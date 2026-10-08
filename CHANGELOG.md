@@ -1,5 +1,47 @@
 # Changelog
 
+## 2026-10-08 — Content Engine: Five Games to Watch, from verified matchup packets
+
+**A new weekly template, in the existing content engine. It features about five games, each with where to watch it (verified network, streaming, ET and CT), why it matters, the matchup that decides it, the evidence, EdgeDesk's projection, an honest read on the upset chance and what to watch.** One verified packet per game feeds two articles: the publisher's edition, approved and sent by hand, and EdgeDesk's own page. Docs: `docs/content-engine/GAMES_TO_WATCH.md`.
+
+- **Matchup packets** (`lib/edgedesk_matchup.js`, `tools/content/build_packets.js` → `football/content/packets.json`, hourly):
+  - built from committed artifacts only; every fact has its numbers, its source and whether a reader could check it;
+  - a projection, a rating or EPA never counts as evidence;
+  - **reasoning gate:** six questions, and at least two independent facts per game.
+- **Data truth:**
+  - the sack columns are quarantined. Offense and defense views of the same plays disagree, a 13.9% against 5.4% team mean on the same 2,088 sacks, so no sack rate is printed;
+  - interceptions come from the passer logs, and no turnover margin is stated;
+  - results come only from verified finals.
+- **Broadcasts** (`lib/edgedesk_broadcast.js`, `football/broadcasts/collect.js`, hourly):
+  - ESPN's public, keyless scoreboard: ESPN-operated networks are confirmed, any other network is held until the owner verifies it from an official source;
+  - stale, changed and conflicting listings are held, and postponements are withdrawn;
+  - revalidated at every read and before sending;
+  - verified weather or schedule moves are printed with their source.
+- **Selection:** never by the largest gap. A comparable market gap is capped context, and a stale or faulted market adds nothing. One storyline per game. Count and required games are configurable; a required game that fails the gate is held for review.
+- **Editions:** both written from the same facts in different words and order (24% similar for October 10). EdgeDesk's links each game's research, the free weekly email and the trial, with no campaign tags on its own site.
+- **Checks:** every block listed in the docs. The review report gives READY, HOLD (verify a broadcast) or REJECT; the job rejects its own REJECT drafts automatically, with the reasons.
+- **Cost:** the AI request carries the packets, not the raw research. A failure in one or two games rewrites only those sections. Every call stays under the $10 monthly cap. No new paid service.
+- **First-party publication** goes through the one article store, publisher and renderer (`tools/content/first_party.js`, `article_type: games_to_watch`). It happens only when every gate passes **and** `football/content/config.json` → `first_party_auto_publish` is true. **It is false.**
+- **Database** (`supabase/content_engine.sql`, re-paste; idempotent; additive):
+  - owner broadcast checks (append-only);
+  - the auto-reject door;
+  - the publisher's response, kept apart from publication;
+  - the per-template report.
+
+  **Not applied to production.** Then redeploy the Edge Function (it carries the two libraries verbatim).
+- **Owner page:**
+  - Article generator → Template: Five Games to Watch, Weekly Upset Watch, Model vs. Market, Single Game Deep Dive, Weekend Review; with publisher, sport, week, count, required games, audience, headline style, date and workflow;
+  - the packet and evidence preview, with missing evidence and blockers;
+  - broadcast verification;
+  - Performance → By template.
+
+**Tests:**
+
+- `content:gtw` (new, 135): the October 10 games as a frozen historical fixture, every named case, every block, and the database doors and job on PostgreSQL. It finds 72 independent facts against 12 in the old projection-only preview.
+- `content:e2e` (72; +8 for the template UI).
+- `content:test` (221), `content:sql` (173), `content:fn` (74), `content:job:test` (27).
+- Articles (5,996), editorial (366, plus publisher, runtime and windows), integrity regression (117), matchup research (249): all green.
+
 ## 2026-10-08 — System integrity: one calculation layer, one integrity engine, and content checked against its approved numbers
 
 **Every number EdgeDesk prints now comes from one calculation layer, and every game passes one integrity engine before it reaches a board, a brief, an AI prompt, an approval or a publisher.** Docs: `docs/system-integrity/` (start with `REPORT.md` and `OPERATING_GUIDE.md`).

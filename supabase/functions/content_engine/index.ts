@@ -182,7 +182,7 @@
 // ── END OUTBOUND AUTH ────────────────────────────────────────────────────
 
 // ── BEGIN INTEGRITY LAYER ──────────────────────────────────────────────
-// Canonical sources: lib/edgedesk_calc.js, lib/edgedesk_schedule.js, lib/edgedesk_availability.js, lib/edgedesk_integrity.js,
+// Canonical sources: lib/edgedesk_calc.js, lib/edgedesk_schedule.js, lib/edgedesk_availability.js, lib/edgedesk_integrity.js, lib/edgedesk_broadcast.js, lib/edgedesk_matchup.js,
 // copied VERBATIM by tools/content/inline.js. Edit the canonical files, then run it.
 // ── lib/edgedesk_calc.js
 /* ===========================================================================
@@ -1632,6 +1632,1161 @@
 
   return I;
 });
+// ── lib/edgedesk_broadcast.js
+/* ===========================================================================
+   EdgeDesk — BROADCAST AND SCHEDULE VERIFICATION (EDBroadcast)
+   docs/content-engine/GAMES_TO_WATCH.md §Broadcasts
+
+   "Where to watch" is a factual claim, so it is verified like one. A network
+   is printed only with the source that verified it and the time it was
+   verified; anything less is held, never guessed.
+
+   SOURCES, in the order they are trusted
+     OWNER_VERIFIED   the owner recorded the network from an official source
+                      (a conference schedule, a school athletics site, the
+                      network's own release) with its URL, in /admin/content/
+     OFFICIAL_NETWORK ESPN's public scoreboard listing a network ESPN itself
+                      operates (ABC, ESPN, ESPN2, ESPNU, ESPNEWS, SEC Network,
+                      ACC Network, ESPN+): the rights holder's own listing
+     CORROBORATED     two independent listings agree
+     LISTED           a single third-party listing (ESPN's scoreboard naming
+                      CBS, FOX, NBC, Big Ten Network, The CW …): useful, NOT
+                      confirmation — the article is held until the owner
+                      verifies it or a second listing agrees
+     NONE             nothing on file
+
+   STATUS (what the article may do)
+     CONFIRMED        print the network, its streaming options, the source and
+                      the verification time
+     TENTATIVE        held: a listing exists but is not confirmed
+     CONFLICT         held: two sources disagree on the network or the time
+     CHANGED          held: the listing changed after it was verified (flex
+                      scheduling, a regional split) — re-verify
+     STALE            held: verified, but not inside the revalidation window
+     POSTPONED / CANCELED   the game is withdrawn from the article
+     UNVERIFIED       held: no listing at all
+
+   STREAMING. A streaming option is printed only when (a) the source listed it
+   for this game, or (b) it is the verified network's OWN live-streaming
+   service (NETWORK_SERVICE in STREAMING below), described as exactly that —
+   "CBS games stream live on Paramount+" — never as a game-specific claim.
+
+   Time zones: the instant is UTC (EDSchedule); Eastern and Central are
+   formatted from it with their own DST rules, never by a fixed offset.
+
+   Browser: window.EDBroadcast. Node: require('./edgedesk_broadcast.js').
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDBroadcast = api;
+})(typeof window !== 'undefined' ? window : globalThis, function () {
+  'use strict';
+  var B = { VERSION: 'edgedesk_broadcast/1' };
+
+  B.CONFIG = {
+    /* a verification older than this before publication is revalidated */
+    revalidate_hours: 24,
+    /* inside this many hours of kickoff, a verification must be this fresh */
+    gameweek_hours: 72, gameweek_revalidate_hours: 12,
+    /* a source time this far from the schedule's is a conflict */
+    time_tolerance_minutes: 5
+  };
+
+  /* networks ESPN operates: its scoreboard listing one of these is the
+     rights holder's own listing */
+  var ESPN_FAMILY = ['ABC', 'ESPN', 'ESPN2', 'ESPNU', 'ESPNEWS', 'SEC Network', 'ACC Network', 'ESPN+', 'SEC Network+', 'ACC Network Extra'];
+  var ALIASES = {
+    'SECN': 'SEC Network', 'SEC NETWORK': 'SEC Network', 'ACCN': 'ACC Network', 'ACC NETWORK': 'ACC Network', 'ESPN+': 'ESPN+', 'ESPN PLUS': 'ESPN+',
+    'SECN+': 'SEC Network+', 'ACCNX': 'ACC Network Extra', 'BTN': 'Big Ten Network', 'BIG TEN NETWORK': 'Big Ten Network', 'FS1': 'FS1', 'FS2': 'FS2',
+    'CBSSN': 'CBS Sports Network', 'CBS SPORTS NETWORK': 'CBS Sports Network', 'CW': 'The CW', 'THE CW': 'The CW', 'CW NETWORK': 'The CW',
+    'ABC': 'ABC', 'ESPN': 'ESPN', 'ESPN2': 'ESPN2', 'ESPNU': 'ESPNU', 'ESPNEWS': 'ESPNEWS', 'CBS': 'CBS', 'FOX': 'FOX', 'NBC': 'NBC',
+    'PEACOCK': 'Peacock', 'TRUTV': 'truTV', 'TNT': 'TNT', 'TBS': 'TBS', 'NFL NETWORK': 'NFL Network', 'NFLN': 'NFL Network', 'AMAZON PRIME VIDEO': 'Prime Video',
+    'PRIME VIDEO': 'Prime Video', 'NETFLIX': 'Netflix', 'YOUTUBE': 'YouTube', 'PARAMOUNT+': 'Paramount+'
+  };
+  B.normalizeNetwork = function (name) {
+    var s = String(name == null ? '' : name).trim();
+    if (!s) return null;
+    var k = s.toUpperCase().replace(/\s+/g, ' ');
+    return ALIASES[k] || s;
+  };
+  B.espnOperated = function (network) { return ESPN_FAMILY.indexOf(B.normalizeNetwork(network)) >= 0; };
+
+  /* THE NETWORK'S OWN LIVE-STREAMING SERVICE (reviewed 2026-10). Only
+     services the network itself runs or names for live games; a network not
+     listed here gets no streaming line. The owner reviews this table each
+     season (docs/content-engine/GAMES_TO_WATCH.md). */
+  B.STREAMING = {
+    ABC: { service: 'the ESPN app', note: 'with a participating TV provider or an ESPN subscription', url: 'https://www.espn.com/watch/' },
+    ESPN: { service: 'the ESPN app', note: 'with a participating TV provider or an ESPN subscription', url: 'https://www.espn.com/watch/' },
+    ESPN2: { service: 'the ESPN app', note: 'with a participating TV provider or an ESPN subscription', url: 'https://www.espn.com/watch/' },
+    ESPNU: { service: 'the ESPN app', note: 'with a participating TV provider or an ESPN subscription', url: 'https://www.espn.com/watch/' },
+    'SEC Network': { service: 'the ESPN app', note: 'with a participating TV provider or an ESPN subscription', url: 'https://www.espn.com/watch/' },
+    'ACC Network': { service: 'the ESPN app', note: 'with a participating TV provider or an ESPN subscription', url: 'https://www.espn.com/watch/' },
+    'ESPN+': { service: 'ESPN+', note: 'a streaming-only broadcast in the ESPN app', url: 'https://www.espn.com/watch/' },
+    CBS: { service: 'Paramount+', note: 'plans that include live CBS', url: 'https://www.paramountplus.com/' },
+    NBC: { service: 'Peacock', note: 'a Peacock subscription', url: 'https://www.peacocktv.com/' },
+    Peacock: { service: 'Peacock', note: 'a streaming-only broadcast on Peacock', url: 'https://www.peacocktv.com/' }
+  };
+
+  function present(x) { return !(x === null || x === undefined || x === ''); }
+  function ms(t) { if (!present(t)) return null; var v = typeof t === 'number' ? t : Date.parse(t); return isFinite(v) ? v : null; }
+  function iso(t) { var v = ms(t); return v == null ? null : new Date(v).toISOString(); }
+  function uniq(a) { var s = {}; return a.filter(function (x) { if (s[x]) return false; s[x] = 1; return true; }); }
+
+  /* ======================================================== ESPN PARSER
+     One public scoreboard payload (site.api.espn.com … /scoreboard) → one
+     LISTING per event: the date ESPN carries, whether its time is valid
+     (timeValid false = TBA), the game status, the venue, and every TV and
+     streaming outlet by market (national, home, away). Nothing is inferred:
+     a field ESPN does not carry stays null. */
+  B.parseEspnScoreboard = function (payload, retrievedAt, sourceUrl) {
+    var out = {};
+    var evs = (payload && payload.events) || [];
+    evs.forEach(function (e) {
+      if (!e || !e.id) return;
+      var c = (e.competitions && e.competitions[0]) || {};
+      var st = (c.status && c.status.type) || (e.status && e.status.type) || {};
+      var outlets = [];
+      (c.geoBroadcasts || []).forEach(function (g) {
+        var name = g && g.media && (g.media.shortName || g.media.name);
+        if (!name) return;
+        outlets.push({ network: B.normalizeNetwork(name), type: g.type && g.type.shortName ? String(g.type.shortName) : null,
+          market: g.market && g.market.type ? String(g.market.type).toLowerCase() : null, region: g.region || null });
+      });
+      if (!outlets.length) (c.broadcasts || []).forEach(function (b) {
+        (b.names || []).forEach(function (n) { outlets.push({ network: B.normalizeNetwork(n), type: 'TV', market: b.market ? String(b.market).toLowerCase() : null, region: null }); });
+      });
+      var comp = (c.competitors || []);
+      var home = comp.filter(function (x) { return x.homeAway === 'home'; })[0], away = comp.filter(function (x) { return x.homeAway === 'away'; })[0];
+      out[String(e.id)] = {
+        game_id: String(e.id), source: { name: 'ESPN scoreboard', kind: 'listing', url: sourceUrl || null, operator: 'ESPN' },
+        retrieved_at: iso(retrievedAt) || null,
+        kickoff: iso(c.date || e.date), time_valid: c.timeValid === false ? false : (c.timeValid === true ? true : null),
+        status: st.name || null, status_detail: st.detail || st.shortDetail || st.description || null,
+        home: home && home.team ? home.team.location || home.team.displayName : null, away: away && away.team ? away.team.location || away.team.displayName : null,
+        venue: c.venue ? { name: c.venue.fullName || null, city: c.venue.address ? c.venue.address.city || null : null, state: c.venue.address ? c.venue.address.state || null : null } : null,
+        outlets: outlets
+      };
+    });
+    return out;
+  };
+
+  /* ===================================================== VERIFICATION
+     listing  one game's ESPN listing (parseEspnScoreboard) or null
+     owner    the owner's verification row, or null:
+              { network, streaming, source_url, source_kind, source_name,
+                verified_at, kickoff (a verified changed kickoff), reason,
+                status ('postponed' | 'canceled' | null) }
+     schedule the game's schedule truth: { kickoff (ISO), kickoff_verified }
+     → the record an article reads */
+  var STATUS_WITHDRAWN = { STATUS_POSTPONED: 'POSTPONED', STATUS_CANCELED: 'CANCELED', STATUS_CANCELLED: 'CANCELED', STATUS_FORFEIT: 'CANCELED' };
+  B.verify = function (gameId, listing, owner, schedule) {
+    schedule = schedule || {};
+    var rec = { schema: 'edgedesk_broadcast_v1', version: B.VERSION, game_id: String(gameId), status: 'UNVERIFIED', tier: 'NONE',
+      network: null, networks: [], regional: [], streaming: [], source: null, verified_at: null, verified_by: null,
+      kickoff: schedule.kickoff || null, kickoff_source: schedule.kickoff ? 'schedule feed' : null, schedule_change: null,
+      problems: [], listing: listing || null };
+    var natTV = [], natStream = [], regional = [];
+    if (listing) (listing.outlets || []).forEach(function (o) {
+      if (!o.network) return;
+      var tv = !o.type || /tv/i.test(o.type), stream = /stream/i.test(o.type || ''), nat = !o.market || o.market === 'national';
+      if (/radio/i.test(o.type || '')) return;
+      if (nat && tv) natTV.push(o.network); else if (nat && stream) natStream.push(o.network); else if (tv) regional.push({ network: o.network, market: o.market });
+    });
+    natTV = uniq(natTV); natStream = uniq(natStream);
+    var withdrawn = listing && STATUS_WITHDRAWN[listing.status];
+    if (owner && /postpon/i.test(owner.status || '')) withdrawn = 'POSTPONED';
+    if (owner && /cancel/i.test(owner.status || '')) withdrawn = 'CANCELED';
+    /* the network */
+    if (owner && present(owner.network)) {
+      rec.network = B.normalizeNetwork(owner.network); rec.tier = 'OWNER_VERIFIED';
+      rec.source = { name: owner.source_name || owner.source_kind || 'owner verification', kind: owner.source_kind || 'official', url: owner.source_url || null };
+      rec.verified_at = iso(owner.verified_at); rec.verified_by = 'owner';
+      if (!present(owner.source_url)) rec.problems.push({ code: 'NO_SOURCE_URL', text: 'the owner verification carries no source URL' });
+      if (natTV.length && natTV.indexOf(rec.network) < 0) {
+        var listedAfter = listing && ms(listing.retrieved_at) != null && ms(owner.verified_at) != null && ms(listing.retrieved_at) > ms(owner.verified_at);
+        rec.problems.push({ code: listedAfter ? 'LISTING_CHANGED' : 'LISTING_DIFFERS', text: 'ESPN’s scoreboard lists ' + natTV.join(' / ') + (listedAfter ? ', after the owner verified ' + rec.network : '') });
+      }
+    } else if (natTV.length || natStream.length) {
+      /* a streaming-only national broadcast (ESPN+, Peacock) is the network */
+      var nets = natTV.length ? natTV : natStream;
+      rec.network = nets[0];
+      rec.tier = nets.every(B.espnOperated) ? 'OFFICIAL_NETWORK' : 'LISTED';
+      rec.source = listing.source; rec.verified_at = listing.retrieved_at; rec.verified_by = 'feed';
+      if (nets.length > 1) rec.networks = nets.slice();
+      if (!natTV.length) natStream = [];
+    }
+    rec.networks = rec.networks.length ? rec.networks : (rec.network ? [rec.network] : []);
+    rec.regional = regional;
+    /* streaming: listed for this game, else the verified network's own service */
+    natStream.forEach(function (s) { rec.streaming.push({ service: s, basis: 'LISTED_FOR_GAME', note: null, url: null }); });
+    if (owner && Array.isArray(owner.streaming)) owner.streaming.forEach(function (s) { if (s && present(s.service || s)) rec.streaming.push({ service: s.service || s, basis: 'OWNER_VERIFIED', note: s.note || null, url: s.url || null }); });
+    if (rec.network && B.STREAMING[rec.network] && !rec.streaming.some(function (s) { return s.service === B.STREAMING[rec.network].service; })) {
+      var S = B.STREAMING[rec.network];
+      rec.streaming.push({ service: S.service, basis: 'NETWORK_SERVICE', note: S.note, url: S.url });
+    }
+    /* the time: an owner-verified change wins; a listing time that disagrees
+       with the schedule is a conflict until someone verifies it */
+    var schedMs = ms(schedule.kickoff);
+    if (owner && present(owner.kickoff)) {
+      rec.schedule_change = { from: iso(schedule.kickoff), to: iso(owner.kickoff), reason: owner.reason || null, source_url: owner.source_url || null, verified_at: iso(owner.verified_at) };
+      rec.kickoff = iso(owner.kickoff); rec.kickoff_source = 'owner verification';
+    } else if (listing && ms(listing.kickoff) != null && schedMs != null && listing.time_valid !== false
+      && Math.abs(ms(listing.kickoff) - schedMs) > B.CONFIG.time_tolerance_minutes * 60e3) {
+      rec.problems.push({ code: 'TIME_CONFLICT', text: 'ESPN’s scoreboard has the game at ' + iso(listing.kickoff) + ', the schedule at ' + iso(schedule.kickoff) });
+    }
+    if (listing && listing.time_valid === false && schedule.kickoff_verified) rec.problems.push({ code: 'TIME_TBA_AT_SOURCE', text: 'ESPN’s scoreboard marks the time as to be announced' });
+    if (schedule.kickoff_verified === false && !(owner && present(owner.kickoff))) rec.problems.push({ code: 'KICKOFF_UNVERIFIED', text: 'the schedule has not confirmed a kickoff time' });
+    /* the status */
+    if (withdrawn) rec.status = withdrawn;
+    else if (!rec.network) rec.status = 'UNVERIFIED';
+    else if (rec.problems.some(function (p) { return p.code === 'LISTING_CHANGED'; })) rec.status = 'CHANGED';
+    else if (rec.problems.some(function (p) { return p.code === 'LISTING_DIFFERS' || p.code === 'TIME_CONFLICT' || p.code === 'TIME_TBA_AT_SOURCE'; })) rec.status = 'CONFLICT';
+    else if (rec.tier === 'LISTED') rec.status = 'TENTATIVE';
+    else if (rec.problems.some(function (p) { return p.code === 'NO_SOURCE_URL' || p.code === 'KICKOFF_UNVERIFIED'; })) rec.status = 'TENTATIVE';
+    else rec.status = 'CONFIRMED';
+    return rec;
+  };
+
+  /* is a CONFIRMED record still fresh enough to publish at `at`? */
+  B.fresh = function (rec, at, kickoff) {
+    if (!rec || rec.status !== 'CONFIRMED') return { ok: false, reason: rec ? rec.status : 'UNVERIFIED' };
+    var t = ms(rec.verified_at), when = ms(at) == null ? Date.now() : ms(at), k = ms(kickoff || rec.kickoff);
+    if (t == null) return { ok: false, reason: 'NO_TIMESTAMP' };
+    var limit = (k != null && k - when <= B.CONFIG.gameweek_hours * 3600e3) ? B.CONFIG.gameweek_revalidate_hours : B.CONFIG.revalidate_hours;
+    var age = (when - t) / 3600e3;
+    return age <= limit ? { ok: true, age_hours: Math.round(age * 10) / 10, limit_hours: limit }
+      : { ok: false, reason: 'STALE', age_hours: Math.round(age * 10) / 10, limit_hours: limit };
+  };
+
+  /* may an article print this record as where to watch? */
+  B.publishable = function (rec, at) {
+    if (!rec) return { ok: false, reason: 'UNVERIFIED', text: 'no broadcast listing is on file' };
+    if (rec.status === 'POSTPONED' || rec.status === 'CANCELED') return { ok: false, reason: rec.status, withdraw: true, text: 'the game is ' + rec.status.toLowerCase() };
+    if (rec.status !== 'CONFIRMED') return { ok: false, reason: rec.status, text: B.STATUS_TEXT[rec.status] || rec.status };
+    var f = B.fresh(rec, at);
+    if (!f.ok) return { ok: false, reason: 'STALE', text: 'the broadcast was verified ' + f.age_hours + ' hours ago; it must be re-verified within ' + f.limit_hours + ' hours of publication' };
+    return { ok: true, reason: null, text: null };
+  };
+  B.STATUS_TEXT = {
+    UNVERIFIED: 'no broadcast listing is on file',
+    TENTATIVE: 'a single third-party listing names the network; it is not confirmed',
+    CONFLICT: 'two sources disagree on the network or the time',
+    CHANGED: 'the listing changed after it was verified',
+    STALE: 'the verification is too old for publication'
+  };
+
+  /* ====================================================== DISPLAY
+     Eastern and Central times from the UTC instant, each with its own DST.
+     Uses EDSchedule when present so there is one formatter. */
+  function sched() { var G = typeof globalThis !== 'undefined' ? globalThis : {}; return G.EDSchedule || (typeof require === 'function' ? (function () { try { return require('./edgedesk_schedule.js'); } catch (e) { return null; } })() : null); }
+  B.timesText = function (kickoffIso) {
+    var S = sched(); if (!S || !kickoffIso) return null;
+    var g = { kickoff: kickoffIso, start_time_tbd: false };
+    var et = S.display(g, 'America/New_York'), ct = S.display(g, 'America/Chicago');
+    if (!et.verified) return null;
+    return { date: et.text.split(' · ')[0], et: et.clock + ' ' + et.zone_abbr, ct: ct.clock + ' ' + ct.zone_abbr, et_abbr: et.zone_abbr, ct_abbr: ct.zone_abbr };
+  };
+  /* "Watch: ABC · Stream: the ESPN app (with a participating TV provider or an
+     ESPN subscription) · Verified Oct. 8, 5:00 PM ET (ESPN scoreboard)" */
+  B.watchLine = function (rec) {
+    if (!rec || rec.status !== 'CONFIRMED') return null;
+    var s = rec.streaming.map(function (x) { return x.service + (x.basis === 'NETWORK_SERVICE' && x.note ? ' (' + x.note + ')' : ''); });
+    return { tv: rec.networks.join(' / '), stream: s.length ? s.join('; ') : null, regional: rec.regional.length ? rec.regional.map(function (r) { return r.network + ' (' + r.market + ' market)'; }).join(', ') : null };
+  };
+  return B;
+});
+// ── lib/edgedesk_matchup.js
+/* ===========================================================================
+   EdgeDesk — THE EDITORIAL MATCHUP PACKET (EDMatchup)
+   docs/content-engine/GAMES_TO_WATCH.md
+
+   One verified research packet per game, built BEFORE any article is written,
+   from what EdgeDesk already publishes:
+
+     football/matchup/packet.js   measured pairings (each offence against the
+                                  defence it meets, garbage time excluded,
+                                  with sample sizes), the quarterback's
+                                  measured season, position-group standings
+     football/cfb_terminal        the champion projection, the market check,
+                                  the integrity verdict, the model's inputs,
+                                  its sensitivity and the other models' lines
+     football/personnel           the conference's OFFICIAL availability report
+     football/availability        the report's URL and publication time
+     football/fbs_epa             every quarterback's game logs
+     football/cfb_terminal/record.json, collective/settled
+                                  verified final scores
+     football/broadcasts          the broadcast listing, verified (EDBroadcast)
+
+   It writes nothing a feed did not measure. Every fact carries its numbers,
+   its source and whether a reader could check it independently: a count from
+   the play-by-play, a final score or an official report is INDEPENDENT; a
+   projection, a rating or an opponent-adjusted metric is EdgeDesk's ANALYSIS
+   and never counts toward the two independent facts a featured game needs.
+
+   THE REASONING GATE (M.gate) — six questions, each answered from the packet:
+     1 why should a reader watch?   2 what matchup could decide it?
+     3 what recent evidence?        4 what does EdgeDesk project?
+     5 why might the model be wrong?  6 what should a viewer watch for?
+   A game that cannot answer all six, with at least two independent facts that
+   support the argument, is not featured.
+
+   Browser: window.EDMatchup. Node: require('./edgedesk_matchup.js').
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDMatchup = api;
+})(typeof window !== 'undefined' ? window : globalThis, function () {
+  'use strict';
+  var M = { VERSION: 'edgedesk_matchup_packet/1', SCHEMA: 'edgedesk_editorial_matchup_packet_v1' };
+
+  function dep(name, file) {
+    var G = typeof globalThis !== 'undefined' ? globalThis : (typeof window !== 'undefined' ? window : {});
+    if (G && G[name]) return G[name];
+    if (typeof require === 'function') { try { return require('./' + file); } catch (e) { /* not in this host */ } }
+    return null;
+  }
+  var CALC = dep('EDCalc', 'edgedesk_calc.js'), SCHED = dep('EDSchedule', 'edgedesk_schedule.js'),
+    AVAIL = dep('EDAvailability', 'edgedesk_availability.js'), BC = dep('EDBroadcast', 'edgedesk_broadcast.js');
+
+  M.CONFIG = {
+    min_independent_facts: 2,
+    /* a pairing sample below this is printed, never argued from */
+    min_pair_n: 40,
+    /* a genuine upset case needs the model to give the underdog at least this */
+    upset_min_dog_prob: 0.25,
+    /* "strength on strength": both units at least this many SD better than average */
+    clash_z: 0.75,
+    /* "mismatch": one side this many SD better than the other */
+    mismatch_z: 1.0,
+    /* a unit counts as a strength this many SD better than average */
+    strength_z: 0.5,
+    /* a quarterback's interception rate this many times the FBS rate is a
+       ball-security story (with at least int_min_attempts throws) */
+    int_ratio: 1.4, int_min_attempts: 60
+  };
+
+  function isNum(x) { return typeof x === 'number' && isFinite(x); }
+  function present(x) { return !(x === null || x === undefined || x === ''); }
+  function ms(t) { if (!present(t)) return null; var v = typeof t === 'number' ? t : Date.parse(t); return isFinite(v) ? v : null; }
+  function iso(t) { var v = ms(t); return v == null ? null : new Date(v).toISOString(); }
+  function key(s) { return s == null ? null : String(s).trim().toLowerCase().replace(/[^a-z0-9]+/g, '') || null; }
+  M.key = key;
+  function r1(x) { return CALC ? CALC.round(x, 1) : Math.round(x * 10) / 10; }
+  function pct1(x) { return r1(x * 100); }
+  function f1(x) { return r1(x).toFixed(1); }
+  function int(x) { return Math.round(x); }
+  function comma(n) { return String(int(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+  function plural(n, one, many) { return n === 1 ? one : (many || one + 's'); }
+  var WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+  function nword(n) { return n >= 0 && n < 10 ? WORDS[n] : String(n); }
+  var MON = ['Jan.', 'Feb.', 'March', 'April', 'May', 'June', 'July', 'Aug.', 'Sept.', 'Oct.', 'Nov.', 'Dec.'];
+  function dateShort(t) { var d = new Date(ms(t)); return MON[d.getUTCMonth()] + ' ' + d.getUTCDate(); }
+  /* "Alabama by 5.4": a projected margin, never written like a betting line */
+  function byText(homeMargin, home, away) { var m = r1(Math.abs(homeMargin)); return m === 0 ? 'a pick’em' : (homeMargin > 0 ? home : away) + ' by ' + m.toFixed(1); }
+  function possessive(t) { return /s$/.test(t) ? t + '’' : t + '’s'; }
+
+  /* =================================================== LEAGUE CONTEXT
+     FBS averages and spreads of each team-level rate, from the profiles
+     (garbage time excluded), so a fact can say "against an FBS average of". */
+  var RATE_FIELDS = ['yards_per_rush', 'explosive_rush_rate', 'completion_rate', 'explosive_pass_rate', 'sack_taken_rate', 'third_down_rate'];
+  /* THE CONSISTENCY GATE. Every play has an offence and a defence, so across
+     the league a rate's offensive and defensive views describe the same
+     plays: their team means can differ a little (each side's schedule mixes
+     in different opponents) but not by much. When they differ by more than
+     this share, the feed is attributing the event to the wrong side on some
+     plays, and the rate is quarantined: printed nowhere, argued from never.
+     (2026: sacks — 13.9% taken against 5.4% made per team, on the same 2,088
+     sacks — because sack plays are sometimes credited to the defence's
+     possession.) */
+  M.CONSISTENCY_MAX = 0.25;
+  M.leagueFromProfiles = function (profiles) {
+    var teams = profiles && profiles.teams ? Object.keys(profiles.teams).map(function (k) { return profiles.teams[k]; }) : [];
+    var out = { basis: 'mean and spread of team rates across FBS team profiles, garbage time excluded (football/matchup/profiles_' + (profiles && profiles.season) + '.json)', n_teams: 0, quarantined: [] };
+    ['excluding_garbage_time', 'allowed_excluding_garbage_time'].forEach(function (view) {
+      out[view] = {};
+      RATE_FIELDS.forEach(function (f) {
+        var xs = teams.map(function (t) { return t[view] ? t[view][f] : null; }).filter(isNum);
+        if (xs.length < 20) return;
+        var m = xs.reduce(function (a, b) { return a + b; }, 0) / xs.length;
+        var sd = Math.sqrt(xs.reduce(function (a, b) { return a + (b - m) * (b - m); }, 0) / (xs.length - 1));
+        out[view][f] = { mean: m, sd: sd, n: xs.length };
+      });
+    });
+    RATE_FIELDS.forEach(function (f) {
+      var o = out.excluding_garbage_time[f], a = out.allowed_excluding_garbage_time[f];
+      if (!o || !a) { out.quarantined.push({ field: f, why: 'fewer than 20 teams carry this rate' }); return; }
+      var rel = Math.abs(o.mean - a.mean) / Math.max(1e-9, Math.min(o.mean, a.mean));
+      o.consistency = a.consistency = Math.round(rel * 1000) / 1000;
+      if (rel > M.CONSISTENCY_MAX) out.quarantined.push({ field: f, offense_mean: Math.round(o.mean * 10000) / 10000, defense_mean: Math.round(a.mean * 10000) / 10000,
+        why: 'the offensive and defensive views of the same plays disagree by ' + Math.round(rel * 100) + '% (team means ' + (o.mean < 1 ? f1(o.mean * 100) + '%' : f1(o.mean)) + ' and ' + (a.mean < 1 ? f1(a.mean * 100) + '%' : f1(a.mean)) + '): the feed credits some of these plays to the wrong side' });
+    });
+    out.n_teams = teams.length;
+    return out;
+  };
+  function quarantined(league, field) { return !!(league && league.quarantined && league.quarantined.some(function (q) { return q.field === field; })); }
+  M.quarantined = quarantined;
+
+  /* =================================================== FINALS INDEX
+     Verified final scores, by team key, newest first. record.json rows carry
+     game ids and full names; the Collective's settlement record carries
+     shortened names, joined on the first ten letters and the date. */
+  M.finalsIndex = function (recordRows, settledGames) {
+    var byGame = {}, byTeam = {};
+    function add(t, x) { (byTeam[t] = byTeam[t] || []).push(x); }
+    (recordRows || []).forEach(function (r) {
+      if (!r || !r.game_id || !isNum(r.final_margin) || !r.final_text) return;
+      var m = /^(.+?) (\d+) — (.+?) (\d+)$/.exec(r.final_text);
+      if (!m) return;
+      byGame[String(r.game_id)] = { game_id: String(r.game_id), kickoff: r.kickoff, home: r.home, away: r.away,
+        away_score: +m[2], home_score: +m[4], source: 'EdgeDesk’s graded record (football/cfb_terminal/record.json)', week: r.week };
+    });
+    var cut = function (s) { return String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10); };
+    /* the settlement record names schools as the feed does; these differ */
+    var ALIAS = { OLEMISS: 'MISSISSIPP', MIAMI: 'MIAMI', UCONN: 'CONNECTICU', UMASS: 'MASSACHUSE', LSU: 'LSU', SMU: 'SMU', UCF: 'UCF', USC: 'USC', BYU: 'BYU', TCU: 'TCU', UTSA: 'UTSA', UTEP: 'UTEP', UNLV: 'UNLV' };
+    var cutA = function (s) { var c = cut(s); return ALIAS[c] || c; };
+    if (settledGames && !Array.isArray(settledGames)) settledGames = Object.keys(settledGames).map(function (k) { return settledGames[k]; });
+    var settled = (settledGames || []).filter(function (g) { return g && isNum(g.home_score) && isNum(g.away_score) && !(g.home_score === 0 && g.away_score === 0); });
+    return {
+      byGame: byGame,
+      settled: settled.map(function (g) { return { h: cut(g.home), a: cut(g.away), day: String(g.kickoff_at || '').slice(0, 10), g: g }; }),
+      /* one team's game on one date: a team plays once a day, so the date
+         and the team's own name identify it; the opponent breaks a tie
+         between two schools whose shortened names collide */
+      find: function (gameId, team, opponent, kickoff) {
+        if (byGame[String(gameId)]) return byGame[String(gameId)];
+        var k = ms(kickoff); if (k == null) return null;
+        var t = cutA(team), o = cutA(opponent);
+        var hits = this.settled.filter(function (s) { var d = ms(s.g.kickoff_at); return d != null && Math.abs(d - k) <= 18 * 3600e3 && (s.h === t || s.a === t); });
+        if (hits.length > 1) hits = hits.filter(function (s) { return (s.h === t ? s.a : s.h).slice(0, 4) === o.slice(0, 4); });
+        if (hits.length !== 1) return null;
+        var hit = hits[0], teamHome = hit.h === t;
+        return { game_id: String(gameId), kickoff: iso(hit.g.kickoff_at), home: teamHome ? team : opponent, away: teamHome ? opponent : team,
+          home_score: hit.g.home_score, away_score: hit.g.away_score,
+          source: 'the Collective’s settlement record (collective/settled), score source: ' + (hit.g.score_source || 'feeds'), week: hit.g.week };
+      }
+    };
+  };
+
+  /* =================================================== QB INDEX */
+  M.qbIndex = function (qbEpa) {
+    var by = {};
+    var P = qbEpa && qbEpa.players ? (Array.isArray(qbEpa.players) ? qbEpa.players : Object.keys(qbEpa.players).map(function (k) { return qbEpa.players[k]; })) : [];
+    var att = 0, ints = 0;
+    P.forEach(function (p) {
+      if (p && p.team_key && p.name) (by[p.team_key] = by[p.team_key] || []).push(p);
+      ((p && p.season_log) || []).forEach(function (g) { if (isNum(g.attempts) && isNum(g.interceptions)) { att += g.attempts; ints += g.interceptions; } });
+    });
+    /* every team's games, with their kickoffs: the schedule a result joins on */
+    var games = {};
+    var TM = qbEpa && qbEpa.teams ? qbEpa.teams : {};
+    Object.keys(TM).forEach(function (k) { (TM[k].offence_log || []).forEach(function (g) { if (g && g.game_id && g.kickoff) games[String(g.game_id)] = g.kickoff; }); });
+    return { by_team: by, league_epa: qbEpa && qbEpa.league && qbEpa.league.season ? qbEpa.league.season.epa_per_dropback : null,
+      league_int_rate: att >= 1000 ? ints / att : null, league_attempts: att, games: games,
+      generated_at: qbEpa ? qbEpa.generated_at : null };
+  };
+  function qbSeason(p, beforeMs) {
+    var L = (p.season_log || []).filter(function (g) { return g && (beforeMs == null || ms(g.kickoff) < beforeMs); });
+    var t = { games: L.length, attempts: 0, completions: 0, yards: 0, tds: 0, interceptions: 0, sacks: 0, dropbacks: 0, epa: 0, epa_n: 0, last: null };
+    L.forEach(function (g) {
+      ['attempts', 'completions', 'yards', 'tds', 'interceptions', 'sacks', 'dropbacks'].forEach(function (k) { if (isNum(g[k])) t[k] += g[k]; });
+      if (isNum(g.epa) && g.epa_state === 'MEASURED') { t.epa += g.epa; t.epa_n += g.dropbacks || 0; }
+      if (!t.last || ms(g.kickoff) > ms(t.last.kickoff)) t.last = g;
+    });
+    t.completion_pct = t.attempts ? pct1(t.completions / t.attempts) : null;
+    t.ypa = t.attempts ? r1(t.yards / t.attempts) : null;
+    t.epa_per_dropback = t.epa_n ? Math.round(t.epa / t.epa_n * 1000) / 1000 : null;
+    return t;
+  }
+
+  /* =================================================== FACT WRITERS
+     Each fact has two phrasings: `text` (publisher edition) and `alt`
+     (EdgeDesk's own edition), so the two articles share verified numbers but
+     not sentences. */
+  function fact(o) {
+    return { id: o.id, team: o.team || null, kind: o.kind, unit: o.unit || null, independent: !!o.independent,
+      text: o.text, alt: o.alt || o.text, numbers: (o.numbers || []).filter(isNum), source: o.source || null,
+      supports: o.supports || [], verify: o.verify || null, direction: o.direction || null };
+  }
+  /* the full description (URL, basis, time) is the packet's sources entry;
+     each fact carries the short reference */
+  var PLAY_SRC = function () { return { name: 'cfbfastR-data play-by-play', artifact: 'football/matchup/profiles_2026.json' }; };
+  var PAIR_TEXT = {
+    run_game: {
+      off: function (t, v, n) { return [t + ' has run for ' + f1(v) + ' yards per carry this season (' + n + ' carries outside garbage time).', t + ' averages ' + f1(v) + ' yards a carry on ' + n + ' non-garbage-time runs.']; },
+      def: function (t, v, n) { return [t + ' has allowed ' + f1(v) + ' yards per carry (' + n + ' carries).', 'Opponents have managed ' + f1(v) + ' yards a carry against ' + t + ' (' + n + ' runs).']; },
+      fmt: function (v) { return f1(v) + ' yards a carry'; }, pct: false, unit: 'yards per carry', higher_is_better_for_offense: true, label: 'the run game', off_label: 'run game', def_label: 'run defense', field: 'yards_per_rush' },
+    explosive_run: {
+      off: function (t, v, n) { return [t + ' has gained 15 yards or more on ' + f1(v * 100) + '% of its carries (' + n + ' carries).', t + ' breaks a run of 15-plus yards on ' + f1(v * 100) + '% of its carries (' + n + ').']; },
+      def: function (t, v, n) { return [t + ' has allowed a run of 15 yards or more on ' + f1(v * 100) + '% of opponent carries (' + n + ').', t + ' gives up a 15-plus-yard run on ' + f1(v * 100) + '% of carries (' + n + ').']; },
+      fmt: function (v) { return f1(v * 100) + '%'; }, pct: true, unit: 'carries of 15+ yards', higher_is_better_for_offense: true, label: 'big runs', off_label: 'big-play run game', def_label: 'defense against big runs', field: 'explosive_rush_rate' },
+    passing: {
+      off: function (t, v, n) { return [t + ' completes ' + f1(v * 100) + '% of its passes (' + n + ' dropbacks).', possessive(t) + ' passers hit on ' + f1(v * 100) + '% of their throws across ' + n + ' dropbacks.']; },
+      def: function (t, v, n) { return [t + ' has allowed a ' + f1(v * 100) + '% completion rate (' + n + ' dropbacks).', 'Quarterbacks have completed ' + f1(v * 100) + '% of their throws against ' + t + ' (' + n + ' dropbacks).']; },
+      fmt: function (v) { return f1(v * 100) + '%'; }, pct: true, unit: 'completion rate', higher_is_better_for_offense: true, label: 'the passing game', off_label: 'passing game', def_label: 'pass defense', field: 'completion_rate' },
+    explosive_pass: {
+      off: function (t, v, n) { return [t + ' has completed a pass of 20 yards or more on ' + f1(v * 100) + '% of its dropbacks (' + n + ' dropbacks).', t + ' connects on a 20-plus-yard pass on ' + f1(v * 100) + '% of dropbacks (' + n + ').']; },
+      def: function (t, v, n) { return [t + ' has allowed a 20-yard completion on ' + f1(v * 100) + '% of opponent dropbacks (' + n + ').', 'Opponents have hit a 20-plus-yard pass on ' + f1(v * 100) + '% of dropbacks against ' + t + ' (' + n + ').']; },
+      fmt: function (v) { return f1(v * 100) + '%'; }, pct: true, unit: 'explosive passes', higher_is_better_for_offense: true, label: 'the deep passing game', off_label: 'deep passing game', def_label: 'defense against big passes', field: 'explosive_pass_rate' },
+    pass_protection: {
+      off: function (t, v, n) { return [t + ' has allowed a sack on ' + f1(v * 100) + '% of dropbacks (' + n + ').', possessive(t) + ' quarterbacks have been sacked on ' + f1(v * 100) + '% of their ' + n + ' dropbacks.']; },
+      def: function (t, v, n) { return [possessive(t) + ' defense has sacked the quarterback on ' + f1(v * 100) + '% of opponent dropbacks (' + n + ').', t + ' gets a sack on ' + f1(v * 100) + '% of opponent dropbacks (' + n + ').']; },
+      fmt: function (v) { return f1(v * 100) + '%'; }, pct: true, unit: 'sacks per dropback', higher_is_better_for_offense: false, label: 'pass protection against the pass rush', off_label: 'pass protection', def_label: 'pass rush', field: 'sack_taken_rate' },
+    third_down: {
+      off: function (t, v, n) { return [t + ' converts ' + f1(v * 100) + '% of its third downs (' + n + ').', t + ' has moved the chains on ' + f1(v * 100) + '% of ' + n + ' third downs.']; },
+      def: function (t, v, n) { return [t + ' allows opponents to convert ' + f1(v * 100) + '% of third downs (' + n + ').', 'Opponents convert ' + f1(v * 100) + '% of third downs against ' + t + ' (' + n + ').']; },
+      fmt: function (v) { return f1(v * 100) + '%'; }, pct: true, unit: 'third-down conversions', higher_is_better_for_offense: true, label: 'third downs', off_label: 'third-down offense', def_label: 'third-down defense', field: 'third_down_rate' }
+  };
+  var QUARANTINE_TEXT = { sack_taken_rate: 'sack rates are not used', completion_rate: 'completion rates are not used', yards_per_rush: 'rushing averages are not used',
+    explosive_rush_rate: 'big-run rates are not used', explosive_pass_rate: 'big-pass rates are not used', third_down_rate: 'third-down rates are not used' };
+  var UNIT_OF_PAIR = { run_game: 'RUN', explosive_run: 'RUN', passing: 'PASS', explosive_pass: 'PASS', pass_protection: 'TRENCHES', third_down: 'SITUATIONAL' };
+  M.PAIR_KEYS = Object.keys(PAIR_TEXT);
+
+  /* z of a value against the league: positive is GOOD for the side named */
+  function zOf(league, view, field, v) {
+    var L = league && league[view] && league[view][field];
+    if (!L || !isNum(v) || !L.sd) return null;
+    return (v - L.mean) / L.sd;
+  }
+
+  /* ======================================================== BUILD
+     src: { terminal (games.json game), football (packet.js build), personnel
+            (personnel game entry), reports ({home, away} bundle entries),
+            finals (M.finalsIndex), qb (M.qbIndex), rankings (content
+            engine rankingsIndex-like {by_name: {rank}}), profiles (teams),
+            league (M.leagueFromProfiles), broadcast (EDBroadcast.verify),
+            now } */
+  M.build = function (src) {
+    src = src || {};
+    var T = src.terminal || {}, F = src.football && src.football.ok ? src.football : null, gm = T.game || {};
+    var now = isNum(src.now) ? src.now : Date.now();
+    var home = gm.home, away = gm.away, hk = key(home), ak = key(away), gid = String(T.game_id);
+    var kickMs = ms(T.kickoff);
+    var facts = [], problems = [], unresolved = [], sources = [];
+    function addSource(s) { if (s && !sources.some(function (x) { return x.name === s.name; })) sources.push(s); }
+    var pushF = function (o) { var f = fact(o); facts.push(f); return f; };
+    var nfid = 0; function fid(k) { nfid++; return 'f_' + gid + '_' + k + '_' + nfid; }
+
+    /* ---------------- identity and schedule */
+    var ranks = src.rankings && src.rankings.by_name ? src.rankings.by_name : {};
+    var rkH = ranks[home] || null, rkA = ranks[away] || null;
+    var kt = SCHED ? SCHED.kickoffOf({ kickoff: T.kickoff, start_time_tbd: T.kickoff_tbd, kickoff_state: T.kickoff_state, kickoff_basis: T.kickoff_basis }) : { state: 'MISSING', verified: false };
+    var B = src.broadcast || null;
+    var kickoffIso = B && B.schedule_change ? B.kickoff : iso(T.kickoff);
+    var times = BC && kt.verified ? BC.timesText(kickoffIso) : null;
+    var schedule = { kickoff: kickoffIso, kickoff_state: kt.state, kickoff_verified: !!kt.verified, kickoff_basis: kt.basis || null,
+      times: times, venue: gm.venue || null, neutral_site: !!gm.neutral_site, schedule_change: B ? B.schedule_change : null,
+      status: B ? B.status : null, source: 'the season schedule feed (cfbfastR-data / ESPN), via football/cfb_terminal' };
+    if (!kt.verified) problems.push({ code: 'KICKOFF_UNVERIFIED', text: 'the kickoff time is not confirmed (' + (kt.state || 'missing') + ')' });
+    if (kickMs != null && kickMs <= now) problems.push({ code: 'STARTED', text: 'the game has kicked off' });
+
+    /* ---------------- broadcast */
+    var bb = broadcastBlock(B, now);
+    var broadcast = bb.broadcast;
+    if (bb.problem) problems.push(bb.problem);
+    if (B && B.source) addSource({ name: B.source.name, url: B.source.url, as_of: B.verified_at, what: 'the television network and streaming listing' });
+
+    /* ---------------- the model */
+    var e = T.edgedesk || {}, mk = T.market || {}, D = T.disagreement || {};
+    var model = { available: !!(e.available && isNum(e.home_margin)) };
+    if (model.available) {
+      var fav = e.home_margin >= 0 ? home : away, dog = fav === home ? away : home, mg = Math.abs(e.home_margin);
+      var cmpM = CALC ? CALC.spread(e.home_margin, { home: home, away: away }) : null;
+      model.fair_text = cmpM ? cmpM.text : e.fair_text;
+      model.favorite = r1(mg) === 0 ? null : fav; model.underdog = r1(mg) === 0 ? null : dog; model.margin = r1(mg);
+      model.home_win_prob = isNum(e.home_win_prob) ? e.home_win_prob : null;
+      model.fav_win_pct = isNum(e.home_win_prob) ? Math.round((fav === home ? e.home_win_prob : 1 - e.home_win_prob) * 100) : null;
+      model.dog_win_pct = model.fav_win_pct == null ? null : 100 - model.fav_win_pct;
+      model.total = isNum(e.fair_total) ? r1(e.fair_total) : null;
+      model.version = e.model_version || null; model.as_of = e.prediction_ts || null;
+      model.reliability = T.data_quality && isNum(T.data_quality.reliability) ? Math.round(T.data_quality.reliability) : null;
+      model.reliability_grade = T.data_quality ? T.data_quality.grade || null : null;
+      model.reliability_note = T.data_quality ? T.data_quality.main_deduction || null : null;
+      model.confidence = e.football_confidence && isNum(e.football_confidence.score) ? Math.round(e.football_confidence.score) : null;
+      model.inputs = ((T.why && T.why.rows) || []).filter(function (w) { return w && w.available !== false && isNum(w.points) && Math.abs(w.points) >= 0.5; })
+        .sort(function (a, b) { return Math.abs(b.points) - Math.abs(a.points); }).slice(0, 3)
+        .map(function (w) { return { label: w.label, points: r1(Math.abs(w.points)), favors: w.favors }; });
+      model.unpriced = ((T.why && T.why.unpriced) || []).slice(0, 4);
+      var sens = ((T.sensitivity && T.sensitivity.rows) || []).filter(function (s) { return isNum(s.home_margin); });
+      if (sens.length) {
+        var lo = Math.min.apply(null, sens.map(function (s) { return s.home_margin; })), hi = Math.max.apply(null, sens.map(function (s) { return s.home_margin; }));
+        model.sensitivity = { low: byText(lo, home, away), high: byText(hi, home, away), low_home_margin: r1(lo), high_home_margin: r1(hi),
+          basis: 'one-standard-deviation rating and input scenarios (football/cfb_terminal sensitivity)' };
+      }
+      var cons = ((T.consensus && T.consensus.rows) || []).filter(function (c) { return isNum(c.home_margin) && c.role !== 'champion'; });
+      if (cons.length) model.other_models = cons.slice(0, 4).map(function (c) { return { label: c.label, home_margin: r1(c.home_margin), text: byText(c.home_margin, home, away) }; });
+      var unc = ((T.risks && T.risks.items) || []).filter(function (r) { return r.key === 'model_uncertainty'; })[0];
+      model.typical_miss = unc ? unc.text : null;
+    }
+    var pubInt = T.integrity && T.integrity.publication ? T.integrity.publication : null;
+    model.integrity = pubInt ? { status: pubInt.status, blocking: pubInt.blocking || [] } : null;
+    model.research_status = T.research_status ? { key: T.research_status.key, label: T.research_status.label, reason: T.research_status.reason || null } : null;
+    /* the market comparison: only a current, unfaulted, main line is a comparable */
+    var best = null;
+    (mk.quotes || []).forEach(function (q) { var t = ms(q.observed_at); if (t != null && isNum(q.home_line) && (!best || t > best.t)) best = { t: t, q: q }; });
+    var market = { state: 'NONE', text: null, book: null, captured_at: null };
+    if (best) {
+      var age = (now - best.t) / 60e3;
+      market = { state: age <= 180 ? 'CURRENT' : 'STALE', home_line: best.q.home_line, text: CALC ? CALC.spread(-best.q.home_line, { home: home, away: away }).text : null,
+        book: best.q.book || null, captured_at: iso(best.t), age_minutes: Math.round(age) };
+    }
+    if (T.research_status && /FAULT/.test(T.research_status.key)) market.state = 'FAULT';
+    if (pubInt && pubInt.blocking && pubInt.blocking.some(function (b) { return /^MKT\./.test(b); })) market.state = 'FAULT';
+    model.market = market;
+    if (model.available && market.state === 'CURRENT' && CALC) {
+      var c = CALC.spreadComparison({ home: home, away: away, model_home_margin: e.home_margin, market_home_margin: -market.home_line });
+      model.gap = { points: c.gap, text: c.text, formula: c.reconcile ? c.reconcile.formula : null, toward: c.toward_team };
+      model.gap_state = 'COMPARABLE';
+      if (c.gap >= 7 && D.verification !== 'VERIFIED') { model.gap_state = 'UNRESOLVED'; unresolved.push({ code: 'LARGE_GAP_UNVERIFIED', text: 'a ' + f1(c.gap) + '-point gap from the market that has not cleared EdgeDesk’s integrity gate: a question about the data, not a prediction' }); }
+      else if (c.gap >= 2) model.gap_why = T.summary && T.summary.why ? T.summary.why : null;
+    } else model.gap_state = market.state === 'NONE' ? 'NO_MARKET' : (market.state === 'FAULT' ? 'FAULT' : 'STALE_MARKET');
+    if (!model.available) problems.push({ code: 'NO_PROJECTION', text: 'EdgeDesk has no projection for this game' });
+    if (model.integrity && model.integrity.status === 'BLOCKED') problems.push({ code: 'INTEGRITY_BLOCKED', text: 'the integrity engine blocks this game from publication (' + model.integrity.blocking.join(', ') + ')' });
+
+    /* ---------------- teams: form, results, opposition */
+    var teams = {};
+    var profiles = src.profiles || {};
+    [['home', home, hk], ['away', away, ak]].forEach(function (s) {
+      var side = s[0], name = s[1], k = s[2], prof = profiles[k] || null;
+      var t = { name: name, key: k, rank: (side === 'home' ? rkH : rkA) ? (side === 'home' ? rkH : rkA).rank : null, conference: side === 'home' ? gm.home_conference : gm.away_conference };
+      /* every game played, newest first, each with its verified final or a
+         gap: the profile's own running score is NOT a final */
+      var sched = src.qb && src.qb.games ? src.qb.games : {};
+      var played = (prof && prof.opponents ? prof.opponents.slice() : []).filter(function (o) { var kk = ms(sched[String(o.game_id)]); return kickMs == null || kk == null || kk < kickMs; })
+        .sort(function (a, b) { return (ms(sched[String(b.game_id)]) || 0) - (ms(sched[String(a.game_id)]) || 0); });
+      var results = [], missing = 0, chain = [];
+      played.forEach(function (o) {
+        var kk = sched[String(o.game_id)] || null;
+        var fin = src.finals ? (src.finals.byGame[String(o.game_id)] || src.finals.find(o.game_id, name, o.opponent, kk)) : null;
+        var pf = null, pa = null, isHome = null;
+        if (fin) { isHome = key(fin.home) === k; pf = isHome ? fin.home_score : fin.away_score; pa = isHome ? fin.away_score : fin.home_score; }
+        if (!fin || !isNum(pf) || !isNum(pa)) { missing++; chain.push(null); return; }
+        var r = { game_id: String(o.game_id), opponent: o.opponent, opponent_rank: ranks[o.opponent] ? ranks[o.opponent].rank : null,
+          points_for: pf, points_against: pa, result: pf > pa ? 'W' : (pf < pa ? 'L' : 'T'), kickoff: fin.kickoff || kk, week: fin.week || null, home: isHome, source: fin.source };
+        results.push(r); chain.push(r);
+      });
+      t.results = results;
+      t.games_played = played.length;
+      /* the most recent games, only while they are consecutive and verified */
+      t.recent = []; for (var ci = 0; ci < chain.length && chain[ci]; ci++) t.recent.push(chain[ci]);
+      t.record_complete = played.length > 0 && missing === 0;
+      if (t.record_complete) {
+        t.wins = results.filter(function (r) { return r.result === 'W'; }).length; t.losses = results.filter(function (r) { return r.result === 'L'; }).length;
+        t.points_for_pg = r1(results.reduce(function (a, r) { return a + r.points_for; }, 0) / results.length);
+        t.points_against_pg = r1(results.reduce(function (a, r) { return a + r.points_against; }, 0) / results.length);
+      } else if (played.length) unresolved.push({ code: 'RESULTS_INCOMPLETE', text: name + ': ' + missing + ' of ' + played.length + ' results have no verified final, so no season record is stated' });
+      var oppRanks = played.map(function (o) { return ranks[o.opponent] ? ranks[o.opponent].rank : null; }).filter(isNum);
+      t.opposition = oppRanks.length ? { avg_rank: Math.round(oppRanks.reduce(function (a, b) { return a + b; }, 0) / oppRanks.length), top25: oppRanks.filter(function (r) { return r <= 25; }).length, n: oppRanks.length, of: played.length } : null;
+      teams[side] = t;
+      /* facts: the last result, the record */
+      var last = t.recent[0];
+      if (last) {
+        var w = last.result === 'W';
+        pushF({ id: fid('last'), team: name, kind: 'result', independent: true,
+          text: name + ' ' + (w ? 'beat ' : (last.result === 'L' ? 'lost to ' : 'tied ')) + last.opponent + ' ' + Math.max(last.points_for, last.points_against) + '-' + Math.min(last.points_for, last.points_against) + (last.week ? ' in Week ' + last.week : '') + '.',
+          alt: 'Last time out, ' + name + ' ' + (w ? 'beat ' : (last.result === 'L' ? 'lost to ' : 'tied ')) + last.opponent + ', ' + Math.max(last.points_for, last.points_against) + '-' + Math.min(last.points_for, last.points_against) + (last.home ? ', at home.' : ', on the road.'),
+          numbers: [last.points_for, last.points_against, last.week], source: { name: 'verified final score', artifact: last.source }, supports: ['why_watch', 'form'], verify: 'the final score of ' + name + ' vs. ' + last.opponent });
+      }
+      if (!t.record_complete && t.recent.length >= 2) {
+        var r2 = t.recent.slice(0, Math.min(3, t.recent.length));
+        var wr = r2.filter(function (r) { return r.result === 'W'; }).length;
+        pushF({ id: fid('recent'), team: name, kind: 'form', independent: true,
+          text: name + ' has ' + (wr === r2.length ? 'won' : (wr === 0 ? 'lost' : 'gone ' + wr + '-' + (r2.length - wr) + ' in')) + ' its last ' + nword(r2.length) + ' games, scoring ' + f1(r2.reduce(function (a, r) { return a + r.points_for; }, 0) / r2.length) + ' points a game and allowing ' + f1(r2.reduce(function (a, r) { return a + r.points_against; }, 0) / r2.length) + '.',
+          alt: 'Over its last ' + nword(r2.length) + ' games ' + name + ' is ' + wr + '-' + (r2.length - wr) + ': ' + r2.map(function (r) { return r.result + ' ' + Math.max(r.points_for, r.points_against) + '-' + Math.min(r.points_for, r.points_against) + ' ' + (r.home ? 'vs.' : 'at') + ' ' + r.opponent; }).join(', ') + '.',
+          numbers: r2.reduce(function (a, r) { return a.concat([r.points_for, r.points_against]); }, [wr, r2.length - wr, r1(r2.reduce(function (a, r) { return a + r.points_for; }, 0) / r2.length), r1(r2.reduce(function (a, r) { return a + r.points_against; }, 0) / r2.length)]), source: { name: 'verified final scores', artifact: 'football/cfb_terminal/record.json, collective/settled' }, supports: ['why_watch', 'form'], verify: name + '’s recent results' });
+      }
+      if (t.record_complete && results.length >= 2) {
+        pushF({ id: fid('record'), team: name, kind: 'form', independent: true,
+          text: name + ' is ' + t.wins + '-' + t.losses + ', scoring ' + f1(t.points_for_pg) + ' points a game and allowing ' + f1(t.points_against_pg) + '.',
+          alt: 'At ' + t.wins + '-' + t.losses + ', ' + name + ' has averaged ' + f1(t.points_for_pg) + ' points and given up ' + f1(t.points_against_pg) + ' per game.',
+          numbers: [t.wins, t.losses, t.points_for_pg, t.points_against_pg], source: { name: 'verified final scores', artifact: 'football/cfb_terminal/record.json, collective/settled' }, supports: ['why_watch', 'form'], verify: name + '’s season results' });
+      }
+      if (t.opposition && t.opposition.n >= 3) {
+        pushF({ id: fid('opp'), team: name, kind: 'opposition', independent: false,
+          text: possessive(name) + ' opponents so far have an average EdgeDesk rank of ' + t.opposition.avg_rank + (t.opposition.top25 ? ', with ' + nword(t.opposition.top25) + ' from EdgeDesk’s top 25' : '') + '.',
+          alt: name + ' has faced a schedule averaging No. ' + t.opposition.avg_rank + ' in EdgeDesk’s ratings' + (t.opposition.top25 ? ' (' + nword(t.opposition.top25) + ' top-25 ' + plural(t.opposition.top25, 'opponent') + ')' : '') + '.',
+          numbers: [t.opposition.avg_rank, t.opposition.top25], source: { name: 'EdgeDesk team ratings', artifact: 'football/rankings/current.json' }, supports: ['context'] });
+      }
+    });
+    if (src.profiles_generated_at) addSource({ name: 'cfbfastR-data play-by-play', url: 'https://github.com/sportsdataverse/cfbfastR-data', as_of: src.profiles_generated_at, what: 'unit rates (this season’s plays, garbage time excluded, not opponent-adjusted) and quarterback lines' });
+
+    /* ---------------- quarterbacks */
+    var qbs = {};
+    ['home', 'away'].forEach(function (side) {
+      var name = side === 'home' ? home : away, k = side === 'home' ? hk : ak;
+      var tq = T.qb && T.qb[side] ? T.qb[side] : null;
+      var cls = AVAIL && tq ? AVAIL.classify(AVAIL.fromTerminal(name, tq), { kickoff: T.kickoff, now: now }) : null;
+      var players = src.qb && src.qb.by_team ? (src.qb.by_team[k] || []) : [];
+      var usage = cls && cls.evidence ? cls.evidence.filter(function (x) { return x.kind === 'usage'; })[0] : null;
+      var names = usage ? [usage.primary, usage.secondary] : (tq && tq.player ? [tq.player] : []);
+      if (usage && cls) {
+        /* the label names the primary by its share; keep both, primary first */
+        var m = /([A-Z][\w.'’-]+(?: [A-Z][\w.'’-]+)*) (\d{1,3})% of recent dropbacks and ([A-Z][\w.'’-]+(?: [A-Z][\w.'’-]+)*) (\d{1,3})%/.exec(String(tq.label || ''));
+        if (m) names = [m[1], m[3]];
+      }
+      var lines = names.map(function (n) {
+        var p = players.filter(function (x) { return x.name === n; })[0];
+        if (!p) return { player: n, season: null };
+        return { player: n, season: qbSeason(p, kickMs) };
+      });
+      var q = { player: tq ? tq.player : null, status: tq ? tq.status : null, classification: cls ? cls['class'] : null, may_assert_uncertainty: cls ? cls.may_assert_uncertainty : false,
+        split: usage ? { primary: names[0], primary_share: m && m[2] ? +m[2] / 100 : usage.primary_share, secondary: names[1], secondary_share: m && m[4] ? +m[4] / 100 : usage.secondary_share } : null,
+        lines: lines, availability: null };
+      qbs[side] = q;
+      lines.forEach(function (L, i) {
+        var s = L.season; if (!s || !s.attempts) return;
+        var ipt = s.interceptions;
+        pushF({ id: fid('qb'), team: name, kind: 'qb', unit: 'QB', independent: true,
+          text: possessive(name) + ' ' + L.player + ' has completed ' + s.completions + ' of ' + s.attempts + ' passes (' + f1(s.completion_pct) + '%) for ' + comma(s.yards) + ' yards, ' + s.tds + ' ' + plural(s.tds, 'touchdown') + ' and ' + ipt + ' ' + plural(ipt, 'interception') + ' this season.',
+          alt: L.player + ' (' + name + '): ' + s.completions + ' of ' + s.attempts + ', ' + comma(s.yards) + ' yards (' + f1(s.ypa) + ' a throw), ' + s.tds + ' TD, ' + ipt + ' INT, sacked ' + (s.sacks === 1 ? 'once' : s.sacks + ' times') + ' on ' + s.dropbacks + ' dropbacks.',
+          numbers: [s.completions, s.attempts, s.completion_pct, s.yards, s.tds, ipt, s.ypa, s.sacks, s.dropbacks], source: { name: 'cfbfastR-data passing lines', artifact: 'football/fbs_epa/qb_epa_2026.json', as_of: src.qb ? src.qb.generated_at : null },
+          supports: ['qb', 'deciding'], verify: L.player + '’s season passing line' });
+        /* ball security: interceptions are attributed to the passer in the
+           player stats (team turnover columns are not: fumbles are gated
+           MISSING league-wide, so no turnover margin is ever stated) */
+        var lir = src.qb ? src.qb.league_int_rate : null;
+        if (isNum(lir) && s.attempts >= M.CONFIG.int_min_attempts) {
+          var ir = s.interceptions / s.attempts;
+          L.int_rate = ir;
+          var hiInt = ir >= M.CONFIG.int_ratio * lir, loInt = ir <= lir / M.CONFIG.int_ratio;
+          if (hiInt || loInt) pushF({ id: fid(hiInt ? 'ints' : 'secure'), team: name, kind: 'turnovers', unit: 'QB', independent: true, direction: hiInt ? 'HIGH' : 'LOW',
+            text: L.player + ' has thrown ' + nword(s.interceptions) + ' ' + plural(s.interceptions, 'interception') + ' in ' + s.attempts + ' attempts (' + f1(ir * 100) + '%), against an FBS rate of ' + f1(lir * 100) + '%.',
+            alt: (hiInt ? 'Ball security is the question for ' + L.player + ': ' : 'Ball security has been a strength for ' + L.player + ': ') + s.interceptions + ' ' + plural(s.interceptions, 'interception') + ' on ' + s.attempts + ' throws, ' + f1(ir * 100) + '% against ' + f1(lir * 100) + '% across FBS.',
+            numbers: [s.interceptions, s.attempts, r1(ir * 100), r1(lir * 100)], source: { name: 'cfbfastR-data passing lines', artifact: 'football/fbs_epa/qb_epa_2026.json', as_of: src.qb.generated_at },
+            supports: ['qb', 'turnovers', 'upset'], verify: L.player + '’s interceptions and attempts' });
+        }
+        if (isNum(s.epa_per_dropback) && s.epa_n >= 40 && i === 0 && src.qb && isNum(src.qb.league_epa)) {
+          pushF({ id: fid('qbepa'), team: name, kind: 'qb_efficiency', unit: 'QB', independent: false,
+            text: L.player + ' has produced ' + s.epa_per_dropback.toFixed(2) + ' expected points added per dropback, against an FBS average of ' + src.qb.league_epa.toFixed(2) + '.',
+            alt: 'By expected points added — how much each dropback moves a team toward points — ' + L.player + ' sits at ' + s.epa_per_dropback.toFixed(2) + ' per dropback (FBS average ' + src.qb.league_epa.toFixed(2) + ').',
+            numbers: [s.epa_per_dropback, src.qb.league_epa], source: { name: 'cfbfastR-data expected points (provider model)', artifact: 'football/fbs_epa/qb_epa_2026.json' }, supports: ['qb'] });
+        }
+      });
+      if (q.split && lines.length === 2) {
+        pushF({ id: fid('qbsplit'), team: name, kind: 'qb_split', unit: 'QB', independent: true,
+          text: q.split.primary + ' has taken ' + Math.round(q.split.primary_share * 100) + '% of ' + possessive(name) + ' recent dropbacks and ' + q.split.secondary + ' ' + Math.round(q.split.secondary_share * 100) + '%, according to the play-by-play.',
+          alt: possessive(name) + ' recent dropbacks have been split: ' + q.split.primary + ' ' + Math.round(q.split.primary_share * 100) + '%, ' + q.split.secondary + ' ' + Math.round(q.split.secondary_share * 100) + '% (play-by-play attribution).',
+          numbers: [Math.round(q.split.primary_share * 100), Math.round(q.split.secondary_share * 100)], source: { name: 'cfbfastR-data player stats (play attribution)', artifact: 'football/cfb_terminal games.json qb' },
+          supports: ['qb', 'why_watch', 'deciding'], verify: possessive(name) + ' dropbacks by passer' });
+        unresolved.push({ code: 'QB_STARTER_UNSETTLED', text: name + ': no source EdgeDesk holds names the starter; the play-by-play shows a split (' + q.split.primary + ' ' + Math.round(q.split.primary_share * 100) + '%, ' + q.split.secondary + ' ' + Math.round(q.split.secondary_share * 100) + '%)' });
+      }
+    });
+
+    /* ---------------- official availability */
+    var availability = {};
+    ['home', 'away'].forEach(function (side) {
+      var name = side === 'home' ? home : away;
+      var P = src.personnel && src.personnel[side] ? src.personnel[side] : null;
+      var rep = src.reports && src.reports[side] ? src.reports[side] : null;
+      if (!P || !P.coverage) { availability[side] = { grade: 'NONE', official: false, note: 'no availability report is on file for ' + name }; return; }
+      var cov = P.coverage;
+      var all = [].concat(P.absences || [], P.unrated || []);
+      var listed = all.map(function (x) { return { player: x.player_name, position: x.position, status: x.injury_status, status_label: x.status_label || x.injury_status, depth_rank: isNum(x.depth_rank) ? x.depth_rank : null, unit: x.unit_label || x.unit || null }; });
+      var srcObj = { name: cov.source || 'availability report', kind: cov.official ? 'official' : 'reporter', url: rep && rep.source_url ? rep.source_url : null,
+        published_at: rep && rep.published_at ? rep.published_at : (cov.as_of || null), retrieved_at: rep && rep.retrieved_at ? rep.retrieved_at : null };
+      availability[side] = { grade: cov.grade, official: !!cov.official, comprehensive: !!cov.comprehensive, source: srcObj, listed: listed,
+        units: (P.units || []).map(function (u) { return { unit: u.label, unit_code: u.unit || null, absences: u.absences, concern: u.concern }; }) };
+      if (srcObj.name) addSource({ name: srcObj.name, url: srcObj.url, as_of: srcObj.published_at, what: name + ' availability' });
+      var out = listed.filter(function (x) { return /^OUT/.test(x.status || ''); });
+      var q2 = listed.filter(function (x) { return /QUESTIONABLE|DOUBTFUL/.test(x.status || ''); });
+      /* the classifications the prose guard reads: a listed player is SOURCED */
+      availability[side].classified = AVAIL ? listed.map(function (x) {
+        return AVAIL.classify({ team: name, player: x.player, reports: [{ claim: /^OUT/.test(x.status) ? 'out' : (/DOUBT/.test(x.status) ? 'doubtful' : (/QUESTION/.test(x.status) ? 'questionable' : 'active')),
+          source: { name: srcObj.name, kind: srcObj.kind, url: srcObj.url }, published_at: srcObj.published_at }] }, { kickoff: T.kickoff, now: now });
+      }) : [];
+      /* the quarterbacks on a comprehensive report that does not list them are available */
+      var Q = qbs[side];
+      if (Q && cov.comprehensive) {
+        var qbNames = Q.lines.map(function (l) { return l.player; });
+        var listedQb = listed.filter(function (x) { return qbNames.indexOf(x.player) >= 0; });
+        Q.availability = { report: srcObj.name, published_at: srcObj.published_at, listed: listedQb, available: qbNames.filter(function (n) { return !listedQb.some(function (x) { return x.player === n; }); }) };
+      }
+      var keyOut = out.filter(function (x) { return x.depth_rank != null && x.depth_rank <= 2; }).concat(out.filter(function (x) { return !(x.depth_rank != null && x.depth_rank <= 2); })).slice(0, 3);
+      if (out.length || q2.length) {
+        var when = srcObj.published_at ? dateShort(srcObj.published_at) : null;
+        var outText = keyOut.map(function (x) { return POS[x.position] ? POS[x.position] + ' ' + x.player : x.player + ' (' + x.position + ')'; });
+        pushF({ id: fid('avail'), team: name, kind: 'availability', unit: 'AVAILABILITY', independent: !!cov.official,
+          text: 'The ' + (cov.source || 'availability report') + ' lists ' + out.length + ' ' + plural(out.length, 'player') + ' out for ' + name + (outText.length ? (out.length === outText.length ? ' (' + sl(outText) + ')' : ', including ' + sl(outText)) : '') + (q2.length ? (out.length === outText.length ? ' and ' : ', and ') + q2.length + ' as questionable or doubtful' : '') + (when ? ' (report dated ' + when + ')' : '') + '.',
+          alt: 'Out for ' + name + ': ' + (outText.length ? sl(outText) : 'none listed') + (out.length > outText.length ? ', plus ' + (out.length - outText.length) + ' more' : '') + (q2.length ? '; ' + q2.length + ' more ' + name + ' ' + plural(q2.length, 'player') + ' questionable or doubtful' : '') + ' (' + (cov.source || 'availability report') + (when ? ', ' + when : '') + ').',
+          numbers: [out.length, q2.length], source: { name: cov.source, url: srcObj.url, published_at: srcObj.published_at, kind: 'official' }, supports: ['availability', 'deciding', 'upset'], verify: 'the conference availability report' });
+      }
+      if (Q && Q.availability && Q.availability.available.length && cov.comprehensive) {
+        var avn = Q.availability.available;
+        pushF({ id: fid('qbavail'), team: name, kind: 'qb_availability', unit: 'QB', independent: !!cov.official,
+          text: sl(avn) + (avn.length > 1 ? ' are' : ' is') + ' not on the ' + (cov.source || 'availability report') + '.',
+          alt: avn.length > 1 ? 'Neither ' + avn.join(' nor ') + ' appears on the ' + (cov.source || 'availability report') + '.' : avn[0] + ' does not appear on the ' + (cov.source || 'availability report') + '.',
+          numbers: [], source: { name: cov.source, url: srcObj.url, published_at: srcObj.published_at, kind: 'official' }, supports: ['qb', 'availability'], verify: 'the conference availability report' });
+      }
+    });
+
+    /* ---------------- the football: measured pairings */
+    var league = src.league || null;
+    var pairs = [], quarantinedSeen = [];
+    var raw = F && F.football ? (F.football.pairings_excluding_garbage_time || []) : [];
+    raw.forEach(function (p) {
+      var Tm = PAIR_TEXT[p.key];
+      if (!Tm || p.state !== 'MEASURED' || !isNum(p.off_value) || !isNum(p.def_value)) return;
+      if (quarantined(league, Tm.field)) { if (quarantinedSeen.indexOf(Tm.field) < 0) quarantinedSeen.push(Tm.field); return; }
+      if ((p.off_n || 0) < M.CONFIG.min_pair_n || (p.def_n || 0) < M.CONFIG.min_pair_n) return;
+      var zo = zOf(league, 'excluding_garbage_time', Tm.field, p.off_value), zd = zOf(league, 'allowed_excluding_garbage_time', Tm.field, p.def_value);
+      /* offence quality and defence quality, each positive when that unit is good */
+      var oq = zo == null ? null : (Tm.higher_is_better_for_offense ? zo : -zo);
+      var dq = zd == null ? null : (Tm.higher_is_better_for_offense ? -zd : zd);
+      var Lo = league && league.excluding_garbage_time && league.excluding_garbage_time[Tm.field] ? league.excluding_garbage_time[Tm.field].mean : null;
+      var o = { id: p.key + ':' + key(p.attacker), key: p.key, unit: UNIT_OF_PAIR[p.key], label: Tm.label, off_label: Tm.off_label, def_label: Tm.def_label, attacker: p.attacker, defender: p.defender,
+        off_value: p.off_value, off_n: p.off_n, def_value: p.def_value, def_n: p.def_n, off_text: Tm.fmt(p.off_value), def_text: Tm.fmt(p.def_value),
+        league: isNum(Lo) ? Tm.fmt(Lo) : null, off_quality: oq == null ? null : Math.round(oq * 100) / 100, def_quality: dq == null ? null : Math.round(dq * 100) / 100,
+        edge: oq != null && dq != null ? Math.round((oq - dq) * 100) / 100 : null, clash: oq != null && dq != null ? Math.round(Math.min(oq, dq) * 100) / 100 : null };
+      var tO = Tm.off(p.attacker, p.off_value, p.off_n), tD = Tm.def(p.defender, p.def_value, p.def_n);
+      var leagueTail = o.league ? ' The FBS average is ' + o.league + '.' : '';
+      o.fact_off = pushF({ id: fid(p.key + '_off'), team: p.attacker, kind: 'unit', unit: o.unit, independent: true, text: tO[0], alt: tO[1],
+        numbers: [Tm.pct ? pct1(p.off_value) : r1(p.off_value), p.off_n], source: PLAY_SRC(src.profiles_generated_at), supports: [p.key], verify: p.attacker + ' ' + Tm.unit }).id;
+      o.fact_def = pushF({ id: fid(p.key + '_def'), team: p.defender, kind: 'unit', unit: o.unit, independent: true, text: tD[0] + leagueTail, alt: tD[1],
+        numbers: [Tm.pct ? pct1(p.def_value) : r1(p.def_value), p.def_n].concat(isNum(Lo) ? [Tm.pct ? pct1(Lo) : r1(Lo)] : []), source: PLAY_SRC(src.profiles_generated_at), supports: [p.key], verify: p.defender + ' ' + Tm.unit + ' allowed' }).id;
+      pairs.push(o);
+    });
+
+    /* position-group standings (EdgeDesk's own boards: analysis, not independent) */
+    var standings = F && F.football && F.football.unit_standing ? F.football.unit_standing : null;
+    /* the opponent-adjusted read from the terminal's matchup cards */
+    var cards = ((T.matchup && T.matchup.cards) || []).map(function (c) { return { key: c.key, label: c.label, favors: c.favors, magnitude: c.magnitude, net_sd: c.net_sd, confidence: c.confidence }; });
+
+    /* ---------------- the arguments */
+    var A = {};
+    /* 2 the deciding matchup: a clear mismatch or a strength-on-strength clash */
+    /* a MISMATCH needs the favoured unit to be a strength in its own right
+       (above the FBS average), not merely the other side's weakness */
+    var ranked = pairs.filter(function (p) { return p.edge != null; }).map(function (p) {
+      var winQ = p.edge > 0 ? p.off_quality : p.def_quality;
+      var mis = Math.abs(p.edge) >= M.CONFIG.mismatch_z && winQ >= M.CONFIG.strength_z;
+      /* ranked by the favoured unit's own strength first, the size of the gap second */
+      var s = Math.max(mis ? winQ + 0.5 * Math.abs(p.edge) : 0, p.clash >= M.CONFIG.clash_z ? 1.5 * p.clash + 0.25 * Math.abs(p.edge) : 0);
+      return { p: p, s: s, kind: p.clash >= M.CONFIG.clash_z ? 'CLASH' : (mis ? 'MISMATCH' : 'EVEN') };
+    }).sort(function (a, b) { return b.s - a.s; });
+    var top = ranked.filter(function (x) { return x.s > 0; });
+    if (top.length) {
+      var d = top[0].p, kind = top[0].kind;
+      var winner = d.edge > 0 ? d.attacker : d.defender;
+      A.deciding = { pair_id: d.id, pairing: d.key, unit: d.unit, kind: kind, attacker: d.attacker, defender: d.defender, favors: kind === 'CLASH' ? null : winner,
+        facts: [d.fact_off, d.fact_def],
+        claim: kind === 'CLASH'
+          ? possessive(d.attacker) + ' ' + d.off_label + ' against ' + possessive(d.defender) + ' ' + d.def_label + ' is strength against strength.'
+          : (d.edge > 0 ? possessive(d.attacker) + ' ' + d.off_label + ' has the edge over ' + possessive(d.defender) + ' ' + d.def_label + ' on the season numbers.'
+            : possessive(d.defender) + ' ' + d.def_label + ' has the edge over ' + possessive(d.attacker) + ' ' + d.off_label + ' on the season numbers.'),
+        alt: kind === 'CLASH' ? 'The best unit-on-unit fight: ' + possessive(d.attacker) + ' ' + d.off_label + ' against ' + article(d.defender) + ' ' + d.defender + ' ' + d.def_label + ' that has been just as good.'
+          : 'The clearest gap on paper: ' + (d.edge > 0 ? possessive(d.attacker) + ' ' + d.off_label + ' against ' + possessive(d.defender) + ' ' + d.def_label : possessive(d.defender) + ' ' + d.def_label + ' against ' + possessive(d.attacker) + ' ' + d.off_label) + '.' };
+      /* the second storyline: a different kind of matchup when one stands out */
+      var nx = top.filter(function (x) { return x.p.key !== d.key; })[0] || top.filter(function (x) { return x.p.id !== d.id; })[0];
+      if (nx) A.second = { pair_id: nx.p.id, pairing: nx.p.key, attacker: nx.p.attacker, defender: nx.p.defender, facts: [nx.p.fact_off, nx.p.fact_def], kind: nx.kind };
+    }
+    /* adjusted corroboration: does the opponent-adjusted card agree? */
+    if (A.deciding) {
+      var card = cards.filter(function (c) { return c.key === A.deciding.unit; })[0];
+      if (card) A.deciding.adjusted = { label: card.label, favors: card.favors, magnitude: card.magnitude, net_sd: card.net_sd, confidence: card.confidence,
+        agrees: A.deciding.favors ? card.favors === A.deciding.favors : null };
+    }
+    /* 1 why watch */
+    var why = [];
+    var bothRanked = teams.home.rank != null && teams.home.rank <= 25 && teams.away.rank != null && teams.away.rank <= 25;
+    if (bothRanked) why.push({ kind: 'RANKED', text: 'two of EdgeDesk’s top 25 teams (No. ' + Math.min(teams.home.rank, teams.away.rank) + ' and No. ' + Math.max(teams.home.rank, teams.away.rank) + ')', facts: [] });
+    else if ((teams.home.rank != null && teams.home.rank <= 25) || (teams.away.rank != null && teams.away.rank <= 25)) {
+      var rt = teams.home.rank != null && teams.home.rank <= 25 ? teams.home : teams.away;
+      why.push({ kind: 'RANKED_ONE', text: 'EdgeDesk’s No. ' + rt.rank + ' team, ' + rt.name, facts: [] });
+    }
+    if (gm.matchup_type === 'conference' && gm.home_conference) why.push({ kind: 'CONFERENCE', text: article(gm.home_conference) + ' ' + gm.home_conference + ' game', facts: [] });
+    ['home', 'away'].forEach(function (s) {
+      var t = teams[s];
+      if (t.record_complete && t.losses === 0 && t.wins >= 3) why.push({ kind: 'UNBEATEN', text: t.name + ' is unbeaten (' + t.wins + '-0)', facts: facts.filter(function (f) { return f.team === t.name && f.kind === 'form'; }).map(function (f) { return f.id; }) });
+    });
+    if (A.deciding && A.deciding.kind === 'CLASH') why.push({ kind: 'CLASH', text: 'strength against strength: ' + possessive(A.deciding.attacker) + ' ' + PAIR_TEXT[A.deciding.pairing].off_label + ' against ' + possessive(A.deciding.defender) + ' ' + PAIR_TEXT[A.deciding.pairing].def_label, facts: A.deciding.facts });
+    ['home', 'away'].forEach(function (s) { if (qbs[s].split) why.push({ kind: 'QB_SPLIT', text: (s === 'home' ? home : away) + ' has split its quarterback dropbacks', facts: facts.filter(function (f) { return f.kind === 'qb_split' && f.team === (s === 'home' ? home : away); }).map(function (f) { return f.id; }) }); });
+    if (model.available && isNum(model.fav_win_pct) && model.fav_win_pct <= 62) why.push({ kind: 'CLOSE', text: 'EdgeDesk’s projection is close: ' + (model.favorite ? model.fav_win_pct + '% for ' + model.favorite : 'a pick’em'), facts: [], model: true });
+    if (gm.neutral_site && gm.venue) why.push({ kind: 'NEUTRAL', text: 'played at a neutral site, ' + gm.venue, facts: [] });
+    A.why_watch = why;
+    /* 3 recent evidence: independent facts that support the deciding matchup or the why */
+    var supportIds = [].concat(A.deciding ? A.deciding.facts : [], A.second ? A.second.facts : []);
+    why.forEach(function (w) { supportIds = supportIds.concat(w.facts || []); });
+    facts.filter(function (f) { return f.kind === 'result' || f.kind === 'form' || f.kind === 'qb' || f.kind === 'turnovers'; }).forEach(function (f) { supportIds.push(f.id); });
+    (A.upset_facts || []).forEach(function (id) { supportIds.push(id); });
+    var evidence = facts.filter(function (f) { return f.independent && supportIds.indexOf(f.id) >= 0; });
+    A.evidence = evidence.map(function (f) { return f.id; });
+    /* 4 projection */
+    A.projection = model.available ? { fair_text: model.fair_text, favorite: model.favorite, fav_win_pct: model.fav_win_pct, total: model.total, inputs: model.inputs,
+      market: model.market, gap: model.gap || null, gap_state: model.gap_state, gap_why: model.gap_why || null,
+      reliability: model.reliability, reliability_grade: model.reliability_grade, integrity: model.integrity ? model.integrity.status : null } : null;
+    /* 5 why the model could be wrong */
+    var wrong = [];
+    if (model.sensitivity) wrong.push({ kind: 'SENSITIVITY', text: 'reasonable changes to the ratings move EdgeDesk’s number between ' + model.sensitivity.low + ' and ' + model.sensitivity.high });
+    if (model.other_models && model.other_models.length) {
+      var oms = model.other_models.map(function (m) { return m.home_margin; });
+      var omLo = Math.min.apply(null, oms), omHi = Math.max.apply(null, oms);
+      wrong.push({ kind: 'OTHER_MODELS', text: 'EdgeDesk’s ' + nword(oms.length) + ' other models range from ' + byText(omLo, home, away) + ' to ' + byText(omHi, home, away), home_margins: oms });
+    }
+    if (A.deciding && A.deciding.adjusted && A.deciding.adjusted.agrees === false) wrong.push({ kind: 'ADJUSTED_DISAGREES', text: 'adjusted for the opponents each side has faced, EdgeDesk’s matchup metrics ' + (A.deciding.adjusted.favors ? 'lean ' + A.deciding.adjusted.favors + ' in the ' + A.deciding.adjusted.label.toLowerCase() + ', not ' + A.deciding.favors : 'call the ' + A.deciding.adjusted.label.toLowerCase() + ' even rather than an edge for ' + A.deciding.favors) });
+    ['home', 'away'].forEach(function (s) {
+      var av = availability[s], name = s === 'home' ? home : away;
+      if (av && av.listed && av.listed.length && model.available) wrong.push({ kind: 'ABSENCES', text: 'the projection does not price individual absences, and ' + name + ' has ' + av.listed.length + ' ' + plural(av.listed.length, 'player') + ' on the availability report' });
+    });
+    ['home', 'away'].forEach(function (s) { if (qbs[s].split) wrong.push({ kind: 'QB_SPLIT', text: 'the projection cannot know which ' + (s === 'home' ? home : away) + ' quarterback plays most' }); });
+    if (model.typical_miss) wrong.push({ kind: 'TYPICAL_MISS', text: model.typical_miss.replace(/\.$/, '') });
+    if (model.gap_state === 'UNRESOLVED') wrong.push({ kind: 'UNRESOLVED_GAP', text: unresolved.filter(function (u) { return u.code === 'LARGE_GAP_UNVERIFIED'; })[0].text });
+    A.model_wrong = wrong;
+    /* the upset case: only on the evidence */
+    var up = { credible: false, team: model.underdog || null, conditions: [], counter: [], reason: null };
+    if (model.available && model.underdog && isNum(model.dog_win_pct) && model.fav_win_pct <= 55) {
+      up.reason = 'EdgeDesk sees this as close to even (' + model.fav_win_pct + '% for ' + model.favorite + '), so neither result would be an upset on its numbers';
+      up.dog_win_pct = model.dog_win_pct; up.near_even = true;
+    } else if (model.available && model.underdog && isNum(model.dog_win_pct)) {
+      var dogN = model.underdog, favN = model.favorite;
+      /* the underdog's MEASURED STRENGTHS where they meet this opponent:
+         a unit at least strength_z better than average, with the edge */
+      var dogEdges = pairs.filter(function (p) {
+        if (p.edge == null) return false;
+        if (p.attacker === dogN) return p.edge >= 0.5 && p.off_quality >= M.CONFIG.strength_z;
+        return p.defender === dogN && p.edge <= -0.5 && p.def_quality >= M.CONFIG.strength_z;
+      }).sort(function (a, b) { return Math.abs(b.edge) - Math.abs(a.edge); });
+      dogEdges.slice(0, 2).forEach(function (p) {
+        var onO = p.attacker === dogN;
+        up.conditions.push({ kind: 'UNIT_EDGE', pairing: p.key, facts: [p.fact_off, p.fact_def],
+          text: onO ? possessive(dogN) + ' ' + p.off_label + ' keeps producing (' + p.off_text + ' this season) against ' + article(favN) + ' ' + favN + ' ' + p.def_label + ' that has allowed ' + p.def_text + (p.league ? ' (FBS average ' + p.league + ')' : '')
+            : possessive(dogN) + ' ' + p.def_label + ' (' + p.def_text + ' allowed' + (p.league ? ', FBS average ' + p.league : '') + ') slows ' + possessive(favN) + ' ' + p.off_label + ' (' + p.off_text + ')' });
+      });
+      var favSide = favN === home ? 'home' : 'away', dogSide = favSide === 'home' ? 'away' : 'home';
+      var favInts = facts.filter(function (f) { return f.kind === 'turnovers' && f.team === favN && f.direction === 'HIGH'; })[0];
+      if (favInts) up.conditions.push({ kind: 'FAV_TURNOVERS', facts: [favInts.id], text: possessive(favN) + ' passer keeps throwing interceptions at the season rate (' + favInts.text.replace(/^.*?\((\d+(?:\.\d)?%)\).*$/, '$1') + ' of throws)' });
+      var avF = availability[favSide];
+      if (avF && avF.units) {
+        var hi = avF.units.filter(function (u) { return u.concern === 'HIGH'; })[0];
+        if (hi) up.conditions.push({ kind: 'FAV_ABSENCES', facts: facts.filter(function (f) { return f.kind === 'availability' && f.team === favN; }).map(function (f) { return f.id; }),
+          text: favN + ' is missing ' + hi.absences + ' ' + plural(hi.absences, 'player') + ' ' + unitWhere(hi.unit_code, hi.unit) + ' on the availability report' });
+      }
+      var dogInts = facts.filter(function (f) { return f.kind === 'turnovers' && f.team === dogN && f.direction === 'HIGH'; })[0];
+      if (dogInts) up.counter.push({ kind: 'DOG_TURNOVERS', facts: [dogInts.id], text: dogInts.text.replace(/\.$/, '') });
+      var favEdge = pairs.filter(function (p) {
+        if (p.edge == null) return false;
+        if (p.attacker === favN) return p.edge >= 0.5 && p.off_quality >= M.CONFIG.strength_z;
+        return p.defender === favN && p.edge <= -0.5 && p.def_quality >= M.CONFIG.strength_z;
+      }).sort(function (a, b) { return Math.abs(b.edge) - Math.abs(a.edge); })[0];
+      if (favEdge) up.counter.push({ kind: 'FAV_EDGE', facts: [favEdge.fact_off, favEdge.fact_def],
+        text: (favEdge.attacker === favN ? possessive(favN) + ' ' + favEdge.off_label + ' (' + favEdge.off_text + ') meets ' + article(dogN) + ' ' + dogN + ' ' + favEdge.def_label + ' that has allowed ' + favEdge.def_text
+          : possessive(favN) + ' ' + favEdge.def_label + ' (' + favEdge.def_text + ' allowed) meets ' + possessive(dogN) + ' ' + favEdge.off_label + ' (' + favEdge.off_text + ')') });
+      up.counter.push({ kind: 'MODEL', text: 'EdgeDesk still makes ' + favN + ' the ' + model.fav_win_pct + '% favorite', model: true });
+      /* credible only on a measured strength of the underdog's own; an
+         absence or a turnover rate can add to a case, never make one */
+      up.credible = model.dog_win_pct >= Math.round(M.CONFIG.upset_min_dog_prob * 100) && up.conditions.some(function (c) { return c.kind === 'UNIT_EDGE'; });
+      if (!up.credible) up.reason = model.dog_win_pct < Math.round(M.CONFIG.upset_min_dog_prob * 100)
+        ? 'EdgeDesk gives ' + dogN + ' a ' + model.dog_win_pct + '% chance; the numbers do not make an upset case'
+        : 'none of ' + possessive(dogN) + ' measured units is a strength with an edge in this matchup';
+      up.dog_win_pct = model.dog_win_pct;
+    } else up.reason = model.available ? 'EdgeDesk projects a pick’em' : 'no projection';
+    A.upset = up;
+    /* 6 what to watch: concrete, tied to the evidence */
+    var wf = [];
+    if (A.deciding) {
+      var dk = A.deciding, dp = pairs.filter(function (p) { return p.id === dk.pair_id; })[0];
+      wf.push({ pairing: dk.pairing, facts: dk.facts, text: WATCH[dk.pairing](dp) });
+    }
+    ['home', 'away'].forEach(function (s) {
+      var q = qbs[s];
+      if (q.split && wf.length < 2) wf.push({ kind: 'QB_SPLIT', facts: facts.filter(function (f) { return f.kind === 'qb_split' && f.team === (s === 'home' ? home : away); }).map(function (f) { return f.id; }),
+        text: 'Who takes ' + possessive(s === 'home' ? home : away) + ' first snap, and whether ' + q.split.secondary + ' still gets a series: the dropbacks have been split ' + Math.round(q.split.primary_share * 100) + '-' + Math.round(q.split.secondary_share * 100) + '.' });
+    });
+    if (wf.length < 2 && A.second) {
+      var sp = pairs.filter(function (p) { return p.id === A.second.pair_id; })[0];
+      if (sp) wf.push({ pairing: sp.key, facts: A.second.facts, text: WATCH[sp.key](sp) });
+    }
+    var tov = facts.filter(function (f) { return f.kind === 'turnovers' && f.direction === 'HIGH'; })[0];
+    if (wf.length < 2 && tov) wf.push({ kind: 'TURNOVERS', facts: [tov.id], text: 'Ball security: ' + tov.text });
+    if (wf.length < 2 && up.credible && up.conditions[0]) wf.push({ kind: 'UPSET', facts: up.conditions[0].facts, text: 'The upset path: ' + up.conditions[0].text + '.' });
+    A.watch_for = wf.slice(0, 2);
+
+    var packet = {
+      schema: M.SCHEMA, version: M.VERSION, built_at: new Date(now).toISOString(), game_id: gid, season: T.season, week: T.week,
+      identity: { home: home, away: away, home_key: hk, away_key: ak, neutral_site: !!gm.neutral_site, venue: gm.venue || null,
+        home_conference: gm.home_conference || null, away_conference: gm.away_conference || null, conference_game: gm.matchup_type === 'conference',
+        home_rank: teams.home.rank, away_rank: teams.away.rank, heading: away + (gm.neutral_site ? ' vs. ' : ' at ') + home },
+      schedule: schedule, broadcast: broadcast, model: model, teams: teams, quarterbacks: qbs, availability: availability,
+      pairings: pairs, standings: standings ? summarizeStandings(standings, home, away) : null, adjusted_cards: cards,
+      facts: facts, arguments: A, problems: problems, unresolved: unresolved, sources: sources,
+      research_as_of: [T.generated_at || null, src.profiles_generated_at || null].filter(Boolean).sort()[0] || null,
+      limits: [
+        'unit rates are counts from this season’s plays with garbage time excluded, and are NOT opponent-adjusted',
+        'pressures short of a sack, blocking grades, coverage and snap counts are in no feed EdgeDesk reads, so none is claimed',
+        'fumbles are attributed for too few plays this season to measure turnovers, so turnover margins are not stated; interceptions are stated per passer',
+        'availability is as of the report’s publication time; a later change is revalidated before publication'
+      ]
+    };
+    /* a quarantined rate is stated in every packet, whether or not this
+       game's pairing would have used it: the reader learns what is missing */
+    ((league && league.quarantined) || []).filter(function (q) { return q.offense_mean != null; }).forEach(function (q) {
+      packet.limits.push(QUARANTINE_TEXT[q.field] ? QUARANTINE_TEXT[q.field] + ': ' + q.why : q.field + ' is not used: ' + q.why);
+    });
+    packet.quarantined = quarantinedSeen;
+    packet.gate = M.gate(packet);
+    return packet;
+  };
+  var UNIT_WHERE = { OFFENSIVE_LINE: 'on the offensive line', DEFENSIVE_FRONT: 'on the defensive front', SECONDARY: 'in the secondary', RECEIVERS: 'at receiver',
+    WIDE_RECEIVERS: 'at receiver', LINEBACKERS: 'at linebacker', QUARTERBACK: 'at quarterback', QB: 'at quarterback', RUNNING_BACKS: 'at running back', BACKFIELD: 'in the backfield',
+    TIGHT_ENDS: 'at tight end', SPECIALISTS: 'among the specialists', SPECIAL_TEAMS: 'on special teams' };
+  function unitWhere(code, label) { return UNIT_WHERE[code] || ('in the ' + String(label || 'unit').toLowerCase()); }
+  function broadcastBlock(B, now) {
+    var bpub = BC ? BC.publishable(B, now) : { ok: false, reason: 'UNVERIFIED', text: 'the broadcast layer did not load' };
+    var watch = B && BC ? BC.watchLine(B) : null;
+    var broadcast = { status: B ? B.status : 'UNVERIFIED', tier: B ? B.tier : 'NONE', network: B ? B.network : null, networks: B ? B.networks : [],
+      streaming: B ? B.streaming : [], regional: B ? B.regional : [], source: B ? B.source : null, verified_at: B ? B.verified_at : null,
+      verified_by: B ? B.verified_by : null, kickoff: B ? B.kickoff : null, schedule_change: B ? B.schedule_change : null,
+      publishable: bpub.ok, hold_reason: bpub.ok ? null : bpub.text, withdraw: !!bpub.withdraw, watch: watch, problems: B ? B.problems : [] };
+    return { broadcast: broadcast, problem: bpub.ok ? null : { code: 'BROADCAST_' + bpub.reason, text: 'where to watch: ' + bpub.text, hold: true, withdraw: !!bpub.withdraw } };
+  }
+  /* RE-VERIFY a built packet's broadcast — the owner's verification from the
+     admin page, or a fresh listing before publication — without rebuilding
+     the football. Returns a new packet; the input is not changed. */
+  M.applyBroadcast = function (packet, record, now) {
+    var p = JSON.parse(JSON.stringify(packet));
+    now = isNum(now) ? now : Date.now();
+    var bb = broadcastBlock(record, now);
+    p.broadcast = bb.broadcast;
+    p.problems = (p.problems || []).filter(function (x) { return !/^BROADCAST_/.test(x.code); });
+    if (bb.problem) p.problems.push(bb.problem);
+    if (record && record.schedule_change && record.kickoff) {
+      p.schedule.kickoff = record.kickoff;
+      p.schedule.times = BC ? BC.timesText(record.kickoff) : null;
+      p.schedule.schedule_change = record.schedule_change;
+      p.schedule.kickoff_verified = true;
+      p.problems = p.problems.filter(function (x) { return x.code !== 'KICKOFF_UNVERIFIED'; });
+    }
+    p.schedule.status = record ? record.status : null;
+    p.gate = M.gate(p);
+    return p;
+  };
+  var POS = { QB: 'quarterback', RB: 'running back', WR: 'receiver', TE: 'tight end', OL: 'offensive lineman', DL: 'defensive lineman', EDGE: 'edge rusher',
+    LB: 'linebacker', CB: 'cornerback', S: 'safety', DB: 'defensive back', NB: 'nickel back', K: 'kicker', P: 'punter' };
+  /* "an SEC game", "a Big Ten game": initialisms by their first letter's sound */
+  var AN_LETTERS = 'AEFHILMNORSX';
+  function article(w) {
+    w = String(w || '');
+    if (/^(MAC|MWC)\b/.test(w)) return 'a';
+    if (/^[A-Z]{2,}\b/.test(w)) return AN_LETTERS.indexOf(w[0]) >= 0 ? 'an' : 'a';
+    if (/^(U[a-z]|Eu|One\b)/.test(w)) return 'a';
+    return /^[aeiou]/i.test(w) ? 'an' : 'a';
+  }
+  M.article = article;
+  function sl(a) { a = a.filter(Boolean); if (a.length <= 1) return a[0] || ''; return a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]; }
+  /* one concrete, checkable thing per pairing: the two season numbers and
+     what it would look like on Saturday if the attacker's number holds */
+  var WATCH = {
+    run_game: function (p) { return possessive(p.attacker) + ' yards per carry against ' + possessive(p.defender) + ' run defense: ' + p.off_text + ' this season against ' + p.def_text + ' allowed, and the halftime rushing average shows whose number is holding.'; },
+    explosive_run: function (p) { return 'Runs of 15 yards or more: ' + p.attacker + ' breaks one on ' + p.off_text + ' of carries and ' + p.defender + ' allows one on ' + p.def_text + '.'; },
+    passing: function (p) { return possessive(p.attacker) + ' completion rate against ' + possessive(p.defender) + ' coverage: ' + p.off_text + ' this season for the offense, ' + p.def_text + ' allowed by the defense.'; },
+    explosive_pass: function (p) { return 'Completions of 20 yards or more: ' + p.attacker + ' hits one on ' + p.off_text + ' of dropbacks and ' + p.defender + ' allows one on ' + p.def_text + ', so count ' + possessive(p.attacker) + ' deep completions.'; },
+    pass_protection: function (p) { return possessive(p.attacker) + ' protection: it allows a sack on ' + p.off_text + ' of dropbacks, and ' + p.defender + ' gets one on ' + p.def_text + '.'; },
+    third_down: function (p) { return 'Third downs: ' + p.attacker + ' converts ' + p.off_text + ' and ' + p.defender + ' allows ' + p.def_text + ', so ' + possessive(p.attacker) + ' third-down rate decides how long its drives last.'; }
+  };
+
+  function summarizeStandings(U, home, away) {
+    var out = [];
+    function one(k, att, def) {
+      var u = U[k]; if (!u) return;
+      out.push({ key: k, attacker: att, defender: def, offense_group: u.offense.group, offense_rank: u.offense.rank, offense_of: u.offense.of, offense_percentile: u.offense.percentile,
+        defense_group: u.defense.group, defense_rank: u.defense.rank, defense_of: u.defense.of, defense_percentile: u.defense.percentile });
+    }
+    one('home_pass_offence_vs_away_secondary', home, away); one('away_pass_offence_vs_home_secondary', away, home);
+    one('home_run_offence_vs_away_front', home, away); one('away_run_offence_vs_home_front', away, home);
+    return out;
+  }
+
+  /* ======================================================= THE GATE */
+  M.gate = function (p) {
+    var A = p.arguments || {}, ans = {}, missing = [];
+    ans.why_watch = (A.why_watch || []).filter(function (w) { return !w.model; });
+    if (!ans.why_watch.length) missing.push({ q: 1, code: 'NO_REASON_TO_WATCH', text: 'no reason to watch beyond the projection' });
+    ans.deciding = A.deciding || null;
+    if (!ans.deciding) missing.push({ q: 2, code: 'NO_DECIDING_MATCHUP', text: 'no measured unit matchup stands out (every pairing is even or too thin)' });
+    var ind = (A.evidence || []).filter(function (id) { return p.facts.some(function (f) { return f.id === id && f.independent; }); });
+    ans.evidence = ind;
+    if (ind.length < M.CONFIG.min_independent_facts) missing.push({ q: 3, code: 'TOO_FEW_FACTS', text: ind.length + ' independent supporting ' + plural(ind.length, 'fact') + '; ' + M.CONFIG.min_independent_facts + ' are required' });
+    /* the deciding matchup itself must rest on two independent facts */
+    if (ans.deciding && ans.deciding.facts.filter(function (id) { return ind.indexOf(id) >= 0; }).length < 2) missing.push({ q: 3, code: 'DECIDING_UNSUPPORTED', text: 'the deciding matchup is not backed by two independent facts' });
+    ans.projection = A.projection || null;
+    if (!ans.projection) missing.push({ q: 4, code: 'NO_PROJECTION', text: 'EdgeDesk has no projection' });
+    ans.model_wrong = A.model_wrong || [];
+    if (!ans.model_wrong.length) missing.push({ q: 5, code: 'NO_COUNTERARGUMENT', text: 'no specific reason the model could be wrong' });
+    ans.watch_for = A.watch_for || [];
+    if (!ans.watch_for.length) missing.push({ q: 6, code: 'NOTHING_TO_WATCH', text: 'no concrete development to watch for' });
+    var hold = (p.problems || []).filter(function (x) { return x.hold; });
+    var block = (p.problems || []).filter(function (x) { return !x.hold; });
+    return { ok: !missing.length && !block.length, publishable: !missing.length && !block.length && !hold.length,
+      missing: missing, blocking: block, holds: hold, independent_facts: ind.length, answers: { why_watch: ans.why_watch.length, deciding: !!ans.deciding, evidence: ind.length,
+        projection: !!ans.projection, model_wrong: ans.model_wrong.length, watch_for: ans.watch_for.length } };
+  };
+
+  /* ====================================================== SELECTION
+     packets → the featured set. Never the largest gaps: audience interest,
+     football significance, evidence quality, matchup advantage, upset
+     potential, reliability, publisher fit and timeliness, with one storyline
+     per game and a balance of national and under-the-radar games.
+     opts: { count (5), required: [game_id], publisher, prefer_broad, now } */
+  var POWER = ['SEC', 'Big Ten', 'Big 12', 'ACC'];
+  M.scoreGame = function (p, opts) {
+    opts = opts || {};
+    var id = p.identity, g = p.gate || M.gate(p), A = p.arguments || {}, m = p.model || {};
+    var parts = {};
+    var rk = [id.home_rank, id.away_rank].filter(isNum);
+    parts.audience = Math.min(100, rk.reduce(function (a, r) { return a + (r <= 10 ? 45 : (r <= 25 ? 30 : (r <= 40 ? 10 : 0))); }, 0)
+      + (POWER.indexOf(id.home_conference) >= 0 || POWER.indexOf(id.away_conference) >= 0 ? 20 : 0));
+    parts.significance = (id.conference_game ? 35 : 10) + (rk.length === 2 && rk.every(function (r) { return r <= 25; }) ? 30 : 0)
+      + ((A.why_watch || []).some(function (w) { return w.kind === 'UNBEATEN'; }) ? 20 : 0) + (isNum(m.fav_win_pct) && m.fav_win_pct <= 62 ? 15 : 0);
+    parts.evidence = Math.min(100, g.independent_facts * 12 + (p.pairings || []).length * 5 + (p.availability && p.availability.home && p.availability.home.official ? 10 : 0));
+    parts.matchup = Math.max(0, Math.min(100, A.deciding ? (A.deciding.kind === 'CLASH' ? 85 : 65) : 0));
+    parts.upset = A.upset && A.upset.credible ? Math.min(100, 40 + (A.upset.dog_win_pct || 0)) : 0;
+    parts.reliability = isNum(m.reliability) ? m.reliability : 40;
+    parts.fit = opts.prefer_broad ? parts.audience : 50;
+    parts.timeliness = p.schedule && p.schedule.kickoff_verified ? 100 : 0;
+    /* a comparable market gap is context, never a selector on its own */
+    parts.market = m.gap_state === 'COMPARABLE' && m.gap && m.gap.points >= 2 ? Math.min(30, m.gap.points * 5) : 0;
+    var W = { audience: 0.22, significance: 0.16, evidence: 0.16, matchup: 0.14, upset: 0.08, reliability: 0.10, fit: 0.06, timeliness: 0.05, market: 0.03 };
+    var s = 0; Object.keys(W).forEach(function (k) { s += W[k] * (parts[k] || 0); });
+    return { score: Math.round(s), parts: parts, weights: W, national: parts.audience >= 50 };
+  };
+  M.storylineOf = function (p) {
+    var A = p.arguments || {};
+    if (A.upset && A.upset.credible) return 'upset:' + (A.upset.conditions[0] ? A.upset.conditions[0].kind : 'model');
+    if ((A.why_watch || []).some(function (w) { return w.kind === 'QB_SPLIT'; })) return 'qb_split';
+    if (A.deciding) return (A.deciding.kind === 'CLASH' ? 'clash:' : 'mismatch:') + A.deciding.pairing;
+    return 'projection';
+  };
+  M.select = function (packets, opts) {
+    opts = opts || {};
+    var count = isNum(opts.count) ? Math.max(1, Math.min(8, opts.count)) : 5;
+    var req = (opts.required || []).map(String);
+    var scored = packets.map(function (p) { return { p: p, s: M.scoreGame(p, opts), story: M.storylineOf(p), gate: p.gate || M.gate(p) }; });
+    var eligible = scored.filter(function (x) { return x.gate.ok; }).sort(function (a, b) { return b.s.score - a.s.score; });
+    var out = [], stories = {}, report = { required_failed: [], skipped: [] };
+    req.forEach(function (id) {
+      var x = scored.filter(function (y) { return y.p.game_id === id; })[0];
+      if (!x) { report.required_failed.push({ game_id: id, reason: 'not in this week’s research' }); return; }
+      if (!x.gate.ok) { report.required_failed.push({ game_id: id, matchup: x.p.identity.heading, reason: (x.gate.missing.concat(x.gate.blocking)).map(function (m) { return m.text; }).join('; ') }); return; }
+      out.push(x); stories[x.story] = (stories[x.story] || 0) + 1;
+    });
+    /* balance: up to two under-the-radar games when the set has room */
+    var nationalSlots = Math.max(0, count - Math.min(2, Math.max(0, count - 3)));
+    eligible.forEach(function (x) {
+      if (out.length >= count || out.indexOf(x) >= 0) return;
+      var nat = out.filter(function (y) { return y.s.national; }).length;
+      if (x.s.national && nat >= nationalSlots && eligible.some(function (y) { return !y.s.national && out.indexOf(y) < 0; })) { report.skipped.push({ game_id: x.p.game_id, reason: 'balance: national slots full' }); return; }
+      if (stories[x.story] && eligible.filter(function (y) { return out.indexOf(y) < 0 && !stories[y.story]; }).length >= count - out.length) { report.skipped.push({ game_id: x.p.game_id, reason: 'storyline already featured (' + x.story + ')' }); return; }
+      out.push(x); stories[x.story] = (stories[x.story] || 0) + 1;
+    });
+    /* fill if balance rules left room */
+    eligible.forEach(function (x) { if (out.length < count && out.indexOf(x) < 0) out.push(x); });
+    return { games: out.map(function (x) { return { game_id: x.p.game_id, heading: x.p.identity.heading, score: x.s.score, parts: x.s.parts, storyline: x.story, national: x.s.national, publishable: x.gate.publishable }; }),
+      packets: out.map(function (x) { return x.p; }), rejected: scored.filter(function (x) { return !x.gate.ok; }).map(function (x) { return { game_id: x.p.game_id, heading: x.p.identity.heading, missing: x.gate.missing.concat(x.gate.blocking).map(function (m) { return m.code; }) }; }),
+      report: report, count: count };
+  };
+  return M;
+});
 // ── END INTEGRITY LAYER ────────────────────────────────────────────────
 // ── BEGIN CONTENT ENGINE CORE ────────────────────────────────────────────
 // Canonical source: lib/content_engine.js, copied VERBATIM by
@@ -1705,6 +2860,11 @@
   var CALC = dep('EDCalc', 'edgedesk_calc.js'), SCHED = dep('EDSchedule', 'edgedesk_schedule.js'),
     AVAIL = dep('EDAvailability', 'edgedesk_availability.js'), INTEG = dep('EDIntegrity', 'edgedesk_integrity.js');
   var INTEGRITY_OK = !!(CALC && SCHED && AVAIL && INTEG);
+  /* the editorial matchup packets and broadcast verification (Five Games to
+     Watch, docs/content-engine/GAMES_TO_WATCH.md); without them that template
+     is not offered and its checks fail closed */
+  var MATCH = dep('EDMatchup', 'edgedesk_matchup.js'), BCAST = dep('EDBroadcast', 'edgedesk_broadcast.js');
+  var GTW_OK = !!(MATCH && BCAST);
 
   /* ------------------------------------------------------------ vocabulary */
   var STATUSES = ['draft', 'in_review', 'approved', 'ready_to_send', 'sent', 'published', 'rejected', 'archived'];
@@ -1712,7 +2872,9 @@
      REJECTED: the owner turned the draft down in review; it can be reworked
      (back to draft) or archived, never approved as it stands. */
   var TRANSITIONS = {
-    draft: ['in_review', 'archived'],
+    /* draft → rejected: only through the auto-reject door, for a draft whose
+       own editorial review is REJECT (docs/content-engine/GAMES_TO_WATCH.md) */
+    draft: ['in_review', 'rejected', 'archived'],
     in_review: ['draft', 'approved', 'rejected', 'archived'],
     rejected: ['draft', 'archived'],
     approved: ['ready_to_send', 'in_review', 'draft', 'archived'],
@@ -1735,7 +2897,8 @@
     trending_story: 'Trending story',
     weekend_storylines: 'Biggest weekend storylines',
     game_deep_dive: 'Individual game deep dive',
-    model_performance: 'Weekly model performance review'
+    model_performance: 'Weekly model performance review',
+    games_to_watch: 'Five games to watch'
   };
 
   /* Each format names the sections a draft must carry, in order. `required`
@@ -1797,6 +2960,22 @@
       required: ['intro', 'record', 'how_to_read', 'conclusion'],
       words: [350, 1000]
     },
+    /* docs/content-engine/GAMES_TO_WATCH.md: N featured games (5 by default),
+       each in six parts — where to watch, why it matters, the key matchup,
+       EdgeDesk's projection, upset potential, what to watch. Two editions
+       from the same verified packets, never the same sentences. */
+    weekly_games_to_watch: {
+      label: 'Five Games to Watch (publisher edition)', league: 'cfb', edition: 'publisher',
+      sections: ['intro', 'watch_guide', 'game_1', 'game_2', 'game_3', 'game_4', 'game_5', 'game_6', 'game_7', 'game_8', 'how_to_read', 'limits', 'conclusion'],
+      required: ['intro', 'watch_guide', 'game_1', 'game_2', 'game_3', 'how_to_read', 'limits', 'conclusion'],
+      words: [1100, 2600]
+    },
+    weekly_games_to_watch_first_party: {
+      label: 'Five Games to Watch (EdgeDesk edition)', league: 'cfb', edition: 'first_party',
+      sections: ['intro', 'research_nav', 'game_1', 'game_2', 'game_3', 'game_4', 'game_5', 'game_6', 'game_7', 'game_8', 'how_to_read', 'limits', 'next_steps'],
+      required: ['intro', 'research_nav', 'game_1', 'game_2', 'game_3', 'how_to_read', 'limits', 'next_steps'],
+      words: [1200, 3000]
+    },
     publisher_custom: {
       label: 'Publisher-specific article', league: null,
       sections: null, /* from the publisher's profile, else the league preview */
@@ -1829,7 +3008,10 @@
     race: 'The state of the race',
     record: 'How the numbers did',
     where_it_missed: 'Where it missed',
-    calibration: 'Were the probabilities honest?'
+    calibration: 'Were the probabilities honest?',
+    watch_guide: 'The schedule at a glance',
+    research_nav: 'This week’s research, game by game',
+    next_steps: 'Follow these games on EdgeDesk'
   };
 
   var DISCLAIMER = 'EdgeDesk publishes research, not betting advice. Nothing in this article is a pick, a wager or a recommendation. 21+. Gamble responsibly — 1-800-GAMBLER.';
@@ -2009,7 +3191,9 @@
     published: 'articles/data/published.json',
     market: 'articles/data/market/{season}-week-{ww}.json',
     /* the live-forward model record, graded (tools/integrity/performance.js) */
-    performance: 'football/validation/integrity_performance.json'
+    performance: 'football/validation/integrity_performance.json',
+    /* the editorial matchup packets (tools/content/build_packets.js) */
+    packets: 'football/content/packets.json'
   };
 
   function rankingsIndex(rk) {
@@ -2345,6 +3529,8 @@
         games: games
       };
       snap.sources.push({ id: 'cfb_terminal', path: ARTIFACTS.cfb_games, as_of: cg.generated_at || null, what: 'CFB projections, captured quotes, research and decision status' });
+      snap.cfb.matchups = matchupsOf(art.packets, week, now, opts.broadcastChecks);
+      if (snap.cfb.matchups) snap.sources.push({ id: 'packets', path: ARTIFACTS.packets, as_of: snap.cfb.matchups.generated_at, what: 'verified matchup research packets and broadcast listings' });
       if (art.rankings) snap.sources.push({ id: 'rankings', path: ARTIFACTS.rankings, as_of: rk.as_of, what: 'EdgeDesk team ratings and ranks' });
     }
 
@@ -2379,6 +3565,28 @@
     if (PF && PF.overall) snap.performance = { kind: PF.kind, source: PF.source, generated_at: art.performance.generated_at || null,
       overall: PF.overall, by_gap: PF.by_gap_at_close || null, by_reliability: PF.by_reliability || null, look_ahead_guard: PF.look_ahead_guard || null };
     return snap;
+  }
+
+  /* THE EDITORIAL MATCHUP PACKETS for the week, each with its broadcast
+     RE-VERIFIED NOW: the listing it was built with, plus the owner's
+     verification row when there is one (content_engine.broadcast_checks),
+     judged at this moment's freshness window — so a broadcast confirmed on
+     Tuesday is held on Friday until it is checked again.
+     checks: [{ game_id, network, streaming, source_url, source_kind,
+                source_name, verified_at, kickoff, reason, status }] */
+  function matchupsOf(doc, week, now, checks) {
+    if (!GTW_OK || !doc || !Array.isArray(doc.packets) || doc.week !== week) return null;
+    var owner = {};
+    (checks || []).forEach(function (c) { if (c && c.game_id != null) { var k = String(c.game_id); if (!owner[k] || (ts(c.verified_at) || 0) > (ts(owner[k].verified_at) || 0)) owner[k] = c; } });
+    var packets = doc.packets.map(function (m) {
+      var bi = m.broadcast_input || {};
+      var rec = BCAST.verify(m.game_id, bi.listing || null, owner[m.game_id] || null, { kickoff: bi.schedule_kickoff || m.schedule.kickoff, kickoff_verified: bi.kickoff_verified !== false && m.schedule.kickoff_verified });
+      var p = MATCH.applyBroadcast(m, rec, now);
+      p.broadcast.verified_text = ts(p.broadcast.verified_at) != null ? whenText(ts(p.broadcast.verified_at)) : null;
+      p.broadcast.owner_verified = !!owner[m.game_id];
+      return p;
+    });
+    return { generated_at: doc.generated_at || null, week: doc.week, fixture: doc.fixture || null, league: doc.league || null, counts: doc.counts || null, packets: packets };
   }
 
   /* THE RESEARCH RECORD a packet is written from (lib/edgedesk_integrity.js):
@@ -2693,6 +3901,7 @@
     if (o.kind === 'market_discrepancy' && (R.games || []).length === 1) return ['market_discrepancy', 'game_deep_dive', 'publisher_custom'];
     if (o.kind === 'game_deep_dive') return ['game_deep_dive', 'publisher_custom'];
     if (o.kind === 'model_performance') return ['model_performance_review'];
+    if (o.kind === 'games_to_watch') return ['weekly_games_to_watch', 'weekly_games_to_watch_first_party'];
     if (o.kind === 'weekend_storylines') return ['weekend_storylines', 'publisher_custom'];
     if (o.kind === 'upset_watch') return [o.league + '_weekly_preview', 'upset_watch', 'publisher_custom'];
     if (o.kind === 'conference_race') return ['cfb_weekly_preview', 'conference_race', 'publisher_custom'];
@@ -2711,6 +3920,59 @@
     o.scores.total = o.priority;
     delete o.slug_part;
     return o;
+  }
+
+  /* the games-to-watch opportunity. opts.games_to_watch: { count, required:
+     [game_id], prefer_broad } — the count defaults to the publisher's
+     editorial.featured_games, else 5 */
+  function gtwOpportunity(snap, L, upcoming, pub, opts, now, firstKick, lastKick, limitations) {
+    var G = opts.games_to_watch || {};
+    var ed = (pub && pub.editorial) || {};
+    var count = isNum(G.count) ? G.count : (isNum(ed.featured_games) ? ed.featured_games : 5);
+    var byId = {}; upcoming.forEach(function (p) { byId[String(p.game_id)] = p; });
+    var pool = L.matchups.packets.filter(function (m) { return byId[m.game_id] && !m.problems.some(function (x) { return x.code === 'STARTED'; }); });
+    var sel = MATCH.select(pool, { count: count, required: G.required || [], prefer_broad: G.prefer_broad != null ? !!G.prefer_broad : ed.prefer_broad !== false });
+    /* required games that are not this week's or not cleared at all */
+    (G.required || []).forEach(function (id) {
+      if (!byId[String(id)] && !sel.report.required_failed.some(function (r) { return r.game_id === String(id); })) sel.report.required_failed.push({ game_id: String(id), reason: 'not cleared for publication this week (see the withheld list)' });
+    });
+    if (sel.packets.length < Math.min(3, count)) return null;
+    var games = sel.packets.map(function (m) { return byId[m.game_id]; });
+    var kw = 'college football week ' + L.week + ' games to watch';
+    var demand = demandFor(kw, 'weekly_preview', opts.gsc);
+    var held = sel.packets.filter(function (m) { return !m.broadcast.publishable; });
+    var lim = limitations.slice();
+    if (L.matchups.fixture) lim.push('These packets are a HISTORICAL TEST FIXTURE (' + L.matchups.fixture + '); an article built from them can never be published.');
+    return mkOpp({
+      league: 'cfb', season: L.season, week: L.week, kind: 'games_to_watch',
+      title: 'College Football Week ' + L.week + ' Games to Watch',
+      angle: 'The week’s ' + numWord(sel.packets.length) + ' games worth a viewer’s Saturday, each with where to watch it, the matchup that decides it, the evidence, EdgeDesk’s projection and an honest read on the upset chance.',
+      summary: sel.games.map(function (g) { return g.heading; }).join('; ') + (held.length ? ' — ' + held.length + ' broadcast' + (held.length === 1 ? '' : 's') + ' still to verify' : ''),
+      teams: uniq([].concat.apply([], games.map(function (p) { return [p.home, p.away]; }))),
+      research: { league: 'cfb', season: L.season, week: L.week, as_of: L.matchups.generated_at || L.generated_at, kind: 'games_to_watch', context: contextOf(snap, 'cfb'),
+        games: games, matchups: sel.packets, fixture: L.matchups.fixture || null,
+        selection: { count: count, games: sel.games, rejected: sel.rejected, report: sel.report, basis: 'EDMatchup.select: audience interest, football significance, evidence quality, matchup advantage, upset potential, reliability, publisher fit and timeliness; one storyline per game; a market gap is capped context, never a selector' },
+        upsets: [], races: [], limitations: lim },
+      sources: sourcesOf(snap, 'cfb').concat(gtwSources(sel.packets)),
+      demand: demand,
+      scores: {
+        search_relevance: { score: demand.measured ? 92 : 82, basis: demand.measured ? 'measured Search Console exposure for the query' : 'estimate: “games to watch” and “where to watch” are recurring weekly queries' },
+        timeliness: timelinessScore(firstKick, now),
+        audience_interest: { score: clamp(Math.round(sel.games.reduce(function (a, g) { return a + g.parts.audience; }, 0) / Math.max(1, sel.games.length)), 0, 100), basis: 'mean audience-interest score of the featured games' },
+        research_availability: { score: Math.round(100 * sel.games.length / Math.max(1, count)), basis: sel.games.length + ' of ' + count + ' requested games pass the six-question reasoning gate' },
+        editorial_relevance: { score: 95, basis: 'football evidence for every game, not a list of projections' },
+        publisher_fit: publisherFit(pub, 'cfb', 'weekly_preview', 'broad'),
+        research_confidence: { score: clamp(Math.round(sel.games.reduce(function (a, g) { return a + g.parts.reliability; }, 0) / Math.max(1, sel.games.length)), 0, 100), basis: 'mean research reliability of the featured games' }
+      },
+      expires_at: iso(Math.min.apply(null, games.map(function (p) { return ts(p.kickoff) || lastKick; })))
+    });
+  }
+  function gtwSources(ms) {
+    var out = [], seen = {};
+    /* a source the database can hold names its page and its time; one
+       without both stays in the packet, never in the cited list */
+    ms.forEach(function (m) { (m.sources || []).forEach(function (x) { var k = x.name + '|' + (x.url || ''); if (seen[k] || !/^https:\/\//.test(x.url || '') || !x.as_of) return; seen[k] = 1; out.push({ kind: 'research_source', name: x.name, url: x.url, as_of: x.as_of, what: x.what || null }); }); });
+    return out;
   }
 
   /* opts: { now, publisher, news: [items from matchNews], gsc: {keyword: {impressions, clicks, days}} } */
@@ -2815,6 +4077,14 @@
           },
           expires_at: iso(ts(c0.kickoff))
         }));
+      }
+
+      /* 1c · FIVE GAMES TO WATCH (docs/content-engine/GAMES_TO_WATCH.md):
+         the featured set is chosen by MATCH.select from games whose packet
+         answers all six questions, never by the largest gaps */
+      if (league === 'cfb' && L.matchups) {
+        var gtw = gtwOpportunity(snap, L, upcoming, pub, opts, now, firstKick, lastKick, limitations);
+        if (gtw) out.push(gtw);
       }
 
       /* 2 · upset watch */
@@ -3117,6 +4387,13 @@
         b.alternatives = [o.league === 'nfl' ? 'NFL Week ' + w + ' Predictions: ' + cap(numWord(Math.min(5, (R.games || []).length))) + ' Games Where the Numbers Tell a Different Story' : (head + ': Why the Model and the Line Disagree'), 'Why EdgeDesk and the Sportsbooks See ' + (head || 'This Game') + ' Differently'];
         b.structure = ['Intro', 'The gap, with capture times', 'Why the numbers differ (drivers)', 'How to read a disagreement (not a bet)', 'The case for the market', 'Bottom line'];
         break;
+      case 'games_to_watch':
+        b.primary_keyword = l + ' week ' + w + ' games to watch';
+        b.secondary_keywords = [l + ' week ' + w + ' tv schedule', 'where to watch ' + (head ? head.replace(' vs. ', ' vs ') : l), l + ' week ' + w + ' predictions', l + ' week ' + w + ' upsets'];
+        b.headline = gtwHeadline(o, 'publisher', 'standard');
+        b.alternatives = [gtwHeadline(o, 'publisher', 'listicle'), gtwHeadline(o, 'publisher', 'where_to_watch')];
+        b.structure = ['Intro: the week in one paragraph', 'The schedule at a glance (times ET/CT, verified TV)', 'One section per game: where to watch, why it matters, the key matchup, EdgeDesk’s projection, upset potential, what to watch', 'How to read projections (not picks)', 'What the numbers can’t see', 'Bottom line'];
+        break;
       case 'injury_impact':
         b.primary_keyword = String((R.focus && R.focus.player) || '').toLowerCase() + ' injury';
         b.headline = (R.focus && R.focus.player) + ' Injury: What It Means for the ' + (R.focus && R.focus.team);
@@ -3157,6 +4434,7 @@
     else if (o.kind === 'upset_watch') m = 'Which Week ' + o.week + ' underdogs have a real chance? EdgeDesk’s model names them, with win chances and the risks. Research, not picks.';
     else if (o.kind === 'conference_race') m = 'The ' + R.conference + ' games that shape the title race in Week ' + o.week + ', with EdgeDesk’s projections and ratings. Research, not picks.';
     else if (o.kind === 'market_discrepancy') m = 'Why EdgeDesk’s projection differs from the betting line' + (g0 && R.games.length === 1 ? ' for ' + g0.away + ' vs. ' + g0.home : ' this week') + ', and what could explain it. Research, not picks.';
+    else if (o.kind === 'games_to_watch') m = 'Week ' + o.week + ' college football games to watch: TV and streaming, kickoff times, the matchups that decide them and the real upset cases.';
     else if (o.kind === 'injury_impact') m = 'What the injury report says about ' + (R.focus && R.focus.player) + ', and how EdgeDesk’s projection changes if he can’t play. Research, not picks.';
     else m = 'The latest ' + (o.teams && o.teams[0] || '') + ' news, read against EdgeDesk’s numbers for the next game. Research, not picks.';
     return m.length > 160 ? m.slice(0, 157).replace(/\s+\S*$/, '') + '…' : m;
@@ -3613,6 +4891,252 @@
     return s;
   }
 
+  /* ======================================================================
+     FIVE GAMES TO WATCH — the writers (docs/content-engine/GAMES_TO_WATCH.md)
+     Every sentence below is assembled from a verified packet fact or a
+     packet argument; the writer adds connective words, never a number. The
+     publisher edition reads each fact's `text`, EdgeDesk's own edition its
+     `alt`, in a different order under different labels, so the two articles
+     share the evidence and not the sentences.
+     ====================================================================== */
+  var GTW_PARTS = [
+    { key: 'where', re: /\*\*(?:Where to watch|Kickoff and broadcast)\b/ },
+    { key: 'why', re: /\*\*(?:Why it matters|The stakes)\b/ },
+    { key: 'matchup', re: /\*\*(?:The key matchup|Where it’s decided|Where it's decided)\b/ },
+    { key: 'model', re: /\*\*(?:EdgeDesk’s projection|EdgeDesk's projection|EdgeDesk’s number|EdgeDesk's number)\b/ },
+    { key: 'upset', re: /\*\*(?:Upset potential|If the underdog wins|Why there’s no upset case|Why there's no upset case)\b/ },
+    { key: 'watch', re: /\*\*(?:What to watch|Watch for)\b/ }
+  ];
+  var BROADCAST_SOURCE_TEXT = { 'ESPN scoreboard': 'ESPN’s public scoreboard listing' };
+  function gtwPairs(o) {
+    var R = o.research || {}, ms = R.matchups || [];
+    var byId = {}; (R.games || []).forEach(function (p) { byId[String(p.game_id)] = p; });
+    return ms.map(function (m) { return { m: m, p: byId[m.game_id] || null }; }).filter(function (x) { return x.p; });
+  }
+  function gtwClock(s) {
+    /* "3:30 PM EDT" → "3:30 p.m. ET"; noon is "noon" */
+    var m = /^(\d{1,2}):(\d{2}) (AM|PM) ([A-Z])[DS]T$/.exec(String(s || ''));
+    if (!m) return s || null;
+    if (m[1] === '12' && m[2] === '00' && m[3] === 'PM') return 'noon ' + m[4] + 'T';
+    return m[1] + (m[2] === '00' ? '' : ':' + m[2]) + ' ' + (m[3] === 'AM' ? 'a.m.' : 'p.m.') + ' ' + m[4] + 'T';
+  }
+  var DAYS_FULL = { Sun: 'Sunday', Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday' };
+  function gtwDate(d) {
+    var m = /^(\w{3}), (\w{3}) (\d{1,2})$/.exec(String(d || ''));
+    return m ? (DAYS_FULL[m[1]] || m[1]) + ', ' + (MONTHS_AP[m[2]] || m[2]) + ' ' + m[3] : d;
+  }
+  function gtwWhen(m) {
+    var t = m.schedule && m.schedule.times;
+    if (!t || !m.schedule.kickoff_verified) return null;
+    return { date: gtwDate(t.date), et: gtwClock(t.et), ct: gtwClock(t.ct) };
+  }
+  function gtwFact(m, id) { return (m.facts || []).filter(function (f) { return f.id === id; })[0] || null; }
+  function gtwFacts(m, pred) { return (m.facts || []).filter(pred); }
+  function gtwSay(f, ed) { return f ? (ed === 'first_party' ? f.alt : f.text) : null; }
+  function gtwVenue(m) { var v = m.identity.venue || (m.schedule && m.schedule.venue); return v ? (m.identity.neutral_site ? v + ' (neutral site)' : v) : null; }
+  function gtwResearchUrl(m) { return SITE + '/research/cfb/#/game/' + encodeURIComponent(m.game_id); }
+  function gtwStory(m) {
+    var A = m.arguments || {};
+    if (A.upset && A.upset.credible) return 'an upset case on the numbers';
+    if ((A.why_watch || []).some(function (w) { return w.kind === 'QB_SPLIT'; })) return 'a quarterback split to watch';
+    if (A.deciding) return A.deciding.kind === 'CLASH' ? 'strength against strength' : 'one clear mismatch';
+    return 'the projection';
+  }
+  function gtwHeading(m, i, ed) {
+    var id = m.identity;
+    var tag = function (side) { var r = side === 'home' ? id.home_rank : id.away_rank; return isNum(r) && r <= 25 ? 'No. ' + r + ' ' : ''; };
+    var h = tag('away') + id.away + (id.neutral_site ? ' vs. ' : ' at ') + tag('home') + id.home;
+    return (i + 1) + '. ' + h + (ed === 'first_party' ? ': ' + cap(gtwStory(m)) : '');
+  }
+  function gtwHeadline(o, ed, style) {
+    var w = o.week, n = ((o.research && o.research.matchups) || []).length || 5, N = cap(numWord(n));
+    /* every style carries the primary keyword's words and stays near 60–70 characters */
+    if (ed === 'first_party') return 'College Football Week ' + w + ' Games to Watch: The Evidence Behind Each';
+    if (style === 'listicle') return N + ' College Football Games to Watch in Week ' + w + ': TV, Matchups, Upsets';
+    if (style === 'where_to_watch') return 'Week ' + w + ' College Football Games to Watch and Where to Watch Them';
+    return 'College Football Week ' + w + ' Games to Watch: TV Channels and Key Matchups';
+  }
+
+  /* A · where to watch */
+  function gtwWhere(m, ed) {
+    var w = gtwWhen(m), b = m.broadcast || {}, v = gtwVenue(m);
+    var when = w ? w.date + ', ' + w.et + ' (' + w.ct + ')' : 'kickoff time not yet announced';
+    var srcName = b.source && b.source.name ? (BROADCAST_SOURCE_TEXT[b.source.name] || b.source.name) : 'the listing';
+    var verified = b.publishable && b.verified_text ? 'Broadcast verified ' + b.verified_text + ' from ' + (b.source && /^https:\/\//.test(b.source.url || '') && b.verified_by === 'owner' ? '[' + srcName + '](' + b.source.url + ')' : srcName) + '.' : null;
+    var tv = b.publishable && b.watch ? b.watch.tv : null, stream = b.publishable && b.watch ? b.watch.stream : null;
+    var change = m.schedule && m.schedule.schedule_change && m.schedule.schedule_change.to
+      ? 'Schedule change: moved from ' + whenText(ts(m.schedule.schedule_change.from)) + ' to ' + whenText(ts(m.schedule.schedule_change.to)) + (m.schedule.schedule_change.reason ? ' (' + m.schedule.schedule_change.reason + ')' : '') + ', verified ' + whenText(ts(m.schedule.schedule_change.verified_at)) + '.' : null;
+    if (ed === 'first_party') {
+      return '**Kickoff and broadcast.** ' + cap(when) + (v ? ', ' + v : '') + '. ' + (tv ? 'On ' + tv + (stream ? '; streaming on ' + stream : '') + '. ' : 'Network not yet verified: EdgeDesk lists a network only after it is verified. ')
+        + (b.publishable && b.watch && b.watch.regional ? 'Regional coverage: ' + b.watch.regional + '. ' : '') + (change ? change + ' ' : '') + (verified ? '*' + verified + '*' : '');
+    }
+    var lines = ['- **When:** ' + when, v ? '- **Where:** ' + v : null,
+      '- **TV:** ' + (tv || 'not yet verified (EdgeDesk lists a network only after it is verified)'),
+      stream ? '- **Streaming:** ' + stream : null,
+      b.publishable && b.watch && b.watch.regional ? '- **Regional coverage:** ' + b.watch.regional : null,
+      change ? '- **' + change.replace(/^Schedule change:/, 'Schedule change:**') : null,
+      verified ? '- *' + verified + '*' : null].filter(Boolean);
+    return '**Where to watch**\n\n' + lines.join('\n');
+  }
+  /* B · why it matters */
+  function gtwWhy(m, ed) {
+    var A = m.arguments || {}, id = m.identity, out = [];
+    var ws = (A.why_watch || []).filter(function (w) { return !w.model; });
+    var has = function (k) { return ws.some(function (w) { return w.kind === k; }); };
+    var rk = function (side) { return side === 'home' ? id.home_rank : id.away_rank; };
+    var conf = has('CONFERENCE') ? id.home_conference : null;
+    var meet = id.neutral_site ? ' meets ' : ' visits ';
+    var tagR = function (side) { return isNum(rk(side)) && rk(side) <= 25 ? 'No. ' + rk(side) + ' ' : ''; };
+    if (has('RANKED')) out.push(ed === 'first_party'
+      ? 'Two EdgeDesk top-25 teams' + (conf ? ' in ' + conf + ' play' : '') + ': No. ' + rk('away') + ' ' + id.away + ' and No. ' + rk('home') + ' ' + id.home + (id.neutral_site ? ', on a neutral field (' + id.venue + ')' : '') + '.'
+      : tagR('away') + id.away + meet + tagR('home') + id.home + (conf ? ' in ' + conf + ' play' : '') + ', a meeting of two teams in EdgeDesk’s top 25' + (id.neutral_site ? ', on a neutral field (' + id.venue + ')' : '') + '.');
+    else if (has('RANKED_ONE')) { var rt = isNum(id.home_rank) && id.home_rank <= 25 ? 'home' : 'away'; out.push(ed === 'first_party'
+      ? id[rt] + ' is No. ' + rk(rt) + ' in EdgeDesk’s ratings; ' + id[rt === 'home' ? 'away' : 'home'] + ' is outside the top 25' + (conf ? ', and it is ' + conf + ' play' : '') + '.'
+      : tagR('away') + id.away + meet + tagR('home') + id.home + (conf ? ' in ' + conf + ' play' : '') + ', with ' + id[rt] + ' No. ' + rk(rt) + ' in EdgeDesk’s ratings.'); }
+    else if (conf) out.push(id.away + meet + id.home + ' in ' + conf + ' play' + (id.neutral_site ? ', on a neutral field (' + id.venue + ')' : '') + '.');
+    if (has('NEUTRAL') && !has('RANKED') && !conf) out.push('It is played on a neutral field (' + id.venue + ').');
+    ['away', 'home'].forEach(function (side) {
+      var team = id[side];
+      var form = gtwFacts(m, function (f) { return f.team === team && f.kind === 'form'; })[0];
+      var last = gtwFacts(m, function (f) { return f.team === team && f.kind === 'result'; })[0];
+      if (form) out.push(gtwSay(form, ed));
+      /* a recent-form line already carries the last game in the EdgeDesk
+         edition; the publisher edition names the last result every time */
+      if (last && (ed !== 'first_party' || !form || form.id.indexOf('_recent_') < 0)) out.push(gtwSay(last, ed));
+    });
+    if (has('CLASH') && ed !== 'first_party') out.push('On the season numbers, it is also ' + ws.filter(function (w) { return w.kind === 'CLASH'; })[0].text + '.');
+    return (ed === 'first_party' ? '**The stakes.** ' : '**Why it matters.** ') + out.join(' ');
+  }
+  /* C · the key football matchup */
+  function gtwMatchup(m, ed) {
+    var A = m.arguments || {}, d = A.deciding, out = [];
+    if (d) {
+      out.push(ed === 'first_party' ? d.alt : d.claim);
+      d.facts.forEach(function (id) { var f = gtwFact(m, id); if (f) out.push(gtwSay(f, ed)); });
+      if (d.adjusted && d.adjusted.agrees === true) out.push(ed === 'first_party' ? 'Adjusted for the opponents each side has faced, EdgeDesk’s matchup metrics agree: a ' + d.adjusted.magnitude + ' ' + String(d.adjusted.label).toLowerCase() + ' edge for ' + d.adjusted.favors + '.' : 'EdgeDesk’s opponent-adjusted numbers agree, rating it a ' + d.adjusted.magnitude + ' edge for ' + d.adjusted.favors + '.');
+    }
+    if (A.second && ed === 'first_party') {
+      out.push('The secondary fight:');
+      A.second.facts.forEach(function (id) { var f = gtwFact(m, id); if (f) out.push(gtwSay(f, ed)); });
+    }
+    /* the quarterbacks: a split is a measured fact; then each passer's line */
+    ['away', 'home'].forEach(function (side) {
+      var team = m.identity[side];
+      var split = gtwFacts(m, function (f) { return f.team === team && f.kind === 'qb_split'; })[0];
+      if (split) out.push(gtwSay(split, ed));
+      var qbs = gtwFacts(m, function (f) { return f.team === team && f.kind === 'qb'; });
+      qbs.slice(0, split ? 2 : 1).forEach(function (f) { out.push(gtwSay(f, ed)); });
+      gtwFacts(m, function (f) { return f.team === team && f.kind === 'turnovers' && (ed === 'first_party' || f.direction === 'HIGH'); }).slice(0, 1).forEach(function (f) { out.push(gtwSay(f, ed)); });
+      if (ed === 'first_party') gtwFacts(m, function (f) { return f.team === team && f.kind === 'qb_efficiency'; }).slice(0, 1).forEach(function (f) { out.push(gtwSay(f, ed)); });
+    });
+    var avail = [];
+    ['away', 'home'].forEach(function (side) {
+      var team = m.identity[side];
+      var split = gtwFacts(m, function (f) { return f.team === team && f.kind === 'qb_split'; }).length > 0;
+      gtwFacts(m, function (f) { return f.team === team && (f.kind === 'availability' || (f.kind === 'qb_availability' && (ed === 'first_party' || split))); }).forEach(function (f) { avail.push(gtwSay(f, ed)); });
+    });
+    var body = out.join(' ');
+    return (ed === 'first_party' ? '**Where it’s decided.** ' : '**The key matchup.** ') + body + (avail.length ? '\n\n' + (ed === 'first_party' ? '*Availability.* ' : '**Injuries and availability:** ') + avail.join(' ') : '');
+  }
+  /* D · EdgeDesk's projection */
+  function gtwModel(m, ed) {
+    var md = m.model || {}, A = m.arguments || {}, out = [];
+    if (!md.available) return null;
+    var head = md.favorite ? (md.favorite + ' by ' + oneDp(md.margin) + (isNum(md.fav_win_pct) ? ', a ' + md.fav_win_pct + '% chance to win' : '')) : 'a pick’em';
+    out.push(ed === 'first_party' ? 'EdgeDesk’s fair line is ' + md.fair_text + (isNum(md.fav_win_pct) && md.favorite ? ' (' + md.favorite + ' ' + md.fav_win_pct + '% to win)' : '') + (isNum(md.total) ? ', with a projected total of ' + oneDp(md.total) + ' points' : '') + '.'
+      : 'EdgeDesk’s model has ' + head + (isNum(md.total) ? ', with a projected total of ' + oneDp(md.total) + ' points' : '') + '.');
+    if ((md.inputs || []).length) out.push((ed === 'first_party' ? 'What moves the number most: ' : 'The biggest input: ') + sentenceList(md.inputs.slice(0, ed === 'first_party' ? 2 : 1).map(function (x) { return String(x.label).replace(/\s*\(.*\)\s*/g, '').toLowerCase() + ' (' + oneDp(x.points) + ' points toward ' + x.favors + ')'; })) + '.');
+    var mk = md.market || {};
+    if (md.gap_state === 'COMPARABLE' && md.gap) out.push('The betting line' + (mk.book ? ' at ' + bookName(mk.book) : '') + ' was ' + mk.text + ' when captured ' + whenText(ts(mk.captured_at)) + '; that is ' + oneDp(md.gap.points) + ' points from EdgeDesk’s number. A gap is a research question, not a bet.');
+    else if (md.gap_state === 'UNRESOLVED') out.push('EdgeDesk’s number is far from the betting line, and that gap has not cleared EdgeDesk’s integrity checks, so it is treated as a question about the data rather than a signal.');
+    else if (md.gap_state === 'STALE_MARKET') out.push('The newest sportsbook line on file was captured ' + whenText(ts(mk.captured_at)) + ', older than EdgeDesk’s three-hour freshness rule, so no gap to the market is stated.');
+    else if (md.gap_state === 'NO_MARKET') out.push('No sportsbook line is on file for a comparison.');
+    if (isNum(md.reliability)) out.push('Research reliability: ' + md.reliability + ' out of 100.');
+    var wrong = (A.model_wrong || []).filter(function (w) { return w.kind !== 'UNRESOLVED_GAP'; });
+    var pick = ed === 'first_party' ? wrong.slice(0, 3) : wrong.filter(function (w) { return w.kind !== 'OTHER_MODELS'; }).slice(0, 2);
+    if (pick.length) out.push((ed === 'first_party' ? 'Where this number could be wrong: ' : 'Why it could be wrong: ') + pick.map(function (w) { return w.text; }).join('; ') + '.');
+    if (ed === 'first_party') out.push('[Open the full research for ' + m.identity.heading + '](' + gtwResearchUrl(m) + ').');
+    return (ed === 'first_party' ? '**EdgeDesk’s number.** ' : '**EdgeDesk’s projection.** ') + out.join(' ');
+  }
+  /* E · upset potential: only on the evidence */
+  function gtwUpset(m, ed) {
+    var u = (m.arguments || {}).upset || {};
+    if (!u.credible && !u.near_even && isNum(u.dog_win_pct)) {
+      return (ed === 'first_party' ? '**Why there’s no upset case.** ' : '**Upset potential.** ') + 'EdgeDesk gives ' + u.team + ' a ' + u.dog_win_pct + '% chance, but ' + String(u.reason || 'the numbers do not make an upset case').replace(/^EdgeDesk gives .*?; /, '') + '.';
+    }
+    if (!u.credible) {
+      return (ed === 'first_party' ? '**Why there’s no upset case.** ' : '**Upset potential.** ') + cap(u.reason || 'the numbers do not make an upset case') + '.';
+    }
+    var cond = u.conditions.map(function (c) { return c.text; });
+    var counter = u.counter.map(function (c) { return c.text; });
+    if (ed === 'first_party') return '**If the underdog wins, here’s how.** EdgeDesk gives ' + u.team + ' a ' + u.dog_win_pct + '% chance. ' + cond.map(function (c) { return cap(c) + '.'; }).join(' ') + ' Against it: ' + counter.join('; ') + '.';
+    return '**Upset potential.** EdgeDesk gives ' + u.team + ' a ' + u.dog_win_pct + '% chance. The case for it: ' + cond.join('; ') + '. The case against: ' + counter.join('; ') + '.';
+  }
+  /* F · what to watch */
+  function gtwWatch(m, ed) {
+    var wf = ((m.arguments || {}).watch_for || []).slice(0, 2);
+    if (!wf.length) return null;
+    return (ed === 'first_party' ? '**Watch for.**' : '**What to watch**') + '\n\n' + wf.map(function (w) { return '- ' + w.text; }).join('\n');
+  }
+  function gtwGame(m, ed) {
+    var parts = [gtwWhere(m, ed), gtwWhy(m, ed), gtwMatchup(m, ed), gtwModel(m, ed), gtwUpset(m, ed), gtwWatch(m, ed)].filter(Boolean);
+    if (ed === 'first_party') parts.splice(1, 0, parts.splice(parts.length - 1, 1)[0]);
+    return parts.join('\n\n');
+  }
+  function gtwSections(o, ed, ctx) {
+    ctx = ctx || {};
+    var pairs = gtwPairs(o), s = { __headings: {} };
+    var w = o.week;
+    var ms = pairs.map(function (x) { return x.m; });
+    var heads = ms.map(function (m) { return m.identity.away + (m.identity.neutral_site ? ' vs. ' : ' at ') + m.identity.home; });
+    var kw = 'college football week ' + w + ' games to watch';
+    if (ed === 'first_party') {
+      s.intro = para('These are EdgeDesk’s college football Week ' + w + ' games to watch: ' + sentenceList(heads) + '.',
+        'Each one is here because the research gives a reason beyond the projection — a measured matchup, a quarterback situation, a result that changed the picture — and each comes with the evidence, so you can check our reasoning against the game.');
+      s.research_nav = ms.map(function (m) { return '- [' + m.identity.heading + '](' + gtwResearchUrl(m) + ') — ' + gtwStory(m); }).join('\n');
+    } else {
+      var first = ms.slice().sort(function (a, b) { return (ts(a.schedule.kickoff) || 0) - (ts(b.schedule.kickoff) || 0); })[0];
+      var fw = first ? gtwWhen(first) : null;
+      s.intro = para('Here are the college football Week ' + w + ' games to watch, with where to watch each one, the matchup most likely to decide it and what EdgeDesk’s numbers expect.',
+        cap(numWord(ms.length)) + ' games made the list: ' + sentenceList(heads) + '.',
+        fw ? 'The first kicks off ' + fw.date + ' at ' + fw.et + '.' : null);
+      s.watch_guide = ms.slice().sort(function (a, b) { return (ts(a.schedule.kickoff) || 0) - (ts(b.schedule.kickoff) || 0); }).map(function (m) {
+        var t = gtwWhen(m), b = m.broadcast || {};
+        return '- **' + m.identity.heading + '** — ' + (t ? t.et + ' (' + t.ct + ')' : 'time not yet announced') + ', ' + (b.publishable && b.watch ? b.watch.tv : 'network not yet verified');
+      }).join('\n');
+    }
+    pairs.forEach(function (x, i) {
+      var k = 'game_' + (i + 1);
+      s[k] = gtwGame(x.m, ed);
+      s.__headings[k] = gtwHeading(x.m, i, ed);
+    });
+    s.how_to_read = para(howToRead(o), ed === 'first_party'
+      ? 'Two kinds of evidence appear above. Counts — a final score, a completion rate over a stated number of dropbacks, a name on a conference availability report — you can check yourself. Ratings, projections and expected points are EdgeDesk’s analysis, and are labelled as such.'
+      : 'Every stat in the game sections is a count from this season’s games (with the sample size beside it) or comes from an official availability report, and the broadcast for each game was verified at the time shown.');
+    var lim = uniq([].concat.apply([], ms.map(function (m) { return m.limits || []; })));
+    s.limits = lim.map(function (l) { return '- ' + cap(l) + '.'; }).concat(['- Even a 70% favorite loses about three times in ten. Projections describe likelihoods, not outcomes.']).join('\n');
+    if (ed === 'first_party') {
+      var camp = ctx.campaign || 'gtw-w' + w;
+      s.next_steps = para('Every game above has a full research page: the projection’s inputs, the market check, both teams’ units and the availability report.',
+        '[Get EdgeDesk’s free weekly email](' + SITE + '/newsletter/?from=' + encodeURIComponent(camp) + ') for next week’s games to watch, or [see every game on today’s free board](' + SITE + '/today/).',
+        'For the full research terminal, EdgeDesk Full Access starts with a 7-day free trial ([details](' + SITE + '/#pricing)).');
+    } else {
+      s.conclusion = para('The short version: ' + sentenceList(ms.map(function (m) { return m.identity.heading + ' is ' + gtwStory(m); })) + '.',
+        'Times, networks and availability can change during the week, so check the official listings before kickoff.',
+        'None of it is a pick. It’s a guide to what to watch, and why.');
+    }
+    s.__seo = { headline: gtwHeadline(o, ed, ctx.headline_style || 'standard'), primary_keyword: ed === 'first_party' ? kw : kw,
+      secondary_keywords: ed === 'first_party' ? ['college football week ' + w + ' matchups', 'college football week ' + w + ' predictions', 'college football week ' + w + ' research'] : (o.seo && o.seo.secondary_keywords) || [],
+      meta_description: ed === 'first_party'
+        ? 'Week ' + w + ' college football games to watch, with the evidence behind each: matchups, quarterbacks, availability and EdgeDesk’s projections.'
+        : null };
+    if (!s.__seo.meta_description) delete s.__seo.meta_description;
+    s.__standfirst = ed === 'first_party'
+      ? numWord(ms.length).replace(/^./, function (c) { return c.toUpperCase(); }) + ' games, the football evidence behind each, and what EdgeDesk’s model expects. Research, not picks.'
+      : 'Where to watch, what decides it and whether an upset is realistic, for Week ' + w + '’s ' + numWord(ms.length) + ' best games. Research, not picks.';
+    return s;
+  }
+
   function sectionsFor(o, format, ctx) {
     var s = {};
     if (format === 'market_discrepancy' && o.research.games && o.research.games.length === 1 && o.research.games[0].gap) return mdSections(o);
@@ -3622,6 +5146,7 @@
     if (format === 'conference_race' && o.research.conference) return raceSections(o);
     if (format === 'upset_watch') return upsetOnlySections(o);
     if (format === 'model_performance_review') return performanceSections(o);
+    if (format === 'weekly_games_to_watch' || format === 'weekly_games_to_watch_first_party') return gtwSections(o, FORMATS[format].edition, ctx);
     var gs = o.research.games || [];
     var angle = ctx.angle || 'full_slate';
     var shown = gs;
@@ -3667,21 +5192,22 @@
     var links = ed.links_allowed !== false;
     var baseFormat = baseFormatOf(o, format);
     var maxGames = ed.max_games || (ed.length && ed.length.max && ed.length.max < 1200 ? 4 : 6);
-    var raw = sectionsFor(o, baseFormat, { angle: ctx.angle, maxGames: maxGames, links: links });
+    var raw = sectionsFor(o, baseFormat, { angle: ctx.angle, maxGames: maxGames, links: links, publisher: publisher, headline_style: ctx.headline_style, audience: ctx.audience, campaign: ctx.campaign });
     var preview = /_weekly_preview$/.test(baseFormat);
     var order = format === 'publisher_custom' && preview ? sectionOrder(format, publisher) : sectionOrder(baseFormat, publisher);
     var sections = [];
     order.forEach(function (k) {
       var body = raw[k];
       if (!body) return;
-      sections.push({ key: k, heading: SECTION_HEADINGS[k] || null, body: body });
+      sections.push({ key: k, heading: (raw.__headings && raw.__headings[k]) || SECTION_HEADINGS[k] || null, body: body });
     });
     var seo = o.seo || seoBrief(o, publisher);
-    var title = ctx.title || seo.headline || o.title;
+    var title = ctx.title || (raw.__seo && raw.__seo.headline) || seo.headline || o.title;
+    if (raw.__seo) seo = Object.assign({}, seo, raw.__seo);
     var a = {
       format: format, base_format: baseFormat, angle: ctx.angle || 'full_slate', title: title, slug: slugify(title), meta_description: seo.meta_description,
       primary_keyword: seo.primary_keyword, secondary_keywords: seo.secondary_keywords,
-      standfirst: standfirstFor(o), sections: sections, generator: 'template:' + VERSION, generated_at: iso(isNum(ctx.now) ? ctx.now : Date.now()),
+      standfirst: raw.__standfirst || standfirstFor(o), sections: sections, generator: 'template:' + VERSION, generated_at: iso(isNum(ctx.now) ? ctx.now : Date.now()),
       research_as_of: o.research && o.research.as_of || null, research_hash: researchHash(o)
     };
     a.word_count = wordCount(a.standfirst + ' ' + sections.map(function (s) { return s.body; }).join(' '));
@@ -3756,6 +5282,17 @@
       [p.home_conference, p.away_conference, p.venue, p.market && p.market.book, p.market && bookName(p.market.book)].forEach(function (x) { if (x) names[x] = 1; });
       ['home', 'away'].forEach(function (s) { var q = p.qb && p.qb[s]; if (q && q.player) names[q.player] = 1;
         var inj = p.injuries && p.injuries[s]; (inj && inj.qbs || []).forEach(function (x) { names[x.name] = 1; }); });
+    });
+    /* a matchup packet's results name past opponents, and its quarterback
+       lines and availability report name players: both are evidence */
+    (o.research.matchups || []).forEach(function (m) {
+      ['home', 'away'].forEach(function (s) {
+        var t = m.teams && m.teams[s]; ((t && t.results) || []).forEach(function (r) { if (r.opponent) teams[r.opponent] = 1; });
+        var q = m.quarterbacks && m.quarterbacks[s]; ((q && q.lines) || []).forEach(function (l) { if (l.player) names[l.player] = 1; });
+        var av = m.availability && m.availability[s]; ((av && av.listed) || []).forEach(function (x) { if (x.player) names[x.player] = 1; });
+      });
+      if (m.identity && m.identity.venue) names[m.identity.venue] = 1;
+      ((m.broadcast && m.broadcast.networks) || []).forEach(function (n) { names[n] = 1; });
     });
     ((o.research.context && o.research.context.top10) || []).forEach(function (t) { teams[t.team] = 1; });
     (o.research.conference_top || []).forEach(function (t) { teams[t] = 1; });
@@ -3955,11 +5492,14 @@
     featured.forEach(function (p) { [p.home, p.away].forEach(function (t) { if (t) (gameTeams[t] = gameTeams[t] || []).push(p.game_id); }); });
     var teamNames = Object.keys(gameTeams);
     var gameNums = {};
+    var mByGid = {}; (o.research.matchups || []).forEach(function (m) { mByGid[m.game_id] = m; });
     function numsOfGame(p) {
       if (gameNums[p.game_id]) return gameNums[p.game_id];
       var set = {};
-      walk(p, function (v) { if (typeof v === 'number') addNum(set, v); else if (typeof v === 'string') numbersIn(v).forEach(function (n) { addNum(set, n); }); }, 0);
-      walk(p, function (v) { if (typeof v === 'number' && v > 0 && v < 1) addNum(set, 1 - v); }, 0);
+      [p, mByGid[String(p.game_id)]].filter(Boolean).forEach(function (src) {
+        walk(src, function (v) { if (typeof v === 'number') addNum(set, v); else if (typeof v === 'string') numbersIn(v).forEach(function (n) { addNum(set, n); }); }, 0);
+        walk(src, function (v) { if (typeof v === 'number' && v > 0 && v < 1) addNum(set, 1 - v); }, 0);
+      });
       gameNums[p.game_id] = set; return set;
     }
     var GENERIC = {}; [o.week, o.season].forEach(function (v) { addNum(GENERIC, v); });
@@ -3985,6 +5525,11 @@
       featured.forEach(function (p) { ['home', 'away'].forEach(function (s) {
         var c = p.availability && p.availability[s], team = s === 'home' ? p.home : p.away;
         if (!c) return; (byTeam[team] = byTeam[team] || []).push(c); if (c.player) (byTeam[c.player] = byTeam[c.player] || []).push(c);
+      }); });
+      /* the conference's official availability report, player by player */
+      (o.research.matchups || []).forEach(function (m) { ['home', 'away'].forEach(function (s) {
+        var av = m.availability && m.availability[s]; if (!av || !av.official) return;
+        (av.classified || []).forEach(function (c) { if (!c) return; (byTeam[c.team] = byTeam[c.team] || []).push(c); if (c.player) (byTeam[c.player] = byTeam[c.player] || []).push(c); });
       }); });
       var qbIssues = AVAIL.guardProse(body, byTeam);
       ig('qb_claims_sourced', 'EDIT.QB_UNCERTAINTY', qbIssues.length ? 'fail' : 'pass', 'Quarterback and injury uncertainty only from a sourced report',
@@ -4019,6 +5564,15 @@
       function allow(team, line) { if (team && isNum(line)) (ok[team] = ok[team] || {})[r1(line).toFixed(1)] = 1; }
       if (p.model && p.model.available && p.model.favorite) { allow(p.model.favorite, -p.model.margin); allow(p.model.underdog, p.model.margin); }
       if (p.market && isNum(p.market.home_line)) { allow(p.home, p.market.home_line); allow(p.away, -p.market.home_line); }
+      /* the packet's own alternative numbers: the sensitivity range and the
+         challenger models, printed as "Team by N" */
+      var mp = mByGid[String(p.game_id)], byOk = {};
+      if (mp && mp.model) {
+        var alts = [];
+        if (mp.model.sensitivity) alts.push(mp.model.sensitivity.low_home_margin, mp.model.sensitivity.high_home_margin);
+        (mp.model.other_models || []).forEach(function (x) { alts.push(x.home_margin); });
+        alts.filter(isNum).forEach(function (hm) { var t = hm > 0 ? p.home : p.away; (byOk[t] = byOk[t] || {})[r1(Math.abs(hm)).toFixed(1)] = 1; allow(t, -Math.abs(hm)); });
+      }
       [p.home, p.away].forEach(function (team) {
         var re = new RegExp('(^|[^A-Za-z])' + team.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' ([+\\-−])(\\d+(?:\\.\\d)?)(?![\\d.])', 'g'), m;
         while ((m = re.exec(body))) {
@@ -4030,7 +5584,7 @@
           var v2 = parseFloat(m2[2]);
           var mm = p.model && p.model.favorite === team ? r1(p.model.margin) : null;
           var km = p.market && isNum(p.market.home_line) ? (team === p.home ? -r1(p.market.home_line) : r1(p.market.home_line)) : null;
-          if (v2 !== mm && v2 !== km) lineBad.push(team + ' by ' + m2[2]);
+          if (v2 !== mm && v2 !== km && !(byOk[team] && byOk[team][r1(v2).toFixed(1)])) lineBad.push(team + ' by ' + m2[2]);
         }
       });
     });
@@ -4040,6 +5594,8 @@
       var stale = a.research_hash && a.research_hash !== opts.current_research_hash;
       ig('snapshot_current', 'EDIT.SNAPSHOT', stale ? 'fail' : 'pass', 'Written on the current research snapshot', stale ? 'the research changed after this draft was written: refresh it' : null);
     }
+    /* ── FIVE GAMES TO WATCH (docs/content-engine/GAMES_TO_WATCH.md §Checks) ── */
+    if (FORMATS[base] && FORMATS[base].edition) gtwChecks(a, o, now, ig, ed);
     var igFail = IG.filter(function (x) { return x.status === 'fail'; });
     var igWarn = checks.filter(function (c) { return c.status === 'warn'; }).length > 0 || featured.some(function (p) { return p.integrity && p.integrity.public && p.integrity.public.status === 'WARNING'; });
     var integrity = { version: INTEG ? INTEG.VERSION : null, status: igFail.length ? 'BLOCKED' : (igWarn ? 'WARNING' : 'PASS'),
@@ -4054,6 +5610,247 @@
       integrity_status: integrity.status, integrity: integrity,
       checked_at: iso(now), version: VERSION
     };
+  }
+
+  /* ======================================================================
+     FIVE GAMES TO WATCH — the editorial checks. Each is deterministic and
+     reads the article against the packets it was written from; every
+     failure blocks approval (integrity BLOCKED), and reviewReport() says
+     which failures HOLD an article (fixable by verification) and which
+     REJECT it.
+     ====================================================================== */
+  var GTW_FILLER = [/anything can happen/i, /on any given (?:saturday|sunday|day)/i, /should be a (?:great|fun|good) (?:one|game)/i, /both teams (?:will be|are) looking/i,
+    /statement (?:game|win)/i, /must[- ]win/i, /only time will tell/i, /buckle up/i, /fireworks/i, /throw the records out/i, /a game you won’t want to miss|a game you won't want to miss/i,
+    /it all comes down to/i, /when the dust settles/i, /circle (?:this|it) on (?:your|the) calendar/i, /something has to give/i, /edge of your seat/i, /\btrap game\b/i];
+  /* networks a "where to watch" line could name */
+  var NETWORK_WORDS = ['ABC', 'CBS', 'NBC', 'FOX', 'ESPN', 'ESPN2', 'ESPNU', 'ESPNEWS', 'ESPN\\+', 'SEC Network\\+?', 'ACC Network(?: Extra)?', 'Big Ten Network', 'BTN', 'FS1', 'FS2',
+    'CBS Sports Network', 'The CW', 'CW', 'Peacock', 'Paramount\\+', 'Prime Video', 'Netflix', 'truTV', 'TNT', 'TBS', 'NFL Network', 'YouTube', 'Fubo', 'Sling', 'Hulu'];
+  function gtwSectionsOf(a) {
+    return (a.sections || []).filter(function (s) { return /^game_\d+$/.test(s.key); });
+  }
+  function gtwPartsOf(body) {
+    /* the six labelled parts, each to the next label */
+    var hits = GTW_PARTS.map(function (P) { var m = P.re.exec(body); return m ? { key: P.key, at: m.index } : null; }).filter(Boolean).sort(function (x, y) { return x.at - y.at; });
+    var out = {};
+    hits.forEach(function (h, i) { out[h.key] = body.slice(h.at, i + 1 < hits.length ? hits[i + 1].at : body.length); });
+    return out;
+  }
+  function gtwChecks(a, o, now, ig, ed) {
+    var R = o.research || {}, ms = R.matchups || [];
+    var secs = gtwSectionsOf(a);
+    if (!GTW_OK) { ig('gtw_engine', 'EDIT.GTW_ENGINE', 'fail', 'The matchup and broadcast layers ran', 'lib/edgedesk_matchup.js or lib/edgedesk_broadcast.js did not load: nothing about the games can be verified'); return; }
+    /* a fixture never publishes */
+    ig('not_fixture', 'EDIT.FIXTURE', R.fixture ? 'fail' : 'pass', 'Built from live research, not a test fixture', R.fixture ? 'these packets are a historical test fixture (' + R.fixture + '); an article built from them can never be published' : null);
+    /* which packet each section is about: by its heading, never by position alone */
+    var rows = secs.map(function (s) {
+      var h = String(s.heading || '') + '\n' + s.body.slice(0, 200);
+      var m = ms.filter(function (x) { return h.indexOf(x.identity.home) >= 0 && h.indexOf(x.identity.away) >= 0; })[0] || null;
+      return { s: s, m: m, parts: gtwPartsOf(s.body) };
+    });
+    var unknown = rows.filter(function (r) { return !r.m; }).map(function (r) { return r.s.key; });
+    var ids = rows.filter(function (r) { return r.m; }).map(function (r) { return r.m.game_id; });
+    var dupIds = ids.filter(function (id, i) { return ids.indexOf(id) !== i; });
+    ig('duplicate_matchup', 'EDIT.DUPLICATE_MATCHUP', dupIds.length || unknown.length ? 'fail' : 'pass', 'Each game appears once, and every game section is a researched game',
+      (dupIds.length ? 'featured twice: ' + uniq(dupIds).map(function (id) { return ms.filter(function (m) { return m.game_id === id; })[0].identity.heading; }).join(', ') : '') + (unknown.length ? (dupIds.length ? '; ' : '') + 'no research packet for ' + unknown.join(', ') : '') || null);
+    var missingGames = ms.filter(function (m) { return ids.indexOf(m.game_id) < 0; }).map(function (m) { return m.identity.heading; });
+    if (missingGames.length) ig('games_covered', 'EDIT.SECTIONS', 'fail', 'Every selected game has its section', 'no section for ' + missingGames.join(', '));
+    /* 1 · the reasoning gate, per game */
+    var gateBad = ms.filter(function (m) { return !(m.gate && m.gate.ok); }).map(function (m) { return m.identity.heading + ' (' + ((m.gate && m.gate.missing) || []).concat((m.gate && m.gate.blocking) || []).map(function (x) { return x.code; }).join(', ') + ')'; });
+    ig('reasoning_gate', 'EDIT.REASONING', gateBad.length ? 'fail' : 'pass', 'Every game answers the six questions (why watch, deciding matchup, evidence, projection, why it could be wrong, what to watch)', gateBad.length ? gateBad.join('; ') : null);
+    /* 2 · six parts in every section */
+    var partBad = [];
+    rows.forEach(function (r) { var miss = GTW_PARTS.filter(function (P) { return !r.parts[P.key]; }).map(function (P) { return P.key; }); if (miss.length) partBad.push((r.m ? r.m.identity.heading : r.s.key) + ': ' + miss.join(', ')); });
+    ig('six_parts', 'EDIT.SECTIONS', partBad.length ? 'fail' : 'pass', 'Every game has all six parts (where to watch, why it matters, key matchup, projection, upset potential, what to watch)', partBad.length ? 'missing ' + partBad.join('; ') : null);
+    /* 3 · two independent, matchup-relevant facts written into each section
+       (the projection never counts) */
+    var factBad = [], factCount = {};
+    rows.forEach(function (r) {
+      if (!r.m) return;
+      var body = stripForNumbers(r.s.body);
+      var have = {}; numbersIn(body).forEach(function (n) { have[String(+n.toFixed(2))] = 1; });
+      var used = (r.m.facts || []).filter(function (f) {
+        if (!f.independent) return false;
+        var nums = (f.numbers || []).filter(function (x) { return isNum(x) && Math.abs(x) >= 1; }).slice(0, 2);
+        if (!nums.length) return f.kind === 'qb_availability' && (f.text && (r.s.body.indexOf(f.text) >= 0 || r.s.body.indexOf(f.alt) >= 0));
+        return nums.every(function (x) { return have[String(+(+x).toFixed(2))] || have[String(+r1(x).toFixed(2))]; }) && (r.s.body.indexOf(f.team) >= 0);
+      });
+      var relevant = used.filter(function (f) { return f.kind === 'unit' || f.kind === 'qb' || f.kind === 'qb_split' || f.kind === 'turnovers' || f.kind === 'availability' || f.kind === 'form' || f.kind === 'result' || f.kind === 'qb_availability'; });
+      factCount[r.m.game_id] = relevant.length;
+      if (relevant.length < (MATCH ? MATCH.CONFIG.min_independent_facts : 2)) factBad.push(r.m.identity.heading + ' (' + relevant.length + ')');
+    });
+    ig('facts_per_game', 'EDIT.FACTS_PER_GAME', factBad.length ? 'fail' : 'pass', 'At least two independent, verifiable facts per game, besides the projection', factBad.length ? 'too few: ' + factBad.join(', ') : null);
+    /* 4 · where to watch: only the verified network, and only when it is
+       CONFIRMED and fresh at this moment */
+    var held = [], wrongNet = [];
+    rows.forEach(function (r) {
+      if (!r.m) return;
+      var b = r.m.broadcast || {};
+      var rec = { status: b.status, verified_at: b.verified_at, kickoff: r.m.schedule.kickoff };
+      var pubNow = BCAST.publishable(Object.assign({}, rec, { networks: b.networks || [], streaming: b.streaming || [], regional: b.regional || [] }), now);
+      if (!pubNow.ok) held.push(r.m.identity.heading + ': ' + pubNow.text);
+      var allowed = [].concat(b.publishable ? (b.networks || []) : [], b.publishable ? (b.streaming || []).map(function (x) { return x.service; }) : [], b.publishable ? (b.regional || []).map(function (x) { return x.network; }) : []);
+      var where = (r.parts.where || '') + '\n' + (r.parts.why || '').slice(0, 0);
+      /* the source line names ESPN as a SOURCE, not a network */
+      var scan = where.replace(/\*?Broadcast verified[^\n]*/g, ' ').replace(/ESPN’s (?:public )?scoreboard(?: listing)?|ESPN's (?:public )?scoreboard(?: listing)?|the ESPN app|an ESPN subscription/g, ' ');
+      NETWORK_WORDS.forEach(function (nw) {
+        var re = new RegExp('(^|[^A-Za-z0-9])(' + nw + ')(?![A-Za-z0-9+])', 'g'), mm;
+        while ((mm = re.exec(scan))) {
+          var name = BCAST.normalizeNetwork(mm[2].replace(/\\/g, ''));
+          if (!allowed.some(function (x) { return BCAST.normalizeNetwork(x) === name; })) wrongNet.push(r.m.identity.heading + ': ' + name);
+        }
+      });
+      if (/the ESPN app/.test(where) && !allowed.some(function (x) { return x === 'the ESPN app'; })) wrongNet.push(r.m.identity.heading + ': the ESPN app');
+    });
+    /* the schedule table, too */
+    var guide = (a.sections || []).filter(function (s) { return s.key === 'watch_guide'; })[0];
+    if (guide) String(guide.body).split('\n').forEach(function (line) {
+      var m = ms.filter(function (x) { return line.indexOf(x.identity.home) >= 0 && line.indexOf(x.identity.away) >= 0; })[0];
+      if (!m) return;
+      var b = m.broadcast || {}, allowed = b.publishable ? (b.networks || []) : [];
+      NETWORK_WORDS.forEach(function (nw) {
+        var re = new RegExp('(^|[^A-Za-z0-9])(' + nw + ')(?![A-Za-z0-9+])', 'g'), mm;
+        while ((mm = re.exec(line))) { var name = BCAST.normalizeNetwork(mm[2].replace(/\\/g, '')); if (!allowed.some(function (x) { return BCAST.normalizeNetwork(x) === name; })) wrongNet.push(m.identity.heading + ' (schedule table): ' + name); }
+      });
+    });
+    ig('where_to_watch', 'EDIT.WHERE_TO_WATCH', wrongNet.length ? 'fail' : 'pass', 'Every network and streaming service named is the verified one', wrongNet.length ? 'not verified for that game: ' + uniq(wrongNet).join(', ') : null);
+    ig('broadcast_verified', 'EDIT.BROADCAST', held.length ? 'fail' : 'pass', 'Every broadcast is verified and fresh at this moment', held.length ? 'held: ' + held.join('; ') : null);
+    /* 5 · kickoff times: the verified time, in ET and CT, and no other clock */
+    var kickBad = [];
+    rows.forEach(function (r) {
+      if (!r.m) return;
+      var w = gtwWhen(r.m), where = r.parts.where || '';
+      if (!w) { kickBad.push(r.m.identity.heading + ': no verified kickoff'); return; }
+      if (where.indexOf(w.et) < 0 || where.indexOf(w.ct) < 0) kickBad.push(r.m.identity.heading + ': the section does not give ' + w.et + ' and ' + w.ct);
+      var clocks = (where.replace(/\*?Broadcast verified[^\n]*/g, ' ').replace(/Schedule change:[^\n]*/g, ' ').match(/\b(?:\d{1,2}(?::\d{2})? ?(?:a\.m\.|p\.m\.|am|pm)|noon) [ECMP]T\b/gi) || []);
+      var change = r.m.schedule.schedule_change;
+      clocks.forEach(function (c) {
+        if (c === w.et || c === w.ct) return;
+        if (change) return; /* a verified move prints the old time once */
+        kickBad.push(r.m.identity.heading + ': prints ' + c);
+      });
+    });
+    ig('kickoff_times', 'EDIT.KICKOFF_TIMES', kickBad.length ? 'fail' : 'pass', 'Each game gives its verified kickoff in ET and CT, and no other time', kickBad.length ? uniq(kickBad).join('; ') : null);
+    /* 6 · no generic filler, and no sentence repeated across games */
+    var filler = [];
+    var allBody = (a.sections || []).map(function (s) { return s.body; }).join('\n\n');
+    GTW_FILLER.forEach(function (re) { var mm = re.exec(allBody); if (mm) filler.push('“' + mm[0] + '”'); });
+    var seenS = {}, repeats = [];
+    rows.forEach(function (r) {
+      gtwSentences(r.s.body.replace(r.parts.where || '', ' ')).forEach(function (sent) {
+        var norm = sent; if (r.m) [r.m.identity.home, r.m.identity.away].forEach(function (t) { norm = norm.split(t).join('TEAM'); });
+        /* a sentence carrying the game's own numbers is data; only a
+           number-free sentence repeated across games is boilerplate */
+        if (/\d/.test(sent)) return;
+        norm = norm.replace(/\s+/g, ' ').trim();
+        if (norm.length < 50 || /^\*\*[^*]+\*\*\s*$|^- \*\*|^\*Broadcast|^- \*Broadcast/.test(sent.trim())) return;
+        if (seenS[norm] && seenS[norm] !== r.s.key) repeats.push(sent.trim().slice(0, 90));
+        seenS[norm] = seenS[norm] || r.s.key;
+      });
+    });
+    ig('generic_filler', 'EDIT.GENERIC', filler.length ? 'fail' : 'pass', 'No generic filler', filler.length ? filler.join(', ') : null);
+    add2(ig, 'repeated_sentences', repeats.length > 2 ? 'fail' : (repeats.length ? 'warn' : 'pass'), 'No boilerplate repeated from game to game', repeats.length ? repeats.length + ' repeated: “' + repeats[0] + '…”' : null);
+    /* 7 · an upset case only where the packet makes one */
+    var upBad = [];
+    rows.forEach(function (r) {
+      if (!r.m) return;
+      var u = (r.m.arguments || {}).upset || {}, part = r.parts.upset || '';
+      var claims = /\b(?:upset (?:path|alert|special|pick)|could (?:pull (?:off )?the|spring the) upset|the case for (?:it|an upset)|here’s how|here's how)\b/i.test(part);
+      if (!u.credible && claims) upBad.push(r.m.identity.heading + ': writes an upset case the evidence does not make');
+      if (u.credible) {
+        var nums = {}; numbersIn(stripForNumbers(part)).forEach(function (n) { nums[String(+n.toFixed(2))] = 1; });
+        var backed = (u.conditions || []).some(function (c) { return (c.facts || []).some(function (id) { var f = (r.m.facts || []).filter(function (x) { return x.id === id; })[0]; return f && (f.numbers || []).filter(function (x) { return Math.abs(x) >= 1; }).slice(0, 1).every(function (x) { return nums[String(+(+x).toFixed(2))] || nums[String(+r1(x).toFixed(2))]; }); }); });
+        if (!backed) upBad.push(r.m.identity.heading + ': the upset case cites none of its evidence');
+      }
+    });
+    ig('upset_supported', 'EDIT.UPSET_SUPPORTED', upBad.length ? 'fail' : 'pass', 'Upset cases only where the evidence makes one, with that evidence', upBad.length ? upBad.join('; ') : null);
+    /* 8 · injuries: a player given a status is on the official report with that status */
+    var injBad = [];
+    var listed = {};
+    ms.forEach(function (m) { ['home', 'away'].forEach(function (s) { var av = m.availability && m.availability[s]; ((av && av.listed) || []).forEach(function (x) { listed[x.player] = x.status; }); }); });
+    var known = {};
+    ms.forEach(function (m) { ['home', 'away'].forEach(function (s) { var q = m.quarterbacks && m.quarterbacks[s]; ((q && q.lines) || []).forEach(function (l) { known[l.player] = 1; }); }); });
+    blockSentencesOf(allBody).forEach(function (sent) {
+      var st = /\b(?:ruled out|is out|are out|will not play|won’t play|won't play|questionable|doubtful|injured|out for the (?:game|season)|day-to-day|game-time decision)\b/i.exec(sent);
+      if (!st) return;
+      Object.keys(known).concat(Object.keys(listed)).forEach(function (pl) {
+        if (sent.indexOf(pl) < 0) return;
+        if (/\bnot on the\b|does not appear|appears? on the|nor .* appears/i.test(sent) && !listed[pl]) return;
+        if (!listed[pl]) injBad.push(pl + ' is given a status but is not on the official report');
+      });
+    });
+    var people = (sentenceText(allBody).match(/\b[A-Z][a-z]+(?:[-'’][A-Z][a-z]+)? [A-Z][a-z]+(?:[-'’][A-Z][a-z]+)?\b(?= (?:is|was) (?:out|questionable|doubtful|injured|ruled out))/g) || []);
+    people.forEach(function (pl) { if (!listed[pl]) injBad.push(pl + ': an injury status with no official report on file'); });
+    ig('injury_claims', 'EDIT.INJURY_VERIFIED', injBad.length ? 'fail' : 'pass', 'Every injury status is from the official availability report', injBad.length ? uniq(injBad).slice(0, 5).join('; ') : null);
+    /* 9 · attribution: the publisher edition carries EdgeDesk's credit line;
+       EdgeDesk's own edition links its research and the free signup */
+    if (FORMATS[a.format] && FORMATS[a.format].edition === 'first_party') {
+      var links = (allBody.match(/\]\(https:\/\/edgedesksports\.com\/research\/cfb\/[^)]*\)/g) || []).length;
+      var cta = /\/newsletter\//.test(allBody);
+      ig('first_party_links', 'EDIT.FIRST_PARTY', links >= ms.length && cta ? 'pass' : 'fail', 'EdgeDesk edition links each game’s research and the free signup', (links < ms.length ? links + ' research links for ' + ms.length + ' games; ' : '') + (cta ? '' : 'no free-signup link'));
+    } else {
+      var att = attributionFor(a, o, { publisher: { editorial: ed } });
+      ig('publisher_attribution', 'EDIT.ATTRIBUTION', /Research by EdgeDesk Sports/.test(att) ? 'pass' : 'fail', 'EdgeDesk is credited in the publisher edition', null);
+    }
+  }
+  /* sentences without splitting at "p.m.", "Oct." or "No." */
+  var ABBR = /\b(a\.m|p\.m|vs|No|Jan|Feb|Aug|Sept|Oct|Nov|Dec|Mon|Tue|Wed|Thu|Fri|Sat|Sun|St|Jr|Sr)\./g;
+  function gtwSentences(t) {
+    return blockSentencesOf(String(t).replace(ABBR, function (m) { return m.replace(/\./g, '\u2024'); })).map(function (x) { return x.replace(/\u2024/g, '.'); });
+  }
+  function sentenceText(t) { return String(t || '').replace(/\*+/g, ''); }
+  function add2(ig, id, status, label, detail) { ig(id, 'EDIT.GENERIC', status, label, detail); }
+
+  /* THE EDITORIAL REVIEW REPORT: per game, the six answers, the facts used,
+     the broadcast, and the verdict — REJECT (fails an essential requirement:
+     regenerate or discard), HOLD (verify a broadcast or a kickoff and run the
+     checks again), or READY (the owner may approve). */
+  var GTW_HOLD_RULES = ['EDIT.BROADCAST', 'EDIT.KICKOFF_TIMES'];
+  var GTW_REJECT_RULES = ['EDIT.REASONING', 'EDIT.FACTS_PER_GAME', 'EDIT.SECTIONS', 'EDIT.DUPLICATE_MATCHUP', 'EDIT.WHERE_TO_WATCH', 'EDIT.GENERIC', 'EDIT.UPSET_SUPPORTED',
+    'EDIT.INJURY_VERIFIED', 'EDIT.NUMBERS', 'EDIT.CONTRADICTION', 'EDIT.QB_UNCERTAINTY', 'EDIT.FIXTURE', 'EDIT.ATTRIBUTION', 'EDIT.FIRST_PARTY', 'EDIT.GTW_ENGINE', 'EDIT.ENGINE'];
+  function reviewReport(a, o, report) {
+    var R = o.research || {}, ms = R.matchups || [];
+    var checks = (report && report.checks) || [], blocking = (report && report.integrity && report.integrity.blocking) || [];
+    var fails = checks.filter(function (c) { return c.status === 'fail'; });
+    var essential = fails.filter(function (c) { return ['numbers_in_evidence', 'no_recommendation', 'teams_in_evidence', 'structure', 'empty_sections', 'no_stringified_nothing'].indexOf(c.id) >= 0; });
+    var rejectR = blocking.filter(function (b) { return GTW_REJECT_RULES.indexOf(b.rule_id) >= 0; });
+    var holdR = blocking.filter(function (b) { return GTW_HOLD_RULES.indexOf(b.rule_id) >= 0; });
+    var other = blocking.filter(function (b) { return GTW_REJECT_RULES.indexOf(b.rule_id) < 0 && GTW_HOLD_RULES.indexOf(b.rule_id) < 0; });
+    var verdict = essential.length || rejectR.length ? 'REJECT' : (holdR.length || other.length || fails.length ? 'HOLD' : 'READY');
+    var secs = gtwSectionsOf(a);
+    var games = ms.map(function (m) {
+      var s = secs.filter(function (x) { var h = String(x.heading || '') + x.body.slice(0, 200); return h.indexOf(m.identity.home) >= 0 && h.indexOf(m.identity.away) >= 0; })[0];
+      var g = m.gate || {};
+      return { game_id: m.game_id, heading: m.identity.heading, section: s ? s.key : null,
+        answers: g.answers || null, independent_facts: g.independent_facts, missing: (g.missing || []).map(function (x) { return x.code; }),
+        deciding: m.arguments && m.arguments.deciding ? m.arguments.deciding.claim : null,
+        upset: m.arguments && m.arguments.upset ? (m.arguments.upset.credible ? 'case on the evidence' : 'no case: ' + m.arguments.upset.reason) : null,
+        broadcast: { status: m.broadcast.status, tier: m.broadcast.tier, network: m.broadcast.network, verified_at: m.broadcast.verified_at, publishable: m.broadcast.publishable, hold: m.broadcast.hold_reason },
+        kickoff: gtwWhen(m), unresolved: (m.unresolved || []).map(function (u) { return u.text; }) };
+    });
+    return { schema: 'edgedesk_editorial_review_v1', format: a.format, verdict: verdict,
+      reject: essential.map(function (c) { return { id: c.id, detail: c.detail }; }).concat(rejectR.map(function (b) { return { id: b.rule_id, detail: b.explanation }; })),
+      hold: holdR.concat(other).map(function (b) { return { id: b.rule_id, detail: b.explanation }; }),
+      warnings: checks.filter(function (c) { return c.status === 'warn'; }).map(function (c) { return { id: c.id, detail: c.detail }; }),
+      games: games, selection: R.selection ? { report: R.selection.report, rejected: R.selection.rejected } : null,
+      checked_at: report ? report.checked_at : null };
+  }
+
+  /* HOW INFORMATIVE an article is: the independent facts it states and
+     their variety, per game — the measure the regression compares with the
+     old projection-only preview */
+  function informativeness(a, o) {
+    var R = o.research || {}, ms = R.matchups || [];
+    var body = (a.sections || []).map(function (s) { return s.body; }).join('\n\n');
+    var have = {}; numbersIn(stripForNumbers(body)).forEach(function (n) { have[String(+n.toFixed(2))] = 1; });
+    var perGame = ms.map(function (m) {
+      var used = (m.facts || []).filter(function (f) { return f.independent && (f.numbers || []).filter(function (x) { return Math.abs(x) >= 1; }).slice(0, 2).every(function (x) { return have[String(+(+x).toFixed(2))] || have[String(+r1(x).toFixed(2))]; }) && (f.numbers || []).some(function (x) { return Math.abs(x) >= 1; }) && body.indexOf(f.team) >= 0; });
+      return { game_id: m.game_id, heading: m.identity.heading, facts: used.length, kinds: uniq(used.map(function (f) { return f.kind; })) };
+    });
+    var where = GTW_PARTS[0].re.test(body);
+    return { games: perGame.length, independent_facts: perGame.reduce(function (x, g) { return x + g.facts; }, 0),
+      min_facts_per_game: perGame.length ? Math.min.apply(null, perGame.map(function (g) { return g.facts; })) : 0,
+      fact_kinds: uniq([].concat.apply([], perGame.map(function (g) { return g.kinds; }))), where_to_watch: where,
+      words: wordCount(body), per_game: perGame };
   }
 
   /* 5-word shingle Jaccard similarity */
@@ -4105,6 +5902,8 @@
     var league = o && o.league === 'nfl' ? 'NFL' : 'college football';
     var line = 'Research by EdgeDesk Sports, an independent sports research platform. Projections are from EdgeDesk’s ' + league + ' model' + (asOf ? ' as of ' + whenText(asOf) : '') + '.';
     if (ed.links_allowed === false) return line + (ed.attribution ? ' ' + ed.attribution : '');
+    /* EdgeDesk's own edition: its own site, no campaign tags */
+    if (a && FORMATS[a.format] && FORMATS[a.format].edition === 'first_party') return line + ' Every game’s full research is on [EdgeDesk’s free board](' + SITE + '/today/).';
     var landing = ctx.landing || SITE + '/today/';
     return line + ' See every game’s numbers at [EdgeDesk](' + tagLink(landing, utmFor(pub, a, ctx.campaign)) + ').' + (ed.attribution ? ' ' + ed.attribution : '');
   }
@@ -4112,7 +5911,9 @@
   /* ctx: { publisher, campaign, frontMatter: bool, opportunity } */
   function toMarkdown(a, ctx) {
     ctx = ctx || {};
-    var utm = utmFor(ctx.publisher, a, ctx.campaign);
+    /* EdgeDesk's own edition links within its own site: no campaign tags,
+       which would overwrite the reader's real source */
+    var utm = FORMATS[a.format] && FORMATS[a.format].edition === 'first_party' ? null : utmFor(ctx.publisher, a, ctx.campaign);
     var out = [];
     if (ctx.frontMatter) {
       out.push('---');
@@ -4505,6 +6306,14 @@
       return r;
     })());
     item('language', 'No pick, lock or value language', st(['no_recommendation', 'projection_not_value']));
+    if (FORMATS[row.format] && FORMATS[row.format].edition) {
+      /* re-verified at this moment: a broadcast confirmed on Tuesday is held
+         on Friday until it is checked again */
+      var gtwNow = opts.opportunity && opts.opportunity.research && opts.opportunity.research.matchups ? opts.opportunity.research.matchups : null;
+      var held = gtwNow && BCAST ? gtwNow.filter(function (m) { return !BCAST.publishable({ status: m.broadcast.status, verified_at: m.broadcast.verified_at, kickoff: m.schedule.kickoff }, isNum(opts.now) ? opts.now : Date.now()).ok; }) : null;
+      item('broadcasts', 'Every broadcast verified and fresh now; kickoffs in ET and CT', held && held.length ? { status: 'fail', detail: 'verify again: ' + held.map(function (m) { return m.identity.heading + ' (' + (m.broadcast.hold_reason || m.broadcast.status) + ')'; }).join('; ') } : st(['broadcast_verified', 'where_to_watch', 'kickoff_times']));
+      item('editorial', 'Six answers and two independent facts per game; no filler, duplicates or unsupported upset cases', st(['reasoning_gate', 'six_parts', 'facts_per_game', 'generic_filler', 'duplicate_matchup', 'upset_supported', 'injury_claims', 'not_fixture']));
+    }
     item('seo', 'Headline, slug, meta description and keyword', st(['headline', 'seo_meta', 'seo_slug', 'seo_keyword']));
     var x = row.title ? exportCheck({ format: row.format, title: row.title, slug: row.slug, meta_description: row.meta_description, standfirst: row.standfirst,
       primary_keyword: row.primary_keyword, secondary_keywords: row.secondary_keywords, sections: row.sections }, row, opts.ctx || {}) : null;
@@ -4633,7 +6442,34 @@
     'Formatting: section bodies are Markdown — paragraphs, "### " game headings inside the games section, "- " bullets, **bold**, [text](https://...) links. Do not write the disclaimer or the attribution footer; EdgeDesk adds both.'
   ].join('\n');
 
-  function compactPacket(o) {
+  /* a games-to-watch packet for the writer: the verified facts, the
+     arguments and the where-to-watch block it must copy — not the raw
+     pairings, cards and listings it was built from (fewer tokens, nothing
+     the writer could misuse). section: only that game's packet. */
+  function compactMatchup(m, i, ed) {
+    var A = m.arguments || {}, md = m.model || {};
+    return {
+      section: 'game_' + (i + 1), heading: gtwHeading(m, i, ed), where_to_watch_block: gtwWhere(m, ed),
+      facts: (m.facts || []).filter(function (f) { return f.kind !== 'opposition'; }).map(function (f) { return { id: f.id, team: f.team, kind: f.kind, independent: f.independent, text: ed === 'first_party' ? f.alt : f.text }; }),
+      why_watch: (A.why_watch || []).filter(function (w) { return !w.model; }).map(function (w) { return w.text; }),
+      deciding: A.deciding ? { claim: ed === 'first_party' ? A.deciding.alt : A.deciding.claim, facts: A.deciding.facts } : null,
+      projection: md.available ? { line: md.favorite ? md.favorite + ' by ' + oneDp(md.margin) : 'pick’em', favorite_win_pct: md.fav_win_pct, total: md.total, reliability: md.reliability,
+        market: md.gap_state === 'COMPARABLE' ? { line: md.market.text, book: md.market.book, captured: whenText(ts(md.market.captured_at)), gap: md.gap ? oneDp(md.gap.points) : null } : { state: md.gap_state, captured: md.market && md.market.captured_at ? whenText(ts(md.market.captured_at)) : null },
+        inputs: (md.inputs || []).map(function (x) { return x.label + ' (' + oneDp(x.points) + ' points toward ' + x.favors + ')'; }) } : null,
+      why_model_could_be_wrong: (A.model_wrong || []).map(function (w) { return w.text; }),
+      upset: A.upset ? { credible: !!A.upset.credible, underdog: A.upset.team, underdog_win_pct: A.upset.dog_win_pct, case_for: (A.upset.conditions || []).map(function (c) { return c.text; }), case_against: (A.upset.counter || []).map(function (c) { return c.text; }), no_case_reason: A.upset.credible ? null : A.upset.reason } : null,
+      what_to_watch: (A.watch_for || []).map(function (w) { return w.text; }),
+      limits: m.limits || []
+    };
+  }
+  function compactPacket(o, ctx) {
+    ctx = ctx || {};
+    if (o.kind === 'games_to_watch') {
+      var ed = FORMATS[ctx.format] && FORMATS[ctx.format].edition || 'publisher';
+      var ms = (o.research.matchups || []).map(function (m, i) { return compactMatchup(m, i, ed); });
+      if (ctx.section && /^game_\d+$/.test(ctx.section)) ms = ms.filter(function (x) { return x.section === ctx.section; });
+      return { league: o.league, season: o.season, week: o.week, kind: o.kind, edition: ed, as_of: o.research.as_of, games: ms, limitations: o.research.limitations || [] };
+    }
     /* what the writer may use: the research minus internal identifiers */
     return {
       league: o.league, season: o.season, week: o.week, kind: o.kind, as_of: o.research.as_of,
@@ -4664,7 +6500,7 @@
       ed.seo_requirements ? 'SEO requirements: ' + ed.seo_requirements : null
     ].filter(Boolean).join('\n') : 'PUBLISHER: none (EdgeDesk house style)';
     var task = ctx.section
-      ? 'Rewrite ONLY the section with key "' + ctx.section + '". Return the full article object with every other section copied unchanged from the CURRENT DRAFT.'
+      ? 'Rewrite ONLY the section with key "' + ctx.section + '". Return the article object with the title, meta description and standfirst copied unchanged and "sections" holding that one section; EdgeDesk keeps every other section as it is.'
       : 'Write the full article. Keep the section keys and order of the CURRENT DRAFT (you may improve every heading and every word). The deterministic CURRENT DRAFT is accurate but plain: make it read like good sports journalism without adding facts.';
     var user = [
       task,
@@ -4672,15 +6508,46 @@
       'SEO: primary keyword "' + (o.seo && o.seo.primary_keyword) + '"; use it naturally in the headline and first paragraph, never stuffed. Meta description 120–155 characters.',
       pubTxt,
       ctx.objections && ctx.objections.length ? 'YOUR PREVIOUS DRAFT WAS REJECTED FOR: ' + ctx.objections.join(' | ') + '. Fix exactly these.' : null,
-      'RESEARCH PACKET (the only facts you may use):\n' + JSON.stringify(compactPacket(o)),
-      'CURRENT DRAFT:\n' + JSON.stringify({ title: base.title, meta_description: base.meta_description, standfirst: base.standfirst, sections: base.sections })
+      o.kind === 'games_to_watch' ? GTW_RULES(FORMATS[format] && FORMATS[format].edition) : null,
+      'RESEARCH PACKET (the only facts you may use):\n' + JSON.stringify(compactPacket(o, { format: format, section: ctx.section })),
+      'CURRENT DRAFT:\n' + JSON.stringify({ title: base.title, meta_description: base.meta_description, standfirst: base.standfirst,
+        /* a one-section rewrite carries only that section: the rest is kept from the draft */
+        sections: ctx.section ? base.sections.filter(function (x) { return x.key === ctx.section; }) : base.sections })
     ].filter(Boolean).join('\n\n');
     return {
       system: AI_SYSTEM,
       messages: [{ role: 'user', content: user }],
-      max_tokens: 16000,
+      /* a one-section rewrite cannot need the whole article's output budget,
+         and the reservation is made at this bound */
+      max_tokens: ctx.section ? 4000 : 16000,
       output_config: { effort: 'medium', format: { type: 'json_schema', schema: AI_SCHEMA } }
     };
+  }
+
+  function GTW_RULES(ed) {
+    var L = ed === 'first_party'
+      ? ['**Kickoff and broadcast.**', '**The stakes.**', '**Where it’s decided.**', '**EdgeDesk’s number.**', '**If the underdog wins, here’s how.** (or **Why there’s no upset case.**)', '**Watch for.**']
+      : ['**Where to watch**', '**Why it matters.**', '**The key matchup.**', '**EdgeDesk’s projection.**', '**Upset potential.**', '**What to watch**'];
+    return ['FIVE GAMES TO WATCH — RULES FOR THIS FORMAT (each one is checked by machine):',
+      'a. Every game section (game_1 … game_N) keeps these six bold labels, in this order: ' + L.join(', ') + '.',
+      'b. Copy each game’s where_to_watch_block exactly. Never name any other TV network or streaming service, and never change a kickoff time.',
+      'c. Each game section states at least two facts whose "independent" is true, with their numbers exactly as written. The projection never counts as one.',
+      'd. Write an upset case only where upset.credible is true, using case_for and case_against; otherwise say why there is no case (no_case_reason).',
+      'e. Give an injury or availability status only for players named in an availability fact, as the fact states it.',
+      'f. No generic filler ("anything can happen", "statement game", "must-win", "something has to give"). Each game needs its own sentences.',
+      ed === 'first_party' ? 'g. Keep every link to edgedesksports.com research pages and the free newsletter signup.' : 'g. Write for a general sports audience: explain each number in plain words.'].join('\n');
+  }
+  /* which game sections a failed check names, so only those are rewritten */
+  function failingSections(report, a) {
+    var out = [];
+    var bad = ((report && report.checks) || []).filter(function (c) { return c.status === 'fail' && c.detail; });
+    gtwSectionsOf(a).forEach(function (s) {
+      var h = String(s.heading || '').replace(/^\d+\.\s*/, '').replace(/No\. \d+ /g, '').replace(/:.*$/, '');
+      if (bad.some(function (c) { return c.detail.indexOf(h) >= 0; })) out.push(s.key);
+    });
+    /* a failure that names no game is the whole article's */
+    var global = bad.some(function (c) { return !gtwSectionsOf(a).some(function (s) { var h = String(s.heading || '').replace(/^\d+\.\s*/, '').replace(/No\. \d+ /g, '').replace(/:.*$/, ''); return c.detail.indexOf(h) >= 0; }); });
+    return { sections: out, whole_article: global };
   }
 
   /* message: the Messages API reply. → { ok, article?, reason } */
@@ -4744,10 +6611,12 @@
     news: { parseFeed: parseFeed, match: matchNews, classify: classifyNews },
     discover: discover, seoBrief: seoBrief, outline: outline, draft: draft,
     evidence: evidenceOf, validate: validate, similarity: similarity, teamsMentioned: teamsMentioned,
+    gamesToWatch: { OK: GTW_OK, PARTS: GTW_PARTS, HOLD_RULES: GTW_HOLD_RULES, REJECT_RULES: GTW_REJECT_RULES, matchupsOf: matchupsOf, sections: gtwSections, headline: gtwHeadline,
+      review: reviewReport, informativeness: informativeness, when: gtwWhen },
     campaignCode: campaignCode, tagLink: tagLink, attribution: attributionFor,
     toMarkdown: toMarkdown, toHtml: toHtml, mdToHtml: mdToHtml, seoSheet: seoSheet, toDocx: toDocx, DOCX_TYPE: DOCX_TYPE,
     exportCheck: exportCheck, snapshotOf: snapshotOf, snapshotLine: snapshotLine, compareCopy: compareCopy, readiness: readiness, numbersFingerprint: numbersFingerprint,
-    ai: { SCHEMA: AI_SCHEMA, SYSTEM: AI_SYSTEM, buildRequest: buildRequest, parseReply: parseReply, objections: objections },
+    ai: { SCHEMA: AI_SCHEMA, SYSTEM: AI_SYSTEM, buildRequest: buildRequest, parseReply: parseReply, objections: objections, failingSections: failingSections },
     cost: { PRICES: PRICES, CEILING: PRICE_CEILING, FALLBACK_MODELS: FALLBACK_MODELS, priceOf: priceOf, estimate: costEstimate, measured: costMeasured, requestKey: costRequestKey, REFUSALS: COST_REFUSALS },
     util: { slugify: slugify, wordCount: wordCount, hash: hash, whenText: whenText, esc: esc, canTransition: function (from, to) { return (TRANSITIONS[from] || []).indexOf(to) >= 0; } }
   };

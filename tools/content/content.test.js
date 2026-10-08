@@ -56,6 +56,9 @@ function section(t) { console.log('\n' + t); }
 
 const NOW = Date.parse('2026-10-08T17:30:00Z');
 const art = ART.load();
+/* the hourly matchup packets move with the week; Five Games to Watch is
+   tested from its frozen fixture in games_to_watch.test.js */
+art.packets = null;
 const TL = ART.teamLists(art);
 const snap = CE.research.fromArtifacts(art, { now: NOW });
 const SR = CE.PUBLISHER_TEMPLATES['stadium-rant'];

@@ -260,7 +260,7 @@ function build() {
     articles: pub.slice().sort((a, b) => String(a.slug).localeCompare(String(b.slug))).map(r => ({
       game_id: r.game_id != null ? String(r.game_id) : null, sport: r.sport, sport_slug: r.sport_slug,
       type: r.article_type || 'pregame', slug: r.slug, url: R.slashed(r.canonical_url),
-      title: r.away_team + ' vs. ' + r.home_team, game_time: r.game_time || null,
+      title: r.page_label || (r.away_team + ' vs. ' + r.home_team), game_time: r.game_time || null,
       updated_at: lastmod(r)
     }))
   }, null, 1) + '\n');

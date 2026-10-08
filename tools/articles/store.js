@@ -36,6 +36,8 @@ const MODEL = require('./article_model.js');
    is populated before anything reads a record, rather than leaving each CLI
    to remember. See tools/articles/article_model.js registerType(). */
 require('../editorial/postgame_model.js');
+/* and EdgeDesk's own Five Games to Watch (tools/content/first_party.js) */
+require('../content/first_party.js');
 
 const ROOT = path.join(__dirname, '..', '..');
 const DATA = path.join(ROOT, 'articles', 'data');

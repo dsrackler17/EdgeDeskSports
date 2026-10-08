@@ -171,6 +171,8 @@ Search Console (existing import) ───────────────�
 | Conference Race Analysis | one conference's race | intro · the race · games · how to read · limits · bottom line |
 | Upset Watch | underdogs at 30–46% | intro · upsets · how to read · limits · bottom line |
 | Weekly Model Performance Review | the live-forward record (50+ graded games) | intro · the record · where it missed · calibration · how to read · bottom line |
+| Five Games to Watch (publisher edition) | the week's featured games (default 5), each from a verified matchup packet — see [GAMES_TO_WATCH.md](GAMES_TO_WATCH.md) | intro · the schedule at a glance · one section per game (where to watch · why it matters · the key matchup · EdgeDesk's projection · upset potential · what to watch) · how to read · limits · bottom line |
+| Five Games to Watch (EdgeDesk edition) | the same packets, written as EdgeDesk's own page | intro · research navigation · one section per game (kickoff and broadcast · watch for · the stakes · where it's decided · EdgeDesk's number · the upset case) · how to read · limits · follow these games |
 | Publisher-specific | any of the above | the publisher's own section order, tone, length and attribution |
 
 One research event can produce several **angles** (for example *full slate* or *upsets first*). Each angle is its own article. The database allows one live article per research event × publisher × format × angle, and the validator fails a draft that overlaps a sibling article from the same research by 70% or more.

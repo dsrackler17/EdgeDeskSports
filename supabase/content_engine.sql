@@ -377,6 +377,8 @@ returns boolean language sql immutable
 set search_path = pg_catalog, pg_temp as $$
   select (p_from, p_to) in (
     ('draft', 'in_review'), ('draft', 'archived'),
+    -- a draft whose own editorial review is REJECT (content_engine_article_auto_reject)
+    ('draft', 'rejected'),
     ('in_review', 'draft'), ('in_review', 'approved'), ('in_review', 'rejected'), ('in_review', 'archived'),
     ('rejected', 'draft'), ('rejected', 'archived'),
     ('approved', 'ready_to_send'), ('approved', 'in_review'), ('approved', 'draft'), ('approved', 'archived'),
@@ -1782,6 +1784,259 @@ on conflict (slug) do nothing;
 update content_engine.settings set default_publisher = 'stadium-rant' where id = 1 and default_publisher is null;
 
 -- =============================================================================
+-- FIVE GAMES TO WATCH (docs/content-engine/GAMES_TO_WATCH.md). Additive and
+-- idempotent; nothing existing is dropped or rewritten.
+--   · two formats (publisher and EdgeDesk editions) and one opportunity kind
+--   · content_engine.broadcast_checks: the owner's verification of a game's
+--     network, streaming and any verified schedule change, from an official
+--     source with its URL — append-only; the newest row per game is current
+--   · content_engine_article_auto_reject: the job rejects ITS OWN draft only
+--     when that draft's stored review verdict is REJECT, with the reasons
+--   · the publisher's response (accepted / declined / revisions requested),
+--     recorded apart from publication
+--   · content_engine_template_report: per template — generated, first-pass
+--     approval, auto-rejected, publisher acceptance, external placements,
+--     traffic, research-page visits, registrations, trials, paid subscribers,
+--     generation cost and attributed revenue — measured, never estimated
+-- =============================================================================
+do $c$ begin
+  alter table content_engine.articles drop constraint if exists articles_format_check;
+  alter table content_engine.articles add constraint articles_format_check check (format in ('cfb_weekly_preview', 'nfl_weekly_preview', 'trending_story', 'market_discrepancy', 'publisher_custom', 'weekend_storylines', 'game_deep_dive', 'conference_race', 'upset_watch', 'model_performance_review', 'weekly_games_to_watch', 'weekly_games_to_watch_first_party'));
+  alter table content_engine.opportunities drop constraint if exists opportunities_kind_check;
+  alter table content_engine.opportunities add constraint opportunities_kind_check check (kind in ('weekly_preview', 'upset_watch', 'conference_race', 'market_discrepancy', 'injury_impact', 'trending_story', 'weekend_storylines', 'game_deep_dive', 'model_performance', 'games_to_watch'));
+end $c$;
+
+create table if not exists content_engine.broadcast_checks (
+  id           bigint generated always as identity primary key,
+  game_id      text not null check (game_id ~ '^[0-9]{6,12}$'),
+  season       int not null check (season between 2020 and 2100),
+  network      text check (network is null or length(btrim(network)) between 2 and 40),
+  streaming    jsonb not null default '[]'::jsonb check (jsonb_typeof(streaming) = 'array' and jsonb_array_length(streaming) <= 4),
+  source_url   text not null check (source_url ~ '^https://[^\s]+$' and length(source_url) <= 400),
+  source_kind  text not null check (source_kind in ('conference', 'school', 'network', 'league', 'other_official')),
+  source_name  text not null check (length(btrim(source_name)) between 3 and 120),
+  kickoff      timestamptz,
+  reason       text check (reason is null or length(reason) <= 200),
+  status       text check (status is null or status in ('postponed', 'canceled')),
+  note         text check (note is null or length(note) <= 500),
+  verified_at  timestamptz not null default now(),
+  verified_by  uuid not null,
+  constraint broadcast_check_says_something check (network is not null or kickoff is not null or status is not null),
+  constraint broadcast_change_has_reason check (kickoff is null or reason is not null)
+);
+create index if not exists broadcast_checks_game on content_engine.broadcast_checks (game_id, verified_at desc);
+alter table content_engine.broadcast_checks enable row level security;
+revoke all on content_engine.broadcast_checks from public;
+do $r$ begin
+  execute 'revoke all on content_engine.broadcast_checks from anon, authenticated, service_role';
+exception when undefined_object then null; end $r$;
+drop trigger if exists broadcast_checks_append_only on content_engine.broadcast_checks;
+create trigger broadcast_checks_append_only before update or delete on content_engine.broadcast_checks for each row execute function content_engine.append_only();
+drop trigger if exists broadcast_checks_no_truncate on content_engine.broadcast_checks;
+create trigger broadcast_checks_no_truncate before truncate on content_engine.broadcast_checks for each statement execute function content_engine.append_only();
+
+alter table content_engine.articles add column if not exists publisher_response text;
+alter table content_engine.articles add column if not exists publisher_responded_at timestamptz;
+alter table content_engine.articles add column if not exists publisher_response_note text;
+do $c$ begin
+  alter table content_engine.articles drop constraint if exists articles_publisher_response_check;
+  alter table content_engine.articles add constraint articles_publisher_response_check check (publisher_response is null or publisher_response in ('accepted', 'declined', 'revisions_requested', 'no_response'));
+  alter table content_engine.articles drop constraint if exists articles_publisher_response_note_check;
+  alter table content_engine.articles add constraint articles_publisher_response_note_check check (publisher_response_note is null or length(publisher_response_note) <= 500);
+end $c$;
+
+-- the owner records a verification: the time is the server's, never typed
+create or replace function public.content_engine_broadcast_verify(p jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare v uuid := content_engine.require_owner(); n bigint;
+begin
+  if coalesce(p ->> 'source_url', '') !~ '^https://' then return jsonb_build_object('ok', false, 'reason', 'source_url_required', 'detail', 'a verification needs the official page it came from'); end if;
+  insert into content_engine.broadcast_checks (game_id, season, network, streaming, source_url, source_kind, source_name, kickoff, reason, status, note, verified_by)
+  values (p ->> 'game_id', (p ->> 'season')::int, nullif(btrim(p ->> 'network'), ''), coalesce(p -> 'streaming', '[]'::jsonb), p ->> 'source_url',
+          coalesce(p ->> 'source_kind', 'other_official'), p ->> 'source_name', nullif(p ->> 'kickoff', '')::timestamptz, nullif(btrim(p ->> 'reason'), ''),
+          nullif(p ->> 'status', ''), left(p ->> 'note', 500), v)
+  returning id into n;
+  perform content_engine.log('owner', 'broadcast_verified', null, null, null, jsonb_build_object('game_id', p ->> 'game_id', 'network', p ->> 'network', 'check', n));
+  return jsonb_build_object('ok', true, 'id', n);
+exception when check_violation or not_null_violation or invalid_text_representation or invalid_datetime_format then
+  return jsonb_build_object('ok', false, 'reason', 'invalid', 'detail', sqlerrm);
+end $$;
+
+-- the current verification per game (the newest row), for the job and the page
+create or replace function public.content_engine_broadcast_checks_current(p_days int default 14)
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  perform content_engine.require_actor();
+  return coalesce((select jsonb_agg(jsonb_build_object('game_id', c.game_id, 'season', c.season, 'network', c.network, 'streaming', c.streaming,
+      'source_url', c.source_url, 'source_kind', c.source_kind, 'source_name', c.source_name, 'kickoff', c.kickoff, 'reason', c.reason,
+      'status', c.status, 'verified_at', c.verified_at) order by c.game_id)
+    from (select distinct on (game_id) * from content_engine.broadcast_checks
+           where verified_at > now() - make_interval(days => greatest(1, least(coalesce(p_days, 14), 60)))
+           order by game_id, verified_at desc) c), '[]'::jsonb);
+end $$;
+
+-- AUTO-REJECT: only a draft, only when its own stored review says REJECT;
+-- the schedule may reject only its own untouched drafts
+create or replace function public.content_engine_article_auto_reject(p_id uuid, p_reasons jsonb default '[]'::jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare who text := content_engine.require_actor(); a content_engine.articles;
+begin
+  select * into a from content_engine.articles where id = p_id for update;
+  if a.id is null then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+  if a.status <> 'draft' then return jsonb_build_object('ok', false, 'reason', 'not_a_draft', 'status', a.status); end if;
+  if coalesce(a.checks -> 'review' ->> 'verdict', '') <> 'REJECT' then
+    return jsonb_build_object('ok', false, 'reason', 'not_rejected_by_review', 'detail', 'only a draft whose own editorial review says REJECT is rejected automatically');
+  end if;
+  if who = 'schedule' and (a.created_by <> 'schedule' or a.owner_edited) then return jsonb_build_object('ok', false, 'reason', 'owner_owned'); end if;
+  update content_engine.articles set status = 'rejected' where id = p_id;
+  perform content_engine.log(who, 'article_auto_rejected', p_id, a.opportunity_id, null,
+    jsonb_build_object('reasons', coalesce(a.checks -> 'review' -> 'reject', '[]'::jsonb), 'reported', coalesce(p_reasons, '[]'::jsonb)));
+  return jsonb_build_object('ok', true, 'status', 'rejected');
+end $$;
+
+-- the publisher's answer, apart from publication: an accepted article may
+-- not run, and a published one was not necessarily accepted as sent
+create or replace function public.content_engine_publisher_response(p_id uuid, p jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare v uuid := content_engine.require_owner(); a content_engine.articles;
+begin
+  select * into a from content_engine.articles where id = p_id for update;
+  if a.id is null then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+  if a.status not in ('sent', 'published') then return jsonb_build_object('ok', false, 'reason', 'not_sent', 'detail', 'a response is recorded for an article that was sent'); end if;
+  update content_engine.articles set publisher_response = p ->> 'response', publisher_response_note = left(p ->> 'note', 500),
+         publisher_responded_at = coalesce(nullif(p ->> 'responded_at', '')::timestamptz, now()) where id = p_id;
+  perform content_engine.log('owner', 'publisher_response', p_id, a.opportunity_id, null, jsonb_build_object('response', p ->> 'response'));
+  return jsonb_build_object('ok', true);
+exception when check_violation or invalid_text_representation or invalid_datetime_format then
+  return jsonb_build_object('ok', false, 'reason', 'invalid', 'detail', sqlerrm);
+end $$;
+
+-- a reservation made before the article existed, tied to it once it does,
+-- so a template's generation cost is the sum of its own calls
+create or replace function public.content_engine_ai_attribute(p_keys jsonb, p_article uuid)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare who text := content_engine.require_actor(); n int;
+begin
+  if jsonb_typeof(p_keys) <> 'array' or jsonb_array_length(p_keys) > 10 then return jsonb_build_object('ok', false, 'reason', 'bad_input'); end if;
+  if not exists (select 1 from content_engine.articles where id = p_article) then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+  update content_engine.ai_spend set article_id = p_article
+   where article_id is null and status <> 'reserved' and request_key in (select jsonb_array_elements_text(p_keys));
+  get diagnostics n = row_count;
+  return jsonb_build_object('ok', true, 'attributed', n);
+end $$;
+
+-- first-party measurement for one EdgeDesk page (its path): sessions that
+-- viewed it, those that went on to a research page, and the accounts whose
+-- first landing it was. COUNTS ONLY, owners excluded; null = not measured.
+create or replace function content_engine.page_metrics(p_path text)
+returns jsonb language plpgsql stable
+set search_path = pg_catalog, public, pg_temp as $$
+declare views int; research int; signups int; trials int; paid int; users uuid[];
+begin
+  if to_regclass('public.user_events') is not null then
+    execute $q$select count(distinct coalesce(e.session_id, e.anonymous_session_id)) from public.user_events e
+              where e.event_name = 'public_page_view' and e.page_path = $1$q$ into views using p_path;
+    execute $q$select count(distinct coalesce(r.session_id, r.anonymous_session_id)) from public.user_events e
+               join public.user_events r on coalesce(r.session_id, r.anonymous_session_id) = coalesce(e.session_id, e.anonymous_session_id)
+                and r.created_at >= e.created_at and r.page_path like '/research/%'
+              where e.event_name = 'public_page_view' and e.page_path = $1$q$ into research using p_path;
+  end if;
+  if to_regclass('public.user_acquisition') is not null then
+    execute $q$select coalesce(array_agg(u.user_id), '{}') from public.user_acquisition u where u.first_landing = $1
+               and not exists (select 1 from growth_outbound.owners o where o.user_id = u.user_id)$q$ into users using p_path;
+    signups := cardinality(users);
+    if to_regprocedure('public.growth_customer_facts()') is not null then
+      execute $q$select count(*) filter (where f.trial_started_at is not null), count(*) filter (where f.paid_at is not null)
+                 from public.growth_customer_facts() f where f.user_id = any ($1)$q$ into trials, paid using users;
+    end if;
+  end if;
+  return jsonb_build_object('views', views, 'research_visits', research, 'signups', signups, 'trials', trials, 'paid', paid);
+end $$;
+
+-- Stripe-paid invoice revenue (gross USD) of the accounts a campaign code or
+-- a landing path brought in; null when billing is not installed
+create or replace function content_engine.attributed_revenue(p_codes text[], p_paths text[])
+returns numeric language plpgsql stable
+set search_path = pg_catalog, public, pg_temp as $$
+declare rev numeric;
+begin
+  if to_regclass('public.user_acquisition') is null or to_regclass('public.stripe_events') is null or to_regclass('public.subscriptions') is null
+     or to_regprocedure('public.affiliate_stripe_object(jsonb)') is null then return null; end if;
+  execute $q$select coalesce(sum(x.amount), 0) / 100.0 from (
+             select distinct on (public.affiliate_stripe_object(e.payload) ->> 'id') ((public.affiliate_stripe_object(e.payload) ->> 'amount_paid')::bigint) as amount
+               from public.stripe_events e
+               join public.subscriptions s on s.stripe_customer_id = coalesce(e.customer_id, public.affiliate_stripe_id(public.affiliate_stripe_object(e.payload) -> 'customer'))
+               join public.user_acquisition u on u.user_id = s.user_id and (u.first_utm_campaign = any ($1) or u.first_landing = any ($2))
+              where e.type in ('invoice.payment_succeeded', 'invoice.paid')
+                and not exists (select 1 from growth_outbound.owners o where o.user_id = u.user_id)
+                and (public.affiliate_stripe_object(e.payload) ->> 'amount_paid') ~ '^[0-9]+$') x$q$ into rev using coalesce(p_codes, '{}'), coalesce(p_paths, '{}');
+  return rev;
+end $$;
+
+-- THE TEMPLATE REPORT. p_pages: EdgeDesk's own published pages per template,
+-- [{ "format": "weekly_games_to_watch_first_party", "path": "/articles/<slug>/" }]
+-- (they live in the site's article store, not here). Every figure is a count
+-- of something that happened; nothing is projected.
+create or replace function public.content_engine_template_report(p_pages jsonb default '[]'::jsonb)
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare out jsonb := '[]'::jsonb; f text; m jsonb; codes text[]; paths text[]; fp jsonb; pm jsonb;
+  gen int; approved int; first_pass int; auto_rej int; sent int; responded int; accepted int; placements int; cost numeric;
+  v int; rv int; su int; tr int; pd int; x jsonb;
+begin
+  perform content_engine.require_owner();
+  for f in select unnest(array['weekly_games_to_watch', 'weekly_games_to_watch_first_party', 'upset_watch', 'market_discrepancy', 'game_deep_dive', 'model_performance_review',
+                                'cfb_weekly_preview', 'nfl_weekly_preview', 'weekend_storylines', 'conference_race', 'trending_story', 'publisher_custom']) loop
+    select count(*),
+           count(*) filter (where status in ('approved', 'ready_to_send', 'sent', 'published')),
+           count(*) filter (where status in ('approved', 'ready_to_send', 'sent', 'published') and revision = 1 and not owner_edited),
+           count(*) filter (where status = 'sent' or status = 'published'),
+           count(*) filter (where publisher_response is not null),
+           count(*) filter (where publisher_response = 'accepted'),
+           count(*) filter (where status = 'published' and publisher_id is not null),
+           coalesce(array_agg(campaign_code) filter (where status in ('sent', 'published')), '{}')
+      into gen, approved, first_pass, sent, responded, accepted, placements, codes
+      from content_engine.articles where format = f;
+    select count(*) into auto_rej from content_engine.events e join content_engine.articles a on a.id = e.article_id
+     where e.kind = 'article_auto_rejected' and a.format = f;
+    select coalesce(sum(s.actual_usd), 0) into cost from content_engine.ai_spend s join content_engine.articles a on a.id = s.article_id
+     where s.status = 'committed' and a.format = f;
+    v := null; rv := null; su := null; tr := null; pd := null;
+    foreach x in array coalesce((select array_agg(content_engine.first_party(c)) from unnest(codes) c), '{}') loop
+      v := coalesce(v, 0) + coalesce((x ->> 'sessions')::int, (x ->> 'visits')::int, 0);
+      su := case when x ->> 'signups' is null then su else coalesce(su, 0) + (x ->> 'signups')::int end;
+      tr := case when x ->> 'trials' is null then tr else coalesce(tr, 0) + (x ->> 'trials')::int end;
+      pd := case when x ->> 'paid' is null then pd else coalesce(pd, 0) + (x ->> 'paid')::int end;
+    end loop;
+    paths := coalesce((select array_agg(e ->> 'path') from jsonb_array_elements(case when jsonb_typeof(p_pages) = 'array' then p_pages else '[]'::jsonb end) e
+                        where e ->> 'format' = f and coalesce(e ->> 'path', '') ~ '^/articles/[a-z0-9-]+/$'), '{}');
+    foreach pm in array coalesce((select array_agg(content_engine.page_metrics(p)) from unnest(paths) p), '{}') loop
+      v := case when pm ->> 'views' is null then v else coalesce(v, 0) + (pm ->> 'views')::int end;
+      rv := case when pm ->> 'research_visits' is null then rv else coalesce(rv, 0) + (pm ->> 'research_visits')::int end;
+      su := case when pm ->> 'signups' is null then su else coalesce(su, 0) + (pm ->> 'signups')::int end;
+      tr := case when pm ->> 'trials' is null then tr else coalesce(tr, 0) + (pm ->> 'trials')::int end;
+      pd := case when pm ->> 'paid' is null then pd else coalesce(pd, 0) + (pm ->> 'paid')::int end;
+    end loop;
+    if gen = 0 and cardinality(paths) = 0 then continue; end if;
+    out := out || jsonb_build_object('format', f, 'articles_generated', gen, 'approved', approved,
+      'first_pass_approval_rate', case when gen > 0 then round(first_pass::numeric / gen, 3) end,
+      'auto_rejected', auto_rej, 'sent_to_publisher', sent, 'publisher_responses', responded, 'publisher_accepted', accepted,
+      'publisher_acceptance_rate', case when responded > 0 then round(accepted::numeric / responded, 3) end,
+      'external_placements', placements, 'first_party_pages', cardinality(paths),
+      'traffic_sessions', v, 'research_page_visits', rv, 'registrations', su, 'trials', tr, 'paid_subscribers', pd,
+      'generation_cost_usd', round(cost, 2), 'attributed_revenue_usd', content_engine.attributed_revenue(codes, paths));
+  end loop;
+  return jsonb_build_object('templates', out,
+    'basis', 'counts of what happened: articles by format; approval on the first revision with no owner edit; publisher responses as the owner recorded them; placements are articles marked published at a publisher URL; traffic, registrations, trials and paid subscribers are first-party counts by campaign code (publisher editions) or landing path (EdgeDesk pages), owners excluded; cost is committed AI spend tied to each article; revenue is Stripe-paid invoices of attributed accounts (gross). A null is not measured, never zero.',
+    'not_claimed', 'no search ranking, forecast or projected revenue is reported here');
+end $$;
+
+-- =============================================================================
 -- 7. WHO MAY CALL WHICH DOOR
 -- =============================================================================
 do $grants$
@@ -1792,7 +2047,7 @@ begin
     execute format('revoke all on function %s from public', f);
     begin execute format('revoke all on function %s from anon, authenticated, service_role', f); exception when undefined_object then null; end;
     -- doors the weekly job uses: owner or service role (each checks which)
-    if f::text ~ '^content_engine_(opportunity_upsert|article_create|article_save|article_submit|article\(|spend|log|search_evidence|job_|ai_reserve|ai_settle)' then
+    if f::text ~ '^content_engine_(opportunity_upsert|article_create|article_save|article_submit|article\(|spend|log|search_evidence|job_|ai_reserve|ai_settle|ai_attribute|article_auto_reject|broadcast_checks_current)' then
       begin execute format('grant execute on function %s to authenticated, service_role', f); exception when undefined_object then null; end;
     else
       begin execute format('grant execute on function %s to authenticated', f); exception when undefined_object then null; end;
@@ -1843,8 +2098,8 @@ select check_name, case when passed then 'ok' else 'CHECK THIS' end as result, d
          coalesce(content_engine.sender() ->> 'from', 'set an edgedesksports.com sender in /admin/content/ Settings')
   union all
   select 'append-only logs installed',
-         (select count(*) from pg_trigger where tgname like '%\_append\_only' and tgrelid::regclass::text like 'content_engine.%') = 5,
-         'revisions, deliveries, performance, events, benchmarks'
+         (select count(*) from pg_trigger where tgname like '%\_append\_only' and tgrelid::regclass::text like 'content_engine.%') = 6,
+         'revisions, deliveries, performance, events, benchmarks, broadcast_checks'
   union all
   select 'owner list available',
          to_regprocedure('growth_outbound.owner_active(uuid)') is not null,
@@ -1861,6 +2116,12 @@ select check_name, case when passed then 'ok' else 'CHECK THIS' end as result, d
   select 'approval binds the research; integrity verdict required',
          to_regprocedure('content_engine.integrity_ok(jsonb)') is not null and to_regprocedure('content_engine.research_current(uuid, text, text)') is not null,
          'changed research revokes approval; ready-to-send and Send refuse a BLOCKED or missing integrity verdict'
+  union all
+  select 'games to watch: owner broadcast checks, auto-reject, template report',
+         to_regclass('content_engine.broadcast_checks') is not null and to_regprocedure('public.content_engine_article_auto_reject(uuid, jsonb)') is not null
+         and to_regprocedure('public.content_engine_template_report(jsonb)') is not null
+         and not has_function_privilege('service_role', 'public.content_engine_broadcast_verify(jsonb)', 'execute'),
+         'only an owner verifies a broadcast; the job rejects only a draft its own review rejected'
   union all
   select 'first-party measurement tables',
          to_regclass('public.acquisition_visitors') is not null and to_regclass('public.user_acquisition') is not null,

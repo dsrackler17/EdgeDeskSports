@@ -309,6 +309,157 @@
     finally { btn.disabled = false; }
   };
 
+  /* ======================================================================
+     TEMPLATE GENERATOR — Five Games to Watch and the other templates
+     docs/content-engine/GAMES_TO_WATCH.md
+     ====================================================================== */
+  var TPL_FORMAT = { upset_watch: 'upset_watch', market_discrepancy: 'market_discrepancy', game_deep_dive: 'game_deep_dive', model_performance: 'model_performance_review' };
+  function tplIsGtw() { return $('tTpl').value === 'games_to_watch'; }
+  function tplSync() {
+    var gtw = tplIsGtw();
+    ['tEdition', 'tCount', 'tReq', 'tHead'].forEach(function (id) { $(id).disabled = !gtw; });
+    if (gtw) $('tSport').value = 'cfb';
+    $('tSport').disabled = gtw; /* the matchup packets are college football */
+    var fp = gtw && $('tEdition').value === 'weekly_games_to_watch_first_party';
+    $('tFlow').value = fp ? $('tFlow').value : 'manual';
+    $('tFlow').querySelector('option[value="automatic"]').disabled = !fp;
+  }
+  ['tTpl', 'tEdition'].forEach(function (id) { $(id).onchange = tplSync; });
+  async function tplArtifacts() {
+    var art = await loadArtifacts();
+    art.packets = await getJson(CE.ARTIFACTS.packets);
+    var checks = [];
+    try { checks = await rpc('content_engine_broadcast_checks_current', { p_days: 14 }); } catch (e) { checks = []; }
+    return { art: art, checks: Array.isArray(checks) ? checks : [] };
+  }
+  function tplOpp(snapArt) {
+    var week = $('tWeek').value ? +$('tWeek').value : undefined;
+    var snap = CE.research.fromArtifacts(snapArt.art, { now: Date.now(), cfbWeek: week, broadcastChecks: snapArt.checks });
+    var req = Array.prototype.slice.call($('tReq').selectedOptions || []).map(function (o) { return o.value; });
+    var pub = publisherById($('gPubSel').value);
+    var opps = CE.discover(snap, { now: Date.now(), publisher: pub, games_to_watch: { count: +$('tCount').value || 5, required: req, prefer_broad: $('tAudience').value !== 'bettors' } });
+    var kind = $('tTpl').value, sport = $('tSport').value;
+    return { snap: snap, opp: opps.filter(function (o) { return o.kind === kind && o.league === sport; })[0] || null, pub: pub, required: req };
+  }
+  function gtwPill(ok, yes, no) { return '<span class="pill ' + (ok ? 'ok' : 'bad') + '">' + esc(ok ? yes : no) + '</span>'; }
+  function packetCard(m, i) {
+    var g = m.gate || {}, A = m.arguments || {}, b = m.broadcast || {}, w = CE.gamesToWatch.when(m);
+    var Q = ['Why watch', 'Deciding matchup', 'Recent evidence', 'EdgeDesk projects', 'Why the model could be wrong', 'What to watch for'];
+    var miss = (g.missing || []).map(function (x) { return x.q; });
+    var ind = (m.facts || []).filter(function (f) { return f.independent; });
+    var probs = (m.problems || []).map(function (p) { return '<li><span class="mono">' + esc(p.code) + '</span> ' + esc(p.text) + (p.hold ? ' <span class="pill warn">hold</span>' : ' <span class="pill bad">blocks</span>') + '</li>'; }).join('');
+    return '<div class="card"><h3 style="margin-top:0">' + (i + 1) + '. ' + esc(m.identity.heading) + ' ' + gtwPill(g.ok, 'passes the reasoning gate', 'fails the reasoning gate') + ' ' + gtwPill(b.publishable, 'broadcast ' + b.status, 'broadcast ' + b.status) + '</h3>'
+      + '<div class="sub">' + (w ? esc(w.date + ', ' + w.et + ' (' + w.ct + ')') : 'kickoff not verified') + ' · ' + esc(b.network ? b.network + ' (' + b.tier + ')' : 'no network on file') + (b.verified_text ? ' · verified ' + esc(b.verified_text) + (b.source ? ' from ' + esc(b.source.name) : '') : '') + (b.hold_reason ? ' · <b>hold:</b> ' + esc(b.hold_reason) : '') + '</div>'
+      + '<ul class="checks">' + Q.map(function (q, k) { return '<li>' + gtwPill(miss.indexOf(k + 1) < 0, 'answered', 'missing') + '<span>' + esc(q) + '</span></li>'; }).join('') + '</ul>'
+      + '<div class="sub" style="margin-top:6px"><b>Deciding matchup:</b> ' + esc(A.deciding ? A.deciding.claim : '—') + '</div>'
+      + '<div class="sub"><b>Upset:</b> ' + esc(A.upset ? (A.upset.credible ? 'a case on the evidence (' + A.upset.dog_win_pct + '% for ' + A.upset.team + ')' : A.upset.reason || 'none') : '—') + '</div>'
+      + '<details style="margin-top:6px"><summary class="sub">' + ind.length + ' independent facts · ' + ((m.facts || []).length - ind.length) + ' analysis</summary><ul class="checks">'
+      + (m.facts || []).map(function (f) { return '<li><span class="pill ' + (f.independent ? 'ok' : 'est') + '">' + (f.independent ? 'independent' : 'analysis') + '</span><span>' + esc(f.text) + '<span class="d"> — ' + esc(f.source ? (f.source.name || '') : '') + '</span></span></li>'; }).join('') + '</ul></details>'
+      + ((g.missing || []).length ? '<div class="sub"><b>Missing evidence:</b> ' + esc(g.missing.map(function (x) { return x.text; }).join('; ')) + '</div>' : '')
+      + (probs ? '<div class="sub"><b>Problems:</b></div><ul class="checks">' + probs + '</ul>' : '')
+      + ((m.unresolved || []).length ? '<div class="sub dim">Unresolved: ' + esc(m.unresolved.map(function (u) { return u.text; }).join('; ')) + '</div>' : '')
+      + '<details style="margin-top:8px"><summary class="sub">Verify the broadcast from an official source</summary><div class="row" style="margin-top:8px" data-gid="' + esc(m.game_id) + '" data-season="' + esc(m.season) + '">'
+      + '<div class="f"><label>Network</label><input data-k="network" value="' + esc(b.network || '') + '" placeholder="e.g. CBS"></div>'
+      + '<div class="f"><label>Streaming (comma-separated)</label><input data-k="streaming" placeholder="optional"></div>'
+      + '<div class="f" style="min-width:260px;flex:2"><label>Official source URL</label><input data-k="source_url" placeholder="https://… conference or school schedule"></div>'
+      + '<div class="f"><label>Source</label><select data-k="source_kind"><option value="conference">Conference</option><option value="school">School</option><option value="network">Network</option><option value="league">League</option><option value="other_official">Other official</option></select></div>'
+      + '<div class="f"><label>Source name</label><input data-k="source_name" placeholder="e.g. Big Ten Conference schedule"></div>'
+      + '<div class="f"><label>Verified new kickoff (only if moved)</label><input data-k="kickoff" type="datetime-local"></div>'
+      + '<div class="f"><label>Reason for a move</label><input data-k="reason" placeholder="e.g. weather"></div>'
+      + '<div class="f"><label>Status</label><select data-k="status"><option value="">On schedule</option><option value="postponed">Postponed</option><option value="canceled">Canceled</option></select></div>'
+      + '<button class="sm" data-act="verify">Record verification</button></div></details></div>';
+  }
+  $('tPreview').onclick = async function () {
+    var btn = $('tPreview'); btn.disabled = true;
+    try {
+      if (!ST.publishers.length) await loadPublishersData();
+      say('tMsg', '', 'Reading the research files and the broadcast verifications…');
+      var sa = ST.tplArt = await tplArtifacts();
+      if (!tplIsGtw()) {
+        var r0 = tplOpp(sa);
+        $('tPreviewOut').innerHTML = r0.opp ? '<div class="card"><b>' + esc(r0.opp.title) + '</b><div class="sub">' + esc(r0.opp.summary || '') + '</div></div>' : '<div class="card"><p class="note">This week’s research has no ' + esc(CE.KINDS[$('tTpl').value] || $('tTpl').value) + ' topic for this sport.</p></div>';
+        $('tPreviewOut').classList.remove('hide'); say('tMsg', r0.opp ? 'ok' : 'err', r0.opp ? 'Topic found.' : 'No topic.'); return;
+      }
+      if (!sa.art.packets) { say('tMsg', 'err', 'No matchup packets on this site yet (football/content/packets.json is built hourly by the CFB lab workflow).'); return; }
+      var r = tplOpp(sa);
+      var all = r.snap.cfb && r.snap.cfb.matchups ? r.snap.cfb.matchups.packets : [];
+      var cur = Array.prototype.slice.call($('tReq').selectedOptions || []).map(function (o) { return o.value; });
+      $('tReq').innerHTML = all.map(function (m) { return '<option value="' + esc(m.game_id) + '"' + (cur.indexOf(m.game_id) >= 0 ? ' selected' : '') + '>' + esc(m.identity.heading) + (m.gate && m.gate.ok ? '' : ' — fails the gate') + '</option>'; }).join('');
+      if (!r.opp) { say('tMsg', 'err', 'Fewer than three games pass the reasoning gate this week, or the packets are for another week (' + (r.snap.cfb && r.snap.cfb.matchups ? 'week ' + r.snap.cfb.matchups.week : 'none') + ').'); return; }
+      ST.tplOpp = r.opp;
+      var sel = r.opp.research.selection;
+      var rej = (sel.rejected || []).slice(0, 40).map(function (x) { return '<li><span>' + esc(x.heading) + '</span><span class="d">' + esc(x.missing.join(', ')) + '</span></li>'; }).join('');
+      $('tPreviewOut').innerHTML = '<div class="card"><b>' + esc(r.opp.title) + '</b><div class="sub">' + esc(sel.basis) + '</div>'
+        + (sel.report.required_failed.length ? '<div class="sub"><b>Required games held for manual review:</b> ' + esc(sel.report.required_failed.map(function (x) { return (x.matchup || x.game_id) + ' (' + x.reason + ')'; }).join('; ')) + '</div>' : '')
+        + '<div class="tw"><table><tr><th>Game</th><th class="r">Score</th><th>Storyline</th><th>Audience</th><th>Broadcast</th></tr>' + sel.games.map(function (g) {
+          return '<tr><td>' + esc(g.heading) + '</td><td class="r">' + esc(g.score) + '</td><td class="mono">' + esc(g.storyline) + '</td><td>' + esc(g.national ? 'national' : 'under the radar') + '</td><td>' + gtwPill(g.publishable, 'ready', 'held') + '</td></tr>';
+        }).join('') + '</table></div>'
+        + (rej ? '<details><summary class="sub">' + sel.rejected.length + ' games that fail the reasoning gate</summary><ul class="checks">' + rej + '</ul></details>' : '') + '</div>'
+        + r.opp.research.matchups.map(packetCard).join('');
+      $('tPreviewOut').classList.remove('hide');
+      var held = r.opp.research.matchups.filter(function (m) { return !m.broadcast.publishable; }).length;
+      say('tMsg', held ? 'err' : 'ok', r.opp.research.matchups.length + ' games selected' + (held ? '; ' + held + ' broadcast(s) must be verified before the article can be approved' : '; every broadcast is verified') + '.');
+    } catch (e) { fail('tMsg', e); }
+    finally { btn.disabled = false; }
+  };
+  $('tPreviewOut').onclick = async function (ev) {
+    var b = ev.target.closest('button[data-act="verify"]'); if (!b) return;
+    var row = b.closest('[data-gid]'), v = function (k) { var el = row.querySelector('[data-k="' + k + '"]'); return el ? el.value.trim() : ''; };
+    try {
+      var ko = v('kickoff') ? new Date(v('kickoff')).toISOString() : null;
+      var r = await rpc('content_engine_broadcast_verify', { p: { game_id: row.getAttribute('data-gid'), season: +row.getAttribute('data-season'), network: v('network') || null,
+        streaming: v('streaming') ? v('streaming').split(',').map(function (x) { return { service: x.trim() }; }).filter(function (x) { return x.service; }) : [],
+        source_url: v('source_url'), source_kind: v('source_kind'), source_name: v('source_name'), kickoff: ko, reason: v('reason') || null, status: v('status') || null } });
+      say('tMsg', r.ok ? 'ok' : 'err', r.ok ? 'Verification recorded. Preview again to see it applied.' : 'Not recorded: ' + (r.detail || r.reason));
+    } catch (e) { fail('tMsg', e); }
+  };
+  $('tCreate').onclick = async function () {
+    var btn = $('tCreate'); btn.disabled = true;
+    try {
+      if (!ST.tplArt) ST.tplArt = await tplArtifacts();
+      var r = tplOpp(ST.tplArt);
+      if (!r.opp) { say('tMsg', 'err', 'No topic for this template in the current research: press Preview first.'); return; }
+      var o = Object.assign({}, r.opp, { research_hash: CE.util.hash(JSON.stringify(r.opp.research)) });
+      var up = await rpc('content_engine_opportunity_upsert', { p: o, p_run: null });
+      if (!up || !up.ok) { say('tMsg', 'err', 'Topic not saved: ' + (up && (up.detail || up.reason))); return; }
+      var full = await rpc('content_engine_opportunity', { p_id: up.id });
+      var format = tplIsGtw() ? $('tEdition').value : TPL_FORMAT[$('tTpl').value];
+      var fp = format === 'weekly_games_to_watch_first_party';
+      var pubId = fp ? null : ($('gPubSel').value || null), pub = publisherById(pubId);
+      var a = CE.draft(full, { publisher: pub, format: format, headline_style: $('tHead').value, audience: $('tAudience').value, now: Date.now() });
+      var rep = CE.validate(a, full, { publisher: pub, now: Date.now() });
+      var review = CE.FORMATS[format] && CE.FORMATS[format].edition ? CE.gamesToWatch.review(a, full, rep) : null;
+      var cr = await rpc('content_engine_article_create', { p_opportunity: full.id, p_publisher: pubId, p_format: a.format, p_angle: 'full_slate',
+        p: Object.assign({}, a, { checks: review ? Object.assign({}, rep, { review: review }) : rep }), p_run: null });
+      if (!cr || !cr.ok) { say('tMsg', 'err', 'Not created: ' + (cr && (cr.detail || cr.reason))); return; }
+      if ($('tDate').value) await rpc('content_engine_log', { p_kind: 'publication_date_set', p_detail: { date: $('tDate').value, workflow: $('tFlow').value }, p_article: cr.id });
+      say('tMsg', review && review.verdict !== 'READY' ? 'err' : 'ok', 'Draft saved' + (review ? ' — editorial review: ' + review.verdict + (review.hold.length ? ' (hold: ' + review.hold.map(function (h) { return h.id; }).join(', ') + ')' : '') + (review.reject.length ? ' (reject: ' + review.reject.map(function (h) { return h.id; }).join(', ') + ')' : '') : '') + '.'
+        + (fp ? ' The EdgeDesk edition is published from the site’s article store by the CFB lab workflow when every gate passes and automatic publication is on.' : ' A publisher edition is approved by you and sent only when you press Send.'));
+      tab('gen'); await fillGenerator(); await openEditor(cr.id);
+    } catch (e) { fail('tMsg', e); }
+    finally { btn.disabled = false; }
+  };
+  getJson('football/content/config.json').then(function (c) { var el = $('tAuto'); if (el) el.textContent = c && c.first_party_auto_publish ? 'currently ON' : 'currently OFF'; });
+  tplSync();
+
+  /* the per-template report (content_engine_template_report): EdgeDesk's own
+     pages are named by their published paths, which the site's article
+     index lists */
+  async function loadTemplateReport() {
+    var el = $('tmplOut'); if (!el) return;
+    var pubIdx = await getJson(CE.ARTIFACTS.published);
+    var pages = ((pubIdx && pubIdx.articles) || []).filter(function (a) { return a.type === 'games_to_watch'; })
+      .map(function (a) { return { format: 'weekly_games_to_watch_first_party', path: '/articles/' + a.slug + '/' }; });
+    var r = await rpc('content_engine_template_report', { p_pages: pages });
+    var rows = (r && r.templates) || [];
+    el.innerHTML = '<div class="card tw"><table><tr><th>Template</th><th class="r">Generated</th><th class="r">First-pass approval</th><th class="r">Auto-rejected</th><th class="r">Publisher acceptance</th><th class="r">Placements</th><th class="r">Traffic</th><th class="r">Research visits</th><th class="r">Registrations</th><th class="r">Trials</th><th class="r">Paid</th><th class="r">AI cost</th><th class="r">Revenue</th></tr>'
+      + (rows.map(function (t) {
+        return '<tr><td>' + esc(CE.FORMATS[t.format] ? CE.FORMATS[t.format].label : t.format) + '</td><td class="r">' + num(t.articles_generated) + '</td><td class="r">' + (t.first_pass_approval_rate == null ? '—' : Math.round(t.first_pass_approval_rate * 100) + '%') + '</td><td class="r">' + num(t.auto_rejected) + '</td>'
+          + '<td class="r">' + (t.publisher_acceptance_rate == null ? '—' : Math.round(t.publisher_acceptance_rate * 100) + '% of ' + t.publisher_responses) + '</td><td class="r">' + num(t.external_placements) + '</td><td class="r">' + num(t.traffic_sessions) + '</td><td class="r">' + num(t.research_page_visits) + '</td>'
+          + '<td class="r">' + num(t.registrations) + '</td><td class="r">' + num(t.trials) + '</td><td class="r">' + num(t.paid_subscribers) + '</td><td class="r">$' + esc(t.generation_cost_usd) + '</td><td class="r">' + (t.attributed_revenue_usd == null ? '—' : '$' + esc(t.attributed_revenue_usd)) + '</td></tr>';
+      }).join('') || '<tr><td colspan="13" class="dim">No articles generated yet.</td></tr>') + '</table><p class="note">' + esc(r && r.basis || '') + ' ' + esc(r && r.not_claimed || '') + '</p></div>';
+  }
+
   async function openEditor(id) {
     var row = await rpc('content_engine_article', { p_id: id });
     ST.art = row; ST.opp = row.opportunity; ST.dirty = false;
@@ -720,6 +871,7 @@
   async function loadPerf() {
     if (!ST.publishers.length) await loadPublishersData();
     loadAcquisition().catch(function (e) { var el = $('acqOut'); if (el) el.innerHTML = '<p class="note">' + esc(S.message(e)) + '</p>'; });
+    loadTemplateReport().catch(function (e) { var el = $('tmplOut'); if (el) el.innerHTML = '<p class="note">' + esc(S.message(e)) + '</p>'; });
     var p = await rpc('content_engine_performance');
     var m = p.measured || {};
     var rows = p.articles || [];

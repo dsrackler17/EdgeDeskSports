@@ -8,7 +8,8 @@
        (the same research, validation and AI request code the admin page and
        the weekly job run);
      · lib/edgedesk_calc.js, edgedesk_schedule.js, edgedesk_availability.js,
-       edgedesk_integrity.js          between BEGIN/END INTEGRITY LAYER, ahead
+       edgedesk_integrity.js, edgedesk_broadcast.js, edgedesk_matchup.js
+                                      between BEGIN/END INTEGRITY LAYER, ahead
        of the core (docs/system-integrity): the core reads them from globalThis
        and fails its validation closed without them.
 
@@ -32,7 +33,10 @@ const BEGIN = '// ── BEGIN CONTENT ENGINE CORE';
 const END = '// ── END CONTENT ENGINE CORE';
 const IBEGIN = '// ── BEGIN INTEGRITY LAYER';
 const IEND = '// ── END INTEGRITY LAYER';
-const INTEGRITY_FILES = ['edgedesk_calc.js', 'edgedesk_schedule.js', 'edgedesk_availability.js', 'edgedesk_integrity.js'];
+/* the order matters: each file finds the ones before it on globalThis.
+   edgedesk_broadcast.js and edgedesk_matchup.js carry Five Games to Watch
+   (docs/content-engine/GAMES_TO_WATCH.md) */
+const INTEGRITY_FILES = ['edgedesk_calc.js', 'edgedesk_schedule.js', 'edgedesk_availability.js', 'edgedesk_integrity.js', 'edgedesk_broadcast.js', 'edgedesk_matchup.js'];
 
 function coreBlock() {
   return BEGIN + ' ────────────────────────────────────────────\n'

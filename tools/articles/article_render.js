@@ -80,6 +80,9 @@
     return JSON.stringify(o, null, 2).replace(/</g, '\\u003c').replace(/>/g, '\\u003e').replace(/&/g, '\\u0026');
   }
   function has(x) { return x != null && x !== ''; }
+  /* a one-game page is titled by its matchup; a several-game page (Five
+     Games to Watch, tools/content/first_party.js) carries its own label */
+  function matchupOf(rec, sep) { return rec.page_label || (rec.away_team + (sep || ' at ') + rec.home_team); }
   function iso(t) { var d = t ? Date.parse(t) : NaN; return isFinite(d) ? new Date(d).toISOString() : null; }
   function dateLabel(t, opts) {
     var d = t ? Date.parse(t) : NaN;
@@ -599,6 +602,9 @@
      rather than only in the methodology note: a reader is entitled to know
      which paragraphs a language model wrote, and a platform whose whole claim
      is transparency cannot make that a footnote. */
+  function markdownHTML(s) {
+    return '<section class="a-sec a-md">' + secHead(s.title, null, anchorId(s.title)) + (s.html || '') + '</section>';
+  }
   function narrativeHTML(s) {
     var h = '<section class="a-sec a-narr">' + secHead(s.title, null, anchorId(s.title));
     (s.paragraphs || []).forEach(function (p) { h += '<p>' + esc(p) + '</p>'; });
@@ -642,7 +648,10 @@
     cases: casesHTML, uncertainty: uncertaintyHTML, market: marketHTML,
     /* postgame */
     thesis_audit: thesisAuditHTML, process: processHTML, scorecard: scorecardHTML,
-    watched: watchedHTML, lessons: lessonsHTML, narrative: narrativeHTML
+    watched: watchedHTML, lessons: lessonsHTML, narrative: narrativeHTML,
+    /* a section written by the content engine, rendered by its own escaped
+       Markdown subset (lib/content_engine.js mdToHtml) */
+    markdown: markdownHTML
   };
 
   /* ------------------------------------------------------------ the hero */
@@ -747,8 +756,8 @@
     if (list.length) {
       h += '<ul class="a-morelist">' + list.map(function (m) {
         var isPost = m.article_type === 'postgame';
-        return '<li><a href="' + esc(slashed(m.canonical_url)) + '">' + esc(m.away_team + ' vs. ' + m.home_team)
-          + '</a><span class="a-morek">' + esc((isPost ? 'Postgame analysis · ' : 'Pregame research · ') + m.sport_label)
+        return '<li><a href="' + esc(slashed(m.canonical_url)) + '">' + esc(matchupOf(m, ' vs. '))
+          + '</a><span class="a-morek">' + esc((isPost ? 'Postgame analysis · ' : (m.article_type === 'games_to_watch' ? 'Games to watch · ' : 'Pregame research · ')) + m.sport_label)
           + '</span></li>';
       }).join('') + '</ul>';
     }
@@ -795,12 +804,20 @@
       publisher: { '@type': 'Organization', name: ORG, url: SITE,
         logo: { '@type': 'ImageObject', url: OG_DEFAULT, width: 1200, height: 630 } },
       url: rec.canonical_url,
-      keywords: [rec.away_team, rec.home_team, rec.sport_label, 'EdgeDesk', 'fair spread', 'model projection'].join(', ')
+      keywords: (rec.keywords || [rec.away_team, rec.home_team, rec.sport_label, 'EdgeDesk', 'fair spread', 'model projection']).filter(Boolean).join(', ')
     };
     if (rec.published_at) art.datePublished = iso(rec.published_at);
     art.dateModified = iso(rec.updated_at) || iso(rec.published_at) || iso(rec.generated_at);
     art.image = [ogImage(rec)];
     out.push(art);
+    /* a page about several games is an Article, not one SportsEvent */
+    if (rec.article_type === 'games_to_watch') {
+      out.push({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+        { '@type': 'ListItem', position: 1, name: 'Research', item: SITE + '/articles/' },
+        { '@type': 'ListItem', position: 2, name: rec.sport_label, item: SITE + '/articles/' + rec.sport_slug + '/' },
+        { '@type': 'ListItem', position: 3, name: matchupOf(rec), item: rec.canonical_url }] });
+      return out;
+    }
 
     var ev = {
       '@context': 'https://schema.org',
@@ -852,12 +869,12 @@
     rec = normRec(rec);
     var published = opts.published || null;
     var nowMs = opts.now ? Date.parse(opts.now) : null;
-    var played = rec.article_type !== 'postgame' && nowMs != null && isFinite(Date.parse(rec.game_time))
+    var played = rec.article_type !== 'postgame' && rec.article_type !== 'games_to_watch' && nowMs != null && isFinite(Date.parse(rec.game_time))
       && Date.parse(rec.game_time) <= nowMs;
     var h = '';
     h += '<nav class="a-crumbs" aria-label="Breadcrumb"><a href="/articles/">Research</a> <span>›</span> '
       + '<a href="/articles/' + esc(rec.sport_slug) + '/">' + esc(rec.sport_label) + '</a> <span>›</span> '
-      + '<span aria-current="page">' + esc(rec.away_team + ' at ' + rec.home_team) + '</span></nav>';
+      + '<span aria-current="page">' + esc(matchupOf(rec)) + '</span></nav>';
     if (played) h += playedHTML(rec, published);
     h += heroHTML(rec);
     h += relatedHTML(rec, published);
@@ -949,7 +966,7 @@
        same card in the four alternate orderings used to carry it four times,
        which is most of why the hub weighed 730 KB */
     if (rec.hero_image && withImage !== false) h += '<img class="a-cardimg" src="' + esc(rec.hero_image) + '" alt="" loading="lazy" width="640" height="360">';
-    h += '<h3 class="a-cardh">' + esc(rec.away_team + ' vs. ' + rec.home_team) + '</h3>';
+    h += '<h3 class="a-cardh">' + esc(matchupOf(rec, ' vs. ')) + '</h3>';
     h += '<p class="a-cardsum">' + esc(rec.excerpt) + '</p>';
     h += '<div class="a-cardmeta">';
     var fin = isPost && rec.result && rec.result.home_score != null

@@ -42,7 +42,9 @@ function load() {
     nflInjuries: readJson(A.nfl_injuries),
     marketSnapshots: marketSnapshots(season),
     published: readJson(A.published),
-    performance: readJson(A.performance)
+    performance: readJson(A.performance),
+    /* the editorial matchup packets (tools/content/build_packets.js) */
+    packets: readJson(A.packets)
   };
 }
 

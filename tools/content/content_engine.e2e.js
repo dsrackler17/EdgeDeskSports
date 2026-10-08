@@ -55,10 +55,14 @@ const FIXED = new Date('2026-10-08T17:30:00Z');
 let pass = 0, fail = 0;
 function chk(name, ok, detail) { if (ok) { pass++; return; } fail++; console.log('  FAIL ' + name + (detail !== undefined ? '  ' + JSON.stringify(detail).slice(0, 400) : '')); }
 
+/* files the page reads that a step replaces (Five Games to Watch reads the
+   frozen October 10 fixture, so the step does not move with the week) */
+const OVERRIDES = {};
 function serve() {
   return new Promise((resolve) => {
     const srv = http.createServer((req, res) => {
       let p = decodeURIComponent(req.url.split('?')[0]); if (p.endsWith('/')) p += 'index.html';
+      if (OVERRIDES[p]) { res.writeHead(200, { 'content-type': 'application/json' }); res.end(OVERRIDES[p]); return; }
       const file = path.join(ROOT, path.normalize(p).replace(/^(\.\.[/\\])+/, ''));
       if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); res.end(); return; }
       const type = p.endsWith('.html') ? 'text/html; charset=utf-8' : p.endsWith('.js') ? 'text/javascript; charset=utf-8' : p.endsWith('.json') ? 'application/json' : 'application/octet-stream';
@@ -373,6 +377,49 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     chk('7 the acquisition loop: the 90-day targets, labelled targets, not forecasts', /targets/.test(acq) && /not forecasts/.test(acq) && /target 250/.test(acq) && /target 25/.test(acq) && /Revenue is not profit/.test(acq), acq.slice(0, 600));
     chk('7 … unmeasured steps show a dash, never a zero', /—/.test(acq));
     chk('7 the three kinds of numbers are named apart', /first-party/.test(await P.textContent('#tab-perf')) && /publisher-reported/i.test(await P.textContent('#tab-perf')) && /Benchmarks/.test(perf));
+
+    chk('7 the per-template report is shown, measured or a dash', /Generated/.test(await P.textContent('#tmplOut')) && /never zero/.test(await P.textContent('#tmplOut')));
+
+    /* 7b · Five Games to Watch: the template, the evidence, the broadcast hold */
+    {
+      const zlib = require('zlib');
+      const FX = JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(ROOT, 'tools', 'content', 'fixtures', 'games_to_watch_2026_w6.json.gz'))).toString('utf8'));
+      const BPK = require(path.join(ROOT, 'tools', 'content', 'build_packets.js'));
+      OVERRIDES['/football/content/packets.json'] = JSON.stringify(BPK.compact(BPK.buildFromFixture(FX, { fixture: null })));
+      OVERRIDES['/football/cfb_terminal/games.json'] = JSON.stringify(FX.terminal);
+      OVERRIDES['/football/cfb_terminal/brief.json'] = JSON.stringify({ week: FX.week });
+      OVERRIDES['/football/rankings/current.json'] = JSON.stringify(FX.rankings);
+      await P.click('.tabs button[data-tab="gen"]');
+      await P.waitForSelector('#tab-gen:not(.hide)');
+      chk('7b the template list: Five Games to Watch, Upset Watch, Model vs. Market, Deep Dive, Weekend Review',
+        JSON.stringify(await P.$$eval('#tTpl option', (os) => os.map((o) => o.textContent))) === JSON.stringify(['Five Games to Watch', 'Weekly Upset Watch', 'Model vs. Market', 'Single Game Deep Dive', 'Weekend Review (model performance)']));
+      const ctl = await Promise.all(['#gPubSel', '#tSport', '#tWeek', '#tCount', '#tReq', '#tAudience', '#tHead', '#tDate', '#tFlow'].map((id) => P.$(id)));
+      chk('7b … with publisher, sport, week, count, required games, audience, headline style, date and workflow', ctl.every(Boolean), ctl.map(Boolean));
+      await P.selectOption('#tTpl', 'games_to_watch');
+      await P.click('#tPreview');
+      await P.waitForSelector('#tPreviewOut:not(.hide) .card h3', { timeout: 30000 });
+      let pv = await P.textContent('#tPreviewOut');
+      chk('7b the preview shows the five games, each with the six questions and its independent facts', ['Ole Miss at Vanderbilt', 'Texas A&M at Missouri', 'Texas vs. Oklahoma', 'UCLA at Oregon', 'Georgia at Alabama'].every((h) => pv.indexOf(h) >= 0)
+        && (pv.match(/passes the reasoning gate/g) || []).length === 5 && /independent facts/.test(pv) && /What to watch for/.test(pv), pv.slice(0, 400));
+      chk('7b … and holds CBS until it is verified', /broadcast TENTATIVE/.test(pv) && /must be verified/.test(await P.textContent('#tMsg')));
+      const row = '#tPreviewOut [data-gid="401858484"]';
+      await P.click('#tPreviewOut details:has([data-gid="401858484"]) summary');
+      await P.fill(row + ' [data-k="network"]', 'CBS');
+      await P.fill(row + ' [data-k="source_url"]', 'https://fixture.test/bigten-football-schedule');
+      await P.fill(row + ' [data-k="source_name"]', 'Big Ten Conference football schedule (fixture)');
+      await P.click(row + ' button[data-act="verify"]');
+      await P.waitForFunction(() => /Verification recorded/.test(document.getElementById('tMsg').textContent), null, { timeout: 15000 });
+      chk('7b the owner’s verification is recorded with its source', db.sql(`select network || '|' || source_url || '|' || source_kind from content_engine.broadcast_checks where game_id = '401858484';`) === 'CBS|https://fixture.test/bigten-football-schedule|conference');
+      await P.click('#tPreview');
+      await P.waitForFunction(() => /every broadcast is verified/.test(document.getElementById('tMsg').textContent), null, { timeout: 30000 });
+      pv = await P.textContent('#tPreviewOut');
+      chk('7b … and applied: CBS confirmed, owner-verified', /broadcast CONFIRMED/.test(pv) && /CBS \(OWNER_VERIFIED\)/.test(pv) && !/broadcast TENTATIVE/.test(pv), pv.slice(0, 300));
+      await P.click('#tCreate');
+      await P.waitForFunction(() => /editorial review: READY/.test(document.getElementById('tMsg').textContent), null, { timeout: 30000 });
+      const g = JSON.parse(db.sql(`select to_jsonb(a) from content_engine.articles a where format = 'weekly_games_to_watch' order by created_at desc limit 1;`));
+      chk('7b the draft is saved for the publisher with its review READY and every check passing', g && g.status === 'draft' && g.checks.review.verdict === 'READY' && g.checks.ok === true && g.sections.filter((x) => /^game_/.test(x.key)).length === 5);
+      Object.keys(OVERRIDES).forEach((k) => { delete OVERRIDES[k]; });
+    }
 
     /* 8 · settings, phone width, errors */
     await P.click('.tabs button[data-tab="set"]');
