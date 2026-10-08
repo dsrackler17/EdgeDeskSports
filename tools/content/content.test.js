@@ -234,6 +234,14 @@ chk('H QB: a split that barely moves the number is not material', (() => { const
 chk('H QB: a split worth a point or more is material', QS({ player: 'A', status: 'COMPETITION' }, 'home', sens('home', -1.6, 1.4), 3).material);
 chk('H QB: a split that flips the favorite is material', (() => { const q = QS({ player: 'A', status: 'COMPETITION' }, 'home', sens('home', -0.6, -0.2), 0.4); return q.material && q.flips_favorite; })());
 chk('H QB: a sourced availability report is AVAILABILITY and material', (() => { const q = QS({ player: 'A', status: 'STARTED_LAST' }, 'away', { risks: { items: [{ key: 'qb_away', text: 'A is QUESTIONABLE (ankle)', source: 'team report' }] } }, -2); return q.status === 'AVAILABILITY' && q.material; })());
+chk('H QB: a contest whose sources disagree on a name is still COMPETITION, not dropped', (() => { const q = QS({ player: null, status: 'COMPETITION', contested: true, label: 'unresolved: A 81% of recent dropbacks and B 12% of recent dropbacks — sources disagree.' }, 'home', sens('home', -2, 1), 3); return q.status === 'COMPETITION' && q.player === null && q.contested && q.material; })());
+chk('H QB: the snapshot keeps a nameless starter only when the job is contested', snap.cfb.games.every((p) => ['home', 'away'].every((s) => !p.qb || !p.qb[s] || p.qb[s].player || p.qb[s].status === 'COMPETITION')));
+/* the research's quarterback risk notes ("X: the quarterback job is
+   contested", "Y is expected, not confirmed") must not reach the copy around
+   qbState: they once did, through the market discrepancy's "also flags" line */
+const qbNotes = new Set();
+(function walk(x, d) { if (!x || typeof x !== 'object' || d > 7) return; if (Array.isArray(x.items)) x.items.forEach((r) => { if (r && /^qb_/.test(r.key || '') && r.text) qbNotes.add(r.text); }); for (const k in x) walk(x[k], d + 1); })(art, 0);
+chk('H QB: no quarterback risk note reaches an article except through qbState', qbNotes.size > 0 && [].concat(snap.cfb.games, snap.nfl.games).every((p) => (p.risks || []).every((t) => !qbNotes.has(t))), qbNotes.size);
 const settled = snap.cfb.games.map((p) => ['home', 'away'].map((s) => p.qb && p.qb[s] && p.qb[s].status === 'ESTABLISHED' ? { p, team: s === 'home' ? p.home : p.away } : null)).flat().filter(Boolean)[0];
 if (settled) {
   chk('H no QB doubt is written about a settled starter', failsOn(mutate((a) => intro(a, settled.team + '’s starting quarterback hasn’t been confirmed.')), 'qb_claims_supported'));

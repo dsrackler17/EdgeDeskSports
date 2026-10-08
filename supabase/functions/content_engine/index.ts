@@ -681,9 +681,10 @@
      COMPETITION   the play data does not settle on one player (sourced)
      AVAILABILITY  a sourced availability note (questionable, doubtful, out)
      UNKNOWN       nothing reliable: no claim either way
-     `material` is the only door into the copy. */
+     A contest whose sources disagree on a name is still COMPETITION (player
+     null). `material` is the only door into the copy. */
   function qbState(q, side, g, homeMargin) {
-    if (!q || !q.player) return { player: null, status: 'UNKNOWN', material: false, confirmed: false, contested: false };
+    if (!q || (!q.player && !(q.contested || String(q.status || '').toUpperCase() === 'COMPETITION'))) return { player: null, status: 'UNKNOWN', material: false, confirmed: false, contested: false };
     var raw = String(q.status || '').toUpperCase();
     var st = raw === 'ANNOUNCED' || q.confirmed ? 'CONFIRMED' : (q.contested || raw === 'COMPETITION') ? 'COMPETITION' : (!raw || raw === 'UNKNOWN') ? 'UNKNOWN' : 'ESTABLISHED';
     var risk = ((g && g.risks && g.risks.items) || []).filter(function (r) { return r && r.key === 'qb_' + side; })[0];
@@ -850,8 +851,8 @@
       .slice(0, 2).map(function (c) { return { label: c.label, favors: c.favors, magnitude: c.magnitude }; }));
     var hm = isNum(e.home_margin) ? e.home_margin : (model.available ? -model.home_line : null);
     var qb = { home: qbState(g.qb && g.qb.home, 'home', g, hm), away: qbState(g.qb && g.qb.away, 'away', g, hm) };
-    if (!qb.home.player) qb.home = null;
-    if (!qb.away.player) qb.away = null;
+    if (!qb.home.player && !qb.home.contested) qb.home = null;
+    if (!qb.away.player && !qb.away.contested) qb.away = null;
     var flags = [];
     if (market.status === 'none') flags.push('NO_MARKET');
     if (market.status === 'stale') flags.push('STALE_MARKET');
@@ -877,7 +878,8 @@
       model: model, market: market, gap: gap,
       favorite_flip: !!(mfav && mfav.favorite && model.favorite && mfav.favorite !== model.favorite),
       drivers: drivers, matchup: matchup, qb: qb,
-      risks: ((g.risks && g.risks.items) || []).map(function (r) { return r.text; }).filter(Boolean).slice(0, 3),
+      /* quarterback notes reach the copy only through qbState (`material`) */
+      risks: ((g.risks && g.risks.items) || []).filter(function (r) { return r && !/^qb_/.test(r.key || ''); }).map(function (r) { return r.text; }).filter(Boolean).slice(0, 3),
       unpriced: ((g.why && g.why.unpriced) || []).slice(0, 4),
       research_status: g.research_status ? { key: g.research_status.key, label: g.research_status.label } : null,
       decision: g.decision_status ? { key: g.decision_status.key, label: g.decision_status.label, reason: g.decision_status.reason || null } : null,
@@ -1917,7 +1919,7 @@
     ['away', 'home'].forEach(function (s) {
       var q = p.qb && p.qb[s]; if (!q || !q.material) return;
       var team = s === 'home' ? p.home : p.away;
-      var move = isNum(q.effect_points) ? ' EdgeDesk’s model moves ' + oneDp(q.effect_points) + ' points if ' + q.player + ' doesn’t start' + (q.flips_favorite ? ', enough to flip the favorite' : '') + '.' : '';
+      var move = isNum(q.effect_points) && q.player ? ' EdgeDesk’s model moves ' + oneDp(q.effect_points) + ' points if ' + q.player + ' doesn’t start' + (q.flips_favorite ? ', enough to flip the favorite' : '') + '.' : '';
       if (q.status === 'AVAILABILITY') out.push(String(q.availability).replace(/\.?$/, '.') + (q.availability_source ? ' (Source: ' + q.availability_source + '.)' : '') + move);
       else if (q.status === 'COMPETITION') { var f = competitionFact(q); out.push(team + '’s quarterback job is unresolved in the play-by-play data' + (f ? ': ' + f : '') + '.' + move); }
     });
