@@ -175,6 +175,15 @@ jobs:
         if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
         run: node tools/validation/model_health.js --write || echo "::warning::model health could not be rebuilt; the last report stays up"
 
+      # The football evidence packets (tools/content/evidence.js): one per
+      # matchup, built from the research objects just rebuilt and the committed
+      # facts ledger — deterministic, no network, no AI. The Content Engine's
+      # admin page reads them; a packet whose inputs did not change is reused
+      # as it was. A failure warns; the last packets stay up.
+      - name: Football evidence packets (football/evidence/packets.json)
+        if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
+        run: node tools/content/evidence.js build || echo "::warning::the football evidence packets could not be rebuilt; the last packets stay up"
+
       - name: Operations report (football/cfb_production/reports/ops.json, admin/cfb-ops)
         if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
         env:
@@ -196,7 +205,7 @@ jobs:
             record/football/cfb_model_lab.json football/cfb_decision football/cfb_market/ledger \
             football/cfb_production/reports/ops.json football/cfb_production/reports/projections.json \
             football/cfb_production/reports/traces.json football/cfb_terminal football/cfb_validation football/markets \
-            football/validation/model_health.json
+            football/validation/model_health.json football/evidence/packets.json
 
       - name: Insert-only copy to Supabase (when secrets are configured)
         if: ${{ steps.gate.outputs.proceed == 'true' && ((github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run') }}

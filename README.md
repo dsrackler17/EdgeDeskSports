@@ -68,6 +68,11 @@ disagreements, injury implications, and attributed trending headlines. It then:
 
 - writes an SEO brief and a draft from EdgeDesk's own numbers;
 - checks every number, team, price label and phrase against the research;
+- holds every featured game to a football evidence packet
+  (`lib/football_evidence.js`): quarterbacks, both offenses against both
+  defenses, availability, form and history, each claim sourced, dated and
+  verified. Any gap between EdgeDesk's number and the market is explained,
+  or called UNEXPLAINED and never presented as an edge;
 - takes the draft through an owner-only review to a publisher-ready Markdown
   or HTML export, with UTM-tagged links.
 

@@ -65,7 +65,7 @@ const NOW = Date.parse('2026-10-08T17:30:00Z');
   const client = PGR.client({ url: SB, key: SERVICE }, fakeFetch, { retries: 0 });
   const quiet = () => {};
   try {
-    ['billing.sql', 'stripe_webhook.sql', 'referral_codes.sql', 'personal_research.sql', 'affiliates.sql', 'growth.sql', 'growth_outbound.sql', 'content_engine.sql']
+    ['billing.sql', 'stripe_webhook.sql', 'referral_codes.sql', 'personal_research.sql', 'affiliates.sql', 'growth.sql', 'growth_outbound.sql', 'content_engine.sql', 'content_engine_evidence.sql']
       .forEach((f) => db.applyFileAtomic(path.join(PG.ROOT, 'supabase', f)));
 
     /* L + D — no Claude */

@@ -87,16 +87,27 @@ async function callClaude(req, o) {
 async function aiPass(o, a, ctx) {
   const notes = [];
   let objections = [];
-  for (let attempt = 0; attempt < 2; attempt++) {
+  /* a retry rewrites only the section that failed (one section, else the
+     whole draft); never more than CE.ai.MAX_ATTEMPTS calls */
+  let current = a, section = null;
+  for (let attempt = 0; attempt < CE.ai.MAX_ATTEMPTS; attempt++) {
     if (ctx.spend && !(await ctx.spend('llm'))) { notes.push('budget_exhausted'); break; }
-    const req = CE.ai.buildRequest(o, { publisher: ctx.publisher, format: a.format, current: a, objections });
+    const req = CE.ai.buildRequest(o, { publisher: ctx.publisher, format: a.format, current, objections, section });
     let reply;
     try { reply = await callClaude(req, ctx); } catch (e) { notes.push('api_error ' + (e.status || '')); break; }
-    const parsed = CE.ai.parseReply(reply, a);
+    if (ctx.usage) ctx.usage(reply);
+    const parsed = CE.ai.parseReply(reply, current);
     if (!parsed.ok) { notes.push(parsed.reason); if (parsed.reason === 'refusal') break; continue; }
-    const rep = CE.validate(parsed.article, o, { publisher: ctx.publisher, now: ctx.now, teamLists: ctx.teamLists });
-    if (rep.ok) return { article: parsed.article, report: rep, generator: 'claude:' + String(reply.model || ctx.model).slice(0, 60), notes };
+    let next = parsed.article;
+    if (section) {
+      next = Object.assign({}, current, { sections: current.sections.map((s) => s.key === section ? (next.sections.find((n) => n.key === section) || s) : s) });
+      next.word_count = CE.util.wordCount(next.standfirst + ' ' + next.sections.map((s) => s.body).join(' '));
+    }
+    const rep = CE.validate(next, o, { publisher: ctx.publisher, now: ctx.now, teamLists: ctx.teamLists });
+    if (rep.ok) return { article: next, report: rep, generator: 'claude:' + String(reply.model || ctx.model).slice(0, 60), notes };
     objections = CE.ai.objections(rep);
+    const hit = CE.ai.affectedSections(rep, next, o);
+    if (hit && hit.length === 1) { section = hit[0]; current = next; } else { section = null; current = a; }
     notes.push('discarded: ' + objections.join(' | ').slice(0, 300));
   }
   return null;
@@ -104,7 +115,7 @@ async function aiPass(o, a, ctx) {
 
 /* ── discovery ──────────────────────────────────────────────────────────── */
 async function discoverAll(o) {
-  const art = o.art || ART.load();
+  const art = o.art || ART.load({ now: o.now });
   const snap = CE.research.fromArtifacts(art, { now: o.now });
   let news = [], feedProblems = [];
   if (o.network) {
@@ -129,7 +140,7 @@ function withHash(o) { return Object.assign({}, o, { research_hash: CE.util.hash
 /* ── the weekly run ─────────────────────────────────────────────────────── */
 async function weekly(o) {
   const db = o.db, log = o.log || console.log;
-  const art = o.art || ART.load();
+  const art = o.art || ART.load({ now: o.now });
   const snap0 = CE.research.fromArtifacts(art, { now: o.now });
   const period = [snap0.cfb && snap0.cfb.season || snap0.nfl && snap0.nfl.season, snap0.cfb ? 'cfb-w' + snap0.cfb.week : 'cfb-none', snap0.nfl ? 'nfl-w' + snap0.nfl.week : 'nfl-none'].join('-');
   const begin = await db.rpc('public', 'content_engine_job_begin', { p_job: 'weekly', p_period: period, p_force: !!o.force });
@@ -137,6 +148,8 @@ async function weekly(o) {
   const run = begin.run_id, settings = begin.settings || {};
   const counts = { opportunities: 0, created: 0, refreshed: 0, refused: 0, drafted: 0, queued_for_review: 0, kept_as_draft: 0, ai_used: 0, ai_discarded: 0, news: 0, feed_problems: 0 };
   const spend = async (provider) => { const r = await db.rpc('public', 'content_engine_spend', { p_provider: provider, p_n: 1 }); return !!(r && r.ok); };
+  /* what each call cost, when the evidence migration is applied (tokens are logged, then priced) */
+  const usage = (reply) => { const u = reply && reply.usage; if (!u) return; db.rpc('public', 'content_engine_ai_usage_record', { p: { model: reply.model || o.model, purpose: 'draft', input_tokens: u.input_tokens || 0, output_tokens: u.output_tokens || 0 } }).catch(() => null); };
   const note = (kind, detail, ids) => db.rpc('public', 'content_engine_log', Object.assign({ p_kind: kind, p_detail: detail, p_article: null, p_opportunity: null, p_run: run }, ids || {})).catch(() => null);
   try {
     const pubs = await db.rpc('public', 'content_engine_job_publishers', {});
@@ -144,10 +157,15 @@ async function weekly(o) {
     const d = await discoverAll({ art, now: o.now, network: o.network, fetch: o.fetch, spend, db, publisher });
     counts.news = d.news.length; counts.feed_problems = d.feedProblems.length;
     if (d.feedProblems.length) await note('fetch_failed', { problems: d.feedProblems });
+    const refusedKinds = {};
     for (const opp of d.opps) {
       const r = await db.rpc('public', 'content_engine_opportunity_upsert', { p: withHash(opp), p_run: run });
       counts.opportunities++;
-      if (r && r.ok) { if (r.created) counts.created++; else counts.refreshed++; } else counts.refused++;
+      if (r && r.ok) { if (r.created) counts.created++; else counts.refreshed++; } else { counts.refused++; refusedKinds[opp.kind] = (refusedKinds[opp.kind] || 0) + 1; }
+    }
+    if (refusedKinds.matchup_analysis) {
+      log('::warning::the database refused ' + refusedKinds.matchup_analysis + ' matchup analysis topic(s): apply supabase/content_engine_evidence.sql after supabase/content_engine.sql');
+      await note('job_note', { refused: refusedKinds, fix: 'apply supabase/content_engine_evidence.sql' });
     }
     const targets = await db.rpc('public', 'content_engine_job_targets', { p_publisher: publisher ? publisher.id : null, p_limit: settings.drafts_per_run });
     for (const t of targets || []) {
@@ -155,7 +173,7 @@ async function weekly(o) {
       let a = CE.draft(t, { publisher, format, now: o.now });
       let rep = CE.validate(a, t, { publisher, now: o.now, teamLists: d.teamLists });
       if (o.anthropicKey) {
-        const ai = await aiPass(t, a, { publisher, now: o.now, teamLists: d.teamLists, spend, key: o.anthropicKey, model: o.model, fetch: o.fetch });
+        const ai = await aiPass(t, a, { publisher, now: o.now, teamLists: d.teamLists, spend, usage, key: o.anthropicKey, model: o.model, fetch: o.fetch });
         if (ai) { a = Object.assign({}, ai.article, { generator: ai.generator }); rep = ai.report; counts.ai_used++; }
         else { counts.ai_discarded++; await note('ai_discarded', { opportunity: t.key, reason: 'kept the deterministic draft' }, { p_opportunity: t.id }); }
       }

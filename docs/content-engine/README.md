@@ -8,7 +8,7 @@
 4. Checks every claim against the research.
 5. Takes the draft through an owner-only review to a publisher-ready export, or to the publisher's inbox when the owner presses **Send**.
 
-It never invents a number, never makes a pick, and never sends or publishes anything by itself.
+It never invents a number, never makes a pick, and never sends or publishes anything by itself. Since October 2026 it also never puts EdgeDesk's number beside a market line without the football behind both of them: see *Football evidence* below.
 
 Why it exists: publishers asked for broader, search-driven pieces rather than isolated matchup previews: weekly CFB and NFL predictions, major storylines, injuries and upsets. The engine produces exactly those, with EdgeDesk's research as the thing that sets them apart.
 
@@ -39,6 +39,7 @@ Search Console (existing import) ───────────────�
   - Word (.docx), Markdown and HTML export;
   - RSS parsing;
   - the AI request and reply.
+- **`lib/football_evidence.js`** builds one football evidence packet per matchup, explains every model–market disagreement, and holds the editorial gate every draft must pass (see *Football evidence*). The Edge Function carries a verbatim copy of it too.
 - **`supabase/content_engine.sql`** holds:
   - the tables: publishers, benchmarks, opportunities, articles, revisions, deliveries, performance, events, runs and usage;
   - the owner doors;
@@ -66,6 +67,10 @@ Search Console (existing import) ───────────────�
 | First-party attribution | `acquisition_visitors`, `user_acquisition`, `user_events` and `growth_customer_facts()` (growth.sql, funnel.sql) |
 | Search demand evidence | `search_console_queries` (the existing Search Console import) |
 | Disclaimer wording | the article footer: "research, not betting advice … 21+ … 1-800-GAMBLER" |
+| Quarterback seasons, game logs and play-by-play unit metrics for the evidence packets | `football/fbs_epa/qb_epa_2026.json`, `football/matchup/metrics.json`, `football/matchup/profiles_2026.json`, `football/enrichment/box/` |
+| Official availability reports | `football/availability/reports/` (the conference reports EdgeDesk already ingests) |
+| Results, records, head-to-head, kickoff forecasts | `football/cfb_terminal/record.json`, `football/pricing/lines_*.json`, `football/venues/forecasts.json` |
+| Outside reporting (dated, attributed, editor-confirmed) | `football/evidence/facts.json`, the facts ledger (new; see below) |
 
 ---
 
@@ -79,7 +84,8 @@ Search Console (existing import) ───────────────�
    - Redeploy the `newsletter` function too, so its webhook ignores the events from these emails (`edgedesk=content`).
    - Until the function is deployed, the page still discovers, drafts, reviews and exports. AI rewrites, trending headlines and Send say they are unavailable.
 4. **The weekly job.** It runs from `.github/workflows/content-engine.yml` on Tue/Wed at 13:23 UTC, or by hand. It uses secrets the repository already holds: `SB_URL`, `SB_SERVICE_ROLE`, and optionally `ANTHROPIC_API_KEY`. Without the Supabase secrets it posts a named warning and does nothing.
-5. **Publisher business data** goes into the page, never the repository (see *Privacy* below). Open **Publishers → Stadium Rant** and:
+5. **The football evidence floor.** Paste `supabase/content_engine_evidence.sql` after `content_engine.sql` (and again after any re-application of it). It allows the two analysis formats and makes the database refuse to approve an article whose stored checks do not include the football evidence gate. It also adds the optional monthly AI cap and the editorial metrics. It is idempotent and ends in a report. Until it is applied, the weekly job skips matchup analyses with a named note, and everything else works as before.
+6. **Publisher business data** goes into the page, never the repository (see *Privacy* below). Open **Publishers → Stadium Rant** and:
    - add the contacts (name and email: **Send** only goes to these addresses) and the partnership terms;
    - add the **historical benchmarks** as *user-reported* values: the average views of the publisher's recent articles, and the range for EdgeDesk's earlier matchup pieces.
 
@@ -151,7 +157,11 @@ Search Console (existing import) ───────────────�
 | Weekly NFL preview | weekly preview, upset watch, slate-wide model-vs-line | intro · why it matters · how to read · the games · upset watch · where the numbers differ · injury report · limits · bottom line |
 | Trending sports story | a matched headline, an NFL injury implication | intro · what was reported (attributed, linked) · why it matters · what EdgeDesk's research shows · what we don't know · bottom line |
 | Market discrepancy analysis | one game with a current price and a 2+ point gap | intro · the gap (with capture time) · why the numbers differ · how to read · the case for the market · limits · bottom line |
+| **Matchup analysis** (for a publisher) | one featured game | the football question · what EdgeDesk sees differently · the football evidence (quarterbacks, both offenses, personnel, form, history, conditions) · what could make EdgeDesk wrong · what has to happen on the field · what to watch and what we still don't know. Prose, no software terms, 800–1,600 words; manual approval always |
+| **EdgeDesk analysis** (first-party) | the same game, for EdgeDesk's own pages | the same journalist-first order as a research page: a fact sheet, the numbers, the evidence by unit, the case against EdgeDesk, a scorecard of what each number needs, **inside EdgeDesk's number** (every model term, the diagnostics, the research status, what is not on file), what to watch. Shares under 45% of its wording with the publisher piece |
 | Publisher-specific | any of the above | the publisher's own section order, tone, length and attribution |
+
+A matchup analysis is offered for the two highest-ranked meetings of the week and for any game where EdgeDesk and the market differ by 7+ points (CFB) or 4+ (NFL), up to three a week. The publisher and first-party versions are written separately on purpose: the database already refuses a second live article for the same research, publisher, format and angle, and the two formats differ in structure and wording, so neither is a syndicated copy of the other.
 
 One research event can produce several **angles** (for example *full slate* or *upsets first*). Each angle is its own article. The database allows one live article per research event × publisher × format × angle, and the validator fails a draft that overlaps a sibling article from the same research by 70% or more.
 
@@ -189,9 +199,154 @@ Each opportunity gets seven parts, each scored 0–100 with its basis:
 
 ---
 
+## Football evidence
+
+**Why.** In Week 6 a publisher received a piece that set EdgeDesk's Ole Miss–Vanderbilt number (Ole Miss by about 1) beside a market that made Ole Miss a 9.5-point favourite, with no football reason for either. The old writer printed only the model's mechanics and "Model confidence: High"; the validator only checked that each number existed somewhere in the research. EdgeDesk's own game page had already labelled that gap a DATA FAULT. The repair is in the shared pipeline, so every format and every publisher gets it.
+
+### One packet per matchup
+
+`lib/football_evidence.js` builds a packet for each game from files already committed. It makes no network call, no AI call, and gives the same packet for the same inputs. `tools/content/evidence.js build` writes `football/evidence/packets.json`, and the hourly Model Lab job rebuilds it after the research terminal. A packet whose inputs did not change is reused as it was.
+
+Each packet holds **claims**. Every claim has:
+- its text, short form and values;
+- its source (a committed file, an official report, or a dated outside article) and the time it was observed or published;
+- its **verification** status:
+
+| Status | Meaning | Football evidence? |
+|---|---|---|
+| `VERIFIED_DATA` | measured from EdgeDesk's committed play-by-play, box scores, results or schedules | yes |
+| `OFFICIAL_REPORT` | a conference availability report or the NFL injury report | yes |
+| `RATING` | EdgeDesk's position-group or opponent ratings | yes, weighed less than measured data |
+| `REPORTED` | an outside outlet's dated article, not yet confirmed by an editor | yes, always attributed and linked, and it holds the article for review |
+| `VERIFIED_REPORT` | outside reporting an editor has confirmed (`add_fact.js --verify`) | yes, attributed |
+| `MODEL_OUTPUT`, `MARKET_DATA` | EdgeDesk's number and its pieces; the captured line | **never**: a model's number is not evidence of a football reason |
+| `CONFLICTING` | two of EdgeDesk's own sources disagree | only to disclose the conflict |
+
+and its **scope**: current season, historical (always dated), preseason, report or market.
+
+What a packet covers, item by item (each is AVAILABLE, a labelled PROXY, or MISSING with the reason):
+- **Quarterbacks:** completions, attempts, yards, yards per attempt, touchdowns, interceptions, sacks per dropback, the last-two-games trend, the last game, the availability report and who started last, and whether the model's starter matches the report.
+- **Each offense against the other defense:** early downs, third down, red zone, explosive runs and passes, run and pass efficiency, pass protection against the pass rush, the line of scrimmage on runs, with the FBS average beside each pair.
+- **Personnel:** EdgeDesk's position-group ratings, the official report's questionable, doubtful and out players, coaching change and returning roster share.
+- **Situation:** points for and against, records, conference records, the last results, schedule strength (a proxy: the average EdgeDesk rank of opponents), rest, home field (and what the market has historically paid for it), the kickoff forecast, and the last meeting with its year.
+- **Not used, on purpose:** turnover rates (the play-by-play feed misses fumbles) and, for CFB, penalties (EdgeDesk has no current-season penalty data). They stay MISSING; nothing is estimated.
+
+Where EdgeDesk's own sources disagree, the packet uses the corroborated figure, marks the other `CONFLICTING`, and says so. For example, a team's sack rate is checked against quarterback logs and box scores.
+
+### The explanation of a disagreement
+
+For every game with a comparable line, the packet says:
+- what EdgeDesk projects, the comparable market (current, last captured with its time, or a reference line), the gap and which way it points;
+- the model's own terms, with their points and direction;
+- how much of the gap EdgeDesk's existing disagreement explainer accounts for;
+- the measured football on each side (**supporting** and **contradicting** claims) and their balance;
+- an **input audit**: a stale line, a quarterback the model expects who is not the one the report lists (`QB_INPUT_CONFLICT`), a generic quarterback-absence adjustment, data conflicts, an outlier against EdgeDesk's other models, the game page's own DATA FAULT label, a league-wide home-field constant, a coaching or roster regime change, a thin sample;
+- a thesis, the critical matchup (a football question), the game script each number needs, the uncertainty, and an assessment.
+
+Then it gives one status:
+
+| Status | When |
+|---|---|
+| `EXPLAINED` | identifiable pieces account for most of the gap, or the measured football supports it |
+| `PARTIALLY_EXPLAINED` | some of it has support, not all |
+| `UNEXPLAINED` | EdgeDesk cannot account for most of the gap. The article must say so, and must say it is not an edge |
+| `NO_MATERIAL_DISAGREEMENT`, `NO_COMPARABLE_MARKET`, `NO_PROJECTION` | as named |
+
+`actionable` is always false. A gap is research, never a recommendation, and an input the audit suspects is flagged and investigated, not explained away.
+
+**Week 6, as the packets read it:** Ole Miss–Vanderbilt is UNEXPLAINED with suspect inputs. The model is built on Blaze Berlowitz starting, while the SEC report lists Jared Curtis as probable; the explainer accounts for about 2.0 of the 9.3 points; and the measured football leans to Ole Miss. Georgia–Alabama and Missouri–Texas A&M are EXPLAINED. Texas–Oklahoma is partly explained. UCLA–Oregon is partly explained with suspect inputs (Dante Moore is listed out, and the model prices his absence generically).
+
+### The facts ledger: outside reporting
+
+`football/evidence/facts.json` holds what EdgeDesk's own data cannot: an injury's nature, a coach's comment, a halftime score. Each fact carries:
+- the outlet;
+- the URL;
+- the published date;
+- who recorded it;
+- an expiry, so a stale report stops being used.
+
+It enters as `REPORTED`, and the article names and links the outlet. Any article citing it is **held for review** until an editor confirms it.
+
+```
+node tools/content/add_fact.js --file new_fact.json      # add (validated: dated, sourced, numbers in the text)
+node tools/content/add_fact.js --list [--game ID]
+node tools/content/add_fact.js --verify ID --by "Name"   # an editor confirms it against the primary source
+node tools/content/add_fact.js --expire | --check
+node tools/content/evidence.js plan --featured           # what each featured game is missing, before anyone researches
+```
+
+The research plan lists only what is missing or expired for **featured** games. Facts already on file and current are reused, never looked up again.
+
+### The gate
+
+`FE.gate()` runs inside `validate()`: in the page, in the weekly job, and in the Edge Function on every AI rewrite. If the module is not loaded, the article fails closed. Each featured game is checked:
+
+| Check | Fails when |
+|---|---|
+| Evidence packet | a featured game has no packet, or its packet was built from different numbers than the research (stale) |
+| Football evidence | fewer than 5 football claims are cited in a single-game piece, or 2 per game in a slate. Model output, the line, and who is available do not count |
+| Quarterbacks discussed | a single-game piece does not cite measured quarterback play for both teams |
+| Injuries addressed | a material injury, or a conflict between the model and the report, goes unmentioned. A conflict must be stated, not just named |
+| Contrary evidence | where EdgeDesk differs from the line, nothing argues the other side. A single-game piece needs two contradicting claims in its counterargument or game script |
+| Unexplained disclosed | an UNEXPLAINED or suspect gap is not called unexplained **and** not an edge |
+| Causal claims supported | the article says the model likes a team *because of* a football stat, or gives a cause for an unexplained gap |
+| Injury status correct | "X will start", "X is out" or "X is cleared" contradicts the report |
+| History dated | a past meeting is stated without its year in any sentence that states it |
+| Gap arithmetic | the model-versus-line gap is misstated |
+| No edge language | "value side", "mispriced", "the market is wrong", "sharp money", "betting edge" |
+| No repetition | a sentence of eight or more words appears three times (a warning at two) |
+| No software jargon | publisher formats only: model versions, "ensemble", "pipeline", "explainer", code identifiers |
+| Sources known | a link to a source outside the research |
+| Reported attributed | outside reporting without its outlet |
+
+The number check is stricter too. A figure from a claim is valid only in a sentence that cites that claim, so a real number moved onto the wrong statement fails.
+
+**Readiness.** Every check report now ends in one of three states:
+- **BLOCKED**: a hard check failed.
+- **HOLD_FOR_REVIEW**: it passes, but it cites unconfirmed outside reporting or EdgeDesk's inputs are suspect. The review panel lists each hold, and the owner's source-verification point is the confirmation.
+- **READY**: nothing is held.
+
+Fluent prose, SEO metadata or an AI quality score cannot move an article out of BLOCKED or HOLD. The review panel shows an **Evidence record**: every central claim with its source, time and verification status.
+
+### EdgeDesk's own game pages
+
+`tools/articles/generate.js` and the editorial pipeline attach the packet's summary to each pregame record. The page gains a section, **The football behind the number**: the quarterbacks, the case each way, the research status and the sources.
+
+Automatic publishing is **held** (`manual_review`, with the reason) when:
+- the game has no packet;
+- the inputs are suspect;
+- the page cites unconfirmed reporting.
+
+An explicit `--publish --game` remains the owner's override. The integrity check counts the packet's figures as supported.
+
+### Cost
+
+- **Packets** are deterministic and built once per matchup per research change, from committed files. The slate and the single-game piece read the same packet (trimmed for a slate).
+- **Outside research** is for featured games only, and only what the plan lists as missing.
+- **Claude** gets the packet in its request, and at most **two attempts** per draft. A retry rewrites only the sections that failed, and every call is budgeted before it is made.
+- **Monthly cap.** The database can now hold an optional monthly cap on Claude calls (`settings.llm_calls_per_month`, unset = not enforced) beside the existing daily cap. Each call's tokens and estimated cost are logged in `content_engine.ai_usage`.
+- **No new paid API** is used.
+
+### Metrics
+
+`content_engine_editorial_metrics(days)` (owner only) reports, from what the database already records:
+- **editorial acceptance**:
+  - articles that passed their initial checks, held for review, or blocked;
+  - average revisions before approval;
+  - unsupported claims the gate caught (by check), and AI drafts discarded;
+  - approved, sent and published articles, and the publisher acceptance rate;
+- **traffic and conversion**: tagged visits, sessions, sign-ups, trials and paid conversions, plus publisher-reported page views;
+- **cost**: Claude calls, tokens and estimated cost, per published article and per paid conversion.
+
+The three are kept apart. A figure the database does not measure is null and says so; nothing is estimated.
+
+---
+
 ## Quality gates
 
 These checks run in the page, in the job and in the function, and the database adds its own floor.
+
+The football evidence gate (above) runs first, as part of the same report.
 
 **Fail (a draft with any of these cannot go to review):**
 
@@ -217,6 +372,7 @@ These checks run in the page, in the job and in the function, and the database a
 
 **The database** refuses approval unless all of the following hold:
 - every check passed;
+- the stored checks include the football evidence gate, and it did not block the article (`content_engine_evidence.sql`);
 - the five-point review is complete, for the current content hash;
 - the approval is for the hash on screen;
 - its own banned-phrase lint is clean.
@@ -224,9 +380,10 @@ These checks run in the page, in the job and in the function, and the database a
 An edit after approval returns the article to review, and sent content is frozen.
 
 **AI.** Claude is called with structured JSON output, the frozen research packet, the current draft and the publisher's profile. It is told the hard rules.
-- If its version fails a check, it gets the objections and one more try.
+- It also gets the football evidence packet for each game and the rules that go with it: cite claims, attribute reporting, never give a cause the packet does not support, call an unexplained gap unexplained.
+- If its version fails a check, it gets the objections and one more try, rewriting only the sections that failed.
 - If it fails again, nothing is saved and the deterministic draft stands.
-- Every call is counted against the database's daily budget **before** it is made (default 20 calls a day, set in Settings).
+- Every call is counted against the database's daily budget **before** it is made (default 20 calls a day, set in Settings), and against the monthly cap when one is set.
 - The default model is `claude-opus-5-5`, with server-side refusal fallbacks.
 
 ---
@@ -290,11 +447,24 @@ An edit after approval returns the article to review, and sent content is frozen
 ## Tests
 
 ```
-npm run content:test      # the core against the committed research + static guards (192 checks)
-npm run content:sql       # the database on a real PostgreSQL (125)
+npm run content:test      # the core (215), the football evidence pipeline (186), the facts ledger, the inline copy
+npm run content:evidence:test  # the evidence pipeline, the facts ledger and the evidence migration on their own
+npm run content:evidence  # rebuild football/evidence/packets.json from the committed research
+npm run content:sql       # the database on a real PostgreSQL (125) and the evidence migration (30)
 npm run content:fn        # the Edge Function as deployed, against that database (61)
 npm run content:job:test  # the weekly job as the service role (23)
 npm run content:e2e       # the owner's whole flow in Chromium, both ways of sending included (54)
+```
+
+`tools/content/evidence.test.js` holds the pipeline to the Week 6 complaint on a frozen copy of that week (`tools/content/fixtures/evidence_2026_w6.json`):
+- the Ole Miss–Vanderbilt analysis must avoid the eight failures the publisher named;
+- the old writer's slate must fail the new gate, and the new one pass;
+- each adversarial edit must fail the right check (29 cases: an invented statistic, a real number moved onto the wrong claim, edge language, a wrong injury status, undated history, a dropped disclosure or counterargument, a code identifier, and more);
+- Georgia–Alabama, Texas–Oklahoma, Missouri–Texas A&M, UCLA–Oregon and an NFL game must pass in both analysis formats;
+- the two formats must stay different articles;
+- today's research must also pass, generated end to end.
+
+```
 npm run content:example   # write an example article (Word, Markdown, HTML, SEO sheet) from the current research to content-example/
 ```
 
@@ -325,7 +495,19 @@ npm run content:example   # write an example article (Word, Markdown, HTML, SEO 
 - publisher-reported figures and benchmarks;
 - multiple publishers.
 
+**Phase 4 — football evidence: built (October 2026).**
+- one evidence packet per matchup;
+- the model–market explanation and input audit;
+- the editorial gate and readiness;
+- the matchup and first-party analysis formats;
+- the facts ledger;
+- the game-page section and the auto-publish hold;
+- the monthly AI cap and editorial metrics (migration to apply by hand).
+
 **Limitations**
+- **Outside reporting is unconfirmed until an editor checks it.** The Week 6 facts were recorded from search results; the development sandbox could not open the primary pages. They are REPORTED, and any article citing them is held for review until `add_fact.js --verify`.
+- **EdgeDesk's own inputs.** The packets flag them; fixing them is model work outside the Content Engine. Two examples: the CFB model's quarterback input lags the availability reports (Ole Miss–Vanderbilt), and sack attribution in the play-by-play disagrees with box scores across the slate.
+- **Not in EdgeDesk's data:** CFB penalties, reliable turnover rates, and a strength-of-schedule measure (a labelled proxy is used).
 - **CFB prices are mostly stale.** Most CFB games carry no fresh price (5 of 55 in Week 6), and NFL quotes are the last captured lines. The articles say so; market-discrepancy topics score lower until prices are fresh.
 - **NFL confidence.** The NFL model publishes no confidence score, and NFL BET/LEAN/PASS decisions are computed only in the browser, so the engine does not cite them.
 - **CFB records and standings.** CFB win–loss records and conference standings are not in the committed research. Conference pieces read races through ratings and projections, and say so.

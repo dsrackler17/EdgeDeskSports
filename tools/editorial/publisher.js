@@ -43,6 +43,7 @@
 
 const AMODEL = require('../articles/article_model.js');
 const QUALITY = require('./quality.js');
+const FE = require('../../lib/football_evidence.js');
 
 /* --------------------------------------------------------------- lifecycle */
 /* THE STATE MACHINE. `status` was an arbitrary string with five legal values
@@ -153,6 +154,11 @@ function preflight(rec, opts) {
   if (type === 'pregame') {
     block('snapshot', !!rec.snapshot_id,
       'a pregame article must cite the immutable snapshot it was built from');
+    /* the football evidence: required when the caller says so (the editorial
+       and article pipelines do) or when the record carries any */
+    if (opts.requireEvidence || rec.football_evidence) {
+      FE.firstPartyGate(rec).blocking.forEach(b => block(b.id, false, b.why, b.detail));
+    }
   } else if (type === 'postgame') {
     const res = rec.result || {};
     block('final_data', res.home_score != null && res.away_score != null,

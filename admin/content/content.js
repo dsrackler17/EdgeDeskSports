@@ -125,8 +125,10 @@
   }
   async function loadArtifacts() {
     var A = CE.ARTIFACTS;
-    var got = await Promise.all([A.cfb_games, A.cfb_brief, A.rankings, A.nfl_slate, A.nfl_injuries, A.published].map(getJson));
-    var art = { cfbGames: got[0], cfbBrief: got[1], rankings: got[2], nflSlate: got[3], nflInjuries: got[4], published: got[5], marketSnapshots: [] };
+    var got = await Promise.all([A.cfb_games, A.cfb_brief, A.rankings, A.nfl_slate, A.nfl_injuries, A.published, A.evidence].map(getJson));
+    /* the football evidence packets (tools/content/evidence.js builds and commits them):
+       without them every draft fails the evidence gate, by design */
+    var art = { cfbGames: got[0], cfbBrief: got[1], rankings: got[2], nflSlate: got[3], nflInjuries: got[4], published: got[5], evidence: got[6], marketSnapshots: [] };
     var season = (art.nflSlate && art.nflSlate.season) || (art.cfbGames && art.cfbGames.season) || new Date().getUTCFullYear();
     var weeks = [];
     if (art.nflSlate) { var w = CE.research.chooseWeek(art.nflSlate.games || [], Date.now()); if (w) weeks.push(w); }
@@ -363,10 +365,22 @@
     var el = $(id); if (!el) return;
     if (!rep || !rep.checks) { el.innerHTML = '<p class="note">Not checked yet.</p>'; return; }
     var cls = { pass: 'ok', warn: 'warn', fail: 'bad' };
+    var rd = { READY: '<span class="pill ok">ready</span>', HOLD_FOR_REVIEW: '<span class="pill warn">hold for review</span>', BLOCKED: '<span class="pill bad">blocked</span>' }[rep.readiness] || '';
     el.innerHTML = '<div class="sub">' + (rep.ok ? '<span class="pill ok">all hard checks pass</span>' : '<span class="pill bad">' + (rep.failed || []).length + ' failing</span>')
-      + ' <span class="dim">checked ' + when(rep.checked_at) + '</span></div><ul class="checks">' + rep.checks.map(function (c) {
+      + ' ' + rd + ' <span class="dim">checked ' + when(rep.checked_at) + '</span></div>'
+      + ((rep.holds || []).length ? '<div class="banner">Confirm before approving (the source verification point): <ul>' + rep.holds.map(function (h) { return '<li>' + esc(h) + '</li>'; }).join('') + '</ul></div>' : '')
+      + '<ul class="checks">' + rep.checks.map(function (c) {
         return '<li><span class="pill ' + cls[c.status] + '">' + esc(c.status) + '</span><div><div>' + esc(c.label) + '</div>' + (c.detail ? '<div class="d">' + esc(c.detail) + '</div>' : '') + '</div></li>';
       }).join('') + '</ul>';
+  }
+  /* every claim the article cites: what it says, where it came from, when, and how far it is verified */
+  function evidenceRecord(rep) {
+    var rec = (rep && rep.evidence_record) || [];
+    if (!rec.length) return '<p class="note">No evidence cited.</p>';
+    return '<table class="t"><tr><th>Claim</th><th>Source</th><th>As of</th><th>Status</th></tr>' + rec.map(function (r) {
+      var src = r.source ? (r.source.url ? '<a href="' + esc(r.source.url) + '" rel="noopener" target="_blank">' + esc(r.source.publisher || r.source.label) + '</a>' : esc(r.source.label || '')) : '';
+      return '<tr><td>' + esc(r.text) + '</td><td>' + src + '</td><td>' + esc(r.observed_at ? when(r.observed_at) : '') + '</td><td><span class="pill ' + (r.needs_confirmation ? 'warn' : (/MODEL|MARKET/.test(r.verification) ? '' : 'ok')) + '">' + esc(r.verification.replace(/_/g, ' ').toLowerCase()) + '</span></td></tr>';
+    }).join('') + '</table>';
   }
   function exportCtx(row) {
     return { publisher: row.publisher_profile, campaign: row.campaign_code, opportunity: row.opportunity, landing: row.landing_url };
@@ -461,6 +475,7 @@
       + esc(row.generator) + ' · revision ' + esc(row.revision) + '</div></div>'
       + '<div class="grid2"><div><div class="card"><h3 style="margin-top:0">Checks, re-run now</h3><div id="rChecks"></div></div>'
       + '<div class="card"><h3 style="margin-top:0">Sources</h3>' + sourcesBlock(row.opportunity && row.opportunity.sources) + '<p class="note">Research as of ' + when(row.research_as_of) + ' (' + ago(row.research_as_of) + ').</p></div>'
+      + '<div class="card"><h3 style="margin-top:0">Evidence record</h3>' + evidenceRecord(rep) + '</div>'
       + '<div class="card"><h3 style="margin-top:0">Model numbers to verify</h3>' + researchTable(row.opportunity) + '</div>'
       + '<div class="card"><h3 style="margin-top:0">SEO sheet</h3><pre class="mono sub" style="white-space:pre-wrap">' + esc(CE.seoSheet(a, row.opportunity)) + '</pre></div>'
       + '<div class="card"><h3 style="margin-top:0">Editorial review</h3>' + REVIEW_POINTS.map(function (p) {
