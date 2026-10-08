@@ -310,6 +310,25 @@ const MORNING = { day: '2026-10-08', timezone: 'America/New_York', test_mode: tr
   domain_auth_checked_at: '2026-10-07T20:00:00Z', providers: { apollo: true, clay: false } };
 const PARTNERS = [{ id: 'pm', full_name: 'Max Media ' + XSS, organization: 'Big Sports Pod', campaign_type: 'media_partner', qualification_score: 61, email: 'max@bigpod.test',
   email_status: 'verified', status: 'qualified' }];
+// Phase 13: what each provider last said, where candidates came from, what they cost, who was turned away
+const P13_HEALTH = {
+  anthropic: { state: 'connected', detail: 'Claude answered (claude-opus-5-5)', checked_at: '2026-10-08T11:00:00Z' },
+  hunter: { state: 'quota_exhausted', detail: 'Hunter (Free): credits 50 of 50 used — resets 2026-11-01', checked_at: '2026-10-08T11:00:00Z' },
+  apollo: { state: 'connected', detail: 'Apollo says this is not on the plan (403) for mixed_people/api_search', endpoints: { 'mixed_people/api_search': 'insufficient_plan' }, checked_at: '2026-10-08T11:00:00Z' },
+  podcastindex: { state: 'not_checked', detail: null },
+  brave: { state: 'credential_missing', detail: 'BRAVE_SEARCH_API_KEY is not set (optional)' },
+  clay: { state: 'credential_missing', detail: null },
+  resend: { state: 'connected', detail: 'Resend answered ' + XSS, checked_at: '2026-10-08T11:00:00Z' } };
+const P13_OV = { health: P13_HEALTH,
+  sources: { podcastindex: { found: 7, waiting: 3, researched: 4, not_a_fit: 2, failed: 0, prospects: 2, qualified: 1 },
+    manual: { found: 12, waiting: 5, researched: 7, not_a_fit: 3, failed: 1, prospects: 3, qualified: 2 } },
+  spend: { usd_today: 0.31, usd_30d: 4.2, usd_month_at_7d_pace: 6.5, providers: {
+    anthropic: { calls_today: 6, units_today: 0, usd_today: 0.31, calls_30d: 90, units_30d: 0, usd_30d: 4.2 },
+    hunter: { calls_today: 3, units_today: 2, usd_today: null, calls_30d: 40, units_30d: 30, usd_30d: null } } },
+  rejected: [{ at: '2026-10-08T10:00:00Z', kind: 'candidate', url: 'https://touts.example/', title: 'Lock of the day ' + XSS, status: 'not_a_fit', source: 'manual', reason: 'a tout selling picks' }],
+  directories: [{ url: 'https://lists.example/cfb-newsletters', permitted: true, segment: 'media_partner' }], directories_due: [] };
+const P13_MORNING = { timezone: 'America/Chicago', candidates_waiting: 8, rejected_today: 2, discovery_sources: { saved_searches: 2, directories: 1 },
+  found_today: { podcastindex: 3, manual: 2 }, health: P13_HEALTH, optout_check: null, optout_checked_at: null, partner_outreach: false };
 const Q12 = { ok: true, status: 'pending_review', total: 1, rows: [Object.assign(card({ id: 'd121', pid: 'p1', name: 'Pat Analyst', org: 'CFB Numbers', fit: 89,
   email: 'pat@cfbnumbers.test', subject: 'Your CFB ratings', body: 'Hi Pat,\n\nI read your CFB power ratings against the market.', claims: PAT_CLAIM_10() }), {
   advice: ['offer: say the price, $49.99/month', 'offer: say the 7-day free trial'], words: 12,
@@ -354,6 +373,15 @@ const PROSPECTS = { total: 2, rows: [
         const body = JSON.parse(req.postData() || '{}');
         calls.push(['fn:growth_outbound_research', body]);
         if (state.research === 'missing') return reply(404, { code: 'NOT_FOUND', message: 'Requested function was not found' });
+        if (body.action === 'status' && o.p13) return reply(200, { ok: true, providers: { search: true, email: true, llm: true, fetch: true, model: 'claude-opus-5-5', enrichment: false, organizations: false,
+          detail: { brave: { role: 'search', key: 'BRAVE_SEARCH_API_KEY', configured: false, on: false }, podcastindex: { role: 'search', key: 'PODCASTINDEX_API_KEY + PODCASTINDEX_API_SECRET', configured: true, on: true },
+            apollo_search: { role: 'search', key: 'APOLLO_API_KEY', configured: true, on: false }, apollo_org: { role: 'search', key: 'APOLLO_API_KEY', configured: true, on: false },
+            hunter: { role: 'email lookup and verification', key: 'HUNTER_API_KEY', configured: true, on: true }, apollo: { role: 'email lookup', key: 'APOLLO_API_KEY', configured: true, on: false },
+            clay: { role: 'enrichment', key: 'CLAY_WEBHOOK_URL', configured: false, on: false } }, health: P13_HEALTH },
+          overview: Object.assign({}, RESEARCH_OV, P13_OV) });
+        if (body.action === 'health' && o.p13) return reply(200, { ok: true, health: Object.assign({}, P13_HEALTH, { podcastindex: { state: 'connected', detail: 'Podcast Index answered a search' } }) });
+        if (body.action === 'expand' && o.p13) return reply(200, { ok: true, run_id: 50, results: 3, new: 2, seen_again: 1, duplicates: 0, directories: 1,
+          per_query: [{ directory: body.url, results: 3, new: 2, note: '2 platform pages left out' }], notes: [] });
         if (body.action === 'status' && o.p12) return reply(200, { ok: true, providers: { search: true, email: true, llm: true, fetch: true, model: 'claude-opus-5-5', enrichment: false,
           detail: { brave: { role: 'search', key: 'BRAVE_SEARCH_API_KEY', configured: true, on: true }, apollo_search: { role: 'search', key: 'APOLLO_API_KEY', configured: false, on: false },
             hunter: { role: 'email lookup and verification', key: 'HUNTER_API_KEY', configured: true, on: true }, apollo: { role: 'email lookup', key: 'APOLLO_API_KEY', configured: true, on: true },
@@ -396,6 +424,13 @@ const PROSPECTS = { total: 2, rows: [
       if (/functions\/v1\/growth_outbound_send/.test(url)) {
         const body = JSON.parse(req.postData() || '{}');
         calls.push(['fn:growth_outbound_send', body, req.headers().authorization]);
+        if (body.action === 'health' && o.p13) return reply(200, { ok: true, health: { resend: { state: 'connected', detail: 'Resend answered: the key is sending-only (it may send, not read domains)' } } });
+        if (body.action === 'optout_check' && o.p13) {
+          return reply(200, state.optoutFail ? { ok: true, check: { base: 'https://zzproj.supabase.co/functions/v1/', ok: false, detail: 'the endpoint is not deployed (404)' }, unsubscribe_url_base: null,
+            live_send_blockers: ['unsubscribe_endpoint_missing'] }
+            : { ok: true, check: { base: 'https://zzproj.supabase.co/functions/v1/', ok: true, redirect_ok: true, post_ok: true, detail: 'GET redirected to the stop page; POST said not valid' },
+              unsubscribe_url_base: 'https://zzproj.supabase.co/functions/v1/', live_send_blockers: ['webhook_unproven'] });
+        }
         if (body.action === 'domain_check') {
           return reply(200, { ok: true, live_send_blockers: state.domainFail ? ['domain_auth_failed'] : [], check: { domain: 'edgedesksports.com', ok: state.domainFail ? false : true, via: 'dns-over-https',
             spf: { ok: true, detail: 'send.edgedesksports.com: v=spf1 include:amazonses.com ~all' }, dkim: { ok: !state.domainFail, detail: state.domainFail ? 'no DKIM key at resend._domainkey.edgedesksports.com' : 'key ' + XSS },
@@ -424,6 +459,11 @@ const PROSPECTS = { total: 2, rows: [
         if (name === 'growth_outbound_suppressions') return reply(200, [{ created_at: '2026-10-05T11:00:00Z', scope: 'address', target: 'no@thanks.test', kind: 'unsubscribe', source: 'owner', reason: 'asked' }]);
         if (name === 'growth_outbound_activity') return reply(200, [{ at: '2026-10-05T11:00:00Z', actor_kind: 'owner', action: 'settings_changed', entity: 'settings', entity_id: '1', detail: { x: 1 } }]);
         if (name === 'growth_outbound_suppress') return reply(200, { ok: true, id: 9, prospects_suppressed: 1, drafts_cancelled: 1 });
+        if (o.p13 && name === 'growth_outbound_candidates_import') {
+          return reply(200, { ok: true, run_id: 51, source: body.p_source, received: body.p_items.length, new: 2, seen_again: 1, duplicates: 0, suppressed: 0,
+            refused: [{ value: 'https://x.com/someone', why: 'X cannot be read by the engine: add them as a prospect' }] });
+        }
+        if (o.p13 && name === 'growth_outbound_morning') return reply(200, Object.assign({}, MORNING, P13_MORNING));
         if (o.p12 && name === 'growth_outbound_morning') return reply(200, MORNING);
         if (o.p12 && name === 'growth_outbound_partner_leads') return reply(200, PARTNERS);
         if (o.p12 && name === 'growth_outbound_prospect_set_segment') return reply(200, { ok: true, segment: body.p_segment, drafts_cancelled: 1 });
@@ -1356,6 +1396,7 @@ const PROSPECTS = { total: 2, rows: [
     await t.page.click('#obSave'); await settle(t.page);
     const wu = t.calls.filter((c) => c[0] === 'growth_outbound_settings_update').pop();
     chk('62 … accepting tells the database it was confirmed', wu[1].p.warmup_enabled === false && wu[1].p.confirm_cap_increase === true, wu[1]);
+    chk('63 before the Phase 13 SQL: provider health says what to run, and nothing else fails', /Provider health arrives with the Phase 13 SQL/.test(await text(t.page, '#dvHealth')));
     chk('58–62 no page errors', t.errors.length === 0, t.errors);
     if (SHOTS) await t.page.screenshot({ path: path.join(SHOTS, 'outbound-morning.png'), fullPage: true });
     try { fs.unlinkSync(tmp); } catch (_) { /* gone */ }
@@ -1372,6 +1413,100 @@ const PROSPECTS = { total: 2, rows: [
     chk('58 … nor the provider switches or the enrichment budget with the saved searches (the older database would refuse them)', !!dv && dv[1].p.discovery_config
       && !('providers' in dv[1].p.discovery_config) && !('enrichment' in (dv[1].p.discovery_config.budget || {})), dv && dv[1]);
     chk('58 … and a card shows no score or word count it does not have', !/words/.test(await text(t.page, '#rqCards')) && !/Product relevance/.test(await text(t.page, '#rqCards')));
+    await t.ctx.close();
+  }
+
+  /* ── 63–66. PHASE 13: free-first discovery, provider health, readiness ── */
+  {
+    const t = await open({ role: 'owner', p12: true, p13: true, settings: { min_qualification_score: 75, daily_qualified_target: 12, warmup_enabled: true, warmup_start_per_day: 10,
+      warmup_step_per_week: 5, partner_outreach_enabled: false, automation_timezone: 'America/Chicago',
+      today: { live_sends: 0, test_sends: 0, cap: 20, test_cap: 25, live_cap: { cap: 10, max: 20, warming: true, week: 0 } } } });
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 800);
+
+    /* 63. provider health */
+    const row = async (k) => t.page.$eval('#dvHealth [data-health="' + k + '"]', (r) => ({ state: r.getAttribute('data-state'), text: r.innerText }));
+    const hu = await row('hunter'), pi = await row('podcastindex'), br = await row('brave'), ap = await row('apollo'), rs = await row('resend');
+    chk('63 provider health: a free allowance used up is said, with its reset date and how to set it up', hu.state === 'quota_exhausted' && /Free credit used up/.test(hu.text)
+      && /resets 2026-11-01/.test(hu.text), hu);
+    chk('63 … a key that is set but never answered is "not checked yet", never connected, with where to get one', pi.state === 'not_checked' && /Key set, not checked yet/.test(pi.text)
+      && /api\.podcastindex\.org\/signup/.test(pi.text) && !/Connected/.test(pi.text), pi);
+    chk('63 … Brave is optional and not needed', br.state === 'credential_missing' && /Credential missing/.test(br.text) && /Optional and not needed/.test(br.text), br);
+    chk('63 … an endpoint off the plan is named beside a working key, with Apollo\'s work-email rule', /Connected and working/.test(ap.text) && /mixed_people\/api_search: Not on the current plan/.test(ap.text), ap);
+    chk('63 … a provider\'s words are shown as text', /<img src=x/.test(rs.text) && !(await t.page.evaluate(() => window.__pwned)), rs);
+    chk('63 … and the page says what connected means', /Connected means the provider answered a live check or a real call/.test(await text(t.page, '#tabOutbound')));
+    await t.page.click('#dvHealthBtn'); await settle(t.page, 600);
+    chk('63 "Check providers now" asks the research and send functions their free questions, and sends nothing', t.calls.some((c) => c[0] === 'fn:growth_outbound_research' && c[1].action === 'health')
+      && t.calls.some((c) => c[0] === 'fn:growth_outbound_send' && c[1].action === 'health' && !c[1].draft_ids));
+    const hm = await text(t.page, '#dvHealthMsg');
+    chk('63 … and says how many work, and what is wrong with the rest', /^4 of 7 connected and working\./.test(hm) && /hunter: free credit used up/.test(hm) && /brave: credential missing/.test(hm), hm);
+
+    /* 64. your own lists */
+    const imports = () => t.calls.filter((c) => c[0] === 'growth_outbound_candidates_import');
+    await t.page.selectOption('#dvImportSource', 'manual');
+    await t.page.selectOption('#dvImportSeg', 'customer');
+    await t.page.fill('#dvImportText', 'https://cfbnumbers.example/ found on a list\nhttps://x.com/someone\n');
+    await t.page.click('#dvImport'); await settle(t.page, 600);
+    let im = imports().pop();
+    chk('64 your own list: one address a line, a note after it, the segment you chose', !!im && im[1].p_source === 'manual'
+      && JSON.stringify(im[1].p_items) === JSON.stringify([{ url: 'https://cfbnumbers.example/', note: 'found on a list', segment: 'customer' }, { url: 'https://x.com/someone', segment: 'customer' }]), im && im[1]);
+    const imsg = await text(t.page, '#dvImportMsg');
+    chk('64 … and says what came of it: new, seen before, and what was left out and why', /Added from your list: 2 new candidates, 1 seen before, 1 left out \(https:\/\/x\.com\/someone: X cannot be read/.test(imsg)
+      && /Research reads them next/.test(imsg), imsg);
+    chk('64 … nothing is fetched or researched by adding them', !t.calls.some((c) => c[0] === 'fn:growth_outbound_research' && (c[1].action === 'research' || c[1].action === 'discover')));
+    await t.page.selectOption('#dvImportSource', 'search_results');
+    await t.page.selectOption('#dvImportSeg', '');
+    await t.page.fill('#dvImportText', 'Results\nhttps://www.google.com/url?q=https://indie.example/post&sa=U  https://www.google.com/search?q=cfb+model\n<a href="https://other.example/a">Other</a> https://indie.example/post');
+    await t.page.click('#dvImport'); await settle(t.page, 600);
+    im = imports().pop();
+    chk('64 a search you ran yourself: only the result addresses, never the search engine\'s own pages, each once', JSON.stringify(im[1].p_items.map((x) => x.url))
+      === JSON.stringify(['https://indie.example/post', 'https://other.example/a']) && im[1].p_source === 'search_results', im[1]);
+    await t.page.selectOption('#dvImportSource', 'domains');
+    await t.page.fill('#dvImportText', 'cfbmodel.example, statsguy.example');
+    await t.page.click('#dvImport'); await settle(t.page, 600);
+    im = imports().pop();
+    chk('64 company domains', JSON.stringify(im[1].p_items) === JSON.stringify([{ domain: 'cfbmodel.example' }, { domain: 'statsguy.example' }]) && im[1].p_source === 'domains', im[1]);
+
+    /* 65. directories, sources, cost, turned away */
+    await t.page.uncheck('#dvDirsOk');
+    await t.page.fill('#dvDirUrl', 'https://lists.example/cfb');
+    await t.page.click('#dvDirRead'); await settle(t.page);
+    chk('65 a directory page is not read until you say its terms allow it', !t.calls.some((c) => c[0] === 'fn:growth_outbound_research' && c[1].action === 'expand')
+      && (await t.page.$eval('#dvDirMsg', (e) => e.className)).indexOf('err') >= 0);
+    await t.page.check('#dvDirsOk');
+    await t.page.selectOption('#dvDirSeg', 'media_partner');
+    await t.page.click('#dvDirRead'); await settle(t.page, 600);
+    const ex = t.calls.filter((c) => c[0] === 'fn:growth_outbound_research' && c[1].action === 'expand').pop();
+    chk('65 … then it is read once, as permitted, with the segment of its links', !!ex && ex[1].url === 'https://lists.example/cfb' && ex[1].permitted === true && ex[1].segment === 'media_partner', ex && ex[1]);
+    chk('65 … and says what it found', /Read it: 3 independent sites linked, 2 new candidates, 1 seen before \(2 platform pages left out\)\./.test(await text(t.page, '#dvDirMsg')), await text(t.page, '#dvDirMsg'));
+    const srcs = await t.page.$$eval('#dvSources [data-source]', (rs) => rs.map((r) => r.getAttribute('data-source')));
+    chk('65 where candidates came from, most first, in words', JSON.stringify(srcs) === JSON.stringify(['manual', 'podcastindex']) && /Your list \(typed or pasted\)/.test(await text(t.page, '#dvSources')), srcs);
+    const spd = await text(t.page, '#dvSpend');
+    chk('65 what providers cost: Claude in dollars, a free tier in credits with no invented price, and the month at this pace', /Claude60\$0\.31900\$4\.20/.test(spd)
+      && /Hunter32—4030—/.test(spd) && /a month at the last 7 days' pace: \$6\.50/.test(spd), spd);
+    const rj = await text(t.page, '#dvRejected');
+    chk('65 who was turned away and why, web text as text', /a tout selling picks/.test(rj) && /<img src=x/.test(rj) && !(await t.page.evaluate(() => window.__pwned)), rj);
+
+    /* 66. the morning, the opt-out endpoint, partner outreach */
+    const mc = await text(t.page, '#mnChips'), mk = await text(t.page, '#mnKpis');
+    chk('66 this morning: the sources, what each found today, a provider that needs you', /Discovery: 2 saved search\(es\), 1 directory, plus your own lists/.test(mc)
+      && /Found today: Podcast Index 3, Your list \(typed or pasted\) 2/.test(mc) && /hunter: free credit used up/.test(mc) && /America\/Chicago/.test(mc), mc);
+    chk('66 … the opt-out endpoint not checked yet, partner outreach off', /Opt-out endpoint: not checked yet/.test(mc) && /Partner outreach: off/.test(mc), mc);
+    chk('66 … candidates waiting and turned away today', /Candidates waiting8/.test(mk) && /Turned away today2/.test(mk), mk);
+    await t.page.click('#tabBtnOutbound'); await settle(t.page);
+    await t.page.click('#hcOptout'); await settle(t.page, 600);
+    chk('66 "Check the opt-out endpoint" asks the send function, and sends nothing', t.calls.some((c) => c[0] === 'fn:growth_outbound_send' && c[1].action === 'optout_check' && !c[1].draft_ids)
+      && /The opt-out endpoint works at https:\/\/zzproj\.supabase\.co\/functions\/v1\/: its link redirects to the stop page and the one-click POST reaches the database\./.test(await text(t.page, '#hcMsg')),
+      await text(t.page, '#hcMsg'));
+    t.state.optoutFail = true;
+    await t.page.click('#hcOptout'); await settle(t.page, 600);
+    chk('66 … a failed check is said, and live sending stays blocked', /The opt-out endpoint does not work yet: the endpoint is not deployed \(404\)\. Live sending stays blocked\./.test(await text(t.page, '#hcMsg')), await text(t.page, '#hcMsg'));
+    chk('66 partner outreach is a setting, off', (await t.page.isChecked('#obf_partner_outreach_enabled')) === false);
+    await t.page.check('#obf_partner_outreach_enabled');
+    await t.page.click('#obSave'); await settle(t.page);
+    const pu = t.calls.filter((c) => c[0] === 'growth_outbound_settings_update').pop();
+    chk('66 … switching it on is saved as that setting', !!pu && pu[1].p.partner_outreach_enabled === true, pu && pu[1]);
+    chk('63–66 no page errors', t.errors.length === 0, t.errors);
+    if (SHOTS) await t.page.screenshot({ path: path.join(SHOTS, 'outbound-freefirst.png'), fullPage: true });
     await t.ctx.close();
   }
 

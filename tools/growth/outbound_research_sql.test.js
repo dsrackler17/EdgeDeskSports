@@ -454,6 +454,8 @@ try {
   one(`select growth_outbound.set_webhook_secret('whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw');`);
   r = j(db.as(OWNER, `select public.growth_outbound_settings_update(${lit(JSON.stringify({ postal_address: 'EdgeDesk Sports, 100 Example St, Springfield, IL 62701',
     unsubscribe_url_base: 'https://iattxbkbufslbauoumga.supabase.co/functions/v1/', test_inbox: 'owner-test@edgedesk.test', test_mode: false, confirm_live: true }))}::jsonb);`));
+  one(SEED.liveReady());   // (Phase 13) the opt-out endpoint checked, the webhook proven
+  r = Object.assign({}, r, { settings: j(db.as(OWNER, `select public.growth_outbound_settings();`)) });
   chk('W (setup) live, compliance configured', r.ok === true && r.settings.test_mode === false && r.settings.send_blockers.length === 0, r);
   const w1 = up(strongPayload({ name: 'Riley Stone', org: 'Stone Analytics', email: 'riley@stone.test', d: 'stone.test', h: 'rileystone', project: 'CFB win totals' }));
   const w2 = up(strongPayload({ name: 'Riley Stone', org: 'Stone Analytics', email: 'riley.stone@mailbox.test', d: 'rileystone-personal.test', h: 'rstone2', project: 'CFB win totals' }));

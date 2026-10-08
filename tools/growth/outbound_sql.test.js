@@ -78,7 +78,9 @@ chk('no pgcrypto dependency (portable under a pinned search_path)', !/gen_random
     'growth_outbound_fit_catalog', 'growth_outbound_draft_context', 'growth_outbound_draft_propose', 'growth_outbound_draft_gave_up',
     'growth_outbound_drafting_overview',
     // Phase 12: who waits for a verifier or for enrichment, and "handed to Clay" (a log line) — none approves, edits or sends
-    'growth_outbound_verify_queue', 'growth_outbound_enrichment_queue', 'growth_outbound_enrichment_mark'];
+    'growth_outbound_verify_queue', 'growth_outbound_enrichment_queue', 'growth_outbound_enrichment_mark',
+    // Phase 13: what a provider said and cost, and a provider's answer kept for a while — none approves, edits or sends
+    'growth_outbound_provider_health_record', 'growth_outbound_provider_record', 'growth_outbound_cache_get', 'growth_outbound_cache_put'];
   const notFirst = chunks.filter((c) => !(PROOF[c.name] || (ENGINE.includes(c.name)
     ? /\nbegin\n\s*perform growth_outbound\.require_engine\(\);/
     : /\nbegin\n\s*(perform growth_outbound\.require_owner\(\);|v_owner := growth_outbound\.require_owner\(\);)/)).test(c.body)).map((c) => c.name);
@@ -183,7 +185,7 @@ try {
 
   /* ══ B. CATALOGUE ═════════════════════════════════════════════════════ */
   const tables = one(`select string_agg(relname, ',' order by relname) from pg_class where relnamespace = 'growth_outbound'::regnamespace and relkind = 'r';`).split(',');
-  chk('B nineteen outbound tables', tables.length === 19, tables);
+  chk('B twenty-three outbound tables (Phase 13: provider health, a provider cache, the cost ledger, revenue)', tables.length === 23, tables);
   for (const r of ['anon', 'authenticated', 'service_role']) {
     chk('B ' + r + ' has no USAGE on the schema', one(`select has_schema_privilege('${r}', 'growth_outbound', 'usage');`) === 'f');
     const held = one(`select coalesce(string_agg(c.relname || ':' || p, ','), '') from pg_class c, unnest(array['select','insert','update','delete','truncate','references','trigger']) p
@@ -192,7 +194,7 @@ try {
   }
   chk('B every table has RLS on and the restrictive deny policy, and no permissive policy exists',
     one(`select count(*) from pg_class c where c.relnamespace = 'growth_outbound'::regnamespace and c.relkind = 'r' and c.relrowsecurity
-          and exists (select 1 from pg_policies p where p.schemaname = 'growth_outbound' and p.tablename = c.relname and p.policyname = 'deny_clients' and p.permissive = 'RESTRICTIVE');`) === '19'
+          and exists (select 1 from pg_policies p where p.schemaname = 'growth_outbound' and p.tablename = c.relname and p.policyname = 'deny_clients' and p.permissive = 'RESTRICTIVE');`) === '23'
     && one(`select count(*) from pg_policies where schemaname = 'growth_outbound' and permissive = 'PERMISSIVE';`) === '0');
 
   /* direct reads of every table, as every non-owner role (the owner too: no direct path for anyone) */
@@ -394,6 +396,7 @@ try {
 
   // go live, deliberately (a live send also needs the webhook's signing secret: bounces and complaints must reach us)
   one(`select growth_outbound.set_webhook_secret('whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw');`);
+  one(SEED.liveReady());   // (Phase 13) the opt-out endpoint checked, the webhook proven
   r = j(db.as(U.owner, `select public.growth_outbound_settings_update('{"test_mode": false, "confirm_live": true}'::jsonb);`));
   chk('I (setup) the owner leaves test mode with confirmation', r.ok === true && r.settings.test_mode === false);
   e = db.mustFail(() => one(`insert into growth_outbound.drafts (prospect_id, subject, body_text) values ('${P1}', 'Second step-1 draft', 'Hey Pat');`));

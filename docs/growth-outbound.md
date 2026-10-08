@@ -1399,12 +1399,145 @@ Nothing in this phase has been deployed. Schema changes and automation stay off 
 - **A failed domain check blocking live sends:** fix DNS and check again, or `update growth_outbound.settings set domain_auth = null, domain_auth_checked_at = null;` in the SQL editor.
 - **The database:** additive. To return to Phase 11, re-run the Phase 11 file (`git show 4f99b38:supabase/growth_outbound.sql`). Its functions replace these, and the new columns are harmless.
 
+## Phase 13: free-first discovery and operational readiness
+
+**The aim: the pipeline runs with Brave, Apollo and Clay all off, every provider state on the console is what the provider actually said, and nothing can go live until the opt-out link and the webhook are proven.** Nothing in this phase approves or sends.
+
+### The audit it started from
+
+| Area | Before Phase 13 |
+|---|---|
+| Discovery | Brave was the only working source. With no `BRAVE_SEARCH_API_KEY` the morning's discovery step failed every day, and the console's only answer was "Search: not set up" |
+| Apollo | `mixed_people/api_search` is not on Apollo's free plan. Its 403 was read as a refused key |
+| Hunter | No account check. Credit was spent until a call failed, an error could be recorded as a verifier's verdict, and the same domain was searched again on every read |
+| Provider status | "Connected" meant a key was set. Nobody asked the provider |
+| Partners | Scored as if they would buy a subscription themselves (the purchase part), so most failed the bar; the engine could not write to them at all |
+| Readiness | A base URL for the opt-out link and a webhook secret were enough to go live. Neither was ever tested |
+| Tone | Nothing refused urgency, pretended familiarity or flattery |
+| Footer | Did not say the email is commercial, or 21+ / research, not betting advice |
+| Revenue, cost | Conversions were counted, money was not. What Claude and the providers cost was not recorded |
+| Time zone | `America/New_York` by default; the owner is in Chicago |
+
+### Where candidates come from now
+
+Every source feeds the one candidate queue. A page seen before is counted once, a known prospect's page is a duplicate, and a domain that asked not to be contacted is never read.
+
+| Source | Cost | Key | How |
+|---|---|---|---|
+| **Your own lists** | Free | None | **Discover and research → Add candidates from your own lists**: web addresses (a note may follow each), company domains, a CSV (`url`/`website`/`domain`, `name`, `note`, `segment`), or the results page of a search you ran yourself in your own browser (only the result addresses are kept). Up to 500 at a time. Nothing is fetched when you add them; research reads them later, robots.txt respected |
+| **Directories** | Free | None | Pages you choose (a list of newsletters, a podcast network's shows) under **Saved searches, directories and the daily budget**. You tick that the page's terms allow reusing its links. The morning run re-reads each one weekly; its links to independent sites become candidates. **Read one directory page now** reads one on demand |
+| **Podcast Index** | Free | `PODCASTINDEX_API_KEY`, `PODCASTINDEX_API_SECRET` ([sign up](https://api.podcastindex.org/signup)) | The saved searches are asked of its `search/byterm`. A show becomes a candidate only through its own website (or its Substack/beehiiv/YouTube profile). Dead feeds, shows silent for a year, non-English shows and shows with only a hosting-platform page are left out, and the report says how many |
+| **Apollo organization lookup** | Plan-dependent | `APOLLO_API_KEY`, switched on | **Company domains to Apollo**: up to ten domains you name. `organizations/enrich`, then `mixed_people/organization_top_people`. The candidate is the organization's own site; Apollo's names and titles are a note for you, never something an email may cite. Either endpoint answering "not on your plan" is recorded and said, never worked around |
+| Brave | Paid (optional) | `BRAVE_SEARCH_API_KEY` | As before |
+| Apollo people search | Not on the free plan | `APOLLO_API_KEY`, switched on | As before; on a free key it is recorded as "not on the plan" once and not asked again that run |
+
+**No HTML scraping of search engines, no CAPTCHA bypass, no accounts other than yours.** X, LinkedIn, Instagram, Facebook, TikTok and Threads are refused as candidates (the engine may not read them): add such a person under **Add a prospect**, with a fact you checked.
+
+**A morning with no source at all is not a failed step.** It is recorded as done, with what to set up, so it never counts towards "three failed steps in a row".
+
+### Provider health
+
+**Discover and research → Provider health → Check providers now** asks each provider whose key is set its free question:
+
+| Provider | Free question |
+|---|---|
+| Anthropic | `models.retrieve` for the model the engine uses |
+| Hunter | `GET /v2/account` (plan, credits — or searches and verifications on older plans — used, reset date) |
+| Apollo | `GET /v1/auth/health` |
+| Podcast Index | a one-result search |
+| Resend | `GET /domains` (a sending-only key is a real key: "connected, sending-only") |
+| Brave, Clay | none: "not checked yet" until a real call answers |
+
+States: **connected** (it answered), **credential missing**, **unauthorized** (the key was refused), **not on the plan**, **free allowance used up**, **temporarily unavailable**, **not checked yet**. A provider is never green because a key is set. Real calls update the same record, and each endpoint's answer is kept apart (an Apollo key can work while its people search is not on the plan). The console shows setup steps for whatever is missing.
+
+**Hunter is careful with its free credit.** The account is read once per run (free) before any credit is spent. A plan with one pool of credits is read as that pool, and each search or verification is counted against it. Nothing more is asked once the allowance is used up, and the console names the reset date. A domain's answer is remembered 30 days (14 when it had no addresses), so a second person at the same domain costs nothing. An error is never recorded as a verdict: "still checking" (202) is asked again another day.
+
+### Cost and revenue
+
+- **The ledger** (`provider_ledger`) records every call by day, provider and operation. Claude's tokens are priced at the model's published rate (Opus 5.5: $4 in, $20 out, $0.20 cache read, per million tokens). Free-tier calls are counted in the provider's own units, with no dollar figure invented. The console's **Provider credits and cost** shows today, this month and the month's Claude spend.
+- **Revenue** (`revenue`): for each account the matcher traced to an email, the paid invoices in Stripe's own stored events. **Gross**: refunds are not in the stored events, so none is subtracted, and the console says so.
+
+### Subscribers and partners
+
+- **Separate scoring.** A partner lead (media, affiliate, business, partnership) is not scored on whether they would buy a subscription: the purchase part is left out and the other 85 points are scaled to 100. Penalties count in full; the bar is the same.
+- **Separate letters.** With **Outbound settings → Campaigns → Partner outreach** on (off by default), the engine also drafts for partner leads with the partnership rules (`PARTNER_SYSTEM` in `growth_outbound_draft`). It offers only what https://edgedesksports.com/partners/ offers: the free research to cite and link, and a conversation. **Never money:** commission, revenue share, payment, sponsorship, affiliate terms or percentages are refused (`partner_offer_problems`). It never pitches the subscription or the trial.
+- **No paid lookups for partners**, as before.
+
+### Content and compliance
+
+- **Tone rules** (engine refused; your own drafts advised): no urgency or scarcity ("act now", "limited time", "only 3 spots left"), no pretended familiarity ("as we discussed", "great chatting with you"), no flattery ("huge fan", "amazing", "the best analyst").
+- **The footer** now says: "This is a commercial email from EdgeDesk Sports. For adults 21+; research, not betting advice." It still carries the sender, the postal address and the one-click opt-out link.
+- **The test inbox** cannot be a prospect's address or a suppressed one. Test sends go only there.
+
+### Live sending needs proof, not configuration
+
+Two new blockers for **live** sends (test sends are unaffected):
+
+| Blocker | Clears when |
+|---|---|
+| `unsubscribe_endpoint_unverified` | **System check → Check the opt-out endpoint** succeeds at the current base. The send function asks the endpoint itself. A GET must redirect to the stop page and change nothing. A POST with a token no send carries must answer "not valid", which proves it reaches this database. The check sends nothing and changes nothing. When no base is set yet, a working check sets it. Changing the base needs a new check |
+| `webhook_unproven` | Resend's webhook has delivered at least one **signed** event since the current secret was set. A test send to your test inbox proves it |
+
+### The morning run
+
+- **Time zone:** an install still on the old default (`America/New_York`) that the owner never changed moves to `America/Chicago` once, on the record. A zone you chose is never touched.
+- **Discovery step:** saved searches through every search provider that is on (Podcast Index is free), then the directories due a read.
+- **Still never approves or sends.** Enabling it is still yours (`supabase/growth_outbound_cron.sql`, then Automation on).
+
+### New in the database
+
+- **Tables:**
+  - `provider_health`: each provider's state, each endpoint's state, its quota, and when it last worked or failed;
+  - `provider_cache`: a short memory of provider answers, which expires;
+  - `provider_ledger`: calls, units, tokens and cost by day;
+  - `revenue`.
+
+  All four are deny-all to clients, like every other table. Report row 1 now counts 23 tables.
+- **Settings:** `optout_check`, `optout_checked_at`, `partner_outreach_enabled`; `discovery_config.directories`.
+- **Owner doors:** `growth_outbound_candidates_import`.
+- **Engine doors** (owner, or a ticket on its own run): `provider_health_record`, `provider_record`, `cache_get`, `cache_put`.
+- **Send-function door:** `growth_outbound_optout_check_record`. Owner-initiated, it writes only the check's result.
+- **Report row 38.**
+
+### Deploy (in order) — for you to run when you have reviewed it
+
+Nothing in this phase has been deployed or applied to production.
+
+1. Merge the Phase 13 PR. The console works against the Phase 12 SQL until step 2. Each Phase 13 panel says "run supabase/growth_outbound.sql again" until then.
+2. In the SQL editor, run `supabase/growth_outbound.sql`. It is additive and idempotent. Report rows 1–38 should say `ok`.
+   - **Live sending becomes blocked** until steps 5 and 6. That is intended: test sends are not affected.
+   - Partner leads are re-scored on the partner basis; some may now qualify.
+3. **Deploy the functions** (research, send and draft changed): Actions → **Deploy outbound Edge Functions**, or from a terminal `supabase functions deploy growth_outbound_research --no-verify-jwt` (and `growth_outbound_send`, `growth_outbound_draft`).
+4. **Secrets** (Supabase → Edge Functions → Secrets):
+   - `PODCASTINDEX_API_KEY` and `PODCASTINDEX_API_SECRET` (free at https://api.podcastindex.org/signup);
+   - `HUNTER_API_KEY` if not set.
+
+   Then **Provider health → Check providers now**.
+5. **System check → Check the opt-out endpoint.**
+6. **Webhook:** in Resend → Webhooks, add the endpoint `https://<project-ref>.supabase.co/functions/v1/growth_outbound_webhook` for the email events. Run `select growth_outbound.set_webhook_secret('whsec_…');` with its signing secret. Then make a test send to your test inbox and check that **Sends** shows it delivered.
+7. Add candidates (your own lists, a directory, saved searches) and research them from the console before turning Automation on.
+
+### Tests
+
+| Suite | Checks | What it proves |
+|---|---|---|
+| `tools/growth/outbound_freefirst_sql.test.js` (new) | 120 | **Upgrade** from the Phase 12 file in place. **Import:** sources, canonical and counted once, duplicates, suppressed domains, refused platforms and search pages, segments, owner only. **Directories** due weekly, permitted only. **Health:** states, endpoints, quota, the ticket's own run only. **Cache, ledger and prices.** **Blockers:** the opt-out base checked here, the webhook proven since the current secret. **Test inbox** never a prospect's or a suppressed address. **Partners:** scoring basis, letters, no money. **Tone and footer.** **Revenue** gross from Stripe's record. **Attention.** **Overview** and row 38 |
+| `tools/growth/outbound_freefirst.test.js` (new) | 75 | The deployed functions against the real SQL, with Brave never called. **Health:** every provider's free question and signed headers; refusals said for what they are. **Discovery** with no Brave key (Podcast Index) and no key at all (directories, imports). **Apollo** off the free plan. **Prefilter** (no Claude call for an obvious non-fit). **Partners** drafted with the partnership rules. **Hunter:** the allowance first, the domain remembered, a used-up allowance and a refused key. **Opt-out check** (deployed, missing, JWT on). **Resend** sending-only key. **End to end:** your own list → research → qualification → Hunter verification → Claude draft → your approval → a test send to the test inbox only (footer, postal address, one-click opt-out) → a signed delivered event → the webhook proven |
+| Earlier suites | All passing | Updated for the new blockers (a fixture proves the endpoint and the webhook), the Chicago time zone, the engine-door allowlist and the 23 tables |
+
+### Rollback
+
+- **Stop a provider:** delete its secret, or switch it off under Providers.
+- **Partner outreach:** switch it off (Outbound settings → Campaigns).
+- **The live-sending proofs:** do not remove them. Fix the endpoint or the webhook and check again.
+- **The database:** additive. To return to Phase 12, re-run the Phase 12 file. Its functions replace these, and the new tables and columns are harmless.
+
 ## Operating it
 
 ### Before you go live (a checklist)
 
 1. **Owner:** `select growth_outbound.grant_owner('you@…');` once, in the SQL editor. Only owners see the Outbound tab.
-2. **Compliance:** a postal address in Outbound settings; the opt-out endpoint (`growth_outbound_optout`) deployed and its base URL set; Resend's webhook pointed at `growth_outbound_webhook`, with its signing secret set (`select growth_outbound.set_webhook_secret('whsec_…');`). The red banner lists whatever is missing.
+2. **Compliance:** a postal address in Outbound settings; the opt-out endpoint (`growth_outbound_optout`) deployed and **checked** (System check → Check the opt-out endpoint); Resend's webhook pointed at `growth_outbound_webhook`, with its signing secret set (`select growth_outbound.set_webhook_secret('whsec_…');`) and **proven** by a signed event (a test send does it). The red banner lists whatever is missing.
 3. **Domain:** send from `davis@edgedesksports.com` on a domain verified in Resend (SPF, DKIM, and DMARC at least `p=none`). Check it from the console: System check → Check the sending domain. A missing record blocks live sending.
 4. **A dry run in test mode:** use "Test draft for my inbox", approve it and send it. Check that the email arrives with the footer, the opt-out link and the `ob_test` link; that Sends says delivered; and that the opt-out link's page asks before it changes anything.
 5. **System check:** all checks pass, and nothing under "Now" or "Soon".
@@ -1431,10 +1564,10 @@ Nothing in this phase has been deployed. Schema changes and automation stay off 
   1. stop sending (test mode on);
   2. look at how those addresses were found (Discover and research);
   3. tighten the email-confidence gate in settings.
-- **A key may have leaked:** rotate it at the provider, then in Supabase → Edge Functions → Secrets: `RESEND_API_KEY`, `ANTHROPIC_API_KEY`, `BRAVE_SEARCH_API_KEY` or `HUNTER_API_KEY`. Functions read keys on every request, so nothing is redeployed. For the webhook secret, roll it in Resend, then run `select growth_outbound.set_webhook_secret('whsec_…');` (Svix sends both signatures while it rolls).
+- **A key may have leaked:** rotate it at the provider, then in Supabase → Edge Functions → Secrets: `RESEND_API_KEY`, `ANTHROPIC_API_KEY`, `PODCASTINDEX_API_KEY`/`PODCASTINDEX_API_SECRET`, `HUNTER_API_KEY`, `APOLLO_API_KEY` or `BRAVE_SEARCH_API_KEY`. Functions read keys on every request, so nothing is redeployed. For the webhook secret, roll it in Resend, then run `select growth_outbound.set_webhook_secret('whsec_…');` (Svix sends both signatures while it rolls).
 - **Remove an owner:** in the SQL editor, run `delete from growth_outbound.owners where user_id = (select id from auth.users where lower(email) = lower('them@…'));`. Removing them from the affiliate admins does the same. Every grant and revoke is audited.
 - **"Sends were never confirmed" (System check, "Soon"):** press "Try again" in Sends. It reuses the same key, so Resend sends at most once. After 23 hours the tick marks such a send failed.
 
 ## Next
 
-All twelve phases are built. What remains is operating it: the checklist and the morning above, and choosing which paid providers (if any) are worth their cost against the qualified prospects they produce (Results → By group → Search shows which searches pay off).
+All thirteen phases are built. What remains is operating it: the checklist and the morning above, and choosing which paid providers (if any) are worth their cost against the qualified prospects they produce (Results → By group → Search shows which searches pay off).

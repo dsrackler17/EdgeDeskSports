@@ -122,6 +122,7 @@ const fnCalls = (re) => LOG.filter((e) => e.host === 'proj.supabase.test' && re.
     own(`select public.growth_outbound_settings_update(${lit(JSON.stringify({ postal_address: 'EdgeDesk Sports, 100 Example St, Springfield, IL 62701',
       test_inbox: 'owner-test@edgedesk.test', unsubscribe_url_base: 'https://iattxbkbufslbauoumga.supabase.co/functions/v1/' }))}::jsonb);`);
     one(`select growth_outbound.set_webhook_secret('whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw');`);
+    one(SEED.liveReady());
     own(`select public.growth_outbound_settings_update('{"test_mode": false, "confirm_live": true}'::jsonb);`);
     const P = { pat: pid(1), kim: pid(2), lo: pid(3), ola: pid(4), uma: pid(5), tess: pid(6), vic: pid(7), wes: pid(8) };
     one(SEED.strong({ id: P.pat, name: 'Pat Analyst', org: 'CFB Numbers', email: 'pat@cfbnumbers.test', domain: 'cfbnumbers.test', handle: 'patanalyst' })
@@ -191,8 +192,8 @@ const fnCalls = (re) => LOG.filter((e) => e.host === 'proj.supabase.test' && re.
       && u.includes('[' + ORG + '] organization: "CFB Numbers"') && /Write the first email \(step 1\)\./.test(u), u);
     chk('C … and nothing it may not cite: no address, no name, no fit signal', !u.includes('pat@cfbnumbers.test') && !/full name/.test(u)
       && !u.includes('prices every game with a market model'), u);
-    chk('C the database was asked, as the owner, in order: who, run, context, budget, proposal', JSON.stringify(fnCalls(/rpc\//).map((e) => e.url.split('/rpc/')[1]))
-      === JSON.stringify(['growth_outbound_is_owner', 'growth_outbound_research_begin', 'growth_outbound_draft_context', 'growth_outbound_research_spend', 'growth_outbound_draft_propose', 'growth_outbound_research_finish']),
+    chk('C the database was asked, as the owner, in order: who, run, context, budget, what Claude cost (Phase 13), proposal', JSON.stringify(fnCalls(/rpc\//).map((e) => e.url.split('/rpc/')[1]))
+      === JSON.stringify(['growth_outbound_is_owner', 'growth_outbound_research_begin', 'growth_outbound_draft_context', 'growth_outbound_research_spend', 'growth_outbound_provider_record', 'growth_outbound_draft_propose', 'growth_outbound_research_finish']),
       fnCalls(/rpc\//).map((e) => e.url.split('/rpc/')[1]));
     chk('C the run is recorded: done, one Claude call, one draft by Claude', one(`select status || '|' || (counts->'spent'->>'llm') || '|' || (counts->>'by_claude') || '|' || kind
       from growth_outbound.research_runs where id = ${x.b.run_id};`) === 'done|1|1|draft');
@@ -347,9 +348,9 @@ const fnCalls = (re) => LOG.filter((e) => e.host === 'proj.supabase.test' && re.
     chk('K every database call: the anon apikey and the OWNER\'s own token', fnCalls(/rest\/v1\/rpc/).length > 0
       && fnCalls(/rest\/v1\/rpc/).every((e) => e.headers.apikey === ANON && e.headers.authorization === 'Bearer ' + OWNER_T));
     chk('K nothing went anywhere but the database (Claude is the SDK\'s business)', LOG.every((e) => e.host === 'proj.supabase.test'));
-    chk('K over the whole suite the function called these doors and no others: nothing that approves, edits or sends', JSON.stringify([...DOORS].sort())
+    chk('K over the whole suite the function called these doors and no others: nothing that approves, edits or sends (Phase 13: and the cost ledger)', JSON.stringify([...DOORS].sort())
       === JSON.stringify(['growth_outbound_draft_context', 'growth_outbound_draft_gave_up', 'growth_outbound_draft_propose', 'growth_outbound_drafting_overview', 'growth_outbound_is_owner',
-        'growth_outbound_research_begin', 'growth_outbound_research_finish', 'growth_outbound_research_spend']), [...DOORS].sort());
+        'growth_outbound_provider_record', 'growth_outbound_research_begin', 'growth_outbound_research_finish', 'growth_outbound_research_spend']), [...DOORS].sort());
 
     /* ══ M. THE MORNING RUN (Phase 9): a ticket, no owner ═════════════ */
     MORNING.install(db);

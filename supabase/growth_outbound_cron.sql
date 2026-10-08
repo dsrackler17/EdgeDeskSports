@@ -7,8 +7,13 @@
 -- Nothing more, unless the owner has turned automation on (Outbound →
 -- Outbound settings) and it is inside their morning window, in their time
 -- zone. Then it does ONE step of today's morning run:
---   1  search the saved searches (once a day);
---   2  research the next new candidate (up to "Prospects to prepare per day");
+--   1  discovery, once a day: the saved searches through every search
+--      provider that is on (Podcast Index is free; Brave and Apollo only if
+--      their keys are set and they are switched on), and the directories
+--      due a weekly read (Phase 13). With no source at all the step is done,
+--      saying what to set up, not failed;
+--   2  verify waiting addresses, then research the next new candidate (up to
+--      the qualified target and "Candidates to read per day");
 --   3  draft for whoever is due, a few at a time (up to the daily send cap).
 -- Each step is a run with a single-use ticket, posted through pg_net to the
 -- research or drafting Edge Function. The ticket opens only the engine's own

@@ -155,6 +155,16 @@ try {
   chk('B live, nothing goes out until the webhook signing secret is set (a bounce or a complaint must reach us) — and nothing is written', r.ok === false
     && /sending is blocked: webhook_secret_missing/.test(r.detail) && nsends(`draft_id = '${did(6)}'`) === 0 && dstatus(did(6)) === 'approved', r);
   one(`select growth_outbound.set_webhook_secret('whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw');`);
+  // (Phase 13) configured is not working: the opt-out endpoint must have been
+  // checked at that very base, and the webhook proven by a signed event
+  r = claim(did(6));
+  chk('B live, nothing goes out until the opt-out endpoint is checked at its base and the webhook has delivered a signed event — and nothing is written', r.ok === false
+    && /sending is blocked: unsubscribe_endpoint_unverified, webhook_unproven/.test(r.detail) && nsends(`draft_id = '${did(6)}'`) === 0 && dstatus(did(6)) === 'approved', r);
+  one(`update growth_outbound.settings set optout_check = '{"base": "https://elsewhere.supabase.co/functions/v1/", "ok": true, "redirect_ok": true, "post_ok": true}',
+         optout_checked_at = now() where id = 1;`);
+  r = claim(did(6));
+  chk('B … a check of another base proves nothing about this one', r.ok === false && /unsubscribe_endpoint_unverified/.test(r.detail) && nsends(`draft_id = '${did(6)}'`) === 0, r);
+  one(SEED.liveReady());
   r = claim(did(6));
   const S6 = r.send_id;
   const tok = one(`select optout_token from growth_outbound.sends where id = '${S6}';`);

@@ -96,6 +96,7 @@ try {
   settings({ postal_address: 'EdgeDesk Sports, 100 Example St, Springfield, IL 62701', test_inbox: 'owner-test@edgedesk.test',
     unsubscribe_url_base: 'https://iattxbkbufslbauoumga.supabase.co/functions/v1/' });
   one(`select growth_outbound.set_webhook_secret(${lit(SECRET)});`);
+  one(SEED.liveReady());   // (Phase 13) the opt-out endpoint checked, the webhook proven
   const NAMES = ['Ana Bell', 'Bo Dunn', 'Cy Park', 'Dee Fox', 'Eli Hart', 'Fay Lund', 'Gus Hale', 'Hal Ives', 'Ida Moss', 'Jo Kerr',
     'Kai Lowe', 'Lee Lines', 'Max Nye', 'Ned Orr', 'Ola Reed', 'Pat Quill'];
   const EM = {};

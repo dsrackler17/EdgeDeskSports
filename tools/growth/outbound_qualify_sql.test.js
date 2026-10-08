@@ -113,6 +113,7 @@ try {
   settings({ postal_address: 'EdgeDesk Sports, 100 Example St, Springfield, IL 62701', test_inbox: 'owner-test@edgedesk.test',
     unsubscribe_url_base: 'https://iattxbkbufslbauoumga.supabase.co/functions/v1/' });
   one(`select growth_outbound.set_webhook_secret('whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw');`);
+  one(SEED.liveReady());   // (Phase 13) the opt-out endpoint checked, the webhook proven
 
   /* ══ Q. THE SCORE ═════════════════════════════════════════════════════ */
   const cat = j(one(`select jsonb_agg(to_jsonb(c)) from growth_outbound.fit_factor_catalog c;`));
@@ -210,7 +211,9 @@ try {
   const DR = begin('draft').run_id;
   r = propose(DR, P6, { sequence_number: 1, subject: 'EdgeDesk Sports, for your research', generator: 'engine:claude:p1',
     body_text: 'Hi Max,\n\nI came across your work, in particular Big Sports Pod.\n\n' + PITCH, claims: [{ text: 'Big Sports Pod', evidence_id: +one(`select id from growth_outbound.evidence where prospect_id = ${lit(P6)} and field_name = 'organization' order by id limit 1;`) }] });
-  chk('G the engine is refused for a partner lead, in words', r.ok === false && has(r, /media partner lead: the engine writes to potential subscribers only/), r);
+  // (Phase 13) until the owner turns partner outreach on
+  chk('G the engine is refused for a partner lead while partner outreach is off, in words', r.ok === false
+    && has(r, /media partner lead: the engine writes to partner leads only while partner outreach is on/), r);
   // the owner decides; the engine does not override
   r = own(`select public.growth_outbound_prospect_set_segment(${lit(P6)}, 'affiliate', 'they run a referral site');`);
   chk('G the owner moves them (affiliate), logged', r.ok === true && one(`select campaign_type from growth_outbound.prospects where id = ${lit(P6)};`) === 'affiliate'

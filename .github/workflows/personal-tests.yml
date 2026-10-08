@@ -271,6 +271,15 @@ jobs:
         run: node tools/growth/outbound_qualify_sql.test.js
       - name: Search, email lookup, verification and enrichment providers are switched on deliberately and weighed as their word
         run: node tools/growth/outbound_providers.test.js
+      # Phase 13: discovery that works with Brave, Apollo and Clay all off —
+      # the owner's own lists, permitted directories, Podcast Index — provider
+      # health that is only green when the provider answered, Hunter's free
+      # allowance, the cost ledger, the partner campaign, and live sending
+      # blocked until the opt-out endpoint and the webhook are proven.
+      - name: Free-first discovery, provider health, the cost ledger and the live-sending proofs (database)
+        run: node tools/growth/outbound_freefirst_sql.test.js
+      - name: Free-first discovery through the deployed functions, end to end to a test send and a signed event
+        run: node tools/growth/outbound_freefirst.test.js
       - name: The research-state scheduler's record is the service role's alone; its pg_cron job replaces itself
         env:
           RESEARCH_CRON_SQL_REQUIRED: '1'

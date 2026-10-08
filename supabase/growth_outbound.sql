@@ -133,7 +133,8 @@ begin
     'growth_outbound.identifiers', 'growth_outbound.fit_factor_catalog', 'growth_outbound.secrets',
     'growth_outbound.provider_events', 'growth_outbound.research_runs', 'growth_outbound.pages',
     'growth_outbound.candidates', 'growth_outbound.provider_usage', 'growth_outbound.scheduler',
-    'growth_outbound.conversions']) t
+    'growth_outbound.conversions', 'growth_outbound.provider_health', 'growth_outbound.provider_cache',
+    'growth_outbound.provider_ledger', 'growth_outbound.revenue']) t
   where to_regclass(t) is not null;
   if v_list is null then return; end if;
   loop
@@ -443,7 +444,10 @@ end $c$;
 insert into growth_outbound.settings (id) values (1) on conflict (id) do nothing;
 -- THE MORNING RUN (Phase 9): when the scheduler may work, in the owner's own
 -- time zone. It finds, researches and drafts; it never approves or sends.
-alter table growth_outbound.settings add column if not exists automation_timezone text not null default 'America/New_York';
+-- (Phase 13) the owner's own time zone is America/Chicago; an install that
+-- still carries the old default is moved once, on the record (section 13)
+alter table growth_outbound.settings add column if not exists automation_timezone text not null default 'America/Chicago';
+alter table growth_outbound.settings alter column automation_timezone set default 'America/Chicago';
 alter table growth_outbound.settings add column if not exists automation_start_hour int not null default 6;
 alter table growth_outbound.settings add column if not exists automation_hours int not null default 4;
 -- RESULTS (Phase 10): EdgeDesk links in a live email carry this prospect's
@@ -487,6 +491,24 @@ do $c$ begin
     and (domain_auth is null or jsonb_typeof(domain_auth) = 'object')
     and (domain_auth is null) = (domain_auth_checked_at is null));
 end $c$;
+-- READINESS AND PARTNERS (Phase 13):
+--   optout_check       the last check of the opt-out endpoint, made by the send
+--                      function on the owner's request: the endpoint answered a
+--                      GET with the redirect to the stop page and a POST with
+--                      "not valid" for a token no send carries, so the link in
+--                      every email works. Written only by its door.
+--   partner_outreach_enabled   the drafting engine also writes to partner
+--                      leads (media, affiliate, business), with the partnership
+--                      rules and never the subscription pitch. Off by default.
+alter table growth_outbound.settings add column if not exists optout_check jsonb;
+alter table growth_outbound.settings add column if not exists optout_checked_at timestamptz;
+alter table growth_outbound.settings add column if not exists partner_outreach_enabled boolean not null default false;
+do $c$ begin
+  alter table growth_outbound.settings drop constraint if exists outbound_settings_readiness;
+  alter table growth_outbound.settings add constraint outbound_settings_readiness check (
+        (optout_check is null or jsonb_typeof(optout_check) = 'object')
+    and (optout_check is null) = (optout_checked_at is null));
+end $c$;
 
 -- What stops a real send right now, in words. Empty means nothing does.
 -- What stops a send, in words. Empty means nothing does. A TEST send (only
@@ -509,7 +531,20 @@ begin
     case when not exists (select 1 from growth_outbound.owners) then 'no_outbound_owner' end,
     -- a sending domain CHECKED and found missing SPF, DKIM or DMARC (Phase 12);
     -- a domain never checked is a System check item, not a blocker
-    case when not coalesce(p_test, false) and s.domain_auth->>'ok' = 'false' then 'domain_auth_failed' end
+    case when not coalesce(p_test, false) and s.domain_auth->>'ok' = 'false' then 'domain_auth_failed' end,
+    -- (Phase 13) configured is not working. The opt-out link must have been
+    -- CHECKED at this very address (the endpoint answered as it should), and
+    -- Resend's webhook must have delivered at least one signed event since
+    -- the current secret was set (a test send proves it): a bounce or a
+    -- complaint that cannot arrive cannot stop the next email.
+    case when not coalesce(p_test, false) and s.unsubscribe_url_base is not null
+              and not (coalesce(s.optout_check->>'ok', '') = 'true' and s.optout_check->>'base' = s.unsubscribe_url_base)
+         then 'unsubscribe_endpoint_unverified' end,
+    case when not coalesce(p_test, false)
+              and exists (select 1 from growth_outbound.secrets k where k.name = 'resend_webhook')
+              and not exists (select 1 from growth_outbound.provider_events e, growth_outbound.secrets k
+                               where k.name = 'resend_webhook' and e.received_at >= k.set_at)
+         then 'webhook_unproven' end
   ], null)
   from growth_outbound.settings s where s.id = 1);
 end $$;
@@ -1459,17 +1494,28 @@ begin
                                   and e.claim_norm is not null and e.source_kind in ('own_site', 'own_profile')) then 2 else 0 end;
   v_q_facts := jsonb_array_length(growth_outbound.citeable_facts(r.id));
   v_q_pers := case when v_q_facts >= 3 then 10 when v_q_facts = 2 then 8 when v_q_facts = 1 then 5 else 0 end;
-  v_q_total := greatest(0, least(100, v_q_rel + v_q_ana + v_q_pur + v_q_email + v_q_ident + v_q_own + v_q_pers + v_q_pen));
+  -- (Phase 13) A PARTNER LEAD is not judged on whether they would pay for a
+  -- subscription themselves: the purchase part is left out and the other
+  -- 85 points are scaled to 100. The penalties still count in full, and the
+  -- bar (min_qualification_score) is the same.
+  if r.campaign_type = 'customer' or r.is_test then
+    v_q_total := greatest(0, least(100, v_q_rel + v_q_ana + v_q_pur + v_q_email + v_q_ident + v_q_own + v_q_pers + v_q_pen));
+  else
+    v_q_total := greatest(0, least(100, round((v_q_rel + v_q_ana + v_q_email + v_q_ident + v_q_own + v_q_pers) * 100.0
+                                                / (100 - growth_outbound.qualification_max('purchase')))::int + v_q_pen));
+  end if;
   r.qualification_score := case when v_has_evidence then v_q_total end;
   r.qualification := case when not v_has_evidence then '{}'::jsonb else jsonb_build_object(
     'score', v_q_total, 'segment', r.campaign_type,
+    'basis', case when r.campaign_type = 'customer' or r.is_test then 'subscriber' else 'partner' end,
     'parts', jsonb_build_object(
       'relevance', jsonb_build_object('points', v_q_rel, 'max', growth_outbound.qualification_max('relevance'),
                                       'reasons', coalesce(v_part->'relevance', '[]'::jsonb)),
       'analytics', jsonb_build_object('points', v_q_ana, 'max', growth_outbound.qualification_max('analytics'),
                                       'reasons', coalesce(v_part->'analytics', '[]'::jsonb)),
       'purchase', jsonb_build_object('points', v_q_pur, 'max', growth_outbound.qualification_max('purchase'),
-                                     'reasons', coalesce(v_part->'purchase', '[]'::jsonb)),
+                                     'reasons', coalesce(v_part->'purchase', '[]'::jsonb),
+                                     'counted', r.campaign_type = 'customer' or r.is_test),
       'contact', jsonb_build_object('points', v_q_email + v_q_ident + v_q_own, 'max', growth_outbound.qualification_max('contact'),
                                     'email', v_q_email, 'email_status', r.email_status, 'identity', v_q_ident, 'own_site_or_profile', v_q_own),
       'personalization', jsonb_build_object('points', v_q_pers, 'max', growth_outbound.qualification_max('personalization'),
@@ -1790,6 +1836,16 @@ do $c$ begin
 end $c$;
 create unique index if not exists candidates_url_uk on growth_outbound.candidates (url);
 create index if not exists candidates_status_idx on growth_outbound.candidates (status, last_seen_at desc);
+-- (Phase 13) who the owner means a candidate to be: a potential subscriber or
+-- a partner lead. Given with an import or a directory; research makes it the
+-- new prospect's campaign, over the model's own reading.
+alter table growth_outbound.candidates add column if not exists segment_hint text;
+do $c$ begin
+  alter table growth_outbound.candidates drop constraint if exists candidates_segment_ck;
+  alter table growth_outbound.candidates add constraint candidates_segment_ck check (
+    segment_hint is null or segment_hint in ('customer', 'partnership', 'media_partner', 'affiliate', 'business_partner'));
+end $c$;
+create index if not exists candidates_provider_idx on growth_outbound.candidates (provider, first_seen_at desc);
 
 -- Every provider call, by day: the budget is enforced on these counts.
 create table if not exists growth_outbound.provider_usage (
@@ -1850,9 +1906,14 @@ $$;
 
 -- What is wrong with a discovery configuration, in words (NULL: nothing).
 --   { queries: [text], budget: {provider: int}, shared_sites: [domain],
---     providers: {brave|apollo_search|hunter|apollo|clay: boolean} }   (Phase 12)
+--     providers: {brave|apollo_search|apollo_org|podcastindex|hunter|apollo|clay: boolean},   (Phase 12, 13)
+--     directories: [{ url, segment?, note?, permitted: true }] }                               (Phase 13)
 -- A provider is used when its key is set AND it is not switched off here;
 -- Apollo and Clay cost money per call, so they are used only when switched on.
+-- A DIRECTORY is a public page the owner chose (a list of newsletters, a
+-- podcast network's roster) whose outbound links become candidates; the owner
+-- says they checked its terms permit that (permitted: true), and robots.txt
+-- still decides whether it is read at all.
 create or replace function growth_outbound.discovery_config_problems(p jsonb)
 returns text language plpgsql immutable
 set search_path = pg_catalog, pg_temp as $$
@@ -1862,7 +1923,7 @@ declare
 begin
   if p is null or jsonb_typeof(p) <> 'object' then return 'discovery_config must be an object'; end if;
   for k in select jsonb_object_keys(p) loop
-    if k not in ('queries', 'budget', 'shared_sites', 'providers') then return 'unknown discovery setting "' || left(k, 40) || '"'; end if;
+    if k not in ('queries', 'budget', 'shared_sites', 'providers', 'directories') then return 'unknown discovery setting "' || left(k, 40) || '"'; end if;
   end loop;
   if p ? 'queries' then
     if jsonb_typeof(p->'queries') <> 'array' or jsonb_array_length(p->'queries') > 25 then
@@ -1889,7 +1950,7 @@ begin
   if p ? 'providers' then
     if jsonb_typeof(p->'providers') <> 'object' then return 'providers: an object of on/off switches'; end if;
     for k, v in select * from jsonb_each(p->'providers') loop
-      if k not in ('brave', 'apollo_search', 'hunter', 'apollo', 'clay') then
+      if k not in ('brave', 'apollo_search', 'apollo_org', 'podcastindex', 'hunter', 'apollo', 'clay') then
         return 'providers: unknown provider "' || left(k, 40) || '"';
       end if;
       if jsonb_typeof(v) <> 'boolean' then return 'providers: ' || k || ' is true or false'; end if;
@@ -1902,6 +1963,30 @@ begin
     for v in select x from jsonb_array_elements(p->'shared_sites') x loop
       if jsonb_typeof(v) <> 'string' or (v #>> '{}') !~ '^[a-z0-9-]+(\.[a-z0-9-]+)+$' then
         return 'shared_sites: each entry is a bare domain such as example.com';
+      end if;
+    end loop;
+  end if;
+  if p ? 'directories' then
+    if jsonb_typeof(p->'directories') <> 'array' or jsonb_array_length(p->'directories') > 30 then
+      return 'directories: a list of at most 30 pages';
+    end if;
+    for v in select x from jsonb_array_elements(p->'directories') x loop
+      if jsonb_typeof(v) <> 'object' then return 'directories: each entry is { url, segment?, note?, permitted }'; end if;
+      for k in select jsonb_object_keys(v) loop
+        if k not in ('url', 'segment', 'note', 'permitted') then return 'directories: unknown field "' || left(k, 40) || '"'; end if;
+      end loop;
+      if jsonb_typeof(v->'url') is distinct from 'string' or (v->>'url') !~ '^https://[a-z0-9.-]+\.[a-z]{2,}(/[^\s]*)?$'
+         or length(v->>'url') > 500 then
+        return 'directories: each url is one https:// page address';
+      end if;
+      if (v->'permitted') is distinct from 'true'::jsonb then
+        return 'directories: ' || left(v->>'url', 80) || ' needs permitted: true (you checked that its terms allow reusing its links)';
+      end if;
+      if v ? 'segment' and coalesce(v->>'segment', '') not in ('customer', 'partnership', 'media_partner', 'affiliate', 'business_partner') then
+        return 'directories: segment is customer, partnership, media_partner, affiliate or business_partner';
+      end if;
+      if v ? 'note' and (jsonb_typeof(v->'note') <> 'string' or length(v->>'note') > 200) then
+        return 'directories: a note is at most 200 characters';
       end if;
     end loop;
   end if;
@@ -2615,7 +2700,10 @@ set search_path = pg_catalog, public, pg_temp as $$
     'webhook', jsonb_build_object(
       'secret_set', exists (select 1 from growth_outbound.secrets where name = 'resend_webhook'),
       'last_event_at', (select max(received_at) from growth_outbound.provider_events where outcome <> 'not_outbound'),
-      'events_24h', (select count(*) from growth_outbound.provider_events where outcome <> 'not_outbound' and received_at >= now() - interval '24 hours')),
+      'events_24h', (select count(*) from growth_outbound.provider_events where outcome <> 'not_outbound' and received_at >= now() - interval '24 hours'),
+      -- (Phase 13) a signed event has arrived since the current secret was set
+      'proven', exists (select 1 from growth_outbound.provider_events e, growth_outbound.secrets k
+                         where k.name = 'resend_webhook' and e.received_at >= k.set_at)),
     'today', jsonb_build_object(
       'live_sends', (select count(*) from growth_outbound.sends where not is_test and claimed_at >= date_trunc('day', now())),
       'test_sends', (select count(*) from growth_outbound.sends where is_test and claimed_at >= date_trunc('day', now())),
@@ -2668,7 +2756,7 @@ declare
     'sender_name', 'sender_email', 'reply_to_email', 'cta_url', 'business_name', 'postal_address', 'unsubscribe_url_base',
     'discovery_config', 'automation_timezone', 'automation_start_hour', 'automation_hours', 'attribution_links',
     'min_qualification_score', 'daily_qualified_target', 'warmup_enabled', 'warmup_start_per_day', 'warmup_step_per_week',
-    'landing_by_interest'];
+    'landing_by_interest', 'partner_outreach_enabled'];
   v_bad text;
   v_diff jsonb := '{}'::jsonb;
   k text;
@@ -2687,6 +2775,19 @@ begin
       'detail', growth_outbound.discovery_config_problems(p->'discovery_config'));
   end if;
   select * into v_old from growth_outbound.settings where id = 1 for update;
+  -- (Phase 13) the test inbox is the owner's own: never an address the engine
+  -- is writing to (every test send would reach that person), never one that
+  -- asked to stop
+  if p ? 'test_inbox' and growth_outbound.norm_email(p->>'test_inbox') is not null then
+    if exists (select 1 from growth_outbound.prospects x where not x.is_test
+                and growth_outbound.norm_email(x.email) = growth_outbound.norm_email(p->>'test_inbox')) then
+      return jsonb_build_object('ok', false, 'reason', 'invalid_value',
+        'detail', 'the test inbox must be your own address: this one belongs to a prospect');
+    end if;
+    if growth_outbound.is_suppressed(p->>'test_inbox') then
+      return jsonb_build_object('ok', false, 'reason', 'invalid_value', 'detail', 'the test inbox is a suppressed address');
+    end if;
+  end if;
   begin
     if p ? 'max_sends_per_day' and (p->>'max_sends_per_day')::int > v_old.max_sends_per_day
        and coalesce((p->>'confirm_cap_increase')::boolean, false) is not true then
@@ -2740,6 +2841,7 @@ begin
       warmup_start_per_day      = coalesce((p->>'warmup_start_per_day')::int, warmup_start_per_day),
       warmup_step_per_week      = coalesce((p->>'warmup_step_per_week')::int, warmup_step_per_week),
       landing_by_interest       = coalesce((p->>'landing_by_interest')::boolean, landing_by_interest),
+      partner_outreach_enabled  = coalesce((p->>'partner_outreach_enabled')::boolean, partner_outreach_enabled),
       updated_at = now(), updated_by = v_owner
     where id = 1
     returning * into v_new;
@@ -3463,6 +3565,23 @@ begin
           || '|betting tips|tipsters?|touts?|touting|sure bets?)\M') then
     v := array_append(v, 'reads like a picks service (EdgeDesk is research, not picks)'::text);
   end if;
+  -- (Phase 13) how a founder writes to a stranger: no pressure, no pretended
+  -- history, no flattery
+  if t ~ ('\m(act now|act fast|limited[- ]time|today only|last chance|final chance|hurry|don''?t miss (out|this)|before it''?s too late'
+          || '|expires? (today|tonight|soon|at midnight)|offer ends|only [0-9]+ (spots?|seats?|places?) (left|remaining)|spots? (are )?filling'
+          || '|urgent(ly)?|time[- ]sensitive|respond (now|immediately|asap))\M') then
+    v := array_append(v, 'pushes with urgency (no deadlines or scarcity; let them decide in their own time)'::text);
+  end if;
+  if t ~ ('\m(as (we|i) (discussed|promised|mentioned on our call)|per our (conversation|call|chat)'
+          || '|following up on our (call|conversation|chat|meeting)|great (chatting|talking|speaking|connecting) with you'
+          || '|you (may|might) remember me|long time no (see|talk)|good to reconnect|as you (know|requested|asked))\M') then
+    v := array_append(v, 'pretends to a familiarity or a conversation that never happened'::text);
+  end if;
+  if t ~ ('\m(huge fan|big fan|biggest fan|love (your|all your) (work|content|stuff)|amazing|incredible|brilliant|genius'
+          || '|world[- ]class|legendary|best in the (business|industry|game)|the best (analyst|newsletter|podcast|model)'
+          || '|blown away|obsessed with)\M') then
+    v := array_append(v, 'flatters (say plainly what you noticed, with no superlatives)'::text);
+  end if;
   return array(select distinct x from unnest(v) x order by 1);
 end $$;
 
@@ -3484,6 +3603,37 @@ begin
   end if;
   if coalesce(p_body, '') !~* 'https://(www\.)?edgedesksports\.com(/|\M)' then
     v := array_append(v, ('offer: include the link to EdgeDesk (' || coalesce(p_cta, 'https://edgedesksports.com/') || ')')::text);
+  end if;
+  if v_words > 150 then
+    v := array_append(v, ('length: ' || v_words || ' words; keep it under 150')::text);
+  end if;
+  return v;
+end $$;
+
+-- WHAT A PARTNERSHIP NOTE MAY OFFER (Phase 13): only what the public partners
+-- page offers (https://edgedesksports.com/partners/): cite and link the free
+-- research, a conversation about evaluating the terminal, and any content,
+-- data or referral arrangement agreed individually and in writing first.
+-- No commission, revenue share, payment, sponsorship or affiliate terms:
+-- none is approved, and EdgeDesk pays nothing without a written agreement.
+-- A link to EdgeDesk, under 150 words. The engine is held to it; an owner's
+-- own note is shown it as advice.
+create or replace function growth_outbound.partner_offer_problems(p_body text)
+returns text[] language plpgsql immutable
+set search_path = pg_catalog, pg_temp as $$
+declare
+  t text := lower(coalesce(p_body, ''));
+  v text[] := '{}';
+  v_words int := coalesce(array_length(regexp_split_to_array(nullif(btrim(coalesce(p_body, '')), ''), '\s+'), 1), 0);
+begin
+  if t ~ ('\m(commissions?|revenue[- ]share|rev[- ]share|profit[- ]share|affiliate (fees?|payouts?|commissions?|rates?|program terms)'
+          || '|per (sign[- ]?up|signup|sale|referral|conversion|subscriber)|cpa|bount(y|ies)|payouts?|sponsor(ship|ed|s)?'
+          || '|paid (partnership|placement|post|promotion|spot)|we(''ll| will) pay|pay(ing)? you|compensat(e|ion)|stipend|retainer'
+          || '|percent of)\M|\m[0-9]{1,3} ?%') then
+    v := array_append(v, 'partnership: offers money or terms nobody has approved (commission, revenue share, sponsorship, payment); the partners page promises only what is agreed in writing'::text);
+  end if;
+  if coalesce(p_body, '') !~* 'https://(www\.)?edgedesksports\.com(/|\M)' then
+    v := array_append(v, 'partnership: include the link to EdgeDesk (the partners page or the free research)'::text);
   end if;
   if v_words > 150 then
     v := array_append(v, ('length: ' || v_words || ' words; keep it under 150')::text);
@@ -3630,11 +3780,16 @@ $$;
 
 -- The footer every message carries: who sent it, the postal address, and how
 -- to stop. The personal opt-out link is made at send time (Phase 5/6).
+-- (Phase 13) It also says plainly what the email is: a commercial message
+-- (CAN-SPAM wants an advertisement identified as one when the reader never
+-- asked for it), and that EdgeDesk is research for adults 21+, not betting
+-- advice.
 create or replace function growth_outbound.footer_text(p_link text)
 returns text language sql stable
 set search_path = pg_catalog, public, pg_temp as $$
   select '--' || E'\n' || s.sender_name || ', ' || s.business_name || E'\n'
       || coalesce(nullif(btrim(s.postal_address), ''), '[no postal address is set: sending is blocked until there is one]') || E'\n'
+      || 'This is a commercial email from ' || s.business_name || '. For adults 21+; research, not betting advice.' || E'\n'
       || 'Not for you? Reply "stop", or opt out in one click: ' || coalesce(p_link, '')
     from growth_outbound.settings s where s.id = 1;
 $$;
@@ -3735,7 +3890,10 @@ set search_path = pg_catalog, public, pg_temp as $$
     -- (Phase 12) what an email should say that this one does not (blocking for
     -- the engine; advice for the owner's own words), its length, and where the
     -- owner can read up on the person
-    'advice', to_jsonb(growth_outbound.offer_problems(d.body_text, (select x.cta_url from growth_outbound.settings x where x.id = 1))),
+    -- (Phase 13) a partnership note is held to the partnership rules instead
+    'advice', to_jsonb(case when d.campaign_type <> 'customer' and not d.is_test
+                            then growth_outbound.partner_offer_problems(d.body_text)
+                            else growth_outbound.offer_problems(d.body_text, (select x.cta_url from growth_outbound.settings x where x.id = 1)) end),
     'words', coalesce(array_length(regexp_split_to_array(nullif(btrim(d.body_text), ''), '\s+'), 1), 0),
     'links', (select coalesce(jsonb_agg(u order by n), '[]'::jsonb) from unnest(array[p.website_url, p.newsletter_url, p.x_url, p.youtube_url,
                                                                                     p.other_profile_url, p.email_source_url]) with ordinality t(u, n)
@@ -4654,7 +4812,16 @@ begin
     'candidates', coalesce((select jsonb_object_agg(status, n) from (
         select status, count(*) n from growth_outbound.candidates group by status) x), '{}'::jsonb),
     'runs', coalesce((select jsonb_agg(to_jsonb(r) - 'requested_by' - 'ticket_sha256' order by r.started_at desc) from (
-        select * from growth_outbound.research_runs order by started_at desc limit 20) r), '[]'::jsonb));
+        select * from growth_outbound.research_runs order by started_at desc limit 20) r), '[]'::jsonb),
+    -- (Phase 13) what each provider last said, what they cost, where the
+    -- candidates came from and what became of them, the directories, and the
+    -- leads turned away with the reason
+    'health', growth_outbound.provider_health_json(),
+    'spend', growth_outbound.spend_json(),
+    'sources', growth_outbound.source_stats(),
+    'directories', coalesce((select s.discovery_config->'directories' from growth_outbound.settings s where s.id = 1), '[]'::jsonb),
+    'directories_due', growth_outbound.directories_due(),
+    'rejected', growth_outbound.recent_rejections(25));
 end $$;
 
 -- A RUN BEGINS: one row, so everything it reads and finds is accounted for.
@@ -4684,6 +4851,9 @@ begin
   returning id into v_id;
   return jsonb_build_object('ok', true, 'run_id', v_id, 'budget', growth_outbound.research_budget(),
     'queries', coalesce((select s.discovery_config->'queries' from growth_outbound.settings s where s.id = 1), '[]'::jsonb),
+    -- (Phase 13) the directories due a read, and whether partner leads are written to
+    'directories', growth_outbound.directories_due(),
+    'partner_outreach', (select s.partner_outreach_enabled from growth_outbound.settings s where s.id = 1),
     'daily_prospect_target', (select s.daily_prospect_target from growth_outbound.settings s where s.id = 1),
     'providers', coalesce((select s.discovery_config->'providers' from growth_outbound.settings s where s.id = 1), '{}'::jsonb),
     'shared_sites', to_jsonb(growth_outbound.builtin_shared_sites())
@@ -4763,7 +4933,9 @@ end $$;
 -- WHAT DISCOVERY TURNED UP. A page seen before is counted, not added again;
 -- one that leads to a known prospect is marked a duplicate (with whose); one
 -- on a domain that asked to stop is marked suppressed and never researched.
---   [{ url, title, snippet, query, provider }]
+--   [{ url, title, snippet, query, provider, segment? }]
+-- (Phase 13) segment: who the owner means them to be (an import or a
+-- directory says so); a later word from the owner replaces an earlier one.
 create or replace function public.growth_outbound_candidates_record(p_run bigint, p_items jsonb)
 returns jsonb language plpgsql security definer
 set search_path = pg_catalog, public, pg_temp as $$
@@ -4781,6 +4953,7 @@ declare
   n_supp int := 0;
   n_bad int := 0;
   v_ids bigint[] := '{}';
+  v_seg text;
 begin
   perform growth_outbound.require_engine();
   select * into r from growth_outbound.research_runs where id = p_run;
@@ -4795,9 +4968,12 @@ begin
   for v in select x from jsonb_array_elements(p_items) x loop
     v_url := case when jsonb_typeof(v) = 'object' then growth_outbound.canonical_url(v->>'url') end;
     if v_url is null or coalesce(v->>'provider', '') !~ '^[a-z0-9_-]{1,40}$' then n_bad := n_bad + 1; continue; end if;
+    v_seg := case when jsonb_typeof(v->'segment') = 'string'
+                   and v->>'segment' in ('customer', 'partnership', 'media_partner', 'affiliate', 'business_partner') then v->>'segment' end;
     select id into v_cid from growth_outbound.candidates where url = v_url for update;
     if found then
-      update growth_outbound.candidates set last_seen_at = now(), times_seen = times_seen + 1, last_run_id = p_run, updated_at = now()
+      update growth_outbound.candidates set last_seen_at = now(), times_seen = times_seen + 1, last_run_id = p_run, updated_at = now(),
+             segment_hint = coalesce(v_seg, segment_hint)
        where id = v_cid;
       n_again := n_again + 1;
       continue;
@@ -4814,13 +4990,13 @@ begin
       when v_match is not null then 'duplicate'
       else 'new' end;
     insert into growth_outbound.candidates (url, site_key, title, snippet, query, provider, status, status_reason, prospect_id,
-                                            first_run_id, last_run_id)
+                                            first_run_id, last_run_id, segment_hint)
     values (v_url, v_site,
             left(nullif(btrim(regexp_replace(coalesce(v->>'title', ''), '\s+', ' ', 'g')), ''), 300),
             left(nullif(btrim(regexp_replace(coalesce(v->>'snippet', ''), '\s+', ' ', 'g')), ''), 1000),
             left(nullif(btrim(coalesce(v->>'query', '')), ''), 200), v->>'provider', v_status,
             case v_status when 'suppressed' then 'the domain asked not to be contacted' when 'duplicate' then 'already a prospect' end,
-            v_match, p_run, p_run)
+            v_match, p_run, p_run, v_seg)
     returning id into v_cid;
     v_ids := array_append(v_ids, v_cid);
     if v_status = 'new' then n_new := n_new + 1; elsif v_status = 'duplicate' then n_dup := n_dup + 1; else n_supp := n_supp + 1; end if;
@@ -5130,8 +5306,10 @@ set search_path = pg_catalog, public, pg_temp as $$
                        union all select 3 where p.status = 'contacted') k
    where not p.is_test
      -- the engine pitches a subscription to potential subscribers only; a
-     -- partner lead is the owner's to write to (Phase 12)
-     and p.campaign_type = 'customer'
+     -- partner lead is the owner's to write to (Phase 12), or the engine's
+     -- partnership note's while partner outreach is on (Phase 13)
+     and (p.campaign_type = 'customer'
+          or (select x.partner_outreach_enabled from growth_outbound.settings x where x.id = 1))
      and growth_outbound.step_due_problem(p.id, k.seq) is null
      and not growth_outbound.has_account(p.email)
      and not exists (select 1 from growth_outbound.drafts d where d.prospect_id = p.id and d.sequence_number = k.seq
@@ -5228,7 +5406,7 @@ begin
   v_focus := upper(coalesce(array_to_string(p.sports_focus, ' '), ''));
   v_cfb := p.prospect_type = 'cfb_analyst' or v_focus ~ '(CFB|NCAAF|COLLEGE)';
   v_nfl := p.prospect_type in ('nfl_analyst', 'fantasy_analyst') or v_focus ~ '(NFL|FANTASY)';
-  if p.campaign_type = 'partnership'
+  if p.campaign_type <> 'customer'
      or p.prospect_type in ('newsletter_writer', 'analytics_newsletter', 'media_founder', 'podcast', 'community_operator', 'youtube_creator') then
     pick := '/partners/'; k := 'partnership'; why := 'a ' || replace(p.prospect_type, '_', ' ') || ' (' || p.campaign_type || ' campaign): the research partnership page';
   elsif p.prospect_type in ('quant_researcher', 'modeling_creator', 'analytics_creator', 'handicapper_modeler', 'betting_educator') then
@@ -5373,12 +5551,18 @@ begin
     v_problems := array_append(v_problems, ('content: ' || x)::text);
   end loop;
 
-  -- (Phase 12) what every engine email says, and to whom
+  -- (Phase 12) what every engine email says, and to whom. (Phase 13) A
+  -- partner lead gets a partnership note, never the subscription pitch, and
+  -- only while the owner has partner outreach on.
   if v_p.campaign_type <> 'customer' and not v_p.is_test then
-    v_problems := array_append(v_problems, ('this is a ' || replace(v_p.campaign_type, '_', ' ')
-      || ' lead: the engine writes to potential subscribers only (write a partnership note yourself)')::text);
+    if not s.partner_outreach_enabled then
+      v_problems := array_append(v_problems, ('this is a ' || replace(v_p.campaign_type, '_', ' ')
+        || ' lead: the engine writes to partner leads only while partner outreach is on (Outbound settings), or write a partnership note yourself')::text);
+    end if;
+    v_problems := v_problems || growth_outbound.partner_offer_problems(v_body);
+  else
+    v_problems := v_problems || growth_outbound.offer_problems(v_body, s.cta_url);
   end if;
-  v_problems := v_problems || growth_outbound.offer_problems(v_body, s.cta_url);
   v_words := coalesce(array_length(regexp_split_to_array(nullif(v_body, ''), '\s+'), 1), 0);
   return jsonb_build_object('problems', to_jsonb(v_problems), 'claims', v_claims, 'subject', v_subject, 'body', v_body,
                             'words', v_words);
@@ -5632,7 +5816,12 @@ begin
             where started_by = 'schedule' and started_at >= v_day_start and status <> 'running'
             order by id desc limit 3) x) then
     v_reason := 'the last three scheduled runs failed, so nothing more today (see Activity)';
-  elsif jsonb_typeof(s.discovery_config->'queries') = 'array' and jsonb_array_length(s.discovery_config->'queries') > 0 and v_disc = 0 then
+  -- (Phase 13) discovery has more than one source: the saved searches (Brave,
+  -- Podcast Index, Apollo), and the directories the owner chose (re-read
+  -- weekly). Either is reason enough for the day's one discovery step.
+  elsif v_disc = 0
+        and ((jsonb_typeof(s.discovery_config->'queries') = 'array' and jsonb_array_length(s.discovery_config->'queries') > 0)
+          or (jsonb_typeof(s.discovery_config->'directories') = 'array' and jsonb_array_length(s.discovery_config->'directories') > 0)) then
     v_step := jsonb_build_object('kind', 'discover', 'fn', 'growth_outbound_research', 'input', jsonb_build_object('saved', true));
   elsif v_verify > 0
         and not exists (select 1 from growth_outbound.research_runs r
@@ -5752,12 +5941,16 @@ begin
   v_run := growth_outbound.ticket_run(p_ticket);
   if v_run is null then return jsonb_build_object('ok', false, 'reason', 'invalid_ticket'); end if;
   select * into r from growth_outbound.research_runs where id = v_run;
-  v_allowed := array['plan', 'growth_outbound_research_spend', 'growth_outbound_research_finish']
+  -- (Phase 13) every kind may record what its providers said and cost
+  v_allowed := array['plan', 'growth_outbound_research_spend', 'growth_outbound_research_finish',
+                     'growth_outbound_provider_health_record', 'growth_outbound_provider_record']
     || case r.kind
-         when 'discover' then array['growth_outbound_candidates_record']
+         when 'discover' then array['growth_outbound_candidates_record', 'growth_outbound_page_record',
+                                    'growth_outbound_cache_get', 'growth_outbound_cache_put']
          when 'research' then array['growth_outbound_candidates', 'growth_outbound_candidate', 'growth_outbound_candidate_set',
                                     'growth_outbound_page_record', 'growth_outbound_research_ingest', 'growth_outbound_fit_catalog',
-                                    'growth_outbound_verify_queue', 'growth_outbound_enrichment_queue', 'growth_outbound_enrichment_mark']
+                                    'growth_outbound_verify_queue', 'growth_outbound_enrichment_queue', 'growth_outbound_enrichment_mark',
+                                    'growth_outbound_cache_get', 'growth_outbound_cache_put']
          when 'draft' then array['growth_outbound_drafting_overview', 'growth_outbound_draft_context',
                                  'growth_outbound_draft_propose', 'growth_outbound_draft_gave_up']
          else '{}'::text[] end;
@@ -5770,6 +5963,9 @@ begin
   if p_door = 'plan' then
     return jsonb_build_object('ok', true, 'run_id', r.id, 'kind', r.kind, 'input', r.input, 'budget', growth_outbound.research_budget(),
       'queries', coalesce((select x.discovery_config->'queries' from growth_outbound.settings x where x.id = 1), '[]'::jsonb),
+      'directories', growth_outbound.directories_due(),
+      'health', growth_outbound.provider_health_json(),
+      'partner_outreach', (select x.partner_outreach_enabled from growth_outbound.settings x where x.id = 1),
       'providers', coalesce((select x.discovery_config->'providers' from growth_outbound.settings x where x.id = 1), '{}'::jsonb),
       'shared_sites', to_jsonb(growth_outbound.builtin_shared_sites())
                       || coalesce((select x.discovery_config->'shared_sites' from growth_outbound.settings x where x.id = 1), '[]'::jsonb));
@@ -5808,6 +6004,14 @@ begin
       public.growth_outbound_draft_propose(v_run, (a->>'p_prospect')::uuid, a->'p')
     when 'growth_outbound_draft_gave_up' then
       public.growth_outbound_draft_gave_up(v_run, (a->>'p_prospect')::uuid, (a->>'p_sequence')::int, coalesce(a->'p_reasons', '[]'::jsonb))
+    when 'growth_outbound_provider_health_record' then
+      public.growth_outbound_provider_health_record(v_run, a->'p')
+    when 'growth_outbound_provider_record' then
+      public.growth_outbound_provider_record(v_run, a->'p_items')
+    when 'growth_outbound_cache_get' then
+      public.growth_outbound_cache_get(a->>'p_provider', a->>'p_key')
+    when 'growth_outbound_cache_put' then
+      public.growth_outbound_cache_put(v_run, a->>'p_provider', a->>'p_key', a->'p_value', coalesce((a->>'p_ttl_hours')::int, 24))
   end;
   perform set_config('growth_outbound.ticket', '', true);
   return v;
@@ -5973,6 +6177,19 @@ begin
       returning stage)
     select coalesce(jsonb_object_agg(stage, k), '{}'::jsonb) into v_add from (select stage, count(*) k from ins group by stage) z;
     v_new := v_new || v_add;
+
+    -- (Phase 13) what those accounts have paid, from Stripe's own record:
+    -- each paid invoice once, refreshed every time results are matched
+    insert into growth_outbound.revenue as rv (prospect_id, account_key, paid_cents, invoices, first_paid_at, last_paid_at)
+    select m.prospect_id, growth_outbound.account_key('account', m.user_id::text), a.paid_cents, a.invoices, a.first_paid_at, a.last_paid_at
+      from (select distinct x.prospect_id, x.user_id
+              from jsonb_to_recordset(v_matched) x(prospect_id uuid, user_id uuid, created_at timestamptz, first_sent_at timestamptz)
+             where x.created_at >= x.first_sent_at
+               and not exists (select 1 from growth_outbound.owners o where o.user_id = x.user_id)) m
+      join growth_outbound.account_paid(v_users, null) a on a.user_id = m.user_id
+    on conflict (prospect_id, account_key) do update set paid_cents = excluded.paid_cents, invoices = excluded.invoices,
+           first_paid_at = excluded.first_paid_at, last_paid_at = excluded.last_paid_at
+     where rv.paid_cents is distinct from excluded.paid_cents or rv.invoices is distinct from excluded.invoices;
   end if;
 
   -- an account ends the sequence
@@ -6195,7 +6412,22 @@ begin
     'latest', coalesce((select jsonb_agg(jsonb_build_object('prospect_id', p.id, 'full_name', p.full_name, 'organization', p.organization,
                  'stage', c.stage, 'matched_by', c.matched_by, 'occurred_at', c.occurred_at) order by c.occurred_at desc, c.id desc)
         from (select * from growth_outbound.conversions order by occurred_at desc, id desc limit 20) c
-        join growth_outbound.prospects p on p.id = c.prospect_id), '[]'::jsonb));
+        join growth_outbound.prospects p on p.id = c.prospect_id), '[]'::jsonb),
+    -- (Phase 13) what the people written to have paid (Stripe's paid
+    -- invoices, gross: refunds are not in the stored events), for those first
+    -- written to in the window, by campaign; and the providers' cost
+    'revenue', (select jsonb_build_object(
+        'paid_cents', coalesce(sum(r.paid_cents), 0), 'invoices', coalesce(sum(r.invoices), 0),
+        'paying_accounts', count(distinct r.account_key),
+        'by_campaign', coalesce((select jsonb_object_agg(k, v) from (
+            select p2.campaign_type as k, sum(r2.paid_cents) as v from growth_outbound.revenue r2
+              join growth_outbound.prospects p2 on p2.id = r2.prospect_id
+             where r2.prospect_id in (select (z->>'prospect_id')::uuid from jsonb_array_elements(v_cohort) z)
+             group by p2.campaign_type) y), '{}'::jsonb),
+        'basis', 'gross paid invoices from Stripe''s record, for accounts matched to an email by its link or the address written to; refunds are not subtracted')
+        from growth_outbound.revenue r
+       where r.prospect_id in (select (z->>'prospect_id')::uuid from jsonb_array_elements(v_cohort) z)),
+    'spend', growth_outbound.spend_json());
 end $$;
 
 -- Every prospect re-evaluated under the rules in this file (a re-run is how a
@@ -6642,8 +6874,678 @@ begin
     'verification_waiting', (select count(*) from growth_outbound.verify_queue(200)),
     'enrichment_waiting', (select count(*) from growth_outbound.enrichment_queue(200)),
     'domain_auth', s.domain_auth, 'domain_auth_checked_at', s.domain_auth_checked_at,
-    'providers', coalesce(s.discovery_config->'providers', '{}'::jsonb));
+    'providers', coalesce(s.discovery_config->'providers', '{}'::jsonb),
+    -- (Phase 13) found today by source, turned away today, provider health and
+    -- spend, the opt-out endpoint's last check, and partner outreach
+    'found_today', coalesce((select jsonb_object_agg(provider, n) from (
+        select c.provider, count(*) n from growth_outbound.candidates c where c.first_seen_at >= v_day_start group by c.provider) x), '{}'::jsonb),
+    'candidates_waiting', (select count(*) from growth_outbound.candidates c where c.status = 'new'),
+    'rejected_today', (select count(*) from growth_outbound.candidates c
+                        where c.status in ('not_a_fit', 'failed') and c.updated_at >= v_day_start),
+    'health', growth_outbound.provider_health_json(),
+    'spend', growth_outbound.spend_json(),
+    'optout_check', s.optout_check, 'optout_checked_at', s.optout_checked_at,
+    'partner_outreach', s.partner_outreach_enabled,
+    'discovery_sources', jsonb_build_object(
+      'saved_searches', coalesce(jsonb_array_length(case when jsonb_typeof(s.discovery_config->'queries') = 'array' then s.discovery_config->'queries' end), 0),
+      'directories', coalesce(jsonb_array_length(case when jsonb_typeof(s.discovery_config->'directories') = 'array' then s.discovery_config->'directories' end), 0)));
 end $$;
+
+-- =============================================================================
+-- 13. FREE-FIRST DISCOVERY AND OPERATIONAL READINESS (Phase 13)
+--
+--   Discovery no longer depends on a paid search API. Candidates come from:
+--     * the owner's own lists: pasted addresses, a CSV, company domains, or
+--       the result addresses of a search the owner ran themselves
+--       (growth_outbound_candidates_import; no provider, no key, no cost);
+--     * directories the owner chose, re-read weekly (discovery_config.directories);
+--     * the free Podcast Index API, for the saved searches (its key is free);
+--     * Brave and Apollo, still, when their keys are set and they are on.
+--   Every source feeds the one candidate queue: a page seen before is counted
+--   once, a known prospect's page is a duplicate, a suppressed domain is never
+--   read.
+--
+--   A provider is CONNECTED only after it answered a live check (or a real
+--   call) — a key that is merely set is "not checked yet". What each provider
+--   said is kept (provider_health), with its remaining free credit where it
+--   reports one; what each call cost is kept by day (provider_ledger).
+--
+--   Live sending also needs the opt-out endpoint CHECKED at its address and
+--   Resend's webhook PROVEN by a signed event (send_blockers_for).
+-- =============================================================================
+
+-- 13a. The owner's time zone. An install that still carries the old default
+-- (America/New_York), never changed by the owner, moves to America/Chicago
+-- once, on the record. A zone the owner chose is never touched.
+do $tz$
+begin
+  if exists (select 1 from growth_outbound.settings where id = 1 and automation_timezone = 'America/New_York')
+     and not exists (select 1 from growth_outbound.activity a where a.action = 'settings_changed' and a.detail ? 'automation_timezone')
+     and not exists (select 1 from growth_outbound.activity a where a.action = 'timezone_default_moved') then
+    update growth_outbound.settings set automation_timezone = 'America/Chicago' where id = 1;
+    perform growth_outbound.log_as('system', 'timezone_default_moved', null, 'settings', '1',
+      jsonb_build_object('from', 'America/New_York', 'to', 'America/Chicago',
+                         'why', 'the owner''s time zone; change it under Outbound settings → Morning run'));
+  end if;
+end $tz$;
+
+-- 13b. WHAT EACH PROVIDER LAST SAID. One row per provider: the key's state,
+-- each endpoint's (an Apollo key can be valid while its people search is not
+-- on the plan), the free credit it reports, when it last worked and failed.
+create table if not exists growth_outbound.provider_health (
+  provider       text primary key,
+  state          text not null,
+  detail         text,
+  endpoints      jsonb not null default '{}'::jsonb,
+  quota          jsonb,
+  checked_at     timestamptz not null default now(),
+  last_ok_at     timestamptz,
+  last_error_at  timestamptz
+);
+do $c$ begin
+  alter table growth_outbound.provider_health drop constraint if exists provider_health_shape_ck;
+  alter table growth_outbound.provider_health add constraint provider_health_shape_ck check (
+        provider in ('anthropic', 'hunter', 'apollo', 'podcastindex', 'brave', 'clay', 'resend')
+    and state in ('connected', 'credential_missing', 'unauthorized', 'insufficient_plan', 'quota_exhausted', 'unavailable',
+                  'not_checked', 'switched_off')
+    and (detail is null or length(detail) <= 500)
+    and jsonb_typeof(endpoints) = 'object' and (quota is null or jsonb_typeof(quota) = 'object'));
+end $c$;
+
+create or replace function growth_outbound.provider_states()
+returns text[] language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select array['connected', 'credential_missing', 'unauthorized', 'insufficient_plan', 'quota_exhausted', 'unavailable',
+               'not_checked', 'switched_off'];
+$$;
+
+-- What the console and the morning run read: each provider's last word.
+-- "fresh" means it was checked in the last 24 hours.
+create or replace function growth_outbound.provider_health_json()
+returns jsonb language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select coalesce(jsonb_object_agg(h.provider, jsonb_build_object(
+           'state', h.state, 'detail', h.detail, 'endpoints', h.endpoints, 'quota', h.quota,
+           'checked_at', h.checked_at, 'last_ok_at', h.last_ok_at, 'last_error_at', h.last_error_at,
+           'fresh', h.checked_at > now() - interval '24 hours')), '{}'::jsonb)
+    from growth_outbound.provider_health h;
+$$;
+
+-- RECORD WHAT A PROVIDER SAID (the engine, during a run; or the owner's
+-- check). { provider, state, detail?, endpoint?, quota? }. With an endpoint,
+-- only that endpoint's state changes (and the key's, if the key was refused).
+create or replace function public.growth_outbound_provider_health_record(p_run bigint, p jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  r growth_outbound.research_runs;
+  v_provider text;
+  v_state text;
+  v_endpoint text;
+  k text;
+begin
+  perform growth_outbound.require_engine();
+  if p_run is not null then
+    select * into r from growth_outbound.research_runs where id = p_run;
+    if not found or r.status <> 'running' then return jsonb_build_object('ok', false, 'reason', 'run_not_running'); end if;
+  elsif growth_outbound.ticket_run(nullif(current_setting('growth_outbound.ticket', true), '')) is not null then
+    return jsonb_build_object('ok', false, 'reason', 'not_allowed', 'detail', 'a ticket acts for its own run only');
+  end if;
+  if p is null or jsonb_typeof(p) <> 'object' or length(p::text) > 4000 then
+    return jsonb_build_object('ok', false, 'reason', 'not_an_object');
+  end if;
+  for k in select jsonb_object_keys(p) loop
+    if k not in ('provider', 'state', 'detail', 'endpoint', 'quota') then
+      return jsonb_build_object('ok', false, 'reason', 'unknown_field', 'detail', left(k, 40));
+    end if;
+  end loop;
+  v_provider := p->>'provider';
+  v_state := p->>'state';
+  v_endpoint := nullif(btrim(coalesce(p->>'endpoint', '')), '');
+  if coalesce(v_provider, '') not in ('anthropic', 'hunter', 'apollo', 'podcastindex', 'brave', 'clay', 'resend') then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_provider');
+  end if;
+  if coalesce(v_state, '') <> all (growth_outbound.provider_states()) then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_state');
+  end if;
+  if v_endpoint is not null and v_endpoint !~ '^[a-z0-9_./-]{1,60}$' then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_endpoint');
+  end if;
+  if p ? 'quota' and jsonb_typeof(p->'quota') not in ('object', 'null') then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_quota');
+  end if;
+  insert into growth_outbound.provider_health as h (provider, state, detail, endpoints, quota, checked_at, last_ok_at, last_error_at)
+  values (v_provider,
+          case when v_endpoint is null or v_state = 'unauthorized' then v_state
+               when v_state in ('connected', 'insufficient_plan', 'quota_exhausted') then 'connected' else 'not_checked' end,
+          left(p->>'detail', 500),
+          case when v_endpoint is null then '{}'::jsonb else jsonb_build_object(v_endpoint, v_state) end,
+          case when jsonb_typeof(p->'quota') = 'object' then p->'quota' end,
+          now(),
+          case when v_state = 'connected' then now() end,
+          case when v_state in ('unauthorized', 'insufficient_plan', 'quota_exhausted', 'unavailable') then now() end)
+  on conflict (provider) do update set
+    state = case when v_endpoint is null or v_state = 'unauthorized' then v_state
+                 -- an endpoint that answered proves the key works (a plan or
+                 -- allowance refusal is an answer to a key the provider knows)
+                 when v_state = 'connected' then 'connected'
+                 when v_state in ('insufficient_plan', 'quota_exhausted') and h.state in ('not_checked', 'credential_missing', 'unavailable', 'unauthorized')
+                   then 'connected'
+                 else h.state end,
+    detail = coalesce(left(p->>'detail', 500), h.detail),
+    endpoints = case when v_endpoint is null then h.endpoints else h.endpoints || jsonb_build_object(v_endpoint, v_state) end,
+    quota = case when jsonb_typeof(p->'quota') = 'object' then p->'quota' else h.quota end,
+    checked_at = now(),
+    last_ok_at = case when v_state = 'connected' then now() else h.last_ok_at end,
+    last_error_at = case when v_state in ('unauthorized', 'insufficient_plan', 'quota_exhausted', 'unavailable') then now() else h.last_error_at end;
+  return jsonb_build_object('ok', true, 'health', growth_outbound.provider_health_json()->v_provider);
+end $$;
+
+-- 13c. A SHORT MEMORY OF PROVIDER ANSWERS, so the same question is never paid
+-- for twice: a Hunter domain search is kept 30 days, a podcast search a day.
+-- Only what the engine needs is kept (an address with its owner's name, a
+-- feed's site), and it expires; it is not history and may be cleared.
+create table if not exists growth_outbound.provider_cache (
+  provider    text not null,
+  cache_key   text not null,
+  value       jsonb not null,
+  fetched_at  timestamptz not null default now(),
+  expires_at  timestamptz not null,
+  primary key (provider, cache_key)
+);
+do $c$ begin
+  alter table growth_outbound.provider_cache drop constraint if exists provider_cache_shape_ck;
+  alter table growth_outbound.provider_cache add constraint provider_cache_shape_ck check (
+        provider in ('hunter_domain_search', 'podcastindex_search', 'apollo_org')
+    and length(cache_key) between 1 and 300 and length(value::text) <= 50000 and expires_at > fetched_at);
+end $c$;
+
+create or replace function public.growth_outbound_cache_get(p_provider text, p_key text)
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare c growth_outbound.provider_cache;
+begin
+  perform growth_outbound.require_engine();
+  select * into c from growth_outbound.provider_cache where provider = p_provider and cache_key = lower(btrim(coalesce(p_key, '')))
+     and expires_at > now();
+  if not found then return jsonb_build_object('hit', false); end if;
+  return jsonb_build_object('hit', true, 'value', c.value, 'fetched_at', c.fetched_at);
+end $$;
+
+create or replace function public.growth_outbound_cache_put(p_run bigint, p_provider text, p_key text, p_value jsonb, p_ttl_hours int default 24)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare r growth_outbound.research_runs;
+begin
+  perform growth_outbound.require_engine();
+  select * into r from growth_outbound.research_runs where id = p_run;
+  if not found or r.status <> 'running' then return jsonb_build_object('ok', false, 'reason', 'run_not_running'); end if;
+  if r.kind = 'draft' then return jsonb_build_object('ok', false, 'reason', 'wrong_run_kind'); end if;
+  if coalesce(p_ttl_hours, 0) not between 1 and 720 then return jsonb_build_object('ok', false, 'reason', 'invalid_ttl'); end if;
+  if p_value is null then return jsonb_build_object('ok', false, 'reason', 'no_value'); end if;
+  delete from growth_outbound.provider_cache where expires_at <= now();
+  begin
+    insert into growth_outbound.provider_cache (provider, cache_key, value, fetched_at, expires_at)
+    values (p_provider, lower(btrim(coalesce(p_key, ''))), p_value, now(), now() + make_interval(hours => p_ttl_hours))
+    on conflict (provider, cache_key) do update set value = excluded.value, fetched_at = excluded.fetched_at, expires_at = excluded.expires_at;
+  exception when check_violation or not_null_violation then
+    return jsonb_build_object('ok', false, 'reason', 'invalid', 'detail', sqlerrm);
+  end;
+  return jsonb_build_object('ok', true);
+end $$;
+
+-- 13d. WHAT EACH PROVIDER CALL COST, by day. Claude's tokens are priced from
+-- the model's published rate (model_price); a free-tier provider's calls are
+-- counted in its own credits, with no dollar figure invented for them.
+create table if not exists growth_outbound.provider_ledger (
+  day            date not null,
+  provider       text not null,
+  operation      text not null,
+  calls          int not null default 0,
+  units          numeric not null default 0,
+  input_tokens   bigint not null default 0,
+  output_tokens  bigint not null default 0,
+  cost_usd       numeric(14, 6),
+  primary key (day, provider, operation)
+);
+do $c$ begin
+  alter table growth_outbound.provider_ledger drop constraint if exists provider_ledger_shape_ck;
+  alter table growth_outbound.provider_ledger add constraint provider_ledger_shape_ck check (
+        provider in ('anthropic', 'hunter', 'apollo', 'podcastindex', 'brave', 'clay', 'resend', 'web')
+    and operation ~ '^[a-z0-9_./-]{1,60}$' and calls >= 0 and units >= 0 and input_tokens >= 0 and output_tokens >= 0
+    and (cost_usd is null or cost_usd >= 0));
+end $c$;
+
+-- Published list prices, US dollars per million tokens (Claude API,
+-- 2026-10): input, output, cache read. Edited here when they change.
+create or replace function growth_outbound.model_price(p_model text)
+returns jsonb language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select case lower(coalesce(p_model, ''))
+    when 'claude-opus-5-5'   then '{"in": 4, "out": 20, "cache_read": 0.2}'::jsonb
+    when 'claude-sonnet-5-5' then '{"in": 2, "out": 10, "cache_read": 0.2}'::jsonb
+    when 'claude-haiku-5-5'  then '{"in": 0.1, "out": 0.5}'::jsonb
+    when 'claude-opus-5'     then '{"in": 5, "out": 25}'::jsonb
+    when 'claude-sonnet-5'   then '{"in": 2, "out": 10}'::jsonb
+    when 'claude-fable-5-1'  then '{"in": 10, "out": 50, "cache_read": 0.25}'::jsonb
+  end;
+$$;
+
+-- RECORD CALLS. [{ provider, operation, calls?, units?, input_tokens?,
+-- output_tokens?, cache_read_tokens?, cache_write_tokens?, model? }]
+create or replace function public.growth_outbound_provider_record(p_run bigint, p_items jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  r growth_outbound.research_runs;
+  v jsonb;
+  k text;
+  v_price jsonb;
+  v_in bigint; v_out bigint; v_cr bigint; v_cw bigint;
+  v_cost numeric;
+  v_calls int;
+  v_units numeric;
+  n int := 0;
+  v_day date := (now() at time zone 'utc')::date;
+begin
+  perform growth_outbound.require_engine();
+  if p_run is not null then
+    select * into r from growth_outbound.research_runs where id = p_run;
+    if not found or r.status <> 'running' then return jsonb_build_object('ok', false, 'reason', 'run_not_running'); end if;
+  elsif growth_outbound.ticket_run(nullif(current_setting('growth_outbound.ticket', true), '')) is not null then
+    return jsonb_build_object('ok', false, 'reason', 'not_allowed', 'detail', 'a ticket acts for its own run only');
+  end if;
+  if p_items is null or jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) > 20 then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_items', 'detail', 'a list of at most 20 entries');
+  end if;
+  for v in select x from jsonb_array_elements(p_items) x loop
+    if jsonb_typeof(v) <> 'object' then return jsonb_build_object('ok', false, 'reason', 'invalid_items'); end if;
+    for k in select jsonb_object_keys(v) loop
+      if k not in ('provider', 'operation', 'calls', 'units', 'input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens', 'model') then
+        return jsonb_build_object('ok', false, 'reason', 'unknown_field', 'detail', left(k, 40));
+      end if;
+    end loop;
+    foreach k in array array['calls', 'units', 'input_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens'] loop
+      if v ? k and (jsonb_typeof(v->k) <> 'number' or (v->>k) !~ '^[0-9]{1,10}(\.[0-9]{1,4})?$') then
+        return jsonb_build_object('ok', false, 'reason', 'invalid_value', 'detail', k);
+      end if;
+    end loop;
+    v_calls := least(coalesce((v->>'calls')::numeric, 1), 1000)::int;
+    v_units := least(coalesce((v->>'units')::numeric, v_calls), 1000000);
+    v_in := coalesce((v->>'input_tokens')::bigint, 0);
+    v_out := coalesce((v->>'output_tokens')::bigint, 0);
+    v_cr := coalesce((v->>'cache_read_tokens')::bigint, 0);
+    v_cw := coalesce((v->>'cache_write_tokens')::bigint, 0);
+    v_cost := null;
+    if v->>'provider' = 'anthropic' then
+      v_price := growth_outbound.model_price(v->>'model');
+      if v_price is not null then
+        v_cost := (v_in * (v_price->>'in')::numeric + v_out * (v_price->>'out')::numeric
+                   + v_cr * coalesce((v_price->>'cache_read')::numeric, (v_price->>'in')::numeric)
+                   + v_cw * (v_price->>'in')::numeric * 1.25) / 1000000;
+      end if;
+    end if;
+    begin
+      insert into growth_outbound.provider_ledger as l (day, provider, operation, calls, units, input_tokens, output_tokens, cost_usd)
+      values (v_day, v->>'provider', coalesce(v->>'operation', ''), v_calls, v_units, v_in + v_cr + v_cw, v_out, v_cost)
+      on conflict (day, provider, operation) do update set
+        calls = l.calls + excluded.calls, units = l.units + excluded.units,
+        input_tokens = l.input_tokens + excluded.input_tokens, output_tokens = l.output_tokens + excluded.output_tokens,
+        cost_usd = case when l.cost_usd is null and excluded.cost_usd is null then null
+                        else coalesce(l.cost_usd, 0) + coalesce(excluded.cost_usd, 0) end;
+    exception when check_violation or not_null_violation or data_exception then
+      return jsonb_build_object('ok', false, 'reason', 'invalid', 'detail', sqlerrm);
+    end;
+    n := n + 1;
+  end loop;
+  return jsonb_build_object('ok', true, 'recorded', n);
+end $$;
+
+-- What the providers cost: today, the last 7 and 30 days, by provider, and a
+-- month at the last 7 days' pace. Dollars only where a price is known.
+create or replace function growth_outbound.spend_json()
+returns jsonb language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  with d as (select (now() at time zone 'utc')::date as today),
+  p as (
+    select l.provider,
+           sum(l.calls) filter (where l.day = d.today) as calls_today,
+           sum(l.units) filter (where l.day = d.today) as units_today,
+           sum(l.cost_usd) filter (where l.day = d.today) as usd_today,
+           sum(l.calls) filter (where l.day > d.today - 7) as calls_7d,
+           sum(l.units) filter (where l.day > d.today - 7) as units_7d,
+           sum(l.cost_usd) filter (where l.day > d.today - 7) as usd_7d,
+           sum(l.calls) filter (where l.day > d.today - 30) as calls_30d,
+           sum(l.units) filter (where l.day > d.today - 30) as units_30d,
+           sum(l.input_tokens) filter (where l.day > d.today - 30) as input_tokens_30d,
+           sum(l.output_tokens) filter (where l.day > d.today - 30) as output_tokens_30d,
+           sum(l.cost_usd) filter (where l.day > d.today - 30) as usd_30d
+      from growth_outbound.provider_ledger l, d
+     where l.day > d.today - 30
+     group by l.provider)
+  select jsonb_build_object(
+    'providers', coalesce((select jsonb_object_agg(provider, jsonb_build_object(
+        'calls_today', coalesce(calls_today, 0), 'units_today', coalesce(units_today, 0), 'usd_today', round(usd_today, 4),
+        'calls_7d', coalesce(calls_7d, 0), 'units_7d', coalesce(units_7d, 0), 'usd_7d', round(usd_7d, 4),
+        'calls_30d', coalesce(calls_30d, 0), 'units_30d', coalesce(units_30d, 0), 'usd_30d', round(usd_30d, 4),
+        'input_tokens_30d', coalesce(input_tokens_30d, 0), 'output_tokens_30d', coalesce(output_tokens_30d, 0))) from p), '{}'::jsonb),
+    'usd_today', (select round(coalesce(sum(usd_today), 0), 4) from p),
+    'usd_30d', (select round(coalesce(sum(usd_30d), 0), 4) from p),
+    'usd_month_at_7d_pace', (select round(coalesce(sum(usd_7d), 0) * 30 / 7, 2) from p));
+$$;
+
+-- 13e. REVENUE FROM AN EMAIL'S CONVERSIONS, where Stripe's own record shows
+-- it: the paid invoices of the accounts the matcher traced to an email (by
+-- link or address, after the first email). Gross: refunds are not in the
+-- stored Stripe events, so none is subtracted, and the console says so.
+-- Written only by the matcher; refreshed, never deleted.
+create table if not exists growth_outbound.revenue (
+  prospect_id    uuid not null references growth_outbound.prospects (id) on delete restrict,
+  account_key    text not null,
+  paid_cents     bigint not null default 0,
+  invoices       int not null default 0,
+  first_paid_at  timestamptz,
+  last_paid_at   timestamptz,
+  refreshed_at   timestamptz not null default now(),
+  primary key (prospect_id, account_key)
+);
+do $c$ begin
+  alter table growth_outbound.revenue drop constraint if exists revenue_shape_ck;
+  alter table growth_outbound.revenue add constraint revenue_shape_ck check (
+    account_key ~ '^[0-9a-f]{64}$' and paid_cents >= 0 and invoices >= 0);
+end $c$;
+create or replace function growth_outbound.revenue_guard()
+returns trigger language plpgsql
+set search_path = pg_catalog, pg_temp as $$
+begin
+  if coalesce(current_setting('growth_outbound.door', true), '') <> 'sync_conversions' then
+    raise exception 'revenue is recorded only by the matcher (growth_outbound.sync_conversions)'
+      using errcode = 'insufficient_privilege';
+  end if;
+  new.refreshed_at := now();
+  return new;
+end $$;
+drop trigger if exists revenue_guard_t on growth_outbound.revenue;
+create trigger revenue_guard_t before insert or update on growth_outbound.revenue
+  for each row execute function growth_outbound.revenue_guard();
+drop trigger if exists revenue_never_delete_t on growth_outbound.revenue;
+create trigger revenue_never_delete_t before delete on growth_outbound.revenue
+  for each row execute function growth_outbound.never_delete();
+
+-- Each account's paid invoices, from the Stripe webhook's own ledger (each
+-- invoice once, whichever of its two events arrived), after a given moment.
+create or replace function growth_outbound.account_paid(p_users uuid[], p_after timestamptz)
+returns table (user_id uuid, paid_cents bigint, invoices int, first_paid_at timestamptz, last_paid_at timestamptz)
+language plpgsql stable
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  if to_regclass('public.stripe_events') is null or to_regclass('public.subscriptions') is null
+     or to_regprocedure('public.affiliate_stripe_object(jsonb)') is null or coalesce(cardinality(p_users), 0) = 0 then
+    return;
+  end if;
+  return query
+    with ev as (
+      select coalesce(e.stripe_created, e.created_at) as at, public.affiliate_stripe_object(e.payload) as o,
+             e.user_id as uid0, e.customer_id, e.subscription_id
+        from public.stripe_events e
+       where e.type in ('invoice.payment_succeeded', 'invoice.paid')
+    ), ev2 as (
+      select ev.at, ev.o, coalesce(ev.uid0,
+               (select s.user_id from public.subscriptions s
+                 where s.stripe_subscription_id = coalesce(ev.subscription_id, public.affiliate_stripe_id(ev.o -> 'subscription'),
+                         public.affiliate_stripe_id(ev.o -> 'parent' -> 'subscription_details' -> 'subscription')) limit 1),
+               (select s.user_id from public.subscriptions s
+                 where s.stripe_customer_id = coalesce(ev.customer_id, public.affiliate_stripe_id(ev.o -> 'customer')) limit 1)) as uid
+        from ev
+    ), inv as (
+      select distinct on (ev2.uid, ev2.o ->> 'id') ev2.uid, ev2.at, (ev2.o ->> 'amount_paid')::bigint as cents
+        from ev2
+       where ev2.uid = any (p_users) and coalesce(ev2.o ->> 'id', '') <> ''
+         and (ev2.o ->> 'amount_paid') ~ '^[0-9]{1,12}$' and (ev2.o ->> 'amount_paid')::bigint > 0
+         and ev2.at >= coalesce(p_after, '-infinity'::timestamptz)
+       order by ev2.uid, ev2.o ->> 'id', ev2.at
+    )
+    select inv.uid, sum(inv.cents)::bigint, count(*)::int, min(inv.at), max(inv.at) from inv group by inv.uid;
+end $$;
+
+-- 13f. THE OWNER'S OWN LISTS. Addresses pasted or typed, a CSV's rows,
+-- company domains, or the result addresses of a search the owner ran by hand
+-- in their own browser (no search API, nothing scraped). Each becomes a
+-- candidate through the same recording as any search: canonical, counted
+-- once, a known prospect's page a duplicate, a suppressed domain never read.
+--   p_source  manual | csv | domains | search_results
+--   p_items   [ "https://…" | "example.com" | { url | website | domain, title?, name?, note?, segment? } ]  (≤ 500)
+-- X, LinkedIn, Instagram, Facebook, TikTok and Threads are refused (the
+-- engine may not read them: add such a person as a prospect, with a fact you
+-- checked); so is a search engine's own page.
+create or replace function public.growth_outbound_candidates_import(p_source text, p_items jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_owner uuid;
+  v_provider text;
+  v jsonb;
+  i int;
+  v_raw text;
+  v_url text;
+  v_host text;
+  v_seg text;
+  v_title text;
+  v_note text;
+  v_items jsonb := '[]'::jsonb;
+  v_refused jsonb := '[]'::jsonb;
+  v_seen text[] := '{}';
+  v_run bigint;
+  v_res jsonb;
+  v_tot jsonb := jsonb_build_object('new', 0, 'seen_again', 0, 'duplicates', 0, 'suppressed', 0, 'invalid', 0);
+  k text;
+  n int;
+begin
+  v_owner := growth_outbound.require_owner();
+  v_provider := case p_source when 'manual' then 'manual' when 'csv' then 'csv_import' when 'domains' then 'domain_list'
+                              when 'search_results' then 'pasted_results' end;
+  if v_provider is null then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_source', 'detail', 'manual, csv, domains or search_results');
+  end if;
+  if p_items is null or jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) not between 1 and 500 then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_items', 'detail', 'a list of 1 to 500 addresses');
+  end if;
+  for v, i in select x, o::int from jsonb_array_elements(p_items) with ordinality t(x, o) loop
+    v_raw := btrim(case jsonb_typeof(v) when 'string' then v #>> '{}'
+                                        when 'object' then coalesce(v->>'url', v->>'website', v->>'domain') end);
+    v_seg := case when jsonb_typeof(v) = 'object' and coalesce(v->>'segment', '') in ('customer', 'partnership', 'media_partner', 'affiliate', 'business_partner')
+                  then v->>'segment' end;
+    v_title := case when jsonb_typeof(v) = 'object' then left(nullif(btrim(coalesce(v->>'title', v->>'name', '')), ''), 300) end;
+    v_note := case when jsonb_typeof(v) = 'object' then left(nullif(btrim(regexp_replace(coalesce(v->>'note', ''), '\s+', ' ', 'g')), ''), 400) end;
+    if jsonb_typeof(v) = 'object' and v ? 'segment' and v_seg is null and coalesce(v->>'segment', '') <> '' then
+      v_refused := v_refused || jsonb_build_array(jsonb_build_object('item', i, 'why', 'segment is customer, partnership, media_partner, affiliate or business_partner'));
+      continue;
+    end if;
+    if v_raw is null or v_raw = '' or length(v_raw) > 2000 then
+      v_refused := v_refused || jsonb_build_array(jsonb_build_object('item', i, 'why', 'no web address'));
+      continue;
+    end if;
+    -- a bare domain, or a domain and path, is a site
+    if v_raw !~* '^https?://' then
+      if v_raw ~* '^(www\.)?[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,63}(/\S*)?$' then
+        v_raw := 'https://' || v_raw;
+      else
+        v_refused := v_refused || jsonb_build_array(jsonb_build_object('item', i, 'value', left(v_raw, 120), 'why', 'not a web address'));
+        continue;
+      end if;
+    end if;
+    v_url := growth_outbound.canonical_url(v_raw);
+    v_host := growth_outbound.url_host(v_url);
+    if v_url is null or v_host is null then
+      v_refused := v_refused || jsonb_build_array(jsonb_build_object('item', i, 'value', left(v_raw, 120), 'why', 'not a web address'));
+      continue;
+    end if;
+    if v_host ~ '(^|\.)(x\.com|twitter\.com|linkedin\.com|instagram\.com|facebook\.com|tiktok\.com|threads\.net|threads\.com)$' then
+      v_refused := v_refused || jsonb_build_array(jsonb_build_object('item', i, 'value', left(v_url, 120),
+        'why', 'the engine may not read X, LinkedIn, Instagram, Facebook, TikTok or Threads: add this person under Add a prospect, with a fact you checked'));
+      continue;
+    end if;
+    if v_host ~ '(^|\.)(google\.[a-z.]+|bing\.com|duckduckgo\.com|search\.yahoo\.com|search\.brave\.com|yandex\.[a-z]+|baidu\.com)$' then
+      v_refused := v_refused || jsonb_build_array(jsonb_build_object('item', i, 'value', left(v_url, 120),
+        'why', 'a search engine''s own page: paste the addresses of the results instead'));
+      continue;
+    end if;
+    -- a company domain is its site's home page
+    if p_source = 'domains' then v_url := growth_outbound.canonical_url('https://' || v_host || '/'); end if;
+    if v_url = any (v_seen) then continue; end if;
+    v_seen := array_append(v_seen, v_url);
+    v_items := v_items || jsonb_build_array(jsonb_strip_nulls(jsonb_build_object(
+      'url', v_url, 'title', v_title,
+      'snippet', case when v_note is not null then 'Your note: ' || v_note end,
+      'query', left('your list: ' || case p_source when 'manual' then 'added by hand' when 'csv' then 'CSV import'
+                                                  when 'domains' then 'company domains' else 'search results you pasted' end, 200),
+      'provider', v_provider, 'segment', v_seg)));
+  end loop;
+  if jsonb_array_length(v_items) = 0 then
+    return jsonb_build_object('ok', false, 'reason', 'nothing_to_import', 'refused', v_refused);
+  end if;
+
+  -- one run, done at once: the import is on the record like any search
+  insert into growth_outbound.research_runs (kind, started_by, requested_by, input)
+  values ('discover', 'owner', v_owner, jsonb_build_object('source', p_source, 'import', true, 'items', jsonb_array_length(v_items)))
+  returning id into v_run;
+  n := 0;
+  while n < jsonb_array_length(v_items) loop
+    v_res := public.growth_outbound_candidates_record(v_run,
+      (select coalesce(jsonb_agg(x order by o), '[]'::jsonb) from jsonb_array_elements(v_items) with ordinality t(x, o) where o > n and o <= n + 50));
+    if coalesce((v_res->>'ok')::boolean, false) is not true then
+      raise exception 'recording the import failed: %', coalesce(v_res->>'reason', '?');
+    end if;
+    foreach k in array array['new', 'seen_again', 'duplicates', 'suppressed', 'invalid'] loop
+      v_tot := v_tot || jsonb_build_object(k, (v_tot->>k)::int + coalesce((v_res->>k)::int, 0));
+    end loop;
+    n := n + 50;
+  end loop;
+  perform public.growth_outbound_research_finish(v_run, 'done',
+    v_tot || jsonb_build_object('results', jsonb_array_length(v_items), 'refused', jsonb_array_length(v_refused), 'outcome', 'imported'), null);
+  return jsonb_build_object('ok', true, 'run_id', v_run, 'source', p_source, 'submitted', jsonb_array_length(p_items),
+    'recorded', jsonb_array_length(v_items), 'refused', v_refused) || v_tot;
+end $$;
+
+-- 13g. THE DIRECTORIES DUE A READ: the owner's chosen pages not read in the
+-- last 7 days (a page is stored each time it is read).
+create or replace function growth_outbound.directories_due()
+returns jsonb language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select coalesce(jsonb_agg(d order by o), '[]'::jsonb)
+    from growth_outbound.settings s
+   cross join lateral jsonb_array_elements(case when jsonb_typeof(s.discovery_config->'directories') = 'array'
+                                                then s.discovery_config->'directories' else '[]'::jsonb end) with ordinality t(d, o)
+   where s.id = 1 and coalesce(d->>'permitted', '') = 'true'
+     and not exists (select 1 from growth_outbound.pages pg
+                      where pg.url = growth_outbound.canonical_url(d->>'url') and pg.fetched_at > now() - interval '7 days');
+$$;
+
+-- 13h. THE OPT-OUT ENDPOINT, CHECKED. The send function asks the endpoint
+-- itself (a GET must redirect to the stop page without changing anything; a
+-- POST with a token no send carries must answer "not valid", which proves it
+-- reaches this database) and records what it found here. When it works and
+-- no base is set yet, that address becomes the opt-out base. A failure is
+-- recorded too; live sending stays blocked until a check at the current base
+-- succeeds.
+--   { base, ok, get_status?, redirect_ok?, post_status?, post_ok?, detail? }
+create or replace function public.growth_outbound_optout_check_record(p jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  s growth_outbound.settings;
+  k text;
+  v_base text;
+  v_ok boolean;
+  v_rec jsonb;
+begin
+  perform growth_outbound.require_owner();
+  select * into s from growth_outbound.settings where id = 1 for update;
+  if p is null or jsonb_typeof(p) <> 'object' or length(p::text) > 4000 then
+    return jsonb_build_object('ok', false, 'reason', 'not_an_object');
+  end if;
+  for k in select jsonb_object_keys(p) loop
+    if k not in ('base', 'ok', 'get_status', 'redirect_ok', 'post_status', 'post_ok', 'detail') then
+      return jsonb_build_object('ok', false, 'reason', 'unknown_field', 'detail', left(k, 40));
+    end if;
+  end loop;
+  v_base := btrim(coalesce(p->>'base', ''));
+  if v_base !~ '^https://[a-z0-9.-]+\.(supabase\.co|edgedesksports\.com)/([a-z0-9_/-]*/)?$' then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_base', 'detail', 'the functions address, https://<project>.supabase.co/functions/v1/');
+  end if;
+  if jsonb_typeof(p->'ok') is distinct from 'boolean' then return jsonb_build_object('ok', false, 'reason', 'invalid_value', 'detail', 'ok'); end if;
+  v_ok := (p->>'ok')::boolean;
+  -- the verdict cannot claim more than its parts
+  if v_ok and not (coalesce(p->>'redirect_ok', '') = 'true' and coalesce(p->>'post_ok', '') = 'true') then
+    return jsonb_build_object('ok', false, 'reason', 'invalid_value', 'detail', 'ok while a part failed');
+  end if;
+  v_rec := jsonb_strip_nulls(jsonb_build_object('base', v_base, 'ok', v_ok, 'get_status', p->'get_status', 'redirect_ok', p->'redirect_ok',
+             'post_status', p->'post_status', 'post_ok', p->'post_ok', 'detail', left(p->>'detail', 300)));
+  update growth_outbound.settings
+     set optout_check = v_rec, optout_checked_at = now(),
+         unsubscribe_url_base = case when v_ok and unsubscribe_url_base is null then v_base else unsubscribe_url_base end
+   where id = 1;
+  perform growth_outbound.log('optout_endpoint_checked', null, 'settings', '1', v_rec);
+  return jsonb_build_object('ok', true, 'optout_check', v_rec,
+    'unsubscribe_url_base', (select unsubscribe_url_base from growth_outbound.settings where id = 1),
+    'live_send_blockers', to_jsonb(growth_outbound.send_blockers_for(false)));
+end $$;
+
+-- 13i. WHERE CANDIDATES CAME FROM AND WHAT BECAME OF THEM, by source, over
+-- the last 30 days: found, waiting, researched, not a fit, failed, made into
+-- prospects, and how many of those cleared every gate.
+create or replace function growth_outbound.source_stats()
+returns jsonb language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select coalesce(jsonb_object_agg(provider, jsonb_build_object(
+           'found', found, 'waiting', waiting, 'researched', researched, 'not_a_fit', not_a_fit, 'failed', failed,
+           'duplicates', dups, 'prospects', prospects, 'qualified', qualified, 'last_found_at', last_at)), '{}'::jsonb)
+    from (select c.provider, count(*) as found,
+                 count(*) filter (where c.status = 'new') as waiting,
+                 count(*) filter (where c.status = 'researched') as researched,
+                 count(*) filter (where c.status = 'not_a_fit') as not_a_fit,
+                 count(*) filter (where c.status = 'failed') as failed,
+                 count(*) filter (where c.status = 'duplicate') as dups,
+                 count(distinct c.prospect_id) filter (where c.status = 'researched') as prospects,
+                 count(distinct c.prospect_id) filter (where c.status = 'researched' and p.first_qualified_at is not null) as qualified,
+                 max(c.first_seen_at) as last_at
+            from growth_outbound.candidates c
+            left join growth_outbound.prospects p on p.id = c.prospect_id
+           where c.first_seen_at >= now() - interval '30 days'
+           group by c.provider) x;
+$$;
+
+-- The leads turned away recently, with the reason in words (candidates that
+-- were not a fit or could not be read, and prospects the owner rejected).
+create or replace function growth_outbound.recent_rejections(p_limit int)
+returns jsonb language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select coalesce(jsonb_agg(x order by x.at desc), '[]'::jsonb) from (
+    select * from (
+      select c.updated_at as at, 'candidate' as kind, c.id::text as id, c.url, c.title, c.provider as source, c.status,
+             c.status_reason as reason
+        from growth_outbound.candidates c where c.status in ('not_a_fit', 'failed', 'dismissed')
+      union all
+      select p.updated_at, 'prospect', p.id::text, coalesce(p.website_url, p.newsletter_url), p.full_name, p.discovered_via, p.status,
+             p.status_reason
+        from growth_outbound.prospects p where p.status = 'rejected' and not p.is_test) y
+     order by y.at desc limit least(greatest(coalesce(p_limit, 25), 1), 100)) x;
+$$;
+
+-- 13j. Row level security and no client privilege on the new tables (the
+-- same layers 2 and 3 as every other table).
+do $rls13$
+declare t text;
+begin
+  foreach t in array array['provider_health', 'provider_cache', 'provider_ledger', 'revenue'] loop
+    execute format('revoke all on table growth_outbound.%I from public, anon, authenticated, service_role', t);
+    execute format('alter table growth_outbound.%I enable row level security', t);
+    execute format('drop policy if exists deny_clients on growth_outbound.%I', t);
+    execute format('create policy deny_clients on growth_outbound.%I as restrictive for all to anon, authenticated using (false) with check (false)', t);
+  end loop;
+end
+$rls13$;
+revoke all on all sequences in schema growth_outbound from public, anon, authenticated, service_role;
 
 -- =============================================================================
 -- 11. THE SYSTEM CHECK (Phase 11): the report below, as a function, so the
@@ -6658,7 +7560,7 @@ select 1 as step, 'the outbound tables exist' as item,
   case when (select count(*) from pg_tables where schemaname = 'growth_outbound' and tablename in
     ('owners', 'owner_audit', 'settings', 'prospects', 'evidence', 'drafts', 'sends', 'suppressions', 'activity',
      'identifiers', 'fit_factor_catalog', 'secrets', 'provider_events', 'research_runs', 'pages', 'candidates',
-     'provider_usage', 'scheduler', 'conversions')) = 19
+     'provider_usage', 'scheduler', 'conversions', 'provider_health', 'provider_cache', 'provider_ledger', 'revenue')) = 23
        then 'ok' else 'CHECK THIS — a table is missing' end as outcome
 union all
 select 2, 'the schema is private: no client role may even look inside it',
@@ -6898,6 +7800,27 @@ select 37, 'qualification and providers (Phase 12): every fit reason belongs to 
                                                   from growth_outbound.settings where id = 1 and domain_auth is not null), 'not checked yet')
        else 'CHECK THIS' end
 union all
+select 38, 'free-first discovery and readiness (Phase 13): your own lists, directories and Podcast Index feed the candidate queue with no paid search; a provider is "connected" only after a live answer; live sending needs a checked opt-out endpoint and a webhook proven by a signed event; partner leads get partnership notes, never the subscription pitch',
+  case when to_regprocedure('public.growth_outbound_candidates_import(text,jsonb)') is not null
+        and to_regprocedure('public.growth_outbound_provider_health_record(bigint,jsonb)') is not null
+        and to_regprocedure('public.growth_outbound_optout_check_record(jsonb)') is not null
+        and pg_get_functiondef('growth_outbound.send_blockers_for(boolean)'::regprocedure) like '%unsubscribe_endpoint_unverified%'
+        and pg_get_functiondef('growth_outbound.send_blockers_for(boolean)'::regprocedure) like '%webhook_unproven%'
+        and growth_outbound.discovery_config_problems('{"directories": [{"url": "https://example.org/list"}]}'::jsonb) is not null
+        and growth_outbound.discovery_config_problems('{"directories": [{"url": "https://example.org/list", "permitted": true}], "providers": {"podcastindex": true}}'::jsonb) is null
+        and cardinality(growth_outbound.draft_lint('Act now', 'Huge fan of your work. As we discussed, this offer ends tonight.')) = 3
+        and cardinality(growth_outbound.partner_offer_problems('We pay a 30% commission per signup: https://edgedesksports.com/partners/')) = 1
+        and pg_get_functiondef('growth_outbound.footer_text(text)'::regprocedure) like '%commercial email%'
+        and pg_get_functiondef('public.growth_outbound_settings_update(jsonb)'::regprocedure) like '%belongs to a prospect%'
+       then 'ok — ' || coalesce((select string_agg(provider || ' ' || state, ', ' order by provider) from growth_outbound.provider_health), 'no provider checked yet')
+            || '; opt-out endpoint ' || coalesce((select case when optout_check->>'ok' = 'true' then 'checked' else 'CHECK FAILED' end
+                                                   from growth_outbound.settings where id = 1 and optout_check is not null), 'not checked yet')
+            || '; webhook ' || case when exists (select 1 from growth_outbound.provider_events e, growth_outbound.secrets k
+                                                  where k.name = 'resend_webhook' and e.received_at >= k.set_at) then 'proven'
+                                    when exists (select 1 from growth_outbound.secrets where name = 'resend_webhook') then 'not proven yet (send a test email)'
+                                    else 'secret not set' end
+       else 'CHECK THIS' end
+union all
 select 18, 'prospects by status: ' || coalesce((select string_agg(status || ' ' || n, ', ' order by status)
                                                 from (select status, count(*) n from growth_outbound.prospects group by status) x), 'none yet'),
   'ok'
@@ -6955,6 +7878,24 @@ set search_path = pg_catalog, public, pg_temp as $$
     select 3, 'domain_auth_unchecked', 'The sending domain''s SPF, DKIM and DMARC have not been checked '
              || case when s.domain_auth_checked_at is null then 'yet' else 'in 30 days' end || '. Run the check (System check → Check the sending domain).'
       from s where not s.test_mode and (s.domain_auth_checked_at is null or s.domain_auth_checked_at < now() - interval '30 days')
+    union all
+    -- (Phase 13) a provider that refused, ran out of free credit or is not on
+    -- the plan, in the last week; a morning run with nothing to discover from
+    select 2, 'provider_' || h.state,
+           initcap(h.provider) || ': ' || case h.state when 'unauthorized' then 'the key was refused'
+                                                   when 'quota_exhausted' then 'the free credit is used up'
+                                                   when 'insufficient_plan' then 'an endpoint is not on the current plan' end
+           || coalesce(' (' || left(h.detail, 160) || ')', '') || '. Discover and research → Providers says what to do.'
+      from growth_outbound.provider_health h
+     where h.checked_at > now() - interval '7 days'
+       and (h.state in ('unauthorized', 'quota_exhausted')
+            or exists (select 1 from jsonb_each_text(h.endpoints) e where e.value in ('unauthorized', 'quota_exhausted')))
+    union all
+    select 2, 'no_discovery_source', 'The morning run is on but has nothing to discover from: save a search (Podcast Index answers it for free once its key is set) or a directory page, or import a list of addresses under Discover and research.'
+      from s where s.automation_enabled
+       and coalesce(jsonb_array_length(case when jsonb_typeof(s.discovery_config->'queries') = 'array' then s.discovery_config->'queries' end), 0) = 0
+       and coalesce(jsonb_array_length(case when jsonb_typeof(s.discovery_config->'directories') = 'array' then s.discovery_config->'directories' end), 0) = 0
+       and not exists (select 1 from growth_outbound.candidates c where c.status = 'new')
     union all
     select 4, 'cap_raised', 'The daily send cap is ' || s.max_sends_per_day || ' (the default is 20).' from s where s.max_sends_per_day > 20
     union all

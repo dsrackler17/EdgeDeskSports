@@ -235,7 +235,7 @@ ul.claims li.badc b{color:var(--neg)}
         <div class="kpis" id="mnKpis" style="margin-top:12px"></div>
         <details id="mnPartnersBox" style="margin-top:10px"><summary class="sub" style="cursor:pointer" id="mnPartnersSum">Partner leads</summary>
           <div class="tw"><table id="mnPartners"></table></div>
-          <div class="note">Media, affiliate and business leads are kept apart from the subscriber queue: the engine never pitches them a subscription. Write to them yourself from their panel if you want to.</div></details>
+          <div class="note">Media, affiliate and business leads are kept apart from the subscriber queue: the engine never pitches them a subscription. With Partner outreach on (Outbound settings → Campaigns) it writes them a partnership note — only what the partners page offers, never money or terms — for your approval; otherwise write to them yourself from their panel.</div></details>
         <div class="note">Overnight the morning run finds, researches and scores new people, and drafts for the potential subscribers who clear every gate (qualification 75+ by default). Review the drafts below, approve the ones you like, then press Send. A draft is never an authorization to send.</div>
       </div>
 
@@ -250,7 +250,7 @@ ul.claims li.badc b{color:var(--neg)}
         <div class="kpis" id="amToday" style="margin-top:12px"></div>
         <h3>The morning run's steps</h3>
         <div class="tw"><table id="amRuns"></table></div>
-        <div class="note">When Automation is on, the database's own clock (pg_cron) takes one step every few minutes inside your window: first your saved searches, then any addresses waiting for the verifier, then the next new candidates (until "New qualified subscribers to aim for per day" qualify today, reading at most "Candidates to read per day"), then drafts for the potential subscribers who are due (up to today's send cap, which grows while the domain warms up). Each step runs on a single-use ticket that opens only the engine's own doors. It never approves and never sends: every draft waits for you in the review queue. It stops for the day after three failed steps in a row.</div>
+        <div class="note">When Automation is on, the database's own clock (pg_cron) takes one step every few minutes inside your window: first discovery (your saved searches through every search provider that is on — Podcast Index is free — and the directories due a read), then any addresses waiting for the verifier, then the next new candidates (until "New qualified subscribers to aim for per day" qualify today, reading at most "Candidates to read per day"), then drafts for the potential subscribers who are due (up to today's send cap, which grows while the domain warms up). Each step runs on a single-use ticket that opens only the engine's own doors. It never approves and never sends: every draft waits for you in the review queue. It stops for the day after three failed steps in a row.</div>
       </div>
 
       <h2>Review queue</h2>
@@ -306,6 +306,7 @@ ul.claims li.badc b{color:var(--neg)}
       <div class="card">
         <div class="row" style="align-items:center"><span id="hcSummary" class="sub"></span><span class="sp"></span>
           <button type="button" class="g sm" id="hcDomain" title="Reads SPF, DKIM and DMARC for the sending domain over DNS; sends nothing">Check the sending domain</button>
+          <button type="button" class="g sm" id="hcOptout" title="Asks the opt-out endpoint with a token no email carries: a GET must redirect to the stop page, a one-click POST must reach the database; changes nothing">Check the opt-out endpoint</button>
           <button type="button" class="g sm" id="hcRun">Run the check again</button></div>
         <div class="msg" id="hcMsg" role="status" aria-live="polite"></div>
         <div id="hcDomainOut"></div>
@@ -318,6 +319,20 @@ ul.claims li.badc b{color:var(--neg)}
       <h2>Discover and research</h2>
       <div class="card">
         <div class="chips" id="dvProviders"></div>
+        <h3>Add candidates from your own lists (free)</h3>
+        <div class="row">
+          <div class="f" style="max-width:280px"><label for="dvImportSource">What you are adding</label>
+            <select id="dvImportSource"><option value="manual">Web addresses, one per line (a note may follow each)</option><option value="search_results">The results page of a search you ran yourself (paste it)</option><option value="domains">Company domains</option><option value="csv">A CSV file (url, website or domain; name; note; segment)</option></select></div>
+          <div class="f" style="max-width:260px"><label for="dvImportSeg">Who they are to EdgeDesk</label><select id="dvImportSeg"><option value="">Let research decide</option><option value="customer">Potential subscribers</option><option value="media_partner">Media partners (newsletters, podcasts)</option><option value="affiliate">Affiliates</option><option value="business_partner">Business partners</option><option value="partnership">Partnership (other)</option></select></div>
+        </div>
+        <div class="row"><div class="f"><label for="dvImportText">Paste here</label><textarea id="dvImportText" rows="4" maxlength="200000" placeholder="https://cfbnumbers.substack.com&#10;footballanalytics.example  a CFB win-totals model"></textarea></div></div>
+        <div class="row" style="align-items:center">
+          <label class="g sm btnfile" for="dvImportFile">Choose a CSV<input type="file" id="dvImportFile" accept=".csv,text/csv" class="hide"></label>
+          <span class="sub" id="dvImportPreview"></span><span class="sp"></span>
+          <button type="button" id="dvImport">Add to the candidate queue</button>
+        </div>
+        <div class="msg" id="dvImportMsg" role="status" aria-live="polite"></div>
+        <div class="note">No paid search is needed. Nothing is fetched when you add addresses: each becomes a candidate, counted once (a page seen before, a known prospect's page and a domain that asked not to be contacted are each said), and research reads it later under the daily budget, robots.txt respected. To use a search engine without an API, run the search in your own browser and paste the results page: only the result addresses are kept. X, LinkedIn, Instagram, Facebook, TikTok and Threads cannot be read by the engine; add such a person under Add a prospect instead.</div>
         <div class="row">
           <div class="f"><label for="dvQuery">Search the web for people to research</label><input id="dvQuery" maxlength="200" placeholder="college football betting model newsletter" autocomplete="off"></div>
           <button type="button" id="dvSearch">Search</button>
@@ -329,10 +344,23 @@ ul.claims li.badc b{color:var(--neg)}
           <span class="sp"></span><button type="button" class="g sm" id="dvNext">Research the next one</button>
         </div>
         <div class="tw" style="margin-top:10px"><table id="dvCands"></table></div>
-        <h3>Saved searches and the daily budget</h3>
+        <h3>Saved searches, directories and the daily budget</h3>
         <div class="row">
-          <div class="f"><label for="dvQueries">Saved searches, one per line (Run saved searches uses these)</label><textarea id="dvQueries" rows="4" maxlength="5000"></textarea></div>
+          <div class="f"><label for="dvQueries">Saved searches, one per line (Run saved searches asks every search provider that is on: Podcast Index is free)</label><textarea id="dvQueries" rows="4" maxlength="5000"></textarea></div>
         </div>
+        <div class="row">
+          <div class="f"><label for="dvDirs">Directory pages, one per line, re-read weekly (a list of newsletters, a podcast network's shows): their links to independent sites become candidates</label><textarea id="dvDirs" rows="3" maxlength="15000"></textarea></div>
+        </div>
+        <div class="row" style="align-items:center">
+          <label class="chk"><input type="checkbox" id="dvDirsOk"> I checked that each page's terms allow reusing its links</label>
+          <div class="f" style="max-width:260px"><label for="dvDirSeg">Who their links are</label><select id="dvDirSeg"><option value="">Let research decide</option><option value="customer">Potential subscribers</option><option value="media_partner">Media partners (newsletters, podcasts)</option><option value="affiliate">Affiliates</option><option value="business_partner">Business partners</option><option value="partnership">Partnership (other)</option></select></div>
+        </div>
+        <div class="row" style="align-items:center">
+          <div class="f"><label for="dvDirUrl">Read one directory page now</label><input id="dvDirUrl" maxlength="500" placeholder="https://example.com/best-football-newsletters" autocomplete="off"></div>
+          <button type="button" class="g sm" id="dvDirRead">Read its links</button>
+        </div>
+        <div class="sub" id="dvDirNote"></div>
+        <div class="msg" id="dvDirMsg" role="status" aria-live="polite"></div>
         <div class="row" style="margin-top:8px">
           <div class="f" style="max-width:120px"><label for="dvB_search">Searches / day</label><input id="dvB_search" inputmode="numeric" maxlength="5"></div>
           <div class="f" style="max-width:120px"><label for="dvB_fetch">Pages / day</label><input id="dvB_fetch" inputmode="numeric" maxlength="5"></div>
@@ -343,6 +371,10 @@ ul.claims li.badc b{color:var(--neg)}
           <span class="sp"></span><button type="button" class="g" id="dvSave">Save</button>
         </div>
         <h3>Providers</h3>
+        <div class="row" style="align-items:center"><span class="sub">Connected means the provider answered a live check or a real call — never just that a key is set.</span><span class="sp"></span>
+          <button type="button" class="g sm" id="dvHealthBtn" title="Free checks only: Claude's model lookup, Hunter's account, Apollo's key check, a one-result Podcast Index search, Resend's key; nothing is sent">Check providers now</button></div>
+        <div class="msg" id="dvHealthMsg" role="status" aria-live="polite"></div>
+        <div class="tw"><table id="dvHealth"></table></div>
         <div class="row" id="dvSwitches"></div>
         <div class="note">A provider is used when its key is set (Supabase → Edge Functions → Secrets) and it is switched on here. Apollo and Clay cost money per call, so they stay off until you switch them on. Whatever a provider says is weighed like any other source: an address it found is unverified until a verifier or you confirm it, and a title or employer it reports is never something an email may cite.</div>
         <h3>Addresses and enrichment</h3>
@@ -354,6 +386,18 @@ ul.claims li.badc b{color:var(--neg)}
           <label class="g sm btnfile" for="dvClayFile" title="Import the CSV you exported from the Clay table">Import Clay results (CSV)<input type="file" id="dvClayFile" accept=".csv,text/csv" class="hide"></label>
         </div>
         <div class="msg" id="dvEnrichMsg" role="status" aria-live="polite"></div>
+        <h3>Company domains to Apollo (optional)</h3>
+        <div class="row" style="align-items:center">
+          <div class="f"><label for="dvOrgDomains">Up to ten company domains</label><input id="dvOrgDomains" maxlength="1000" placeholder="example.com, another.io" autocomplete="off"></div>
+          <button type="button" class="g sm" id="dvOrgFind" disabled>Ask Apollo for their top people</button>
+        </div>
+        <div class="msg" id="dvOrgMsg" role="status" aria-live="polite"></div>
+        <h3>Where candidates came from (30 days)</h3>
+        <div class="tw"><table id="dvSources"></table></div>
+        <h3>Provider credits and cost</h3>
+        <div class="tw"><table id="dvSpend"></table></div>
+        <h3>Turned away, and why</h3>
+        <div class="tw"><table id="dvRejected"></table></div>
         <h3>Recent runs</h3>
         <div class="tw"><table id="dvRuns"></table></div>
         <div class="note">Finding someone makes them a candidate, not a prospect. Research reads their own pages (robots.txt respected) and records only what it can quote; the database checks every quote against the stored page and decides which pages are their own. Nothing here writes, approves or sends an email. Every search, page, Claude read and email lookup counts against the daily budget, which the database enforces.</div>
@@ -449,7 +493,7 @@ ul.claims li.badc b{color:var(--neg)}
 </div>
 <script src="/lib/edgedesk_auth.js?v=20261005a"></script>
 <script src="/lib/edgedesk_admin_session.js?v=20261007a"></script>
-<script src="/admin/growth/outbound.js?v=20261008d"></script>
+<script src="/admin/growth/outbound.js?v=20261008f"></script>
 <script>
 var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
