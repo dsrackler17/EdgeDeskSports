@@ -21,8 +21,8 @@
   "game_time": "2026-10-11T02:30:00.000Z",
   "game_when_label": "2026-10-11 02:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-08T00:55:58.242Z",
-  "generated_at": "2026-10-08T00:55:58.242Z",
+  "updated_at": "2026-10-08T10:25:54.824Z",
+  "generated_at": "2026-10-08T10:25:54.824Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -115,23 +115,23 @@
         "note": "Quoted from Fresno State’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
       "confidence_pct": 84,
-      "inputs_reached_pct": 69,
+      "inputs_reached_pct": 77,
       "input_contract": {
         "fields": 26,
         "applicable": 26,
-        "known": 18,
-        "priced": 11,
-        "priced_coverage_pct": 42,
+        "known": 20,
+        "priced": 13,
+        "priced_coverage_pct": 50,
         "by_state": {
-          "USABLE": 11,
+          "USABLE": 13,
           "RESEARCH_ONLY": 7,
           "STALE": 0,
           "CONFLICTING": 1,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
+          "NOT_DUE_YET": 0,
           "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -139,6 +139,18 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff"
           },
           {
             "field": "off_field",
@@ -319,9 +331,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-04T01:30:00.000Z",
-        "retrieved_at": "2026-10-08T00:28:03.979Z"
+        "retrieved_at": "2026-10-08T04:02:25.365Z"
       },
-      "generated_at": "2026-10-08T00:28:35.873Z",
+      "generated_at": "2026-10-08T04:03:09.374Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -366,8 +378,8 @@
               "a": {
                 "v": "-1.2",
                 "n": -1.17,
-                "rank": "#79 of 138",
-                "rank_n": 79,
+                "rank": "#80 of 138",
+                "rank_n": 80,
                 "note": null
               },
               "h": {
@@ -380,7 +392,7 @@
               "edge": {
                 "side": "a",
                 "gap": 5.4,
-                "rank_gap": 37
+                "rank_gap": 36
               }
             },
             {
@@ -640,21 +652,21 @@
               "a": {
                 "v": "60.2",
                 "n": 60.2,
-                "rank": "#26 of 138",
-                "rank_n": 26,
+                "rank": "#24 of 138",
+                "rank_n": 24,
                 "note": null
               },
               "h": {
                 "v": "57.6",
                 "n": 57.6,
-                "rank": "#67 of 138",
-                "rank_n": 67,
+                "rank": "#66 of 138",
+                "rank_n": 66,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 2.6,
-                "rank_gap": 41
+                "rank_gap": 42
               }
             },
             {
@@ -664,8 +676,8 @@
               "a": {
                 "v": "50.4",
                 "n": 50.4,
-                "rank": "#82 of 138",
-                "rank_n": 82,
+                "rank": "#81 of 138",
+                "rank_n": 81,
                 "note": null
               },
               "h": {
@@ -678,7 +690,7 @@
               "edge": {
                 "side": "a",
                 "gap": 6.2,
-                "rank_gap": 45
+                "rank_gap": 46
               }
             },
             {
@@ -695,14 +707,14 @@
               "h": {
                 "v": "55.0",
                 "n": 55,
-                "rank": "#68 of 138",
-                "rank_n": 68,
+                "rank": "#69 of 138",
+                "rank_n": 69,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 0.6,
-                "rank_gap": 29
+                "rank_gap": 30
               }
             },
             {
@@ -736,8 +748,8 @@
               "a": {
                 "v": "57.0",
                 "n": 57,
-                "rank": "#36 of 138",
-                "rank_n": 36,
+                "rank": "#35 of 138",
+                "rank_n": 35,
                 "note": null
               },
               "h": {
@@ -750,7 +762,7 @@
               "edge": {
                 "side": "a",
                 "gap": 0.6,
-                "rank_gap": 20
+                "rank_gap": 21
               }
             },
             {
@@ -942,23 +954,23 @@
         },
         {
           "k": "Offensive line",
-          "rank_gap": 45,
+          "rank_gap": 46,
           "gap": 6.2,
           "lead": "Boise State",
           "trail": "Fresno State",
-          "lead_cell": "50.4 · #82 of 138",
+          "lead_cell": "50.4 · #81 of 138",
           "trail_cell": "44.2 · #127 of 138",
-          "text": "Boise State 50.4 (#82 of 138) vs Fresno State 44.2 (#127 of 138) — 45 places on the national board."
+          "text": "Boise State 50.4 (#81 of 138) vs Fresno State 44.2 (#127 of 138) — 46 places on the national board."
         },
         {
           "k": "QB room",
-          "rank_gap": 41,
+          "rank_gap": 42,
           "gap": 2.6,
           "lead": "Boise State",
           "trail": "Fresno State",
-          "lead_cell": "60.2 · #26 of 138",
-          "trail_cell": "57.6 · #67 of 138",
-          "text": "Boise State 60.2 (#26 of 138) vs Fresno State 57.6 (#67 of 138) — 41 places on the national board."
+          "lead_cell": "60.2 · #24 of 138",
+          "trail_cell": "57.6 · #66 of 138",
+          "text": "Boise State 60.2 (#24 of 138) vs Fresno State 57.6 (#66 of 138) — 42 places on the national board."
         }
       ],
       "home": [
@@ -1101,7 +1113,7 @@
           "team": "Boise State",
           "label": "QB room",
           "v": "60.2",
-          "rank": "#26 of 138",
+          "rank": "#24 of 138",
           "note": null
         },
         "def": {
@@ -1112,7 +1124,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Boise State’s QB room rates 60.2 (#26 of 138) against Fresno State’s secondary at 56.1 (#35 of 138). Boise State’s unit stands higher among its own position group, by 9 places."
+        "read": "Boise State’s QB room rates 60.2 (#24 of 138) against Fresno State’s secondary at 56.1 (#35 of 138). Boise State’s unit stands higher among its own position group, by 11 places."
       },
       {
         "title": "Fresno State QB room vs Boise State secondary",
@@ -1120,7 +1132,7 @@
           "team": "Fresno State",
           "label": "QB room",
           "v": "57.6",
-          "rank": "#67 of 138",
+          "rank": "#66 of 138",
           "note": null
         },
         "def": {
@@ -1131,7 +1143,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Fresno State’s QB room rates 57.6 (#67 of 138) against Boise State’s secondary at 50.6 (#96 of 138). Fresno State’s unit stands higher among its own position group, by 29 places."
+        "read": "Fresno State’s QB room rates 57.6 (#66 of 138) against Boise State’s secondary at 50.6 (#96 of 138). Fresno State’s unit stands higher among its own position group, by 30 places."
       },
       {
         "title": "Boise State offensive line vs Fresno State defensive line",
@@ -1139,7 +1151,7 @@
           "team": "Boise State",
           "label": "offensive line",
           "v": "50.4",
-          "rank": "#82 of 138",
+          "rank": "#81 of 138",
           "note": null
         },
         "def": {
@@ -1150,7 +1162,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Boise State’s offensive line rates 50.4 (#82 of 138) against Fresno State’s defensive line at 55.7 (#33 of 138). Fresno State’s unit stands higher among its own position group, by 49 places."
+        "read": "Boise State’s offensive line rates 50.4 (#81 of 138) against Fresno State’s defensive line at 55.7 (#33 of 138). Fresno State’s unit stands higher among its own position group, by 48 places."
       },
       {
         "title": "Fresno State offensive line vs Boise State defensive line",
@@ -1177,7 +1189,7 @@
           "team": "Boise State",
           "label": "running backs",
           "v": "57.0",
-          "rank": "#36 of 138",
+          "rank": "#35 of 138",
           "note": null
         },
         "def": {
@@ -1188,7 +1200,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Boise State’s running backs rates 57.0 (#36 of 138) against Fresno State’s linebackers at 55.6 (#33 of 138). Fresno State’s unit stands higher among its own position group, by 3 places."
+        "read": "Boise State’s running backs rates 57.0 (#35 of 138) against Fresno State’s linebackers at 55.6 (#33 of 138). Fresno State’s unit stands higher among its own position group, by 2 places."
       },
       {
         "title": "Fresno State running backs vs Boise State linebackers",
@@ -1234,7 +1246,7 @@
           "team": "Fresno State",
           "label": "receivers",
           "v": "55.0",
-          "rank": "#68 of 138",
+          "rank": "#69 of 138",
           "note": null
         },
         "def": {
@@ -1245,7 +1257,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Fresno State’s receivers rates 55.0 (#68 of 138) against Boise State’s secondary at 50.6 (#96 of 138). Fresno State’s unit stands higher among its own position group, by 28 places."
+        "read": "Fresno State’s receivers rates 55.0 (#69 of 138) against Boise State’s secondary at 50.6 (#96 of 138). Fresno State’s unit stands higher among its own position group, by 27 places."
       }
     ],
     "roster": {
@@ -1436,7 +1448,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 26h old",
+          "text": "odds is 35h old",
           "widening": null
         },
         {
@@ -1477,18 +1489,6 @@
         },
         {
           "sev": "LOW",
-          "label": "missing",
-          "text": "home injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "away injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
           "label": "low confidence",
           "text": "rivalry situational effect is in the number but rests on a thin sample",
           "widening": null
@@ -1502,14 +1502,6 @@
         {
           "item": "Away starting quarterback",
           "why": "starting QB not supplied for away"
-        },
-        {
-          "item": "Home availability / injuries",
-          "why": "no injury report supplied for home"
-        },
-        {
-          "item": "Away availability / injuries",
-          "why": "no injury report supplied for away"
         },
         {
           "item": "Weather at kickoff",
@@ -1557,7 +1549,7 @@
       "total_market": "48.5",
       "book": "captured consensus (stale) · 1 book · best at BetRivers",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "26 hours old",
+      "capture_age": "35 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1625,7 +1617,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 9.1,
+            "score": 9.7,
             "max": 20
           },
           {
@@ -1643,7 +1635,7 @@
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 12.1,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1660,18 +1652,18 @@
         "next_actions": [
           {
             "action": "Identify Boise State’s starting QB",
-            "potential_gain": 9,
-            "text": "up to +9"
+            "potential_gain": 10,
+            "text": "up to +10"
           },
           {
-            "action": "Re-read availability inside the filing window (Boise State)",
-            "potential_gain": 4,
-            "text": "up to +4 once identify Boise State’s starting QB is done"
+            "action": "Confirm Boise State’s QB availability",
+            "potential_gain": 3,
+            "text": "up to +3 once identify Boise State’s starting QB is done"
           },
           {
-            "action": "Re-read availability inside the filing window (Fresno State)",
-            "potential_gain": 4,
-            "text": "up to +4 once identify Boise State’s starting QB is done"
+            "action": "Confirm Fresno State’s QB availability",
+            "potential_gain": 2,
+            "text": "up to +2 once identify Boise State’s starting QB is done"
           }
         ],
         "stability": {
@@ -1705,9 +1697,9 @@
         "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
-        "key": "STABLE",
-        "label": "STABLE",
-        "text": "EdgeDesk’s number is unchanged since the latest published number."
+        "key": "INJURY_UNCERTAINTY",
+        "label": "INJURY UNCERTAINTY",
+        "text": "A supplied availability report lists 8 players with an unresolved status; the engine widens this game’s range for it."
       },
       "stability": {
         "tier": "MEDIUM",
@@ -1774,7 +1766,7 @@
       "rows": [
         {
           "k": "ETSR (overall)",
-          "a": "-1.2  #79",
+          "a": "-1.2  #80",
           "h": "-6.5  #116",
           "note": "points vs an average FBS team, neutral field"
         },
@@ -1834,25 +1826,25 @@
         },
         {
           "k": "QB room",
-          "a": "60.2  #26",
-          "h": "57.6  #67",
+          "a": "60.2  #24",
+          "h": "57.6  #66",
           "note": null
         },
         {
           "k": "Offensive line",
-          "a": "50.4  #82",
+          "a": "50.4  #81",
           "h": "44.2  #127",
           "note": null
         },
         {
           "k": "Receivers",
           "a": "55.6  #39",
-          "h": "55.0  #68",
+          "h": "55.0  #69",
           "note": null
         },
         {
           "k": "Running backs",
-          "a": "57.0  #36",
+          "a": "57.0  #35",
           "h": "56.4  #56",
           "note": null
         },
@@ -1894,7 +1886,7 @@
         },
         {
           "k": "Δ national rank, this week",
-          "a": "no change",
+          "a": "down 1",
           "h": "no change",
           "note": "differenced from last week’s committed snapshot"
         }
@@ -1918,6 +1910,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-08T00:55:58.242Z"
+    "at": "2026-10-08T10:25:54.824Z"
   }
 }

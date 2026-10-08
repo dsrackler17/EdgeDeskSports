@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "South Carolina vs. Florida: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "South Carolina vs. Florida 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk prices South Carolina at Florida at Florida -7.4 with a 57.9 fair total. Florida wins 69% of simulations. Data confidence 85%. Model status INVESTIGATE. Research, not picks.",
+  "seo_description": "EdgeDesk prices South Carolina at Florida at Florida -7.4 with a 57.9 fair total. Florida wins 69% of simulations. Data confidence 90%. Model status INVESTIGATE. Research, not picks.",
   "excerpt": "South Carolina carries the stronger underlying team rating — +6.5 against +2.8, a 3.8-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Florida -7.4 before any sportsbook number is consulted, with Florida winning…",
   "home_team": "Florida",
   "away_team": "South Carolina",
@@ -21,12 +21,12 @@
   "game_time": "2026-10-10T16:45:00.000Z",
   "game_when_label": "2026-10-10 16:45 UTC",
   "published_at": null,
-  "updated_at": "2026-10-08T00:55:58.242Z",
-  "generated_at": "2026-10-08T00:55:58.242Z",
+  "updated_at": "2026-10-08T10:25:54.824Z",
+  "generated_at": "2026-10-08T10:25:54.824Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
-  "confidence": 85,
+  "confidence": 90,
   "priced": true,
   "fair_spread_text": "Florida -7.4",
   "fair_total": "57.9",
@@ -65,8 +65,8 @@
     "lede": [
       "South Carolina carries the stronger underlying team rating — +6.5 against +2.8, a 3.8-point separation on a neutral field before home advantage, travel or rest.",
       "EdgeDesk makes it Florida -7.4 before any sportsbook number is consulted, with Florida winning 69% of simulations.",
-      "The position-group comparison shows where the separation comes from: the widest measured gap is receivers, where Florida leads South Carolina by 67 places nationally.",
-      "Data confidence on this matchup is 85% — high by this board’s standards, so the margin is the strongest part of the read."
+      "The position-group comparison shows where the separation comes from: the widest measured gap is receivers, where Florida leads South Carolina by 60 places nationally.",
+      "Data confidence on this matchup is 90% — high by this board’s standards, so the margin is the strongest part of the read."
     ],
     "projection": {
       "priced": true,
@@ -114,24 +114,24 @@
         "volatility_discriminates": false,
         "note": "Quoted from Florida’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
-      "confidence_pct": 85,
-      "inputs_reached_pct": 73,
+      "confidence_pct": 90,
+      "inputs_reached_pct": 89,
       "input_contract": {
         "fields": 26,
         "applicable": 26,
-        "known": 19,
-        "priced": 11,
-        "priced_coverage_pct": 42,
+        "known": 23,
+        "priced": 15,
+        "priced_coverage_pct": 58,
         "by_state": {
-          "USABLE": 11,
+          "USABLE": 15,
           "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
           "NOT_DUE_YET": 0,
-          "FETCH_FAILED": 2,
-          "UNAVAILABLE": 5
+          "FETCH_FAILED": 0,
+          "UNAVAILABLE": 3
         },
         "absent": [
           {
@@ -139,30 +139,6 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "FETCH_FAILED",
-            "why": "EdgeDesk read 3 source(s) for Florida and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Southeastern Conference requires an availability report for this game: filed three days before a conference game and updated daily until 90 minutes before kickoff. 1 older row(s) on file were refused as HISTORICAL against this kickoff (published more than a week before it, or undated), so they say nothing about this game."
-          },
-          {
-            "field": "availability",
-            "side": "away",
-            "state": "FETCH_FAILED",
-            "why": "EdgeDesk read 3 source(s) for South Carolina and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Southeastern Conference requires an availability report for this game: filed three days before a conference game and updated daily until 90 minutes before kickoff."
-          },
-          {
-            "field": "qb_availability",
-            "side": "home",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Southeastern Conference requires an availability report for this game: filed three days before a conference game and updated daily until 90 minutes before kickoff"
-          },
-          {
-            "field": "qb_availability",
-            "side": "away",
-            "state": "UNAVAILABLE",
-            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Southeastern Conference requires an availability report for this game: filed three days before a conference game and updated daily until 90 minutes before kickoff"
           },
           {
             "field": "off_field",
@@ -261,7 +237,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T20:15:00.000Z",
-        "retrieved_at": "2026-10-08T00:28:03.979Z"
+        "retrieved_at": "2026-10-08T04:02:25.365Z"
       },
       "home": {
         "team": "Florida",
@@ -351,9 +327,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T19:30:00.000Z",
-        "retrieved_at": "2026-10-08T00:28:03.979Z"
+        "retrieved_at": "2026-10-08T04:02:25.365Z"
       },
-      "generated_at": "2026-10-08T00:28:35.873Z",
+      "generated_at": "2026-10-08T04:03:09.374Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -404,14 +380,14 @@
               },
               "h": {
                 "v": "+2.8",
-                "n": 2.75,
+                "n": 2.76,
                 "rank": "#45 of 138",
                 "rank_n": 45,
                 "note": null
               },
               "edge": {
                 "side": "a",
-                "gap": 3.8,
+                "gap": 3.7,
                 "rank_gap": 24
               }
             },
@@ -427,14 +403,14 @@
                 "note": null
               },
               "h": {
-                "v": "54.8",
-                "n": 54.8,
-                "rank": "#44 of 138",
-                "rank_n": 44,
+                "v": "55.0",
+                "n": 55,
+                "rank": "#42 of 138",
+                "rank_n": 42,
                 "note": null
               },
               "edge": {
-                "side": "a",
+                "side": "h",
                 "gap": 0.1,
                 "rank_gap": 1
               }
@@ -672,15 +648,15 @@
               "a": {
                 "v": "59.1",
                 "n": 59.1,
-                "rank": "#42 of 138",
-                "rank_n": 42,
+                "rank": "#41 of 138",
+                "rank_n": 41,
                 "note": null
               },
               "h": {
                 "v": "58.7",
                 "n": 58.7,
-                "rank": "#49 of 138",
-                "rank_n": 49,
+                "rank": "#48 of 138",
+                "rank_n": 48,
                 "note": null
               },
               "edge": {
@@ -694,8 +670,8 @@
               "k": "Offensive line",
               "note": null,
               "a": {
-                "v": "54.6",
-                "n": 54.6,
+                "v": "54.7",
+                "n": 54.7,
                 "rank": "#36 of 138",
                 "rank_n": 36,
                 "note": null
@@ -709,7 +685,7 @@
               },
               "edge": {
                 "side": "a",
-                "gap": 3.1,
+                "gap": 3.2,
                 "rank_gap": 31
               }
             },
@@ -718,23 +694,23 @@
               "k": "Receivers",
               "note": null,
               "a": {
-                "v": "54.8",
-                "n": 54.8,
-                "rank": "#82 of 138",
-                "rank_n": 82,
+                "v": "54.9",
+                "n": 54.9,
+                "rank": "#80 of 138",
+                "rank_n": 80,
                 "note": null
               },
               "h": {
-                "v": "56.3",
-                "n": 56.3,
-                "rank": "#15 of 138",
-                "rank_n": 15,
+                "v": "56.2",
+                "n": 56.2,
+                "rank": "#20 of 138",
+                "rank_n": 20,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 1.5,
-                "rank_gap": 67
+                "gap": 1.3,
+                "rank_gap": 60
               }
             },
             {
@@ -773,16 +749,16 @@
                 "note": null
               },
               "h": {
-                "v": "59.4",
-                "n": 59.4,
-                "rank": "#4 of 138",
-                "rank_n": 4,
+                "v": "59.6",
+                "n": 59.6,
+                "rank": "#3 of 138",
+                "rank_n": 3,
                 "note": null
               },
               "edge": {
                 "side": "h",
-                "gap": 2.9,
-                "rank_gap": 51
+                "gap": 3.1,
+                "rank_gap": 52
               }
             },
             {
@@ -985,34 +961,34 @@
         {
           "k": "Offensive line",
           "rank_gap": 31,
-          "gap": 3.1,
+          "gap": 3.2,
           "lead": "South Carolina",
           "trail": "Florida",
-          "lead_cell": "54.6 · #36 of 138",
+          "lead_cell": "54.7 · #36 of 138",
           "trail_cell": "51.5 · #67 of 138",
-          "text": "South Carolina 54.6 (#36 of 138) vs Florida 51.5 (#67 of 138) — 31 places on the national board."
+          "text": "South Carolina 54.7 (#36 of 138) vs Florida 51.5 (#67 of 138) — 31 places on the national board."
         }
       ],
       "home": [
         {
           "k": "Receivers",
-          "rank_gap": 67,
-          "gap": 1.5,
+          "rank_gap": 60,
+          "gap": 1.3,
           "lead": "Florida",
           "trail": "South Carolina",
-          "lead_cell": "56.3 · #15 of 138",
-          "trail_cell": "54.8 · #82 of 138",
-          "text": "Florida 56.3 (#15 of 138) vs South Carolina 54.8 (#82 of 138) — 67 places on the national board."
+          "lead_cell": "56.2 · #20 of 138",
+          "trail_cell": "54.9 · #80 of 138",
+          "text": "Florida 56.2 (#20 of 138) vs South Carolina 54.9 (#80 of 138) — 60 places on the national board."
         },
         {
           "k": "Running backs",
-          "rank_gap": 51,
-          "gap": 2.9,
+          "rank_gap": 52,
+          "gap": 3.1,
           "lead": "Florida",
           "trail": "South Carolina",
-          "lead_cell": "59.4 · #4 of 138",
+          "lead_cell": "59.6 · #3 of 138",
           "trail_cell": "56.5 · #55 of 138",
-          "text": "Florida 59.4 (#4 of 138) vs South Carolina 56.5 (#55 of 138) — 51 places on the national board."
+          "text": "Florida 59.6 (#3 of 138) vs South Carolina 56.5 (#55 of 138) — 52 places on the national board."
         },
         {
           "k": "Pass offense",
@@ -1133,7 +1109,7 @@
           "team": "South Carolina",
           "label": "QB room",
           "v": "59.1",
-          "rank": "#42 of 138",
+          "rank": "#41 of 138",
           "note": null
         },
         "def": {
@@ -1144,7 +1120,7 @@
           "note": null
         },
         "complete": true,
-        "read": "South Carolina’s QB room rates 59.1 (#42 of 138) against Florida’s secondary at 48.6 (#116 of 138). South Carolina’s unit stands higher among its own position group, by 74 places."
+        "read": "South Carolina’s QB room rates 59.1 (#41 of 138) against Florida’s secondary at 48.6 (#116 of 138). South Carolina’s unit stands higher among its own position group, by 75 places."
       },
       {
         "title": "Florida QB room vs South Carolina secondary",
@@ -1152,7 +1128,7 @@
           "team": "Florida",
           "label": "QB room",
           "v": "58.7",
-          "rank": "#49 of 138",
+          "rank": "#48 of 138",
           "note": null
         },
         "def": {
@@ -1163,14 +1139,14 @@
           "note": null
         },
         "complete": true,
-        "read": "Florida’s QB room rates 58.7 (#49 of 138) against South Carolina’s secondary at 52.8 (#74 of 138). Florida’s unit stands higher among its own position group, by 25 places."
+        "read": "Florida’s QB room rates 58.7 (#48 of 138) against South Carolina’s secondary at 52.8 (#74 of 138). Florida’s unit stands higher among its own position group, by 26 places."
       },
       {
         "title": "South Carolina offensive line vs Florida defensive line",
         "att": {
           "team": "South Carolina",
           "label": "offensive line",
-          "v": "54.6",
+          "v": "54.7",
           "rank": "#36 of 138",
           "note": null
         },
@@ -1182,7 +1158,7 @@
           "note": null
         },
         "complete": true,
-        "read": "South Carolina’s offensive line rates 54.6 (#36 of 138) against Florida’s defensive line at 51.1 (#84 of 138). South Carolina’s unit stands higher among its own position group, by 48 places."
+        "read": "South Carolina’s offensive line rates 54.7 (#36 of 138) against Florida’s defensive line at 51.1 (#84 of 138). South Carolina’s unit stands higher among its own position group, by 48 places."
       },
       {
         "title": "Florida offensive line vs South Carolina defensive line",
@@ -1227,8 +1203,8 @@
         "att": {
           "team": "Florida",
           "label": "running backs",
-          "v": "59.4",
-          "rank": "#4 of 138",
+          "v": "59.6",
+          "rank": "#3 of 138",
           "note": null
         },
         "def": {
@@ -1239,15 +1215,15 @@
           "note": null
         },
         "complete": true,
-        "read": "Florida’s running backs rates 59.4 (#4 of 138) against South Carolina’s linebackers at 52.2 (#74 of 138). Florida’s unit stands higher among its own position group, by 70 places."
+        "read": "Florida’s running backs rates 59.6 (#3 of 138) against South Carolina’s linebackers at 52.2 (#74 of 138). Florida’s unit stands higher among its own position group, by 71 places."
       },
       {
         "title": "South Carolina receivers vs Florida secondary",
         "att": {
           "team": "South Carolina",
           "label": "receivers",
-          "v": "54.8",
-          "rank": "#82 of 138",
+          "v": "54.9",
+          "rank": "#80 of 138",
           "note": null
         },
         "def": {
@@ -1258,15 +1234,15 @@
           "note": null
         },
         "complete": true,
-        "read": "South Carolina’s receivers rates 54.8 (#82 of 138) against Florida’s secondary at 48.6 (#116 of 138). South Carolina’s unit stands higher among its own position group, by 34 places."
+        "read": "South Carolina’s receivers rates 54.9 (#80 of 138) against Florida’s secondary at 48.6 (#116 of 138). South Carolina’s unit stands higher among its own position group, by 36 places."
       },
       {
         "title": "Florida receivers vs South Carolina secondary",
         "att": {
           "team": "Florida",
           "label": "receivers",
-          "v": "56.3",
-          "rank": "#15 of 138",
+          "v": "56.2",
+          "rank": "#20 of 138",
           "note": null
         },
         "def": {
@@ -1277,7 +1253,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Florida’s receivers rates 56.3 (#15 of 138) against South Carolina’s secondary at 52.8 (#74 of 138). Florida’s unit stands higher among its own position group, by 59 places."
+        "read": "Florida’s receivers rates 56.2 (#20 of 138) against South Carolina’s secondary at 52.8 (#74 of 138). Florida’s unit stands higher among its own position group, by 54 places."
       }
     ],
     "roster": {
@@ -1383,15 +1359,15 @@
         {
           "k": "Availability records",
           "note": "an absence report reaching this roster. UNKNOWN is never read as healthy",
-          "a": "none on file — 100% unknown",
-          "h": "none on file — 100% unknown",
+          "a": "8 on file, 4% of starter value out",
+          "h": "8 on file, 1% of starter value out",
           "edge": null
         },
         {
           "k": "Data confidence",
           "note": "how much EdgeDesk knows about this roster, not how good it is",
-          "a": "60%",
-          "h": "48%",
+          "a": "70%",
+          "h": "58%",
           "edge": {
             "side": "a",
             "gap": 0.118
@@ -1434,8 +1410,8 @@
         "bullets": [
           "Playing at Florida is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
           "Florida is the better football team by 3.5 points on opponent-adjusted results, with roughly 47% of it still inherited from last season (+3.5 pts).",
-          "Receivers: Florida 56.3 (#15 of 138) vs South Carolina 54.8 (#82 of 138) — 67 places on the national board.",
-          "Running backs: Florida 59.4 (#4 of 138) vs South Carolina 56.5 (#55 of 138) — 51 places on the national board.",
+          "Receivers: Florida 56.2 (#20 of 138) vs South Carolina 54.9 (#80 of 138) — 60 places on the national board.",
+          "Running backs: Florida 59.6 (#3 of 138) vs South Carolina 56.5 (#55 of 138) — 52 places on the national board.",
           "Pass offense: Florida 62.9 (#15 of 137) vs South Carolina 49.5 (#60 of 137) — 45 places on the national board."
         ]
       },
@@ -1469,19 +1445,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 26h old",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "South Carolina — injury uncertainty",
-          "text": "100% of projected starter value has no availability record.",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "Florida — injury uncertainty",
-          "text": "100% of projected starter value has no availability record.",
+          "text": "odds is 35h old",
           "widening": null
         },
         {
@@ -1494,18 +1458,6 @@
           "sev": "LOW",
           "label": "missing",
           "text": "weather not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "home injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "away injury report not supplied",
           "widening": null
         },
         {
@@ -1531,14 +1483,6 @@
           "why": "starting QB not supplied for away"
         },
         {
-          "item": "Home availability / injuries",
-          "why": "no injury report supplied for home"
-        },
-        {
-          "item": "Away availability / injuries",
-          "why": "no injury report supplied for away"
-        },
-        {
           "item": "Weather at kickoff",
           "why": "no weather supplied"
         },
@@ -1559,16 +1503,8 @@
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
         },
         {
-          "item": "South Carolina — availability and injuries",
-          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
-        },
-        {
           "item": "Florida — recruiting ratings",
           "why": "no legal, public, keyless recruiting feed is wired into EdgeDesk, so no recruiting rating exists for this roster. Nothing is estimated in its place."
-        },
-        {
-          "item": "Florida — availability and injuries",
-          "why": "no availability record reached this roster. UNKNOWN is carried as unknown; it is never read as healthy."
         }
       ],
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
@@ -1584,7 +1520,7 @@
       "total_market": "62.0",
       "book": "captured consensus (stale) · 1 book · best at FanDuel",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "26 hours old",
+      "capture_age": "35 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1629,18 +1565,18 @@
         "note": null
       },
       "confidence": {
-        "score": 85,
+        "score": 90,
         "tier": "HIGH",
         "label": "High"
       },
       "reliability": {
-        "pct": 83,
+        "pct": 93,
         "tier": "STRONG",
-        "text": "83 · STRONG",
-        "sub": "main deduction: South Carolina’s availability sources refused",
-        "score": 83,
-        "grade": "STRONG",
-        "grade_label": "STRONG",
+        "text": "93 · VERY STRONG",
+        "sub": "main deduction: the market quote is past its freshness limit",
+        "score": 93,
+        "grade": "VERY_STRONG",
+        "grade_label": "VERY STRONG",
         "gate_label": null,
         "components": [
           {
@@ -1652,7 +1588,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 9.3,
+            "score": 18.9,
             "max": 20
           },
           {
@@ -1664,13 +1600,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.3,
+            "score": 12.9,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 14.7,
+            "score": 14.6,
             "max": 15
           },
           {
@@ -1680,25 +1616,9 @@
             "max": 10
           }
         ],
-        "main_deduction": "South Carolina’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of South Carolina’s absences cannot be assessed: no graded availability read",
+        "main_deduction": "the market quote is past its freshness limit",
         "capped_by": [],
-        "next_actions": [
-          {
-            "action": "Restore an injury/availability source for South Carolina",
-            "potential_gain": 5,
-            "text": "up to +5"
-          },
-          {
-            "action": "Restore an injury/availability source for Florida",
-            "potential_gain": 5,
-            "text": "up to +5"
-          },
-          {
-            "action": "Refresh the market quote",
-            "potential_gain": 3,
-            "text": "up to +3"
-          }
-        ],
+        "next_actions": [],
         "stability": {
           "tier": "STABLE",
           "sd": 1.85,
@@ -1730,9 +1650,9 @@
         "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
-        "key": "STABLE",
-        "label": "STABLE",
-        "text": "EdgeDesk’s number is unchanged since the latest published number."
+        "key": "INJURY_UNCERTAINTY",
+        "label": "INJURY UNCERTAINTY",
+        "text": "A supplied availability report lists 9 players with an unresolved status; the engine widens this game’s range for it."
       },
       "stability": {
         "tier": "LOW",
@@ -1806,7 +1726,7 @@
         {
           "k": "Talent",
           "a": "54.9  #43",
-          "h": "54.8  #44",
+          "h": "55.0  #42",
           "note": null
         },
         {
@@ -1859,26 +1779,26 @@
         },
         {
           "k": "QB room",
-          "a": "59.1  #42",
-          "h": "58.7  #49",
+          "a": "59.1  #41",
+          "h": "58.7  #48",
           "note": null
         },
         {
           "k": "Offensive line",
-          "a": "54.6  #36",
+          "a": "54.7  #36",
           "h": "51.5  #67",
           "note": null
         },
         {
           "k": "Receivers",
-          "a": "54.8  #82",
-          "h": "56.3  #15",
+          "a": "54.9  #80",
+          "h": "56.2  #20",
           "note": null
         },
         {
           "k": "Running backs",
           "a": "56.5  #55",
-          "h": "59.4  #4",
+          "h": "59.6  #3",
           "note": null
         },
         {
@@ -1913,8 +1833,8 @@
         },
         {
           "k": "Confidence",
-          "a": "60%",
-          "h": "48%",
+          "a": "70%",
+          "h": "58%",
           "note": "how much EdgeDesk knows, not how good the team is"
         },
         {
@@ -1944,6 +1864,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-08T00:55:58.242Z"
+    "at": "2026-10-08T10:25:54.824Z"
   }
 }
