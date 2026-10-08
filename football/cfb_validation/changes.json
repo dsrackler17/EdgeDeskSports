@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-10-08T16:55:15.227Z",
+ "generated_at": "2026-10-08T17:07:41.266Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
   "available": true,
-  "since": "2026-10-02T16:07:35.739Z",
+  "since": "2026-10-02T17:07:36.503Z",
   "changes": [
    {
     "what": "pricing code",
@@ -23,21 +23,33 @@
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
     "from": "2026-10-02T12:51:13.054Z",
-    "to": "2026-10-08T16:33:42.909Z"
+    "to": "2026-10-08T16:58:23.155Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
     "kind": "FOOTBALL",
     "from": 90,
     "to": 85
+   },
+   {
+    "what": "market coverage (% of slate games with 2+ fresh books)",
+    "kind": "MARKET",
+    "from": 5,
+    "to": 0
+   },
+   {
+    "what": "market coverage (% of slate games with a fresh quote)",
+    "kind": "MARKET",
+    "from": 19,
+    "to": 4
    }
   ],
-  "summary": "SOFTWARE: pricing code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved)"
+  "summary": "SOFTWARE: pricing code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with 2+ fresh books) · MARKET: market coverage (% of slate games with a fresh quote)"
  },
  "games": [
   {
    "from_at": "2026-10-01T06:18:17.322Z",
-   "to_at": "2026-10-08T13:56:16.844Z",
+   "to_at": "2026-10-08T16:58:23.155Z",
    "old_fair": 2.17,
    "new_fair": -7.02,
    "change": -9.19,
@@ -61,10 +73,10 @@
    "game_id": "401866435",
    "game": "Eastern Michigan @ Akron",
    "market_then": null,
-   "market_now": 6.5,
+   "market_now": 6.63,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "MARKET_ALIGNED",
+   "status_now": "NO_MARKET",
    "price_state": "EDGE MOSTLY PRICED IN"
   },
   {
@@ -1297,7 +1309,7 @@
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-08T13:56:16.844Z",
+   "to_at": "2026-10-08T16:58:23.155Z",
    "old_fair": -3.82,
    "new_fair": -5.57,
    "change": -1.75,
@@ -1321,10 +1333,10 @@
    "game_id": "401864517",
    "game": "Nevada @ UTEP",
    "market_then": null,
-   "market_now": 10,
+   "market_now": 9.75,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
+   "status_now": "NO_MARKET",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
@@ -1534,7 +1546,7 @@
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-08T13:56:16.844Z",
+   "to_at": "2026-10-08T16:58:23.155Z",
    "old_fair": 14.62,
    "new_fair": 13.88,
    "change": -0.74,
@@ -1561,7 +1573,7 @@
    "market_now": -10,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
+   "status_now": "NO_MARKET",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
@@ -1703,7 +1715,7 @@
   },
   {
    "from_at": "2026-09-30T02:47:34.357Z",
-   "to_at": "2026-10-08T13:56:16.844Z",
+   "to_at": "2026-10-08T16:58:23.155Z",
    "old_fair": 13.54,
    "new_fair": 13.85,
    "change": 0.31,
@@ -1727,10 +1739,10 @@
    "game_id": "401856826",
    "game": "Iowa State @ BYU",
    "market_then": null,
-   "market_now": -10.5,
+   "market_now": -10.37,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "INVESTIGATE",
+   "status_now": "NO_MARKET",
    "price_state": "NO INITIAL EDGE"
   },
   {
