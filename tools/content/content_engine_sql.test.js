@@ -204,6 +204,11 @@ try {
   const ak = own(`select public.content_engine_article_ack(${lit(c1.id)}, 'discrepancy:401', 'checked injuries and QB news');`);
   chk('G the owner acknowledges, with a note; the gate must run again', ak.ok && one(`select (acks -> 'discrepancy:401' ->> 'note') || '|' || (gate_at is null)::text from content_engine.articles where id = ${lit(c1.id)};`) === 'checked injuries and QB news|true');
   chk('G … after which a report may carry that acknowledgement', gateAs(c1.id, null, GATE('WARNING', [{ status: 'WARNING', reason: 'Reviewed by the owner: gap', ack_key: 'discrepancy:401', acknowledged: { note: 'checked' } }])).ok);
+  own(`select public.content_engine_article_ack(${lit(c1.id)}, 'discrepancy:401', null);`);
+  chk('G withdrawing a review leaves the gate unrun: the old WARNING cannot approve (a NULL time is never fresh)', own(`select public.content_engine_article_approve(${lit(c1.id)}, ${lit(hashOf(c1.id))});`).reason === 'gate_stale'
+    && one(`select gate_verdict || '|' || (gate_at is null)::text from content_engine.articles where id = ${lit(c1.id)};`) === 'WARNING|true');
+  chk('G … and the table itself refuses it, even posing as the approve door', /run the editorial gate/.test(fails(() => one(`begin; select set_config('request.jwt.claim.sub', ${lit(OWNER)}, true), set_config('content_engine.door', 'approve', true);
+       update content_engine.articles set status = 'approved', approved_by = ${lit(OWNER)}, approved_at = now(), approved_hash = content_hash where id = ${lit(c1.id)}; commit;`)) || ''));
   chk('G the weekly job may store a report (service role), the admin may not', J(db.service(`select public.content_engine_article_gate(${lit(c1.id)}, ${lit(hashOf(c1.id))}, ${lit(JSON.stringify(GATE('PASS')))}::jsonb);`)).ok
     && /owner only/.test(fails(() => gateAs(c1.id, 'PASS', null, ADMIN)) || ''));
   chk('G the first verdict is never rewritten', one(`select first_gate_verdict from content_engine.articles where id = ${lit(c1.id)};`) === 'BLOCKED');

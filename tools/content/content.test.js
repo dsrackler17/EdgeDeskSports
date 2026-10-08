@@ -377,7 +377,7 @@ mvm.forEach((o) => {
 });
 const sqlText = fs.readFileSync(path.join(ROOT, 'supabase', 'content_engine.sql'), 'utf8');
 const listOf = (re) => { const m = re.exec(sqlText); return m ? m[1].split(',').map((x) => x.trim().replace(/'/g, '')).sort() : []; };
-chk('T the database accepts every format the library writes', JSON.stringify(listOf(/add constraint articles_format_check check \(format in \(([^)]*)\)\)/)) === JSON.stringify(Object.keys(CE.FORMATS).concat(CE.FORMATS.postgame_review ? [] : ['postgame_review']).sort()),
+chk('T the database accepts every publisher format the library writes (EdgeDesk’s own features live in first_party)', JSON.stringify(listOf(/add constraint articles_format_check check \(format in \(([^)]*)\)\)/)) === JSON.stringify(Object.keys(CE.FORMATS).filter((k) => !CE.FORMATS[k].first_party).concat(CE.FORMATS.postgame_review ? [] : ['postgame_review']).sort()),
   listOf(/add constraint articles_format_check check \(format in \(([^)]*)\)\)/));
 chk('T … and every kind', JSON.stringify(listOf(/add constraint opportunities_kind_check check \(kind in \(([^)]*)\)\)/)) === JSON.stringify(Object.keys(CE.KINDS).concat(CE.KINDS.postgame_review ? [] : ['postgame_review']).sort()));
 
@@ -521,7 +521,11 @@ chk('S the library and the database share one transition matrix', JSON.stringify
 chk('S the SQL and the library ban the same core phrases', ['best bets', 'guarantee', 'free money', 'sure thing', 'risk.?free', 'take the points'].every((t) => SQL.indexOf(t.replace('best bets', 'best bets?')) >= 0 || SQL.indexOf(t) >= 0));
 chk('S the Edge Function carries the core and the owner check verbatim', !INLINE.drifted());
 const publicFiles = [page, js, SQL, fs.readFileSync(path.join(ROOT, 'lib', 'content_engine.js'), 'utf8'), fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'content-engine.yml'), 'utf8'),
-  fs.readFileSync(path.join(ROOT, 'docs', 'content-engine', 'README.md'), 'utf8')]
+  fs.readFileSync(path.join(ROOT, 'docs', 'content-engine', 'README.md'), 'utf8'),
+  /* EdgeDesk's own features: the job, the type, the workflow, the tests */
+  fs.readFileSync(path.join(ROOT, 'tools', 'editorial', 'features.js'), 'utf8'), fs.readFileSync(path.join(ROOT, 'tools', 'editorial', 'feature_model.js'), 'utf8'),
+  fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'edgedesk-features.yml'), 'utf8'), fs.readFileSync(path.join(ROOT, 'tools', 'editorial', 'features.test.js'), 'utf8')]
+  .concat(fs.existsSync(path.join(ROOT, 'features', 'records')) ? fs.readdirSync(path.join(ROOT, 'features', 'records')).map((f) => fs.readFileSync(path.join(ROOT, 'features', 'records', f), 'utf8')) : [])
   /* the tests are public too; the guard lines themselves are the only exception */
   .concat(fs.readdirSync(__dirname).filter((f) => /\.js$/.test(f)).map((f) => fs.readFileSync(path.join(__dirname, f), 'utf8')
     .split('\n').filter((l) => !/^chk\('(S no publisher business data|F the seed carries no contact)/.test(l)).join('\n'))).join('\n');

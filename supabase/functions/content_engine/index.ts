@@ -318,6 +318,25 @@
       required: ['intro', 'how_to_read', 'scoreboard', 'misses', 'conclusion'],
       words: [500, 1500]
     },
+    /* EdgeDesk's own articles (edgedesksports.com), never sent to a publisher */
+    fp_weekend_review: {
+      label: 'Weekend Model Review (EdgeDesk)', league: null, first_party: true,
+      sections: ['intro', 'how_to_read', 'scoreboard', 'closest', 'misses', 'season', 'limits', 'conclusion'],
+      required: ['intro', 'how_to_read', 'scoreboard', 'misses', 'conclusion'],
+      words: [500, 1600]
+    },
+    fp_storylines: {
+      label: 'Weekend Storylines (EdgeDesk)', league: null, first_party: true,
+      sections: ['intro', 'how_to_read', 'story_1', 'story_2', 'story_3', 'story_4', 'story_5', 'limits', 'conclusion'],
+      required: ['intro', 'how_to_read', 'story_1', 'story_2', 'story_3', 'limits', 'conclusion'],
+      words: [500, 1500]
+    },
+    fp_research_preview: {
+      label: 'Weekend Research Preview (EdgeDesk)', league: null, first_party: true,
+      sections: ['intro', 'how_to_read', 'num_1', 'num_2', 'num_3', 'num_4', 'num_5', 'watch', 'limits', 'conclusion'],
+      required: ['intro', 'how_to_read', 'num_1', 'num_2', 'num_3', 'num_4', 'limits', 'conclusion'],
+      words: [500, 1500]
+    },
     publisher_custom: {
       label: 'Publisher-specific article', league: null,
       sections: null, /* from the publisher's profile, else the league preview */
@@ -357,7 +376,8 @@
     scoreboard: 'How the numbers did',
     closest: 'Where the model was closest',
     misses: 'The biggest misses',
-    season: 'The season so far'
+    season: 'The season so far',
+    watch: 'What could move these numbers'
   };
 
   var DISCLAIMER = 'EdgeDesk publishes research, not betting advice. Nothing in this article is a pick, a wager or a recommendation. 21+. Gamble responsibly — 1-800-GAMBLER.';
@@ -1980,11 +2000,12 @@
       'EdgeDesk’s NFL projections are built from each team’s efficiency this season, quarterback play, rest and home field, and they are compared with the betting line only when EdgeDesk knows when that line was captured.');
   }
 
-  function howToRead(o) {
+  function howToRead(o, opts) {
+    opts = opts || {};
     var gs = (o.research.games || []).filter(function (p) { return p.model.available; });
     var misses = gs.map(function (p) { return p.model.typical_miss; }).filter(isNum).map(Math.round);
     var lo = misses.length ? Math.min.apply(null, misses) : null, hi = misses.length ? Math.max.apply(null, misses) : null;
-    var dq = gs.some(function (p) { return p.model.data_quality && isNum(p.model.data_quality.score); });
+    var dq = !opts.noDataQuality && gs.some(function (p) { return p.model.data_quality && isNum(p.model.data_quality.score); });
     return para('A projection is the margin and win chance EdgeDesk’s model expects, built from team ratings, home field and matchup data.',
       'A projection is not a bet. A team can be the likelier winner and still be a poor wager if the betting line already expects more than the model does, which is why this article doesn’t make picks.',
       lo != null ? 'Projections miss: EdgeDesk’s typical miss on games like these is about ' + (lo === hi ? lo : lo + ' to ' + hi) + ' points, which is why a win chance matters more than the margin alone.' : null,
@@ -2553,6 +2574,12 @@
     return { numbers: nums, teams: teams, names: names, sources: srcs };
   }
 
+  /* the season's teams for the article's league; both leagues for an EdgeDesk weekend article */
+  function knownTeams(o, lists) {
+    lists = lists || {};
+    if (o.league === 'multi') return (lists.cfb || []).concat(lists.nfl || []);
+    return lists[o.league] && lists[o.league].length ? lists[o.league] : ((o.research.context && o.research.context.team_names) || []);
+  }
   function textOf(a) {
     return [a.title, a.standfirst, a.meta_description].concat((a.sections || []).map(function (s) { return (s.heading || '') + '\n' + s.body; })).join('\n\n');
   }
@@ -2618,7 +2645,7 @@
 
     /* 4 teams: no team the research does not cover */
     var lists = opts.teamLists || {};
-    var known = (lists[o.league] && lists[o.league].length ? lists[o.league] : ((o.research.context && o.research.context.team_names) || []));
+    var known = knownTeams(o, lists);
     if (known.length) {
       /* a person's name is masked before teams are matched (Isaiah Marshall is
          not Marshall) — but never a name that is itself a team */
@@ -2780,8 +2807,14 @@
           if (hi + '-' + lo !== x.final.score) out.push(x.away + ' at ' + x.home + ': ' + sm[0] + ' is not the final (' + x.final.score + ')');
         }
         if (x.final.winner) { var wm = new RegExp(escRe(x.final.loser) + ' won\\b').exec(pa); if (wm) out.push(x.away + ' at ' + x.home + ': ' + x.final.loser + ' is said to have won'); }
+        /* the result card's form: "Final: A 55, B 19" */
+        var cm, cre = /Final: (.+?) (\d{1,3}), (.+?) (\d{1,3})\b/g;
+        while ((cm = cre.exec(pa))) {
+          var sc = {}; sc[cm[1].trim()] = +cm[2]; sc[cm[3].trim()] = +cm[4];
+          if (sc[x.home] !== x.final.home || sc[x.away] !== x.final.away) out.push(x.away + ' at ' + x.home + ': “' + cm[0] + '” is not the final (' + x.away + ' ' + x.final.away + ', ' + x.home + ' ' + x.final.home + ')');
+        }
         if (x.pre.favorite) {
-          var fre = new RegExp('EdgeDesk (?:had|projected) ' + escRe(x.pre.favorite) + ' by (\\d+(?:\\.\\d+)?)', 'g'), fm;
+          var fre = new RegExp('EdgeDesk (?:had|projected|before kickoff:) ' + escRe(x.pre.favorite) + ' by (\\d+(?:\\.\\d+)?)', 'g'), fm;
           while ((fm = fre.exec(pa))) if (Math.abs(+fm[1] - x.pre.margin) > 0.05) out.push(x.away + ' at ' + x.home + ': EdgeDesk’s pregame margin was ' + oneDp(x.pre.margin) + ', not ' + fm[1]);
         }
       });
@@ -2842,12 +2875,14 @@
           }
         }
         if (p.model.favorite) {
-          var fre = new RegExp(escRe(p.model.favorite) + ' (?:by |a |an |is EdgeDesk’s |is EdgeDesk\'s )(\\d+(?:\\.\\d+)?)(?:-point favorite)?', 'g'), fm;
+          /* a margin, never the start of a percentage ("Ole Miss a 50% chance") */
+          var fre = new RegExp(escRe(p.model.favorite) + ' (?:by |a |an |is EdgeDesk’s |is EdgeDesk\'s )(\\d+(?:\\.\\d+)?)(?![\\d.]*%)(?:-point favorite)?', 'g'), fm;
           while ((fm = fre.exec(pa))) { if (Math.abs(+fm[1] - p.model.margin) > 0.05) out.push(p.away + ' at ' + p.home + ': ' + p.model.favorite + ' is described as ' + fm[1] + ' but EdgeDesk has ' + oneDp(p.model.margin)); }
           var dog = p.model.underdog;
           [[p.model.favorite, p.model.fav_win_pct], [dog, p.model.dog_win_pct]].forEach(function (x) {
             if (!x[0] || !isNum(x[1])) return;
-            var pre = new RegExp(escRe(x[0]) + '[^.;:]{0,60}?(?:a |\\()(\\d+)% (?:chance|to win)', 'g'), pm;
+            /* within one line: a heading above a paragraph is not the same sentence */
+            var pre = new RegExp(escRe(x[0]) + '[^.;:\\n]{0,60}?(?:a |\\()(\\d+)% (?:chance|to win)', 'g'), pm;
             while ((pm = pre.exec(pa))) { if (+pm[1] !== x[1]) out.push(p.away + ' at ' + p.home + ': ' + x[0] + ' is given ' + pm[1] + '% but EdgeDesk has ' + x[1] + '%'); }
           });
         }
@@ -2940,7 +2975,9 @@
       if ((c.venue || null) !== (p.venue || null) || !!c.neutral_site !== !!p.neutral_site) find('schedule', 'BLOCKED', g + ': the venue changed (' + (p.venue || 'unknown') + ' → ' + (c.venue || 'unknown') + (c.neutral_site !== p.neutral_site ? ', neutral site ' + (c.neutral_site ? 'yes' : 'no') : '') + ').', [], 'Confirm the venue, then regenerate the games section.', ['games']);
     });
     if (!cur && feat.length) find('schedule', 'WARNING', 'The schedule was not re-checked against the current research.', [], 'Re-run the check with the current research loaded.', []);
-    if (feat.some(function (p) { return p.week !== o.week; })) find('schedule', 'BLOCKED', 'A featured game is from a different week than the article.', feat.filter(function (p) { return p.week !== o.week; }).map(function (p) { return p.away + ' at ' + p.home + ' (week ' + p.week + ')'; }), 'Remove it.', ['games']);
+    /* a two-league article has a week per league */
+    var weekFor = function (p) { return o.research.weeks && o.research.weeks[p.league] != null ? o.research.weeks[p.league] : o.week; };
+    if (feat.some(function (p) { return p.week !== weekFor(p); })) find('schedule', 'BLOCKED', 'A featured game is from a different week than the article.', feat.filter(function (p) { return p.week !== weekFor(p); }).map(function (p) { return p.away + ' at ' + p.home + ' (week ' + p.week + ')'; }), 'Remove it.', ['games']);
 
     /* 2 teams, conferences, rankings */
     if (failed('teams_in_evidence')) find('teams', 'BLOCKED', 'A team is named that this article’s research does not cover.', [vc.teams_in_evidence.detail], 'Remove the team or regenerate the section.', [sectionWith(a, (vc.teams_in_evidence.detail || '').replace(/^.*: /, '').split(',')[0])]);
@@ -2971,8 +3008,11 @@
     });
 
     /* 4 snapshot */
-    var snaps = uniq(feat.map(function (p) { return p.model && p.model.version; }).filter(Boolean));
-    if (snaps.length > 1) find('snapshot', 'BLOCKED', 'The featured games come from different model versions.', snaps, 'Regenerate the article from one research read.', ['games']);
+    /* one model version per league (the college and NFL models are different models) */
+    ['cfb', 'nfl'].forEach(function (lg) {
+      var snaps = uniq(feat.filter(function (p) { return (p.league || o.league) === lg; }).map(function (p) { return p.model && p.model.version; }).filter(Boolean));
+      if (snaps.length > 1) find('snapshot', 'BLOCKED', 'The featured games come from different model versions.', snaps, 'Regenerate the article from one research read.', ['games']);
+    });
     if (cur) feat.forEach(function (p) {
       var c = cur[p.game_id];
       if (!c || !c.model || !c.model.available || !p.model.available) return;
@@ -3039,7 +3079,7 @@
     if (wk && +wk[1] !== o.week) find('headline', 'BLOCKED', 'The headline says Week ' + wk[1] + ' but the research is Week ' + o.week + '.', [title], 'Fix the week in the headline.', []);
     if (o.league === 'cfb' && /\bNFL\b/.test(title) || o.league === 'nfl' && /college football|\bCFB\b/i.test(title)) find('headline', 'BLOCKED', 'The headline names the wrong league.', [title], 'Fix the headline.', []);
     var lists = ctx.teamLists || {};
-    var known = lists[o.league] && lists[o.league].length ? lists[o.league] : ((o.research.context && o.research.context.team_names) || []);
+    var known = knownTeams(o, lists);
     var tTeams = teamsMentioned(title, known, []).filter(function (t) { return !feat.some(function (p) { return p.home === t || p.away === t; }) && !(o.teams || []).some(function (x) { return x === t; }); });
     if (tTeams.length) find('headline', 'BLOCKED', 'The headline names a team the article doesn’t cover: ' + tTeams.join(', ') + '.', [title], 'Fix the headline.', []);
     var ev = evidenceOf(o);
@@ -3064,11 +3104,18 @@
     var exp = toMarkdown(a, expCtx);
     var edLinks = (exp.match(/\]\((https?:\/\/(?:www\.)?edgedesksports\.com[^)\s]*)\)/g) || []).map(function (x) { return x.slice(2, -1); });
     var pubUtm = utmFor(ctx.publisher, a, ctx.campaign);
-    if (ed.links_allowed !== false) {
+    /* EdgeDesk's own page: its links are internal, and an internal link must
+       carry NO utm tags (they would overwrite the reader's real source) */
+    var firstParty = !!(FORMATS[a.base_format || ''] || {}).first_party;
+    if (firstParty) {
+      edLinks = ((a.sections || []).map(function (x) { return x.body; }).join('\n').match(/\]\((https?:\/\/(?:www\.)?edgedesksports\.com[^)\s]*)\)/g) || []).map(function (x) { return x.slice(2, -1); });
+      edLinks.filter(function (u) { return /[?&]utm_/.test(u); }).forEach(function (u) { find('referral', 'BLOCKED', 'An internal EdgeDesk link carries campaign tags.', [u], 'Remove the utm_ parameters from internal links.', [sectionWith(a, u.split('?')[0])]); });
+      edLinks.filter(function (u) { return !/^https:/.test(u); }).forEach(function (u) { find('referral', 'BLOCKED', 'An EdgeDesk link is not https.', [u], 'Use the https link.', []); });
+    } else if (ed.links_allowed !== false) {
       if (!edLinks.length) find('referral', 'BLOCKED', 'The export carries no EdgeDesk link, so referrals cannot be measured.', [], 'Restore the attribution line.', []);
       if (!ctx.campaign) find('referral', 'BLOCKED', 'The article has no campaign code.', [], 'The campaign code is assigned when the article is created; recreate it.', []);
     }
-    edLinks.forEach(function (u) {
+    if (!firstParty) edLinks.forEach(function (u) {
       var q; try { q = new URL(u).searchParams; } catch (e) { q = null; }
       if (!q || q.get('utm_campaign') !== String(ctx.campaign || '').toLowerCase() || q.get('utm_medium') !== 'publisher' || q.get('utm_source') !== pubUtm.source.toLowerCase().replace(/[^a-z0-9_.-]/g, ''))
         find('referral', 'BLOCKED', 'An EdgeDesk link is not tagged for this article and publisher.', [u], 'Regenerate the export (links are tagged automatically).', [sectionWith(a, u.split('?')[0])]);
@@ -3155,6 +3202,444 @@
       generator: String(a.generator || 'template').replace(/\+repair$/, '') + '+repair' });
     b.word_count = wordCount(b.standfirst + ' ' + out.map(function (x) { return x.body; }).join(' '));
     return { article: b, changed: uniq(changed), removed: removed };
+  }
+
+  /* ======================================================================
+     FIRST-PARTY PUBLISHING — EdgeDesk's own articles on edgedesksports.com.
+
+     At most three a week, in Central Time: Monday the Weekend Model Review
+     (the weekend's results against the pregame numbers), Wednesday the
+     upcoming weekend's biggest storylines, Friday the weekend in five
+     numbers. Each builder returns { ok:false, reason } rather than a thin
+     article when the research does not support one: fewer articles, never a
+     filler one.
+
+     Twelve gates decide whether an article may publish without a person
+     (fpGates). Anything short of all twelve is HELD FOR REVIEW. The
+     headlines lead with a storyline, and every storyline is a fact in the
+     research (a ranking, a projection, a result), never a story invented to
+     explain a number.
+     ====================================================================== */
+  var FP_TZ = 'America/Chicago';
+  var FP_SLOTS = { 1: 'weekend_review', 3: 'storylines', 5: 'research_preview' };
+  var FP_KINDS = {
+    weekend_review: { label: 'Weekend Model Review', format: 'fp_weekend_review', day: 'Monday', category: 'weekend-model-review' },
+    storylines: { label: 'Weekend Storylines', format: 'fp_storylines', day: 'Wednesday', category: 'weekend-storylines' },
+    research_preview: { label: 'Weekend Research Preview', format: 'fp_research_preview', day: 'Friday', category: 'weekend-research-preview' }
+  };
+  var FP_DEFAULTS = { publish_hour_ct: 7, window_hours: 10, max_per_week: 3, research_max_age_hours: 36, kickoff_lead_minutes: 60,
+    publisher_similarity_max: 0.35, site_similarity_max: 0.5 };
+  var FP_CTA = { text: 'Explore the full matchup research on EdgeDesk.', href: SITE + '/today/' };
+  var WD3 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  function ctParts(t) {
+    var o = {};
+    new Intl.DateTimeFormat('en-US', { timeZone: FP_TZ, year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })
+      .formatToParts(new Date(t)).forEach(function (x) { o[x.type] = x.value; });
+    return { y: +o.year, m: +o.month, d: +o.day, wd: WD3.indexOf(o.weekday), h: (+o.hour) % 24, mi: +o.minute };
+  }
+  function ctDate(t) { var p = ctParts(t); return p.y + '-' + (p.m < 10 ? '0' : '') + p.m + '-' + (p.d < 10 ? '0' : '') + p.d; }
+  /* the instant a Central Time wall clock reads h:00 on y-m-d (CST or CDT) */
+  function ctInstant(y, m, d, h) {
+    for (var off = 5; off <= 6; off++) { var t = Date.UTC(y, m - 1, d, h + off); var p = ctParts(t); if (p.h === h && p.d === d) return t; }
+    return Date.UTC(y, m - 1, d, h + 6);
+  }
+  /* the Monday that starts the Central Time week a date falls in */
+  function ctWeekOf(t) { var p = ctParts(t); var back = (p.wd + 6) % 7; return ctDate(ctInstant(p.y, p.m, p.d, 12) - back * 86400000); }
+  function fpSlot(now, settings) {
+    settings = Object.assign({}, FP_DEFAULTS, settings || {});
+    var p = ctParts(now), kind = FP_SLOTS[p.wd];
+    if (!kind) return null;
+    var at = ctInstant(p.y, p.m, p.d, settings.publish_hour_ct);
+    return { kind: kind, label: FP_KINDS[kind].label, date: ctDate(now), week: ctWeekOf(now), publish_at: iso(at), window_end: iso(at + settings.window_hours * 3600000),
+      id: 'feature-' + ctDate(now) + '-' + kind.replace(/_/g, '-') };
+  }
+  var MON3 = ['Jan.', 'Feb.', 'March', 'April', 'May', 'June', 'July', 'Aug.', 'Sept.', 'Oct.', 'Nov.', 'Dec.'];
+  function ctDayText(t) { var p = ctParts(t); return MON3[p.m - 1] + ' ' + p.d; }
+
+  function upcomingOf(L, now, lead) { return (L && L.games || []).filter(function (p) { var k = ts(p.kickoff); return p.model.available && p.flags.indexOf('KICKED_OFF') < 0 && k != null && k > now + (lead || 0); }); }
+  /* a game whose number the market disputes by more than EdgeDesk's inputs
+     explain is not featured in an unattended article: it waits for a person */
+  function undisputed(p) { return !p.discrepancy || p.discrepancy.review === 'NONE'; }
+  function disputedNote(n) {
+    return n ? '- **Left out for review:** ' + numWord(n) + ' upcoming game' + (n === 1 ? '' : 's') + ' where EdgeDesk’s number and the market disagree by more than EdgeDesk’s inputs explain ' + (n === 1 ? 'is' : 'are') + ' not featured here until a person has reviewed the gap.' : null;
+  }
+  function fpOpp(kind, research, snap, extra) {
+    var leagues = research.leagues_used || [];
+    var sources = [];
+    leagues.forEach(function (lg) { sourcesOf(snap, lg).forEach(function (x) { sources.push(x); }); });
+    (snap.sources || []).filter(function (x) { return /^record_/.test(x.id) && leagues.indexOf(x.id.slice(7)) >= 0; })
+      .forEach(function (x) { sources.push({ kind: 'edgedesk_research', label: x.what, path: x.path, url: SITE + '/' + x.path, as_of: x.as_of }); });
+    return Object.assign({ league: 'multi', fp_kind: kind, kind: 'fp_' + kind, season: research.season, week: research.week, research: research, sources: sources, formats: [FP_KINDS[kind].format] }, extra || {});
+  }
+
+  /* ── Monday: the weekend's results against the pregame numbers ── */
+  function fpReview(snap, now) {
+    var leagues = ['cfb', 'nfl'].filter(function (lg) { var R = snap.results && snap.results[lg]; return R && R.results.length && now - ts(R.last_kickoff) <= 4 * 86400000; });
+    if (!leagues.length) return { ok: false, reason: 'no graded games from this weekend in the model record yet' };
+    var res = [], L = {}, asOf = null;
+    leagues.forEach(function (lg) {
+      var R = snap.results[lg];
+      L[lg] = { week: R.week, week_record: R.week_record, season_record: R.season_record };
+      R.results.forEach(function (x) { res.push(x); });
+      if (R.as_of && (!asOf || ts(R.as_of) > ts(asOf))) asOf = R.as_of;
+    });
+    if (res.length < 6) return { ok: false, reason: 'only ' + res.length + ' graded games this weekend: too few for a review' };
+    var season = (snap.results[leagues[0]] || {}).season_year;
+    var research = { kind: 'fp_weekend_review', league: 'multi', leagues_used: leagues, season: season, week: L.cfb ? L.cfb.week : L.nfl.week, as_of: asOf,
+      weeks: { cfb: L.cfb && L.cfb.week, nfl: L.nfl && L.nfl.week },
+      leagues: L, results: res, games: [], upsets: [], races: [], context: {}, limitations: [] };
+    return { ok: true, o: fpOpp('weekend_review', research, snap) };
+  }
+  function lgName(lg, cap0) { return lg === 'nfl' ? 'NFL' : (cap0 ? 'College football' : 'college football'); }
+  function fpReviewHeadline(o) {
+    var R = o.research, head = 'Weekend Model Review: ', opts = [];
+    var lgs = R.leagues_used.slice().sort(function (a, b) { return R.leagues[b].week_record.games - R.leagues[a].week_record.games; });
+    lgs.forEach(function (lg) {
+      var W = R.leagues[lg].week_record, nm = lg === 'nfl' ? 'NFL' : 'College';
+      if (W.compared >= 4 && W.closer / W.compared >= 0.6) opts.push(head + 'EdgeDesk Beat the Close in ' + W.closer + ' of ' + W.compared + ' ' + nm + ' Games');
+      if (W.su_games >= 4 && W.su_w / W.su_games >= 0.7) opts.push(head + 'EdgeDesk’s Favorite Won ' + W.su_w + ' of ' + W.su_games + ' ' + nm + ' Games');
+    });
+    var miss = R.results.slice().sort(function (a, b) { return (b.grade.model_err || 0) - (a.grade.model_err || 0); })[0];
+    if (miss && miss.final.winner && miss.final.margin >= 17) opts.push(head + nick(miss.final.winner, miss.league) + '’ ' + miss.final.score + ' Win Tops the Misses');
+    opts.push(head + 'What Held Up and What Missed');
+    return opts.filter(function (h, i) { return h.length <= 70 || i === opts.length - 1; })[0];
+  }
+  function pgBullets(W) {
+    var b = ['- **Right winner:** ' + W.su_w + ' of ' + W.su_games + '.'];
+    if (W.compared) b.push('- **Closer to the final than the closing line:** ' + W.closer + ' of ' + W.compared + '.', '- **Average miss on the margin:** EdgeDesk ' + oneDp(W.model_err_avg) + ' points, the closing line ' + oneDp(W.close_err_avg) + '.');
+    if (W.ats_w + W.ats_l + W.ats_p) b.push('- **Against the closing spread:** ' + W.ats_w + '-' + W.ats_l + (W.ats_p ? '-' + W.ats_p : '') + ' for the side EdgeDesk’s number leaned to (a grade of the number, not a betting record).');
+    return b.join('\n');
+  }
+  /* EdgeDesk's own result card: the same facts as the publisher recap, in a
+     different shape, so the two are never near-copies of each other */
+  function fpCard(x, lgs) {
+    var p = x.pre, f = x.final, g = x.grade;
+    var fin = f.winner ? (x.home === f.winner ? x.home + ' ' + f.home + ', ' + x.away + ' ' + f.away : x.away + ' ' + f.away + ', ' + x.home + ' ' + f.home) : x.away + ' ' + f.away + ', ' + x.home + ' ' + f.home;
+    var lines = ['- Final: ' + fin + (lgs.length > 1 ? ' (' + (x.league === 'nfl' ? 'NFL' : 'college football') + ')' : ''),
+      '- EdgeDesk before kickoff: ' + (p.favorite ? p.favorite + ' by ' + oneDp(p.margin) + (isNum(p.fav_win_pct) ? ', ' + p.fav_win_pct + '% to win' : '') : 'a pick’em'),
+      isNum(g.model_err) ? '- Off by: ' + oneDp(g.model_err) + ' points' + (isNum(g.close_err) ? ' (closing line' + (x.close ? ' ' + (x.close.favorite ? x.close.favorite + ' -' + String(r1(x.close.margin)) : 'pick’em') : '') + ': off by ' + oneDp(g.close_err) + ')' : '') : null];
+    return '**' + x.away + ' at ' + x.home + '**\n\n' + lines.filter(Boolean).join('\n') + (x.postgame_url ? '\n\n[EdgeDesk’s postgame analysis](' + x.postgame_url + ')' : '');
+  }
+  function fpReviewSections(o) {
+    var R = o.research, s = {}, lgs = R.leagues_used, res = R.results;
+    var desc = lgs.map(function (lg) { return lgName(lg) + ' Week ' + R.leagues[lg].week; });
+    var total = lgs.reduce(function (a, lg) { return a + R.leagues[lg].week_record.games; }, 0);
+    s.intro = para('EdgeDesk publishes its numbers before kickoff and grades every one of them afterward. This weekend model review covers ' + sentenceList(desc) + ': ' + numWord(total) + ' graded games.',
+      lgs.map(function (lg, i) { var W = R.leagues[lg].week_record; return (i ? 'In the ' : 'In ') + (lg === 'nfl' ? 'NFL' : 'college football') + ', the model had the right winner in ' + W.su_w + ' of ' + W.su_games + '.'; }).join(' '),
+      'Here are the calls that held up, the misses, and what one weekend can and can’t say about a model.');
+    s.how_to_read = para('Each game is graded the same way: EdgeDesk’s last pregame number against the final score, next to the closing line, the market’s last word before kickoff.',
+      'A single game can miss by two touchdowns even when the projection was sound, so one weekend is a small sample; the season record below is the better guide.',
+      'This is a record of a model, not betting advice and not a betting result.');
+    s.scoreboard = lgs.map(function (lg) {
+      var W = R.leagues[lg].week_record;
+      return para('**' + lgName(lg, true) + ', Week ' + R.leagues[lg].week + '.** Of ' + numWord(W.games) + ' graded games, EdgeDesk’s pregame favorite won ' + W.su_w + '.',
+        W.compared ? 'Measured by how far each projected margin landed from the final, EdgeDesk averaged ' + oneDp(W.model_err_avg) + ' points and the closing line ' + oneDp(W.close_err_avg) + ', with EdgeDesk the nearer of the two in ' + W.closer + ' games.' : null,
+        (W.ats_w + W.ats_l) ? 'Scored against the closing spread, the side its number leaned to went ' + W.ats_w + '-' + W.ats_l + (W.ats_p ? '-' + W.ats_p : '') + ', a grade of the number rather than a betting record.' : null);
+    }).join('\n\n');
+    var closest = res.filter(function (x) { return isNum(x.grade.model_err); }).sort(function (a, b) { return a.grade.model_err - b.grade.model_err; }).slice(0, 3);
+    var ids = closest.map(function (x) { return x.game_id; });
+    var misses = res.filter(function (x) { return isNum(x.grade.model_err) && ids.indexOf(x.game_id) < 0; }).sort(function (a, b) { return b.grade.model_err - a.grade.model_err; }).slice(0, 3);
+    var tag = function (x) { return lgs.length > 1 ? ' (' + (x.league === 'nfl' ? 'NFL' : 'college football') + ')' : ''; };
+    var withLink = function (x) { return x.postgame_url ? ' [Read the postgame analysis](' + x.postgame_url + ').' : ''; };
+    s.closest = closest.map(function (x) { return fpCard(x, lgs); }).join('\n\n');
+    var bothN = misses.filter(function (x) { return isNum(x.grade.close_err) && x.grade.close_err >= x.grade.model_err - 3; }).length;
+    s.misses = misses.length ? (bothN ? (bothN === misses.length ? 'In each of these, the closing line missed by about as much as EdgeDesk did, so the market’s number was no closer.' : 'In ' + numWord(bothN) + ' of these, the closing line missed by about as much as EdgeDesk did.') + '\n\n' : '')
+      + misses.map(function (x) { return fpCard(x, lgs); }).join('\n\n') : 'No game missed by enough to single out.';
+    void tag; void withLink;
+    s.season = lgs.map(function (lg) {
+      var S = R.leagues[lg].season_record; if (!S || !S.games) return null;
+      return para('**' + lgName(lg, true) + ':** across the season so far, the right winner in ' + S.su_w + ' of ' + S.su_games + ' graded games (' + S.su_pct + '%)'
+        + (S.compared ? '; an average miss on the margin of ' + oneDp(S.model_err_avg) + ' points against ' + oneDp(S.close_err_avg) + ' for the closing line.' : '.'));
+    }).filter(Boolean).join('\n\n');
+    s.limits = '- **Small samples:** one weekend says little about a model on its own; read it next to the season record.\n'
+      + '- **Final scores are noisy:** late scores, turnovers and garbage time move a margin without saying much about how the game was played.\n'
+      + '- **Still to be graded:** a game is reviewed only once its final and its grade are on record, so a late game can be missing here.\n'
+      + '- **Uncertainty:** even a 70% favorite loses about three times in ten. Projections describe likelihoods, not outcomes.';
+    var top = misses[0];
+    s.conclusion = para('The short version: ' + lgs.map(function (lg) { var W = R.leagues[lg].week_record; return W.su_w + ' of ' + W.su_games + ' winners in ' + (lg === 'nfl' ? 'the NFL' : 'college football'); }).join(' and ')
+      + (top ? '; the biggest miss was ' + top.away + ' at ' + top.home : '') + '.',
+      'Every number here was published before kickoff and graded after it, misses included. None of it is a pick.');
+    return s;
+  }
+
+  /* ── Wednesday: the upcoming weekend's biggest storylines ── */
+  function fpStorylines(snap, now, opts) {
+    opts = opts || {};
+    var lead = (opts.kickoff_lead_minutes != null ? opts.kickoff_lead_minutes : FP_DEFAULTS.kickoff_lead_minutes) * 60000;
+    var all0 = { cfb: upcomingOf(snap.cfb, now, lead), nfl: upcomingOf(snap.nfl, now, lead) };
+    var up = { cfb: all0.cfb.filter(undisputed), nfl: all0.nfl.filter(undisputed) };
+    var disputed = all0.cfb.length + all0.nfl.length - up.cfb.length - up.nfl.length;
+    var cands = [];
+    var add = function (kind, p, extra) { if (p) cands.push(Object.assign({ kind: kind, p: p }, extra || {})); };
+    var rc = rankGames('cfb', up.cfb), rn = rankGames('nfl', up.nfl);
+    if (rc[0]) add('headliner', rc[0].p, { why: rc[0].why });
+    if (rn[0]) add('headliner', rn[0].p, { why: rn[0].why });
+    var ids0 = up.cfb.map(function (p) { return p.game_id; });
+    var race = conferenceRaces(snap).filter(function (p) { return ids0.indexOf(p.game_id) >= 0; })[0];
+    if (race) add('race', race);
+    var uc = upsetsOf('cfb', up.cfb)[0], un = upsetsOf('nfl', up.nfl)[0];
+    if (uc) add('upset', uc);
+    var gap = up.cfb.concat(up.nfl).filter(function (p) { return p.discrepancy; }).sort(function (a, b) { return b.discrepancy.points - a.discrepancy.points; })[0];
+    if (gap) add('gap', gap);
+    var wx = up.cfb.filter(function (p) { return p.weather && p.weather.state === 'HAZARD'; })[0];
+    if (wx) add('weather', wx);
+    var qb = up.cfb.filter(function (p) { return p.qb && ((p.qb.home && p.qb.home.material) || (p.qb.away && p.qb.away.material)); })[0];
+    if (qb) add('qb', qb);
+    if (un) add('upset', un);
+    var seen = {}, picks = [];
+    cands.forEach(function (c) { if (picks.length < 5 && !seen[c.p.game_id]) { seen[c.p.game_id] = 1; picks.push(c); } });
+    if (picks.length < 3) return { ok: false, reason: 'only ' + picks.length + ' storyline(s) with research behind them: not enough for the Wednesday piece' };
+    var lgs = uniq(picks.map(function (c) { return c.p.league; }));
+    var L = snap.cfb || snap.nfl;
+    var research = { kind: 'fp_storylines', league: 'multi', leagues_used: lgs, season: L.season, week: snap.cfb ? snap.cfb.week : snap.nfl.week, weeks: { cfb: snap.cfb && snap.cfb.week, nfl: snap.nfl && snap.nfl.week },
+      as_of: [snap.cfb && snap.cfb.generated_at, snap.nfl && snap.nfl.generated_at].filter(Boolean).sort().pop() || null,
+      stories: picks.map(function (c) { return { kind: c.kind, game_id: c.p.game_id, league: c.p.league, why: c.why || [] }; }),
+      games: picks.map(function (c) { return c.p; }), upsets: [], races: race ? [race] : [], context: snap.cfb ? contextOf(snap, 'cfb') : {}, limitations: [],
+      conference_top: race ? (snap.cfb.rankings.conference_top[race.home_conference] || []) : [], disputed: disputed };
+    return { ok: true, o: fpOpp('storylines', research, snap) };
+  }
+  function storyOf(o, st, p, i) {
+    var sep = p.neutral_site ? ' vs. ' : ' at ', g = rankedName(p, 'away') + sep + rankedName(p, 'home');
+    var lnk = p.link ? '\n\nFull research: [' + p.away + ' vs. ' + p.home + ' on EdgeDesk](' + p.link + ')' : '';
+    var lg = p.league === 'nfl' ? 'NFL' : 'college football';
+    if (st.kind === 'headliner') {
+      var both = p.league === 'cfb' && isNum(p.home_rank) && isNum(p.away_rank) && p.home_rank <= 25 && p.away_rank <= 25;
+      return { heading: 'The ' + lg + ' headliner: ' + p.away + sep + p.home,
+        body: para(g + (p.kickoff_text ? ' (' + p.kickoff_text + ')' : '') + ' is the ' + lg + ' game EdgeDesk’s research ranks highest this week' + (both ? ': two top-25 teams in EdgeDesk’s power ratings' + (p.conference_game ? ', in a game that counts in the ' + p.home_conference + ' standings' : '') : '') + '.',
+          fanLine(p, i), driverLine(p, i), marketLine(p, i)) + lnk };
+    }
+    if (st.kind === 'race') {
+      return { heading: 'The ' + p.home_conference + ' race: ' + p.away + sep + p.home,
+        body: para('Both teams are among the ' + p.home_conference + '’s three highest-rated teams in EdgeDesk’s ratings, so the result carries straight into the title race.', fanLine(p, i), matchupLine(p, i), 'EdgeDesk doesn’t carry a standings feed, so this reads the race through ratings, not the table.') + lnk };
+    }
+    if (st.kind === 'upset') {
+      return { heading: 'Upset watch: ' + p.model.underdog + ' against ' + p.model.favorite,
+        body: para('EdgeDesk gives ' + p.model.underdog + ' a ' + p.model.dog_win_pct + '% chance against ' + p.model.favorite + (p.kickoff_text ? ' (' + p.kickoff_text + ')' : '') + '.',
+          'That is a real chance, not a prediction: the favorite still wins this game more often than not.', driverLine(p, i)) + lnk };
+    }
+    if (st.kind === 'gap') {
+      return { heading: 'Model vs. market: ' + p.away + sep + p.home, body: discrepancyText(p, i) + ' A gap between a model and a market is a research question, not a reason to bet.' + lnk };
+    }
+    if (st.kind === 'weather') {
+      var w = p.weather;
+      return { heading: 'Weather watch: ' + p.away + sep + p.home,
+        body: para('The kickoff forecast (' + (w.source || 'open-meteo forecast') + (w.as_of ? ', as of ' + whenText(ts(w.as_of)) : '') + ') calls for ' + sentenceList(w.hazards) + '.', fanLine(p, i), 'EdgeDesk’s projected margin does not move for weather, so this is one to check again before kickoff.') + lnk };
+    }
+    if (st.kind === 'qb') {
+      return { heading: 'Quarterback watch: ' + p.away + sep + p.home, body: para((qbLine(p) || '').replace(/^Quarterback: /, ''), fanLine(p, i)) + lnk };
+    }
+    return null;
+  }
+  function fpStorylinesSections(o) {
+    var R = o.research, s = {};
+    var stories = R.stories.map(function (st, i) { var p = R.games.filter(function (g) { return g.game_id === st.game_id; })[0]; return p ? storyOf(o, st, p, i) : null; }).filter(Boolean);
+    var h0 = R.games[0];
+    s.intro = para('Here are the week ' + R.week + ' storylines EdgeDesk’s research says are worth following, from ' + h0.away + (h0.neutral_site ? ' vs. ' : ' at ') + h0.home + ' to the games where the numbers are closer than the billing.',
+      'Each one is built on a number EdgeDesk publishes, a ranking, a projection or a forecast, and each links to the full matchup research.');
+    s.how_to_read = howToRead(o, { noDataQuality: true });
+    stories.forEach(function (x, i) { s['story_' + (i + 1)] = x; });
+    s.limits = [limitsSection(o), disputedNote(R.disputed)].filter(Boolean).join('\n');
+    s.conclusion = para('Projections move as news and prices arrive during the week, and EdgeDesk updates its numbers as they do. The Friday research preview will have the latest.',
+      'None of this is a pick. It is a guide to where the weekend’s real uncertainty sits.');
+    return s;
+  }
+
+  /* ── Friday: the weekend in five numbers ── */
+  function fpPreview(snap, now, opts) {
+    opts = opts || {};
+    var lead = (opts.kickoff_lead_minutes != null ? opts.kickoff_lead_minutes : FP_DEFAULTS.kickoff_lead_minutes) * 60000;
+    var ac = upcomingOf(snap.cfb, now, lead), an = upcomingOf(snap.nfl, now, lead);
+    var fc = rankGames('cfb', ac.filter(undisputed)).slice(0, 10).map(function (x) { return x.p; });
+    var fn = rankGames('nfl', an.filter(undisputed)).slice(0, 6).map(function (x) { return x.p; });
+    var disputed = ac.length + an.length - ac.filter(undisputed).length - an.filter(undisputed).length;
+    var nums = [], used = {};
+    var take = function (key, p, extra) { if (p && !used[p.game_id + key]) { used[p.game_id + key] = 1; nums.push(Object.assign({ key: key, game_id: p.game_id, league: p.league }, extra || {})); } };
+    var withFav = fc.filter(function (p) { return p.model.favorite && isNum(p.model.fav_win_pct); });
+    var closest = withFav.slice().sort(function (a, b) { return a.model.margin - b.model.margin; })[0];
+    take('closest', closest);
+    var biggest = withFav.concat(fn.filter(function (p) { return p.model.favorite && isNum(p.model.fav_win_pct); })).sort(function (a, b) { return b.model.fav_win_pct - a.model.fav_win_pct; })[0];
+    if (biggest && (!closest || biggest.game_id !== closest.game_id)) take('favorite', biggest);
+    var dog = upsetsOf('cfb', fc).concat(upsetsOf('nfl', fn)).sort(function (a, b) { return b.model.dog_win_pct - a.model.dog_win_pct; })[0];
+    take('underdog', dog);
+    var miss = fc.filter(function (p) { return isNum(p.model.typical_miss); })[0];
+    if (miss) take('miss', miss);
+    var gap = fc.concat(fn).filter(function (p) { return p.discrepancy; }).sort(function (a, b) { return b.discrepancy.points - a.discrepancy.points; })[0];
+    if (gap) take('gap', gap);
+    var nflTop = fn.filter(function (p) { return p.model.favorite; })[0];
+    if (nums.length < 5 && nflTop) take('nfl', nflTop);
+    nums = nums.slice(0, 5);
+    if (nums.length < 4) return { ok: false, reason: 'only ' + nums.length + ' numbers with research behind them: not enough for the Friday preview' };
+    var games = uniq(nums.map(function (n) { return n.game_id; })).map(function (id) { return fc.concat(fn).filter(function (p) { return p.game_id === id; })[0]; });
+    var L = snap.cfb || snap.nfl;
+    var research = { kind: 'fp_research_preview', league: 'multi', leagues_used: uniq(games.map(function (p) { return p.league; })), season: L.season, week: snap.cfb ? snap.cfb.week : snap.nfl.week,
+      weeks: { cfb: snap.cfb && snap.cfb.week, nfl: snap.nfl && snap.nfl.week }, disputed: disputed,
+      as_of: [snap.cfb && snap.cfb.generated_at, snap.nfl && snap.nfl.generated_at].filter(Boolean).sort().pop() || null,
+      numbers: nums, games: games, watch: fc.concat(fn).filter(function (p) { return (p.weather && p.weather.state === 'HAZARD') || (p.qb && ((p.qb.home && p.qb.home.material) || (p.qb.away && p.qb.away.material))); }).slice(0, 3).map(function (p) { return p.game_id; }),
+      upsets: [], races: [], context: snap.cfb ? contextOf(snap, 'cfb') : {}, limitations: [] };
+    research.games = uniq(games.concat(fc.concat(fn).filter(function (p) { return research.watch.indexOf(p.game_id) >= 0; })));
+    return { ok: true, o: fpOpp('research_preview', research, snap) };
+  }
+  function fpPreviewSections(o) {
+    var R = o.research, s = {};
+    var G = function (id) { return R.games.filter(function (p) { return p.game_id === id; })[0]; };
+    var sep = function (p) { return p.neutral_site ? ' vs. ' : ' at '; };
+    s.intro = para('Five numbers frame the week ' + R.week + ' projections from EdgeDesk: the closest call, the biggest favorite, the best underdog chance and the size of a normal miss, each from the research EdgeDesk publishes for every game.',
+      'Each number comes with the game it belongs to and what it does and doesn’t mean.');
+    s.how_to_read = howToRead(o, { noDataQuality: true });
+    R.numbers.forEach(function (n, i) {
+      var p = G(n.game_id), m = p.model, g = p.away + sep(p) + p.home, k = 'num_' + (i + 1);
+      if (n.key === 'closest') s[k] = { heading: oneDp(m.margin) + ' points: the closest call', body: para('**' + oneDp(m.margin) + ' points** is EdgeDesk’s projected margin for ' + g + (p.kickoff_text ? ' (' + p.kickoff_text + ')' : '') + ', the closest call among the college games EdgeDesk features this week.', 'EdgeDesk gives ' + m.favorite + ' a ' + m.fav_win_pct + '% chance to win, close enough that one bounce decides it.', matchupLine(p, i)) };
+      if (n.key === 'favorite') s[k] = { heading: m.fav_win_pct + '%: the biggest favorite', body: para('**' + m.fav_win_pct + '%** is the chance EdgeDesk gives ' + m.favorite + ' against ' + m.underdog + ', the biggest favorite among the games EdgeDesk features this week.', 'It still leaves ' + m.underdog + ' winning ' + m.dog_win_pct + '% of the time: a heavy favorite is not a certainty.', driverLine(p, i)) };
+      if (n.key === 'underdog') s[k] = { heading: m.dog_win_pct + '%: the best underdog chance', body: para('**' + m.dog_win_pct + '%** is the best chance EdgeDesk gives an underdog in a headline game: ' + m.underdog + ' against ' + m.favorite + (p.kickoff_text ? ' (' + p.kickoff_text + ')' : '') + '.', 'That is a real chance, not a prediction: the favorite still wins more often than not.', driverLine(p, i + 1)) };
+      if (n.key === 'miss') s[k] = { heading: 'About ' + Math.round(m.typical_miss) + ' points: a normal miss', body: para('**About ' + Math.round(m.typical_miss) + ' points** is EdgeDesk’s typical miss on a game like ' + g + '.', 'Projected margins are estimates with a wide band around them, which is why a win chance says more than a margin, and why a projection is not a bet.') };
+      if (n.key === 'gap') s[k] = { heading: oneDp(p.discrepancy.points) + ' points: the biggest explained gap with the market', body: discrepancyText(p, i) + ' A gap between a model and a market is a research question, not a reason to bet.' };
+      if (n.key === 'nfl') s[k] = { heading: oneDp(m.margin) + ' points: the NFL headliner', body: para('**' + oneDp(m.margin) + ' points** is EdgeDesk’s margin for ' + m.favorite + ' in ' + g + (p.kickoff_text ? ' (' + p.kickoff_text + ')' : '') + ', the NFL game EdgeDesk’s research ranks highest this week.', 'EdgeDesk gives ' + m.favorite + ' a ' + m.fav_win_pct + '% chance to win.') };
+      if (p.link) s[k].body += '\n\nFull research: [' + p.away + ' vs. ' + p.home + ' on EdgeDesk](' + p.link + ')';
+    });
+    var W = (R.watch || []).map(G).filter(Boolean);
+    if (W.length) s.watch = W.map(function (p) {
+      var bits = [];
+      if (p.weather && p.weather.state === 'HAZARD') bits.push('the forecast calls for ' + sentenceList(p.weather.hazards));
+      var q = qbLine(p); if (q) bits.push(q.replace(/^Quarterback: /, '').replace(/\.$/, ''));
+      return '- **' + p.away + sep(p) + p.home + ':** ' + bits.join('; ') + '.';
+    }).join('\n');
+    s.limits = [limitsSection(o), disputedNote(R.disputed)].filter(Boolean).join('\n');
+    s.conclusion = para('Five numbers, five games, and none of them a pick. EdgeDesk updates every projection as news and prices arrive, and Monday’s weekend model review will grade them.');
+    return s;
+  }
+
+  var FP_BUILD = { weekend_review: fpReview, storylines: fpStorylines, research_preview: fpPreview };
+  var FP_SECTIONS = { weekend_review: fpReviewSections, storylines: fpStorylinesSections, research_preview: fpPreviewSections };
+  function fpSeo(o, now) {
+    var R = o.research, w = R.week;
+    if (o.fp_kind === 'weekend_review') {
+      var t = fpReviewHeadline(o);
+      return { title: t, keyword: 'weekend model review', slug: 'weekend-model-review-' + slugify(ctDayText(now)) + '-' + R.season,
+        meta: 'EdgeDesk’s weekend model review: every pregame number graded on the final and against the closing line, the closest calls and the biggest misses.' };
+    }
+    if (o.fp_kind === 'storylines') {
+      var h = R.games[0], hg = h.away + (h.neutral_site ? ' vs. ' : ' at ') + h.home, n = R.stories.length;
+      var cands = [hg + ' and ' + cap(numWord(n - 1)) + ' More Storylines for Week ' + w, 'Week ' + w + ' Storylines: ' + hg + ' and More', 'Week ' + w + ' Storylines EdgeDesk Is Watching'];
+      return { title: cands.filter(function (x, i) { return x.length <= 70 || i === cands.length - 1; })[0], keyword: 'week ' + w + ' storylines', slug: 'week-' + w + '-storylines-' + R.season,
+        meta: 'The week ' + w + ' storylines EdgeDesk’s research says are worth following: the headliners, the upset chances and the numbers behind them. Research, not picks.' };
+    }
+    return { title: 'The Weekend in ' + cap(numWord(R.numbers.length)) + ' Numbers: Week ' + w + ' Projections From EdgeDesk', keyword: 'week ' + w + ' projections', slug: 'week-' + w + '-projections-in-' + numWord(R.numbers.length) + '-numbers-' + R.season,
+      meta: 'Week ' + w + ' projections from EdgeDesk in ' + numWord(R.numbers.length) + ' numbers: the closest call, the biggest favorite, the best underdog chance and a normal miss.' };
+  }
+  /* the article for a slot, or why there is none */
+  function fpBuild(kind, snap, opts) {
+    opts = opts || {};
+    var now = isNum(opts.now) ? opts.now : Date.now();
+    if (!FP_BUILD[kind]) return { ok: false, reason: 'unknown slot ' + kind };
+    var b = FP_BUILD[kind](snap, now, opts);
+    if (!b.ok) return b;
+    var o = b.o, raw = FP_SECTIONS[kind](o), F = FORMATS[FP_KINDS[kind].format];
+    var sections = [];
+    F.sections.forEach(function (k) {
+      var x = raw[k]; if (!x) return;
+      if (typeof x === 'string') sections.push({ key: k, heading: SECTION_HEADINGS[k] || null, body: x });
+      else sections.push({ key: k, heading: x.heading || null, body: x.body });
+    });
+    var seo = fpSeo(o, now);
+    o.seo = { primary_keyword: seo.keyword, secondary_keywords: [], headline: seo.title, meta_description: seo.meta, slug: seo.slug };
+    var a = { format: FP_KINDS[kind].format, base_format: FP_KINDS[kind].format, angle: kind, title: seo.title, slug: seo.slug,
+      meta_description: seo.meta, primary_keyword: seo.keyword, secondary_keywords: [], standfirst: fpStandfirst(o), sections: sections,
+      generator: 'template:' + VERSION + ':fp', generated_at: iso(now), research_as_of: o.research.as_of || null, research_hash: researchHash(o) };
+    a.word_count = wordCount(a.standfirst + ' ' + sections.map(function (x) { return x.body; }).join(' '));
+    return { ok: true, o: o, article: a };
+  }
+  function fpStandfirst(o) {
+    if (o.fp_kind === 'weekend_review') return 'Every number EdgeDesk published before kickoff, graded on the final and against the closing line: what held up, what missed, and what one weekend can’t say.';
+    if (o.fp_kind === 'storylines') return 'The week ' + o.research.week + ' games EdgeDesk’s research says are worth following, and the numbers behind each one. Research, not picks.';
+    return 'The closest call, the biggest favorite, the best underdog chance and the size of a normal miss: the weekend in numbers, each one explained.';
+  }
+
+  /* THE TWELVE GATES. ctx: { now, slot, settings, current, teamLists,
+     publishedThisWeek: [{id, kind}], site: [{id, slug, title, text}] (every
+     published EdgeDesk page's text), taken: {slug: id}, publisherTexts:
+     [{label, text}] (the week's publisher drafts), ai: {used, ledgered} }.
+     All twelve must pass for an article to publish without a person. */
+  function fpGates(a, o, ctx) {
+    ctx = ctx || {};
+    var now = isNum(ctx.now) ? ctx.now : Date.now();
+    var S = Object.assign({}, FP_DEFAULTS, ctx.settings || {});
+    var g = [];
+    function add(key, label, ok, detail) { g.push({ key: key, label: label, ok: !!ok, detail: detail || null }); }
+    var v = validate(a, o, { now: now, teamLists: ctx.teamLists, siblings: [] });
+    var vc = {}; v.checks.forEach(function (c) { vc[c.id] = c; });
+    var ce = gate(a, o, { now: now, current: ctx.current, teamLists: ctx.teamLists, landing: FP_CTA.href, campaign: null });
+    var slot = ctx.slot;
+    /* 1 the slot */
+    add('slot', 'Today’s Central Time slot is this article’s', slot && slot.kind === o.fp_kind && now <= ts(slot.window_end),
+      slot ? slot.label + ' · publishes ' + whenText(ts(slot.publish_at)) + ' · window closes ' + whenText(ts(slot.window_end)) : 'no slot today');
+    /* 2 the cadence */
+    var wk = (ctx.publishedThisWeek || []).filter(function (x) { return !slot || x.id !== slot.id; });
+    var dupSlot = (ctx.publishedThisWeek || []).some(function (x) { return slot && x.id === slot.id; });
+    add('cadence', 'At most ' + S.max_per_week + ' a week, one per slot', !dupSlot && wk.length < S.max_per_week, (dupSlot ? 'this slot is already published; ' : '') + wk.length + ' published this week');
+    /* 3 freshness */
+    var age = o.research.as_of ? (now - ts(o.research.as_of)) / 3600000 : null;
+    add('freshness', 'The research is fresh', age != null && age <= S.research_max_age_hours, age == null ? 'no research time on file' : 'research read ' + Math.round(age) + ' hours ago (limit ' + S.research_max_age_hours + ')');
+    /* 4 the schedule */
+    var started = (o.research.games || []).filter(function (p) { var k = ts(p.kickoff); return k != null && k <= now + S.kickoff_lead_minutes * 60000; });
+    var unfinished = (o.research.results || []).filter(function (x) { return !x.final || !isNum(x.final.home); });
+    add('schedule', o.fp_kind === 'weekend_review' ? 'Every game reviewed is final and graded' : 'No featured game has started (or starts within the hour)', !started.length && !unfinished.length,
+      started.length ? started.map(function (p) { return p.away + ' at ' + p.home; }).join(', ') : unfinished.length ? unfinished.length + ' unfinished' : null);
+    /* 5 the editorial gate: nothing blocked, nothing that needs a person's judgment */
+    var judge = [];
+    ce.items.forEach(function (it) { it.findings.forEach(function (f) {
+      if (f.status === 'BLOCKED' || (f.status === 'WARNING' && /^discrepancy:/.test(f.ack_key || '') && !f.acknowledged)) judge.push(it.label + ': ' + f.reason);
+    }); });
+    add('editorial_gate', 'The fourteen-check editorial gate: nothing blocked, no unexplained market gap', !judge.length, judge.length ? judge.slice(0, 4).join(' · ') : 'verdict ' + ce.verdict
+      + (ce.counts && ce.counts.WARNING ? ' (' + ce.counts.WARNING + ' warning(s), none needing a person)' : ''));
+    /* 6 the hard checks */
+    add('hard_checks', 'Every hard validation check passes', v.ok, v.ok ? null : v.failed.join(', '));
+    /* 7 the numbers */
+    var numIds = ['numbers_in_evidence', 'numbers_reconcile', 'results_reconcile'];
+    var numBad = numIds.filter(function (k) { return vc[k] && vc[k].status === 'fail'; });
+    add('numbers', 'Every number traces to the research and reconciles', !numBad.length, numBad.length ? numBad.map(function (k) { return vc[k].detail; }).join(' · ') : null);
+    /* 8 responsible gambling */
+    var resp = ['no_recommendation', 'projection_not_value', 'no_confidence_misuse'].filter(function (k) { return vc[k] && vc[k].status === 'fail'; });
+    add('responsible', 'No pick or staking language; a projection is explained as not a bet; the 21+ disclaimer is on the page', !resp.length, resp.length ? resp.join(', ') : null);
+    /* 9 duplicates on EdgeDesk */
+    var owner = (ctx.taken || {})[a.slug];
+    var simSite = (ctx.site || []).filter(function (x) { return !slot || x.id !== slot.id; }).map(function (x) { return { id: x.id, title: x.title, sim: similarity(textOf(a), x.text) }; }).sort(function (x, y) { return y.sim - x.sim; })[0];
+    add('duplicate_site', 'A URL of its own, and not a near-copy of anything EdgeDesk has published', (!owner || (slot && owner === slot.id)) && (!simSite || simSite.sim < S.site_similarity_max),
+      (owner && (!slot || owner !== slot.id) ? '/articles/' + a.slug + '/ is taken by ' + owner + '; ' : '') + (simSite ? 'closest: ' + Math.round(simSite.sim * 100) + '% overlap with “' + simSite.title + '”' : 'nothing published to compare'));
+    /* 10 duplicates with a publisher's article (a distinct angle, never a copy) */
+    var simPub = (ctx.publisherTexts || []).map(function (x) { return { label: x.label, sim: similarity(textOf(a), x.text) }; }).sort(function (x, y) { return y.sim - x.sim; })[0];
+    add('duplicate_publisher', 'A distinct angle from every publisher article of the same week', !simPub || simPub.sim < S.publisher_similarity_max,
+      simPub ? 'closest: ' + Math.round(simPub.sim * 100) + '% overlap with ' + simPub.label + ' (limit ' + Math.round(S.publisher_similarity_max * 100) + '%)' : 'no publisher article this week');
+    /* 11 SEO */
+    var seoBad = [];
+    if (!a.title || a.title.length < 20 || a.title.length > 75) seoBad.push('headline ' + (a.title || '').length + ' characters');
+    if (!a.meta_description || a.meta_description.length < 90 || a.meta_description.length > 160) seoBad.push('meta description ' + (a.meta_description || '').length + ' characters');
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(a.slug || '')) seoBad.push('slug');
+    if (vc.seo_keyword && vc.seo_keyword.status !== 'pass') seoBad.push('keyword: ' + vc.seo_keyword.detail);
+    add('seo', 'Headline, description, URL and keyword are complete', !seoBad.length, seoBad.join('; ') || null);
+    /* 12 cost */
+    var ai = ctx.ai || null;
+    add('cost', 'Any AI used went through the shared budget ledger', !ai || !ai.used || !!ai.ledgered, ai && ai.used ? (ai.ledgered ? 'AI version kept, ledger call ' + (ai.call || '') : 'AI used without the ledger') : 'no AI used (EdgeDesk’s own writer)');
+    return { ok: g.every(function (x) { return x.ok; }), gates: g, failed: g.filter(function (x) { return !x.ok; }).map(function (x) { return x.key; }), ce_gate: ce, validation: v };
+  }
+  /* the store record (tools/editorial/feature_model.js renders it) */
+  function fpRecord(a, o, ctx) {
+    ctx = ctx || {};
+    var now = isNum(ctx.now) ? ctx.now : Date.now(), slot = ctx.slot || {};
+    var body = a.sections.map(function (x) { return x.body; }).join('\n\n');
+    return {
+      id: slot.id, article_type: 'feature', feature_kind: o.fp_kind, category: FP_KINDS[o.fp_kind].label, category_slug: FP_KINDS[o.fp_kind].category,
+      slot_date: slot.date || ctDate(now), season: o.research.season, week: o.research.week, leagues: o.research.leagues_used,
+      sport: 'FEATURE', sport_label: 'EdgeDesk features', sport_slug: 'features',
+      slug: a.slug, aliases: [], title: a.title, seo_title: a.title + ' | EdgeDesk', seo_description: a.meta_description, canonical_url: SITE + '/articles/' + a.slug + '/',
+      primary_keyword: a.primary_keyword, standfirst: a.standfirst, excerpt: a.standfirst, sections: a.sections, word_count: a.word_count, author: 'EdgeDesk Research',
+      research_as_of: a.research_as_of, research_hash: a.research_hash, content_hash: hash(a.title + '\n' + a.standfirst + '\n' + body), generator: a.generator,
+      game_ids: (o.research.games || []).map(function (p) { return p.game_id; }).concat((o.research.results || []).map(function (x) { return x.game_id; })),
+      research_links: uniq((o.research.games || []).map(function (p) { return p.link; }).filter(Boolean)),
+      sources: (o.sources || []).map(function (x) { return { label: x.label, url: x.url, as_of: x.as_of }; }),
+      disclaimer: DISCLAIMER, cta: FP_CTA,
+      syndication: { canonical: 'self', note: 'Original EdgeDesk article. No other site is named canonical, and EdgeDesk claims no other site’s URL.' },
+      status: ctx.status || 'draft', generated_at: iso(now), published_at: ctx.status === 'published' ? iso(now) : null, updated_at: iso(now)
+    };
   }
 
   /* ======================================================================
@@ -3734,6 +4219,8 @@
     campaignCode: campaignCode, tagLink: tagLink, attribution: attributionFor,
     toMarkdown: toMarkdown, toHtml: toHtml, mdToHtml: mdToHtml, seoSheet: seoSheet, toDocx: toDocx, DOCX_TYPE: DOCX_TYPE,
     weeklyReview: weeklyReview, weeklyReviewText: weeklyReviewText, SAMPLE: SAMPLE,
+    firstParty: { KINDS: FP_KINDS, SLOTS: FP_SLOTS, DEFAULTS: FP_DEFAULTS, CTA: FP_CTA, TZ: FP_TZ, slot: fpSlot, build: fpBuild, gates: fpGates, record: fpRecord,
+      ctDate: ctDate, ctWeekOf: ctWeekOf, ctParts: ctParts, ctInstant: ctInstant },
     gate: gate, repair: repair, sectionsToFix: sectionsToFix, GATE_CHECKS: GATE_CHECKS, DISCREPANCY: DISCREPANCY, WEATHER: WEATHER, NUM_TOL: NUM_TOL,
     reconcileScore: reconcileScore, qbState: qbState,
     ai: { requestKey: requestKey, inputEstimate: inputEstimate, precheck: aiPrecheck, MAX_TOKENS: AI_MAX_TOKENS, SECTION_SCHEMA: AI_SECTION_SCHEMA, SCHEMA: AI_SCHEMA, SYSTEM: AI_SYSTEM, buildRequest: buildRequest, parseReply: parseReply, objections: objections },

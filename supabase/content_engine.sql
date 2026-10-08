@@ -18,6 +18,8 @@
 --   performance     publisher-reported or owner-observed numbers, append-only,
 --                   kept apart from first-party measurement
 --   events          the activity and failure log, append-only
+--   first_party     EdgeDesk's own features: every dry run, held, scheduled,
+--                   approved, published, rejected or skipped slot (owner-only)
 --   runs, usage     scheduled-job leases (idempotency) and the daily AI/fetch
 --                   budget
 --
@@ -490,7 +492,9 @@ begin
     -- THE EDITORIAL GATE (section 6c): approval and Ready to Send need a gate
     -- report for this exact version, from the last 24 hours, that is not BLOCKED
     if (new.status = 'approved' and old.status = 'in_review') or new.status = 'ready_to_send' then
-      if new.gate_verdict is null or new.gate_hash is distinct from new.content_hash or new.gate_at < now() - interval '24 hours' then
+      /* gate_at is NULL after an owner review is recorded or withdrawn: the
+         gate must run again, and a NULL comparison must never read as fresh */
+      if new.gate_verdict is null or new.gate_hash is distinct from new.content_hash or new.gate_at is null or new.gate_at < now() - interval '24 hours' then
         raise exception 'run the editorial gate on this exact version first' using errcode = 'check_violation';
       end if;
       if new.gate_verdict = 'BLOCKED' then
@@ -1445,7 +1449,7 @@ returns text language sql stable
 set search_path = pg_catalog, public, pg_temp as $$
   select case
     when a.gate_verdict is null or a.gate_hash is distinct from a.content_hash then 'gate_not_run'
-    when a.gate_at < now() - interval '24 hours' then 'gate_stale'
+    when a.gate_at is null or a.gate_at < now() - interval '24 hours' then 'gate_stale'
     when a.gate_verdict = 'BLOCKED' then 'gate_blocked'
     else null end;
 $$;
@@ -2118,6 +2122,196 @@ begin
 end $$;
 
 -- =============================================================================
+-- 6f. FIRST-PARTY PUBLISHING — EdgeDesk's own Monday/Wednesday/Friday
+-- features on edgedesksports.com (tools/editorial/features.js).
+--
+-- The public copy of a published feature is a committed file
+-- (features/records/, rendered by the article build). EVERYTHING ELSE lives
+-- here, owner-only: a dry run, an article HELD FOR REVIEW, one scheduled for
+-- later today, the owner's approval or rejection. Nothing unpublished is ever
+-- written to the public repository or to a public log.
+--
+-- The rules the job cannot argue with:
+--   * fp_mode: 'off' (nothing runs), 'dry_run' (the default: build, gate and
+--     record, publish nothing), 'auto' (publish what clears all twelve gates).
+--   * the job (schedule) may mark a feature published only when every one of
+--     the twelve gates passed AND the mode is 'auto', or when the owner
+--     approved THIS text (content hash) — never on its own judgment;
+--   * at most fp_max_per_week (≤ 3) published per Central Time week;
+--   * a published feature is final here (its page is the record); a rejected
+--     one stays rejected; only the owner approves or rejects.
+-- =============================================================================
+alter table content_engine.settings add column if not exists fp_mode text not null default 'dry_run';
+alter table content_engine.settings add column if not exists fp_publish_hour_ct int not null default 7;
+alter table content_engine.settings add column if not exists fp_max_per_week int not null default 3;
+do $fp$ begin
+  if not exists (select 1 from pg_constraint where conname = 'settings_fp_shape') then
+    alter table content_engine.settings add constraint settings_fp_shape check (
+      fp_mode in ('off', 'dry_run', 'auto') and fp_publish_hour_ct between 5 and 20 and fp_max_per_week between 0 and 3);
+  end if;
+end $fp$;
+
+create table if not exists content_engine.first_party (
+  id            text primary key check (id ~ '^feature-[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z-]{5,30}$'),
+  kind          text not null check (kind in ('weekend_review', 'storylines', 'research_preview')),
+  slot_date     date not null,
+  week_of       date not null,
+  status        text not null check (status in ('dry_run', 'held', 'scheduled', 'approved', 'published', 'rejected', 'skipped')),
+  mode          text not null check (mode in ('dry_run', 'auto', 'owner')),
+  title         text check (title is null or length(title) between 10 and 200),
+  slug          text check (slug is null or slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
+  url           text check (url is null or url ~ '^https://edgedesksports\.com/articles/[a-z0-9-]+/$'),
+  article       jsonb,
+  content_hash  text,
+  gates         jsonb,
+  failed        text[] not null default '{}',
+  ce_verdict    text,
+  reason        text check (reason is null or length(reason) <= 600),
+  overlap       jsonb,
+  owner_note    text check (owner_note is null or length(owner_note) <= 500),
+  decided_by    uuid,
+  decided_at    timestamptz,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now(),
+  published_at  timestamptz
+);
+create index if not exists first_party_week on content_engine.first_party (week_of, status);
+alter table content_engine.first_party enable row level security;
+
+/* twelve gates, every one passed */
+create or replace function content_engine.fp_all_gates(p jsonb)
+returns boolean language sql immutable
+set search_path = pg_catalog, public, pg_temp as $$
+  select jsonb_typeof(p) = 'array' and jsonb_array_length(p) = 12
+     and not exists (select 1 from jsonb_array_elements(p) g where coalesce((g ->> 'ok')::boolean, false) is not true);
+$$;
+
+-- the job's view: the settings, this week's rows, what the owner approved,
+-- and the week's publisher articles (title and text, for the duplicate gate)
+create or replace function public.content_engine_fp_state(p_week date)
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare who text := content_engine.require_actor(); s content_engine.settings;
+begin
+  select * into s from content_engine.settings where id = 1;
+  return jsonb_build_object(
+    'settings', jsonb_build_object('mode', s.fp_mode, 'publish_hour_ct', s.fp_publish_hour_ct, 'max_per_week', s.fp_max_per_week),
+    'week', coalesce((select jsonb_agg(jsonb_build_object('id', f.id, 'kind', f.kind, 'status', f.status, 'content_hash', f.content_hash, 'published_at', f.published_at) order by f.id)
+        from content_engine.first_party f where f.week_of = p_week), '[]'::jsonb),
+    'approved', coalesce((select jsonb_agg(jsonb_build_object('id', f.id, 'kind', f.kind, 'article', f.article, 'content_hash', f.content_hash, 'decided_at', f.decided_at) order by f.id)
+        from content_engine.first_party f where f.status = 'approved'), '[]'::jsonb),
+    'published', coalesce((select jsonb_agg(jsonb_build_object('id', f.id, 'slug', f.slug, 'article', f.article, 'published_at', f.published_at) order by f.id)
+        from content_engine.first_party f where f.status = 'published' and f.published_at > now() - interval '21 days'), '[]'::jsonb),
+    'publisher_texts', coalesce((select jsonb_agg(jsonb_build_object('label', coalesce(p.name, 'a publisher') || ': ' || a.title,
+          'text', (select string_agg(x ->> 'body', E'\n\n') from jsonb_array_elements(a.sections) x)))
+        from content_engine.articles a join content_engine.publishers p on p.id = a.publisher_id
+       where a.status <> 'archived' and a.created_at > now() - interval '10 days'), '[]'::jsonb));
+end $$;
+
+-- record a run's outcome for one slot (the job, or the owner's preview)
+create or replace function public.content_engine_fp_record(p jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare who text := content_engine.require_actor(); s content_engine.settings; cur content_engine.first_party;
+  st text := p ->> 'status'; wk date; n int;
+begin
+  if p is null or jsonb_typeof(p) <> 'object' or coalesce(p ->> 'id', '') = '' then return jsonb_build_object('ok', false, 'reason', 'bad_input'); end if;
+  select * into s from content_engine.settings where id = 1;
+  select * into cur from content_engine.first_party where id = p ->> 'id' for update;
+  if cur.id is not null and cur.status = 'published' then return jsonb_build_object('ok', false, 'reason', 'already_published'); end if;
+  if cur.id is not null and cur.status = 'rejected' and who = 'schedule' then return jsonb_build_object('ok', false, 'reason', 'rejected_by_owner'); end if;
+  if st in ('approved', 'rejected') then return jsonb_build_object('ok', false, 'reason', 'owner_decides', 'detail', 'approve or reject with content_engine_fp_decide'); end if;
+  if st not in ('dry_run', 'held', 'scheduled', 'published', 'skipped') then return jsonb_build_object('ok', false, 'reason', 'bad_status'); end if;
+  /* an approved article keeps its approval only while its text is unchanged */
+  if cur.id is not null and cur.status = 'approved' and st not in ('published', 'skipped') and cur.content_hash is not distinct from p ->> 'content_hash' then
+    return jsonb_build_object('ok', true, 'unchanged', true, 'status', 'approved');
+  end if;
+  wk := (p ->> 'week_of')::date;
+  if st = 'published' then
+    if s.fp_mode = 'off' then return jsonb_build_object('ok', false, 'reason', 'mode_off'); end if;
+    /* coalesce: with no row yet, cur.status is NULL, and NOT (false OR NULL)
+       is NULL, which an IF reads as "do not refuse" */
+    if not coalesce((s.fp_mode = 'auto' and content_engine.fp_all_gates(p -> 'gates'))
+            or (cur.status = 'approved' and cur.content_hash = p ->> 'content_hash'), false) then
+      return jsonb_build_object('ok', false, 'reason', 'not_cleared', 'detail', 'publishing needs all twelve gates in auto mode, or the owner''s approval of this exact text');
+    end if;
+    select count(*) into n from content_engine.first_party where week_of = wk and status = 'published';
+    if n >= s.fp_max_per_week then return jsonb_build_object('ok', false, 'reason', 'weekly_cap', 'published', n); end if;
+  end if;
+  insert into content_engine.first_party as f (id, kind, slot_date, week_of, status, mode, title, slug, url, article, content_hash, gates, failed, ce_verdict, reason, overlap, published_at)
+  values (p ->> 'id', p ->> 'kind', (p ->> 'slot_date')::date, wk, st,
+          case when cur.status = 'approved' then 'owner' else coalesce(p ->> 'mode', 'dry_run') end,
+          p ->> 'title', p ->> 'slug', p ->> 'url', p -> 'article', p ->> 'content_hash', p -> 'gates',
+          coalesce((select array_agg(x) from jsonb_array_elements_text(p -> 'failed') x), '{}'), p ->> 'ce_verdict', left(p ->> 'reason', 600), p -> 'overlap',
+          case when st = 'published' then now() end)
+  on conflict (id) do update set status = excluded.status, mode = excluded.mode, title = excluded.title, slug = excluded.slug, url = excluded.url,
+    article = excluded.article, content_hash = excluded.content_hash, gates = excluded.gates, failed = excluded.failed, ce_verdict = excluded.ce_verdict,
+    reason = excluded.reason, overlap = excluded.overlap, updated_at = now(), published_at = excluded.published_at,
+    decided_by = case when f.content_hash is distinct from excluded.content_hash then null else f.decided_by end,
+    decided_at = case when f.content_hash is distinct from excluded.content_hash then null else f.decided_at end;
+  perform content_engine.log(who, 'fp_' || st, null, null, null, jsonb_build_object('id', p ->> 'id', 'kind', p ->> 'kind', 'failed', p -> 'failed'));
+  return jsonb_build_object('ok', true, 'status', st);
+exception when check_violation or invalid_text_representation or invalid_datetime_format or not_null_violation then
+  return jsonb_build_object('ok', false, 'reason', 'invalid', 'detail', sqlerrm);
+end $$;
+
+-- the owner's list (everything, including what was never published)
+create or replace function public.content_engine_fp_list(p_limit int default 40)
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  perform content_engine.require_owner();
+  return coalesce((select jsonb_agg(to_jsonb(f) order by f.slot_date desc, f.id desc) from (
+    select * from content_engine.first_party order by slot_date desc, id desc limit greatest(1, least(coalesce(p_limit, 40), 200))) f), '[]'::jsonb);
+end $$;
+
+-- the owner's decision on a held feature: approve THIS text, reject, or reopen
+create or replace function public.content_engine_fp_decide(p_id text, p_decision text, p_note text, p_content_hash text)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare v uuid := content_engine.require_owner(); cur content_engine.first_party;
+begin
+  select * into cur from content_engine.first_party where id = p_id for update;
+  if cur.id is null then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+  if cur.status = 'published' then return jsonb_build_object('ok', false, 'reason', 'already_published'); end if;
+  if p_decision = 'approve' then
+    if cur.status not in ('held', 'dry_run', 'scheduled') then return jsonb_build_object('ok', false, 'reason', 'not_approvable', 'status', cur.status); end if;
+    if cur.content_hash is distinct from p_content_hash then return jsonb_build_object('ok', false, 'reason', 'changed_since_loaded'); end if;
+    if cur.article is null then return jsonb_build_object('ok', false, 'reason', 'no_article'); end if;
+    update content_engine.first_party set status = 'approved', decided_by = v, decided_at = now(), owner_note = nullif(btrim(p_note), ''), updated_at = now() where id = p_id;
+  elsif p_decision = 'reject' then
+    update content_engine.first_party set status = 'rejected', decided_by = v, decided_at = now(), owner_note = nullif(btrim(p_note), ''), updated_at = now() where id = p_id;
+  elsif p_decision = 'reopen' then
+    if cur.status not in ('rejected', 'approved') then return jsonb_build_object('ok', false, 'reason', 'not_reopenable'); end if;
+    update content_engine.first_party set status = 'held', decided_by = null, decided_at = null, owner_note = nullif(btrim(p_note), ''), updated_at = now() where id = p_id;
+  else
+    return jsonb_build_object('ok', false, 'reason', 'bad_decision');
+  end if;
+  perform content_engine.log('owner', 'fp_' || p_decision, null, null, null, jsonb_build_object('id', p_id));
+  return jsonb_build_object('ok', true);
+exception when check_violation then
+  return jsonb_build_object('ok', false, 'reason', 'invalid', 'detail', sqlerrm);
+end $$;
+
+-- the owner's switch: off, dry run, or auto (the default is dry run)
+create or replace function public.content_engine_fp_settings_save(p jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare v uuid := content_engine.require_owner();
+begin
+  if p is null or jsonb_typeof(p) <> 'object' then return jsonb_build_object('ok', false, 'reason', 'bad_input'); end if;
+  update content_engine.settings set
+    fp_mode = coalesce(p ->> 'fp_mode', fp_mode),
+    fp_publish_hour_ct = coalesce((p ->> 'fp_publish_hour_ct')::int, fp_publish_hour_ct),
+    fp_max_per_week = coalesce((p ->> 'fp_max_per_week')::int, fp_max_per_week)
+   where id = 1;
+  perform content_engine.log('owner', 'settings_changed', null, null, null, jsonb_build_object('first_party', p));
+  return jsonb_build_object('ok', true, 'settings', (select jsonb_build_object('mode', fp_mode, 'publish_hour_ct', fp_publish_hour_ct, 'max_per_week', fp_max_per_week) from content_engine.settings where id = 1));
+exception when check_violation or invalid_text_representation then
+  return jsonb_build_object('ok', false, 'reason', 'invalid', 'detail', 'mode off, dry_run or auto; publish hour 5–20 CT; at most 3 a week');
+end $$;
+
+-- =============================================================================
 -- 6. THE FIRST PUBLISHER — editorial preferences only. Contacts, partnership
 -- terms and the historical view benchmarks are business data: the owner enters
 -- them in the Content Engine page (Publishers), never in this public file.
@@ -2153,7 +2347,7 @@ begin
     execute format('revoke all on function %s from public', f);
     begin execute format('revoke all on function %s from anon, authenticated, service_role', f); exception when undefined_object then null; end;
     -- doors the weekly job uses: owner or service role (each checks which)
-    if f::text ~ '^content_engine_(opportunity_upsert|article_create|article_save|article_submit|article\(|article_gate|ai_reserve|ai_settle|spend|log|search_evidence|job_)' then
+    if f::text ~ '^content_engine_(opportunity_upsert|article_create|article_save|article_submit|article\(|article_gate|ai_reserve|ai_settle|spend|log|search_evidence|job_|fp_state|fp_record)' then
       begin execute format('grant execute on function %s to authenticated, service_role', f); exception when undefined_object then null; end;
     else
       begin execute format('grant execute on function %s to authenticated', f); exception when undefined_object then null; end;
@@ -2229,6 +2423,12 @@ select check_name, case when passed then 'ok' else 'CHECK THIS' end as result, d
          not has_function_privilege('service_role', 'public.content_engine_scorecard(integer)', 'execute')
          and not has_function_privilege('anon', 'public.content_engine_scorecard(integer)', 'execute'),
          'funnel, revenue and costs: counts and sums only, owners excluded, no identities returned'
+  union all
+  select 'first-party features: owner decides, the job never approves',
+         not has_function_privilege('service_role', 'public.content_engine_fp_decide(text, text, text, text)', 'execute')
+         and not has_function_privilege('service_role', 'public.content_engine_fp_settings_save(jsonb)', 'execute')
+         and not has_function_privilege('anon', 'public.content_engine_fp_state(date)', 'execute'),
+         (select 'mode ' || fp_mode || ' (dry_run publishes nothing); at most ' || fp_max_per_week || ' a week; ' || fp_publish_hour_ct || ':00 CT' from content_engine.settings where id = 1)
   union all
   select 'first-party measurement tables',
          to_regclass('public.acquisition_visitors') is not null and to_regclass('public.user_acquisition') is not null,
