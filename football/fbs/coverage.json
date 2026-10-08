@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-08T00:29:07.054Z",
+ "generated_at": "2026-10-08T01:30:24.641Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,14 +119,14 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 117,
+  "total": 118,
   "by_group": {
-   "other": 60,
+   "other": 61,
    "p4": 59,
    "independent": 3
   },
   "by_matchup": {
-   "conference": 108,
+   "conference": 109,
    "non_conference": 6,
    "fbs_fcs": 3
   },
@@ -137,7 +137,7 @@
    "acc": 16,
    "bigten": 15,
    "pac12": 5,
-   "mwc": 9,
+   "mwc": 10,
    "big12": 13,
    "sec": 15,
    "mac": 14,
@@ -196,22 +196,24 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 117
+  "PREDICTED": 118
  },
  "weather": {
-  "requested": 111,
+  "requested": 112,
   "answered": 111,
   "dome": 5,
   "no_venue": 0,
-  "failed": 0,
-  "carried": 0,
+  "failed": 1,
+  "carried": 1,
   "carry_dropped": 0,
-  "failures": {},
+  "failures": {
+   "HTTP 429": 1
+  },
   "host": "api.open-meteo.com",
-  "summary": "111 of 111 outdoor game(s) got a forecast; 5 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "111 of 112 outdoor game(s) got a forecast; 5 indoor venue(s) needed none; 0 had no coordinates to locate one; 1 request(s) failed; 1 carried the last observed forecast forward at its real age (HTTP 429 x1)"
  },
  "spread_recommendation": {
-  "NO_MARKET": 117
+  "NO_MARKET": 118
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
@@ -280,8 +282,8 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 58,
-    "total": 117,
+    "non_power_games": 59,
+    "total": 118,
     "example": [
      "Jacksonville State @ Kennesaw State",
      "New Mexico State @ Florida International",
@@ -300,7 +302,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 108,
+    "conference_games": 109,
     "wrong": 0
    }
   },
@@ -334,8 +336,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 117,
-    "audit_total": 117
+    "slate": 118,
+    "audit_total": 118
    }
   },
   {
