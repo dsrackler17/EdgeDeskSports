@@ -158,7 +158,11 @@ function build(opts) {
   const injTeams = INJ.data && INJ.data.teams ? INJ.data.teams : {};
   for (const [code0, rec] of Object.entries(injTeams)) {
     const code = String(code0).toUpperCase();
-    const players = (rec.players || []).map((p) => ({ name: p.name, position: p.position, status: p.status, injury: p.injury || null, practice: p.practice || null }));
+    // A row with neither a game status nor a practice designation (nflverse
+    // lists some players with an injury and nothing else) says nothing about
+    // availability, so it is not carried; nothing is invented for it either.
+    const players = (rec.players || []).filter((p) => p.name && (p.status || p.practice))
+      .map((p) => ({ name: p.name, position: p.position, status: p.status, injury: p.injury || null, practice: p.practice || null }));
     const count = (s) => players.filter((p) => String(p.status || '').toLowerCase() === s).length;
     nfl.teams[code] = nfl.teams[code] || { code, starter: null, injuries: null };
     nfl.teams[code].injuries = { week: rec.week == null ? null : Number(rec.week), game_type: rec.game_type || null, players, out: count('out'), doubtful: count('doubtful'), questionable: count('questionable'),
