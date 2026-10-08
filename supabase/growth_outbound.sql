@@ -487,6 +487,13 @@ do $c$ begin
     and (domain_auth is null or jsonb_typeof(domain_auth) = 'object')
     and (domain_auth is null) = (domain_auth_checked_at is null));
 end $c$;
+-- THE DAILY EMAIL (2026-10): a short note to the OWNER when the morning run
+-- leaves drafts for review. digest_owner is the owner who turned it on, and
+-- the note goes to that account's own confirmed address, looked up when it
+-- is written — never an address typed in, never a prospect's. An owner who
+-- loses outbound stops receiving it (set null with their grant).
+alter table growth_outbound.settings add column if not exists digest_enabled boolean not null default false;
+alter table growth_outbound.settings add column if not exists digest_owner uuid references growth_outbound.owners (user_id) on delete set null;
 
 -- What stops a real send right now, in words. Empty means nothing does.
 -- What stops a send, in words. Empty means nothing does. A TEST send (only
@@ -1700,6 +1707,60 @@ do $c$ begin
     conversions_error is null or length(conversions_error) <= 500);
 end $c$;
 
+-- THE DAILY EMAIL'S RECORD (2026-10): one row per morning (the owner-local
+-- day the window opened), saying what was decided and what became of it.
+-- Counts only: no address, no name, no draft. A note being written carries a
+-- single-use ticket, kept here only as its sha256, like a scheduled run's.
+--   skipped  nothing waited for review, so nothing was sent
+--   sending  the ticket is out: the digest function writes and sends it
+--   sent     Resend accepted it (its id)
+--   failed   it did not go (reason); retryable only when it surely did not
+create table if not exists growth_outbound.digests (
+  id                 bigint generated always as identity primary key,
+  day                date not null,
+  status             text not null,
+  reason             text,
+  waiting            int not null default 0,
+  recipient_owner    uuid,
+  attempts           int not null default 0,
+  retryable          boolean not null default false,
+  ticket_sha256      text,
+  ticket_expires_at  timestamptz,
+  composed_at        timestamptz,
+  sent_at            timestamptz,
+  resend_message_id  text,
+  created_at         timestamptz not null default now(),
+  updated_at         timestamptz not null default now()
+);
+do $c$ begin
+  alter table growth_outbound.digests drop constraint if exists digests_shape_ck;
+  alter table growth_outbound.digests add constraint digests_shape_ck check (
+        status in ('skipped', 'sending', 'sent', 'failed')
+    and (reason is null or length(reason) <= 300)
+    and waiting >= 0 and attempts between 0 and 3
+    and (ticket_sha256 is null or ticket_sha256 ~ '^[0-9a-f]{64}$')
+    and (ticket_sha256 is null) = (ticket_expires_at is null)
+    and (status <> 'sending' or ticket_sha256 is not null)
+    and (status = 'sent') = (resend_message_id is not null)
+    and (status = 'sent') = (sent_at is not null)
+    and (resend_message_id is null or resend_message_id ~ '^[A-Za-z0-9_-]{1,100}$')
+    and (status <> 'sent' or composed_at is not null));
+end $c$;
+create unique index if not exists digests_day_uk on growth_outbound.digests (day);
+create unique index if not exists digests_ticket_uk on growth_outbound.digests (ticket_sha256) where ticket_sha256 is not null;
+
+-- WHO RECEIVES THE DAILY EMAIL right now: the confirmed address of the owner
+-- who turned it on, while they are still an owner. NULL: nobody (and then
+-- nothing is sent).
+create or replace function growth_outbound.digest_recipient()
+returns text language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select growth_outbound.norm_email(u.email)
+    from growth_outbound.settings s join auth.users u on u.id = s.digest_owner
+   where s.id = 1 and u.email_confirmed_at is not null and growth_outbound.owner_active(u.id)
+     and growth_outbound.valid_email(growth_outbound.norm_email(u.email));
+$$;
+
 -- =============================================================================
 -- 4e. RESULTS: who came to EdgeDesk after an email (Phase 10)
 --
@@ -2052,6 +2113,9 @@ create trigger candidates_never_delete_t before delete on growth_outbound.candid
   for each row execute function growth_outbound.never_delete();
 drop trigger if exists research_runs_never_delete_t on growth_outbound.research_runs;
 create trigger research_runs_never_delete_t before delete on growth_outbound.research_runs
+  for each row execute function growth_outbound.never_delete();
+drop trigger if exists digests_never_delete_t on growth_outbound.digests;
+create trigger digests_never_delete_t before delete on growth_outbound.digests
   for each row execute function growth_outbound.never_delete();
 
 -- A conversion is written by the matcher only, and never rewritten: what
@@ -2564,7 +2628,7 @@ begin
   foreach t in array array['owners', 'owner_audit', 'settings', 'prospects', 'evidence', 'drafts',
                            'sends', 'suppressions', 'activity', 'identifiers', 'fit_factor_catalog', 'secrets',
                            'provider_events', 'research_runs', 'pages', 'candidates', 'provider_usage', 'scheduler',
-                           'conversions'] loop
+                           'conversions', 'digests'] loop
     execute format('alter table growth_outbound.%I enable row level security', t);
     execute format('drop policy if exists deny_clients on growth_outbound.%I', t);
     -- RESTRICTIVE: ANDed with every permissive policy, so a permissive policy
@@ -2608,7 +2672,9 @@ $$;
 create or replace function growth_outbound.settings_json()
 returns jsonb language sql stable
 set search_path = pg_catalog, public, pg_temp as $$
-  select to_jsonb(s) - 'id' || jsonb_build_object(
+  select to_jsonb(s) - 'id' - 'digest_owner' || jsonb_build_object(
+    -- the daily email's address is the owner's own, shown, never typed in
+    'digest_to', case when s.digest_enabled then growth_outbound.digest_recipient() end,
     'send_blockers', to_jsonb(growth_outbound.send_blockers()),
     'test_send_blockers', to_jsonb(growth_outbound.send_blockers_for(true)),
     'live_send_blockers', to_jsonb(growth_outbound.send_blockers_for(false)),
@@ -2668,7 +2734,7 @@ declare
     'sender_name', 'sender_email', 'reply_to_email', 'cta_url', 'business_name', 'postal_address', 'unsubscribe_url_base',
     'discovery_config', 'automation_timezone', 'automation_start_hour', 'automation_hours', 'attribution_links',
     'min_qualification_score', 'daily_qualified_target', 'warmup_enabled', 'warmup_start_per_day', 'warmup_step_per_week',
-    'landing_by_interest'];
+    'landing_by_interest', 'digest_enabled'];
   v_bad text;
   v_diff jsonb := '{}'::jsonb;
   k text;
@@ -2700,6 +2766,14 @@ begin
        and coalesce((p->>'confirm_cap_increase')::boolean, false) is not true then
       return jsonb_build_object('ok', false, 'reason', 'cap_increase_needs_confirmation',
         'detail', 'turning the warm-up off or speeding it up raises today''s cap; it needs confirm_cap_increase');
+    end if;
+    -- THE DAILY EMAIL goes to the owner who turns it on, at their account's
+    -- own confirmed address: there is no address to type, so none to misuse
+    if (p->>'digest_enabled')::boolean is true and not exists (
+         select 1 from auth.users u where u.id = v_owner and u.email_confirmed_at is not null
+            and growth_outbound.valid_email(growth_outbound.norm_email(u.email))) then
+      return jsonb_build_object('ok', false, 'reason', 'invalid_value',
+        'detail', 'the daily email goes to your account''s own address, and yours is not confirmed');
     end if;
     if p ? 'test_mode' and (p->>'test_mode')::boolean is false and v_old.test_mode
        and coalesce((p->>'confirm_live')::boolean, false) is not true then
@@ -2740,13 +2814,15 @@ begin
       warmup_start_per_day      = coalesce((p->>'warmup_start_per_day')::int, warmup_start_per_day),
       warmup_step_per_week      = coalesce((p->>'warmup_step_per_week')::int, warmup_step_per_week),
       landing_by_interest       = coalesce((p->>'landing_by_interest')::boolean, landing_by_interest),
+      digest_enabled            = coalesce((p->>'digest_enabled')::boolean, digest_enabled),
+      digest_owner              = case (p->>'digest_enabled')::boolean when true then v_owner when false then null else digest_owner end,
       updated_at = now(), updated_by = v_owner
     where id = 1
     returning * into v_new;
   exception when check_violation or data_exception then
     return jsonb_build_object('ok', false, 'reason', 'invalid_value', 'detail', sqlerrm);
   end;
-  foreach k in array v_keys loop
+  foreach k in array v_keys || array['digest_owner'] loop
     if (to_jsonb(v_old) -> k) is distinct from (to_jsonb(v_new) -> k) then
       v_diff := v_diff || jsonb_build_object(k, jsonb_build_object('from', to_jsonb(v_old) -> k, 'to', to_jsonb(v_new) -> k));
     end if;
@@ -5654,6 +5730,19 @@ begin
     'timezone', s.automation_timezone, 'in_window', v_in, 'today', v_today);
 end $$;
 
+-- WHY pg_net CANNOT POST FROM HERE (NULL: it can): the functions address
+-- must be a Supabase project's, and pg_net must be installed.
+create or replace function growth_outbound.post_blocker(p_base text)
+returns text language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select case
+    when coalesce(p_base, '') !~ '^https://[a-z0-9-]+\.supabase\.co/functions/v1$'
+      then 'the functions address is not a Supabase project''s (https://<project>.supabase.co/functions/v1/)'
+    when to_regprocedure('net.http_post(text,jsonb,jsonb,jsonb,integer)') is null
+      then 'pg_net is not installed (Database → Extensions)'
+  end;
+$$;
+
 -- ONE TICK (pg_cron, every few minutes; never through the API). Marks runs
 -- that never finished as failed, asks the plan, and for a step: starts the
 -- run with a fresh single-use ticket and posts it to the engine through
@@ -5670,6 +5759,7 @@ declare
   v_base text := rtrim(btrim(coalesce(p_functions_base, '')), '/');
   v_why text;
   v_gone record;
+  v_digest jsonb;
 begin
   if growth_outbound.api_origin() then
     raise exception 'the scheduler runs inside the database (pg_cron) only' using errcode = 'insufficient_privilege';
@@ -5691,6 +5781,10 @@ begin
     perform growth_outbound.log_as('system', 'send_abandoned', v_gone.prospect_id, 'send', v_gone.id::text,
       jsonb_build_object('claimed_at', v_gone.claimed_at, 'by', 'the scheduler'));
   end loop;
+  -- a daily email whose ticket went out half an hour ago and never came back
+  -- (growth_outbound.digest_sweep): failed, and tried again only if it was
+  -- surely never written
+  perform growth_outbound.digest_sweep();
   -- RESULTS (Phase 10), hourly, whether or not the morning run is on: who
   -- visited, signed up, started a trial or paid; a signup ends its sequence.
   -- A failure here is recorded and never stops the tick.
@@ -5705,14 +5799,18 @@ begin
   v_plan := growth_outbound.schedule_plan(p_now);
   v_step := v_plan->'step';
   if v_step is null or jsonb_typeof(v_step) <> 'object' then
+    -- nothing for the morning run to do: the moment for the owner's daily
+    -- email (section 13). Its trouble is recorded, and never stops the tick.
+    begin
+      v_digest := growth_outbound.digest_tick(v_base, p_now);
+    exception when others then
+      v_digest := jsonb_build_object('action', 'error', 'reason', left(sqlerrm, 300));
+    end;
     update growth_outbound.scheduler set last_tick_at = now(), last_action = 'idle', last_reason = left(v_plan->>'reason', 500), ticks = ticks + 1 where id = 1;
-    return jsonb_build_object('action', 'idle', 'reason', v_plan->>'reason');
+    return jsonb_build_object('action', 'idle', 'reason', v_plan->>'reason')
+      || case when v_digest is null then '{}'::jsonb else jsonb_build_object('digest', v_digest) end;
   end if;
-  if v_base !~ '^https://[a-z0-9-]+\.supabase\.co/functions/v1$' then
-    v_why := 'the functions address is not a Supabase project''s (https://<project>.supabase.co/functions/v1/)';
-  elsif to_regprocedure('net.http_post(text,jsonb,jsonb,jsonb,integer)') is null then
-    v_why := 'pg_net is not installed (Database → Extensions)';
-  end if;
+  v_why := growth_outbound.post_blocker(v_base);
   if v_why is not null then
     update growth_outbound.scheduler set last_tick_at = now(), last_action = 'blocked', last_reason = v_why, ticks = ticks + 1 where id = 1;
     return jsonb_build_object('action', 'blocked', 'reason', v_why);
@@ -5738,7 +5836,9 @@ end $$;
 -- one: refused, nothing read or written. With one: only the doors that
 -- run's kind needs, and only for that run — never one that approves, edits,
 -- rejects, sends, suppresses or changes settings (those check the signed-in
--- owner, and a ticket is nobody).
+-- owner, and a ticket is nobody). A ticket that is not a run's may be the
+-- daily email's (section 13): its own door checks it first and opens its own
+-- two doors, and no others.
 create or replace function public.growth_outbound_scheduled(p_ticket text, p_door text, p_args jsonb default '{}'::jsonb)
 returns jsonb language plpgsql security definer
 set search_path = pg_catalog, public, pg_temp as $$
@@ -5750,7 +5850,7 @@ declare
   v jsonb;
 begin
   v_run := growth_outbound.ticket_run(p_ticket);
-  if v_run is null then return jsonb_build_object('ok', false, 'reason', 'invalid_ticket'); end if;
+  if v_run is null then return growth_outbound.digest_door(p_ticket, p_door, p_args); end if;
   select * into r from growth_outbound.research_runs where id = v_run;
   v_allowed := array['plan', 'growth_outbound_research_spend', 'growth_outbound_research_finish']
     || case r.kind
@@ -5842,6 +5942,10 @@ begin
                    'results_synced_at', sc.conversions_synced_at, 'results_error', sc.conversions_error),
     'pg_net', to_regprocedure('net.http_post(text,jsonb,jsonb,jsonb,integer)') is not null,
     'cron_job', v_job,
+    'digest', jsonb_build_object('enabled', s.digest_enabled, 'to', case when s.digest_enabled then growth_outbound.digest_recipient() end,
+                'plan', growth_outbound.digest_plan(),
+                'recent', coalesce((select jsonb_agg(to_jsonb(d) - 'ticket_sha256' - 'ticket_expires_at' - 'recipient_owner' order by d.day desc)
+                                      from (select * from growth_outbound.digests order by day desc limit 7) d), '[]'::jsonb)),
     'runs', coalesce((select jsonb_agg(to_jsonb(r) - 'requested_by' - 'ticket_sha256' - 'ticket_expires_at' order by r.started_at desc) from (
         select * from growth_outbound.research_runs where started_by = 'schedule' order by started_at desc limit 15) r), '[]'::jsonb));
 end $$;
@@ -6646,6 +6750,321 @@ begin
 end $$;
 
 -- =============================================================================
+-- 13. THE DAILY EMAIL (2026-10): "N drafts are waiting for your review"
+--
+-- Once a morning, when the morning run has nothing left to do (or its window
+-- has closed), the tick writes the OWNER a short note if drafts wait for
+-- review. It is the owner's notice, not outreach:
+--   * it goes to one address only: the confirmed address of the owner who
+--     turned it on (digest_recipient), looked up when it is written, and
+--     never one that is also a prospect's;
+--   * it says counts and nothing else: no name, no address, no draft;
+--   * it is sent by its own function (growth_outbound_digest) on a single-use
+--     ticket that opens two doors (write it; say what became of it) and no
+--     others: it cannot reach a draft, a prospect or a send, and it never
+--     touches the sends table, the daily cap or the results;
+--   * once a morning at most (one row per day), tried again only when it
+--     surely did not go, three tries at most, and never after the evening.
+-- =============================================================================
+
+-- WHAT TO DO ABOUT THIS MORNING'S EMAIL, now: 'send', 'skip' (the run is
+-- done and nothing waits for review) or 'wait', with the reason in words.
+create or replace function growth_outbound.digest_plan(p_now timestamptz default now())
+returns jsonb language plpgsql stable
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  s growth_outbound.settings;
+  v_local timestamp;
+  v_open timestamp;
+  v_day date;
+  v_in boolean;
+  v_plan jsonb;
+  v_t jsonb;
+  d growth_outbound.digests;
+  v_waiting int;
+  v_reason text;
+  v_action text := 'wait';
+begin
+  select * into s from growth_outbound.settings where id = 1;
+  v_local := p_now at time zone s.automation_timezone;
+  -- the morning this is about: the window that opened most recently (one that
+  -- crosses midnight belongs to the day it opened)
+  v_open := date_trunc('day', v_local) + make_interval(hours => s.automation_start_hour);
+  if v_open > v_local then v_open := v_open - interval '1 day'; end if;
+  v_day := v_open::date;
+  v_in := v_local < v_open + make_interval(hours => s.automation_hours);
+  select * into d from growth_outbound.digests where day = v_day;
+  select count(*) into v_waiting from growth_outbound.drafts where status = 'pending_review' and not is_test;
+  if not s.digest_enabled then
+    v_reason := 'the daily email is off';
+  elsif growth_outbound.digest_recipient() is null then
+    v_reason := 'nobody to send it to: the owner who turned it on is no longer an owner or has no confirmed address (turn it off and on again)';
+  elsif d.id is not null and not (d.status = 'failed' and d.retryable and d.attempts < 3) then
+    v_reason := case d.status when 'sent' then 'this morning''s email went out'
+                              when 'skipped' then 'nothing waited for review this morning, so no email'
+                              when 'sending' then 'this morning''s email is on its way'
+                              else 'this morning''s email could not be sent: ' || coalesce(d.reason, 'no reason recorded') end;
+  elsif d.id is not null and d.updated_at > p_now - interval '20 minutes' then
+    v_reason := 'this morning''s email failed; it is tried again shortly';
+  elsif v_local >= v_open + make_interval(hours => s.automation_hours + 12) then
+    v_reason := 'too late for this morning''s email; the next comes after tomorrow''s morning run';
+  else
+    if v_in then
+      -- inside the window: only once the morning run has nothing left to do,
+      -- and is not merely pausing before it tries a step again
+      v_plan := growth_outbound.schedule_plan(p_now);
+      v_t := v_plan->'today';
+      if jsonb_typeof(v_plan->'step') = 'object'
+         or v_plan->>'reason' in ('a scheduled run is still going', 'three runs are already going') then
+        v_reason := 'the morning run is still working';
+      elsif v_plan->>'reason' = 'nothing left to do this morning'
+            and (coalesce((v_t->>'verify_waiting')::int, 0) > 0
+                 or (coalesce((v_t->>'due')::int, 0) > 0 and coalesce((v_t->>'drafted')::int, 0) < coalesce((v_t->>'draft_cap')::int, 0))) then
+        v_reason := 'the morning run is pausing before it tries again';
+      end if;
+    end if;
+    if v_reason is null then
+      v_action := case when v_waiting > 0 then 'send' else 'skip' end;
+      v_reason := case when v_waiting > 0 then 'the morning run is done: ' || v_waiting || ' draft(s) wait for review'
+                       else 'the morning run is done and nothing waits for review' end;
+    end if;
+  end if;
+  return jsonb_build_object('action', v_action, 'reason', v_reason, 'day', v_day, 'waiting', v_waiting, 'in_window', v_in,
+    'window_opened', to_char(v_open, 'YYYY-MM-DD HH24:MI'), 'timezone', s.automation_timezone);
+end $$;
+
+-- A LIVE DAILY-EMAIL TICKET (NULL: none): its hash, its note still being
+-- sent, unexpired.
+create or replace function growth_outbound.digest_for_ticket(p_ticket text)
+returns bigint language plpgsql stable
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  if coalesce(p_ticket, '') !~ '^[0-9a-f]{64}$' then return null; end if;
+  return (select d.id from growth_outbound.digests d
+           where d.ticket_sha256 = encode(sha256(convert_to(p_ticket, 'UTF8')), 'hex')
+             and d.status = 'sending' and d.ticket_expires_at > now());
+end $$;
+
+-- THE DAILY EMAIL'S DOOR, reached only through the ticket door
+-- (growth_outbound_scheduled) when a ticket is not a run's. FIRST: its own
+-- live ticket, or refused. Then two doors and no others: what today's note
+-- to the owner says, and what became of it.
+create or replace function growth_outbound.digest_door(p_ticket text, p_door text, p_args jsonb)
+returns jsonb language plpgsql
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_id bigint;
+  a jsonb := coalesce(p_args, '{}'::jsonb);
+begin
+  v_id := growth_outbound.digest_for_ticket(p_ticket);
+  if v_id is null then return jsonb_build_object('ok', false, 'reason', 'invalid_ticket'); end if;
+  if coalesce(p_door, '') not in ('digest_compose', 'digest_result') then
+    return jsonb_build_object('ok', false, 'reason', 'not_allowed', 'detail', 'a daily-email ticket may not call that');
+  end if;
+  if jsonb_typeof(a) <> 'object' then
+    return jsonb_build_object('ok', false, 'reason', 'not_allowed', 'detail', 'arguments are an object');
+  end if;
+  if p_door = 'digest_compose' then return growth_outbound.digest_compose(v_id); end if;
+  return growth_outbound.digest_result(v_id, a->>'p_message_id', a->>'p_error', a->'p_retryable' = 'true'::jsonb);
+end $$;
+
+-- How a note ended: recorded once, with its reason, in the activity too.
+create or replace function growth_outbound.digest_end(p_id bigint, p_status text, p_reason text, p_retryable boolean, p_message_id text default null)
+returns void language plpgsql
+set search_path = pg_catalog, public, pg_temp as $$
+declare d growth_outbound.digests;
+begin
+  update growth_outbound.digests
+     set status = p_status, reason = left(p_reason, 300), retryable = p_status = 'failed' and coalesce(p_retryable, false),
+         resend_message_id = p_message_id, sent_at = case when p_status = 'sent' then now() end, updated_at = now()
+   where id = p_id
+  returning * into d;
+  perform growth_outbound.log_as('system', 'digest_' || p_status, null, 'digest', p_id::text,
+    jsonb_build_object('day', d.day, 'waiting', d.waiting, 'attempt', d.attempts)
+    || case when p_reason is null then '{}'::jsonb else jsonb_build_object('reason', left(p_reason, 300)) end);
+end $$;
+
+-- Every tick: a note whose ticket went out half an hour ago and never came
+-- back has failed. Tried again only if it was never even written (the
+-- function never ran); written and unanswered, it may have gone, so never.
+create or replace function growth_outbound.digest_sweep()
+returns void language plpgsql
+set search_path = pg_catalog, public, pg_temp as $$
+declare v record;
+begin
+  for v in select id, composed_at from growth_outbound.digests
+            where status = 'sending' and ticket_expires_at < now() - interval '15 minutes' for update loop
+    perform growth_outbound.digest_end(v.id, 'failed',
+      case when v.composed_at is null then 'the daily-email function never answered (is growth_outbound_digest deployed?)'
+           else 'the daily-email function stopped after writing it: it may have gone out, so it is not sent again' end,
+      v.composed_at is null);
+  end loop;
+end $$;
+
+-- THE TICK'S PART (schedule_tick calls it when the morning run is idle):
+-- decide this morning's email once; to send it, mint a single-use ticket
+-- and post it to the digest function through pg_net.
+create or replace function growth_outbound.digest_tick(p_base text, p_now timestamptz default now())
+returns jsonb language plpgsql
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  dp jsonb;
+  v_day date;
+  v_id bigint;
+  v_ticket text;
+  v_why text;
+  v_owner uuid := (select digest_owner from growth_outbound.settings where id = 1);
+begin
+  if growth_outbound.api_origin() then
+    raise exception 'the daily email is started by the scheduler only' using errcode = 'insufficient_privilege';
+  end if;
+  dp := growth_outbound.digest_plan(p_now);
+  v_day := (dp->>'day')::date;
+  if dp->>'action' = 'skip' then
+    insert into growth_outbound.digests (day, status, reason, waiting, recipient_owner)
+    values (v_day, 'skipped', 'nothing waited for review', 0, v_owner)
+    on conflict (day) do update set status = 'skipped', reason = excluded.reason, waiting = 0, retryable = false, updated_at = now()
+     where growth_outbound.digests.status = 'failed'
+    returning id into v_id;
+    if v_id is null then return null; end if;
+    perform growth_outbound.log_as('system', 'digest_skipped', null, 'digest', v_id::text, jsonb_build_object('day', v_day));
+    return jsonb_build_object('action', 'skipped', 'day', v_day);
+  end if;
+  if dp->>'action' is distinct from 'send' then return null; end if;
+  v_why := growth_outbound.post_blocker(p_base);
+  if v_why is not null then return jsonb_build_object('action', 'blocked', 'reason', v_why); end if;
+  -- 256 random bits; only its hash is kept
+  v_ticket := replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '');
+  insert into growth_outbound.digests (day, status, waiting, recipient_owner, attempts, ticket_sha256, ticket_expires_at)
+  values (v_day, 'sending', (dp->>'waiting')::int, v_owner, 1, encode(sha256(convert_to(v_ticket, 'UTF8')), 'hex'), now() + interval '15 minutes')
+  on conflict (day) do update set status = 'sending', reason = null, retryable = false, waiting = excluded.waiting,
+         recipient_owner = excluded.recipient_owner, attempts = growth_outbound.digests.attempts + 1,
+         ticket_sha256 = excluded.ticket_sha256, ticket_expires_at = excluded.ticket_expires_at, composed_at = null, updated_at = now()
+   where growth_outbound.digests.status = 'failed' and growth_outbound.digests.retryable and growth_outbound.digests.attempts < 3
+  returning id into v_id;
+  if v_id is null then return null; end if;
+  execute 'select net.http_post(url := $1, body := $2, headers := $3, timeout_milliseconds := $4)'
+    using p_base || '/growth_outbound_digest', jsonb_build_object('action', 'scheduled', 'ticket', v_ticket),
+          jsonb_build_object('content-type', 'application/json'), 30000;
+  perform growth_outbound.log_as('system', 'digest_started', null, 'digest', v_id::text,
+    jsonb_build_object('day', v_day, 'waiting', (dp->>'waiting')::int));
+  return jsonb_build_object('action', 'started', 'digest_id', v_id, 'day', v_day, 'waiting', (dp->>'waiting')::int);
+end $$;
+
+-- WRITE THE NOTE (the ticket door's 'digest_compose'; once per ticket). The
+-- address is decided here, from the owner's own account, and the content is
+-- counts: how many drafts wait (first emails, follow-ups), how many the
+-- morning run wrote, approved and unsent, what may still go out today, and
+-- what the System check says needs attention — in its own fixed words.
+create or replace function growth_outbound.digest_compose(p_id bigint)
+returns jsonb language plpgsql
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  d growth_outbound.digests;
+  s growth_outbound.settings;
+  v_to text;
+  v_n int;
+  v_first int;
+  v_follow int;
+  v_new int;
+  v_approved int;
+  v_cap int;
+  v_out int;
+  v_att text[];
+  v_subject text;
+  v_text text;
+begin
+  select * into d from growth_outbound.digests where id = p_id for update;
+  if d.id is null or d.status <> 'sending' then return jsonb_build_object('ok', false, 'reason', 'invalid_ticket'); end if;
+  if d.composed_at is not null then return jsonb_build_object('ok', false, 'reason', 'already_composed'); end if;
+  select * into s from growth_outbound.settings where id = 1;
+  if not s.digest_enabled then
+    perform growth_outbound.digest_end(p_id, 'failed', 'the daily email was turned off', false);
+    return jsonb_build_object('ok', false, 'reason', 'digest_off');
+  end if;
+  v_to := growth_outbound.digest_recipient();
+  if v_to is null then
+    perform growth_outbound.digest_end(p_id, 'failed', 'nobody to send it to: the owner who turned it on is no longer an owner or has no confirmed address', false);
+    return jsonb_build_object('ok', false, 'reason', 'no_recipient');
+  end if;
+  -- never to anybody the engine writes to: refused, not guessed about
+  if exists (select 1 from growth_outbound.prospects p where not p.is_test and growth_outbound.norm_email(p.email) = v_to) then
+    perform growth_outbound.digest_end(p_id, 'failed', 'the owner''s address is also a prospect''s, so the daily email is not sent to it', false);
+    return jsonb_build_object('ok', false, 'reason', 'recipient_is_a_prospect');
+  end if;
+  select count(*), count(*) filter (where sequence_number = 1), count(*) filter (where sequence_number > 1)
+    into v_n, v_first, v_follow from growth_outbound.drafts where status = 'pending_review' and not is_test;
+  if v_n = 0 then
+    perform growth_outbound.digest_end(p_id, 'skipped', 'nothing waited for review by the time it was written', false);
+    return jsonb_build_object('ok', false, 'reason', 'nothing_waiting');
+  end if;
+  select count(*) into v_new from growth_outbound.drafts x join growth_outbound.research_runs r on r.id = x.run_id
+   where x.status = 'pending_review' and not x.is_test and r.started_by = 'schedule'
+     and r.started_at >= (d.day::timestamp at time zone s.automation_timezone);
+  select count(*) into v_approved from growth_outbound.drafts where status = 'approved' and not is_test;
+  v_cap := (growth_outbound.live_send_cap()->>'cap')::int;
+  select count(*) into v_out from growth_outbound.sends where not is_test and claimed_at >= date_trunc('day', now());
+  select coalesce(array_agg('- ' || case x->>'code'
+           when 'check_failed' then 'A system check fails.'
+           when 'complaints' then 'Spam complaints are above 1 in 1,000 live emails.'
+           when 'bounces' then 'Bounces are above 4% of live emails.'
+           when 'webhook_silent' then 'No events from Resend in two days: bounces are not being recorded.'
+           when 'domain_auth_failed' then 'The sending domain''s SPF, DKIM or DMARC check fails.'
+           when 'stale_claims' then 'A send was handed over and never confirmed.'
+           when 'runs_failing' then 'The last three morning-run steps failed.'
+           when 'results_error' then 'Matching results failed.'
+           when 'approved_waiting' then 'Approved drafts have waited over three days.'
+           when 'blocked' then 'Sending is blocked until the settings are complete.'
+           when 'domain_auth_unchecked' then 'The sending domain has not been checked in 30 days.'
+           else 'Something else: see System check.' end
+           order by (x->>'severity')::int, x->>'code'), '{}')
+    into v_att from jsonb_array_elements(growth_outbound.attention()) x
+   where (x->>'severity')::int <= 3 and x->>'code' not in ('digest_failed', 'digest_no_recipient', 'clock_stopped');
+  v_subject := v_n || case when v_n = 1 then ' outbound draft is' else ' outbound drafts are' end || ' ready for your review';
+  v_text := concat_ws(E'\n',
+    v_n || case when v_n = 1 then ' draft is' else ' drafts are' end || ' waiting for your review: '
+      || v_first || case when v_first = 1 then ' first email' else ' first emails' end || ', '
+      || v_follow || case when v_follow = 1 then ' follow-up.' else ' follow-ups.' end,
+    case when v_new > 0 then 'The morning run wrote ' || v_new || ' of them on ' || to_char(d.day, 'FMDay, FMMonth FMDD') || '.' end,
+    '',
+    case when v_approved > 0 then v_approved || ' approved ' || case when v_approved = 1 then 'draft has' else 'drafts have' end || ' not been sent yet.' end,
+    case when s.test_mode then 'Test mode is on: an approved email goes only to your test inbox.'
+         else 'Live emails you may still send today: ' || greatest(v_cap - v_out, 0) || ' of ' || v_cap || '.' end,
+    case when cardinality(v_att) > 0 then E'\nNeeds your attention (Outbound, System check):\n' || array_to_string(v_att, E'\n') end,
+    '',
+    'Review them: https://edgedesksports.com/admin/growth/',
+    '',
+    'Nothing goes to a prospect until you approve it and press Send.',
+    'This note goes only to you. Turn it off in Outbound settings, under Morning run.');
+  update growth_outbound.digests set composed_at = now(), waiting = v_n, recipient_owner = s.digest_owner, updated_at = now() where id = p_id;
+  return jsonb_build_object('ok', true, 'kind', 'owner_digest', 'digest_id', p_id, 'day', d.day,
+    'idempotency_key', 'edgedesk-outbound-digest-' || p_id || '-' || d.attempts,
+    'message', jsonb_build_object('from', 'EdgeDesk outbound <' || s.sender_email || '>', 'to', v_to,
+                                  'subject', v_subject, 'text', v_text));
+end $$;
+
+-- WHAT BECAME OF IT (the ticket door's 'digest_result'): Resend's id, or why
+-- not and whether trying again is safe. The ticket dies with the answer.
+create or replace function growth_outbound.digest_result(p_id bigint, p_message_id text, p_error text, p_retryable boolean)
+returns jsonb language plpgsql
+set search_path = pg_catalog, public, pg_temp as $$
+declare d growth_outbound.digests;
+begin
+  select * into d from growth_outbound.digests where id = p_id for update;
+  if d.id is null or d.status <> 'sending' then return jsonb_build_object('ok', false, 'reason', 'invalid_ticket'); end if;
+  if d.composed_at is null then return jsonb_build_object('ok', false, 'reason', 'not_composed'); end if;
+  if p_message_id is not null then
+    if p_message_id !~ '^[A-Za-z0-9_-]{1,100}$' then return jsonb_build_object('ok', false, 'reason', 'invalid_message_id'); end if;
+    perform growth_outbound.digest_end(p_id, 'sent', null, false, p_message_id);
+    return jsonb_build_object('ok', true, 'status', 'sent');
+  end if;
+  perform growth_outbound.digest_end(p_id, 'failed',
+    coalesce(nullif(btrim(regexp_replace(left(coalesce(p_error, ''), 300), '[[:cntrl:]]+', ' ', 'g')), ''), 'not sent (no reason given)'),
+    coalesce(p_retryable, false));
+  return jsonb_build_object('ok', true, 'status', 'failed', 'retry', coalesce(p_retryable, false));
+end $$;
+
+-- =============================================================================
 -- 11. THE SYSTEM CHECK (Phase 11): the report below, as a function, so the
 --     owner's console runs the very same checks the SQL editor shows — any
 --     time, not only when this file is run — plus what needs attention now.
@@ -6658,7 +7077,7 @@ select 1 as step, 'the outbound tables exist' as item,
   case when (select count(*) from pg_tables where schemaname = 'growth_outbound' and tablename in
     ('owners', 'owner_audit', 'settings', 'prospects', 'evidence', 'drafts', 'sends', 'suppressions', 'activity',
      'identifiers', 'fit_factor_catalog', 'secrets', 'provider_events', 'research_runs', 'pages', 'candidates',
-     'provider_usage', 'scheduler', 'conversions')) = 19
+     'provider_usage', 'scheduler', 'conversions', 'digests')) = 20
        then 'ok' else 'CHECK THIS — a table is missing' end as outcome
 union all
 select 2, 'the schema is private: no client role may even look inside it',
@@ -6724,7 +7143,7 @@ select 12, 'history is append-only and nothing is deleted',
   case when (select count(*) from pg_trigger where not tgisinternal and tgname in
     ('suppressions_append_only_t', 'activity_append_only_t', 'owner_audit_append_only_t', 'prospects_never_delete_t',
      'evidence_never_delete_t', 'drafts_never_delete_t', 'sends_never_delete_t', 'evidence_guard_t',
-     'identifiers_never_delete_t', 'identifiers_guard_t', 'conversions_append_only_t')) = 11
+     'identifiers_never_delete_t', 'identifiers_guard_t', 'conversions_append_only_t', 'digests_never_delete_t')) = 12
        then 'ok' else 'CHECK THIS' end
 union all
 select 13, 'settings: test mode ' || (select case when test_mode then 'ON' else 'off' end from growth_outbound.settings where id = 1)
@@ -6898,6 +7317,23 @@ select 37, 'qualification and providers (Phase 12): every fit reason belongs to 
                                                   from growth_outbound.settings where id = 1 and domain_auth is not null), 'not checked yet')
        else 'CHECK THIS' end
 union all
+select 38, 'the daily email goes only to an outbound owner''s own confirmed address, says counts only, and its ticket opens its own two doors and no others (never a draft, a prospect or a send): '
+  || (select case when not s.digest_enabled then 'off'
+                  else 'on, to ' || coalesce(growth_outbound.digest_recipient(), 'NOBODY (turn it off and on again)') end
+        from growth_outbound.settings s where s.id = 1)
+  || coalesce('; last ' || (select d.day || ' ' || d.status from growth_outbound.digests d order by d.day desc limit 1), ''),
+  case when pg_get_functiondef('public.growth_outbound_scheduled(text,text,jsonb)'::regprocedure) like '%growth_outbound.digest_door(p_ticket%'
+        and pg_get_functiondef('growth_outbound.digest_door(text,text,jsonb)'::regprocedure)
+            ~ 'begin\s+v_id := growth_outbound\.digest_for_ticket\(p_ticket\);\s+if v_id is null then return'
+        and pg_get_functiondef('growth_outbound.digest_compose(bigint)'::regprocedure) like '%digest_recipient()%'
+        and pg_get_functiondef('growth_outbound.digest_compose(bigint)'::regprocedure)
+            !~ '(insert into growth_outbound\.sends|update growth_outbound\.sends|send_claim|send_result|approve_one|drafts_approve)'
+        and growth_outbound.digest_for_ticket(repeat('0', 64)) is null and growth_outbound.digest_for_ticket('not a ticket') is null
+        and exists (select 1 from pg_constraint where conname = 'digests_shape_ck')
+        and exists (select 1 from pg_constraint where conrelid = 'growth_outbound.settings'::regclass and contype = 'f'
+                      and confrelid = 'growth_outbound.owners'::regclass and confdeltype = 'n')
+       then 'ok' else 'CHECK THIS' end
+union all
 select 18, 'prospects by status: ' || coalesce((select string_agg(status || ' ' || n, ', ' order by status)
                                                 from (select status, count(*) n from growth_outbound.prospects group by status) x), 'none yet'),
   'ok'
@@ -6955,6 +7391,13 @@ set search_path = pg_catalog, public, pg_temp as $$
     select 3, 'domain_auth_unchecked', 'The sending domain''s SPF, DKIM and DMARC have not been checked '
              || case when s.domain_auth_checked_at is null then 'yet' else 'in 30 days' end || '. Run the check (System check → Check the sending domain).'
       from s where not s.test_mode and (s.domain_auth_checked_at is null or s.domain_auth_checked_at < now() - interval '30 days')
+    union all
+    select 2, 'digest_failed', 'This morning''s email to you could not be sent: ' || coalesce(d.reason, 'no reason recorded') || '. Outbound, Morning run shows each try.'
+      from s, growth_outbound.digests d
+     where s.digest_enabled and d.status = 'failed' and not (d.retryable and d.attempts < 3) and d.updated_at >= now() - interval '24 hours'
+    union all
+    select 3, 'digest_no_recipient', 'The daily email is on but has nobody to go to: the owner who turned it on is no longer an owner, or has no confirmed address. Turn it off and on again.'
+      from s where s.digest_enabled and growth_outbound.digest_recipient() is null
     union all
     select 4, 'cap_raised', 'The daily send cap is ' || s.max_sends_per_day || ' (the default is 20).' from s where s.max_sends_per_day > 20
     union all

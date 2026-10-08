@@ -11,9 +11,10 @@
                     provider key, no service-role key, no provider address:
                     the browser talks to the database's doors and the Edge
                     Functions, never to Resend, Brave, Hunter or Claude
-     F  FUNCTIONS   each outbound Edge Function reads exactly the settings it
-                    needs and never a service-role key; no function logs a
-                    token, a key, a ticket, a header or a body
+     F  FUNCTIONS   each outbound Edge Function (all six, the daily email's
+                    too) reads exactly the settings it needs and never a
+                    service-role key; no function logs a token, a key, a
+                    ticket, a header or a body
      W  WORKFLOWS   the deploy workflow hands secrets to steps as env only
 
    Run: node tools/growth/outbound_static.test.js
@@ -94,7 +95,10 @@ const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
     growth_outbound_send: ['OUTBOUND_ALLOWED_ORIGINS', 'RESEND_API_KEY', 'SUPABASE_ANON_KEY', 'SUPABASE_URL'],
     growth_outbound_webhook: ['SUPABASE_ANON_KEY', 'SUPABASE_URL'],
     growth_outbound_optout: ['OUTBOUND_OPTOUT_PAGE', 'SUPABASE_ANON_KEY', 'SUPABASE_URL'],
+    growth_outbound_digest: ['RESEND_API_KEY', 'SUPABASE_ANON_KEY', 'SUPABASE_URL'],
   };
+  const deployed = fs.readdirSync(path.join(ROOT, 'supabase', 'functions')).filter((f) => /^growth_outbound_/.test(f)).sort();
+  chk('F every outbound Edge Function is checked here (a new one must be added)', JSON.stringify(deployed) === JSON.stringify(Object.keys(ENV).sort()), deployed);
   const SENSITIVE = /\b(authz|authorization|token|ticket|apikey|anonKey|resendKey|braveKey|hunterKey|anthropicKey|apolloKey|clayToken|clayWebhookUrl|secret|headers|body|req|request|key|signature|sig)\b/i;
   for (const name of Object.keys(ENV)) {
     const src = rd('supabase/functions/' + name + '/index.ts');

@@ -1399,6 +1399,115 @@ Nothing in this phase has been deployed. Schema changes and automation stay off 
 - **A failed domain check blocking live sends:** fix DNS and check again, or `update growth_outbound.settings set domain_auth = null, domain_auth_checked_at = null;` in the SQL editor.
 - **The database:** additive. To return to Phase 11, re-run the Phase 11 file (`git show 4f99b38:supabase/growth_outbound.sql`). Its functions replace these, and the new columns are harmless.
 
+## The daily email (2026-10): "N drafts are waiting for your review"
+
+**A short note to you, once a morning, when the morning run leaves drafts for you to review.** It is a notice to the owner, not outreach: it never goes to a prospect, never sends a draft, and never counts against the daily cap. It is off until you turn it on.
+
+### What it says
+
+Counts, and nothing else:
+
+- how many drafts wait for review (first emails and follow-ups), and how many the morning run wrote;
+- approved drafts not yet sent;
+- in test mode, that approved emails go only to your test inbox; live, how many emails you may still send today (under the warm-up cap);
+- what the System check says needs attention, in fixed words;
+- the link to `/admin/growth/`.
+
+No name, address, organization, site or draft text appears in it. If your inbox is ever read by someone else, it tells them nothing about anyone.
+
+For example:
+
+> **Subject:** 3 outbound drafts are ready for your review
+>
+> 3 drafts are waiting for your review: 2 first emails, 1 follow-up.
+> The morning run wrote 3 of them on Thursday, October 8.
+>
+> Test mode is on: an approved email goes only to your test inbox.
+>
+> Review them: https://edgedesksports.com/admin/growth/
+>
+> Nothing goes to a prospect until you approve it and press Send.
+> This note goes only to you. Turn it off in Outbound settings, under Morning run.
+
+### Whom it goes to
+
+- **Your account's own confirmed address.** You turn it on under **Outbound settings → Morning run**. It goes to the account that turned it on, and the settings show which address that is. There is no address field: nothing typed in, nothing a hijacked session could point elsewhere.
+- **It is looked up every time**, so a changed address follows you.
+  - An owner who is removed stops receiving it at once.
+  - An unconfirmed address receives nothing.
+  - If the owner's address is also a prospect's, it is refused rather than guessed about.
+- **From:** `EdgeDesk outbound <davis@edgedesksports.com>` (your sender address). It is tagged `edgedesk=outbound`, so the newsletter's webhook leaves its events alone.
+
+### When it goes
+
+- **Once a morning, at most.** It goes as soon as the morning run has nothing left to do: not while a step is running, and not while the run only pauses before trying a step again. If the run never finishes, it goes when your window closes.
+- **Up to 12 hours after the window.** Turned on in the afternoon, you get today's note within five minutes.
+- **Nothing to review that morning:** no email. The morning is recorded as skipped, and a draft that arrives later that day does not bring one.
+- **Automation off:** it still goes, at your window's time, if drafts wait (for example, ones you wrote yourself).
+
+### How it is sent, and why it cannot do more
+
+The tick decides; it never sends anything itself.
+
+1. When the morning run is idle, the tick mints a **single-use ticket** (only its sha256 is kept) and posts it through pg_net to a new Edge Function, **`growth_outbound_digest`**.
+2. The function presents the ticket to the ticket door (`growth_outbound_scheduled`). A daily-email ticket opens **two doors and no others**:
+   - write the note (once per ticket);
+   - say what became of it (Resend's id, or why not).
+
+   It cannot reach a run door, a draft, a prospect, a send, an approval or a setting. A morning-run ticket cannot reach these two either.
+3. The function checks the note is still exactly one plain EdgeDesk email to one address (no extra recipients, headers or fields), then sends it through Resend with one idempotency key per try.
+4. It holds the project URL, the public anon key and `RESEND_API_KEY` (already set). It holds no service-role key, and it refuses any request from a browser.
+
+### When it fails
+
+- **It surely did not go** (Resend down or rate-limiting, the key refused, the key not set, or the function never ran): tried again 20 minutes later, at most three tries.
+- **It may have gone** (no answer from Resend, or the function stopped after writing it): never tried again. A missed note is better than a duplicate.
+- **Resend refused the message:** not tried again.
+- **The System check** says when this morning's email could not be sent, or when it has nobody to go to. The morning-run panel shows each try.
+
+### New in the database
+
+- **Settings:** `digest_enabled`; `digest_owner` (who turned it on: a reference to the owners list, cleared when they lose outbound). The settings show the address it resolves to, not the id; the id appears only in the settings change log.
+- **Table:** `digests`, the twentieth. It holds one row per morning: what was decided, how many waited, the tries, Resend's id, and the ticket's hash only. It holds no address. Deny-all to every client role, and never deleted.
+- **Functions:**
+  - the plan and the tick's part: `digest_recipient`, `digest_plan`, `digest_tick`, `digest_sweep`, `post_blocker`;
+  - the ticket and its doors: `digest_for_ticket`, `digest_door`, `digest_compose`, `digest_result`, `digest_end`.
+
+  None is callable by a client role. The ticket door hands a ticket that is not a run's to `digest_door`, which checks it first.
+- **The morning-run panel** (`growth_outbound_automation_overview`) adds `digest`: on or off, to whom, what next, and the last seven mornings. It never shows a ticket hash or an account id.
+- **System check:** row 38 (the rules above, and where it goes); rows 1 and 12 count the new table and its never-delete trigger. Attention items `digest_failed` and `digest_no_recipient`.
+- **Still three public doors.**
+
+### Deploy (in order)
+
+1. Merge the PR.
+2. In the SQL editor, run `supabase/growth_outbound.sql`. Report rows 1–38 should say `ok`.
+3. Deploy the functions: Actions → **Deploy outbound Edge Functions**. It now deploys `growth_outbound_digest` too, `--no-verify-jwt` like the research and drafting functions (pg_cron sends no JWT; the database checks the ticket). No new secret: it uses `RESEND_API_KEY`.
+4. The clock (`supabase/growth_outbound_cron.sql`) is unchanged. If it already runs, nothing to do.
+5. Outbound settings → Morning run → tick **Email me once the morning run is done…** and Save. It shows the address it will use.
+
+### Tests
+
+| Suite | Checks | What it proves |
+|---|---|---|
+| `tools/growth/outbound_digest_sql.test.js` (new) | 102 | Settings, the plan (window, zone, midnight, grace, busy, pausing, off), the tick, the ticket (two doors only; a run's ticket cannot reach them; dead once answered or expired), the content (counts only; nothing about anyone), retries and the sweep, never a send, draft or prospect, the overview and System check |
+| `tools/growth/outbound_digest.test.js` (new) | 45 | The deployed function against the real SQL and a Resend stand-in: only a POST, never a browser, a well-formed ticket; exactly the note the database wrote, to one address, tagged, keyed per try; every Resend failure recorded with the right retry; a tampered note never sent; no key, ticket or address in any answer or log |
+| `tools/growth/outbound_lifecycle.test.js` | 48 | Adds step 9: the morning run drafts, the tick hands the daily email a ticket, the real function sends one note to the owner; nothing else moves |
+| `tools/growth/outbound_static.test.js` | 40 | Every outbound function is checked (a new one must be added); the digest function reads only its three settings and logs nothing secret |
+| `tools/growth/outbound_console.e2e.js` | 295 | Adds sections 58–60: the setting, where it goes, no address field, the panel's chip (sent, failed with its reason, nobody to go to, off), text never markup |
+| `tools/growth/outbound_sql.test.js` | 494 | Twenty tables, every one denied to clients |
+
+**Mutation-checked:** 66 deliberate breaks (52 of the SQL, 14 of the function). 63 were caught. Two of those were first missed, which led to two more checks: the plan's own words after a failure that may have sent, and the ticket check itself after an answer.
+
+The other three remove one of two independent safeguards whose other one holds in every state the database allows:
+- the owner check inside `digest_recipient` (the foreign keys already clear a removed owner);
+- the two guards on the tick's upsert (the plan never asks for a send or a skip they would refuse).
+
+### Rollback
+
+- **Stop it:** untick it in the settings. A ticket already out dies with it, and nothing more is written or sent.
+- **The database:** additive. Re-running an earlier file leaves the new table and columns unused.
+
 ## Operating it
 
 ### Before you go live (a checklist)
@@ -1410,10 +1519,11 @@ Nothing in this phase has been deployed. Schema changes and automation stay off 
 5. **System check:** all checks pass, and nothing under "Now" or "Soon".
 6. **Go live:** turn test mode off (you type LIVE). Keep the daily cap at 20 at first; the warm-up starts at 10 a day and adds 5 a week up to it.
 7. **The morning run (optional):** run `supabase/growth_outbound_cron.sql`, set your window, and turn Automation on. It never approves or sends.
+8. **The daily email (optional):** tick "Email me once the morning run is done…" in the same group. It tells you when drafts wait, and only you.
 
 ### Every morning
 
-1. Open `/admin/growth/` → Outbound.
+1. Open `/admin/growth/` → Outbound. With the daily email on, its link brings you there once drafts are waiting.
 2. Read the System check line and **This morning**: qualified today, what waits for review, today's cap, the domain.
 3. **Review queue:** approve or reject each draft.
 4. **Approved, not sent:** press Send.
@@ -1433,8 +1543,9 @@ Nothing in this phase has been deployed. Schema changes and automation stay off 
   3. tighten the email-confidence gate in settings.
 - **A key may have leaked:** rotate it at the provider, then in Supabase → Edge Functions → Secrets: `RESEND_API_KEY`, `ANTHROPIC_API_KEY`, `BRAVE_SEARCH_API_KEY` or `HUNTER_API_KEY`. Functions read keys on every request, so nothing is redeployed. For the webhook secret, roll it in Resend, then run `select growth_outbound.set_webhook_secret('whsec_…');` (Svix sends both signatures while it rolls).
 - **Remove an owner:** in the SQL editor, run `delete from growth_outbound.owners where user_id = (select id from auth.users where lower(email) = lower('them@…'));`. Removing them from the affiliate admins does the same. Every grant and revoke is audited.
+- **The daily email did not come:** the morning-run panel says why ("Daily email: …"). Usually nothing waited for review, or the morning run is still working. If it says it could not be sent, the System check says what Resend answered. Check that `growth_outbound_digest` is deployed and `RESEND_API_KEY` is set. It tries again by itself only when it surely did not go.
 - **"Sends were never confirmed" (System check, "Soon"):** press "Try again" in Sends. It reuses the same key, so Resend sends at most once. After 23 hours the tick marks such a send failed.
 
 ## Next
 
-All twelve phases are built. What remains is operating it: the checklist and the morning above, and choosing which paid providers (if any) are worth their cost against the qualified prospects they produce (Results → By group → Search shows which searches pay off).
+All twelve phases are built, and the owner's daily email with them. What remains is operating it: the checklist and the morning above, and choosing which paid providers (if any) are worth their cost against the qualified prospects they produce (Results → By group → Search shows which searches pay off).

@@ -98,7 +98,8 @@
               ['automation_enabled', 'bool', 'Automation — discover, research and draft on schedule (never approve, never send)'],
               ['test_inbox', 'email', 'Test inbox']]],
     ['Morning run', [['automation_timezone', 'text', 'Your time zone (e.g. America/New_York)'], ['automation_start_hour', 'int', 'Starts at (hour, 0–23)', 0, 23],
-                     ['automation_hours', 'int', 'For how many hours', 1, 12]]],
+                     ['automation_hours', 'int', 'For how many hours', 1, 12],
+                     ['digest_enabled', 'bool', 'Email me once the morning run is done, if drafts are waiting for review (to my own address only; never to a prospect)']]],
     ['Limits', [['max_sends_per_day', 'int', 'Daily send cap (live)', 1, 200], ['max_test_sends_per_day', 'int', 'Daily test-send cap', 1, 100],
                 ['daily_prospect_target', 'int', 'Candidates to read per day (at most)', 1, 100],
                 ['daily_qualified_target', 'int', 'New qualified subscribers to aim for per day', 1, 50]]],
@@ -340,7 +341,11 @@
     $('obSettings').innerHTML = FIELDS.map(function (g) {
       return '<fieldset><legend>' + esc(g[0]) + '</legend><div class="row">' + g[1].map(function (f) {
         var id = 'obf_' + f[0], v = s[f[0]];
-        if (f[1] === 'bool') return '<div class="f" style="min-width:260px"><label class="chk"><input type="checkbox" id="' + id + '"' + (v ? ' checked' : '') + '> ' + esc(f[2]) + '</label></div>';
+        if (f[1] === 'bool') return '<div class="f" style="min-width:260px"><label class="chk"><input type="checkbox" id="' + id + '"' + (v ? ' checked' : '') + '> ' + esc(f[2]) + '</label>'
+          /* the daily email's address is the database's: the signed-in owner's own, shown, never typed */
+          + (f[0] === 'digest_enabled' ? '<div class="sub" id="obDigestTo">' + esc(!s.digest_enabled ? 'Off. When on, it goes to the address of the owner who turns it on.'
+              : s.digest_to ? 'Goes to ' + s.digest_to + ' (your account\'s own address).' : 'On, but there is nobody to send it to: turn it off and on again.') + '</div>' : '')
+          + '</div>';
         var type = f[1] === 'int' || f[1] === 'num' ? 'number' : f[1] === 'email' ? 'email' : 'text';
         var extra = f[1] === 'num' ? ' step="0.01" min="0" max="1"' : f[1] === 'int' ? ' step="1"' + (f[3] != null ? ' min="' + f[3] + '"' : '') + (f[4] != null ? ' max="' + f[4] + '"' : '') : '';
         return '<div class="f"><label for="' + id + '">' + esc(f[2]) + '</label><input id="' + id + '" type="' + type + '"' + extra + ' value="' + esc(v == null ? '' : v) + '"></div>';
@@ -1076,6 +1081,7 @@
     else h += '<span class="chip off" data-am="noclock">The clock is not running' + (sc.last_tick_at ? ' (last tick ' + esc(when(sc.last_tick_at)) + ')' : '')
       + ': run supabase/growth_outbound_cron.sql in the SQL editor</span>';
     h += '<span class="chip" data-am="next">' + (p.step ? 'Next: ' + esc(stepName(p.step)) : 'Now: ' + esc(p.reason || 'nothing to do')) + '</span>';
+    h += digestChip(a.digest);
     $('amChips').innerHTML = h;
     $('amToday').innerHTML = kpi('Searched today', t.searched ? 'yes' : 'not yet')
       + (t.qualified_target != null ? kpi('Qualified today', (t.qualified || 0) + ' of ' + t.qualified_target, 'new potential subscribers') : '')
@@ -1091,6 +1097,21 @@
           + '<td><span class="pill ' + (r.status === 'failed' ? 'bad' : r.status === 'running' ? 'test' : 'on') + '">' + esc(r.status) + '</span></td>'
           + '<td>' + esc(res) + '</td><td class="wrap">' + esc(clip(r.error || '', 160)) + '</td></tr>';
       }).join('') : '<tr><td colspan="5">The morning run has not run yet.</td></tr>');
+  }
+  /* the owner's daily email ("N drafts are waiting for your review"): on or
+     off, to whom, and what became of this morning's */
+  function digestChip(dg) {
+    if (!dg) return '';
+    if (!dg.enabled) return '<span class="chip off" data-am="digest">Daily email: off (turn it on under Outbound settings → Morning run)</span>';
+    var pl = dg.plan || {}, last = (dg.recent || [])[0], now;
+    if (last && last.day === pl.day) {
+      now = last.status === 'sent' ? 'sent ' + when(last.sent_at) + ' (' + last.waiting + ' waiting)'
+        : last.status === 'skipped' ? 'nothing waited for review this morning'
+        : last.status === 'sending' ? 'on its way'
+        : 'not sent: ' + clip(last.reason || 'no reason recorded', 120) + (last.retryable && last.attempts < 3 ? ' (it tries again)' : '');
+    } else now = pl.reason || '';
+    return '<span class="chip ' + (!dg.to || (last && last.day === pl.day && last.status === 'failed') ? 'warn' : 'ok') + '" data-am="digest">Daily email: on, to '
+      + esc(dg.to || 'nobody (turn it off and on again)') + (now ? ' · ' + esc(now) : '') + '</span>';
   }
   function loadAutomation() {
     if (!OWNER) return Promise.resolve();

@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-08 — Outbound: the owner's daily email ("N drafts are waiting for your review")
+
+**One short note a morning, to the owner only, when the morning run leaves drafts for review.** Off until turned on (Outbound settings → Morning run). It never goes to a prospect, never sends a draft and never counts against the daily cap. Details, deploy order and rollback: `docs/growth-outbound.md`, "The daily email".
+
+- **Whom:** the confirmed address of the outbound owner who turned it on, looked up every time it is written. There is no address field. A removed owner, an unconfirmed address, or an address that is also a prospect's: nothing is sent.
+- **What:** counts only: drafts waiting (first emails and follow-ups), how many the morning run wrote, approved and unsent, what may still go out today, System-check items in fixed words, and the console link. No name, address, organization or draft.
+- **When:** once the morning run has nothing left to do, or its window closes (up to 12 hours after). Once a morning at most. A morning with nothing to review is recorded as skipped, with no email.
+- **How:** the tick mints a single-use ticket (its hash kept) for a new Edge Function, `growth_outbound_digest` (project URL, anon key, `RESEND_API_KEY`; no service-role key; refuses browsers). The ticket opens two doors (write it; record what became of it) and nothing else. Tried again only when it surely did not go, at most three times.
+- **Database:** `digests` (the twentieth table, deny-all, never deleted), `digest_enabled` / `digest_owner` settings, the morning-run panel's `digest`, report row 38, attention items `digest_failed` and `digest_no_recipient`. Still three public doors.
+- **Console:** the setting shows the address it goes to; the morning-run panel shows today's email (sent, skipped, on its way, or why not).
+- **Tests:** `outbound_digest_sql` (102), `outbound_digest` (45), lifecycle step 9 (48), static (40), console e2e sections 58–60 (295). 63 of 66 deliberate breaks were caught; the other 3 are layered safeguards.
+
 ## 2026-10-08 — Growth engine: organic discovery, free tools, attribution end to end
 
 **Visitor → research page or tool → trial → paid, measured by channel. Built on the existing articles, attribution, funnel, newsletter, outbound and partner systems; nothing touches billing.** Audit: `docs/growth-engine/AUDIT.md`; deploy order and Search Console setup: `docs/growth-engine/README.md`.

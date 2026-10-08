@@ -176,6 +176,7 @@ function freshSettings() {
     min_fit_score: 80, min_identity_confidence: 0.9, min_role_confidence: 0.85, min_research_confidence: 0.85, min_email_confidence: 0.9,
     followup_enabled: true, followup_delay_days: 5, final_followup_enabled: false, final_followup_delay_days: 10,
     automation_timezone: 'America/New_York', automation_start_hour: 6, automation_hours: 4, attribution_links: true,
+    digest_enabled: false, digest_to: null,
     sender_name: 'Davis', sender_email: 'davis@edgedesksports.com', reply_to_email: null, cta_url: 'https://edgedesksports.com/', business_name: 'EdgeDesk Sports',
     postal_address: null, unsubscribe_url_base: null, discovery_config: {},
     send_blockers: ['postal_address_missing', 'unsubscribe_endpoint_missing'], live_send_blockers: ['postal_address_missing', 'unsubscribe_endpoint_missing', 'webhook_secret_missing'],
@@ -511,6 +512,8 @@ const PROSPECTS = { total: 2, rows: [
             return reply(200, { ok: false, reason: 'invalid_value', detail: 'budget: llm must be a whole number' });
           }
           Object.keys(p).filter((k) => k.indexOf('confirm_') !== 0).forEach((k) => { changed[k] = { from: st[k], to: p[k] }; st[k] = p[k]; });
+          // the daily email goes to the signed-in owner's own address, decided by the database
+          if ('digest_enabled' in p) st.digest_to = p.digest_enabled ? (state.digestTo || 'owner@edgedesk.test') : null;
           return reply(200, { ok: true, changed, settings: st });
         }
       }
@@ -1125,6 +1128,59 @@ const PROSPECTS = { total: 2, rows: [
     chk('52 before the Phase 9 SQL: said, and nothing else fails', /arrives with the Phase 9 SQL/.test(await text(t.page, '#amChips')) && !(await visible(t.page, '#obMsg')));
     chk('52 no page errors', t.errors.length === 0, t.errors);
     await t.ctx.close();
+  }
+
+  /* ── 58–60. the owner's daily email (2026-10) ─────────────────────── */
+  {
+    const t = await open({ role: 'owner' });
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 700);
+    chk('58 the daily email is a Morning run setting, off by default, and says where it would go', !(await t.page.isChecked('#obf_digest_enabled'))
+      && /Off\. When on, it goes to the address of the owner who turns it on\./.test(await text(t.page, '#obDigestTo')), await text(t.page, '#obDigestTo'));
+    chk('58 there is no address to type: no field for one', (await t.page.$$('#obf_digest_to, #obf_digest_owner')).length === 0);
+    chk('58 an older SQL (no daily email in the panel): no chip, nothing fails', !/Daily email/.test(await text(t.page, '#amChips')));
+    await t.page.check('#obf_digest_enabled');
+    await t.page.click('#obSave'); await settle(t.page, 600);
+    const up = t.calls.filter((c) => c[0] === 'growth_outbound_settings_update').slice(-1)[0];
+    chk('58 turning it on saves exactly that — no address goes with it, no confirmation needed (it only ever writes to you)',
+      !!up && JSON.stringify(up[1].p) === JSON.stringify({ digest_enabled: true }) && t.dialogs.length === 0, up && up[1]);
+    chk('58 … and says where it now goes: the account\'s own address', /Goes to owner@edgedesk\.test \(your account's own address\)\./.test(await text(t.page, '#obDigestTo')), await text(t.page, '#obDigestTo'));
+    chk('58 no page errors', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+  {
+    const t = await open({ role: 'owner' });
+    t.state.am = { digest: { enabled: true, to: 'owner@edgedesk.test', plan: { action: 'wait', reason: 'this morning\'s email went out', day: '2026-10-08' },
+      recent: [{ day: '2026-10-08', status: 'sent', waiting: 3, attempts: 1, retryable: false, sent_at: '2026-10-08T11:16:00Z', reason: null }] } };
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 700);
+    let chips = await text(t.page, '#amChips');
+    chk('59 the morning-run panel says the daily email is on, to whom, and that this morning\'s went', /Daily email: on, to owner@edgedesk\.test · sent 2026-10-08 11:16Z \(3 waiting\)/.test(chips), chips);
+    await t.ctx.close();
+  }
+  {
+    const t = await open({ role: 'owner' });
+    t.state.am = { digest: { enabled: true, to: 'owner@edgedesk.test', plan: { action: 'wait', reason: 'x', day: '2026-10-08' },
+      recent: [{ day: '2026-10-08', status: 'failed', waiting: 2, attempts: 1, retryable: true, sent_at: null, reason: 'Resend answered 503' + XSS }] } };
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 700);
+    const chips = await text(t.page, '#amChips');
+    chk('60 a failed one: said, with the reason, and that it tries again', /Daily email: on, to owner@edgedesk\.test · not sent: Resend answered 503/.test(chips) && /\(it tries again\)/.test(chips)
+      && await t.page.$eval('[data-am="digest"]', (e) => e.classList.contains('warn')), chips);
+    chk('60 … its words are text, never markup', !(await t.page.evaluate(() => window.__pwned)) && /<img src=x/.test(chips));
+    await t.ctx.close();
+  }
+  {
+    const t = await open({ role: 'owner' });
+    t.state.am = { digest: { enabled: true, to: null, plan: { action: 'wait', reason: 'nobody to send it to', day: '2026-10-08' }, recent: [] } };
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 700);
+    let chips = await text(t.page, '#amChips');
+    chk('60 on with nobody to go to: said, with what to do', /Daily email: on, to nobody \(turn it off and on again\) · nobody to send it to/.test(chips), chips);
+    await t.ctx.close();
+    const u = await open({ role: 'owner' });
+    u.state.am = { digest: { enabled: false, to: null, plan: { action: 'wait', reason: 'the daily email is off', day: '2026-10-08' }, recent: [] } };
+    await u.page.click('#tabBtnOutbound'); await settle(u.page, 700);
+    chips = await text(u.page, '#amChips');
+    chk('60 off: said, with where to turn it on', /Daily email: off \(turn it on under Outbound settings → Morning run\)/.test(chips), chips);
+    chk('58-60 no page errors', u.errors.length === 0 && t.errors.length === 0, u.errors.concat(t.errors));
+    await u.ctx.close();
   }
 
   /* ── 53–56. results (Phase 10) ─────────────────────────────────────── */
