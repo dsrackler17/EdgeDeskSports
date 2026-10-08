@@ -1,0 +1,24 @@
+/* ===========================================================================
+   EdgeDesk primary navigation row — for the hand-written public pages whose
+   headers keep their own look (methodology, newsletter, sample research,
+   public record). The links themselves are lib/edgedesk_nav.js PRIMARY and
+   tools/site/nav.test.js holds every page to them. Colours come from each
+   page's own --dim / --text.
+
+   .ed-pnav-host  the header row the nav sits in: it may wrap
+   .ed-pnav       the five links; on a phone a full-width row of its own
+   .ed-pnav.row   a full-width row at every width (a header already full of
+                  its own in-page links, like the public record)
+   =========================================================================== */
+.ed-pnav-host{flex-wrap:wrap}
+.ed-pnav{display:flex;flex-wrap:wrap;align-items:center;gap:2px;min-width:0;margin-left:12px}
+.ed-pnav a{color:var(--dim,#b3a993);font-size:13.5px;font-weight:500;line-height:1.2;padding:8px 10px;border-radius:8px;text-decoration:none;white-space:nowrap}
+.ed-pnav a:hover,.ed-pnav a[aria-current]{color:var(--text,#f1ebdf);background:rgba(241,235,223,.06)}
+.ed-pnav a:focus-visible{outline:2px solid var(--text,#f1ebdf);outline-offset:1px}
+.ed-pnav.row{order:3;flex:1 0 100%;margin:0 0 6px -10px}
+.ed-pnav-host.tall{height:auto!important;min-height:60px;padding-top:8px}
+@media(max-width:760px){
+  .ed-pnav-host{height:auto!important;min-height:56px;padding-top:8px;padding-bottom:6px;row-gap:2px}
+  .ed-pnav{order:3;flex:1 0 100%;margin:0 0 2px -8px}
+  .ed-pnav a{padding:9px 8px;font-size:13px}
+}

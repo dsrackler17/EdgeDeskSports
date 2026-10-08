@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-10-08 — Product-led growth, phases 1–2: free research first
+
+**Free research is the front door; Full Access ($49.99/month, 7-day free trial) is one step behind it. Nothing in billing changes.** Audit and the five-phase plan: `docs/product-led-growth/PLAN.md`.
+
+**Security fix:**
+- **the AI desk let the public anon key through.** `edgedesk_ai` treated a 401 from the subscriptions read as "could not be checked"; anon cannot read that table, so the key in every page's source got paid inference. It now refuses an `anon` token and any 401/403 (404/5xx stay fail-open for paying readers) and uses the database's 21-day past-due grace instead of 3. Needs the Deploy intelligence workflow (build `edgedesk_ai-2026-10-08-r21-anon-gate`).
+
+**Found and not fixed here (PLAN.md §2):** premium research is committed as public static JSON in a public repository (`football/cfb_terminal/`, `football/props/`, the slates) and `/research/cfb/` renders the CFB board with no sign-in — Phase 2b; `collective_public` uses a looser entitlement copy; `paywall.sql` is not in the repo.
+
+**Navigation:** one primary nav on every public page — Free Research, Today's Games, Tools, Research Terminal, Pricing (`lib/edgedesk_nav.js`; `tools/site/nav.test.js` fails on drift). Articles rebuilt (header and footer only).
+
+**Today's Games (`/today/`):** the week's NFL and FBS slate in the reader's time zone, each game with its free research and EdgeDesk's public read where the free board has one; `football/home/schedule.json` (no model numbers) built beside the home board.
+
+**Landing page:** free research first — the first action, a working no-vig calculator in the hero instead of a sample of an unbuilt feature, a `#free` section before any pitch, a Free card beside Full Access, nothing in development on either price card.
+
+**Freemium access map:** `lib/edgedesk_plans.js` (free / Full Access / planned, with the door or gate for each) and `lib/edgedesk_flags.js` (UI-only flags; never read by access code). `tools/site/free_access.test.js` (122): free pages use anonymous doors only, anon grants match the SQL, no premium artifact is fetched by a free page, no secret in a served file, the desk's gate is pinned.
+
+**Tests:** new `site:test` (nav 493, free access 122); landing positioning 466, interaction 203, landing e2e 249, public pages e2e 130, home 142, intelligence §32 +13; `checkout_flow.e2e.js` repaired (failed on main) — 40.
+
 ## 2026-10-08 — Outbound: replies read from Resend
 
 **A reply ends that person's sequence by itself, the way "They replied" does.** Resend's signed `email.received` event arrives through the existing outbound webhook. The database checks the signature, then matches the sender's address, whole and alone, to the last live email that went there in 180 days. Details and setup: `docs/growth-outbound.md`, "Replies".

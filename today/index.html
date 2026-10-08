@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Today’s NFL and College Football Games | EdgeDesk</title>
+<meta name="description" content="This week's NFL and FBS games in your time zone, with EdgeDesk's free research and its public model-vs-market read. No account. Research, not picks.">
+<link rel="canonical" href="https://edgedesksports.com/today/">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#100e0a">
+<meta name="color-scheme" content="dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Sports">
+<meta property="og:url" content="https://edgedesksports.com/today/">
+<meta property="og:title" content="Today’s games — EdgeDesk">
+<meta property="og:description" content="This week's NFL and college football slate with EdgeDesk's free research for each game. Research, not picks.">
+<meta property="og:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@edgedesksports">
+<meta name="twitter:title" content="Today’s games — EdgeDesk">
+<meta name="twitter:description" content="This week's NFL and college football slate with EdgeDesk's free research for each game. Research, not picks.">
+<meta name="twitter:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23100e0a'/%3E%3Cpath d='M15 6h6l-4 20h-6z' fill='%232fa79a'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://iattxbkbufslbauoumga.supabase.co" crossorigin>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tools/tools.css?v=1">
+<style>
+.day{margin-top:26px}
+.day h2{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:0 0 4px;font-size:19px}
+.day h2 small{font:600 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.game .meta .pill{margin-right:6px;vertical-align:1px}
+.game .row{margin-top:8px}
+.game .btn{min-height:44px;padding:10px 14px;font-size:14px}
+.up{font-size:13.5px;color:var(--dim);text-decoration:none;border-bottom:1px dotted var(--border2);padding:6px 0}
+.up:hover{color:var(--text)}
+.summary{font-size:14px;color:var(--dim);margin:14px 0 0}
+.summary b{color:var(--text)}
+</style>
+<script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "Today’s NFL and college football games",
+  "url": "https://edgedesksports.com/today/",
+  "description": "This week's NFL and FBS games with EdgeDesk's free published research and its public model-vs-market read.",
+  "isPartOf": { "@type": "WebSite", "name": "EdgeDesk Sports", "url": "https://edgedesksports.com" }
+}</script>
+</head>
+<body data-ed-page="tool:todays-games">
+<header class="th">
+  <a class="th-brand" href="/"><span class="th-mark" aria-hidden="true"></span>EdgeDesk</a>
+  <nav class="th-nav" aria-label="Main">
+    <a href="/articles/" data-ed-nav="research">Free Research</a><a class="on" href="/today/" aria-current="page" data-ed-nav="today">Today’s Games</a><a href="/tools/" data-ed-nav="tools">Tools</a><a href="/app.html" data-ed-nav="terminal">Research Terminal</a><a href="/#pricing" data-ed-nav="pricing">Pricing</a>
+  </nav>
+  <a class="th-cta" href="/#subscribe" data-ed-cta="today_header_trial">Start free trial</a>
+</header>
+<main class="wrap" id="main">
+  <span class="ey">Free · no account · research, not picks</span>
+  <h1>Today’s games</h1>
+  <p class="lede">Every NFL and FBS game on EdgeDesk’s slate for the next eight days, in your time zone. Each game
+  links to EdgeDesk’s free published research where there is some, and shows EdgeDesk’s public read —
+  Research, Watch, Pass or Data incomplete — where the free board carries it.</p>
+
+  <section class="card" aria-labelledby="slate-h">
+    <h2 id="slate-h" style="margin-top:0">This week’s slate</h2>
+    <div class="filters">
+      <div><label class="fl" for="fLeague">League</label>
+        <select id="fLeague"><option value="">NFL + college</option><option value="nfl">NFL</option><option value="cfb">College football</option></select></div>
+      <div><label class="fl" for="fShow">Show</label>
+        <select id="fShow"><option value="">Every game</option><option value="research">With free research</option><option value="read">With EdgeDesk’s public read</option></select></div>
+    </div>
+    <p class="summary" id="summary" aria-live="polite">Loading the slate…</p>
+    <div id="days">
+      <noscript><p class="note">The slate needs JavaScript. EdgeDesk’s published research — the same games, written up —
+      is at <a href="/articles/nfl/">NFL research</a> and <a href="/articles/college-football/">college football research</a>.</p></noscript>
+    </div>
+    <p class="note" id="asOf"></p>
+  </section>
+
+  <section>
+    <h2>How to read a game</h2>
+    <ul class="steps">
+      <li><b>Read the free research</b> opens EdgeDesk’s published article on the game: its own fair spread, what moved
+      the number, where each team has a measured edge, and what the model could not see.</li>
+      <li><span class="pill research">Research</span> clears EdgeDesk’s research gates: worth opening, not a bet.</li>
+      <li><span class="pill watch">Watch</span> a real disagreement with the market that has not cleared the gates yet.</li>
+      <li><span class="pill pass">Pass</span> EdgeDesk and the market agree, or the price leaves no value.</li>
+      <li><span class="pill incomplete">Data incomplete</span> something EdgeDesk needs is missing or stale, and the game says what.</li>
+    </ul>
+    <p>The public read is a free sample of up to eight games at a time. A disagreement is a reason to research a game,
+    never a recommendation to bet it. How every number is built is public: the <a href="/methodology/">methodology</a>
+    and the <a href="/record.html">graded public record</a>.</p>
+  </section>
+
+  <aside class="cta">
+    <span class="k">EdgeDesk Full Access</span>
+    <h2 style="margin-top:6px">EdgeDesk’s number for every game on this page.</h2>
+    <p>For each game EdgeDesk prices: its fair spread and total, win probabilities, the market at each sportsbook with the
+    time it was captured, EdgeDesk EV at the exact price, player props and the reasoning behind the gap — plus your own
+    bet journal with profit, ROI and closing-line value.</p>
+    <div class="row"><a class="btn" href="/#subscribe" data-ed-cta="today_trial">Start the 7-day free trial</a>
+      <a class="btn ghost" href="/newsletter/?from=today" data-ed-cta="today_newsletter">Get the weekly research email</a></div>
+    <p class="fine">7-day free trial. $49.99/month after trial. Cancel anytime.</p>
+  </aside>
+
+  <nav class="links" aria-label="More free research">
+    <a href="/articles/nfl/">NFL research</a>
+    <a href="/articles/college-football/">College football research</a>
+    <a href="/tools/model-vs-market/">Model vs. market explorer</a>
+    <a href="/tools/no-vig-calculator/">No-vig odds calculator</a>
+  </nav>
+</main>
+<footer class="tf">
+  <div><b>Research, not picks.</b> Every number on this page is EdgeDesk’s research output or a captured market price. Nothing here is betting advice, a prediction or a recommendation.</div>
+  <nav aria-label="Footer"><a href="/">Home</a><a href="/articles/">Free research</a><a href="/today/">Today’s games</a><a href="/tools/">Free tools</a><a href="/newsletter/">Weekly research email</a><a href="/methodology/">Methodology</a><a href="/record.html">Public record</a><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a><a href="/disclaimer.html">Disclaimer</a></nav>
+  <div>21+ · Gamble responsibly — 1-800-GAMBLER · © EdgeDesk Sports, Rackler Tech Ventures LLC</div>
+</footer>
+<script src="/lib/edgedesk_flags.js?v=20261008a"></script>
+<script src="/lib/edgedesk_home.js?v=20260930c"></script>
+<script>
+/* THREE PUBLIC READS, NOTHING ELSE:
+     /football/home/schedule.json   the week's games — teams, kickoff, venue
+                                    or conferences, no model number
+                                    (tools/home/build_home.js)
+     public_home_board()            EdgeDesk's public read for up to 8 games,
+                                    the same anonymous subset the landing page
+                                    and the explorer show (supabase/home_board.sql,
+                                    60-second server cache), re-judged at view
+                                    time by lib/edgedesk_home.js
+     /articles/data/published.json  the free published research
+   No EV, no props, no driver and nothing personal is read here. */
+(function () {
+  var SB_URL = 'https://iattxbkbufslbauoumga.supabase.co';
+  var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8';
+  var H = window.EDHome, F = window.EDFlags;
+  var $ = function (id) { return document.getElementById(id); };
+  var games = [], read = {}, pre = {}, post = {}, used = false;
+  var LEAGUE = { nfl: 'NFL', cfb: 'College football' };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function timeout(p, ms) { return Promise.race([p, new Promise(function (_, rej) { setTimeout(function () { rej(new Error('timeout')); }, ms); })]); }
+  function idOf(key) { return String(key || '').split('|')[1] || ''; }
+  function dayStart(t) { var d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); }
+  function dayLabel(t, now) {
+    var diff = Math.round((dayStart(t) - dayStart(now)) / 864e5);
+    var name = new Date(t).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+    return { head: diff === 0 ? 'Today' : (diff === 1 ? 'Tomorrow' : name), sub: diff === 0 || diff === 1 ? name : '' };
+  }
+  function timeText(t) {
+    try { return new Date(t).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }); }
+    catch (_) { return new Date(t).toISOString().slice(11, 16) + ' UTC'; }
+  }
+  function ago(iso) {
+    var t = Date.parse(iso); if (!isFinite(t)) return null;
+    var m = Math.max(0, Math.round((Date.now() - t) / 6e4));
+    return m < 60 ? m + ' min ago' : (m < 1440 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago');
+  }
+  /* the free article for a game: the postgame once it has kicked off and one
+     exists, otherwise the pregame */
+  function article(g, now) {
+    var id = idOf(g.key), started = Date.parse(g.kickoff) <= now;
+    return (started && post[id]) || pre[id] || null;
+  }
+  function where(g) {
+    if (g.league === 'nfl') return g.venue || '';
+    if (g.away_conf && g.home_conf) return g.away_conf === g.home_conf ? g.home_conf : g.away_conf + ' vs ' + g.home_conf;
+    return g.fcs ? 'FCS opponent' : '';
+  }
+  function row(g, now) {
+    var v = read[g.key], a = article(g, now), started = Date.parse(g.kickoff) <= now;
+    var meta = (v ? '<span class="pill ' + esc(v.tone) + '">' + esc(v.status_label) + '</span>' : '')
+      + esc(LEAGUE[g.league] || g.league) + ' · ' + (started ? 'Kicked off ' : '') + esc(timeText(g.kickoff))
+      + (where(g) ? ' · ' + esc(where(g)) : '') + (g.week != null ? ' · Week ' + esc(g.week) : '');
+    var nums = v && (v.fair_text || v.market_text) ? '<div class="nums">'
+      + '<div class="stat"><div class="k">EdgeDesk fair</div><div class="v" style="font-size:17px">' + esc(v.fair_text || '—') + '</div></div>'
+      + '<div class="stat"><div class="k">Market</div><div class="v" style="font-size:17px">' + esc(v.market_text || '—') + '</div>'
+      + '<div class="s">' + (v.market_book ? esc(v.market_book) : '') + (v.market_age_text ? ' · ' + esc(v.market_age_text) : '') + (v.market_stale ? ' · stale' : '') + '</div></div>'
+      + '<div class="stat"><div class="k">Gap</div><div class="v" style="font-size:17px">' + esc(v.gap_text || '—') + '</div>'
+      + '<div class="s">' + (v.toward && v.gap_text ? 'toward ' + esc(v.toward) : '') + '</div></div></div>'
+      + (v.status_note ? '<p class="why"><b>' + esc(v.status_label) + ':</b> ' + esc(v.status_note) + '</p>' : '') : '';
+    /* the upgrade says what it adds for THIS game, and is never the first action */
+    var up = v && v.status !== 'DATA_INCOMPLETE' && v.gap_text
+      ? 'Every book’s price, EV at the exact price and the drivers behind this gap: Full Access'
+      : 'EdgeDesk’s fair line and the market comparison for games it prices: Full Access';
+    return '<article class="game" data-key="' + esc(g.key) + '">'
+      + '<div class="meta">' + meta + '</div>'
+      + '<h3>' + esc(g.away) + ' at ' + esc(g.home) + '</h3>' + nums
+      + '<div class="row">'
+      + (a ? '<a class="btn" href="' + esc(a.url) + '" data-ed-cta="today_article">Read the free ' + (a.type === 'postgame' ? 'postgame analysis' : 'research') + '</a>' : '')
+      + '<a class="up" href="/#pricing" data-ed-cta="today_row_upgrade">' + esc(up) + ' →</a>'
+      + '</div></article>';
+  }
+  function draw() {
+    var now = Date.now(), lg = $('fLeague').value, show = $('fShow').value;
+    var list = games.filter(function (g) {
+      return (!lg || g.league === lg) && (show !== 'research' || article(g, now)) && (show !== 'read' || read[g.key]);
+    });
+    var today = games.filter(function (g) { return dayStart(Date.parse(g.kickoff)) === dayStart(now); }).length;
+    var withArt = games.filter(function (g) { return article(g, now); }).length;
+    $('summary').innerHTML = games.length
+      ? '<b>' + today + '</b> game' + (today === 1 ? '' : 's') + ' today · <b>' + games.length + '</b> this week · <b>' + withArt + '</b> with free research'
+      : 'No upcoming game is on EdgeDesk’s slate right now.';
+    var el = $('days');
+    if (!list.length) {
+      el.innerHTML = '<p class="note">' + (games.length ? 'No game this week matches those filters.'
+        : 'EdgeDesk’s published research is at <a href="/articles/">/articles/</a>.') + '</p>';
+      return;
+    }
+    var html = '', cur = null;
+    list.forEach(function (g) {
+      var t = Date.parse(g.kickoff), d = dayStart(t);
+      if (d !== cur) {
+        if (cur !== null) html += '</section>';
+        var lab = dayLabel(t, now);
+        html += '<section class="day"><h2>' + esc(lab.head) + (lab.sub ? ' <small>' + esc(lab.sub) + '</small>' : '') + '</h2>';
+        cur = d;
+      }
+      html += row(g, now);
+    });
+    el.innerHTML = html + '</section>';
+  }
+  ['fLeague', 'fShow'].forEach(function (id) {
+    $(id).addEventListener('change', function () {
+      draw();
+      if (!used && window.EDPublic) { used = true; window.EDPublic.track('tool_used', { entity: 'todays_games', filter: id }); }
+    });
+  });
+
+  var sched = timeout(fetch('/football/home/schedule.json', { cache: 'no-cache' })
+    .then(function (r) { if (!r.ok) throw new Error(String(r.status)); return r.json(); }), 6000).catch(function () { return null; });
+  var board = (!F || F.on('today_live_data')) ? timeout(fetch(SB_URL + '/rest/v1/rpc/public_home_board', { method: 'POST',
+    headers: { apikey: SB_KEY, authorization: 'Bearer ' + SB_KEY, 'content-type': 'application/json' }, body: '{}' })
+    .then(function (r) { if (!r.ok) throw new Error(String(r.status)); return r.json(); }), 8000).catch(function () { return null; }) : Promise.resolve(null);
+  var pub = timeout(fetch('/articles/data/published.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; }), 6000)
+    .catch(function () { return null; });
+
+  Promise.all([sched, board, pub]).then(function (all) {
+    var s = all[0], rpc = all[1], p = all[2], now = Date.now();
+    (p && p.articles || []).forEach(function (a) { if (a.game_id) (a.type === 'postgame' ? post : pre)[a.game_id] = a; });
+    var view = H && rpc ? H.build(rpc, null, now, {}) : null;
+    (view && view.games || []).forEach(function (v) { if (v.game_key) read[v.game_key] = v; });
+    var from = now - 6 * 36e5;
+    games = (s && Array.isArray(s.games) ? s.games : []).filter(function (g) { return Date.parse(g.kickoff) >= from; });
+    /* no schedule file: the public board's own games are still a slate */
+    if (!games.length && view) {
+      games = view.games.filter(function (v) { return v.kickoff_at && v.game_key; }).map(function (v) {
+        return { key: v.game_key, league: v.league, kickoff: v.kickoff_at, away: v.away, home: v.home };
+      }).sort(function (a, b) { return Date.parse(a.kickoff) - Date.parse(b.kickoff); });
+    }
+    var parts = [];
+    if (s && s.generated_at) parts.push('Schedule updated ' + ago(s.generated_at));
+    if (rpc && rpc.as_of) parts.push('EdgeDesk’s public read as of ' + ago(rpc.as_of));
+    else if (!F || F.on('today_live_data')) parts.push('EdgeDesk’s public read could not be reached just now');
+    parts.push('times in your time zone; a stale price is judged now, on your clock');
+    $('asOf').textContent = parts.join(' · ') + '.';
+    draw();
+  });
+})();
+</script>
+<script src="/lib/edgedesk_track.js?v=20261008a" defer></script>
+<script src="/lib/edgedesk_public.js?v=20261008a" defer></script>
+</body>
+</html>

@@ -18,8 +18,8 @@
 <!-- Reveal-on-scroll and the live-board skeleton hide content only when script
      is running, so a page whose JS fails never leaves a section invisible. -->
 <script>document.documentElement.className+=' js';</script>
-<title>EdgeDesk Sports | Football Research + Bet Tracking</title>
-<meta name="description" content="Research NFL and college football games and player props, log your bets, and see whether your betting process is working. Research, not picks.">
+<title>EdgeDesk Sports | Free Football Research + Bet Tracking</title>
+<meta name="description" content="Free NFL and college football research every week. Full Access adds player props, EV and a journal to log your bets. Research, not picks.">
 <link rel="canonical" href="https://edgedesksports.com/">
 <meta name="theme-color" content="#100e0a">
 <meta name="color-scheme" content="dark">
@@ -27,8 +27,8 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="EdgeDesk Sports">
 <meta property="og:url" content="https://edgedesksports.com/">
-<meta property="og:title" content="EdgeDesk Sports | Bet with a process. Know what’s working.">
-<meta property="og:description" content="Research NFL and college football matchups, log your bets, track your results against the closing line, and see where your process is helping or hurting you. Research, not picks.">
+<meta property="og:title" content="EdgeDesk Sports | Research the game before you bet it.">
+<meta property="og:description" content="Free NFL and college football research every week: today’s games, EdgeDesk’s model against the market, published game research and odds tools. Full Access adds player props, EV and bet tracking. Research, not picks.">
 <meta property="og:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -36,8 +36,8 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
 <meta name="twitter:site" content="@edgedesksports">
-<meta name="twitter:title" content="EdgeDesk Sports | Bet with a process. Know what’s working.">
-<meta name="twitter:description" content="Football research and personal betting analytics for NFL and college football: model vs market, player props, a bet journal and closing-line value on your own bets. Research, not picks.">
+<meta name="twitter:title" content="EdgeDesk Sports | Research the game before you bet it.">
+<meta name="twitter:description" content="Free NFL and college football research every week, and Full Access when you want the whole board: player props, EV at the exact price and your own bet journal. Research, not picks.">
 <!-- Structured data: who publishes this and what it sells. No rating, no
      review count and no user count — nothing is claimed here that the page
      itself does not state. The offer must match lib/edgedesk_pricing.js
@@ -117,7 +117,6 @@ h1,h2,h3,h4{font-family:var(--disp);font-weight:600;letter-spacing:-.02em}
 .nav-links{display:flex;align-items:center;gap:2px;flex:1;margin-left:26px}
 .nlink{color:var(--dim);font-size:14px;font-weight:500;padding:8px 11px;border-radius:8px;white-space:nowrap;transition:color .15s,background .15s}
 .nlink:hover{color:var(--text);background:rgba(241,235,223,.04)}
-.nav-links .nlink[href="/games/"],.nav-links .nlink[href="/articles"]{display:none}
 #navLogin{margin-left:auto}
 .nav-offer{display:none}
 .nav-act{display:flex;align-items:center;gap:8px;flex:none}
@@ -135,7 +134,6 @@ h1,h2,h3,h4{font-family:var(--disp);font-weight:600;letter-spacing:-.02em}
   .nav-links{display:none;position:absolute;top:64px;left:0;right:0;margin:0;flex-direction:column;align-items:stretch;gap:0;padding:6px 20px 20px;background:var(--ink);border-bottom:1px solid var(--line);box-shadow:0 30px 40px -30px rgba(0,0,0,.8)}
   .nav.open .nav-links{display:flex}
   .nav-links .nlink{font-size:17px;padding:15px 2px;border-radius:0;border-bottom:1px solid var(--line);color:var(--text)}
-  .nav-links .nlink[href="/games/"],.nav-links .nlink[href="/articles"]{display:block;color:var(--dim);font-size:15px}
   #navLogin{margin:16px 0 0;width:100%;padding:13px 16px;font-size:15px}
   .nav-offer{display:block;margin-top:10px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--faint)}
 }
@@ -220,16 +218,9 @@ h1 .g,.sec-head h2 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),v
 .dash{box-shadow:0 50px 90px -60px rgba(0,0,0,.95),0 0 0 1px rgba(47,167,154,.05)}
 .panel-bar .chips{margin-left:auto;display:flex;gap:6px;flex:none}
 .panel-bar .chips .tag{margin-left:0}
-.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border-bottom:1px solid var(--line)}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border-bottom:1px solid var(--line)}
 .kpis>div{background:var(--panel);padding:14px 14px 13px;min-width:0}
 .kpis .v{font-size:19px}
-.sig{display:grid;grid-template-columns:minmax(0,1fr);gap:3px;margin:12px 16px 0;padding:11px 13px;border:1px solid var(--line);border-left:3px solid var(--line2);border-radius:10px;background:var(--deep)}
-.sig .k{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
-.sig b{font-size:15px;font-weight:600;line-height:1.35}
-.sig .m{font-family:var(--mono);font-size:12px;color:var(--dim)}
-.sig.good{border-left-color:var(--val)}.sig.good .k{color:var(--val)}
-.sig.watch{border-left-color:var(--est)}.sig.watch .k{color:var(--est)}
-.sig.next{border-left-color:var(--obs);margin-bottom:14px}.sig.next .k{color:var(--obs)}
 
 /* one subscription, said once, under the hero */
 .strip{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:12px 22px;margin-top:56px;padding:18px 22px;border:1px solid var(--line2);border-radius:16px;background:var(--panel)}
@@ -238,6 +229,7 @@ h1 .g,.sec-head h2 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),v
 .strip li{position:relative;display:inline-flex;align-items:center;gap:8px;font-family:var(--disp);font-size:16.5px;font-weight:600;letter-spacing:-.01em;padding:0 14px}
 .strip li+li::before{content:"+";position:absolute;left:-5px;color:var(--faint);font-family:var(--mono);font-weight:400}
 .strip li:first-child{padding-left:0}
+.strip-how{font-size:14px;white-space:nowrap}
 .strip-p{font-family:var(--disp);font-size:20px;font-weight:700;letter-spacing:-.02em;white-space:nowrap}
 
 @media(max-width:1180px){
@@ -247,11 +239,9 @@ h1 .g,.sec-head h2 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),v
 }
 @media(max-width:1020px){.hero-in{grid-template-columns:1fr;gap:36px}.hero{padding-top:40px;padding-bottom:52px}.dash{max-width:560px}}
 @media(max-width:760px){.strip{margin-top:36px;padding:16px}.strip li{font-size:15px;padding:0 11px}.strip-p{font-size:18px}}
-/* THE FIRST PHONE SCREEN. A first visit from a social link, inside an in-app
-   browser, leaves ~550 px (iPhone SE) to ~660 px (iPhone 15) of page. Before
-   any scroll it says what EdgeDesk is (eyebrow, headline), what it does (the
-   sentence), what it costs (the offer), where to tap (both actions in one
-   row) and shows the top of the product: the week's numbers. */
+/* THE FIRST PHONE SCREEN (~550 px in an in-app browser): what EdgeDesk is,
+   what is free, what Full Access costs, both actions in one row, and the top
+   of the free calculator — before any scroll. */
 @media(max-width:560px){
   .cta{margin-top:20px;gap:10px}
   .cta .btn.lg{flex:1 1 100%;padding:14px 16px;font-size:15.5px}
@@ -266,25 +256,61 @@ h1 .g,.sec-head h2 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),v
   .hero .microcta>span{padding:0 9px}
   .hero .microcta>span+span::before{display:block;content:"";position:absolute;left:-2px;top:50%;width:3px;height:3px;margin-top:-1.5px;border-radius:50%;background:var(--faint)}
   .aud{margin-top:12px;padding-top:10px;font-size:12.5px;text-align:center}
-  .kpis{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1.1fr) minmax(0,.7fr)}
   .kpis>div{padding:10px 8px}
   .kpis .v{font-size:15px;white-space:nowrap}
   .kpis .l{font-size:8.5px;letter-spacing:.06em}
-  .sig{margin:10px 12px 0;padding:10px 11px}
-  .sig.next{margin-bottom:12px}
-  .sig b{font-size:14px}
-  .strip ul{gap:6px 0}
+    .strip ul{gap:6px 0}
 }
 @media(max-width:374px){
   .hero .cta{grid-template-columns:1fr}
-  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   /* every chip stays: on the narrowest phones they take their own row */
   .panel-bar{flex-wrap:wrap}
   .panel-bar .chips{margin-left:0;flex-basis:100%;order:3}
 }
 
+/* the hero's free calculator */
+.calc-in{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:14px 16px 0}
+.calc-in label{display:grid;gap:6px;min-width:0}
+.calc-in .l,.calc-out .l{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.calc-in input{width:100%;min-width:0;min-height:46px;background:var(--ink);border:1px solid var(--line2);border-radius:10px;color:var(--text);font-family:var(--mono);font-size:18px;padding:10px 12px}
+.calc-in input:focus{outline:2px solid var(--obs);outline-offset:-1px}
+.calc-in input[aria-invalid="true"]{border-color:var(--neg)}
+.calc-out{margin-top:14px;border-top:1px solid var(--line)}
+.calc-out .v{display:block;font-family:var(--mono);font-weight:700;margin-top:4px;white-space:nowrap}
+.calc-out .s{display:block;font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:2px}
+.calc-help{padding:12px 16px;font-size:13px;line-height:1.5;color:var(--dim);margin:0}
+.calc-err{padding:0 16px 12px;font-size:13px;color:var(--neg);margin:0}
+@media(max-width:560px){.calc-in{padding:12px 12px 0;gap:8px}.calc-help{padding:10px 12px;font-size:12.5px}}
+@media(max-width:374px){.calc-out .v{font-size:13.5px}.calc-in input{font-size:16px}}
+
 /* ---------- sections ---------- */
 .sec{padding:96px 0}
+.sec.alt+.sec.alt{border-top:0}
+/* #free */
+.free-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.fcard{background:var(--panel);border:1px solid var(--line2);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.fcard .fk{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--obs)}
+.fcard h3{font-size:20px;letter-spacing:-.02em;line-height:1.25}
+.fcard>.lnk{align-self:flex-start;font-size:15px}
+.fcard>.btn{align-self:flex-start;margin-top:4px}
+.fcard .fadd{margin-top:auto;padding-top:12px;border-top:1px solid var(--line);font-size:13.5px;color:var(--dim);line-height:1.5}
+.fcard .fadd b{color:var(--text);font-weight:600}
+.fdesc{color:var(--dim);font-size:15px;line-height:1.55}
+.flist,.fgames{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.flist li{display:grid;gap:2px;min-width:0}
+.flist a{font-weight:600;color:var(--text);border-bottom:1px solid var(--line2);justify-self:start}
+.flist a:hover{border-bottom-color:var(--obs)}
+.flist span{font-size:13.5px;color:var(--dim);line-height:1.45}
+.fgames{gap:0}
+.fgames li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);min-width:0}
+.fgames li:last-child{border-bottom:0}
+.fgames .fg-m{min-width:0}
+.fgames .fg-m b{display:block;font-weight:600;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fgames .fg-m small{display:block;font-family:var(--mono);font-size:11px;color:var(--faint)}
+.fgames .st{flex:none}
+.fgames .fg-none{display:block;color:var(--dim);font-size:14.5px;border:0;padding:0}
+.final .fback{align-self:center;font-size:15px}
+@media(max-width:760px){.free-grid{grid-template-columns:1fr}.fcard{padding:18px}}
 .sec.alt{background:var(--deep);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .sec-head{max-width:820px}
 .sec-head.center{text-align:center;margin:0 auto}
@@ -515,13 +541,6 @@ h1 .g,.sec-head h2 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),v
 
 /* ---------- value + pricing ---------- */
 .price{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,440px);gap:28px 56px;align-items:start;max-width:1040px;margin-left:auto;margin-right:auto}
-.val h3{font-size:22px;letter-spacing:-.02em}
-.vlist{list-style:none;padding:0;margin:16px 0 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 18px}
-.vlist li{position:relative;padding-left:22px;font-size:15px;line-height:1.4}
-.vlist li::before{content:"\2713";position:absolute;left:0;color:var(--val);font-weight:700}
-.vlist li.later{color:var(--dim)}
-.vlist li.later::before{content:"\25CB";color:var(--est)}
-.vlist li.later .soon{margin-left:6px}
 .hook{margin-top:30px;font-family:var(--disp);font-size:clamp(22px,2.4vw,28px);font-weight:600;letter-spacing:-.025em;line-height:1.15}
 .hook+p{margin-top:10px;font-size:15px;color:var(--dim);line-height:1.6;max-width:36em}
 .pcard{position:relative;background:var(--panel);border:1px solid rgba(47,167,154,.45);border-radius:20px;padding:30px;box-shadow:0 40px 80px -60px rgba(0,0,0,.95)}
@@ -538,6 +557,13 @@ h1 .g,.sec-head h2 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),v
 .psub{font-size:12.5px;color:var(--dim);margin-top:12px;line-height:1.55;text-align:center}
 .psub+.psub{margin-top:4px}
 .psmall{font-family:var(--mono);font-size:10.5px;color:var(--faint);line-height:1.6;margin-top:14px;text-align:center}
+.freecard{border-color:var(--line2);box-shadow:none}
+.freecard .ptag{color:var(--dim)}
+.freecard .pper{font-size:14px}
+.freecard .btn{width:100%}
+.pnote{max-width:720px;margin:40px auto 0;text-align:center}
+.pnote .hook{margin-top:0}
+.pnote .hook+p{margin-left:auto;margin-right:auto}
 .timeline{list-style:none;padding:0;margin:40px auto 0;max-width:1040px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .timeline li{background:var(--ink);padding:16px 18px;display:grid;gap:4px}
 .timeline .when{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--obs)}
@@ -545,7 +571,7 @@ h1 .g,.sec-head h2 .g,.final h2 .g{background:linear-gradient(92deg,var(--obs),v
 .timeline span{display:block;color:var(--dim);font-size:14px;line-height:1.5}
 .timeline .when span,.timeline b span{display:inline;color:inherit;font-size:inherit}
 @media(max-width:900px){.price{grid-template-columns:1fr;max-width:560px}.timeline{grid-template-columns:1fr;max-width:560px}}
-@media(max-width:560px){.pcard{padding:22px}.pamt{font-size:46px}.vlist{grid-template-columns:1fr}}
+@media(max-width:560px){.pcard{padding:22px}.pamt{font-size:46px}}
 
 /* ---------- trust / public record ---------- */
 .trust{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:44px;align-items:start}
@@ -697,15 +723,15 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
   <div class="wrap nav-in">
     <a class="logo" href="#top" aria-label="EdgeDesk Sports, back to top"><span class="mk" aria-hidden="true"></span>EdgeDesk <small>Sports</small></a>
     <div class="nav-links" id="navMenu">
-      <a class="nlink" href="#how" data-track="how_it_works_click" data-cta="nav_how">How it works</a>
-      <a class="nlink" href="#coach" data-cta="nav_coach">Process Coach</a>
-      <a class="nlink" href="#research" data-cta="nav_research">Research</a>
-      <a class="nlink" href="#pricing" data-cta="nav_pricing">Pricing</a>
-      <a class="nlink" href="#faq" data-cta="nav_faq">FAQ</a>
-      <!-- the public, no-account half: research articles and the free games.
-           In the menu and the footer, never competing with the trial. -->
-      <a class="nlink" href="/articles">Research articles</a>
-      <a class="nlink" href="/games/">Games</a>
+      <!-- THE SITE'S PRIMARY NAVIGATION (lib/edgedesk_nav.js), the same five
+           places on every public page, free research first. Pricing is this
+           page's own #pricing; everywhere else it is /#pricing.
+           tools/site/nav.test.js holds every page to the list. -->
+      <a class="nlink" href="/articles/" data-ed-nav="research" data-cta="nav_free_research">Free Research</a>
+      <a class="nlink" href="/today/" data-ed-nav="today" data-cta="nav_today">Today&rsquo;s Games</a>
+      <a class="nlink" href="/tools/" data-ed-nav="tools" data-cta="nav_tools">Tools</a>
+      <a class="nlink" href="/app.html" data-ed-nav="terminal" data-cta="nav_terminal">Research Terminal</a>
+      <a class="nlink" href="#pricing" data-ed-nav="pricing" data-cta="nav_pricing">Pricing</a>
       <button type="button" class="btn ghost" id="navLogin" onclick="openAuth('login')" data-track="login_click">Log in</button>
       <p class="nav-offer"><span data-ed-price="cta">7-day free trial. $49.99/month after trial. Cancel anytime.</span></p>
     </div>
@@ -719,57 +745,183 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
 <main id="main">
 
 <!-- ============================ 1 · HERO ============================
-     Five seconds: what EdgeDesk is (research + your own betting analytics),
-     what it does, what it costs, and that it sells no picks. The eyebrow,
-     headline and sentence carry data-hero so a future test can swap them
-     (HERO_COPY in the presentation script); this markup is variant "a" and
-     is what search engines, no-script readers and every visitor get.
-     The preview beside it is a SAMPLE week, read the way Process Coach will
-     read one. Process Coach is in development, and the panel says so in its
-     own chrome before any number. -->
+     Free research first, the trial second; data-hero copy is HERO_COPY "a".
+     The calculator works now and is correct before any script runs. -->
 <header class="hero" id="top">
   <div class="wrap">
     <div class="hero-in">
       <div>
         <span class="ey" data-hero="eyebrow">Research, not picks.</span>
-        <h1 data-hero="headline">Bet with a process. <span class="g">Know what&rsquo;s working.</span></h1>
-        <p class="sub" data-hero="sub">Research NFL and college football matchups, log your bets, track your results against the closing line, and see where your process is helping or hurting you.</p>
+        <h1 data-hero="headline">Research the game <span class="g">before you bet it.</span></h1>
+        <p class="sub" data-hero="sub">Free NFL and college football research every week: today&rsquo;s games, EdgeDesk&rsquo;s number beside the market&rsquo;s, and odds tools, with no card needed.</p>
         <div class="cta">
-          <button type="button" class="btn primary lg" id="heroCta" onclick="startSubscribe()" data-track="hero_cta_click" data-cta="hero_trial">Start free trial <span class="ar" aria-hidden="true">&rarr;</span></button>
-          <a class="btn ghost lg" id="heroStart" href="#how" data-track="how_it_works_click" data-cta="hero_how">See how it works</a>
+          <a class="btn primary lg" id="heroStart" href="#free" data-track="hero_free_click" data-cta="hero_free">Explore free research <span class="ar" aria-hidden="true">&rarr;</span></a>
+          <button type="button" class="btn ghost lg" id="heroCta" onclick="startSubscribe()" data-track="hero_cta_click" data-cta="hero_trial">Start free trial</button>
         </div>
-        <p class="microcta"><span><b><span data-ed-price="trial">7 days free</span></b></span><span>Then <span data-ed-price="price">$49.99</span>/month</span><span>Cancel anytime</span><span>21+</span></p>
+        <p class="microcta"><span><b>Free research, no card</b></span><span>Full Access <span data-ed-price="trial">7 days free</span></span><span>Then <span data-ed-price="price">$49.99</span>/month</span><span>Cancel anytime</span><span>21+</span></p>
         <p class="aud">Built for NFL + college football bettors, from first-time researchers to serious market analysts.</p>
       </div>
 
-      <div class="panel dash" role="region" aria-label="Sample week in Process Coach, a feature in development">
-        <div class="panel-bar"><span class="mk" aria-hidden="true"></span><span class="nm">This week</span><span class="chips"><span class="soon">In development</span><span class="tag">Sample data</span></span></div>
-        <div class="kpis">
-          <div><span class="l">P&amp;L</span><span class="v pos">+$184.22</span></div>
-          <div><span class="l">ROI</span><span class="v pos">+5.7%</span></div>
-          <div><span class="l">Process grade</span><span class="v acc">A&minus;</span></div>
-          <div><span class="l">Open</span><span class="v">6</span></div>
+      <div class="panel dash calc" role="region" aria-label="Free no-vig calculator">
+        <div class="panel-bar"><span class="mk" aria-hidden="true"></span><span class="nm">No-vig calculator</span><span class="chips"><span class="tag live">Free</span><span class="tag">Works now</span></span></div>
+        <div class="calc-in">
+          <label for="hcA"><span class="l">Side A price</span><input id="hcA" type="text" autocomplete="off" value="-150" aria-describedby="hcHelp"></label>
+          <label for="hcB"><span class="l">Side B price</span><input id="hcB" type="text" autocomplete="off" value="+130" aria-describedby="hcHelp"></label>
         </div>
-        <div class="sig good"><span class="k">What&rsquo;s working</span><b>CFB spreads entered 24&ndash;72h early</b><span class="m"><span class="pos">+9.8% ROI</span> &middot; <span class="pos">+1.4 avg CLV</span></span></div>
-        <div class="sig watch"><span class="k">Watch</span><b>Game-day props</b><span class="m"><span class="neg">&minus;11.2% ROI</span> &middot; <span class="neg">&minus;0.8 avg CLV</span></span></div>
-        <div class="sig next"><span class="k">Next focus</span><b>Improve game-day entry discipline.</b></div>
-        <div class="panel-foot">Illustrative sample, not a real account. Process Coach is in development. Today EdgeDesk logs your bets, results and closing-line value; the grades and patterns above are not live yet.</div>
+        <div class="kpis calc-out" id="hcOut" aria-live="polite">
+          <div><span class="l">A&rsquo;s fair chance</span><span class="v" id="hcPa">57.98%</span><span class="s" id="hcOa">no-vig &minus;138</span></div>
+          <div><span class="l">B&rsquo;s fair chance</span><span class="v" id="hcPb">42.02%</span><span class="s" id="hcOb">no-vig +138</span></div>
+          <div><span class="l">Book margin</span><span class="v" id="hcVig">3.48%</span><span class="s">taken out</span></div>
+        </div>
+        <p class="calc-help" id="hcHelp">Enter both sides of a market in American odds. The sportsbook&rsquo;s margin comes out; what is left is the chance each price implies.</p>
+        <p class="calc-err" id="hcErr" role="alert" hidden></p>
+        <div class="panel-foot"><a class="lnk" href="/tools/no-vig-calculator/" data-cta="hero_calc_full">Every method, with the working</a> &middot; Arithmetic on the prices you enter. Not a prediction.</div>
       </div>
     </div>
 
-    <!-- 2 · ONE SUBSCRIPTION, said once -->
-    <div class="strip" aria-label="What one subscription covers">
-      <span class="strip-k">One subscription</span>
+    <!-- 2 · FREE, AND WHAT FULL ACCESS ADDS, said once -->
+    <div class="strip" aria-label="What is free, and what Full Access adds">
+      <span class="strip-k">Free</span>
       <ul>
-        <li>Football research</li>
-        <li>Bet tracking</li>
-        <li>P&amp;L + CLV</li>
-        <li>Process Coach <span class="soon">Soon</span></li>
+        <li>Game research</li>
+        <li>Today&rsquo;s games</li>
+        <li>Odds tools</li>
+        <li>Weekly email</li>
       </ul>
-      <span class="strip-p" data-ed-price="monthly">$49.99/month</span>
+      <span class="strip-p"><span class="strip-k">Full Access</span> <span data-ed-price="monthly">$49.99/month</span></span>
+      <a class="lnk strip-how" href="#how" data-track="how_it_works_click" data-cta="strip_how">How Full Access works</a>
     </div>
   </div>
 </header>
+
+<!-- ================== FREE RESEARCH, FIRST ==================
+     lib/edgedesk_plans.js FREE, before any pitch; filled by
+     lib/edgedesk_home_free.js from public data. -->
+<section class="sec" id="free">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <span class="ey">Free research <span class="livechip">No card</span></span>
+      <h2>Free football research, <span class="g">every week.</span></h2>
+      <p class="lede">No account and no card. Come back each week for the slate, EdgeDesk&rsquo;s public read on it, the published research and the tools.</p>
+    </div>
+    <div class="sec-body free-grid">
+      <article class="fcard rv" id="freeToday">
+        <span class="fk">Today&rsquo;s games</span>
+        <h3>This week&rsquo;s NFL and FBS slate</h3>
+        <ul class="fgames" id="freeGames"><li class="fg-none">Every NFL and FBS game this week, with EdgeDesk&rsquo;s public read where the free board has one.</li></ul>
+        <a class="lnk" href="/today/" data-cta="free_today">See every game this week &rarr;</a>
+        <p class="fadd"><b>Full Access</b> adds EdgeDesk&rsquo;s fair line and the market at each sportsbook for every game it prices.</p>
+      </article>
+      <article class="fcard rv" id="freeResearch">
+        <span class="fk">Published research</span>
+        <h3>EdgeDesk&rsquo;s read on this week&rsquo;s games</h3>
+        <ul class="flist" id="freeArts">
+          <li><a href="/articles/nfl/" data-cta="free_nfl">NFL research</a><span>The fair spread, what moved it, what the model can&rsquo;t see.</span></li>
+          <li><a href="/articles/college-football/" data-cta="free_cfb">College football research</a><span>The same, for FBS games.</span></li>
+        </ul>
+        <a class="lnk" href="/articles/" data-cta="free_articles">All free research &rarr;</a>
+        <p class="fadd"><b>Full Access</b> adds the drivers and player props behind every game, not only the ones written up.</p>
+      </article>
+      <article class="fcard rv" id="freeTools">
+        <span class="fk">Free tools</span>
+        <h3>The arithmetic, with the working shown</h3>
+        <ul class="flist">
+          <li><a href="/tools/no-vig-calculator/" data-cta="free_tool_novig">No-vig odds calculator</a><span>What a price implies once the margin is out.</span></li>
+          <li><a href="/tools/fair-odds-calculator/" data-cta="free_tool_fair">Fair odds calculator</a><span>Your probability in, the fair price out.</span></li>
+          <li><a href="/tools/model-vs-market/" data-cta="free_tool_explorer">Model vs. market explorer</a><span>A live sample of EdgeDesk&rsquo;s board.</span></li>
+          <li><a href="/research/sample/" data-cta="free_sample">A full sample game</a><span>One game, researched the way the terminal does it.</span></li>
+        </ul>
+        <p class="fadd"><b>Full Access</b> adds EdgeDesk EV at the exact price you are offered, for every game and prop it prices.</p>
+      </article>
+      <article class="fcard rv" id="freeEmail">
+        <span class="fk">Weekly research email</span>
+        <h3>The games worth your research time, once a week</h3>
+        <p class="fdesc">College football on Monday, the NFL on Tuesday: where EdgeDesk and the market disagree, and why. Free; one click to stop.</p>
+        <a class="btn ghost" href="/newsletter/?from=home_free" data-cta="free_newsletter">Get the weekly email</a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================== 9 · THE RESEARCH TERMINAL ==================
+     The product that is live today, and the one place on this page with
+     REAL numbers: the preview and the statistics are read from
+     public_home_board() and football/home/board.json through
+     lib/edgedesk_home.js. Nothing in them is typed in by hand; when no live
+     game exists the preview falls back to an example that SAYS it is one.
+     #today is the anchor methodology/ links to as "today's board". -->
+<section class="sec alt" id="research">
+  <span id="today" aria-hidden="true"></span>
+  <div class="wrap rs">
+    <div>
+      <div class="sec-head rv">
+        <span class="ey">The research terminal <span class="livechip">Live</span></span>
+        <h2>Before you track the decision, <span class="g">research it.</span></h2>
+        <p class="lede">EdgeDesk prices every NFL and FBS game itself, sets its number beside the sportsbooks&rsquo;, and tells you how sure it is.</p>
+      </div>
+      <ul class="caps rv">
+        <li><b>EdgeDesk fair line</b><span>Its own spread, total and projected score.</span></li>
+        <li><b>Market line</b><span>What the sportsbooks are offering, and when it was captured.</span></li>
+        <li><b>Model gap</b><span>How far apart EdgeDesk and the market are.</span></li>
+        <li><b>Win probability</b><span>For each side, from EdgeDesk&rsquo;s own model.</span></li>
+        <li><b>Confidence</b><span>A reliability score on college games, and what&rsquo;s uncertain on every game.</span></li>
+        <li><b>Matchup edge</b><span>Where a college team&rsquo;s units hold the advantage.</span></li>
+        <li><b>Roster context</b><span>College rosters and player ratings; NFL quarterback rooms.</span></li>
+        <li><b>Weather</b><span>Forecasts for college venues, used in the total.</span></li>
+        <li><b>Player props</b><span>Projections against the line, in an experimental stage.</span></li>
+        <li><b>Best available price</b><span>Where supported, the best line on file and the price that still plays.</span></li>
+      </ul>
+      <details class="deep rv">
+        <summary>For advanced users: how the numbers are built</summary>
+        <div class="a">
+          <p>The game model is built from opponent-adjusted efficiency per play, home field and a learned quarterback layer. The prop model is built from volume, share and efficiency, adjusted for matchup, game script, weather and availability. Sportsbook prices are captured with the time they were captured. A language model never produces a probability, a price or a rating.</p>
+          <p>EdgeDesk EV compares EdgeDesk&rsquo;s probability with the sportsbook&rsquo;s break-even at the exact price you&rsquo;re offered. Expected value estimates the theoretical return of repeatedly taking the same price if EdgeDesk&rsquo;s probability is accurate &mdash; it does not guarantee profit. Raw and calibrated EV are shown separately.</p>
+          <p>An unconfirmed starting quarterback is carried as unknown, never as healthy. A stale price is not compared. Layers that have not cleared validation move no line.</p>
+          <p><a class="lnk" href="/methodology/">Read the methodology</a> &middot; <a class="lnk" href="/methodology/#ev">How EdgeDesk EV works</a> &middot; <a class="lnk" href="/methodology/#props">How prop projections are built</a></p>
+        </div>
+      </details>
+    </div>
+
+    <div class="rv">
+      <!-- LIVE STATISTICS: counts of what EdgeDesk holds right now. Real rows
+           only; every item stays hidden unless the database returned it. Not
+           a user count, not an accuracy, not a profit. -->
+      <ul class="stats" id="lpStats" aria-label="EdgeDesk right now">
+        <li data-k="updated" class="upd" hidden>Updated <b></b></li>
+        <li data-k="games_analyzed" hidden><b></b> games analyzed</li>
+        <li data-k="research" title="Games whose market or a player prop clears EdgeDesk&rsquo;s research gates right now, each counted once" hidden><b></b> worth researching</li>
+        <li data-k="props_tracked" hidden><b></b> player props tracked</li>
+        <li data-k="sportsbook_quotes" hidden><b></b> sportsbook quotes</li>
+      </ul>
+      <div class="panel prev" id="lpPreview" role="region" aria-label="Live research preview">
+        <div class="panel-bar"><span class="mk" aria-hidden="true"></span><span class="nm">EdgeDesk &middot; Research</span><span class="tag" id="lpPrevTag">Loading</span></div>
+        <div class="prev-body loading" id="lpPrevBody" aria-live="polite">
+          <div class="prev-skel" aria-hidden="true"><div class="skel w6"></div><div class="skel w4"></div><div class="skel tall"></div><div class="skel w8"></div><div class="skel w6"></div><div class="skel tall"></div><div class="skel w8"></div></div>
+          <!-- THE EXAMPLE: shown only without script, or when no live game or
+               prop is available. It says what it is in its own chrome. -->
+          <div class="prev-ill" id="lpPrevIll">
+            <div class="opp">
+              <div class="opp-hd"><div><b>Baylor @ Auburn</b><span class="w">Example game &middot; not live</span></div><span class="st research">RESEARCH</span></div>
+              <div class="opp-k">Game market</div>
+              <div class="cells c3"><div><span class="l">Market</span><span class="v">AUB &minus;8.0</span></div><div><span class="l">EdgeDesk</span><span class="v mdl">AUB &minus;10.2</span></div><div><span class="l">Difference</span><span class="v warn">2.2 pts</span></div></div>
+              <div class="opp-k">Player props</div>
+              <div class="pm"><span class="pwho">QB passing yards<small>Example</small></span><span class="nums">Mkt <b>226.5</b> &middot; ED <b>241.0</b> &middot; <span class="d pos">+14.5</span></span></div>
+              <div class="pm"><span class="pwho">WR receiving yards<small>Example</small></span><span class="nums">Mkt <b>61.5</b> &middot; ED <b>66.0</b> &middot; <span class="d pos">+4.5</span></span></div>
+            </div>
+          </div>
+        </div>
+        <div class="panel-foot" id="lpPrevFoot">Numbers are read from EdgeDesk&rsquo;s stored research with the time each price was captured. Research, not picks.</div>
+      </div>
+      <noscript><p class="note" style="margin-top:12px"><b>The live preview needs JavaScript.</b> It reads EdgeDesk&rsquo;s current research the moment the page loads.</p></noscript>
+      <div class="legend" aria-label="What the labels mean">
+        <span><span class="st research">RESEARCH</span> clears EdgeDesk&rsquo;s research gates &mdash; worth opening, not a bet</span>
+        <span><span class="st watch">WATCH</span> a real disagreement that hasn&rsquo;t cleared them</span>
+        <span><span class="st pass">PASS</span> model and market agree, or the price leaves no value</span>
+      </div>
+      <p class="rs-more"><a class="lnk" href="/research/sample/" data-cta="research_sample">See a full sample game, free</a> &middot; <a class="lnk" href="/articles" data-cta="research_articles">Read this week&rsquo;s research articles</a></p>
+    </div>
+  </div>
+</section>
 
 <!-- ================== 3 · WHY RESULTS AREN'T ENOUGH ==================
      Illustrative tickets, and they say so. $100 at -110 each: a loss is
@@ -1060,115 +1212,34 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
   </div>
 </section>
 
-<!-- ================== 9 · THE RESEARCH TERMINAL ==================
-     The product that is live today, and the one place on this page with
-     REAL numbers: the preview and the statistics are read from
-     public_home_board() and football/home/board.json through
-     lib/edgedesk_home.js. Nothing in them is typed in by hand; when no live
-     game exists the preview falls back to an example that SAYS it is one.
-     #today is the anchor methodology/ links to as "today's board". -->
-<section class="sec alt" id="research">
-  <span id="today" aria-hidden="true"></span>
-  <div class="wrap rs">
-    <div>
-      <div class="sec-head rv">
-        <span class="ey">The research terminal <span class="livechip">Live</span></span>
-        <h2>Before you track the decision, <span class="g">research it.</span></h2>
-        <p class="lede">EdgeDesk prices every NFL and FBS game itself, sets its number beside the sportsbooks&rsquo;, and tells you how sure it is.</p>
-      </div>
-      <ul class="caps rv">
-        <li><b>EdgeDesk fair line</b><span>Its own spread, total and projected score.</span></li>
-        <li><b>Market line</b><span>What the sportsbooks are offering, and when it was captured.</span></li>
-        <li><b>Model gap</b><span>How far apart EdgeDesk and the market are.</span></li>
-        <li><b>Win probability</b><span>For each side, from EdgeDesk&rsquo;s own model.</span></li>
-        <li><b>Confidence</b><span>A reliability score on college games, and what&rsquo;s uncertain on every game.</span></li>
-        <li><b>Matchup edge</b><span>Where a college team&rsquo;s units hold the advantage.</span></li>
-        <li><b>Roster context</b><span>College rosters and player ratings; NFL quarterback rooms.</span></li>
-        <li><b>Weather</b><span>Forecasts for college venues, used in the total.</span></li>
-        <li><b>Player props</b><span>Projections against the line, in an experimental stage.</span></li>
-        <li><b>Best available price</b><span>Where supported, the best line on file and the price that still plays.</span></li>
-      </ul>
-      <details class="deep rv">
-        <summary>For advanced users: how the numbers are built</summary>
-        <div class="a">
-          <p>The game model is built from opponent-adjusted efficiency per play, home field and a learned quarterback layer. The prop model is built from volume, share and efficiency, adjusted for matchup, game script, weather and availability. Sportsbook prices are captured with the time they were captured. A language model never produces a probability, a price or a rating.</p>
-          <p>EdgeDesk EV compares EdgeDesk&rsquo;s probability with the sportsbook&rsquo;s break-even at the exact price you&rsquo;re offered. Expected value estimates the theoretical return of repeatedly taking the same price if EdgeDesk&rsquo;s probability is accurate &mdash; it does not guarantee profit. Raw and calibrated EV are shown separately.</p>
-          <p>An unconfirmed starting quarterback is carried as unknown, never as healthy. A stale price is not compared. Layers that have not cleared validation move no line.</p>
-          <p><a class="lnk" href="/methodology/">Read the methodology</a> &middot; <a class="lnk" href="/methodology/#ev">How EdgeDesk EV works</a> &middot; <a class="lnk" href="/methodology/#props">How prop projections are built</a></p>
-        </div>
-      </details>
-    </div>
-
-    <div class="rv">
-      <!-- LIVE STATISTICS: counts of what EdgeDesk holds right now. Real rows
-           only; every item stays hidden unless the database returned it. Not
-           a user count, not an accuracy, not a profit. -->
-      <ul class="stats" id="lpStats" aria-label="EdgeDesk right now">
-        <li data-k="updated" class="upd" hidden>Updated <b></b></li>
-        <li data-k="games_analyzed" hidden><b></b> games analyzed</li>
-        <li data-k="research" title="Games whose market or a player prop clears EdgeDesk&rsquo;s research gates right now, each counted once" hidden><b></b> worth researching</li>
-        <li data-k="props_tracked" hidden><b></b> player props tracked</li>
-        <li data-k="sportsbook_quotes" hidden><b></b> sportsbook quotes</li>
-      </ul>
-      <div class="panel prev" id="lpPreview" role="region" aria-label="Live research preview">
-        <div class="panel-bar"><span class="mk" aria-hidden="true"></span><span class="nm">EdgeDesk &middot; Research</span><span class="tag" id="lpPrevTag">Loading</span></div>
-        <div class="prev-body loading" id="lpPrevBody" aria-live="polite">
-          <div class="prev-skel" aria-hidden="true"><div class="skel w6"></div><div class="skel w4"></div><div class="skel tall"></div><div class="skel w8"></div><div class="skel w6"></div><div class="skel tall"></div><div class="skel w8"></div></div>
-          <!-- THE EXAMPLE: shown only without script, or when no live game or
-               prop is available. It says what it is in its own chrome. -->
-          <div class="prev-ill" id="lpPrevIll">
-            <div class="opp">
-              <div class="opp-hd"><div><b>Baylor @ Auburn</b><span class="w">Example game &middot; not live</span></div><span class="st research">RESEARCH</span></div>
-              <div class="opp-k">Game market</div>
-              <div class="cells c3"><div><span class="l">Market</span><span class="v">AUB &minus;8.0</span></div><div><span class="l">EdgeDesk</span><span class="v mdl">AUB &minus;10.2</span></div><div><span class="l">Difference</span><span class="v warn">2.2 pts</span></div></div>
-              <div class="opp-k">Player props</div>
-              <div class="pm"><span class="pwho">QB passing yards<small>Example</small></span><span class="nums">Mkt <b>226.5</b> &middot; ED <b>241.0</b> &middot; <span class="d pos">+14.5</span></span></div>
-              <div class="pm"><span class="pwho">WR receiving yards<small>Example</small></span><span class="nums">Mkt <b>61.5</b> &middot; ED <b>66.0</b> &middot; <span class="d pos">+4.5</span></span></div>
-            </div>
-          </div>
-        </div>
-        <div class="panel-foot" id="lpPrevFoot">Numbers are read from EdgeDesk&rsquo;s stored research with the time each price was captured. Research, not picks.</div>
-      </div>
-      <noscript><p class="note" style="margin-top:12px"><b>The live preview needs JavaScript.</b> It reads EdgeDesk&rsquo;s current research the moment the page loads.</p></noscript>
-      <div class="legend" aria-label="What the labels mean">
-        <span><span class="st research">RESEARCH</span> clears EdgeDesk&rsquo;s research gates &mdash; worth opening, not a bet</span>
-        <span><span class="st watch">WATCH</span> a real disagreement that hasn&rsquo;t cleared them</span>
-        <span><span class="st pass">PASS</span> model and market agree, or the price leaves no value</span>
-      </div>
-      <p class="rs-more"><a class="lnk" href="/research/sample/" data-cta="research_sample">See a full sample game, free</a> &middot; <a class="lnk" href="/articles" data-cta="research_articles">Read this week&rsquo;s research articles</a></p>
-    </div>
-  </div>
-</section>
-
 <!-- ================== 10 · VALUE + PRICING ==================
      Every figure is lib/edgedesk_pricing.js (data-ed-price), the one source.
-     app.html sends visitors to ./index.html#pricing and #subscribe.
-     The value list says which parts are in development; the plan card lists
-     only what Full Access includes today (FEATURES). -->
+     app.html sends visitors to ./index.html#pricing and #subscribe. Free
+     (lib/edgedesk_plans.js FREE) beside Full Access (FEATURES); neither card
+     lists anything still in development. -->
 <section class="sec" id="pricing">
   <div class="wrap">
     <div class="sec-head center rv">
       <span class="ey">Pricing</span>
-      <h2>One platform. One price.</h2>
+      <h2>Free research. <span class="g">One price for the rest.</span></h2>
     </div>
     <div class="sec-body price">
-      <div class="val rv">
-        <h3>What <span data-ed-price="price">$49.99</span> a month covers</h3>
-        <ul class="vlist">
-          <li>Research terminal</li>
-          <li>Football models</li>
-          <li>Market comparison</li>
-          <li>Player props</li>
-          <li>Bet journal + ledger</li>
-          <li>P&amp;L + closing-line value</li>
-          <li>Decision-quality analytics</li>
-          <li>Public record</li>
-          <li class="later">Calendar view<span class="soon">Soon</span></li>
-          <li class="later">Process Coach<span class="soon">Soon</span></li>
-          <li class="later">Weekly Film Room<span class="soon">Soon</span></li>
+      <!-- lib/edgedesk_plans.js FREE, in order -->
+      <div class="freecard pcard rv">
+        <span class="ptag">EdgeDesk Free</span>
+        <p class="pname">Football research, no card</p>
+        <div class="pprice"><span class="pamt">$0</span><span class="pper">no account needed</span></div>
+        <ul class="pincl free-incl">
+          <li>Published research on NFL and college games</li>
+          <li>Today&rsquo;s games, with EdgeDesk&rsquo;s public read</li>
+          <li>A live model-vs-market sample</li>
+          <li>No-vig and fair odds calculators</li>
+          <li>A full sample game</li>
+          <li>The graded public record</li>
+          <li>The weekly research email</li>
         </ul>
-        <p class="hook">One bad habit can cost more than a month of EdgeDesk.</p>
-        <p>EdgeDesk is designed to help you see the decisions your betting history might otherwise hide. It can&rsquo;t promise you&rsquo;ll win, and it won&rsquo;t pretend to.</p>
+        <a class="btn ghost lg" href="#free" data-cta="pricing_free">Explore free research</a>
+        <p class="psub">Free stays free. Full Access is there when you want EdgeDesk&rsquo;s number on every game.</p>
       </div>
       <div class="pcard rv">
         <span id="subscribe"></span>
@@ -1194,6 +1265,10 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
         <p class="psub" id="edOffer" hidden></p>
         <p class="psmall">21+ &middot; Research and decision-support tool &middot; Signals can be wrong &middot; <span class="nw">1-800-GAMBLER</span></p>
       </div>
+    </div>
+    <div class="pnote rv">
+      <p class="hook">One bad habit can cost more than a month of EdgeDesk.</p>
+      <p>EdgeDesk is designed to help you see the decisions your betting history might otherwise hide. It can&rsquo;t promise you&rsquo;ll win, and it won&rsquo;t pretend to.</p>
     </div>
     <ol class="timeline rv">
       <li><span class="when">Today</span><b>Full access &middot; $0</b><span>Every live part of EdgeDesk is open during the trial.</span></li>
@@ -1278,6 +1353,10 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
         <div class="a"><p>No. Research, not picks. EdgeDesk shows its own price, the market&rsquo;s price, why they differ and what could make it wrong, and it helps you track and review your own decisions. The choice to bet stays yours &mdash; no picks, no locks, no guaranteed winners.</p></div>
       </details>
       <details>
+        <summary>What can I use for free?</summary>
+        <div class="a"><p>No account, no card: the published research, <a class="lnk" href="/today/">today&rsquo;s games</a> with EdgeDesk&rsquo;s public read, a model-vs-market sample, a sample game, the <a class="lnk" href="/tools/">odds calculators</a>, the public record and the weekly email. Full Access adds EdgeDesk&rsquo;s number on every game it prices, every book&rsquo;s price, EdgeDesk EV at the exact price, player props and your bet journal.</p></div>
+      </details>
+      <details>
         <summary>Does EdgeDesk guarantee I&rsquo;ll make money?</summary>
         <div class="a"><p>No, and nobody honestly can. EdgeDesk&rsquo;s numbers are estimates and can be wrong. What it gives you is research before you bet and evidence afterward about how your decisions are actually performing.</p></div>
       </details>
@@ -1286,12 +1365,8 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
         <div class="a"><p>Anyone who wants to approach football betting with more research and a measurable process &mdash; from someone who bets $10 on Saturdays to someone who prices every line on the board.</p></div>
       </details>
       <details>
-        <summary>Can beginners use it?</summary>
-        <div class="a"><p>Yes. The core answers are plain English: are you up or down, and are you getting good prices. You never need to know what a metric is called to use it.</p></div>
-      </details>
-      <details>
-        <summary>Can advanced bettors use it?</summary>
-        <div class="a"><p>Yes. Fair lines, win probabilities, EdgeDesk EV at the exact price, closing-line value with sample sizes and intervals, EdgeDesk&rsquo;s snapshot at the moment you entered, and every underlying position stay one tap away.</p></div>
+        <summary>Can beginners and advanced bettors both use it?</summary>
+        <div class="a"><p>Yes. The core answers are plain English: are you up or down, and are you getting good prices. You never need to know what a metric is called to use it. For advanced bettors: Fair lines, win probabilities, EdgeDesk EV at the exact price, closing-line value with sample sizes and intervals, EdgeDesk&rsquo;s snapshot at the moment you entered, and every underlying position stay one tap away.</p></div>
       </details>
       <details>
         <summary>What sports are currently supported?</summary>
@@ -1338,6 +1413,7 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
     <p class="fprice rv" data-ed-price="monthly">$49.99/month</p>
     <div class="cta rv">
       <button type="button" class="btn primary lg" id="btmLogin" onclick="startSubscribe()" data-track="final_trial_click" data-cta="final_trial">Start free trial <span class="ar" aria-hidden="true">&rarr;</span></button>
+      <a class="lnk fback" href="#free" data-cta="final_free">Or keep using the free research</a>
     </div>
     <p class="microcta"><span data-ed-price="cta">7-day free trial. $49.99/month after trial. Cancel anytime.</span></p>
     <p class="fine">Research, not picks &middot; 21+ &middot; <span class="nw">1-800-GAMBLER</span></p>
@@ -1367,8 +1443,9 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
       <div>
         <h4>Free</h4>
         <ul>
-          <li><a href="/articles">Research articles</a></li>
-          <li><a href="/articles/college-football">College football</a> &middot; <a href="/articles/nfl">NFL</a></li>
+          <li><a href="/today/">Today&rsquo;s games</a></li>
+          <li><a href="/articles/">Research articles</a></li>
+          <li><a href="/articles/college-football/">College football</a> &middot; <a href="/articles/nfl/">NFL</a></li>
           <li><a href="/research/sample/">Sample game research</a></li>
           <li><a href="/tools/">Free odds tools</a> &middot; <a href="/tools/no-vig-calculator/">No-vig calculator</a></li>
           <li><a href="/tools/model-vs-market/">Model vs. market explorer</a></li>
@@ -1479,11 +1556,14 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
 <!-- THE ONE ACCESS DECISION (public.my_billing_access) and the two server
      functions that change it: create_checkout_session, sync_subscription. -->
 <script src="/lib/edgedesk_access.js?v=20261004a"></script>
+<script src="/lib/edgedesk_flags.js?v=20261008a"></script>
+<script src="/lib/edgedesk_odds_tools.js?v=20261008a"></script>
 <script>try{window.EDPricing&&window.EDPricing.apply(document);}catch(e){}</script>
 <!-- the funnel's one client (supabase/funnel.sql ed_track) and the live
      board's view model (supabase/home_board.sql + football/home/board.json) -->
 <script src="/lib/edgedesk_track.js?v=20260930a"></script>
 <script src="/lib/edgedesk_home.js?v=20260930c"></script>
+<script src="/lib/edgedesk_home_free.js?v=20261008a"></script>
 <!-- The same "Report a problem" the terminal, Games and the 404 page use. It
      matters most HERE: somebody who cannot get past signup has no account, no
      terminal and, until now, nothing but a mailto in the footer. -->
@@ -2599,6 +2679,9 @@ async function handleAuthCallback(){
     }else{
       if(su){su.textContent='Open the terminal';su.onclick=toApp;}
       heroMain('Open the terminal →','hero_app_click','hero_app',toApp);
+      /* a subscriber's first action is the terminal */
+      var hs=document.getElementById('heroStart'),hc=document.getElementById('heroCta');
+      if(hs&&hc){hc.className='btn primary lg';hs.className='btn ghost lg';}
       if(bl){bl.textContent=(u.email?'Signed in as '+u.email:'Open the terminal');bl.onclick=toApp;}
     }
     try{ document.dispatchEvent(new CustomEvent('ed:paid',{detail:paid})); }catch(_){}
@@ -2637,7 +2720,9 @@ function n(v){ return typeof v==='number'&&isFinite(v)?v.toLocaleString('en-US')
    it saw (hero_variant).
    ====================================================================== */
 var HERO_COPY = {
-  a: { headline: 'Bet with a process. <span class="g">Know what&rsquo;s working.</span>' },
+  a: { headline: 'Research the game <span class="g">before you bet it.</span>' },
+  /* the process headline that led until free research did (2026-10) */
+  p: { headline: 'Bet with a process. <span class="g">Know what&rsquo;s working.</span>' },
   b: { headline: 'Stop guessing <span class="g">why you&rsquo;re losing.</span>' },
   c: { headline: 'Research the bet. Track the result. <span class="g">Improve the process.</span>' }
 };
@@ -2899,16 +2984,21 @@ function failAll(){
   var tag=$('lpPrevTag'); if(tag){ tag.textContent='Example'; tag.className='tag'; }
   var foot=$('lpPrevFoot'); if(foot) foot.textContent='Example layout. The live preview couldn’t be reached just now; it reads a public summary of EdgeDesk’s research and returns on the next visit.';
 }
+/* the hero calculator and #free: lib/edgedesk_home_free.js */
+var FREE=window.EDHomeFree||null;
+if(FREE) FREE.init({track:track, funnel:funnel, chip:stChip, wait:withDeadline});
+function renderFreeGames(V){ if(FREE) FREE.games(V); }
+
 (function liveBoard(){
-  if(!H){ failAll(); return; }
+  if(!H){ failAll(); renderFreeGames(null); return; }
   readHome().then(function(o){
-    if(!o||(!o.rpc&&!o.stat)){ failAll(); return; }
+    if(!o||(!o.rpc&&!o.stat)){ failAll(); renderFreeGames(null); return; }
     var V=H.build(o.rpc, o.stat, Date.now());
     VIEW=V;
-    renderStats(V); renderPreview(V);
+    renderStats(V); renderPreview(V); renderFreeGames(V);
     /* the funnel's "saw the live board": only when there was a live board to see */
     if(V.live&&window.EDTrack) EDTrack.seen($('lpPreview'), 'landing_live_board_view', {games:V.games.length, props:V.props.length}, 0.25);
-  }).catch(function(){ failAll(); });
+  }).catch(function(){ failAll(); renderFreeGames(null); });
   /* a subscriber's links point into the terminal once billing has answered */
   document.addEventListener('ed:paid', function(){ if(VIEW){ renderPreview(VIEW); } });
   /* a phone turned to landscape, or a window resized, across the phone width reorders */

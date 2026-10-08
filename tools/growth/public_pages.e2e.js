@@ -17,6 +17,11 @@
                 the honeypot, and counts one signup; the confirm page calls
                 nothing until the button is pressed; the manage page reads,
                 then saves the four topics
+     TODAY      /today/ draws the week's slate from the schedule file, day
+                by day; EdgeDesk's public read only on the board's games; the
+                free research before the upgrade on every row; filters; one
+                tool_used; only the public board is read; with its flag off
+                or its schedule missing it still draws what it has
      EVERYWHERE nothing wider than the screen; no script error; the trial
                 terms as lib/edgedesk_pricing.js words them
 
@@ -37,6 +42,7 @@ function chk(name, ok, detail) {
   if (ok) { pass++; return; }
   fail++; console.log('  FAIL ' + name + (detail !== undefined ? '  ' + JSON.stringify(detail).slice(0, 400) : ''));
 }
+function eq(name, got, want) { chk(name, JSON.stringify(got) === JSON.stringify(want), { got, want }); }
 
 /* the committed board, its clock moved so its newest capture is 30 minutes ago */
 function liveBoard() {
@@ -87,6 +93,17 @@ function serve() {
   /* make one board row a published game, so the explorer's article link is exercised */
   const pre = PUB.articles.find((a) => a.type === 'pregame');
   if (BOARD.games && BOARD.games[0] && pre) BOARD.games[0].game_key = String(BOARD.games[0].league) + '|' + pre.game_id;
+  /* the week's slate for /today/: every board game, plus three the public
+     board does not carry (so no read, no article), kickoffs relative to now */
+  const H = 36e5;
+  const SCHEDULE = { schema: 'edgedesk_home_schedule/1', generated_at: new Date(Date.now() - 20 * 60000).toISOString(),
+    games: (BOARD.games || []).map((g) => ({ key: g.game_key, league: g.league, kickoff: g.kickoff_at, away: g.away, home: g.home }))
+      .concat([
+        { key: 'nfl|2026_06_ZZZ_YYY', league: 'nfl', kickoff: new Date(Date.now() + 26 * H).toISOString(), away: 'Visitors FC', home: 'Hosts FC', venue: 'Test Field' },
+        { key: 'cfb|999000001', league: 'cfb', kickoff: new Date(Date.now() + 74 * H).toISOString(), away: 'North Test', home: 'South Test', away_conf: 'Big Test', home_conf: 'Big Test' },
+        { key: 'cfb|999000002', league: 'cfb', kickoff: new Date(Date.now() + 98 * H).toISOString(), away: 'East Test', home: 'West Test', away_conf: 'Mid Test', home_conf: 'Big Test' }
+      ]).sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff)) };
+  let scheduleBody = JSON.stringify(SCHEDULE);
 
   async function open(urlPath, viewport, opts) {
     opts = opts || {};
@@ -94,6 +111,10 @@ function serve() {
     const rec = { events: [], rpc: [], nl: [], errors: [] };
     await ctx.route('**/*', async (route) => {
       const req = route.request(), url = req.url();
+      if (url.indexOf('/football/home/schedule.json') >= 0) {
+        return scheduleBody == null ? route.fulfill({ status: 404, body: 'not found' })
+          : route.fulfill({ status: 200, contentType: 'application/json', body: scheduleBody });
+      }
       if (url.indexOf('127.0.0.1') >= 0) return route.continue();
       if (/supabase\.co/.test(url)) {
         let body = null; try { body = JSON.parse(req.postData() || 'null'); } catch (e) { body = null; }
@@ -185,6 +206,60 @@ function serve() {
     chk(tag + ' explorer: nothing wider than the screen, no script error', (await overflow(o.page, vp.width)).length === 0 && o.rec.errors.length === 0, o.rec.errors);
     await shot(o.page, 'explorer' + vp.width);
     await o.ctx.close();
+
+    /* ── today's games ───────────────────────────────────────────────── */
+    o = await open('/today/', vp, { referer: 'https://www.google.com/' });
+    await o.page.waitForSelector('#days article.game', { timeout: 5000 }).catch(() => null);
+    const rows = await o.page.$$eval('#days article.game', (as) => as.map((a) => ({ key: a.getAttribute('data-key'),
+      pill: !!a.querySelector('.meta .pill'), nums: !!a.querySelector('.nums'), art: (a.querySelector('a[data-ed-cta="today_article"]') || {}).href || null,
+      up: (a.querySelector('a.up') || {}).href || null, order: [...a.querySelectorAll('.row a')].map((x) => x.getAttribute('data-ed-cta')),
+      numsText: (a.querySelector('.nums') || {}).textContent || '' })));
+    const boardKeys = (BOARD.games || []).map((g) => g.game_key);
+    eq(tag + ' today: every game on the slate is drawn, soonest first', rows.map((r) => r.key), SCHEDULE.games.map((g) => g.key));
+    chk(tag + ' today: grouped by day under a heading', (await o.page.$$('#days section.day h2')).length >= 2);
+    chk(tag + ' today: EdgeDesk\'s public read only on the public board\'s games',
+      rows.every((r) => r.pill === (boardKeys.indexOf(r.key) >= 0)), rows.map((r) => [r.key, r.pill]));
+    chk(tag + ' today: no model number on a game the board does not carry', rows.filter((r) => boardKeys.indexOf(r.key) < 0).every((r) => !r.nums));
+    chk(tag + ' today: no EV percentage and no player props in a row', rows.every((r) => !/%/.test(r.numsText))
+      && !/Receiving Yards|Passing Yards/.test(await o.page.textContent('#days')));
+    chk(tag + ' today: the published game links to its free research', rows.some((r) => r.art && r.art.endsWith(pre.url.replace('https://edgedesksports.com', ''))), rows.map((r) => r.art));
+    chk(tag + ' today: every row has an upgrade path to pricing', rows.every((r) => r.up && /\/#pricing$/.test(r.up)));
+    chk(tag + ' today: the free research comes before the upgrade', rows.every((r) => r.order[r.order.length - 1] === 'today_row_upgrade'));
+    chk(tag + ' today: the nav marks Today\'s Games as this page', await o.page.$('header nav a[data-ed-nav="today"][aria-current="page"]') !== null);
+    const summary = await o.page.textContent('#summary');
+    chk(tag + ' today: the summary counts the week', new RegExp('\\b' + SCHEDULE.games.length + '\\b this week').test(summary), summary);
+    await o.page.selectOption('#fLeague', 'nfl');
+    const nflKeys = await o.page.$$eval('#days article.game', (as) => as.map((a) => a.getAttribute('data-key')));
+    eq(tag + ' today: filters by league', nflKeys, SCHEDULE.games.filter((g) => g.league === 'nfl').map((g) => g.key));
+    await o.page.selectOption('#fLeague', '');
+    await o.page.selectOption('#fShow', 'research');
+    const artKeys = await o.page.$$eval('#days article.game', (as) => as.map((a) => a.getAttribute('data-key')));
+    chk(tag + ' today: "with free research" keeps only games with an article', artKeys.length >= 1 && artKeys.length < SCHEDULE.games.length, artKeys);
+    await flush(o.page);
+    eq(tag + ' today: one tool_used, however many filters', o.rec.events.filter((e) => e.event === 'tool_used').map((e) => e.props && e.props.entity), ['todays_games']);
+    chk(tag + ' today: reads only the public board', o.rec.rpc.every((r) => ['public_home_board', 'acq_track_visit', 'affiliate_track_click'].indexOf(r.fn) >= 0)
+      && o.rec.rpc.some((r) => r.fn === 'public_home_board'), o.rec.rpc.map((r) => r.fn));
+    chk(tag + ' today: nothing wider than the screen, no script error', (await overflow(o.page, vp.width)).length === 0 && o.rec.errors.length === 0, o.rec.errors);
+    await shot(o.page, 'today' + vp.width);
+    await o.ctx.close();
+
+    /* its live read switched off: the slate still draws, the board is not asked */
+    o = await open('/today/?ff=today_live_data:0', vp);
+    await o.page.waitForSelector('#days article.game', { timeout: 5000 }).catch(() => null);
+    eq(tag + ' today, flag off: the whole slate still draws', (await o.page.$$('#days article.game')).length, SCHEDULE.games.length);
+    chk(tag + ' today, flag off: the public board is not asked', !o.rec.rpc.some((r) => r.fn === 'public_home_board'), o.rec.rpc.map((r) => r.fn));
+    chk(tag + ' today, flag off: and no read is shown', (await o.page.$$('#days .meta .pill')).length === 0);
+    await o.ctx.close();
+
+    /* no schedule file: the public board's own games are still a slate */
+    scheduleBody = null;
+    o = await open('/today/', vp);
+    await o.page.waitForSelector('#days article.game', { timeout: 5000 }).catch(() => null);
+    const fb = await o.page.$$eval('#days article.game', (as) => as.map((a) => a.getAttribute('data-key')));
+    chk(tag + ' today, no schedule: falls back to the board\'s games', fb.length > 0 && fb.every((k) => boardKeys.indexOf(k) >= 0), fb);
+    chk(tag + ' today, no schedule: no script error', o.rec.errors.length === 0, o.rec.errors);
+    await o.ctx.close();
+    scheduleBody = JSON.stringify(SCHEDULE);
 
     /* ── a research article ──────────────────────────────────────────── */
     o = await open('/articles/' + pre.slug + '/', vp, { referer: 'https://www.bing.com/' });

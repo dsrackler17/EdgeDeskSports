@@ -140,18 +140,28 @@
   }
 
   /* -------------------------------------------------------- shared chrome */
+  /* THE SITE'S PRIMARY NAVIGATION, as lib/edgedesk_nav.js (PRIMARY) writes
+     it. This file loads in a browser without that module, so the list is
+     copied here and tools/site/nav.test.js holds the two equal. Sport and
+     member sections are the hub's own filters and the footer's links. */
+  var NAV = [
+    ['research', 'Free Research', '/articles/'],
+    ['today', 'Today’s Games', '/today/'],
+    ['tools', 'Tools', '/tools/'],
+    ['terminal', 'Research Terminal', '/app.html'],
+    ['pricing', 'Pricing', '/#pricing']
+  ];
   function siteHeader(active) {
-    function tab(href, label) {
-      return '<a class="ah-tab' + (active === href ? ' on' : '') + '" href="' + href + '">' + esc(label) + '</a>';
-    }
+    /* every page this file writes sits under Free Research; the hub IS it */
+    var exact = active === '/articles/';
     return '<header class="ah">'
       + '<a class="ah-brand" href="/"><span class="ah-mark" aria-hidden="true"></span>EdgeDesk</a>'
-      + '<nav class="ah-nav" aria-label="Research sections">'
-      + tab('/articles/', 'All research')
-      + tab('/articles/college-football/', 'College football')
-      + tab('/articles/nfl/', 'NFL')
-      + tab('/tools/', 'Free tools')
-      + tab('/articles/community/', 'Members')
+      + '<nav class="ah-nav" aria-label="Main">'
+      + NAV.map(function (n) {
+        var on = n[0] === 'research';
+        return '<a class="ah-tab' + (on ? ' on' : '') + '" href="' + n[2] + '"'
+          + (on ? ' aria-current="' + (exact ? 'page' : 'true') + '"' : '') + ' data-ed-nav="' + n[0] + '">' + esc(n[1]) + '</a>';
+      }).join('')
       + '</nav>'
       + '<a class="ah-cta" href="' + TRIAL_HREF + '" data-ed-cta="header_trial">Start free trial</a>'
       + '</header>';
@@ -162,6 +172,7 @@
       + '<nav class="af-nav" aria-label="Site">'
       + '<a href="/articles/">Research articles</a><a href="/articles/college-football/">College football</a>'
       + '<a href="/articles/nfl/">NFL</a><a href="/articles/community/">Member posts</a>'
+      + '<a href="/today/">Today\u2019s games</a>'
       + '<a href="/tools/">Free odds tools</a><a href="/methodology/">Methodology</a>'
       + '<a href="/record.html">Public record</a>'
       + '<a href="/app.html#research/football">Research terminal</a>'

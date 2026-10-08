@@ -37,7 +37,7 @@ functions do **not**:
 
 1. **Run the `Deploy intelligence` workflow** (Actions → Deploy intelligence →
    Run workflow) with **`deploy_function` = true** and **`deploy_capture` = true**.
-   - `edgedesk_ai` → build `edgedesk_ai-2026-09-27-r20-support-boundary`. Until
+   - `edgedesk_ai` → build `edgedesk_ai-2026-10-08-r21-anon-gate`. Until
      this runs, the deployed desk (`edgedesk_ai-2026-09-25-r17-mine` as of
      2026-09-27) still lists WTA tennis in card-wide best-bets answers and still
      researches tennis questions.

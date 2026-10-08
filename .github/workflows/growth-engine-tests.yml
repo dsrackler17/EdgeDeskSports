@@ -15,6 +15,20 @@ on:
       - 'tools/no-vig-calculator/**'
       - 'tools/fair-odds-calculator/**'
       - 'tools/model-vs-market/**'
+      - 'today/**'
+      - 'tools/site/**'
+      - 'tools/home/build_home.js'
+      - 'football/home/schedule.json'
+      - 'index.html'
+      - 'methodology/**'
+      - 'record.html'
+      - 'research/sample/**'
+      - 'lib/edgedesk_nav.js'
+      - 'lib/edgedesk_nav.css'
+      - 'lib/edgedesk_flags.js'
+      - 'lib/edgedesk_plans.js'
+      - 'lib/edgedesk_pricing.js'
+      - 'lib/edgedesk_access.js'
       - 'tools/growth/**'
       - 'tools/seo/**'
       - 'tools/articles/**'
@@ -61,6 +75,8 @@ jobs:
         run: node tools/growth/growth_engine.test.js
       - name: Every public page passes the SEO audit (titles, canonicals, links, structured data)
         run: node tools/seo/audit.js --check
+      - name: One primary navigation on every public page; free stays free, paid stays paid
+        run: npm run -s site:test
 
   migrations:
     runs-on: ubuntu-latest

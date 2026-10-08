@@ -78,8 +78,10 @@ Object.keys(MODULES).forEach(m => {
 });
 ['navMenu', 'pricingView', 'coachView', 'stickyCta'].forEach(m =>
   chk(m + ' returns early if its host is gone', /if\s*\(\s*!(?:\w+|\$\('[a-z]+'\))(?:\s*\|\|\s*!\w+)*(?:\s*\|\|\s*!HAS_IO)?\s*\)\s*return;/.test(mod(m))));
-chk('the live board falls back when its view model did not load', /if\(!H\)\{ failAll\(\); return; \}/.test(mod('liveBoard')));
-chk('and when the reads fail or return nothing', /\.catch\(function\(\)\{ failAll\(\); \}\)/.test(mod('liveBoard')) && /if\(!o\|\|\(!o\.rpc&&!o\.stat\)\)\{ failAll\(\); return; \}/.test(mod('liveBoard')));
+/* each fallback also hands #free its games: none, so it reads the schedule */
+chk('the live board falls back when its view model did not load', /if\(!H\)\{ failAll\(\); renderFreeGames\(null\); return; \}/.test(mod('liveBoard')));
+chk('and when the reads fail or return nothing', /\.catch\(function\(\)\{ failAll\(\); renderFreeGames\(null\); \}\)/.test(mod('liveBoard')) && /if\(!o\|\|\(!o\.rpc&&!o\.stat\)\)\{ failAll\(\); renderFreeGames\(null\); return; \}/.test(mod('liveBoard')));
+chk('a built board fills #free too', /renderStats\(V\); renderPreview\(V\); renderFreeGames\(V\);/.test(mod('liveBoard')));
 ['renderStats', 'renderPreview'].forEach(f =>
   chk(f + ' bails out when its host is missing', new RegExp('function ' + f + '\\([^)]*\\)\\{[\\s\\S]{0,220}?if\\(!\\w+\\) return;').test(LANDING)));
 chk('the reads are cached for 90 seconds in the session, never in localStorage', /HOME_KEY='edgedesk_home_cache_v1', HOME_TTL=90\*1000/.test(LANDING) && /sessionStorage\.setItem\(HOME_KEY/.test(LANDING) && !/localStorage\.setItem\(HOME_KEY/.test(LANDING));
@@ -100,7 +102,7 @@ chk('every button the script builds says what kind it is', !/'<button (?!type=)/
 chk('the answers are native <details>, so they work without script', (IDX.match(/<details>/g) || []).length >= 10);
 chk('there is a skip link to the main content', /<a class="skip" href="#main">/.test(IDX) && /<main id="main">/.test(IDX));
 chk('focus is always visible', /:focus-visible\{outline:2px solid var\(--obs\)/.test(CSS));
-chk('there is exactly one h1, and it is the hero line', (IDX.match(/<h1\b/g) || []).length === 1 && /<h1 data-hero="headline">Bet with a process\./.test(IDX));
+chk('there is exactly one h1, and it is the hero line', (IDX.match(/<h1\b/g) || []).length === 1 && /<h1 data-hero="headline">Research the game /.test(IDX));
 chk('every section is introduced by an h2', () => {
   const secs = [...IDX.matchAll(/<section class="(?:sec[^"]*|final)" id="([a-z]+)">/g)].map(m => m[1]);
   return secs.length >= 10 && secs.every(id => {
@@ -114,7 +116,7 @@ chk('every table has a caption and scoped headers', () => {
   return tables.length === (IDX.match(/<table\b/g) || []).length && tables.length >= 2;
 });
 chk('the sample calendar\'s day names have their full names for a screen reader', (IDX.match(/<th scope="col" abbr="(Sun|Mon|Tues|Wednes|Thurs|Fri|Satur)day">/g) || []).length === 7);
-chk('the illustrations are labelled regions or carry their own heading', /class="panel dash" role="region" aria-label="Sample week in Process Coach, a feature in development"/.test(IDX));
+chk('the illustrations are labelled regions or carry their own heading', /class="panel dash calc" role="region" aria-label="Free no-vig calculator"/.test(IDX));
 chk('the loading skeleton is hidden from screen readers', /<div class="prev-skel" aria-hidden="true">/.test(IDX));
 
 /* ======================================================================== */
@@ -174,7 +176,9 @@ chk('no page elsewhere on the site links to a landing anchor that is gone', () =
 });
 chk('no CSS rule is left for a class nothing carries', () => {
   const st = IDX.indexOf('<style>'), en = IDX.indexOf('</style>');
-  const css = IDX.slice(st, en).replace(/\/\*[\s\S]*?\*\//g, ''), rest = IDX.slice(0, st) + IDX.slice(en);
+  /* the markup, and what lib/edgedesk_home_free.js renders into it */
+  const css = IDX.slice(st, en).replace(/\/\*[\s\S]*?\*\//g, ''), rest = IDX.slice(0, st) + IDX.slice(en)
+    + fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_home_free.js'), 'utf8');
   const cls = [...new Set((css.replace(/url\([^)]*\)/g, '').match(/\.[a-zA-Z][a-zA-Z0-9_-]+/g) || []).map(s => s.slice(1)))]
     .filter(c => !/^\d/.test(c));
   const dead = cls.filter(c => !new RegExp('(?<![a-zA-Z0-9_-])' + c.replace(/-/g, '\\-') + '(?![a-zA-Z0-9_-])').test(rest));
@@ -195,7 +199,8 @@ chk('the live preview\'s fallback says it is an example', () => {
    own chrome — the bar a reader sees before any number in it */
 chk('every illustrative panel carries "Sample data" in its own bar', () => {
   const bars = [...MARKUP.matchAll(/<div class="panel(?: dash)?(?: rv)?"[^>]*>\s*<div class="panel-bar">([\s\S]*?)<\/div>/g)].map(m => m[1]);
-  return bars.length >= 4 && bars.every(b => /Sample data/.test(b));
+  /* coach, film room, history (the hero's picture is a free tool, not a sample) */
+  return bars.length >= 3 && bars.every(b => /Sample data/.test(b));
 }, [...MARKUP.matchAll(/<div class="panel(?: dash)?(?: rv)?"[^>]*>\s*<div class="panel-bar">([\s\S]*?)<\/div>/g)].length);
 chk('the page fetches exactly three things of its own: the board RPC, the board file and the Supabase plumbing', () => {
   const all = [...IDX.matchAll(/fetch\(([^,)]{0,40})/g)].map(m => m[1]);
@@ -232,7 +237,7 @@ chk('analytics go through the existing gtag, and no new vendor', /window\.gtag\(
 chk('the reports\' old names are still sent beside the new ones',
   /GA_LEGACY = \{ hero_cta_click: 'hero_trial_click', pricing_cta_click: 'pricing_trial_click', how_it_works_click: 'hero_how_click' \}/.test(LANDING) && /if\(GA_LEGACY\[name\]\) track\(GA_LEGACY\[name\], label\)/.test(LANDING));
 /* THE FUNNEL, VISITOR -> CTA -> SIGNUP -> TRIAL -> PAID, named in GA too */
-[['hero_cta_click', /id="heroCta"[^>]*data-track="hero_cta_click"/], ['how_it_works_click', /id="heroStart"[^>]*data-track="how_it_works_click"/],
+[['hero_cta_click', /id="heroCta"[^>]*data-track="hero_cta_click"/], ['how_it_works_click', /data-track="how_it_works_click" data-cta="strip_how"/], ['hero_free_click', /id="heroStart"[^>]*data-track="hero_free_click"/],
  ['pricing_cta_click', /id="subBtn"[^>]*data-track="pricing_cta_click"/], ['process_coach_view', /track\('process_coach_view'\)/],
  ['signup_started', /edGa\('signup_started'/], ['signup_completed', /edGa\('signup_completed',\{email_confirmation:false\}\)[\s\S]*edGa\('signup_completed',\{email_confirmation:true\}\)/],
  ['checkout_started', /edGa\('checkout_started'/], ['trial_started', /edGa\(trial\?'trial_started':'subscription_active',\{\}\)/]]
@@ -256,8 +261,8 @@ chk('it says the price beside the button', /<div class="mbar" id="mbar" hidden>[
 /* ======================================================================== */
 /* 6c. THE HERO IS READY FOR A TEST, WITHOUT A FAKE TEST FRAMEWORK          */
 /* ======================================================================== */
-chk('the hero copy lives in one config with the three candidate headlines', /var HERO_COPY = \{\s*a: \{ headline: 'Bet with a process\. <span class="g">Know what&rsquo;s working\.<\/span>' \},\s*b: \{ headline: 'Stop guessing <span class="g">why you&rsquo;re losing\.<\/span>' \},\s*c: \{ headline: 'Research the bet\. Track the result\. <span class="g">Improve the process\.<\/span>' \}/.test(LANDING));
-chk('variant a is exactly the markup, so search engines and no-script readers get it', IDX.indexOf('<h1 data-hero="headline">Bet with a process. <span class="g">Know what&rsquo;s working.</span></h1>') > 0);
+chk('the hero copy lives in one config with the candidate headlines (p: the process line that led before free research)', /var HERO_COPY = \{\s*a: \{ headline: 'Research the game <span class="g">before you bet it\.<\/span>' \},\s*\/\*[^*]*\*\/\s*p: \{ headline: 'Bet with a process\. <span class="g">Know what&rsquo;s working\.<\/span>' \},\s*b: \{ headline: 'Stop guessing <span class="g">why you&rsquo;re losing\.<\/span>' \},\s*c: \{ headline: 'Research the bet\. Track the result\. <span class="g">Improve the process\.<\/span>' \}/.test(LANDING));
+chk('variant a is exactly the markup, so search engines and no-script readers get it', IDX.indexOf('<h1 data-hero="headline">Research the game <span class="g">before you bet it.</span></h1>') > 0);
 chk('only a named variant can be shown, and nobody is assigned at random', /Object\.prototype\.hasOwnProperty\.call\(HERO_COPY,q\)/.test(LANDING) && !/Math\.random/.test(IDX));
 chk('a Sign out click is never counted as a log in', /login_click' && \/sign out\/i/.test(LANDING));
 
