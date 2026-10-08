@@ -40,6 +40,7 @@ const { register } = require('node:module');
 const { pathToFileURL } = require('node:url');
 const PG = require(path.join(__dirname, '..', 'personal', '_pg.js'));
 const { rpcShim } = require(path.join(__dirname, '..', 'growth', '_rpc_shim.js'));
+const DX = require(path.join(__dirname, '_docx.js'));
 const INLINE = require(path.join(__dirname, 'inline.js'));
 const CE = require(path.join(__dirname, '..', '..', 'lib', 'content_engine.js'));
 const ART = require(path.join(__dirname, 'artifacts.js'));
@@ -228,9 +229,12 @@ const claude = (...answers) => { let i = 0; globalThis.__claude = (req, opts) =>
     chk('M a test to the owner is sent', t1.b.ok && t1.b.test === true && RESEND.length === 1 && e1.body.to[0] === 'owner@edgedesk.test', t1.b);
     chk('M … with the database’s key, the edgedesksports.com sender and the content tag', /^edgedesk-content-[0-9a-f]{32}$/.test(e1.headers['idempotency-key'])
       && e1.body.from === 'Davis <davis@edgedesksports.com>' && e1.body.tags.some((t) => t.name === 'edgedesk' && t.value === 'content'));
-    const att = (e1.body.attachments || []).map((a) => ({ n: a.filename, t: Buffer.from(a.content, 'base64').toString('utf8') }));
-    chk('M … the note, the article (HTML and text) and three files', /Here it is\./.test(e1.body.html) && /<h2>How to read these numbers<\/h2>/.test(e1.body.html) && /How to read these numbers/.test(e1.body.text)
-      && att.length === 3 && /\.md$/.test(att[0].n) && /^---\ntitle:/.test(att[0].t) && /1-800-GAMBLER/.test(att[0].t) && /<!doctype html>/.test(att[1].t) && /Primary keyword:/.test(att[2].t));
+    const att = (e1.body.attachments || []).map((a) => ({ n: a.filename, raw: Buffer.from(a.content, 'base64'), t: Buffer.from(a.content, 'base64').toString('utf8') }));
+    chk('M … the note, the article (HTML and text) and four files', /Here it is\./.test(e1.body.html) && /<h2>How to read these numbers<\/h2>/.test(e1.body.html) && /How to read these numbers/.test(e1.body.text)
+      && att.length === 4 && /\.md$/.test(att[1].n) && /^---\ntitle:/.test(att[1].t) && /1-800-GAMBLER/.test(att[1].t) && /<!doctype html>/.test(att[2].t) && /Primary keyword:/.test(att[3].t));
+    const wordDoc = (() => { try { return DX.paragraphs(DX.unzip(att[0].raw)['word/document.xml'].toString('utf8')); } catch (_) { return []; } })();
+    chk('M … the first is the Word file the editor can touch up: the article, the disclaimer, the editor’s page', /\.docx$/.test(att[0].n) && wordDoc.length > 20
+      && wordDoc[0].style === 'Title' && wordDoc.some((p) => p.text === CE.DISCLAIMER) && wordDoc.some((p) => p.text === 'For the editor (not for publication)'));
     chk('M … the tagged EdgeDesk link travels in the email', /utm_campaign=ce_stadiumrant_/.test(e1.body.html));
     chk('M … a markup note stays text', (await (async () => { RESEND = []; await run({ action: 'send', article_id: AID, recipient: 'owner@edgedesk.test', note: '<script>x</script>', test: true }, cfgM()); return !/<script>/.test(RESEND[0].body.html); })()));
     chk('M … each test is on record as sent', one(`select count(*) from content_engine.sends where is_test and status = 'sent' and provider_id is not null;`) === '2');
