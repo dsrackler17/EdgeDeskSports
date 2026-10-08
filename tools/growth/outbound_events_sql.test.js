@@ -144,7 +144,7 @@ try {
     && one(`select tgenabled from pg_trigger where tgname = 'secrets_guard_t';`) === 'O', e);
   for (const [bad, why] of [['', /not a Resend webhook signing secret/], ['an-api-key-not-a-signing-secret-0123', /not a Resend webhook signing secret/],
     ['<whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw>', /remove the < >/], ['whsec_short', /not a Resend webhook signing secret/],
-    ['whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaS', /not valid base64/]]) {
+    [SECRET.slice(0, -1), /not valid base64/]]) {
     e = db.mustFail(() => one(`select growth_outbound.set_webhook_secret(${lit(bad)});`));
     chk('K a malformed secret is refused: ' + (bad || '(empty)').slice(0, 24), !!e && why.test(e), e);
   }

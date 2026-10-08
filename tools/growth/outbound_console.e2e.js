@@ -112,6 +112,11 @@
     56  a prospect lists its results; link tagging is a setting (turning it
         off is saved and said); a matching failure is said; before the
         Phase 10 SQL, said
+    57  THE SYSTEM CHECK (Phase 11): all passing, said at the top; a failing
+        check and what needs attention, most serious first, said at the top
+        and in the panel (text from anywhere stays text); every check listed;
+        "run the check again" asks the database again; before the Phase 11
+        SQL, said
 
    Run:  node tools/growth/outbound_console.e2e.js [--shots <dir>]
    =========================================================================== */
@@ -233,6 +238,9 @@ const RESULTS = (o) => Object.assign({ ok: true, days: 90, since: '2026-07-10T00
   providers: { search: 3, llm: 5 },
   latest: [{ prospect_id: 'p1', full_name: 'Pat Analyst', organization: 'CFB Numbers', stage: 'paid', matched_by: 'link', occurred_at: '2026-10-07T12:00:00Z' },
            { prospect_id: 'pc', full_name: XSS, organization: null, stage: 'signed_up', matched_by: 'address', occurred_at: '2026-10-07T11:00:00Z' }] }, o || {});
+const HEALTH = (o) => Object.assign({ ok: true, checked_at: '2026-10-08T03:00:00Z', total: 3, passing: 3, attention: [],
+  checks: [{ step: 1, item: 'the outbound tables exist', ok: true, outcome: 'ok' }, { step: 2, item: 'the schema is private', ok: true, outcome: 'ok' },
+           { step: 4, item: 'row level security is on, with the restrictive deny policy, on every table', ok: true, outcome: 'ok' }] }, o || {});
 const card = (o) => ({
   draft: { id: o.id, prospect_id: o.pid, sequence_number: o.seq || 1, status: o.status || 'pending_review', subject: o.subject, body_text: o.body, content_hash: 'h-' + o.id,
     approved_at: o.status === 'approved' ? '2026-10-07T10:00:00Z' : null, generator_version: o.gen || 'owner', edited_by_owner: o.edited == null ? !o.gen : !!o.edited },
@@ -386,6 +394,10 @@ const PROSPECTS = { total: 2, rows: [
         if (name === 'growth_outbound_analytics') {
           if (state.results === 'missing') return reply(404, { code: 'PGRST202', message: 'Could not find the function' });
           return reply(200, RESULTS(Object.assign({ days: body.p_days || 90, attribution_links: st.attribution_links !== false }, typeof state.results === 'object' ? state.results : {})));
+        }
+        if (name === 'growth_outbound_health') {
+          if (state.health === 'missing') return reply(404, { code: 'PGRST202', message: 'Could not find the function' });
+          return reply(200, HEALTH(typeof state.health === 'object' ? state.health : {}));
         }
         if (name === 'growth_outbound_candidates') return reply(200, body.p_status === 'new' ? CANDS : []);
         if (name === 'growth_outbound_candidate_set') return reply(200, { ok: true, status: body.p_status });
@@ -1152,6 +1164,39 @@ const PROSPECTS = { total: 2, rows: [
     await t.page.click('#tabBtnOutbound'); await settle(t.page, 800);
     chk('56 before the Phase 10 SQL: said, and nothing else fails', /arrive with the Phase 10 SQL/.test(await text(t.page, '#rsChips')) && !(await visible(t.page, '#obMsg')));
     chk('56 no page errors', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+
+  /* ── 57. the system check (Phase 11) ───────────────────────────────── */
+  {
+    const t = await open({ role: 'owner' });
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 800);
+    chk('57 all passing: said at the top of the tab, and in the panel', /System check: all 3 pass/.test(await text(t.page, '#hcTop'))
+      && /3 of 3 checks pass/.test(await text(t.page, '#hcSummary')) && /Nothing needs your attention/.test(await text(t.page, '#hcAttention')));
+    chk('57 every check is listed', (await t.page.$$('#hcChecks tr')).length === 4 && (await t.page.$$('#hcChecks [data-failing]')).length === 0);
+    t.state.health = { passing: 2, checks: [{ step: 1, item: 'the outbound tables exist', ok: true, outcome: 'ok' },
+      { step: 4, item: 'row level security is on, with the restrictive deny policy, on every table', ok: false, outcome: 'CHECK THIS' },
+      { step: 2, item: 'the schema is private', ok: true, outcome: 'ok' }],
+      attention: [{ severity: 1, code: 'check_failed', text: 'A system check fails: row level security is on. Run supabase/growth_outbound.sql again and read its report.' },
+                  { severity: 2, code: 'stale_claims', text: '2 send(s) were handed over over an hour ago and never confirmed. ' + XSS },
+                  { severity: 4, code: 'cap_raised', text: 'The daily send cap is 40 (the default is 20).' }] };
+    const n0 = t.calls.filter((c) => c[0] === 'growth_outbound_health').length;
+    await t.page.click('#hcRun'); await settle(t.page, 600);
+    chk('57 "run the check again" asks the database again', t.calls.filter((c) => c[0] === 'growth_outbound_health').length === n0 + 1);
+    chk('57 a failing check and what needs attention: said at the top', /System check: 1 check failing · 2 things to look at/.test(await text(t.page, '#hcTop')), await text(t.page, '#hcTop'));
+    const att = await t.page.$$eval('#hcAttention li', (lis) => lis.map((l) => l.getAttribute('data-att') + ':' + l.querySelector('.pill').textContent));
+    chk('57 … most serious first, each with how soon', JSON.stringify(att) === JSON.stringify(['check_failed:Now', 'stale_claims:Soon', 'cap_raised:Note']), att);
+    chk('57 … the failing check is marked in the list', (await t.page.$$('#hcChecks [data-failing]')).length === 1 && /2 of 3 checks pass/.test(await text(t.page, '#hcSummary')));
+    chk('57 … and text from anywhere stays text', /<img/.test(await text(t.page, '#hcAttention')) && !(await t.page.evaluate(() => window.__pwned)));
+    chk('57 no page errors', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+  {
+    const t = await open({ role: 'owner' });
+    t.state.health = 'missing';
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 800);
+    chk('57 before the Phase 11 SQL: said, and nothing else fails', /arrives with the Phase 11 SQL/.test(await text(t.page, '#hcSummary')) && !(await visible(t.page, '#obMsg')));
+    chk('57 no page errors (before the SQL)', t.errors.length === 0, t.errors);
     await t.ctx.close();
   }
 

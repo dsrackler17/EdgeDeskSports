@@ -17,6 +17,7 @@
 
    Kinds: PRIVATE_KEY, SERVICE_ROLE_JWT (a JWT whose role is not anon),
    GITHUB_TOKEN, STRIPE_SECRET, ANTHROPIC_KEY, OPENAI_KEY, SLACK_TOKEN, AWS_KEY,
+   RESEND_KEY, WEBHOOK_SIGNING_SECRET (Svix/Standard Webhooks whsec_),
    DB_URL_WITH_PASSWORD, API_KEY_IN_URL, ASSIGNED_SECRET. Placeholders
    (xxxx, <...>, ${...}, env lookups) are not secrets.
 
@@ -43,15 +44,21 @@ const RULES = [
   ['OPENAI_KEY', /\bsk-(proj-)?[A-Za-z0-9]{32,}\b/g, 0],
   ['SLACK_TOKEN', /\bxox[abpors]-[A-Za-z0-9-]{10,}\b/g, 0],
   ['AWS_KEY', /\bAKIA[0-9A-Z]{16}\b/g, 0],
+  ['RESEND_KEY', /\bre_[A-Za-z0-9]{8,}_[A-Za-z0-9]{16,}\b/g, 0],
+  ['WEBHOOK_SIGNING_SECRET', /\bwhsec_[A-Za-z0-9+/]{24,}={0,2}/g, 0],
   ['DB_URL_WITH_PASSWORD', /\bpostgres(ql)?:\/\/[^:\s'"@/]+:([^@\s'"]{6,})@[^\s'"]+/g, 2],
   ['API_KEY_IN_URL', /[?&](api[_-]?key|apikey|access_token|token)=([A-Za-z0-9_-]{24,})/gi, 2],
-  ['ASSIGNED_SECRET', /\b(service_role_key|SUPABASE_SERVICE_ROLE_KEY|SB_SERVICE_ROLE|ODDS_API_KEY|ANTHROPIC_API_KEY|CRON_SECRET|STRIPE_SECRET_KEY|GH_TOKEN|GITHUB_TOKEN|password|passwd)\b\s*[:=]\s*['"]([^'"\s]{12,})['"]/gi, 2],
+  ['ASSIGNED_SECRET', /\b(service_role_key|SUPABASE_SERVICE_ROLE_KEY|SB_SERVICE_ROLE|ODDS_API_KEY|ANTHROPIC_API_KEY|CRON_SECRET|STRIPE_SECRET_KEY|GH_TOKEN|GITHUB_TOKEN|RESEND_API_KEY|BRAVE_SEARCH_API_KEY|BRAVE_API_KEY|HUNTER_API_KEY|password|passwd)\b\s*[:=]\s*['"]([^'"\s]{12,})['"]/gi, 2],
 ];
 const JWT = /\beyJ[A-Za-z0-9_-]{10,}\.(eyJ[A-Za-z0-9_-]{10,})\.[A-Za-z0-9_-]{10,}\b/g;
 const PLACEHOLDER = /x{4,}|X{4,}|<[^>]+>|\$\{|your[_-]?|example|placeholder|dummy|redacted|\*{4,}|\.\.\.|env(Get)?\(|process\.env|Deno\.env|secrets\./i;
 /* a test fixture: a value inside a test file that says it is not real */
 const TEST_FILE = /(\.test\.(js|sql|ts)|(^|\/)tests?(_[a-z]+)?\.(js|py)|(^|\/)fixtures?\/|(^|\/)conversation\.js)$/;
 const FAKE = /test|fake|dummy|secret|sekrit|local|example|abc|123|xyz|not-a|nope|stub|mock|signature_here/i;
+/* values published as examples by their own vendors: a fixture in a test file, never anyone's secret */
+const PUBLIC_EXAMPLES = new Set([
+  'whsec_' + 'MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw',   // Svix's documentation example signing secret (split, so this line is not a finding)
+]);
 
 function fingerprint(v) { return 'sha256:' + crypto.createHash('sha256').update(String(v)).digest('hex').slice(0, 10) + ' (' + String(v).length + ' chars)'; }
 function jwtRole(payloadB64) {
@@ -92,7 +99,7 @@ function scanText(rel, text, findings) {
            HIGH. For that one kind the line it sits on is the evidence. A real
            key committed to a test file sits on a line of its own, carries no
            marker, and still reads HIGH; detection is unchanged. */
-        const marked = FAKE.test(val) || (kind === 'PRIVATE_KEY' && FAKE.test(line));
+        const marked = FAKE.test(val) || PUBLIC_EXAMPLES.has(val) || (kind === 'PRIVATE_KEY' && FAKE.test(line));
         findings.push({ file: rel, line: i + 1, kind, where, severity: TEST_FILE.test(rel) && marked ? 'FIXTURE' : 'HIGH', fingerprint: fingerprint(val) });
       }
     });

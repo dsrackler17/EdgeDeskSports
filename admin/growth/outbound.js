@@ -136,7 +136,7 @@
     show('growth');
     DETAIL = null; CATALOG = null; QROWS = []; PICKED = {}; RES = null;
     ['obKpis', 'obProspects', 'obSupp', 'obSettings', 'obActivity', 'obChips', 'obDetail', 'obLookOut', 'rqCards', 'obSends', 'dvProviders', 'dvCands', 'dvRuns',
-     'rsChips', 'rsPeople', 'rsSends', 'rsSignals', 'rsSteps', 'rsGroups', 'rsDaily', 'rsLatest'].forEach(function (id) { if ($(id)) $(id).innerHTML = ''; });
+     'rsChips', 'rsPeople', 'rsSends', 'rsSignals', 'rsSteps', 'rsGroups', 'rsDaily', 'rsLatest', 'hcTop', 'hcSummary', 'hcAttention', 'hcChecks'].forEach(function (id) { if ($(id)) $(id).innerHTML = ''; });
     if ($('obDetailWrap')) $('obDetailWrap').classList.add('hide');
   }
   function show(which) {
@@ -194,7 +194,7 @@
     if (!OWNER) return Promise.resolve();
     LOADED = true;
     $('obMsg').classList.add('hide');
-    return Promise.all([loadOverview(), loadAutomation(), loadQueue(), loadDrafting(), loadSends(), loadResults(), loadResearch(), loadProspects(), loadSupp(), loadActivity()]).catch(function (e) { fail('obMsg', e); });
+    return Promise.all([loadOverview(), loadHealth(), loadAutomation(), loadQueue(), loadDrafting(), loadSends(), loadResults(), loadResearch(), loadProspects(), loadSupp(), loadActivity()]).catch(function (e) { fail('obMsg', e); });
   }
   function loadOverview() {
     return S.rpc('growth_outbound_overview', {}).then(function (o) {
@@ -701,6 +701,37 @@
       say('dvMsg', 'ok', 'Saved: ' + qs.length + ' search' + (qs.length === 1 ? '' : 'es') + ' and the daily budget.');
       return loadResearch();
     }, function (e) { fail('dvMsg', e); });
+  }
+
+  /* ── the system check (Phase 11) ─────────────────────────────────────── */
+  var SEVERITY = { 1: ['Now', 'bad'], 2: ['Soon', 'test'], 3: ['When you can', ''], 4: ['Note', ''] };
+  function paintHealth(h) {
+    var att = h.attention || [], bad = (h.checks || []).filter(function (c) { return !c.ok; });
+    var urgent = att.filter(function (a) { return a.severity <= 2; }).length;
+    $('hcTop').innerHTML = bad.length || urgent
+      ? '<a class="chip warn" href="#hcHead" data-hc="warn">System check: ' + (bad.length ? bad.length + ' check' + (bad.length > 1 ? 's' : '') + ' failing' : '') + (bad.length && urgent ? ' · ' : '')
+        + (urgent ? urgent + ' thing' + (urgent > 1 ? 's' : '') + ' to look at' : '') + '</a>'
+      : '<span class="chip ok" data-hc="ok">System check: all ' + esc(h.total) + ' pass</span>';
+    $('hcSummary').textContent = h.passing + ' of ' + h.total + ' checks pass · checked ' + when(h.checked_at);
+    $('hcAttention').innerHTML = att.length ? '<ul class="claims">' + att.map(function (a) {
+      var sv = SEVERITY[a.severity] || ['Note', ''];
+      return '<li data-att="' + esc(a.code) + '"><span class="pill ' + sv[1] + '">' + esc(sv[0]) + '</span> ' + esc(a.text) + '</li>';
+    }).join('') + '</ul>' : '<div class="okb" data-att="none">Nothing needs your attention.</div>';
+    $('hcChecks').innerHTML = '<tr><th>#</th><th>Check</th><th>Result</th></tr>' + (h.checks || []).map(function (c) {
+      return '<tr' + (c.ok ? '' : ' data-failing="1"') + '><td>' + esc(c.step) + '</td><td class="wrap">' + esc(c.item) + '</td><td class="wrap">'
+        + '<span class="pill ' + (c.ok ? 'on' : 'bad') + '">' + (c.ok ? 'ok' : 'CHECK') + '</span> ' + (c.ok && c.outcome === 'ok' ? '' : esc(c.outcome)) + '</td></tr>';
+    }).join('');
+  }
+  function loadHealth() {
+    if (!OWNER) return Promise.resolve();
+    return S.rpc('growth_outbound_health', {}).then(paintHealth, function (e) {
+      if (e && e.kind === 'not_installed') {
+        $('hcSummary').textContent = 'The system check arrives with the Phase 11 SQL: run supabase/growth_outbound.sql again.';
+        $('hcTop').innerHTML = ''; $('hcAttention').innerHTML = ''; $('hcChecks').innerHTML = '';
+        return;
+      }
+      throw e;
+    });
   }
 
   /* ── results (Phase 10) ─────────────────────────────────────────────── */
@@ -1239,6 +1270,7 @@
         if (root.confirm('Try this send again? It reuses the same key, so it can never go out twice.')) sendDrafts([b.getAttribute('data-resend')]);
       }
       else if (b.id === 'rqFixture') fixture();
+      else if (b.id === 'hcRun') { b.disabled = true; loadHealth().catch(function (er) { fail('obMsg', er); }).then(function () { b.disabled = false; }); }
       else if (b.getAttribute('data-rdays')) { RDAYS = Number(b.getAttribute('data-rdays')); loadResults().catch(function (er) { fail('rsMsg', er); }); }
       else if (b.getAttribute('data-rdim')) { RDIM = b.getAttribute('data-rdim'); if (RES) paintResults(RES); }
     });

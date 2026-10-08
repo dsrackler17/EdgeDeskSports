@@ -216,6 +216,7 @@ ul.claims li.badc b{color:var(--neg)}
 
     <div id="tabOutbound" class="hide" role="tabpanel" aria-labelledby="tabBtnOutbound">
       <div class="chips" id="obChips"></div>
+      <div class="chips" id="hcTop"></div>
       <div class="block hide" id="obBlock" role="status"></div>
       <div class="note hide" id="obLiveNote" role="status"></div>
       <div class="msg err hide" id="obMsg" role="alert"></div>
@@ -282,6 +283,16 @@ ul.claims li.badc b{color:var(--neg)}
         <h3>By day</h3>
         <div class="tw"><table id="rsDaily"></table></div>
         <div class="note">A result counts for a prospect only when it can be traced to an email that reached them: the visit or the new account carried that email's campaign code (its EdgeDesk links are tagged utm_campaign=ob_…), or the account was made with the very address written to — and only after the first email went out. Nothing is inferred from a name, a domain or timing. Trials and payments come from Stripe's own record. Someone who makes an account is marked converted and their unsent follow-ups are cancelled. The account itself is never shown or stored here.</div>
+      </div>
+
+      <h2 id="hcHead">System check</h2>
+      <div class="card">
+        <div class="row" style="align-items:center"><span id="hcSummary" class="sub"></span><span class="sp"></span>
+          <button type="button" class="g sm" id="hcRun">Run the check again</button></div>
+        <div id="hcAttention"></div>
+        <details style="margin-top:10px"><summary class="sub" style="cursor:pointer">Every check</summary>
+          <div class="tw"><table id="hcChecks"></table></div></details>
+        <div class="note">The same checks the SQL file's report runs: the schema is private, every table denies clients, every door checks its caller, history is append-only, approving and sending are the owner's alone. Below them, what needs your attention now — most serious first, each with what to do. Running it changes nothing.</div>
       </div>
 
       <h2>Discover and research</h2>
@@ -405,7 +416,7 @@ ul.claims li.badc b{color:var(--neg)}
 </div>
 <script src="/lib/edgedesk_auth.js?v=20261005a"></script>
 <script src="/lib/edgedesk_admin_session.js?v=20261007a"></script>
-<script src="/admin/growth/outbound.js?v=20261008b"></script>
+<script src="/admin/growth/outbound.js?v=20261008c"></script>
 <script>
 var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
