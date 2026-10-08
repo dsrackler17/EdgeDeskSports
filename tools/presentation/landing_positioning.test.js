@@ -434,7 +434,11 @@ has(IDX, 'Expected value estimates the theoretical return of repeatedly taking t
 /* ======================================================================== */
 const NAV = section('nav', 'nav');
 chk('the site nav is found', NAV.length > 400);
-['How it works', 'Process Coach', 'Research', 'Pricing', 'FAQ'].forEach(l => has(NAV, '>' + l + '<', 'the nav offers ' + l));
+/* the site's primary navigation (lib/edgedesk_nav.js), free research first;
+   tools/site/nav.test.js holds every public page to the same five */
+['Free Research', 'Today&rsquo;s Games', 'Tools', 'Research Terminal', 'Pricing'].forEach(l => has(NAV, '>' + l + '<', 'the nav offers ' + l));
+chk('free research leads the nav, pricing closes it',
+  NAV.indexOf('>Free Research<') >= 0 && NAV.indexOf('>Free Research<') < NAV.indexOf('>Pricing<'));
 chk('the nav CTA is "Start free trial"', /id="navSignup"[^>]*>Start free trial</.test(NAV));
 has(NAV, 'id="navLogin"', 'Log in keeps the id bootAuthState rewrites');
 chk('the phone menu is a real disclosure', /aria-controls="navMenu"/.test(NAV) && /aria-expanded="false"/.test(NAV));

@@ -50,7 +50,7 @@ a{color:var(--obs)}
 .mono{font-family:'JetBrains Mono',monospace}
 h1,h2,h3{font-family:'Space Grotesk',sans-serif;letter-spacing:-.02em;font-weight:600}
 .wrap{max-width:720px;margin:0 auto;padding:0 20px}
-nav{position:sticky;top:0;z-index:40;background:rgba(16,14,10,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
+.sitebar{position:sticky;top:0;z-index:40;background:rgba(16,14,10,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
 .nav-in{display:flex;align-items:center;gap:10px;padding:13px 0}
 .logo{font-weight:700;font-size:17px;display:flex;align-items:center;gap:10px;font-family:'Space Grotesk',sans-serif;color:var(--text);text-decoration:none}
 .logo .mk{width:10px;height:19px;background:linear-gradient(180deg,var(--obs),var(--brand-lit));border-radius:2px;transform:skewX(-11deg);flex:none}
@@ -96,15 +96,15 @@ footer a{color:var(--faint)}
 .sample .k{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.06em}
 .sample .v{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600}
 </style>
+<link rel="stylesheet" href="/lib/edgedesk_nav.css?v=20261008a">
 </head>
 <body>
 
-<nav><div class="wrap nav-in">
+<header class="sitebar"><div class="wrap nav-in ed-pnav-host">
   <a class="logo" href="/"><span class="mk"></span>EdgeDesk</a>
+  <nav class="ed-pnav" aria-label="Main"><a href="/articles/" data-ed-nav="research">Free Research</a><a href="/today/" data-ed-nav="today">Today’s Games</a><a href="/tools/" data-ed-nav="tools">Tools</a><a href="/app.html" data-ed-nav="terminal">Research Terminal</a><a href="/#pricing" data-ed-nav="pricing">Pricing</a></nav>
   <span class="nav-sp"></span>
-  <a class="nlink" href="/articles">Research</a>
-  <a class="nlink" href="/app.html#research/football">Terminal</a>
-</div></nav>
+</div></header>
 
 <header class="wrap" style="padding-top:44px">
   <span class="ey"><b>Research, not picks</b> · weekly</span>

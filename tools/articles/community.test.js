@@ -221,7 +221,9 @@ section('6. THE ENTITLEMENT RULE, THE SAME IN BOTH PLACES');
   has(SQL, "s.status in ('active', 'trialing')", 'and the same two live statuses');
 
   /* and the sentence a writer is shown before they write */
-  const live = C.publishRoute({ status: 'active', current_period_end: fut });
+  /* publishRoute reads the real clock, so its row's period end is relative
+     to it (a fixed date here expired on 2026-10-01 and failed the suite) */
+  const live = C.publishRoute({ status: 'active', current_period_end: new Date(Date.now() + 30 * 864e5).toISOString() });
   chk('a subscriber is told their post goes live', live.immediate && /straight through/.test(live.note));
   const queued = C.publishRoute(null);
   chk('a free account is told an editor reads it first', !queued.immediate && /editor/.test(queued.note));
@@ -283,7 +285,7 @@ has(HUB, 'Write a post', 'labelled for what it does');
 has(HUB, 'href="/articles/community"', 'and a link to read member posts');
 has(HUB, 'kept separate from EdgeDesk’s model research',
   'and says on the hub that the two are separate');
-has(HUB, '<a class="ah-tab" href="/articles/community/">Members</a>', 'the section is in the site nav');
+has(HUB, '<a href="/articles/community/">Member posts</a>', 'the section is in the site footer (the header is the site\'s primary nav, lib/edgedesk_nav.js)');
 has(NOTFOUND, "p[1]==='community'", 'a pretty member-post URL is routed on a static host');
 has(NOTFOUND, "'/articles/community/?p='", 'to the one page that can render it');
 (function () {

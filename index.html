@@ -117,7 +117,6 @@ h1,h2,h3,h4{font-family:var(--disp);font-weight:600;letter-spacing:-.02em}
 .nav-links{display:flex;align-items:center;gap:2px;flex:1;margin-left:26px}
 .nlink{color:var(--dim);font-size:14px;font-weight:500;padding:8px 11px;border-radius:8px;white-space:nowrap;transition:color .15s,background .15s}
 .nlink:hover{color:var(--text);background:rgba(241,235,223,.04)}
-.nav-links .nlink[href="/games/"],.nav-links .nlink[href="/articles"]{display:none}
 #navLogin{margin-left:auto}
 .nav-offer{display:none}
 .nav-act{display:flex;align-items:center;gap:8px;flex:none}
@@ -135,7 +134,6 @@ h1,h2,h3,h4{font-family:var(--disp);font-weight:600;letter-spacing:-.02em}
   .nav-links{display:none;position:absolute;top:64px;left:0;right:0;margin:0;flex-direction:column;align-items:stretch;gap:0;padding:6px 20px 20px;background:var(--ink);border-bottom:1px solid var(--line);box-shadow:0 30px 40px -30px rgba(0,0,0,.8)}
   .nav.open .nav-links{display:flex}
   .nav-links .nlink{font-size:17px;padding:15px 2px;border-radius:0;border-bottom:1px solid var(--line);color:var(--text)}
-  .nav-links .nlink[href="/games/"],.nav-links .nlink[href="/articles"]{display:block;color:var(--dim);font-size:15px}
   #navLogin{margin:16px 0 0;width:100%;padding:13px 16px;font-size:15px}
   .nav-offer{display:block;margin-top:10px;text-align:center;font-family:var(--mono);font-size:11px;color:var(--faint)}
 }
@@ -697,15 +695,15 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
   <div class="wrap nav-in">
     <a class="logo" href="#top" aria-label="EdgeDesk Sports, back to top"><span class="mk" aria-hidden="true"></span>EdgeDesk <small>Sports</small></a>
     <div class="nav-links" id="navMenu">
-      <a class="nlink" href="#how" data-track="how_it_works_click" data-cta="nav_how">How it works</a>
-      <a class="nlink" href="#coach" data-cta="nav_coach">Process Coach</a>
-      <a class="nlink" href="#research" data-cta="nav_research">Research</a>
-      <a class="nlink" href="#pricing" data-cta="nav_pricing">Pricing</a>
-      <a class="nlink" href="#faq" data-cta="nav_faq">FAQ</a>
-      <!-- the public, no-account half: research articles and the free games.
-           In the menu and the footer, never competing with the trial. -->
-      <a class="nlink" href="/articles">Research articles</a>
-      <a class="nlink" href="/games/">Games</a>
+      <!-- THE SITE'S PRIMARY NAVIGATION (lib/edgedesk_nav.js), the same five
+           places on every public page, free research first. Pricing is this
+           page's own #pricing; everywhere else it is /#pricing.
+           tools/site/nav.test.js holds every page to the list. -->
+      <a class="nlink" href="/articles/" data-ed-nav="research" data-cta="nav_free_research">Free Research</a>
+      <a class="nlink" href="/today/" data-ed-nav="today" data-cta="nav_today">Today&rsquo;s Games</a>
+      <a class="nlink" href="/tools/" data-ed-nav="tools" data-cta="nav_tools">Tools</a>
+      <a class="nlink" href="/app.html" data-ed-nav="terminal" data-cta="nav_terminal">Research Terminal</a>
+      <a class="nlink" href="#pricing" data-ed-nav="pricing" data-cta="nav_pricing">Pricing</a>
       <button type="button" class="btn ghost" id="navLogin" onclick="openAuth('login')" data-track="login_click">Log in</button>
       <p class="nav-offer"><span data-ed-price="cta">7-day free trial. $49.99/month after trial. Cancel anytime.</span></p>
     </div>
