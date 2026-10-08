@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_pnl_summary_v1",
  "engine": "edgedesk_pnl_v2",
- "generated_at": "2026-10-08T03:04:30.485Z",
+ "generated_at": "2026-10-08T03:09:09.205Z",
  "season": 2026,
  "strategy": "Verified P&L: every graded EdgeDesk decision — the model's published number on a game and every BET — that settled at a real price EdgeDesk captured at or before the decision. Recorded stakes: the units the decision recorded, or the default 1.00u when it recorded none. Flat: 1.00u each. Never mixed.",
  "rules": [
@@ -1118,14 +1118,14 @@
  ],
  "states": {
   "total": 5382,
-  "PENDING": 1048,
-  "VERIFIED": 3316,
+  "PENDING": 1047,
+  "VERIFIED": 3317,
   "RECORD_ONLY": 868,
   "VOID": 150,
   "INVALID": 0
  },
  "pending_reasons": {
-  "total": 1048,
+  "total": 1047,
   "reasons": [
    {
     "key": "UPCOMING",
@@ -1135,7 +1135,7 @@
    {
     "key": "IN_PROGRESS",
     "label": "Game in progress",
-    "n": 86
+    "n": 85
    },
    {
     "key": "MISSING_FINAL",
@@ -1767,7 +1767,7 @@
   }
  },
  "settlement": {
-  "as_of": "2026-10-08T03:04:30.485Z",
+  "as_of": "2026-10-08T03:09:09.205Z",
   "props": {
    "NFL": {
     "file": "football/props/nfl/settlement.json",
@@ -1782,7 +1782,7 @@
     "started_unsettled": 138
    }
   },
-  "finals_known": 390
+  "finals_known": 391
  },
  "views": {
   "all": {
@@ -6390,21 +6390,21 @@
       },
       {
        "key": "Pass",
-       "n": 60,
+       "n": 61,
        "rows": 116,
-       "wins": 30,
+       "wins": 31,
        "losses": 28,
        "pushes": 2,
-       "record": "30-28-2",
-       "win_rate_pct": 51.72,
-       "net_units": -1.34,
-       "risked_units": 58,
-       "roi_pct": -2.3,
+       "record": "31-28-2",
+       "win_rate_pct": 52.54,
+       "net_units": -0.47,
+       "risked_units": 59,
+       "roi_pct": -0.79,
        "avg_clv_points": 0.02,
-       "avg_clv_prob_pp": 0.36,
+       "avg_clv_prob_pp": 0.35,
        "clv_hit_rate_pct": 51.4,
        "avg_odds": -111,
-       "avg_edge_pct": -2.53,
+       "avg_edge_pct": -2.55,
        "max_drawdown_units": -7.4459,
        "record_only": {
         "n": 0,
@@ -6418,8 +6418,8 @@
         "key": "DEVELOPING",
         "label": "Developing sample",
         "warn": false,
-        "n": 60,
-        "text": "n=60 · Developing sample"
+        "n": 61,
+        "text": "n=61 · Developing sample"
        }
       },
       {
@@ -11391,21 +11391,21 @@
       },
       {
        "key": "Pass",
-       "n": 60,
+       "n": 61,
        "rows": 116,
-       "wins": 30,
+       "wins": 31,
        "losses": 28,
        "pushes": 2,
-       "record": "30-28-2",
-       "win_rate_pct": 51.72,
-       "net_units": -1.34,
-       "risked_units": 58,
-       "roi_pct": -2.3,
+       "record": "31-28-2",
+       "win_rate_pct": 52.54,
+       "net_units": -0.47,
+       "risked_units": 59,
+       "roi_pct": -0.79,
        "avg_clv_points": 0.02,
-       "avg_clv_prob_pp": 0.36,
+       "avg_clv_prob_pp": 0.35,
        "clv_hit_rate_pct": 51.4,
        "avg_odds": -111,
-       "avg_edge_pct": -2.53,
+       "avg_edge_pct": -2.55,
        "max_drawdown_units": -7.4459,
        "record_only": {
         "n": 0,
@@ -11419,8 +11419,8 @@
         "key": "DEVELOPING",
         "label": "Developing sample",
         "warn": false,
-        "n": 60,
-        "text": "n=60 · Developing sample"
+        "n": 61,
+        "text": "n=61 · Developing sample"
        }
       },
       {
@@ -11791,8 +11791,8 @@
    },
    "data_quality": {
     "total": 5382,
-    "verified": 3316,
-    "pending": 1048,
+    "verified": 3317,
+    "pending": 1047,
     "voids": 150,
     "missing_entry_odds": 868,
     "simulated_price": 0,
@@ -14047,8 +14047,8 @@
    },
    "data_quality": {
     "total": 949,
-    "verified": 146,
-    "pending": 78,
+    "verified": 147,
+    "pending": 77,
     "voids": 0,
     "missing_entry_odds": 725,
     "simulated_price": 0,
@@ -19311,8 +19311,8 @@
    },
    "data_quality": {
     "total": 1092,
-    "verified": 146,
-    "pending": 78,
+    "verified": 147,
+    "pending": 77,
     "voids": 0,
     "missing_entry_odds": 868,
     "simulated_price": 0,
@@ -19330,7 +19330,7 @@
   {
    "source": "CFB Model Lab",
    "file": "football/cfb_lab/ledger/2026/evaluations.jsonl",
-   "rows": 140,
+   "rows": 142,
    "reason": "research positions graded at an ASSUMED −110 (price_assumed); simulated, so never counted as verified P&L"
   },
   {
@@ -19342,7 +19342,7 @@
   {
    "source": "CFB decision engine (shadow)",
    "file": "football/cfb_decision/2026/decisions.jsonl",
-   "rows": 1440,
+   "rows": 1442,
    "reason": "a shadow engine under evaluation; its calls are not published EdgeDesk recommendations"
   }
  ],
@@ -19380,7 +19380,7 @@
   {
    "source": "bettor_decision",
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "snapshots": 1618,
+   "snapshots": 1622,
    "rows": 147,
    "evaluations_file": "football/cfb_terminal/decisions/2026/evaluations.jsonl"
   },
