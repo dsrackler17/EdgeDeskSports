@@ -22,7 +22,11 @@
                    draft, objections) and every way a reply can go wrong
      E  EXPORT     Markdown and HTML: disclaimer, attribution, UTM tags on
                    EdgeDesk links only, markup escaped, https links only; the
-                   campaign code survives growth.sql's utm_campaign cleaning
+                   campaign code survives growth.sql's utm_campaign cleaning.
+                   Word (.docx): a valid package (CRCs checked by zlib, every
+                   part well formed), Word headings and bullets, the tagged
+                   link live, the disclaimer kept, the editor's page last,
+                   markup and control characters made safe, same bytes twice
      N  NEWS       RSS parsing (CDATA, entities, only https links), matching to
                    the slate, classification
      S  STATIC     the admin page: noindex, only the anon key, no provider host,
@@ -208,6 +212,41 @@ const h = CE.toHtml(evil, ctx);
 chk('E HTML escapes markup and links only https', !/<script>|<img/.test(h) && /&lt;script&gt;/.test(h) && !/href="javascript/.test(h) && /href="https:\/\/edgedesksports\.com\/\?utm_source=/.test(h));
 chk('E the standalone document is noindex and scriptless', (() => { const d = CE.toHtml(a0, Object.assign({ standalone: true }, ctx)); return /^<!doctype html>/.test(d) && /noindex/.test(d) && !/<script/i.test(d); })());
 chk('E the SEO sheet carries the demand basis', /Demand: ESTIMATE/.test(CE.seoSheet(a0, cfbPrev)));
+{
+  const DX = require(path.join(__dirname, '_docx.js'));
+  const bytes = CE.toDocx(a0, ctx);
+  let files = null, err = null;
+  try { files = DX.unzip(bytes); } catch (e) { err = String(e.message); }
+  chk('E Word: a ZIP whose every entry passes zlib’s own CRC check', bytes instanceof Uint8Array && files !== null, err);
+  files = files || {};
+  const need = ['[Content_Types].xml', '_rels/.rels', 'word/document.xml', 'word/_rels/document.xml.rels', 'word/styles.xml', 'word/numbering.xml', 'docProps/core.xml'];
+  chk('E … with the parts Word needs, [Content_Types].xml first', need.every((n) => files[n]) && Object.keys(files)[0] === '[Content_Types].xml', Object.keys(files));
+  chk('E … every part well-formed XML', Object.keys(files).every((n) => DX.wellFormed(files[n].toString('utf8'))), Object.keys(files).filter((n) => !DX.wellFormed(files[n].toString('utf8'))));
+  const doc = files['word/document.xml'] ? files['word/document.xml'].toString('utf8') : '';
+  const paras = DX.paragraphs(doc);
+  const styleOf = (re) => (paras.find((p) => re.test(p.text)) || {}).style;
+  chk('E … the headline as Title, sections as Word headings (Google Docs keeps them)', paras[0] && paras[0].style === 'Title' && paras[0].text === a0.title
+    && a0.sections.filter((x) => x.heading).every((x) => paras.some((p) => p.style === 'Heading2' && p.text === x.heading)), paras.slice(0, 3));
+  chk('E … games as subheadings and bullets as a real Word list', styleOf(/^No\. 6 Georgia at No\. 11 Alabama/) === 'Heading3' && /<w:numId w:val="1"\/>/.test(doc) && paras.some((p) => p.style === 'ListParagraph'));
+  const rels = files['word/_rels/document.xml.rels'] ? files['word/_rels/document.xml.rels'].toString('utf8') : '';
+  chk('E … the tagged EdgeDesk link is a live hyperlink', /<w:hyperlink r:id="rIdL1"/.test(doc) && /Id="rIdL1" Type="[^"]+\/hyperlink" Target="https:\/\/edgedesksports\.com\/today\/\?utm_source=stadiumrant&amp;utm_medium=publisher&amp;utm_campaign=ce_stadiumrant_[a-z0-9]{12}&amp;utm_content=cfb_weekly_preview" TargetMode="External"/.test(rels));
+  chk('E … the research credit and the disclaimer stay in the article', paras.some((p) => /^Research by EdgeDesk Sports/.test(p.text)) && paras.some((p) => p.text === CE.DISCLAIMER));
+  const ed = paras.findIndex((p) => p.text === 'For the editor (not for publication)');
+  chk('E … the editor’s page comes last, on its own page, after the disclaimer', ed > paras.findIndex((p) => p.text === CE.DISCLAIMER) && /<w:pageBreakBefore\/>/.test(doc)
+    && paras.slice(ed).some((p) => /Please keep three things/.test(p.text)) && paras.slice(ed).some((p) => p.text === 'Slug: ' + a0.slug) && paras.slice(ed).some((p) => /^Demand: ESTIMATE/.test(p.text)));
+  chk('E … and nothing else from the SEO sheet leaks into the article body', paras.slice(0, ed).every((p) => !/^(Slug|Meta description|Primary keyword): /.test(p.text)));
+  chk('E … the title in the document properties', /<dc:title>College Football Week 6 Predictions/.test(files['docProps/core.xml'] ? files['docProps/core.xml'].toString('utf8') : ''));
+  chk('E … the same article gives the same bytes', Buffer.from(CE.toDocx(a0, ctx)).equals(Buffer.from(bytes)));
+  chk('E … without the editor’s page when asked', !DX.paragraphs(DX.unzip(CE.toDocx(a0, Object.assign({}, ctx, { editorNotes: false })))['word/document.xml'].toString('utf8')).some((p) => /For the editor/.test(p.text)));
+  const ev = JSON.parse(JSON.stringify(a0));
+  ev.title = 'Texas A&M <b>"vs"</b> Missouri\u0007';
+  ev.sections[0].body = '<script>alert(1)</script> & [click](javascript:alert(1)) **bold** and *italic* [ok](https://edgedesksports.com/)';
+  const evFiles = DX.unzip(CE.toDocx(ev, ctx)), evDoc = evFiles['word/document.xml'].toString('utf8');
+  chk('E … markup and control characters are made safe; only https links become links', Object.keys(evFiles).every((n) => DX.wellFormed(evFiles[n].toString('utf8')))
+    && /Texas A&amp;M &lt;b&gt;&quot;vs&quot;&lt;\/b&gt; Missouri</.test(evDoc) && !/\u0007|<script/.test(evDoc)
+    && /<w:b\/><\/w:rPr><w:t xml:space="preserve">bold</.test(evDoc) && /<w:i\/><\/w:rPr><w:t xml:space="preserve">italic</.test(evDoc)
+    && !/javascript:/.test(evFiles['word/_rels/document.xml.rels'].toString('utf8')) && /\[click\]\(javascript:alert\(1\)\)/.test(DX.paragraphs(evDoc).map((p) => p.text).join('\n')));
+}
 
 /* ── N news ───────────────────────────────────────────────────────────── */
 section('N news');

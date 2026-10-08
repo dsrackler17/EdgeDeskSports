@@ -100,8 +100,8 @@
       ['Open topics', (o['new'] || 0) + (o.shortlisted || 0), 'new + shortlisted'],
       ['Drafts', a.draft || 0, 'not yet in review'],
       ['In review', a.in_review || 0, 'waiting for you'],
-      ['Approved / ready', (a.approved || 0) + (a.ready_to_send || 0), 'export and send by hand'],
-      ['Sent / published', (a.sent || 0) + (a.published || 0), 'recorded by you'],
+      ['Approved / ready', (a.approved || 0) + (a.ready_to_send || 0), 'waiting for you to send'],
+      ['Sent / published', (a.sent || 0) + (a.published || 0), 'by you, never on its own'],
       ['AI calls today', ov.budget.llm.used + ' / ' + ov.budget.llm.cap, 'daily cap (Settings)']
     ];
     $('kpis').innerHTML = k.map(function (x) { return '<div class="kpi"><i>' + esc(x[0]) + '</i><b>' + esc(x[1]) + '</b><small>' + esc(x[2]) + '</small></div>'; }).join('');
@@ -516,14 +516,14 @@
     if (st === 'draft') acts += '<button data-q="edit">Edit</button>';
     if (st === 'in_review') acts += '<button data-q="review">Review</button>';
     if (st === 'approved') acts += '<button data-q="ready">Mark ready to send</button><button class="g" data-q="toreview">Back to review</button>';
-    if (st === 'ready_to_send') acts += '<button class="g" data-q="sent">Record a send made elsewhere…</button><button class="g" data-q="unready">Back to approved</button>';
+    if (st === 'ready_to_send') acts += '<button class="g" data-q="unready">Back to approved</button>';
     if (st === 'sent') acts += '<button data-q="published">Mark published…</button>';
     if (st === 'archived' && !row.sent_at) acts += '<button class="g" data-q="restore">Restore to draft</button>';
     if (st !== 'archived') acts += '<button class="d" data-q="archive">Archive</button>';
     $('pDetail').innerHTML = '<div class="card" style="margin-top:14px"><div class="otitle">' + esc(row.title) + '</div><div class="sub">' + pill(st) + ' · ' + esc(pubName(row.publisher_id)) + ' · revision ' + esc(row.revision)
       + (row.approved_at ? ' · approved ' + when(row.approved_at) : '') + (row.sent_at ? ' · sent ' + when(row.sent_at) : '') + (row.published_url ? ' · ' + link(row.published_url, 'published copy') : '') + '</div>'
       + '<div class="row" style="margin-top:10px">' + acts + '</div>'
-      + '<h3>Export</h3><div class="row"><button class="g" data-q="md"' + (exportable ? '' : ' disabled') + '>Download Markdown</button><button class="g" data-q="html"' + (exportable ? '' : ' disabled') + '>Download HTML</button>'
+      + '<h3>Export</h3><div class="row"><button class="g" data-q="docx"' + (exportable ? '' : ' disabled') + '>Download Word (.docx)</button><button class="g" data-q="md"' + (exportable ? '' : ' disabled') + '>Download Markdown</button><button class="g" data-q="html"' + (exportable ? '' : ' disabled') + '>Download HTML</button>'
       + '<button class="g" data-q="copyhtml"' + (exportable ? '' : ' disabled') + '>Copy HTML</button><button class="g" data-q="seo"' + (exportable ? '' : ' disabled') + '>Download SEO sheet</button></div>'
       + (exportable ? '' : '<p class="note">Export unlocks once the owner approves this exact version. Use the editor’s preview until then.</p>')
       + '<h3>Tagged referral link</h3><div class="sub mono" style="overflow-wrap:anywhere">' + esc(utm) + '</div><p class="note">Every EdgeDesk link in the export carries utm_source=' + esc(row.publisher_profile ? row.publisher_profile.utm_source : 'direct') + ', utm_medium=publisher and utm_campaign=' + esc(row.campaign_code) + ': visits, sign-ups, trials and paid conversions through it appear under Performance (counts only).</p>'
@@ -552,17 +552,22 @@
         if (q === 'archive') { if (!window.confirm('Archive this article?')) return; r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'archived', p: {} }); }
         if (q === 'restore') r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'draft', p: {} });
         if (q === 'sent') {
-          var method = window.prompt('How did you send it? manual_email, cms_upload, shared_document or other', (row.publisher_profile && row.publisher_profile.editorial && 'manual_email') || 'manual_email');
-          if (method === null) return;
-          var note = window.prompt('A note for the record (who, which thread — optional)', '') || '';
-          r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'sent', p: { method: method.trim(), note: note } });
+          var msel = $('qMethod'), method = msel ? msel.value : 'manual_email';
+          if (!window.confirm('Mark “' + row.title + '” as sent to ' + pubName(row.publisher_id) + '?\n\nUse this once you have sent it yourself. EdgeDesk sends nothing for this.')) return;
+          if (st === 'approved') {
+            r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'ready_to_send', p: {} });
+            if (r && r.ok === false) { say('qMsg', 'err', 'Not done: ' + (r.detail || r.reason)); return; }
+          }
+          r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'sent', p: { method: method,
+            note: 'sent by the owner: ' + (msel ? msel.options[msel.selectedIndex].text : 'emailed it myself').toLowerCase() } });
         }
         if (q === 'published') {
           var url = window.prompt('The published article’s URL (https://…)', ''); if (url === null) return;
           r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'published', p: { url: url.trim() } });
         }
-        if (q === 'md' || q === 'html' || q === 'copyhtml' || q === 'seo') {
+        if (q === 'md' || q === 'html' || q === 'copyhtml' || q === 'seo' || q === 'docx') {
           var ctx = exportCtx(row);
+          if (q === 'docx') download(row.slug + '.docx', CE.toDocx(a, ctx), CE.DOCX_TYPE);
           if (q === 'md') download(row.slug + '.md', CE.toMarkdown(a, Object.assign({ frontMatter: true }, ctx)), 'text/markdown');
           if (q === 'html') download(row.slug + '.html', CE.toHtml(a, Object.assign({ standalone: true }, ctx)), 'text/html');
           if (q === 'copyhtml') copy(CE.toHtml(a, ctx), 'qMsg');
@@ -577,10 +582,13 @@
     };
   }
 
-  /* ── SEND TO PUBLISHER: the owner's own send ───────────────────────────
-     Only for the approved version; a real send only once it is marked ready;
-     only to a contact on the publisher's profile; the page names the address
-     and asks first. The database checks all of it again (content_engine_send_claim). */
+  /* ── SEND TO PUBLISHER: the owner's own send, two ways ─────────────────
+     1  Send it yourself: download the Word file (the editor touches it up),
+        email it from your own inbox, then "Mark as sent" (one confirmation).
+     2  Or email it from EdgeDesk: only the approved version; only once it is
+        marked ready; only to a contact on the publisher's profile; the page
+        names the address and asks first. The database checks all of it again
+        (content_engine_send_claim). */
   function firstName(n) { return String(n || '').trim().split(/\s+/)[0] || ''; }
   function sendPanel(row) {
     var st = row.status;
@@ -594,22 +602,32 @@
     }).join('<br>') + '</div>' : '';
     if (st === 'sent' || st === 'published') return sends.length ? '<h3>Emails</h3>' + hist : '';
     if (!row.publisher_id) return '<h3>Send to publisher</h3><p class="note">This article has no publisher.</p>';
-    if (!contacts.length) return '<h3>Send to ' + esc(pub ? pub.name : 'publisher') + '</h3><p class="note">Add ' + esc(pub ? pub.name : 'the publisher') + '’s contact (name and email) under <b>Publishers</b> to send it from here.</p>' + hist;
+    var pname = pub ? pub.name : 'the publisher';
+    var who = contacts.length && contacts[0].name ? firstName(contacts[0].name) : 'the editor';
+    /* 1 — send it yourself: the editable Word file, then one click to record it */
+    var self = '<div class="card" style="background:var(--bg)"><div class="otitle" style="font-size:14px">Send it yourself</div>'
+      + '<p class="note" style="margin:6px 0 10px">Download the Word file and email it to ' + esc(who) + ' from your own inbox; they can touch it up in Word or Google Docs. It keeps the tagged EdgeDesk link and the disclaimer, and its last page (for the editor, not for publication) has the SEO details. Then mark it sent here.</p>'
+      + '<div class="row"><button data-q="docx" type="button">Download Word file</button>'
+      + '<div class="f" style="max-width:240px;flex:0 1 240px"><label for="qMethod">How you sent it</label><select id="qMethod">'
+      + [['manual_email', 'I emailed it myself'], ['shared_document', 'I shared a document'], ['cms_upload', 'I uploaded it to their CMS'], ['other', 'Some other way']].map(function (m) { return '<option value="' + m[0] + '">' + esc(m[1]) + '</option>'; }).join('')
+      + '</select></div><button class="g" data-q="sent" type="button">Mark as sent</button></div></div>';
+    var head = '<h3>Send to ' + esc(pname) + '</h3>' + self;
+    if (!contacts.length) return head + '<p class="note">To email it from EdgeDesk instead, add ' + esc(pname) + '’s contact (name and email) under <b>Publishers</b>.</p>' + hist;
     var c0 = contacts[0];
     var note = 'Hi ' + (firstName(c0.name) || 'there') + ',\n\n'
-      + 'Here is “' + row.title + '” from EdgeDesk' + (pub ? ', ready for ' + pub.name : '') + '. The article is below, and attached as Markdown and HTML, with an SEO sheet (headline, slug, meta description and keywords).\n\n'
-      + 'Happy to adjust anything before it runs.\n\n'
+      + 'Here is “' + row.title + '” from EdgeDesk' + (pub ? ', ready for ' + pub.name : '') + '. It is attached as a Word document you can edit, and it is also below. The last page of the Word file has the headline, slug, meta description and keywords.\n\n'
+      + 'Feel free to touch it up. Happy to adjust anything before it runs.\n\n'
       + 'Thanks,\n' + ((sender && sender.name) || '');
-    return '<h3>Send to ' + esc(pub.name) + '</h3><div class="card" style="background:var(--bg)">'
-      + '<div class="row"><div class="f"><label for="sTo">To</label><select id="sTo">' + contacts.map(function (c, i) {
+    return head + '<div class="card" style="background:var(--bg);margin-top:10px"><div class="otitle" style="font-size:14px">Or email it from EdgeDesk</div>'
+      + '<div class="row" style="margin-top:8px"><div class="f"><label for="sTo">To</label><select id="sTo">' + contacts.map(function (c, i) {
           return '<option value="' + esc(String(c.email).trim().toLowerCase()) + '"' + (i === 0 ? ' selected' : '') + ' data-name="' + esc(c.name || '') + '">' + esc((c.name ? c.name + ' — ' : '') + String(c.email).trim()) + (c.role ? ' (' + esc(c.role) + ')' : '') + '</option>';
         }).join('') + '</select></div>'
       + '<div class="f" style="flex:2"><label for="sSubj">Subject</label><input id="sSubj" maxlength="150" value="' + esc(row.title) + '"></div></div>'
       + '<div class="f" style="margin-top:8px"><label for="sNote">Note (above the article)</label><textarea id="sNote" style="min-height:130px">' + esc(note) + '</textarea></div>'
-      + '<div class="sub" style="margin-top:6px">From ' + esc(sender ? sender.from : 'the engine’s sender (Settings)') + ' · replies to ' + esc(sender ? sender.reply_to : '—') + ' · the approved version, with the tagged EdgeDesk link and the disclaimer</div>'
+      + '<div class="sub" style="margin-top:6px">From ' + esc(sender ? sender.from : 'the engine’s sender (Settings)') + ' · replies to ' + esc(sender ? sender.reply_to : '—') + ' · the approved version, with the Word file attached, the tagged EdgeDesk link and the disclaimer</div>'
       + '<div class="row" style="margin-top:10px"><button class="g" data-q="emailtest" type="button">Send a test to me</button>'
       + '<button data-q="email" type="button"' + (st === 'ready_to_send' ? '' : ' disabled title="mark it ready to send first"') + '>Send to ' + esc(c0.name ? firstName(c0.name) : c0.email) + '</button></div>'
-      + (st === 'approved' ? '<p class="note">Mark it ready to send to unlock the send. A test to yourself works now.</p>' : '')
+      + (st === 'approved' ? '<p class="note">Mark it ready to send to unlock this. A test to yourself works now.</p>' : '')
       + hist + '</div>';
   }
   async function sendNow(row, test, btn) {

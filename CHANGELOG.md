@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-10-08 — Content Engine: a Word file the editor can touch up, and "Mark as sent"
+
+**An approved article now downloads as a Word (.docx) file that the publisher's editor can edit in Word or Google Docs. The quickest way to send it is now to email it yourself and press Mark as sent.** Nothing is ever sent on its own. Docs: `docs/content-engine/README.md` (*Using it*, step 6).
+
+- **Word export** (`lib/content_engine.js` `toDocx`, no dependency). It contains:
+  - real headings and bullets, a live tagged EdgeDesk link, the research credit and the disclaimer;
+  - a last page *For the editor (not for publication)*: the SEO sheet, and a request to keep the link, the credit and the 21+ line and to check any change to a number with us.
+
+  The same article always gives the same bytes. `content:example` writes one too.
+- **Page.** The publishing queue leads its exports with **Download Word (.docx)**. The Send panel now has two cards:
+  - **Send it yourself**: **Download Word file**, then **Mark as sent** with how you sent it. One confirmation, no typing, no "ready" step. It replaces **Record a send made elsewhere…**.
+  - **Or email it from EdgeDesk**: the Send added earlier today, which now attaches the Word file first.
+- **Edge Function** `content_engine`: the email's attachments lead with the Word file; redeploy it.
+
+**Tests:** `content:test` (192, including the Word package read back with zlib's own CRC check and an XML well-formedness check), `content:fn` (61), `content:e2e` (52). The e2e takes a second article through approval, then downloads the Word file, opens and checks it, and presses Mark as sent; nothing is emailed. The Word file was also opened with python-docx, pandoc and LibreOffice.
+
 ## 2026-10-08 — Content Engine: Send to publisher
 
 **An approved article can now be emailed to the publisher's editor from the publishing queue, only when the owner presses Send and confirms the address.** Nothing is ever sent on its own. Docs: `docs/content-engine/README.md` (*Using it*, step 6).

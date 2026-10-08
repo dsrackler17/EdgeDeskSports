@@ -201,6 +201,7 @@ async function example(o) {
   fs.writeFileSync(base + '.md', CE.toMarkdown(a, Object.assign({ frontMatter: true }, ctx)));
   fs.writeFileSync(base + '.html', CE.toHtml(a, Object.assign({ standalone: true }, ctx)));
   fs.writeFileSync(base + '.seo.txt', CE.seoSheet(a, opp) + '\n');
+  fs.writeFileSync(base + '.docx', CE.toDocx(a, ctx));
   fs.writeFileSync(base + '.checks.json', JSON.stringify({ generator, opportunity: { key: opp.key, priority: opp.priority, scores: opp.scores, demand: opp.demand, sources: opp.sources }, checks: rep }, null, 2) + '\n');
   return { file: base + '.md', words: a.word_count, ok: rep.ok, failed: rep.failed, warned: rep.warned, generator, priority: opp.priority };
 }

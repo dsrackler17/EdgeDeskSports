@@ -36,7 +36,7 @@ Search Console (existing import) ───────────────�
   - five article formats;
   - the deterministic writer;
   - the validator;
-  - Markdown and HTML export;
+  - Word (.docx), Markdown and HTML export;
   - RSS parsing;
   - the AI request and reply.
 - **`supabase/content_engine.sql`** holds:
@@ -117,9 +117,17 @@ Search Console (existing import) ───────────────�
    - the export preview.
 
    Confirm the five points (source verification, data freshness, model accuracy, SEO, compliance), then **Approve this exact version**. The approval is bound to the content hash on screen.
-6. **Publishing queue.** Open the approved article. Download the Markdown (with front matter), the HTML or the SEO sheet if you want them. Then send it in one of two ways.
+6. **Publishing queue.** Open the approved article. The exports are **Word (.docx)**, Markdown (with front matter), HTML and the SEO sheet. Then send it in one of two ways.
 
-   **Send from the page:**
+   **Send it yourself (the editor touches it up):**
+   1. Press **Download Word file**. It opens in Word or Google Docs, ready to edit:
+      - the headline and section headings are real Word headings, the game lists real bullets;
+      - the tagged EdgeDesk link is live, and the research credit and the disclaimer are in place;
+      - a last page, *For the editor (not for publication)*, carries the SEO sheet (headline options, slug, meta description, keywords). It asks the editor to keep the link, the credit and the 21+ line, and to check any change to a projection or number with you.
+   2. Email it to the editor from your own inbox.
+   3. Back on the page, choose how you sent it (default *I emailed it myself*) and press **Mark as sent**. It asks once, then records the send with a delivery row. There is no "ready" step on this path.
+
+   **Or email it from EdgeDesk:**
    1. Add the editor's name and email under **Publishers → Edit → Contacts**, once per publisher.
    2. Optionally, press **Send a test to me**. It goes to your own sign-in address and does not count as sent.
    3. Press **Mark ready to send**.
@@ -128,11 +136,9 @@ Search Console (existing import) ───────────────�
    The email contains:
    - your note;
    - the approved article, with its tagged link and the disclaimer;
-   - the Markdown, the HTML and the SEO sheet, attached.
+   - the Word file (first, for editing), the Markdown, the HTML and the SEO sheet, attached.
 
    It is recorded as **sent**, with a delivery row.
-
-   **Send it yourself:** use **Record a send made elsewhere…**, with the method and a note.
 
    Then **Mark published** when it goes live, with its URL.
 7. **Performance.** First-party visits, sessions, sign-ups, trials and paid conversions through the article's tagged link appear here. Add the publisher-reported figures (page views, referral clicks) by hand.
@@ -284,12 +290,12 @@ An edit after approval returns the article to review, and sent content is frozen
 ## Tests
 
 ```
-npm run content:test      # the core against the committed research + static guards (179 checks)
+npm run content:test      # the core against the committed research + static guards (192 checks)
 npm run content:sql       # the database on a real PostgreSQL (125)
-npm run content:fn        # the Edge Function as deployed, against that database (60)
+npm run content:fn        # the Edge Function as deployed, against that database (61)
 npm run content:job:test  # the weekly job as the service role (23)
-npm run content:e2e       # the owner's whole flow in Chromium, Send included (44)
-npm run content:example   # write an example article from the current research to content-example/
+npm run content:e2e       # the owner's whole flow in Chromium, both ways of sending included (52)
+npm run content:example   # write an example article (Word, Markdown, HTML, SEO sheet) from the current research to content-example/
 ```
 
 ---
@@ -303,7 +309,7 @@ npm run content:example   # write an example article from the current research t
 - the Stadium Rant profile;
 - SEO briefs and drafts;
 - the owner-only dashboard;
-- Markdown and HTML export, and the owner's Send to a publisher contact.
+- Word (.docx), Markdown and HTML export, and the owner's Send to a publisher contact.
 
 **Phase 2 — automation: built.**
 - the scheduled weekly discovery;

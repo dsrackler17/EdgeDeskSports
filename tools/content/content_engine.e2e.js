@@ -23,6 +23,9 @@
         owner and changes nothing; the real send waits for "ready", names the
         address and asks first, emails the approved article with its files,
         and records it as sent; mark published (URL asked)
+     6b Send it yourself: a second article, approved, downloaded as a Word
+        file (opened and checked), then "Mark as sent" with one confirmation;
+        nothing is emailed
      7  Performance lists the article with its campaign code; nothing claims a
         measurement it does not have
      8  at 390 px nothing overflows; no page errors anywhere
@@ -38,6 +41,7 @@ const { pathToFileURL } = require('node:url');
 const PG = require(path.join(__dirname, '..', 'personal', '_pg.js'));
 const { rpcShim } = require(path.join(__dirname, '..', 'growth', '_rpc_shim.js'));
 const INLINE = require(path.join(__dirname, 'inline.js'));
+const DX = require(path.join(__dirname, '_docx.js'));
 
 const ROOT = PG.ROOT;
 const args = process.argv.slice(2);
@@ -285,14 +289,59 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     chk('6 … one email to the contact, with the subject as typed, from the sender', RESEND.length === 2 && em.body.to.length === 1 && em.body.to[0] === 'jordan@publisher.example'
       && em.body.subject === 'College Football Week 6 Predictions — for Stadium Rant' && em.body.from === 'Davis <davis@edgedesksports.com>', em.body.to);
     const files = (em.body.attachments || []).map((x) => x.filename);
-    chk('6 … the note, the approved article with its tagged link and disclaimer, and three files', /<p>Hi Jordan,<\/p>/.test(em.body.html || '') && /utm_campaign=ce_stadiumrant_/.test(em.body.html) && /1-800-GAMBLER/.test(em.body.html)
-      && files.length === 3 && files.every((f) => f.indexOf(art.slug) === 0), files);
+    chk('6 … the note, the approved article with its tagged link and disclaimer, and four files, the Word copy first', /<p>Hi Jordan,<\/p>/.test(em.body.html || '') && /utm_campaign=ce_stadiumrant_/.test(em.body.html) && /1-800-GAMBLER/.test(em.body.html)
+      && files.length === 4 && files.every((f) => f.indexOf(art.slug) === 0) && /\.docx$/.test(files[0]), files);
     chk('6 … with the database’s idempotency key, and no key anywhere on the page', /^edgedesk-content-[0-9a-f]{32}$/.test(em.headers['idempotency-key']) && !/re_e2e_stub_key/.test(await P.content()));
     chk('6 recorded: sent, an email delivery, the send on record', db.sql(`select a.status || '|' || d.method || '|' || s.status from content_engine.articles a join content_engine.deliveries d on d.article_id = a.id join content_engine.sends s on s.article_id = a.id and not s.is_test where a.id = '${art.id}';`) === 'sent|email|sent');
     chk('6 the page shows it sent, with the email in its history', /Sent/.test(await P.textContent('#pDetail')) && /To Jordan Editor <jordan@publisher\.example> · sent/.test(await P.textContent('#pDetail')));
     await P.click('#pDetail button[data-q="published"]');
     await P.waitForFunction(() => /Done/.test((document.getElementById('qMsg') || {}).textContent || ''), null, { timeout: 15000 });
     chk('6 published, with its URL', db.sql(`select status || '|' || published_url from content_engine.articles where id = '${art.id}';`) === 'published|https://www.stadiumrant.com/college-football-week-6-predictions');
+
+    /* 6b · send it yourself: the Word file, then one click */
+    await P.click('.tabs button[data-tab="opps"]');
+    await P.waitForSelector('#oList .opp');
+    const opp2 = db.sql(`select id from content_engine.opportunities where league = 'nfl' and kind = 'weekly_preview' order by priority desc limit 1;`);
+    await P.click('#oList button[data-act="write"][data-id="' + opp2 + '"]');
+    await P.waitForSelector('#tab-gen:not(.hide)');
+    await P.selectOption('#gFormat', 'nfl_weekly_preview');
+    await P.click('#gDraft');
+    await P.waitForFunction(() => { const e = document.getElementById('eChecks'); return e && /all hard checks pass/.test(e.textContent) && !document.getElementById('gEditor').classList.contains('hide'); }, null, { timeout: 30000 });
+    const art3 = JSON.parse(db.sql(`select to_jsonb(a) from content_engine.articles a where opportunity_id = '${opp2}' order by created_at desc limit 1;`));
+    await P.click('#gEditor button[data-act="submit"]');
+    await P.waitForFunction(() => /In review/.test(document.getElementById('eMsg').textContent), null, { timeout: 15000 });
+    await P.click('.tabs button[data-tab="review"]');
+    await P.waitForSelector('#rList button[data-open="' + art3.id + '"]');
+    await P.click('#rList button[data-open="' + art3.id + '"]');
+    await P.waitForSelector('#rDetail [data-rv]');
+    for (const k of ['source_verification', 'data_freshness', 'model_accuracy', 'seo_review', 'compliance']) await P.check('#rDetail [data-rv="' + k + '"]');
+    await P.click('#rApprove');
+    await P.waitForFunction(() => /Approved/.test(document.getElementById('rMsg').textContent), null, { timeout: 15000 });
+    await P.click('.tabs button[data-tab="pub"]');
+    await P.waitForSelector('#pCols button[data-open="' + art3.id + '"]');
+    await P.click('#pCols button[data-open="' + art3.id + '"]');
+    await P.waitForSelector('#pDetail button[data-q="sent"]');
+    chk('6b approved: “Send it yourself” offers the Word file and “Mark as sent”, no ready step needed', /Send it yourself/.test(await P.textContent('#pDetail')) && /email it to Jordan from your own inbox/.test(await P.textContent('#pDetail'))
+      && await P.isVisible('#pDetail button[data-q="sent"]'));
+    if (SHOTS) await P.screenshot({ path: path.join(SHOTS, '5-send-yourself.png'), fullPage: false });
+    const [dlw] = await Promise.all([P.waitForEvent('download'), P.locator('#pDetail button[data-q="docx"]').last().click()]);
+    chk('6b the download is a .docx named for the article', dlw.suggestedFilename() === art3.slug + '.docx', dlw.suggestedFilename());
+    const wbytes = fs.readFileSync(await dlw.path());
+    if (SHOTS) fs.writeFileSync(path.join(SHOTS, dlw.suggestedFilename()), wbytes);
+    let wfiles = {}, werr = null;
+    try { wfiles = DX.unzip(wbytes); } catch (e) { werr = String(e.message); }
+    const wparas = wfiles['word/document.xml'] ? DX.paragraphs(wfiles['word/document.xml'].toString('utf8')) : [];
+    chk('6b the Word file opens: every part checks out', !werr && Object.keys(wfiles).length === 7 && Object.keys(wfiles).every((n) => DX.wellFormed(wfiles[n].toString('utf8'))), werr);
+    chk('6b … the approved article: headline, sections, disclaimer, the editor’s page', wparas[0] && wparas[0].style === 'Title' && wparas[0].text === art3.title
+      && wparas.some((x) => x.style === 'Heading2') && wparas.some((x) => /21\+\. Gamble responsibly — 1-800-GAMBLER/.test(x.text)) && wparas.some((x) => x.text === 'For the editor (not for publication)'));
+    chk('6b … with the tagged EdgeDesk link live', /Target="https:\/\/edgedesksports\.com\/[^"]*utm_source=stadiumrant&amp;utm_medium=publisher&amp;utm_campaign=ce_stadiumrant_[0-9a-f]{12}/.test(wfiles['word/_rels/document.xml.rels'] ? wfiles['word/_rels/document.xml.rels'].toString('utf8') : ''));
+    chk('6b … and the download is logged', +db.sql(`select count(*) from content_engine.events where kind = 'exported' and article_id = '${art3.id}' and detail ->> 'as' = 'docx';`) === 1);
+    const before = RESEND.length;
+    await P.click('#pDetail button[data-q="sent"]');
+    await P.waitForFunction(() => /Done/.test((document.getElementById('qMsg') || {}).textContent || ''), null, { timeout: 15000 });
+    chk('6b “Mark as sent” asks once, then records it: emailed by the owner', dialogs.some((d) => /^Mark “/.test(d) && /as sent to Stadium Rant/.test(d))
+      && db.sql(`select a.status || '|' || d.method || '|' || d.note from content_engine.articles a join content_engine.deliveries d on d.article_id = a.id where a.id = '${art3.id}';`) === 'sent|manual_email|sent by the owner: i emailed it myself');
+    chk('6b … and EdgeDesk emailed nothing for it', RESEND.length === before && +db.sql(`select count(*) from content_engine.sends where article_id = '${art3.id}';`) === 0);
 
     /* 7 · performance */
     await P.click('.tabs button[data-tab="perf"]');
@@ -312,7 +361,7 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     await P.waitForSelector('#oList .opp');
     const over = await P.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     chk('8 at 390 px nothing overflows horizontally', over <= 1, over);
-    if (SHOTS) await P.screenshot({ path: path.join(SHOTS, '5-phone.png'), fullPage: false });
+    if (SHOTS) await P.screenshot({ path: path.join(SHOTS, '6-phone.png'), fullPage: false });
     chk('8 no page errors', o.errors.length === 0, o.errors);
     await o.ctx.close();
   } catch (e) {
