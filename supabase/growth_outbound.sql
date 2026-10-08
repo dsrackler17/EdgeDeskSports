@@ -82,6 +82,12 @@
 --        the morning run (pg_cron) finds, researches and drafts on single-use
 --          tickets kept only as hashes; no ticket reaches a door that
 --          approves, edits, sends, suppresses or changes a setting.
+--        a result is matched, never guessed: a visit or an account counts
+--          for a prospect only by their email's link (its campaign code) or
+--          the address written to, and only after the first email went out;
+--          the account itself is not stored here; an account ends that
+--          prospect's sequence, and an address that already has an EdgeDesk
+--          account is never cold-emailed.
 --
 -- BOOTSTRAP (Supabase SQL editor only, AFTER this file has run — see
 -- docs/growth-outbound.md). The address goes in plain, with no < >:
@@ -126,7 +132,8 @@ begin
     'growth_outbound.sends', 'growth_outbound.suppressions', 'growth_outbound.activity',
     'growth_outbound.identifiers', 'growth_outbound.fit_factor_catalog', 'growth_outbound.secrets',
     'growth_outbound.provider_events', 'growth_outbound.research_runs', 'growth_outbound.pages',
-    'growth_outbound.candidates', 'growth_outbound.provider_usage', 'growth_outbound.scheduler']) t
+    'growth_outbound.candidates', 'growth_outbound.provider_usage', 'growth_outbound.scheduler',
+    'growth_outbound.conversions']) t
   where to_regclass(t) is not null;
   if v_list is null then return; end if;
   loop
@@ -182,6 +189,16 @@ set search_path = pg_catalog, pg_temp as $$
 $$;
 
 -- Is this a time zone PostgreSQL knows ('America/New_York', 'UTC')?
+-- Does this address already belong to an EdgeDesk account? Such a person is a
+-- customer (or was one): never a cold prospect. Read here, server-side only;
+-- nothing about the account leaves this schema.
+create or replace function growth_outbound.has_account(p_email text)
+returns boolean language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select growth_outbound.norm_email(p_email) is not null
+     and exists (select 1 from auth.users u where lower(btrim(u.email)) = growth_outbound.norm_email(p_email));
+$$;
+
 create or replace function growth_outbound.valid_timezone(p text)
 returns boolean language plpgsql stable
 set search_path = pg_catalog, pg_temp as $$
@@ -429,6 +446,9 @@ insert into growth_outbound.settings (id) values (1) on conflict (id) do nothing
 alter table growth_outbound.settings add column if not exists automation_timezone text not null default 'America/New_York';
 alter table growth_outbound.settings add column if not exists automation_start_hour int not null default 6;
 alter table growth_outbound.settings add column if not exists automation_hours int not null default 4;
+-- RESULTS (Phase 10): EdgeDesk links in a live email carry this prospect's
+-- campaign code, so a visit or a signup that came from it can be matched back.
+alter table growth_outbound.settings add column if not exists attribution_links boolean not null default true;
 do $c$ begin
   alter table growth_outbound.settings drop constraint if exists outbound_settings_automation;
   alter table growth_outbound.settings add constraint outbound_settings_automation check (
@@ -643,6 +663,9 @@ alter table growth_outbound.sends add column if not exists attempts int not null
 alter table growth_outbound.sends add column if not exists last_attempt_at timestamptz;
 alter table growth_outbound.sends add column if not exists last_error text;
 create unique index if not exists sends_optout_token_uk on growth_outbound.sends (optout_token) where optout_token is not null;
+-- whether this send's EdgeDesk links carried a campaign code (fixed when it
+-- is claimed, from the setting; what was sent is what the row says)
+alter table growth_outbound.sends add column if not exists links_tagged boolean not null default false;
 
 create table if not exists growth_outbound.suppressions (
   id           bigint generated always as identity primary key,
@@ -1509,6 +1532,52 @@ do $c$ begin
     and (last_reason is null or length(last_reason) <= 500));
 end $c$;
 insert into growth_outbound.scheduler (id) values (1) on conflict (id) do nothing;
+-- when the results were last matched (Phase 10), and what went wrong if they
+-- could not be
+alter table growth_outbound.scheduler add column if not exists conversions_synced_at timestamptz;
+alter table growth_outbound.scheduler add column if not exists conversions_error text;
+do $c$ begin
+  alter table growth_outbound.scheduler drop constraint if exists scheduler_results_ck;
+  alter table growth_outbound.scheduler add constraint scheduler_results_ck check (
+    conversions_error is null or length(conversions_error) <= 500);
+end $c$;
+
+-- =============================================================================
+-- 4e. RESULTS: who came to EdgeDesk after an email (Phase 10)
+--
+-- A conversion is a fact about a prospect we WROTE TO (a live send that went
+-- out): their link was visited, an account was made, a trial started, a
+-- payment made. Matched two ways only:
+--   link     the campaign code in their email's EdgeDesk links
+--            (utm_campaign=ob_<their attribution token>) is the campaign
+--            supabase/growth.sql recorded for the visit or the account
+--   address  an account was made with the address we wrote to
+-- and only for what happened AFTER the first email went out. Never a guess
+-- from a name, a domain or a time alone.
+--
+-- The account itself is not recorded here: no user id, no account email.
+-- account_key is a one-way hash of it, enough to count each person once.
+-- Written only by sync_conversions(); never rewritten or deleted.
+-- =============================================================================
+create table if not exists growth_outbound.conversions (
+  id            bigint generated always as identity primary key,
+  prospect_id   uuid not null references growth_outbound.prospects (id) on delete restrict,
+  stage         text not null,
+  matched_by    text not null,
+  account_key   text not null,
+  occurred_at   timestamptz not null,
+  recorded_at   timestamptz not null default now()
+);
+do $c$ begin
+  alter table growth_outbound.conversions drop constraint if exists conversions_shape_ck;
+  alter table growth_outbound.conversions add constraint conversions_shape_ck check (
+        stage in ('visited', 'signed_up', 'trial', 'paid')
+    and matched_by in ('link', 'address')
+    and (stage <> 'visited' or matched_by = 'link')
+    and account_key ~ '^[0-9a-f]{64}$');
+end $c$;
+create unique index if not exists conversions_once_uk on growth_outbound.conversions (prospect_id, stage, account_key);
+create index if not exists conversions_at_idx on growth_outbound.conversions (occurred_at desc);
 
 -- A page as the engine read it: its visible text, its links and its
 -- structured data, exactly what a quote is checked against. Never rewritten.
@@ -1814,6 +1883,26 @@ create trigger candidates_never_delete_t before delete on growth_outbound.candid
 drop trigger if exists research_runs_never_delete_t on growth_outbound.research_runs;
 create trigger research_runs_never_delete_t before delete on growth_outbound.research_runs
   for each row execute function growth_outbound.never_delete();
+
+-- A conversion is written by the matcher only, and never rewritten: what
+-- the owner reads as results is what was matched, when it was matched.
+create or replace function growth_outbound.conversions_guard()
+returns trigger language plpgsql
+set search_path = pg_catalog, pg_temp as $$
+begin
+  if coalesce(current_setting('growth_outbound.door', true), '') <> 'sync_conversions' then
+    raise exception 'a conversion is recorded only by the matcher (growth_outbound.sync_conversions)'
+      using errcode = 'insufficient_privilege';
+  end if;
+  new.recorded_at := now();
+  return new;
+end $$;
+drop trigger if exists conversions_guard_t on growth_outbound.conversions;
+create trigger conversions_guard_t before insert on growth_outbound.conversions
+  for each row execute function growth_outbound.conversions_guard();
+drop trigger if exists conversions_append_only_t on growth_outbound.conversions;
+create trigger conversions_append_only_t before update or delete on growth_outbound.conversions
+  for each row execute function growth_outbound.append_only();
 
 -- EVIDENCE COMES IN ONLY IN A FORM THAT CAN BE CHECKED. Whoever writes the
 -- row — the owner's form, the research engine, a provider — it must name a
@@ -2147,10 +2236,12 @@ declare
 begin
   if tg_op = 'UPDATE' then
     if (new.prospect_id, new.draft_id, new.sequence_number, new.is_test, new.idempotency_key, new.sender,
-        new.intended_recipient, new.recipient, new.subject, new.content_hash, new.claimed_at, new.claimed_by, new.optout_token)
+        new.intended_recipient, new.recipient, new.subject, new.content_hash, new.claimed_at, new.claimed_by, new.optout_token,
+        new.links_tagged)
        is distinct from
        (old.prospect_id, old.draft_id, old.sequence_number, old.is_test, old.idempotency_key, old.sender,
-        old.intended_recipient, old.recipient, old.subject, old.content_hash, old.claimed_at, old.claimed_by, old.optout_token)
+        old.intended_recipient, old.recipient, old.subject, old.content_hash, old.claimed_at, old.claimed_by, old.optout_token,
+        old.links_tagged)
        or (old.resend_message_id is not null and new.resend_message_id is distinct from old.resend_message_id) then
       raise exception 'a send records what was sent; only its delivery state may change'
         using errcode = 'insufficient_privilege';
@@ -2210,6 +2301,11 @@ begin
     if new.is_test or new.recipient is distinct from new.intended_recipient then
       raise exception 'a live send goes to the approved recipient only' using errcode = 'insufficient_privilege';
     end if;
+    -- a customer is never cold-emailed: this address already has an account
+    -- (or made one after an earlier step, and the sequence is over)
+    if growth_outbound.has_account(new.intended_recipient) then
+      raise exception 'this address already has an EdgeDesk account' using errcode = 'insufficient_privilege';
+    end if;
     -- this address has never had this step, from any prospect row
     if exists (select 1 from growth_outbound.sends x where not x.is_test
                 and x.intended_recipient = new.intended_recipient and x.sequence_number = new.sequence_number) then
@@ -2264,6 +2360,7 @@ begin
   new.optout_token := replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '');
   new.attempts := 1;
   new.last_attempt_at := now();
+  new.links_tagged := s.attribution_links;
   return new;
 end $$;
 drop trigger if exists sends_guard_t on growth_outbound.sends;
@@ -2286,7 +2383,8 @@ declare t text;
 begin
   foreach t in array array['owners', 'owner_audit', 'settings', 'prospects', 'evidence', 'drafts',
                            'sends', 'suppressions', 'activity', 'identifiers', 'fit_factor_catalog', 'secrets',
-                           'provider_events', 'research_runs', 'pages', 'candidates', 'provider_usage', 'scheduler'] loop
+                           'provider_events', 'research_runs', 'pages', 'candidates', 'provider_usage', 'scheduler',
+                           'conversions'] loop
     execute format('alter table growth_outbound.%I enable row level security', t);
     execute format('drop policy if exists deny_clients on growth_outbound.%I', t);
     -- RESTRICTIVE: ANDed with every permissive policy, so a permissive policy
@@ -2366,7 +2464,7 @@ declare
     'max_test_sends_per_day', 'min_fit_score', 'min_identity_confidence', 'min_role_confidence', 'min_research_confidence',
     'min_email_confidence', 'followup_enabled', 'followup_delay_days', 'final_followup_enabled', 'final_followup_delay_days',
     'sender_name', 'sender_email', 'reply_to_email', 'cta_url', 'business_name', 'postal_address', 'unsubscribe_url_base',
-    'discovery_config', 'automation_timezone', 'automation_start_hour', 'automation_hours'];
+    'discovery_config', 'automation_timezone', 'automation_start_hour', 'automation_hours', 'attribution_links'];
   v_bad text;
   v_diff jsonb := '{}'::jsonb;
   k text;
@@ -2423,6 +2521,7 @@ begin
       automation_timezone       = coalesce(nullif(btrim(p->>'automation_timezone'), ''), automation_timezone),
       automation_start_hour     = coalesce((p->>'automation_start_hour')::int, automation_start_hour),
       automation_hours          = coalesce((p->>'automation_hours')::int, automation_hours),
+      attribution_links         = coalesce((p->>'attribution_links')::boolean, attribution_links),
       updated_at = now(), updated_by = v_owner
     where id = 1
     returning * into v_new;
@@ -2491,6 +2590,10 @@ begin
                          '[]'::jsonb),
     'drafts', coalesce((select jsonb_agg(to_jsonb(d) order by d.sequence_number, d.generated_at desc) from growth_outbound.drafts d where d.prospect_id = p.id), '[]'::jsonb),
     'sends', coalesce((select jsonb_agg(to_jsonb(s) order by s.claimed_at desc) from growth_outbound.sends s where s.prospect_id = p.id), '[]'::jsonb),
+    -- what came of it: visits, an account, a trial, a payment (never whose account)
+    'conversions', coalesce((select jsonb_agg(jsonb_build_object('stage', c.stage, 'matched_by', c.matched_by, 'occurred_at', c.occurred_at,
+                              'recorded_at', c.recorded_at) order by c.occurred_at, c.id)
+                               from growth_outbound.conversions c where c.prospect_id = p.id), '[]'::jsonb),
     'activity', coalesce((select jsonb_agg(to_jsonb(a) order by a.at desc) from (
         select * from growth_outbound.activity a where a.prospect_id = p.id order by a.at desc limit 100) a), '[]'::jsonb));
 end $$;
@@ -3280,9 +3383,61 @@ set search_path = pg_catalog, public, pg_temp as $$
     from growth_outbound.settings s where s.id = 1;
 $$;
 
+-- THE CAMPAIGN CODE a message's EdgeDesk links carry (Phase 10): the
+-- prospect's own for a live message; 'ob_test' for one that goes to the
+-- owner's inbox, so the owner's own clicks are never counted as anybody's
+-- result. The code is a random token: it says nothing about the person.
+create or replace function growth_outbound.link_campaign(p_token text, p_test boolean)
+returns text language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select case when coalesce(p_test, true) then 'ob_test'
+              when p_token ~ '^[0-9a-f]{32}$' then 'ob_' || p_token end;
+$$;
+
+-- EdgeDesk links in an email's words, tagged with the campaign code
+-- (utm_source=outbound, utm_medium=email, utm_campaign=<code>), which the
+-- site records for each visit and each new account (supabase/growth.sql).
+-- Only links written in full to the main site (https://edgedesksports.com or
+-- www.) are tagged; trailing punctuation stays outside the link; a fragment
+-- stays last; a link that already carries a utm_ parameter is left exactly
+-- as written. Nothing else in the text changes.
+create or replace function growth_outbound.tag_links(p_text text, p_campaign text)
+returns text language plpgsql immutable
+set search_path = pg_catalog, pg_temp as $$
+declare
+  v_rest text := p_text;
+  v_out text := '';
+  m text[];
+  v_url text;
+  v_at int;
+  v_base text;
+  v_frag text;
+  v_tags text;
+begin
+  if p_text is null or p_campaign is null or p_campaign !~ '^ob_[a-z0-9]{1,40}$' then return p_text; end if;
+  v_tags := 'utm_source=outbound&utm_medium=email&utm_campaign=' || p_campaign;
+  loop
+    m := regexp_match(v_rest,
+      '(https?://(www\.)?edgedesksports\.com(?![a-z0-9:@_-]|\.[a-z0-9])(/[^][\s<>"''`(){}|\\^]*[^][\s<>"''`(){}|\\^.,;:!?*])?/?)', 'i');
+    exit when m is null;
+    v_url := m[1];
+    v_at := strpos(v_rest, v_url);
+    v_base := split_part(v_url, '#', 1);
+    v_frag := substr(v_url, length(v_base) + 1);
+    if v_base !~* '[?&]utm_[a-z]*=' then
+      v_base := case when v_base ~ '\?' then v_base || case when v_base ~ '[?&]$' then '' else '&' end
+                     when v_base ~* '^https?://(www\.)?edgedesksports\.com$' then v_base || '/?'
+                     else v_base || '?' end || v_tags;
+    end if;
+    v_out := v_out || substr(v_rest, 1, v_at - 1) || v_base || v_frag;
+    v_rest := substr(v_rest, v_at + length(v_url));
+  end loop;
+  return v_out || v_rest;
+end $$;
+
 -- EXACTLY what would go out for a draft, as the owner reviews it: sender,
 -- recipient (the test inbox in test mode or for a test prospect), subject,
--- the words, the footer.
+-- the words (their EdgeDesk links tagged, unless tagging is off), the footer.
 create or replace function growth_outbound.compose(p_draft uuid)
 returns jsonb language sql stable
 set search_path = pg_catalog, public, pg_temp as $$
@@ -3293,12 +3448,16 @@ set search_path = pg_catalog, public, pg_temp as $$
     'to', case when s.test_mode or d.is_test then s.test_inbox else growth_outbound.norm_email(p.email) end,
     'intended_recipient', growth_outbound.norm_email(p.email),
     'subject', d.subject,
-    'body', d.body_text,
+    'links_tagged', s.attribution_links,
+    'body', b.body,
     'footer', growth_outbound.footer_text('[your personal opt-out link is added when this is sent]'),
-    'text', d.body_text || E'\n\n' || growth_outbound.footer_text('[your personal opt-out link is added when this is sent]'))
+    'text', b.body || E'\n\n' || growth_outbound.footer_text('[your personal opt-out link is added when this is sent]'))
   from growth_outbound.drafts d
   join growth_outbound.prospects p on p.id = d.prospect_id
   cross join growth_outbound.settings s
+  cross join lateral (select case when s.attribution_links
+                                  then growth_outbound.tag_links(d.body_text, growth_outbound.link_campaign(p.attribution_token, s.test_mode or d.is_test))
+                                  else d.body_text end as body) b
   where d.id = p_draft and s.id = 1;
 $$;
 
@@ -3316,6 +3475,7 @@ set search_path = pg_catalog, public, pg_temp as $$
     'claims_missing', to_jsonb(growth_outbound.claims_missing(d)),
     'greeting_problem', case when d.generator_version like 'engine:%' and not d.edited_by_owner and not d.is_test
                              then growth_outbound.greeting_problem(d.body_text, p.first_name) end,
+    'existing_account', not d.is_test and growth_outbound.has_account(p.email),
     'claims', coalesce((
       select jsonb_agg(jsonb_build_object(
                'text', x.c->>'text',
@@ -3375,6 +3535,7 @@ begin
     if coalesce(p.research_confidence, 0) < s.min_research_confidence then v_gates := array_append(v_gates, 'research confidence below minimum'::text); end if;
     if coalesce(p.email_confidence, 0) < s.min_email_confidence then v_gates := array_append(v_gates, 'email confidence below minimum'::text); end if;
     if p.email_status <> 'verified' then v_gates := array_append(v_gates, ('email is ' || p.email_status)::text); end if;
+    if growth_outbound.has_account(p.email) then v_gates := array_append(v_gates, 'this address already has an EdgeDesk account'::text); end if;
     foreach x in array growth_outbound.claims_missing(d) loop
       v_gates := array_append(v_gates, ('a cited claim is not in the email: "' || left(coalesce(x, ''), 80) || '"')::text);
     end loop;
@@ -3662,9 +3823,10 @@ set search_path = pg_catalog, public, pg_temp as $$
 $$;
 
 -- The message for one claimed send, exactly as Resend receives it: the
--- recipient and sender recorded on the send row, the approved words, the
--- footer with the postal address and this send's own opt-out link, and the
--- RFC 8058 one-click List-Unsubscribe headers.
+-- recipient and sender recorded on the send row, the approved words (their
+-- EdgeDesk links tagged if the send says so), the footer with the postal
+-- address and this send's own opt-out link, and the RFC 8058 one-click
+-- List-Unsubscribe headers.
 create or replace function growth_outbound.compose_for_send(p_send uuid)
 returns jsonb language sql stable
 set search_path = pg_catalog, public, pg_temp as $$
@@ -3673,7 +3835,8 @@ set search_path = pg_catalog, public, pg_temp as $$
     'to', x.recipient,
     'reply_to', coalesce(s.reply_to_email, s.sender_email),
     'subject', x.subject,
-    'text', d.body_text || E'\n\n' || growth_outbound.footer_text(coalesce(growth_outbound.optout_url(x.optout_token),
+    'text', case when x.links_tagged then growth_outbound.tag_links(d.body_text, growth_outbound.link_campaign(p.attribution_token, x.is_test))
+                 else d.body_text end || E'\n\n' || growth_outbound.footer_text(coalesce(growth_outbound.optout_url(x.optout_token),
               '[test send: your personal opt-out link appears here once the opt-out endpoint is configured]')),
     'headers', jsonb_strip_nulls(jsonb_build_object(
       'List-Unsubscribe', concat_ws(', ',
@@ -3682,6 +3845,7 @@ set search_path = pg_catalog, public, pg_temp as $$
       'List-Unsubscribe-Post', case when growth_outbound.optout_url(x.optout_token) is not null then 'List-Unsubscribe=One-Click' end)))
   from growth_outbound.sends x
   join growth_outbound.drafts d on d.id = x.draft_id
+  join growth_outbound.prospects p on p.id = x.prospect_id
   cross join growth_outbound.settings s
   where x.id = p_send and s.id = 1;
 $$;
@@ -3725,6 +3889,15 @@ begin
   end if;
 
   if d.status <> 'approved' then return jsonb_build_object('ok', false, 'reason', 'not_approved', 'status', d.status); end if;
+  -- a follow-up never reaches someone who has signed up since: their results
+  -- are matched now, and a conversion ends the sequence (cancelling this draft)
+  if d.sequence_number > 1 and not d.is_test then
+    perform growth_outbound.sync_conversions(d.prospect_id);
+    if (select status from growth_outbound.prospects where id = d.prospect_id) = 'converted' then
+      return jsonb_build_object('ok', false, 'reason', 'prospect_converted',
+        'detail', 'they made an EdgeDesk account after an earlier email, so the sequence is over and this follow-up is cancelled');
+    end if;
+  end if;
   -- the approval must still be earned, now: a prospect that no longer passes
   -- loses it (evaluate() puts the draft back in review)
   perform growth_outbound.evaluate(d.prospect_id);
@@ -4654,6 +4827,7 @@ set search_path = pg_catalog, public, pg_temp as $$
                        union all select 3 where p.status = 'contacted') k
    where not p.is_test
      and growth_outbound.step_due_problem(p.id, k.seq) is null
+     and not growth_outbound.has_account(p.email)
      and not exists (select 1 from growth_outbound.drafts d where d.prospect_id = p.id and d.sequence_number = k.seq
                        and d.status = 'rejected' and d.rejected_at > now() - interval '14 days')
      and not exists (select 1 from growth_outbound.activity a where a.prospect_id = p.id and a.action = 'draft_gave_up'
@@ -4709,7 +4883,8 @@ set search_path = pg_catalog, public, pg_temp as $$
              'approved_after_edit', count(*) filter (where d.status in ('approved', 'sent') and d.edited_by_owner),
              'rejected', count(*) filter (where d.status = 'rejected'),
              'sent', count(*) filter (where d.status = 'sent'),
-             'replied', count(distinct d.prospect_id) filter (where d.status = 'sent' and p.status in ('replied', 'converted'))) as v
+             'replied', count(distinct d.prospect_id) filter (where d.status = 'sent' and exists (
+                          select 1 from growth_outbound.activity a where a.prospect_id = d.prospect_id and a.action = 'prospect_replied'))) as v
       from growth_outbound.drafts d join growth_outbound.prospects p on p.id = d.prospect_id
      where not d.is_test and d.generated_at > now() - interval '90 days'
      group by 1) x;
@@ -5038,6 +5213,17 @@ begin
   end if;
   update growth_outbound.research_runs set status = 'failed', finished_at = now(), error = 'never finished (the function stopped)'
    where status = 'running' and started_at < now() - interval '30 minutes';
+  -- RESULTS (Phase 10), hourly, whether or not the morning run is on: who
+  -- visited, signed up, started a trial or paid; a signup ends its sequence.
+  -- A failure here is recorded and never stops the tick.
+  if coalesce((select conversions_synced_at from growth_outbound.scheduler where id = 1), '-infinity'::timestamptz)
+     < now() - interval '1 hour' then
+    begin
+      perform growth_outbound.sync_conversions();
+    exception when others then
+      update growth_outbound.scheduler set conversions_synced_at = now(), conversions_error = left(sqlerrm, 500) where id = 1;
+    end;
+  end if;
   v_plan := growth_outbound.schedule_plan(p_now);
   v_step := v_plan->'step';
   if v_step is null or jsonb_typeof(v_step) <> 'object' then
@@ -5166,11 +5352,361 @@ begin
     'plan', growth_outbound.schedule_plan(),
     'scheduler', jsonb_build_object('last_tick_at', sc.last_tick_at, 'last_action', sc.last_action, 'last_reason', sc.last_reason,
                    'last_run_id', sc.last_run_id, 'ticks', sc.ticks,
-                   'ticking', sc.last_tick_at is not null and sc.last_tick_at > now() - interval '15 minutes'),
+                   'ticking', sc.last_tick_at is not null and sc.last_tick_at > now() - interval '15 minutes',
+                   'results_synced_at', sc.conversions_synced_at, 'results_error', sc.conversions_error),
     'pg_net', to_regprocedure('net.http_post(text,jsonb,jsonb,jsonb,integer)') is not null,
     'cron_job', v_job,
     'runs', coalesce((select jsonb_agg(to_jsonb(r) - 'requested_by' - 'ticket_sha256' - 'ticket_expires_at' order by r.started_at desc) from (
         select * from growth_outbound.research_runs where started_by = 'schedule' order by started_at desc limit 15) r), '[]'::jsonb));
+end $$;
+
+-- =============================================================================
+-- 10. RESULTS (Phase 10): what came of the emails
+--
+-- The owner reads, for any window: the pipeline (found, drafted, approved,
+-- sent), what Resend reported (delivered, bounced, complained; opens and
+-- clicks as hints), what people did (replied, opted out, visited, made an
+-- account, started a trial, paid), the same broken down by step, writer,
+-- prospect type, discovery search and fit, by day, and what each provider
+-- was asked for. A difference is called out only when the sample is big
+-- enough for it to be more than noise.
+-- =============================================================================
+
+-- A one-way key for a visitor or an account: enough to count each once,
+-- never the id itself.
+create or replace function growth_outbound.account_key(p_kind text, p_id text)
+returns text language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select encode(sha256(convert_to('edgedesk-outbound:' || p_kind || ':' || p_id, 'UTF8')), 'hex');
+$$;
+
+-- Whom we wrote to: every real prospect with a live email that went out (and
+-- did not bounce or fail), from when, at which addresses, under which
+-- campaign code.
+create or replace function growth_outbound.contacted(p_prospect uuid default null)
+returns table (prospect_id uuid, campaign text, emails text[], first_sent_at timestamptz)
+language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select p.id, 'ob_' || p.attribution_token, array_agg(distinct x.intended_recipient), min(x.sent_at)
+    from growth_outbound.prospects p
+    join growth_outbound.sends x on x.prospect_id = p.id
+   where not p.is_test and not x.is_test and x.sent_at is not null and x.delivery_status not in ('bounced', 'failed')
+     and (p_prospect is null or p.id = p_prospect)
+   group by p.id, p.attribution_token;
+$$;
+
+-- Trial and first payment of some accounts, from Stripe's own record
+-- (supabase/growth.sql). Nothing when that is not installed.
+create or replace function growth_outbound.account_stages(p_users uuid[])
+returns table (user_id uuid, trial_started_at timestamptz, paid_at timestamptz)
+language plpgsql stable
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  if to_regprocedure('public.growth_customer_facts()') is null or coalesce(cardinality(p_users), 0) = 0 then return; end if;
+  return query select f.user_id, f.trial_started_at, f.paid_at from public.growth_customer_facts() f where f.user_id = any (p_users);
+end $$;
+
+-- THE MATCHER. Records what happened after an email, by its link or its
+-- address only (section 4e), each fact once. Someone who made an account
+-- ends their sequence: a contacted (or replied) prospect becomes converted,
+-- and every unsent follow-up is cancelled. Owners' own accounts and visits
+-- never count. Run hourly by the scheduler's tick, whenever the owner opens
+-- the results, and for one prospect before any follow-up is sent.
+create or replace function growth_outbound.sync_conversions(p_prospect uuid default null)
+returns jsonb language plpgsql
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_matched jsonb := '[]'::jsonb;
+  v_users uuid[];
+  v_new jsonb := '{}'::jsonb;
+  v_add jsonb;
+  v_moved int := 0;
+  v_cancelled int := 0;
+  n int;
+  r record;
+begin
+  perform set_config('growth_outbound.door', 'sync_conversions', true);
+
+  -- VISITS: a visitor whose first or latest touch carried this campaign
+  -- code, at or after the first email
+  if to_regclass('public.acquisition_visitors') is not null then
+    with ins as (
+      insert into growth_outbound.conversions (prospect_id, stage, matched_by, account_key, occurred_at)
+      select c.prospect_id, 'visited', 'link', growth_outbound.account_key('visitor', v.visitor_hash), t.at
+        from growth_outbound.contacted(p_prospect) c
+        join public.acquisition_visitors v on v.first_utm_campaign = c.campaign or v.last_utm_campaign = c.campaign
+        cross join lateral (select least(
+                  case when v.first_utm_campaign = c.campaign and v.first_seen_at >= c.first_sent_at then v.first_seen_at end,
+                  case when v.last_utm_campaign = c.campaign and v.last_seen_at >= c.first_sent_at then v.last_seen_at end) as at) t
+       where t.at is not null
+         and (v.user_id is null or not exists (select 1 from growth_outbound.owners o where o.user_id = v.user_id))
+      on conflict (prospect_id, stage, account_key) do nothing
+      returning stage)
+    select coalesce(jsonb_object_agg(stage, k), '{}'::jsonb) into v_add from (select stage, count(*) k from ins group by stage) z;
+    v_new := v_new || v_add;
+  end if;
+
+  -- ACCOUNTS made at or after the first email: by the link's campaign code
+  -- (the touch that brought the account), else by the address we wrote to
+  if to_regclass('public.user_acquisition') is not null then
+    select v_matched || coalesce(jsonb_agg(jsonb_build_object('prospect_id', c.prospect_id, 'user_id', u.id, 'matched_by', 'link',
+             'created_at', u.created_at, 'first_sent_at', c.first_sent_at, 'pref', 1)), '[]'::jsonb)
+      into v_matched
+      from growth_outbound.contacted(p_prospect) c
+      join public.user_acquisition a on a.first_utm_campaign = c.campaign or a.last_utm_campaign = c.campaign
+      join auth.users u on u.id = a.user_id;
+  end if;
+  select v_matched || coalesce(jsonb_agg(jsonb_build_object('prospect_id', c.prospect_id, 'user_id', u.id, 'matched_by', 'address',
+           'created_at', u.created_at, 'first_sent_at', c.first_sent_at, 'pref', 2)), '[]'::jsonb)
+    into v_matched
+    from growth_outbound.contacted(p_prospect) c
+    join auth.users u on lower(btrim(u.email)) = any (c.emails);
+  select coalesce(array_agg(distinct m.user_id), '{}') into v_users
+    from jsonb_to_recordset(v_matched) m(user_id uuid, created_at timestamptz, first_sent_at timestamptz)
+   where m.created_at >= m.first_sent_at;
+
+  if cardinality(v_users) > 0 then
+    with m as (
+      select distinct on (x.prospect_id, x.user_id) x.*
+        from jsonb_to_recordset(v_matched) x(prospect_id uuid, user_id uuid, matched_by text, created_at timestamptz,
+                                             first_sent_at timestamptz, pref int)
+       where x.created_at >= x.first_sent_at
+         and not exists (select 1 from growth_outbound.owners o where o.user_id = x.user_id)
+       order by x.prospect_id, x.user_id, x.pref
+    ), ins as (
+      insert into growth_outbound.conversions (prospect_id, stage, matched_by, account_key, occurred_at)
+      select m.prospect_id, st.stage, m.matched_by, growth_outbound.account_key('account', m.user_id::text), st.at
+        from m
+        left join growth_outbound.account_stages(v_users) f on f.user_id = m.user_id
+        cross join lateral (values ('signed_up', m.created_at), ('trial', f.trial_started_at), ('paid', f.paid_at)) st(stage, at)
+       where st.at is not null and st.at >= m.first_sent_at
+      on conflict (prospect_id, stage, account_key) do nothing
+      returning stage)
+    select coalesce(jsonb_object_agg(stage, k), '{}'::jsonb) into v_add from (select stage, count(*) k from ins group by stage) z;
+    v_new := v_new || v_add;
+  end if;
+
+  -- an account ends the sequence
+  for r in
+    select p.id, p.status,
+           (select c.matched_by from growth_outbound.conversions c
+             where c.prospect_id = p.id and c.stage in ('signed_up', 'trial', 'paid') order by c.occurred_at, c.id limit 1) as matched_by
+      from growth_outbound.prospects p
+     where p.status in ('contacted', 'replied') and not p.is_test
+       and (p_prospect is null or p.id = p_prospect)
+       and exists (select 1 from growth_outbound.conversions c where c.prospect_id = p.id and c.stage in ('signed_up', 'trial', 'paid'))
+  loop
+    update growth_outbound.prospects
+       set status = 'converted', status_reason = 'made an EdgeDesk account (matched by ' || case when r.matched_by = 'link' then 'their email''s link' else 'the address we wrote to' end || ')'
+     where id = r.id and status in ('contacted', 'replied');
+    get diagnostics n = row_count;
+    if n = 0 then continue; end if;
+    v_moved := v_moved + 1;
+    n := growth_outbound.cancel_live_drafts(r.id, 'they made an EdgeDesk account');
+    v_cancelled := v_cancelled + n;
+    perform growth_outbound.log_as('system', 'prospect_converted', r.id, 'prospect', r.id::text,
+      jsonb_build_object('from', r.status, 'matched_by', r.matched_by, 'drafts_cancelled', n));
+  end loop;
+
+  perform set_config('growth_outbound.door', '', true);
+  if p_prospect is null then
+    update growth_outbound.scheduler set conversions_synced_at = now(), conversions_error = null where id = 1;
+  end if;
+  return jsonb_build_object('new', v_new, 'converted', v_moved, 'drafts_cancelled', v_cancelled);
+end $$;
+
+-- The results door's cohort, carried as a value (no temporary table inside
+-- a security-definer door): one row per prospect first written to in the
+-- window, with what they did.
+create or replace function growth_outbound.cohort_rows(p jsonb)
+returns table (prospect_id uuid, first_sent_at timestamptz, prospect_type text, fit_band text, writer text, query text,
+               replied boolean, reply_step int, opted_out boolean, bounced boolean, complained boolean,
+               visited boolean, signed_up boolean, signup_step int, trial boolean, paid boolean)
+language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select * from jsonb_to_recordset(coalesce(p, '[]'::jsonb)) as x(
+    prospect_id uuid, first_sent_at timestamptz, prospect_type text, fit_band text, writer text, query text,
+    replied boolean, reply_step int, opted_out boolean, bounced boolean, complained boolean,
+    visited boolean, signed_up boolean, signup_step int, trial boolean, paid boolean);
+$$;
+
+-- A 95% Wilson interval for k of n: how sure a rate is, from its sample.
+create or replace function growth_outbound.wilson(k bigint, n bigint)
+returns jsonb language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select case when coalesce(n, 0) <= 0 then null else (
+    select jsonb_build_array(round(greatest(0, (c - h) / d)::numeric, 3), round(least(1, (c + h) / d)::numeric, 3))
+      from (select (p + z * z / (2 * n)) as c, z * sqrt(p * (1 - p) / n + z * z / (4.0 * n * n)) as h, 1 + z * z / n as d
+              from (select k::float8 / n as p, 1.96::float8 as z) a) b) end;
+$$;
+
+-- k of n as a rate, 4 places; null when there is nothing to divide
+create or replace function growth_outbound.rate(k bigint, n bigint)
+returns numeric language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select case when coalesce(n, 0) > 0 then round(k::numeric / n, 4) end;
+$$;
+
+-- THE RESULTS DOOR. Owner only. Matches first (so what it shows is current),
+-- then counts. Every number is an aggregate: no account, no account email,
+-- no user id; the only people named are prospects, in the latest results.
+create or replace function public.growth_outbound_analytics(p_days int default 90)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_days int := least(greatest(coalesce(p_days, 90), 1), 365);
+  v_since timestamptz;
+  v_sync jsonb;
+  v_err text;
+  v_zone text;
+  v_min int := 10;
+  v_cohort jsonb;
+  v_people jsonb;
+  v_groups jsonb := '{}'::jsonb;
+  v_group jsonb;
+  v_signals jsonb := '[]'::jsonb;
+  v_dim text;
+begin
+  perform growth_outbound.require_owner();
+  begin
+    v_sync := growth_outbound.sync_conversions();
+  exception when others then
+    v_err := left(sqlerrm, 500);
+  end;
+  if v_err is not null then
+    update growth_outbound.scheduler set conversions_error = v_err where id = 1;
+  end if;
+  select automation_timezone into v_zone from growth_outbound.settings where id = 1;
+  v_since := now() - make_interval(days => v_days);
+
+  -- every prospect first written to in the window, with what they did
+  select coalesce(jsonb_agg(to_jsonb(z)), '[]'::jsonb) into v_cohort from (
+  select p.id as prospect_id, f.first_sent_at, p.prospect_type,
+         case when p.fit_score is null then 'no score' when p.fit_score >= 95 then '95–100' when p.fit_score >= 90 then '90–94'
+              when p.fit_score >= 85 then '85–89' when p.fit_score >= 80 then '80–84' else 'under 80' end as fit_band,
+         coalesce((select case when d.generator_version like 'engine:template:%' then 'template'
+                               when d.generator_version like 'engine:%' and d.edited_by_owner then 'engine, edited'
+                               when d.generator_version like 'engine:%' then 'engine' else 'owner' end
+                     from growth_outbound.sends x join growth_outbound.drafts d on d.id = x.draft_id
+                    where x.prospect_id = p.id and not x.is_test and x.sequence_number = 1 limit 1), 'owner') as writer,
+         coalesce((select coalesce(c.query, 'found without a search') from growth_outbound.candidates c
+                    where c.prospect_id = p.id order by c.first_seen_at, c.id limit 1), 'added by hand') as query,
+         rp.at is not null as replied,
+         (select max(x.sequence_number) from growth_outbound.sends x
+           where x.prospect_id = p.id and not x.is_test and x.sent_at is not null and x.sent_at <= rp.at) as reply_step,
+         exists (select 1 from growth_outbound.suppressions s
+                  where s.kind in ('unsubscribe', 'replied') and s.created_at >= f.first_sent_at
+                    and (s.prospect_id = p.id or (s.scope = 'address' and s.target = any (f.emails)))) as opted_out,
+         exists (select 1 from growth_outbound.sends x where x.prospect_id = p.id and not x.is_test and x.bounced_at is not null) as bounced,
+         exists (select 1 from growth_outbound.sends x where x.prospect_id = p.id and not x.is_test and x.complained_at is not null) as complained,
+         exists (select 1 from growth_outbound.conversions c where c.prospect_id = p.id and c.stage = 'visited') as visited,
+         su.at is not null as signed_up,
+         (select max(x.sequence_number) from growth_outbound.sends x
+           where x.prospect_id = p.id and not x.is_test and x.sent_at is not null and x.sent_at <= su.at) as signup_step,
+         exists (select 1 from growth_outbound.conversions c where c.prospect_id = p.id and c.stage = 'trial') as trial,
+         exists (select 1 from growth_outbound.conversions c where c.prospect_id = p.id and c.stage = 'paid') as paid
+    from (select x.prospect_id, min(x.sent_at) as first_sent_at, array_agg(distinct x.intended_recipient) as emails
+            from growth_outbound.sends x
+           where not x.is_test and x.sent_at is not null
+           group by x.prospect_id) f
+    join growth_outbound.prospects p on p.id = f.prospect_id and not p.is_test
+    left join lateral (select min(a.at) as at from growth_outbound.activity a
+                        where a.prospect_id = p.id and a.action = 'prospect_replied') rp on true
+    left join lateral (select min(c.occurred_at) as at from growth_outbound.conversions c
+                        where c.prospect_id = p.id and c.stage = 'signed_up') su on true
+   where f.first_sent_at >= v_since) z;
+
+  select jsonb_build_object(
+    'contacted', count(*), 'replied', count(*) filter (where replied), 'opted_out', count(*) filter (where opted_out),
+    'bounced', count(*) filter (where bounced), 'complained', count(*) filter (where complained),
+    'visited', count(*) filter (where visited), 'signed_up', count(*) filter (where signed_up),
+    'trial', count(*) filter (where trial), 'paid', count(*) filter (where paid))
+    into v_people from growth_outbound.cohort_rows(v_cohort);
+
+  -- the same, by each dimension; a group's rates carry their 95% interval
+  foreach v_dim in array array['writer', 'prospect_type', 'query', 'fit_band'] loop
+    execute format($q$
+      select coalesce(jsonb_agg(jsonb_build_object(
+               'group', g, 'contacted', n, 'replied', r, 'opted_out', o, 'visited', v, 'signed_up', s, 'trial', t, 'paid', pd,
+               'reply_rate', growth_outbound.rate(r, n), 'reply_interval', growth_outbound.wilson(r, n),
+               'signup_rate', growth_outbound.rate(s, n), 'signup_interval', growth_outbound.wilson(s, n),
+               'enough', n >= $1) order by n desc, g), '[]'::jsonb)
+        from (select %I as g, count(*) n, count(*) filter (where replied) r, count(*) filter (where opted_out) o,
+                     count(*) filter (where visited) v, count(*) filter (where signed_up) s, count(*) filter (where trial) t,
+                     count(*) filter (where paid) pd
+                from growth_outbound.cohort_rows($2) group by 1) z$q$, v_dim)
+      into v_group using v_min, v_cohort;
+    v_groups := v_groups || jsonb_build_object(v_dim, v_group);
+  end loop;
+
+  -- a signal: a big-enough group whose whole interval sits above or below
+  -- everyone's rate
+  select coalesce(jsonb_agg(x order by x->>'dimension', x->>'group', x->>'metric'), '[]'::jsonb) into v_signals
+    from (select jsonb_build_object('dimension', d.key, 'group', g->>'group', 'metric', m.metric,
+                   'direction', case when (g->m.iv->>0)::numeric > m.overall then 'higher' else 'lower' end,
+                   'k', (g->>m.k)::int, 'n', (g->>'contacted')::int, 'rate', (g->>m.rt)::numeric, 'overall', m.overall) as x
+            from jsonb_each(v_groups) d
+            cross join lateral jsonb_array_elements(d.value) g
+            cross join lateral (values
+              ('reply', 'replied', 'reply_rate', 'reply_interval',
+               growth_outbound.rate((v_people->>'replied')::bigint, (v_people->>'contacted')::bigint)),
+              ('signup', 'signed_up', 'signup_rate', 'signup_interval',
+               growth_outbound.rate((v_people->>'signed_up')::bigint, (v_people->>'contacted')::bigint))) m(metric, k, rt, iv, overall)
+           where (g->>'enough')::boolean and m.overall is not null
+             and (select count(*) from jsonb_array_elements(d.value)) > 1
+             and ((g->m.iv->>0)::numeric > m.overall or (g->m.iv->>1)::numeric < m.overall)) s;
+
+  return jsonb_build_object('ok', true, 'days', v_days, 'since', v_since, 'min_sample', v_min,
+    'attribution_links', (select attribution_links from growth_outbound.settings where id = 1),
+    'synced', v_sync, 'sync_error', coalesce(v_err, (select conversions_error from growth_outbound.scheduler where id = 1)),
+    'synced_at', (select conversions_synced_at from growth_outbound.scheduler where id = 1),
+    'pipeline', jsonb_build_object(
+      'found', (select count(*) from growth_outbound.candidates where first_seen_at >= v_since),
+      'prospects', (select count(*) from growth_outbound.prospects where not is_test and created_at >= v_since),
+      'drafted', (select count(*) from growth_outbound.drafts where not is_test and generated_at >= v_since),
+      'approved', (select count(*) from growth_outbound.drafts where not is_test and approved_at >= v_since),
+      'rejected', (select count(*) from growth_outbound.drafts where not is_test and rejected_at >= v_since)),
+    'sends', (select jsonb_build_object(
+      'sent', count(*), 'delivered', count(*) filter (where delivered_at is not null),
+      'bounced', count(*) filter (where bounced_at is not null), 'complained', count(*) filter (where complained_at is not null),
+      'opened', count(*) filter (where opened_at is not null), 'clicked', count(*) filter (where clicked_at is not null),
+      'links_tagged', count(*) filter (where links_tagged),
+      'delivery_rate', growth_outbound.rate(count(*) filter (where delivered_at is not null), count(*)),
+      'bounce_rate', growth_outbound.rate(count(*) filter (where bounced_at is not null), count(*)),
+      'complaint_rate', growth_outbound.rate(count(*) filter (where complained_at is not null), count(*)))
+      from growth_outbound.sends where not is_test and sent_at >= v_since),
+    'people', v_people || jsonb_build_object(
+      'reply_rate', growth_outbound.rate((v_people->>'replied')::bigint, (v_people->>'contacted')::bigint),
+      'opt_out_rate', growth_outbound.rate((v_people->>'opted_out')::bigint, (v_people->>'contacted')::bigint),
+      'visit_rate', growth_outbound.rate((v_people->>'visited')::bigint, (v_people->>'contacted')::bigint),
+      'signup_rate', growth_outbound.rate((v_people->>'signed_up')::bigint, (v_people->>'contacted')::bigint),
+      'trial_rate', growth_outbound.rate((v_people->>'trial')::bigint, (v_people->>'contacted')::bigint),
+      'paid_rate', growth_outbound.rate((v_people->>'paid')::bigint, (v_people->>'contacted')::bigint)),
+    'by_step', coalesce((select jsonb_agg(jsonb_build_object('step', x.seq, 'sent', x.sent, 'delivered', x.delivered, 'bounced', x.bounced,
+                 'opened', x.opened, 'clicked', x.clicked,
+                 'replies_after', (select count(*) from growth_outbound.cohort_rows(v_cohort) c where c.reply_step = x.seq),
+                 'signups_after', (select count(*) from growth_outbound.cohort_rows(v_cohort) c where c.signup_step = x.seq)) order by x.seq)
+        from (select sequence_number as seq, count(*) as sent, count(*) filter (where delivered_at is not null) as delivered,
+                     count(*) filter (where bounced_at is not null) as bounced, count(*) filter (where opened_at is not null) as opened,
+                     count(*) filter (where clicked_at is not null) as clicked
+                from growth_outbound.sends where not is_test and sent_at >= v_since group by sequence_number) x), '[]'::jsonb),
+    'groups', v_groups,
+    'signals', v_signals,
+    'daily', (select coalesce(jsonb_agg(jsonb_build_object('day', d.day,
+                'sent', (select count(*) from growth_outbound.sends x where not x.is_test and (x.sent_at at time zone v_zone)::date = d.day),
+                'replied', (select count(*) from growth_outbound.activity a join growth_outbound.prospects p on p.id = a.prospect_id and not p.is_test
+                             where a.action = 'prospect_replied' and (a.at at time zone v_zone)::date = d.day),
+                'visited', (select count(*) from growth_outbound.conversions c where c.stage = 'visited' and (c.occurred_at at time zone v_zone)::date = d.day),
+                'signed_up', (select count(*) from growth_outbound.conversions c where c.stage = 'signed_up' and (c.occurred_at at time zone v_zone)::date = d.day))
+              order by d.day), '[]'::jsonb)
+                from (select generate_series((v_since at time zone v_zone)::date, (now() at time zone v_zone)::date, interval '1 day')::date as day) d),
+    'providers', coalesce((select jsonb_object_agg(u.provider, u.calls) from (
+        select provider, sum(calls)::bigint as calls from growth_outbound.provider_usage
+         where day >= (v_since at time zone 'utc')::date group by provider) u), '{}'::jsonb),
+    'latest', coalesce((select jsonb_agg(jsonb_build_object('prospect_id', p.id, 'full_name', p.full_name, 'organization', p.organization,
+                 'stage', c.stage, 'matched_by', c.matched_by, 'occurred_at', c.occurred_at) order by c.occurred_at desc, c.id desc)
+        from (select * from growth_outbound.conversions order by occurred_at desc, id desc limit 20) c
+        join growth_outbound.prospects p on p.id = c.prospect_id), '[]'::jsonb));
 end $$;
 
 -- Every prospect re-evaluated under the rules in this file (a re-run is how a
@@ -5217,7 +5753,7 @@ select 1 as step, 'the outbound tables exist' as item,
   case when (select count(*) from pg_tables where schemaname = 'growth_outbound' and tablename in
     ('owners', 'owner_audit', 'settings', 'prospects', 'evidence', 'drafts', 'sends', 'suppressions', 'activity',
      'identifiers', 'fit_factor_catalog', 'secrets', 'provider_events', 'research_runs', 'pages', 'candidates',
-     'provider_usage', 'scheduler')) = 18
+     'provider_usage', 'scheduler', 'conversions')) = 19
        then 'ok' else 'CHECK THIS — a table is missing' end as outcome
 union all
 select 2, 'the schema is private: no client role may even look inside it',
@@ -5283,7 +5819,7 @@ select 12, 'history is append-only and nothing is deleted',
   case when (select count(*) from pg_trigger where not tgisinternal and tgname in
     ('suppressions_append_only_t', 'activity_append_only_t', 'owner_audit_append_only_t', 'prospects_never_delete_t',
      'evidence_never_delete_t', 'drafts_never_delete_t', 'sends_never_delete_t', 'evidence_guard_t',
-     'identifiers_never_delete_t', 'identifiers_guard_t')) = 10
+     'identifiers_never_delete_t', 'identifiers_guard_t', 'conversions_append_only_t')) = 11
        then 'ok' else 'CHECK THIS' end
 union all
 select 13, 'settings: test mode ' || (select case when test_mode then 'ON' else 'off' end from growth_outbound.settings where id = 1)
@@ -5414,6 +5950,23 @@ select 33, 'morning run: ' || (select case when automation_enabled then 'ON' els
                                    from growth_outbound.scheduler where id = 1 and last_tick_at is not null),
                                 'never (run supabase/growth_outbound_cron.sql to schedule it)'),
   'ok'
+union all
+select 34, 'results: a live email''s EdgeDesk links carry its campaign code; a visit or an account is matched by that code or the address written to, after the first email only; a customer is never cold-emailed',
+  case when growth_outbound.tag_links('Try it at https://edgedesksports.com/.', 'ob_0123456789abcdef0123456789abcdef')
+            = 'Try it at https://edgedesksports.com/?utm_source=outbound&utm_medium=email&utm_campaign=ob_0123456789abcdef0123456789abcdef.'
+        and growth_outbound.tag_links('See https://edgedesksports.com.evil.test/x', 'ob_test') = 'See https://edgedesksports.com.evil.test/x'
+        and growth_outbound.link_campaign('0123456789abcdef0123456789abcdef', true) = 'ob_test'
+        and (select count(*) from pg_trigger where not tgisinternal and tgname in ('conversions_guard_t', 'conversions_append_only_t')) = 2
+        and pg_get_functiondef('growth_outbound.sends_guard()'::regprocedure) like '%has_account%'
+        and to_regprocedure('public.growth_outbound_analytics(integer)') is not null
+       then 'ok' else 'CHECK THIS' end
+union all
+select 35, 'results: ' || (select count(distinct prospect_id) from growth_outbound.conversions where stage = 'signed_up')::text || ' prospects made an account, '
+  || (select count(distinct prospect_id) from growth_outbound.conversions where stage = 'paid')::text || ' paid; links '
+  || (select case when attribution_links then 'tagged' else 'NOT tagged (turned off)' end from growth_outbound.settings where id = 1)
+  || '; last matched ' || coalesce((select to_char(conversions_synced_at, 'YYYY-MM-DD HH24:MI') || ' UTC' || coalesce(' — ' || conversions_error, '')
+                                     from growth_outbound.scheduler where id = 1 and conversions_synced_at is not null), 'never (the tick does it hourly)'),
+  case when (select conversions_error from growth_outbound.scheduler where id = 1) is null then 'ok' else 'CHECK THIS' end
 union all
 select 18, 'prospects by status: ' || coalesce((select string_agg(status || ' ' || n, ', ' order by status)
                                                 from (select status, count(*) n from growth_outbound.prospects group by status) x), 'none yet'),

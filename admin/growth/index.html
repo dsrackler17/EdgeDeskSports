@@ -259,6 +259,31 @@ ul.claims li.badc b{color:var(--neg)}
         <div class="note">Every email handed to Resend, newest first. A send is written down before Resend is called, with one key per draft, so "Try again" can never send it twice; an answer still missing after 23 hours is marked failed rather than retried. Delivery, bounces and spam complaints arrive from Resend's signed webhook.</div>
       </div>
 
+      <h2>Results</h2>
+      <div class="card">
+        <div class="row" style="align-items:center">
+          <div class="seg" id="rsDays" role="group" aria-label="Window"><button type="button" data-rdays="7">7 days</button><button type="button" data-rdays="30">30 days</button><button type="button" data-rdays="90" class="on">90 days</button><button type="button" data-rdays="365">A year</button></div>
+        </div>
+        <div class="chips" id="rsChips"></div>
+        <div class="msg" id="rsMsg" role="status" aria-live="polite"></div>
+        <h3>The people written to</h3>
+        <div class="kpis" id="rsPeople"></div>
+        <h3>The emails</h3>
+        <div class="kpis" id="rsSends"></div>
+        <h3>What stands out</h3>
+        <div id="rsSignals"></div>
+        <h3>By step</h3>
+        <div class="tw"><table id="rsSteps"></table></div>
+        <h3>By group</h3>
+        <div class="seg" id="rsDim" role="group" aria-label="Group by"><button type="button" data-rdim="prospect_type" class="on">Prospect type</button><button type="button" data-rdim="query">Search</button><button type="button" data-rdim="writer">Writer</button><button type="button" data-rdim="fit_band">Fit score</button></div>
+        <div class="tw" style="margin-top:8px"><table id="rsGroups"></table></div>
+        <h3>Latest results</h3>
+        <div class="tw"><table id="rsLatest"></table></div>
+        <h3>By day</h3>
+        <div class="tw"><table id="rsDaily"></table></div>
+        <div class="note">A result counts for a prospect only when it can be traced to an email that reached them: the visit or the new account carried that email's campaign code (its EdgeDesk links are tagged utm_campaign=ob_…), or the account was made with the very address written to — and only after the first email went out. Nothing is inferred from a name, a domain or timing. Trials and payments come from Stripe's own record. Someone who makes an account is marked converted and their unsent follow-ups are cancelled. The account itself is never shown or stored here.</div>
+      </div>
+
       <h2>Discover and research</h2>
       <div class="card">
         <div class="chips" id="dvProviders"></div>
@@ -380,7 +405,7 @@ ul.claims li.badc b{color:var(--neg)}
 </div>
 <script src="/lib/edgedesk_auth.js?v=20261005a"></script>
 <script src="/lib/edgedesk_admin_session.js?v=20261007a"></script>
-<script src="/admin/growth/outbound.js?v=20261008a"></script>
+<script src="/admin/growth/outbound.js?v=20261008b"></script>
 <script>
 var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";

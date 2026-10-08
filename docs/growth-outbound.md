@@ -999,6 +999,113 @@ Turn on **Automation** (Outbound settings → Mode) and set your window (Morning
 - **Email you a summary.** The Morning run panel and the review queue are the summary.
 - **Measure what works.** Replies, conversions and attribution by source, step and writer are Phase 10.
 
+## Phase 10: results and attribution
+
+**A result is matched, never guessed.** The console now shows what came of the emails: replies, opt-outs, visits, accounts, trials and payments. They are counted for the people written to and broken down by step, by who wrote the email, by prospect type, by the search that found them and by fit. Nothing new is sent, and nothing about an account leaves the database.
+
+### How an email is traced
+
+1. **Its links are tagged.** In a live email, every link to the main site (`https://edgedesksports.com/…`, or `www.`) gets `utm_source=outbound&utm_medium=email&utm_campaign=ob_<the prospect's token>`:
+   - the token is random and says nothing about the person;
+   - a test send's links carry `ob_test`, so your own clicks count for nobody;
+   - trailing punctuation stays outside the link, and a `#fragment` stays last;
+   - a link that already has a `utm_` tag, a subdomain, a port or a look-alike domain is left exactly as written;
+   - **the review card shows the words exactly as sent, tags included;**
+   - **each send records whether its links were tagged**, so a retry sends what was claimed.
+2. **The site already records the campaign.** The landing page keeps the campaign of each visit and of the touch that brought each new account (`supabase/growth.sql`: `acquisition_visitors`, `user_acquisition`). Nothing on the site changed.
+3. **The matcher** (`growth_outbound.sync_conversions()`) counts a result for a prospect only when:
+   - the email it follows reached them: a live send that went out and did not bounce or fail;
+   - it happened **after** the first email;
+   - and it is traced by either:
+     - **link:** the visit, or the touch that brought the account, carried their code; or
+     - **address:** the account was made with the very address written to.
+
+   **Never from a name, a domain or timing alone.** Never an owner's account or visit, never a test send, never an account that existed before the email.
+4. **Trials and payments** come from Stripe's own record (`growth_customer_facts()`), for the matched accounts only.
+5. **Each fact once:** visited, made an account, started a trial, paid (unique per prospect, stage and person). The record is append-only and written by the matcher only.
+6. **The account itself is not stored here.** A one-way key (sha256) counts each person once: no user id, no account email.
+
+### What a result changes
+
+- **An account ends the sequence.** A contacted (or replied) prospect becomes **converted**, and every unsent follow-up is cancelled. A follow-up claimed after the signup is refused before anything is sent: the send door matches that prospect first. An opt-out stays an opt-out.
+- **A customer is never cold-emailed.** An address that already has an EdgeDesk account is:
+  - left out of the drafting engine's list;
+  - blocked on its review card;
+  - refused at approval, and refused again by the send trigger.
+
+### When it runs
+
+- **Hourly:** by the scheduler's tick (Phase 9's clock), whether or not the morning run is on.
+- **Whenever you open Results.**
+- **For one prospect, before any follow-up is sent.**
+
+A failure (say, the Stripe record unreachable) is recorded and shown, and never stops the tick. Nothing is half-written, and the next run catches up.
+
+### The console
+
+**Results** (new panel, after Sends), for 7, 30 or 90 days, or a year:
+- **header:** whether links are tagged, when results were last matched (or why matching failed), and each provider's calls;
+- **the people written to:**
+  - replied, opted out (by link or by asking; a bounce is not an opt-out);
+  - visited, made an account, started a trial, paid;
+  - each as a share of the people written to;
+- **the emails:** sent, delivered, bounced, spam complaints. Opens and clicks are shown as hints only.
+- **what stands out:** a group is compared once it has **10 people**. It is called out only when its whole **95% range** (Wilson) is above or below everyone's rate, so a lucky few never look like a pattern.
+- **by step:** what each step sent, and which step each reply and signup followed;
+- **by group** (prospect type, the search that found them, who wrote the first email, fit score): each rate with its 95% range, marked "few" below the sample;
+- **the latest results:** who, what, matched how; each opens the prospect;
+- **by day:** each day that had activity, in your time zone.
+
+**Each prospect** lists its results. **Each review card** shows its tagged links and says what the tag is; an address with an account blocks the card. **Outbound settings** gains a **Results** group: link tagging (on by default). With it off, only the address written to can be matched.
+
+### New in the database
+
+- **`growth_outbound.conversions`:** append-only; written only by the matcher; default-deny RLS. **Nineteen tables.**
+- **Columns:**
+  - `settings.attribution_links`;
+  - `sends.links_tagged` (fixed at claim; nobody rewrites it);
+  - `scheduler.conversions_synced_at` and `conversions_error`.
+- **Functions:**
+  - `tag_links`, `link_campaign`;
+  - `has_account`, `contacted`, `account_stages`, `account_key`;
+  - `sync_conversions`;
+  - `wilson`, `rate`, `cohort_rows`.
+- **Changes:**
+  - `compose` and `compose_for_send` tag links;
+  - the send trigger, approval and the drafting list refuse an address with an account;
+  - the send door matches before a follow-up;
+  - the tick matches hourly;
+  - the prospect detail lists its results;
+  - the drafting stats count replies from the record of replies, so a signup is no longer counted as a reply.
+- **Door:** `growth_outbound_analytics(p_days)` (owner only).
+- **Report rows 34–35.** Row 1 counts nineteen tables; row 12 counts the conversions trigger.
+
+### Deploy (in order)
+
+1. Merge the Phase 10 PR.
+2. In the SQL editor, run `supabase/growth_outbound.sql`. Report rows 1–35 should say `ok`.
+3. No function changed, and nothing else needs deploying. If `supabase/growth_outbound_cron.sql` has run (Phase 9), results are matched hourly from now on. Either way, opening Results matches them.
+
+### Tests
+
+| Suite | Checks | What it proves |
+|---|---|---|
+| `tools/growth/outbound_analytics_sql.test.js` (new) | 100 | **Links:** sixteen tagging cases (punctuation, fragments, existing tags, look-alikes, ports, subdomains); no injected parameter; test sends carry `ob_test`; the preview is what is sent; the send row fixes it; turning tagging off. **Accounts:** never drafted for, approved or sent to an address with an account, however the address is written. **Matching:** by link or address only; after the first email only; never an owner's, a test's, a bounced email's or an earlier account; the link wins over the address; trials and payments from Stripe; each fact once; no id or address stored. **The end of the sequence:** converted, follow-ups cancelled, a late follow-up refused, opt-outs kept, logged by the system with no account. **The tick:** hourly, even with the morning run off; a failure recorded, nothing half-written, the next run catches up. **The door:** owner only; every number checked; Wilson ranges against an independent computation; a difference called out only past the sample and outside the range; the window; no address, id or key in what leaves. **The record:** written by the matcher only, never rewritten or read directly. **Mutation-checked:** 69 deliberate breaks; 66 caught, and the other 3 are equivalent (a second check elsewhere enforces the same rule). |
+| `tools/growth/outbound_console.e2e.js` | 236 | adds sections 53–56: the Results panel, the window and grouping, tagged links and the existing-account block on review cards, a prospect's results, the tagging setting, a matching failure, before the Phase 10 SQL |
+| `tools/growth/outbound_sql.test.js` | 422 | nineteen tables, each default-deny |
+| earlier suites | all passing | |
+
+### Rollback
+
+- **Stop tagging:** turn it off (Outbound settings → Results). Emails then go out with their links exactly as written.
+- **The database:** additive. The results are a record; removing the panel removes nothing.
+
+### What Phase 10 does not do
+
+- **Send, approve, or change who is written to by itself.** What stands out is for you to read; the engine's targets stay yours.
+- **Read your inbox.** A reply counts when you mark it ("They replied").
+- **Guess.** A signup it cannot trace to an email by link or address is not counted as one.
+
 ## Next
 
-- **Phase 10:** analytics and attribution.
+- **Phase 11:** testing and hardening.

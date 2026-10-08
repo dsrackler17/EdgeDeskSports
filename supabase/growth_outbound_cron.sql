@@ -2,9 +2,11 @@
 -- THE MORNING RUN'S CLOCK — pg_cron calling growth_outbound.schedule_tick()
 -- every five minutes (Phase 9 of the outbound engine; docs/growth-outbound.md).
 --
--- WHAT A TICK DOES. Nothing, unless the owner has turned automation on
--- (Outbound → Outbound settings) and it is inside their morning window, in
--- their time zone. Then it does ONE step of today's morning run:
+-- WHAT A TICK DOES. Once an hour, whatever else: match results (Phase 10;
+-- who visited, made an account, started a trial or paid after an email).
+-- Nothing more, unless the owner has turned automation on (Outbound →
+-- Outbound settings) and it is inside their morning window, in their time
+-- zone. Then it does ONE step of today's morning run:
 --   1  search the saved searches (once a day);
 --   2  research the next new candidate (up to "Prospects to prepare per day");
 --   3  draft for whoever is due, a few at a time (up to the daily send cap).
