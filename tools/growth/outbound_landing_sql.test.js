@@ -25,7 +25,8 @@ const chk = T.chk;
 const FILE = path.join(PG.ROOT, 'supabase', 'growth_outbound.sql');
 const SRC = fs.readFileSync(FILE, 'utf8');
 
-chk('static: the settings door lists the switch', /'attribution_links',\s*'landing_by_interest'\]/.test(SRC));
+chk('static: the settings door lists the switch', /v_keys text\[\] := array\[[^\]]*'landing_by_interest'[^\]]*\];/.test(SRC)
+  && /landing_by_interest\s*= coalesce\(\(p->>'landing_by_interest'\)::boolean, landing_by_interest\)/.test(SRC));
 chk('static: landing_for is not a client door', /revoke all on function growth_outbound\.landing_for\(uuid\) from public;/.test(SRC));
 
 const db = PG.start('oblanding');
