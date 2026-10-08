@@ -30,6 +30,41 @@
 
 **Tests:** new `growth_engine` (236), `growth_engine_sql` (53), `newsletter_growth_sql` (31), `outbound_landing_sql` (26), `public_pages.e2e` (90), `seo:audit --check`; `.github/workflows/growth-engine-tests.yml`. Existing suites updated for the intended changes and passing.
 
+## 2026-10-08 — Growth console: providers, qualification and volume (outbound engine, phase 12)
+
+**The aim: wake up to 10–15 qualified potential subscribers with drafts, and send only the ones you approve.** Nothing added here can approve or send.
+
+**Found and fixed:**
+- **partners got the subscriber pitch:** `campaign_type` existed but nothing set it, and the engine drafted the $49.99 subscriber email for media and affiliate leads too. Claude now reads who someone is (subscriber, media partner, affiliate, business partner), the engine drafts for potential subscribers only, and the owner's choice is never overridden;
+- **the daily target counted reads, not results:** the morning run now researches until `daily_qualified_target` new subscribers qualify (12 by default), reading at most `daily_prospect_target` candidates;
+- **engine follow-ups left out the price:** every engine email now states the 7-day free trial and $49.99/month, links to EdgeDesk and stays under 150 words;
+- **nothing refused free or special access or picks talk:** the content rules now refuse complimentary, comped, discounted, early or VIP access, promo codes, and "best bets" or "picks of the day";
+- **a lookup's note was lost:** `runResearch` overwrote it (for example "Hunter answered 429"); notes now reach the answer and the run's record;
+- **the console could send settings the database does not have yet:** a setting the database did not report is never sent.
+
+**Added:**
+- **the 0–100 qualification score**, computed from evidence. Product relevance 35, analytics 25 and purchase signals 15 come from capped parts of the fit catalogue. Contact quality 15 comes from the address, the identity and a site of their own. Personalization 10 counts the facts an email may cite. Penalties are subtracted. It is a gate (75 by default), the queue's order, and re-checked at approval. Eight new catalogue reasons, including sportsbook staff and a sports-industry job without analytics work;
+- **providers behind interfaces,** switched on and off in the console: Brave and Apollo for search, Hunter and Apollo for email lookup, Hunter for verification, Clay for enrichment. Apollo yields only addresses it marks verified, and its "verified" counts as one source, not two. Clay goes out by its table's webhook or a CSV and comes back by CSV import as Clay's word: never verified, never a new prospect;
+- **the verify step:** waiting addresses are put to the verifier, and every verdict is kept;
+- **send warm-up:** 10 a day at first, plus 5 a week, never past the cap;
+- **the sending domain's check:** SPF, DKIM and DMARC over DNS-over-HTTPS. A missing record blocks live sending;
+- **`growth_outbound_draft_check`:** the engine's rules on a draft, writing nothing;
+- **the dry-run harness** (`tools/growth/outbound_dryrun.js`);
+- report row 37.
+
+**`/admin/growth/` → Outbound:**
+- **This morning:** qualified today against the target, review, today's cap, verification and enrichment waiting, the domain, partner leads;
+- **each card:** the score in its parts, why they fit, the address and its verification, where to read up, what the email should still say;
+- **elsewhere:** a segment switch on each prospect; provider switches, verify, Send to Clay, Export and Import; Check the sending domain; warm-up and qualification settings.
+
+**Tests:**
+- new suites: `outbound_qualify_sql` (163) and `outbound_providers` (43);
+- console e2e: 283;
+- 33 deliberate breaks, all caught;
+- every earlier suite passing.
+
+**Docs:** `docs/growth-outbound.md`, Phase 12: the audit, the scoring rules, providers and Clay, deploy (nothing deployed), capacity, rollback.
+
 ## 2026-10-08 — Growth console: testing and hardening (outbound engine, phase 11)
 
 **Each phase was tested on its own. Phase 11 tests them together, at the same instant, and against junk, then fixes what that found.**

@@ -313,7 +313,7 @@ try {
   chk('F follow-up 1 is not due before its delay', r.due === false && /^not due until \d{4}-\d\d-\d\d \d\d:\d\d UTC$/.test(r.problem) && !due().includes(P4 + '#2'), r);
   const FU = (o) => Object.assign({ sequence_number: 2, subject: 'Following up: EdgeDesk Sports', generator: 'engine:claude:p1',
     body_text: 'Hi Ola,\n\nFollowing up on my note about your CFB power ratings against the market.\n\n'
-      + 'EdgeDesk Sports keeps NFL and college football research, bet logging and closing-line tracking in one place. The 7-day free trial is at https://edgedesksports.com/ if you want to look.\n\n'
+      + 'EdgeDesk Sports keeps NFL and college football research, bet logging and closing-line tracking in one place. The 7-day free trial is at https://edgedesksports.com/ if you want to look (then $49.99/month).\n\n'
       + 'If it\'s not for you, just reply "stop" and I won\'t write again.',
     claims: [{ text: 'CFB power ratings against the market', evidence_id: PROJ4 }] }, o || {});
   r = propose(DR, P4, FU());

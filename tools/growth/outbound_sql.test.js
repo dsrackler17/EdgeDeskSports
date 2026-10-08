@@ -76,7 +76,9 @@ chk('no pgcrypto dependency (portable under a pinned search_path)', !/gen_random
   const ENGINE = ['growth_outbound_research_spend', 'growth_outbound_page_record', 'growth_outbound_candidates_record', 'growth_outbound_candidates',
     'growth_outbound_candidate', 'growth_outbound_candidate_set', 'growth_outbound_research_ingest', 'growth_outbound_research_finish',
     'growth_outbound_fit_catalog', 'growth_outbound_draft_context', 'growth_outbound_draft_propose', 'growth_outbound_draft_gave_up',
-    'growth_outbound_drafting_overview'];
+    'growth_outbound_drafting_overview',
+    // Phase 12: who waits for a verifier or for enrichment, and "handed to Clay" (a log line) — none approves, edits or sends
+    'growth_outbound_verify_queue', 'growth_outbound_enrichment_queue', 'growth_outbound_enrichment_mark'];
   const notFirst = chunks.filter((c) => !(PROOF[c.name] || (ENGINE.includes(c.name)
     ? /\nbegin\n\s*perform growth_outbound\.require_engine\(\);/
     : /\nbegin\n\s*(perform growth_outbound\.require_owner\(\);|v_owner := growth_outbound\.require_owner\(\);)/)).test(c.body)).map((c) => c.name);

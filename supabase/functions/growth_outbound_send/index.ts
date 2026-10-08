@@ -28,6 +28,12 @@
 //   4  growth_outbound_send_result(send), AS THE CALLER: sent (with Resend's
 //      id), failed (a permanent refusal), or still claimed (try again).
 //
+//   POST { action: 'domain_check' }   (Phase 12; sends nothing)
+//      reads the sending domain's SPF, DKIM and DMARC over DNS-over-HTTPS
+//      (and Resend's own status for it, when the key may read it) and
+//      records the result (growth_outbound_domain_auth_record, as the
+//      caller). A record found missing blocks live sending until fixed.
+//
 // WHAT IT HOLDS. The project URL, the PUBLIC anon key (to reach the API as
 // the caller) and RESEND_API_KEY. NO service-role key: every database call
 // is made with the owner's own token, so the database checks the owner again
@@ -287,6 +293,71 @@ export async function sendOne(c: Cfg, authz: string, draftId: string): Promise<R
   return { ...out, ok: false, state: 'claimed', reason: r.status === 0 ? 'resend_unreachable' : 'resend_' + r.status, retry: true, send_id: b.send_id };
 }
 
+// ── the sending domain's authentication (Phase 12) ──────────────────────────
+// POST { action: 'domain_check' } — the owner asks; nothing is sent. SPF (the
+// TXT record Resend's return path needs, at send.<domain>), DKIM (Resend's
+// key, at resend._domainkey.<domain>) and DMARC (_dmarc.<domain>) are read
+// over DNS-over-HTTPS; Resend is asked for the domain's own status when the
+// API key may read it. A record that DNS says is not there is a failure; a
+// lookup that did not answer is "could not tell", never a failure.
+const DOH = ['https://cloudflare-dns.com/dns-query', 'https://dns.google/resolve'];
+type Lookup = { answered: boolean; records: string[] };
+export async function dnsTxt(c: Cfg, name: string, type = 'TXT'): Promise<Lookup> {
+  for (const base of DOH) {
+    const ctl = new AbortController();
+    const t = setTimeout(() => { try { ctl.abort(); } catch (_) { /* gone */ } }, 8000);
+    try {
+      const r = await c.fetch(base + '?name=' + encodeURIComponent(name) + '&type=' + type, { headers: { accept: 'application/dns-json' }, signal: ctl.signal });
+      if (!r.ok) continue;
+      const b: any = await r.json().catch(() => null);
+      if (!b || (b.Status !== 0 && b.Status !== 3)) continue;   // NOERROR, or NXDOMAIN (no such name: answered, nothing there)
+      const want = type === 'MX' ? 15 : 16;
+      const recs = (Array.isArray(b.Answer) ? b.Answer : []).filter((a: any) => a && a.type === want && typeof a.data === 'string')
+        .map((a: any) => String(a.data).replace(/"\s+"/g, '').replace(/^"|"$/g, '').trim());
+      return { answered: true, records: recs };
+    } catch (_) { /* the next resolver */ } finally { clearTimeout(t); }
+  }
+  return { answered: false, records: [] };
+}
+export async function domainCheck(c: Cfg, domain: string): Promise<any> {
+  const [spf, mx, root, dkim, dmarc] = await Promise.all([
+    dnsTxt(c, 'send.' + domain), dnsTxt(c, 'send.' + domain, 'MX'), dnsTxt(c, domain), dnsTxt(c, 'resend._domainkey.' + domain), dnsTxt(c, '_dmarc.' + domain)]);
+  const verdict = (l: Lookup, found: boolean) => (found ? true : l.answered ? false : null);
+  const spfRec = spf.records.find((x) => /^v=spf1\b/i.test(x)) || null;
+  const rootSpf = root.records.find((x) => /^v=spf1\b/i.test(x)) || null;
+  const dkimRec = dkim.records.find((x) => /(^|;)\s*p=[A-Za-z0-9+/=]{20,}/.test(x)) || null;
+  const dmarcRec = dmarc.records.find((x) => /^v=DMARC1\b/i.test(x)) || null;
+  const policy = dmarcRec ? ((/(^|;)\s*p=(none|quarantine|reject)\b/i.exec(dmarcRec) || [])[2] || '').toLowerCase() || null : null;
+  const out: any = {
+    domain,
+    spf: { ok: verdict(spf, !!spfRec && /amazonses\.com/i.test(spfRec)),
+           detail: spfRec ? 'send.' + domain + ': ' + spfRec.slice(0, 200) : (spf.answered ? 'no SPF record at send.' + domain + ' (Resend\'s return path)' : 'DNS did not answer')
+             + (mx.answered ? (mx.records.length ? '; MX present' : '; no MX at send.' + domain) : '') + (rootSpf ? '; root: ' + rootSpf.slice(0, 120) : '') },
+    dkim: { ok: verdict(dkim, !!dkimRec), detail: dkimRec ? 'resend._domainkey.' + domain + ' holds a key' : (dkim.answered ? 'no DKIM key at resend._domainkey.' + domain : 'DNS did not answer') },
+    dmarc: { ok: verdict(dmarc, !!dmarcRec && !!policy), policy,
+             detail: dmarcRec ? dmarcRec.slice(0, 200) + (policy === 'none' ? ' (monitoring only: fine to start, then move to quarantine)' : '')
+               : (dmarc.answered ? 'no DMARC record at _dmarc.' + domain : 'DNS did not answer') },
+    via: 'dns-over-https',
+  };
+  const parts = [out.spf.ok, out.dkim.ok, out.dmarc.ok];
+  out.ok = parts.every((v) => v === true) ? true : parts.some((v) => v === false) ? false : null;
+  // Resend's own word on the domain, when the key may read it (a sending-only key may not)
+  if (c.resendKey) {
+    const ctl = new AbortController();
+    const t = setTimeout(() => { try { ctl.abort(); } catch (_) { /* gone */ } }, 8000);
+    try {
+      const r = await c.fetch('https://api.resend.com/domains', { headers: { authorization: 'Bearer ' + c.resendKey }, signal: ctl.signal });
+      if (r.status === 401 || r.status === 403) out.provider = { ok: null, detail: 'the Resend key can send but not read domains' };
+      else if (r.ok) {
+        const b: any = await r.json().catch(() => null);
+        const d = (Array.isArray(b?.data) ? b.data : []).find((x: any) => x && String(x.name || '').toLowerCase() === domain);
+        out.provider = d ? { ok: d.status === 'verified', detail: 'Resend: ' + String(d.status || 'unknown').slice(0, 40) } : { ok: false, detail: 'Resend has no domain ' + domain };
+      } else out.provider = { ok: null, detail: 'Resend answered ' + r.status };
+    } catch (_) { out.provider = { ok: null, detail: 'Resend did not answer' }; } finally { clearTimeout(t); }
+  }
+  return out;
+}
+
 export async function handle(req: Request, cfg?: Cfg): Promise<Response> {
   const c = cfg ?? config();
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(req, c) });
@@ -298,6 +369,22 @@ export async function handle(req: Request, cfg?: Cfg): Promise<Response> {
 
   let body: any = null;
   try { body = await req.json(); } catch (_) { body = null; }
+  if (body && body.action === 'domain_check') {
+    // the sending domain is the database's (the sender in the settings), never the request's
+    let st;
+    try { st = await AUTH.rpcAsCaller(c, who.authz, 'growth_outbound_settings', {}); }
+    catch (_) { return json(req, c, { ok: false, reason: 'database_unreachable' }, 503); }
+    const sender = st && st.ok && st.body && typeof st.body.sender_email === 'string' ? st.body.sender_email : '';
+    const domain = /^[^@\s]+@([a-z0-9-]+(\.[a-z0-9-]+)+)$/i.exec(sender)?.[1]?.toLowerCase();
+    if (!domain) return json(req, c, { ok: false, reason: 'no_sender' }, 409);
+    const check = await domainCheck(c, domain);
+    let rec;
+    try { rec = await AUTH.rpcAsCaller(c, who.authz, 'growth_outbound_domain_auth_record', { p: check }); }
+    catch (_) { return json(req, c, { ok: false, reason: 'database_unreachable', check }, 503); }
+    if (rec.status === 404) return json(req, c, { ok: false, reason: 'not_installed', check }, 503);
+    if (!rec.ok || !rec.body || rec.body.ok !== true) return json(req, c, { ok: false, reason: (rec.body && rec.body.reason) || 'not_recorded', check }, 409);
+    return json(req, c, { ok: true, check, live_send_blockers: rec.body.live_send_blockers });
+  }
   const raw = body && Array.isArray(body.draft_ids) ? body.draft_ids : body && body.draft_id ? [body.draft_id] : null;
   if (!raw || raw.length < 1 || raw.length > MAX_DRAFTS) return json(req, c, { ok: false, reason: 'bad_request', detail: '1 to ' + MAX_DRAFTS + ' draft ids' }, 400);
   const ids: string[] = [];

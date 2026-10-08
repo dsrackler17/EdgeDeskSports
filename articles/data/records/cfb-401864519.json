@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T01:00:00.000Z",
   "game_when_label": "2026-10-10 01:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-08T00:55:58.242Z",
-  "generated_at": "2026-10-08T00:55:58.242Z",
+  "updated_at": "2026-10-08T10:25:54.824Z",
+  "generated_at": "2026-10-08T10:25:54.824Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -129,9 +129,9 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 4
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 6
         },
         "absent": [
           {
@@ -139,6 +139,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for San José State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Wyoming and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff"
           },
           {
             "field": "recruiting_talent",
@@ -237,7 +261,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T19:30:00.000Z",
-        "retrieved_at": "2026-10-08T00:28:03.979Z"
+        "retrieved_at": "2026-10-08T04:02:25.365Z"
       },
       "home": {
         "team": "San José State",
@@ -309,9 +333,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-04T03:59:00.000Z",
-        "retrieved_at": "2026-10-08T00:28:03.979Z"
+        "retrieved_at": "2026-10-08T04:02:25.365Z"
       },
-      "generated_at": "2026-10-08T00:28:35.873Z",
+      "generated_at": "2026-10-08T04:03:09.374Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -722,15 +746,15 @@
               "a": {
                 "v": "55.5",
                 "n": 55.5,
-                "rank": "#91 of 138",
-                "rank_n": 91,
+                "rank": "#90 of 138",
+                "rank_n": 90,
                 "note": null
               },
               "h": {
                 "v": "54.9",
                 "n": 54.9,
-                "rank": "#118 of 138",
-                "rank_n": 118,
+                "rank": "#117 of 138",
+                "rank_n": 117,
                 "note": null
               },
               "edge": {
@@ -777,14 +801,14 @@
               "h": {
                 "v": "51.3",
                 "n": 51.3,
-                "rank": "#83 of 138",
-                "rank_n": 83,
+                "rank": "#82 of 138",
+                "rank_n": 82,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 2.5,
-                "rank_gap": 44
+                "rank_gap": 45
               }
             },
             {
@@ -950,13 +974,13 @@
       "home": [
         {
           "k": "Linebackers",
-          "rank_gap": 44,
+          "rank_gap": 45,
           "gap": 2.5,
           "lead": "San José State",
           "trail": "Wyoming",
-          "lead_cell": "51.3 · #83 of 138",
+          "lead_cell": "51.3 · #82 of 138",
           "trail_cell": "48.8 · #127 of 138",
-          "text": "San José State 51.3 (#83 of 138) vs Wyoming 48.8 (#127 of 138) — 44 places on the national board."
+          "text": "San José State 51.3 (#82 of 138) vs Wyoming 48.8 (#127 of 138) — 45 places on the national board."
         },
         {
           "k": "Defensive line",
@@ -1163,18 +1187,18 @@
           "team": "Wyoming",
           "label": "running backs",
           "v": "55.5",
-          "rank": "#91 of 138",
+          "rank": "#90 of 138",
           "note": null
         },
         "def": {
           "team": "San José State",
           "label": "linebackers",
           "v": "51.3",
-          "rank": "#83 of 138",
+          "rank": "#82 of 138",
           "note": null
         },
         "complete": true,
-        "read": "Wyoming’s running backs rates 55.5 (#91 of 138) against San José State’s linebackers at 51.3 (#83 of 138). San José State’s unit stands higher among its own position group, by 8 places."
+        "read": "Wyoming’s running backs rates 55.5 (#90 of 138) against San José State’s linebackers at 51.3 (#82 of 138). San José State’s unit stands higher among its own position group, by 8 places."
       },
       {
         "title": "San José State running backs vs Wyoming linebackers",
@@ -1182,7 +1206,7 @@
           "team": "San José State",
           "label": "running backs",
           "v": "54.9",
-          "rank": "#118 of 138",
+          "rank": "#117 of 138",
           "note": null
         },
         "def": {
@@ -1193,7 +1217,7 @@
           "note": null
         },
         "complete": true,
-        "read": "San José State’s running backs rates 54.9 (#118 of 138) against Wyoming’s linebackers at 48.8 (#127 of 138). San José State’s unit stands higher among its own position group, by 9 places."
+        "read": "San José State’s running backs rates 54.9 (#117 of 138) against Wyoming’s linebackers at 48.8 (#127 of 138). San José State’s unit stands higher among its own position group, by 10 places."
       },
       {
         "title": "Wyoming receivers vs San José State secondary",
@@ -1388,7 +1412,7 @@
         "bullets": [
           "Playing at San José State is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
           "San José State is the better football team by 2.3 points on opponent-adjusted results, with roughly 47% of it still inherited from last season (+2.3 pts).",
-          "Linebackers: San José State 51.3 (#83 of 138) vs Wyoming 48.8 (#127 of 138) — 44 places on the national board.",
+          "Linebackers: San José State 51.3 (#82 of 138) vs Wyoming 48.8 (#127 of 138) — 45 places on the national board.",
           "Defensive line: San José State 51.0 (#87 of 138) vs Wyoming 48.2 (#124 of 138) — 37 places on the national board.",
           "Pass offense: San José State 44.2 (#98 of 137) vs Wyoming 41.6 (#113 of 137) — 15 places on the national board."
         ]
@@ -1417,7 +1441,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 26h old",
+          "text": "odds is 35h old",
           "widening": null
         },
         {
@@ -1532,7 +1556,7 @@
       "total_market": "43.0",
       "book": "captured consensus (stale) · 1 book · best at Pinnacle",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "26 hours old",
+      "capture_age": "35 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1582,11 +1606,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 88,
+        "pct": 84,
         "tier": "STRONG",
-        "text": "88 · STRONG",
-        "sub": "main deduction: Wyoming’s availability report is not due yet",
-        "score": 88,
+        "text": "84 · STRONG",
+        "sub": "main deduction: Wyoming’s availability sources refused",
+        "score": 84,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1600,7 +1624,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.8,
+            "score": 9.3,
             "max": 20
           },
           {
@@ -1612,7 +1636,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.9,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1628,23 +1652,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "Wyoming’s availability report is not due yet; the impact of Wyoming’s absences cannot be assessed: no graded availability read",
+        "main_deduction": "Wyoming’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Wyoming’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
         "next_actions": [
           {
-            "action": "Re-read availability inside the filing window (Wyoming)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Restore an injury/availability source for Wyoming",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Re-read availability inside the filing window (San José State)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Restore an injury/availability source for San José State",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
             "action": "Refresh the market quote",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1825,8 +1849,8 @@
         },
         {
           "k": "Running backs",
-          "a": "55.5  #91",
-          "h": "54.9  #118",
+          "a": "55.5  #90",
+          "h": "54.9  #117",
           "note": null
         },
         {
@@ -1838,7 +1862,7 @@
         {
           "k": "Linebackers",
           "a": "48.8  #127",
-          "h": "51.3  #83",
+          "h": "51.3  #82",
           "note": null
         },
         {
@@ -1893,6 +1917,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-08T00:55:58.242Z"
+    "at": "2026-10-08T10:25:54.824Z"
   }
 }

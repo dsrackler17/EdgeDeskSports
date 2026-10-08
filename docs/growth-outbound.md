@@ -1191,22 +1191,230 @@ A failure (say, the Stripe record unreachable) is recorded and shown, and never 
 - **The database:** additive. The three locks, the dry-run rule and the trial rule are what was meant all along.
 - **The console:** the System check panel only reads.
 
+## Phase 12: providers, qualification and volume
+
+**The aim: wake up to 10–15 qualified potential subscribers with drafts, and send only the ones you approve.** Phase 12 adds what the first eleven phases did not have. Nothing it adds can approve or send.
+
+### The audit it started from
+
+| Area | Before Phase 12 |
+|---|---|
+| Tables, owner-only access, evidence, drafts, sends, suppressions, opt-out, webhook, attribution | Built and tested (Phases 1–11) |
+| Discovery and research | Worked, but Brave and Hunter were written into the function, with no way to switch either off |
+| Clay, Apollo | Missing |
+| Scoring | A flat sum of catalogue points (`fit_score`, gate 80). It had no parts and did not score contact quality or personalization |
+| Subscriber vs partner | `campaign_type` existed but nothing set it, and the engine drafted the $49.99 subscriber pitch for partners too |
+| Morning run | Targeted 15 candidates *read* a day rather than prospects *qualified*. Its default window was 06:00–10:00, not overnight |
+| Content rules | Nothing refused "complimentary" or "special access", discounts, or picks language. Engine follow-ups did not state the price. There was no length limit |
+| Sending domain | SPF/DKIM/DMARC was a checklist line only |
+| Volume | A fixed daily cap of 20, with no warm-up |
+
+### The qualification score (0–100)
+
+It is computed by the database from evidence, like every other number, in `compute()`.
+
+| Part | Max | What counts |
+|---|---|---|
+| Product relevance | 35 | Evidenced catalogue reasons in the part `relevance`: covers CFB (8), covers the NFL (8), odds, markets or probability (14), EV or fair pricing (14), player props (6), a workflow EdgeDesk clearly serves (12) |
+| Demonstrated analytics interest | 25 | `analytics`: quantitative analysis (18), predictive models (15), data visualization (8), an analytical newsletter, podcast or channel (8), analytics tools (6), an engaged audience (6), consistent publishing (5) |
+| Evidence of purchasing interest | 15 | `purchase`: tracks closing-line value (12), tracks their own bets (10), pays for data, tools or research (10), runs paid research (6), independent rather than at a media company (6) |
+| Contact quality and legitimacy | 15 | The address: verified 9; published on their own site or profile 5; published elsewhere, or a provider's unverified find, 3; none, guessed or bounced 0. Identity at its gate 4 (at 0.70, 2). A site or profile of their own 2 |
+| Personalization opportunities | 10 | Facts an email may cite, each sure enough by itself to clear the research gate: one 5, two 8, three or more 10 |
+| Penalties | — | Every reason against, unproven, subtracted: spam −100, sportsbook or operator staff −50, touting −40, anonymous −40, a sports-industry job without analytics work −30, no analytics interest −30, poor fit −30, a large media outlet −25, inactive −25, entertainment only −20, generic content −15 |
+
+**How a reason counts.** Within each of the first three parts the reasons are summed and capped at the part's maximum, so piling up relevance cannot make up for missing analytics. A positive reason counts only while it cites current evidence about that person; nothing a page or a model merely asserts counts.
+
+**The gate.** A prospect becomes `qualified` only at `min_qualification_score` (75 by default, under **Gates**) *and* every earlier gate. The earlier gates are: fit, identity 0.90, an address that is verified at 0.90, and research 0.85. The review queue and the drafting order go best-qualified first, and approval re-checks the score.
+
+**Where to see it.** Each prospect carries `qualification` (each part, the reasons it rests on, why they fit and what counts against them). It appears on every review card and prospect panel. `growth_outbound_qualification_rules()` returns these rules for the console.
+
+**The fit gate is still there.** It is a flat sum, so a prospect can score 78 and still be stopped at fit 76. If you want the 0–100 score to be the only bar, lower **Minimum fit score** in Settings. That is your decision, so this phase leaves it at 80.
+
+### Subscribers and partners
+
+- `campaign_type` is now one of `customer` (a potential subscriber), `media_partner`, `affiliate`, `business_partner` or `partnership`.
+- When it first reads a new prospect, Claude says which one they are. Working in the sports industry does not make someone a subscriber: sportsbook staff, a journalist with no analytics work and team staff are not.
+- **The engine drafts only for potential subscribers.** A partner lead is never pitched a subscription. The engine is refused for them, and the drafting list leaves them out.
+- **No paid lookups for partners.** The research engine spends no email-lookup budget on them.
+- **Your decision stands.** You change who someone is from their panel; moving someone away from "potential subscriber" cancels a subscriber email waiting for them. The engine never overrides a segment once set.
+- **This morning → Partner leads** lists them, apart from the subscriber queue.
+
+### Providers
+
+Each provider sits behind one small interface in `growth_outbound_research`: search, email lookup, verification or enrichment. A provider is used when its key is set (Supabase → Edge Functions → Secrets) **and** it is switched on under **Discover and research → Providers**. Brave and Hunter are on once their key is set. Apollo and Clay cost money per call, so they stay off until you switch them on.
+
+| Provider | Role | Secret | What it can contribute |
+|---|---|---|---|
+| Brave | search | `BRAVE_SEARCH_API_KEY` | Candidates (pages to read) |
+| Apollo people search | search | `APOLLO_API_KEY` | Candidates: the person's organization's own site, named in the snippet. No address, no credit. Never a LinkedIn or other platform page |
+| Hunter | email lookup and verification | `HUNTER_API_KEY` | An address Hunter lists for that person at their domain (`provider_found`), and the verifier's word (`provider_verified` only for "valid") |
+| Apollo people match | email lookup | `APOLLO_API_KEY` | An address **only when Apollo marks it verified**, for the same first and last name, and never a locked placeholder, a role address or a guessed ("extrapolated") one |
+| Clay | enrichment | `CLAY_WEBHOOK_URL`, `CLAY_WEBHOOK_TOKEN` | See below |
+
+**Never a fabricated or over-claimed address:**
+
+- A guessed address is never put to a verifier; it waits for enrichment instead.
+- An address a provider found is `risky` until a verifier or you confirm it.
+- **Apollo's own "verified" is one source**, because the same company found it and checked it. It lifts the address to 0.85 sure. The email gate wants 0.90, which takes Hunter's verifier or your own check as well.
+- A verifier's answer is recorded whatever it says, so the same address is not asked about again for 30 days.
+
+**Clay** has no public API to read a table, so enrichment goes out and comes back in two halves:
+
+1. **Out:**
+   - **Send to Clay** (or the morning run, three a step) posts each prospect waiting for enrichment to your Clay table's webhook. That is one row per POST, with the table's token in `x-clay-webhook-auth`, and only ever to a `clay.com` address.
+   - **Export for Clay (CSV)** downloads the same rows instead.
+   - A prospect waits for enrichment when they are a potential subscriber, the address is all that keeps them under the bar, and they have not been handed over in 14 days.
+   - Clay is told who they are and where: `edgedesk_ref`, name, organization, site and profiles. It is never told their score or evidence.
+2. **Back:** export the enriched Clay table as CSV and use **Import Clay results (CSV)**. Clay's usual columns are mapped for you: `edgedesk_ref`, Full Name, Work Email, Company Name, LinkedIn Profile, and so on. What comes back counts as Clay's word:
+   - an address is Clay's find, unverified until the verifier confirms it (the morning run asks);
+   - a title or an employer is a directory's word from the profile page, at the lowest weight, and an email never cites it;
+   - a profile identifies them.
+
+   A row that names nobody EdgeDesk already found is left out, never turned into a prospect.
+
+**Free and low-cost first.** With only Brave's free credit and Hunter's free tier, the pipeline runs, but it runs thin (see the dry run). Apollo and Clay are optional, and each is one switch.
+
+### The morning run
+
+- **It stops at a qualified target.** It now researches until `daily_qualified_target` new potential subscribers qualified today (12 by default), reading at most `daily_prospect_target` candidates.
+- **A verify step comes first.** Addresses waiting for a verifier are checked before research, five a step and not more than once every 20 minutes.
+- **Drafts follow the warm-up.** Drafting is capped by today's warm-up cap.
+- **Overnight.** To have the queue ready when you wake, set the window overnight under **Morning run**: for example a start hour of 1 for 6 hours, in your time zone. It never approves or sends.
+
+### Content rules
+
+These apply to every draft, at approval:
+
+- Nothing beyond the 7-day free trial: no complimentary, comped, free-month or discounted access, no promo or referral code, no special, early, VIP or lifetime access.
+- Nothing that reads like a picks service: no best bets, our picks, picks or plays of the day, betting tips, tipsters or touts. "Research, not picks" is fine.
+
+Every engine email, follow-ups included, must also:
+
+- state the 7-day free trial and $49.99/month;
+- link to EdgeDesk;
+- stay under 150 words.
+
+The follow-up templates now state the price. A draft you write or edit yourself is not blocked by these. Its card says what it is missing as **Worth fixing before you approve**, with its word count.
+
+**`growth_outbound_draft_check(prospect, draft)`** runs the engine's rules on a draft without queuing it and writes nothing. It is how the dry run checks its emails.
+
+### Sending: warm-up and the sending domain
+
+- **Warm-up.** On by default. The live cap starts at `warmup_start_per_day` (10) on the day of the first live email and grows by `warmup_step_per_week` (5) each week, never past `max_sends_per_day`. The send trigger enforces it. Turning it off or speeding it up asks first, like raising the cap.
+- **The sending domain.** **System check → Check the sending domain** asks the send function to read the records over DNS-over-HTTPS. It sends nothing. It reads:
+  - SPF at `send.edgedesksports.com` (Resend's return path);
+  - DKIM at `resend._domainkey.edgedesksports.com`;
+  - DMARC at `_dmarc.edgedesksports.com`;
+  - and Resend's own status for the domain, when the API key may read it.
+
+  What happens with the result:
+  - a record DNS says is missing **blocks live sending** (`domain_auth_failed`) until it is fixed and checked again;
+  - DNS that did not answer decides nothing;
+  - while live and never checked (or not in 30 days), the System check says so.
+
+### This morning (the console)
+
+A new panel at the top of the Outbound tab shows:
+
+- qualified today against the target;
+- drafts waiting for review, and approved ones not yet sent;
+- sent today against today's cap (with the warm-up week);
+- researched today;
+- addresses waiting for a verifier, and prospects waiting for enrichment;
+- the sending domain;
+- the paid providers that are on;
+- the partner leads.
+
+Every review card shows:
+
+- the score in its five parts, and why they fit;
+- the address and whether anyone verified it;
+- where to read up on them (https links only);
+- what the email should still say.
+
+### The dry run
+
+`node tools/growth/outbound_dryrun.js <candidates.json> --out report.md` puts candidates through the same database doors the research engine uses, in a throwaway PostgreSQL:
+
+- the pages it read;
+- each fact as a quote the database checks;
+- fit reasons and segment;
+- the score;
+- the owner's draft check on a proposed email.
+
+It then proves nothing was sent: no send row, no draft row, test mode on, no Resend key, no network.
+
+### New in the database
+
+- **Settings:**
+  - `min_qualification_score`, `daily_qualified_target`;
+  - `warmup_enabled`, `warmup_start_per_day`, `warmup_step_per_week`;
+  - `domain_auth`, `domain_auth_checked_at`;
+  - `discovery_config.providers` and the `enrichment` budget (15 a day by default; 200 at most).
+- **Prospects:** `qualification_score`, `qualification`, `first_qualified_at` (computed; nobody writes them).
+- **Fit catalogue:**
+  - `category`;
+  - eight new reasons: data visualization, tracks own bets, pays for tools, sells paid research, independent researcher, sportsbook or operator, industry job without analytics, large media outlet. The existing reasons are re-filed into the parts.
+- **Runs:** kind `enrich`.
+- **Functions:** `qualification_max`, `live_send_cap`, `offer_problems`, `engine_draft_problems` (`draft_propose` now uses it), `verify_queue`, `enrichment_queue`, `enrichment_row`.
+- **Owner doors:**
+  - `draft_check`, `enrichment_export`, `provider_import`, `domain_auth_record`;
+  - `prospect_set_segment`, `qualification_rules`, `partner_leads`, `morning`.
+- **Engine doors (a ticket may reach them, on research runs only):** `verify_queue`, `enrichment_queue`, `enrichment_mark`. None of them approves, edits or sends.
+- **Report row 37.** Still nineteen tables, three public doors.
+
+### Deploy (in order) — for you to run when you have reviewed it
+
+Nothing in this phase has been deployed. Schema changes and automation stay off until you run them.
+
+1. Merge the Phase 12 PR. The console works against the Phase 11 SQL until step 2. "This morning" says which SQL to run, and the page sends no Phase 12 setting before then.
+2. In the SQL editor, run `supabase/growth_outbound.sql`. It is additive and idempotent, and re-evaluates every prospect. Report rows 1–37 should say `ok`.
+   - **Prospects that were qualified may move back to "needs research"** if they score under 75. That is the new bar working. Their cards say why.
+   - **Existing approvals they no longer earn go back to review**, as before.
+3. **Deploy the functions** (research and send changed; draft changed its templates): Actions → **Deploy outbound Edge Functions**. Its tests now include the provider suite.
+4. **Optional secrets** in Supabase → Edge Functions → Secrets:
+   - `APOLLO_API_KEY`;
+   - `CLAY_WEBHOOK_URL` (your Clay table's webhook, `https://api.clay.com/…`) and `CLAY_WEBHOOK_TOKEN`.
+
+   Then switch each on under **Providers**.
+5. **System check → Check the sending domain.** Fix anything missing in DNS before going live.
+6. **Morning run:** set an overnight window, a qualified target, and budgets your provider plans can afford. Turning Automation on is still yours.
+
+**Capacity.** Every qualified prospect needs a verified address: one verifier call each, plus usually one lookup. To qualify 10–15 a day, expect to read 40+ candidates and verify 15–30 addresses a day. That is beyond Hunter's free tier; Hunter's paid tiers, Apollo, or Clay's waterfall is what makes the target reachable. Raise "Candidates to read per day", "Pages / day", "Claude calls / day", "Email lookups / day" and "Verifications / day" to match the plan you buy.
+
+### Tests
+
+| Suite | Checks | What it proves |
+|---|---|---|
+| `tools/growth/outbound_qualify_sql.test.js` (new) | 163 | **Score:** the catalogue's parts, a strong prospect's 35/25/12/15/8, caps, contact points per address kind, personalization, penalties, the gate and its bar, computed only, first qualified when, approval re-checks it. **Segments:** the engine drafts and lists subscribers only; the owner decides and the engine never overrides; partner leads. **Content:** 24 refused and 7 clean texts; the offer, link and length; the engine held to it, the owner advised. **Draft check** writes nothing. **Warm-up:** the ramp, the trigger, confirmation. **Domain:** honest records, a failure blocks live sending, unchecked said when live. **Providers and budgets.** **Verify and enrich queues.** **Clay import:** Clay's word, never verified, never a new prospect, role addresses and placeholders refused. **Apollo's "verified":** one source, not two. **Morning:** the qualified target, the verify step, the warm-up draft cap, the morning door, tickets. **Mutation-checked:** 24 deliberate breaks, every one caught. |
+| `tools/growth/outbound_providers.test.js` (new) | 43 | The deployed research and send functions against the real SQL, covering Brave, Apollo, Hunter, Clay, DNS-over-HTTPS and Resend: provider status and switches; discovery across providers; finders in order; Apollo verified-only, same person, no placeholders, no role addresses; no lookup for partners; verification and its verdicts; the morning run's verify step on a ticket; Clay one row per POST, token to Clay only, the budget, 14 days; the domain check (found, missing, a resolver down, DNS silent, a sending-only key, owner only); each key only to its own provider. **Mutation-checked:** 9 deliberate breaks, every one caught. |
+| `tools/growth/outbound_console.e2e.js` | 283 | Adds sections 58–62: this morning, the card's score and advice, the prospect's segment, providers, verify, Clay push, export and import, the domain check, the warm-up, before the Phase 12 SQL |
+| Earlier suites | All passing | Updated: the engine-door allowlist (three read-only queues), the research engine's settings, the follow-up fixture now states the price, the warm-up off in two suites that send dozens of live emails a day |
+
+### Rollback
+
+- **Stop Apollo or Clay:** switch them off under Providers, or delete their secrets.
+- **The bar:** lower `min_qualification_score` (0 disables it).
+- **The warm-up:** turn it off (asks first).
+- **A failed domain check blocking live sends:** fix DNS and check again, or `update growth_outbound.settings set domain_auth = null, domain_auth_checked_at = null;` in the SQL editor.
+- **The database:** additive. To return to Phase 11, re-run the Phase 11 file (`git show 4f99b38:supabase/growth_outbound.sql`). Its functions replace these, and the new columns are harmless.
+
 ## Operating it
 
 ### Before you go live (a checklist)
 
 1. **Owner:** `select growth_outbound.grant_owner('you@…');` once, in the SQL editor. Only owners see the Outbound tab.
 2. **Compliance:** a postal address in Outbound settings; the opt-out endpoint (`growth_outbound_optout`) deployed and its base URL set; Resend's webhook pointed at `growth_outbound_webhook`, with its signing secret set (`select growth_outbound.set_webhook_secret('whsec_…');`). The red banner lists whatever is missing.
-3. **Domain:** send from `davis@edgedesksports.com` on a domain verified in Resend (SPF, DKIM, and DMARC at least `p=none`).
+3. **Domain:** send from `davis@edgedesksports.com` on a domain verified in Resend (SPF, DKIM, and DMARC at least `p=none`). Check it from the console: System check → Check the sending domain. A missing record blocks live sending.
 4. **A dry run in test mode:** use "Test draft for my inbox", approve it and send it. Check that the email arrives with the footer, the opt-out link and the `ob_test` link; that Sends says delivered; and that the opt-out link's page asks before it changes anything.
 5. **System check:** all checks pass, and nothing under "Now" or "Soon".
-6. **Go live:** turn test mode off (you type LIVE). Keep the daily cap at 20 at first.
+6. **Go live:** turn test mode off (you type LIVE). Keep the daily cap at 20 at first; the warm-up starts at 10 a day and adds 5 a week up to it.
 7. **The morning run (optional):** run `supabase/growth_outbound_cron.sql`, set your window, and turn Automation on. It never approves or sends.
 
 ### Every morning
 
 1. Open `/admin/growth/` → Outbound.
-2. Read the System check line at the top.
+2. Read the System check line and **This morning**: qualified today, what waits for review, today's cap, the domain.
 3. **Review queue:** approve or reject each draft.
 4. **Approved, not sent:** press Send.
 5. In **Sends**, check delivery. Mark replies on the prospect ("They replied", or "…stop emailing them").
@@ -1229,4 +1437,4 @@ A failure (say, the Stripe record unreachable) is recorded and shown, and never 
 
 ## Next
 
-All eleven phases are built. What remains is operating it: the checklist and the morning above.
+All twelve phases are built. What remains is operating it: the checklist and the morning above, and choosing which paid providers (if any) are worth their cost against the qualified prospects they produce (Results → By group → Search shows which searches pay off).

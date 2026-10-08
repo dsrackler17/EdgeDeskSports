@@ -114,6 +114,13 @@ textarea{background:var(--bg);color:var(--text);border:1px solid var(--border);b
 .pname{font-size:17px;font-weight:700;overflow-wrap:anywhere}
 .pill.st{font-size:11px;color:var(--text)}
 .pill.by{font-size:11px;color:var(--dim)}
+label.btnfile{display:inline-block;border-radius:8px;background:var(--surface2);color:var(--text);border:1px solid var(--border);font:700 11.5px Inter,system-ui,sans-serif;padding:5px 9px;cursor:pointer}
+.qual{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin-top:8px}
+.qual div{border:1px solid var(--border);border-radius:8px;padding:6px 8px;background:var(--bg);font-size:11px;color:var(--dim)}
+.qual b{display:block;font-size:14px;color:var(--text)}
+.qual .meter{height:4px;border-radius:2px;background:var(--surface2);margin-top:4px;overflow:hidden}
+.qual .meter span{display:block;height:4px;background:var(--pos)}
+.pill.seg{font-size:11px;color:var(--warn);border-color:var(--warn)}
 #rqDrafting{margin-top:0}
 h3{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:18px 0 6px;font-weight:700}
 tr.old td{color:var(--faint)}
@@ -222,6 +229,16 @@ ul.claims li.badc b{color:var(--neg)}
       <div class="msg err hide" id="obMsg" role="alert"></div>
       <div class="row" style="margin-top:10px"><span class="sp"></span><button class="g sm" id="obReload" type="button">Refresh outbound</button></div>
 
+      <h2>This morning</h2>
+      <div class="card">
+        <div class="chips" id="mnChips"></div>
+        <div class="kpis" id="mnKpis" style="margin-top:12px"></div>
+        <details id="mnPartnersBox" style="margin-top:10px"><summary class="sub" style="cursor:pointer" id="mnPartnersSum">Partner leads</summary>
+          <div class="tw"><table id="mnPartners"></table></div>
+          <div class="note">Media, affiliate and business leads are kept apart from the subscriber queue: the engine never pitches them a subscription. Write to them yourself from their panel if you want to.</div></details>
+        <div class="note">Overnight the morning run finds, researches and scores new people, and drafts for the potential subscribers who clear every gate (qualification 75+ by default). Review the drafts below, approve the ones you like, then press Send. A draft is never an authorization to send.</div>
+      </div>
+
       <h2>Today's outreach</h2>
       <div class="card"><div class="kpis" id="obKpis"></div>
         <div class="note">Nothing on this page sends anything. A message can only go out once you have approved its draft and pressed send yourself, and the database refuses every other path.</div>
@@ -233,7 +250,7 @@ ul.claims li.badc b{color:var(--neg)}
         <div class="kpis" id="amToday" style="margin-top:12px"></div>
         <h3>The morning run's steps</h3>
         <div class="tw"><table id="amRuns"></table></div>
-        <div class="note">When Automation is on, the database's own clock (pg_cron) takes one step every few minutes inside your window: first your saved searches, then the next new candidates (up to "Prospects to prepare per day"), then drafts for whoever is due (up to the daily send cap). Each step runs on a single-use ticket that opens only the engine's own doors. It never approves and never sends: every draft waits for you in the review queue. It stops for the day after three failed steps in a row.</div>
+        <div class="note">When Automation is on, the database's own clock (pg_cron) takes one step every few minutes inside your window: first your saved searches, then any addresses waiting for the verifier, then the next new candidates (until "New qualified subscribers to aim for per day" qualify today, reading at most "Candidates to read per day"), then drafts for the potential subscribers who are due (up to today's send cap, which grows while the domain warms up). Each step runs on a single-use ticket that opens only the engine's own doors. It never approves and never sends: every draft waits for you in the review queue. It stops for the day after three failed steps in a row.</div>
       </div>
 
       <h2>Review queue</h2>
@@ -288,7 +305,10 @@ ul.claims li.badc b{color:var(--neg)}
       <h2 id="hcHead">System check</h2>
       <div class="card">
         <div class="row" style="align-items:center"><span id="hcSummary" class="sub"></span><span class="sp"></span>
+          <button type="button" class="g sm" id="hcDomain" title="Reads SPF, DKIM and DMARC for the sending domain over DNS; sends nothing">Check the sending domain</button>
           <button type="button" class="g sm" id="hcRun">Run the check again</button></div>
+        <div class="msg" id="hcMsg" role="status" aria-live="polite"></div>
+        <div id="hcDomainOut"></div>
         <div id="hcAttention"></div>
         <details style="margin-top:10px"><summary class="sub" style="cursor:pointer">Every check</summary>
           <div class="tw"><table id="hcChecks"></table></div></details>
@@ -319,8 +339,21 @@ ul.claims li.badc b{color:var(--neg)}
           <div class="f" style="max-width:120px"><label for="dvB_llm" title="Research and drafting share this figure">Claude calls / day</label><input id="dvB_llm" inputmode="numeric" maxlength="5"></div>
           <div class="f" style="max-width:140px"><label for="dvB_email_finder">Email lookups / day</label><input id="dvB_email_finder" inputmode="numeric" maxlength="5"></div>
           <div class="f" style="max-width:150px"><label for="dvB_email_verifier">Verifications / day</label><input id="dvB_email_verifier" inputmode="numeric" maxlength="5"></div>
+          <div class="f" style="max-width:150px"><label for="dvB_enrichment" title="Prospects handed to Clay per day">Enrichments / day</label><input id="dvB_enrichment" inputmode="numeric" maxlength="5"></div>
           <span class="sp"></span><button type="button" class="g" id="dvSave">Save</button>
         </div>
+        <h3>Providers</h3>
+        <div class="row" id="dvSwitches"></div>
+        <div class="note">A provider is used when its key is set (Supabase → Edge Functions → Secrets) and it is switched on here. Apollo and Clay cost money per call, so they stay off until you switch them on. Whatever a provider says is weighed like any other source: an address it found is unverified until a verifier or you confirm it, and a title or employer it reports is never something an email may cite.</div>
+        <h3>Addresses and enrichment</h3>
+        <div class="row" style="align-items:center">
+          <span class="sub" id="dvWaiting"></span><span class="sp"></span>
+          <button type="button" class="g sm" id="dvVerify" title="Ask the verifier about addresses nobody has confirmed yet">Verify waiting addresses</button>
+          <button type="button" class="g sm" id="dvClayPush" title="Post the prospects whose only missing piece is an address to your Clay table's webhook">Send to Clay</button>
+          <button type="button" class="g sm" id="dvClayExport" title="Download them as a CSV to upload to a Clay table">Export for Clay (CSV)</button>
+          <label class="g sm btnfile" for="dvClayFile" title="Import the CSV you exported from the Clay table">Import Clay results (CSV)<input type="file" id="dvClayFile" accept=".csv,text/csv" class="hide"></label>
+        </div>
+        <div class="msg" id="dvEnrichMsg" role="status" aria-live="polite"></div>
         <h3>Recent runs</h3>
         <div class="tw"><table id="dvRuns"></table></div>
         <div class="note">Finding someone makes them a candidate, not a prospect. Research reads their own pages (robots.txt respected) and records only what it can quote; the database checks every quote against the stored page and decides which pages are their own. Nothing here writes, approves or sends an email. Every search, page, Claude read and email lookup counts against the daily budget, which the database enforces.</div>
@@ -416,7 +449,7 @@ ul.claims li.badc b{color:var(--neg)}
 </div>
 <script src="/lib/edgedesk_auth.js?v=20261005a"></script>
 <script src="/lib/edgedesk_admin_session.js?v=20261007a"></script>
-<script src="/admin/growth/outbound.js?v=20261008c"></script>
+<script src="/admin/growth/outbound.js?v=20261008d"></script>
 <script>
 var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
