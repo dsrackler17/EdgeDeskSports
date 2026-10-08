@@ -32,10 +32,13 @@
 --      — auth.uid() must be in owners and still in affiliate_admins. A
 --      subscriber, a partner, an affiliate admin and the service role (which
 --      has no auth.uid()) are refused before anything else runs.
---      TWO EXCEPTIONS, callable by anon only and by nobody signed in: the
---      webhook door, whose first statement checks Resend's signature, and
---      the opt-out door, whose first statement checks a send's 64-hex token.
---      Without its proof each refuses and reads, writes and reveals nothing.
+--      THREE EXCEPTIONS, callable by anon only and by nobody signed in: the
+--      webhook door, whose first statement checks Resend's signature; the
+--      opt-out door, whose first statement checks a send's 64-hex token; and
+--      the scheduled engine's door, whose first statement checks a single-use
+--      ticket the database minted for one scheduled run. Without its proof
+--      each refuses and reads, writes and reveals nothing. A ticket opens
+--      only the engine's own doors (find, read, record, draft), for its run.
 --   5  INVARIANTS ON THE TABLES THEMSELVES (triggers no code path can skip):
 --        an owner row cannot be written by anything that arrived through the
 --          API — not even a security-definer function someone adds later;
@@ -75,7 +78,10 @@
 --          its own words; no name, figure or sentence about them comes from
 --          nowhere; the greeting uses an established first name or none; the
 --          step is due; and a follow-up is SENT only on the configured
---          cadence, after the step before it went out.
+--          cadence, after the step before it went out;
+--        the morning run (pg_cron) finds, researches and drafts on single-use
+--          tickets kept only as hashes; no ticket reaches a door that
+--          approves, edits, sends, suppresses or changes a setting.
 --
 -- BOOTSTRAP (Supabase SQL editor only, AFTER this file has run — see
 -- docs/growth-outbound.md). The address goes in plain, with no < >:
@@ -120,7 +126,7 @@ begin
     'growth_outbound.sends', 'growth_outbound.suppressions', 'growth_outbound.activity',
     'growth_outbound.identifiers', 'growth_outbound.fit_factor_catalog', 'growth_outbound.secrets',
     'growth_outbound.provider_events', 'growth_outbound.research_runs', 'growth_outbound.pages',
-    'growth_outbound.candidates', 'growth_outbound.provider_usage']) t
+    'growth_outbound.candidates', 'growth_outbound.provider_usage', 'growth_outbound.scheduler']) t
   where to_regclass(t) is not null;
   if v_list is null then return; end if;
   loop
@@ -174,6 +180,15 @@ returns text language sql immutable
 set search_path = pg_catalog, pg_temp as $$
   select nullif(split_part(coalesce(p, ''), '@', 2), '');
 $$;
+
+-- Is this a time zone PostgreSQL knows ('America/New_York', 'UTC')?
+create or replace function growth_outbound.valid_timezone(p text)
+returns boolean language plpgsql stable
+set search_path = pg_catalog, pg_temp as $$
+begin
+  if p is null or length(p) > 64 or p !~ '^[A-Za-z][A-Za-z0-9_+/-]*$' then return false; end if;
+  return exists (select 1 from pg_catalog.pg_timezone_names where name = p);
+end $$;
 
 create or replace function growth_outbound.content_hash(p_subject text, p_text text, p_html text)
 returns text language sql immutable
@@ -266,6 +281,39 @@ begin
     raise exception 'outbound owner only' using errcode = 'insufficient_privilege';
   end if;
   return v;
+end $$;
+
+-- A LIVE SCHEDULED RUN for a ticket (NULL: none). The ticket is checked
+-- against its stored hash; the run must be the scheduler's, still running,
+-- the ticket unexpired, and automation still on (turning it off ends every
+-- ticket at once). (plpgsql: resolved when called; the table comes later.)
+create or replace function growth_outbound.ticket_run(p_ticket text)
+returns bigint language plpgsql stable
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  if coalesce(p_ticket, '') !~ '^[0-9a-f]{64}$' then return null; end if;
+  return (select r.id from growth_outbound.research_runs r, growth_outbound.settings s
+           where s.id = 1 and s.automation_enabled
+             and r.ticket_sha256 = encode(sha256(convert_to(p_ticket, 'UTF8')), 'hex')
+             and r.started_by = 'schedule' and r.status = 'running' and r.ticket_expires_at > now());
+end $$;
+
+-- THE ENGINE'S CHECK, the first statement of every door the research and
+-- drafting engine uses (find, read, record, draft): the signed-in owner, as
+-- everywhere — or, inside the scheduled door only, a live ticket. That door
+-- puts the ticket in a transaction-local setting and this checks it AGAIN
+-- against its hash, so a forged setting is worth nothing without the ticket.
+-- The doors that approve, edit, reject, send, suppress or change settings
+-- keep require_owner(): no ticket reaches them.
+create or replace function growth_outbound.require_engine()
+returns uuid language plpgsql stable
+set search_path = pg_catalog, public, pg_temp as $$
+declare v_ticket text := nullif(current_setting('growth_outbound.ticket', true), '');
+begin
+  if v_ticket is not null and auth.uid() is null and growth_outbound.ticket_run(v_ticket) is not null then
+    return null;
+  end if;
+  return growth_outbound.require_owner();
 end $$;
 
 -- THE BOOTSTRAP, made hard to get wrong. Run in the Supabase SQL editor:
@@ -376,6 +424,17 @@ do $c$ begin
     and jsonb_typeof(discovery_config) = 'object');
 end $c$;
 insert into growth_outbound.settings (id) values (1) on conflict (id) do nothing;
+-- THE MORNING RUN (Phase 9): when the scheduler may work, in the owner's own
+-- time zone. It finds, researches and drafts; it never approves or sends.
+alter table growth_outbound.settings add column if not exists automation_timezone text not null default 'America/New_York';
+alter table growth_outbound.settings add column if not exists automation_start_hour int not null default 6;
+alter table growth_outbound.settings add column if not exists automation_hours int not null default 4;
+do $c$ begin
+  alter table growth_outbound.settings drop constraint if exists outbound_settings_automation;
+  alter table growth_outbound.settings add constraint outbound_settings_automation check (
+        automation_start_hour between 0 and 23 and automation_hours between 1 and 12
+    and growth_outbound.valid_timezone(automation_timezone));
+end $c$;
 
 -- What stops a real send right now, in words. Empty means nothing does.
 -- What stops a send, in words. Empty means nothing does. A TEST send (only
@@ -1420,6 +1479,36 @@ do $c$ begin
     and (finished_at is null) = (status = 'running'));
 end $c$;
 create index if not exists research_runs_started_idx on growth_outbound.research_runs (started_at desc);
+-- A SCHEDULED run carries a single-use ticket, kept here only as its sha256:
+-- the ticket itself exists only in the one request pg_net makes to the
+-- engine. An owner's run has none.
+alter table growth_outbound.research_runs add column if not exists ticket_sha256 text;
+alter table growth_outbound.research_runs add column if not exists ticket_expires_at timestamptz;
+do $c$ begin
+  alter table growth_outbound.research_runs drop constraint if exists research_runs_ticket_ck;
+  alter table growth_outbound.research_runs add constraint research_runs_ticket_ck check (
+        (started_by = 'schedule') = (ticket_sha256 is not null)
+    and (ticket_sha256 is null or ticket_sha256 ~ '^[0-9a-f]{64}$')
+    and (ticket_sha256 is null) = (ticket_expires_at is null));
+end $c$;
+create unique index if not exists research_runs_ticket_uk on growth_outbound.research_runs (ticket_sha256) where ticket_sha256 is not null;
+
+-- THE SCHEDULER'S RECORD: one row, what the last tick decided and why.
+create table if not exists growth_outbound.scheduler (
+  id            int primary key default 1,
+  last_tick_at  timestamptz,
+  last_action   text,
+  last_reason   text,
+  last_run_id   bigint references growth_outbound.research_runs (id) on delete restrict,
+  ticks         bigint not null default 0
+);
+do $c$ begin
+  alter table growth_outbound.scheduler drop constraint if exists scheduler_shape_ck;
+  alter table growth_outbound.scheduler add constraint scheduler_shape_ck check (
+    id = 1 and (last_action is null or last_action in ('started', 'idle', 'blocked'))
+    and (last_reason is null or length(last_reason) <= 500));
+end $c$;
+insert into growth_outbound.scheduler (id) values (1) on conflict (id) do nothing;
 
 -- A page as the engine read it: its visible text, its links and its
 -- structured data, exactly what a quote is checked against. Never rewritten.
@@ -2197,7 +2286,7 @@ declare t text;
 begin
   foreach t in array array['owners', 'owner_audit', 'settings', 'prospects', 'evidence', 'drafts',
                            'sends', 'suppressions', 'activity', 'identifiers', 'fit_factor_catalog', 'secrets',
-                           'provider_events', 'research_runs', 'pages', 'candidates', 'provider_usage'] loop
+                           'provider_events', 'research_runs', 'pages', 'candidates', 'provider_usage', 'scheduler'] loop
     execute format('alter table growth_outbound.%I enable row level security', t);
     execute format('drop policy if exists deny_clients on growth_outbound.%I', t);
     -- RESTRICTIVE: ANDed with every permissive policy, so a permissive policy
@@ -2277,7 +2366,7 @@ declare
     'max_test_sends_per_day', 'min_fit_score', 'min_identity_confidence', 'min_role_confidence', 'min_research_confidence',
     'min_email_confidence', 'followup_enabled', 'followup_delay_days', 'final_followup_enabled', 'final_followup_delay_days',
     'sender_name', 'sender_email', 'reply_to_email', 'cta_url', 'business_name', 'postal_address', 'unsubscribe_url_base',
-    'discovery_config'];
+    'discovery_config', 'automation_timezone', 'automation_start_hour', 'automation_hours'];
   v_bad text;
   v_diff jsonb := '{}'::jsonb;
   k text;
@@ -2331,6 +2420,9 @@ begin
       postal_address            = case when p ? 'postal_address' then nullif(btrim(p->>'postal_address'), '') else postal_address end,
       unsubscribe_url_base      = case when p ? 'unsubscribe_url_base' then nullif(btrim(p->>'unsubscribe_url_base'), '') else unsubscribe_url_base end,
       discovery_config          = coalesce(p->'discovery_config', discovery_config),
+      automation_timezone       = coalesce(nullif(btrim(p->>'automation_timezone'), ''), automation_timezone),
+      automation_start_hour     = coalesce((p->>'automation_start_hour')::int, automation_start_hour),
+      automation_hours          = coalesce((p->>'automation_hours')::int, automation_hours),
       updated_at = now(), updated_by = v_owner
     where id = 1
     returning * into v_new;
@@ -2950,7 +3042,7 @@ create or replace function public.growth_outbound_fit_catalog()
 returns jsonb language plpgsql stable security definer
 set search_path = pg_catalog, public, pg_temp as $$
 begin
-  perform growth_outbound.require_owner();
+  perform growth_outbound.require_engine();
   return coalesce((select jsonb_agg(to_jsonb(c) order by c.points desc, c.code) from growth_outbound.fit_factor_catalog c), '[]'::jsonb);
 end $$;
 
@@ -4105,7 +4197,7 @@ begin
     'daily_prospect_target', (select s.daily_prospect_target from growth_outbound.settings s where s.id = 1),
     'candidates', coalesce((select jsonb_object_agg(status, n) from (
         select status, count(*) n from growth_outbound.candidates group by status) x), '{}'::jsonb),
-    'runs', coalesce((select jsonb_agg(to_jsonb(r) - 'requested_by' order by r.started_at desc) from (
+    'runs', coalesce((select jsonb_agg(to_jsonb(r) - 'requested_by' - 'ticket_sha256' order by r.started_at desc) from (
         select * from growth_outbound.research_runs order by started_at desc limit 20) r), '[]'::jsonb));
 end $$;
 
@@ -4153,7 +4245,7 @@ declare
   v_cap int;
   v_used int;
 begin
-  perform growth_outbound.require_owner();
+  perform growth_outbound.require_engine();
   select * into r from growth_outbound.research_runs where id = p_run for update;
   if not found or r.status <> 'running' then return jsonb_build_object('ok', false, 'reason', 'run_not_running'); end if;
   if coalesce(p_provider, '') not in ('search', 'fetch', 'llm', 'email_finder', 'email_verifier') then
@@ -4187,7 +4279,7 @@ declare
   v_bad text;
   pg growth_outbound.pages;
 begin
-  perform growth_outbound.require_owner();
+  perform growth_outbound.require_engine();
   select * into r from growth_outbound.research_runs where id = p_run;
   if not found or r.status <> 'running' then return jsonb_build_object('ok', false, 'reason', 'run_not_running'); end if;
   if r.kind = 'draft' then return jsonb_build_object('ok', false, 'reason', 'wrong_run_kind'); end if;
@@ -4231,7 +4323,7 @@ declare
   n_bad int := 0;
   v_ids bigint[] := '{}';
 begin
-  perform growth_outbound.require_owner();
+  perform growth_outbound.require_engine();
   select * into r from growth_outbound.research_runs where id = p_run;
   if not found or r.status <> 'running' then return jsonb_build_object('ok', false, 'reason', 'run_not_running'); end if;
   if r.kind = 'draft' then return jsonb_build_object('ok', false, 'reason', 'wrong_run_kind'); end if;
@@ -4280,7 +4372,7 @@ create or replace function public.growth_outbound_candidates(p_status text defau
 returns jsonb language plpgsql stable security definer
 set search_path = pg_catalog, public, pg_temp as $$
 begin
-  perform growth_outbound.require_owner();
+  perform growth_outbound.require_engine();
   return coalesce((select jsonb_agg(to_jsonb(c) || jsonb_build_object('full_name', p.full_name, 'prospect_status', p.status)
                                     order by c.last_seen_at desc, c.id desc)
     from (select * from growth_outbound.candidates
@@ -4294,7 +4386,7 @@ create or replace function public.growth_outbound_candidate(p_id bigint)
 returns jsonb language plpgsql stable security definer
 set search_path = pg_catalog, public, pg_temp as $$
 begin
-  perform growth_outbound.require_owner();
+  perform growth_outbound.require_engine();
   return coalesce((select to_jsonb(c) || jsonb_build_object('ok', true) from growth_outbound.candidates c where c.id = p_id),
                   jsonb_build_object('ok', false, 'reason', 'not_found'));
 end $$;
@@ -4306,7 +4398,7 @@ returns jsonb language plpgsql security definer
 set search_path = pg_catalog, public, pg_temp as $$
 declare c growth_outbound.candidates;
 begin
-  perform growth_outbound.require_owner();
+  perform growth_outbound.require_engine();
   select * into c from growth_outbound.candidates where id = p_id for update;
   if not found then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
   if coalesce(p_status, '') not in ('new', 'dismissed', 'not_a_fit', 'failed') then
@@ -4351,7 +4443,7 @@ declare
   v_ok boolean;
   v_marked int := 0;
 begin
-  perform growth_outbound.require_owner();
+  perform growth_outbound.require_engine();
   select * into r from growth_outbound.research_runs where id = p_run;
   if not found or r.status <> 'running' then return jsonb_build_object('ok', false, 'reason', 'run_not_running'); end if;
   if r.kind = 'draft' then return jsonb_build_object('ok', false, 'reason', 'wrong_run_kind'); end if;
@@ -4458,7 +4550,7 @@ returns jsonb language plpgsql security definer
 set search_path = pg_catalog, public, pg_temp as $$
 declare r growth_outbound.research_runs;
 begin
-  perform growth_outbound.require_owner();
+  perform growth_outbound.require_engine();
   select * into r from growth_outbound.research_runs where id = p_run for update;
   if not found or r.status <> 'running' then return jsonb_build_object('ok', false, 'reason', 'run_not_running'); end if;
   if coalesce(p_status, '') not in ('done', 'failed') then return jsonb_build_object('ok', false, 'reason', 'invalid_status'); end if;
@@ -4471,7 +4563,7 @@ begin
    where id = p_run returning * into r;
   perform growth_outbound.log('research_' || r.kind || '_' || p_status, null, 'research_run', p_run::text,
     r.counts || jsonb_build_object('error', r.error));
-  return jsonb_build_object('ok', true, 'run', to_jsonb(r) - 'requested_by');
+  return jsonb_build_object('ok', true, 'run', to_jsonb(r) - 'requested_by' - 'ticket_sha256');
 end $$;
 
 -- ── the drafting engine (Phase 8): software may DRAFT, never approve or send ─
@@ -4635,7 +4727,7 @@ declare
   s growth_outbound.settings;
   v_problem text;
 begin
-  perform growth_outbound.require_owner();
+  perform growth_outbound.require_engine();
   if not exists (select 1 from growth_outbound.prospects where id = p_prospect) then
     return jsonb_build_object('ok', false, 'reason', 'not_found');
   end if;
@@ -4684,7 +4776,7 @@ declare
   c jsonb;
   x text;
 begin
-  perform growth_outbound.require_owner();
+  perform growth_outbound.require_engine();
   select * into r from growth_outbound.research_runs where id = p_run for update;
   if not found or r.status <> 'running' then return jsonb_build_object('ok', false, 'reason', 'run_not_running'); end if;
   if r.kind <> 'draft' then return jsonb_build_object('ok', false, 'reason', 'wrong_run_kind'); end if;
@@ -4797,7 +4889,7 @@ returns jsonb language plpgsql security definer
 set search_path = pg_catalog, public, pg_temp as $$
 declare r growth_outbound.research_runs;
 begin
-  perform growth_outbound.require_owner();
+  perform growth_outbound.require_engine();
   select * into r from growth_outbound.research_runs where id = p_run;
   if not found or r.status <> 'running' then return jsonb_build_object('ok', false, 'reason', 'run_not_running'); end if;
   if r.kind <> 'draft' then return jsonb_build_object('ok', false, 'reason', 'wrong_run_kind'); end if;
@@ -4817,7 +4909,7 @@ create or replace function public.growth_outbound_drafting_overview()
 returns jsonb language plpgsql stable security definer
 set search_path = pg_catalog, public, pg_temp as $$
 begin
-  perform growth_outbound.require_owner();
+  perform growth_outbound.require_engine();
   return (
     with due as (select x.prospect_id, x.sequence_number, x.n from growth_outbound.drafting_due() with ordinality x(prospect_id, sequence_number, n))
     select jsonb_build_object(
@@ -4833,8 +4925,252 @@ begin
       'cadence', (select jsonb_build_object('followup_enabled', s.followup_enabled, 'followup_delay_days', s.followup_delay_days,
                     'final_followup_enabled', s.final_followup_enabled, 'final_followup_delay_days', s.final_followup_delay_days)
                     from growth_outbound.settings s where s.id = 1),
-      'runs', coalesce((select jsonb_agg(to_jsonb(r) - 'requested_by' order by r.started_at desc) from (
+      'runs', coalesce((select jsonb_agg(to_jsonb(r) - 'requested_by' - 'ticket_sha256' order by r.started_at desc) from (
           select * from growth_outbound.research_runs where kind = 'draft' order by started_at desc limit 10) r), '[]'::jsonb)));
+end $$;
+
+-- ── the morning run (Phase 9): software may find, research and draft on a
+--    schedule; it never approves or sends ────────────────────────────────────
+--
+--   pg_cron calls growth_outbound.schedule_tick() every few minutes
+--   (supabase/growth_outbound_cron.sql). Each tick asks schedule_plan() for
+--   the ONE next step of today's morning run, and, if there is one, starts a
+--   run for it with a single-use ticket and asks the engine (the research or
+--   drafting Edge Function) to do it, through pg_net. The engine presents the
+--   ticket to growth_outbound_scheduled, the only door a ticket opens, and
+--   that door lets it reach only the engine doors that run's kind needs.
+--   No credential is stored anywhere: the ticket exists only in that one
+--   request, its hash here, for 15 minutes, while the run is running and
+--   automation is on.
+
+-- WHAT THE MORNING RUN DOES NEXT, in the owner's time zone (one step a tick):
+--   1  search the saved searches, once a day;
+--   2  research the next new candidate, up to daily_prospect_target a day;
+--   3  draft for whoever is due, a few at a time, up to the daily send cap a
+--      day (more drafts than can be sent would only wait).
+-- It stops for the day after three scheduled runs in a row fail, or after 60
+-- runs, and never starts while a scheduled run is still going.
+create or replace function growth_outbound.schedule_plan(p_now timestamptz default now())
+returns jsonb language plpgsql stable
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  s growth_outbound.settings;
+  v_local timestamp;
+  v_day_start timestamptz;
+  v_hour int;
+  v_in boolean;
+  v_runs int;
+  v_disc int;
+  v_res int;
+  v_drafted int;
+  v_new int;
+  v_due int;
+  v_step jsonb;
+  v_reason text;
+  v_today jsonb;
+begin
+  select * into s from growth_outbound.settings where id = 1;
+  v_local := p_now at time zone s.automation_timezone;
+  v_hour := extract(hour from v_local)::int;
+  v_in := ((v_hour - s.automation_start_hour + 24) % 24) < s.automation_hours;
+  v_day_start := date_trunc('day', v_local) at time zone s.automation_timezone;
+  select count(*), count(*) filter (where kind = 'discover'), count(*) filter (where kind = 'research')
+    into v_runs, v_disc, v_res
+    from growth_outbound.research_runs where started_by = 'schedule' and started_at >= v_day_start;
+  select count(*) into v_drafted from growth_outbound.drafts d join growth_outbound.research_runs r on r.id = d.run_id
+   where r.started_by = 'schedule' and r.started_at >= v_day_start;
+  select count(*) into v_new from growth_outbound.candidates where status = 'new';
+  select count(*) into v_due from growth_outbound.drafting_due();
+  v_today := jsonb_build_object('day', v_local::date, 'runs', v_runs, 'searched', v_disc > 0, 'researched', v_res,
+    'research_target', s.daily_prospect_target, 'drafted', v_drafted, 'draft_cap', s.max_sends_per_day,
+    'new_candidates', v_new, 'due', v_due);
+
+  if not s.automation_enabled then
+    v_reason := 'automation is off';
+  elsif not v_in then
+    v_reason := format('outside the morning window (%s:00, %s hours, %s)', s.automation_start_hour, s.automation_hours, s.automation_timezone);
+  elsif exists (select 1 from growth_outbound.research_runs where started_by = 'schedule' and status = 'running') then
+    v_reason := 'a scheduled run is still going';
+  elsif (select count(*) from growth_outbound.research_runs where status = 'running') >= 3 then
+    v_reason := 'three runs are already going';
+  elsif v_runs >= 60 then
+    v_reason := 'the day''s limit of 60 scheduled runs is reached';
+  elsif (select count(*) = 3 and bool_and(x.status = 'failed') from (
+           select status from growth_outbound.research_runs
+            where started_by = 'schedule' and started_at >= v_day_start and status <> 'running'
+            order by id desc limit 3) x) then
+    v_reason := 'the last three scheduled runs failed, so nothing more today (see Activity)';
+  elsif jsonb_typeof(s.discovery_config->'queries') = 'array' and jsonb_array_length(s.discovery_config->'queries') > 0 and v_disc = 0 then
+    v_step := jsonb_build_object('kind', 'discover', 'fn', 'growth_outbound_research', 'input', jsonb_build_object('saved', true));
+  elsif v_res < s.daily_prospect_target and v_new > 0 then
+    v_step := jsonb_build_object('kind', 'research', 'fn', 'growth_outbound_research', 'input', jsonb_build_object('next', true));
+  elsif v_drafted < s.max_sends_per_day and v_due > 0
+        and not exists (select 1 from growth_outbound.research_runs r
+                         where r.started_by = 'schedule' and r.kind = 'draft' and r.started_at > p_now - interval '30 minutes'
+                           and coalesce((r.counts->>'drafted')::int, 0) = 0) then
+    v_step := jsonb_build_object('kind', 'draft', 'fn', 'growth_outbound_draft',
+      'input', jsonb_build_object('next', least(3, s.max_sends_per_day - v_drafted)));
+  else
+    v_reason := 'nothing left to do this morning';
+  end if;
+  return jsonb_build_object('step', v_step, 'reason', v_reason, 'local_time', to_char(v_local, 'YYYY-MM-DD HH24:MI'),
+    'timezone', s.automation_timezone, 'in_window', v_in, 'today', v_today);
+end $$;
+
+-- ONE TICK (pg_cron, every few minutes; never through the API). Marks runs
+-- that never finished as failed, asks the plan, and for a step: starts the
+-- run with a fresh single-use ticket and posts it to the engine through
+-- pg_net (sent once this transaction commits). Says what it decided in the
+-- scheduler's record either way.
+create or replace function growth_outbound.schedule_tick(p_functions_base text, p_now timestamptz default now())
+returns jsonb language plpgsql
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_plan jsonb;
+  v_step jsonb;
+  v_ticket text;
+  v_run bigint;
+  v_base text := rtrim(btrim(coalesce(p_functions_base, '')), '/');
+  v_why text;
+begin
+  if growth_outbound.api_origin() then
+    raise exception 'the scheduler runs inside the database (pg_cron) only' using errcode = 'insufficient_privilege';
+  end if;
+  update growth_outbound.research_runs set status = 'failed', finished_at = now(), error = 'never finished (the function stopped)'
+   where status = 'running' and started_at < now() - interval '30 minutes';
+  v_plan := growth_outbound.schedule_plan(p_now);
+  v_step := v_plan->'step';
+  if v_step is null or jsonb_typeof(v_step) <> 'object' then
+    update growth_outbound.scheduler set last_tick_at = now(), last_action = 'idle', last_reason = left(v_plan->>'reason', 500), ticks = ticks + 1 where id = 1;
+    return jsonb_build_object('action', 'idle', 'reason', v_plan->>'reason');
+  end if;
+  if v_base !~ '^https://[a-z0-9-]+\.supabase\.co/functions/v1$' then
+    v_why := 'the functions address is not a Supabase project''s (https://<project>.supabase.co/functions/v1/)';
+  elsif to_regprocedure('net.http_post(text,jsonb,jsonb,jsonb,integer)') is null then
+    v_why := 'pg_net is not installed (Database → Extensions)';
+  end if;
+  if v_why is not null then
+    update growth_outbound.scheduler set last_tick_at = now(), last_action = 'blocked', last_reason = v_why, ticks = ticks + 1 where id = 1;
+    return jsonb_build_object('action', 'blocked', 'reason', v_why);
+  end if;
+  -- 256 random bits; only its hash is kept
+  v_ticket := replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '');
+  insert into growth_outbound.research_runs (kind, started_by, requested_by, input, ticket_sha256, ticket_expires_at)
+  values (v_step->>'kind', 'schedule', null, (v_step->'input') || jsonb_build_object('scheduled', true),
+          encode(sha256(convert_to(v_ticket, 'UTF8')), 'hex'), now() + interval '15 minutes')
+  returning id into v_run;
+  execute 'select net.http_post(url := $1, body := $2, headers := $3, timeout_milliseconds := $4)'
+    using v_base || '/' || (v_step->>'fn'), jsonb_build_object('action', 'scheduled', 'ticket', v_ticket),
+          jsonb_build_object('content-type', 'application/json'), 150000;
+  update growth_outbound.scheduler set last_tick_at = now(), last_action = 'started', last_run_id = v_run,
+         last_reason = left((v_step->>'kind') || ' (run ' || v_run || ')', 500), ticks = ticks + 1 where id = 1;
+  perform growth_outbound.log('schedule_started', null, 'research_run', v_run::text,
+    jsonb_build_object('kind', v_step->>'kind', 'input', v_step->'input', 'today', v_plan->'today'));
+  return jsonb_build_object('action', 'started', 'run_id', v_run, 'kind', v_step->>'kind');
+end $$;
+
+-- THE THIRD PUBLIC DOOR: the scheduled engine's. Its FIRST statement checks
+-- a ticket the database itself minted for one scheduled run. Without a live
+-- one: refused, nothing read or written. With one: only the doors that
+-- run's kind needs, and only for that run — never one that approves, edits,
+-- rejects, sends, suppresses or changes settings (those check the signed-in
+-- owner, and a ticket is nobody).
+create or replace function public.growth_outbound_scheduled(p_ticket text, p_door text, p_args jsonb default '{}'::jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_run bigint;
+  r growth_outbound.research_runs;
+  a jsonb := coalesce(p_args, '{}'::jsonb);
+  v_allowed text[];
+  v jsonb;
+begin
+  v_run := growth_outbound.ticket_run(p_ticket);
+  if v_run is null then return jsonb_build_object('ok', false, 'reason', 'invalid_ticket'); end if;
+  select * into r from growth_outbound.research_runs where id = v_run;
+  v_allowed := array['plan', 'growth_outbound_research_spend', 'growth_outbound_research_finish']
+    || case r.kind
+         when 'discover' then array['growth_outbound_candidates_record']
+         when 'research' then array['growth_outbound_candidates', 'growth_outbound_candidate', 'growth_outbound_candidate_set',
+                                    'growth_outbound_page_record', 'growth_outbound_research_ingest', 'growth_outbound_fit_catalog']
+         when 'draft' then array['growth_outbound_drafting_overview', 'growth_outbound_draft_context',
+                                 'growth_outbound_draft_propose', 'growth_outbound_draft_gave_up']
+         else '{}'::text[] end;
+  if coalesce(p_door, '') <> all (v_allowed) then
+    return jsonb_build_object('ok', false, 'reason', 'not_allowed', 'detail', 'a scheduled ' || r.kind || ' run may not call that');
+  end if;
+  if jsonb_typeof(a) <> 'object' or (a ? 'p_run' and (a->>'p_run') is distinct from v_run::text) then
+    return jsonb_build_object('ok', false, 'reason', 'not_allowed', 'detail', 'a ticket acts for its own run only');
+  end if;
+  if p_door = 'plan' then
+    return jsonb_build_object('ok', true, 'run_id', r.id, 'kind', r.kind, 'input', r.input, 'budget', growth_outbound.research_budget(),
+      'queries', coalesce((select x.discovery_config->'queries' from growth_outbound.settings x where x.id = 1), '[]'::jsonb),
+      'shared_sites', to_jsonb(growth_outbound.builtin_shared_sites())
+                      || coalesce((select x.discovery_config->'shared_sites' from growth_outbound.settings x where x.id = 1), '[]'::jsonb));
+  end if;
+  perform set_config('growth_outbound.ticket', p_ticket, true);
+  v := case p_door
+    when 'growth_outbound_research_spend' then
+      public.growth_outbound_research_spend(v_run, a->>'p_provider', coalesce((a->>'p_n')::int, 1))
+    when 'growth_outbound_research_finish' then
+      public.growth_outbound_research_finish(v_run, a->>'p_status', coalesce(a->'p_counts', '{}'::jsonb), a->>'p_error')
+    when 'growth_outbound_candidates_record' then
+      public.growth_outbound_candidates_record(v_run, a->'p_items')
+    when 'growth_outbound_candidates' then
+      public.growth_outbound_candidates(coalesce(a->>'p_status', 'new'), coalesce((a->>'p_limit')::int, 50))
+    when 'growth_outbound_candidate' then
+      public.growth_outbound_candidate((a->>'p_id')::bigint)
+    when 'growth_outbound_candidate_set' then
+      public.growth_outbound_candidate_set((a->>'p_id')::bigint, a->>'p_status', a->>'p_reason')
+    when 'growth_outbound_page_record' then
+      public.growth_outbound_page_record(v_run, a->'p')
+    when 'growth_outbound_research_ingest' then
+      public.growth_outbound_research_ingest(v_run, (a->>'p_candidate')::bigint, (a->>'p_prospect')::uuid, a->>'p_collector', a->'p')
+    when 'growth_outbound_fit_catalog' then
+      public.growth_outbound_fit_catalog()
+    when 'growth_outbound_drafting_overview' then
+      public.growth_outbound_drafting_overview()
+    when 'growth_outbound_draft_context' then
+      public.growth_outbound_draft_context((a->>'p_prospect')::uuid, coalesce((a->>'p_sequence')::int, 1))
+    when 'growth_outbound_draft_propose' then
+      public.growth_outbound_draft_propose(v_run, (a->>'p_prospect')::uuid, a->'p')
+    when 'growth_outbound_draft_gave_up' then
+      public.growth_outbound_draft_gave_up(v_run, (a->>'p_prospect')::uuid, (a->>'p_sequence')::int, coalesce(a->'p_reasons', '[]'::jsonb))
+  end;
+  perform set_config('growth_outbound.ticket', '', true);
+  return v;
+end $$;
+
+-- THE MORNING RUN, for the console: on or off, the window in the owner's
+-- time zone, what it will do next and why, today's progress, whether the
+-- scheduler is ticking (and what it needs if not), and the scheduled runs.
+create or replace function public.growth_outbound_automation_overview()
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  s growth_outbound.settings;
+  sc growth_outbound.scheduler;
+  v_job boolean := null;
+begin
+  perform growth_outbound.require_owner();
+  select * into s from growth_outbound.settings where id = 1;
+  select * into sc from growth_outbound.scheduler where id = 1;
+  if to_regclass('cron.job') is not null then
+    begin
+      execute 'select exists (select 1 from cron.job where jobname = ''growth_outbound_tick'' and active)' into v_job;
+    exception when others then v_job := null;
+    end;
+  end if;
+  return jsonb_build_object(
+    'enabled', s.automation_enabled, 'timezone', s.automation_timezone, 'start_hour', s.automation_start_hour, 'hours', s.automation_hours,
+    'plan', growth_outbound.schedule_plan(),
+    'scheduler', jsonb_build_object('last_tick_at', sc.last_tick_at, 'last_action', sc.last_action, 'last_reason', sc.last_reason,
+                   'last_run_id', sc.last_run_id, 'ticks', sc.ticks,
+                   'ticking', sc.last_tick_at is not null and sc.last_tick_at > now() - interval '15 minutes'),
+    'pg_net', to_regprocedure('net.http_post(text,jsonb,jsonb,jsonb,integer)') is not null,
+    'cron_job', v_job,
+    'runs', coalesce((select jsonb_agg(to_jsonb(r) - 'requested_by' - 'ticket_sha256' - 'ticket_expires_at' order by r.started_at desc) from (
+        select * from growth_outbound.research_runs where started_by = 'schedule' order by started_at desc limit 15) r), '[]'::jsonb));
 end $$;
 
 -- Every prospect re-evaluated under the rules in this file (a re-run is how a
@@ -4858,10 +5194,11 @@ begin
   for f in select p.oid::regprocedure from pg_proc p
             where p.pronamespace = 'public'::regnamespace and p.proname like 'growth\_outbound\_%' loop
     execute format('revoke all on function %s from public, anon, authenticated, service_role', f);
-    -- TWO PUBLIC DOORS, each refusing anything without its own proof (Resend's
-    -- signature; a send's opt-out token). Every other door: signed-in callers,
-    -- and then only an owner gets past its first statement.
-    if f::text like 'growth_outbound_webhook(%' or f::text like 'growth_outbound_optout(%' then
+    -- THREE PUBLIC DOORS, each refusing anything without its own proof (Resend's
+    -- signature; a send's opt-out token; a scheduled run's ticket). Every other
+    -- door: signed-in callers, and then only an owner gets past its first
+    -- statement.
+    if f::text like 'growth_outbound_webhook(%' or f::text like 'growth_outbound_optout(%' or f::text like 'growth_outbound_scheduled(%' then
       execute format('grant execute on function %s to anon', f);
     else
       execute format('grant execute on function %s to authenticated', f);
@@ -4880,7 +5217,7 @@ select 1 as step, 'the outbound tables exist' as item,
   case when (select count(*) from pg_tables where schemaname = 'growth_outbound' and tablename in
     ('owners', 'owner_audit', 'settings', 'prospects', 'evidence', 'drafts', 'sends', 'suppressions', 'activity',
      'identifiers', 'fit_factor_catalog', 'secrets', 'provider_events', 'research_runs', 'pages', 'candidates',
-     'provider_usage')) = 17
+     'provider_usage', 'scheduler')) = 18
        then 'ok' else 'CHECK THIS — a table is missing' end as outcome
 union all
 select 2, 'the schema is private: no client role may even look inside it',
@@ -4914,7 +5251,7 @@ select 6, 'every outbound door is security definer with a pinned search_path, an
   case when not exists (
     select 1 from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname like 'growth\_outbound\_%'
        and (not p.prosecdef or p.proconfig is null or not exists (select 1 from unnest(p.proconfig) c where c like 'search_path=%')
-            or (has_function_privilege('anon', p.oid, 'execute') and p.proname not in ('growth_outbound_webhook', 'growth_outbound_optout'))
+            or (has_function_privilege('anon', p.oid, 'execute') and p.proname not in ('growth_outbound_webhook', 'growth_outbound_optout', 'growth_outbound_scheduled'))
             or has_function_privilege('service_role', p.oid, 'execute')))
        then 'ok' else 'CHECK THIS' end
 union all
@@ -4994,12 +5331,12 @@ select 20, 'review queue: ' || (select count(*) from growth_outbound.drafts wher
   || (select count(*) from growth_outbound.drafts where status = 'approved')::text || ' approved and not sent',
   'ok'
 union all
-select 23, 'two public doors and only two: the webhook (needs Resend''s signature) and the opt-out (needs a send''s token)',
+select 23, 'three public doors and only three: the webhook (needs Resend''s signature), the opt-out (needs a send''s token) and the scheduled engine''s (needs a run''s ticket)',
   case when (select string_agg(p.proname, ',' order by p.proname) from pg_proc p
               where p.pronamespace = 'public'::regnamespace and p.proname like 'growth\_outbound\_%'
-                and has_function_privilege('anon', p.oid, 'execute')) = 'growth_outbound_optout,growth_outbound_webhook'
+                and has_function_privilege('anon', p.oid, 'execute')) = 'growth_outbound_optout,growth_outbound_scheduled,growth_outbound_webhook'
         and not exists (select 1 from pg_proc p where p.pronamespace = 'public'::regnamespace
-                          and p.proname in ('growth_outbound_webhook', 'growth_outbound_optout')
+                          and p.proname in ('growth_outbound_webhook', 'growth_outbound_optout', 'growth_outbound_scheduled')
                           and (has_function_privilege('authenticated', p.oid, 'execute') or has_function_privilege('service_role', p.oid, 'execute')))
        then 'ok' else 'CHECK THIS' end
 union all
@@ -5055,6 +5392,27 @@ select 31, 'drafting: ' || (select count(*) from growth_outbound.drafting_due() 
   || coalesce((select (v->>'drafts') || ' written, ' || (v->>'approved_as_written') || ' approved as written, '
                       || (v->>'approved_after_edit') || ' after an edit, ' || (v->>'rejected') || ' rejected'
                  from jsonb_each(growth_outbound.drafting_stats()) x(k, v) where k = 'engine'), 'none'),
+  'ok'
+union all
+select 32, 'the morning run finds, researches and drafts on a ticket that opens only the engine''s doors; it cannot approve, edit, send, suppress or change settings',
+  case when to_regprocedure('public.growth_outbound_scheduled(text,text,jsonb)') is not null
+        and pg_get_functiondef('public.growth_outbound_scheduled(text,text,jsonb)'::regprocedure)
+            !~ '(approve|send_claim|send_result|draft_edit|draft_reject|draft_create|settings_update|suppress|prospect_set_status|research_begin)'
+        and not exists (select 1 from pg_proc p where p.pronamespace = 'public'::regnamespace
+                          and p.proname in ('growth_outbound_draft_approve', 'growth_outbound_drafts_approve_batch', 'growth_outbound_draft_unapprove',
+                                            'growth_outbound_draft_edit', 'growth_outbound_draft_reject', 'growth_outbound_draft_create',
+                                            'growth_outbound_send_claim', 'growth_outbound_send_result', 'growth_outbound_settings_update',
+                                            'growth_outbound_suppress', 'growth_outbound_prospect_set_status', 'growth_outbound_research_begin')
+                          and pg_get_functiondef(p.oid) like '%require_engine%')
+        and growth_outbound.ticket_run(repeat('0', 64)) is null and growth_outbound.ticket_run('not a ticket') is null
+        and exists (select 1 from pg_constraint where conname = 'research_runs_ticket_ck')
+       then 'ok' else 'CHECK THIS' end
+union all
+select 33, 'morning run: ' || (select case when automation_enabled then 'ON' else 'off' end || ', ' || automation_start_hour || ':00 for '
+                                        || automation_hours || ' h, ' || automation_timezone from growth_outbound.settings where id = 1)
+  || '; last tick ' || coalesce((select to_char(last_tick_at, 'YYYY-MM-DD HH24:MI') || ' UTC (' || last_action || ': ' || coalesce(last_reason, '') || ')'
+                                   from growth_outbound.scheduler where id = 1 and last_tick_at is not null),
+                                'never (run supabase/growth_outbound_cron.sql to schedule it)'),
   'ok'
 union all
 select 18, 'prospects by status: ' || coalesce((select string_agg(status || ' ' || n, ', ' order by status)

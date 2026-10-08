@@ -908,7 +908,97 @@ A prospect also has **Research again**. If the function is not deployed, the pag
 - **Send anything:** drafts wait for you.
 - **Learn beyond your words:** it reads your reasons for rejecting its drafts. Measuring which drafts get replies (attribution) is Phase 10.
 
+## Phase 9: the morning run
+
+**Software may find, research, score, verify, draft and queue on a schedule. It may not approve or send.** The morning run does by itself what the buttons do. Every draft still waits in the review queue for you.
+
+### A morning
+
+Turn on **Automation** (Outbound settings → Mode) and set your window (Morning run: your time zone, the hour it starts, for how many hours; by default 06:00 for 4 hours, America/New_York). Every five minutes the database's own clock (pg_cron) runs `growth_outbound.schedule_tick()`. Inside your window it takes **one step**:
+
+1. **search** your saved searches, once a day;
+2. **research** the next new candidate, up to "Prospects to prepare per day";
+3. **draft** for whoever is due (follow-ups first), three at a time, up to the daily send cap a day: more drafts than can be sent would only wait.
+
+**Its limits:**
+- never two steps at once;
+- a step that never finished is marked failed after 30 minutes;
+- after three failed steps in a row it stops for the day; 60 steps a day at most;
+- a drafting step that wrote nothing waits half an hour before another;
+- everything counts against the same daily provider budget as your own clicks.
+
+### How a step runs with nobody signed in
+
+**No credential is stored anywhere for it:** no service-role key, no password, no API token.
+
+1. **The ticket.** For each step the tick starts a run with a single-use ticket (256 random bits) and keeps only its sha256. pg_net posts the ticket, once, to the research or drafting function.
+2. **The third public door.** The function presents the ticket to `growth_outbound_scheduled`, whose first statement checks it. The run must be the scheduler's and still running, the ticket under 15 minutes old, and automation still on. **Turning automation off ends every live ticket at once.**
+3. **Only the engine's own doors, only for that run.**
+   - A search run records candidates.
+   - A research run reads the candidate queue, stores pages and records what it can quote.
+   - A drafting run reads the context and proposes drafts.
+
+   A ticket never reaches a door that approves, edits, rejects, sends, suppresses, changes settings or starts another run.
+4. **Checked twice.** Those engine doors begin with `require_engine()`: the signed-in owner as before, or, inside the ticket door only, the ticket, checked again against its hash, so a forged setting is worthless. Every door that approves, edits, sends, suppresses or changes settings still begins with `require_owner()`, and a ticket is nobody.
+5. **What to do comes from the database** (the run's plan), never from the request.
+6. **On the record as the system's,** never as yours (Activity).
+
+### The console
+
+**Morning run** (new panel, above the review queue):
+- on or off, and the window in your time zone;
+- whether the clock is ticking (if not: run `supabase/growth_outbound_cron.sql`), and whether pg_net is installed;
+- the next step, or why there is none;
+- today's progress: searched, researched of the target, drafted of the cap, new candidates, due;
+- the morning run's steps, and why one failed.
+
+**Outbound settings** gains a **Morning run** group (time zone, start hour, hours). Turning Automation on says what it does, and that it never approves or sends, and asks first. The runs table under Discover and research marks the morning run's steps.
+
+### New in the database
+
+- **Settings:** `automation_timezone`, `automation_start_hour`, `automation_hours`, checked by the table: a real time zone, 0–23, 1–12.
+- **`research_runs`:** `ticket_sha256` and `ticket_expires_at`. A scheduled run has a ticket hash; an owner's run never does. No listing ever shows a hash.
+- **`growth_outbound.scheduler`** (one row): the last tick, what it decided and why. Eighteen tables.
+- **Functions:** `schedule_plan`, `schedule_tick` (pg_cron only; refused through the API), `ticket_run`, `require_engine`.
+- **Doors:**
+  - `growth_outbound_scheduled` (anon only; the third public door);
+  - `growth_outbound_automation_overview` (owner).
+- **Report rows 32–33.** Row 23 now counts three public doors.
+
+**`supabase/growth_outbound_cron.sql`** (new): the clock. One pg_cron job, every five minutes, calling the tick with this project's functions address and no key. Running it again replaces the job.
+
+### Deploy (in order)
+
+1. Merge the Phase 9 PR.
+2. In the SQL editor, run `supabase/growth_outbound.sql`. Report rows 1–33 should say `ok`.
+3. **Deploy the functions** (research and drafting changed): Actions → **Deploy outbound Edge Functions**.
+4. **Enable pg_cron and pg_net** (Database → Extensions). Then run **`supabase/growth_outbound_cron.sql`** in the SQL editor; its report should say `ok`.
+5. In the console: set your time zone and window, and turn on **Automation**. Within five minutes the Morning run panel says "Clock: last tick …".
+
+### Tests
+
+| Suite | Checks | What it proves |
+|---|---|---|
+| `tools/growth/outbound_schedule_sql.test.js` (new) | 112 | **the tick** (off, outside the window, your time zone, a window across midnight, your day not UTC's); **the ticket** (posted once with nothing else, only its hash kept, nowhere in plain, 15 minutes); **the door** (refused without a live ticket and nothing written; only its run's kind's doors, never approve, edit, send, suppress, settings or begin; its own run only; a forged setting, the real ticket in a signed-in non-owner's hands, and the check alone; dead when the run finishes, expires, or automation goes off); **the steps** (search once, research up to the target, drafts up to the cap even with more due, half an hour after a drafting step wrote nothing); **failures** (30 minutes, three in a row, 60 a day); **blocked** (no pg_net, not a Supabase address); the overview (never a hash) and owner only; the settings; **the cron file** (one job, every five minutes, no key, replaced when run again). **Mutation-checked:** 42 deliberate breaks, every one caught. |
+| `tools/growth/outbound_research.test.js` | 99 | adds the morning run against the real SQL: a ticket the real tick minted, no owner token, every call through the ticket door as anon; the saved search; the next candidate read; the target met; a ticket used twice; a drafting run sent here; a ticket nobody issued; a malformed one never reaching the database; automation turned off; an empty queue; no search key; a token sent along changing nothing. |
+| `tools/growth/outbound_draft.test.js` | 76 | adds the morning run: drafts written with no owner token, as many as the database planned (the cap, though more are due); marked with the run; a search run sent here; malformed and unissued tickets. |
+| (both functions) | | **Mutation-checked:** 17 deliberate breaks to the scheduled mode, every one caught. |
+| `tools/growth/outbound_console.e2e.js` | 208 | adds sections 48–52: the Morning run panel, turning it on (asks), the window settings, no clock or pg_net, before the Phase 9 SQL |
+| `tools/growth/outbound_sql.test.js` | 416 | eighteen tables; three public doors; **only the engine's doors accept a ticket** (checked statically, door by door) |
+| earlier suites | all passing | |
+
+### Rollback
+
+- **Pause it:** turn Automation off. Every live ticket stops working at once; the clock keeps ticking and does nothing.
+- **Stop the clock:** `select cron.unschedule('growth_outbound_tick');`
+- **The database:** additive. The morning run's steps are runs like any other, kept on the record.
+
+### What Phase 9 does not do
+
+- **Approve or send.** Ever. Those stay yours, checked by the database.
+- **Email you a summary.** The Morning run panel and the review queue are the summary.
+- **Measure what works.** Replies, conversions and attribution by source, step and writer are Phase 10.
+
 ## Next
 
-- **Phase 9:** the scheduled morning run (find, research, score, draft, queue; never approve or send).
 - **Phase 10:** analytics and attribution.

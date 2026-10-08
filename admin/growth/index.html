@@ -226,6 +226,15 @@ ul.claims li.badc b{color:var(--neg)}
         <div class="note">Nothing on this page sends anything. A message can only go out once you have approved its draft and pressed send yourself, and the database refuses every other path.</div>
       </div>
 
+      <h2>Morning run</h2>
+      <div class="card">
+        <div class="chips" id="amChips"></div>
+        <div class="kpis" id="amToday" style="margin-top:12px"></div>
+        <h3>The morning run's steps</h3>
+        <div class="tw"><table id="amRuns"></table></div>
+        <div class="note">When Automation is on, the database's own clock (pg_cron) takes one step every few minutes inside your window: first your saved searches, then the next new candidates (up to "Prospects to prepare per day"), then drafts for whoever is due (up to the daily send cap). Each step runs on a single-use ticket that opens only the engine's own doors. It never approves and never sends: every draft waits for you in the review queue. It stops for the day after three failed steps in a row.</div>
+      </div>
+
       <h2>Review queue</h2>
       <div class="card">
         <div class="row" style="align-items:center">
@@ -371,7 +380,7 @@ ul.claims li.badc b{color:var(--neg)}
 </div>
 <script src="/lib/edgedesk_auth.js?v=20261005a"></script>
 <script src="/lib/edgedesk_admin_session.js?v=20261007a"></script>
-<script src="/admin/growth/outbound.js?v=20261007g"></script>
+<script src="/admin/growth/outbound.js?v=20261008a"></script>
 <script>
 var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";

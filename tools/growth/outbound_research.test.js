@@ -39,6 +39,8 @@ const { pathToFileURL } = require('node:url');
 const PG = require(path.join(__dirname, '..', 'personal', '_pg.js'));
 const INLINE = require(path.join(__dirname, 'inline_outbound_auth.js'));
 const { rpcShim, jres } = require(path.join(__dirname, '_rpc_shim.js'));
+const MORNING = require(path.join(__dirname, '_morning.js'));
+const crypto = require('crypto');
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -366,6 +368,69 @@ const webCalls = (host) => LOG.filter((e) => e.host === host);
     const longLine = 'x'.repeat(10) + ' ' + '{"@type":"Person","name":"Lee Live","jobTitle":"Modeler"}'.repeat(10);
     const win = M.excerptAround(longLine, 'Lee Live');
     chk('R a quote window from a long line is cut where words end, so it is still a quote', win.length < 400 && win.includes('Lee Live') && M.quoteIn(win, longLine), win);
+
+    /* ══ M. THE MORNING RUN (Phase 9): a ticket, no owner ═════════════ */
+    MORNING.install(db);
+    one(`update growth_outbound.research_runs set status = 'done', finished_at = now() where status = 'running';
+         update growth_outbound.settings set discovery_config = '{"queries": ["cfb ratings room"]}', daily_prospect_target = 1 where id = 1;`);
+    BRAVE = BRAVE_OK([{ url: 'https://ratingsroom.net/', title: 'Ratings Room', description: 'CFB ratings' }]);
+    let m = MORNING.tick(db);
+    chk('M the morning starts with the saved searches, posted to this function with a ticket', m.r.kind === 'discover' && m.fn === 'growth_outbound_research'
+      && /^[0-9a-f]{64}$/.test(m.ticket), m.r);
+    x = await run({ action: 'scheduled', ticket: m.ticket }, undefined, { token: null });
+    chk('M the function runs it with NO owner token: the saved search, its candidate recorded', x.r.status === 200 && x.b.ok === true && x.b.queries === 1 && x.b.new === 1, x.b);
+    chk('M … nobody was asked who the caller is: the ticket is the credential, checked by the database', fnCalls(/auth\/v1\/user/).length === 0);
+    chk('M … every database call went through the ticket door, as anon', fnCalls(/rest\/v1\/rpc/).length >= 3
+      && fnCalls(/rest\/v1\/rpc/).every((e) => /rpc\/growth_outbound_scheduled$/.test(e.url) && e.headers.authorization === 'Bearer ' + ANON && e.headers.apikey === ANON));
+    chk('M … the run is done, and it is the scheduler\'s', one(`select status || '|' || started_by from growth_outbound.research_runs where id = ${m.r.run_id};`) === 'done|schedule');
+    x = await run({ action: 'scheduled', ticket: m.ticket }, undefined, { token: null });
+    chk('M the same ticket again: refused (its run is over)', x.r.status === 401 && x.b.reason === 'invalid_ticket', x.b);
+    WEB['https://ratingsroom.net/'] = { body: '<html><head><title>Ratings Room</title></head><body><p>Sam Room sells betting picks.</p></body></html>' };
+    globalThis.__claude = () => ({ stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify({ relevant: false, reason: 'sells picks',
+      prospect_type: 'other', sports: [], facts: [], fit_factors: [], own_profiles: [] }) }] });
+    m = MORNING.tick(db);
+    chk('M next, the next new candidate', m.r.kind === 'research' && m.fn === 'growth_outbound_research', m.r);
+    x = await run({ action: 'scheduled', ticket: m.ticket }, undefined, { token: null });
+    chk('M … read on the ticket: the page stored for that run, the candidate marked', x.b.ok === true && x.b.outcome === 'not_a_fit'
+      && one(`select count(*) from growth_outbound.pages where run_id = ${m.r.run_id};`) !== '0'
+      && one(`select status from growth_outbound.candidates where url = 'https://ratingsroom.net';`) === 'not_a_fit', x.b);
+    m = MORNING.tick(db);
+    chk('M … and the day\'s research target (1) is met: no more research today', m.r.kind !== 'research', m.r);
+    one(`update growth_outbound.research_runs set status = 'done', finished_at = now() where status = 'running';`);
+    const T9 = crypto.randomBytes(32).toString('hex');
+    one(`insert into growth_outbound.research_runs (kind, started_by, input, ticket_sha256, ticket_expires_at)
+         values ('draft', 'schedule', '{"next": 1}', ${lit(crypto.createHash('sha256').update(T9).digest('hex'))}, now() + interval '10 minutes');`);
+    x = await run({ action: 'scheduled', ticket: T9 }, undefined, { token: null });
+    chk('M a drafting run sent to the research function: refused, and the run marked failed', x.r.status === 400 && x.b.reason === 'wrong_function'
+      && one(`select status || '|' || error from growth_outbound.research_runs where id = ${x.b.run_id};`) === 'failed|a draft run was sent to the research function', x.b);
+    x = await run({ action: 'scheduled', ticket: 'f'.repeat(64) }, undefined, { token: null });
+    chk('M a ticket nobody issued: 401', x.r.status === 401 && x.b.reason === 'invalid_ticket' && fnCalls(/rpc\//).length === 1, x.b);
+    x = await run({ action: 'scheduled', ticket: 'nope' }, undefined, { token: null });
+    chk('M … and a malformed one never reaches the database', x.r.status === 401 && fnCalls(/rpc\//).length === 0);
+    const T10 = crypto.randomBytes(32).toString('hex');
+    one(`insert into growth_outbound.research_runs (kind, started_by, input, ticket_sha256, ticket_expires_at)
+         values ('research', 'schedule', '{"next": true}', ${lit(crypto.createHash('sha256').update(T10).digest('hex'))}, now() + interval '10 minutes');
+         update growth_outbound.settings set automation_enabled = false where id = 1;`);
+    x = await run({ action: 'scheduled', ticket: T10 }, undefined, { token: null });
+    chk('M automation turned off: a live ticket stops working at once', x.r.status === 401 && x.b.reason === 'invalid_ticket', x.b);
+    one(`update growth_outbound.research_runs set status = 'done', finished_at = now() where status = 'running';
+         update growth_outbound.settings set automation_enabled = true where id = 1;`);
+    const mint = (kind, input) => { const t = crypto.randomBytes(32).toString('hex');
+      return { t, id: +one(`insert into growth_outbound.research_runs (kind, started_by, input, ticket_sha256, ticket_expires_at)
+        values (${lit(kind)}, 'schedule', ${lit(JSON.stringify(input))}::jsonb, ${lit(crypto.createHash('sha256').update(t).digest('hex'))}, now() + interval '10 minutes') returning id;`) }; };
+    let tk = mint('research', { next: true });
+    x = await run({ action: 'scheduled', ticket: tk.t }, undefined, { token: null });
+    chk('M no new candidate left: said, and the run is done (nothing to read is not a failure)', x.b.reason === 'queue_empty'
+      && one(`select status || '|' || (counts->>'outcome') from growth_outbound.research_runs where id = ${tk.id};`) === 'done|queue_empty', x.b);
+    tk = mint('discover', { saved: true });
+    x = await run({ action: 'scheduled', ticket: tk.t }, cfgOf({ braveKey: '' }), { token: null });
+    chk('M no search key: the morning\'s search fails, said, and the run is marked so', x.r.status === 503 && x.b.reason === 'search_not_configured'
+      && one(`select status || '|' || error from growth_outbound.research_runs where id = ${tk.id};`) === 'failed|search is not set up (BRAVE_SEARCH_API_KEY)', x.b);
+    tk = mint('research', { next: true });
+    x = await run({ action: 'scheduled', ticket: tk.t }, undefined, { token: OWNER_T });
+    chk('M a token sent along changes nothing: the ticket is the only credential, used as anon', x.b.reason === 'queue_empty'
+      && fnCalls(/rest\/v1\/rpc/).every((e) => e.headers.authorization === 'Bearer ' + ANON) && fnCalls(/auth\/v1\/user/).length === 0, x.b);
+    one(`update growth_outbound.settings set discovery_config = '{}', automation_enabled = false where id = 1;`);
 
     /* ══ K. KEYS ════════════════════════════════════════════════════════ */
     LOG = [];

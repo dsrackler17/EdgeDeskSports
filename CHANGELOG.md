@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-10-08 — Growth console: the morning run (outbound engine, phase 9)
+
+**Software may find, research, score, verify, draft and queue on a schedule. It may not approve or send.**
+
+**`supabase/growth_outbound.sql`** adds:
+- **the plan and the tick:** every five minutes (pg_cron) one step of today's morning run, in the owner's own time zone and window. It searches the saved searches once, researches up to the daily target, then drafts up to the daily send cap. It never runs two steps at once and stops for the day after three failures in a row;
+- **single-use tickets instead of credentials:** each step's run gets 256 random bits, stored only as a hash, posted once through pg_net, alive 15 minutes, while the run runs and automation is on;
+- **the third public door, `growth_outbound_scheduled`:** a ticket opens only the engine doors its run's kind needs, for its own run. Those doors now begin with `require_engine()`: the owner, or a ticket checked again against its hash. Every door that approves, edits, sends, suppresses or changes settings still requires the owner;
+- **records and settings:** the automation window settings, the scheduler record (18 tables), the owner's automation overview, and report rows 32–33.
+
+**`supabase/growth_outbound_cron.sql`** (new): the clock, one pg_cron job, no key.
+
+**`growth_outbound_research` and `growth_outbound_draft`:** `{action: 'scheduled', ticket}`. There is no owner token. Every call goes through the ticket door, and what to do comes from the database. Owner requests are unchanged. A follow-up or first email with nothing citeable is now recorded as given up, so the due list leaves it alone until new evidence arrives.
+
+**`/admin/growth/` → Outbound:**
+- the **Morning run** panel: on or off, the window, the clock, the next step, today's progress and the steps;
+- the window settings;
+- turning Automation on asks first.
+
+**Tests:**
+- `outbound_schedule_sql.test.js`: 112 checks; 42 mutations, all caught;
+- research function: 99; drafting function: 76; the scheduled mode's 17 mutations, all caught;
+- console e2e: 208; security suite: 416;
+- earlier suites: all passing.
+
 ## 2026-10-08 — Growth console: the drafting engine (outbound engine, phase 8)
 
 **The engine may draft. It may not approve or send, and it may not say anything about a person that the database cannot cite.**

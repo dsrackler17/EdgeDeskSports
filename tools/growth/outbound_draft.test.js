@@ -39,6 +39,8 @@ const PG = require(path.join(__dirname, '..', 'personal', '_pg.js'));
 const SEED = require(path.join(__dirname, '_outbound_seed.js'));
 const INLINE = require(path.join(__dirname, 'inline_outbound_auth.js'));
 const { rpcShim } = require(path.join(__dirname, '_rpc_shim.js'));
+const MORNING = require(path.join(__dirname, '_morning.js'));
+const crypto = require('crypto');
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -344,6 +346,41 @@ const fnCalls = (re) => LOG.filter((e) => e.host === 'proj.supabase.test' && re.
     chk('K over the whole suite the function called these doors and no others: nothing that approves, edits or sends', JSON.stringify([...DOORS].sort())
       === JSON.stringify(['growth_outbound_draft_context', 'growth_outbound_draft_gave_up', 'growth_outbound_draft_propose', 'growth_outbound_drafting_overview', 'growth_outbound_is_owner',
         'growth_outbound_research_begin', 'growth_outbound_research_finish', 'growth_outbound_research_spend']), [...DOORS].sort());
+
+    /* ══ M. THE MORNING RUN (Phase 9): a ticket, no owner ═════════════ */
+    MORNING.install(db);
+    one(`update growth_outbound.research_runs set status = 'done', finished_at = now() where status = 'running';
+         update growth_outbound.settings set max_sends_per_day = 1 where id = 1;`);
+    one(SEED.strong({ id: pid(20), name: 'Gil Hart', org: 'Hart Lines', email: 'gil@hartlines.test', domain: 'hartlines.test', handle: 'gilhart' })
+      + SEED.strong({ id: pid(21), name: 'Bo Lund', org: 'Lund Totals', email: 'bo@lundtotals.test', domain: 'lundtotals.test', handle: 'bolund' }));
+    let m = MORNING.tick(db);
+    chk('M prospects due: the morning drafts, posted to this function with a ticket', m.r.kind === 'draft' && m.fn === 'growth_outbound_draft'
+      && /^[0-9a-f]{64}$/.test(m.ticket), m.r);
+    const planned = +one(`select (input->>'next') from growth_outbound.research_runs where id = ${m.r.run_id};`);
+    const dueNow = +one(`select count(*) from growth_outbound.drafting_due();`);
+    claude(honest());
+    x = await run({ action: 'scheduled', ticket: m.ticket }, undefined, { token: null });
+    chk('M the function writes with NO owner token: as many as the database planned (the daily cap, 1, though 2 are due), each accepted', x.r.status === 200
+      && x.b.ok === true && planned === 1 && dueNow === 2 && x.b.asked === 1 && x.b.drafted === 1 && x.b.results.every((y) => y.ok), [planned, dueNow, x.b]);
+    chk('M … each waits for the owner, marked with the morning\'s run', one(`select count(*) || '|' || count(*) filter (where status = 'pending_review' and not edited_by_owner)
+      from growth_outbound.drafts where run_id = ${m.r.run_id};`) === x.b.drafted + '|' + x.b.drafted);
+    chk('M … nobody was asked who the caller is, and every database call went through the ticket door, as anon', fnCalls(/auth\/v1\/user/).length === 0
+      && fnCalls(/rest\/v1\/rpc/).every((e) => /rpc\/growth_outbound_scheduled$/.test(e.url) && e.headers.authorization === 'Bearer ' + ANON));
+    chk('M … the run is done, with its counts', one(`select status || '|' || (counts->>'drafted') from growth_outbound.research_runs where id = ${m.r.run_id};`)
+      === 'done|' + x.b.drafted);
+    x = await run({ action: 'scheduled', ticket: m.ticket }, undefined, { token: null });
+    chk('M the same ticket again: refused (its run is over)', x.r.status === 401 && x.b.reason === 'invalid_ticket', x.b);
+    const T9 = crypto.randomBytes(32).toString('hex');
+    one(`insert into growth_outbound.research_runs (kind, started_by, input, ticket_sha256, ticket_expires_at)
+         values ('discover', 'schedule', '{"saved": true}', ${lit(crypto.createHash('sha256').update(T9).digest('hex'))}, now() + interval '10 minutes');`);
+    x = await run({ action: 'scheduled', ticket: T9 }, undefined, { token: null });
+    chk('M a search run sent to the drafting function: refused, and the run marked failed', x.r.status === 400 && x.b.reason === 'wrong_function'
+      && one(`select status from growth_outbound.research_runs where id = ${x.b.run_id};`) === 'failed', x.b);
+    x = await run({ action: 'scheduled', ticket: 'nope' }, undefined, { token: null });
+    chk('M a malformed ticket never reaches the database', x.r.status === 401 && fnCalls(/rpc\//).length === 0);
+    x = await run({ action: 'scheduled', ticket: 'e'.repeat(64) }, undefined, { token: null });
+    chk('M a ticket nobody issued: 401 after one question to the database', x.r.status === 401 && x.b.reason === 'invalid_ticket' && fnCalls(/rpc\//).length === 1, x.b);
+    chk('M the key still went only to the SDK', !x.raw.includes(KEY) && CLAUDE_OPTS.every((o) => o.apiKey === KEY));
 
     /* the pieces, by themselves */
     const ctx = { first_name: null, sequence_number: 1, is_test: false, facts: [

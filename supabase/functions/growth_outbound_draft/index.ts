@@ -34,6 +34,12 @@
 //             and the due list leaves that step alone for a week.
 //        Whatever is accepted waits in the review queue for the owner.
 //
+//   POST { action: 'scheduled', ticket }   (pg_cron, through pg_net: the
+//        morning run, Phase 9) — no owner token; drafts for the next ones
+//        due, as many as the database planned, every call made through
+//        growth_outbound_scheduled, which checks the ticket and opens only
+//        the drafting doors, for that run.
+//
 // WHAT IT NEVER DOES: approve, send, cite anything the database does not
 // hold as current evidence about that person, or greet anyone by a name the
 // evidence does not establish.
@@ -212,13 +218,21 @@ function json(req: Request, c: Cfg, body: any, status = 200): Response {
 }
 
 // ── the database, as the owner ──────────────────────────────────────────────
-type Ctx = { c: Cfg; authz: string; run: number | null; llmCalls: number; notes: string[]; started: number };
+type Ctx = { c: Cfg; authz: string; run: number | null; llmCalls: number; notes: string[]; started: number; ticket?: string };
 class Refused extends Error { reason: string; detail: string; constructor(reason: string, detail: string) { super(detail); this.reason = reason; this.detail = detail; } }
 async function db(x: Ctx, fn: string, args: Record<string, unknown>): Promise<any> {
-  const r = await AUTH.rpcAsCaller(x.c, x.authz, fn, args);
-  if (r.status === 404) throw new Refused('not_installed', 'the Phase 8 SQL is not applied: run supabase/growth_outbound.sql');
+  // the morning run reaches the database only through the ticket door, which
+  // lets its ticket open the doors that run's kind needs, for its run alone
+  const r = x.ticket
+    ? await AUTH.rpcAsCaller(x.c, x.authz, 'growth_outbound_scheduled', { p_ticket: x.ticket, p_door: fn, p_args: args })
+    : await AUTH.rpcAsCaller(x.c, x.authz, fn, args);
+  if (r.status === 404) throw new Refused('not_installed', 'the outbound SQL is not applied (or is older than this function): run supabase/growth_outbound.sql');
   if (r.status === 401 || r.status === 403) throw new Refused('not_an_owner', 'this account is not an outbound owner');
   if (!r.ok) throw new Refused('database_error', fn + ' answered ' + r.status);
+  if (x.ticket && r.body && r.body.ok === false && (r.body.reason === 'invalid_ticket' || r.body.reason === 'not_allowed')) {
+    throw new Refused(r.body.reason, r.body.reason === 'invalid_ticket'
+      ? 'the scheduled run\'s ticket is not valid (finished, expired, or automation turned off)' : String(r.body.detail || 'not allowed on this ticket'));
+  }
   return r.body;
 }
 // one Claude call, counted against today's writing budget BEFORE it is made
@@ -366,6 +380,9 @@ export async function draftOne(x: Ctx, prospectId: string, seq: number): Promise
   if (!ctx.due) return { ok: false, prospect_id: prospectId, sequence_number: seq, reason: 'not_due', detail: ctx.problem };
   const facts = Array.isArray(ctx.facts) ? ctx.facts : [];
   if (!facts.length && !ctx.is_test) {
+    // on the record, so the due list leaves this step alone until new evidence arrives
+    await db(x, 'growth_outbound_draft_gave_up', { p_run: x.run, p_prospect: prospectId, p_sequence: seq,
+      p_reasons: ['no fact about them is sure enough to cite on its own'] });
     return { ok: false, prospect_id: prospectId, sequence_number: seq, reason: 'no_citeable_fact',
       detail: 'no fact about them is sure enough to cite on its own; research them further' };
   }
@@ -408,17 +425,62 @@ export async function draftOne(x: Ctx, prospectId: string, seq: number): Promise
     detail: 'neither Claude nor the template wrote a draft the database accepts', attempts };
 }
 
+// ── several prospects, once the run has begun (the owner's, or the morning run's)
+async function runDrafts(x: Ctx, todo: { prospect_id: string; sequence_number: number }[]): Promise<{ counts: any; results: any[] }> {
+  const results: any[] = [];
+  try {
+    for (const t of todo) {
+      if (results.length && timeLeft(x) < 30_000) { x.notes.push('stopped for time: ask again for the rest'); break; }
+      results.push(await draftOne(x, t.prospect_id, t.sequence_number));
+    }
+  } catch (e: any) {
+    await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: 'failed', p_counts: {}, p_error: String(e?.detail || e?.message || e).slice(0, 900) }).catch(() => null);
+    throw e;
+  }
+  const drafted = results.filter((r) => r.ok).length;
+  const counts = { asked: todo.length, tried: results.length, drafted, by_claude: results.filter((r) => r.writer === 'claude').length,
+    by_template: results.filter((r) => r.writer === 'template').length, not_drafted: results.length - drafted };
+  const failed = drafted === 0 && results.some((r) => r.reason === 'not_drafted');
+  await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: failed ? 'failed' : 'done', p_counts: counts,
+    p_error: failed ? 'nothing the database accepts was written' : (x.notes.join('; ') || null) });
+  return { counts, results };
+}
+
+// ── the morning run: one step, on a ticket the database minted ─────────────
+// No owner token: pg_cron sends none. The ticket is the only credential, and
+// the database checks it at every call (growth_outbound_scheduled); how many
+// to write comes from the database too (the run's plan), never the request.
+async function scheduled(req: Request, c: Cfg, ticket: string): Promise<Response> {
+  if (!/^[0-9a-f]{64}$/.test(ticket)) return json(req, c, { ok: false, reason: 'invalid_ticket' }, 401);
+  const x: Ctx = { c, authz: 'Bearer ' + c.anonKey, run: null, llmCalls: 0, notes: [], started: Date.now(), ticket };
+  const plan = await db(x, 'plan', {});
+  x.run = plan.run_id;
+  if (plan.kind !== 'draft') {
+    await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: 'failed', p_counts: {}, p_error: 'a ' + plan.kind + ' run was sent to the drafting function' });
+    return json(req, c, { ok: false, reason: 'wrong_function', run_id: x.run }, 400);
+  }
+  const next = Math.max(1, Math.min(MAX_NEXT, Number(plan.input?.next) || 1));
+  const ov = await db(x, 'growth_outbound_drafting_overview', {});
+  const todo = (Array.isArray(ov?.due) ? ov.due : []).slice(0, next).map((d: any) => ({ prospect_id: d.prospect_id, sequence_number: d.sequence_number }));
+  const out = await runDrafts(x, todo);
+  return json(req, c, { ok: true, run_id: x.run, ...out.counts, results: out.results, llm_calls: x.llmCalls, notes: x.notes });
+}
+
 // ── the request ─────────────────────────────────────────────────────────────
 export async function handle(req: Request, cfg?: Cfg): Promise<Response> {
   const c = cfg ?? config();
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(req, c) });
   if (req.method !== 'POST') return json(req, c, { ok: false, reason: 'method_not_allowed' }, 405);
   if (!c.url || !c.anonKey) return json(req, c, { ok: false, reason: 'not_configured' }, 503);
-  const who = await AUTH.requireOutboundOwner(req, { url: c.url, anonKey: c.anonKey, fetch: c.fetch, timeoutMs: c.timeoutMs });
-  if (!who.ok) return json(req, c, { ok: false, reason: who.reason }, who.status);
   let body: any = null;
   try { body = await req.json(); } catch (_) { body = null; }
   const action = body && typeof body.action === 'string' ? body.action : '';
+  if (action === 'scheduled') {
+    try { return await scheduled(req, c, typeof body.ticket === 'string' ? body.ticket : ''); }
+    catch (e: any) { return refusedResponse(req, c, e); }
+  }
+  const who = await AUTH.requireOutboundOwner(req, { url: c.url, anonKey: c.anonKey, fetch: c.fetch, timeoutMs: c.timeoutMs });
+  if (!who.ok) return json(req, c, { ok: false, reason: who.reason }, who.status);
   const x: Ctx = { c, authz: who.authz, run: null, llmCalls: 0, notes: [], started: Date.now() };
   const providers = { llm: !!c.anthropicKey, model: c.model };
   try {
@@ -443,30 +505,21 @@ export async function handle(req: Request, cfg?: Cfg): Promise<Response> {
       const b = await db(x, 'growth_outbound_research_begin', { p_kind: 'draft', p_input: pid ? { prospect_id: pid, sequence_number: seq } : { next } });
       if (!b || b.ok !== true) return json(req, c, { ok: false, reason: b?.reason || 'refused', detail: b?.detail }, 409);
       x.run = b.run_id;
-      const results: any[] = [];
-      try {
-        for (const t of todo) {
-          if (results.length && timeLeft(x) < 30_000) { x.notes.push('stopped for time: ask again for the rest'); break; }
-          results.push(await draftOne(x, t.prospect_id, t.sequence_number));
-        }
-      } catch (e: any) {
-        await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: 'failed', p_counts: {}, p_error: String(e?.detail || e?.message || e).slice(0, 900) }).catch(() => null);
-        throw e;
-      }
-      const drafted = results.filter((r) => r.ok).length;
-      const counts = { asked: todo.length, tried: results.length, drafted, by_claude: results.filter((r) => r.writer === 'claude').length,
-        by_template: results.filter((r) => r.writer === 'template').length, not_drafted: results.length - drafted };
-      const failed = drafted === 0 && results.some((r) => r.reason === 'not_drafted');
-      await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: failed ? 'failed' : 'done', p_counts: counts,
-        p_error: failed ? 'nothing the database accepts was written' : (x.notes.join('; ') || null) });
+      const { counts, results } = await runDrafts(x, todo);
       if (pid) return json(req, c, { ...results[0], run_id: x.run, llm_calls: x.llmCalls, notes: x.notes });
       return json(req, c, { ok: true, run_id: x.run, ...counts, results, llm_calls: x.llmCalls, notes: x.notes });
     }
     return json(req, c, { ok: false, reason: 'bad_request', detail: 'action: status or draft' }, 400);
   } catch (e: any) {
-    if (e instanceof Refused) return json(req, c, { ok: false, reason: e.reason, detail: e.detail }, e.reason === 'not_installed' ? 503 : e.reason === 'not_an_owner' ? 403 : 502);
-    return json(req, c, { ok: false, reason: 'unhandled', detail: 'the drafting engine stopped unexpectedly' }, 500);
+    return refusedResponse(req, c, e);
   }
+}
+function refusedResponse(req: Request, c: Cfg, e: any): Response {
+  if (e instanceof Refused) {
+    return json(req, c, { ok: false, reason: e.reason, detail: e.detail }, e.reason === 'not_installed' ? 503 : e.reason === 'not_an_owner' ? 403
+      : e.reason === 'invalid_ticket' ? 401 : e.reason === 'not_allowed' ? 403 : 502);
+  }
+  return json(req, c, { ok: false, reason: 'unhandled', detail: 'the drafting engine stopped unexpectedly' }, 500);
 }
 
 // @ts-ignore Deno.serve exists in the edge runtime

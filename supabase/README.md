@@ -224,7 +224,7 @@ Run after `affiliates.sql` and `growth.sql` (the guard says so).
 
 - **Discovery and research (Phase 7).** Search results are candidates; research stores every page it reads (append-only) and records facts only as quotes from those pages. The database checks each quote against the stored page and each claim against its quote, decides itself which pages are the prospect's own (never a publisher's), and enforces a daily budget on every provider call. Nothing here approves or sends.
 
-Grant the owner with `select growth_outbound.grant_owner('you@example.com');` in the SQL editor. Report rows 1-31 should say `ok`. Tested by `tools/growth/outbound_sql.test.js`, `outbound_research_sql.test.js`, `outbound_review_sql.test.js`, `outbound_send_sql.test.js`, `outbound_events_sql.test.js`, `outbound_engine_sql.test.js`, `outbound_research.test.js`, `outbound_drafting_sql.test.js` and `outbound_draft.test.js`; see `docs/growth-outbound.md`.
+Grant the owner with `select growth_outbound.grant_owner('you@example.com');` in the SQL editor. Report rows 1-33 should say `ok`. Then, for the morning run (Phase 9), enable pg_cron and pg_net and run `growth_outbound_cron.sql` (one five-minute job, no key). Tested by `tools/growth/outbound_sql.test.js`, `outbound_research_sql.test.js`, `outbound_review_sql.test.js`, `outbound_send_sql.test.js`, `outbound_events_sql.test.js`, `outbound_engine_sql.test.js`, `outbound_research.test.js`, `outbound_drafting_sql.test.js`, `outbound_draft.test.js` and `outbound_schedule_sql.test.js`; see `docs/growth-outbound.md`.
 
 ### `funnel.sql` — where people stop: one event stream, the first run, the admin report
 Run after `billing.sql`, `stripe_webhook.sql`, `personal_research.sql`,

@@ -91,6 +91,14 @@
         step not due is said in the database's words
     47  the drafting function not deployed: said, who is due still shown,
         the button off
+    48  THE MORNING RUN (Phase 9): on or off, the window in the owner's zone,
+        whether the clock ticks, the next step, today's progress, the steps;
+        opening the page starts nothing
+    49  turning automation on says what it does (and that it never approves
+        or sends) and asks; declining saves nothing
+    50  the window and the zone are settings like any other
+    51  the clock not running, or pg_net missing: said, with what to run
+    52  before the Phase 9 SQL: said
 
    Run:  node tools/growth/outbound_console.e2e.js [--shots <dir>]
    =========================================================================== */
@@ -134,6 +142,7 @@ function freshSettings() {
   return { automation_enabled: false, test_mode: true, test_inbox: 'owner-test@edgedesk.test', daily_prospect_target: 15, max_sends_per_day: 20, max_test_sends_per_day: 25,
     min_fit_score: 80, min_identity_confidence: 0.9, min_role_confidence: 0.85, min_research_confidence: 0.85, min_email_confidence: 0.9,
     followup_enabled: true, followup_delay_days: 5, final_followup_enabled: false, final_followup_delay_days: 10,
+    automation_timezone: 'America/New_York', automation_start_hour: 6, automation_hours: 4,
     sender_name: 'Davis', sender_email: 'davis@edgedesksports.com', reply_to_email: null, cta_url: 'https://edgedesksports.com/', business_name: 'EdgeDesk Sports',
     postal_address: null, unsubscribe_url_base: null, discovery_config: {},
     send_blockers: ['postal_address_missing', 'unsubscribe_endpoint_missing'], live_send_blockers: ['postal_address_missing', 'unsubscribe_endpoint_missing', 'webhook_secret_missing'],
@@ -148,8 +157,17 @@ const RESEARCH_OV = { budget: { search: { cap: 20, used: 3, left: 17 }, fetch: {
            input: { query: 'cfb models' }, counts: { new: 5, results: 18, spent: { search: 1 } }, error: null },
          { id: 10, kind: 'research', started_by: 'owner', started_at: '2026-10-07T09:05:00Z', finished_at: '2026-10-07T09:05:40Z', status: 'failed',
            input: { candidate_id: 70 }, counts: { pages: 0, spent: { fetch: 2 } }, error: 'robots.txt disallows it' },
-         { id: 11, kind: 'draft', started_by: 'owner', started_at: '2026-10-07T09:10:00Z', finished_at: '2026-10-07T09:11:00Z', status: 'done',
+         { id: 11, kind: 'draft', started_by: 'schedule', started_at: '2026-10-07T09:10:00Z', finished_at: '2026-10-07T09:11:00Z', status: 'done',
            input: { next: 3 }, counts: { drafted: 2, not_drafted: 1, spent: { llm: 3 } }, error: null }] };
+const ago = (min) => new Date(Date.now() - min * 60000).toISOString();
+const AM_OV = () => ({ enabled: true, timezone: 'America/New_York', start_hour: 6, hours: 4,
+  plan: { step: { kind: 'research', fn: 'growth_outbound_research', input: { next: true } }, reason: null, local_time: '2026-10-08 07:30', timezone: 'America/New_York', in_window: true,
+    today: { day: '2026-10-08', runs: 3, searched: true, researched: 2, research_target: 15, drafted: 1, draft_cap: 20, new_candidates: 5, due: 4 } },
+  scheduler: { last_tick_at: ago(2), last_action: 'started', last_reason: 'research (run 12)', last_run_id: 12, ticks: 40, ticking: true },
+  pg_net: true, cron_job: true,
+  runs: [{ id: 12, kind: 'research', started_by: 'schedule', started_at: ago(2), status: 'running', counts: {}, error: null },
+         { id: 11, kind: 'discover', started_by: 'schedule', started_at: ago(30), status: 'done', counts: { new: 5, results: 18 }, error: null },
+         { id: 10, kind: 'draft', started_by: 'schedule', started_at: ago(90), status: 'failed', counts: {}, error: 'never finished (the function stopped)' }] });
 const DRAFT_OV = { llm_budget: { cap: 30, used: 4, left: 26 }, due_counts: { first: 3, followup: 1, final: 0 },
   due: [{ prospect_id: 'pc', sequence_number: 2, full_name: 'Cam Contacted', fit_score: 88 }, { prospect_id: 'p1', sequence_number: 1, full_name: 'Pat Analyst', fit_score: 89 }],
   stats: { engine: { drafts: 6, waiting: 2, approved_as_written: 2, approved_after_edit: 1, rejected: 1, sent: 2, replied: 0 },
@@ -318,6 +336,10 @@ const PROSPECTS = { total: 2, rows: [
         if (name === 'growth_outbound_sends') return reply(200, SENDS);
         if (name === 'growth_outbound_research_overview') return reply(200, RESEARCH_OV);
         if (name === 'growth_outbound_drafting_overview') return reply(200, DRAFT_OV);
+        if (name === 'growth_outbound_automation_overview') {
+          if (state.am === 'missing') return reply(404, { code: 'PGRST202', message: 'Could not find the function' });
+          return reply(200, Object.assign(AM_OV(), typeof state.am === 'object' ? state.am : {}));
+        }
         if (name === 'growth_outbound_candidates') return reply(200, body.p_status === 'new' ? CANDS : []);
         if (name === 'growth_outbound_candidate_set') return reply(200, { ok: true, status: body.p_status });
         if (name === 'growth_outbound_draft_approve') return reply(200, { ok: true, draft_id: body.p_draft_id, approved_hash: body.p_content_hash });
@@ -930,6 +952,63 @@ const PROSPECTS = { total: 2, rows: [
     chk('47 the drafting function not deployed: said; who is due still shown from the database; the button off', /drafting function is not deployed/.test(info)
       && /Due: 3 first emails, 1 follow-up/.test(info) && await t.page.isDisabled('#rqWrite') && !(await visible(t.page, '#obMsg')), info);
     chk('47 no page errors', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+
+  /* ── 48–52. the morning run (Phase 9) ──────────────────────────────── */
+  {
+    const t = await open({ role: 'owner' });
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 700);
+    const chips = await text(t.page, '#amChips');
+    chk('48 the morning run: on, its window in the owner\'s zone, the clock ticking, the next step', /Morning run: on · 06:00–10:00 America\/New_York/.test(chips)
+      && /Clock: last tick/.test(chips) && /Next: research the next new candidate/.test(chips), chips);
+    const today = await text(t.page, '#amToday');
+    chk('48 … today\'s progress', /Searched todayyes/.test(today) && /Researched today2 of 15/.test(today) && /Drafted today1 of 20/.test(today)
+      && /New candidates5/.test(today) && /Due a draft4/.test(today), today);
+    const runs = await text(t.page, '#amRuns');
+    chk('48 … the steps: what each did, and why one failed', /search the saved searches/.test(runs) && /5 new of 18/.test(runs)
+      && /never finished \(the function stopped\)/.test(runs) && /running/.test(runs), runs);
+    chk('48 opening the page starts nothing (no function is asked to do anything)', !t.calls.some((c) => /^fn:/.test(c[0]) && c[1].action && c[1].action !== 'status'));
+    chk('48 the runs table marks the morning run\'s steps', /drafting\s*\(morning run\)/.test(await text(t.page, '#dvRuns')), await text(t.page, '#dvRuns'));
+    chk('50 the window and the zone are settings', (await t.page.inputValue('#obf_automation_timezone')) === 'America/New_York'
+      && (await t.page.inputValue('#obf_automation_start_hour')) === '6' && (await t.page.inputValue('#obf_automation_hours')) === '4');
+    await t.page.fill('#obf_automation_timezone', 'America/Chicago'); await t.page.fill('#obf_automation_start_hour', '7');
+    await t.page.click('#obSave'); await settle(t.page, 600);
+    let up = t.calls.filter((c) => c[0] === 'growth_outbound_settings_update').slice(-1)[0];
+    chk('50 … saved like any other: exactly what changed', !!up && JSON.stringify(up[1].p) === JSON.stringify({ automation_timezone: 'America/Chicago', automation_start_hour: 7 }), up && up[1]);
+    chk('50 … and the panel is read again', t.calls.filter((c) => c[0] === 'growth_outbound_automation_overview').length >= 2);
+    const n0 = t.calls.filter((c) => c[0] === 'growth_outbound_settings_update').length;
+    await t.page.check('#obf_automation_enabled');
+    t.setAnswers([false]);
+    await t.page.click('#obSave'); await settle(t.page, 500);
+    const d = t.dialogs.slice(-1)[0];
+    chk('49 turning automation on says what it does, and that it never approves or sends, and asks', !!d && /Turn on the morning run\?/.test(d.msg)
+      && /never approves and never sends/.test(d.msg) && /daily provider budget/.test(d.msg), d);
+    chk('49 … declining saves nothing', t.calls.filter((c) => c[0] === 'growth_outbound_settings_update').length === n0 && /the morning run stays off/.test(await text(t.page, '#obSetMsg')));
+    t.setAnswers([true]);
+    await t.page.click('#obSave'); await settle(t.page, 500);
+    up = t.calls.filter((c) => c[0] === 'growth_outbound_settings_update').slice(-1)[0];
+    chk('49 … accepting turns it on', !!up && up[1].p.automation_enabled === true, up && up[1]);
+    chk('48-50 no page errors', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+  {
+    const t = await open({ role: 'owner' });
+    t.state.am = { enabled: false, pg_net: false, scheduler: { last_tick_at: null, ticking: false, ticks: 0 }, plan: { step: null, reason: 'automation is off', today: {} }, runs: [] };
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 700);
+    const chips = await text(t.page, '#amChips');
+    chk('51 off, no clock, no pg_net: each said, with what to do', /Morning run: off/.test(chips) && /The clock is not running: run supabase\/growth_outbound_cron\.sql/.test(chips)
+      && /pg_net is not installed/.test(chips) && /Now: automation is off/.test(chips), chips);
+    chk('51 … and the steps table says nothing has run', /has not run yet/.test(await text(t.page, '#amRuns')));
+    chk('51 no page errors', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+  {
+    const t = await open({ role: 'owner' });
+    t.state.am = 'missing';
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 700);
+    chk('52 before the Phase 9 SQL: said, and nothing else fails', /arrives with the Phase 9 SQL/.test(await text(t.page, '#amChips')) && !(await visible(t.page, '#obMsg')));
+    chk('52 no page errors', t.errors.length === 0, t.errors);
     await t.ctx.close();
   }
 

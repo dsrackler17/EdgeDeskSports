@@ -23,7 +23,8 @@
      R  REPLIED    the owner marks a reply: follow-ups stop; "asked to stop"
                    suppresses
      L  LIVE       no live send without the webhook secret
-     P  PUBLIC     exactly two doors anon may call, and nothing else; signed-in
+     P  PUBLIC     exactly three doors anon may call (the third, Phase 9's
+                   scheduled engine door, needs a run's ticket), and nothing else; signed-in
                    callers cannot call those two; the events list is the
                    owner's; provider events are append-only
 
@@ -371,7 +372,7 @@ try {
   /* ══ P. THE PUBLIC SURFACE ════════════════════════════════════════════ */
   const anonDoors = one(`select string_agg(p.proname, ',' order by p.proname) from pg_proc p where p.pronamespace = 'public'::regnamespace
       and p.proname like 'growth\\_outbound\\_%' and has_function_privilege('anon', p.oid, 'execute');`);
-  chk('P anon may call exactly two outbound doors', anonDoors === 'growth_outbound_optout,growth_outbound_webhook', anonDoors);
+  chk('P anon may call exactly three outbound doors (the third: a scheduled run\'s, with its ticket)', anonDoors === 'growth_outbound_optout,growth_outbound_scheduled,growth_outbound_webhook', anonDoors);
   const authPublic = one(`select count(*) from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname in ('growth_outbound_optout', 'growth_outbound_webhook')
       and (has_function_privilege('authenticated', p.oid, 'execute') or has_function_privilege('service_role', p.oid, 'execute'));`);
   chk('P … and no signed-in caller (nor the service role) may call those two', authPublic === '0');
@@ -393,7 +394,7 @@ try {
 
   const rep = db.applyFileAtomic(FILE);
   chk('the file re-runs over all of this, every report row ok', !/CHECK THIS/.test(rep), rep.split('\n').filter((l) => /CHECK THIS/.test(l)));
-  chk('… the report says the secret is set and the public doors are two', /^24\|Resend webhook signing secret: set/m.test(rep) && /^23\|two public doors and only two/m.test(rep),
+  chk('… the report says the secret is set and the public doors are two', /^24\|Resend webhook signing secret: set/m.test(rep) && /^23\|three public doors and only three/m.test(rep),
     rep.split('\n').filter((l) => /^2[3-6]\|/.test(l)));
   chk('… and counts the provider events', /^26\|provider events: \d+ in 24 hours/m.test(rep), rep.split('\n').filter((l) => /^26\|/.test(l)));
 } catch (err) {
