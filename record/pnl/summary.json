@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_pnl_summary_v1",
  "engine": "edgedesk_pnl_v2",
- "generated_at": "2026-10-08T04:05:13.851Z",
+ "generated_at": "2026-10-08T05:19:37.469Z",
  "season": 2026,
  "strategy": "Verified P&L: every graded EdgeDesk decision — the model's published number on a game and every BET — that settled at a real price EdgeDesk captured at or before the decision. Recorded stakes: the units the decision recorded, or the default 1.00u when it recorded none. Flat: 1.00u each. Never mixed.",
  "rules": [
@@ -13,8 +13,8 @@
   "Each recommendation is one row, keyed by its recommendation id. A corrected result updates that row and is logged on it; nothing is deleted."
  ],
  "counts": {
-  "rows": 5389,
-  "bets": 272,
+  "rows": 5467,
+  "bets": 277,
   "verified_bets": 217,
   "priced_decisions": 296,
   "graded_decisions": 1168,
@@ -40,7 +40,7 @@
      "graded": 1168,
      "priced": 296,
      "record_only": 872,
-     "pending_priced": 50,
+     "pending_priced": 55,
      "excluded": [
       {
        "key": "historical_price_unavailable",
@@ -116,7 +116,7 @@
        "win_rate_pct": 53,
        "graded": 217,
        "record_only": 0,
-       "pending_priced": 50,
+       "pending_priced": 55,
        "type": "player_prop",
        "label": "Player Props"
       }
@@ -144,7 +144,7 @@
      "graded": 1168,
      "priced": 296,
      "record_only": 872,
-     "pending_priced": 50,
+     "pending_priced": 55,
      "excluded": [
       {
        "key": "historical_price_unavailable",
@@ -220,7 +220,7 @@
        "win_rate_pct": 53,
        "graded": 217,
        "record_only": 0,
-       "pending_priced": 50,
+       "pending_priced": 55,
        "type": "player_prop",
        "label": "Player Props"
       }
@@ -670,7 +670,7 @@
      "graded": 217,
      "priced": 217,
      "record_only": 0,
-     "pending_priced": 50,
+     "pending_priced": 55,
      "excluded": [],
      "snapshot_priced": 0,
      "default_stake": 0,
@@ -735,7 +735,7 @@
        "win_rate_pct": 53,
        "graded": 217,
        "record_only": 0,
-       "pending_priced": 50,
+       "pending_priced": 55,
        "type": "player_prop",
        "label": "Player Props"
       }
@@ -763,7 +763,7 @@
      "graded": 217,
      "priced": 217,
      "record_only": 0,
-     "pending_priced": 50,
+     "pending_priced": 55,
      "excluded": [],
      "snapshot_priced": 0,
      "default_stake": 0,
@@ -828,7 +828,7 @@
        "win_rate_pct": 53,
        "graded": 217,
        "record_only": 0,
-       "pending_priced": 50,
+       "pending_priced": 55,
        "type": "player_prop",
        "label": "Player Props"
       }
@@ -1117,37 +1117,32 @@
   "Pinnacle"
  ],
  "states": {
-  "total": 5389,
-  "PENDING": 1048,
-  "VERIFIED": 3319,
+  "total": 5467,
+  "PENDING": 1124,
+  "VERIFIED": 3321,
   "RECORD_ONLY": 872,
   "VOID": 150,
   "INVALID": 0
  },
  "pending_reasons": {
-  "total": 1048,
+  "total": 1124,
   "reasons": [
    {
     "key": "UPCOMING",
     "label": "Upcoming game",
-    "n": 908
-   },
-   {
-    "key": "IN_PROGRESS",
-    "label": "Game in progress",
-    "n": 40
+    "n": 986
    },
    {
     "key": "MISSING_FINAL",
     "label": "Missing final",
-    "n": 100
+    "n": 138
    }
   ]
  },
  "record": {
   "what": "Every graded model pick and BET, priced or not, as wins, losses and pushes. Never units.",
   "all": {
-   "tracked": 1223,
+   "tracked": 1228,
    "graded": 1168,
    "wins": 683,
    "losses": 478,
@@ -1156,7 +1151,7 @@
    "win_rate_pct": 58.8286,
    "verified": 296,
    "record_only": 872,
-   "pending": 50,
+   "pending": 55,
    "voids": 5,
    "invalid": 0,
    "first_game": "2026-09-11",
@@ -1220,7 +1215,7 @@
      "key": "College Football"
     },
     {
-     "tracked": 272,
+     "tracked": 277,
      "graded": 217,
      "wins": 115,
      "losses": 102,
@@ -1229,7 +1224,7 @@
      "win_rate_pct": 52.9954,
      "verified": 217,
      "record_only": 0,
-     "pending": 50,
+     "pending": 55,
      "voids": 5,
      "invalid": 0,
      "first_game": "2026-10-02",
@@ -1318,7 +1313,7 @@
      "key": "Moneyline"
     },
     {
-     "tracked": 272,
+     "tracked": 277,
      "graded": 217,
      "wins": 115,
      "losses": 102,
@@ -1327,7 +1322,7 @@
      "win_rate_pct": 52.9954,
      "verified": 217,
      "record_only": 0,
-     "pending": 50,
+     "pending": 55,
      "voids": 5,
      "invalid": 0,
      "first_game": "2026-10-02",
@@ -1392,7 +1387,7 @@
      "key": "edgedesk_football_v1.0.0"
     },
     {
-     "tracked": 272,
+     "tracked": 277,
      "graded": 217,
      "wins": 115,
      "losses": 102,
@@ -1401,7 +1396,7 @@
      "win_rate_pct": 52.9954,
      "verified": 217,
      "record_only": 0,
-     "pending": 50,
+     "pending": 55,
      "voids": 5,
      "invalid": 0,
      "first_game": "2026-10-02",
@@ -1610,7 +1605,7 @@
      "key": "NFL · Week 04"
     },
     {
-     "tracked": 50,
+     "tracked": 55,
      "graded": 0,
      "wins": 0,
      "losses": 0,
@@ -1619,7 +1614,7 @@
      "win_rate_pct": null,
      "verified": 0,
      "record_only": 0,
-     "pending": 50,
+     "pending": 55,
      "voids": 0,
      "invalid": 0,
      "first_game": null,
@@ -1636,7 +1631,7 @@
    ],
    "grade": [
     {
-     "tracked": 272,
+     "tracked": 277,
      "graded": 217,
      "wins": 115,
      "losses": 102,
@@ -1645,7 +1640,7 @@
      "win_rate_pct": 52.9954,
      "verified": 217,
      "record_only": 0,
-     "pending": 50,
+     "pending": 55,
      "voids": 5,
      "invalid": 0,
      "first_game": "2026-10-02",
@@ -1767,7 +1762,7 @@
   }
  },
  "settlement": {
-  "as_of": "2026-10-08T04:05:13.851Z",
+  "as_of": "2026-10-08T05:19:37.469Z",
   "props": {
    "NFL": {
     "file": "football/props/nfl/settlement.json",
@@ -1856,7 +1851,7 @@
      "graded": 1168,
      "priced": 296,
      "record_only": 872,
-     "pending_priced": 50,
+     "pending_priced": 55,
      "excluded": [
       {
        "key": "historical_price_unavailable",
@@ -1932,7 +1927,7 @@
        "win_rate_pct": 53,
        "graded": 217,
        "record_only": 0,
-       "pending_priced": 50,
+       "pending_priced": 55,
        "type": "player_prop",
        "label": "Player Props"
       }
@@ -4237,7 +4232,7 @@
       {
        "key": "Player Props",
        "n": 217,
-       "rows": 272,
+       "rows": 277,
        "wins": 115,
        "losses": 102,
        "pushes": 0,
@@ -4375,7 +4370,7 @@
       {
        "key": "Player Props",
        "n": 217,
-       "rows": 272,
+       "rows": 277,
        "wins": 115,
        "losses": 102,
        "pushes": 0,
@@ -4445,7 +4440,7 @@
       {
        "key": "2026-10",
        "n": 296,
-       "rows": 503,
+       "rows": 508,
        "wins": 169,
        "losses": 127,
        "pushes": 0,
@@ -4481,7 +4476,7 @@
       {
        "key": "Captured with the decision",
        "n": 217,
-       "rows": 1144,
+       "rows": 1149,
        "wins": 115,
        "losses": 102,
        "pushes": 0,
@@ -4585,7 +4580,7 @@
       {
        "key": "Receiving Yards",
        "n": 53,
-       "rows": 65,
+       "rows": 67,
        "wins": 27,
        "losses": 26,
        "pushes": 0,
@@ -4619,7 +4614,7 @@
       {
        "key": "Receptions",
        "n": 60,
-       "rows": 77,
+       "rows": 78,
        "wins": 30,
        "losses": 30,
        "pushes": 0,
@@ -4721,7 +4716,7 @@
       {
        "key": "Rushing Yards",
        "n": 44,
-       "rows": 60,
+       "rows": 62,
        "wins": 30,
        "losses": 14,
        "pushes": 0,
@@ -4791,7 +4786,7 @@
       {
        "key": "Receiving",
        "n": 113,
-       "rows": 142,
+       "rows": 145,
        "wins": 57,
        "losses": 56,
        "pushes": 0,
@@ -4825,7 +4820,7 @@
       {
        "key": "Rushing",
        "n": 92,
-       "rows": 113,
+       "rows": 115,
        "wins": 52,
        "losses": 40,
        "pushes": 0,
@@ -4929,7 +4924,7 @@
       {
        "key": "Under",
        "n": 177,
-       "rows": 221,
+       "rows": 226,
        "wins": 98,
        "losses": 79,
        "pushes": 0,
@@ -5237,7 +5232,7 @@
       {
        "key": "DraftKings",
        "n": 156,
-       "rows": 406,
+       "rows": 408,
        "wins": 93,
        "losses": 63,
        "pushes": 0,
@@ -5271,7 +5266,7 @@
       {
        "key": "ESPN BET",
        "n": 31,
-       "rows": 38,
+       "rows": 40,
        "wins": 15,
        "losses": 16,
        "pushes": 0,
@@ -5305,7 +5300,7 @@
       {
        "key": "FanDuel",
        "n": 21,
-       "rows": 33,
+       "rows": 34,
        "wins": 9,
        "losses": 12,
        "pushes": 0,
@@ -5511,7 +5506,7 @@
       {
        "key": "5–7%",
        "n": 34,
-       "rows": 43,
+       "rows": 45,
        "wins": 16,
        "losses": 18,
        "pushes": 0,
@@ -5545,7 +5540,7 @@
       {
        "key": "7%+",
        "n": 159,
-       "rows": 199,
+       "rows": 202,
        "wins": 92,
        "losses": 67,
        "pushes": 0,
@@ -5581,7 +5576,7 @@
       {
        "key": "0.25u",
        "n": 217,
-       "rows": 272,
+       "rows": 277,
        "wins": 115,
        "losses": 102,
        "pushes": 0,
@@ -5753,7 +5748,7 @@
       {
        "key": "−114 to −105",
        "n": 122,
-       "rows": 156,
+       "rows": 158,
        "wins": 64,
        "losses": 58,
        "pushes": 0,
@@ -5787,7 +5782,7 @@
       {
        "key": "−104 to +100",
        "n": 33,
-       "rows": 37,
+       "rows": 39,
        "wins": 20,
        "losses": 13,
        "pushes": 0,
@@ -5821,7 +5816,7 @@
       {
        "key": "+101 to +149",
        "n": 47,
-       "rows": 56,
+       "rows": 57,
        "wins": 22,
        "losses": 25,
        "pushes": 0,
@@ -6163,7 +6158,7 @@
       {
        "key": "NFL · Week 05",
        "n": 0,
-       "rows": 50,
+       "rows": 55,
        "wins": 0,
        "losses": 0,
        "pushes": 0,
@@ -6267,7 +6262,7 @@
       {
        "key": "edgedesk_props_model_v1",
        "n": 217,
-       "rows": 272,
+       "rows": 277,
        "wins": 115,
        "losses": 102,
        "pushes": 0,
@@ -6303,7 +6298,7 @@
       {
        "key": "Bet",
        "n": 217,
-       "rows": 272,
+       "rows": 277,
        "wins": 115,
        "losses": 102,
        "pushes": 0,
@@ -6337,7 +6332,7 @@
       {
        "key": "Lean",
        "n": 2953,
-       "rows": 4019,
+       "rows": 4082,
        "wins": 1516,
        "losses": 1437,
        "pushes": 0,
@@ -6370,21 +6365,21 @@
       },
       {
        "key": "Watch",
-       "n": 9,
-       "rows": 31,
-       "wins": 4,
+       "n": 10,
+       "rows": 32,
+       "wins": 5,
        "losses": 5,
        "pushes": 0,
-       "record": "4-5",
-       "win_rate_pct": 44.44,
-       "net_units": -1.04,
-       "risked_units": 9,
-       "roi_pct": -11.55,
-       "avg_clv_points": -0.17,
-       "avg_clv_prob_pp": -0.12,
-       "clv_hit_rate_pct": 33.3,
-       "avg_odds": -102,
-       "avg_edge_pct": -0.21,
+       "record": "5-5",
+       "win_rate_pct": 50,
+       "net_units": -0.13,
+       "risked_units": 10,
+       "roi_pct": -1.3,
+       "avg_clv_points": 0.1,
+       "avg_clv_prob_pp": 0.57,
+       "clv_hit_rate_pct": 42.9,
+       "avg_odds": -103,
+       "avg_edge_pct": -0.44,
        "max_drawdown_units": -2.0196,
        "record_only": {
         "n": 0,
@@ -6398,27 +6393,27 @@
         "key": "VERY_SMALL",
         "label": "Very small sample",
         "warn": true,
-        "n": 9,
-        "text": "n=9 · Very small sample — results may be unstable"
+        "n": 10,
+        "text": "n=10 · Very small sample — results may be unstable"
        }
       },
       {
        "key": "Pass",
-       "n": 61,
-       "rows": 116,
-       "wins": 31,
+       "n": 62,
+       "rows": 125,
+       "wins": 32,
        "losses": 28,
        "pushes": 2,
-       "record": "31-28-2",
-       "win_rate_pct": 52.54,
-       "net_units": -0.47,
-       "risked_units": 59,
-       "roi_pct": -0.79,
-       "avg_clv_points": 0.02,
-       "avg_clv_prob_pp": 0.35,
-       "clv_hit_rate_pct": 51.4,
+       "record": "32-28-2",
+       "win_rate_pct": 53.33,
+       "net_units": 0.44,
+       "risked_units": 60,
+       "roi_pct": 0.74,
+       "avg_clv_points": 0.06,
+       "avg_clv_prob_pp": 0.46,
+       "clv_hit_rate_pct": 52.6,
        "avg_odds": -111,
-       "avg_edge_pct": -2.55,
+       "avg_edge_pct": -2.54,
        "max_drawdown_units": -7.4459,
        "record_only": {
         "n": 0,
@@ -6432,8 +6427,8 @@
         "key": "DEVELOPING",
         "label": "Developing sample",
         "warn": false,
-        "n": 61,
-        "text": "n=61 · Developing sample"
+        "n": 62,
+        "text": "n=62 · Developing sample"
        }
       },
       {
@@ -6871,7 +6866,7 @@
      "graded": 1168,
      "priced": 296,
      "record_only": 872,
-     "pending_priced": 50,
+     "pending_priced": 55,
      "excluded": [
       {
        "key": "historical_price_unavailable",
@@ -6947,7 +6942,7 @@
        "win_rate_pct": 53,
        "graded": 217,
        "record_only": 0,
-       "pending_priced": 50,
+       "pending_priced": 55,
        "type": "player_prop",
        "label": "Player Props"
       }
@@ -9252,7 +9247,7 @@
       {
        "key": "Player Props",
        "n": 217,
-       "rows": 272,
+       "rows": 277,
        "wins": 115,
        "losses": 102,
        "pushes": 0,
@@ -9390,7 +9385,7 @@
       {
        "key": "Player Props",
        "n": 217,
-       "rows": 272,
+       "rows": 277,
        "wins": 115,
        "losses": 102,
        "pushes": 0,
@@ -9460,7 +9455,7 @@
       {
        "key": "2026-10",
        "n": 296,
-       "rows": 503,
+       "rows": 508,
        "wins": 169,
        "losses": 127,
        "pushes": 0,
@@ -9496,7 +9491,7 @@
       {
        "key": "Captured with the decision",
        "n": 217,
-       "rows": 1144,
+       "rows": 1149,
        "wins": 115,
        "losses": 102,
        "pushes": 0,
@@ -9600,7 +9595,7 @@
       {
        "key": "Receiving Yards",
        "n": 53,
-       "rows": 65,
+       "rows": 67,
        "wins": 27,
        "losses": 26,
        "pushes": 0,
@@ -9634,7 +9629,7 @@
       {
        "key": "Receptions",
        "n": 60,
-       "rows": 77,
+       "rows": 78,
        "wins": 30,
        "losses": 30,
        "pushes": 0,
@@ -9736,7 +9731,7 @@
       {
        "key": "Rushing Yards",
        "n": 44,
-       "rows": 60,
+       "rows": 62,
        "wins": 30,
        "losses": 14,
        "pushes": 0,
@@ -9806,7 +9801,7 @@
       {
        "key": "Receiving",
        "n": 113,
-       "rows": 142,
+       "rows": 145,
        "wins": 57,
        "losses": 56,
        "pushes": 0,
@@ -9840,7 +9835,7 @@
       {
        "key": "Rushing",
        "n": 92,
-       "rows": 113,
+       "rows": 115,
        "wins": 52,
        "losses": 40,
        "pushes": 0,
@@ -9944,7 +9939,7 @@
       {
        "key": "Under",
        "n": 177,
-       "rows": 221,
+       "rows": 226,
        "wins": 98,
        "losses": 79,
        "pushes": 0,
@@ -10252,7 +10247,7 @@
       {
        "key": "DraftKings",
        "n": 156,
-       "rows": 406,
+       "rows": 408,
        "wins": 93,
        "losses": 63,
        "pushes": 0,
@@ -10286,7 +10281,7 @@
       {
        "key": "ESPN BET",
        "n": 31,
-       "rows": 38,
+       "rows": 40,
        "wins": 15,
        "losses": 16,
        "pushes": 0,
@@ -10320,7 +10315,7 @@
       {
        "key": "FanDuel",
        "n": 21,
-       "rows": 33,
+       "rows": 34,
        "wins": 9,
        "losses": 12,
        "pushes": 0,
@@ -10526,7 +10521,7 @@
       {
        "key": "5–7%",
        "n": 34,
-       "rows": 43,
+       "rows": 45,
        "wins": 16,
        "losses": 18,
        "pushes": 0,
@@ -10560,7 +10555,7 @@
       {
        "key": "7%+",
        "n": 159,
-       "rows": 199,
+       "rows": 202,
        "wins": 92,
        "losses": 67,
        "pushes": 0,
@@ -10596,7 +10591,7 @@
       {
        "key": "0.25u",
        "n": 217,
-       "rows": 272,
+       "rows": 277,
        "wins": 115,
        "losses": 102,
        "pushes": 0,
@@ -10768,7 +10763,7 @@
       {
        "key": "−114 to −105",
        "n": 122,
-       "rows": 156,
+       "rows": 158,
        "wins": 64,
        "losses": 58,
        "pushes": 0,
@@ -10802,7 +10797,7 @@
       {
        "key": "−104 to +100",
        "n": 33,
-       "rows": 37,
+       "rows": 39,
        "wins": 20,
        "losses": 13,
        "pushes": 0,
@@ -10836,7 +10831,7 @@
       {
        "key": "+101 to +149",
        "n": 47,
-       "rows": 56,
+       "rows": 57,
        "wins": 22,
        "losses": 25,
        "pushes": 0,
@@ -11178,7 +11173,7 @@
       {
        "key": "NFL · Week 05",
        "n": 0,
-       "rows": 50,
+       "rows": 55,
        "wins": 0,
        "losses": 0,
        "pushes": 0,
@@ -11282,7 +11277,7 @@
       {
        "key": "edgedesk_props_model_v1",
        "n": 217,
-       "rows": 272,
+       "rows": 277,
        "wins": 115,
        "losses": 102,
        "pushes": 0,
@@ -11318,7 +11313,7 @@
       {
        "key": "Bet",
        "n": 217,
-       "rows": 272,
+       "rows": 277,
        "wins": 115,
        "losses": 102,
        "pushes": 0,
@@ -11352,7 +11347,7 @@
       {
        "key": "Lean",
        "n": 2953,
-       "rows": 4019,
+       "rows": 4082,
        "wins": 1516,
        "losses": 1437,
        "pushes": 0,
@@ -11385,21 +11380,21 @@
       },
       {
        "key": "Watch",
-       "n": 9,
-       "rows": 31,
-       "wins": 4,
+       "n": 10,
+       "rows": 32,
+       "wins": 5,
        "losses": 5,
        "pushes": 0,
-       "record": "4-5",
-       "win_rate_pct": 44.44,
-       "net_units": -1.04,
-       "risked_units": 9,
-       "roi_pct": -11.55,
-       "avg_clv_points": -0.17,
-       "avg_clv_prob_pp": -0.12,
-       "clv_hit_rate_pct": 33.3,
-       "avg_odds": -102,
-       "avg_edge_pct": -0.21,
+       "record": "5-5",
+       "win_rate_pct": 50,
+       "net_units": -0.13,
+       "risked_units": 10,
+       "roi_pct": -1.3,
+       "avg_clv_points": 0.1,
+       "avg_clv_prob_pp": 0.57,
+       "clv_hit_rate_pct": 42.9,
+       "avg_odds": -103,
+       "avg_edge_pct": -0.44,
        "max_drawdown_units": -2.0196,
        "record_only": {
         "n": 0,
@@ -11413,27 +11408,27 @@
         "key": "VERY_SMALL",
         "label": "Very small sample",
         "warn": true,
-        "n": 9,
-        "text": "n=9 · Very small sample — results may be unstable"
+        "n": 10,
+        "text": "n=10 · Very small sample — results may be unstable"
        }
       },
       {
        "key": "Pass",
-       "n": 61,
-       "rows": 116,
-       "wins": 31,
+       "n": 62,
+       "rows": 125,
+       "wins": 32,
        "losses": 28,
        "pushes": 2,
-       "record": "31-28-2",
-       "win_rate_pct": 52.54,
-       "net_units": -0.47,
-       "risked_units": 59,
-       "roi_pct": -0.79,
-       "avg_clv_points": 0.02,
-       "avg_clv_prob_pp": 0.35,
-       "clv_hit_rate_pct": 51.4,
+       "record": "32-28-2",
+       "win_rate_pct": 53.33,
+       "net_units": 0.44,
+       "risked_units": 60,
+       "roi_pct": 0.74,
+       "avg_clv_points": 0.06,
+       "avg_clv_prob_pp": 0.46,
+       "clv_hit_rate_pct": 52.6,
        "avg_odds": -111,
-       "avg_edge_pct": -2.55,
+       "avg_edge_pct": -2.54,
        "max_drawdown_units": -7.4459,
        "record_only": {
         "n": 0,
@@ -11447,8 +11442,8 @@
         "key": "DEVELOPING",
         "label": "Developing sample",
         "warn": false,
-        "n": 61,
-        "text": "n=61 · Developing sample"
+        "n": 62,
+        "text": "n=62 · Developing sample"
        }
       },
       {
@@ -11818,9 +11813,9 @@
     }
    },
    "data_quality": {
-    "total": 5389,
-    "verified": 3319,
-    "pending": 1048,
+    "total": 5467,
+    "verified": 3321,
+    "pending": 1124,
     "voids": 150,
     "missing_entry_odds": 872,
     "simulated_price": 0,
@@ -14102,9 +14097,9 @@
     }
    },
    "data_quality": {
-    "total": 955,
-    "verified": 149,
-    "pending": 77,
+    "total": 965,
+    "verified": 151,
+    "pending": 85,
     "voids": 0,
     "missing_entry_odds": 729,
     "simulated_price": 0,
@@ -14188,7 +14183,7 @@
      "graded": 217,
      "priced": 217,
      "record_only": 0,
-     "pending_priced": 50,
+     "pending_priced": 55,
      "excluded": [],
      "snapshot_priced": 0,
      "default_stake": 0,
@@ -14253,7 +14248,7 @@
        "win_rate_pct": 53,
        "graded": 217,
        "record_only": 0,
-       "pending_priced": 50,
+       "pending_priced": 55,
        "type": "player_prop",
        "label": "Player Props"
       }
@@ -15967,7 +15962,7 @@
      "graded": 217,
      "priced": 217,
      "record_only": 0,
-     "pending_priced": 50,
+     "pending_priced": 55,
      "excluded": [],
      "snapshot_priced": 0,
      "default_stake": 0,
@@ -16032,7 +16027,7 @@
        "win_rate_pct": 53,
        "graded": 217,
        "record_only": 0,
-       "pending_priced": 50,
+       "pending_priced": 55,
        "type": "player_prop",
        "label": "Player Props"
       }
@@ -17678,9 +17673,9 @@
     }
    },
    "data_quality": {
-    "total": 4291,
+    "total": 4359,
     "verified": 3170,
-    "pending": 971,
+    "pending": 1039,
     "voids": 150,
     "missing_entry_odds": 0,
     "simulated_price": 0,
@@ -19394,9 +19389,9 @@
     }
    },
    "data_quality": {
-    "total": 1098,
-    "verified": 149,
-    "pending": 77,
+    "total": 1108,
+    "verified": 151,
+    "pending": 85,
     "voids": 0,
     "missing_entry_odds": 872,
     "simulated_price": 0,
@@ -19414,7 +19409,7 @@
   {
    "source": "CFB Model Lab",
    "file": "football/cfb_lab/ledger/2026/evaluations.jsonl",
-   "rows": 142,
+   "rows": 144,
    "reason": "research positions graded at an ASSUMED −110 (price_assumed); simulated, so never counted as verified P&L"
   },
   {
@@ -19426,7 +19421,7 @@
   {
    "source": "CFB decision engine (shadow)",
    "file": "football/cfb_decision/2026/decisions.jsonl",
-   "rows": 1442,
+   "rows": 1448,
    "reason": "a shadow engine under evaluation; its calls are not published EdgeDesk recommendations"
   }
  ],
@@ -19449,7 +19444,7 @@
    "source": "player_props",
    "league": "NFL",
    "file": "football/props/nfl/2026/evaluations.jsonl",
-   "rows": 2398,
+   "rows": 2445,
    "results_file": "football/props/nfl/2026/results.jsonl",
    "results": 4306
   },
@@ -19457,15 +19452,15 @@
    "source": "player_props",
    "league": "CFB",
    "file": "football/props/cfb/2026/evaluations.jsonl",
-   "rows": 1893,
+   "rows": 1914,
    "results_file": "football/props/cfb/2026/results.jsonl",
    "results": 3968
   },
   {
    "source": "bettor_decision",
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "snapshots": 1622,
-   "rows": 147,
+   "snapshots": 1645,
+   "rows": 157,
    "evaluations_file": "football/cfb_terminal/decisions/2026/evaluations.jsonl"
   },
   {

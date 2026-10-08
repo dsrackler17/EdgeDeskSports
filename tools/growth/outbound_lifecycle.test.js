@@ -250,8 +250,9 @@ const resetRuns = () => one(`update growth_outbound.research_runs set status = '
     r = JSON.parse(db.as(PAT_USER, `select public.acq_claim(${lit(VISITOR)}, ${J(Object.assign({ seen_at: new Date().toISOString() }, touch))}, null);`));
     chk('5 they make an account with ANOTHER address; the site claims the touch that brought them', r.ok === true
       && one(`select first_utm_campaign from public.user_acquisition where user_id = ${lit(PAT_USER)};`) === PAT_CODE, r);
-    // Stripe keeps whole seconds: the trial is stamped at the start of the very second the email went out, a fraction "before" it
-    one(`update growth_outbound.sends set sent_at = date_trunc('second', sent_at) + interval '0.7 second' where resend_message_id = 're_lc_0002';`);
+    // Stripe keeps whole seconds: the trial is stamped at the start of the very second the email went out, a fraction "before" it.
+    // The email is moved EARLIER (into the second before, 0.7 s in), never later: every visit and account after it stays after it.
+    one(`update growth_outbound.sends set sent_at = date_trunc('second', sent_at) - interval '1 second' + interval '0.7 second' where resend_message_id = 're_lc_0002';`);
     const TRIAL_AT = +one(`select extract(epoch from date_trunc('second', sent_at))::bigint from growth_outbound.sends where resend_message_id = 're_lc_0002';`);
     one(`insert into public.stripe_events (id, type, stripe_created, customer_id, subscription_id, user_id, payload)
          values ('evt_lc_1', 'customer.subscription.created', now(), 'cus_lc', 'sub_lc', ${lit(PAT_USER)},
