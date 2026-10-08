@@ -77,6 +77,10 @@ const content = (extra) => Object.assign({ title: 'College Football Week 6 Predi
   checks: { ok: true, failed: [], warned: [] } }, extra || {});
 const REVIEW = { source_verification: true, data_freshness: true, model_accuracy: true, seo_review: true, compliance: true, notes: 'ok' };
 const hashOf = (id) => one(`select content_hash from content_engine.articles where id = ${lit(id)};`);
+/* an editorial gate report (lib/content_engine.js gate) for the current version */
+const GATE = (verdict, findings) => ({ schema: 'edgedesk_editorial_gate_v1', verdict, items: [{ key: 'claims', label: 'Unsupported factual claims', status: verdict,
+  findings: findings || (verdict === 'PASS' ? [] : [{ status: verdict, reason: 'test finding' }]) }] });
+const gateAs = (id, verdict, report, who) => J(db.as(who || OWNER, `select public.content_engine_article_gate(${lit(id)}, ${lit(hashOf(id))}, ${lit(JSON.stringify(report || GATE(verdict || 'PASS')))}::jsonb);`));
 const statusOf = (id) => one(`select status from content_engine.articles where id = ${lit(id)};`);
 
 try {
@@ -184,6 +188,26 @@ try {
   chk('S the admin cannot review', !!fails(() => db.as(ADMIN, `select public.content_engine_article_review(${lit(c1.id)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`)));
   own(`select public.content_engine_article_review(${lit(c1.id)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
   chk('S approval is for the exact content: a stale hash is refused', own(`select public.content_engine_article_approve(${lit(c1.id)}, 'deadbeef');`).reason === 'changed_since_loaded');
+  /* ── G the editorial gate ─────────────────────────────────────────── */
+  chk('G approval needs a gate report for this version', own(`select public.content_engine_article_approve(${lit(c1.id)}, ${lit(hashOf(c1.id))});`).reason === 'gate_not_run');
+  chk('G a report whose verdict is not its worst finding is refused', gateAs(c1.id, null, Object.assign(GATE('BLOCKED'), { verdict: 'PASS' })).reason === 'verdict_mismatch');
+  chk('G a report for another version is refused', J(db.as(OWNER, `select public.content_engine_article_gate(${lit(c1.id)}, 'deadbeef', ${lit(JSON.stringify(GATE('PASS')))}::jsonb);`)).reason === 'changed_since_loaded');
+  chk('G a report claiming an acknowledgement the owner never made is refused',
+    gateAs(c1.id, null, GATE('WARNING', [{ status: 'WARNING', reason: 'Reviewed by the owner: gap', ack_key: 'discrepancy:401', acknowledged: { note: 'x' } }])).reason === 'unknown_acknowledgement');
+  const gb = gateAs(c1.id, 'BLOCKED');
+  chk('G a BLOCKED report is stored, with the first verdict kept', gb.ok && gb.verdict === 'BLOCKED'
+    && one(`select gate_verdict || '|' || first_gate_verdict || '|' || array_to_string(first_gate_blocked, ',') from content_engine.articles where id = ${lit(c1.id)};`) === 'BLOCKED|BLOCKED|claims');
+  chk('G a BLOCKED version cannot be approved', own(`select public.content_engine_article_approve(${lit(c1.id)}, ${lit(hashOf(c1.id))});`).reason === 'gate_blocked');
+  chk('G the admin cannot acknowledge a review finding', /owner only/.test(fails(() => db.as(ADMIN, `select public.content_engine_article_ack(${lit(c1.id)}, 'discrepancy:401', 'checked');`)) || ''));
+  chk('G an acknowledgement needs a note', own(`select public.content_engine_article_ack(${lit(c1.id)}, 'discrepancy:401', 'x');`).reason === 'note_required');
+  chk('G … and a known kind of finding', own(`select public.content_engine_article_ack(${lit(c1.id)}, 'anything:1', 'checked it');`).reason === 'bad_key');
+  const ak = own(`select public.content_engine_article_ack(${lit(c1.id)}, 'discrepancy:401', 'checked injuries and QB news');`);
+  chk('G the owner acknowledges, with a note; the gate must run again', ak.ok && one(`select (acks -> 'discrepancy:401' ->> 'note') || '|' || (gate_at is null)::text from content_engine.articles where id = ${lit(c1.id)};`) === 'checked injuries and QB news|true');
+  chk('G … after which a report may carry that acknowledgement', gateAs(c1.id, null, GATE('WARNING', [{ status: 'WARNING', reason: 'Reviewed by the owner: gap', ack_key: 'discrepancy:401', acknowledged: { note: 'checked' } }])).ok);
+  chk('G the weekly job may store a report (service role), the admin may not', J(db.service(`select public.content_engine_article_gate(${lit(c1.id)}, ${lit(hashOf(c1.id))}, ${lit(JSON.stringify(GATE('PASS')))}::jsonb);`)).ok
+    && /owner only/.test(fails(() => gateAs(c1.id, 'PASS', null, ADMIN)) || ''));
+  chk('G the first verdict is never rewritten', one(`select first_gate_verdict from content_engine.articles where id = ${lit(c1.id)};`) === 'BLOCKED');
+  chk('G every run is in the activity log', +one(`select count(*) from content_engine.events where kind = 'gate_run' and article_id = ${lit(c1.id)};`) >= 3);
   const ap1 = own(`select public.content_engine_article_approve(${lit(c1.id)}, ${lit(hashOf(c1.id))});`);
   chk('S the owner approves', ap1.ok && statusOf(c1.id) === 'approved'
     && one(`select approved_by::text || '|' || (approved_hash = content_hash)::text from content_engine.articles where id = ${lit(c1.id)};`) === OWNER + '|true');
@@ -199,9 +223,20 @@ try {
   own(`select public.content_engine_article_save(${lit(c3.id)}, ${lit(JSON.stringify({ sections: badSecs, checks: { ok: true } }))}::jsonb, 'bad words', null);`);
   own(`select public.content_engine_article_submit(${lit(c3.id)});`);
   own(`select public.content_engine_article_review(${lit(c3.id)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
+  gateAs(c3.id, 'PASS');   /* even a passing report: the database's own language floor still refuses */
   const ap3 = own(`select public.content_engine_article_approve(${lit(c3.id)}, ${lit(hashOf(c3.id))});`);
   chk('S tout language blocks approval even with the checks passed', ap3.ok === false && ap3.reason === 'language' && /guarantee/.test(JSON.stringify(ap3.terms)));
+  chk('G an edit makes the old report stale: approval asks for a new one', own(`select public.content_engine_article_approve(${lit(c1.id)}, ${lit(hashOf(c1.id))});`).reason === 'gate_not_run');
+  gateAs(c1.id, 'PASS');
   chk('S approve again, at the current hash', own(`select public.content_engine_article_approve(${lit(c1.id)}, ${lit(hashOf(c1.id))});`).ok);
+  /* the gate is the database's rule: the table's own trigger refuses a BLOCKED or stale report whatever the door */
+  gateAs(c1.id, 'BLOCKED');
+  chk('G Ready to Send refuses a BLOCKED report (door)', own(`select public.content_engine_article_transition(${lit(c1.id)}, 'ready_to_send', '{}'::jsonb);`).reason === 'gate_blocked');
+  chk('G … and the trigger refuses it on any path', /editorial gate blocked/.test(fails(() => one(`update content_engine.articles set status = 'ready_to_send' where id = ${lit(c1.id)};`)) || ''));
+  gateAs(c1.id, 'PASS');
+  one(`update content_engine.articles set gate_at = now() - interval '25 hours' where id = ${lit(c1.id)};`);
+  chk('G a report older than a day is stale', own(`select public.content_engine_article_transition(${lit(c1.id)}, 'ready_to_send', '{}'::jsonb);`).reason === 'gate_stale');
+  gateAs(c1.id, 'WARNING');
   chk('S approved → ready to send', own(`select public.content_engine_article_transition(${lit(c1.id)}, 'ready_to_send', '{}'::jsonb);`).ok && statusOf(c1.id) === 'ready_to_send');
   chk('S approved cannot jump to published', own(`select public.content_engine_article_transition(${lit(c3.id)}, 'published', '{"url":"https://x.example/a"}'::jsonb);`).ok === false);
   const sent0 = own(`select public.content_engine_article_transition(${lit(c1.id)}, 'sent', '{}'::jsonb);`);
@@ -225,6 +260,7 @@ try {
   const EM = em.id;
   own(`select public.content_engine_article_submit(${lit(EM)});`);
   own(`select public.content_engine_article_review(${lit(EM)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
+  gateAs(EM, 'PASS');
   chk('E (setup) approved', own(`select public.content_engine_article_approve(${lit(EM)}, ${lit(hashOf(EM))});`).ok);
   const claim = (who, to, test, hash) => J(db[who === 'svc' ? 'service' : 'as'](...(who === 'svc' ? [] : [who]),
     `select public.content_engine_send_claim(${lit(EM)}, ${lit(to)}, null, ${lit(hash === undefined ? hashOf(EM) : hash)}, ${test ? 'true' : 'false'});`));
@@ -260,6 +296,7 @@ try {
   const em2 = own(`select public.content_engine_article_create(${lit(ue2.id)}, ${lit(SR.id)}, 'nfl_weekly_preview', 'full_slate', ${lit(JSON.stringify(content({ title: 'NFL Week 5 Predictions: Biggest Games and Potential Upsets' })))}::jsonb, null);`).id;
   own(`select public.content_engine_article_submit(${lit(em2)});`);
   own(`select public.content_engine_article_review(${lit(em2)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
+  gateAs(em2, 'PASS');
   own(`select public.content_engine_article_approve(${lit(em2)}, ${lit(hashOf(em2))});`);
   own(`select public.content_engine_article_transition(${lit(em2)}, 'ready_to_send', '{}'::jsonb);`);
   const f1 = J(db.as(OWNER, `select public.content_engine_send_claim(${lit(em2)}, 'editor@example.test', 'NFL Week 5', ${lit(hashOf(em2))}, false);`));
@@ -330,6 +367,130 @@ try {
   const full = own(`select public.content_engine_article(${lit(c3.id)});`);
   chk('P an article comes with its research, profile and siblings for the duplicate check', full && full.opportunity && full.opportunity.research && full.publisher_profile.slug === 'stadium-rant'
     && full.siblings.length === 0 /* c1 is archived */ && full.revisions.length >= 2);
+  { /* ── AB the AI budget ─────────────────────────────────────────────── */
+  const H = (x) => require('crypto').createHash('sha256').update('edgedesk-req:' + x).digest('hex');
+  const resQ = (hash, o) => `select public.content_engine_ai_reserve(${lit((o && o.op) || 'draft')}, null, ${lit((o && o.model) || 'claude-opus-5-5')}, ${lit(hash)}, ${(o && o.max) || 16000}, ${o && o.input != null ? o.input : 12000}, ${(o && o.attempt) || 1});`;
+  const resOwn = (hash, o) => own(resQ(hash, o));
+  const resSvc = (hash, o) => svc(resQ(hash, o));
+  const settle = (id, usage, outcome, result, who) => J(db[who === 'svc' ? 'service' : 'as'](...(who === 'svc' ? [] : [OWNER]),
+    `select public.content_engine_ai_settle(${id}, ${usage == null ? 'null' : lit(JSON.stringify(usage)) + '::jsonb'}, ${lit(outcome)}, ${result == null ? 'null' : lit(JSON.stringify(result)) + '::jsonb'}, null);`));
+  own(`select public.content_engine_settings_save('{"llm_calls_per_day": 200}'::jsonb);`);
+  chk('AB the owner sets a monthly AI budget', own(`select public.content_engine_ai_budget_save('{"ai_monthly_budget_usd": 1}'::jsonb);`).ok);
+  chk('AB anon cannot reserve AI spend', /permission denied/.test(fails(() => db.anon(resQ(H('anon')))) || ''));
+  chk('AB the admin cannot reserve AI spend', /owner only/.test(fails(() => db.as(ADMIN, resQ(H('admin')))) || ''));
+  const usedBefore = +one(`select coalesce((select calls from content_engine.usage where day = (now() at time zone 'utc')::date and provider = 'llm'), 0);`);
+  const r1 = resOwn(H(1));
+  chk('AB a reservation holds the worst case: 12,000 input + 16,000 output tokens at $4/$20 per million = $0.368', r1.ok && r1.cached === false && Math.abs(r1.reserved_usd - 0.368) < 1e-9, r1);
+  const r2 = resSvc(H(2));
+  chk('AB the weekly job reserves too (service role)', r2.ok && Math.abs(r2.committed_usd - 0.736) < 1e-9, r2);
+  const r3 = resOwn(H(3));
+  chk('AB past the monthly cap: refused before any call, and logged', r3.ok === false && r3.reason === 'budget_exhausted' && Math.abs(r3.committed_usd - 0.736) < 1e-9
+    && +one(`select count(*) from content_engine.events where kind = 'ai_budget_blocked';`) >= 1, r3);
+  chk('AB each real reservation counts against today’s call cap', +one(`select calls from content_engine.usage where day = (now() at time zone 'utc')::date and provider = 'llm';`) === usedBefore + 2);
+  const s1 = settle(r1.call_id, { input_tokens: 10000, output_tokens: 3000, model: 'claude-opus-5-5' }, 'accepted', { title: 'cached version', sections: [] });
+  chk('AB settled from the API’s own token counts: 10,000 in + 3,000 out = $0.10 (estimated)', s1.ok && Math.abs(s1.est_usd - 0.1) < 1e-9 && s1.usage_known === true, s1);
+  chk('AB a call is settled once', settle(r1.call_id, { input_tokens: 1, output_tokens: 1 }, 'accepted').already === true);
+  chk('AB the ledger keeps its outcome: no rewrite, no delete, no truncate', !!fails(() => one(`update content_engine.ai_calls set est_usd = 0 where id = ${r1.call_id};`))
+    && !!fails(() => one(`delete from content_engine.ai_calls where id = ${r1.call_id};`)) && !!fails(() => one(`truncate content_engine.ai_calls;`)));
+  const r3b = resOwn(H(3));
+  chk('AB with the estimate in place of the reservation there is room again', r3b.ok && Math.abs(r3b.committed_usd - (0.1 + 0.368 + 0.368)) < 1e-9, r3b);
+  const usedMid = +one(`select calls from content_engine.usage where day = (now() at time zone 'utc')::date and provider = 'llm';`);
+  const c1x = resOwn(H(1));
+  chk('AB the identical request again: served from the ledger, no call, no cost, no cap used', c1x.ok && c1x.cached === true && c1x.outcome === 'accepted' && c1x.result.title === 'cached version'
+    && +one(`select calls from content_engine.usage where day = (now() at time zone 'utc')::date and provider = 'llm';`) === usedMid
+    && one(`select status || '|' || est_usd::text from content_engine.ai_calls where id = ${c1x.call_id};`) === 'cache_hit|0.000000', c1x);
+  settle(r2.call_id, { input_tokens: 9000, output_tokens: 2000 }, 'discarded', { title: 'a version that failed the checks' }, 'svc');
+  const c2x = resSvc(H(2));
+  chk('AB a request that already failed the checks is not paid for twice', c2x.ok && c2x.cached === true && c2x.outcome === 'discarded');
+  own(`select public.content_engine_ai_budget_save('{"ai_monthly_budget_usd": 5}'::jsonb);`);
+  const r4 = resOwn(H(4), { max: 1000, input: 1000 });
+  const s4 = settle(r4.call_id, { iterations: [{ model: 'claude-opus-5-5', input_tokens: 1000, output_tokens: 1000 }, { model: 'claude-opus-5', input_tokens: 1000, output_tokens: 1000 }] }, 'accepted', null);
+  chk('AB a refusal fallback is priced at each model’s own rate ($0.024 + $0.030)', Math.abs(s4.est_usd - 0.054) < 1e-9, s4);
+  const r5 = resOwn(H(5), { model: 'claude-unlisted-9', max: 1000, input: 0 });
+  chk('AB an unlisted model is priced at the most expensive listed rate', r5.ok && Math.abs(r5.reserved_usd - 0.05) < 1e-9, r5);
+  chk('AB a timeout keeps the reservation as the estimate (it may have been billed)', Math.abs(settle(r5.call_id, null, 'unknown').est_usd - 0.05) < 1e-9);
+  const r6 = resOwn(H(6), { max: 1000, input: 1000 });
+  chk('AB an API error with no usage costs nothing', settle(r6.call_id, null, 'error').est_usd === 0);
+  const bud = own('select public.content_engine_ai_budget();');
+  chk('AB the month in one place: estimated dollars, tokens, calls, cache hits, by model', bud.calls >= 5 && bud.cache_hits === 2 && bud.input_tokens === 21000 && bud.by_model['claude-opus-5-5'] && /not your invoice/.test(bud.basis), bud);
+  chk('AB 50/75/90% alerts are logged as the month crosses them', one(`select string_agg(distinct detail ->> 'level', ',' order by detail ->> 'level') from content_engine.events where kind = 'ai_budget_alert';`).indexOf('50') >= 0);
+  /* the race: eight simultaneous requests, room for exactly two */
+  const committed = +own('select public.content_engine_ai_budget();').committed_usd;
+  own(`select public.content_engine_ai_budget_save(${lit(JSON.stringify({ ai_monthly_budget_usd: Math.round((committed + 0.8) * 100) / 100 }))}::jsonb);`);
+  const room = +own('select public.content_engine_ai_budget();').budget_usd - committed;
+  const expectOk = Math.floor(room / 0.368 + 1e-9);
+  const claimTxt = `do $claim$ begin perform set_config('request.jwt.claim.sub', ${lit(OWNER)}, true); end $claim$;\n`;
+  const racers = [];
+  for (let i = 0; i < 8; i++) racers.push(db.background('begin;\n' + claimTxt + 'set local role authenticated;\n' + resQ(H('race' + i)) + '\nselect pg_sleep(0.4);\ncommit;\n'));
+  const results = racers.map((r) => r.wait(30000));
+  const oks = results.filter((r) => /"ok": true/.test(r.out)).length, refused = results.filter((r) => /budget_exhausted/.test(r.out)).length;
+  chk('AB eight concurrent requests cannot pass the monthly cap together (room for ' + expectOk + ')', expectOk === 2 && oks === expectOk && refused === 8 - expectOk
+    && +one(`select count(*) from content_engine.ai_calls where status = 'reserved' and request_hash in (${[0, 1, 2, 3, 4, 5, 6, 7].map((i) => lit(H('race' + i))).join(',')});`) === expectOk,
+    { oks, refused, expectOk, outs: results.map((r) => r.out.slice(0, 80)) });
+  own(`select public.content_engine_settings_save('{"llm_calls_per_day": 0}'::jsonb);`);
+  own(`select public.content_engine_ai_budget_save('{"ai_monthly_budget_usd": 500}'::jsonb);`);
+  chk('AB the daily call cap still applies under a generous budget', /call cap/.test(resOwn(H('cap')).detail || ''));
+  own(`select public.content_engine_settings_save('{"llm_calls_per_day": 20}'::jsonb);`);
+  own(`select public.content_engine_ai_budget_save('{"ai_monthly_budget_usd": 10}'::jsonb);`);
+  chk('AB the overview shows the month’s AI spend', typeof own('select public.content_engine_overview();').ai.committed_usd === 'number');
+
+  /* ── M measurement: funnel, revenue, costs, targets ────────────────── */
+  const base = own('select public.content_engine_scorecard(30);');
+  const code1 = one(`select campaign_code from content_engine.articles where id = ${lit(c1.id)};`);
+  const codeE = one(`select campaign_code from content_engine.articles where id = ${lit(EM)};`);
+  const U = (n) => '00000000-0000-0000-0000-0000000001' + String(n).padStart(2, '0');
+  const users = [[1, true], [2, false], [3, true], [4, true], [6, true], [7, true]];
+  one(`insert into auth.users (id, email, email_confirmed_at, created_at) values ${users.map(([n, c]) => `(${lit(U(n))}, 'reader${n}@example.test', ${c ? 'now()' : 'null'}, now() - interval '3 days')`).join(', ')};`);
+  const acq = (n, first, last, lastMed, lastDays, firstDays) => `(${lit(U(n))}, now() - interval '3 days', ${first ? "'referral'" : "'direct'"}, ${lit(first)}, ${first ? "'publisher'" : 'null'}, now() - interval '${firstDays || 4} days', 'referral', ${lit(last)}, ${lit(lastMed)}, now() - interval '${lastDays || 4} days')`;
+  one(`insert into public.user_acquisition (user_id, signup_at, first_source, first_utm_campaign, first_utm_medium, first_seen_at, last_source, last_utm_campaign, last_utm_medium, last_seen_at) values
+    ${[acq(1, code1, code1, 'publisher'), acq(2, code1, code1, 'publisher'), acq(3, codeE, 'fall_promo', 'cpc'), acq(4, code1, code1, 'publisher', 40, 40),
+       acq(6, code1, code1, 'publisher'), acq(7, codeE, codeE, 'publisher')].join(',\n')},
+    (${lit(OWNER)}, now() - interval '3 days', 'referral', ${lit(code1)}, 'publisher', now() - interval '4 days', 'referral', ${lit(code1)}, 'publisher', now() - interval '4 days')
+    on conflict (user_id) do nothing;`);
+  one(`insert into public.acquisition_visitors (visitor_hash, first_source, first_utm_campaign, first_seen_at, last_source, last_utm_campaign, last_utm_medium, last_seen_at)
+       values ('cv1', 'referral', ${lit(code1)}, now() - interval '5 days', 'referral', ${lit(code1)}, 'publisher', now() - interval '5 days'),
+              ('cv2', 'referral', ${lit(code1)}, now() - interval '2 days', 'referral', ${lit(code1)}, 'publisher', now() - interval '2 days'),
+              ('cv3', 'referral', ${lit(codeE)}, now() - interval '1 days', 'referral', ${lit(codeE)}, 'publisher', now() - interval '1 days'),
+              ('cv4', 'other', 'fall_promo', now() - interval '1 days', 'other', 'fall_promo', 'cpc', now() - interval '1 days');`);
+  /* Stripe, as the verified webhook stores it: a trial, invoices (one delivered twice), a cancellation, a refund */
+  const ev = (id, type, uid, sub, cust, obj, days) => `(${lit(id)}, ${lit(type)}, now() - interval '${days} days', ${lit(cust)}, ${lit(sub)}, ${lit(uid)}, ${lit(JSON.stringify({ data: { object: obj } }))}::jsonb)`;
+  one(`insert into public.subscriptions (user_id, status, price_id, stripe_customer_id, stripe_subscription_id) values
+         (${lit(U(6))}, 'active', 'price_full', 'cus_6', 'sub_6'), (${lit(U(7))}, 'canceled', 'price_full', 'cus_7', 'sub_7')
+       on conflict (user_id) do update set status = excluded.status, stripe_customer_id = excluded.stripe_customer_id, stripe_subscription_id = excluded.stripe_subscription_id;`);
+  one(`insert into public.stripe_events (id, type, stripe_created, customer_id, subscription_id, user_id, payload) values
+    ${[ev('evt_t6', 'customer.subscription.created', U(6), 'sub_6', 'cus_6', { id: 'sub_6', status: 'trialing', trial_start: Math.floor(Date.now() / 1000) - 3 * 86400 }, 3),
+       ev('evt_i6a', 'invoice.paid', U(6), 'sub_6', 'cus_6', { id: 'in_6a', amount_paid: 4999, subscription: 'sub_6' }, 2),
+       ev('evt_i6a_again', 'invoice.payment_succeeded', U(6), 'sub_6', 'cus_6', { id: 'in_6a', amount_paid: 4999, subscription: 'sub_6' }, 2),
+       ev('evt_i6b', 'invoice.paid', U(6), 'sub_6', 'cus_6', { id: 'in_6b', amount_paid: 4999, subscription: 'sub_6' }, 1),
+       ev('evt_i7', 'invoice.paid', U(7), 'sub_7', 'cus_7', { id: 'in_7', amount_paid: 4999, subscription: 'sub_7' }, 2),
+       ev('evt_r7', 'charge.refunded', U(7), 'sub_7', 'cus_7', { id: 'ch_7', amount_refunded: 4999, customer: 'cus_7' }, 1)].join(',\n')};`);
+  chk('M costs: the owner enters billed amounts; a correction is a negative row; nothing is edited', own(`select public.content_engine_cost_add('{"category":"ai_billed","amount_usd":3.50,"basis":"billed","note":"Anthropic invoice"}'::jsonb);`).ok
+    && own(`select public.content_engine_cost_add('{"category":"magic","amount_usd":1}'::jsonb);`).reason === 'invalid'
+    && !!fails(() => one(`update content_engine.costs set amount_usd = 0;`)) && !!fails(() => one(`delete from content_engine.costs;`)));
+  chk('M the scorecard is the owner’s: not the admin, not the job', /owner only/.test(fails(() => db.as(ADMIN, 'select public.content_engine_scorecard(30);')) || '')
+    && /permission denied/.test(fails(() => db.service('select public.content_engine_scorecard(30);')) || ''));
+  const sc = own('select public.content_engine_scorecard(30);');
+  chk('M visits: content campaigns only (3 of 4 visitors)', sc.distribution.referral_visits - base.distribution.referral_visits === 3, [base.distribution, sc.distribution]);
+  chk('M registrations: direct and confirmed only — not the unconfirmed one, not outside the window, not the owner', sc.distribution.registrations - base.distribution.registrations === 3, [base.distribution, sc.distribution]);
+  chk('M assisted shown apart, never added to direct', sc.distribution.registrations_assisted - base.distribution.registrations_assisted === 2 && sc.revenue.paid_assisted === base.revenue.paid_assisted, [base.distribution, sc.distribution]);
+  chk('M trials and paid from Stripe’s events', sc.distribution.trials - base.distribution.trials === 1 && sc.revenue.paid - base.revenue.paid === 2, { b: base.revenue, d: sc.distribution, r: sc.revenue });
+  const independent = +one(`select coalesce(sum(cents), 0) from (select distinct on (payload -> 'data' -> 'object' ->> 'id') (payload -> 'data' -> 'object' ->> 'amount_paid')::bigint cents
+      from public.stripe_events where type in ('invoice.paid', 'invoice.payment_succeeded') and user_id in (${lit(U(6))}, ${lit(U(7))}) order by payload -> 'data' -> 'object' ->> 'id') x;`);
+  chk('M collected revenue reconciles with Stripe’s invoices, a duplicate delivery counted once ($149.97)', Math.round((sc.revenue.collected_usd - base.revenue.collected_usd) * 100) === independent && independent === 14997, { sc: sc.revenue, base: base.revenue, independent });
+  chk('M refunds come off: net $99.98', Math.round((sc.revenue.refunded_usd - base.revenue.refunded_usd) * 100) === 4999 && Math.round((sc.revenue.net_collected_usd - base.revenue.net_collected_usd) * 100) === 9998, [base.revenue, sc.revenue]);
+  chk('M new MRR counts active subscriptions only ($49.99)', Math.round((sc.revenue.new_mrr_usd - base.revenue.new_mrr_usd) * 100) === 4999, [base.revenue, sc.revenue]);
+  chk('M retained and churned are told apart', sc.revenue.retention.retained - base.revenue.retention.retained === 1 && sc.revenue.retention.churned - base.revenue.retention.churned === 1, [base.revenue.retention, sc.revenue.retention]);
+  chk('M costs: billed AI replaces the estimate; CAC = cost / paid customers', sc.costs.total_usd === 3.5 && sc.costs.cac_usd === Math.round(3.5 / sc.revenue.paid * 100) / 100 && /billed/.test(sc.costs.basis), sc.costs);
+  chk('M first-three-month revenue to cost', sc.costs.revenue_to_cost === Math.round(sc.revenue.first_three_months_usd / 3.5 * 100) / 100 && sc.revenue.first_three_months_usd - base.revenue.first_three_months_usd === 149.97, [sc.costs, sc.revenue]);
+  const tgt = {}; sc.targets.forEach((t) => { tgt[t.key] = t; });
+  chk('M every target carries actual, needed-now and a status; nothing unmeasured is filled in', sc.targets.length === 13 && sc.targets.every((t) => ['met', 'on_track', 'behind', 'not_measured'].indexOf(t.status) >= 0)
+    && tgt.paid_per_month.target === 3 && tgt.new_mrr_usd_per_month.target === 149.97 && tgt.cac_max_usd.status === 'met', sc.targets);
+  chk('M the bottleneck names the first stage below the targets', ['production', 'acceptance', 'traffic', 'signup', 'paid', 'cost', 'insufficient_data', 'none'].indexOf(sc.bottleneck.stage) >= 0 && sc.bottleneck.label, sc.bottleneck);
+  chk('M no identity in the scorecard', !/reader\d@example|00000000-0000-0000-0000-00000000010/.test(JSON.stringify(sc)));
+  const wd = own('select public.content_engine_weekly_data(28);');
+  chk('M the weekly data: articles with their funnel, gate failures, AI waste', Array.isArray(wd.articles) && wd.articles.length >= 2 && wd.gate_failures.claims >= 1 && wd.ai.calls >= 5 && wd.ai.cache_hits === 2, { ai: wd.ai, gf: wd.gate_failures });
+  }
+
 } catch (e) {
   chk('the suite reached its end — ' + String(e.message).slice(0, 600), false);
 } finally {

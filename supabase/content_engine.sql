@@ -219,6 +219,23 @@ create unique index if not exists articles_one_live on content_engine.articles
   (opportunity_id, coalesce(publisher_id, '00000000-0000-0000-0000-000000000000'::uuid), format, angle)
   where status <> 'archived';
 create index if not exists articles_status on content_engine.articles (status, updated_at desc);
+-- the editorial gate (section 6c): the last report for this article, the
+-- version it was run on, and the owner's review acknowledgements
+alter table content_engine.articles add column if not exists gate jsonb;
+alter table content_engine.articles add column if not exists gate_verdict text;
+alter table content_engine.articles add column if not exists gate_hash text;
+alter table content_engine.articles add column if not exists gate_at timestamptz;
+alter table content_engine.articles add column if not exists acks jsonb not null default '{}'::jsonb;
+alter table content_engine.articles add column if not exists first_gate_verdict text;
+alter table content_engine.articles add column if not exists first_gate_blocked text[];
+do $g$ begin
+  if not exists (select 1 from pg_constraint where conname = 'articles_gate_shape') then
+    alter table content_engine.articles add constraint articles_gate_shape check (
+      (gate_verdict is null or gate_verdict in ('PASS', 'WARNING', 'BLOCKED'))
+      and (first_gate_verdict is null or first_gate_verdict in ('PASS', 'WARNING', 'BLOCKED'))
+      and jsonb_typeof(acks) = 'object');
+  end if;
+end $g$;
 
 create table if not exists content_engine.revisions (
   id               bigint generated always as identity primary key,
@@ -464,6 +481,16 @@ begin
     if new.status = 'ready_to_send' and (new.approved_hash is distinct from new.content_hash or new.approved_by is null) then
       raise exception 'only approved, unchanged content is ready to send' using errcode = 'check_violation';
     end if;
+    -- THE EDITORIAL GATE (section 6c): approval and Ready to Send need a gate
+    -- report for this exact version, from the last 24 hours, that is not BLOCKED
+    if (new.status = 'approved' and old.status = 'in_review') or new.status = 'ready_to_send' then
+      if new.gate_verdict is null or new.gate_hash is distinct from new.content_hash or new.gate_at < now() - interval '24 hours' then
+        raise exception 'run the editorial gate on this exact version first' using errcode = 'check_violation';
+      end if;
+      if new.gate_verdict = 'BLOCKED' then
+        raise exception 'the editorial gate blocked this version' using errcode = 'check_violation';
+      end if;
+    end if;
     if new.status = 'sent' then
       if door <> 'mark_sent' then raise exception 'only the mark-sent door records a send' using errcode = 'insufficient_privilege'; end if;
       new.sent_at := coalesce(new.sent_at, now());
@@ -578,8 +605,11 @@ begin
     'publishers', coalesce((select jsonb_agg(jsonb_build_object('id', id, 'slug', slug, 'name', name, 'status', status) order by name) from content_engine.publishers), '[]'::jsonb),
     'runs', coalesce((select jsonb_agg(to_jsonb(r) order by r.started_at desc) from (select * from content_engine.runs order by started_at desc limit 8) r), '[]'::jsonb),
     'sender', content_engine.sender(),
+    'ai', content_engine.ai_month(),
+    'gate', coalesce((select jsonb_object_agg(coalesce(gate_verdict, 'NOT_RUN'), n) from (select gate_verdict, count(*) n from content_engine.articles
+        where status in ('draft', 'in_review', 'approved', 'ready_to_send') group by gate_verdict) x), '{}'::jsonb),
     'problems', coalesce((select jsonb_agg(to_jsonb(e) order by e.at desc) from (select * from content_engine.events
-        where kind in ('generation_failed', 'validation_failed', 'ai_discarded', 'fetch_failed', 'job_failed', 'send_failed') order by at desc limit 12) e), '[]'::jsonb));
+        where kind in ('generation_failed', 'validation_failed', 'ai_discarded', 'fetch_failed', 'job_failed', 'send_failed', 'ai_budget_blocked', 'ai_budget_alert') order by at desc limit 12) e), '[]'::jsonb));
 end $$;
 
 create or replace function public.content_engine_settings_save(p jsonb)
@@ -892,6 +922,7 @@ begin
   if not a.checks_ok then return jsonb_build_object('ok', false, 'reason', 'checks_failed', 'failed', a.checks -> 'failed'); end if;
   if not content_engine.review_complete(a.review) then return jsonb_build_object('ok', false, 'reason', 'review_incomplete'); end if;
   if (a.review ->> 'content_hash') is distinct from a.content_hash then return jsonb_build_object('ok', false, 'reason', 'review_is_for_an_older_version'); end if;
+  if content_engine.gate_problem(a) is not null then return jsonb_build_object('ok', false, 'reason', content_engine.gate_problem(a), 'verdict', a.gate_verdict); end if;
   bad := content_engine.lint(a.title || ' ' || coalesce(a.standfirst, '') || ' ' || coalesce(a.meta_description, '') || ' ' || a.sections::text);
   if cardinality(bad) > 0 then return jsonb_build_object('ok', false, 'reason', 'language', 'terms', to_jsonb(bad)); end if;
   perform set_config('content_engine.door', 'approve', true);
@@ -913,6 +944,9 @@ begin
   if p_to = 'approved' and a.status = 'in_review' then return jsonb_build_object('ok', false, 'reason', 'use_approve'); end if;
   if not content_engine.can_transition(a.status, p_to) then
     return jsonb_build_object('ok', false, 'reason', 'not_allowed', 'from', a.status, 'to', p_to);
+  end if;
+  if p_to = 'ready_to_send' and content_engine.gate_problem(a) is not null then
+    return jsonb_build_object('ok', false, 'reason', content_engine.gate_problem(a), 'verdict', a.gate_verdict);
   end if;
   if p_to = 'sent' then
     if coalesce(p ->> 'method', '') not in ('manual_email', 'cms_upload', 'shared_document', 'other') then
@@ -948,7 +982,8 @@ begin
              'checks_ok', a.checks_ok, 'failed', a.checks -> 'failed', 'warned', a.checks -> 'warned', 'word_count', a.word_count,
              'generator', a.generator, 'revision', a.revision, 'campaign_code', a.campaign_code, 'review_complete', content_engine.review_complete(a.review),
              'created_by', a.created_by, 'updated_at', a.updated_at, 'sent_at', a.sent_at, 'published_url', a.published_url,
-             'research_stale', a.research_hash is distinct from o.research_hash) x
+             'research_stale', a.research_hash is distinct from o.research_hash,
+             'gate_verdict', a.gate_verdict, 'gate_current', coalesce(a.gate_hash = a.content_hash and a.gate_at > now() - interval '24 hours', false)) x
       from content_engine.articles a join content_engine.opportunities o on o.id = a.opportunity_id
      where (p_status is null and a.status <> 'archived') or a.status = p_status
      order by a.updated_at desc limit greatest(1, least(coalesce(p_limit, 100), 300))) q), '[]'::jsonb);
@@ -1304,6 +1339,7 @@ begin
     nm := null;
   else
     if a.status <> 'ready_to_send' then return jsonb_build_object('ok', false, 'reason', 'not_ready', 'status', a.status); end if;
+    if content_engine.gate_problem(a) is not null then return jsonb_build_object('ok', false, 'reason', content_engine.gate_problem(a), 'detail', 'run the editorial gate again before sending'); end if;
     select * into pb from content_engine.publishers where id = a.publisher_id;
     if pb.id is null then return jsonb_build_object('ok', false, 'reason', 'no_publisher'); end if;
     if pb.status in ('paused', 'ended') then return jsonb_build_object('ok', false, 'reason', 'publisher_inactive'); end if;
@@ -1386,6 +1422,696 @@ exception when check_violation then
 end $$;
 
 -- =============================================================================
+-- 6c. THE EDITORIAL GATE — a report per version, enforced
+--
+-- The gate is computed by lib/content_engine.js (CE.gate: fourteen checks,
+-- each PASS / WARNING / BLOCKED with evidence and a fix) in the owner's page or
+-- the weekly job, against the research re-read at that moment. The database
+-- stores the report for the exact content hash, refuses a report whose verdict
+-- does not match its own findings or that claims an acknowledgement the owner
+-- never made, and REFUSES approval, Ready to Send and Send without a report for
+-- this version from the last 24 hours that is not BLOCKED (articles_guard, the
+-- doors and content_engine_send_claim). The owner's review acknowledgements
+-- (a discrepancy checked, a forecast read) live here, with a note.
+-- =============================================================================
+create or replace function content_engine.gate_problem(a content_engine.articles)
+returns text language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select case
+    when a.gate_verdict is null or a.gate_hash is distinct from a.content_hash then 'gate_not_run'
+    when a.gate_at < now() - interval '24 hours' then 'gate_stale'
+    when a.gate_verdict = 'BLOCKED' then 'gate_blocked'
+    else null end;
+$$;
+
+create or replace function public.content_engine_article_gate(p_id uuid, p_content_hash text, p_report jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare who text := content_engine.require_actor(); a content_engine.articles; vd text; worst text; blocked text[];
+begin
+  select * into a from content_engine.articles where id = p_id for update;
+  if a.id is null then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+  if p_content_hash is distinct from a.content_hash then return jsonb_build_object('ok', false, 'reason', 'changed_since_loaded', 'content_hash', a.content_hash); end if;
+  if p_report is null or jsonb_typeof(p_report) <> 'object' or p_report ->> 'schema' is distinct from 'edgedesk_editorial_gate_v1'
+     or jsonb_typeof(p_report -> 'items') is distinct from 'array' or octet_length(p_report::text) > 200000 then
+    return jsonb_build_object('ok', false, 'reason', 'bad_report');
+  end if;
+  vd := p_report ->> 'verdict';
+  select case when bool_or(i ->> 'status' = 'BLOCKED') then 'BLOCKED' when bool_or(i ->> 'status' = 'WARNING') then 'WARNING' else 'PASS' end
+    into worst from jsonb_array_elements(p_report -> 'items') i;
+  if vd is distinct from coalesce(worst, 'PASS') then
+    return jsonb_build_object('ok', false, 'reason', 'verdict_mismatch', 'detail', 'a report''s verdict is its worst finding');
+  end if;
+  -- an acknowledgement in a report must be one the owner made, here
+  if exists (select 1 from jsonb_array_elements(p_report -> 'items') i, jsonb_array_elements(coalesce(i -> 'findings', '[]'::jsonb)) f
+              where f ? 'acknowledged' and not (a.acks ? coalesce(f ->> 'ack_key', ''))) then
+    return jsonb_build_object('ok', false, 'reason', 'unknown_acknowledgement');
+  end if;
+  select coalesce(array_agg(i ->> 'key'), '{}') into blocked from jsonb_array_elements(p_report -> 'items') i where i ->> 'status' = 'BLOCKED';
+  update content_engine.articles set gate = p_report, gate_verdict = vd, gate_hash = a.content_hash, gate_at = now(),
+         first_gate_verdict = coalesce(first_gate_verdict, vd),
+         first_gate_blocked = case when first_gate_verdict is null then blocked else first_gate_blocked end
+   where id = p_id;
+  perform content_engine.log(who, 'gate_run', p_id, a.opportunity_id, null,
+    jsonb_build_object('verdict', vd, 'blocked', to_jsonb(blocked), 'content_hash', a.content_hash, 'revision', a.revision));
+  return jsonb_build_object('ok', true, 'verdict', vd, 'blocked', to_jsonb(blocked));
+end $$;
+
+-- the owner's acknowledgement of a review finding (a large unexplained
+-- discrepancy, a weather hazard, an unverified report): with a note, recorded,
+-- reversible. It changes no content; the gate is re-run to apply it.
+create or replace function public.content_engine_article_ack(p_id uuid, p_key text, p_note text)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare v uuid := content_engine.require_owner(); a content_engine.articles; n text := btrim(coalesce(p_note, ''));
+begin
+  if coalesce(p_key, '') !~ '^(discrepancy|weather|news):[A-Za-z0-9_-]{1,40}$' then return jsonb_build_object('ok', false, 'reason', 'bad_key'); end if;
+  select * into a from content_engine.articles where id = p_id for update;
+  if a.id is null then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+  if a.status in ('sent', 'published', 'archived') then return jsonb_build_object('ok', false, 'reason', 'not_editable', 'status', a.status); end if;
+  if p_note is null then
+    update content_engine.articles set acks = acks - p_key, gate_at = null where id = p_id;
+    perform content_engine.log('owner', 'review_unacknowledged', p_id, a.opportunity_id, null, jsonb_build_object('key', p_key));
+    return jsonb_build_object('ok', true, 'removed', true);
+  end if;
+  if length(n) < 3 or length(n) > 500 then return jsonb_build_object('ok', false, 'reason', 'note_required', 'detail', 'say what you checked (3–500 characters)'); end if;
+  -- the gate must be re-run for the acknowledgement to count
+  update content_engine.articles set acks = acks || jsonb_build_object(p_key, jsonb_build_object('note', n, 'at', now(), 'by', v)), gate_at = null where id = p_id;
+  perform content_engine.log('owner', 'review_acknowledged', p_id, a.opportunity_id, null, jsonb_build_object('key', p_key, 'note', n));
+  return jsonb_build_object('ok', true);
+end $$;
+
+-- =============================================================================
+-- 6d. THE AI BUDGET — tokens and estimated dollars, a monthly cap that holds
+--
+-- Every Claude call is RESERVED before it is made: the worst case (the
+-- request's estimated input plus max_tokens of output, at the configured list
+-- price of the model) is held against the month under one advisory lock, so
+-- concurrent workers and requests cannot pass the cap together. The call is
+-- SETTLED with the usage the API returned (input, output, cache tokens, the
+-- model that actually served it), which replaces the reservation with an
+-- ESTIMATE. Estimated is not billed: owner-entered billed amounts live in
+-- content_engine.costs (section 6e). An identical request (same model, prompt
+-- and draft: request_hash) answered in the last 30 days is served from the
+-- ledger without a call. Warnings at 50 / 75 / 90%; at 100% discretionary
+-- generation is refused — exports, review, sending and the deterministic
+-- writer never depend on it.
+-- =============================================================================
+alter table content_engine.settings add column if not exists ai_monthly_budget_usd numeric(8,2) not null default 10;
+alter table content_engine.settings add column if not exists ai_prices jsonb not null default jsonb_build_object(
+  'source', 'Anthropic first-party list prices per million tokens (claude-api reference, cached 2026-10-06). Used for ESTIMATES only; your invoice is the billed amount.',
+  'unknown_model', 'priced at the most expensive listed model',
+  'models', jsonb_build_object(
+    'claude-opus-5-5',   jsonb_build_object('input', 4,    'output', 20,  'cache_read', 0.2,  'cache_write', 5),
+    'claude-opus-5',     jsonb_build_object('input', 5,    'output', 25,  'cache_read', 0.5,  'cache_write', 6.25),
+    'claude-opus-4-8',   jsonb_build_object('input', 5,    'output', 25,  'cache_read', 0.5,  'cache_write', 6.25),
+    'claude-sonnet-5-5', jsonb_build_object('input', 2,    'output', 10,  'cache_read', 0.2,  'cache_write', 2.5),
+    'claude-haiku-5-5',  jsonb_build_object('input', 0.1,  'output', 0.5, 'cache_read', 0.01, 'cache_write', 0.125),
+    'claude-fable-5-1',  jsonb_build_object('input', 10,   'output', 50,  'cache_read', 0.25, 'cache_write', 12.5)));
+do $b$ begin
+  if not exists (select 1 from pg_constraint where conname = 'settings_ai_budget_shape') then
+    alter table content_engine.settings add constraint settings_ai_budget_shape check (
+      ai_monthly_budget_usd between 0 and 1000 and jsonb_typeof(ai_prices -> 'models') = 'object');
+  end if;
+end $b$;
+
+create table if not exists content_engine.ai_calls (
+  id                 bigint generated always as identity primary key,
+  month              date not null,
+  created_at         timestamptz not null default now(),
+  actor              text not null check (actor in ('owner', 'schedule')),
+  operation          text not null check (operation in ('draft', 'section', 'other')),
+  article_id         uuid references content_engine.articles(id),
+  model              text not null check (model ~ '^[a-z0-9.-]{3,60}$'),
+  request_hash       text not null check (request_hash ~ '^[0-9a-f]{64}$'),
+  attempt            int not null default 1 check (attempt between 1 and 3),
+  status             text not null default 'reserved' check (status in ('reserved', 'completed', 'failed', 'cache_hit')),
+  outcome            text check (outcome is null or outcome in ('accepted', 'discarded', 'error', 'refused', 'max_tokens', 'unknown')),
+  reserved_usd       numeric(10,6) not null default 0 check (reserved_usd >= 0),
+  est_usd            numeric(10,6) check (est_usd is null or est_usd >= 0),
+  usage_known        boolean,
+  input_tokens       int check (input_tokens is null or input_tokens >= 0),
+  output_tokens      int check (output_tokens is null or output_tokens >= 0),
+  cache_read_tokens  int check (cache_read_tokens is null or cache_read_tokens >= 0),
+  cache_write_tokens int check (cache_write_tokens is null or cache_write_tokens >= 0),
+  served_model       text,
+  result             jsonb,
+  objections         jsonb,
+  cached_from        bigint references content_engine.ai_calls(id),
+  settled_at         timestamptz
+);
+create index if not exists ai_calls_month on content_engine.ai_calls (month, status);
+create index if not exists ai_calls_hash on content_engine.ai_calls (request_hash, status, created_at desc);
+alter table content_engine.ai_calls enable row level security;
+
+-- a reservation is settled once; nothing else about a call changes; nothing is deleted
+create or replace function content_engine.ai_calls_guard()
+returns trigger language plpgsql
+set search_path = pg_catalog, pg_temp as $$
+begin
+  if tg_op = 'DELETE' then raise exception 'AI calls are a ledger: nothing is deleted' using errcode = 'check_violation'; end if;
+  if old.status <> 'reserved' then raise exception 'a settled AI call does not change' using errcode = 'check_violation'; end if;
+  if new.id <> old.id or new.month <> old.month or new.created_at <> old.created_at or new.actor <> old.actor or new.operation <> old.operation
+     or new.model <> old.model or new.request_hash <> old.request_hash or new.reserved_usd <> old.reserved_usd or new.attempt <> old.attempt
+     or new.article_id is distinct from old.article_id then
+    raise exception 'only the outcome of an AI call is written' using errcode = 'check_violation';
+  end if;
+  return new;
+end $$;
+drop trigger if exists ai_calls_guard on content_engine.ai_calls;
+create trigger ai_calls_guard before update or delete on content_engine.ai_calls for each row execute function content_engine.ai_calls_guard();
+create or replace function content_engine.no_truncate() returns trigger language plpgsql set search_path = pg_catalog, pg_temp as $$
+begin raise exception '% is a ledger: it is never truncated', tg_table_name using errcode = 'check_violation'; end $$;
+drop trigger if exists ai_calls_no_truncate on content_engine.ai_calls;
+create trigger ai_calls_no_truncate before truncate on content_engine.ai_calls for each statement execute function content_engine.no_truncate();
+
+-- a model's price row; an unknown model at the most expensive listed rates
+create or replace function content_engine.ai_price(p_model text)
+returns jsonb language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  select coalesce((select ai_prices -> 'models' -> p_model from content_engine.settings where id = 1),
+    (select m.value || jsonb_build_object('unpriced', true) from content_engine.settings s, jsonb_each(s.ai_prices -> 'models') m where s.id = 1
+      order by (m.value ->> 'output')::numeric desc limit 1));
+$$;
+-- dollars for a usage object as the API returns it: { input_tokens, output_tokens,
+-- cache_read_input_tokens, cache_creation_input_tokens, model, iterations: [...] }.
+-- A fallback that served part of the turn is priced at its own model's rates.
+create or replace function content_engine.ai_cost(p_usage jsonb, p_model text)
+returns numeric language plpgsql stable
+set search_path = pg_catalog, public, pg_temp as $$
+declare rows jsonb; r jsonb; pr jsonb; total numeric := 0;
+begin
+  rows := case when jsonb_typeof(p_usage -> 'iterations') = 'array' and jsonb_array_length(p_usage -> 'iterations') > 0 then p_usage -> 'iterations' else jsonb_build_array(p_usage) end;
+  for r in select * from jsonb_array_elements(rows) loop
+    pr := content_engine.ai_price(coalesce(r ->> 'model', p_usage ->> 'model', p_model));
+    total := total + (coalesce((r ->> 'input_tokens')::numeric, 0) * (pr ->> 'input')::numeric
+                    + coalesce((r ->> 'output_tokens')::numeric, 0) * (pr ->> 'output')::numeric
+                    + coalesce((r ->> 'cache_read_input_tokens')::numeric, 0) * coalesce((pr ->> 'cache_read')::numeric, (pr ->> 'input')::numeric)
+                    + coalesce((r ->> 'cache_creation_input_tokens')::numeric, 0) * coalesce((pr ->> 'cache_write')::numeric, (pr ->> 'input')::numeric)) / 1000000;
+  end loop;
+  return round(total, 6);
+end $$;
+-- a token count from a usage object: the top level, else the sum of its iterations (a fallback turn)
+create or replace function content_engine.usage_sum(p_usage jsonb, p_key text)
+returns int language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select coalesce((p_usage ->> p_key)::int,
+    (select sum((x ->> p_key)::int)::int from jsonb_array_elements(case when jsonb_typeof(p_usage -> 'iterations') = 'array' then p_usage -> 'iterations' else '[]'::jsonb end) x));
+$$;
+-- the month so far: settled estimates plus every reservation still open
+create or replace function content_engine.ai_month(p_month date default null)
+returns jsonb language sql stable
+set search_path = pg_catalog, public, pg_temp as $$
+  with m as (select coalesce(p_month, date_trunc('month', now() at time zone 'utc')::date) as month),
+  c as (select x.* from content_engine.ai_calls x, m where x.month = m.month),
+  t as (select coalesce(sum(case when status = 'reserved' then reserved_usd else coalesce(est_usd, 0) end), 0) as committed,
+               coalesce(sum(est_usd) filter (where status in ('completed', 'failed')), 0) as estimated,
+               coalesce(sum(reserved_usd) filter (where status = 'reserved'), 0) as open_reserved,
+               count(*) filter (where status in ('completed', 'failed')) as calls,
+               count(*) filter (where status = 'cache_hit') as cache_hits,
+               count(*) filter (where outcome = 'accepted') as accepted,
+               count(*) filter (where outcome = 'discarded') as discarded,
+               count(*) filter (where outcome in ('error', 'refused', 'max_tokens', 'unknown')) as failed,
+               coalesce(sum(input_tokens), 0) as input_tokens, coalesce(sum(output_tokens), 0) as output_tokens
+          from c),
+  s as (select ai_monthly_budget_usd as budget from content_engine.settings where id = 1)
+  select jsonb_build_object('month', (select month from m), 'budget_usd', s.budget, 'committed_usd', round(t.committed, 4),
+    'estimated_usd', round(t.estimated, 4), 'open_reserved_usd', round(t.open_reserved, 4),
+    'level', case when s.budget <= 0 then 100 else least(100, floor(t.committed / s.budget * 100))::int end,
+    'alert', case when s.budget <= 0 or t.committed >= s.budget then 100 when t.committed >= s.budget * 0.9 then 90
+                  when t.committed >= s.budget * 0.75 then 75 when t.committed >= s.budget * 0.5 then 50 else 0 end,
+    'calls', t.calls, 'cache_hits', t.cache_hits, 'accepted', t.accepted, 'discarded', t.discarded, 'failed', t.failed,
+    'input_tokens', t.input_tokens, 'output_tokens', t.output_tokens,
+    'basis', 'estimated from the API''s own token counts at list prices; not your invoice (enter billed amounts under Costs)')
+  from t, s;
+$$;
+
+create or replace function public.content_engine_ai_reserve(p_operation text, p_article uuid, p_model text, p_request_hash text,
+  p_max_output_tokens int, p_input_tokens_est int, p_attempt int default 1)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare who text := content_engine.require_actor(); s content_engine.settings; m date := date_trunc('month', now() at time zone 'utc')::date;
+  pr jsonb; worst numeric; month jsonb; committed numeric; hit content_engine.ai_calls; nid bigint; cap int; used int; d date := (now() at time zone 'utc')::date;
+  before_alert int; after_alert int;
+begin
+  if p_operation not in ('draft', 'section', 'other') or coalesce(p_request_hash, '') !~ '^[0-9a-f]{64}$' or coalesce(p_model, '') !~ '^[a-z0-9.-]{3,60}$'
+     or coalesce(p_max_output_tokens, 0) not between 1 and 64000 or coalesce(p_input_tokens_est, -1) not between 0 and 400000 or coalesce(p_attempt, 0) not between 1 and 3 then
+    return jsonb_build_object('ok', false, 'reason', 'bad_input');
+  end if;
+  -- the same request, already answered: served from the ledger, no call, no cost
+  select * into hit from content_engine.ai_calls
+   where request_hash = p_request_hash and status = 'completed' and outcome in ('accepted', 'discarded') and result is not null
+     and created_at > now() - interval '30 days' order by id desc limit 1;
+  if hit.id is not null then
+    insert into content_engine.ai_calls (month, actor, operation, article_id, model, request_hash, attempt, status, outcome, est_usd, usage_known, cached_from, settled_at)
+    values (m, who, p_operation, p_article, p_model, p_request_hash, p_attempt, 'cache_hit', hit.outcome, 0, true, hit.id, now()) returning id into nid;
+    return jsonb_build_object('ok', true, 'cached', true, 'call_id', nid, 'outcome', hit.outcome, 'result', hit.result, 'objections', hit.objections,
+      'from_call', hit.id, 'answered_at', hit.created_at);
+  end if;
+  -- every reservation in the project, one at a time: no two can pass the cap together
+  perform pg_advisory_xact_lock(hashtext('content_engine.ai_budget'));
+  select * into s from content_engine.settings where id = 1;
+  pr := content_engine.ai_price(p_model);
+  worst := round((p_input_tokens_est * (pr ->> 'input')::numeric + p_max_output_tokens * (pr ->> 'output')::numeric) / 1000000, 6);
+  month := content_engine.ai_month(m);
+  committed := (month ->> 'committed_usd')::numeric;
+  if s.ai_monthly_budget_usd <= 0 or committed + worst > s.ai_monthly_budget_usd then
+    perform content_engine.log(who, 'ai_budget_blocked', p_article, null, null,
+      jsonb_build_object('budget_usd', s.ai_monthly_budget_usd, 'committed_usd', committed, 'needed_usd', worst, 'model', p_model));
+    return jsonb_build_object('ok', false, 'reason', 'budget_exhausted', 'budget_usd', s.ai_monthly_budget_usd, 'committed_usd', committed, 'needed_usd', worst,
+      'detail', 'this month''s AI budget would be exceeded: the deterministic writer, review, exports and sending still work');
+  end if;
+  -- the daily call cap still applies, counted in the same place as before
+  cap := s.llm_calls_per_day;
+  insert into content_engine.usage (day, provider, calls) values (d, 'llm', 0) on conflict do nothing;
+  select calls into used from content_engine.usage where day = d and provider = 'llm' for update;
+  if used + 1 > cap then
+    perform content_engine.log(who, 'budget_exhausted', p_article, null, null, jsonb_build_object('provider', 'llm', 'cap', cap, 'used', used));
+    return jsonb_build_object('ok', false, 'reason', 'budget_exhausted', 'detail', 'today''s AI call cap (' || cap || ') is reached', 'cap', cap, 'used', used);
+  end if;
+  update content_engine.usage set calls = calls + 1 where day = d and provider = 'llm';
+  before_alert := (month ->> 'alert')::int;
+  insert into content_engine.ai_calls (month, actor, operation, article_id, model, request_hash, attempt, reserved_usd)
+  values (m, who, p_operation, p_article, p_model, p_request_hash, p_attempt, worst) returning id into nid;
+  after_alert := (content_engine.ai_month(m) ->> 'alert')::int;
+  if after_alert > before_alert then
+    perform content_engine.log(who, 'ai_budget_alert', p_article, null, null, jsonb_build_object('level', after_alert, 'budget_usd', s.ai_monthly_budget_usd));
+  end if;
+  return jsonb_build_object('ok', true, 'cached', false, 'call_id', nid, 'reserved_usd', worst, 'committed_usd', committed + worst,
+    'budget_usd', s.ai_monthly_budget_usd, 'alert', after_alert, 'price', pr);
+end $$;
+
+-- the API's answer: tokens and the serving model replace the reservation with an estimate.
+-- p_usage null with p_outcome 'unknown' (a timeout): the reservation stands as the estimate.
+create or replace function public.content_engine_ai_settle(p_call bigint, p_usage jsonb, p_outcome text, p_result jsonb default null, p_objections jsonb default null)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare who text := content_engine.require_actor(); c content_engine.ai_calls; est numeric; known boolean;
+begin
+  if p_outcome not in ('accepted', 'discarded', 'error', 'refused', 'max_tokens', 'unknown') then return jsonb_build_object('ok', false, 'reason', 'bad_input'); end if;
+  select * into c from content_engine.ai_calls where id = p_call for update;
+  if c.id is null then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+  if c.status <> 'reserved' then return jsonb_build_object('ok', true, 'already', true, 'status', c.status); end if;
+  known := p_usage is not null and jsonb_typeof(p_usage) = 'object' and (p_usage ? 'input_tokens' or p_usage ? 'iterations');
+  est := case when known then content_engine.ai_cost(p_usage, c.model) when p_outcome = 'error' then 0 else c.reserved_usd end;
+  update content_engine.ai_calls set
+    status = case when p_outcome in ('accepted', 'discarded') then 'completed' else 'failed' end,
+    outcome = p_outcome, est_usd = est, usage_known = known,
+    input_tokens = case when known then content_engine.usage_sum(p_usage, 'input_tokens') end,
+    output_tokens = case when known then content_engine.usage_sum(p_usage, 'output_tokens') end,
+    cache_read_tokens = case when known then content_engine.usage_sum(p_usage, 'cache_read_input_tokens') end,
+    cache_write_tokens = case when known then content_engine.usage_sum(p_usage, 'cache_creation_input_tokens') end,
+    served_model = left(coalesce(p_usage ->> 'model', c.model), 60),
+    result = case when p_outcome in ('accepted', 'discarded') and p_result is not null and octet_length(p_result::text) <= 200000 then p_result end,
+    objections = case when p_objections is not null and octet_length(p_objections::text) <= 20000 then p_objections end,
+    settled_at = now()
+   where id = p_call;
+  return jsonb_build_object('ok', true, 'est_usd', est, 'usage_known', known, 'month', content_engine.ai_month(c.month));
+end $$;
+
+create or replace function public.content_engine_ai_budget()
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  perform content_engine.require_owner();
+  return content_engine.ai_month() || jsonb_build_object(
+    'prices', (select ai_prices from content_engine.settings where id = 1),
+    'by_model', coalesce((select jsonb_object_agg(coalesce(served_model, model), jsonb_build_object('calls', n, 'est_usd', round(usd, 4))) from (
+        select served_model, model, count(*) n, sum(coalesce(est_usd, 0)) usd from content_engine.ai_calls
+         where month = date_trunc('month', now() at time zone 'utc')::date and status in ('completed', 'failed') group by served_model, model) x), '{}'::jsonb),
+    'by_operation', coalesce((select jsonb_object_agg(operation, jsonb_build_object('calls', n, 'est_usd', round(usd, 4), 'accepted', ok)) from (
+        select operation, count(*) n, sum(coalesce(est_usd, 0)) usd, count(*) filter (where outcome = 'accepted') ok from content_engine.ai_calls
+         where month = date_trunc('month', now() at time zone 'utc')::date and status in ('completed', 'failed') group by operation) x), '{}'::jsonb),
+    'recent', coalesce((select jsonb_agg(jsonb_build_object('id', id, 'at', created_at, 'operation', operation, 'model', coalesce(served_model, model),
+        'status', status, 'outcome', outcome, 'est_usd', est_usd, 'reserved_usd', reserved_usd, 'input_tokens', input_tokens, 'output_tokens', output_tokens,
+        'article_id', article_id, 'cached_from', cached_from) order by id desc)
+        from (select * from content_engine.ai_calls order by id desc limit 25) z), '[]'::jsonb));
+end $$;
+
+create or replace function public.content_engine_ai_budget_save(p jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare v uuid := content_engine.require_owner();
+begin
+  if p is null or jsonb_typeof(p) <> 'object' then return jsonb_build_object('ok', false, 'reason', 'bad_input'); end if;
+  update content_engine.settings set
+    ai_monthly_budget_usd = coalesce((p ->> 'ai_monthly_budget_usd')::numeric, ai_monthly_budget_usd),
+    ai_prices = case when jsonb_typeof(p -> 'ai_prices') = 'object' then p -> 'ai_prices' else ai_prices end
+   where id = 1;
+  perform content_engine.log('owner', 'settings_changed', null, null, null, jsonb_build_object('ai_budget', p - 'ai_prices', 'prices_changed', p ? 'ai_prices'));
+  return jsonb_build_object('ok', true, 'ai', content_engine.ai_month());
+exception when check_violation or invalid_text_representation then
+  return jsonb_build_object('ok', false, 'reason', 'invalid', 'detail', 'budget 0–1000 dollars; prices need a models object');
+end $$;
+
+-- =============================================================================
+-- 6e. MEASUREMENT — the funnel, the revenue, the costs and the targets
+--
+-- Article → approved → sent → published → referral visit → registration →
+-- trial → paid → retained, joined on each article's utm_campaign through the
+-- growth tables that already persist attribution across sign-up
+-- (acquisition_visitors → acq_claim → user_acquisition) and Stripe's verified
+-- webhook events (stripe_events → growth_customer_facts).
+--
+--   DIRECT     the account's LAST attributable touch was this article's
+--              campaign, within attribution_window_days before sign-up. One
+--              article at most per account.
+--   ASSISTED   an earlier touch (the first) was a content campaign, but the
+--              last was not, within assisted_window_days. Never added to the
+--              direct totals.
+--   REGISTRATION counts confirmed email addresses only (a bot account that
+--              never confirms is not a registration); owners are excluded.
+--   REVENUE    Stripe's invoices (amount_paid, de-duplicated by invoice) less
+--              refunds (charge.refunded, de-duplicated by charge) — collected
+--              money, not list price. MRR is each active subscription's latest
+--              paid invoice.
+-- Counts and sums only; no identity leaves this function.
+-- =============================================================================
+alter table content_engine.settings add column if not exists attribution_window_days int not null default 30;
+alter table content_engine.settings add column if not exists assisted_window_days int not null default 90;
+alter table content_engine.settings add column if not exists program_started_at date not null default (now() at time zone 'utc')::date;
+alter table content_engine.settings add column if not exists targets jsonb not null default jsonb_build_object(
+  'articles_per_week', 2, 'articles_per_month', 8, 'first_pass_rate', 0.9, 'factual_errors', 0,
+  'active_publishers', 3, 'placements_per_month', 8, 'referral_visits_per_month', 250, 'registrations_per_month', 25,
+  'paid_per_month', 3, 'new_mrr_usd_per_month', 149.97, 'cac_max_usd', 25, 'revenue_to_cost_min', 3, 'price_usd', 49.99, 'ramp_days', 90);
+do $m$ begin
+  if not exists (select 1 from pg_constraint where conname = 'settings_measurement_shape') then
+    alter table content_engine.settings add constraint settings_measurement_shape check (
+      attribution_window_days between 1 and 180 and assisted_window_days between 1 and 365 and jsonb_typeof(targets) = 'object');
+  end if;
+end $m$;
+
+-- what the channel cost: billed amounts and estimates the owner enters (an
+-- Anthropic invoice, a writer, a tool). AI ESTIMATES come from the ledger.
+create table if not exists content_engine.costs (
+  id           bigint generated always as identity primary key,
+  month        date not null check (extract(day from month) = 1),
+  category     text not null check (category in ('ai_billed', 'writing', 'distribution', 'tools', 'other')),
+  amount_usd   numeric(10,2) not null check (amount_usd between -100000 and 100000),
+  basis        text not null check (basis in ('billed', 'estimate')),
+  note         text check (note is null or length(note) <= 300),
+  recorded_by  uuid,
+  recorded_at  timestamptz not null default now()
+);
+alter table content_engine.costs enable row level security;
+drop trigger if exists costs_append_only on content_engine.costs;
+create trigger costs_append_only before update or delete on content_engine.costs for each row execute function content_engine.append_only();
+
+create or replace function public.content_engine_cost_add(p jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare v uuid := content_engine.require_owner(); n bigint;
+begin
+  insert into content_engine.costs (month, category, amount_usd, basis, note, recorded_by)
+  values (date_trunc('month', coalesce(nullif(p ->> 'month', '')::date, (now() at time zone 'utc')::date))::date, p ->> 'category',
+          (p ->> 'amount_usd')::numeric, coalesce(p ->> 'basis', 'billed'), nullif(btrim(p ->> 'note'), ''), v)
+  returning id into n;
+  perform content_engine.log('owner', 'cost_recorded', null, null, null, jsonb_build_object('id', n, 'category', p ->> 'category', 'amount_usd', p ->> 'amount_usd'));
+  return jsonb_build_object('ok', true, 'id', n);
+exception when check_violation or not_null_violation or invalid_text_representation or invalid_datetime_format then
+  return jsonb_build_object('ok', false, 'reason', 'invalid', 'detail', 'category, amount and basis (billed or estimate); a correction is a negative amount');
+end $$;
+
+create or replace function public.content_engine_targets_save(p jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare v uuid := content_engine.require_owner();
+begin
+  if p is null or jsonb_typeof(p) <> 'object' then return jsonb_build_object('ok', false, 'reason', 'bad_input'); end if;
+  update content_engine.settings set
+    targets = case when jsonb_typeof(p -> 'targets') = 'object' then targets || (p -> 'targets') else targets end,
+    attribution_window_days = coalesce((p ->> 'attribution_window_days')::int, attribution_window_days),
+    assisted_window_days = coalesce((p ->> 'assisted_window_days')::int, assisted_window_days),
+    program_started_at = coalesce(nullif(p ->> 'program_started_at', '')::date, program_started_at)
+   where id = 1;
+  perform content_engine.log('owner', 'settings_changed', null, null, null, jsonb_build_object('targets', p));
+  return jsonb_build_object('ok', true);
+exception when check_violation or invalid_text_representation or invalid_datetime_format then
+  return jsonb_build_object('ok', false, 'reason', 'invalid');
+end $$;
+
+-- collected money per account, from Stripe's own events (de-duplicated by
+-- invoice and by charge). Null when billing is not installed.
+create or replace function content_engine.user_revenue()
+returns table (user_id uuid, collected_cents bigint, refunded_cents bigint, invoices int, first_paid_at timestamptz, latest_paid_cents bigint)
+language plpgsql stable
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  if to_regclass('public.stripe_events') is null or to_regprocedure('public.affiliate_stripe_object(jsonb)') is null then return; end if;
+  return query
+  with ev as (
+    select e.type, coalesce(e.stripe_created, e.created_at) as at, public.affiliate_stripe_object(e.payload) as o, e.user_id as uid0, e.customer_id, e.subscription_id
+      from public.stripe_events e where e.type in ('invoice.paid', 'invoice.payment_succeeded', 'charge.refunded')
+  ), ev2 as (
+    select ev.*, coalesce(ev.uid0,
+      (select s.user_id from public.subscriptions s where s.stripe_subscription_id = coalesce(ev.subscription_id, public.affiliate_stripe_id(ev.o -> 'subscription'),
+          public.affiliate_stripe_id(ev.o -> 'parent' -> 'subscription_details' -> 'subscription')) limit 1),
+      (select s.user_id from public.subscriptions s where s.stripe_customer_id = coalesce(ev.customer_id, public.affiliate_stripe_id(ev.o -> 'customer')) limit 1)) as uid
+      from ev
+  ), inv as (
+    select distinct on (o ->> 'id') uid, at, (o ->> 'amount_paid')::bigint as cents
+      from ev2 where type in ('invoice.paid', 'invoice.payment_succeeded') and uid is not null and (o ->> 'amount_paid') ~ '^[0-9]+$' and (o ->> 'amount_paid')::bigint > 0
+     order by o ->> 'id', at
+  ), ref as (
+    select distinct on (o ->> 'id') uid, (o ->> 'amount_refunded')::bigint as cents
+      from ev2 where type = 'charge.refunded' and uid is not null and (o ->> 'amount_refunded') ~ '^[0-9]+$'
+     order by o ->> 'id', at desc
+  )
+  select u.uid, coalesce(sum(i.cents), 0)::bigint, coalesce((select sum(r.cents) from ref r where r.uid = u.uid), 0)::bigint, count(i.cents)::int, min(i.at),
+         (select i2.cents from inv i2 where i2.uid = u.uid order by i2.at desc limit 1)
+    from (select distinct uid from inv union select distinct uid from ref) u left join inv i on i.uid = u.uid
+   group by u.uid;
+end $$;
+
+-- one row per account that touched a content campaign: how it was attributed,
+-- and what it did. Owners excluded. For the scorecard only.
+create or replace function content_engine.attribution(p_from timestamptz, p_to timestamptz)
+returns table (user_id uuid, signup_at timestamptz, confirmed boolean, direct_code text, assisted_code text,
+               trial_at timestamptz, paid_at timestamptz, paid_invoices int, sub_status text,
+               collected_cents bigint, refunded_cents bigint, first90_cents bigint, latest_paid_cents bigint)
+language plpgsql stable
+set search_path = pg_catalog, public, pg_temp as $$
+declare w int; aw int;
+begin
+  if to_regclass('public.user_acquisition') is null then return; end if;
+  select attribution_window_days, assisted_window_days into w, aw from content_engine.settings where id = 1;
+  return query
+  with codes as (select campaign_code from content_engine.articles),
+  ua as (
+    select u.user_id, coalesce(u.signup_at, au.created_at) as signup_at, au.email_confirmed_at is not null as confirmed,
+           case when u.last_utm_campaign in (select campaign_code from codes) and coalesce(u.last_utm_medium, '') = 'publisher'
+                 and (u.last_seen_at is null or u.last_seen_at >= coalesce(u.signup_at, au.created_at) - make_interval(days => w)) then u.last_utm_campaign end as direct_code,
+           case when u.first_utm_campaign in (select campaign_code from codes)
+                 and (u.first_seen_at is null or u.first_seen_at >= coalesce(u.signup_at, au.created_at) - make_interval(days => aw)) then u.first_utm_campaign end as first_code
+      from public.user_acquisition u join auth.users au on au.id = u.user_id
+     where not exists (select 1 from growth_outbound.owners o where o.user_id = u.user_id)
+       and coalesce(u.signup_at, au.created_at) >= p_from and coalesce(u.signup_at, au.created_at) < p_to
+  ), att as (
+    select ua.*, case when ua.direct_code is null then ua.first_code when ua.first_code is distinct from ua.direct_code then null end as assisted
+      from ua where ua.direct_code is not null or ua.first_code is not null
+  ), facts as (
+    select f.* from public.growth_customer_facts() f where to_regprocedure('public.growth_customer_facts()') is not null
+  ), rev as (select * from content_engine.user_revenue())
+  select att.user_id, att.signup_at, att.confirmed, att.direct_code, att.assisted,
+         f.trial_started_at, f.paid_at, coalesce(f.paid_invoices, 0), f.sub_status,
+         coalesce(r.collected_cents, 0), coalesce(r.refunded_cents, 0),
+         coalesce((select sum((public.affiliate_stripe_object(e.payload) ->> 'amount_paid')::bigint) from (
+             select distinct on (public.affiliate_stripe_object(e2.payload) ->> 'id') e2.* from public.stripe_events e2
+              where e2.type in ('invoice.paid', 'invoice.payment_succeeded') and e2.user_id = att.user_id
+                and (public.affiliate_stripe_object(e2.payload) ->> 'amount_paid') ~ '^[0-9]+$'
+              order by public.affiliate_stripe_object(e2.payload) ->> 'id') e
+            where f.paid_at is not null and coalesce(e.stripe_created, e.created_at) < f.paid_at + interval '90 days'), 0)::bigint,
+         r.latest_paid_cents
+    from att left join facts f on f.user_id = att.user_id left join rev r on r.user_id = att.user_id;
+end $$;
+
+-- THE SCORECARD: actual against the 90-day targets, with the bottleneck.
+-- Every figure says whether it is measured; nothing is filled in.
+create or replace function public.content_engine_scorecard(p_days int default 30)
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare s content_engine.settings; d int := greatest(7, least(coalesce(p_days, 30), 365)); f timestamptz; t timestamptz := now();
+  tg jsonb; elapsed int; ramp numeric; prod jsonb; dist jsonb; rev jsonb; cost jsonb; out jsonb; scale numeric;
+  gen int; gated int; firstpass int; firstpass_auto int; warned int; blocked int; sent int; published int; avg_hours numeric; approved int;
+  pubs int; visits int; regs int; regs_assisted int; trials int; paid int; paid_assisted int; mrr bigint; collected bigint; refunded bigint; first90 bigint;
+  retained int; churned int; paid_total int; ai_est numeric; ai_billed numeric; other_cost numeric; total_cost numeric;
+  measured_visits boolean := to_regclass('public.acquisition_visitors') is not null;
+  measured_regs boolean := to_regclass('public.user_acquisition') is not null;
+  measured_paid boolean := to_regprocedure('public.growth_customer_facts()') is not null;
+  measured_rev boolean := to_regclass('public.stripe_events') is not null;
+  targets jsonb := '[]'::jsonb; bottleneck jsonb;
+begin
+  perform content_engine.require_owner();
+  select * into s from content_engine.settings where id = 1;
+  f := t - make_interval(days => d);
+  scale := d / 30.0;
+  tg := s.targets;
+  elapsed := greatest(0, (current_date - s.program_started_at));
+  ramp := least(1, greatest(0.1, elapsed / greatest(1, coalesce((tg ->> 'ramp_days')::numeric, 90))));
+
+  -- production
+  select count(*) filter (where created_at >= f), count(*) filter (where created_at >= f and first_gate_verdict is not null),
+         count(*) filter (where created_at >= f and first_gate_verdict in ('PASS', 'WARNING')),
+         count(*) filter (where created_at >= f and first_gate_verdict is not null
+                            and not (coalesce(first_gate_blocked, '{}') && array['schedule', 'teams', 'projections', 'snapshot', 'market', 'availability', 'claims', 'repetition', 'headline', 'referral', 'responsible'])),
+         count(*) filter (where gate_verdict = 'WARNING' and status in ('draft', 'in_review', 'approved', 'ready_to_send')),
+         count(*) filter (where gate_verdict = 'BLOCKED' and status in ('draft', 'in_review', 'approved', 'ready_to_send')),
+         count(*) filter (where approved_at >= f), count(*) filter (where sent_at >= f), count(*) filter (where published_at >= f),
+         avg(extract(epoch from (sent_at - created_at)) / 3600) filter (where sent_at >= f)
+    into gen, gated, firstpass, firstpass_auto, warned, blocked, approved, sent, published, avg_hours
+    from content_engine.articles;
+  prod := jsonb_build_object('generated', gen, 'gated_first', gated, 'first_pass', firstpass, 'first_pass_rate', case when gated > 0 then round(firstpass::numeric / gated, 3) end,
+    'first_pass_auto', firstpass_auto, 'first_pass_auto_rate', case when gated > 0 then round(firstpass_auto::numeric / gated, 3) end,
+    'open_warnings', warned, 'open_blocked', blocked, 'approved', approved, 'sent', sent, 'published', published,
+    'avg_hours_to_sent', round(avg_hours, 1),
+    'first_pass_note', 'first_pass: the first gate run on a new article was not BLOCKED. first_pass_auto ignores blocks that need the owner''s judgment (an unexplained market gap).');
+
+  -- distribution
+  select count(*) into pubs from content_engine.publishers p where p.status = 'active'
+     and exists (select 1 from content_engine.articles a where a.publisher_id = p.id and a.sent_at >= t - interval '60 days');
+  if measured_visits then
+    select count(*) into visits from public.acquisition_visitors v
+     where coalesce(v.last_utm_campaign, v.first_utm_campaign) in (select campaign_code from content_engine.articles)
+       and coalesce(v.last_seen_at, v.first_seen_at) >= f
+       and (v.user_id is null or not exists (select 1 from growth_outbound.owners o where o.user_id = v.user_id));
+  end if;
+  if measured_regs then
+    select count(*) filter (where direct_code is not null and confirmed), count(*) filter (where assisted_code is not null and confirmed),
+           count(*) filter (where direct_code is not null and trial_at is not null),
+           count(*) filter (where direct_code is not null and paid_at is not null), count(*) filter (where assisted_code is not null and paid_at is not null),
+           coalesce(sum(latest_paid_cents) filter (where direct_code is not null and sub_status in ('active', 'trialing', 'past_due') and paid_at is not null), 0),
+           coalesce(sum(collected_cents) filter (where direct_code is not null), 0), coalesce(sum(refunded_cents) filter (where direct_code is not null), 0),
+           coalesce(sum(first90_cents) filter (where direct_code is not null), 0),
+           count(*) filter (where direct_code is not null and paid_at is not null and paid_invoices >= 2 and coalesce(sub_status, '') in ('active', 'past_due')),
+           count(*) filter (where direct_code is not null and paid_at is not null and coalesce(sub_status, 'canceled') not in ('active', 'trialing', 'past_due')),
+           count(*) filter (where direct_code is not null and paid_at is not null)
+      into regs, regs_assisted, trials, paid, paid_assisted, mrr, collected, refunded, first90, retained, churned, paid_total
+      from content_engine.attribution(f, t);
+  end if;
+  dist := jsonb_build_object('active_publishers', pubs,
+    'placements', coalesce((select jsonb_agg(jsonb_build_object('publisher', p.name, 'sent', n_sent, 'published', n_pub) order by n_pub desc, n_sent desc) from (
+        select a.publisher_id, count(*) filter (where a.sent_at >= f) n_sent, count(*) filter (where a.published_at >= f) n_pub
+          from content_engine.articles a where a.publisher_id is not null group by a.publisher_id) x
+        join content_engine.publishers p on p.id = x.publisher_id where n_sent > 0 or n_pub > 0), '[]'::jsonb),
+    'referral_visits', visits, 'registrations', regs, 'registrations_assisted', regs_assisted, 'trials', trials,
+    'visit_to_registration', case when coalesce(visits, 0) > 0 and regs is not null then round(regs::numeric / visits, 4) end,
+    'registration_to_trial', case when coalesce(regs, 0) > 0 and trials is not null then round(trials::numeric / regs, 4) end);
+  rev := jsonb_build_object('paid', paid, 'paid_assisted', paid_assisted, 'new_mrr_usd', case when mrr is not null then round(mrr / 100.0, 2) end,
+    'collected_usd', case when collected is not null and measured_rev then round(collected / 100.0, 2) end,
+    'refunded_usd', case when refunded is not null and measured_rev then round(refunded / 100.0, 2) end,
+    'net_collected_usd', case when collected is not null and measured_rev then round((collected - refunded) / 100.0, 2) end,
+    'first_three_months_usd', case when first90 is not null and measured_rev then round(first90 / 100.0, 2) end,
+    'registration_to_paid', case when coalesce(regs, 0) > 0 and paid is not null then round(paid::numeric / regs, 4) end,
+    'retention', jsonb_build_object('paid', paid_total, 'retained', retained, 'churned', churned,
+       'note', 'retained: a second paid invoice and an active subscription; churned: paid once, subscription no longer active'),
+    'basis', 'direct attribution only; assisted shown apart and never added. Collected money is Stripe''s invoices less refunds, de-duplicated.');
+
+  -- costs over the same window, pro-rated by month
+  select coalesce(sum(coalesce(est_usd, case when status = 'reserved' then reserved_usd else 0 end)), 0) into ai_est from content_engine.ai_calls where created_at >= f;
+  select coalesce(sum(amount_usd) filter (where category = 'ai_billed'), 0), coalesce(sum(amount_usd) filter (where category <> 'ai_billed'), 0)
+    into ai_billed, other_cost from content_engine.costs where month >= date_trunc('month', f)::date;
+  total_cost := case when ai_billed > 0 then ai_billed else ai_est end + other_cost;
+  cost := jsonb_build_object('ai_estimated_usd', round(ai_est, 2), 'ai_billed_usd', round(ai_billed, 2), 'other_usd', round(other_cost, 2),
+    'total_usd', round(total_cost, 2), 'basis', case when ai_billed > 0 then 'AI: billed amounts you entered' else 'AI: estimated from token counts (enter the invoice under Costs for billed)' end,
+    'cac_usd', case when coalesce(paid, 0) > 0 then round(total_cost / paid, 2) end,
+    'revenue_to_cost', case when total_cost > 0 and first90 is not null and measured_rev then round((first90 / 100.0) / total_cost, 2) end,
+    'positive_return', case when total_cost > 0 and collected is not null and measured_rev then (collected - refunded) / 100.0 > total_cost end);
+
+  -- the targets
+  targets := jsonb_build_array(
+    jsonb_build_object('key', 'articles_per_week', 'label', 'Publisher-ready articles a week', 'group', 'production', 'target', (tg ->> 'articles_per_week')::numeric,
+      'actual', round(approved / (d / 7.0), 1), 'measured', true, 'ramped', false),
+    jsonb_build_object('key', 'articles_per_month', 'label', 'Completed articles a month', 'group', 'production', 'target', (tg ->> 'articles_per_month')::numeric,
+      'actual', round(sent / scale, 1), 'measured', true, 'ramped', false),
+    jsonb_build_object('key', 'first_pass_rate', 'label', 'Pass the automated checks on first generation', 'group', 'production', 'target', (tg ->> 'first_pass_rate')::numeric,
+      'actual', case when gated > 0 then round(firstpass_auto::numeric / gated, 3) end, 'measured', gated > 0, 'ramped', false, 'unit', 'rate'),
+    jsonb_build_object('key', 'factual_errors', 'label', 'Published articles with a recorded factual error', 'group', 'production', 'target', 0,
+      'actual', (select count(*) from content_engine.events e where e.kind = 'correction_recorded' and e.at >= f), 'measured', true, 'ramped', false, 'lower_is_better', true),
+    jsonb_build_object('key', 'ai_budget', 'label', 'AI spend this month (estimated)', 'group', 'production', 'target', s.ai_monthly_budget_usd,
+      'actual', (content_engine.ai_month() ->> 'committed_usd')::numeric, 'measured', true, 'ramped', false, 'lower_is_better', true, 'unit', 'usd'),
+    jsonb_build_object('key', 'active_publishers', 'label', 'Active publishing partners', 'group', 'distribution', 'target', (tg ->> 'active_publishers')::numeric,
+      'actual', pubs, 'measured', true, 'ramped', true),
+    jsonb_build_object('key', 'placements_per_month', 'label', 'External placements a month', 'group', 'distribution', 'target', (tg ->> 'placements_per_month')::numeric,
+      'actual', round(published / scale, 1), 'measured', true, 'ramped', true),
+    jsonb_build_object('key', 'referral_visits_per_month', 'label', 'Publisher referral visits a month', 'group', 'distribution', 'target', (tg ->> 'referral_visits_per_month')::numeric,
+      'actual', case when visits is not null then round(visits / scale) end, 'measured', measured_visits, 'ramped', true),
+    jsonb_build_object('key', 'registrations_per_month', 'label', 'Free registrations a month (direct)', 'group', 'distribution', 'target', (tg ->> 'registrations_per_month')::numeric,
+      'actual', case when regs is not null then round(regs / scale, 1) end, 'measured', measured_regs, 'ramped', true),
+    jsonb_build_object('key', 'paid_per_month', 'label', 'Paid subscribers a month (direct)', 'group', 'revenue', 'target', (tg ->> 'paid_per_month')::numeric,
+      'actual', case when paid is not null then round(paid / scale, 1) end, 'measured', measured_paid, 'ramped', true),
+    jsonb_build_object('key', 'new_mrr_usd_per_month', 'label', 'New attributable MRR a month', 'group', 'revenue', 'target', (tg ->> 'new_mrr_usd_per_month')::numeric,
+      'actual', case when mrr is not null then round(mrr / 100.0 / scale, 2) end, 'measured', measured_paid and measured_rev, 'ramped', true, 'unit', 'usd'),
+    jsonb_build_object('key', 'cac_max_usd', 'label', 'Cost per acquired customer', 'group', 'revenue', 'target', (tg ->> 'cac_max_usd')::numeric,
+      'actual', case when coalesce(paid, 0) > 0 then round(total_cost / paid, 2) end, 'measured', coalesce(paid, 0) > 0, 'ramped', false, 'lower_is_better', true, 'unit', 'usd'),
+    jsonb_build_object('key', 'revenue_to_cost_min', 'label', 'First-three-month revenue to cost', 'group', 'revenue', 'target', (tg ->> 'revenue_to_cost_min')::numeric,
+      'actual', case when total_cost > 0 and first90 is not null and measured_rev then round((first90 / 100.0) / total_cost, 2) end,
+      'measured', total_cost > 0 and measured_rev, 'ramped', false));
+  select jsonb_agg(x || jsonb_build_object(
+      'needed_now', case when (x ->> 'ramped')::boolean then round((x ->> 'target')::numeric * ramp, 2) else (x ->> 'target')::numeric end,
+      'status', case when not (x ->> 'measured')::boolean or x ->> 'actual' is null then 'not_measured'
+                     when coalesce((x ->> 'lower_is_better')::boolean, false) then case when (x ->> 'actual')::numeric <= (x ->> 'target')::numeric then 'met' else 'behind' end
+                     when (x ->> 'actual')::numeric >= (x ->> 'target')::numeric then 'met'
+                     when (x ->> 'ramped')::boolean and (x ->> 'actual')::numeric >= (x ->> 'target')::numeric * ramp then 'on_track'
+                     else 'behind' end))
+    into targets from jsonb_array_elements(targets) x;
+
+  -- the bottleneck: the first funnel stage below the rate the targets imply,
+  -- with enough of a sample to say so
+  bottleneck := case
+    when round(approved / (d / 7.0), 1) < (tg ->> 'articles_per_week')::numeric then
+      jsonb_build_object('stage', 'production', 'label', 'Not enough articles', 'evidence', approved || ' approved in ' || d || ' days; target ' || (tg ->> 'articles_per_week') || ' a week')
+    when sent >= 3 and published::numeric / sent < 0.5 then
+      jsonb_build_object('stage', 'acceptance', 'label', 'Low publication acceptance', 'evidence', published || ' of ' || sent || ' sent articles were published')
+    when published > 0 and measured_visits and coalesce(visits, 0)::numeric / published < (tg ->> 'referral_visits_per_month')::numeric / greatest(1, (tg ->> 'placements_per_month')::numeric) then
+      jsonb_build_object('stage', 'traffic', 'label', 'Weak referral traffic', 'evidence', coalesce(visits, 0) || ' visits from ' || published || ' placements; the targets need about '
+        || round((tg ->> 'referral_visits_per_month')::numeric / greatest(1, (tg ->> 'placements_per_month')::numeric)) || ' each')
+    when coalesce(visits, 0) >= 50 and coalesce(regs, 0)::numeric / visits < (tg ->> 'registrations_per_month')::numeric / greatest(1, (tg ->> 'referral_visits_per_month')::numeric) then
+      jsonb_build_object('stage', 'signup', 'label', 'Weak sign-up conversion', 'evidence', coalesce(regs, 0) || ' registrations from ' || visits || ' visits')
+    when coalesce(regs, 0) >= 10 and coalesce(paid, 0)::numeric / regs < (tg ->> 'paid_per_month')::numeric / greatest(1, (tg ->> 'registrations_per_month')::numeric) then
+      jsonb_build_object('stage', 'paid', 'label', 'Weak paid conversion', 'evidence', coalesce(paid, 0) || ' paid from ' || regs || ' registrations')
+    when total_cost > s.ai_monthly_budget_usd * scale * 2 or (coalesce(paid, 0) > 0 and total_cost / paid > (tg ->> 'cac_max_usd')::numeric) then
+      jsonb_build_object('stage', 'cost', 'label', 'Excessive production cost', 'evidence', '$' || round(total_cost, 2) || ' spent' || case when coalesce(paid, 0) > 0 then ', $' || round(total_cost / paid, 2) || ' per customer' else '' end)
+    when coalesce(visits, 0) < 50 and published > 0 then
+      jsonb_build_object('stage', 'insufficient_data', 'label', 'Too little traffic to judge conversion yet', 'evidence', coalesce(visits, 0) || ' visits so far')
+    else jsonb_build_object('stage', 'none', 'label', 'No stage is below the rate the targets need', 'evidence', null) end;
+
+  return jsonb_build_object('window', jsonb_build_object('from', f, 'to', t, 'days', d),
+    'program', jsonb_build_object('started', s.program_started_at, 'day', elapsed, 'ramp', round(ramp, 2), 'ramp_days', tg ->> 'ramp_days'),
+    'production', prod, 'distribution', dist, 'revenue', rev, 'costs', cost, 'targets', targets, 'bottleneck', bottleneck,
+    'measured', jsonb_build_object('visits', measured_visits, 'registrations', measured_regs, 'trials_paid', measured_paid, 'revenue', measured_rev),
+    'note', 'Counts and sums only, owners excluded. Registrations are confirmed addresses. Visits are anonymous page loads and cannot be verified; trials, payments and revenue come from Stripe''s verified webhook events.');
+end $$;
+
+-- THE WEEKLY SUMMARY'S DATA: what earned publication, traffic, sign-ups and
+-- money, which checks keep failing, which AI work was wasted. The page turns
+-- it into recommendations (lib/content_engine.js weeklyReview), with
+-- sample-size guards; nothing here changes the engine.
+create or replace function public.content_engine_weekly_data(p_days int default 28)
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare d int := greatest(7, least(coalesce(p_days, 28), 180)); f timestamptz := now() - make_interval(days => greatest(7, least(coalesce(p_days, 28), 180)));
+begin
+  perform content_engine.require_owner();
+  return jsonb_build_object('days', d, 'from', f, 'to', now(),
+    'articles', coalesce((select jsonb_agg(jsonb_build_object('id', a.id, 'title', a.title, 'format', a.format, 'kind', o.kind, 'league', o.league,
+        'publisher', p.name, 'status', a.status, 'created_at', a.created_at, 'sent_at', a.sent_at, 'published_at', a.published_at,
+        'generator', a.generator, 'first_gate', a.first_gate_verdict, 'first_gate_blocked', to_jsonb(a.first_gate_blocked), 'gate', a.gate_verdict,
+        'campaign', a.campaign_code, 'funnel', content_engine.first_party(a.campaign_code)) order by a.created_at desc)
+        from content_engine.articles a join content_engine.opportunities o on o.id = a.opportunity_id left join content_engine.publishers p on p.id = a.publisher_id
+       where a.created_at >= f or a.sent_at >= f or a.published_at >= f), '[]'::jsonb),
+    'gate_failures', coalesce((select jsonb_object_agg(k, n) from (select k, count(*) n from content_engine.events e, jsonb_array_elements_text(e.detail -> 'blocked') k
+        where e.kind = 'gate_run' and e.at >= f group by k) x), '{}'::jsonb),
+    'ai', coalesce((select jsonb_build_object('calls', count(*) filter (where status in ('completed', 'failed')), 'accepted', count(*) filter (where outcome = 'accepted'),
+        'discarded', count(*) filter (where outcome = 'discarded'), 'failed', count(*) filter (where outcome in ('error', 'refused', 'max_tokens', 'unknown')),
+        'cache_hits', count(*) filter (where status = 'cache_hit'), 'est_usd', round(coalesce(sum(est_usd), 0), 4),
+        'wasted_usd', round(coalesce(sum(est_usd) filter (where outcome in ('discarded', 'error', 'refused', 'max_tokens', 'unknown')), 0), 4),
+        'by_operation', coalesce((select jsonb_object_agg(operation, jsonb_build_object('calls', n, 'accepted', ok, 'est_usd', round(usd, 4))) from (
+            select operation, count(*) n, count(*) filter (where outcome = 'accepted') ok, sum(coalesce(est_usd, 0)) usd from content_engine.ai_calls
+             where created_at >= f and status in ('completed', 'failed') group by operation) z), '{}'::jsonb))
+        from content_engine.ai_calls where created_at >= f), '{}'::jsonb));
+end $$;
+
+-- =============================================================================
 -- 6. THE FIRST PUBLISHER — editorial preferences only. Contacts, partnership
 -- terms and the historical view benchmarks are business data: the owner enters
 -- them in the Content Engine page (Publishers), never in this public file.
@@ -1421,7 +2147,7 @@ begin
     execute format('revoke all on function %s from public', f);
     begin execute format('revoke all on function %s from anon, authenticated, service_role', f); exception when undefined_object then null; end;
     -- doors the weekly job uses: owner or service role (each checks which)
-    if f::text ~ '^content_engine_(opportunity_upsert|article_create|article_save|article_submit|article\(|spend|log|search_evidence|job_)' then
+    if f::text ~ '^content_engine_(opportunity_upsert|article_create|article_save|article_submit|article\(|article_gate|ai_reserve|ai_settle|spend|log|search_evidence|job_)' then
       begin execute format('grant execute on function %s to authenticated, service_role', f); exception when undefined_object then null; end;
     else
       begin execute format('grant execute on function %s to authenticated', f); exception when undefined_object then null; end;
@@ -1472,8 +2198,8 @@ select check_name, case when passed then 'ok' else 'CHECK THIS' end as result, d
          coalesce(content_engine.sender() ->> 'from', 'set an edgedesksports.com sender in /admin/content/ Settings')
   union all
   select 'append-only logs installed',
-         (select count(*) from pg_trigger where tgname like '%\_append\_only' and tgrelid::regclass::text like 'content_engine.%') = 5,
-         'revisions, deliveries, performance, events, benchmarks'
+         (select count(*) from pg_trigger where tgname like '%\_append\_only' and tgrelid::regclass::text like 'content_engine.%') = 6,
+         'revisions, deliveries, performance, events, benchmarks, costs'
   union all
   select 'owner list available',
          to_regprocedure('growth_outbound.owner_active(uuid)') is not null,
@@ -1482,6 +2208,21 @@ select check_name, case when passed then 'ok' else 'CHECK THIS' end as result, d
   select 'first publisher seeded (editorial only)',
          exists (select 1 from content_engine.publishers where slug = 'stadium-rant'),
          'contacts and benchmarks are entered by the owner in /admin/content/'
+  union all
+  select 'editorial gate enforced (approve, Ready to Send, Send)',
+         to_regprocedure('content_engine.gate_problem(content_engine.articles)') is not null
+         and pg_get_functiondef('content_engine.articles_guard()'::regprocedure) like '%run the editorial gate%',
+         'a BLOCKED, stale or missing gate report stops approval, Ready to Send and Send — in the doors and in the table''s own trigger'
+  union all
+  select 'AI budget: reservations serialized and capped monthly',
+         to_regprocedure('public.content_engine_ai_reserve(text, uuid, text, text, integer, integer, integer)') is not null
+         and not has_function_privilege('anon', 'public.content_engine_ai_reserve(text, uuid, text, text, integer, integer, integer)', 'execute'),
+         (select '$' || ai_monthly_budget_usd::text || ' a month; ' || (content_engine.ai_month() ->> 'level') || '% used (estimated)' from content_engine.settings where id = 1)
+  union all
+  select 'scorecard and attribution are owner-only',
+         not has_function_privilege('service_role', 'public.content_engine_scorecard(integer)', 'execute')
+         and not has_function_privilege('anon', 'public.content_engine_scorecard(integer)', 'execute'),
+         'funnel, revenue and costs: counts and sums only, owners excluded, no identities returned'
   union all
   select 'first-party measurement tables',
          to_regclass('public.acquisition_visitors') is not null and to_regclass('public.user_acquisition') is not null,

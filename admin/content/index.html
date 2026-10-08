@@ -139,6 +139,7 @@ a{color:var(--accent)}
   <div id="app" class="hide">
     <div class="msg err hide" id="appMsg" role="alert"></div>
     <div class="kpis" id="kpis" style="margin-top:16px"></div>
+    <div class="banner hide" id="budgetBanner" role="status"></div>
     <div class="tabs" role="tablist">
       <button type="button" role="tab" data-tab="opps" class="on">Opportunities</button>
       <button type="button" role="tab" data-tab="gen">Article generator</button>
@@ -210,7 +211,9 @@ a{color:var(--accent)}
 
     <!-- ── PERFORMANCE ───────────────────────────────────────────────── -->
     <section id="tab-perf" role="tabpanel" class="hide">
-      <h2>Performance</h2>
+      <h2>Business scorecard</h2>
+      <div id="scOut"><p class="note">Loading…</p></div>
+      <h2>Performance by article</h2>
       <div class="banner">Three kinds of numbers, never mixed: <b>first-party</b> (EdgeDesk’s own measurement of visits, sign-ups, trials and paid conversions that arrived through each article’s tagged link), <b>publisher-reported</b> (figures a publisher gave you, as entered), and <b>benchmarks</b> (user-reported reference values, not live analytics). A dash means not measured.</div>
       <div id="perfOut"><p class="note">Loading…</p></div>
       <h2>Add a publisher-reported figure</h2>
@@ -245,6 +248,8 @@ a{color:var(--accent)}
       <div class="card" id="setForm"></div>
       <h2>AI</h2>
       <div class="card"><div id="aiStatus" class="note">Checking the Edge Function…</div></div>
+      <h2>AI budget</h2>
+      <div class="card" id="aiBudget"><p class="note">Loading…</p></div>
       <h2>Recent runs</h2>
       <div class="card tw" id="runs"></div>
       <h2>Problems</h2>
@@ -258,7 +263,7 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 </script>
 <script src="/lib/edgedesk_auth.js?v=20261005a"></script>
 <script src="/lib/edgedesk_admin_session.js?v=20261007a"></script>
-<script src="/lib/content_engine.js?v=20261008b"></script>
-<script src="/admin/content/content.js?v=20261008b"></script>
+<script src="/lib/content_engine.js?v=20261009a"></script>
+<script src="/admin/content/content.js?v=20261009a"></script>
 </body>
 </html>

@@ -67,36 +67,62 @@ async function fetchFeeds(leagues, o) {
 }
 
 /* ── one Claude call, raw HTTPS (no dependencies in this repository) ───── */
+/* One request; ONE retry, after a pause, only for an overloaded or
+   rate-limited API (429, 529, 5xx) — inside the same reservation. */
 async function callClaude(req, o) {
   const f = o.fetch || fetch;
-  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), o.timeoutMs || 150000);
-  try {
-    const r = await f('https://api.anthropic.com/v1/messages', {
-      method: 'POST', signal: ctl.signal,
-      headers: { 'content-type': 'application/json', 'x-api-key': o.key, 'anthropic-version': '2023-06-01', 'anthropic-beta': FALLBACK_BETA },
-      body: JSON.stringify({ model: o.model, max_tokens: req.max_tokens, system: req.system, messages: req.messages, output_config: req.output_config, fallbacks: 'default' })
-    });
-    const text = await r.text();
-    if (!r.ok) { const e = new Error('anthropic ' + r.status + ': ' + text.slice(0, 200)); e.status = r.status; throw e; }
-    return JSON.parse(text);
-  } finally { clearTimeout(t); }
+  for (let attempt = 0; ; attempt++) {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), o.timeoutMs || 150000);
+    try {
+      const r = await f('https://api.anthropic.com/v1/messages', {
+        method: 'POST', signal: ctl.signal,
+        headers: { 'content-type': 'application/json', 'x-api-key': o.key, 'anthropic-version': '2023-06-01', 'anthropic-beta': FALLBACK_BETA },
+        body: JSON.stringify({ model: o.model, max_tokens: req.max_tokens, system: req.system, messages: req.messages, output_config: req.output_config, fallbacks: 'default' })
+      });
+      const text = await r.text();
+      if (!r.ok) {
+        if (attempt === 0 && (r.status === 429 || r.status >= 500)) { await new Promise((ok) => setTimeout(ok, o.backoffMs != null ? o.backoffMs : 2000)); continue; }
+        const e = new Error('anthropic ' + r.status + ': ' + text.slice(0, 200)); e.status = r.status; throw e;
+      }
+      return JSON.parse(text);
+    } finally { clearTimeout(t); }
+  }
 }
+const sha256 = (t) => require('crypto').createHash('sha256').update(t).digest('hex');
+const usageOf = (reply) => (reply && reply.usage ? Object.assign({}, reply.usage, { model: reply.model || undefined }) : null);
 
 /* Improve a deterministic draft with Claude, keeping only a version that
    passes every check. Returns { article, report, generator, notes }. */
 async function aiPass(o, a, ctx) {
   const notes = [];
   let objections = [];
+  /* no ledger, no call: every AI dollar goes through the database's budget */
+  if (!ctx.db) { notes.push('no budget ledger: AI skipped'); return null; }
+  const pre = CE.ai.precheck(a, o, ctx.now);
+  if (pre.length) { notes.push('research_first: ' + pre.join('; ')); return null; }
+  const settle = (id, usage, outcome, result, obj) => ctx.db.rpc('public', 'content_engine_ai_settle', { p_call: id, p_usage: usage, p_outcome: outcome, p_result: result || null, p_objections: obj || null }).catch(() => null);
   for (let attempt = 0; attempt < 2; attempt++) {
-    if (ctx.spend && !(await ctx.spend('llm'))) { notes.push('budget_exhausted'); break; }
     const req = CE.ai.buildRequest(o, { publisher: ctx.publisher, format: a.format, current: a, objections });
-    let reply;
-    try { reply = await callClaude(req, ctx); } catch (e) { notes.push('api_error ' + (e.status || '')); break; }
-    const parsed = CE.ai.parseReply(reply, a);
-    if (!parsed.ok) { notes.push(parsed.reason); if (parsed.reason === 'refusal') break; continue; }
-    const rep = CE.validate(parsed.article, o, { publisher: ctx.publisher, now: ctx.now, teamLists: ctx.teamLists });
-    if (rep.ok) return { article: parsed.article, report: rep, generator: 'claude:' + String(reply.model || ctx.model).slice(0, 60), notes };
+    const rsv = await ctx.db.rpc('public', 'content_engine_ai_reserve', { p_operation: req.operation, p_article: null, p_model: ctx.model,
+      p_request_hash: sha256(CE.ai.requestKey(req, ctx.model)), p_max_output_tokens: req.max_tokens, p_input_tokens_est: CE.ai.inputEstimate(req), p_attempt: attempt + 1 }).catch(() => null);
+    if (!rsv || rsv.ok !== true) { notes.push((rsv && rsv.reason) || 'budget_exhausted'); break; }
+    let next, reply = null;
+    if (rsv.cached) {
+      if (rsv.outcome !== 'accepted' || !rsv.result) { objections = Array.isArray(rsv.objections) ? rsv.objections : objections; notes.push('previously_rejected'); continue; }
+      next = rsv.result;
+    } else {
+      try { reply = await callClaude(req, ctx); } catch (e) { await settle(rsv.call_id, null, e.status ? 'error' : 'unknown'); notes.push('api_error ' + (e.status || '')); break; }
+      const parsed = CE.ai.parseReply(reply, a);
+      if (!parsed.ok) { await settle(rsv.call_id, usageOf(reply), parsed.reason === 'refusal' ? 'refused' : parsed.reason === 'max_tokens' ? 'max_tokens' : 'error'); notes.push(parsed.reason); if (parsed.reason === 'refusal') break; continue; }
+      next = parsed.article;
+    }
+    const rep = CE.validate(next, o, { publisher: ctx.publisher, now: ctx.now, teamLists: ctx.teamLists });
+    if (rep.ok) {
+      if (!rsv.cached) await settle(rsv.call_id, usageOf(reply), 'accepted', next);
+      return { article: next, report: rep, generator: rsv.cached ? 'claude:cached' : 'claude:' + String(reply.model || ctx.model).slice(0, 60), notes, cached: !!rsv.cached };
+    }
     objections = CE.ai.objections(rep);
+    if (!rsv.cached) await settle(rsv.call_id, usageOf(reply), 'discarded', next, objections);
     notes.push('discarded: ' + objections.join(' | ').slice(0, 300));
   }
   return null;
@@ -155,7 +181,7 @@ async function weekly(o) {
       let a = CE.draft(t, { publisher, format, now: o.now });
       let rep = CE.validate(a, t, { publisher, now: o.now, teamLists: d.teamLists });
       if (o.anthropicKey) {
-        const ai = await aiPass(t, a, { publisher, now: o.now, teamLists: d.teamLists, spend, key: o.anthropicKey, model: o.model, fetch: o.fetch });
+        const ai = await aiPass(t, a, { publisher, now: o.now, teamLists: d.teamLists, db, key: o.anthropicKey, model: o.model, fetch: o.fetch, backoffMs: o.backoffMs });
         if (ai) { a = Object.assign({}, ai.article, { generator: ai.generator }); rep = ai.report; counts.ai_used++; }
         else { counts.ai_discarded++; await note('ai_discarded', { opportunity: t.key, reason: 'kept the deterministic draft' }, { p_opportunity: t.id }); }
       }
@@ -163,6 +189,14 @@ async function weekly(o) {
       if (!c || !c.ok) { await note('generation_failed', { opportunity: t.key, reason: c && (c.detail || c.reason) }, { p_opportunity: t.id }); continue; }
       if (c.existing) continue;
       counts.drafted++;
+      /* the editorial gate on the first generation, against the research as read now */
+      try {
+        const current = {}; ['cfb', 'nfl'].forEach((lg) => ((d.snap[lg] && d.snap[lg].games) || []).forEach((p) => { current[p.game_id] = p; }));
+        const row = await db.rpc('public', 'content_engine_article', { p_id: c.id });
+        const g = CE.gate(Object.assign({}, a, { format }), t, { now: o.now, publisher, campaign: row && row.campaign_code, landing: CE.SITE + '/today/', current, teamLists: d.teamLists });
+        const gs = row && await db.rpc('public', 'content_engine_article_gate', { p_id: c.id, p_content_hash: row.content_hash, p_report: g });
+        if (gs && gs.ok) counts['gate_' + g.verdict.toLowerCase()] = (counts['gate_' + g.verdict.toLowerCase()] || 0) + 1;
+      } catch (e) { await note('job_note', { gate: 'not stored', reason: String(e && e.message || e).slice(0, 200) }, { p_article: c.id }); }
       if (rep.ok) {
         const s = await db.rpc('public', 'content_engine_article_submit', { p_id: c.id });
         if (s && s.ok) counts.queued_for_review++; else counts.kept_as_draft++;
@@ -191,7 +225,7 @@ async function example(o) {
   let rep = CE.validate(a, opp, { publisher, now: o.now, teamLists: d.teamLists });
   let generator = a.generator;
   if (o.ai && o.anthropicKey) {
-    const ai = await aiPass(opp, a, { publisher, now: o.now, teamLists: d.teamLists, key: o.anthropicKey, model: o.model });
+    const ai = await aiPass(opp, a, { publisher, now: o.now, teamLists: d.teamLists, key: o.anthropicKey, model: o.model, db: o.db || null });
     if (ai) { a = ai.article; rep = ai.report; generator = ai.generator; }
   }
   const campaign = CE.campaignCode(publisher && publisher.slug, 'example' + CE.util.hash(opp.key).slice(0, 5));

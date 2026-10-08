@@ -16,7 +16,11 @@
      3  Write article → outline (SEO brief) → full draft: every hard check
         passes; the SEO brief shows keyword, slug, meta, demand basis
      4  Rewrite with AI: the function's version is checked and saved
-     5  Submit for review → the five-point review → approve this exact version
+     5  Submit for review → the editorial gate runs on the version under
+        review: the Week 6 preview is BLOCKED on its two unexplained market
+        gaps, Approve is locked; the owner records a written review of each
+        (kept with the article), the gate re-runs to WARNING → the five-point
+        review → approve this exact version (the gate re-runs first)
      6  Publishing queue: export is locked before approval; after it the
         Markdown carries the UTM-tagged link and the disclaimer. Send: the
         publisher's contact is added under Publishers; a test goes to the
@@ -112,7 +116,7 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     globalThis.Deno = { env: { get: () => undefined } };
     globalThis.__claude = (req) => {
       const cur = JSON.parse(/CURRENT DRAFT:\n([\s\S]*)$/.exec(String(req.messages[0].content))[1]);
-      return { stop_reason: 'end_turn', model: 'claude-opus-5-5', content: [{ type: 'text', text: JSON.stringify(Object.assign({}, cur, { standfirst: cur.standfirst + ' Here is what the numbers say.' })) }] };
+      return { stop_reason: 'end_turn', model: 'claude-opus-5-5', usage: { input_tokens: 9000, output_tokens: 3000 }, content: [{ type: 'text', text: JSON.stringify(Object.assign({}, cur, { standfirst: cur.standfirst + ' Here is what the numbers say.' })) }] };
     };
     const FNM = await import(pathToFileURL(INLINE.TARGET).href);
     const fnCfg = { url: SB, anonKey: ANON, anthropicKey: 'sk-ant-e2e-stub-key-0000', resendKey: 're_e2e_stub_key_0000', model: 'claude-opus-5-5', origins: ['http://127.0.0.1:' + site.port], fetch: nodeFetch, timeoutMs: 5000 };
@@ -172,6 +176,7 @@ const RSS = `<?xml version="1.0"?><rss><channel>
       if (/How did you send it/.test(m)) return d.accept('manual_email');
       if (/note for the record/.test(m)) return d.accept('sent by the owner, e2e');
       if (/published article’s URL/.test(m)) return d.accept('https://www.stadiumrant.com/college-football-week-6-predictions');
+      if (/What did you check\?/.test(m)) return d.accept('Checked the gap: no availability or line news on file explains it; the article states it as unexplained.');
       return d.accept();
     });
     await P.goto(BASE + '/admin/content/');
@@ -222,6 +227,21 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     await P.click('#rList button[data-open]');
     await P.waitForSelector('#rDetail [data-rv]');
     chk('5 the review shows the sources, the model numbers and the export preview', /EdgeDesk research/.test(await P.textContent('#rDetail')) && /Model numbers to verify/.test(await P.textContent('#rDetail')));
+    await P.waitForSelector('#rGate .pill.bad');
+    const gateText = await P.textContent('#rGate');
+    chk('5 the gate ran on this version: BLOCKED on the two unexplained market gaps, with evidence and a fix', /BLOCKED/.test(gateText) && /Ole Miss at Vanderbilt/.test(gateText) && /UCLA at Oregon/.test(gateText) && /Evidence:/.test(gateText) && /Fix:/.test(gateText), gateText.slice(0, 400));
+    chk('5 … stored with the version it judged', db.sql(`select gate_verdict || '|' || (gate_hash = content_hash)::text from content_engine.articles where id = '${art.id}';`) === 'BLOCKED|true');
+    chk('5 … and Approve is locked', await P.isDisabled('#rApprove'));
+    if (SHOTS) await P.screenshot({ path: path.join(SHOTS, '3a-gate-blocked.png'), fullPage: false });
+    for (let i = 0; i < 2; i++) {
+      await P.click('#rGate button[data-ack]');
+      await P.waitForFunction((n) => /Review recorded/.test(document.getElementById('rMsg').textContent) && document.querySelectorAll('#rGate button[data-unack]').length === n, i + 1, { timeout: 30000 });
+    }
+    chk('5 the owner’s two written reviews are on record, with the note', db.sql(`select count(*) from content_engine.articles a, jsonb_each(a.acks) k where a.id = '${art.id}' and k.key like 'discrepancy:%' and k.value ->> 'note' like 'Checked the gap%';`) === '2');
+    await P.waitForSelector('#rGate .pill.warn');
+    chk('5 the gate re-ran: WARNING, each gap marked reviewed by the owner', /WARNING/.test(await P.textContent('#rGate')) && /Reviewed by the owner/.test(await P.textContent('#rGate'))
+      && db.sql(`select gate_verdict from content_engine.articles where id = '${art.id}';`) === 'WARNING');
+    await P.waitForFunction(() => !document.getElementById('rApprove').disabled, null, { timeout: 15000 });
     await P.click('#rApprove');
     await P.waitForFunction(() => /Confirm all five/.test(document.getElementById('rMsg').textContent), null, { timeout: 15000 });
     chk('5 approval refuses an incomplete review', db.sql(`select status from content_engine.articles where id = '${art.id}';`) === 'in_review');
@@ -360,12 +380,28 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     await P.waitForSelector('#perfOut table');
     const perf = await P.textContent('#perfOut');
     chk('7 the article is listed with its campaign code', perf.indexOf(art.campaign_code) >= 0);
+    await P.waitForSelector('#scOut table');
+    const sc = await P.textContent('#scOut');
+    chk('7 the scorecard lists every target with goal, needed-now, actual and status', (sc.match(/(met|on track|behind|not measured)/g) || []).length >= 13
+      && /Publisher-ready articles a week/.test(sc) && /Paid subscribers a month \(direct\)/.test(sc) && /Bottleneck:/.test(sc), sc.slice(0, 300));
+    chk('7 … production counted from the record: two articles sent', /Sent\s*2/.test(sc.replace(/\s+/g, ' ')) || /Sent2/.test(sc), sc.slice(0, 600));
+    chk('7 nothing reads NaN, null or undefined', !/\b(NaN|undefined|null)\b/.test(sc));
+    await P.fill('#ccAmt', '0.5'); await P.selectOption('#ccCat', 'ai_billed');
+    await P.click('#ccAdd');
+    await P.waitForFunction(() => /AI cost, billed \(entered\)\s*\$0\.50/.test(document.getElementById('scOut').textContent), null, { timeout: 15000 });
+    chk('7 a billed AI cost is recorded, kept apart from the estimate, and used instead of it', db.sql(`select category || '|' || amount_usd || '|' || basis from content_engine.costs;`) === 'ai_billed|0.50|billed'
+      && /AI: billed amounts you entered/.test(await P.textContent('#scOut')));
     chk('7 the three kinds of numbers are named apart', /first-party/.test(await P.textContent('#tab-perf')) && /publisher-reported/i.test(await P.textContent('#tab-perf')) && /Benchmarks/.test(perf));
 
     /* 8 · settings, phone width, errors */
     await P.click('.tabs button[data-tab="set"]');
     await P.waitForFunction(() => /AI drafting is configured/.test(document.getElementById('aiStatus').textContent), null, { timeout: 15000 });
     chk('8 settings say whether AI is configured (never the key)', !/sk-ant/.test(await P.textContent('#tab-set')));
+    await P.waitForSelector('#aiBudget #abBudget');
+    const ab = await P.textContent('#aiBudget');
+    chk('8 the AI budget: the month’s committed spend from the one call, at list price, against $10', /\$0\.10/.test(ab) && /of \$10\.00/.test(ab) && /not your invoice/.test(ab), ab.slice(0, 300));
+    chk('8 … the call is in the ledger, settled with its token counts', db.sql(`select operation || '|' || status || '|' || outcome || '|' || input_tokens || '|' || est_usd from content_engine.ai_calls;`) === 'draft|completed|accepted|9000|0.096000');
+    chk('8 … and the KPI strip shows it, labelled an estimate', /AI this month\s*\$0\.10 \/ \$10\.00\s*estimated, not billed/.test(await P.textContent('#kpis')), await P.textContent('#kpis'));
     chk('8 … and whether sending is, with the sender (never the key)', /Send to publisher is configured/.test(await P.textContent('#aiStatus')) && !/re_e2e/.test(await P.textContent('#tab-set'))
       && await P.getAttribute('#sSEmail', 'placeholder') === 'davis@edgedesksports.com', await P.textContent('#aiStatus'));
     await P.setViewportSize({ width: 390, height: 844 });

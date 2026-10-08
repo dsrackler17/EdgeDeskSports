@@ -20,6 +20,13 @@
                    covers every phrase the article and community lists ban
      A  AI         the request (structured output, the packet, the current
                    draft, objections) and every way a reply can go wrong
+     H  HARDENING  figures reconcile to the tenth (a conflict is never
+                   repaired), quarterback states and materiality, data quality
+                   never sold as confidence, model–market gaps explained or
+                   held for review, weather from the forecast on file, the
+                   14-check gate (worst finding wins; an owner review clears
+                   only a gap), repair of the flagged sections only, and the
+                   AI precheck, ledger key and estimate
      E  EXPORT     Markdown and HTML: disclaimer, attribution, UTM tags on
                    EdgeDesk links only, markup escaped, https links only; the
                    campaign code survives growth.sql's utm_campaign cleaning.
@@ -194,6 +201,127 @@ chk('A invalid JSON is refused', CE.ai.parseReply({ stop_reason: 'end_turn', con
 const pr = CE.ai.parseReply(rep({ title: 'A New Headline for Week Six Predictions', meta_description: 'm', standfirst: 's', sections: [{ key: 'intro', heading: '', body: 'New intro.' }] }), a0);
 chk('A a partial reply keeps the base sections it did not rewrite, in order', pr.ok && pr.article.sections.length === a0.sections.length && pr.article.sections[0].body === 'New intro.' && pr.article.sections[1].body === a0.sections[1].body);
 chk('A objections are the failed checks, in words', CE.ai.objections(mutate((a) => intro(a, 'Alabama has won 83 percent.'))).some((x) => /83/.test(x)));
+
+/* ── H hardening: figures, quarterbacks, gaps, weather, the gate, repair ── */
+section('H hardening');
+const RS = CE.reconcileScore;
+const rc = RS(31.2, 25.9, 5.3, 57.1);
+chk('H reconciled scores: the difference IS the margin and the sum IS the total, to the tenth', rc.ok && Math.round((rc.home - rc.away) * 10) === 53 && Math.round((rc.home + rc.away) * 10) === 571, rc);
+chk('H … derived from margin and total alone when the source has no scores', (() => { const x = RS(null, null, -3.4, 48.6); return x.ok && Math.round((x.home - x.away) * 10) === -34 && Math.round((x.home + x.away) * 10) === 486; })());
+chk('H scores that disagree with the margin are a conflict, never repaired', (() => { const x = RS(31.2, 25.9, 8.0, 57.1); return !x.ok && /margin/.test(x.problems.join(' ')); })());
+chk('H scores that disagree with the total are a conflict', !RS(31.2, 25.9, 5.3, 61.0).ok);
+chk('H one-decimal source rounding is not a conflict (0.1 apart)', RS(30.0, 24.6, 5.3, 54.6).ok);
+const shownNums = snap.cfb.games.filter((p) => p.model.numbers && p.model.numbers.ok && p.model.projected);
+chk('H every CFB game’s displayed figures reconcile exactly: score gap = margin, score sum = total', shownNums.length >= 10 && shownNums.every((p) => {
+  const n = p.model.projected; return Math.round((n.home - n.away) * 10) === Math.round(-p.model.home_line * 10) && Math.round((n.home + n.away) * 10) === Math.round(p.model.fair_total * 10); }));
+chk('H … and no featured game carries a conflict', snap.cfb.games.every((p) => p.flags.indexOf('NUMBERS_CONFLICT') < 0));
+
+const QS = CE.qbState;
+const sens = (side, delta, hm) => ({ sensitivity: { rows: [{ key: 'qb_out_' + side, delta, home_margin: hm }] } });
+chk('H QB: no starter data is UNKNOWN and never material', (() => { const q = QS(null, 'home', {}, 3); return q.status === 'UNKNOWN' && !q.material; })());
+chk('H QB: last week’s uncontested starter is ESTABLISHED: not news, not doubt', (() => { const q = QS({ player: 'A. Starter', status: 'STARTED_LAST' }, 'home', sens('home', 4, 1), 3); return q.status === 'ESTABLISHED' && !q.material && !q.contested; })());
+chk('H QB: an announcement is CONFIRMED', QS({ player: 'A. Starter', status: 'ANNOUNCED' }, 'home', {}, 3).status === 'CONFIRMED');
+chk('H QB: a split that barely moves the number is not material', (() => { const q = QS({ player: 'A', status: 'COMPETITION' }, 'home', sens('home', -0.4, 2.6), 3); return q.status === 'COMPETITION' && !q.material; })());
+chk('H QB: a split worth a point or more is material', QS({ player: 'A', status: 'COMPETITION' }, 'home', sens('home', -1.6, 1.4), 3).material);
+chk('H QB: a split that flips the favorite is material', (() => { const q = QS({ player: 'A', status: 'COMPETITION' }, 'home', sens('home', -0.6, -0.2), 0.4); return q.material && q.flips_favorite; })());
+chk('H QB: a sourced availability report is AVAILABILITY and material', (() => { const q = QS({ player: 'A', status: 'STARTED_LAST' }, 'away', { risks: { items: [{ key: 'qb_away', text: 'A is QUESTIONABLE (ankle)', source: 'team report' }] } }, -2); return q.status === 'AVAILABILITY' && q.material; })());
+const settled = snap.cfb.games.map((p) => ['home', 'away'].map((s) => p.qb && p.qb[s] && p.qb[s].status === 'ESTABLISHED' ? { p, team: s === 'home' ? p.home : p.away } : null)).flat().filter(Boolean)[0];
+if (settled) {
+  chk('H no QB doubt is written about a settled starter', failsOn(mutate((a) => intro(a, settled.team + '’s starting quarterback hasn’t been confirmed.')), 'qb_claims_supported'));
+  chk('H … and the deterministic copy writes none', !failsOn(v0, 'qb_claims_supported'));
+}
+chk('H a standing note on what the model does not price is not a QB claim', !failsOn(mutate((a) => intro(a, 'EdgeDesk’s college projection does not directly price quarterback changes or reported injuries.')), 'qb_claims_supported'));
+
+chk('H confidence: “high confidence” in a result fails', failsOn(mutate((a) => intro(a, 'EdgeDesk has high confidence in Alabama.')), 'no_confidence_misuse'));
+chk('H confidence: a “confidence score” on a game fails', failsOn(mutate((a) => intro(a, 'Alabama carries a confidence score of 81.')), 'no_confidence_misuse'));
+chk('H confidence: saying a model publishes no confidence score is a fact, not misuse', !failsOn(mutate((a) => intro(a, 'The NFL model publishes no confidence score.')), 'no_confidence_misuse'));
+chk('H the CFB copy prints data quality, never confidence', /Data quality: \d+\/100/.test(a0.sections.find((s) => s.key === 'games').body) && !/[Cc]onfidence: \d/.test(CE.toMarkdown(a0, {})));
+const nflA = CE.draft(nflPrev, { publisher: SR, now: NOW });
+chk('H the NFL copy prints no data-quality score it does not have', !/Data quality/.test(nflA.sections.map((s) => s.body).join(' ')));
+chk('H “undefined/100” is stringified nothing', failsOn(mutate((a) => intro(a, 'Data quality: undefined/100.')), 'no_stringified_nothing'));
+chk('H an NFL game’s injury counts are written once, in the injury section', (() => {
+  const txt = nflA.sections.map((s) => s.body).join('\n'); const m = txt.match(/list(?:s)? \w+ players? as out\./g) || [];
+  return m.length > 0 && new Set(m).size === m.length || !/as out/.test(txt); })());
+
+const inc = mutate((a) => { const g = a.sections.find((s) => s.key === 'games'); const p = cfbPrev.research.games[0];
+  g.body = g.body.replace(new RegExp('(' + p.home.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' )(\\d+\\.\\d)'), (m0, t, n) => t + (+n + 3).toFixed(1)); });
+chk('H a projected score that does not reconcile with the margin fails', failsOn(inc, 'numbers_reconcile'), inc.checks.find((c) => c.id === 'numbers_reconcile'));
+chk('H a misquoted win chance fails', failsOn(mutate((a) => { const p = cfbPrev.research.games[0]; intro(a, p.model.favorite + ' has a ' + (p.model.fav_win_pct + 7) + '% chance to win.'); }), 'numbers_reconcile'));
+const stale = snap.cfb.games.filter((p) => p.market.status === 'stale');
+if (stale.length) chk('H a stale line is printed as historical, with its capture time', a0.sections.find((s) => s.key === 'games').body.split('### ').slice(1)
+  .filter((g) => stale.some((p) => g.indexOf(p.home) >= 0 && g.indexOf(p.away) >= 0)).every((g) => !/line/i.test(g) || /Historical line|historical/.test(g)));
+
+const D = CE.DISCREPANCY;
+chk('H discrepancy thresholds: 3 significant, review at 3 unexplained, block at a 7-point gap with 5 unexplained', D.significant === 3 && D.review_unexplained === 3 && D.block_gap === 7 && D.block_unexplained === 5);
+const om = snap.cfb.games.find((p) => p.away === 'Ole Miss' && p.home === 'Vanderbilt');
+const uo = snap.cfb.games.find((p) => p.away === 'UCLA' && p.home === 'Oregon');
+if (om) chk('H Ole Miss at Vanderbilt: a 9.3-point gap, mostly unexplained, blocks until reviewed', om.discrepancy && om.discrepancy.review === 'BLOCK' && om.discrepancy.points >= 9 && om.discrepancy.unexplained_pct >= 70, om.discrepancy);
+if (uo) chk('H UCLA at Oregon: a 7.8-point gap, mostly unexplained, blocks until reviewed', uo.discrepancy && uo.discrepancy.review === 'BLOCK' && uo.discrepancy.unexplained_pct >= 80, uo.discrepancy);
+chk('H a gap under three points is not a discrepancy', snap.cfb.games.filter((p) => p.gap && p.gap.points < 3).every((p) => !p.discrepancy));
+chk('H the explanation states what is unexplained, and invents no cause', (() => { const s = a0.sections.find((x) => x.key === 'disagreements'); return !!s && /not explained by anything EdgeDesk measures/.test(s.body) && !/because the market|sharp money|public money/i.test(s.body); })());
+
+const W = CE.WEATHER;
+const wx = (fc, at) => CE.research.weatherOf ? CE.research.weatherOf(fc, at) : null;
+const cfbWx = snap.cfb.games.map((p) => p.weather).filter(Boolean);
+chk('H weather: every featured game has a stated weather state', cfbWx.length === snap.cfb.games.length && cfbWx.every((w) => ['OK', 'HAZARD', 'STALE', 'INDOOR', 'NOT_CHECKED'].indexOf(w.state) >= 0));
+chk('H weather thresholds are the documented ones', W.wind_mph === 20 && W.gust_mph === 35 && W.precip_in === 0.25 && W.cold_f === 25 && W.heat_f === 95 && W.stale_hours === 12);
+chk('H weather: hazards come from the forecast on file, each with its source time', snap.cfb.games.filter((p) => p.weather && p.weather.state === 'HAZARD').every((p) => p.weather.hazards.length && p.weather.as_of));
+
+/* the gate */
+const current = {}; ['cfb', 'nfl'].forEach((lg) => (snap[lg].games || []).forEach((p) => { current[p.game_id] = p; }));
+const gctx = (extra) => Object.assign({ now: NOW, publisher: SR, campaign: 'ce_stadiumrant_test0000', landing: CE.SITE + '/today/', current, teamLists: TL }, extra || {});
+const g0 = CE.gate(Object.assign({}, a0, { format: 'cfb_weekly_preview' }), cfbPrev, gctx());
+const RANK = { PASS: 0, WARNING: 1, BLOCKED: 2 };
+chk('H gate: fourteen checks, each with a kind', g0.schema === 'edgedesk_editorial_gate_v1' && g0.items.length === 14 && CE.GATE_CHECKS.length === 14 && g0.items.every((i) => i.kind));
+chk('H gate: the verdict is the worst check', g0.verdict === ['PASS', 'WARNING', 'BLOCKED'][Math.max.apply(null, g0.items.map((i) => RANK[i.status]))]);
+chk('H gate: every finding gives its reason, its evidence and its fix', g0.items.every((i) => i.findings.filter((f) => f.status !== 'PASS').every((f) => f.reason && Array.isArray(f.evidence) && f.fix)));
+const blockedKeys = g0.items.filter((i) => i.status === 'BLOCKED').map((i) => i.key);
+const discAcks = (g0.items.find((i) => i.key === 'reliability') || { findings: [] }).findings.filter((f) => f.status === 'BLOCKED' && /^discrepancy:/.test(f.ack_key || '')).map((f) => f.ack_key);
+chk('H gate: the Week 6 preview is BLOCKED only on its unexplained gaps, which need the owner', g0.verdict === 'BLOCKED' && blockedKeys.join() === 'reliability' && discAcks.length === 2, { blockedKeys, discAcks });
+const acks = {}; discAcks.forEach((k) => { acks[k] = { note: 'Reviewed: market moved on availability news EdgeDesk has not captured.', at: '2026-10-08T17:00:00Z' }; });
+const g1 = CE.gate(Object.assign({}, a0, { format: 'cfb_weekly_preview' }), cfbPrev, gctx({ acks }));
+chk('H gate: the owner’s recorded review turns those blocks into warnings, and says so', g1.verdict !== 'BLOCKED' && g1.items.find((i) => i.key === 'reliability').findings.filter((f) => f.acknowledged).length === 2
+  && g1.items.find((i) => i.key === 'reliability').findings.filter((f) => f.acknowledged).every((f) => /^Reviewed by the owner/.test(f.reason)));
+chk('H gate: an acknowledgement cannot clear any other block', (() => { const gx = CE.gate(Object.assign({}, a0, { format: 'cfb_weekly_preview' }, { title: a0.title, sections: a0.sections.map((s, i) => i ? s : Object.assign({}, s, { body: s.body + ' Our best bet is Alabama.' })) }), cfbPrev, gctx({ acks })); return gx.verdict === 'BLOCKED'; })());
+chk('H gate: a pick is BLOCKED under responsible gambling', (() => { const gx = CE.gate(Object.assign({}, a0, { format: 'cfb_weekly_preview', sections: a0.sections.map((s, i) => i ? s : Object.assign({}, s, { body: s.body + ' Our best bet is Alabama.' })) }), cfbPrev, gctx({ acks })); return gx.items.find((i) => i.key === 'responsible').status === 'BLOCKED'; })());
+chk('H gate: a game that has kicked off is BLOCKED under schedule', CE.gate(Object.assign({}, a0, { format: 'cfb_weekly_preview' }), cfbPrev, gctx({ now: Date.parse('2026-10-11T12:00:00Z'), acks })).items.find((i) => i.key === 'schedule').status === 'BLOCKED');
+chk('H gate: the inconsistent score is BLOCKED under projections, pointing at the games section', (() => {
+  const a = JSON.parse(JSON.stringify(a0)); const g = a.sections.find((s) => s.key === 'games'); const p = cfbPrev.research.games[0];
+  g.body = g.body.replace(new RegExp('(' + p.home.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' )(\\d+\\.\\d)'), (m0, t, n) => t + (+n + 3).toFixed(1));
+  const gx = CE.gate(Object.assign(a, { format: 'cfb_weekly_preview' }), cfbPrev, gctx({ acks })); const it = gx.items.find((i) => i.key === 'projections');
+  return it.status === 'BLOCKED' && CE.sectionsToFix(gx).indexOf('games') >= 0; })());
+chk('H gate: research moved by a point since writing is BLOCKED under snapshot', (() => {
+  const p = cfbPrev.research.games[0]; const moved = Object.assign({}, current); moved[p.game_id] = JSON.parse(JSON.stringify(current[p.game_id]));
+  moved[p.game_id].model.home_line = moved[p.game_id].model.home_line + 1.5;
+  return CE.gate(Object.assign({}, a0, { format: 'cfb_weekly_preview' }), cfbPrev, gctx({ acks, current: moved })).items.find((i) => i.key === 'snapshot').status === 'BLOCKED'; })());
+chk('H gate: an NFL draft from today’s research passes', CE.gate(Object.assign({}, nflA, { format: 'nfl_weekly_preview' }), nflPrev, gctx()).verdict !== 'BLOCKED');
+
+/* repair: only the flagged sections; everything else byte for byte */
+const broken = JSON.parse(JSON.stringify(a0));
+(() => { const g = broken.sections.find((s) => s.key === 'games'); const p = cfbPrev.research.games[0];
+  g.body = g.body.replace(new RegExp('(' + p.home.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' )(\\d+\\.\\d)'), (m0, t, n) => t + (+n + 3).toFixed(1)); })();
+broken.sections.find((s) => s.key === 'intro').body += ' (Edited by hand.)';
+const gb = CE.gate(Object.assign({}, broken, { format: 'cfb_weekly_preview' }), cfbPrev, gctx({ acks }));
+const fixKeys = CE.sectionsToFix(gb);
+const rp = CE.repair(Object.assign({}, broken, { format: 'cfb_weekly_preview' }), cfbPrev, { sections: fixKeys, publisher: SR, now: NOW });
+chk('H repair: rewrites the flagged section (and its explainer), nothing else', fixKeys.indexOf('games') >= 0 && rp.changed.indexOf('games') >= 0 && rp.changed.every((k) => ['games', 'how_to_read', 'disagreements'].indexOf(k) >= 0), { fixKeys, changed: rp.changed });
+chk('H repair: every other section is kept byte for byte, the owner’s edit included', broken.sections.filter((s) => fixKeys.indexOf(s.key) < 0 && s.key !== 'how_to_read').every((s) => rp.article.sections.find((x) => x.key === s.key).body === s.body)
+  && /\(Edited by hand\.\)/.test(rp.article.sections.find((x) => x.key === 'intro').body));
+chk('H repair: the repaired article clears the projections check', CE.gate(Object.assign({}, rp.article, { format: 'cfb_weekly_preview' }), cfbPrev, gctx({ acks })).items.find((i) => i.key === 'projections').status === 'PASS');
+chk('H repair: says it was repaired, and costs no AI call', /\+repair$/.test(rp.article.generator));
+
+/* AI cost: deterministic checks first; a stable key; a conservative estimate */
+chk('H AI precheck: fresh research, nothing kicked off: go', CE.ai.precheck(a0, cfbPrev, NOW).length === 0);
+chk('H AI precheck: research older than 36 hours: refresh first, no call', CE.ai.precheck(a0, cfbPrev, Date.parse(cfbPrev.research.as_of) + 40 * 3600000).some((x) => /hours old/.test(x)));
+chk('H AI precheck: a featured game has kicked off: no call', CE.ai.precheck(a0, cfbPrev, Date.parse('2026-10-11T12:00:00Z')).some((x) => /kicked off/.test(x)));
+const rq = CE.ai.buildRequest(cfbPrev, { publisher: SR, format: 'cfb_weekly_preview', current: a0, objections: [] });
+chk('H AI: the same request has the same ledger key; another model, another key', CE.ai.requestKey(rq, 'claude-opus-5-5') === CE.ai.requestKey(CE.ai.buildRequest(cfbPrev, { publisher: SR, format: 'cfb_weekly_preview', current: a0, objections: [] }), 'claude-opus-5-5')
+  && CE.ai.requestKey(rq, 'claude-opus-5-5') !== CE.ai.requestKey(rq, 'claude-sonnet-5-5'));
+chk('H AI: the input estimate is conservative (≥ characters ÷ 3)', CE.ai.inputEstimate(rq) >= (rq.system.length + rq.messages[0].content.length) / 3);
+const rs = CE.ai.buildRequest(cfbPrev, { publisher: SR, format: 'cfb_weekly_preview', current: a0, objections: [], section: 'games' });
+chk('H AI: a section rewrite asks for one section, with a smaller output cap', rs.operation === 'section' && rs.max_tokens === CE.ai.MAX_TOKENS.section && rs.max_tokens < CE.ai.MAX_TOKENS.draft && rs.output_config.format.schema === CE.ai.SECTION_SCHEMA);
+chk('H AI: a one-section reply merges into the draft, the rest untouched', (() => { const r = CE.ai.parseReply({ stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify({ key: 'limits', heading: 'Limits', body: 'New limits.' }) }] }, a0);
+  return r.ok && r.section === 'limits' && r.article.sections.filter((s) => s.key !== 'limits').every((s) => s.body === a0.sections.find((x) => x.key === s.key).body); })());
 
 /* ── E export ─────────────────────────────────────────────────────────── */
 section('E export');
