@@ -73,6 +73,7 @@ on:
       - 'supabase/functions/growth_outbound_optout/**'
       - 'supabase/functions/growth_outbound_research/**'
       - 'supabase/functions/growth_outbound_draft/**'
+      - 'supabase/functions/growth_outbound_digest/**'
       - 'supabase/functions/newsletter/**'
       - 'email/stop/**'
       - '.github/workflows/deploy-growth-outbound.yml'
@@ -258,7 +259,7 @@ jobs:
         run: node tools/growth/outbound_concurrency_sql.test.js
       - name: Junk at every door is refused in words, never an error, and the public doors write nothing without their proof
         run: node tools/growth/outbound_fuzz_sql.test.js
-      - name: One prospect's whole life through all five Edge Functions and one database, approved and sent only by the owner
+      - name: One prospect's whole life through all six Edge Functions and one database, approved and sent only by the owner
         run: node tools/growth/outbound_lifecycle.test.js
       - name: The System check is the file's own report, owner only; what needs attention appears exactly when true
         run: node tools/growth/outbound_health_sql.test.js
@@ -271,6 +272,18 @@ jobs:
         run: node tools/growth/outbound_qualify_sql.test.js
       - name: Search, email lookup, verification and enrichment providers are switched on deliberately and weighed as their word
         run: node tools/growth/outbound_providers.test.js
+      # The owner's daily email (2026-10): "N drafts are waiting for your
+      # review", once a morning, to the owner's own confirmed address only,
+      # counts only, on a ticket that opens its own two doors and no others.
+      - name: The daily email goes once a morning to the owner alone, says counts only, and never touches a send
+        run: node tools/growth/outbound_digest_sql.test.js
+      - name: The daily email's function sends exactly what the database wrote, to one address, and records what became of it
+        run: node tools/growth/outbound_digest.test.js
+      # Replies read from Resend (2026-10): the signed email.received event,
+      # matched by address alone; a reply ends a sequence, an out-of-office
+      # changes nothing, a request to stop suppresses.
+      - name: A reply Resend receives ends that person's sequence; a request to stop suppresses; nothing is guessed
+        run: node tools/growth/outbound_replies_sql.test.js
       - name: The research-state scheduler's record is the service role's alone; its pg_cron job replaces itself
         env:
           RESEARCH_CRON_SQL_REQUIRED: '1'

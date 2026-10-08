@@ -481,6 +481,10 @@ async function handleWebhook(c: Cfg, req: Request): Promise<Response> {
   // and nothing is suppressed from here: the address, the event, the bounce
   // all stay out of the newsletter's tables.
   if (isOutboundEvent(data)) return json({ ok: true, state: 'not_newsletter' });
+  // NOR IS AN EMAIL RECEIVED (2026-10). The newsletter receives nothing; a
+  // received email is a reply to the outbound engine (its own webhook reads
+  // it). Its sender and subject are kept out of the newsletter's tables.
+  if (type === 'email.received') return json({ ok: true, state: 'not_newsletter' });
   const to = Array.isArray(data.to) ? String(data.to[0]) : (data.to ? String(data.to) : null);
   const messageId = String(data.email_id ?? data.id ?? '') || null;
   const eventId = req.headers.get('svix-id') ?? req.headers.get('webhook-id');

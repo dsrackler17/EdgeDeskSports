@@ -176,6 +176,7 @@ function freshSettings() {
     min_fit_score: 80, min_identity_confidence: 0.9, min_role_confidence: 0.85, min_research_confidence: 0.85, min_email_confidence: 0.9,
     followup_enabled: true, followup_delay_days: 5, final_followup_enabled: false, final_followup_delay_days: 10,
     automation_timezone: 'America/New_York', automation_start_hour: 6, automation_hours: 4, attribution_links: true,
+    digest_enabled: false, digest_to: null, reply_detection: true,
     sender_name: 'Davis', sender_email: 'davis@edgedesksports.com', reply_to_email: null, cta_url: 'https://edgedesksports.com/', business_name: 'EdgeDesk Sports',
     postal_address: null, unsubscribe_url_base: null, discovery_config: {},
     send_blockers: ['postal_address_missing', 'unsubscribe_endpoint_missing'], live_send_blockers: ['postal_address_missing', 'unsubscribe_endpoint_missing', 'webhook_secret_missing'],
@@ -435,6 +436,10 @@ const PROSPECTS = { total: 2, rows: [
           return reply(200, body.p_status === 'approved' ? QAPPROVED : state.queue10 ? Q10 : state.queue8 ? Q8 : QPENDING);
         }
         if (name === 'growth_outbound_sends') return reply(200, SENDS);
+        if (name === 'growth_outbound_replies') {
+          if (!state.replies) return reply(404, { code: 'PGRST202', message: 'Could not find the function' });
+          return reply(200, state.replies);
+        }
         if (name === 'growth_outbound_research_overview') return reply(200, RESEARCH_OV);
         if (name === 'growth_outbound_drafting_overview') return reply(200, DRAFT_OV);
         if (name === 'growth_outbound_automation_overview') {
@@ -470,6 +475,7 @@ const PROSPECTS = { total: 2, rows: [
           return reply(200, { ok: true, status: 'replied', drafts_cancelled: 1, suppressed: !!body.p_stop });
         }
         if (name === 'growth_outbound_prospect') {
+          if (body.p_id === 'p1' && state.pdReplies) return reply(200, Object.assign({}, DETAIL, { replies: state.pdReplies }));
           if (body.p_id === 'p1' && o.p12) return reply(200, Object.assign({}, DETAIL, { prospect: Object.assign({}, DETAIL.prospect, { qualification_score: 82, qualification: QUAL(),
             campaign_type: 'customer', assessment: Object.assign({}, DETAIL.prospect.assessment, { thresholds: Object.assign({}, DETAIL.prospect.assessment.thresholds, { qualification: 75 }) }) }) }));
           if (body.p_id === 'p1') return reply(200, Object.assign({}, DETAIL, o.results10 ? { conversions: [
@@ -511,6 +517,8 @@ const PROSPECTS = { total: 2, rows: [
             return reply(200, { ok: false, reason: 'invalid_value', detail: 'budget: llm must be a whole number' });
           }
           Object.keys(p).filter((k) => k.indexOf('confirm_') !== 0).forEach((k) => { changed[k] = { from: st[k], to: p[k] }; st[k] = p[k]; });
+          // the daily email goes to the signed-in owner's own address, decided by the database
+          if ('digest_enabled' in p) st.digest_to = p.digest_enabled ? (state.digestTo || 'owner@edgedesk.test') : null;
           return reply(200, { ok: true, changed, settings: st });
         }
       }
@@ -1125,6 +1133,107 @@ const PROSPECTS = { total: 2, rows: [
     chk('52 before the Phase 9 SQL: said, and nothing else fails', /arrives with the Phase 9 SQL/.test(await text(t.page, '#amChips')) && !(await visible(t.page, '#obMsg')));
     chk('52 no page errors', t.errors.length === 0, t.errors);
     await t.ctx.close();
+  }
+
+  /* ── 58–60. the owner's daily email (2026-10) ─────────────────────── */
+  {
+    const t = await open({ role: 'owner' });
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 700);
+    chk('58 the daily email is a Morning run setting, off by default, and says where it would go', !(await t.page.isChecked('#obf_digest_enabled'))
+      && /Off\. When on, it goes to the address of the owner who turns it on\./.test(await text(t.page, '#obDigestTo')), await text(t.page, '#obDigestTo'));
+    chk('58 there is no address to type: no field for one', (await t.page.$$('#obf_digest_to, #obf_digest_owner')).length === 0);
+    chk('58 an older SQL (no daily email in the panel): no chip, nothing fails', !/Daily email/.test(await text(t.page, '#amChips')));
+    await t.page.check('#obf_digest_enabled');
+    await t.page.click('#obSave'); await settle(t.page, 600);
+    const up = t.calls.filter((c) => c[0] === 'growth_outbound_settings_update').slice(-1)[0];
+    chk('58 turning it on saves exactly that — no address goes with it, no confirmation needed (it only ever writes to you)',
+      !!up && JSON.stringify(up[1].p) === JSON.stringify({ digest_enabled: true }) && t.dialogs.length === 0, up && up[1]);
+    chk('58 … and says where it now goes: the account\'s own address', /Goes to owner@edgedesk\.test \(your account's own address\)\./.test(await text(t.page, '#obDigestTo')), await text(t.page, '#obDigestTo'));
+    chk('58 no page errors', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+  {
+    const t = await open({ role: 'owner' });
+    t.state.am = { digest: { enabled: true, to: 'owner@edgedesk.test', plan: { action: 'wait', reason: 'this morning\'s email went out', day: '2026-10-08' },
+      recent: [{ day: '2026-10-08', status: 'sent', waiting: 3, attempts: 1, retryable: false, sent_at: '2026-10-08T11:16:00Z', reason: null }] } };
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 700);
+    let chips = await text(t.page, '#amChips');
+    chk('59 the morning-run panel says the daily email is on, to whom, and that this morning\'s went', /Daily email: on, to owner@edgedesk\.test · sent 2026-10-08 11:16Z \(3 waiting\)/.test(chips), chips);
+    await t.ctx.close();
+  }
+  {
+    const t = await open({ role: 'owner' });
+    t.state.am = { digest: { enabled: true, to: 'owner@edgedesk.test', plan: { action: 'wait', reason: 'x', day: '2026-10-08' },
+      recent: [{ day: '2026-10-08', status: 'failed', waiting: 2, attempts: 1, retryable: true, sent_at: null, reason: 'Resend answered 503' + XSS }] } };
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 700);
+    const chips = await text(t.page, '#amChips');
+    chk('60 a failed one: said, with the reason, and that it tries again', /Daily email: on, to owner@edgedesk\.test · not sent: Resend answered 503/.test(chips) && /\(it tries again\)/.test(chips)
+      && await t.page.$eval('[data-am="digest"]', (e) => e.classList.contains('warn')), chips);
+    chk('60 … its words are text, never markup', !(await t.page.evaluate(() => window.__pwned)) && /<img src=x/.test(chips));
+    await t.ctx.close();
+  }
+  {
+    const t = await open({ role: 'owner' });
+    t.state.am = { digest: { enabled: true, to: null, plan: { action: 'wait', reason: 'nobody to send it to', day: '2026-10-08' }, recent: [] } };
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 700);
+    let chips = await text(t.page, '#amChips');
+    chk('60 on with nobody to go to: said, with what to do', /Daily email: on, to nobody \(turn it off and on again\) · nobody to send it to/.test(chips), chips);
+    await t.ctx.close();
+    const u = await open({ role: 'owner' });
+    u.state.am = { digest: { enabled: false, to: null, plan: { action: 'wait', reason: 'the daily email is off', day: '2026-10-08' }, recent: [] } };
+    await u.page.click('#tabBtnOutbound'); await settle(u.page, 700);
+    chips = await text(u.page, '#amChips');
+    chk('60 off: said, with where to turn it on', /Daily email: off \(turn it on under Outbound settings → Morning run\)/.test(chips), chips);
+    chk('58-60 no page errors', u.errors.length === 0 && t.errors.length === 0, u.errors.concat(t.errors));
+    await u.ctx.close();
+  }
+
+  /* ── 61–62. replies, read from Resend (2026-10) ─────────────────────── */
+  {
+    const t = await open({ role: 'owner' });
+    t.state.replies = { ok: true, detection: true, last_at: '2026-10-08T14:00:00Z',
+      counts_30d: { reply: 2, auto_reply: 1, opt_out: 1, test: 0, unmatched: 1 },
+      rows: [
+        { id: 5, received_at: '2026-10-08T14:00:00Z', kind: 'reply', applied: true, sequence_number: 1, subject: 'Re: Your ratings', prospect_id: 'p1', full_name: 'Pat Analyst', detail: {} },
+        { id: 4, received_at: '2026-10-08T13:00:00Z', kind: 'opt_out', applied: true, sequence_number: 2, subject: XSS, prospect_id: 'p2', full_name: XSS, detail: {} },
+        { id: 3, received_at: '2026-10-08T12:00:00Z', kind: 'auto_reply', applied: false, sequence_number: 1, subject: 'Automatic reply: away', prospect_id: 'p3', full_name: 'Sam Spare', detail: {} },
+        { id: 2, received_at: '2026-10-08T11:00:00Z', kind: 'unmatched', applied: false, sequence_number: null, subject: null, prospect_id: null, full_name: null, from_masked: 's•••@elsewhere.test', detail: {} },
+        { id: 1, received_at: '2026-10-08T10:00:00Z', kind: 'reply', applied: false, sequence_number: 1, subject: 'Re: hi', prospect_id: 'p4', full_name: 'Ana Bell', detail: { detection: 'off' } }] };
+    t.state.pdReplies = [{ received_at: '2026-10-08T14:00:00Z', kind: 'reply', subject: 'Re: Your ratings', sequence_number: 1, applied: true }];
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 700);
+    const chips = await text(t.page, '#obReplyChips');
+    chk('61 Replies: detection on, and what came in over 30 days', /Reply detection: on/.test(chips) && /30 days: 2 replied · 1 automatic · 1 asked to stop · 1 from nobody you wrote to/.test(chips)
+      && !/Nothing received yet/.test(chips), chips);
+    const tbl = await text(t.page, '#obReplies');
+    chk('61 … each one: who, what it was taken to be, and what it changed', /Pat Analyst/.test(tbl) && /repliedRe: Your ratingssequence ended/.test(tbl)
+      && /asked to stop/.test(tbl) && /suppressed/.test(tbl) && /automatic answer/.test(tbl) && /s•••@elsewhere\.test/.test(tbl) && /from nobody you wrote to/.test(tbl)
+      && /nothing \(detection off\)/.test(tbl) && /step 2/.test(tbl), tbl);
+    chk('61 … its words are text, never markup', !(await t.page.evaluate(() => window.__pwned)) && /<img src=x/.test(tbl));
+    await t.page.click('#obReplies [data-open="p1"]'); await settle(t.page, 600);
+    const pd = await text(t.page, '#pdReplies');
+    chk('61 a name opens the prospect, whose page lists their replies', /repliedRe: Your ratings/.test(pd), pd);
+    chk('61 reply detection is a setting, on by default', await t.page.isChecked('#obf_reply_detection'));
+    await t.page.uncheck('#obf_reply_detection');
+    await t.page.click('#obSave'); await settle(t.page, 600);
+    const up = t.calls.filter((c) => c[0] === 'growth_outbound_settings_update').slice(-1)[0];
+    chk('61 … turning it off saves exactly that, and the list is read again', !!up && JSON.stringify(up[1].p) === JSON.stringify({ reply_detection: false })
+      && t.calls.filter((c) => c[0] === 'growth_outbound_replies').length >= 2, up && up[1]);
+    chk('61 no page errors', t.errors.length === 0, t.errors);
+    await t.ctx.close();
+  }
+  {
+    const t = await open({ role: 'owner' });
+    await t.page.click('#tabBtnOutbound'); await settle(t.page, 700);
+    chk('62 before the 2026-10 SQL: said, and nothing else fails', /Replies arrive with the 2026-10 SQL/.test(await text(t.page, '#obReplyChips')) && !(await visible(t.page, '#obMsg')));
+    await t.ctx.close();
+    const u = await open({ role: 'owner' });
+    u.state.replies = { ok: true, detection: false, last_at: null, counts_30d: {}, rows: [] };
+    await u.page.click('#tabBtnOutbound'); await settle(u.page, 700);
+    const chips = await text(u.page, '#obReplyChips');
+    chk('62 nothing received yet: said, with where to set it up; detection off said too', /Nothing received yet: set up receiving in Resend/.test(chips)
+      && /Reply detection: off \(replies are listed; only a request to stop acts\)/.test(chips) && /No email has been received\./.test(await text(u.page, '#obReplies')), chips);
+    chk('62 no page errors', u.errors.length === 0 && t.errors.length === 0, u.errors.concat(t.errors));
+    await u.ctx.close();
   }
 
   /* ── 53–56. results (Phase 10) ─────────────────────────────────────── */

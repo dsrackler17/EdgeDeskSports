@@ -193,8 +193,8 @@ const TOK = 'ab'.repeat(32);
 
   /* ══ N. THE NEWSLETTER'S WEBHOOK IGNORES OUTBOUND EMAIL ═══════════════ */
   const sign = (id, ts, body) => 'v1,' + crypto.createHmac('sha256', Buffer.from(NL_SECRET.slice(6), 'base64')).update(id + '.' + ts + '.' + body).digest('base64');
-  const nl = (data, id) => {
-    const body = JSON.stringify({ type: 'email.bounced', created_at: '2026-10-07T10:00:00Z', data });
+  const nl = (data, id, type) => {
+    const body = JSON.stringify({ type: type || 'email.bounced', created_at: '2026-10-07T10:00:00Z', data });
     const ts = String(Math.floor(Date.now() / 1000));
     return new Request(URL_ + '/functions/v1/newsletter/webhook', { method: 'POST',
       headers: { 'content-type': 'application/json', 'svix-id': id, 'svix-timestamp': ts, 'svix-signature': sign(id, ts, body) }, body });
@@ -205,6 +205,10 @@ const TOK = 'ab'.repeat(32);
     chk('N an OUTBOUND email\'s event (' + label + ') is acknowledged and NOTHING is written: no event row, no suppression', x.r.status === 200 && x.b.state === 'not_newsletter'
       && LOG.length === 0, LOG.map((e) => e.url));
   }
+  x = await run(N, {}, nl({ email_id: 'rcv_1', from: 'Pat Analyst <pat@cfbnumbers.test>', to: ['replies@edgedesksports.com'], subject: 'Re: your ratings',
+    received_for: ['replies@edgedesksports.com'], message_id: '<a@b>', attachments: [] }, 'evt_rcv_1', 'email.received'), null);
+  chk('N an email RECEIVED (a reply to the outbound engine) is not the newsletter\'s: acknowledged, nothing written — no sender, no subject', x.r.status === 200
+    && x.b.state === 'not_newsletter' && LOG.length === 0, LOG.map((e) => e.url));
   x = await run(N, {}, nl(Object.assign({}, bounce, { email_id: 'msg_nl_1', to: ['reader@x.test'], tags: { category: 'newsletter' } }), 'evt_nl_1'), null);
   chk('N the newsletter\'s own events are still handled (stored, and a hard bounce suppressed)', x.r.status === 200 && LOG.some((e) => /newsletter_events/.test(e.url))
     && LOG.some((e) => /rpc\/newsletter_suppress$/.test(e.url)), LOG.map((e) => e.url));
