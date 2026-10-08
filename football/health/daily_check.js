@@ -342,6 +342,8 @@ function p4NormSchedRow(r, fromSupabase) {
   return {
     game_id: r.game_id, season: num(r.season), week: num(r.week),
     start_date: r.start_date,
+    /* the feed's TBA flag (docs/system-integrity/AUDIT.md §2); absent from the fallback */
+    start_time_tbd: fromSupabase || r.start_time_tbd == null || r.start_time_tbd === '' ? null : String(r.start_time_tbd).toUpperCase() === 'TRUE',
     completed: fromSupabase ? !!r.completed : String(r.completed).toUpperCase() === 'TRUE',
     neutral_site: fromSupabase ? !!r.neutral_site : String(r.neutral_site).toUpperCase() === 'TRUE',
     venue_id: fromSupabase ? null : num(r.venue_id), venue: r.venue,

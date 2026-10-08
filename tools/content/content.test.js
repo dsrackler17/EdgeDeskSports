@@ -69,14 +69,21 @@ chk('R the CFB week is the brief’s week and every game is in it', snap.cfb && 
 chk('R the NFL week is the next one with games still to come', snap.nfl && snap.nfl.games.some((p) => Date.parse(p.kickoff) > NOW));
 const gid = Object.keys(art.cfbGames.games).find((k) => art.cfbGames.games[k].week === snap.cfb.week && art.cfbGames.games[k].edgedesk && art.cfbGames.games[k].edgedesk.available);
 const raw = art.cfbGames.games[gid], pk = snap.cfb.games.find((p) => p.game_id === String(gid));
-chk('R the fair line reads as EdgeDesk’s own display reads', pk && raw.edgedesk.fair_text.indexOf(pk.model.favorite) === 0
-  && raw.edgedesk.fair_text.endsWith(String(pk.model.margin.toFixed(1))), { fair_text: raw.edgedesk.fair_text, packet: pk && pk.model });
+/* 2026-10-08 (docs/system-integrity/AUDIT.md §1): every surface rounds the
+   STORED number by the one policy (lib/edgedesk_calc.js, half away from zero);
+   a committed artifact built before that policy may still carry the binary
+   toFixed text, so the check reads the stored number, not the old text */
+const CALC = require(path.join(ROOT, 'lib', 'edgedesk_calc.js'));
+chk('R the fair line is the stored number under the canonical rounding policy', pk && raw.edgedesk.fair_text.indexOf(pk.model.favorite) === 0
+  && pk.model.home_line === CALC.round(raw.edgedesk.fair_home_line, 1) && pk.model.margin === Math.abs(CALC.round(raw.edgedesk.fair_home_line, 1)), { fair_text: raw.edgedesk.fair_text, packet: pk && pk.model });
 chk('R the win chance is the artifact’s, as a whole percent', pk && pk.model.fav_win_pct === Math.round(100 * (pk.model.favorite === pk.home ? raw.edgedesk.home_win_prob : 1 - raw.edgedesk.home_win_prob)));
 chk('R the confidence is the artifact’s', pk && (!raw.edgedesk.football_confidence || pk.model.confidence.score === Math.round(raw.edgedesk.football_confidence.score)));
 chk('R kickoff printed in Eastern time, AP style', /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\., (Sept\.|Oct\.|Nov\.|Dec\.|Aug\.|Jan\.) \d{1,2}, \d{1,2}(:\d{2})? (a|p)\.m\. ET$/.test(pk.kickoff_text), pk.kickoff_text);
 const al = snap.cfb.games.find((p) => p.home === 'Alabama' && p.away === 'Georgia');
 if (al) {
-  chk('R Georgia at Alabama: Alabama by 5.3, 64%, as the terminal says', al.display.fair === 'Alabama by 5.3' && al.display.win === 'Alabama 64%');
+  const alRaw = art.cfbGames.games[al.game_id].edgedesk;
+  chk('R Georgia at Alabama: Alabama by the stored margin, canonically rounded, 64%', al.display.fair === 'Alabama by ' + Math.abs(CALC.round(alRaw.fair_home_line, 1)).toFixed(1) && al.display.win === 'Alabama 64%', al.display);
+  chk('R … and the two win chances add to 100', +al.display.win.match(/(\d+)%/)[1] + +al.display.dog_win.match(/(\d+)%/)[1] === 100, al.display);
   chk('R … its market is older than three hours, so it is stale, with its capture time', al.market.status === 'stale' && /captured/.test(al.display.market) && al.flags.indexOf('STALE_MARKET') >= 0);
 }
 const fresh = snap.cfb.games.filter((p) => p.market.status === 'current');
@@ -123,6 +130,10 @@ all.forEach((o) => o.formats.forEach((f) => {
   chk('D ' + o.kind + ' / ' + f + ' passes every hard check', v.ok, v.failed.map((id) => v.checks.find((c) => c.id === id)));
 }));
 chk('D … across ' + drafted + ' drafts', drafted >= 20);
+/* reliability is never assumed: the NFL model publishes none, so no league gets a deep dive "inside the numbers" on an invented score */
+chk('D a deep dive needs a measured reliability: CFB has one, the NFL (no published reliability) gets none', all.some((o) => o.league === 'cfb' && o.kind === 'game_deep_dive')
+  && !all.some((o) => o.league === 'nfl' && o.kind === 'game_deep_dive'));
+chk('D … and an NFL story score says its reliability was unmeasured instead of assuming one', (() => { const g = snap.nfl.games.find((p) => p.model.available); const sc = CE.story.score(g); return g && sc.reliability_measured === false && sc.research_reliability <= 40; })());
 const a0 = CE.draft(cfbPrev, { publisher: SR, format: 'cfb_weekly_preview', now: NOW });
 chk('D the preview has every required section, in order', JSON.stringify(a0.sections.map((s) => s.key)) === JSON.stringify(CE.FORMATS.cfb_weekly_preview.sections.filter((k) => a0.sections.some((s) => s.key === k))));
 chk('D it explains that a projection is not a bet', /A projection is not a bet/.test(a0.sections.find((s) => s.key === 'how_to_read').body));
@@ -301,6 +312,52 @@ const sendNowSrc = (/async function sendNow\([\s\S]*?\n  \}\n/.exec(js) || [''])
 chk('S the page emails only after the owner confirms the address', sendNowSrc.indexOf('window.confirm(') > 0 && sendNowSrc.indexOf('window.confirm(') < sendNowSrc.indexOf("action: 'send'")
   && /if \(!ok\) return;/.test(sendNowSrc) && (js.match(/action: 'send'/g) || []).length === 1);
 chk('S the job names no door that approves, sends or publishes', !/content_engine_article_(approve|transition|review)/.test(runSrc));
+
+/* ── X  exports carry the approved snapshot, and are read back ───────────── */
+{
+  const vx = CE.validate(a0, cfbPrev, { now: NOW, teamLists: TL, publisher: SR });
+  const row = Object.assign({}, a0, { id: 'a1', status: 'approved', revision: 3, content_hash: 'c0ffee0123456789', approved_hash: 'c0ffee0123456789', approved_by: 'owner',
+    approved_at: '2026-10-08T18:00:00Z', approved_research_hash: a0.research_hash, campaign_code: 'ce_stadiumrant_a1', checks: vx });
+  const xctx = { publisher: SR, campaign: 'ce_stadiumrant_a1', opportunity: cfbPrev };
+  const x = CE.exportCheck(a0, row, xctx);
+  chk('X the approved draft exports with the same numbers in Markdown, HTML and Word', x.ok && x.formats.md.ok && x.formats.html.ok && x.formats.docx.ok && x.expected_numbers > 20, x);
+  chk('X the snapshot line names the revision, the content and research fingerprints and the approval',
+    /revision 3 · content c0ffee012345 · research [0-9a-z]+ .*· approved 2026-10-08T18:00:00\.000Z · numbers [0-9a-z]+/.test(x.snapshot_line), x.snapshot_line);
+  chk('X an unapproved revision is refused for export', (() => { const r = CE.exportCheck(a0, Object.assign({}, row, { approved_hash: 'old' }), xctx); return !r.ok && r.problems.some((p) => p.id === 'EXPORT.APPROVED') && /NOT APPROVED/.test(r.snapshot_line); })());
+  chk('X research changed after approval is refused for export', (() => { const r = CE.exportCheck(a0, Object.assign({}, row, { approved_research_hash: 'other' }), xctx); return r.problems.some((p) => p.id === 'EXPORT.RESEARCH'); })());
+  chk('X an export without the campaign-tagged link is refused', (() => { const r = CE.exportCheck(a0, row, Object.assign({}, xctx, { campaign: 'ce_other_zz' })); return r.problems.some((p) => p.id === 'EXPORT.REFERRAL'); })());
+  const md = CE.toMarkdown(a0, Object.assign({ frontMatter: true, snapshot: x.snapshot }, xctx));
+  chk('X the Markdown front matter carries the snapshot', /edgedesk_revision: 3/.test(md) && /edgedesk_content_hash: "c0ffee0123456789"/.test(md) && /edgedesk_approved: true/.test(md));
+  chk('X the HTML carries the snapshot in a meta tag', /<meta name="edgedesk-snapshot" content="EdgeDesk snapshot: revision 3/.test(CE.toHtml(a0, Object.assign({ standalone: true, snapshot: x.snapshot }, xctx))));
+  chk('X the Word file carries the snapshot on the editor page', new TextDecoder().decode(CE.toDocx(a0, Object.assign({ snapshot: x.snapshot }, xctx))).indexOf('EdgeDesk snapshot: revision 3') > 0);
+  /* a renderer that changes one number is caught: the Word writer, mutated */
+  const vm = require('vm');
+  const sbx = { TextEncoder, TextDecoder, URL, console };
+  sbx.globalThis = sbx; vm.createContext(sbx);
+  ['edgedesk_calc.js', 'edgedesk_schedule.js', 'edgedesk_availability.js', 'edgedesk_integrity.js'].forEach((f) => vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', f), 'utf8'), sbx));
+  const src = fs.readFileSync(path.join(ROOT, 'lib', 'content_engine.js'), 'utf8');
+  const target = "xesc(r.t) + '</w:t></w:r>'";
+  chk('X (the mutation target exists in the Word writer)', src.indexOf(target) > 0);
+  const firstNum = (/\d+\.\d/.exec(a0.sections.map((s2) => s2.body).join(' ')) || ['x'])[0];
+  vm.runInContext(src.replace(target, "xesc(r.t.split(" + JSON.stringify(firstNum) + ").join('0.0')) + '</w:t></w:r>'"), sbx);
+  const bad = sbx.EDContentEngine.exportCheck(a0, row, xctx);
+  chk('X a Word renderer that changes one number is caught', !bad.ok && bad.formats.md.ok && bad.formats.html.ok && !bad.formats.docx.ok
+    && bad.problems.some((p) => p.id === 'EXPORT.NUMBERS' && p.format === 'docx'), bad.problems);
+  /* an edited copy against the approved numbers */
+  const plain = CE.toMarkdown(a0, xctx);
+  chk('X a faithful copy matches the approved numbers', CE.compareCopy(plain, a0, xctx).same);
+  const edited = CE.compareCopy(plain.replace(firstNum, '99.9'), a0, xctx);
+  chk('X an edited number in a copy is named', !edited.same && edited.not_in_approved.indexOf('99.9') >= 0 && edited.missing_from_copy.indexOf(String(+firstNum)) >= 0, edited);
+  /* the readiness checklist */
+  const opp = { research_hash: a0.research_hash };
+  const rd = CE.readiness(row, { opportunity: opp, ctx: xctx });
+  chk('R2 the readiness checklist passes an approved, checked, current article', rd.ok, rd.items.filter((i) => i.status !== 'pass'));
+  chk('R2 the checklist covers matchups, numbers, claims, sources, SEO, referral, disclosures, research and exports',
+    ['owner_approval', 'integrity', 'research_unchanged', 'matchups', 'numbers', 'claims', 'sources_timestamps', 'language', 'seo', 'referral', 'disclosures', 'exports_reconcile'].every((k) => rd.items.some((i) => i.id === k)));
+  chk('R2 research that changed after approval blocks readiness', (() => { const r = CE.readiness(row, { opportunity: { research_hash: 'new' }, ctx: xctx }); return !r.ok && r.blocking.indexOf('research_unchanged') >= 0; })());
+  chk('R2 a BLOCKED integrity verdict blocks readiness', (() => { const r = CE.readiness(Object.assign({}, row, { checks: Object.assign({}, vx, { integrity_status: 'BLOCKED', integrity: { blocking: [{ rule_id: 'EDIT.NUMBERS' }] } }) }), { opportunity: opp, ctx: xctx }); return !r.ok && r.blocking.indexOf('integrity') >= 0; })());
+  chk('R2 a draft with no checks on file is not ready (unknown is not a pass)', (() => { const r = CE.readiness(Object.assign({}, row, { checks: {} }), { opportunity: opp, ctx: xctx }); return !r.ok && r.items.find((i) => i.id === 'numbers').status === 'unknown'; })());
+}
 
 failures.forEach((f) => console.log('  × ' + f));
 console.log((fail ? 'FAIL' : 'PASS') + ' | content engine core | ' + pass + ' passed, ' + fail + ' failed');

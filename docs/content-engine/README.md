@@ -14,6 +14,21 @@ Why it exists: publishers asked for broader, search-driven pieces rather than is
 
 **Open it:** `/admin/content/` (outbound owners only).
 
+**System integrity** (`docs/system-integrity/`):
+
+- Every game packet is checked by the integrity engine. A BLOCKED game is
+  withheld from every article: an unconfirmed kickoff, a future week, a faulted
+  or misjoined market, or a gap that does not reconcile.
+- Every draft carries an integrity verdict, which the database enforces at
+  approval and at Ready to Send.
+- Approval is bound to the research it was given on.
+- Every export is read back against the approved numbers.
+- Every Claude call is reserved against a **$10 monthly cap** and settled at
+  its measured cost.
+
+See `OPERATING_GUIDE.md` (daily use), `TEMPLATES.md` (formats and story
+selection), `COST.md`, `RULES.md` and `MIGRATION.md`.
+
 ---
 
 ## How it fits together
@@ -150,7 +165,12 @@ Search Console (existing import) ───────────────�
 | Weekly CFB preview | weekly preview, upset watch, conference race | intro · why it matters · how to read · the games · upset watch · conference races · what the numbers can't see · bottom line |
 | Weekly NFL preview | weekly preview, upset watch, slate-wide model-vs-line | intro · why it matters · how to read · the games · upset watch · where the numbers differ · injury report · limits · bottom line |
 | Trending sports story | a matched headline, an NFL injury implication | intro · what was reported (attributed, linked) · why it matters · what EdgeDesk's research shows · what we don't know · bottom line |
-| Market discrepancy analysis | one game with a current price and a 2+ point gap | intro · the gap (with capture time) · why the numbers differ · how to read · the case for the market · limits · bottom line |
+| Model vs. Market | one research-grade disagreement (Worth Researching or Verified Major) with a current price; never an unverified 7+ gap | intro · the gap (with capture time) · why the numbers differ · how to read · the case for the market · limits · bottom line |
+| Biggest Weekend Storylines | three to five storylines, each one game and one reason | intro · storylines · how to read · limits · bottom line |
+| Individual Game Deep Dive | the week's central game (needs a measured reliability) | intro · the matchup · the numbers · why they differ · what could change · how to read · limits · bottom line |
+| Conference Race Analysis | one conference's race | intro · the race · games · how to read · limits · bottom line |
+| Upset Watch | underdogs at 30–46% | intro · upsets · how to read · limits · bottom line |
+| Weekly Model Performance Review | the live-forward record (50+ graded games) | intro · the record · where it missed · calibration · how to read · bottom line |
 | Publisher-specific | any of the above | the publisher's own section order, tone, length and attribution |
 
 One research event can produce several **angles** (for example *full slate* or *upsets first*). Each angle is its own article. The database allows one live article per research event × publisher × format × angle, and the validator fails a draft that overlaps a sibling article from the same research by 70% or more.
@@ -227,6 +247,7 @@ An edit after approval returns the article to review, and sent content is frozen
 - If its version fails a check, it gets the objections and one more try.
 - If it fails again, nothing is saved and the deterministic draft stands.
 - Every call is counted against the database's daily budget **before** it is made (default 20 calls a day, set in Settings).
+- Every call is also **reserved in dollars** against the content engine's monthly cap ($10 by default) and settled at its measured token cost. An identical request already paid for is refused as a duplicate. See `docs/system-integrity/COST.md`.
 - The default model is `claude-opus-5-5`, with server-side refusal fallbacks.
 
 ---

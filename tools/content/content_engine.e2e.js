@@ -222,6 +222,8 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     await P.click('#rList button[data-open]');
     await P.waitForSelector('#rDetail [data-rv]');
     chk('5 the review shows the sources, the model numbers and the export preview', /EdgeDesk research/.test(await P.textContent('#rDetail')) && /Model numbers to verify/.test(await P.textContent('#rDetail')));
+    chk('5 the review shows the integrity engine’s verdict (the integrity layer loaded on the page)', /integrity: (PASS|WARNING)/.test(await P.textContent('#rChecks')), await P.textContent('#rChecks'));
+    chk('5 a draft in review can be rejected, with a reason', await P.isVisible('#rReject'));
     await P.click('#rApprove');
     await P.waitForFunction(() => /Confirm all five/.test(document.getElementById('rMsg').textContent), null, { timeout: 15000 });
     chk('5 approval refuses an incomplete review', db.sql(`select status from content_engine.articles where id = '${art.id}';`) === 'in_review');
@@ -254,6 +256,9 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     await P.click('#pCols button[data-open="' + art.id + '"]');
     await P.waitForSelector('#pDetail button[data-q="ready"]');
     chk('6 approved: export unlocked', !(await P.isDisabled('#pDetail button[data-q="md"]')));
+    const ready = await P.textContent('#pDetail');
+    chk('6 the ready-to-send checklist: every item passes, with the snapshot it was checked on', /Ready-to-send checklist/.test(ready) && /\bready\b/.test(ready)
+      && /Markdown, HTML and Word carry the approved numbers/.test(ready) && /EdgeDesk snapshot: revision \d+ · content [0-9a-f]{12}/.test(ready) && !(await P.isDisabled('#pDetail button[data-q="ready"]')), ready.slice(0, 900));
     const panel = await P.textContent('#pDetail');
     chk('6 the send panel: To the contact, from the edgedesksports.com sender', /Send to Stadium Rant/.test(panel) && /Jordan Editor — jordan@publisher\.example/.test(panel) && /From Davis <davis@edgedesksports\.com>/.test(panel), panel.slice(0, 600));
     chk('6 … the real send is locked until it is marked ready', await P.isDisabled('#pDetail button[data-q="email"]'));
@@ -275,11 +280,14 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     chk('6 the Markdown export: front matter, headline, sections', /^---\ntitle: "College Football Week 6 Predictions/.test(md) && /## How to read these numbers/.test(md) && /### No\. 6 Georgia at No\. 11 Alabama/.test(md), md.slice(0, 300));
     chk('6 … the UTM-tagged EdgeDesk link and the disclaimer', /utm_source=stadiumrant&utm_medium=publisher&utm_campaign=ce_stadiumrant_[0-9a-f]{12}/.test(md) && /21\+\. Gamble responsibly — 1-800-GAMBLER/.test(md));
     chk('6 … and no pick language', !/best bet|lock of|guarantee|our pick/i.test(md));
+    chk('6 … the snapshot it was approved on, in the front matter', /edgedesk_content_hash: "[0-9a-f]{64}"/.test(md) && /edgedesk_approved: true/.test(md) && /edgedesk_research_hash: "/.test(md), md.slice(0, 600));
     if (SHOTS) fs.writeFileSync(path.join(SHOTS, 'export.md'), md);
     const [dl2] = await Promise.all([P.waitForEvent('download'), P.click('#pDetail button[data-q="html"]')]);
     const html = fs.readFileSync(await dl2.path(), 'utf8');
     chk('6 the HTML export is a clean, standalone document with no script', /^<!doctype html>/.test(html) && !/<script/i.test(html) && /<h2>How to read these numbers<\/h2>/.test(html));
     chk('6 each export is logged', +db.sql(`select count(*) from content_engine.events where kind = 'exported' and article_id = '${art.id}';`) === 2);
+    chk('6 … with the numbers fingerprint it was read back against', +db.sql(`select count(*) from content_engine.events where kind = 'exported' and article_id = '${art.id}' and detail ->> 'numbers' ~ '^[0-9a-z]+$';`) === 2);
+    chk('6 the HTML export carries the snapshot', /<meta name="edgedesk-snapshot" content="EdgeDesk snapshot: revision \d+/.test(html));
     if (SHOTS) await P.screenshot({ path: path.join(SHOTS, '4-send.png'), fullPage: false });
 
     await P.fill('#sSubj', 'College Football Week 6 Predictions — for Stadium Rant');
@@ -360,6 +368,10 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     await P.waitForSelector('#perfOut table');
     const perf = await P.textContent('#perfOut');
     chk('7 the article is listed with its campaign code', perf.indexOf(art.campaign_code) >= 0);
+    await P.waitForSelector('#acqOut table');
+    const acq = await P.textContent('#acqOut');
+    chk('7 the acquisition loop: the 90-day targets, labelled targets, not forecasts', /targets/.test(acq) && /not forecasts/.test(acq) && /target 250/.test(acq) && /target 25/.test(acq) && /Revenue is not profit/.test(acq), acq.slice(0, 600));
+    chk('7 … unmeasured steps show a dash, never a zero', /—/.test(acq));
     chk('7 the three kinds of numbers are named apart', /first-party/.test(await P.textContent('#tab-perf')) && /publisher-reported/i.test(await P.textContent('#tab-perf')) && /Benchmarks/.test(perf));
 
     /* 8 · settings, phone width, errors */
@@ -368,6 +380,15 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     chk('8 settings say whether AI is configured (never the key)', !/sk-ant/.test(await P.textContent('#tab-set')));
     chk('8 … and whether sending is, with the sender (never the key)', /Send to publisher is configured/.test(await P.textContent('#aiStatus')) && !/re_e2e/.test(await P.textContent('#tab-set'))
       && await P.getAttribute('#sSEmail', 'placeholder') === 'davis@edgedesksports.com', await P.textContent('#aiStatus'));
+    await P.waitForSelector('#costOut .kpi');
+    const cost = await P.textContent('#costOut');
+    chk('8 the AI spend dashboard: the $10 hard cap, spent, in flight, remaining, refusals', /\$10\.00/.test(cost) && /hard cap/.test(cost) && /In flight/.test(cost) && /Remaining/.test(cost) && /Refused/.test(cost), cost.slice(0, 600));
+    await P.fill('#cMonth', '25'); await P.click('#cSave');
+    await P.waitForFunction(() => /Saved/.test(document.getElementById('cMsg').textContent), null, { timeout: 15000 });
+    chk('8 … raising it above the $10 default asks first, then saves', dialogs.some((d) => /Raise the content engine’s monthly AI budget to \$25\.00/.test(d) && /default is \$10/.test(d))
+      && db.sql(`select monthly_budget_usd from content_engine.settings where id = 1;`) === '25.00');
+    await P.fill('#cMonth', '10'); await P.click('#cSave');
+    await P.waitForFunction(() => /Saved/.test(document.getElementById('cMsg').textContent) && /\$10\.00/.test(document.getElementById('costOut').textContent), null, { timeout: 15000 });
     await P.setViewportSize({ width: 390, height: 844 });
     await P.click('.tabs button[data-tab="opps"]');
     await P.waitForSelector('#oList .opp');

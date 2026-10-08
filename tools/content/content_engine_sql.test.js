@@ -74,7 +74,7 @@ const SECTIONS = [{ key: 'intro', heading: null, body: 'EdgeDesk’s model makes
 const content = (extra) => Object.assign({ title: 'College Football Week 6 Predictions: Biggest Games', slug: 'college-football-week-6-predictions',
   meta_description: 'EdgeDesk’s Week 6 projections.', standfirst: 'Research, not picks.', primary_keyword: 'college football week 6 predictions',
   secondary_keywords: ['cfb week 6'], sections: SECTIONS, word_count: 20, generator: 'template:content_engine_v1',
-  checks: { ok: true, failed: [], warned: [] } }, extra || {});
+  checks: { ok: true, failed: [], warned: [], integrity_status: 'PASS' } }, extra || {});
 const REVIEW = { source_verification: true, data_freshness: true, model_accuracy: true, seo_review: true, compliance: true, notes: 'ok' };
 const hashOf = (id) => one(`select content_hash from content_engine.articles where id = ${lit(id)};`);
 const statusOf = (id) => one(`select status from content_engine.articles where id = ${lit(id)};`);
@@ -160,7 +160,7 @@ try {
   chk('A a different angle on the same research is its own article', c3.ok && c3.existing === false && c3.id !== c1.id);
   chk('A the opportunity is now assigned', one(`select status from content_engine.opportunities where id = ${lit(u1.id)};`) === 'assigned');
   chk('A revision 1 is recorded', one(`select count(*) from content_engine.revisions where article_id = ${lit(c1.id)};`) === '1');
-  const js1 = svc(`select public.content_engine_article_save(${lit(c1.id)}, ${lit(JSON.stringify({ generator: 'claude:claude-opus-5-5', sections: SECTIONS.concat([{ key: 'conclusion', heading: 'The bottom line', body: 'None of it is a pick.' }]), checks: { ok: true } }))}::jsonb, 'ai pass', null);`);
+  const js1 = svc(`select public.content_engine_article_save(${lit(c1.id)}, ${lit(JSON.stringify({ generator: 'claude:claude-opus-5-5', sections: SECTIONS.concat([{ key: 'conclusion', heading: 'The bottom line', body: 'None of it is a pick.' }]), checks: { ok: true, integrity_status: 'PASS' } }))}::jsonb, 'ai pass', null);`);
   chk('A the job may rewrite its own untouched draft', js1.ok && js1.revision === 2);
   const stale = own(`select public.content_engine_article_save(${lit(c1.id)}, ${lit(JSON.stringify({ title: 'College Football Week 6 Predictions: Edited by the owner' }))}::jsonb, 'owner edit', 'not-the-hash');`);
   chk('A a save over a version the caller never saw is refused', stale.ok === false && stale.reason === 'changed_since_loaded');
@@ -173,7 +173,7 @@ try {
   own(`select public.content_engine_article_save(${lit(c1.id)}, ${lit(JSON.stringify({ checks: { ok: false, failed: ['numbers_in_evidence'] } }))}::jsonb, 'checks', null);`);
   const sub0 = own(`select public.content_engine_article_submit(${lit(c1.id)});`);
   chk('S failed checks cannot go to review', sub0.ok === false && sub0.reason === 'checks_failed');
-  own(`select public.content_engine_article_save(${lit(c1.id)}, ${lit(JSON.stringify({ checks: { ok: true, failed: [] } }))}::jsonb, 'checks', null);`);
+  own(`select public.content_engine_article_save(${lit(c1.id)}, ${lit(JSON.stringify({ checks: { ok: true, failed: [], integrity_status: 'PASS' } }))}::jsonb, 'checks', null);`);
   chk('S checks passed: to review', own(`select public.content_engine_article_submit(${lit(c1.id)});`).ok && statusOf(c1.id) === 'in_review');
   chk('S a direct status write cannot approve (no door)', !!fails(() => one(`update content_engine.articles set status = 'approved', approved_by = ${lit(OWNER)}, approved_hash = content_hash where id = ${lit(c1.id)};`)));
   chk('S a direct write cannot skip ahead to sent', !!fails(() => one(`update content_engine.articles set status = 'sent' where id = ${lit(c1.id)};`)));
@@ -196,7 +196,7 @@ try {
   own(`select public.content_engine_article_review(${lit(c1.id)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
   /* language: the database's own floor */
   const badSecs = SECTIONS.concat([{ key: 'conclusion', heading: 'x', body: 'Alabama is a guaranteed winner.' }]);
-  own(`select public.content_engine_article_save(${lit(c3.id)}, ${lit(JSON.stringify({ sections: badSecs, checks: { ok: true } }))}::jsonb, 'bad words', null);`);
+  own(`select public.content_engine_article_save(${lit(c3.id)}, ${lit(JSON.stringify({ sections: badSecs, checks: { ok: true, integrity_status: 'PASS' } }))}::jsonb, 'bad words', null);`);
   own(`select public.content_engine_article_submit(${lit(c3.id)});`);
   own(`select public.content_engine_article_review(${lit(c3.id)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
   const ap3 = own(`select public.content_engine_article_approve(${lit(c3.id)}, ${lit(hashOf(c3.id))});`);
@@ -330,6 +330,136 @@ try {
   const full = own(`select public.content_engine_article(${lit(c3.id)});`);
   chk('P an article comes with its research, profile and siblings for the duplicate check', full && full.opportunity && full.opportunity.research && full.publisher_profile.slug === 'stadium-rant'
     && full.siblings.length === 0 /* c1 is archived */ && full.revisions.length >= 2);
+
+  /* ── I integrity, research binding and REJECTED (docs/system-integrity) ── */
+  const io = own(`select public.content_engine_opportunity_upsert(${lit(JSON.stringify(opp('cfb:2026:w6:integrity', { research_hash: 'r1' })))}::jsonb, null);`);
+  const ia = own(`select public.content_engine_article_create(${lit(io.id)}, null, 'cfb_weekly_preview', 'integrity', ${lit(JSON.stringify(content({ slug: 'integrity-test', checks: { ok: true, failed: [], integrity_status: 'BLOCKED', integrity: { blocking: [{ rule_id: 'SCHED.KICKOFF_VERIFIED' }] } } })))}::jsonb, null);`);
+  own(`select public.content_engine_article_submit(${lit(ia.id)});`);
+  own(`select public.content_engine_article_review(${lit(ia.id)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
+  const iap = own(`select public.content_engine_article_approve(${lit(ia.id)}, ${lit(hashOf(ia.id))});`);
+  chk('I a BLOCKED integrity verdict cannot be approved, and the blocking rule is named', iap.ok === false && iap.reason === 'integrity_blocked' && /KICKOFF/.test(JSON.stringify(iap.blocking)), iap);
+  own(`select public.content_engine_article_save(${lit(ia.id)}, ${lit(JSON.stringify({ checks: { ok: true, failed: [] } }))}::jsonb, 'no verdict', null);`);
+  own(`select public.content_engine_article_review(${lit(ia.id)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
+  chk('I a MISSING integrity verdict is BLOCKED, never PASS', own(`select public.content_engine_article_approve(${lit(ia.id)}, ${lit(hashOf(ia.id))});`).reason === 'integrity_blocked');
+  chk('I … and the guard refuses it even past the door', /integrity engine blocks/.test(fails(() => db.sql(`begin; select set_config('content_engine.door', 'approve', true); select set_config('request.jwt.claim.sub', ${lit(OWNER)}, true);
+       update content_engine.articles set status = 'approved', approved_by = ${lit(OWNER)}, approved_hash = content_hash where id = ${lit(ia.id)}; commit;`)) || ''));
+  own(`select public.content_engine_article_save(${lit(ia.id)}, ${lit(JSON.stringify({ checks: { ok: true, failed: [], integrity_status: 'WARNING' } }))}::jsonb, 'warn', null);`);
+  own(`select public.content_engine_article_review(${lit(ia.id)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
+  chk('I a WARNING verdict can be approved (warnings are for the reviewer)', own(`select public.content_engine_article_approve(${lit(ia.id)}, ${lit(hashOf(ia.id))});`).ok === true && statusOf(ia.id) === 'approved');
+  chk('I approval records the research it approved', one(`select approved_research_hash from content_engine.articles where id = ${lit(ia.id)};`) === 'r1');
+  chk('I ready to send on unchanged research', own(`select public.content_engine_article_transition(${lit(ia.id)}, 'ready_to_send', '{}'::jsonb);`).ok === true && statusOf(ia.id) === 'ready_to_send');
+  const iu = own(`select public.content_engine_opportunity_upsert(${lit(JSON.stringify(opp('cfb:2026:w6:integrity', { research_hash: 'r2' })))}::jsonb, null);`);
+  chk('I changed research REVOKES the approval: back to review', iu.research_changed === true && statusOf(ia.id) === 'in_review'
+    && one(`select approved_hash is null and approved_research_hash is null from content_engine.articles where id = ${lit(ia.id)};`) === 't');
+  chk('I … and the revocation is logged with both research hashes', one(`select detail ->> 'old_research_hash' || '>' || (detail ->> 'new_research_hash') from content_engine.events where kind = 'approval_revoked' and article_id = ${lit(ia.id)};`) === 'r1>r2');
+  own(`select public.content_engine_article_review(${lit(ia.id)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
+  const iap2 = own(`select public.content_engine_article_approve(${lit(ia.id)}, ${lit(hashOf(ia.id))});`);
+  chk('I a draft written on the OLD research cannot be re-approved until it is refreshed', iap2.ok === false && iap2.reason === 'research_changed', iap2);
+  own(`select public.content_engine_article_save(${lit(ia.id)}, ${lit(JSON.stringify({ research_hash: 'r2', checks: { ok: true, failed: [], integrity_status: 'PASS' } }))}::jsonb, 'refreshed', null);`);
+  own(`select public.content_engine_article_review(${lit(ia.id)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
+  chk('I refreshed on the new research: approved again', own(`select public.content_engine_article_approve(${lit(ia.id)}, ${lit(hashOf(ia.id))});`).ok === true);
+  one(`update content_engine.opportunities set research_hash = 'r3' where id = ${lit(io.id)};`);
+  const irs = own(`select public.content_engine_article_transition(${lit(ia.id)}, 'ready_to_send', '{}'::jsonb);`);
+  chk('I research changed behind the door: ready-to-send is refused', irs.ok === false && irs.reason === 'research_changed', irs);
+  chk('I … and Send is refused too', own(`select public.content_engine_send_claim(${lit(ia.id)}, 'x@y.test', 'S', ${lit(hashOf(ia.id))}, false, null);`).reason === 'research_changed');
+  const ib = own(`select public.content_engine_article_create(${lit(io.id)}, null, 'cfb_weekly_preview', 'rejectme', ${lit(JSON.stringify(content({ slug: 'reject-me' })))}::jsonb, null);`);
+  own(`select public.content_engine_article_submit(${lit(ib.id)});`);
+  chk('I REJECTED needs a reason', own(`select public.content_engine_article_transition(${lit(ib.id)}, 'rejected', '{}'::jsonb);`).reason === 'reason_required');
+  chk('I in review → rejected, with the reason logged', own(`select public.content_engine_article_transition(${lit(ib.id)}, 'rejected', '{"reason":"the central story is weak"}'::jsonb);`).ok && statusOf(ib.id) === 'rejected'
+    && one(`select detail ->> 'reason' from content_engine.events where kind = 'article_rejected' and article_id = ${lit(ib.id)};`) === 'the central story is weak');
+  chk('I a rejected draft cannot be approved as it stands', own(`select public.content_engine_article_transition(${lit(ib.id)}, 'approved', '{}'::jsonb);`).ok === false);
+  chk('I … it can be reworked (back to draft) or archived', own(`select public.content_engine_article_transition(${lit(ib.id)}, 'draft', '{}'::jsonb);`).ok && statusOf(ib.id) === 'draft');
+  chk('I the new formats and kinds are accepted', !!own(`select public.content_engine_opportunity_upsert(${lit(JSON.stringify(opp('cfb:2026:w6:storylines', { kind: 'weekend_storylines', formats: ['weekend_storylines'] })))}::jsonb, null);`).ok);
+
+  /* ── B the monthly AI budget ($10 by default), reserved before every call ── */
+  const b_k = (n) => ('0'.repeat(16) + n.toString(16)).slice(-16) + 'aaaaaaaaaaaaaaaa';
+  const b_bset = own(`select public.content_engine_cost_report();`);
+  chk('B the content engine’s own budget defaults to $10 a month', b_bset.cap_usd === 10 && b_bset.committed_usd === 0, b_bset);
+  const b_r1 = svc(`select public.content_engine_ai_reserve(${lit(b_k(1))}, 0.40, 'rewrite', ${lit(c3.id)}, 'claude-test', null);`);
+  chk('B a reservation is taken BEFORE the call', b_r1.ok === true && b_r1.reserved_usd === 0.4, b_r1);
+  chk('B one call in flight per article and purpose', svc(`select public.content_engine_ai_reserve(${lit(b_k(2))}, 0.40, 'rewrite', ${lit(c3.id)}, 'claude-test', null);`).reason === 'in_flight');
+  chk('B the same request twice while in flight is b_refused', svc(`select public.content_engine_ai_reserve(${lit(b_k(1))}, 0.40, 'rewrite', ${lit(c3.id)}, 'claude-test', null);`).reason === 'in_flight');
+  const b_s1 = svc(`select public.content_engine_ai_settle(${lit(b_k(1))}, true, 3000, 1500, 0.0315, null, 0, 0);`);
+  chk('B settled at the ACTUAL cost from token usage', b_s1.ok && b_s1.status === 'committed' && b_s1.actual_usd === 0.0315
+    && one(`select input_tokens || '/' || output_tokens || '/' || billing_source from content_engine.ai_spend where request_key = ${lit(b_k(1))};`) === '3000/1500/usage_tokens');
+  const b_dup = svc(`select public.content_engine_ai_reserve(${lit(b_k(1))}, 0.40, 'rewrite', ${lit(c3.id)}, 'claude-test', null);`);
+  chk('B DUPLICATE GENERATION: the identical request again is b_refused — no second charge', b_dup.ok === false && b_dup.reason === 'duplicate'
+    && one(`select count(*) from content_engine.ai_spend where request_key = ${lit(b_k(1))};`) === '1');
+  svc(`select public.content_engine_ai_reserve(${lit(b_k(3))}, 0.30, 'section', ${lit(c3.id)}, 'claude-test', null);`);
+  const b_s3 = svc(`select public.content_engine_ai_settle(${lit(b_k(3))}, false, 0, 0, null, 'network down', null, null);`);
+  chk('B a call that failed before any token is released, not charged', b_s3.status === 'released' && one(`select round(reserved_usd, 2) from content_engine.ai_months;`) === '0.00');
+  chk('B … and may be retried once', svc(`select public.content_engine_ai_reserve(${lit(b_k(3))}, 0.30, 'section', ${lit(c3.id)}, 'claude-test', null);`).ok === true);
+  svc(`select public.content_engine_ai_settle(${lit(b_k(3))}, false, 0, 0, null, 'network down again', null, null);`);
+  chk('B … but not past the attempt limit', svc(`select public.content_engine_ai_reserve(${lit(b_k(3))}, 0.30, 'section', ${lit(c3.id)}, 'claude-test', null);`).reason === 'retry_limit');
+  svc(`select public.content_engine_ai_reserve(${lit(b_k(4))}, 0.50, 'other', null, 'claude-test', null);`);
+  const b_s4 = svc(`select public.content_engine_ai_settle(${lit(b_k(4))}, false, 900, 0, 0.0027, 'reply discarded by the checks', null, null);`);
+  chk('B a call that b_used tokens is charged even when its draft is discarded', b_s4.status === 'committed' && b_s4.actual_usd === 0.0027);
+  /* an abandoned reservation (the caller died mid-call) is charged at its estimate, never released */
+  svc(`select public.content_engine_ai_reserve(${lit(b_k(20))}, 0.04, 'other', null, 'claude-test', null);`);
+  db.sql(`update content_engine.ai_spend set created_at = now() - interval '31 minutes' where request_key = ${lit(b_k(20))};`);
+  const b_before = +one(`select committed_usd from content_engine.ai_months;`);
+  svc(`select public.content_engine_ai_reserve(${lit(b_k(21))}, 0.01, 'other', null, 'claude-test', null);`);
+  chk('B an abandoned reservation is charged at its estimate, not released', one(`select status || '|' || actual_usd || '|' || billing_source from content_engine.ai_spend where request_key = ${lit(b_k(20))};`) === 'committed|0.040000|estimate'
+    && Math.abs(+one(`select committed_usd from content_engine.ai_months;`) - b_before - 0.04) < 1e-9);
+  svc(`select public.content_engine_ai_settle(${lit(b_k(21))}, false, 0, 0, null, 'x', null, null);`);
+  /* a call that cost more than its estimate is counted in full and flagged */
+  svc(`select public.content_engine_ai_reserve(${lit(b_k(22))}, 0.01, 'other', null, 'claude-test', null);`);
+  const b_over = svc(`select public.content_engine_ai_settle(${lit(b_k(22))}, true, 100, 100, 0.02, null, null, null);`);
+  chk('B a call that cost more than its estimate is counted in full, and flagged', b_over.actual_usd === 0.02 && one(`select count(*) from content_engine.events where kind = 'ai_estimate_exceeded';`) === '1', b_over);
+  /* the HARD CAP: $10 a month by default, and the owner cannot lift it from the page */
+  chk('B the content engine’s monthly cap is $10 by default', one(`select monthly_budget_usd from content_engine.settings where id = 1;`) === '10.00');
+  const b_up = own(`select public.content_engine_budget_update('{"monthly_budget_usd": 10.01}'::jsonb);`);
+  chk('B raising the cap above the $10 default needs an explicit confirmation', b_up.ok === false && b_up.reason === 'confirm_raise'
+    && one(`select monthly_budget_usd from content_engine.settings where id = 1;`) === '10.00', b_up);
+  const b_up2 = own(`select public.content_engine_budget_update('{"monthly_budget_usd": 15, "confirm_raise": true}'::jsonb);`);
+  chk('B … with it, the owner configures the cap, and the change is logged with the old value', b_up2.ok === true && one(`select monthly_budget_usd from content_engine.settings where id = 1;`) === '15.00'
+    && one(`select detail ->> 'previous_monthly_budget_usd' from content_engine.events where kind = 'budget_updated' order by id desc limit 1;`) === '10.00', b_up2);
+  chk('B … never past the $50 ceiling the database enforces', own(`select public.content_engine_budget_update('{"monthly_budget_usd": 50.01, "confirm_raise": true}'::jsonb);`).ok === false
+    && !!fails(() => db.sql(`update content_engine.settings set monthly_budget_usd = 51 where id = 1;`)));
+  chk('B lowering it needs no confirmation', own(`select public.content_engine_budget_update('{"monthly_budget_usd": 10}'::jsonb);`).ok === true);
+  /* the cap: reserve right up to it, then one more cent is b_refused */
+  own(`select public.content_engine_budget_update('{"monthly_budget_usd": 1.00, "job_budget_usd": 0.50}'::jsonb);`);
+  const b_used = +one(`select committed_usd + reserved_usd from content_engine.ai_months;`);
+  const b_r5 = svc(`select public.content_engine_ai_reserve(${lit(b_k(5))}, ${(Math.round((1 - b_used) * 1e6) / 1e6).toFixed(6)}, 'other', null, 'claude-test', null);`);
+  chk('B up to the cap is allowed', b_r5.ok === true, b_r5);
+  const b_r6 = svc(`select public.content_engine_ai_reserve(${lit(b_k(6))}, 0.01, 'other', null, 'claude-test', null);`);
+  chk('B AT THE CAP discretionary generation stops, with the reason', b_r6.ok === false && b_r6.reason === 'monthly_budget_exhausted' && /deterministic draft/.test(b_r6.detail), b_r6);
+  chk('B … and the refusal is logged', one(`select count(*) from content_engine.events where kind = 'budget_exhausted' and detail ->> 'scope' = 'month';`) === '1');
+  svc(`select public.content_engine_ai_settle(${lit(b_k(5))}, false, 0, 0, null, 'not needed', null, null);`);
+  /* a per-job budget */
+  const b_jr = own(`select public.content_engine_job_begin('weekly', '2026-budget-test', false);`);
+  svc(`select public.content_engine_ai_reserve(${lit(b_k(7))}, 0.30, 'draft', null, 'claude-test', ${b_jr.run_id});`);
+  chk('B a job cannot spend past its own budget', svc(`select public.content_engine_ai_reserve(${lit(b_k(8))}, 0.30, 'draft', null, 'claude-test', ${b_jr.run_id});`).reason === 'job_budget_exhausted');
+  svc(`select public.content_engine_ai_settle(${lit(b_k(7))}, false, 0, 0, null, 'x', null, null);`);
+  /* CONCURRENCY: two sessions each try to take $0.60 of a $1.00 cap at once */
+  const b_usedNow = +one(`select committed_usd + reserved_usd from content_engine.ai_months;`);
+  const b_room = Math.round((1 - b_usedNow) * 1e6) / 1e6, b_half = (Math.round(b_room * 0.6 * 1e6) / 1e6).toFixed(6);
+  const b_race = (key) => db.background(`begin; set local role service_role;
+    select public.content_engine_ai_reserve('${key}', ${b_half}, 'other', null, 'claude-test', null);
+    select pg_sleep(1.5); commit;`);
+  const b_ra = b_race(b_k(9)), b_rb = b_race(b_k(10));
+  const b_oa = b_ra.wait(30000), b_ob = b_rb.wait(30000);
+  const b_okN = [b_oa.out, b_ob.out].filter((o) => /"ok": true/.test(o)).length, b_refused = [b_oa.out, b_ob.out].filter((o) => /monthly_budget_exhausted/.test(o)).length;
+  chk('B CONCURRENCY: two jobs racing for the last dollars cannot both pass the cap (one in, one b_refused)', b_okN === 1 && b_refused === 1, [b_oa.out, b_ob.out]);
+  chk('B … the month never exceeds its cap', +one(`select committed_usd + reserved_usd from content_engine.ai_months;`) <= 1.000001);
+  const b_cr = own(`select public.content_engine_cost_report();`);
+  chk('B the cost dashboard: cap, committed, reserved, remaining, tokens, refusals', b_cr.cap_usd === 1 && b_cr.this_month.input_tokens >= 3900 && b_cr.refused.duplicates === 1 && b_cr.refused.retry_limit === 1 && b_cr.refused.budget >= 1
+    && typeof b_cr.remaining_usd === 'number' && /token usage/.test(b_cr.basis), b_cr);
+  chk('B the budget door is owner only', !!fails(() => db.service(`select public.content_engine_budget_update('{"monthly_budget_usd": 500}'::jsonb);`)));
+  chk('B the reserve door refuses anon', !!fails(() => db.anon(`select public.content_engine_ai_reserve(${lit(b_k(11))}, 0.1, 'other', null, null, null);`)));
+
+  /* ── A the acquisition loop ── */
+  /* fixture: one article already published this month (set directly, as the
+     superuser, around the guard — the doors' own path is tested above) */
+  one(`set session_replication_role = replica; update content_engine.articles set status = 'published', published_url = 'https://stadiumrant.example/a', published_at = now(), sent_at = now() where id = ${lit(c3.id)}; set session_replication_role = origin;`);
+  const a_ar = own(`select public.content_engine_acquisition_report(3);`);
+  const a_m0 = a_ar.months[0];
+  chk('A the 90-day targets travel with the actuals, labelled as targets', a_ar.targets.active_partners === 3 && a_ar.targets.published_articles_per_month === 8 && a_ar.targets.referral_visits_per_month === 250
+    && a_ar.targets.registrations_per_month === 25 && a_ar.targets.paid_subscribers_per_month === 3 && a_ar.targets.max_cost_per_paid_subscriber_usd === 25 && /not forecasts/.test(a_ar.targets.kind));
+  chk('A this month: published, visits and registrations by content campaign (owners excluded)', a_m0.published_articles >= 1 && a_m0.referral_visits === 2 && a_m0.registrations === 1, a_m0);
+  chk('A revenue is Stripe’s, and profit is explicitly not computed', /not profit/.test(a_ar.revenue) && a_ar.measured.revenue === true && typeof a_m0.subscriber_revenue_usd === 'number');
+  chk('A content AI cost is the engine’s committed spend', a_m0.content_ai_cost_usd >= 0.03, a_m0);
+  chk('A the report is owner only', !!fails(() => db.service(`select public.content_engine_acquisition_report(3);`)));
 } catch (e) {
   chk('the suite reached its end — ' + String(e.message).slice(0, 600), false);
 } finally {

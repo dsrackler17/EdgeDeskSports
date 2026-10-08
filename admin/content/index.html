@@ -212,6 +212,9 @@ a{color:var(--accent)}
     <section id="tab-perf" role="tabpanel" class="hide">
       <h2>Performance</h2>
       <div class="banner">Three kinds of numbers, never mixed: <b>first-party</b> (EdgeDesk’s own measurement of visits, sign-ups, trials and paid conversions that arrived through each article’s tagged link), <b>publisher-reported</b> (figures a publisher gave you, as entered), and <b>benchmarks</b> (user-reported reference values, not live analytics). A dash means not measured.</div>
+      <h2>Acquisition loop — first 90 days</h2>
+      <div id="acqOut"><p class="note">Loading…</p></div>
+      <h2>By article</h2>
       <div id="perfOut"><p class="note">Loading…</p></div>
       <h2>Add a publisher-reported figure</h2>
       <div class="card">
@@ -245,6 +248,8 @@ a{color:var(--accent)}
       <div class="card" id="setForm"></div>
       <h2>AI</h2>
       <div class="card"><div id="aiStatus" class="note">Checking the Edge Function…</div></div>
+      <h2>AI spend (hard cap)</h2>
+      <div class="card" id="costOut"><p class="note">Loading…</p></div>
       <h2>Recent runs</h2>
       <div class="card tw" id="runs"></div>
       <h2>Problems</h2>
@@ -258,7 +263,12 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 </script>
 <script src="/lib/edgedesk_auth.js?v=20261005a"></script>
 <script src="/lib/edgedesk_admin_session.js?v=20261007a"></script>
-<script src="/lib/content_engine.js?v=20261008b"></script>
-<script src="/admin/content/content.js?v=20261008b"></script>
+<!-- the integrity layer the core checks every draft with (docs/system-integrity): without it validation fails closed -->
+<script src="/lib/edgedesk_calc.js?v=20261008i"></script>
+<script src="/lib/edgedesk_schedule.js?v=20261008i"></script>
+<script src="/lib/edgedesk_availability.js?v=20261008i"></script>
+<script src="/lib/edgedesk_integrity.js?v=20261008i"></script>
+<script src="/lib/content_engine.js?v=20261008i"></script>
+<script src="/admin/content/content.js?v=20261008i"></script>
 </body>
 </html>

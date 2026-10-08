@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-10-08 — System integrity: one calculation layer, one integrity engine, and content checked against its approved numbers
+
+**Every number EdgeDesk prints now comes from one calculation layer, and every game passes one integrity engine before it reaches a board, a brief, an AI prompt, an approval or a publisher.** Docs: `docs/system-integrity/` (start with `REPORT.md` and `OPERATING_GUIDE.md`).
+
+- **Gaps reconcile.** `lib/edgedesk_calc.js` applies one rounding policy, and a displayed gap is always the difference of the two displayed lines. The engine's ±1 near-pick'em floor is never shown or compared: Ole Miss reads −0.2 / −9.5 / 9.3, never "−1.0 … 9.3". Projected scores add to the total and differ by the margin.
+- **Time.** `lib/edgedesk_schedule.js`:
+  - the slate keeps the feed's `start_time_tbd`, so a placeholder reads "time TBA", never "FRI 11:00p";
+  - kickoffs are shown in the reader's chosen zone, with its abbreviation;
+  - the board names the current week and badges look-ahead games "WK n";
+  - future-week games never reach this week's briefs or articles.
+- **The integrity engine** (`lib/edgedesk_integrity.js`). Thirty deterministic rules, each returning PASS / WARNING / BLOCKED with rule id, severity, evidence and remediation, run at seven boundaries. Research status and the decision are two answers, each with its passing and failing rules and one sentence on why they differ.
+  - **Research-grade** no longer counts INVESTIGATE.
+  - **Raw EV** is never an edge: the calibrator is labelled for what it is (no skill shown), and the two EV layers are never printed as one bet.
+- **Markets.** Duplicate, suspended, non-equivalent, alternate-misfiled, polarity-inverted and unmapped quotes are quarantined, never deleted (`football/cfb_lab/integrity.js screenSet`).
+- **Quarterbacks.** `lib/edgedesk_availability.js` assigns seven classes, each with its source and time. A missing announcement is never uncertainty, and a dropback split is a measured fact.
+- **Content engine.**
+  - **Selection and templates:** publishable, current-week games only; one central storyline; five new templates (Biggest Weekend Storylines, Game Deep Dive, Conference Race, Upset Watch, Weekly Model Performance Review).
+  - **Checks:** every number must belong to its game; QB, conference, kickoff and spread claims are checked.
+  - **Exports:** Markdown, HTML and Word are read back and carry the approved snapshot.
+  - **Approval:** changed research revokes it; there is a ready-to-send checklist and a Reject state.
+  - **Cost:** every Claude call is reserved against a **$10 monthly cap** and settled at its measured token cost (duplicates refused, concurrency-safe).
+  - **Acquisition:** an acquisition dashboard against the 90-day targets.
+- **Database** (`supabase/content_engine.sql`, re-paste; idempotent; additive). Approve, ready and send need an integrity verdict and unchanged research. Adds the AI budget tables and doors and the acquisition report. Rollout order and rollback: `docs/system-integrity/MIGRATION.md`. **Not applied to production.**
+- **Edge Function** `content_engine`: reserve → call → settle; redeploy after the SQL and the merge.
+
+**Tests:** `integrity:test` (117 checks: the 17 regression cases + a research-to-publication integration test, on PostgreSQL, required in CI), `content:test` (221), `content:sql` (173), `content:fn` (74), `content:job:test` (27), `content:e2e` (64), and every affected existing suite. `tools/app/first_run.test.js`, `tools/football/quote_ev_ui.e2e.js` and `tools/bettor/decision_ui.e2e.js` each fail one check identically on the base commit (pre-existing, untouched).
+
 ## 2026-10-08 — Content Engine: Save as PDF, and the page always loads its latest code
 
 - **Save as PDF** in the publishing queue (the export row and the *Send it yourself* card). It opens the article's clean, script-free print view, with the tagged EdgeDesk link and the disclaimer, and the browser's print dialog, where *Save as PDF* is the destination. Word stays the format to send for editing.

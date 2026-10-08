@@ -41,7 +41,8 @@ function load() {
     nflSlate,
     nflInjuries: readJson(A.nfl_injuries),
     marketSnapshots: marketSnapshots(season),
-    published: readJson(A.published)
+    published: readJson(A.published),
+    performance: readJson(A.performance)
   };
 }
 

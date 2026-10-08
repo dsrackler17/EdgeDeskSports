@@ -105,12 +105,25 @@ const NOW = Date.parse('2026-10-08T17:30:00Z');
     chk('C structured output, fallbacks, the model', b.output_config && b.output_config.format.type === 'json_schema' && b.fallbacks === 'default' && b.model === 'claude-opus-5-5');
     chk('C the retry carried the objections', /REJECTED FOR/.test(JSON.parse(CLAUDE[1].body).messages[0].content));
     chk('C Claude’s checked version is the saved draft', one(`select count(*) from content_engine.articles where generator like 'claude:%' and standfirst like '%The numbers, explained.%';`) === '1');
+    const sp4 = JSON.parse(one(`select coalesce(jsonb_agg(to_jsonb(s) order by s.id), '[]') from content_engine.ai_spend s;`));
+    chk('$ every job call was reserved against this run and settled', sp4.length === 2 && sp4.every((x) => x.run_id === r4.run && x.purpose === 'draft' && x.status === 'committed' && x.actor === 'schedule'), sp4);
+    chk('$ … a reply with no usage is charged at its upper-bound estimate', sp4.every((x) => x.billing_source === 'estimate' && +x.actual_usd === +x.estimated_usd && +x.estimated_usd > 0.3));
     chk('C the key reached no log or row', !/sk-ant-job-key/.test(one(`select coalesce(string_agg(detail::text, ' '), '') from content_engine.events;`)) && !/sk-ant-job-key/.test(one(`select coalesce(string_agg(sections::text, ' '), '') from content_engine.articles;`)));
     CLAUDE = [];
     claudeAnswer = (body) => { const cur = JSON.parse(/CURRENT DRAFT:\n([\s\S]*)$/.exec(body.messages[0].content)[1]); cur.title = 'Our best bets for the weekend'; return { stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify(cur) }] }; };
     const r5 = await RUN.weekly({ db: client, now: NOW, network: false, force: true, anthropicKey: 'sk-ant-job-key-12345', model: 'claude-opus-5-5', fetch: fakeFetch, log: quiet });
-    chk('C a version that fails twice is discarded; the deterministic draft is kept and queued', r5.counts.ai_discarded === 1 && r5.counts.queued_for_review === 1
+    chk('C a version that fails twice is discarded; the deterministic draft is kept and queued', CLAUDE.length === 2 && r5.counts.ai_discarded === 1 && r5.counts.queued_for_review === 1
       && one(`select count(*) from content_engine.articles where title ilike '%best bets%';`) === '0', r5.counts);
+    /* the per-job budget: one call's upper bound does not fit, so the job makes no call */
+    one(`update content_engine.settings set job_budget_usd = 0.25;`);
+    CLAUDE = [];
+    const r5b = await RUN.weekly({ db: client, now: NOW, network: false, force: true, anthropicKey: 'sk-ant-job-key-12345', model: 'claude-opus-5-5', fetch: fakeFetch, log: quiet });
+    chk('$ a job cannot pass its own AI budget: no call; the deterministic draft is still written', CLAUDE.length === 0 && r5b.counts.drafted === 1 && r5b.counts.ai_discarded === 1, r5b.counts);
+    one(`update content_engine.settings set job_budget_usd = 2.00;`);
+    /* the example's AI pass makes no call without the database's budget door */
+    let exErr = null;
+    try { await RUN.example({ now: NOW, out: path.join(require('os').tmpdir(), 'ce-example-test'), ai: true, anthropicKey: 'sk-ant-job-key-12345', model: 'claude-opus-5-5' }); } catch (e) { exErr = e; }
+    chk('$ the local example refuses an unmetered AI call', exErr && /budget door/.test(exErr.message) && CLAUDE.length === 0, exErr && exErr.message);
     one(`update content_engine.settings set llm_calls_per_day = 0;`);
     CLAUDE = [];
     const r6 = await RUN.weekly({ db: client, now: NOW, network: false, force: true, anthropicKey: 'sk-ant-job-key-12345', model: 'claude-opus-5-5', fetch: fakeFetch, log: quiet });
@@ -120,7 +133,7 @@ const NOW = Date.parse('2026-10-08T17:30:00Z');
     one(`update content_engine.settings set schedule_enabled = false;`);
     const r7 = await RUN.weekly({ db: client, now: NOW, network: false, force: true, log: quiet });
     chk('L the owner’s off switch stops the job', r7.ran === false && r7.reason === 'schedule_disabled');
-    chk('L every run is on record (five ran; the refused ones never opened a lease)', +one(`select count(*) from content_engine.runs;`) === 5);
+    chk('L every run is on record (six ran; the refused ones never opened a lease)', +one(`select count(*) from content_engine.runs;`) === 6);
   } catch (e) {
     chk('the suite reached its end — ' + String(e && e.stack || e).slice(0, 600), false);
   } finally {

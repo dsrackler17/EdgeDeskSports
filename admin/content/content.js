@@ -125,8 +125,8 @@
   }
   async function loadArtifacts() {
     var A = CE.ARTIFACTS;
-    var got = await Promise.all([A.cfb_games, A.cfb_brief, A.rankings, A.nfl_slate, A.nfl_injuries, A.published].map(getJson));
-    var art = { cfbGames: got[0], cfbBrief: got[1], rankings: got[2], nflSlate: got[3], nflInjuries: got[4], published: got[5], marketSnapshots: [] };
+    var got = await Promise.all([A.cfb_games, A.cfb_brief, A.rankings, A.nfl_slate, A.nfl_injuries, A.published, A.performance].map(getJson));
+    var art = { cfbGames: got[0], cfbBrief: got[1], rankings: got[2], nflSlate: got[3], nflInjuries: got[4], published: got[5], performance: got[6], marketSnapshots: [] };
     var season = (art.nflSlate && art.nflSlate.season) || (art.cfbGames && art.cfbGames.season) || new Date().getUTCFullYear();
     var weeks = [];
     if (art.nflSlate) { var w = CE.research.chooseWeek(art.nflSlate.games || [], Date.now()); if (w) weeks.push(w); }
@@ -169,12 +169,17 @@
         } catch (e) { notes.push('Search Console unavailable: ' + S.message(e)); }
       }
       say('dMsg', '', 'Saving ' + opps.length + ' opportunities…');
-      var made = 0, refreshed = 0, bad = 0;
+      var made = 0, refreshed = 0, bad = 0, revoked = 0;
       for (var i = 0; i < opps.length; i++) {
         var o = opps[i];
         var r = await rpc('content_engine_opportunity_upsert', { p: Object.assign({}, o, { research_hash: CE.util.hash(JSON.stringify(o.research)) }), p_run: null });
-        if (r && r.ok) { if (r.created) made++; else refreshed++; } else bad++;
+        if (r && r.ok) { if (r.created) made++; else refreshed++; if (r.revoked) revoked += r.revoked; } else bad++;
       }
+      var withheld = [].concat(snap.cfb ? snap.cfb.withheld || [] : [], snap.nfl ? snap.nfl.withheld || [] : []);
+      if (!CE.integrity.ok) notes.push('THE INTEGRITY LAYER DID NOT LOAD: every draft will fail its checks until the page is reloaded');
+      if (withheld.length) notes.push(withheld.length + ' game(s) withheld from every article by the integrity engine: ' + withheld.slice(0, 6).map(function (w) {
+        return w.matchup + ' (' + (w.blocking || []).map(function (b) { return b.rule_id; }).join(', ') + ')'; }).join('; ') + (withheld.length > 6 ? '; …' : ''));
+      if (revoked) notes.push(revoked + ' approval(s) revoked because their research changed');
       await rpc('content_engine_log', { p_kind: 'discovery_run', p_detail: { found: opps.length, created: made, refreshed: refreshed, refused: bad, news: news.length, cfb_week: snap.cfb && snap.cfb.week, nfl_week: snap.nfl && snap.nfl.week } });
       say('dMsg', bad ? 'err' : 'ok', opps.length + ' opportunities: ' + made + ' new, ' + refreshed + ' refreshed' + (bad ? ', ' + bad + ' refused' : '') + '. '
         + 'Research: CFB week ' + (snap.cfb ? snap.cfb.week + ' (' + when(snap.cfb.generated_at) + ')' : '—') + ', NFL week ' + (snap.nfl ? snap.nfl.week + ' (' + when(snap.nfl.generated_at) + ')' : '—') + '.'
@@ -350,23 +355,48 @@
     var a = {
       format: row.format, angle: row.angle, title: $('eTitle').value.trim(), slug: CE.util.slugify($('eSlug').value.trim() || $('eTitle').value),
       meta_description: $('eMeta').value.trim(), standfirst: $('eStand').value.trim(), primary_keyword: $('eKw').value.trim(),
-      secondary_keywords: row.secondary_keywords || [], sections: secs, generator: row.generator, research_as_of: row.research_as_of
+      secondary_keywords: row.secondary_keywords || [], sections: secs, generator: row.generator, research_as_of: row.research_as_of, research_hash: row.research_hash
     };
     a.word_count = CE.util.wordCount(a.standfirst + ' ' + secs.map(function (s) { return s.body; }).join(' '));
     return a;
   }
   function checkNow() {
     var row = ST.art;
-    return CE.validate(collect(), row.opportunity, { publisher: row.publisher_profile, siblings: row.siblings || [], now: Date.now() });
+    return CE.validate(collect(), row.opportunity, { publisher: row.publisher_profile, siblings: row.siblings || [], now: Date.now(),
+      current_research_hash: row.opportunity && row.opportunity.research_hash });
   }
   function renderChecks(rep, id) {
     var el = $(id); if (!el) return;
     if (!rep || !rep.checks) { el.innerHTML = '<p class="note">Not checked yet.</p>'; return; }
     var cls = { pass: 'ok', warn: 'warn', fail: 'bad' };
     el.innerHTML = '<div class="sub">' + (rep.ok ? '<span class="pill ok">all hard checks pass</span>' : '<span class="pill bad">' + (rep.failed || []).length + ' failing</span>')
-      + ' <span class="dim">checked ' + when(rep.checked_at) + '</span></div><ul class="checks">' + rep.checks.map(function (c) {
+      + ' ' + integrityPill(rep.integrity_status)
+      + ' <span class="dim">checked ' + when(rep.checked_at) + '</span></div>' + integrityGames(rep) + '<ul class="checks">' + rep.checks.map(function (c) {
         return '<li><span class="pill ' + cls[c.status] + '">' + esc(c.status) + '</span><div><div>' + esc(c.label) + '</div>' + (c.detail ? '<div class="d">' + esc(c.detail) + '</div>' : '') + '</div></li>';
       }).join('') + '</ul>';
+  }
+  /* the integrity engine's verdict (docs/system-integrity/RULES.md): PASS and
+     WARNING may be approved, BLOCKED never (the database refuses it too) */
+  function integrityPill(st) {
+    if (!st) return '<span class="pill bad" title="no integrity verdict: the integrity layer did not load">integrity: unchecked</span>';
+    return '<span class="pill ' + ({ PASS: 'ok', WARNING: 'warn', BLOCKED: 'bad' }[st] || 'bad') + '">integrity: ' + esc(st) + '</span>';
+  }
+  function integrityGames(rep) {
+    var ig = rep && rep.integrity; if (!ig) return '';
+    var bl = (ig.blocking || []).map(function (b) { return '<li><span class="mono">' + esc(b.rule_id) + '</span> ' + esc(b.explanation || '') + '</li>'; }).join('');
+    var gs = (ig.games || []).filter(function (g) { return g.status !== 'PASS'; });
+    return (bl ? '<ul class="checks" style="margin-top:6px">' + bl + '</ul>' : '')
+      + (gs.length ? '<div class="sub">Games not at PASS: ' + gs.map(function (g) { return esc(g.game_id) + ' (' + esc(g.status) + ')'; }).join(', ') + '</div>' : '');
+  }
+  /* the checklist before Ready to send (CE.readiness): every item must pass;
+     the starred ones the database checks again */
+  function readinessHtml(rd) {
+    var cls = { pass: 'ok', fail: 'bad', unknown: 'warn' };
+    return '<h3>Ready-to-send checklist</h3><div class="sub">' + (rd.ok ? '<span class="pill ok">ready</span>' : '<span class="pill bad">' + rd.blocking.length + ' item(s) open</span>') + '</div>'
+      + '<ul class="checks">' + rd.items.map(function (i) {
+        return '<li><span class="pill ' + cls[i.status] + '">' + esc(i.status) + '</span><div><div>' + esc(i.label) + (i.enforced_by_database ? ' <span class="dim" title="the database enforces this again">★</span>' : '') + '</div>'
+          + (i.detail ? '<div class="d">' + esc(i.detail) + '</div>' : '') + '</div></li>';
+      }).join('') + '</ul>' + (rd.snapshot_line ? '<div class="sub mono" style="overflow-wrap:anywhere">' + esc(rd.snapshot_line) + '</div>' : '');
   }
   function exportCtx(row) {
     return { publisher: row.publisher_profile, campaign: row.campaign_code, opportunity: row.opportunity, landing: row.landing_url };
@@ -453,8 +483,10 @@
     var row = await rpc('content_engine_article', { p_id: id });
     ST.art = row;
     var a = { format: row.format, title: row.title, slug: row.slug, meta_description: row.meta_description, standfirst: row.standfirst, primary_keyword: row.primary_keyword,
-      secondary_keywords: row.secondary_keywords, sections: row.sections, word_count: row.word_count, research_as_of: row.research_as_of };
-    var rep = CE.validate(a, row.opportunity, { publisher: row.publisher_profile, siblings: row.siblings || [], now: Date.now() });
+      secondary_keywords: row.secondary_keywords, sections: row.sections, word_count: row.word_count, research_as_of: row.research_as_of, research_hash: row.research_hash };
+    var rep = CE.validate(a, row.opportunity, { publisher: row.publisher_profile, siblings: row.siblings || [], now: Date.now(),
+      current_research_hash: row.opportunity && row.opportunity.research_hash });
+    var blocked = rep.integrity_status !== 'PASS' && rep.integrity_status !== 'WARNING';
     var rv = row.review || {};
     var reviewCurrent = rv.content_hash === row.content_hash;
     $('rDetail').innerHTML = '<div class="card"><div class="otitle">' + esc(row.title) + '</div><div class="sub">' + pill(row.status) + ' · ' + esc(pubName(row.publisher_id)) + ' · ' + esc(row.word_count) + ' words · '
@@ -467,8 +499,8 @@
         return '<label class="chk" style="margin:6px 0;align-items:flex-start"><input type="checkbox" data-rv="' + p[0] + '"' + (reviewCurrent && rv[p[0]] ? ' checked' : '') + '><span><b>' + esc(p[1]) + '</b><div class="sub">' + esc(p[2]) + '</div></span></label>';
       }).join('') + '<div class="f" style="margin-top:6px"><label for="rNotes">Notes</label><textarea id="rNotes">' + esc(reviewCurrent ? rv.notes || '' : '') + '</textarea></div>'
       + (rv.content_hash && !reviewCurrent ? '<div class="banner">The content changed after the last review: review it again.</div>' : '')
-      + '<div class="row" style="margin-top:10px"><button class="g" id="rSave">Save review</button><button id="rApprove"' + (rep.ok && row.checks_ok ? '' : ' disabled title="every automated check must pass first"') + '>Approve this exact version</button>'
-      + '<button class="g" id="rEdit">Edit</button><button class="d" id="rBack">Send back to draft</button></div><div class="msg" id="rMsg" role="status" aria-live="polite"></div></div></div>'
+      + '<div class="row" style="margin-top:10px"><button class="g" id="rSave">Save review</button><button id="rApprove"' + (rep.ok && row.checks_ok && !blocked ? '' : ' disabled title="every automated check must pass and the integrity engine must not block it"') + '>Approve this exact version</button>'
+      + '<button class="g" id="rEdit">Edit</button><button class="d" id="rBack">Send back to draft</button>' + (row.status === 'in_review' ? '<button class="d" id="rReject">Reject…</button>' : '') + '</div><div class="msg" id="rMsg" role="status" aria-live="polite"></div></div></div>'
       + '<div><div class="card"><h3 style="margin-top:0">The article as it will be exported</h3><div class="preview">' + CE.toHtml(a, exportCtx(row)) + '</div></div></div></div>';
     renderChecks(rep, 'rChecks');
     function reviewObj() { var o = { notes: $('rNotes').value }; document.querySelectorAll('#rDetail [data-rv]').forEach(function (c) { o[c.getAttribute('data-rv')] = c.checked; }); return o; }
@@ -479,10 +511,16 @@
         if (!r1.review_complete) { say('rMsg', 'err', 'Confirm all five review points first.'); return; }
         var r = await rpc('content_engine_article_approve', { p_id: id, p_content_hash: row.content_hash });
         if (r && r.ok) { say('rMsg', 'ok', 'Approved. It is now in the publishing queue: mark it ready, export it, and send it yourself.'); await loadReview(); await loadOverview(); }
-        else say('rMsg', 'err', 'Not approved: ' + ({ checks_failed: 'automated checks fail', review_incomplete: 'the review is incomplete', changed_since_loaded: 'the article changed since you opened it — reload', language: 'banned language: ' + JSON.stringify(r.terms), review_is_for_an_older_version: 'the review is for an older version' }[r && r.reason] || (r && r.reason)));
+        else say('rMsg', 'err', 'Not approved: ' + ({ checks_failed: 'automated checks fail', integrity_blocked: 'the integrity engine blocks it (see the checks)', research_changed: 'the research changed since this draft was written: refresh it', review_incomplete: 'the review is incomplete', changed_since_loaded: 'the article changed since you opened it — reload', language: 'banned language: ' + JSON.stringify(r.terms), review_is_for_an_older_version: 'the review is for an older version' }[r && r.reason] || (r && r.reason)));
       } catch (e) { fail('rMsg', e); }
     };
     $('rEdit').onclick = async function () { tab('gen'); await openEditor(id); };
+    if ($('rReject')) $('rReject').onclick = async function () {
+      var why = window.prompt('Why is this draft rejected? (kept with the article; it can be reworked from draft or archived)', '');
+      if (why === null) return;
+      if (!why.trim()) { say('rMsg', 'err', 'A rejection needs a reason.'); return; }
+      try { var r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'rejected', p: { reason: why.trim().slice(0, 500) } }); say('rMsg', r.ok ? 'ok' : 'err', r.ok ? 'Rejected.' : 'Not done: ' + (r.detail || r.reason)); if (r.ok) await loadReview(); } catch (e) { fail('rMsg', e); }
+    };
     $('rBack').onclick = async function () { try { var r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'draft', p: { reason: 'sent back from review' } }); say('rMsg', r.ok ? 'ok' : 'err', r.ok ? 'Back to draft.' : r.reason); await loadReview(); } catch (e) { fail('rMsg', e); } };
     $('rDetail').scrollIntoView({ behavior: 'smooth' });
   }
@@ -511,11 +549,12 @@
     ST.art = row;
     var st = row.status;
     var exportable = ['approved', 'ready_to_send', 'sent', 'published'].indexOf(st) >= 0;
+    var rd = CE.readiness(row, { opportunity: row.opportunity, ctx: exportCtx(row) });
     var utm = CE.tagLink(row.landing_url || CE.SITE + '/today/', { source: row.publisher_profile ? row.publisher_profile.utm_source : 'direct', medium: 'publisher', campaign: row.campaign_code, content: row.format });
     var acts = '';
     if (st === 'draft') acts += '<button data-q="edit">Edit</button>';
     if (st === 'in_review') acts += '<button data-q="review">Review</button>';
-    if (st === 'approved') acts += '<button data-q="ready">Mark ready to send</button><button class="g" data-q="toreview">Back to review</button>';
+    if (st === 'approved') acts += '<button data-q="ready"' + (rd.ok ? '' : ' disabled title="the ready-to-send checklist has open items"') + '>Mark ready to send</button><button class="g" data-q="toreview">Back to review</button>';
     if (st === 'ready_to_send') acts += '<button class="g" data-q="unready">Back to approved</button>';
     if (st === 'sent') acts += '<button data-q="published">Mark published…</button>';
     if (st === 'archived' && !row.sent_at) acts += '<button class="g" data-q="restore">Restore to draft</button>';
@@ -523,6 +562,7 @@
     $('pDetail').innerHTML = '<div class="card" style="margin-top:14px"><div class="otitle">' + esc(row.title) + '</div><div class="sub">' + pill(st) + ' · ' + esc(pubName(row.publisher_id)) + ' · revision ' + esc(row.revision)
       + (row.approved_at ? ' · approved ' + when(row.approved_at) : '') + (row.sent_at ? ' · sent ' + when(row.sent_at) : '') + (row.published_url ? ' · ' + link(row.published_url, 'published copy') : '') + '</div>'
       + '<div class="row" style="margin-top:10px">' + acts + '</div>'
+      + (['approved', 'ready_to_send'].indexOf(st) >= 0 ? readinessHtml(rd) : '')
       + '<h3>Export</h3><div class="row"><button class="g" data-q="docx"' + (exportable ? '' : ' disabled') + '>Download Word (.docx)</button><button class="g" data-q="pdf"' + (exportable ? '' : ' disabled') + '>Save as PDF</button><button class="g" data-q="md"' + (exportable ? '' : ' disabled') + '>Download Markdown</button><button class="g" data-q="html"' + (exportable ? '' : ' disabled') + '>Download HTML</button>'
       + '<button class="g" data-q="copyhtml"' + (exportable ? '' : ' disabled') + '>Copy HTML</button><button class="g" data-q="seo"' + (exportable ? '' : ' disabled') + '>Download SEO sheet</button></div>'
       + (exportable ? '' : '<p class="note">Export unlocks once the owner approves this exact version. Use the editor’s preview until then.</p>')
@@ -546,7 +586,11 @@
         var r;
         if (q === 'edit') { tab('gen'); await openEditor(id); return; }
         if (q === 'review') { tab('review'); await openReview(id); return; }
-        if (q === 'ready') r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'ready_to_send', p: {} });
+        if (q === 'ready') {
+          var rdy = CE.readiness(row, { opportunity: row.opportunity, ctx: exportCtx(row) });
+          if (!rdy.ok) { say('qMsg', 'err', 'Not ready: ' + rdy.blocking.join(', ')); return; }
+          r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'ready_to_send', p: {} });
+        }
         if (q === 'toreview') r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'in_review', p: {} });
         if (q === 'unready') r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'approved', p: {} });
         if (q === 'archive') { if (!window.confirm('Archive this article?')) return; r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'archived', p: {} }); }
@@ -567,6 +611,10 @@
         }
         if (q === 'md' || q === 'html' || q === 'copyhtml' || q === 'seo' || q === 'docx' || q === 'pdf') {
           var ctx = exportCtx(row);
+          /* every file is the approved snapshot, read back before it leaves */
+          var xc = CE.exportCheck(a, row, ctx);
+          if (!xc.ok) { say('qMsg', 'err', 'Not exported: ' + xc.problems.map(function (p) { return p.detail; }).join(' · ')); return; }
+          ctx.snapshot = xc.snapshot;
           if (q === 'docx') download(row.slug + '.docx', CE.toDocx(a, ctx), CE.DOCX_TYPE);
           if (q === 'pdf') {
             /* the clean standalone article in its own window, then the browser's print dialog,
@@ -580,7 +628,7 @@
           if (q === 'html') download(row.slug + '.html', CE.toHtml(a, Object.assign({ standalone: true }, ctx)), 'text/html');
           if (q === 'copyhtml') copy(CE.toHtml(a, ctx), 'qMsg');
           if (q === 'seo') download(row.slug + '-seo.txt', CE.seoSheet(a, row.opportunity), 'text/plain');
-          await rpc('content_engine_log', { p_kind: 'exported', p_detail: { as: q, revision: row.revision, content_hash: row.content_hash }, p_article: id });
+          await rpc('content_engine_log', { p_kind: 'exported', p_detail: { as: q, revision: row.revision, content_hash: row.content_hash, research_hash: row.research_hash, numbers: xc.snapshot.numbers }, p_article: id });
           if (q === 'pdf') say('qMsg', 'ok', 'Opened revision ' + row.revision + ' to print: choose “Save as PDF” as the destination.');
           else if (q !== 'copyhtml') say('qMsg', 'ok', 'Exported revision ' + row.revision + '.');
           return;
@@ -671,6 +719,7 @@
      ====================================================================== */
   async function loadPerf() {
     if (!ST.publishers.length) await loadPublishersData();
+    loadAcquisition().catch(function (e) { var el = $('acqOut'); if (el) el.innerHTML = '<p class="note">' + esc(S.message(e)) + '</p>'; });
     var p = await rpc('content_engine_performance');
     var m = p.measured || {};
     var rows = p.articles || [];
@@ -858,6 +907,69 @@
         : 'AI drafting is <b>not configured</b>: set ANTHROPIC_API_KEY on the content_engine Edge Function. Until then every draft is EdgeDesk’s deterministic writer, which is complete on its own.')
         + '<br>' + (st.email_configured ? 'Send to publisher is configured (Resend).' : 'Send to publisher is <b>not configured</b>: set RESEND_API_KEY on the Supabase project (the newsletter’s key works).');
     } catch (e) { $('aiStatus').textContent = 'The content_engine Edge Function did not answer (' + S.message(e) + '). Deploy it to enable AI rewrites and trending headlines; everything else works without it.'; }
+    await loadCost();
+  }
+
+  /* ── AI spend: the content engine's own $10 hard cap ────────────────────
+     content_engine_cost_report: cap, committed (actual, from the provider's
+     token counts), reserved (in flight), remaining, refusals. Other AI
+     products' budgets are not shown or changed here. */
+  function usd(x, dp) { return x == null ? '—' : '$' + (+x).toFixed(dp == null ? 2 : dp); }
+  async function loadCost() {
+    var el = $('costOut'); if (!el) return;
+    var c;
+    try { c = await rpc('content_engine_cost_report'); } catch (e) { el.innerHTML = '<p class="note">The cost report is not installed: run supabase/content_engine.sql (section 6c). ' + esc(S.message(e)) + '</p>'; return; }
+    var tm = c.this_month || {}, rf = c.refused || {}, used = (c.committed_usd || 0) + (c.reserved_usd || 0), pct = c.cap_usd ? Math.min(100, Math.round(100 * used / c.cap_usd)) : 100;
+    el.innerHTML = '<div class="kpis">'
+      + [['Month (UTC)', c.month, 'calendar month'], ['Cap', usd(c.cap_usd), 'hard cap (default $10)'], ['Spent', usd(c.committed_usd, 4), 'actual, from token counts'], ['In flight', usd(c.reserved_usd, 4), 'reserved, not yet settled'],
+         ['Remaining', usd(c.remaining_usd, 4), pct + '% of the cap used'], ['Calls', tm.calls || 0, (tm.input_tokens || 0) + ' in / ' + (tm.output_tokens || 0) + ' out tokens'],
+         ['Refused', (rf.duplicates || 0) + (rf.budget || 0) + (rf.retry_limit || 0), (rf.duplicates || 0) + ' duplicate · ' + (rf.budget || 0) + ' budget · ' + (rf.retry_limit || 0) + ' retry']]
+        .map(function (k) { return '<div class="kpi"><i>' + esc(k[0]) + '</i><b>' + esc(k[1]) + '</b><small>' + esc(k[2]) + '</small></div>'; }).join('') + '</div>'
+      + '<p class="note">' + esc(c.basis) + ' At the cap, AI rewrites stop and the deterministic draft stands; nothing is bought or upgraded.</p>'
+      + '<div class="row"><div class="f" style="max-width:180px"><label for="cMonth">Monthly cap (USD; default 10)</label><input id="cMonth" type="number" min="0" max="50" step="0.5" value="' + esc(c.cap_usd) + '"></div>'
+      + '<div class="f" style="max-width:180px"><label for="cJob">Per-job cap (USD)</label><input id="cJob" type="number" min="0" max="50" step="0.25" value="' + esc(c.job_cap_usd) + '"></div>'
+      + '<div class="f" style="max-width:160px"><label for="cTries">Attempts per call</label><input id="cTries" type="number" min="1" max="5" value="' + esc(c.max_attempts) + '"></div>'
+      + '<div class="f" style="flex:0 0 auto"><label>&nbsp;</label><button class="g" id="cSave" type="button">Save budget</button></div></div><div class="msg" id="cMsg"></div>'
+      + '<div class="tw" style="margin-top:8px"><table><tr><th>Article</th><th class="r">Calls</th><th class="r">Spent</th></tr>' + ((c.top_articles || []).map(function (t) {
+        return '<tr><td>' + esc(t.title || t.article_id || '(no article)') + '</td><td class="r">' + esc(t.calls) + '</td><td class="r">' + usd(t.usd, 4) + '</td></tr>';
+      }).join('') || '<tr><td colspan="3" class="dim">No AI spend this month.</td></tr>') + '</table></div>'
+      + '<div class="sub">Earlier months: ' + ((c.months || []).map(function (m) { return esc(m.month) + ' ' + usd(m.committed_usd); }).join(' · ') || '—') + '</div>';
+    $('cSave').onclick = async function () {
+      try {
+        var cap = +$('cMonth').value, raise = cap > 10 && cap > (+c.cap_usd || 10);
+        if (raise && !window.confirm('Raise the content engine’s monthly AI budget to $' + cap.toFixed(2) + '?\n\nThe default is $10. This is real API spend; nothing else changes.')) return;
+        var r = await rpc('content_engine_budget_update', { p: { monthly_budget_usd: cap, job_budget_usd: +$('cJob').value, ai_max_attempts: +$('cTries').value, confirm_raise: raise } });
+        if (r.ok) { await loadCost(); say('cMsg', 'ok', 'Saved: the monthly cap is $' + (+cap).toFixed(2) + '.'); }
+        else say('cMsg', 'err', 'Not saved: ' + (r.detail || r.reason));
+      } catch (e) { fail('cMsg', e); }
+    };
+  }
+
+  /* ── the acquisition loop: article → partner → publication → visit →
+     registration → trial → paid, against the 90-day TARGETS. A dash is "not
+     measured", never zero; revenue is Stripe's gross invoice amounts, not
+     profit. */
+  async function loadAcquisition() {
+    var el = $('acqOut'); if (!el) return;
+    var r;
+    try { r = await rpc('content_engine_acquisition_report', { p_months: 3 }); } catch (e) { el.innerHTML = '<p class="note">The acquisition report is not installed: run supabase/content_engine.sql (section 6c). ' + esc(S.message(e)) + '</p>'; return; }
+    var t = r.targets || {}, ms = r.months || [], m0 = ms[0] || {};
+    function cell(v, target, lowerIsBetter, money) {
+      if (v == null) return '<td class="r dim" title="not measured">—</td>';
+      var hit = target == null ? null : (lowerIsBetter ? v <= target : v >= target);
+      return '<td class="r">' + esc(money ? usd(v) : v) + (hit == null ? '' : ' <span class="pill ' + (hit ? 'ok' : 'warn') + '">' + (hit ? 'on target' : 'below target') + '</span>') + '</td>';
+    }
+    el.innerHTML = '<div class="banner">These are <b>targets</b> for the first 90 days, not forecasts. A dash means EdgeDesk does not measure it yet. Revenue is not profit.</div>'
+      + '<div class="card tw"><table><tr><th>Month</th><th class="r">Active partners<br><span class="dim">target ' + esc(t.active_partners) + '</span></th><th class="r">Published<br><span class="dim">target ' + esc(t.published_articles_per_month) + '</span></th>'
+      + '<th class="r">Referral visits<br><span class="dim">target ' + esc(t.referral_visits_per_month) + '</span></th><th class="r">Registrations<br><span class="dim">target ' + esc(t.registrations_per_month) + '</span></th><th class="r">Trials</th>'
+      + '<th class="r">Paid<br><span class="dim">target ' + esc(t.paid_subscribers_per_month) + '</span></th><th class="r">Subscriber revenue<br><span class="dim">gross</span></th><th class="r">Content AI cost</th><th class="r">Cost per paid<br><span class="dim">target ≤ ' + usd(t.max_cost_per_paid_subscriber_usd) + '</span></th></tr>'
+      + ms.map(function (m) {
+        return '<tr><td>' + esc(m.month) + '</td>' + cell(m.active_partners, t.active_partners) + cell(m.published_articles, t.published_articles_per_month) + cell(m.referral_visits, t.referral_visits_per_month)
+          + cell(m.registrations, t.registrations_per_month) + cell(m.trials, null) + cell(m.paid_subscribers, t.paid_subscribers_per_month) + cell(m.subscriber_revenue_usd, null, false, true)
+          + cell(m.content_ai_cost_usd, null, false, true) + cell(m.cost_per_paid_subscriber_usd, t.max_cost_per_paid_subscriber_usd, true, true) + '</tr>';
+      }).join('') + '</table></div>'
+      + '<p class="note">' + esc(r.attribution) + ' ' + esc(r.revenue) + ' ' + esc(r.cost) + '</p>'
+      + (m0.paid_subscribers ? '' : '<p class="note">No paid subscriber is attributed to an article this month, so cost per paid subscriber is not computed.</p>');
   }
 
   /* ── boot ──────────────────────────────────────────────────────────── */

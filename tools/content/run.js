@@ -83,15 +83,34 @@ async function callClaude(req, o) {
 }
 
 /* Improve a deterministic draft with Claude, keeping only a version that
-   passes every check. Returns { article, report, generator, notes }. */
+   passes every check. Returns { article, report, generator, notes }.
+   ctx.db (required for any call): the content engine's money door — every
+   call is reserved against the $10 monthly cap and this run's own budget
+   before it is made, and settled at the measured cost after it
+   (docs/system-integrity/COST.md). No db, no call. */
 async function aiPass(o, a, ctx) {
   const notes = [];
   let objections = [];
+  if (!ctx.db) { notes.push('no_budget_door: the AI pass needs the database budget (content_engine_ai_reserve)'); return null; }
+  const settle = (key, ok, cost, error) => ctx.db.rpc('public', 'content_engine_ai_settle', { p_request_key: key, p_ok: ok,
+    p_input_tokens: cost ? cost.input_tokens : null, p_output_tokens: cost ? cost.output_tokens : null, p_actual_usd: cost ? cost.usd : null,
+    p_error: error ? String(error).slice(0, 300) : null, p_cache_read_tokens: cost ? cost.cache_read_tokens : null, p_cache_write_tokens: cost ? cost.cache_write_tokens : null })
+    .catch(() => null); /* unsettled: the database charges it at its estimate after 30 minutes */
   for (let attempt = 0; attempt < 2; attempt++) {
-    if (ctx.spend && !(await ctx.spend('llm'))) { notes.push('budget_exhausted'); break; }
     const req = CE.ai.buildRequest(o, { publisher: ctx.publisher, format: a.format, current: a, objections });
+    const key = await CE.cost.requestKey(ctx.model, { opportunity: o.key, research_hash: CE.util.hash(JSON.stringify(o.research)), format: a.format }, req);
+    const rsv = await ctx.db.rpc('public', 'content_engine_ai_reserve', { p_request_key: key, p_estimated_usd: CE.cost.estimate(req, ctx.model),
+      p_purpose: 'draft', p_article: null, p_model: ctx.model, p_run: ctx.run == null ? null : ctx.run });
+    if (!rsv || rsv.ok !== true) { notes.push('not_reserved: ' + ((rsv && rsv.reason) || 'refused')); break; }
+    if (ctx.spend && !(await ctx.spend('llm'))) { await settle(key, false, null, 'daily call limit reached before the call'); notes.push('budget_exhausted'); break; }
     let reply;
-    try { reply = await callClaude(req, ctx); } catch (e) { notes.push('api_error ' + (e.status || '')); break; }
+    try { reply = await callClaude(req, ctx); } catch (e) {
+      /* an error the API answered with is not billed; no answer at all may have been */
+      const answered = typeof (e && e.status) === 'number';
+      await settle(key, !answered, null, 'api_error ' + (e.status || e.message || '') + (answered ? '' : ' (no answer: charged at the estimate)'));
+      notes.push('api_error ' + (e.status || '')); break;
+    }
+    await settle(key, true, CE.cost.measured(reply, ctx.model), null);
     const parsed = CE.ai.parseReply(reply, a);
     if (!parsed.ok) { notes.push(parsed.reason); if (parsed.reason === 'refusal') break; continue; }
     const rep = CE.validate(parsed.article, o, { publisher: ctx.publisher, now: ctx.now, teamLists: ctx.teamLists });
@@ -155,7 +174,7 @@ async function weekly(o) {
       let a = CE.draft(t, { publisher, format, now: o.now });
       let rep = CE.validate(a, t, { publisher, now: o.now, teamLists: d.teamLists });
       if (o.anthropicKey) {
-        const ai = await aiPass(t, a, { publisher, now: o.now, teamLists: d.teamLists, spend, key: o.anthropicKey, model: o.model, fetch: o.fetch });
+        const ai = await aiPass(t, a, { publisher, now: o.now, teamLists: d.teamLists, spend, key: o.anthropicKey, model: o.model, fetch: o.fetch, db, run });
         if (ai) { a = Object.assign({}, ai.article, { generator: ai.generator }); rep = ai.report; counts.ai_used++; }
         else { counts.ai_discarded++; await note('ai_discarded', { opportunity: t.key, reason: 'kept the deterministic draft' }, { p_opportunity: t.id }); }
       }
@@ -191,7 +210,10 @@ async function example(o) {
   let rep = CE.validate(a, opp, { publisher, now: o.now, teamLists: d.teamLists });
   let generator = a.generator;
   if (o.ai && o.anthropicKey) {
-    const ai = await aiPass(opp, a, { publisher, now: o.now, teamLists: d.teamLists, key: o.anthropicKey, model: o.model });
+    /* the example's AI pass is metered like every other call: it needs the
+       database's budget door, or it makes no call */
+    if (!o.db) throw new Error('--ai needs the database budget door (the content engine’s $10 monthly cap): set SB_URL and SB_SERVICE_ROLE, or leave out --ai for the deterministic draft');
+    const ai = await aiPass(opp, a, { publisher, now: o.now, teamLists: d.teamLists, key: o.anthropicKey, model: o.model, db: o.db });
     if (ai) { a = ai.article; rep = ai.report; generator = ai.generator; }
   }
   const campaign = CE.campaignCode(publisher && publisher.slug, 'example' + CE.util.hash(opp.key).slice(0, 5));
@@ -213,7 +235,8 @@ async function main() {
   const anthropicKey = process.env.ANTHROPIC_API_KEY || '';
   const model = process.env.CONTENT_ENGINE_MODEL || 'claude-opus-5-5';
   if (cmd === 'example') {
-    const r = await example({ now, out: arg('out', 'content-example'), league: arg('league'), kind: arg('kind'), format: arg('format'), ai: flag('ai'), anthropicKey, model });
+    const ecfg = flag('ai') ? PGR.config(process.env) : null;
+    const r = await example({ now, out: arg('out', 'content-example'), league: arg('league'), kind: arg('kind'), format: arg('format'), ai: flag('ai'), anthropicKey, model, db: ecfg ? PGR.client(ecfg) : null });
     console.log((r.ok ? 'OK' : 'CHECKS FAIL') + ' | ' + r.file + ' | ' + r.words + ' words | priority ' + r.priority + ' | ' + r.generator + (r.failed.length ? ' | failed: ' + r.failed.join(', ') : '') + (r.warned.length ? ' | warnings: ' + r.warned.join(', ') : ''));
     process.exit(r.ok ? 0 : 1);
   }

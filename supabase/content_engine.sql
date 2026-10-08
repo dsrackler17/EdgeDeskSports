@@ -152,7 +152,7 @@ create table if not exists content_engine.opportunities (
   league          text not null check (league in ('cfb', 'nfl')),
   season          int,
   week            int,
-  kind            text not null check (kind in ('weekly_preview', 'upset_watch', 'conference_race', 'market_discrepancy', 'injury_impact', 'trending_story')),
+  kind            text not null check (kind in ('weekly_preview', 'upset_watch', 'conference_race', 'market_discrepancy', 'injury_impact', 'trending_story', 'weekend_storylines', 'game_deep_dive', 'model_performance')),
   title           text not null check (length(btrim(title)) between 5 and 240),
   angle           text,
   summary         text,
@@ -180,9 +180,9 @@ create table if not exists content_engine.articles (
   id                 uuid primary key default gen_random_uuid(),
   opportunity_id     uuid not null references content_engine.opportunities(id),
   publisher_id       uuid references content_engine.publishers(id),
-  format             text not null check (format in ('cfb_weekly_preview', 'nfl_weekly_preview', 'trending_story', 'market_discrepancy', 'publisher_custom')),
+  format             text not null check (format in ('cfb_weekly_preview', 'nfl_weekly_preview', 'trending_story', 'market_discrepancy', 'publisher_custom', 'weekend_storylines', 'game_deep_dive', 'conference_race', 'upset_watch', 'model_performance_review')),
   angle              text not null default 'full_slate' check (angle ~ '^[a-z_]{3,30}$'),
-  status             text not null default 'draft' check (status in ('draft', 'in_review', 'approved', 'ready_to_send', 'sent', 'published', 'archived')),
+  status             text not null default 'draft' check (status in ('draft', 'in_review', 'approved', 'ready_to_send', 'sent', 'published', 'rejected', 'archived')),
   title              text not null check (length(btrim(title)) between 10 and 200),
   slug               text not null check (slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$' and length(slug) <= 90),
   meta_description   text check (meta_description is null or length(meta_description) <= 320),
@@ -377,7 +377,8 @@ returns boolean language sql immutable
 set search_path = pg_catalog, pg_temp as $$
   select (p_from, p_to) in (
     ('draft', 'in_review'), ('draft', 'archived'),
-    ('in_review', 'draft'), ('in_review', 'approved'), ('in_review', 'archived'),
+    ('in_review', 'draft'), ('in_review', 'approved'), ('in_review', 'rejected'), ('in_review', 'archived'),
+    ('rejected', 'draft'), ('rejected', 'archived'),
     ('approved', 'ready_to_send'), ('approved', 'in_review'), ('approved', 'draft'), ('approved', 'archived'),
     ('ready_to_send', 'sent'), ('ready_to_send', 'approved'), ('ready_to_send', 'in_review'), ('ready_to_send', 'archived'),
     ('sent', 'published'), ('sent', 'archived'),
@@ -460,9 +461,19 @@ begin
       if new.approved_hash is distinct from new.content_hash then raise exception 'approval is for the exact content reviewed' using errcode = 'check_violation'; end if;
       if not new.checks_ok then raise exception 'automated checks have not passed' using errcode = 'check_violation'; end if;
       if not content_engine.review_complete(new.review) then raise exception 'the editorial review is not complete' using errcode = 'check_violation'; end if;
+      -- docs/system-integrity: the integrity engine's verdict on THIS content,
+      -- saved with it; an absent verdict is BLOCKED, never PASS
+      if not content_engine.integrity_ok(new.checks) then raise exception 'the integrity engine blocks this content: %', coalesce(new.checks -> 'integrity' -> 'blocking', '[]'::jsonb) using errcode = 'check_violation'; end if;
+      new.approved_research_hash := new.research_hash;
     end if;
     if new.status = 'ready_to_send' and (new.approved_hash is distinct from new.content_hash or new.approved_by is null) then
       raise exception 'only approved, unchanged content is ready to send' using errcode = 'check_violation';
+    end if;
+    if new.status in ('ready_to_send', 'sent') then
+      if not content_engine.integrity_ok(new.checks) then raise exception 'the integrity engine blocks this content' using errcode = 'check_violation'; end if;
+      if not content_engine.research_current(new.opportunity_id, new.research_hash, new.approved_research_hash) then
+        raise exception 'the research changed after approval: the article goes back to review' using errcode = 'check_violation';
+      end if;
     end if;
     if new.status = 'sent' then
       if door <> 'mark_sent' then raise exception 'only the mark-sent door records a send' using errcode = 'insufficient_privilege'; end if;
@@ -477,8 +488,8 @@ begin
     if new.status = 'archived' then new.archived_at := now(); end if;
     if new.status = 'ready_to_send' then new.ready_at := now(); end if;
     -- leaving approval for review or rework clears it
-    if new.status in ('draft', 'in_review') then
-      new.approved_at := null; new.approved_by := null; new.approved_hash := null; new.ready_at := null;
+    if new.status in ('draft', 'in_review', 'rejected') then
+      new.approved_at := null; new.approved_by := null; new.approved_hash := null; new.ready_at := null; new.approved_research_hash := null;
     end if;
   elsif new.status in ('approved', 'ready_to_send') and (new.approved_by is distinct from old.approved_by or new.approved_hash is distinct from old.approved_hash) then
     raise exception 'approval cannot be rewritten' using errcode = 'insufficient_privilege';
@@ -729,7 +740,13 @@ begin
     status = case when o.status = 'expired' then 'new' else o.status end
   returning * into r;
   created := old_hash is null;
-  return jsonb_build_object('ok', true, 'id', r.id, 'created', created, 'research_changed', old_hash is not null and old_hash is distinct from r.research_hash, 'status', r.status);
+  -- docs/system-integrity: research that changed under an approved article
+  -- revokes the approval; the article goes back to review with the reason
+  if old_hash is not null and old_hash is distinct from r.research_hash then
+    perform content_engine.revoke_for_research(r.id, old_hash, r.research_hash, who, p_run);
+  end if;
+  return jsonb_build_object('ok', true, 'id', r.id, 'created', created, 'research_changed', old_hash is not null and old_hash is distinct from r.research_hash, 'status', r.status,
+    'revoked', coalesce((select count(*) from content_engine.events e where e.kind = 'approval_revoked' and e.opportunity_id = r.id and e.at >= now() - interval '1 second'), 0));
 exception when check_violation or not_null_violation or invalid_text_representation or invalid_datetime_format then
   perform content_engine.log(who, 'validation_failed', null, null, p_run, jsonb_build_object('stage', 'opportunity_upsert', 'key', p ->> 'key', 'error', sqlerrm));
   return jsonb_build_object('ok', false, 'reason', 'invalid', 'detail', sqlerrm);
@@ -890,6 +907,8 @@ begin
   if a.status <> 'in_review' then return jsonb_build_object('ok', false, 'reason', 'not_in_review', 'status', a.status); end if;
   if p_content_hash is distinct from a.content_hash then return jsonb_build_object('ok', false, 'reason', 'changed_since_loaded', 'content_hash', a.content_hash); end if;
   if not a.checks_ok then return jsonb_build_object('ok', false, 'reason', 'checks_failed', 'failed', a.checks -> 'failed'); end if;
+  if not content_engine.integrity_ok(a.checks) then return jsonb_build_object('ok', false, 'reason', 'integrity_blocked', 'blocking', coalesce(a.checks -> 'integrity' -> 'blocking', '[]'::jsonb)); end if;
+  if not content_engine.research_current(a.opportunity_id, a.research_hash, null) then return jsonb_build_object('ok', false, 'reason', 'research_changed', 'detail', 'the research changed since this draft was written: refresh it before approving'); end if;
   if not content_engine.review_complete(a.review) then return jsonb_build_object('ok', false, 'reason', 'review_incomplete'); end if;
   if (a.review ->> 'content_hash') is distinct from a.content_hash then return jsonb_build_object('ok', false, 'reason', 'review_is_for_an_older_version'); end if;
   bad := content_engine.lint(a.title || ' ' || coalesce(a.standfirst, '') || ' ' || coalesce(a.meta_description, '') || ' ' || a.sections::text);
@@ -913,6 +932,15 @@ begin
   if p_to = 'approved' and a.status = 'in_review' then return jsonb_build_object('ok', false, 'reason', 'use_approve'); end if;
   if not content_engine.can_transition(a.status, p_to) then
     return jsonb_build_object('ok', false, 'reason', 'not_allowed', 'from', a.status, 'to', p_to);
+  end if;
+  if p_to in ('ready_to_send', 'sent') then
+    if not content_engine.integrity_ok(a.checks) then return jsonb_build_object('ok', false, 'reason', 'integrity_blocked', 'blocking', coalesce(a.checks -> 'integrity' -> 'blocking', '[]'::jsonb)); end if;
+    if not content_engine.research_current(a.opportunity_id, a.research_hash, a.approved_research_hash) then
+      return jsonb_build_object('ok', false, 'reason', 'research_changed', 'detail', 'the research changed after approval: the article must be reviewed again');
+    end if;
+  end if;
+  if p_to = 'rejected' and coalesce(btrim(p ->> 'reason'), '') = '' then
+    return jsonb_build_object('ok', false, 'reason', 'reason_required', 'detail', 'say why the draft is rejected');
   end if;
   if p_to = 'sent' then
     if coalesce(p ->> 'method', '') not in ('manual_email', 'cms_upload', 'shared_document', 'other') then
@@ -1290,6 +1318,8 @@ begin
   if p_content_hash is distinct from a.content_hash then return jsonb_build_object('ok', false, 'reason', 'changed_since_loaded'); end if;
   if not a.checks_ok then return jsonb_build_object('ok', false, 'reason', 'checks_failed'); end if;
   if a.approved_by is null or a.approved_hash is distinct from a.content_hash then return jsonb_build_object('ok', false, 'reason', 'not_approved'); end if;
+  if not content_engine.integrity_ok(a.checks) then return jsonb_build_object('ok', false, 'reason', 'integrity_blocked', 'blocking', a.checks -> 'integrity' -> 'blocking'); end if;
+  if not content_engine.research_current(a.opportunity_id, a.research_hash, a.approved_research_hash) then return jsonb_build_object('ok', false, 'reason', 'research_changed'); end if;
   subj := btrim(coalesce(nullif(btrim(p_subject), ''), 'EdgeDesk: ' || a.title));
   if length(subj) > 150 or subj ~ '[\r\n]' or length(subj) < 3 then return jsonb_build_object('ok', false, 'reason', 'bad_subject'); end if;
   if is_t then
@@ -1386,6 +1416,347 @@ exception when check_violation then
 end $$;
 
 -- =============================================================================
+-- 6c. INTEGRITY, AI BUDGET AND ACQUISITION (docs/system-integrity)
+--
+-- INTEGRITY. lib/content_engine.js validate() runs the integrity engine
+-- (lib/edgedesk_integrity.js) and saves its verdict IN the article's checks,
+-- in the same save as the content, so the verdict always describes the text
+-- it sits beside. Approval, ready-to-send and Send refuse anything but PASS or
+-- WARNING; a missing verdict is BLOCKED. Approval records the research it
+-- approved; research that changes afterwards revokes the approval (the article
+-- returns to review, an approval_revoked event says why), and nothing reaches
+-- ready-to-send or a publisher on research other than the research approved.
+--
+-- AI BUDGET. A dollar budget per calendar month (UTC), default $10, separate
+-- from every other AI product's budget, on top of the daily call cap above.
+-- content_engine_ai_reserve claims the call's ESTIMATED cost before the call,
+-- under a lock on the month's row, so concurrent jobs cannot together pass the
+-- cap. One request key per exact request: the same request twice is refused
+-- as a duplicate (no second charge); one call in flight per article and
+-- purpose; a failed call may be retried up to ai_max_attempts. Settle records
+-- the tokens and the ACTUAL cost from the provider's usage; a call that used
+-- tokens is charged even when its draft is discarded.
+--
+-- ACQUISITION. content_engine_acquisition_report: article → publisher →
+-- publication → referral visit → registration → trial → paid, by month, with
+-- the 90-day targets beside the actuals. Revenue is Stripe's own invoice
+-- amounts; profit is not computed (no fee or cost data is held here).
+-- =============================================================================
+alter table content_engine.articles add column if not exists approved_research_hash text;
+do $c$ begin
+  alter table content_engine.articles drop constraint if exists articles_status_check;
+  alter table content_engine.articles add constraint articles_status_check check (status in ('draft', 'in_review', 'approved', 'ready_to_send', 'sent', 'published', 'rejected', 'archived'));
+  alter table content_engine.articles drop constraint if exists articles_format_check;
+  alter table content_engine.articles add constraint articles_format_check check (format in ('cfb_weekly_preview', 'nfl_weekly_preview', 'trending_story', 'market_discrepancy', 'publisher_custom', 'weekend_storylines', 'game_deep_dive', 'conference_race', 'upset_watch', 'model_performance_review'));
+  alter table content_engine.opportunities drop constraint if exists opportunities_kind_check;
+  alter table content_engine.opportunities add constraint opportunities_kind_check check (kind in ('weekly_preview', 'upset_watch', 'conference_race', 'market_discrepancy', 'injury_impact', 'trending_story', 'weekend_storylines', 'game_deep_dive', 'model_performance'));
+end $c$;
+
+create or replace function content_engine.integrity_ok(p jsonb)
+returns boolean language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select coalesce(p ->> 'integrity_status', 'BLOCKED') in ('PASS', 'WARNING');
+$$;
+
+-- the article is written on the opportunity's CURRENT research, and that is
+-- the research it was approved on (an approval from before this rule has none)
+create or replace function content_engine.research_current(p_opportunity uuid, p_article_hash text, p_approved_hash text)
+returns boolean language sql stable
+set search_path = pg_catalog, pg_temp as $$
+  select exists (select 1 from content_engine.opportunities o where o.id = p_opportunity and o.research_hash = p_article_hash)
+     and (p_approved_hash is null or p_approved_hash = p_article_hash);
+$$;
+
+create or replace function content_engine.revoke_for_research(p_opportunity uuid, p_old text, p_new text, p_actor text, p_run bigint)
+returns int language plpgsql
+set search_path = pg_catalog, public, pg_temp as $$
+declare a record; n int := 0;
+begin
+  for a in select id, status from content_engine.articles
+            where opportunity_id = p_opportunity and status in ('approved', 'ready_to_send') for update loop
+    update content_engine.articles set status = 'in_review' where id = a.id;
+    perform content_engine.log(p_actor, 'approval_revoked', a.id, p_opportunity, p_run,
+      jsonb_build_object('from', a.status, 'old_research_hash', p_old, 'new_research_hash', p_new,
+                         'reason', 'the research the article was approved on changed; review the new numbers before it can be sent'));
+    n := n + 1;
+  end loop;
+  return n;
+end $$;
+
+-- ── the AI budget ────────────────────────────────────────────────────────────
+alter table content_engine.settings add column if not exists monthly_budget_usd numeric(10,2) not null default 10.00;
+alter table content_engine.settings add column if not exists job_budget_usd numeric(10,2) not null default 2.00;
+alter table content_engine.settings add column if not exists ai_max_attempts int not null default 2;
+-- THE HARD CAP: the content engine spends at most monthly_budget_usd in a
+-- calendar month (UTC) — $10 by default. The owner configures it from the page
+-- (content_engine_budget_update, owner only, logged); raising it above the $10
+-- default needs an explicit confirmation, and $50 is the ceiling the database
+-- itself enforces. Other AI products' budgets live elsewhere and are untouched.
+do $c$ begin
+  alter table content_engine.settings drop constraint if exists settings_ai_budget_shape;
+  alter table content_engine.settings add constraint settings_ai_budget_shape check (
+    monthly_budget_usd between 0 and 50 and job_budget_usd between 0 and 50 and job_budget_usd <= monthly_budget_usd and ai_max_attempts between 1 and 5);
+end $c$;
+
+create table if not exists content_engine.ai_months (
+  month          date primary key,
+  committed_usd  numeric(12,6) not null default 0 check (committed_usd >= 0),
+  reserved_usd   numeric(12,6) not null default 0 check (reserved_usd >= 0),
+  updated_at     timestamptz not null default now()
+);
+create table if not exists content_engine.ai_spend (
+  id                 bigint generated always as identity primary key,
+  request_key        text not null unique check (request_key ~ '^[a-f0-9]{16,64}$'),
+  month              date not null,
+  purpose            text not null check (purpose in ('rewrite', 'section', 'draft', 'other')),
+  article_id         uuid references content_engine.articles(id),
+  run_id             bigint,
+  model              text check (model is null or length(model) <= 80),
+  actor              text not null check (actor in ('owner', 'schedule')),
+  status             text not null default 'reserved' check (status in ('reserved', 'committed', 'released')),
+  estimated_usd      numeric(12,6) not null check (estimated_usd > 0 and estimated_usd <= 5),
+  attempts           int not null default 1 check (attempts between 1 and 10),
+  input_tokens       int check (input_tokens is null or input_tokens >= 0),
+  output_tokens      int check (output_tokens is null or output_tokens >= 0),
+  cache_read_tokens  int check (cache_read_tokens is null or cache_read_tokens >= 0),
+  cache_write_tokens int check (cache_write_tokens is null or cache_write_tokens >= 0),
+  actual_usd         numeric(12,6) check (actual_usd is null or actual_usd >= 0),
+  billing_source     text not null default 'estimate' check (billing_source in ('estimate', 'usage_tokens', 'provider_invoice')),
+  error              text check (error is null or length(error) <= 300),
+  created_at         timestamptz not null default now(),
+  settled_at         timestamptz
+);
+-- one call in flight per article and purpose: two concurrent drafts of the
+-- same article cannot both be paid for
+create unique index if not exists ai_spend_one_in_flight on content_engine.ai_spend (article_id, purpose)
+  where status = 'reserved' and article_id is not null;
+create index if not exists ai_spend_month on content_engine.ai_spend (month, status);
+alter table content_engine.ai_months enable row level security;
+alter table content_engine.ai_spend enable row level security;
+revoke all on content_engine.ai_months, content_engine.ai_spend from public;
+do $r$ begin
+  execute 'revoke all on content_engine.ai_months, content_engine.ai_spend from anon, authenticated, service_role';
+exception when undefined_object then null; end $r$;
+
+create or replace function content_engine.ai_month_now()
+returns date language sql stable
+set search_path = pg_catalog, pg_temp as $$ select date_trunc('month', now() at time zone 'utc')::date; $$;
+
+-- a reservation older than 30 minutes was abandoned (the caller died after the
+-- reservation, perhaps after the provider had already billed the call): it is
+-- CHARGED AT ITS ESTIMATE, which is an upper bound, never released — releasing
+-- it could let money already spent go uncounted and the month pass its cap
+create or replace function content_engine.ai_sweep(p_month date)
+returns void language plpgsql
+set search_path = pg_catalog, public, pg_temp as $$
+declare r record;
+begin
+  for r in select id, estimated_usd from content_engine.ai_spend
+            where month = p_month and status = 'reserved' and created_at < now() - interval '30 minutes' for update skip locked loop
+    update content_engine.ai_spend set status = 'committed', actual_usd = r.estimated_usd, billing_source = 'estimate', settled_at = now(),
+           error = 'abandoned: no settlement within 30 minutes; charged at the estimate' where id = r.id;
+    update content_engine.ai_months set reserved_usd = greatest(0, reserved_usd - r.estimated_usd), committed_usd = committed_usd + r.estimated_usd, updated_at = now() where month = p_month;
+  end loop;
+end $$;
+
+create or replace function public.content_engine_ai_reserve(p_request_key text, p_estimated_usd numeric, p_purpose text default 'rewrite',
+                                                           p_article uuid default null, p_model text default null, p_run bigint default null)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare who text := content_engine.require_actor(); st content_engine.settings; m date := content_engine.ai_month_now();
+  mo content_engine.ai_months; ex content_engine.ai_spend; run_used numeric; est numeric := round(coalesce(p_estimated_usd, 0), 6);
+begin
+  if coalesce(p_request_key, '') !~ '^[a-f0-9]{16,64}$' or est <= 0 or est > 5 or coalesce(p_purpose, '') not in ('rewrite', 'section', 'draft', 'other') then
+    return jsonb_build_object('ok', false, 'reason', 'bad_input');
+  end if;
+  select * into st from content_engine.settings where id = 1;
+  insert into content_engine.ai_months (month) values (m) on conflict do nothing;
+  -- THE LOCK: every reservation this month waits here, so the cap is checked
+  -- against every other reservation, committed or in flight
+  select * into mo from content_engine.ai_months where month = m for update;
+  perform content_engine.ai_sweep(m);
+  select * into mo from content_engine.ai_months where month = m;
+  select * into ex from content_engine.ai_spend where request_key = p_request_key for update;
+  if ex.id is not null then
+    if ex.status = 'committed' then
+      perform content_engine.log(who, 'ai_duplicate_refused', ex.article_id, null, p_run, jsonb_build_object('request_key', p_request_key));
+      return jsonb_build_object('ok', false, 'reason', 'duplicate', 'detail', 'this exact request was already made and paid for; its result is the one on file', 'spend_id', ex.id);
+    end if;
+    if ex.status = 'reserved' then return jsonb_build_object('ok', false, 'reason', 'in_flight'); end if;
+    if ex.attempts >= st.ai_max_attempts then
+      perform content_engine.log(who, 'ai_retry_limit', ex.article_id, null, p_run, jsonb_build_object('request_key', p_request_key, 'attempts', ex.attempts));
+      return jsonb_build_object('ok', false, 'reason', 'retry_limit', 'attempts', ex.attempts, 'max', st.ai_max_attempts);
+    end if;
+  end if;
+  if mo.committed_usd + mo.reserved_usd + est > st.monthly_budget_usd then
+    perform content_engine.log(who, 'budget_exhausted', p_article, null, p_run,
+      jsonb_build_object('provider', 'llm', 'scope', 'month', 'cap_usd', st.monthly_budget_usd, 'committed_usd', mo.committed_usd, 'reserved_usd', mo.reserved_usd, 'estimate_usd', est));
+    return jsonb_build_object('ok', false, 'reason', 'monthly_budget_exhausted', 'cap_usd', st.monthly_budget_usd,
+      'used_usd', round(mo.committed_usd + mo.reserved_usd, 4), 'detail', 'discretionary AI generation stops at the monthly cap; the deterministic draft still works');
+  end if;
+  if p_run is not null then
+    select coalesce(sum(coalesce(actual_usd, estimated_usd)), 0) into run_used from content_engine.ai_spend where run_id = p_run and status in ('reserved', 'committed');
+    if run_used + est > st.job_budget_usd then
+      return jsonb_build_object('ok', false, 'reason', 'job_budget_exhausted', 'cap_usd', st.job_budget_usd, 'used_usd', round(run_used, 4));
+    end if;
+  end if;
+  if ex.id is not null then
+    update content_engine.ai_spend set status = 'reserved', attempts = attempts + 1, estimated_usd = est, settled_at = null, error = null,
+           created_at = now() where id = ex.id;
+  else
+    insert into content_engine.ai_spend (request_key, month, purpose, article_id, run_id, model, actor, estimated_usd)
+    values (p_request_key, m, p_purpose, p_article, p_run, left(p_model, 80), who, est);
+  end if;
+  update content_engine.ai_months set reserved_usd = reserved_usd + est, updated_at = now() where month = m;
+  return jsonb_build_object('ok', true, 'request_key', p_request_key, 'month', m, 'cap_usd', st.monthly_budget_usd,
+    'committed_usd', round(mo.committed_usd, 4), 'reserved_usd', round(mo.reserved_usd + est, 4),
+    'remaining_usd', round(st.monthly_budget_usd - mo.committed_usd - mo.reserved_usd - est, 4));
+exception when unique_violation then
+  return jsonb_build_object('ok', false, 'reason', 'in_flight', 'detail', 'another call for this article and purpose is already running');
+end $$;
+
+create or replace function public.content_engine_ai_settle(p_request_key text, p_ok boolean, p_input_tokens int default null, p_output_tokens int default null,
+                                                          p_actual_usd numeric default null, p_error text default null,
+                                                          p_cache_read_tokens int default null, p_cache_write_tokens int default null)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare who text := content_engine.require_actor(); ex content_engine.ai_spend; cost numeric; used_tokens boolean;
+begin
+  select * into ex from content_engine.ai_spend where request_key = p_request_key for update;
+  if ex.id is null then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+  if ex.status <> 'reserved' then return jsonb_build_object('ok', false, 'reason', 'not_reserved', 'status', ex.status); end if;
+  perform 1 from content_engine.ai_months where month = ex.month for update;
+  used_tokens := coalesce(p_input_tokens, 0) + coalesce(p_output_tokens, 0) > 0;
+  if coalesce(p_ok, false) or used_tokens then
+    cost := round(coalesce(p_actual_usd, ex.estimated_usd), 6);
+    update content_engine.ai_spend set status = 'committed', input_tokens = p_input_tokens, output_tokens = p_output_tokens,
+           cache_read_tokens = p_cache_read_tokens, cache_write_tokens = p_cache_write_tokens, actual_usd = cost,
+           billing_source = case when p_actual_usd is not null then 'usage_tokens' else 'estimate' end,
+           settled_at = now(), error = left(p_error, 300) where id = ex.id;
+    update content_engine.ai_months set reserved_usd = greatest(0, reserved_usd - ex.estimated_usd), committed_usd = committed_usd + cost, updated_at = now() where month = ex.month;
+    -- the estimate is meant to be an upper bound; a call that cost more is
+    -- still counted in full (the truth), and flagged so the estimator is fixed
+    if cost > ex.estimated_usd then
+      perform content_engine.log(who, 'ai_estimate_exceeded', ex.article_id, null, ex.run_id, jsonb_build_object('request_key', p_request_key, 'estimated_usd', ex.estimated_usd, 'actual_usd', cost));
+    end if;
+    return jsonb_build_object('ok', true, 'status', 'committed', 'actual_usd', cost);
+  end if;
+  update content_engine.ai_spend set status = 'released', settled_at = now(), error = left(coalesce(p_error, 'failed before any token was used'), 300) where id = ex.id;
+  update content_engine.ai_months set reserved_usd = greatest(0, reserved_usd - ex.estimated_usd), updated_at = now() where month = ex.month;
+  return jsonb_build_object('ok', true, 'status', 'released');
+end $$;
+
+-- the cost dashboard (owner only)
+create or replace function public.content_engine_cost_report()
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare st content_engine.settings; m date := content_engine.ai_month_now(); mo content_engine.ai_months;
+begin
+  perform content_engine.require_owner();
+  select * into st from content_engine.settings where id = 1;
+  select * into mo from content_engine.ai_months where month = m;
+  return jsonb_build_object(
+    'month', m, 'cap_usd', st.monthly_budget_usd, 'job_cap_usd', st.job_budget_usd, 'max_attempts', st.ai_max_attempts,
+    'committed_usd', round(coalesce(mo.committed_usd, 0), 4), 'reserved_usd', round(coalesce(mo.reserved_usd, 0), 4),
+    'remaining_usd', round(st.monthly_budget_usd - coalesce(mo.committed_usd, 0) - coalesce(mo.reserved_usd, 0), 4),
+    'basis', 'actual_usd is computed from the provider''s reported token usage at the published per-token price; estimates are used only until a call settles. Provider invoices are not imported.',
+    'this_month', (select jsonb_build_object('calls', count(*) filter (where status = 'committed'), 'released', count(*) filter (where status = 'released'),
+        'input_tokens', coalesce(sum(input_tokens), 0), 'output_tokens', coalesce(sum(output_tokens), 0),
+        'by_purpose', coalesce((select jsonb_object_agg(purpose, usd) from (select purpose, round(sum(actual_usd), 4) as usd from content_engine.ai_spend
+            where month = m and status = 'committed' group by purpose) q), '{}'::jsonb))
+      from content_engine.ai_spend where month = m),
+    'refused', (select jsonb_build_object('duplicates', count(*) filter (where kind = 'ai_duplicate_refused'), 'budget', count(*) filter (where kind = 'budget_exhausted'),
+        'retry_limit', count(*) filter (where kind = 'ai_retry_limit'))
+      from content_engine.events where at >= m::timestamptz),
+    'months', coalesce((select jsonb_agg(jsonb_build_object('month', month, 'committed_usd', round(committed_usd, 4)) order by month desc)
+      from (select * from content_engine.ai_months order by month desc limit 6) z), '[]'::jsonb),
+    'top_articles', coalesce((select jsonb_agg(x) from (select jsonb_build_object('article_id', s.article_id, 'title', a.title, 'usd', round(sum(s.actual_usd), 4), 'calls', count(*)) as x
+        from content_engine.ai_spend s left join content_engine.articles a on a.id = s.article_id
+       where s.month = m and s.status = 'committed' group by s.article_id, a.title order by sum(s.actual_usd) desc limit 20) q), '[]'::jsonb));
+end $$;
+
+create or replace function public.content_engine_budget_update(p jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare v uuid := content_engine.require_owner(); old_cap numeric;
+begin
+  select monthly_budget_usd into old_cap from content_engine.settings where id = 1;
+  -- above the $10 default only on purpose: the page asks, and says so here
+  if (p ->> 'monthly_budget_usd') is not null and (p ->> 'monthly_budget_usd')::numeric > 10
+     and (p ->> 'monthly_budget_usd')::numeric > coalesce(old_cap, 10) and coalesce((p ->> 'confirm_raise')::boolean, false) is not true then
+    return jsonb_build_object('ok', false, 'reason', 'confirm_raise', 'detail', 'raising the content engine’s monthly AI budget above the $10 default needs an explicit confirmation');
+  end if;
+  update content_engine.settings set
+    monthly_budget_usd = coalesce((p ->> 'monthly_budget_usd')::numeric, monthly_budget_usd),
+    job_budget_usd = coalesce((p ->> 'job_budget_usd')::numeric, job_budget_usd),
+    ai_max_attempts = coalesce((p ->> 'ai_max_attempts')::int, ai_max_attempts),
+    updated_at = now(), updated_by = v where id = 1;
+  perform content_engine.log('owner', 'budget_updated', null, null, null, p || jsonb_build_object('previous_monthly_budget_usd', old_cap));
+  return jsonb_build_object('ok', true);
+exception when check_violation or invalid_text_representation then
+  return jsonb_build_object('ok', false, 'reason', 'invalid', 'detail', 'the monthly budget is 0–50 USD (the database ceiling); the job budget is not above the monthly one; attempts 1–5');
+end $$;
+
+-- ── the customer-acquisition loop ────────────────────────────────────────────
+create or replace function public.content_engine_acquisition_report(p_months int default 3)
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare n int := greatest(1, least(coalesce(p_months, 3), 12)); months jsonb := '[]'::jsonb; i int; m0 date; m1 date;
+  pubs int; published int; visits int; regs int; trials int; paid int; rev numeric; cost numeric; users uuid[];
+  has_v boolean := to_regclass('public.acquisition_visitors') is not null; has_u boolean := to_regclass('public.user_acquisition') is not null;
+  has_f boolean := to_regprocedure('public.growth_customer_facts()') is not null; has_s boolean := to_regclass('public.stripe_events') is not null;
+begin
+  perform content_engine.require_owner();
+  for i in 0 .. n - 1 loop
+    m0 := (content_engine.ai_month_now() - make_interval(months => i))::date; m1 := (m0 + interval '1 month')::date;
+    select count(distinct publisher_id) filter (where publisher_id is not null), count(*) into pubs, published
+      from content_engine.articles where published_at >= m0 and published_at < m1;
+    visits := null; regs := null; trials := null; paid := null; rev := null; users := '{}';
+    if has_v then
+      execute $q$select count(*) from public.acquisition_visitors v where v.first_utm_campaign like 'ce\_%' and v.first_seen_at >= $1 and v.first_seen_at < $2
+               and (v.user_id is null or not exists (select 1 from growth_outbound.owners o where o.user_id = v.user_id))$q$ into visits using m0, m1;
+    end if;
+    if has_u then
+      execute $q$select coalesce(array_agg(u.user_id), '{}') from public.user_acquisition u where u.first_utm_campaign like 'ce\_%'
+               and coalesce(u.signup_at, u.updated_at) >= $1 and coalesce(u.signup_at, u.updated_at) < $2
+               and not exists (select 1 from growth_outbound.owners o where o.user_id = u.user_id)$q$ into users using m0, m1;
+      regs := cardinality(users);
+    end if;
+    if has_u and has_f then
+      execute $q$select count(*) filter (where f.trial_started_at >= $1 and f.trial_started_at < $2), count(*) filter (where f.paid_at >= $1 and f.paid_at < $2)
+                 from public.growth_customer_facts() f join public.user_acquisition u on u.user_id = f.user_id
+                where u.first_utm_campaign like 'ce\_%' and not exists (select 1 from growth_outbound.owners o where o.user_id = u.user_id)$q$
+        into trials, paid using m0, m1;
+    end if;
+    if has_u and has_s then
+      execute $q$select coalesce(sum(x.amount), 0) / 100.0 from (
+                 select distinct on (public.affiliate_stripe_object(e.payload) ->> 'id') ((public.affiliate_stripe_object(e.payload) ->> 'amount_paid')::bigint) as amount
+                   from public.stripe_events e
+                   join public.subscriptions s on s.stripe_customer_id = coalesce(e.customer_id, public.affiliate_stripe_id(public.affiliate_stripe_object(e.payload) -> 'customer'))
+                   join public.user_acquisition u on u.user_id = s.user_id and u.first_utm_campaign like 'ce\_%'
+                  where e.type in ('invoice.payment_succeeded', 'invoice.paid') and coalesce(e.stripe_created, e.created_at) >= $1 and coalesce(e.stripe_created, e.created_at) < $2
+                    and (public.affiliate_stripe_object(e.payload) ->> 'amount_paid') ~ '^[0-9]+$') x$q$ into rev using m0, m1;
+    end if;
+    select coalesce(sum(actual_usd), 0) into cost from content_engine.ai_spend where month = m0 and status = 'committed';
+    months := months || jsonb_build_object('month', m0, 'active_partners', pubs, 'published_articles', published, 'referral_visits', visits,
+      'registrations', regs, 'trials', trials, 'paid_subscribers', paid, 'subscriber_revenue_usd', rev, 'content_ai_cost_usd', round(cost, 2),
+      'cost_per_paid_subscriber_usd', case when paid > 0 then round(cost / paid, 2) end);
+  end loop;
+  return jsonb_build_object(
+    'targets', jsonb_build_object('active_partners', 3, 'published_articles_per_month', 8, 'referral_visits_per_month', 250,
+      'registrations_per_month', 25, 'paid_subscribers_per_month', 3, 'max_cost_per_paid_subscriber_usd', 25,
+      'kind', 'TARGETS for the first 90 days, not forecasts'),
+    'months', months,
+    'attribution', 'first touch: a visitor or account whose FIRST utm_campaign is a content-engine code (ce_<publisher>_<article>); owners excluded. Last-touch figures per article are in content_engine_performance.',
+    'revenue', 'subscriber revenue is the amount Stripe reports as paid on invoices of attributed customers (gross, in USD). It is not profit: Stripe fees, refunds after the month and every non-AI cost are not held here, so profit is not computed.',
+    'cost', 'content AI cost is the content engine''s own committed AI spend (content_engine.ai_spend). No other cost is included.',
+    'measured', jsonb_build_object('visits', has_v, 'registrations', has_u, 'trials_paid', has_u and has_f, 'revenue', has_u and has_s),
+    'by_publisher', coalesce((select jsonb_agg(jsonb_build_object('publisher', p.name, 'slug', p.slug, 'articles_published', (select count(*) from content_engine.articles a where a.publisher_id = p.id and a.published_at is not null),
+        'first_party', (select jsonb_agg(content_engine.first_party(a.campaign_code)) from content_engine.articles a where a.publisher_id = p.id and a.status in ('sent', 'published'))))
+      from content_engine.publishers p where p.status in ('active', 'prospect')), '[]'::jsonb));
+end $$;
+
+-- =============================================================================
 -- 6. THE FIRST PUBLISHER — editorial preferences only. Contacts, partnership
 -- terms and the historical view benchmarks are business data: the owner enters
 -- them in the Content Engine page (Publishers), never in this public file.
@@ -1421,7 +1792,7 @@ begin
     execute format('revoke all on function %s from public', f);
     begin execute format('revoke all on function %s from anon, authenticated, service_role', f); exception when undefined_object then null; end;
     -- doors the weekly job uses: owner or service role (each checks which)
-    if f::text ~ '^content_engine_(opportunity_upsert|article_create|article_save|article_submit|article\(|spend|log|search_evidence|job_)' then
+    if f::text ~ '^content_engine_(opportunity_upsert|article_create|article_save|article_submit|article\(|spend|log|search_evidence|job_|ai_reserve|ai_settle)' then
       begin execute format('grant execute on function %s to authenticated, service_role', f); exception when undefined_object then null; end;
     else
       begin execute format('grant execute on function %s to authenticated', f); exception when undefined_object then null; end;
@@ -1482,6 +1853,14 @@ select check_name, case when passed then 'ok' else 'CHECK THIS' end as result, d
   select 'first publisher seeded (editorial only)',
          exists (select 1 from content_engine.publishers where slug = 'stadium-rant'),
          'contacts and benchmarks are entered by the owner in /admin/content/'
+  union all
+  select 'AI budget: a monthly dollar cap, reserved before every call',
+         to_regclass('content_engine.ai_spend') is not null and (select monthly_budget_usd from content_engine.settings where id = 1) is not null,
+         coalesce((select '$' || monthly_budget_usd::text || ' a month' from content_engine.settings where id = 1), 'not configured')
+  union all
+  select 'approval binds the research; integrity verdict required',
+         to_regprocedure('content_engine.integrity_ok(jsonb)') is not null and to_regprocedure('content_engine.research_current(uuid, text, text)') is not null,
+         'changed research revokes approval; ready-to-send and Send refuse a BLOCKED or missing integrity verdict'
   union all
   select 'first-party measurement tables',
          to_regclass('public.acquisition_visitors') is not null and to_regclass('public.user_acquisition') is not null,

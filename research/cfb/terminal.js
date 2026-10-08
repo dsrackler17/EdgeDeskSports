@@ -22,10 +22,36 @@
   function pp(x) { return num(x) ? (x >= 0 ? '+' : '−') + Math.abs(100 * x).toFixed(1) + ' pp' : '—'; }
   function f1(x) { return num(x) ? x.toFixed(1) : '—'; }
   function bk(v) { return T.format.bookText(v); }
+  /* THE READER'S TIME ZONE (the same choice the app board remembers), named on
+     every time the page prints; a kickoff the schedule marks TBA is printed as
+     "time TBA" on its date, never as a clock time (lib/edgedesk_schedule.js) */
+  var SCH = window.EDSchedule || null, IG = window.EDIntegrity || null;
+  function tz() {
+    var z = null; try { z = localStorage.getItem('ed_tz_v1'); } catch (e) { z = null; }
+    if (z && SCH && SCH.validZone(z)) return z;
+    try { z = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { z = null; }
+    return z && SCH && SCH.validZone(z) ? z : 'America/Chicago';
+  }
   function when(t) {
     if (!t) return '—';
+    if (SCH) return SCH.timestampText(t, tz());
     var d = new Date(t);
     return d.toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+  /* a kickoff: the row's own verification state decides whether it is a time */
+  function kick(o) {
+    if (!o || !o.kickoff) return '—';
+    if (!SCH) return when(o.kickoff);
+    return SCH.display({ kickoff: o.kickoff, kickoff_state: o.kickoff_state || null, start_time_tbd: o.kickoff_tbd == null ? undefined : o.kickoff_tbd }, tz()).text;
+  }
+  /* the integrity mark: the dashboard rules that fired, on hover; a publication block is named */
+  var IG_QUIET = { 'SCHED.WEEK_SCOPE': 1, 'SCHED.KICKOFF_VERIFIED': 1, 'SCHED.TEAM_IDS': 1, 'SCHED.VENUE': 1, 'PROJ.SNAPSHOT': 1, 'CALC.SNAPSHOT_IDS': 1 };
+  function igMark(r) {
+    var x = r && r.integrity; if (!x) return '';
+    var loud = (x.dashboard.rules || []).filter(function (k) { var id = k.split(':')[0]; return !IG_QUIET[id] || /BLOCKED$/.test(k); });
+    if (!loud.length) return '';
+    var blocked = loud.some(function (k) { return /BLOCKED$/.test(k); });
+    return ' <span class="ubadge" style="' + (blocked ? 'color:var(--neg)' : '') + '" title="' + esc('Integrity (' + x.version + '): ' + loud.join(', ') + (x.publication && x.publication.blocking.length ? ' · blocked from publication by ' + x.publication.blocking.join(', ') : '')) + '">' + (blocked ? 'DATA CHECK' : 'CHECK') + '</span>';
   }
   function ago(t) {
     if (!t) return '—';
@@ -237,7 +263,10 @@
       }).join('') + '</div>';
     }
     h += '<div class="sortbar">Sort <select id="sort">' + Object.keys(SORTS).map(function (k) { return '<option value="' + k + '"' + (S.sort === k ? ' selected' : '') + '>' + SORTS[k] + '</option>'; }).join('') + '</select>'
-      + '<span>' + rows.length + ' of ' + b.rows.length + ' games · week ' + esc(String(b.rows.length ? b.rows[0].week : '—')) + '</span></div>';
+      + '<span>' + rows.length + ' of ' + b.rows.length + ' games · week ' + esc(String(b.current_week ? b.current_week.week : (b.rows.length ? b.rows[0].week : '—')))
+      + (b.counts && b.counts.integrity && b.counts.integrity.future_week ? ' + ' + b.counts.integrity.future_week + ' look-ahead' : '')
+      + (b.counts && b.counts.integrity && b.counts.integrity.kickoff_unverified ? ' · ' + b.counts.integrity.kickoff_unverified + ' kickoff' + (b.counts.integrity.kickoff_unverified === 1 ? '' : 's') + ' TBA' : '')
+      + ' · times ' + esc(tz()) + '</span></div>';
     h += '<div class="board">' + (rows.length ? rows.map(function (r) { return rowHTML(r, !!watch[r.game_id]); }).join('') : '<div class="empty">No game matches these filters.</div>') + '</div>';
     $('view').innerHTML = h;
     Array.prototype.forEach.call(document.querySelectorAll('[data-st]'), function (x) { x.onclick = function () { S.status = S.status === x.getAttribute('data-st') ? null : x.getAttribute('data-st'); track('filter_apply', { detail: 'status:' + S.status }); renderQueue(); }; });
@@ -256,7 +285,7 @@
     return '<div class="' + cls + '" data-id="' + esc(r.game_id) + '">'
       + '<div class="rh">'
       + '<div class="g"><div class="m"><button class="star' + (watched ? ' on' : '') + '" data-w="' + esc(r.game_id) + '" title="Watch">★</button> ' + esc(r.away) + ' @ ' + esc(r.home) + '</div>'
-      + '<div class="k">' + esc(when(r.kickoff)) + (r.fcs ? ' · FCS' : '') + '</div></div>'
+      + '<div class="k">' + esc(kick(r)) + (r.fcs ? ' · FCS' : '') + (r.week_scope === 'FUTURE_WEEK' ? ' · <b title="A later schedule week: look-ahead research, not this week’s">LOOK-AHEAD · WK ' + esc(r.week) + '</b>' : '') + igMark(r) + '</div></div>'
       + '<div class="c ed"><div class="l">EdgeDesk</div><div class="v">' + esc(r.fair || '—') + '</div></div>'
       + '<div class="c mk"><div class="l">Market</div><div class="v">' + esc(r.market || '—') + (r.market_stale ? ' <span class="mut">stale</span>' : '') + '</div></div>'
       + '<div class="c gap"><div class="l">Gap</div><div class="v">' + gap + '</div></div>'
@@ -275,6 +304,21 @@
       + '<div class="ln"><span class="l">Quality</span><span class="mono">confidence ' + (r.confidence == null ? '—' : r.confidence) + ' · reliability ' + (r.reliability == null ? '—' : r.reliability) + ' · models ' + esc(r.agreement || '—') + (r.model_sd != null ? ' (SD ' + r.model_sd.toFixed(1) + ')' : '') + ' · interest ' + r.research_interest + '</span></div>'
       + '<div class="act"><a class="btn pri" href="#/game/' + esc(r.game_id) + '">Open research page →</a></div>'
       + '</div></div>';
+  }
+  function integrityCard(o) {
+    var X = o && o.integrity; if (!X) return '';
+    var st = X.statuses || {};
+    function rules(list) { return '<ul class="l">' + (list || []).map(function (r) { return '<li>' + (r.pass ? '✓' : '✕') + ' ' + esc(r.rule) + (r.detail ? ' <span class="mut">— ' + esc(r.detail) + '</span>' : '') + '</li>'; }).join('') + '</ul>'; }
+    function checks(b) { var c = (b && b.checks) || []; return c.length ? '<table class="t"><tr><th>Rule</th><th>Status</th><th>What is wrong</th><th>What to do</th></tr>' + c.map(function (k) { return '<tr><td class="mono">' + esc(k.rule_id) + '</td><td>' + esc(k.status) + '</td><td>' + esc(k.explanation || '') + '</td><td class="mut">' + esc(k.remediation || '') + '</td></tr>'; }).join('') + '</table>' : '<div class="mut">Every rule passes at this boundary.</div>'; }
+    var h = '<div class="sec"><h2>Research status and decision — two separate answers</h2>'
+      + '<div class="note">' + esc(st.why_differ || '') + '</div>'
+      + '<div class="grid2"><div class="sub"><h3>Research: ' + esc(st.research ? st.research.label : '—') + '</h3><div class="mut">' + esc(st.research ? st.research.means : '') + '</div>' + rules(st.research && st.research.rules) + '</div>'
+      + '<div class="sub"><h3>Decision: ' + esc(st.decision ? st.decision.label : '—') + '</h3><div class="mut">' + esc(st.decision ? st.decision.means : '') + '</div>' + rules(st.decision && st.decision.rules) + '</div></div>';
+    if (X.ev && X.ev.text) h += '<div class="sub"><h3>Why a raw EV is ' + (X.ev.rejected ? 'rejected' : 'not an edge on its own') + '</h3><p>' + esc(X.ev.text) + '</p></div>';
+    h += '<div class="sub"><h3>Data integrity</h3><div class="mut">Dashboard: ' + esc(X.dashboard.status) + ' · decision: ' + esc(X.decision.status) + ' · publication: ' + esc(X.publication.status) + ' (' + esc(X.version) + ')</div>'
+      + '<details><summary>Research dashboard checks</summary>' + checks(X.dashboard) + '</details>'
+      + '<details><summary>Publication checks (what would block an article)</summary>' + checks(X.publication) + '</details></div></div>';
+    return h;
   }
   function bindStars() {
     Array.prototype.forEach.call(document.querySelectorAll('.star[data-w]'), function (x) {
@@ -801,7 +845,7 @@
       var g = o.game, A = o.edgedesk, B = o.market, C = o.disagreement, F = o.price, St = o.status, sm = o.summary;
       var watched = !!store.get(KW, {})[id];
       var h = '<div class="gh"><h1>' + esc(g.away) + ' @ ' + esc(g.home) + '</h1>'
-        + '<div class="meta">' + esc(when(o.kickoff)) + ' · ' + esc([g.away_conference, g.home_conference].filter(Boolean).join(' at ')) + (g.venue ? ' · ' + esc(g.venue) : '') + (g.neutral_site ? ' · neutral site' : '') + (g.fcs ? ' · FCS opponent' : '') + ' · week ' + esc(o.week) + '</div>'
+        + '<div class="meta">' + esc(kick(o)) + (o.week_scope === 'FUTURE_WEEK' ? ' · LOOK-AHEAD (a later week)' : '') + ' · ' + esc([g.away_conference, g.home_conference].filter(Boolean).join(' at ')) + (g.venue ? ' · ' + esc(g.venue) : '') + (g.neutral_site ? ' · neutral site' : '') + (g.fcs ? ' · FCS opponent' : '') + ' · week ' + esc(o.week) + '</div>'
         + '<div class="tools"><button class="btn sm" id="watchBtn">' + (watched ? '★ Watching' : '☆ Watch') + '</button>'
         + '<button class="btn sm" id="expBtn">Copy research card</button>'
         + '<button class="btn sm" id="flagBtn">Flag an issue ▾</button></div>'
@@ -816,6 +860,9 @@
       S.evCfg = G.ev || null;
       S.ev = liveEv(o, S.read);
       h += '<div id="evWrap">' + evCard(o, S.ev) + '</div>';
+      /* RESEARCH STATUS AND DECISION, SIDE BY SIDE, AND THE INTEGRITY CHECKS
+         (lib/edgedesk_integrity.js, written by the build) */
+      h += integrityCard(o);
       /* THE 15-SECOND SUMMARY */
       h += '<div class="sum' + (C.verified ? ' verified' : '') + '">'
         + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">'

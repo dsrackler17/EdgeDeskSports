@@ -474,6 +474,7 @@ section('17 · the board (app.html) shows VERIFIED only when the gate verifies')
     ctx.window.EDCfbDisagreement = opts.noGate ? undefined : D;
     /* the one research classifier the board word is read off (audit 2026-09-30 #6) */
     ctx.window.EDCanon = require(path.join(ROOT, 'lib', 'edgedesk_canon.js'));
+    ctx.window.EDCalc = require(path.join(ROOT, 'lib', 'edgedesk_calc.js'));
     ctx.FB = { p4: { _proj: { b1: p }, up: [u], _mkt: {}, dgSub: opts.dgSub === undefined ? { b1: { source: 't', projections: { r: line + 9, g: line + 8, c: line + 8.5 }, ensemble: line + 8.5, ensemble_sd: 1 } } : opts.dgSub, dgSubLoading: true } };
     ctx.FB_GUARD = { p4: { game: 21 } };
     ctx.fbP4Assembly = () => ({ starters: { home: { status: 'PREVIOUS_GAME', player_name: 'QB1', availability: { state: 'UNKNOWN' } },
@@ -491,6 +492,8 @@ section('17 · the board (app.html) shows VERIFIED only when the gate verifies')
     ctx.fbMarketConsensusFor = () => ({ books_reporting: opts.undated ? 6 : nb, market_dispersion: { range: 1 } });
     ctx.fbP4ReliabilityFor = () => ({ score: 82 });
     vm.createContext(ctx);
+    /* the page's one gap helper (lib/edgedesk_calc.js through fbCalcGap) */
+    { const c0 = APP.indexOf('function fbCalcGap('); vm.runInContext(APP.slice(c0, APP.indexOf('\n}\n', c0) + 3), ctx, { filename: 'app.html [fbCalcGap]' }); }
     vm.runInContext(APP.slice(a, b), ctx, { filename: 'app.html [gate adapter]' });
     return ctx;
   }
