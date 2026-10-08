@@ -1508,6 +1508,85 @@ The other three remove one of two independent safeguards whose other one holds i
 - **Stop it:** untick it in the settings. A ticket already out dies with it, and nothing more is written or sent.
 - **The database:** additive. Re-running an earlier file leaves the new table and columns unused.
 
+## Replies (2026-10): read from Resend
+
+**A reply ends that person's sequence by itself, the way "They replied" does.** Until now a reply counted only when you marked it. Now the database reads Resend's signed `email.received` event for every email Resend receives for you.
+
+- **A reply** from an address a live email went to, after it went (up to 180 days): the prospect becomes "replied", their unsent follow-ups are cancelled, and the results count it like a marked reply.
+- **An automatic answer** (out of office, "Automatic reply", "OOO", on vacation, and the common German, French and Spanish forms): noted; nothing changes, and the follow-up stays due.
+- **A request to stop** ("unsubscribe", "remove me", "opt out", "stop emailing", "do not contact" in the subject): the address is suppressed, always, even with detection off. They asked.
+- **An answer to a test email** (from your test inbox): noted as a test, nothing changes. This is how you prove the setup works.
+- **From nobody we wrote to:** kept with the sender masked (`s•••@example.com`) and no subject; nothing changes.
+
+### What it can and cannot see
+
+- **Matched by the sender's address alone,** whole and in any case. Never by a name, a domain or a guess: a colleague writing from the same company is nobody we wrote to.
+- **Only what the event carries:** who sent it, to which address, and the subject. **Never the body.** You read the reply itself in your mailbox, as now. The kind (reply, automatic, stop) is read from the subject.
+- **Signed, or nothing.** The event arrives through the existing `growth_outbound_webhook`, and the database checks Resend's signature first. A forged "reply" is refused before anything is read. The same email delivered twice counts once.
+- **Safe direction only.** Whatever it gets wrong, the worst it can do is stop emailing someone: end a sequence, or suppress an address. It never approves, drafts or sends.
+
+### Setting it up (you choose; nothing is sent until you do)
+
+Resend has to receive a copy of the replies. The simplest way leaves your inbox exactly as it is:
+
+1. **In Resend → Receiving,** note the receiving address Resend gives you (on its own `resend.app` domain; no DNS change). You can instead receive on a domain of yours with the MX record Resend shows, but a domain's MX record is where its mail lives, so never point `edgedesksports.com` itself there while `davis@` is hosted elsewhere.
+2. **In the mailbox that receives `davis@edgedesksports.com`,** add a rule that forwards a copy of incoming mail to that address, keeping the original sender. Gmail's forwarding keeps it. In Outlook, use "redirect", not "forward". Gmail first sends a confirmation code to the new address: open it in Resend's Receiving list.
+3. **In Resend → Webhooks,** add the `email.received` event to the endpoint that already points at `growth_outbound_webhook`. **Do not add it to the newsletter's endpoint.** The newsletter ignores received mail anyway, but a reply's sender and subject have no business there.
+4. **Prove it:**
+   1. in test mode, send yourself the test email;
+   2. reply to it from your test inbox;
+   3. Outbound → **Replies** shows "answer to a test email" within a minute.
+
+**Turning it off:** Outbound settings → Follow-ups → untick "Detect replies from Resend". Replies are still listed, and a request to stop is still honoured. To stop the events entirely, remove `email.received` from the webhook in Resend.
+
+### In the console and the daily email
+
+- **Outbound → Replies:** each email received, newest first. It shows who it was from (the prospect, or a masked stranger), which email it answered, what it was taken to be, and what it changed. Counts for 30 days. Whether detection is on.
+- **A prospect's page** lists their replies.
+- **The daily email** adds "N people replied in the last day": a count, never who.
+
+### New in the database
+
+- **Setting:** `reply_detection` (on by default).
+- **Table:** `replies`, the twenty-first. Append-only, deny-all to every client role. It holds the kind, the prospect and send it matched, the masked sender, and the subject only when it matched someone.
+- **Functions:**
+  - `classify_reply(subject)`;
+  - `reply_received(event, data)`, called by the webhook door for `email.received` after the signature check;
+  - owner door `growth_outbound_replies`;
+  - the prospect door's `replies`.
+- **The webhook door** routes `email.received` there. Every other event is handled as before.
+- **The newsletter's webhook** (`supabase/functions/newsletter`) acknowledges a received email and keeps nothing about it.
+- **System check:** row 39 (the classifier's cases, the webhook's routing, the append-only record, and what came in over 30 days). Rows 1 and 12 count the new table and trigger.
+
+### Deploy (in order)
+
+1. Merge the PR.
+2. In the SQL editor, run `supabase/growth_outbound.sql`. Report rows 1–39 should say `ok`.
+3. Deploy the newsletter function as you usually do. Its only change is that it ignores received mail.
+
+   The outbound functions are unchanged by this: the webhook function already relays every event untouched.
+4. Set up receiving (above), and prove it with a test reply.
+
+### Tests
+
+| Suite | Checks | What it proves |
+|---|---|---|
+| `tools/growth/outbound_replies_sql.test.js` (new) | 43 | Real sends, real signatures. 24 subjects classified. A reply ends the sequence once (status, follow-up cancelled, counted). An automatic answer changes nothing. A request to stop suppresses, even with detection off. A test reply is noted. A stranger, a colleague at the same domain, a too-old email and a near-miss address are not matched. Detection off records only. Forged, unreadable and repeated events. The Replies list, the prospect's page, the results, the webhook's health, the daily email's line, the System check. The record is append-only and unreadable to clients |
+| `tools/growth/outbound_lifecycle.test.js` | 53 | Adds step 10: the owner sends Kai's draft; Kai replies; Resend's signed event passes through the real webhook function; the sequence ends |
+| `tools/growth/outbound_events.test.js` | 66 | The newsletter's webhook keeps nothing about a received email |
+| `tools/growth/outbound_concurrency_sql.test.js` | 24 | Adds race Y: one reply delivered under five event ids, plus three more replies from the same person, all at the same instant. Every delivery is answered, the email is recorded once, and "replied" is logged once. Without the per-email lock it adds, this race failed with duplicate-key errors |
+| `tools/growth/outbound_console.e2e.js` | 305 | Adds sections 61–62: the Replies list, the prospect's replies, the setting, text never markup, before the SQL, nothing received yet |
+| `tools/growth/outbound_sql.test.js` | 500 | Twenty-one tables; the new door opens with the owner check |
+
+**Mutation-checked:** 29 deliberate breaks. 28 were caught: the routing, the classifier's three rules and its word boundaries, matching by domain, by case, with the display name, or past 180 days, test sends treated as live, every effect (suppression, status, follow-ups, the results record, the detection switch), the masking, the deduplication, the record's shape, the door's owner check, row-level security, the append-only trigger, the prospect page, the daily email's line, and the newsletter's guard.
+
+One was first missed and led to a sharper check: a subject's control characters past the 200-character cut. The remaining survivor adds the matched prospect's own address to the Replies list. That is something you already see on their page, and it is never a stranger's.
+
+### Rollback
+
+- **Stop it:** untick reply detection, or remove `email.received` from the webhook in Resend.
+- **The database:** additive. A reply already applied stays applied, as a marked one would.
+
 ## Operating it
 
 ### Before you go live (a checklist)
@@ -1520,6 +1599,7 @@ The other three remove one of two independent safeguards whose other one holds i
 6. **Go live:** turn test mode off (you type LIVE). Keep the daily cap at 20 at first; the warm-up starts at 10 a day and adds 5 a week up to it.
 7. **The morning run (optional):** run `supabase/growth_outbound_cron.sql`, set your window, and turn Automation on. It never approves or sends.
 8. **The daily email (optional):** tick "Email me once the morning run is done…" in the same group. It tells you when drafts wait, and only you.
+9. **Replies (optional):** have Resend receive a copy of your replies and send `email.received` to the outbound webhook ("Replies", above). Prove it with a reply to your test email.
 
 ### Every morning
 
@@ -1527,7 +1607,7 @@ The other three remove one of two independent safeguards whose other one holds i
 2. Read the System check line and **This morning**: qualified today, what waits for review, today's cap, the domain.
 3. **Review queue:** approve or reject each draft.
 4. **Approved, not sent:** press Send.
-5. In **Sends**, check delivery. Mark replies on the prospect ("They replied", or "…stop emailing them").
+5. In **Sends**, check delivery. **Replies** shows what Resend received. A reply that only you saw (by phone, say), mark on the prospect ("They replied", or "…stop emailing them").
 
 ### When something goes wrong
 
@@ -1548,4 +1628,4 @@ The other three remove one of two independent safeguards whose other one holds i
 
 ## Next
 
-All twelve phases are built, and the owner's daily email with them. What remains is operating it: the checklist and the morning above, and choosing which paid providers (if any) are worth their cost against the qualified prospects they produce (Results → By group → Search shows which searches pay off).
+All twelve phases are built, with the owner's daily email and replies read from Resend. What remains is operating it: the checklist and the morning above, and choosing which paid providers (if any) are worth their cost against the qualified prospects they produce (Results → By group → Search shows which searches pay off).

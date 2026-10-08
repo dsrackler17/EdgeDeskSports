@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-10-08 — Outbound: replies read from Resend
+
+**A reply ends that person's sequence by itself, the way "They replied" does.** Resend's signed `email.received` event arrives through the existing outbound webhook. The database checks the signature, then matches the sender's address, whole and alone, to the last live email that went there in 180 days. Details and setup: `docs/growth-outbound.md`, "Replies".
+
+- **A reply:** the prospect becomes replied, unsent follow-ups are cancelled, and the results count it.
+- **An out-of-office or automatic answer:** noted; nothing changes.
+- **"Unsubscribe", "remove me", "stop emailing" in the subject:** the address is suppressed, always, even with detection off.
+- **A reply to a test email:** noted as a test (how the setup is proved).
+- **From nobody we wrote to** (or a colleague at the same domain): kept masked, without a subject.
+- **Only the event's metadata** (sender, subject), never the body. Forged events are refused, and repeats count once. It can only ever stop emailing someone, never send.
+- **Setting** `reply_detection` (on). **Table** `replies` (the twenty-first, append-only, deny-all). **Owner door** `growth_outbound_replies`; the prospect page lists replies; the daily email counts them; report row 39.
+- **Console:** Outbound → Replies; the setting under Follow-ups.
+- **The newsletter's webhook** now ignores received mail, keeping a reply's sender and subject out of its tables.
+- **Setup** needs no DNS: a mailbox rule forwards copies to Resend's receiving address, and `email.received` is added to the outbound webhook in Resend.
+- **Tests:** `outbound_replies_sql` (43), lifecycle step 10 (53), events (66), concurrency race Y (24), console e2e sections 61–62 (305). Mutation-checked: 28 of 29 breaks caught; the survivor is benign.
+
 ## 2026-10-08 — Outbound: the owner's daily email ("N drafts are waiting for your review")
 
 **One short note a morning, to the owner only, when the morning run leaves drafts for review.** Off until turned on (Outbound settings → Morning run). It never goes to a prospect, never sends a draft and never counts against the daily cap. Details, deploy order and rollback: `docs/growth-outbound.md`, "The daily email".

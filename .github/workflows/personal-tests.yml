@@ -279,6 +279,11 @@ jobs:
         run: node tools/growth/outbound_digest_sql.test.js
       - name: The daily email's function sends exactly what the database wrote, to one address, and records what became of it
         run: node tools/growth/outbound_digest.test.js
+      # Replies read from Resend (2026-10): the signed email.received event,
+      # matched by address alone; a reply ends a sequence, an out-of-office
+      # changes nothing, a request to stop suppresses.
+      - name: A reply Resend receives ends that person's sequence; a request to stop suppresses; nothing is guessed
+        run: node tools/growth/outbound_replies_sql.test.js
       - name: The research-state scheduler's record is the service role's alone; its pg_cron job replaces itself
         env:
           RESEARCH_CRON_SQL_REQUIRED: '1'

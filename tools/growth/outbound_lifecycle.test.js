@@ -29,6 +29,9 @@
         qualified prospect; when it has nothing left to do, the tick hands a
         ticket to the digest function, and Resend gets one note — to the
         owner alone, counts only; no send, no prospect touched
+    10  a reply, read from Resend (2026-10): the owner sends that draft; the
+        person answers; Resend's signed email.received reaches the webhook
+        function, and the database ends their sequence — as "They replied"
 
    Run: node tools/growth/outbound_lifecycle.test.js
    =========================================================================== */
@@ -342,6 +345,20 @@ const resetRuns = () => one(`update growth_outbound.research_runs set status = '
       && one(`select status from growth_outbound.drafts where id = ${lit(pendingDraft(KAI))};`) === 'pending_review');
     const leaked9 = ANSWERS.filter((a) => Object.values(KEYS).some((k) => a.includes(k)) || a.includes(c9.body.ticket) || a.includes('owner@edgedesk.test'));
     chk('9 no answer carried a key, the ticket or the owner\'s address', leaked9.length === 0, leaked9.slice(0, 2));
+    /* ══ 10. A REPLY, READ FROM RESEND ══════════════════════════════════ */
+    const DKAI = pendingDraft(KAI);
+    chk('10 the owner approves Kai\'s draft', approve(DKAI).ok === true);
+    x = await call('send', post('send', { draft_ids: [DKAI] }, OWNER_T));
+    chk('10 … and sends it: to Kai', x.status === 200 && x.b.sent === 1 && pstatus(KAI) === 'contacted' && JSON.stringify(MAIL[MAIL.length - 1].msg.to) === '["kai@linelab.test"]', x.b);
+    x = await hook('email.received', 'rcv_lc_kai', { from: 'Kai Lines <Kai@LineLab.test>', to: ['replies@edgedesksports.com'], cc: [], bcc: [],
+      received_for: ['replies@edgedesksports.com'], message_id: '<r1@linelab.test>', subject: 'Re: A research tool for your work', attachments: [] });
+    chk('10 Kai answers; Resend\'s signed event reaches the webhook function, which relays it untouched', x.status === 200);
+    chk('10 … and the database ends Kai\'s sequence, as "They replied" does', pstatus(KAI) === 'replied'
+      && one(`select kind || '|' || applied from growth_outbound.replies where prospect_id = ${lit(KAI)};`) === 'reply|true'
+      && one(`select actor_kind from growth_outbound.activity where action = 'prospect_replied' and prospect_id = ${lit(KAI)};`) === 'webhook'
+      && +one(`select count(*) from growth_outbound.drafting_due() x where x.prospect_id = ${lit(KAI)};`) === 0);
+    const rl = own(`select public.growth_outbound_replies(10);`);
+    chk('10 the owner sees it in Replies: who, which email, what it was', rl.rows[0].full_name === 'Kai Lines' && rl.rows[0].kind === 'reply' && rl.rows[0].sequence_number === 1, rl.rows[0]);
     const out = db.applyFileAtomic(path.join(PG.ROOT, 'supabase', 'growth_outbound.sql'));
     chk('8 the file runs again over all of this, every report row ok', !/CHECK THIS/.test(out), out.split('\n').filter((l) => /CHECK THIS/.test(l)));
   } catch (e) {

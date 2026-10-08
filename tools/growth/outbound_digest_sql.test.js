@@ -451,7 +451,8 @@ try {
   chk('O the System check proves the daily email\'s rules, and says where it goes', row38.outcome === 'ok'
     && /on, to owner@edgedesk\.test; last \d{4}-\d\d-\d\d skipped/.test(row38.item), row38);
   chk('O every System check row is ok', checks.every((x) => /^ok/.test(x.outcome)), checks.filter((x) => !/^ok/.test(x.outcome)));
-  chk('O twenty tables, every one denied to clients', one(`select count(*) from pg_tables where schemaname = 'growth_outbound';`) === '20'
+  chk('O every table (the daily email\'s among them) denied to clients', one(`select count(*) from pg_tables t where t.schemaname = 'growth_outbound'
+        and not exists (select 1 from pg_policies p where p.schemaname = 'growth_outbound' and p.tablename = t.tablename and p.policyname = 'deny_clients' and p.permissive = 'RESTRICTIVE');`) === '0'
     && one(`select count(*) from pg_policies where schemaname = 'growth_outbound' and tablename = 'digests' and policyname = 'deny_clients' and permissive = 'RESTRICTIVE';`) === '1');
 } catch (e) {
   chk('the suite ran to the end', false, String(e && (e.sqlMessage || e.message) || e).slice(0, 900));

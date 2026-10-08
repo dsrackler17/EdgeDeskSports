@@ -494,6 +494,10 @@ end $c$;
 -- loses outbound stops receiving it (set null with their grant).
 alter table growth_outbound.settings add column if not exists digest_enabled boolean not null default false;
 alter table growth_outbound.settings add column if not exists digest_owner uuid references growth_outbound.owners (user_id) on delete set null;
+-- REPLIES (2026-10): a reply Resend receives (email.received, signed) ends
+-- that person's sequence, as "They replied" does. Off: replies are recorded
+-- and shown, and only an unsubscribe request still acts.
+alter table growth_outbound.settings add column if not exists reply_detection boolean not null default true;
 
 -- What stops a real send right now, in words. Empty means nothing does.
 -- What stops a send, in words. Empty means nothing does. A TEST send (only
@@ -1625,6 +1629,45 @@ end $c$;
 create unique index if not exists provider_events_uk on growth_outbound.provider_events (provider, event_id);
 create index if not exists provider_events_at_idx on growth_outbound.provider_events (received_at desc);
 
+-- REPLIES (2026-10): every email Resend received for us (its signed
+-- email.received event), what it was taken to be, and whether it changed
+-- anything. Only what the event carries: never the body.
+--   reply       from an address a live email went to, after it: their
+--               sequence ends (when reply detection is on)
+--   auto_reply  an out-of-office or automatic answer: noted, nothing changes
+--   opt_out     "unsubscribe", "remove me", "stop emailing" in the subject:
+--               the address is suppressed, always
+--   test        an answer to a test email (from the test inbox): noted
+--   unmatched   from nobody we wrote to: the sender kept masked, no subject
+create table if not exists growth_outbound.replies (
+  id               bigint generated always as identity primary key,
+  received_at      timestamptz not null default now(),
+  resend_email_id  text not null,
+  event_id         text not null,
+  kind             text not null,
+  prospect_id      uuid references growth_outbound.prospects (id) on delete set null,
+  send_id          uuid references growth_outbound.sends (id) on delete set null,
+  sequence_number  int,
+  from_masked      text,
+  subject          text,
+  applied          boolean not null default false,
+  detail           jsonb not null default '{}'::jsonb
+);
+do $c$ begin
+  alter table growth_outbound.replies drop constraint if exists replies_shape_ck;
+  alter table growth_outbound.replies add constraint replies_shape_ck check (
+        kind in ('reply', 'auto_reply', 'opt_out', 'test', 'unmatched')
+    and length(resend_email_id) between 1 and 200 and length(event_id) between 1 and 200
+    and (subject is null or length(subject) <= 200)
+    and (kind = 'unmatched') = (send_id is null)
+    and (kind <> 'unmatched' or subject is null)
+    and (sequence_number is null or sequence_number between 1 and 3)
+    and jsonb_typeof(detail) = 'object');
+end $c$;
+create unique index if not exists replies_email_uk on growth_outbound.replies (resend_email_id);
+create index if not exists replies_at_idx on growth_outbound.replies (received_at desc);
+create index if not exists replies_prospect_idx on growth_outbound.replies (prospect_id, received_at desc) where prospect_id is not null;
+
 -- what the recipient did, first time only (opens are unreliable; kept as a hint)
 alter table growth_outbound.sends add column if not exists opened_at timestamptz;
 alter table growth_outbound.sends add column if not exists clicked_at timestamptz;
@@ -2043,6 +2086,9 @@ create trigger owner_audit_append_only_t before update or delete on growth_outbo
   for each row execute function growth_outbound.append_only();
 drop trigger if exists provider_events_append_only_t on growth_outbound.provider_events;
 create trigger provider_events_append_only_t before update or delete on growth_outbound.provider_events
+  for each row execute function growth_outbound.append_only();
+drop trigger if exists replies_append_only_t on growth_outbound.replies;
+create trigger replies_append_only_t before update or delete on growth_outbound.replies
   for each row execute function growth_outbound.append_only();
 
 -- A page as read: stored in canonical form, its hash computed here; never
@@ -2628,7 +2674,7 @@ begin
   foreach t in array array['owners', 'owner_audit', 'settings', 'prospects', 'evidence', 'drafts',
                            'sends', 'suppressions', 'activity', 'identifiers', 'fit_factor_catalog', 'secrets',
                            'provider_events', 'research_runs', 'pages', 'candidates', 'provider_usage', 'scheduler',
-                           'conversions', 'digests'] loop
+                           'conversions', 'digests', 'replies'] loop
     execute format('alter table growth_outbound.%I enable row level security', t);
     execute format('drop policy if exists deny_clients on growth_outbound.%I', t);
     -- RESTRICTIVE: ANDed with every permissive policy, so a permissive policy
@@ -2734,7 +2780,7 @@ declare
     'sender_name', 'sender_email', 'reply_to_email', 'cta_url', 'business_name', 'postal_address', 'unsubscribe_url_base',
     'discovery_config', 'automation_timezone', 'automation_start_hour', 'automation_hours', 'attribution_links',
     'min_qualification_score', 'daily_qualified_target', 'warmup_enabled', 'warmup_start_per_day', 'warmup_step_per_week',
-    'landing_by_interest', 'digest_enabled'];
+    'landing_by_interest', 'digest_enabled', 'reply_detection'];
   v_bad text;
   v_diff jsonb := '{}'::jsonb;
   k text;
@@ -2815,6 +2861,7 @@ begin
       warmup_step_per_week      = coalesce((p->>'warmup_step_per_week')::int, warmup_step_per_week),
       landing_by_interest       = coalesce((p->>'landing_by_interest')::boolean, landing_by_interest),
       digest_enabled            = coalesce((p->>'digest_enabled')::boolean, digest_enabled),
+      reply_detection           = coalesce((p->>'reply_detection')::boolean, reply_detection),
       digest_owner              = case (p->>'digest_enabled')::boolean when true then v_owner when false then null else digest_owner end,
       updated_at = now(), updated_by = v_owner
     where id = 1
@@ -2884,6 +2931,10 @@ begin
                          '[]'::jsonb),
     'drafts', coalesce((select jsonb_agg(to_jsonb(d) order by d.sequence_number, d.generated_at desc) from growth_outbound.drafts d where d.prospect_id = p.id), '[]'::jsonb),
     'sends', coalesce((select jsonb_agg(to_jsonb(s) order by s.claimed_at desc) from growth_outbound.sends s where s.prospect_id = p.id), '[]'::jsonb),
+    -- what they wrote back, as Resend received it (2026-10): subject and kind, never the body
+    'replies', coalesce((select jsonb_agg(jsonb_build_object('received_at', r.received_at, 'kind', r.kind, 'subject', r.subject,
+                           'sequence_number', r.sequence_number, 'applied', r.applied) order by r.received_at desc)
+                          from growth_outbound.replies r where r.prospect_id = p.id), '[]'::jsonb),
     -- what came of it: visits, an account, a trial, a payment (never whose account)
     'conversions', coalesce((select jsonb_agg(jsonb_build_object('stage', c.stage, 'matched_by', c.matched_by, 'occurred_at', c.occurred_at,
                               'recorded_at', c.recorded_at) order by c.occurred_at, c.id)
@@ -4488,6 +4539,99 @@ begin
   return jsonb_build_object('ok', true, 'id', v_id, 'prospects_suppressed', v_np, 'drafts_cancelled', v_nd);
 end $$;
 
+-- WHAT A RECEIVED EMAIL IS, from its subject alone (the event carries no
+-- body). An unsubscribe request first: honouring it is never wrong.
+create or replace function growth_outbound.classify_reply(p_subject text)
+returns text language sql immutable
+set search_path = pg_catalog, pg_temp as $$
+  select case
+    when coalesce(p_subject, '') ~* '\m(unsubscribe|opt[ -]?out|remove me|take me off|stop (emailing|contacting|sending)|do not (email|contact))\M'
+      then 'opt_out'
+    when coalesce(p_subject, '') ~* '(\mauto(matic)?[ -]?(reply|response|antwort)\M|\mautoreply\M|out of (the )?office|^\s*ooo\M|\mabwesenheit|réponse automatique|respuesta automática|\mon (vacation|holiday|leave)\M|away from (the office|my desk))'
+      then 'auto_reply'
+    else 'reply' end;
+$$;
+
+-- A RECEIVED EMAIL (Resend's email.received, its signature already checked
+-- by the webhook door). Matched by the sender's address ALONE, to the last
+-- email that went to that address in 180 days and before it arrived; never
+-- by a name or a domain. A reply ends that person's sequence exactly as
+-- "They replied" does; an unsubscribe request suppresses the address. Nothing
+-- here sends, drafts or approves anything.
+create or replace function growth_outbound.reply_received(p_event_id text, d jsonb)
+returns jsonb language plpgsql
+set search_path = pg_catalog, public, pg_temp as $$
+declare
+  s growth_outbound.settings;
+  v_email_id text := nullif(left(btrim(coalesce(d->>'email_id', '')), 200), '');
+  v_raw text := left(coalesce(d->>'from', ''), 320);
+  v_from text;
+  v_subject text := nullif(btrim(left(regexp_replace(coalesce(d->>'subject', ''), '[[:cntrl:]]+', ' ', 'g'), 200)), '');
+  x growth_outbound.sends;
+  p growth_outbound.prospects;
+  v_kind text;
+  v_applied boolean := false;
+  v_n int := 0;
+begin
+  select * into s from growth_outbound.settings where id = 1;
+  v_from := growth_outbound.norm_email(coalesce(substring(v_raw from '<([^<>[:space:]]+)>'), v_raw));
+  if v_email_id is null or not growth_outbound.valid_email(v_from) then
+    insert into growth_outbound.provider_events (event_id, event_type, outcome) values (p_event_id, 'email.received', 'reply_unreadable');
+    return jsonb_build_object('ok', true, 'outcome', 'reply_unreadable');
+  end if;
+  -- the same email under another event id: once (two at the same instant
+  -- queue here rather than both passing the check)
+  perform pg_advisory_xact_lock(hashtext('growth_outbound.reply:' || v_email_id));
+  if exists (select 1 from growth_outbound.replies where resend_email_id = v_email_id) then
+    insert into growth_outbound.provider_events (event_id, event_type, outcome) values (p_event_id, 'email.received', 'reply_duplicate');
+    return jsonb_build_object('ok', true, 'outcome', 'reply_duplicate');
+  end if;
+  select * into x from growth_outbound.sends
+   where recipient = v_from and sent_at is not null and sent_at < now() and sent_at > now() - interval '180 days'
+   order by sent_at desc limit 1;
+  if x.id is null then
+    v_kind := 'unmatched';
+  elsif x.is_test then
+    v_kind := 'test';
+  else
+    v_kind := growth_outbound.classify_reply(v_subject);
+    select * into p from growth_outbound.prospects where id = x.prospect_id for update;
+  end if;
+  if v_kind = 'opt_out' and not growth_outbound.is_suppressed(v_from) then
+    -- always honoured, whatever the setting: they asked. Every prospect at
+    -- the address is suppressed and every unsent draft cancelled.
+    perform growth_outbound.apply_suppression('address', v_from, 'unsubscribe',
+      'asked to stop in a reply' || coalesce(': ' || left(v_subject, 120), ''), 'reply', null, p.id);
+    v_applied := true;
+  end if;
+  if v_kind = 'reply' and s.reply_detection and p.status in ('contacted', 'replied') then
+    if p.status = 'contacted' then
+      update growth_outbound.prospects set status = 'replied', status_reason = left('replied by email' || coalesce(': ' || v_subject, ''), 500)
+       where id = p.id;
+      v_applied := true;
+    end if;
+    v_n := growth_outbound.cancel_live_drafts(p.id, 'they replied');
+    v_applied := v_applied or v_n > 0;
+  end if;
+  -- the record "They replied" leaves, once a person: the results count it
+  if p.id is not null and (v_kind = 'opt_out' or (v_kind = 'reply' and s.reply_detection))
+     and not exists (select 1 from growth_outbound.activity a where a.prospect_id = p.id and a.action = 'prospect_replied') then
+    perform growth_outbound.log_as('webhook', 'prospect_replied', p.id, 'reply', v_email_id,
+      jsonb_build_object('detected', true, 'sequence', x.sequence_number, 'kind', v_kind, 'drafts_cancelled', v_n));
+  end if;
+  if v_kind <> 'unmatched' then
+    perform growth_outbound.log_as('webhook', 'reply_received', x.prospect_id, 'reply', v_email_id,
+      jsonb_build_object('kind', v_kind, 'sequence', x.sequence_number, 'applied', v_applied, 'test', x.is_test));
+  end if;
+  insert into growth_outbound.replies (resend_email_id, event_id, kind, prospect_id, send_id, sequence_number, from_masked, subject, applied, detail)
+  values (v_email_id, p_event_id, v_kind, x.prospect_id, x.id, x.sequence_number, growth_outbound.mask_email(v_from),
+          case when v_kind <> 'unmatched' then v_subject end, v_applied,
+          case when v_kind in ('reply', 'opt_out') and not s.reply_detection then jsonb_build_object('detection', 'off') else '{}'::jsonb end);
+  insert into growth_outbound.provider_events (event_id, event_type, send_id, outcome)
+  values (p_event_id, 'email.received', x.id, 'reply_' || v_kind);
+  return jsonb_build_object('ok', true, 'outcome', 'reply_' || v_kind, 'applied', v_applied);
+end $$;
+
 -- THE WEBHOOK DOOR — one of the two doors a caller with no account may knock
 -- on. Its proof is Resend's signature, checked FIRST; without it nothing is
 -- read, stored or changed. With it:
@@ -4499,6 +4643,8 @@ end $$;
 --   suppressed (by Resend)    failed, never sent; the address suppressed
 --                             (not for a test)
 --   opened / clicked          first time noted
+--   received (2026-10)        an email Resend received for us: a reply ends
+--                             that person's sequence (reply_received)
 --   about any other email     acknowledged; nothing about it kept
 create or replace function public.growth_outbound_webhook(p_id text, p_timestamp text, p_signature text, p_body text)
 returns jsonb language plpgsql security definer
@@ -4530,6 +4676,9 @@ begin
   perform pg_advisory_xact_lock(hashtext('growth_outbound.provider_event:' || p_id));
   if exists (select 1 from growth_outbound.provider_events where provider = 'resend' and event_id = left(p_id, 200)) then
     return jsonb_build_object('ok', true, 'duplicate', true);
+  end if;
+  if v_type = 'email.received' then
+    return growth_outbound.reply_received(left(p_id, 200), d);
   end if;
   if v_msg is not null then
     select * into x from growth_outbound.sends where resend_message_id = v_msg for update;
@@ -4691,6 +4840,30 @@ begin
     jsonb_build_object('stop', coalesce(p_stop, false), 'drafts_cancelled', n));
   return jsonb_build_object('ok', true, 'status', 'replied', 'drafts_cancelled', n,
     'suppressed', coalesce((r->>'ok')::boolean, false) or (coalesce(p_stop, false) and growth_outbound.is_suppressed(p.email)));
+end $$;
+
+-- REPLIES, for the console (2026-10): what Resend received for us, newest
+-- first, who it was from when it matched someone we wrote to, and what it
+-- changed. Owner only; reads.
+create or replace function public.growth_outbound_replies(p_limit int default 50)
+returns jsonb language plpgsql stable security definer
+set search_path = pg_catalog, public, pg_temp as $$
+begin
+  perform growth_outbound.require_owner();
+  return jsonb_build_object('ok', true,
+    'detection', (select x.reply_detection from growth_outbound.settings x where x.id = 1),
+    'last_at', (select max(received_at) from growth_outbound.replies),
+    'counts_30d', (select jsonb_build_object('reply', count(*) filter (where kind = 'reply'), 'auto_reply', count(*) filter (where kind = 'auto_reply'),
+                     'opt_out', count(*) filter (where kind = 'opt_out'), 'test', count(*) filter (where kind = 'test'),
+                     'unmatched', count(*) filter (where kind = 'unmatched'))
+                     from growth_outbound.replies where received_at >= now() - interval '30 days'),
+    'rows', coalesce((select jsonb_agg(jsonb_build_object('id', r.id, 'received_at', r.received_at, 'kind', r.kind, 'applied', r.applied,
+                        'sequence_number', r.sequence_number, 'subject', r.subject, 'from_masked', r.from_masked, 'detail', r.detail,
+                        'prospect_id', r.prospect_id, 'full_name', p.full_name, 'organization', p.organization, 'status', p.status)
+                        order by r.received_at desc, r.id desc)
+                       from (select * from growth_outbound.replies order by received_at desc, id desc
+                              limit least(greatest(coalesce(p_limit, 50), 1), 200)) r
+                       left join growth_outbound.prospects p on p.id = r.prospect_id), '[]'::jsonb));
 end $$;
 
 -- The last provider events, for the console: what Resend has told us.
@@ -6970,6 +7143,7 @@ declare
   v_approved int;
   v_cap int;
   v_out int;
+  v_replied int;
   v_att text[];
   v_subject text;
   v_text text;
@@ -7004,6 +7178,9 @@ begin
   select count(*) into v_approved from growth_outbound.drafts where status = 'approved' and not is_test;
   v_cap := (growth_outbound.live_send_cap()->>'cap')::int;
   select count(*) into v_out from growth_outbound.sends where not is_test and claimed_at >= date_trunc('day', now());
+  -- replies Resend received in the last day (2026-10): how many, never who
+  select count(distinct prospect_id) into v_replied from growth_outbound.replies
+   where kind in ('reply', 'opt_out') and received_at >= now() - interval '24 hours';
   select coalesce(array_agg('- ' || case x->>'code'
            when 'check_failed' then 'A system check fails.'
            when 'complaints' then 'Spam complaints are above 1 in 1,000 live emails.'
@@ -7028,6 +7205,7 @@ begin
     case when v_new > 0 then 'The morning run wrote ' || v_new || ' of them on ' || to_char(d.day, 'FMDay, FMMonth FMDD') || '.' end,
     '',
     case when v_approved > 0 then v_approved || ' approved ' || case when v_approved = 1 then 'draft has' else 'drafts have' end || ' not been sent yet.' end,
+    case when v_replied > 0 then v_replied || case when v_replied = 1 then ' person' else ' people' end || ' replied in the last day (Outbound, Replies).' end,
     case when s.test_mode then 'Test mode is on: an approved email goes only to your test inbox.'
          else 'Live emails you may still send today: ' || greatest(v_cap - v_out, 0) || ' of ' || v_cap || '.' end,
     case when cardinality(v_att) > 0 then E'\nNeeds your attention (Outbound, System check):\n' || array_to_string(v_att, E'\n') end,
@@ -7077,7 +7255,7 @@ select 1 as step, 'the outbound tables exist' as item,
   case when (select count(*) from pg_tables where schemaname = 'growth_outbound' and tablename in
     ('owners', 'owner_audit', 'settings', 'prospects', 'evidence', 'drafts', 'sends', 'suppressions', 'activity',
      'identifiers', 'fit_factor_catalog', 'secrets', 'provider_events', 'research_runs', 'pages', 'candidates',
-     'provider_usage', 'scheduler', 'conversions', 'digests')) = 20
+     'provider_usage', 'scheduler', 'conversions', 'digests', 'replies')) = 21
        then 'ok' else 'CHECK THIS — a table is missing' end as outcome
 union all
 select 2, 'the schema is private: no client role may even look inside it',
@@ -7143,7 +7321,8 @@ select 12, 'history is append-only and nothing is deleted',
   case when (select count(*) from pg_trigger where not tgisinternal and tgname in
     ('suppressions_append_only_t', 'activity_append_only_t', 'owner_audit_append_only_t', 'prospects_never_delete_t',
      'evidence_never_delete_t', 'drafts_never_delete_t', 'sends_never_delete_t', 'evidence_guard_t',
-     'identifiers_never_delete_t', 'identifiers_guard_t', 'conversions_append_only_t', 'digests_never_delete_t')) = 12
+     'identifiers_never_delete_t', 'identifiers_guard_t', 'conversions_append_only_t', 'digests_never_delete_t',
+     'replies_append_only_t')) = 13
        then 'ok' else 'CHECK THIS' end
 union all
 select 13, 'settings: test mode ' || (select case when test_mode then 'ON' else 'off' end from growth_outbound.settings where id = 1)
@@ -7332,6 +7511,23 @@ select 38, 'the daily email goes only to an outbound owner''s own confirmed addr
         and exists (select 1 from pg_constraint where conname = 'digests_shape_ck')
         and exists (select 1 from pg_constraint where conrelid = 'growth_outbound.settings'::regclass and contype = 'f'
                       and confrelid = 'growth_outbound.owners'::regclass and confdeltype = 'n')
+       then 'ok' else 'CHECK THIS' end
+union all
+select 39, 'replies: an email Resend receives for us is matched by its sender''s address alone to the last email that went there; a reply ends that sequence, an out-of-office changes nothing, "unsubscribe" suppresses: '
+  || (select case when reply_detection then 'detection on' else 'detection OFF (replies recorded; unsubscribe requests still honoured)' end
+        from growth_outbound.settings where id = 1)
+  || '; ' || coalesce((select count(*) filter (where kind = 'reply') || ' replied, ' || count(*) filter (where kind = 'auto_reply') || ' automatic, '
+                              || count(*) filter (where kind = 'opt_out') || ' asked to stop, ' || count(*) filter (where kind = 'unmatched')
+                              || ' from nobody we wrote to (30 days); last ' || to_char(max(received_at), 'YYYY-MM-DD HH24:MI') || ' UTC'
+                         from growth_outbound.replies where received_at >= now() - interval '30 days' having count(*) > 0),
+                      'nothing received in 30 days (set up receiving in Resend: docs/growth-outbound.md, Replies)'),
+  case when growth_outbound.classify_reply('Re: your CFB ratings') = 'reply'
+        and growth_outbound.classify_reply('Automatic reply: Pat is away') = 'auto_reply'
+        and growth_outbound.classify_reply('Out of Office: back Monday') = 'auto_reply'
+        and growth_outbound.classify_reply('Re: please unsubscribe me') = 'opt_out'
+        and growth_outbound.classify_reply(null) = 'reply'
+        and pg_get_functiondef('public.growth_outbound_webhook(text,text,text,text)'::regprocedure) like '%growth_outbound.reply_received(%'
+        and exists (select 1 from pg_trigger where not tgisinternal and tgname = 'replies_append_only_t')
        then 'ok' else 'CHECK THIS' end
 union all
 select 18, 'prospects by status: ' || coalesce((select string_agg(status || ' ' || n, ', ' order by status)

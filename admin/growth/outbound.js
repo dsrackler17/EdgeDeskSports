@@ -110,7 +110,8 @@
                ['min_role_confidence', 'num', 'Minimum role confidence'], ['min_research_confidence', 'num', 'Minimum research confidence'],
                ['min_email_confidence', 'num', 'Minimum email confidence']]],
     ['Follow-ups', [['followup_enabled', 'bool', 'Follow-up 1 (still needs your approval)'], ['followup_delay_days', 'int', 'Days before follow-up 1', 2, 30],
-                    ['final_followup_enabled', 'bool', 'Final follow-up'], ['final_followup_delay_days', 'int', 'Days after follow-up 1 before the final one', 3, 60]]],
+                    ['final_followup_enabled', 'bool', 'Final follow-up'], ['final_followup_delay_days', 'int', 'Days after follow-up 1 before the final one', 3, 60],
+                    ['reply_detection', 'bool', 'Detect replies from Resend: a reply ends that person\'s sequence (a request to stop is always honoured)']]],
     ['Sender and compliance', [['sender_name', 'text', 'Sender name'], ['sender_email', 'email', 'Sender email (@edgedesksports.com)'],
                                ['reply_to_email', 'email', 'Reply-to (@edgedesksports.com, optional)'], ['cta_url', 'text', 'Call-to-action URL (edgedesksports.com)'],
                                ['business_name', 'text', 'Business name in the footer'], ['postal_address', 'text', 'Postal address in the footer (required to send)'],
@@ -158,7 +159,7 @@
     if ($('obModeTag')) $('obModeTag').classList.add('hide');
     show('growth');
     DETAIL = null; CATALOG = null; QROWS = []; PICKED = {}; RES = null;
-    ['obKpis', 'obProspects', 'obSupp', 'obSettings', 'obActivity', 'obChips', 'obDetail', 'obLookOut', 'rqCards', 'obSends', 'dvProviders', 'dvCands', 'dvRuns',
+    ['obKpis', 'obProspects', 'obSupp', 'obSettings', 'obActivity', 'obChips', 'obDetail', 'obLookOut', 'rqCards', 'obSends', 'obReplyChips', 'obReplies', 'dvProviders', 'dvCands', 'dvRuns',
      'mnChips', 'mnKpis', 'mnPartners', 'dvSwitches', 'dvWaiting', 'hcDomainOut',
      'rsChips', 'rsPeople', 'rsSends', 'rsSignals', 'rsSteps', 'rsGroups', 'rsDaily', 'rsLatest', 'hcTop', 'hcSummary', 'hcAttention', 'hcChecks'].forEach(function (id) { if ($(id)) $(id).innerHTML = ''; });
     if ($('obDetailWrap')) $('obDetailWrap').classList.add('hide');
@@ -219,7 +220,7 @@
     if (!OWNER) return Promise.resolve();
     LOADED = true;
     $('obMsg').classList.add('hide');
-    return Promise.all([loadMorning(), loadOverview(), loadHealth(), loadAutomation(), loadQueue(), loadDrafting(), loadSends(), loadResults(), loadResearch(), loadProspects(), loadSupp(), loadActivity()]).catch(function (e) { fail('obMsg', e); });
+    return Promise.all([loadMorning(), loadOverview(), loadHealth(), loadAutomation(), loadQueue(), loadDrafting(), loadSends(), loadReplies(), loadResults(), loadResearch(), loadProspects(), loadSupp(), loadActivity()]).catch(function (e) { fail('obMsg', e); });
   }
   /* ── the 0–100 qualification score, in its parts (Phase 12) ─────────── */
   // the Phase 12 SQL is installed: the database reports its settings (and only then are they shown or sent)
@@ -408,7 +409,7 @@
       var changed = Object.keys(r.changed || {});
       say('obSetMsg', 'ok', changed.length ? 'Saved: ' + changed.join(', ') + '.' : 'Saved (no change).');
       paintMode(r.settings); paintSettings(r.settings);
-      return Promise.all([loadActivity(), loadAutomation(), loadResults(), loadQueue()]);
+      return Promise.all([loadActivity(), loadAutomation(), loadResults(), loadQueue(), loadReplies()]);
     }, function (e) { fail('obSetMsg', e); }).then(function () { $('obSave').disabled = false; });
   }
 
@@ -519,6 +520,11 @@
       }).join('') : '<tr><td colspan="6" class="dim">No identifiers.</td></tr>') + '</table></div>'
       + '<div class="note">An email address or a profile names one prospect. "Not theirs" releases it from this person (kept on the record) so it can belong to someone else.</div>';
 
+    if (d.replies !== undefined) h += '<h3>Replies</h3><div class="tw"><table id="pdReplies"><tr><th>When</th><th>What</th><th>Subject</th></tr>'
+      + (d.replies.length ? d.replies.map(function (x) {
+        return '<tr><td>' + when(x.received_at) + '</td><td>' + esc(REPLY_KIND[x.kind] || x.kind) + (x.sequence_number > 1 ? ' <span class="sub">to step ' + esc(x.sequence_number) + '</span>' : '') + '</td>'
+          + '<td class="wrap">' + esc(clip(x.subject || '', 150)) + '</td></tr>';
+      }).join('') : '<tr><td colspan="3" class="dim">No reply received from Resend. (A reply you read yourself: "They replied".)</td></tr>') + '</table></div>';
     h += '<h3>Results</h3><div class="tw"><table id="pdResults"><tr><th>When</th><th>What</th><th>Matched by</th></tr>'
       + ((d.conversions || []).length ? d.conversions.map(function (x) {
         return '<tr><td>' + when(x.occurred_at) + '</td><td>' + esc(STAGE[x.stage] || x.stage) + '</td><td>' + esc(MATCHED[x.matched_by] || x.matched_by) + '</td></tr>';
@@ -1419,6 +1425,39 @@
         }).join('') : '<tr><td colspan="9">Nothing has been sent.</td></tr>');
     }, function (e) {
       if (e && e.kind === 'not_installed') { $('obSends').innerHTML = '<tr><td>Sending arrives with the Phase 5 SQL: run supabase/growth_outbound.sql again.</td></tr>'; return; }
+      throw e;
+    });
+  }
+  /* ── replies, read from Resend (2026-10) ─────────────────────────── */
+  var REPLY_KIND = { reply: 'replied', auto_reply: 'automatic answer', opt_out: 'asked to stop', test: 'answer to a test email', unmatched: 'from nobody you wrote to' };
+  function loadReplies() {
+    if (!OWNER) return Promise.resolve();
+    return S.rpc('growth_outbound_replies', { p_limit: 50 }).then(function (r) {
+      r = r || {};
+      var c = r.counts_30d || {}, rows = r.rows || [];
+      $('obReplyChips').innerHTML = '<span class="chip ' + (r.detection ? 'ok' : 'warn') + '" data-rp="detection">Reply detection: '
+          + (r.detection ? 'on' : 'off (replies are listed; only a request to stop acts)') + '</span>'
+        + '<span class="chip" data-rp="counts">30 days: ' + (c.reply || 0) + ' replied · ' + (c.auto_reply || 0) + ' automatic · ' + (c.opt_out || 0) + ' asked to stop · '
+          + (c.unmatched || 0) + ' from nobody you wrote to</span>'
+        + (r.last_at ? '' : '<span class="chip off" data-rp="none">Nothing received yet: set up receiving in Resend (docs/growth-outbound.md, "Replies")</span>');
+      $('obReplies').innerHTML = '<tr><th>When</th><th>From</th><th>What</th><th>Subject</th><th>Changed</th></tr>'
+        + (rows.length ? rows.map(function (x) {
+          var who = x.prospect_id ? '<button type="button" class="lnk" data-open="' + esc(x.prospect_id) + '">' + esc(x.full_name || '(no name)') + '</button>'
+              + (x.sequence_number > 1 ? ' <span class="sub">step ' + esc(x.sequence_number) + '</span>' : '')
+            : '<span class="mono">' + esc(x.from_masked || '') + '</span>';
+          var changed = x.kind === 'opt_out' ? (x.applied ? 'suppressed' : 'already suppressed')
+            : x.kind === 'reply' ? (x.applied ? 'sequence ended' : x.detail && x.detail.detection === 'off' ? 'nothing (detection off)' : 'nothing more')
+            : '—';
+          return '<tr><td>' + when(x.received_at) + '</td><td>' + who + '</td>'
+            + '<td><span class="pill ' + (x.kind === 'reply' ? 'on' : x.kind === 'opt_out' ? 'bad' : x.kind === 'test' ? 'test' : '') + '" data-kind="' + esc(x.kind) + '">' + esc(REPLY_KIND[x.kind] || x.kind) + '</span></td>'
+            + '<td class="wrap">' + esc(clip(x.subject || '', 120)) + '</td><td>' + esc(changed) + '</td></tr>';
+        }).join('') : '<tr><td colspan="5">No email has been received.</td></tr>');
+    }, function (e) {
+      if (e && e.kind === 'not_installed') {
+        $('obReplyChips').innerHTML = '<span class="chip off">Replies arrive with the 2026-10 SQL: run supabase/growth_outbound.sql again.</span>';
+        $('obReplies').innerHTML = '';
+        return;
+      }
       throw e;
     });
   }
