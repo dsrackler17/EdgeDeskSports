@@ -169,7 +169,7 @@ try {
       say('**Proposed email** — subject: _' + r.draft.subject + '_');
       say('');
       say('```');
-      say(r.draft.body);
+      say(r.draft.body_text);
       say('```');
       say('');
       say('Engine rules: ' + (r.check.passes ? '**pass**' : '**' + r.check.problems.length + ' problem(s)**: ' + r.check.problems.join('; ')) + ' · ' + r.check.words + ' words · '
