@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_rankings_health_v1",
- "generated_at": "2026-10-08T04:02:45.164Z",
+ "generated_at": "2026-10-08T13:53:36.316Z",
  "build_version": {
   "schema_version": "1.1.0",
   "versions": {
@@ -14,7 +14,7 @@
    "scheme_matchup": "scheme_matchup_v1",
    "simulation": "simulation_v1"
   },
-  "digest": "55e3f1aa8b86e743"
+  "digest": "888308bd4e5f2ba3"
  },
  "season": 2026,
  "week": 6,
@@ -225,11 +225,11 @@
   },
   "availability": {
    "label": "Availability",
-   "rated": 32,
-   "ranked": 32,
+   "rated": 40,
+   "ranked": 40,
    "unranked_low_confidence": 0,
-   "no_rating": 106,
-   "coverage": 0.232
+   "no_rating": 98,
+   "coverage": 0.29
   }
  },
  "confidence": {
@@ -331,22 +331,22 @@
   }
  ],
  "ingestion": {
-  "completed_games_in_schedule": 391,
-  "last_completed_kickoff": "2026-10-07T00:00:00.000Z",
-  "team_games_read": 1433,
+  "completed_games_in_schedule": 393,
+  "last_completed_kickoff": "2026-10-07T23:30:00.000Z",
+  "team_games_read": 1437,
   "teams_with_a_performance_rating": 138,
-  "special_teams_team_games_joined": 778,
-  "special_teams_coverage_joined": 736,
+  "special_teams_team_games_joined": 782,
+  "special_teams_coverage_joined": 740,
   "special_teams_box_available": true,
   "opponent_adjustment_converged": true
  },
  "source_freshness": {
-  "completed_games": 391,
-  "latest_completed_kickoff": "2026-10-07T00:00:00.000Z",
-  "completed_games_digest": "269e0137a508af9a",
+  "completed_games": 393,
+  "latest_completed_kickoff": "2026-10-07T23:30:00.000Z",
+  "completed_games_digest": "b93b744c5e6f1261",
   "finality": {
    "schedule_final": 390,
-   "confirmed_by_box_alone": 1,
+   "confirmed_by_box_alone": 3,
    "games": [
     {
      "game_id": "401871090",
@@ -355,11 +355,27 @@
      "week": 6,
      "start_date": "2026-10-07T00:00:00.000Z",
      "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
+    },
+    {
+     "game_id": "401871051",
+     "home": "Kennesaw State",
+     "away": "Jacksonville State",
+     "week": 6,
+     "start_date": "2026-10-07T23:00:00.000Z",
+     "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
+    },
+    {
+     "game_id": "401871066",
+     "home": "Florida International",
+     "away": "New Mexico State",
+     "week": 6,
+     "start_date": "2026-10-07T23:30:00.000Z",
+     "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
     }
    ],
    "basis": "a game is FINAL when a feed this pipeline reads says it was played: the schedule feed with a score, or the ESPN box by carrying both teams. Whichever publishes first is believed, and the board says which one it was."
   },
-  "team_games_read": 1433,
+  "team_games_read": 1437,
   "teams_with_a_performance_rating": 138,
   "basis": "the completed games and team-games this build actually read out of the season in progress, and how many teams that was enough to rate. A rebuild that read a stale cache shows the same numbers as the week before it."
  },
@@ -368,11 +384,11 @@
   "season": 2026,
   "reference_season": 2025,
   "per_team_game": {
-   "team_games": 779,
+   "team_games": 783,
    "fg_att": 1.43,
-   "xp_att": 3.22,
+   "xp_att": 3.21,
    "punts": 4.22,
-   "punts_in20": 1.28,
+   "punts_in20": 1.29,
    "kr": 1.48,
    "pr": 1.3
   },
@@ -389,11 +405,11 @@
    "fg_att": 0.94,
    "xp_att": 1.06,
    "punts": 1.02,
-   "punts_in20": 0.97,
+   "punts_in20": 0.98,
    "kr": 0.88,
    "pr": 1.03
   },
-  "mean_ratio": 0.98,
+  "mean_ratio": 0.99,
   "basis": "per-team-game kicking, punting and return volumes in this season’s box artifact against the most recent completed season this build read. A season in progress publishes in pieces — a game lands, then the punter’s line lands — so a ratio below one is the FEED still filling in, not football that did not happen. It moves no rating: it is why some teams have no special-teams number yet."
  },
  "history": {
@@ -412,12 +428,12 @@
    "week_ordinal": 6,
    "week_label": "Week 6",
    "season_type": "regular",
-   "generated_at": "2026-10-08T04:02:45.164Z",
+   "generated_at": "2026-10-08T13:53:36.316Z",
    "team_count": 138,
    "rating_version": "team_rating_v1"
   }
  },
- "last_rankings_build": "2026-10-08T04:02:45.164Z",
+ "last_rankings_build": "2026-10-08T13:53:36.316Z",
  "notes": [
   "Every count here is of FBS teams. A team with no rating in a category is listed by name in genuinely_unavailable with the reason that team was given, so a gap is a lookup rather than an investigation.",
   "A rating exists when the evidence exists. Sample size is carried by CONFIDENCE and by the reliability shrink, never by a null."
