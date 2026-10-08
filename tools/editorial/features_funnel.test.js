@@ -145,6 +145,15 @@ try {
   chk('F it says what it does not count', /Global Privacy Control/.test(r.note) && /Google Search Console/.test(r.note) && /never added/.test(r.note));
   const g = fs.readFileSync(path.join(ROOT, 'admin', 'growth', 'index.html'), 'utf8');
   chk('F the Growth Console shows it beside the acquisition funnel', /growth_admin_article_funnel/.test(g) && /EdgeDesk’s own articles — the reader funnel/.test(g) && /not measured/.test(g));
+  /* the rollback removes the report and keeps the event kind, which is
+     funnel.sql's (the registry lib/edgedesk_track.js mirrors) and history */
+  const RB = path.join(PG.ROOT, 'supabase', 'first_party_funnel_rollback.sql');
+  const rb1 = db.applyFileAtomic(RB), rb2 = db.applyFileAtomic(RB);
+  chk('F the rollback removes the report, twice over, and keeps the event kind and its events',
+    !/CHECK THIS/.test(String(rb1) + String(rb2)) && one(`select to_regprocedure('public.growth_admin_article_funnel(integer)') is null;`) === 't'
+    && one(`select count(*) from public.user_event_kinds where event_name = 'article_engaged';`) === '1'
+    && +one(`select count(*) from public.user_events where event_name = 'article_engaged';`) === 2);
+  chk('F …and rolling forward again restores it', !/CHECK THIS/.test(String(db.applyFileAtomic(FILE))) && one(`select to_regprocedure('public.growth_admin_article_funnel(integer)') is not null;`) === 't');
 } catch (e) {
   chk('the database section reached its end — ' + String(e && e.stack || e).slice(0, 600), false);
 } finally { db.stop(); }

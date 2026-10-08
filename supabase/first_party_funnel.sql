@@ -34,7 +34,9 @@
 -- Idempotent. Rollback: supabase/first_party_funnel_rollback.sql.
 -- =============================================================================
 
--- the engagement event (client-sent; once per article per session)
+-- the engagement event (client-sent; once per article per session). funnel.sql
+-- registers it too (its registry is the tracker's list); this keeps the file
+-- self-sufficient on a database whose funnel.sql predates it.
 insert into public.user_event_kinds (event_name, source, dedupe, stage, signed_in, description) values
   ('article_engaged', 'client', 'session_entity', 6, false,
    'A reader stayed with an EdgeDesk article: 30 seconds visible and half of it read (props.entity = article:slug). Never sent under Global Privacy Control or Do Not Track.')
