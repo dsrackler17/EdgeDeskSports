@@ -86,7 +86,8 @@ try {
     unsubscribe_url_base: 'https://iattxbkbufslbauoumga.supabase.co/functions/v1/' });
   one(`select growth_outbound.set_webhook_secret('whsec_MfKQ9r8GKYqrTwjUPD8ILPZIo2LaLaSw');`);
   chk('A configured: nothing needs attention', JSON.stringify(codes()) === '[]', codes());
-  settings({ test_mode: false, confirm_live: true });
+  // dozens of live emails in one day: the warm-up (Phase 12, its own suite) is off here
+  settings({ test_mode: false, confirm_live: true, warmup_enabled: false, confirm_cap_increase: true });
   ['Ana Bell', 'Bo Dunn', 'Cy Park'].forEach((nm, i) => {
     const [f, l] = nm.split(' '), dom = (f + l).toLowerCase() + '.test';
     one(SEED.strong({ id: pid(i + 1), name: nm, org: l + ' Media', email: f.toLowerCase() + '@' + dom, domain: dom, handle: (f + l).toLowerCase() })

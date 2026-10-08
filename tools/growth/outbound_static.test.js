@@ -87,13 +87,15 @@ const rd = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 /* ══ F. THE EDGE FUNCTIONS ══════════════════════════════════════════════ */
 {
   const ENV = {
-    growth_outbound_research: ['ANTHROPIC_API_KEY', 'BRAVE_SEARCH_API_KEY', 'HUNTER_API_KEY', 'OUTBOUND_ALLOWED_ORIGINS', 'OUTBOUND_RESEARCH_MODEL', 'SUPABASE_ANON_KEY', 'SUPABASE_URL'],
+    // Phase 12: Apollo (optional) and Clay's table webhook (optional) join the research engine's providers
+    growth_outbound_research: ['ANTHROPIC_API_KEY', 'APOLLO_API_KEY', 'BRAVE_SEARCH_API_KEY', 'CLAY_WEBHOOK_TOKEN', 'CLAY_WEBHOOK_URL',
+      'HUNTER_API_KEY', 'OUTBOUND_ALLOWED_ORIGINS', 'OUTBOUND_RESEARCH_MODEL', 'SUPABASE_ANON_KEY', 'SUPABASE_URL'],
     growth_outbound_draft: ['ANTHROPIC_API_KEY', 'OUTBOUND_ALLOWED_ORIGINS', 'OUTBOUND_DRAFT_MODEL', 'SUPABASE_ANON_KEY', 'SUPABASE_URL'],
     growth_outbound_send: ['OUTBOUND_ALLOWED_ORIGINS', 'RESEND_API_KEY', 'SUPABASE_ANON_KEY', 'SUPABASE_URL'],
     growth_outbound_webhook: ['SUPABASE_ANON_KEY', 'SUPABASE_URL'],
     growth_outbound_optout: ['OUTBOUND_OPTOUT_PAGE', 'SUPABASE_ANON_KEY', 'SUPABASE_URL'],
   };
-  const SENSITIVE = /\b(authz|authorization|token|ticket|apikey|anonKey|resendKey|braveKey|hunterKey|anthropicKey|secret|headers|body|req|request|key|signature|sig)\b/i;
+  const SENSITIVE = /\b(authz|authorization|token|ticket|apikey|anonKey|resendKey|braveKey|hunterKey|anthropicKey|apolloKey|clayToken|clayWebhookUrl|secret|headers|body|req|request|key|signature|sig)\b/i;
   for (const name of Object.keys(ENV)) {
     const src = rd('supabase/functions/' + name + '/index.ts');
     const reads = [...new Set([...src.matchAll(/env\('([A-Z_]+)'\)/g)].map((m) => m[1]))].sort();

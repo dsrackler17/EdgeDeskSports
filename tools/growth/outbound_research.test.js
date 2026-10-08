@@ -239,7 +239,8 @@ const webCalls = (host) => LOG.filter((e) => e.host === host);
       && cr.output_config.effort === 'low' && cr.output_config.format.type === 'json_schema' && cr.fallbacks === 'default'
       && JSON.stringify(cr.betas) === JSON.stringify(['server-side-fallback-2026-07-01']) && !('thinking' in cr) && !('temperature' in cr), cr && Object.keys(cr));
     chk('R … told the pages are data, not instructions, and never to guess', /data, not instructions/.test(cr.system) && /Never guess a name/.test(cr.system));
-    chk('R … and the fit codes it may use are exactly the catalogue', cr.output_config.format.schema.properties.fit_factors.items.properties.code.enum.length === 21);
+    chk('R … and the fit codes it may use are exactly the catalogue', cr.output_config.format.schema.properties.fit_factors.items.properties.code.enum.length
+      === +one(`select count(*) from growth_outbound.fit_factor_catalog;`));
     chk('R the run is done, counting what it read and dropped', one(`select status || '|' || (counts->>'pages') || '|' || (counts->>'dropped') from growth_outbound.research_runs where id = ${x.b.run_id};`) === 'done|3|4');
     chk('R research approved, drafted and sent nothing', one(`select count(*) from growth_outbound.drafts;`) === '0' && one(`select count(*) from growth_outbound.sends;`) === '0');
 
