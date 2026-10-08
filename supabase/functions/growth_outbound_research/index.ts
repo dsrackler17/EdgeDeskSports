@@ -29,6 +29,12 @@
 //        not this function's. Every provider call is first counted against
 //        the daily budget the database enforces.
 //
+//   POST { action: 'scheduled', ticket }   (pg_cron, through pg_net: the
+//        morning run, Phase 9) — no owner token; ONE step the database
+//        planned (a search of the saved searches, or the next new
+//        candidate), every call made through growth_outbound_scheduled,
+//        which checks the ticket and opens only that run's doors.
+//
 // WHAT IT NEVER DOES: approve, draft, send, guess an address, take a name
 // from an email address, infer an employer from a domain, or keep a fact it
 // could not quote.
@@ -394,12 +400,20 @@ export function robotsAllows(robots: string, path: string): boolean {
 
 // ── the database, as the owner ──────────────────────────────────────────────
 type Ctx = { c: Cfg; authz: string; run: number | null; spent: Record<string, number>; notes: string[]; started: number;
-  robots: Map<string, string | null>; shared: Set<string> };
+  robots: Map<string, string | null>; shared: Set<string>; ticket?: string };
 async function db(x: Ctx, fn: string, args: Record<string, unknown>): Promise<any> {
-  const r = await AUTH.rpcAsCaller(x.c, x.authz, fn, args);
-  if (r.status === 404) throw new Refused('not_installed', 'the Phase 7 SQL is not applied: run supabase/growth_outbound.sql');
+  // the morning run reaches the database only through the ticket door, which
+  // lets its ticket open the doors that run's kind needs, for its run alone
+  const r = x.ticket
+    ? await AUTH.rpcAsCaller(x.c, x.authz, 'growth_outbound_scheduled', { p_ticket: x.ticket, p_door: fn, p_args: args })
+    : await AUTH.rpcAsCaller(x.c, x.authz, fn, args);
+  if (r.status === 404) throw new Refused('not_installed', 'the outbound SQL is not applied (or is older than this function): run supabase/growth_outbound.sql');
   if (r.status === 401 || r.status === 403) throw new Refused('not_an_owner', 'this account is not an outbound owner');
   if (!r.ok) throw new Refused('database_error', fn + ' answered ' + r.status);
+  if (x.ticket && r.body && r.body.ok === false && (r.body.reason === 'invalid_ticket' || r.body.reason === 'not_allowed')) {
+    throw new Refused(r.body.reason, r.body.reason === 'invalid_ticket'
+      ? 'the scheduled run\'s ticket is not valid (finished, expired, or automation turned off)' : String(r.body.detail || 'not allowed on this ticket'));
+  }
   return r.body;
 }
 class Refused extends Error { reason: string; detail: string; constructor(reason: string, detail: string) { super(detail); this.reason = reason; this.detail = detail; } }
@@ -794,17 +808,91 @@ export async function researchOne(x: Ctx, target: { candidate?: any; prospect?: 
   return out;
 }
 
+// ── a search, once its run has begun (the owner's, or the morning run's) ───
+async function runDiscover(x: Ctx, queries: string[]): Promise<{ status: number; body: any }> {
+  if (!queries.length) {
+    await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: 'failed', p_counts: {}, p_error: 'no search given and none saved' });
+    return { status: 400, body: { ok: false, reason: 'no_queries', detail: 'type a search, or save some under Discovery settings' } };
+  }
+  const totals: any = { queries: 0, results: 0, new: 0, seen_again: 0, duplicates: 0, suppressed: 0, invalid: 0 };
+  const per: any[] = [];
+  for (const qq of queries) {
+    if (timeLeft(x) < 10_000 || !(await spend(x, 'search'))) break;
+    const s = await braveSearch(x.c, qq);
+    totals.queries++;
+    if (!s.ok) { per.push({ query: qq, error: s.why }); if (/refused the key/.test(s.why || '')) break; continue; }
+    const rec = await db(x, 'growth_outbound_candidates_record', { p_run: x.run,
+      p_items: s.results.map((r) => ({ ...r, query: qq, provider: 'brave' })) });
+    totals.results += s.results.length;
+    for (const k of ['new', 'seen_again', 'duplicates', 'suppressed', 'invalid']) totals[k] += rec?.[k] || 0;
+    per.push({ query: qq, results: s.results.length, new: rec?.new || 0 });
+  }
+  const failed = per.length > 0 && per.every((p) => p.error);
+  await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: failed ? 'failed' : 'done', p_counts: totals,
+    p_error: failed ? per.map((p) => p.error).join('; ').slice(0, 900) : (x.notes.join('; ') || null) });
+  return { status: 200, body: { ok: !failed, run_id: x.run, ...totals, per_query: per, notes: x.notes, ...(failed ? { reason: 'search_failed' } : {}) } };
+}
+
+// ── one candidate or prospect read, once its run has begun ─────────────────
+async function runResearch(x: Ctx, target: any): Promise<{ status: number; body: any }> {
+  let out: any;
+  try { out = await researchOne(x, target); }
+  catch (e: any) {
+    await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: 'failed', p_counts: {}, p_error: String(e?.detail || e?.message || e).slice(0, 900) }).catch(() => null);
+    throw e;
+  }
+  await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: out.ok ? 'done' : 'failed',
+    p_counts: { pages: out.pages || 0, evidence: out.evidence || 0, dropped: (out.dropped || []).length, outcome: out.outcome || out.reason },
+    p_error: out.ok ? (x.notes.join('; ') || null) : String(out.detail || out.reason || 'failed').slice(0, 900) });
+  return { status: 200, body: { ...out, run_id: x.run, spent: x.spent, notes: x.notes } };
+}
+
+// ── the morning run: one step, on a ticket the database minted ─────────────
+// No owner token: pg_cron sends none. The ticket is the only credential, and
+// the database checks it at every call (growth_outbound_scheduled); what to
+// do comes from the database too (the run's plan), never from the request.
+async function scheduled(req: Request, c: Cfg, ticket: string): Promise<Response> {
+  if (!/^[0-9a-f]{64}$/.test(ticket)) return json(req, c, { ok: false, reason: 'invalid_ticket' }, 401);
+  const x: Ctx = { c, authz: 'Bearer ' + c.anonKey, run: null, spent: {}, notes: [], started: Date.now(), robots: new Map(), shared: new Set(), ticket };
+  const plan = await db(x, 'plan', {});
+  x.run = plan.run_id;
+  x.shared = new Set((Array.isArray(plan.shared_sites) ? plan.shared_sites : []).map((s: string) => String(s).toLowerCase()));
+  if (plan.kind === 'discover') {
+    if (!c.braveKey) {
+      await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: 'failed', p_counts: {}, p_error: 'search is not set up (BRAVE_SEARCH_API_KEY)' });
+      return json(req, c, { ok: false, reason: 'search_not_configured', run_id: x.run }, 503);
+    }
+    const out = await runDiscover(x, (Array.isArray(plan.queries) ? plan.queries : []).slice(0, 10));
+    return json(req, c, out.body, out.status);
+  }
+  if (plan.kind === 'research') {
+    const found = ((await db(x, 'growth_outbound_candidates', { p_status: 'new', p_limit: 1 })) || [])[0];
+    if (!found) {
+      await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: 'done', p_counts: { outcome: 'queue_empty' }, p_error: null });
+      return json(req, c, { ok: false, reason: 'queue_empty', run_id: x.run });
+    }
+    const out = await runResearch(x, { candidate: found });
+    return json(req, c, out.body, out.status);
+  }
+  await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: 'failed', p_counts: {}, p_error: 'a ' + plan.kind + ' run was sent to the research function' });
+  return json(req, c, { ok: false, reason: 'wrong_function', run_id: x.run }, 400);
+}
+
 // ── the request ─────────────────────────────────────────────────────────────
 export async function handle(req: Request, cfg?: Cfg): Promise<Response> {
   const c = cfg ?? config();
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors(req, c) });
   if (req.method !== 'POST') return json(req, c, { ok: false, reason: 'method_not_allowed' }, 405);
   if (!c.url || !c.anonKey) return json(req, c, { ok: false, reason: 'not_configured' }, 503);
-  const who = await AUTH.requireOutboundOwner(req, { url: c.url, anonKey: c.anonKey, fetch: c.fetch, timeoutMs: c.timeoutMs });
-  if (!who.ok) return json(req, c, { ok: false, reason: who.reason }, who.status);
   let body: any = null;
   try { body = await req.json(); } catch (_) { body = null; }
   const action = body && typeof body.action === 'string' ? body.action : '';
+  if (action === 'scheduled') {
+    try { return await scheduled(req, c, typeof body.ticket === 'string' ? body.ticket : ''); }
+    catch (e: any) { return refusedResponse(req, c, e); }
+  }
+  const who = await AUTH.requireOutboundOwner(req, { url: c.url, anonKey: c.anonKey, fetch: c.fetch, timeoutMs: c.timeoutMs });
+  if (!who.ok) return json(req, c, { ok: false, reason: who.reason }, who.status);
   const x: Ctx = { c, authz: who.authz, run: null, spent: {}, notes: [], started: Date.now(), robots: new Map(), shared: new Set() };
   const providers = { search: !!c.braveKey, email: !!c.hunterKey, llm: !!c.anthropicKey, fetch: true, model: c.model };
   try {
@@ -819,28 +907,8 @@ export async function handle(req: Request, cfg?: Cfg): Promise<Response> {
       const b = await db(x, 'growth_outbound_research_begin', { p_kind: 'discover', p_input: q ? { query: q } : { saved: true } });
       if (!b || b.ok !== true) return json(req, c, { ok: false, reason: b?.reason || 'refused', detail: b?.detail }, 409);
       x.run = b.run_id;
-      const queries: string[] = q ? [q] : (Array.isArray(b.queries) ? b.queries.slice(0, 10) : []);
-      if (!queries.length) {
-        await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: 'failed', p_counts: {}, p_error: 'no search given and none saved' });
-        return json(req, c, { ok: false, reason: 'no_queries', detail: 'type a search, or save some under Discovery settings' }, 400);
-      }
-      const totals: any = { queries: 0, results: 0, new: 0, seen_again: 0, duplicates: 0, suppressed: 0, invalid: 0 };
-      const per: any[] = [];
-      for (const qq of queries) {
-        if (timeLeft(x) < 10_000 || !(await spend(x, 'search'))) break;
-        const s = await braveSearch(c, qq);
-        totals.queries++;
-        if (!s.ok) { per.push({ query: qq, error: s.why }); if (/refused the key/.test(s.why || '')) break; continue; }
-        const rec = await db(x, 'growth_outbound_candidates_record', { p_run: x.run,
-          p_items: s.results.map((r) => ({ ...r, query: qq, provider: 'brave' })) });
-        totals.results += s.results.length;
-        for (const k of ['new', 'seen_again', 'duplicates', 'suppressed', 'invalid']) totals[k] += rec?.[k] || 0;
-        per.push({ query: qq, results: s.results.length, new: rec?.new || 0 });
-      }
-      const failed = per.length > 0 && per.every((p) => p.error);
-      await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: failed ? 'failed' : 'done', p_counts: totals,
-        p_error: failed ? per.map((p) => p.error).join('; ').slice(0, 900) : (x.notes.join('; ') || null) });
-      return json(req, c, { ok: !failed, run_id: x.run, ...totals, per_query: per, notes: x.notes, ...(failed ? { reason: 'search_failed' } : {}) });
+      const out = await runDiscover(x, q ? [q] : (Array.isArray(b.queries) ? b.queries.slice(0, 10) : []));
+      return json(req, c, out.body, out.status);
     }
     if (action === 'research') {
       const cid = body.candidate_id, pid = body.prospect_id;
@@ -863,22 +931,20 @@ export async function handle(req: Request, cfg?: Cfg): Promise<Response> {
       if (!b || b.ok !== true) return json(req, c, { ok: false, reason: b?.reason || 'refused', detail: b?.detail }, 409);
       x.run = b.run_id;
       x.shared = new Set((Array.isArray(b.shared_sites) ? b.shared_sites : []).map((s: string) => String(s).toLowerCase()));
-      let out: any;
-      try { out = await researchOne(x, target); }
-      catch (e: any) {
-        await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: 'failed', p_counts: {}, p_error: String(e?.detail || e?.message || e).slice(0, 900) }).catch(() => null);
-        throw e;
-      }
-      await db(x, 'growth_outbound_research_finish', { p_run: x.run, p_status: out.ok ? 'done' : 'failed',
-        p_counts: { pages: out.pages || 0, evidence: out.evidence || 0, dropped: (out.dropped || []).length, outcome: out.outcome || out.reason },
-        p_error: out.ok ? (x.notes.join('; ') || null) : String(out.detail || out.reason || 'failed').slice(0, 900) });
-      return json(req, c, { ...out, run_id: x.run, spent: x.spent, notes: x.notes });
+      const out = await runResearch(x, target);
+      return json(req, c, out.body, out.status);
     }
     return json(req, c, { ok: false, reason: 'bad_request', detail: 'action: status, discover or research' }, 400);
   } catch (e: any) {
-    if (e instanceof Refused) return json(req, c, { ok: false, reason: e.reason, detail: e.detail }, e.reason === 'not_installed' ? 503 : e.reason === 'not_an_owner' ? 403 : 502);
-    return json(req, c, { ok: false, reason: 'unhandled', detail: 'the research engine stopped unexpectedly' }, 500);
+    return refusedResponse(req, c, e);
   }
+}
+function refusedResponse(req: Request, c: Cfg, e: any): Response {
+  if (e instanceof Refused) {
+    return json(req, c, { ok: false, reason: e.reason, detail: e.detail }, e.reason === 'not_installed' ? 503 : e.reason === 'not_an_owner' ? 403
+      : e.reason === 'invalid_ticket' ? 401 : e.reason === 'not_allowed' ? 403 : 502);
+  }
+  return json(req, c, { ok: false, reason: 'unhandled', detail: 'the research engine stopped unexpectedly' }, 500);
 }
 
 // @ts-ignore Deno.serve exists in the edge runtime

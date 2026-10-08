@@ -79,6 +79,8 @@
     ['Mode', [['test_mode', 'bool', 'Test mode — every send goes only to the test inbox'],
               ['automation_enabled', 'bool', 'Automation — discover, research and draft on schedule (never approve, never send)'],
               ['test_inbox', 'email', 'Test inbox']]],
+    ['Morning run', [['automation_timezone', 'text', 'Your time zone (e.g. America/New_York)'], ['automation_start_hour', 'int', 'Starts at (hour, 0–23)', 0, 23],
+                     ['automation_hours', 'int', 'For how many hours', 1, 12]]],
     ['Limits', [['max_sends_per_day', 'int', 'Daily send cap (live)', 1, 200], ['max_test_sends_per_day', 'int', 'Daily test-send cap', 1, 100],
                 ['daily_prospect_target', 'int', 'Prospects to prepare per day', 1, 100]]],
     ['Gates', [['min_fit_score', 'int', 'Minimum fit score', 0, 100], ['min_identity_confidence', 'num', 'Minimum identity confidence'],
@@ -190,7 +192,7 @@
     if (!OWNER) return Promise.resolve();
     LOADED = true;
     $('obMsg').classList.add('hide');
-    return Promise.all([loadOverview(), loadQueue(), loadDrafting(), loadSends(), loadResearch(), loadProspects(), loadSupp(), loadActivity()]).catch(function (e) { fail('obMsg', e); });
+    return Promise.all([loadOverview(), loadAutomation(), loadQueue(), loadDrafting(), loadSends(), loadResearch(), loadProspects(), loadSupp(), loadActivity()]).catch(function (e) { fail('obMsg', e); });
   }
   function loadOverview() {
     return S.rpc('growth_outbound_overview', {}).then(function (o) {
@@ -287,13 +289,19 @@
       if (typed !== 'LIVE') { say('obSetMsg', '', 'Not saved: still in test mode.'); return Promise.resolve(); }
       p.confirm_live = true;
     }
+    /* THE MORNING RUN works on its own: said plainly before it is turned on. */
+    if (p.automation_enabled === true && !s.automation_enabled) {
+      if (!root.confirm('Turn on the morning run?\n\nEvery morning, in your window, it searches your saved searches, researches new candidates and writes drafts, spending your daily provider budget.\n\nIt never approves and never sends: every draft waits for you.')) {
+        say('obSetMsg', '', 'Not saved: the morning run stays off.'); return Promise.resolve();
+      }
+    }
     $('obSave').disabled = true;
     return S.rpc('growth_outbound_settings_update', { p: p }).then(function (r) {
       if (!r || r.ok === false) { say('obSetMsg', 'err', 'Not saved: ' + ((r && (r.detail || r.reason)) || 'refused')); return; }
       var changed = Object.keys(r.changed || {});
       say('obSetMsg', 'ok', changed.length ? 'Saved: ' + changed.join(', ') + '.' : 'Saved (no change).');
       paintMode(r.settings); paintSettings(r.settings);
-      return loadActivity();
+      return Promise.all([loadActivity(), loadAutomation()]);
     }, function (e) { fail('obSetMsg', e); }).then(function () { $('obSave').disabled = false; });
   }
 
@@ -574,7 +582,7 @@
         var did = r.kind === 'discover' ? (c.new != null ? c.new + ' new of ' + (c.results || 0) : '')
           : r.kind === 'draft' ? (c.drafted != null ? c.drafted + ' drafted' + (c.not_drafted ? ', ' + c.not_drafted + ' not' : '') : '')
           : (c.pages != null ? c.pages + ' page(s), ' + (c.evidence || 0) + ' fact(s)' + (c.dropped ? ', ' + c.dropped + ' dropped' : '') : '');
-        return '<tr><td>' + when(r.started_at) + '</td><td>' + esc(r.kind === 'discover' ? 'search' : r.kind === 'draft' ? 'drafting' : 'research') + (r.input && r.input.query ? ' <span class="sub">' + esc(clip(r.input.query, 60)) + '</span>' : '') + '</td>'
+        return '<tr><td>' + when(r.started_at) + '</td><td>' + esc(r.kind === 'discover' ? 'search' : r.kind === 'draft' ? 'drafting' : 'research') + (r.started_by === 'schedule' ? ' <span class="sub">(morning run)</span>' : '') + (r.input && r.input.query ? ' <span class="sub">' + esc(clip(r.input.query, 60)) + '</span>' : '') + '</td>'
           + '<td><span class="pill ' + (r.status === 'failed' ? 'bad' : r.status === 'running' ? 'test' : 'on') + '">' + esc(r.status) + '</span></td><td>' + esc(did) + '</td>'
           + '<td>' + esc(Object.keys(sp).map(function (k) { return k + ' ' + sp[k]; }).join(', ')) + '</td><td class="wrap">' + esc(clip(r.error || '', 160)) + '</td></tr>';
       }).join('') : '<tr><td colspan="6">No research has run yet.</td></tr>');
@@ -687,6 +695,46 @@
       say('dvMsg', 'ok', 'Saved: ' + qs.length + ' search' + (qs.length === 1 ? '' : 'es') + ' and the daily budget.');
       return loadResearch();
     }, function (e) { fail('dvMsg', e); });
+  }
+
+  /* ── the morning run (Phase 9) ───────────────────────────────────────── */
+  var STEP = { discover: 'search the saved searches', research: 'research the next new candidate', draft: 'write drafts for whoever is due' };
+  function hh(n) { return (n < 10 ? '0' : '') + n + ':00'; }
+  function paintAutomation(a) {
+    var p = a.plan || {}, t = p.today || {}, sc = a.scheduler || {};
+    var end = (a.start_hour + a.hours) % 24;
+    var h = a.enabled
+      ? '<span class="chip ok" data-am="on">Morning run: on · ' + esc(hh(a.start_hour)) + '–' + esc(hh(end)) + ' ' + esc(a.timezone) + '</span>'
+      : '<span class="chip off" data-am="off">Morning run: off (turn on Automation under Outbound settings)</span>';
+    if (!a.pg_net) h += '<span class="chip off" data-am="nonet">pg_net is not installed: enable it under Database → Extensions</span>';
+    if (sc.ticking) h += '<span class="chip ok" data-am="ticking">Clock: last tick ' + esc(when(sc.last_tick_at)) + '</span>';
+    else h += '<span class="chip off" data-am="noclock">The clock is not running' + (sc.last_tick_at ? ' (last tick ' + esc(when(sc.last_tick_at)) + ')' : '')
+      + ': run supabase/growth_outbound_cron.sql in the SQL editor</span>';
+    h += '<span class="chip" data-am="next">' + (p.step ? 'Next: ' + esc(STEP[p.step.kind] || p.step.kind) : 'Now: ' + esc(p.reason || 'nothing to do')) + '</span>';
+    $('amChips').innerHTML = h;
+    $('amToday').innerHTML = kpi('Searched today', t.searched ? 'yes' : 'not yet') + kpi('Researched today', (t.researched || 0) + ' of ' + (t.research_target || 0))
+      + kpi('Drafted today', (t.drafted || 0) + ' of ' + (t.draft_cap || 0), 'the daily send cap') + kpi('New candidates', t.new_candidates || 0) + kpi('Due a draft', t.due || 0);
+    var runs = a.runs || [];
+    $('amRuns').innerHTML = '<tr><th>When</th><th>Step</th><th>Status</th><th>Result</th><th>Note</th></tr>'
+      + (runs.length ? runs.map(function (r) {
+        var c = r.counts || {};
+        var res = r.kind === 'discover' ? (c.new != null ? c.new + ' new of ' + (c.results || 0) : '') : r.kind === 'draft' ? (c.drafted != null ? c.drafted + ' drafted' : '')
+          : (c.outcome ? String(c.outcome).replace(/_/g, ' ') + (c.evidence ? ', ' + c.evidence + ' fact(s)' : '') : '');
+        return '<tr><td>' + when(r.started_at) + '</td><td>' + esc(STEP[r.kind] || r.kind) + '</td>'
+          + '<td><span class="pill ' + (r.status === 'failed' ? 'bad' : r.status === 'running' ? 'test' : 'on') + '">' + esc(r.status) + '</span></td>'
+          + '<td>' + esc(res) + '</td><td class="wrap">' + esc(clip(r.error || '', 160)) + '</td></tr>';
+      }).join('') : '<tr><td colspan="5">The morning run has not run yet.</td></tr>');
+  }
+  function loadAutomation() {
+    if (!OWNER) return Promise.resolve();
+    return S.rpc('growth_outbound_automation_overview', {}).then(paintAutomation, function (e) {
+      if (e && e.kind === 'not_installed') {
+        $('amChips').innerHTML = '<span class="chip off">The morning run arrives with the Phase 9 SQL: run supabase/growth_outbound.sql again.</span>';
+        $('amToday').innerHTML = ''; $('amRuns').innerHTML = '';
+        return;
+      }
+      throw e;
+    });
   }
 
   /* ── the drafting engine (Phase 8) ────────────────────────────────── */

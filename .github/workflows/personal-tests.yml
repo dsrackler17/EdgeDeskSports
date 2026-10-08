@@ -66,6 +66,7 @@ on:
       - 'lib/edgedesk_auth.js'
       - 'tools/growth/**'
       - 'supabase/growth_outbound.sql'
+      - 'supabase/growth_outbound_cron.sql'
       - 'supabase/functions/growth_outbound_send/**'
       - 'supabase/functions/growth_outbound_webhook/**'
       - 'supabase/functions/growth_outbound_optout/**'
@@ -238,6 +239,11 @@ jobs:
       # no door that approves, edits or sends.
       - name: The drafting function writes only what the database accepts, and never approves or sends
         run: node tools/growth/outbound_draft.test.js
+      # The morning run: one step a tick, in the owner's window, on a
+      # single-use ticket kept only as a hash; the ticket opens only the
+      # engine's doors for its run, never approve, edit, send or settings.
+      - name: The morning run finds, researches and drafts on single-use tickets, and can never approve or send
+        run: node tools/growth/outbound_schedule_sql.test.js
       - name: The research-state scheduler's record is the service role's alone; its pg_cron job replaces itself
         env:
           RESEARCH_CRON_SQL_REQUIRED: '1'

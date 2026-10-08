@@ -9,6 +9,10 @@
 #   growth_outbound_draft    the drafting engine: writes drafts the database
 #                            accepts into the review queue (never approves or
 #                            sends); the owner presses it
+#   (research and draft also take the MORNING RUN's steps: pg_cron, through
+#    pg_net, posts a single-use ticket the database minted; no JWT, which is
+#    why both stay deployed --no-verify-jwt. The clock itself is
+#    supabase/growth_outbound_cron.sql, applied by hand.)
 #
 # MANUAL ON PURPOSE (workflow_dispatch). Shipping the code that can send email
 # to real people is a decision a person makes. This workflow never touches the
