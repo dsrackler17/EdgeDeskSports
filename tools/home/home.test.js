@@ -363,6 +363,32 @@ const T = require(path.join(ROOT, 'lib', 'edgedesk_track.js'));
   const noRead = BH.build({ now: S.generated_at, read: () => null });
   chk('with no artifacts it writes an empty board, not an invented one', noRead.props.top.length === 0 && Object.keys(noRead.props.items).length === 0 && Object.keys(noRead.game_ev).length === 0);
 
+  /* ── THE LANDING PAGE'S FREE HALF (lib/edgedesk_home_free.js) ─────────── */
+  {
+    globalThis.EDOddsTools = require(path.join(ROOT, 'lib', 'edgedesk_odds_tools.js'));
+    const HF = require(path.join(ROOT, 'lib', 'edgedesk_home_free.js'));
+    const c = HF.calc('-150', '+130');
+    chk('calc: the hero\'s opening numbers are the odds library\'s (and the markup\'s)',
+      c.ok && c.pa === '57.98%' && c.pb === '42.02%' && c.oa === 'no-vig −138' && c.ob === 'no-vig +138' && c.margin === '3.48%', c);
+    const IDX = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+    chk('calc: the markup prints what the calculator computes, before any script',
+      IDX.indexOf('id="hcPa">' + c.pa + '<') > 0 && IDX.indexOf('id="hcPb">' + c.pb + '<') > 0 && IDX.indexOf('id="hcVig">' + c.margin + '<') > 0);
+    const bad = HF.calc('-150', 'abc');
+    chk('calc: a bad price names its field', !bad.ok && bad.bad.join() === '1' && /not a price/.test(bad.error), bad);
+    const mkt = HF.calc('-110', '+250');
+    chk('calc: prices that cannot be one market blame no field', !mkt.ok && mkt.bad.every((i) => i === null) && /implied probability/.test(mkt.error), mkt);
+    const t0 = Date.parse('2026-10-08T12:00:00Z'), hr = 36e5, at = (h) => new Date(t0 + h * hr).toISOString();
+    const up = HF.upcoming([{ kickoff_at: at(30), k: 'c' }, { kickoff_at: at(-8), k: 'old' }, { kickoff_at: at(2), k: 'a' }, { kickoff_at: at(-2), k: 'live' },
+      { kickoff_at: 'nope', k: 'x' }, { kickoff_at: at(5), k: 'b' }, { kickoff_at: at(50), k: 'd' }], t0);
+    chk('free games: soonest first, a game a few hours in still listed, at most four', up.map((g) => g.k).join() === 'live,a,b,c', up.map((g) => g.k));
+    const arts = HF.pickArticles([
+      { type: 'pregame', url: 'u1', title: 'Old', game_time: at(-200) }, { type: 'postgame', url: 'u2', title: 'Post', game_time: at(-1) },
+      { type: 'pregame', url: 'u3', title: 'Sat', game_time: at(48) }, { type: 'pregame', url: 'u4', title: 'Thu', game_time: at(8) },
+      { type: 'pregame', url: 'u5', title: 'Recent', game_time: at(-30) }, { type: 'pregame', title: 'No url', game_time: at(9) }], t0);
+    chk('free research: this week\'s pregame first, soonest first, then the most recent; never a postgame or an unlinked one',
+      arts.map((a) => a.title).join() === 'Thu,Sat,Recent', arts.map((a) => a.title));
+  }
+
   /* ── THE WEEK'S SLATE (football/home/schedule.json, for /today/) ──────── */
   {
     const T = '2026-10-08T12:00:00Z', t = Date.parse(T), at = (h) => new Date(t + h * 3600e3).toISOString();

@@ -80,20 +80,24 @@ const LANDING = (function () {
 const HERO = section('top', 'header');
 chk('the hero is found', HERO.length > 2500);
 has(HERO, '<span class="ey" data-hero="eyebrow">Research, not picks.</span>', 'the eyebrow is the philosophy: research, not picks');
-has(HERO, '<h1 data-hero="headline">Bet with a process. <span class="g">Know what&rsquo;s working.</span></h1>', 'the headline: bet with a process, know what\'s working');
-has(HERO, '<p class="sub" data-hero="sub">Research NFL and college football matchups, log your bets, track your results against the closing line, and see where your process is helping or hurting you.</p>',
-  'the sentence: research the game, track the bets, see the results, see the process');
+has(HERO, '<h1 data-hero="headline">Research the game <span class="g">before you bet it.</span></h1>', 'the headline: research the game before you bet it');
+has(HERO, '<p class="sub" data-hero="sub">Free NFL and college football research every week: today&rsquo;s games, EdgeDesk&rsquo;s number beside the market&rsquo;s, and odds tools, with no card needed.</p>',
+  'the sentence: the research is free, every week, with no card');
 chk('the sentence is one sentence, not a paragraph', plain(HERO.match(/<p class="sub"[\s\S]*?<\/p>/)[0]).trim().split(/[.!?](\s|$)/).filter(s => s.trim()).length === 1);
-chk('the primary action starts the free trial through the consented flow',
-  /<button type="button" class="btn primary lg" id="heroCta" onclick="startSubscribe\(\)" data-track="hero_cta_click" data-cta="hero_trial">Start free trial <span class="ar" aria-hidden="true">&rarr;<\/span><\/button>/.test(HERO));
-chk('the secondary action is "See how it works", to the loop',
-  /<a class="btn ghost lg" id="heroStart" href="#how" data-track="how_it_works_click" data-cta="hero_how">See how it works<\/a>/.test(HERO) && /<section class="sec" id="how">/.test(IDX));
+/* FREE RESEARCH FIRST (docs/product-led-growth/PLAN.md, Phase 1): the free
+   research is the primary action; the trial is right beside it, through the
+   same consented flow, with its terms under both */
+chk('the primary action is the free research',
+  /<a class="btn primary lg" id="heroStart" href="#free" data-track="hero_free_click" data-cta="hero_free">Explore free research <span class="ar" aria-hidden="true">&rarr;<\/span><\/a>/.test(HERO) && /<section class="sec" id="free">/.test(IDX));
+chk('the secondary action starts the free trial through the consented flow',
+  /<button type="button" class="btn ghost lg" id="heroCta" onclick="startSubscribe\(\)" data-track="hero_cta_click" data-cta="hero_trial">Start free trial<\/button>/.test(HERO));
+chk('the free research comes before the trial in the hero', HERO.indexOf('id="heroStart"') < HERO.indexOf('id="heroCta"'));
 chk('an account is shown its next step on the primary button: the trial through the consented flow, or the terminal',
   /heroMain\('Start free trial →','hero_cta_click','hero_trial',toPay\)/.test(IDX) && /heroMain\('Open the terminal →','hero_app_click','hero_app',toApp\)/.test(IDX));
 /* the offer sits directly under the buttons — nobody hunts for what the trial becomes */
 const OFFER = (HERO.match(/<p class="microcta">([\s\S]*?)<\/p>/) || [])[1] || '';
 chk('the hero offer line is found', OFFER.length > 40);
-['data-ed-price="trial">7 days free', '$49.99', '/month', 'Cancel anytime', '21+'].forEach(t => has(OFFER, t, 'the hero offer states ' + t));
+['Free research, no card', 'data-ed-price="trial">7 days free', '$49.99', '/month', 'Cancel anytime', '21+'].forEach(t => has(OFFER, t, 'the hero offer states ' + t));
 chk('the hero offer is the first .microcta, the one bootAuthState rewrites for an unpaid account', () => {
   const first = IDX.search(/class="microcta"/), a = IDX.indexOf('<header class="hero"'), b = IDX.indexOf('</header>');
   return first > a && first < b;
@@ -101,32 +105,43 @@ chk('the hero offer is the first .microcta, the one bootAuthState rewrites for a
 has(HERO, 'Built for NFL + college football bettors, from first-time researchers to serious market analysts.', 'who it is for, beginner to analyst, in one line');
 /* the five-second test: no jargon above the fold (the sample panel's own
    labels are a product picture, not the pitch) */
-const PITCH = plain(HERO.slice(0, HERO.indexOf('class="panel dash"')));
+const PITCH = plain(HERO.slice(0, HERO.indexOf('class="panel dash')));
 [/\bEV\b/, /\bCLV\b/, /\bBrier\b/i, /\bMonte Carlo\b/i, /\bcalibrat/i, /\bAPI\b/, /\bexpected value\b/i, /\bde-?vig/i]
   .forEach(re => chk('the pitch carries no jargon: ' + re, !re.test(PITCH), (re.exec(PITCH) || [])[0]));
 chk('the pitch is short: under 75 words before the product picture', PITCH.split(/\s+/).filter(Boolean).length < 75, PITCH.split(/\s+/).length);
 
 /* ======================================================================== */
-/* 2. THE HERO'S PRODUCT PICTURE IS A LABELLED SAMPLE                       */
+/* 2. THE HERO'S PRODUCT PICTURE IS A FREE TOOL THAT WORKS NOW              */
 /* ======================================================================== */
-const DASH = (HERO.match(/<div class="panel dash"[\s\S]*?<div class="panel-foot">[\s\S]*?<\/div>/) || [''])[0];
-chk('the hero preview is found', DASH.length > 800);
+const DASH = (HERO.match(/<div class="panel dash calc"[\s\S]*?<div class="panel-foot">[\s\S]*?<\/div>/) || [''])[0];
+chk('the hero calculator is found', DASH.length > 800);
 const DBAR = (DASH.match(/<div class="panel-bar">([\s\S]*?)<\/div>/) || [, ''])[1];
-chk('its own bar says In development and Sample data, before any number', /<span class="soon">In development<\/span>/.test(DBAR) && /Sample data/.test(DBAR) && DASH.indexOf(DBAR) < DASH.indexOf('+$184.22'));
-chk('and its label for assistive technology says so too', /aria-label="Sample week in Process Coach, a feature in development"/.test(DASH));
-['P&amp;L', 'ROI', 'Process grade', 'Open', '+$184.22', '+5.7%', 'A&minus;', 'What&rsquo;s working', 'CFB spreads entered 24&ndash;72h early', '+9.8% ROI', '+1.4 avg CLV',
- 'Watch', 'Game-day props', '&minus;11.2% ROI', '&minus;0.8 avg CLV', 'Next focus', 'Improve game-day entry discipline.']
-  .forEach(t => has(DASH, t, 'the sample week shows ' + t));
-has(DASH, 'Illustrative sample, not a real account. Process Coach is in development.', 'its footer says it is not a real account and not live');
-has(DASH, 'Today EdgeDesk logs your bets, results and closing-line value', 'and says what IS live today');
+chk('its own bar says Free, and it is not a sample or a feature in development',
+  /<span class="tag live">Free<\/span>/.test(DBAR) && !/Sample data|In development/.test(DASH));
+chk('and its label for assistive technology says what it is', /aria-label="Free no-vig calculator"/.test(DASH));
+{
+  const OT = require(path.join(ROOT, 'lib', 'edgedesk_odds_tools.js'));
+  const r = OT.noVig(['-150', '+130'], { method: 'proportional' });
+  const pct = (x) => (x * 100).toFixed(2) + '%';
+  has(DASH, 'value="-150"', 'it opens on a real two-way price'); has(DASH, 'value="+130"', 'both sides');
+  has(DASH, '<span class="v" id="hcPa">' + pct(r.outcomes[0].fair) + '</span>', 'the printed fair chance is the odds library\'s, before any script');
+  has(DASH, '<span class="v" id="hcPb">' + pct(r.outcomes[1].fair) + '</span>', 'for both sides');
+  has(DASH, 'no-vig &minus;' + r.outcomes[0].fair_american_display.replace('-', ''), 'and the no-vig price');
+  has(DASH, '<span class="v" id="hcVig">' + pct(r.overround) + '</span>', 'and the margin taken out');
+}
+has(DASH, 'href="/tools/no-vig-calculator/"', 'the full calculator, with its working, is one tap away');
+has(DASH, 'Not a prediction.', 'and it says what it is not');
+['Process Coach', 'Film Room', 'In development', 'Sample data'].forEach(t => lacks(HERO, t, 'nothing in the hero is a feature still being built: ' + t));
 
 /* ======================================================================== */
 /* 3. ONE SUBSCRIPTION                                                      */
 /* ======================================================================== */
 const STRIP = (HERO.match(/<div class="strip"[\s\S]*?<\/div>/) || [''])[0];
-chk('the value strip is four items, in order', JSON.stringify([...STRIP.matchAll(/<li>([^<]+)/g)].map(m => plain(m[1]).trim())) === JSON.stringify(['Football research', 'Bet tracking', 'P&L + CLV', 'Process Coach']));
-chk('Process Coach is marked as not live, in the strip itself', /<li>Process Coach <span class="soon">Soon<\/span><\/li>/.test(STRIP));
-has(STRIP, '<span class="strip-p" data-ed-price="monthly">$49.99/month</span>', 'the strip states the price, from the pricing file');
+chk('the strip says what is free first, in order', /<span class="strip-k">Free<\/span>/.test(STRIP)
+  && JSON.stringify([...STRIP.matchAll(/<li>([^<]+)/g)].map(m => plain(m[1]).trim())) === JSON.stringify(['Game research', "Today's games", 'Odds tools', 'Weekly email']));
+has(STRIP, '<span class="strip-k">Full Access</span> <span data-ed-price="monthly">$49.99/month</span>', 'then Full Access, at the pricing file\'s price');
+chk('nothing in the strip is a feature still being built', !/Process Coach|Soon/.test(STRIP));
+has(HERO, 'href="#how" data-track="how_it_works_click" data-cta="strip_how">How Full Access works<', 'how the paid half works is one tap away (the GA report reads how_it_works_click)');
 chk('the strip is not fifteen feature cards', (STRIP.match(/<li>/g) || []).length <= 5);
 
 /* ======================================================================== */
@@ -322,12 +337,19 @@ chk('the plan\'s inclusions are the pricing file\'s FEATURES, in order', () => {
 chk('the plan lists six to eight benefits, not a wall', X.FEATURES.length >= 6 && X.FEATURES.length <= 8, X.FEATURES.length);
 chk('and none of them is a feature still in development', !X.FEATURES.some(f => /coach|film room|calendar|prediction|connect|sync|import|grade/i.test(f)), X.FEATURES);
 chk('player props are part of the plan', X.FEATURES.indexOf('Player props') >= 0);
-const VAL = (PRICE.match(/<ul class="vlist">([\s\S]*?)<\/ul>/) || [, ''])[1];
-chk('the value list marks every unfinished item, and only those', () => {
-  const items = [...VAL.matchAll(/<li( class="later")?>([^<]+)(<span class="soon">Soon<\/span>)?<\/li>/g)];
-  return items.length >= 9 && items.every(m => !!m[1] === !!m[3])
-    && JSON.stringify(items.filter(m => m[1]).map(m => m[2])) === JSON.stringify(['Calendar view', 'Process Coach', 'Weekly Film Room']);
-});
+/* FREE BESIDE FULL ACCESS: the free card is lib/edgedesk_plans.js FREE, in
+   order; no card on this section lists anything still being built */
+const PLANS = require(path.join(ROOT, 'lib', 'edgedesk_plans.js'));
+const FREEC = (PRICE.match(/<div class="freecard pcard rv">([\s\S]*?)<div class="pcard rv">/) || [, ''])[1];
+chk('a Free card sits beside the plan, before it', FREEC.length > 200 && PRICE.indexOf('freecard') < PRICE.indexOf('id="subscribe"'));
+chk('the Free card lists lib/edgedesk_plans.js FREE, in order', () => {
+  const li = [...(FREEC.match(/<ul class="pincl free-incl">([\s\S]*?)<\/ul>/) || [, ''])[1].matchAll(/<li>([\s\S]*?)<\/li>/g)].map(m => plain(m[1]).trim());
+  return JSON.stringify(li) === JSON.stringify(PLANS.FREE.map(f => f.label.replace(/\u2019/g, "'")));
+}, 'the Free card differs from lib/edgedesk_plans.js FREE');
+has(FREEC, '<span class="pamt">$0</span>', 'free is $0');
+chk('the Free card asks for no card and starts no trial', !/startSubscribe|data-ed-price/.test(FREEC) && /href="#free"/.test(FREEC));
+PLANS.PLANNED.forEach(f => lacks(PRICE, f.label, 'pricing lists nothing still being built: ' + f.label));
+lacks(PRICE, 'class="soon"', 'and marks nothing as coming soon');
 has(PRICE, 'One bad habit can cost more than a month of EdgeDesk.', 'the value line');
 has(PRICE, 'It can&rsquo;t promise you&rsquo;ll win, and it won&rsquo;t pretend to.', 'and right beside it, no promise');
 lacks(PRICE, 'make you more than', 'the price is never justified by promised winnings');
@@ -405,7 +427,7 @@ has(TR, 'EdgeDesk&rsquo;s record &middot; live', 'and it says it is EdgeDesk\'s 
 /* ======================================================================== */
 const FAQ = section('faq');
 const QS = [...FAQ.matchAll(/<summary>([\s\S]*?)<\/summary>/g)].map(m => plain(m[1]).trim());
-['Is EdgeDesk a picks service?', 'Does EdgeDesk guarantee I\'ll make money?', 'Who is EdgeDesk for?', 'Can beginners use it?', 'Can advanced bettors use it?',
+['Is EdgeDesk a picks service?', 'What can I use for free?', 'Does EdgeDesk guarantee I\'ll make money?', 'Who is EdgeDesk for?', 'Can beginners and advanced bettors both use it?',
  'What sports are currently supported?', 'Can I connect my sportsbook or prediction-market account?', 'Which features are still in development?', 'How does the 7 -day trial work?', 'Can I cancel anytime?']
   .forEach(q => chk('the FAQ answers: ' + q, QS.indexOf(q) >= 0, QS.join(' | ')));
 function answer(q) { const i = QS.indexOf(q); const all = [...FAQ.matchAll(/<div class="a">([\s\S]*?)<\/div>/g)]; return i < 0 || !all[i] ? '' : plain(all[i][1]).trim(); }
@@ -415,7 +437,8 @@ chk('sports: exactly the NFL and NCAA FBS', /^Football: the NFL and NCAA FBS/.te
 chk('connections: not yet, and logged by hand today', /^Not yet\. Today you log your bets yourself\./.test(answer('Can I connect my sportsbook or prediction-market account?')));
 chk('the in-development list names every unfinished feature', ['Process Coach', 'Weekly Film Room', 'calendar view', 'per-bet process grades', 'prediction-market tracking', 'account connections']
   .every(f => answer('Which features are still in development?').indexOf(f) >= 0));
-chk('beginners: yes', /^Yes\./.test(answer('Can beginners use it?')) && /^Yes\./.test(answer('Can advanced bettors use it?')));
+chk('beginners and advanced: yes, both', /^Yes\./.test(answer('Can beginners and advanced bettors both use it?')) && /For advanced bettors: Fair lines/.test(answer('Can beginners and advanced bettors both use it?')));
+chk('what is free: no account, no card, and what Full Access adds', /^No account, no card/.test(answer('What can I use for free?')) && /Full Access adds/.test(answer('What can I use for free?')));
 chk('the FAQ is short: at most a dozen product questions', QS.length <= 12, QS.length);
 has(FAQ, 'Re-check my subscription now', 'the self-serve billing re-check survives');
 has(FAQ, 'reopen signup', 'and the confirmation-email help');
@@ -454,11 +477,12 @@ chk('"See how it works" is the only secondary action in the hero', (HERO.match(/
 /* ======================================================================== */
 /* 12. THE HIERARCHY                                                        */
 /* ======================================================================== */
-const ORDER = ['top', 'why', 'how', 'coach', 'film', 'history', 'depth', 'research', 'pricing', 'trust', 'faq', 'start'];
+const ORDER = ['top', 'free', 'research', 'why', 'how', 'coach', 'film', 'history', 'depth', 'pricing', 'trust', 'faq', 'start'];
 ORDER.forEach(id => has(IDX, 'id="' + id + '"', 'the ' + id + ' section exists'));
-chk('hero → why results aren\'t enough → the loop → Process Coach → Film Room → history → depth → research → value + pricing → trust → FAQ → close',
+chk('hero → free research → the live research preview → why results aren\'t enough → the loop → Process Coach → Film Room → history → depth → free + pricing → trust → FAQ → close',
   ORDER.every((id, i) => i === 0 || IDX.indexOf('id="' + id + '"') > IDX.indexOf('id="' + ORDER[i - 1] + '"')));
-chk('every section earns its place: eleven sections and the hero, no more', (IDX.match(/<section\b/g) || []).length === 11, (IDX.match(/<section\b/g) || []).length);
+chk('every section earns its place: twelve sections and the hero, no more', (IDX.match(/<section\b/g) || []).length === 12, (IDX.match(/<section\b/g) || []).length);
+chk('free research comes before any subscription pitch', IDX.indexOf('id="free"') < IDX.indexOf('id="why"') && IDX.indexOf('id="free"') < IDX.indexOf('id="pricing"'));
 ['id="game"', 'id="ev"', 'id="evSlider"', 'id="tabs"', 'id="lpEvData"'].forEach(x =>
   lacks(IDX, x, 'the technical walk-through lives on /methodology/: ' + x));
 const FIN = section('start');
@@ -508,10 +532,10 @@ has(IDX, 'data-ed-report', 'a visitor can report a problem');
 /* ======================================================================== */
 /* 15. SEARCH AND SOCIAL                                                    */
 /* ======================================================================== */
-has(IDX, '<title>EdgeDesk Sports | Football Research + Bet Tracking</title>', 'the title names both halves of the product');
+has(IDX, '<title>EdgeDesk Sports | Free Football Research + Bet Tracking</title>', 'the title names both halves of the product, free research first');
 const DESC = (IDX.match(/<meta name="description" content="([^"]+)"/) || [])[1] || '';
 chk('the description is search-length', DESC.length >= 110 && DESC.length <= 160, DESC.length);
-chk('and names what it researches and tracks', /NFL/.test(DESC) && /college football/.test(DESC) && /player props/.test(DESC) && /log your bets/.test(DESC) && /Research, not picks/.test(DESC));
+chk('and names what it researches and tracks, free first', /^Free /.test(DESC) && /NFL/.test(DESC) && /college football/.test(DESC) && /player props/.test(DESC) && /log your bets/.test(DESC) && /Research, not picks/.test(DESC));
 has(IDX, '<link rel="canonical" href="https://edgedesksports.com/">', 'the canonical URL is the root');
 ['og:title', 'og:description', 'og:url', 'og:type', 'twitter:card', 'twitter:title', 'twitter:description']
   .forEach(k => chk('social metadata: ' + k, new RegExp('(property|name)="' + k + '" content="[^"]{5,}"').test(IDX)));

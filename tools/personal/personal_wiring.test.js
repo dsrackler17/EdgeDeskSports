@@ -114,8 +114,10 @@ chk('player props are part of Full Access', X.FEATURES.indexOf('Player props') >
 chk('the paywall renders the same list', /\(\(X&&X\.FEATURES\)\|\|\[\]\)\.map\(/.test(APP));
 /* the offer sits under the hero button rather than in the bar, so a reader
    sees what the free week becomes before any button, at every width */
+/* free research first: the line under the two hero actions says the research
+   needs no card, then what the free week of Full Access becomes */
 chk('the hero says what follows the free week, right under its button',
-  /id="heroStart"[\s\S]{0,400}<p class="microcta"><span><b><span data-ed-price="trial">7 days free<\/span><\/b><\/span><span>Then <span data-ed-price="price">\$49\.99<\/span>\/month<\/span><span>Cancel anytime<\/span>/.test(IDX));
+  /id="heroCta"[\s\S]{0,200}<p class="microcta"><span><b>Free research, no card<\/b><\/span><span>Full Access <span data-ed-price="trial">7 days free<\/span><\/span><span>Then <span data-ed-price="price">\$49\.99<\/span>\/month<\/span><span>Cancel anytime<\/span>/.test(IDX));
 chk('the in-app paywall states the trial line for a new account and promises no trial to a lapsed one',
   /fresh\?X\.CTA_LINE:X\.RESUBSCRIBE_LINE/.test(APP) && /\(fresh\?'<a class="pg-btn" href="\.\/index\.html#subscribe">Start '\+\(X\?X\.TRIAL_DAYS:''\)\+' days free<\/a>'/.test(APP)
   && /<span class="per">then '\+stEsc\(price\)\+'\/month<\/span>/.test(APP));
