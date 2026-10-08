@@ -246,13 +246,22 @@ const libPairs = []; Object.keys(CE.TRANSITIONS).forEach((a) => CE.TRANSITIONS[a
 chk('S the library and the database share one transition matrix', JSON.stringify(pairs.sort()) === JSON.stringify(libPairs.sort()), { sql: pairs, lib: libPairs });
 chk('S the SQL and the library ban the same core phrases', ['best bets', 'guarantee', 'free money', 'sure thing', 'risk.?free', 'take the points'].every((t) => SQL.indexOf(t.replace('best bets', 'best bets?')) >= 0 || SQL.indexOf(t) >= 0));
 chk('S the Edge Function carries the core and the owner check verbatim', !INLINE.drifted());
-const publicFiles = [page, js, SQL, fs.readFileSync(path.join(ROOT, 'lib', 'content_engine.js'), 'utf8'), fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'content-engine.yml'), 'utf8')].join('\n');
+const publicFiles = [page, js, SQL, fs.readFileSync(path.join(ROOT, 'lib', 'content_engine.js'), 'utf8'), fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'content-engine.yml'), 'utf8'),
+  fs.readFileSync(path.join(ROOT, 'docs', 'content-engine', 'README.md'), 'utf8')]
+  /* the tests are public too; the guard lines themselves are the only exception */
+  .concat(fs.readdirSync(__dirname).filter((f) => /\.js$/.test(f)).map((f) => fs.readFileSync(path.join(__dirname, f), 'utf8')
+    .split('\n').filter((l) => !/^chk\('(S no publisher business data|F the seed carries no contact)/.test(l)).join('\n'))).join('\n');
 chk('S no publisher business data in any public file (contacts, view benchmarks)', !/\b351\b|45[–-]48|@stadiumrant\.com|\bSteven\b/i.test(publicFiles));
 const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'content-engine.yml'), 'utf8');
 chk('S the workflow reads only, and runs the job only on schedule or by hand', /permissions:\n  contents: read/.test(wf) && /github\.event_name == 'schedule'/.test(wf) && !/contents: write|git push/.test(wf));
 const fnSrc = fs.readFileSync(INLINE.TARGET, 'utf8');
-chk('S the Edge Function names no door that approves, sends or publishes', !/content_engine_article_(approve|transition|review)/.test(fnSrc));
-chk('S the job names no door that approves, sends or publishes', !/content_engine_article_(approve|transition|review)/.test(fs.readFileSync(path.join(__dirname, 'run.js'), 'utf8')));
+chk('S the Edge Function names no door that approves, reviews or publishes', !/content_engine_article_(approve|transition|review)/.test(fnSrc));
+const runSrc = fs.readFileSync(path.join(__dirname, 'run.js'), 'utf8');
+chk('S the weekly job and its workflow never reach email', !/send_claim|send_result|resend|RESEND/i.test(runSrc + wf));
+const sendNowSrc = (/async function sendNow\([\s\S]*?\n  \}\n/.exec(js) || [''])[0];
+chk('S the page emails only after the owner confirms the address', sendNowSrc.indexOf('window.confirm(') > 0 && sendNowSrc.indexOf('window.confirm(') < sendNowSrc.indexOf("action: 'send'")
+  && /if \(!ok\) return;/.test(sendNowSrc) && (js.match(/action: 'send'/g) || []).length === 1);
+chk('S the job names no door that approves, sends or publishes', !/content_engine_article_(approve|transition|review)/.test(runSrc));
 
 failures.forEach((f) => console.log('  × ' + f));
 console.log((fail ? 'FAIL' : 'PASS') + ' | content engine core | ' + pass + ' passed, ' + fail + ' failed');

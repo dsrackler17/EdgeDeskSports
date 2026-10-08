@@ -1,5 +1,6 @@
 # Deploy the Content Engine's Edge Function (content_engine): the AI editorial
-# pass and the trending-news fetch for the owner's /admin/content/ page.
+# pass, the trending-news fetch, and the owner's Send to a publisher contact
+# for the owner's /admin/content/ page.
 #
 # MANUAL ON PURPOSE (workflow_dispatch), like every deploy here. This workflow
 # never touches the database: supabase/content_engine.sql is applied by hand in
@@ -20,6 +21,8 @@
 #   ANTHROPIC_API_KEY        optional — without it the page's AI buttons say
 #                            "not configured" and the deterministic draft stands
 #   CONTENT_ENGINE_MODEL     optional — defaults to claude-opus-5-5
+#   RESEND_API_KEY           for Send (already set for the newsletter) — without
+#                            it Send says "not configured"; export still works
 # The function holds no service-role key and needs none.
 name: Deploy content engine function
 
@@ -74,4 +77,4 @@ jobs:
           PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
         run: |
           supabase functions deploy content_engine --project-ref "$PROJECT_REF" --no-verify-jwt
-          echo "**content_engine** deployed. Set ANTHROPIC_API_KEY on the project to enable AI rewrites." >> "$GITHUB_STEP_SUMMARY"
+          echo "**content_engine** deployed. Set ANTHROPIC_API_KEY on the project to enable AI rewrites; Send uses RESEND_API_KEY. Redeploy the newsletter function too, so its webhook ignores these emails' events." >> "$GITHUB_STEP_SUMMARY"

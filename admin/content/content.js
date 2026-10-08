@@ -8,8 +8,12 @@
    weekly job and the Edge Function run. The Edge Function (content_engine)
    does the two things a browser must not: call Claude and fetch the feeds.
 
-   Nothing on this page sends an email or publishes anything. “Record as
-   sent” records what the owner did by hand.
+   Nothing on this page publishes anything, and nothing is ever emailed on its
+   own. The one email is the owner's: “Send to <contact>” in the publishing
+   queue, after a confirmation naming the address, of the approved version
+   only, to a contact on the article's publisher (the database checks every
+   one of those). “Record a send made elsewhere” records a send the owner made
+   from their own mail.
    =========================================================================== */
 (function () {
   'use strict';
@@ -502,6 +506,7 @@
   }
   $('pCols').onclick = function (ev) { var b = ev.target.closest('button[data-open]'); if (b) openQueueItem(b.getAttribute('data-open')).catch(function (e) { fail('appMsg', e); }); };
   async function openQueueItem(id) {
+    if (!ST.publishers.length) await loadPublishersData();
     var row = await rpc('content_engine_article', { p_id: id });
     ST.art = row;
     var st = row.status;
@@ -511,7 +516,7 @@
     if (st === 'draft') acts += '<button data-q="edit">Edit</button>';
     if (st === 'in_review') acts += '<button data-q="review">Review</button>';
     if (st === 'approved') acts += '<button data-q="ready">Mark ready to send</button><button class="g" data-q="toreview">Back to review</button>';
-    if (st === 'ready_to_send') acts += '<button data-q="sent">Record as sent…</button><button class="g" data-q="unready">Back to approved</button>';
+    if (st === 'ready_to_send') acts += '<button class="g" data-q="sent">Record a send made elsewhere…</button><button class="g" data-q="unready">Back to approved</button>';
     if (st === 'sent') acts += '<button data-q="published">Mark published…</button>';
     if (st === 'archived' && !row.sent_at) acts += '<button class="g" data-q="restore">Restore to draft</button>';
     if (st !== 'archived') acts += '<button class="d" data-q="archive">Archive</button>';
@@ -522,11 +527,19 @@
       + '<button class="g" data-q="copyhtml"' + (exportable ? '' : ' disabled') + '>Copy HTML</button><button class="g" data-q="seo"' + (exportable ? '' : ' disabled') + '>Download SEO sheet</button></div>'
       + (exportable ? '' : '<p class="note">Export unlocks once the owner approves this exact version. Use the editor’s preview until then.</p>')
       + '<h3>Tagged referral link</h3><div class="sub mono" style="overflow-wrap:anywhere">' + esc(utm) + '</div><p class="note">Every EdgeDesk link in the export carries utm_source=' + esc(row.publisher_profile ? row.publisher_profile.utm_source : 'direct') + ', utm_medium=publisher and utm_campaign=' + esc(row.campaign_code) + ': visits, sign-ups, trials and paid conversions through it appear under Performance (counts only).</p>'
+      + sendPanel(row)
       + (row.deliveries && row.deliveries.length ? '<h3>Sends recorded</h3>' + row.deliveries.map(function (d) { return '<div class="sub">' + when(d.delivered_at) + ' · ' + esc(d.method) + (d.note ? ' · ' + esc(d.note) : '') + '</div>'; }).join('') : '')
       + '<div class="msg" id="qMsg" role="status" aria-live="polite"></div></div>';
+    if ($('sTo')) $('sTo').onchange = function () {
+      /* the button and the greeting follow the chosen contact */
+      var o = this.options[this.selectedIndex], nm = o.getAttribute('data-name') || '', fn = firstName(nm);
+      var btn = document.querySelector('#pDetail button[data-q="email"]'); if (btn) btn.textContent = 'Send to ' + (fn || this.value);
+      var n = $('sNote'); n.value = n.value.replace(/^Hi [^,\n]*,/, 'Hi ' + (fn || 'there') + ',');
+    };
     $('pDetail').onclick = async function (ev) {
       var b = ev.target.closest('button[data-q]'); if (!b) return;
       var q = b.getAttribute('data-q');
+      if (q === 'email' || q === 'emailtest') { await sendNow(row, q === 'emailtest', b); return; }
       var a = { format: row.format, title: row.title, slug: row.slug, meta_description: row.meta_description, standfirst: row.standfirst, primary_keyword: row.primary_keyword,
         secondary_keywords: row.secondary_keywords, sections: row.sections };
       try {
@@ -562,6 +575,68 @@
         await loadQueue(); await openQueueItem(id); say('qMsg', 'ok', 'Done.');
       } catch (e) { fail('qMsg', e); }
     };
+  }
+
+  /* ── SEND TO PUBLISHER: the owner's own send ───────────────────────────
+     Only for the approved version; a real send only once it is marked ready;
+     only to a contact on the publisher's profile; the page names the address
+     and asks first. The database checks all of it again (content_engine_send_claim). */
+  function firstName(n) { return String(n || '').trim().split(/\s+/)[0] || ''; }
+  function sendPanel(row) {
+    var st = row.status;
+    if (['approved', 'ready_to_send', 'sent', 'published'].indexOf(st) < 0) return '';
+    var pub = publisherById(row.publisher_id);
+    var contacts = ((pub && pub.contacts) || []).filter(function (c) { return c && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(c.email || '').trim()); });
+    var sender = ST.overview && ST.overview.sender;
+    var sends = row.sends || [];
+    var hist = sends.length ? '<div class="sub" style="margin-top:8px">' + sends.map(function (x) {
+      return (x.is_test ? 'Test to ' : 'To ') + esc(x.recipient_name ? x.recipient_name + ' <' + x.recipient + '>' : x.recipient) + ' · ' + esc(x.status) + ' · ' + esc(ago(x.finished_at || x.claimed_at)) + (x.error ? ' · ' + esc(x.error) : '');
+    }).join('<br>') + '</div>' : '';
+    if (st === 'sent' || st === 'published') return sends.length ? '<h3>Emails</h3>' + hist : '';
+    if (!row.publisher_id) return '<h3>Send to publisher</h3><p class="note">This article has no publisher.</p>';
+    if (!contacts.length) return '<h3>Send to ' + esc(pub ? pub.name : 'publisher') + '</h3><p class="note">Add ' + esc(pub ? pub.name : 'the publisher') + '’s contact (name and email) under <b>Publishers</b> to send it from here.</p>' + hist;
+    var c0 = contacts[0];
+    var note = 'Hi ' + (firstName(c0.name) || 'there') + ',\n\n'
+      + 'Here is “' + row.title + '” from EdgeDesk' + (pub ? ', ready for ' + pub.name : '') + '. The article is below, and attached as Markdown and HTML, with an SEO sheet (headline, slug, meta description and keywords).\n\n'
+      + 'Happy to adjust anything before it runs.\n\n'
+      + 'Thanks,\n' + ((sender && sender.name) || '');
+    return '<h3>Send to ' + esc(pub.name) + '</h3><div class="card" style="background:var(--bg)">'
+      + '<div class="row"><div class="f"><label for="sTo">To</label><select id="sTo">' + contacts.map(function (c, i) {
+          return '<option value="' + esc(String(c.email).trim().toLowerCase()) + '"' + (i === 0 ? ' selected' : '') + ' data-name="' + esc(c.name || '') + '">' + esc((c.name ? c.name + ' — ' : '') + String(c.email).trim()) + (c.role ? ' (' + esc(c.role) + ')' : '') + '</option>';
+        }).join('') + '</select></div>'
+      + '<div class="f" style="flex:2"><label for="sSubj">Subject</label><input id="sSubj" maxlength="150" value="' + esc(row.title) + '"></div></div>'
+      + '<div class="f" style="margin-top:8px"><label for="sNote">Note (above the article)</label><textarea id="sNote" style="min-height:130px">' + esc(note) + '</textarea></div>'
+      + '<div class="sub" style="margin-top:6px">From ' + esc(sender ? sender.from : 'the engine’s sender (Settings)') + ' · replies to ' + esc(sender ? sender.reply_to : '—') + ' · the approved version, with the tagged EdgeDesk link and the disclaimer</div>'
+      + '<div class="row" style="margin-top:10px"><button class="g" data-q="emailtest" type="button">Send a test to me</button>'
+      + '<button data-q="email" type="button"' + (st === 'ready_to_send' ? '' : ' disabled title="mark it ready to send first"') + '>Send to ' + esc(c0.name ? firstName(c0.name) : c0.email) + '</button></div>'
+      + (st === 'approved' ? '<p class="note">Mark it ready to send to unlock the send. A test to yourself works now.</p>' : '')
+      + hist + '</div>';
+  }
+  async function sendNow(row, test, btn) {
+    var sel = $('sTo'), to = test ? String(S.email() || '').toLowerCase() : (sel && sel.value);
+    var name = test ? 'you' : (sel && sel.options[sel.selectedIndex].getAttribute('data-name')) || to;
+    if (!to) { say('qMsg', 'err', test ? 'Your sign-in address is unknown: sign in again.' : 'Choose a recipient.'); return; }
+    var subj = $('sSubj').value.trim(), note = $('sNote').value;
+    var ok = window.confirm(test
+      ? 'Send a TEST of “' + row.title + '” to your own address (' + to + ')? It does not count as sent.'
+      : 'Email “' + row.title + '” to ' + name + ' <' + to + '> now?\n\nThis sends the approved version, with the article attached, from ' + ((ST.overview && ST.overview.sender && ST.overview.sender.from) || 'the engine’s sender') + '.');
+    if (!ok) return;
+    btn.disabled = true; say('qMsg', '', test ? 'Sending the test…' : 'Sending to ' + name + '…');
+    try {
+      var r = await S.invoke(FN, { action: 'send', article_id: row.id, recipient: to, subject: subj, note: note, test: !!test }, { timeoutMs: 60000 });
+      if (r && r.ok) {
+        if (!test) { await loadQueue(); await openQueueItem(row.id); loadOverview().catch(function () {}); }
+        say('qMsg', 'ok', r.already ? 'Already sent to ' + to + ' — nothing was sent twice.' : (test ? 'Test sent to ' + to + '.' : 'Sent to ' + name + ' <' + to + '>. Recorded as sent.')
+          + (r.retried ? ' It went as first written: edits made after the unanswered try were not applied.' : '') + (r.warning ? ' ' + r.warning : ''));
+        return;
+      }
+      var why = { email_not_configured: 'Email is not configured: RESEND_API_KEY is not set on the Supabase project.', not_ready: 'Mark it ready to send first.',
+        not_approved: 'Only the approved version can be sent.', changed_since_loaded: 'The article changed since you opened it: reload it.', not_a_contact: 'That address is not one of the publisher’s contacts.',
+        test_goes_to_you: 'A test goes only to your own sign-in address.', no_sender: 'Set an edgedesksports.com sender in Settings.', publisher_inactive: 'This publisher is paused or ended.',
+        provider_rejected: 'Resend refused it: ', outcome_unknown: '' }[r && r.reason];
+      say('qMsg', 'err', (why != null ? why : 'Not sent: ' + (r && r.reason) + '. ') + (r && r.detail ? r.detail : ''));
+    } catch (e) { fail('qMsg', e); }
+    finally { btn.disabled = false; }
   }
 
   /* ======================================================================
@@ -723,12 +798,24 @@
       + '<div class="f" style="flex:2"><label>Landing page for tagged links</label><input id="sLand" value="' + esc(s.landing_url) + '"></div>'
       + '<label class="chk"><input type="checkbox" id="sSched"' + (s.schedule_enabled ? ' checked' : '') + '> weekly job enabled</label>'
       + '<div class="f" style="flex:0 0 auto"><label>&nbsp;</label><button id="sSave" type="button">Save</button></div></div><div class="msg" id="sMsg"></div>'
+      + '<h3>Send to publisher: the sender</h3><div class="row"><div class="f"><label>Sender name</label><input id="sSName" maxlength="60" value="' + esc(s.sender_name || '') + '" placeholder="' + esc(ST.overview.sender ? ST.overview.sender.name : '') + '"></div>'
+      + '<div class="f"><label>Sender address (@edgedesksports.com)</label><input id="sSEmail" value="' + esc(s.sender_email || '') + '" placeholder="' + esc(ST.overview.sender ? ST.overview.sender.email : '') + '"></div>'
+      + '<div class="f"><label>Replies go to</label><input id="sSReply" value="' + esc(s.reply_to_email || '') + '" placeholder="' + esc(ST.overview.sender ? ST.overview.sender.reply_to : '') + '"></div>'
+      + '<div class="f" style="flex:0 0 auto"><label>&nbsp;</label><button class="g" id="sSSave" type="button">Save sender</button></div></div>'
+      + '<p class="note">Now sending as <b>' + esc(ST.overview.sender ? ST.overview.sender.from : 'no sender set') + '</b>' + (s.sender_email ? '' : ' (the outbound engine’s sender, until you set one here)') + '. Leave a field empty to use the outbound engine’s.</p>'
       + '<p class="note">The weekly job (.github/workflows/content-engine.yml) discovers topics and drafts at most this many top opportunities above the priority floor, checks them, and puts the passing ones in your review queue. It never approves, sends or publishes. Budgets are enforced by the database before every AI call or feed fetch.</p>';
     $('sSave').onclick = async function () {
       try {
         var r = await rpc('content_engine_settings_save', { p: { drafts_per_run: +$('sDrafts').value, min_priority: +$('sMin').value, llm_calls_per_day: +$('sLlm').value, fetch_calls_per_day: +$('sFetch').value,
           default_publisher: $('sPub').value, landing_url: $('sLand').value.trim(), schedule_enabled: $('sSched').checked } });
         say('sMsg', r.ok ? 'ok' : 'err', r.ok ? 'Saved.' : 'Not saved: ' + (r.detail || r.reason));
+      } catch (e) { fail('sMsg', e); }
+    };
+    $('sSSave').onclick = async function () {
+      try {
+        var r = await rpc('content_engine_sender_save', { p: { sender_name: $('sSName').value, sender_email: $('sSEmail').value, reply_to_email: $('sSReply').value } });
+        say('sMsg', r.ok ? 'ok' : 'err', r.ok ? 'Sender saved: ' + (r.sender ? r.sender.from : '—') + '.' : 'Not saved: ' + (r.detail || r.reason));
+        if (r.ok) await loadSettings();
       } catch (e) { fail('sMsg', e); }
     };
     var ov = ST.overview;
@@ -740,8 +827,9 @@
     }).join('') || '<tr><td colspan="4" class="dim">Nothing has failed recently.</td></tr>') + '</table>';
     try {
       var st = await S.invoke(FN, { action: 'status' }, { timeoutMs: 20000 });
-      $('aiStatus').innerHTML = st.ai_configured ? 'AI drafting is configured (model <span class="mono">' + esc(st.model) + '</span>). Every AI draft is checked against the research before it is kept.'
-        : 'AI drafting is <b>not configured</b>: set ANTHROPIC_API_KEY on the content_engine Edge Function. Until then every draft is EdgeDesk’s deterministic writer, which is complete on its own.';
+      $('aiStatus').innerHTML = (st.ai_configured ? 'AI drafting is configured (model <span class="mono">' + esc(st.model) + '</span>). Every AI draft is checked against the research before it is kept.'
+        : 'AI drafting is <b>not configured</b>: set ANTHROPIC_API_KEY on the content_engine Edge Function. Until then every draft is EdgeDesk’s deterministic writer, which is complete on its own.')
+        + '<br>' + (st.email_configured ? 'Send to publisher is configured (Resend).' : 'Send to publisher is <b>not configured</b>: set RESEND_API_KEY on the Supabase project (the newsletter’s key works).');
     } catch (e) { $('aiStatus').textContent = 'The content_engine Edge Function did not answer (' + S.message(e) + '). Deploy it to enable AI rewrites and trending headlines; everything else works without it.'; }
   }
 

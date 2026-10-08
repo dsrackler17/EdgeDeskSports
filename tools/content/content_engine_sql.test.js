@@ -26,6 +26,13 @@
      P  PERF      first-party counts joined on the campaign code, owners
                   excluded, no identity returned; Search Console evidence is
                   EdgeDesk's own exposure
+     E  EMAIL     Send to publisher: only an owner; only the approved hash;
+                  a real send only once ready and only to a contact on the
+                  publisher's profile, a test only to the owner's own address;
+                  claimed before the provider is called, an unanswered claim
+                  answered with the same key, one real send per person; the
+                  result records a delivery and `sent`; a send is a record;
+                  an install from before Send widens the delivery methods
 
    Run: node tools/content/content_engine_sql.test.js
    =========================================================================== */
@@ -75,7 +82,15 @@ const statusOf = (id) => one(`select status from content_engine.articles where i
 try {
   ['billing.sql', 'stripe_webhook.sql', 'referral_codes.sql', 'personal_research.sql', 'affiliates.sql', 'growth.sql', 'funnel.sql', 'growth_outbound.sql', 'growth_engine.sql']
     .forEach((f) => db.applyFileAtomic(path.join(PG.ROOT, 'supabase', f)));
+  /* an install from before Send to publisher: no 'email' delivery method */
+  const OLD = SQL.replace(/^  method        text not null check \(method in \('manual_email', 'email', /m, "  method        text not null check (method in ('manual_email', ")
+    .replace(/-- an install from before Send: widen[\s\S]*?end \$c\$;\n/, '');
+  chk('F (setup) the pre-Send variant differs', OLD !== SQL);
+  db.applyText(OLD);
+  const methodDef = () => one(`select pg_get_constraintdef(oid) from pg_constraint where conrelid = 'content_engine.deliveries'::regclass and contype = 'c' and pg_get_constraintdef(oid) like '%manual_email%';`);
+  chk('F the pre-Send install has no email delivery method', !/'email'/.test(methodDef()));
   const rep1 = db.applyFileAtomic(FILE);
+  chk('F … re-applying the file widens it in place', /'email'/.test(methodDef()));
   const rep2 = db.applyFileAtomic(FILE);
   const bad = (r) => r.split('\n').filter((l) => l && !/\|ok\|/.test(l));
   chk('F the report reads ok on every row', bad(rep1).length === 0 && rep1.split('\n').length >= 9, bad(rep1));
@@ -203,6 +218,61 @@ try {
   chk('S articles are never deleted', !!fails(() => one(`delete from content_engine.articles where id = ${lit(c3.id)};`)));
   chk('S a new article cannot be inserted already approved', !!fails(() => one(`insert into content_engine.articles (opportunity_id, format, title, slug, sections, generator, research_hash, campaign_code, created_by, status)
       values (${lit(u1.id)}, 'cfb_weekly_preview', 'College Football Week 6 Predictions', 'x', '[{"key":"intro","body":"x"}]', 'template', 'h', 'ce_x_y', 'owner', 'approved');`)));
+
+  /* ── E email: Send to publisher ──────────────────────────────────── */
+  const ue = svc(`select public.content_engine_opportunity_upsert(${lit(JSON.stringify(opp('cfb:2026:w6:upset_watch', { kind: 'upset_watch', title: 'College Football Week 6 Upset Watch' })))}::jsonb, null);`);
+  const em = own(`select public.content_engine_article_create(${lit(ue.id)}, ${lit(SR.id)}, 'cfb_weekly_preview', 'full_slate', ${lit(JSON.stringify(content({ title: 'College Football Week 6 Upset Watch: Underdogs With a Real Chance' })))}::jsonb, null);`);
+  const EM = em.id;
+  own(`select public.content_engine_article_submit(${lit(EM)});`);
+  own(`select public.content_engine_article_review(${lit(EM)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
+  chk('E (setup) approved', own(`select public.content_engine_article_approve(${lit(EM)}, ${lit(hashOf(EM))});`).ok);
+  const claim = (who, to, test, hash) => J(db[who === 'svc' ? 'service' : 'as'](...(who === 'svc' ? [] : [who]),
+    `select public.content_engine_send_claim(${lit(EM)}, ${lit(to)}, null, ${lit(hash === undefined ? hashOf(EM) : hash)}, ${test ? 'true' : 'false'});`));
+  const claimAs = (uid, to, test, hash) => J(db.as(uid, `select public.content_engine_send_claim(${lit(EM)}, ${lit(to)}, null, ${lit(hash === undefined ? hashOf(EM) : hash)}, ${test ? 'true' : 'false'});`));
+  chk('E the service role cannot send', /permission denied/.test(fails(() => db.service(`select public.content_engine_send_claim(${lit(EM)}, 'editor@example.test', null, ${lit(hashOf(EM))}, false);`)) || ''));
+  chk('E an affiliate admin cannot send', /owner only/.test(fails(() => claimAs(ADMIN, 'editor@example.test', false)) || ''));
+  chk('E a real send waits for “ready to send”', claimAs(OWNER, 'editor@example.test', false).reason === 'not_ready');
+  chk('E a test before that goes only to the owner’s own address', claimAs(OWNER, 'editor@example.test', true).reason === 'test_goes_to_you');
+  const t1 = claimAs(OWNER, 'owner@edgedesk.test', true);
+  chk('E a test to the owner is claimed, from the edgedesksports.com sender', t1.ok && t1.test === true && /^[^<]+ <[a-z0-9._%+-]+@edgedesksports\.com>$/.test(t1.message.from) && t1.message.to === 'owner@edgedesk.test');
+  chk('E … and its success changes no status', own(`select public.content_engine_send_result(${t1.send_id}, 'resend-test-1', null);`).state === 'sent' && statusOf(EM) === 'approved'
+    && one(`select count(*) from content_engine.deliveries where article_id = ${lit(EM)};`) === '0');
+  own(`select public.content_engine_article_transition(${lit(EM)}, 'ready_to_send', '{}'::jsonb);`);
+  chk('E only the approved hash on screen', claimAs(OWNER, 'editor@example.test', false, 'deadbeef').reason === 'changed_since_loaded');
+  chk('E only a contact on the publisher’s profile', claimAs(OWNER, 'someone@else.test', false).reason === 'not_a_contact');
+  const r1 = J(db.as(OWNER, `select public.content_engine_send_claim(${lit(EM)}, 'Editor@Example.test', null, ${lit(hashOf(EM))}, false, 'Hi Ed, here it is.');`));
+  chk('E a contact (any case) is claimed, with a key, before anything is sent', r1.ok && r1.idempotency_key && /^edgedesk-content-[0-9a-f]{32}$/.test(r1.idempotency_key)
+    && r1.message.to === 'editor@example.test' && r1.recipient_name === 'Editor' && one(`select status from content_engine.sends where id = ${r1.send_id};`) === 'claimed');
+  const r2 = J(db.as(OWNER, `select public.content_engine_send_claim(${lit(EM)}, 'editor@example.test', 'Another subject', ${lit(hashOf(EM))}, false, 'An edited note');`));
+  chk('E pressed again before an answer: the same send and the same key', r2.ok && r2.retry && r2.send_id === r1.send_id && r2.idempotency_key === r1.idempotency_key);
+  chk('E … and the same message, whatever was typed since (Resend refuses a key reused with another body)', r1.message.note === 'Hi Ed, here it is.' && r2.message.note === 'Hi Ed, here it is.' && r2.message.subject === r1.message.subject);
+  chk('E the job never learns a recipient', !/editor@example/.test(db.service(`select public.content_engine_article(${lit(EM)});`)));
+  chk('E a send is a record: no field but its outcome changes', !!fails(() => one(`update content_engine.sends set subject = 'other' where id = ${r1.send_id};`))
+    && !!fails(() => one(`delete from content_engine.sends where id = ${r1.send_id};`)) && !!fails(() => one(`truncate content_engine.sends;`)));
+  const res = own(`select public.content_engine_send_result(${r1.send_id}, 're_abc123', null);`);
+  chk('E delivered: `sent`, with an email delivery row at the sent hash', res.ok && res.state === 'sent' && statusOf(EM) === 'sent'
+    && one(`select method || '|' || (content_hash = (select content_hash from content_engine.articles where id = ${lit(EM)}))::text from content_engine.deliveries where article_id = ${lit(EM)};`) === 'email|true');
+  chk('E a finished send does not change', !!fails(() => one(`update content_engine.sends set status = 'failed' where id = ${r1.send_id};`)));
+  chk('E the result is recorded once', own(`select public.content_engine_send_result(${r1.send_id}, 're_other', null);`).already === true);
+  chk('E sent content cannot be sent again (it is no longer ready)', claimAs(OWNER, 'editor@example.test', false).reason === 'not_ready');
+  /* a failure, then a second try */
+  const ue2 = svc(`select public.content_engine_opportunity_upsert(${lit(JSON.stringify(opp('nfl:2026:w5:weekly_preview', { league: 'nfl', week: 5, title: 'NFL Week 5 Predictions' })))}::jsonb, null);`);
+  const em2 = own(`select public.content_engine_article_create(${lit(ue2.id)}, ${lit(SR.id)}, 'nfl_weekly_preview', 'full_slate', ${lit(JSON.stringify(content({ title: 'NFL Week 5 Predictions: Biggest Games and Potential Upsets' })))}::jsonb, null);`).id;
+  own(`select public.content_engine_article_submit(${lit(em2)});`);
+  own(`select public.content_engine_article_review(${lit(em2)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
+  own(`select public.content_engine_article_approve(${lit(em2)}, ${lit(hashOf(em2))});`);
+  own(`select public.content_engine_article_transition(${lit(em2)}, 'ready_to_send', '{}'::jsonb);`);
+  const f1 = J(db.as(OWNER, `select public.content_engine_send_claim(${lit(em2)}, 'editor@example.test', 'NFL Week 5', ${lit(hashOf(em2))}, false);`));
+  own(`select public.content_engine_send_result(${f1.send_id}, null, 'refused by Resend (422): invalid');`);
+  chk('E a refused send is recorded failed; the article stays ready', one(`select status from content_engine.sends where id = ${f1.send_id};`) === 'failed' && statusOf(em2) === 'ready_to_send'
+    && one(`select count(*) from content_engine.events where kind = 'send_failed';`) === '1');
+  const f2 = J(db.as(OWNER, `select public.content_engine_send_claim(${lit(em2)}, 'editor@example.test', 'NFL Week 5', ${lit(hashOf(em2))}, false);`));
+  chk('E … and can be tried again, with a new key', f2.ok && f2.send_id !== f1.send_id && f2.idempotency_key !== f1.idempotency_key);
+  chk('E a subject that spans lines is refused', J(db.as(OWNER, `select public.content_engine_send_claim(${lit(em2)}, 'editor@example.test', E'two\\nlines', ${lit(hashOf(em2))}, false);`)).reason !== undefined);
+  chk('E the sender: the outbound engine’s until one is set', own('select public.content_engine_overview();').sender.from === 'Davis <davis@edgedesksports.com>');
+  chk('E a sender outside edgedesksports.com is refused', own(`select public.content_engine_sender_save('{"sender_email": "me@gmail.com"}'::jsonb);`).ok === false);
+  const ss = own(`select public.content_engine_sender_save('{"sender_name": "Davis Rackler", "sender_email": "davis@edgedesksports.com", "reply_to_email": "dsrackler@example.com"}'::jsonb);`);
+  chk('E the owner sets the sender and the reply-to', ss.ok && ss.sender.from === 'Davis Rackler <davis@edgedesksports.com>' && ss.sender.reply_to === 'dsrackler@example.com');
 
   /* ── L logs ───────────────────────────────────────────────────────── */
   ['revisions', 'deliveries', 'events', 'benchmarks'].forEach((t) => {

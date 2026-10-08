@@ -6,7 +6,7 @@
 2. Scores them.
 3. Writes an SEO brief and a draft from EdgeDesk's own numbers.
 4. Checks every claim against the research.
-5. Takes the draft through an owner-only review to a publisher-ready export.
+5. Takes the draft through an owner-only review to a publisher-ready export, or to the publisher's inbox when the owner presses **Send**.
 
 It never invents a number, never makes a pick, and never sends or publishes anything by itself.
 
@@ -75,10 +75,12 @@ Search Console (existing import) ───────────────�
 2. **Owners.** The Content Engine's owners are the outbound owners. If you are not one yet, run `select growth_outbound.grant_owner('you@example.com');` in the SQL editor.
 3. **Deploy the function.** Run the **Deploy content engine function** workflow (manual), or deploy from a terminal: `supabase functions deploy content_engine --no-verify-jwt`.
    - Optional: set `ANTHROPIC_API_KEY` on the project (Edge Functions → Secrets).
-   - Until the function is deployed, the page still discovers, drafts, reviews and exports. AI rewrites and trending headlines say they are unavailable.
+   - **Send** uses `RESEND_API_KEY`, which the project already holds for the newsletter. Settings shows whether it is configured.
+   - Redeploy the `newsletter` function too, so its webhook ignores the events from these emails (`edgedesk=content`).
+   - Until the function is deployed, the page still discovers, drafts, reviews and exports. AI rewrites, trending headlines and Send say they are unavailable.
 4. **The weekly job.** It runs from `.github/workflows/content-engine.yml` on Tue/Wed at 13:23 UTC, or by hand. It uses secrets the repository already holds: `SB_URL`, `SB_SERVICE_ROLE`, and optionally `ANTHROPIC_API_KEY`. Without the Supabase secrets it posts a named warning and does nothing.
 5. **Publisher business data** goes into the page, never the repository (see *Privacy* below). Open **Publishers → Stadium Rant** and:
-   - add the contacts and the partnership terms;
+   - add the contacts (name and email: **Send** only goes to these addresses) and the partnership terms;
    - add the **historical benchmarks** as *user-reported* values: the average views of the publisher's recent articles, and the range for EdgeDesk's earlier matchup pieces.
 
 ---
@@ -115,9 +117,24 @@ Search Console (existing import) ───────────────�
    - the export preview.
 
    Confirm the five points (source verification, data freshness, model accuracy, SEO, compliance), then **Approve this exact version**. The approval is bound to the content hash on screen.
-6. **Publishing queue.** **Mark ready to send**, then download the Markdown (with front matter), the HTML or the SEO sheet. **Send it yourself.** Then:
-   - **Record as sent**, with the method and a note;
-   - **Mark published** when it goes live, with its URL.
+6. **Publishing queue.** Open the approved article. Download the Markdown (with front matter), the HTML or the SEO sheet if you want them. Then send it in one of two ways.
+
+   **Send from the page:**
+   1. Add the editor's name and email under **Publishers → Edit → Contacts**, once per publisher.
+   2. Optionally, press **Send a test to me**. It goes to your own sign-in address and does not count as sent.
+   3. Press **Mark ready to send**.
+   4. Choose the contact, check the subject and the note, and press **Send to …**. The page names the address and asks first.
+
+   The email contains:
+   - your note;
+   - the approved article, with its tagged link and the disclaimer;
+   - the Markdown, the HTML and the SEO sheet, attached.
+
+   It is recorded as **sent**, with a delivery row.
+
+   **Send it yourself:** use **Record a send made elsewhere…**, with the method and a note.
+
+   Then **Mark published** when it goes live, with its URL.
 7. **Performance.** First-party visits, sessions, sign-ups, trials and paid conversions through the article's tagged link appear here. Add the publisher-reported figures (page views, referral clicks) by hand.
 
 ### Formats
@@ -228,7 +245,20 @@ An edit after approval returns the article to review, and sent content is frozen
   - unpublished drafts.
 
   A test fails if any of these appears in a committed file. `content-example/` (the local example output) is git-ignored.
-- **Nothing is sent automatically.** The engine has no email or publishing code path. "Sent" is a record the owner makes, with a delivery row at the sent content hash.
+- **Nothing is sent automatically.** The only email path is the owner's **Send** button.
+  - The weekly job and its workflow have no email code; a test fails if they gain any.
+  - The database's `content_engine_send_claim` (owner only; the service role cannot call it) checks four things:
+    - the article is approved, and the content is the approved hash on screen;
+    - for a real send, the article is marked ready to send;
+    - the recipient is a contact on that publisher's profile, or, for a test, the owner's own sign-in address;
+    - the publisher is not paused.
+  - The claim is written **before** Resend is called, with one idempotency key.
+    - Pressing Send again after an unanswered try resends the same message with the same key, so it cannot arrive twice.
+    - Once an address has the article, it cannot be sent to that address again.
+  - "Sent" is then recorded with a delivery row at the sent content hash. Sends, like deliveries, cannot be edited or deleted.
+- **The sender** defaults to the outbound engine's `edgedesksports.com` sender and its reply-to. Change it in **Settings** (the database only accepts an `@edgedesksports.com` sender).
+  - Resend events from these emails carry the tag `edgedesk=content`, and the newsletter's webhook ignores them.
+  - No subscriber or reader data is ever in the email: only the article, its public tagged link and your note.
 
 ---
 
@@ -239,6 +269,7 @@ An edit after approval returns the article to review, and sent content is frozen
 | `ANTHROPIC_API_KEY` | Supabase function secrets; GitHub Actions secret | optional | Claude's editorial pass. Without it, the deterministic writer drafts everything. |
 | `CONTENT_ENGINE_MODEL` | Supabase function secrets; GitHub Actions variable | optional | defaults to `claude-opus-5-5` |
 | `CONTENT_ENGINE_ALLOWED_ORIGINS` | Supabase function secrets | optional | CORS; defaults to edgedesksports.com |
+| `RESEND_API_KEY` | Supabase function secrets (already set for the newsletter and outbound) | for **Send** | the owner's send to a publisher. Without it, Send says it is not configured and export still works. |
 | `SB_URL`, `SB_SERVICE_ROLE` | GitHub Actions secrets (already present) | for the weekly job | the job's door into the database (job doors only) |
 | `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF` | GitHub Actions secrets (already present) | to deploy from CI | the deploy workflow |
 
@@ -246,18 +277,18 @@ An edit after approval returns the article to review, and sent content is frozen
   - Only the headline, link, time and the feed's own description are kept, never an article body.
   - Each fetch is counted against a daily budget (default 60).
   - The fetches identify themselves as `EdgeDeskContentEngine/1.0`.
-- **No new paid service** is required.
+- **No new paid service** is required. Send reuses the Resend account the newsletter already uses.
 
 ---
 
 ## Tests
 
 ```
-npm run content:test      # the core against the committed research + static guards (177 checks)
-npm run content:sql       # the database on a real PostgreSQL (98)
-npm run content:fn        # the Edge Function as deployed, against that database (40)
+npm run content:test      # the core against the committed research + static guards (179 checks)
+npm run content:sql       # the database on a real PostgreSQL (125)
+npm run content:fn        # the Edge Function as deployed, against that database (60)
 npm run content:job:test  # the weekly job as the service role (23)
-npm run content:e2e       # the owner's whole flow in Chromium (30)
+npm run content:e2e       # the owner's whole flow in Chromium, Send included (44)
 npm run content:example   # write an example article from the current research to content-example/
 ```
 
@@ -272,7 +303,7 @@ npm run content:example   # write an example article from the current research t
 - the Stadium Rant profile;
 - SEO briefs and drafts;
 - the owner-only dashboard;
-- Markdown and HTML export.
+- Markdown and HTML export, and the owner's Send to a publisher contact.
 
 **Phase 2 — automation: built.**
 - the scheduled weekly discovery;
@@ -295,4 +326,5 @@ npm run content:example   # write an example article from the current research t
 - **News feeds.** The RSS feeds could not be reached from the development sandbox. Parsing and matching are tested against fixtures, and the feeds run from the Edge Function and GitHub Actions.
 - **Search demand.** Demand stays an estimate until Search Console has matching queries. There is no keyword-volume provider.
 - **Publisher analytics.** There is no integration with publishers' analytics: publisher page views are entered by hand.
-- **Delivery.** Delivery is manual by design. A future CMS or shared-document integration should still require the owner's approval per article.
+- **Delivery.** Delivery is by email, and only when the owner presses Send (or by hand, recorded). There is no CMS or shared-document integration; one should still require the owner's approval per article.
+- **Email delivery status.** Resend's delivered, bounced and complained events for these emails are not yet read back. The page shows what Resend accepted, not what reached the inbox.

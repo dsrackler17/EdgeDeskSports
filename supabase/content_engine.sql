@@ -28,8 +28,13 @@
 --     automated check passed and the five-point editorial review complete.
 --   · Editing approved content puts it back in review. Sent or published
 --     content is frozen.
---   · `sent` exists only with a delivery row the owner recorded; nothing here
---     (or anywhere in the engine) emails a publisher.
+--   · `sent` exists only with a delivery row: one the owner recorded after
+--     sending by hand, or the record of an email the OWNER sent from the page
+--     (Send to publisher). Nothing is ever emailed on a schedule or by the job:
+--     the send doors need an owner's auth.uid(), go only to a contact on the
+--     article's publisher (or, as a test, to the owner's own address), only
+--     for the approved content hash, and are claimed here before the provider
+--     is called, so a retry can never send twice.
 --   · Nothing is deleted. Publishers end, opportunities are dismissed, articles
 --     are archived; logs, revisions, deliveries, benchmarks and performance
 --     reports are append-only.
@@ -236,7 +241,7 @@ create table if not exists content_engine.deliveries (
   id            bigint generated always as identity primary key,
   article_id    uuid not null references content_engine.articles(id),
   publisher_id  uuid references content_engine.publishers(id),
-  method        text not null check (method in ('manual_email', 'cms_upload', 'shared_document', 'other')),
+  method        text not null check (method in ('manual_email', 'email', 'cms_upload', 'shared_document', 'other')),
   note          text check (note is null or length(note) <= 500),
   content_hash  text not null,
   delivered_at  timestamptz not null default now(),
@@ -572,8 +577,9 @@ begin
       'fetch', jsonb_build_object('cap', s.fetch_calls_per_day, 'used', coalesce((select calls from content_engine.usage where day = (now() at time zone 'utc')::date and provider = 'fetch'), 0))),
     'publishers', coalesce((select jsonb_agg(jsonb_build_object('id', id, 'slug', slug, 'name', name, 'status', status) order by name) from content_engine.publishers), '[]'::jsonb),
     'runs', coalesce((select jsonb_agg(to_jsonb(r) order by r.started_at desc) from (select * from content_engine.runs order by started_at desc limit 8) r), '[]'::jsonb),
+    'sender', content_engine.sender(),
     'problems', coalesce((select jsonb_agg(to_jsonb(e) order by e.at desc) from (select * from content_engine.events
-        where kind in ('generation_failed', 'validation_failed', 'ai_discarded', 'fetch_failed', 'job_failed') order by at desc limit 12) e), '[]'::jsonb));
+        where kind in ('generation_failed', 'validation_failed', 'ai_discarded', 'fetch_failed', 'job_failed', 'send_failed') order by at desc limit 12) e), '[]'::jsonb));
 end $$;
 
 create or replace function public.content_engine_settings_save(p jsonb)
@@ -955,9 +961,9 @@ end $$;
 create or replace function public.content_engine_article(p_id uuid)
 returns jsonb language plpgsql stable security definer
 set search_path = pg_catalog, public, pg_temp as $$
-declare a content_engine.articles;
+declare a content_engine.articles; who text;
 begin
-  perform content_engine.require_actor();
+  who := content_engine.require_actor();
   select * into a from content_engine.articles where id = p_id;
   if a.id is null then return null; end if;
   return content_engine.article_json(a) || jsonb_build_object(
@@ -969,6 +975,9 @@ begin
                     'created_at', r.created_at, 'content_hash', r.content_hash) order by r.revision desc)
                   from content_engine.revisions r where r.article_id = a.id), '[]'::jsonb),
     'deliveries', coalesce((select jsonb_agg(to_jsonb(d) order by d.delivered_at) from content_engine.deliveries d where d.article_id = a.id), '[]'::jsonb),
+    'sends', case when who = 'owner' then coalesce((select jsonb_agg(jsonb_build_object('id', x.id, 'recipient', x.recipient, 'recipient_name', x.recipient_name,
+                    'is_test', x.is_test, 'subject', x.subject, 'status', x.status, 'error', x.error, 'claimed_at', x.claimed_at, 'finished_at', x.finished_at) order by x.id)
+                  from content_engine.sends x where x.article_id = a.id), '[]'::jsonb) else '[]'::jsonb end,
     'performance', coalesce((select jsonb_agg(to_jsonb(m) order by m.reported_at) from content_engine.performance m where m.article_id = a.id), '[]'::jsonb),
     'siblings', coalesce((select jsonb_agg(jsonb_build_object('id', s.id, 'title', s.title,
                     'text', (select string_agg(x ->> 'body', E'\n\n') from jsonb_array_elements(s.sections) x)))
@@ -1165,6 +1174,218 @@ begin
 end $$;
 
 -- =============================================================================
+-- 6b. SEND TO PUBLISHER — only when the owner presses Send
+--
+-- The Edge Function asks content_engine_send_claim (as the owner) for one
+-- send: the database checks the article is approved and ready, the content is
+-- the approved hash the owner is looking at, and the recipient is a contact on
+-- that publisher's profile (or, for a test, the owner's own address). It
+-- writes the send FIRST, with one idempotency key, and only then does the
+-- function call Resend with that key. content_engine_send_result records what
+-- happened: a delivery row and `sent`, or the failure. An unanswered claim is
+-- answered with the same key for 23 hours (a retry cannot send twice), then
+-- marked failed.
+-- =============================================================================
+alter table content_engine.settings add column if not exists sender_name text;
+alter table content_engine.settings add column if not exists sender_email text;
+alter table content_engine.settings add column if not exists reply_to_email text;
+do $c$ begin
+  if not exists (select 1 from pg_constraint where conname = 'settings_sender_shape' and conrelid = 'content_engine.settings'::regclass) then
+    alter table content_engine.settings add constraint settings_sender_shape check (
+          (sender_name is null or (length(btrim(sender_name)) between 1 and 60 and sender_name !~ '[<>@\r\n]'))
+      and (sender_email is null or sender_email ~ '^[a-z0-9._%+-]+@edgedesksports\.com$')
+      and (reply_to_email is null or reply_to_email ~ '^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$'));
+  end if;
+end $c$;
+
+-- an install from before Send: widen the delivery methods in place
+do $c$
+declare n text;
+begin
+  select c.conname into n from pg_constraint c
+   where c.conrelid = 'content_engine.deliveries'::regclass and c.contype = 'c' and pg_get_constraintdef(c.oid) like '%manual_email%'
+     and position('''email''' in pg_get_constraintdef(c.oid)) = 0;
+  if n is not null then
+    execute format('alter table content_engine.deliveries drop constraint %I', n);
+    alter table content_engine.deliveries add constraint deliveries_method_check
+      check (method in ('manual_email', 'email', 'cms_upload', 'shared_document', 'other'));
+  end if;
+end $c$;
+
+create table if not exists content_engine.sends (
+  id               bigint generated always as identity primary key,
+  article_id       uuid not null references content_engine.articles(id),
+  publisher_id     uuid references content_engine.publishers(id),
+  recipient        text not null check (recipient ~ '^[a-z0-9._%+-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$' and length(recipient) <= 254),
+  recipient_name   text check (recipient_name is null or length(recipient_name) <= 120),
+  is_test          boolean not null default false,
+  sender           text not null,
+  reply_to         text not null,
+  subject          text not null check (length(btrim(subject)) between 3 and 150 and subject !~ '[\r\n]'),
+  note             text check (note is null or length(note) <= 4000),
+  content_hash     text not null,
+  idempotency_key  text not null unique,
+  status           text not null default 'claimed' check (status in ('claimed', 'sent', 'failed')),
+  provider_id      text unique,
+  error            text,
+  claimed_by       uuid not null,
+  claimed_at       timestamptz not null default now(),
+  finished_at      timestamptz
+);
+-- one real send of an article to one person (a failed one may be tried again)
+create unique index if not exists sends_once on content_engine.sends (article_id, lower(recipient))
+  where not is_test and status in ('claimed', 'sent');
+alter table content_engine.sends enable row level security;
+revoke all on content_engine.sends from public;
+do $r$ begin
+  execute 'revoke all on content_engine.sends from anon, authenticated, service_role';
+exception when undefined_object then null; end $r$;
+
+-- a send is a record: only its outcome is ever written, once
+create or replace function content_engine.sends_guard()
+returns trigger language plpgsql
+set search_path = pg_catalog, pg_temp as $$
+begin
+  if tg_op = 'DELETE' then raise exception 'sends are never deleted' using errcode = 'check_violation'; end if;
+  if old.status <> 'claimed' then raise exception 'a finished send does not change' using errcode = 'check_violation'; end if;
+  if (new.article_id, new.publisher_id, new.recipient, new.is_test, new.sender, new.reply_to, new.subject, new.content_hash,
+      new.idempotency_key, new.claimed_by, new.claimed_at)
+     is distinct from (old.article_id, old.publisher_id, old.recipient, old.is_test, old.sender, old.reply_to, old.subject, old.content_hash,
+      old.idempotency_key, old.claimed_by, old.claimed_at) then
+    raise exception 'only the outcome of a send is written' using errcode = 'check_violation';
+  end if;
+  return new;
+end $$;
+drop trigger if exists sends_guard on content_engine.sends;
+create trigger sends_guard before update or delete on content_engine.sends for each row execute function content_engine.sends_guard();
+drop trigger if exists sends_no_truncate on content_engine.sends;
+create trigger sends_no_truncate before truncate on content_engine.sends for each statement execute function content_engine.append_only();
+
+-- who the email is from: this engine's own sender if set, else the outbound
+-- engine's (already a verified edgedesksports.com sender on Resend)
+create or replace function content_engine.sender()
+returns jsonb language plpgsql stable
+set search_path = pg_catalog, public, pg_temp as $$
+declare s content_engine.settings; n text; e text; r text; on_ text; oe text; orr text;
+begin
+  select * into s from content_engine.settings where id = 1;
+  n := s.sender_name; e := s.sender_email; r := s.reply_to_email;
+  if (n is null or e is null or r is null) and to_regclass('growth_outbound.settings') is not null then
+    execute 'select sender_name, sender_email, coalesce(reply_to_email, sender_email) from growth_outbound.settings order by id limit 1' into on_, oe, orr;
+    n := coalesce(n, on_); e := coalesce(e, oe); r := coalesce(r, orr);
+  end if;
+  if n is null or e is null or e !~ '^[a-z0-9._%+-]+@edgedesksports\.com$' then return null; end if;
+  return jsonb_build_object('from', n || ' <' || e || '>', 'reply_to', coalesce(r, e), 'name', n, 'email', e);
+end $$;
+
+drop function if exists public.content_engine_send_claim(uuid, text, text, text, boolean);
+create or replace function public.content_engine_send_claim(p_id uuid, p_recipient text, p_subject text, p_content_hash text, p_test boolean default false, p_note text default null)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare v uuid := content_engine.require_owner(); a content_engine.articles; pb content_engine.publishers; prev content_engine.sends;
+  rcpt text := lower(btrim(coalesce(p_recipient, ''))); nm text; me text; snd jsonb; sid bigint; k text; subj text; is_t boolean := coalesce(p_test, false);
+begin
+  select * into a from content_engine.articles where id = p_id for update;
+  if a.id is null then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+  if p_content_hash is distinct from a.content_hash then return jsonb_build_object('ok', false, 'reason', 'changed_since_loaded'); end if;
+  if not a.checks_ok then return jsonb_build_object('ok', false, 'reason', 'checks_failed'); end if;
+  if a.approved_by is null or a.approved_hash is distinct from a.content_hash then return jsonb_build_object('ok', false, 'reason', 'not_approved'); end if;
+  subj := btrim(coalesce(nullif(btrim(p_subject), ''), 'EdgeDesk: ' || a.title));
+  if length(subj) > 150 or subj ~ '[\r\n]' or length(subj) < 3 then return jsonb_build_object('ok', false, 'reason', 'bad_subject'); end if;
+  if is_t then
+    if a.status not in ('approved', 'ready_to_send') then return jsonb_build_object('ok', false, 'reason', 'not_approved'); end if;
+    select lower(btrim(u.email)) into me from auth.users u where u.id = v;
+    if me is null or rcpt <> me then
+      return jsonb_build_object('ok', false, 'reason', 'test_goes_to_you', 'detail', 'a test goes only to your own sign-in address');
+    end if;
+    if (select count(*) from content_engine.sends where is_test and claimed_by = v and claimed_at > now() - interval '1 hour') >= 10 then
+      return jsonb_build_object('ok', false, 'reason', 'too_many_tests');
+    end if;
+    nm := null;
+  else
+    if a.status <> 'ready_to_send' then return jsonb_build_object('ok', false, 'reason', 'not_ready', 'status', a.status); end if;
+    select * into pb from content_engine.publishers where id = a.publisher_id;
+    if pb.id is null then return jsonb_build_object('ok', false, 'reason', 'no_publisher'); end if;
+    if pb.status in ('paused', 'ended') then return jsonb_build_object('ok', false, 'reason', 'publisher_inactive'); end if;
+    select left(btrim(c ->> 'name'), 120) into nm from jsonb_array_elements(pb.contacts) c where lower(btrim(c ->> 'email')) = rcpt limit 1;
+    if not found then
+      return jsonb_build_object('ok', false, 'reason', 'not_a_contact', 'detail', 'add this address to the publisher''s contacts first');
+    end if;
+    select * into prev from content_engine.sends
+     where article_id = a.id and lower(recipient) = rcpt and not is_test and status in ('claimed', 'sent') order by id desc limit 1;
+    if prev.id is not null then
+      if prev.status = 'sent' then return jsonb_build_object('ok', true, 'already', true, 'state', 'sent', 'send_id', prev.id); end if;
+      if prev.claimed_at > now() - interval '23 hours' then
+        -- unanswered: the same key and the same message, so Resend cannot send it twice
+        return jsonb_build_object('ok', true, 'retry', true, 'send_id', prev.id, 'idempotency_key', prev.idempotency_key, 'test', false,
+          'message', jsonb_build_object('from', prev.sender, 'to', prev.recipient, 'reply_to', prev.reply_to, 'subject', prev.subject, 'note', prev.note),
+          'recipient_name', prev.recipient_name);
+      end if;
+      update content_engine.sends set status = 'failed', error = 'outcome unknown after 23 hours', finished_at = now() where id = prev.id;
+    end if;
+  end if;
+  snd := content_engine.sender();
+  if snd is null then return jsonb_build_object('ok', false, 'reason', 'no_sender', 'detail', 'set an edgedesksports.com sender in Settings'); end if;
+  k := 'edgedesk-content-' || replace(gen_random_uuid()::text, '-', '');
+  insert into content_engine.sends (article_id, publisher_id, recipient, recipient_name, is_test, sender, reply_to, subject, note, content_hash, idempotency_key, claimed_by)
+  values (a.id, a.publisher_id, rcpt, nm, is_t, snd ->> 'from', snd ->> 'reply_to', subj, nullif(btrim(coalesce(p_note, '')), ''), a.content_hash, k, v)
+  returning id into sid;
+  perform content_engine.log('owner', case when is_t then 'test_send_claimed' else 'send_claimed' end, a.id, a.opportunity_id, null,
+    jsonb_build_object('send_id', sid, 'to', rcpt));
+  return jsonb_build_object('ok', true, 'send_id', sid, 'idempotency_key', k, 'test', is_t, 'recipient_name', nm,
+    'message', jsonb_build_object('from', snd ->> 'from', 'to', rcpt, 'reply_to', snd ->> 'reply_to', 'subject', subj, 'note', nullif(btrim(coalesce(p_note, '')), '')));
+exception when check_violation or unique_violation then
+  return jsonb_build_object('ok', false, 'reason', 'invalid', 'detail', sqlerrm);
+end $$;
+
+create or replace function public.content_engine_send_result(p_send_id bigint, p_provider_id text, p_error text)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare v uuid := content_engine.require_owner(); s content_engine.sends; a content_engine.articles;
+begin
+  select * into s from content_engine.sends where id = p_send_id for update;
+  if s.id is null then return jsonb_build_object('ok', false, 'reason', 'not_found'); end if;
+  if s.status <> 'claimed' then return jsonb_build_object('ok', true, 'already', true, 'state', s.status); end if;
+  if nullif(btrim(coalesce(p_provider_id, '')), '') is not null and p_error is null then
+    update content_engine.sends set status = 'sent', provider_id = left(btrim(p_provider_id), 200), finished_at = now() where id = s.id;
+    if not s.is_test then
+      insert into content_engine.deliveries (article_id, publisher_id, method, note, content_hash, recorded_by)
+      values (s.article_id, s.publisher_id, 'email',
+              left('emailed from EdgeDesk to ' || coalesce(s.recipient_name || ' ', '') || '<' || s.recipient || '>: ' || s.subject, 500), s.content_hash, v);
+      select * into a from content_engine.articles where id = s.article_id for update;
+      if a.status = 'ready_to_send' and a.content_hash = s.content_hash then
+        perform set_config('content_engine.door', 'mark_sent', true);
+        update content_engine.articles set status = 'sent' where id = a.id;
+        perform set_config('content_engine.door', '', true);
+      end if;
+    end if;
+    perform content_engine.log('owner', case when s.is_test then 'test_emailed' else 'article_emailed' end, s.article_id, null, null,
+      jsonb_build_object('send_id', s.id, 'to', s.recipient, 'provider_id', left(p_provider_id, 200)));
+    return jsonb_build_object('ok', true, 'state', 'sent', 'test', s.is_test,
+      'status', (select status from content_engine.articles where id = s.article_id));
+  end if;
+  update content_engine.sends set status = 'failed', error = left(coalesce(p_error, 'no provider id'), 500), finished_at = now() where id = s.id;
+  perform content_engine.log('owner', 'send_failed', s.article_id, null, null, jsonb_build_object('send_id', s.id, 'error', left(p_error, 300)));
+  return jsonb_build_object('ok', true, 'state', 'failed');
+end $$;
+
+create or replace function public.content_engine_sender_save(p jsonb)
+returns jsonb language plpgsql security definer
+set search_path = pg_catalog, public, pg_temp as $$
+declare v uuid := content_engine.require_owner();
+begin
+  update content_engine.settings set
+    sender_name = case when p ? 'sender_name' then nullif(btrim(p ->> 'sender_name'), '') else sender_name end,
+    sender_email = case when p ? 'sender_email' then nullif(lower(btrim(p ->> 'sender_email')), '') else sender_email end,
+    reply_to_email = case when p ? 'reply_to_email' then nullif(lower(btrim(p ->> 'reply_to_email')), '') else reply_to_email end,
+    updated_at = now(), updated_by = v
+  where id = 1;
+  return jsonb_build_object('ok', true, 'sender', content_engine.sender());
+exception when check_violation then
+  return jsonb_build_object('ok', false, 'reason', 'invalid', 'detail', 'the sender must be an edgedesksports.com address; the reply-to one email address');
+end $$;
+
+-- =============================================================================
 -- 6. THE FIRST PUBLISHER — editorial preferences only. Contacts, partnership
 -- terms and the historical view benchmarks are business data: the owner enters
 -- them in the Content Engine page (Publishers), never in this public file.
@@ -1184,7 +1405,7 @@ values ('stadium-rant', 'Stadium Rant', 'https://www.stadiumrant.com', 'active',
     'links_allowed', true,
     'cadence', 'Weekly: CFB preview by Thursday, NFL preview by Friday',
     'notes', 'Prefer weekly previews and major storylines over isolated low-interest matchups. Integrate predictions naturally; keep EdgeDesk''s analysis meaningful, not promotional.'),
-  jsonb_build_object('method', 'manual_email', 'notes', 'The owner sends approved articles by hand. The engine never emails a publisher.'),
+  jsonb_build_object('method', 'manual_email', 'notes', 'The owner sends each approved article: Send in the publishing queue (only when pressed and confirmed), or by hand. Nothing is sent on its own.'),
   jsonb_build_object('owner_approval_required', true, 'publisher_review', true))
 on conflict (slug) do nothing;
 update content_engine.settings set default_publisher = 'stadium-rant' where id = 1 and default_publisher is null;
@@ -1240,6 +1461,15 @@ select check_name, case when passed then 'ok' else 'CHECK THIS' end as result, d
   select 'article guard installed',
          exists (select 1 from pg_trigger where tgname = 'articles_guard' and tgrelid = 'content_engine.articles'::regclass),
          'approval by an owner for the exact content hash; edits after approval return to review; sent content frozen'
+  union all
+  select 'send doors are owner-only (no service role, no anon)',
+         not has_function_privilege('service_role', 'public.content_engine_send_claim(uuid, text, text, text, boolean, text)', 'execute')
+         and not has_function_privilege('anon', 'public.content_engine_send_claim(uuid, text, text, text, boolean, text)', 'execute'),
+         'an email goes out only when an owner presses Send, to a contact on the article''s publisher'
+  union all
+  select 'a sender for Send to publisher',
+         content_engine.sender() is not null,
+         coalesce(content_engine.sender() ->> 'from', 'set an edgedesksports.com sender in /admin/content/ Settings')
   union all
   select 'append-only logs installed',
          (select count(*) from pg_trigger where tgname like '%\_append\_only' and tgrelid::regclass::text like 'content_engine.%') = 5,
