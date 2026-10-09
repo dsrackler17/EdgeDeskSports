@@ -24,7 +24,7 @@
   "game_when_label": "2026-10-11 17:00 UTC",
   "published_at": null,
   "updated_at": "2026-10-09T10:24:18.082Z",
-  "generated_at": "2026-10-09T10:24:18.082Z",
+  "generated_at": "2026-10-09T18:18:52.635Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 0.6-point gap is context only and the game is excluded from research ranking.",
@@ -1293,6 +1293,70 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-09T10:24:18.082Z"
+    "at": "2026-10-09T18:18:52.635Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1efxp051rxdf7b",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": false,
+    "question": "Can the Texans stop the Titans’ run game?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.5 points.",
+    "gap": {
+      "points": 0.5,
+      "toward": "Tennessee Titans",
+      "other": "Houston Texans"
+    },
+    "supporting": [
+      "Houston Texans’ running game ranks No. 30 of 32 in rushing efficiency this season.",
+      "When Houston Texans have the ball: their run game ranks No. 30, and Tennessee Titans’ run defense ranks No. 19.",
+      "Tennessee Titans’ pass rush ranks No. 8 of 32 in sack rate this season."
+    ],
+    "contradicting": [
+      "When Tennessee Titans have the ball: their passing game ranks No. 31, and Houston Texans’ pass defense ranks No. 3.",
+      "When Tennessee Titans have the ball: their pass protection ranks No. 20, and Houston Texans’ pass rush ranks No. 5.",
+      "When Houston Texans have the ball: their passing game ranks No. 18, and Tennessee Titans’ pass defense ranks No. 30.",
+      "Tennessee Titans’ defense ranks No. 29 of 32 in efficiency allowed per play this season."
+    ],
+    "quarterbacks": [
+      "Tennessee Titans’ passers have completed 75 of 119 (63.0%) for 726 yards, 6.1 yards per attempt, with 3 touchdowns, 2 interceptions and 6 sacks taken in four games.",
+      "Houston Texans’ passers have completed 93 of 152 (61.2%) for 1,141 yards, 7.5 yards per attempt, with 5 touchdowns, 0 interceptions and 12 sacks taken in four games."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "The Tennessee Titans have to win on the ground (Tennessee Titans’ No. 14 run game against Houston Texans’ No. 3 run defense).",
+        "The Tennessee Titans have to hold their own through the air (Tennessee Titans’ No. 31 passing game against Houston Texans’ No. 3 pass defense).",
+        "The Tennessee Titans have to hold their own in the pass-rush matchup (Tennessee Titans’ No. 20 pass protection against Houston Texans’ No. 5 pass rush).",
+        "The Tennessee Titans have to win on the ground (Houston Texans’ No. 30 run game against Tennessee Titans’ No. 19 run defense)."
+      ],
+      "market": [
+        "The Houston Texans have to win through the air (Tennessee Titans’ No. 31 passing game against Houston Texans’ No. 3 pass defense).",
+        "The Houston Texans have to win in the pass-rush matchup (Tennessee Titans’ No. 20 pass protection against Houston Texans’ No. 5 pass rush).",
+        "The Houston Texans have to win on the ground (Tennessee Titans’ No. 14 run game against Houston Texans’ No. 3 run defense)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and injuries and personnel.",
+      "The line on file was captured Oct. 6 and may have moved."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-08T19:17:48.997Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-09T18:18:44.243Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }

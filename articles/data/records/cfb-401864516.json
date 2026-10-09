@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T23:30:00.000Z",
   "game_when_label": "2026-10-10 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-09T10:24:18.082Z",
-  "generated_at": "2026-10-09T10:24:18.082Z",
+  "updated_at": "2026-10-09T18:18:52.635Z",
+  "generated_at": "2026-10-09T18:18:52.635Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -273,7 +273,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T16:00:00.000Z",
-        "retrieved_at": "2026-10-09T05:41:41.040Z"
+        "retrieved_at": "2026-10-09T16:34:00.692Z"
       },
       "home": {
         "team": "Northern Illinois",
@@ -351,9 +351,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-09-26T18:00:00.000Z",
-        "retrieved_at": "2026-10-09T05:41:41.040Z"
+        "retrieved_at": "2026-10-09T16:34:00.692Z"
       },
-      "generated_at": "2026-10-09T05:42:22.554Z",
+      "generated_at": "2026-10-09T16:34:43.616Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1469,7 +1469,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 59h old",
+          "text": "odds is 67h old",
           "widening": null
         },
         {
@@ -1603,7 +1603,7 @@
       "total_market": "46.0",
       "book": "captured consensus (stale) · 1 book · best at BetOnline.ag",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "59 hours old",
+      "capture_age": "67 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1969,6 +1969,100 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-09T10:24:18.082Z"
+    "at": "2026-10-09T18:18:52.635Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "zhigtef69bk0",
+    "status": "PARTIALLY_EXPLAINED",
+    "input_suspect": false,
+    "question": "Can Air Force’s pass rush get to Taron Dickens?",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Air Force, and its own breakdown accounts for about 0.0 of the 4.6 points, but not the full gap. It is a research question, not a bet.",
+    "gap": {
+      "points": 4.6,
+      "toward": "Air Force",
+      "other": "Northern Illinois"
+    },
+    "supporting": [
+      "When Northern Illinois has the ball (pass protection against the pass rush): Northern Illinois’ offense has allowed a sack on 11.0% of its dropbacks, and Air Force’s defense sacks the quarterback on 6.5% of opponent dropbacks (FBS average 5.6%).",
+      "When Northern Illinois has the ball (third down): Northern Illinois’ offense converts 31.1% of its third downs, and Air Force’s defense allows opponents to convert 28.2% of their third downs (FBS average 39.6%).",
+      "When Air Force has the ball (third down): Air Force’s offense converts 44.8% of its third downs, and Northern Illinois’ defense allows opponents to convert 56.0% of their third downs (FBS average 39.6%).",
+      "When Air Force has the ball (big plays through the air): Air Force’s offense turns 20.3% of its pass plays into explosive gains, and Northern Illinois’ defense gives up explosive gains on 9.9% of opponent pass plays (FBS average 10.4%)."
+    ],
+    "contradicting": [
+      "When Air Force has the ball (pass protection against the pass rush): Air Force’s offense has allowed a sack on 14.7% of its dropbacks, and Northern Illinois’ defense sacks the quarterback on 4.6% of opponent dropbacks (FBS average 5.6%).",
+      "When Air Force has the ball (big plays on the ground): Air Force’s offense turns 3.2% of its runs into explosive gains, and Northern Illinois’ defense gives up explosive gains on 5.3% of opponent runs (FBS average 6.6%).",
+      "EdgeDesk’s position-group ratings put Northern Illinois’ secondary No. 63 nationally and Air Force’s No. 137.",
+      "EdgeDesk’s position-group ratings put Northern Illinois’ pass defense No. 61 nationally and Air Force’s No. 114."
+    ],
+    "quarterbacks": [
+      "Taron Dickens has completed 84 of 120 passes (70.0%) for 837 yards, 7.0 yards per attempt, 4 touchdowns and 2 interceptions in four games for Northern Illinois, and has been sacked on 14 of 134 dropbacks.",
+      "Jalen Macon has completed 5 of 12 passes (41.7%) for 20 yards, 1.7 yards per attempt, no touchdowns and no interceptions in two games for Northern Illinois, and has been sacked on 3 of 15 dropbacks.",
+      "Liam Szarka has completed 19 of 40 passes (47.5%) for 296 yards, 7.4 yards per attempt, 1 touchdown and 4 interceptions in four games for Air Force, and has been sacked on 2 of 42 dropbacks."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "Air Force’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 6.5% of opponent dropbacks, against an offense that has allowed a sack on 11.0% of its dropbacks.",
+        "Air Force’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 4.6% of opponent dropbacks.",
+        "Air Force’s offense has to hold its own on long runs against a defense that gives up explosive gains on 5.3% of opponent runs.",
+        "Air Force’s offense has to keep winning on big pass plays: it turns 20.3% of its pass plays into explosive gains, and Northern Illinois’ defense gives up explosive gains on 9.9% of opponent pass plays."
+      ],
+      "market": [
+        "Northern Illinois’ defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 4.6% of opponent dropbacks, against an offense that has allowed a sack on 14.7% of its dropbacks.",
+        "Northern Illinois’ defense has to come out ahead on long runs: it gives up explosive gains on 5.3% of opponent runs, against an offense that turns 3.2% of its runs into explosive gains.",
+        "Northern Illinois’ offense has to keep winning in the pass-rush matchup: it has allowed a sack on 11.0% of its dropbacks, and Air Force’s defense sacks the quarterback on 6.5% of opponent dropbacks."
+      ]
+    },
+    "unknown": [
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Northern Illinois and Air Force.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates, historical meetings, conference implications and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Northern Illinois), sack rate (Northern Illinois) and sack rate (Air Force); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      },
+      {
+        "key": "CROSS_MODEL_OUTLIER",
+        "severity": "medium",
+        "text": "EdgeDesk’s published number sits 3.9 points from the middle of its own other models."
+      },
+      {
+        "key": "REGIME_CHANGE",
+        "severity": "medium",
+        "text": "Northern Illinois: new head coach; returning roster share at the 43rd percentile. The long-run state is weighted 69% (regime curve) instead of 80% (standard curve) at 4 games played."
+      },
+      {
+        "key": "THIN_SAMPLE",
+        "severity": "medium",
+        "text": "One team has played only 4 games; ratings this early carry wide error."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-09T16:34:50.184Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk position-group ratings",
+        "url": null,
+        "path": "football/rankings/current.json",
+        "observed_at": "2026-10-09T16:34:23.322Z",
+        "verification": "RATING"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-07T23:30:00.000Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }

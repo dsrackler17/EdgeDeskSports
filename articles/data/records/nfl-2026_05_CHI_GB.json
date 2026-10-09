@@ -24,7 +24,7 @@
   "game_when_label": "2026-10-11 17:00 UTC",
   "published_at": null,
   "updated_at": "2026-10-09T10:24:18.082Z",
-  "generated_at": "2026-10-09T10:24:18.082Z",
+  "generated_at": "2026-10-09T18:18:52.635Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 2.6-point gap is context only and the game is excluded from research ranking.",
@@ -1305,6 +1305,70 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-09T10:24:18.082Z"
+    "at": "2026-10-09T18:18:52.635Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1tgv4u04fhjoa",
+    "status": "UNEXPLAINED",
+    "input_suspect": false,
+    "question": "Can the Packers stop the Bears’ run game?",
+    "assessment": "EdgeDesk’s number is 2.6 points closer to Green Bay Packers than the line, and EdgeDesk cannot account for most of that. The measured football evidence leans toward Chicago Bears, not toward EdgeDesk’s number. Treat the gap as an open research question, not as an edge.",
+    "gap": {
+      "points": 2.6,
+      "toward": "Green Bay Packers",
+      "other": "Chicago Bears"
+    },
+    "supporting": [
+      "When Green Bay Packers have the ball: their pass protection ranks No. 8, and Chicago Bears’ pass rush ranks No. 21.",
+      "Green Bay Packers’ pass protection ranks No. 8 of 32 in sack rate allowed this season.",
+      "Chicago Bears’ explosive passes allowed ranks No. 27 of 32 in explosive passes allowed this season."
+    ],
+    "contradicting": [
+      "When Chicago Bears have the ball: their passing game ranks No. 8, and Green Bay Packers’ pass defense ranks No. 24.",
+      "When Chicago Bears have the ball: their pass protection ranks No. 3, and Green Bay Packers’ pass rush ranks No. 29.",
+      "Green Bay Packers’ running game ranks No. 31 of 32 in rushing efficiency this season.",
+      "Green Bay Packers’ pass rush ranks No. 29 of 32 in sack rate this season."
+    ],
+    "quarterbacks": [
+      "Green Bay Packers’ passers have completed 87 of 154 (56.5%) for 1,041 yards, 6.8 yards per attempt, with 8 touchdowns, 3 interceptions and 8 sacks taken in four games.",
+      "Chicago Bears’ passers have completed 90 of 132 (68.2%) for 976 yards, 7.4 yards per attempt, with 4 touchdowns, 2 interceptions and 7 sacks taken in four games."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "The Green Bay Packers have to win on the ground (Chicago Bears’ No. 6 run game against Green Bay Packers’ No. 10 run defense).",
+        "The Green Bay Packers have to slow the Chicago Bears in the pass-rush matchup (Chicago Bears’ No. 3 pass protection against Green Bay Packers’ No. 29 pass rush).",
+        "The Green Bay Packers have to slow the Chicago Bears through the air (Chicago Bears’ No. 8 passing game against Green Bay Packers’ No. 24 pass defense).",
+        "The Green Bay Packers have to win in the pass-rush matchup (Green Bay Packers’ No. 8 pass protection against Chicago Bears’ No. 21 pass rush)."
+      ],
+      "market": [
+        "The Chicago Bears have to win in the pass-rush matchup (Chicago Bears’ No. 3 pass protection against Green Bay Packers’ No. 29 pass rush).",
+        "The Chicago Bears have to win through the air (Chicago Bears’ No. 8 passing game against Green Bay Packers’ No. 24 pass defense).",
+        "The Chicago Bears have to win on the ground (Chicago Bears’ No. 6 run game against Green Bay Packers’ No. 10 run defense)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and injuries and personnel.",
+      "The line on file was captured Oct. 6 and may have moved."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-08T19:17:48.997Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-09T18:18:44.243Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }

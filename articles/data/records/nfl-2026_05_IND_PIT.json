@@ -24,7 +24,7 @@
   "game_when_label": "2026-10-11 17:00 UTC",
   "published_at": null,
   "updated_at": "2026-10-09T10:24:18.082Z",
-  "generated_at": "2026-10-09T10:24:18.082Z",
+  "generated_at": "2026-10-09T18:18:52.635Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 0.8-point gap is context only and the game is excluded from research ranking.",
@@ -1319,6 +1319,69 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-09T10:24:18.082Z"
+    "at": "2026-10-09T18:18:52.635Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1c2mc2r1e30agx",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": false,
+    "question": "Can the Steelers stop the Colts’ run game?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.8 points.",
+    "gap": {
+      "points": 0.8,
+      "toward": "Indianapolis Colts",
+      "other": "Pittsburgh Steelers"
+    },
+    "supporting": [
+      "Indianapolis Colts’ running game ranks No. 2 of 32 in rushing efficiency this season.",
+      "When Indianapolis Colts have the ball: their run game ranks No. 2, and Pittsburgh Steelers’ run defense ranks No. 13.",
+      "When Indianapolis Colts have the ball: their pass protection ranks No. 6, and Pittsburgh Steelers’ pass rush ranks No. 14.",
+      "Indianapolis Colts’ pass protection ranks No. 6 of 32 in sack rate allowed this season."
+    ],
+    "contradicting": [
+      "When Pittsburgh Steelers have the ball: their pass protection ranks No. 16, and Indianapolis Colts’ pass rush ranks No. 25.",
+      "Indianapolis Colts’ pass rush ranks No. 25 of 32 in sack rate this season.",
+      "Indianapolis Colts’ explosive passing ranks No. 25 of 32 in explosive pass rate this season.",
+      "Indianapolis Colts’ scoring defense ranks No. 26 of 32 in points allowed this season."
+    ],
+    "quarterbacks": [
+      "Pittsburgh Steelers’ passers have completed 88 of 155 (56.8%) for 999 yards, 6.4 yards per attempt, with 7 touchdowns, 4 interceptions and 13 sacks taken in four games.",
+      "Indianapolis Colts’ passers have completed 84 of 132 (63.6%) for 754 yards, 5.7 yards per attempt, with 3 touchdowns, 4 interceptions and 8 sacks taken in four games."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "The Indianapolis Colts have to win on the ground (Indianapolis Colts’ No. 2 run game against Pittsburgh Steelers’ No. 13 run defense).",
+        "The Indianapolis Colts have to slow the Pittsburgh Steelers in the pass-rush matchup (Pittsburgh Steelers’ No. 16 pass protection against Indianapolis Colts’ No. 25 pass rush).",
+        "The Indianapolis Colts have to win in the pass-rush matchup (Indianapolis Colts’ No. 6 pass protection against Pittsburgh Steelers’ No. 14 pass rush)."
+      ],
+      "market": [
+        "The Pittsburgh Steelers have to win in the pass-rush matchup (Pittsburgh Steelers’ No. 16 pass protection against Indianapolis Colts’ No. 25 pass rush).",
+        "The Pittsburgh Steelers have to win on the ground (Indianapolis Colts’ No. 2 run game against Pittsburgh Steelers’ No. 13 run defense)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel and conference implications.",
+      "The line on file was captured Oct. 6 and may have moved."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-08T19:17:48.997Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-09T18:18:44.243Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }

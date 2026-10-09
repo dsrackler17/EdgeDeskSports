@@ -24,7 +24,7 @@
   "game_when_label": "2026-10-11 20:25 UTC",
   "published_at": null,
   "updated_at": "2026-10-08T18:48:19.127Z",
-  "generated_at": "2026-10-09T10:24:18.082Z",
+  "generated_at": "2026-10-09T18:18:52.635Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 0.5-point gap is context only and the game is excluded from research ranking.",
@@ -1293,6 +1293,65 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-09T10:24:18.082Z"
+    "at": "2026-10-09T18:18:52.635Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1i74ue2evyw8o",
+    "status": "NO_MATERIAL_DISAGREEMENT",
+    "input_suspect": false,
+    "question": "Can the Cardinals’ pass defense slow the Lions’ passing game?",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.5 points.",
+    "gap": {
+      "points": 0.5,
+      "toward": "Arizona Cardinals",
+      "other": "Detroit Lions"
+    },
+    "supporting": [
+      "Detroit Lions’ scoring defense ranks No. 27 of 32 in points allowed this season."
+    ],
+    "contradicting": [
+      "When Detroit Lions have the ball: their passing game ranks No. 6, and Arizona Cardinals’ pass defense ranks No. 29.",
+      "Arizona Cardinals’ pass defense ranks No. 29 of 32 in pass defense this season.",
+      "Arizona Cardinals’ explosive passing ranks No. 32 of 32 in explosive pass rate this season.",
+      "Arizona Cardinals’ scoring defense ranks No. 31 of 32 in points allowed this season."
+    ],
+    "quarterbacks": [
+      "Arizona Cardinals’ passers have completed 103 of 152 (67.8%) for 818 yards, 5.4 yards per attempt, with 6 touchdowns, 4 interceptions and 7 sacks taken in four games.",
+      "Detroit Lions’ passers have completed 109 of 161 (67.7%) for 1,214 yards, 7.5 yards per attempt, with 9 touchdowns, 0 interceptions and 8 sacks taken in four games."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "The Arizona Cardinals have to win through the air (Detroit Lions’ No. 6 passing game against Arizona Cardinals’ No. 29 pass defense).",
+        "The Arizona Cardinals have to hold their own in the pass-rush matchup (Arizona Cardinals’ No. 19 pass protection against Detroit Lions’ No. 9 pass rush)."
+      ],
+      "market": [
+        "The Detroit Lions have to win through the air (Detroit Lions’ No. 6 passing game against Arizona Cardinals’ No. 29 pass defense).",
+        "The Detroit Lions have to win in the pass-rush matchup (Arizona Cardinals’ No. 19 pass protection against Detroit Lions’ No. 9 pass rush)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel, weather and conference implications.",
+      "The line on file was captured Oct. 6 and may have moved."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-08T19:17:48.997Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-09T18:18:44.243Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }

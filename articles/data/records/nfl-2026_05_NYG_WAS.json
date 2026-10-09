@@ -24,7 +24,7 @@
   "game_when_label": "2026-10-11 17:00 UTC",
   "published_at": null,
   "updated_at": "2026-10-09T10:24:18.082Z",
-  "generated_at": "2026-10-09T10:24:18.082Z",
+  "generated_at": "2026-10-09T18:18:52.635Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 2.0-point gap is context only and the game is excluded from research ranking.",
@@ -1315,6 +1315,72 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-09T10:24:18.082Z"
+    "at": "2026-10-09T18:18:52.635Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "shwicq1mucv2g",
+    "status": "UNEXPLAINED",
+    "input_suspect": false,
+    "question": "Can the Giants’ pass defense slow the Commanders’ passing game?",
+    "assessment": "EdgeDesk’s number is 2.0 points closer to New York Giants than the line, and EdgeDesk cannot account for most of that. The measured football evidence leans toward Washington Commanders, not toward EdgeDesk’s number. Treat the gap as an open research question, not as an edge.",
+    "gap": {
+      "points": 2,
+      "toward": "New York Giants",
+      "other": "Washington Commanders"
+    },
+    "supporting": [
+      "When New York Giants have the ball: their run game ranks No. 19, and Washington Commanders’ run defense ranks No. 31.",
+      "Washington Commanders’ defense ranks No. 30 of 32 in efficiency allowed per play this season.",
+      "Washington Commanders’ run defense ranks No. 31 of 32 in run defense this season.",
+      "Washington Commanders’ scoring defense ranks No. 30 of 32 in points allowed this season."
+    ],
+    "contradicting": [
+      "When Washington Commanders have the ball: their run game ranks No. 16, and New York Giants’ run defense ranks No. 32.",
+      "When New York Giants have the ball: their pass protection ranks No. 28, and Washington Commanders’ pass rush ranks No. 11.",
+      "New York Giants’ run defense ranks No. 32 of 32 in run defense this season.",
+      "When Washington Commanders have the ball: their pass protection ranks No. 7, and New York Giants’ pass rush ranks No. 17."
+    ],
+    "quarterbacks": [
+      "Washington Commanders’ passers have completed 78 of 137 (56.9%) for 786 yards, 5.7 yards per attempt, with 8 touchdowns, 1 interceptions and 5 sacks taken in four games.",
+      "New York Giants’ passers have completed 69 of 112 (61.6%) for 729 yards, 6.5 yards per attempt, with 6 touchdowns, 3 interceptions and 11 sacks taken in four games."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "The New York Giants have to win through the air (Washington Commanders’ No. 14 passing game against New York Giants’ No. 14 pass defense).",
+        "The New York Giants have to hold their own in the pass-rush matchup (New York Giants’ No. 28 pass protection against Washington Commanders’ No. 11 pass rush).",
+        "The New York Giants have to slow the Washington Commanders on the ground (Washington Commanders’ No. 16 run game against New York Giants’ No. 32 run defense).",
+        "The New York Giants have to win on the ground (New York Giants’ No. 19 run game against Washington Commanders’ No. 31 run defense)."
+      ],
+      "market": [
+        "The Washington Commanders have to win in the pass-rush matchup (New York Giants’ No. 28 pass protection against Washington Commanders’ No. 11 pass rush).",
+        "The Washington Commanders have to win on the ground (Washington Commanders’ No. 16 run game against New York Giants’ No. 32 run defense).",
+        "The Washington Commanders have to win through the air (Washington Commanders’ No. 14 passing game against New York Giants’ No. 14 pass defense)."
+      ]
+    },
+    "unknown": [
+      "Weather: 62 degrees.",
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and injuries and personnel.",
+      "The line on file was captured Oct. 6 and may have moved."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-08T19:17:48.997Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-09T18:18:44.243Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }

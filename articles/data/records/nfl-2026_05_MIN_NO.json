@@ -24,7 +24,7 @@
   "game_when_label": "2026-10-11 17:00 UTC",
   "published_at": null,
   "updated_at": "2026-10-09T10:24:18.082Z",
-  "generated_at": "2026-10-09T10:24:18.082Z",
+  "generated_at": "2026-10-09T18:18:52.635Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 4.6-point gap is context only and the game is excluded from research ranking.",
@@ -1317,6 +1317,71 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-09T10:24:18.082Z"
+    "at": "2026-10-09T18:18:52.635Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "d33zlxv022jr",
+    "status": "UNEXPLAINED",
+    "input_suspect": false,
+    "question": "Can the Saints’ pass rush get to Kyler Murray?",
+    "assessment": "EdgeDesk’s number is 4.6 points closer to New Orleans Saints than the line, and EdgeDesk cannot account for most of that. The measured football evidence leans toward Minnesota Vikings, not toward EdgeDesk’s number. Treat the gap as an open research question, not as an edge.",
+    "gap": {
+      "points": 4.6,
+      "toward": "New Orleans Saints",
+      "other": "Minnesota Vikings"
+    },
+    "supporting": [
+      "When Minnesota Vikings have the ball: their passing game ranks No. 32, and New Orleans Saints’ pass defense ranks No. 11.",
+      "When Minnesota Vikings have the ball: their run game ranks No. 24, and New Orleans Saints’ run defense ranks No. 6.",
+      "When Minnesota Vikings have the ball: their pass protection ranks No. 32, and New Orleans Saints’ pass rush ranks No. 7.",
+      "Minnesota Vikings’ offense ranks No. 32 of 32 in efficiency per play this season."
+    ],
+    "contradicting": [
+      "When New Orleans Saints have the ball: their passing game ranks No. 17, and Minnesota Vikings’ pass defense ranks No. 1.",
+      "When New Orleans Saints have the ball: their run game ranks No. 26, and Minnesota Vikings’ run defense ranks No. 2.",
+      "When New Orleans Saints have the ball: their pass protection ranks No. 21, and Minnesota Vikings’ pass rush ranks No. 1.",
+      "New Orleans Saints’ explosive passing ranks No. 29 of 32 in explosive pass rate this season."
+    ],
+    "quarterbacks": [
+      "New Orleans Saints’ passers have completed 121 of 180 (67.2%) for 1,203 yards, 6.7 yards per attempt, with 9 touchdowns, 3 interceptions and 12 sacks taken in four games.",
+      "Minnesota Vikings’ passers have completed 68 of 110 (61.8%) for 709 yards, 6.4 yards per attempt, with 4 touchdowns, 2 interceptions and 13 sacks taken in four games."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "The New Orleans Saints have to win in the pass-rush matchup (Minnesota Vikings’ No. 32 pass protection against New Orleans Saints’ No. 7 pass rush).",
+        "The New Orleans Saints have to hold their own on the ground (New Orleans Saints’ No. 26 run game against Minnesota Vikings’ No. 2 run defense).",
+        "The New Orleans Saints have to hold their own in the pass-rush matchup (New Orleans Saints’ No. 21 pass protection against Minnesota Vikings’ No. 1 pass rush).",
+        "The New Orleans Saints have to win through the air (Minnesota Vikings’ No. 32 passing game against New Orleans Saints’ No. 11 pass defense)."
+      ],
+      "market": [
+        "The Minnesota Vikings have to win on the ground (New Orleans Saints’ No. 26 run game against Minnesota Vikings’ No. 2 run defense).",
+        "The Minnesota Vikings have to win in the pass-rush matchup (New Orleans Saints’ No. 21 pass protection against Minnesota Vikings’ No. 1 pass rush).",
+        "The Minnesota Vikings have to win in the pass-rush matchup (Minnesota Vikings’ No. 32 pass protection against New Orleans Saints’ No. 7 pass rush)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel and conference implications.",
+      "The line on file was captured Oct. 6 and may have moved."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-08T19:17:48.997Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-09T18:18:44.243Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }

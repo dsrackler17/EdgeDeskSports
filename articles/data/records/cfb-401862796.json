@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T19:30:00.000Z",
   "game_when_label": "2026-10-10 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-09T10:24:18.082Z",
-  "generated_at": "2026-10-09T10:24:18.082Z",
+  "updated_at": "2026-10-09T18:18:52.635Z",
+  "generated_at": "2026-10-09T18:18:52.635Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -249,7 +249,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T15:00:00.000Z",
-        "retrieved_at": "2026-10-09T05:41:41.040Z"
+        "retrieved_at": "2026-10-09T16:34:00.692Z"
       },
       "home": {
         "team": "North Texas",
@@ -339,9 +339,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-02T01:00:00.000Z",
-        "retrieved_at": "2026-10-09T05:41:41.040Z"
+        "retrieved_at": "2026-10-09T16:34:00.692Z"
       },
-      "generated_at": "2026-10-09T05:42:22.554Z",
+      "generated_at": "2026-10-09T16:34:43.616Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1427,7 +1427,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 59h old",
+          "text": "odds is 67h old",
           "widening": null
         },
         {
@@ -1549,7 +1549,7 @@
       "total_market": "58.0",
       "book": "captured consensus (stale) · 1 book · best at BetRivers",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "59 hours old",
+      "capture_age": "67 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1915,6 +1915,91 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-09T10:24:18.082Z"
+    "at": "2026-10-09T18:18:52.635Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "h7ic6vnrgwt1",
+    "status": "PARTIALLY_EXPLAINED",
+    "input_suspect": true,
+    "question": "Can North Texas win at the line of scrimmage?",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward North Texas, and its own breakdown accounts for about 0.9 of the 3.9 points, but not the full gap. Input warning: EdgeDesk’s published number sits 9.9 points from the middle of its own other models. It is a research question, not a bet.",
+    "gap": {
+      "points": 3.9,
+      "toward": "North Texas",
+      "other": "Charlotte"
+    },
+    "supporting": [
+      "When North Texas has the ball (pass protection against the pass rush): North Texas’ offense has allowed a sack on 2.9% of its dropbacks, and Charlotte’s defense sacks the quarterback on 5.2% of opponent dropbacks (FBS average 5.6%).",
+      "When North Texas has the ball (third down): North Texas’ offense converts 49.8% of its third downs, and Charlotte’s defense allows opponents to convert 50.3% of their third downs (FBS average 39.6%).",
+      "When Charlotte has the ball (third down): Charlotte’s offense converts 22.5% of its third downs, and North Texas’ defense allows opponents to convert 39.8% of their third downs (FBS average 39.6%).",
+      "When Charlotte has the ball (big plays through the air): Charlotte’s offense turns 4.8% of its pass plays into explosive gains, and North Texas’ defense gives up explosive gains on 9.2% of opponent pass plays (FBS average 10.4%)."
+    ],
+    "contradicting": [
+      "When Charlotte has the ball (pass protection against the pass rush): Charlotte’s offense has allowed a sack on 3.9% of its dropbacks, and North Texas’ defense sacks the quarterback on 5.5% of opponent dropbacks (FBS average 5.6%)."
+    ],
+    "quarterbacks": [
+      "Tayven Jackson has completed 118 of 166 passes (71.1%) for 1,490 yards, 9.0 yards per attempt, 9 touchdowns and 4 interceptions in five games for North Texas, and has been sacked on 3 of 169 dropbacks.",
+      "Cole Gonzales has completed 77 of 125 passes (61.6%) for 863 yards, 6.9 yards per attempt, 3 touchdowns and 7 interceptions in five games for Charlotte, and has been sacked on 5 of 130 dropbacks.",
+      "Conner Harrell has completed 13 of 19 passes (68.4%) for 93 yards, 4.9 yards per attempt, no touchdowns and no interceptions in two games for Charlotte, and has been sacked on 1 of 20 dropbacks."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "North Texas’ defense has to come out ahead at the line of scrimmage: it stops 18.0% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 28.7% of its runs.",
+        "North Texas’ defense has to slow Charlotte in the pass-rush matchup — Charlotte’s offense has allowed a sack on 3.9% of its dropbacks.",
+        "North Texas’ offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.9% of its dropbacks, and Charlotte’s defense sacks the quarterback on 5.2% of opponent dropbacks.",
+        "Home field has to be worth something close to the full 4.1 points EdgeDesk gives it."
+      ],
+      "market": [
+        "Charlotte’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.9% of its dropbacks, and North Texas’ defense sacks the quarterback on 5.5% of opponent dropbacks.",
+        "Charlotte’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 28.7% of its runs, and North Texas’ defense stops 18.0% of opponent runs at or behind the line.",
+        "Gonzales keeps producing at his season rate (61.6% completions, 6.9 yards per attempt, 3 TD, 7 INT)."
+      ]
+    },
+    "unknown": [
+      "EdgeDesk’s own sources disagree on sack rate and sack rate allowed for North Texas and Charlotte.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate.",
+      "The line on file was captured Oct. 7 and may have moved."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate (North Texas), sack rate allowed (Charlotte) and sack rate (Charlotte); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      },
+      {
+        "key": "CROSS_MODEL_OUTLIER",
+        "severity": "high",
+        "text": "EdgeDesk’s published number sits 9.9 points from the middle of its own other models."
+      },
+      {
+        "key": "HFA_CONSTANT",
+        "severity": "medium",
+        "text": "EdgeDesk’s model gives North Texas 4.1 points for playing at home — a league-wide value, not one measured for this stadium; historically, the closing market has priced about 61% of EdgeDesk’s home-field number."
+      },
+      {
+        "key": "REGIME_CHANGE",
+        "severity": "medium",
+        "text": "North Texas: new head coach; returning roster share at the 8th percentile; returning production at the 1st percentile; transfers out at the 87th percentile. The long-run state is weighted 68% (regime curve) instead of 80% (standard curve) at 5 games played."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-09T16:34:50.184Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-07T23:30:00.000Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }

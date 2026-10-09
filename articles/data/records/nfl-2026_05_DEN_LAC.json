@@ -24,7 +24,7 @@
   "game_when_label": "2026-10-11 20:05 UTC",
   "published_at": null,
   "updated_at": "2026-10-09T10:24:18.082Z",
-  "generated_at": "2026-10-09T10:24:18.082Z",
+  "generated_at": "2026-10-09T18:18:52.635Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 2.4-point gap is context only and the game is excluded from research ranking.",
@@ -1318,6 +1318,71 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-09T10:24:18.082Z"
+    "at": "2026-10-09T18:18:52.635Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "7q3zap10drh03",
+    "status": "UNEXPLAINED",
+    "input_suspect": false,
+    "question": "Can the Chargers’ pass rush get to Bo Nix?",
+    "assessment": "EdgeDesk’s number is 2.4 points closer to Los Angeles Chargers than the line, and EdgeDesk cannot account for most of that. The measured football evidence leans toward Denver Broncos, not toward EdgeDesk’s number. Treat the gap as an open research question, not as an edge.",
+    "gap": {
+      "points": 2.4,
+      "toward": "Los Angeles Chargers",
+      "other": "Denver Broncos"
+    },
+    "supporting": [
+      "When Denver Broncos have the ball: their run game ranks No. 17, and Los Angeles Chargers’ run defense ranks No. 5.",
+      "Los Angeles Chargers’ defense ranks No. 4 of 32 in efficiency allowed per play this season.",
+      "Los Angeles Chargers’ pass rush ranks No. 3 of 32 in sack rate this season.",
+      "Los Angeles Chargers’ pass defense ranks No. 8 of 32 in pass defense this season."
+    ],
+    "contradicting": [
+      "When Los Angeles Chargers have the ball: their passing game ranks No. 28, and Denver Broncos’ pass defense ranks No. 4.",
+      "When Los Angeles Chargers have the ball: their pass protection ranks No. 31, and Denver Broncos’ pass rush ranks No. 2.",
+      "Los Angeles Chargers’ pass protection ranks No. 31 of 32 in sack rate allowed this season.",
+      "Denver Broncos’ pass defense ranks No. 4 of 32 in pass defense this season."
+    ],
+    "quarterbacks": [
+      "Los Angeles Chargers’ passers have completed 71 of 120 (59.2%) for 816 yards, 6.8 yards per attempt, with 4 touchdowns, 6 interceptions and 12 sacks taken in four games.",
+      "Denver Broncos’ passers have completed 81 of 135 (60.0%) for 819 yards, 6.1 yards per attempt, with 5 touchdowns, 3 interceptions and 5 sacks taken in four games."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "The Los Angeles Chargers have to win in the pass-rush matchup (Denver Broncos’ No. 5 pass protection against Los Angeles Chargers’ No. 3 pass rush).",
+        "The Los Angeles Chargers have to hold their own in the pass-rush matchup (Los Angeles Chargers’ No. 31 pass protection against Denver Broncos’ No. 2 pass rush).",
+        "The Los Angeles Chargers have to hold their own through the air (Los Angeles Chargers’ No. 28 passing game against Denver Broncos’ No. 4 pass defense).",
+        "The Los Angeles Chargers have to win on the ground (Denver Broncos’ No. 17 run game against Los Angeles Chargers’ No. 5 run defense)."
+      ],
+      "market": [
+        "The Denver Broncos have to win in the pass-rush matchup (Los Angeles Chargers’ No. 31 pass protection against Denver Broncos’ No. 2 pass rush).",
+        "The Denver Broncos have to win through the air (Los Angeles Chargers’ No. 28 passing game against Denver Broncos’ No. 4 pass defense).",
+        "The Denver Broncos have to win in the pass-rush matchup (Denver Broncos’ No. 5 pass protection against Los Angeles Chargers’ No. 3 pass rush)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and injuries and personnel.",
+      "The line on file was captured Oct. 6 and may have moved."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-08T19:17:48.997Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-09T18:18:44.243Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }

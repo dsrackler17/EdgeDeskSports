@@ -24,7 +24,7 @@
   "game_when_label": "2026-10-13 00:15 UTC",
   "published_at": null,
   "updated_at": "2026-10-08T18:48:19.127Z",
-  "generated_at": "2026-10-09T10:24:18.082Z",
+  "generated_at": "2026-10-09T18:18:52.635Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 3.1-point gap is context only and the game is excluded from research ranking.",
@@ -1318,6 +1318,71 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-09T10:24:18.082Z"
+    "at": "2026-10-09T18:18:52.635Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "ecnjosegziz2",
+    "status": "UNEXPLAINED",
+    "input_suspect": false,
+    "question": "Can the Bills’ pass defense slow the Rams’ passing game?",
+    "assessment": "EdgeDesk’s number is 3.1 points closer to Buffalo Bills than the line, and EdgeDesk cannot account for most of that. The measured football evidence leans toward Los Angeles Rams, not toward EdgeDesk’s number. Treat the gap as an open research question, not as an edge.",
+    "gap": {
+      "points": 3.1,
+      "toward": "Buffalo Bills",
+      "other": "Los Angeles Rams"
+    },
+    "supporting": [
+      "When Buffalo Bills have the ball: their passing game ranks No. 2, and Los Angeles Rams’ pass defense ranks No. 17.",
+      "When Buffalo Bills have the ball: their run game ranks No. 1, and Los Angeles Rams’ run defense ranks No. 16.",
+      "Buffalo Bills’ offense ranks No. 1 of 32 in efficiency per play this season.",
+      "Buffalo Bills’ passing offense ranks No. 2 of 32 in passing efficiency this season."
+    ],
+    "contradicting": [
+      "When Los Angeles Rams have the ball: their run game ranks No. 11, and Buffalo Bills’ run defense ranks No. 28.",
+      "When Los Angeles Rams have the ball: their pass protection ranks No. 2, and Buffalo Bills’ pass rush ranks No. 27.",
+      "Los Angeles Rams’ offense ranks No. 4 of 32 in efficiency per play this season.",
+      "Los Angeles Rams’ pass protection ranks No. 2 of 32 in sack rate allowed this season."
+    ],
+    "quarterbacks": [
+      "Los Angeles Rams’ passers have completed 101 of 165 (61.2%) for 1,202 yards, 7.3 yards per attempt, with 6 touchdowns, 6 interceptions and 6 sacks taken in four games.",
+      "Buffalo Bills’ passers have completed 79 of 119 (66.4%) for 1,039 yards, 8.7 yards per attempt, with 6 touchdowns, 3 interceptions and 9 sacks taken in four games."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "The Buffalo Bills have to win through the air (Los Angeles Rams’ No. 5 passing game against Buffalo Bills’ No. 10 pass defense).",
+        "The Buffalo Bills have to slow the Los Angeles Rams in the pass-rush matchup (Los Angeles Rams’ No. 2 pass protection against Buffalo Bills’ No. 27 pass rush).",
+        "The Buffalo Bills have to slow the Los Angeles Rams on the ground (Los Angeles Rams’ No. 11 run game against Buffalo Bills’ No. 28 run defense).",
+        "The Buffalo Bills have to win through the air (Buffalo Bills’ No. 2 passing game against Los Angeles Rams’ No. 17 pass defense)."
+      ],
+      "market": [
+        "The Los Angeles Rams have to win in the pass-rush matchup (Los Angeles Rams’ No. 2 pass protection against Buffalo Bills’ No. 27 pass rush).",
+        "The Los Angeles Rams have to win on the ground (Los Angeles Rams’ No. 11 run game against Buffalo Bills’ No. 28 run defense).",
+        "The Los Angeles Rams have to win through the air (Los Angeles Rams’ No. 5 passing game against Buffalo Bills’ No. 10 pass defense)."
+      ]
+    },
+    "unknown": [
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel and conference implications.",
+      "The line on file was captured Oct. 6 and may have moved."
+    ],
+    "flags": [],
+    "sources": [
+      {
+        "label": "EdgeDesk NFL team ratings (2026)",
+        "url": null,
+        "path": "football/nfl/slate.json",
+        "observed_at": "2026-10-08T19:17:48.997Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "nflverse team-week stats (2026)",
+        "url": null,
+        "path": "football/nfl/stats_team_week_2026.csv",
+        "observed_at": "2026-10-09T18:18:44.243Z",
+        "verification": "VERIFIED_DATA"
+      }
+    ],
+    "needs_confirmation": []
   }
 }
