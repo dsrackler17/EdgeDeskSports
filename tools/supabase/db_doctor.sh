@@ -133,11 +133,18 @@ diagnose() {
     p.relid::regclass::text as vacuuming, p.phase
     from pg_stat_activity a left join pg_stat_progress_vacuum p using (pid)
     where a.backend_type not in ('client backend') order by a.backend_type"
-  sql "pg_cron: last 10 hours" "select j.jobname, d.status, to_char(d.start_time at time zone 'utc','MM-DD HH24:MI:SS') as start_utc,
-    date_trunc('second', coalesce(d.end_time, now())-d.start_time)::text as took,
-    left(regexp_replace(coalesce(d.return_message,''), '\s+', ' ', 'g'), 140) as msg
+  # one row per job, not per run: a stall turns every run into the same
+  # "job startup timeout", and 120 of those hide which jobs ever recovered
+  sql "pg_cron: last 10 hours, per job" "select j.jobname,
+    count(*) filter (where d.status='succeeded') as ok_10h,
+    count(*) filter (where d.status='failed') as failed_10h,
+    count(*) filter (where d.status='succeeded' and d.start_time >= pg_postmaster_start_time()) as ok_since_start,
+    count(*) filter (where d.status='failed' and d.start_time >= pg_postmaster_start_time()) as failed_since_start,
+    to_char(max(d.start_time) filter (where d.status='succeeded') at time zone 'utc','MM-DD HH24:MI') as last_ok_utc,
+    left(regexp_replace((array_agg(d.return_message order by d.start_time desc) filter (where d.status='failed'))[1], '\s+', ' ', 'g'), 90) as last_failure
     from cron.job_run_details d left join cron.job j using (jobid)
-    where d.start_time > now()-interval '10 hours' order by d.start_time desc limit 120"
+    where d.start_time > now()-interval '10 hours'
+    group by 1 order by failed_since_start desc, failed_10h desc"
   sql "pg_cron: jobs" "select jobid, jobname, schedule, active, left(regexp_replace(command, '\s+', ' ', 'g'), 110) as command from cron.job order by jobid"
   sql "pg_net backlog" "select (select count(*) from net.http_request_queue) as queued,
     (select count(*) from net._http_response where created > now()-interval '1 hour') as responses_1h,
@@ -145,6 +152,21 @@ diagnose() {
   sql "Largest tables" "select relname, pg_size_pretty(pg_total_relation_size(relid)) as total, n_live_tup, n_dead_tup,
     to_char(last_autovacuum,'MM-DD HH24:MI') as last_autovac
     from pg_stat_user_tables order by pg_total_relation_size(relid) desc limit 20"
+  # where the space sits, from the catalog alone: no table is scanned, so this
+  # stays cheap on an instance whose disk IO is the scarce thing
+  sql "Largest tables: rows vs out-of-line values vs indexes" "select c.relname,
+    pg_size_pretty(pg_relation_size(c.oid)) as heap,
+    pg_size_pretty(coalesce(pg_total_relation_size(nullif(c.reltoastrelid, 0)), 0)) as toast,
+    pg_size_pretty(pg_indexes_size(c.oid)) as indexes,
+    (select count(*) from pg_index i where i.indrelid = c.oid) as n_indexes
+    from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    where c.relkind = 'r' and n.nspname not in ('pg_catalog', 'information_schema')
+    order by pg_total_relation_size(c.oid) desc limit 6"
+  sql "Widest columns of the largest table (planner statistics, no scan)" "with t as (
+      select s.relname from pg_stat_user_tables s order by pg_total_relation_size(s.relid) desc limit 1)
+    select st.tablename, st.attname, st.avg_width, round(st.null_frac::numeric, 3) as null_frac
+    from pg_stats st join t on t.relname = st.tablename
+    where st.schemaname = 'public' order by st.avg_width desc limit 12"
 }
 
 cancel_stuck() {
