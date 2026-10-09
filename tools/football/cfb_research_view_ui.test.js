@@ -52,6 +52,8 @@ const E = M.loadEngine(win, ROOT);
 /* the page loads the research view with a plain <script> tag */
 const LIB = 'lib/cfb_research_view.js';
 has(BOOT.app, '<script src="/' + LIB + '?v=', 'app.html loads ' + LIB);
+has(BOOT.app, '<script src="/lib/edgedesk_calc.js?v=', 'app.html loads lib/edgedesk_calc.js (the one calculation layer)');
+if (!win.EDCalc) vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_calc.js'), 'utf8'), win, { filename: 'lib/edgedesk_calc.js' });
 vm.runInContext(fs.readFileSync(path.join(ROOT, LIB), 'utf8'), win, { filename: LIB });
 ok(!!win.EDCfbResearchView, 'the research view is on window, as the page reads it');
 /* …and the one research classifier it delegates to (audit 2026-09-30 #6) */
@@ -116,7 +118,10 @@ section('STEP 1 · near pick’em: the side, the one-point floor and the badge')
   const s = stageAt(-0.31);
   const v = T.fbP4ViewFor(s.u, s.p);
   ok(Math.abs(s.p.model.fair_spread + 0.31) < 1e-9, 'the raw margin was steered to -0.31', s.p.model.fair_spread);
-  eq(v.fair.fair_line_text, AWAY + ' -1.0', 'the view names the away side at the one-point floor');
+  /* 2026-10-08 (docs/system-integrity/AUDIT.md §1a): the view prints the
+     model's own number, tagged, never the engine's one-point display floor */
+  eq(v.fair.fair_line_text, AWAY + ' -0.3 (near pick’em)', 'the view names the away side at its own number, tagged near pick’em');
+  eq(v.fair.floor_line_text, AWAY + ' -1.0', 'the engine’s floor is kept as its own field');
   eq(v.raw_projected_margin, s.p.model.fair_spread, 'and keeps the engine’s raw margin, untouched');
   eq(v.is_near_pickem, true, 'and flags the near pick’em');
   const card = T.fbGxSummary(s.u, s.p, 'RV1');
@@ -158,7 +163,8 @@ section('STEP 2 · the market gap on the card and the board row');
   /* the near pick'em floor never manufactures a gap */
   const n = stageAt(-0.31, { market_spread: -2.5 });
   const vn = T.fbP4ViewFor(n.u, n.p);
-  eq(Math.round(vn.market_gap.points * 100) / 100, 2.81, 'a near pick’em’s gap is its raw 2.81, not the 3.5 its display line implies');
+  eq(vn.market_gap.points, 2.8, 'a near pick’em’s gap is the difference of the printed lines (-0.3 vs -2.5 = 2.8), never the floor’s 3.5');
+  eq(Math.round(vn.market_gap.points_exact * 100) / 100, 2.81, 'with the full-precision 2.81 kept beside it');
   has(T.fbGxSummary(n.u, n.p, 'RV1'), '2.8 pts', 'and the card prints 2.8');
 
   const none = stageAt(-4);
@@ -543,9 +549,9 @@ section('STEP 9 · top 5 worth researching, on the college board');
   const ix = {}; units.forEach(u => { ix[String(u.g.game_id)] = u; });
   const npc = T.fbWrCandidate(npRow, ix);
   const row = T.fbWrRowHTML({ rank: 1, candidate: npc, why: { text: 'x' }, detail: { uncertainty: { elevated: false, reasons: [] } } });
-  has(row, '<i>Model</i><b>Oregon -1.0', 'the overview list prints the near pick’em at its one-point display line');
-  lacks(row, '<i>Model</i><b>Oregon -0.3', 'never as the raw 0.3');
-  lacks(row, '<i>Model</i><b>Oregon +0.3', 'in either sign');
+  has(row, '<i>Model</i><b>Oregon -0.3', 'the overview list prints the near pick’em at its own number (never the floor)');
+  lacks(row, '<i>Model</i><b>Oregon -1.0', 'never as the -1.0 display floor');
+  lacks(row, '<i>Model</i><b>Oregon +0.3', 'and never on the wrong side');
   has(row, '<i>Confidence</i><b title="EdgeDesk information confidence: how good the inputs for this game are">' + npc.view.confidence.pct_text,
     'and its confidence is the research view’s own');
   has(row, 'NEAR PICK’EM', 'with its badge');

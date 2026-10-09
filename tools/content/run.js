@@ -92,46 +92,74 @@ const sha256 = (t) => require('crypto').createHash('sha256').update(t).digest('h
 const usageOf = (reply) => (reply && reply.usage ? Object.assign({}, reply.usage, { model: reply.model || undefined }) : null);
 
 /* Improve a deterministic draft with Claude, keeping only a version that
-   passes every check. Returns { article, report, generator, notes }. */
+   passes every check. Returns { article, report, generator, notes, calls }.
+   ctx.db (required for any call): THE ONE AI LEDGER (supabase/content_engine.sql
+   6d) — every call is reserved at its worst case against the monthly cap
+   before it is made and settled with the API's own usage after it; an
+   identical request already answered is served from the ledger at no cost.
+   No db, no call. `calls` lists the ledger rows made for this draft, so the
+   article can name what it cost (content_engine_template_report). */
 async function aiPass(o, a, ctx) {
-  const notes = [];
+  const notes = [], calls = [];
   let objections = [];
   /* no ledger, no call: every AI dollar goes through the database's budget */
   if (!ctx.db) { notes.push('no budget ledger: AI skipped'); return null; }
   const pre = CE.ai.precheck(a, o, ctx.now);
   if (pre.length) { notes.push('research_first: ' + pre.join('; ')); return null; }
   const settle = (id, usage, outcome, result, obj) => ctx.db.rpc('public', 'content_engine_ai_settle', { p_call: id, p_usage: usage, p_outcome: outcome, p_result: result || null, p_objections: obj || null }).catch(() => null);
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const req = CE.ai.buildRequest(o, { publisher: ctx.publisher, format: a.format, current: a, objections });
+  /* TARGETED REGENERATION (Five Games to Watch): when a rejected draft's
+     failures all name one or two games, the next call rewrites only those
+     game sections (a section request: a fraction of the tokens) instead of
+     the article. At most three calls in all, each reserved and settled. */
+  let current = a, sections = [null];
+  for (let attempt = 0; attempt < 3 && sections.length; attempt++) {
+    const section = sections.shift();
+    if (attempt === 2 && section === null) break;
+    const req = CE.ai.buildRequest(o, { publisher: ctx.publisher, format: a.format, current, objections, section: section || undefined });
     const rsv = await ctx.db.rpc('public', 'content_engine_ai_reserve', { p_operation: req.operation, p_article: null, p_model: ctx.model,
       p_request_hash: sha256(CE.ai.requestKey(req, ctx.model)), p_max_output_tokens: req.max_tokens, p_input_tokens_est: CE.ai.inputEstimate(req), p_attempt: attempt + 1 }).catch(() => null);
     if (!rsv || rsv.ok !== true) { notes.push((rsv && rsv.reason) || 'budget_exhausted'); break; }
+    calls.push(rsv.call_id);
     let next, reply = null;
     if (rsv.cached) {
-      if (rsv.outcome !== 'accepted' || !rsv.result) { objections = Array.isArray(rsv.objections) ? rsv.objections : objections; notes.push('previously_rejected'); continue; }
+      if (rsv.outcome !== 'accepted' || !rsv.result) { objections = Array.isArray(rsv.objections) ? rsv.objections : objections; notes.push('previously_rejected'); if (!sections.length && attempt === 0) sections.push(null); continue; }
       next = rsv.result;
     } else {
       try { reply = await callClaude(req, ctx); } catch (e) { await settle(rsv.call_id, null, e.status ? 'error' : 'unknown'); notes.push('api_error ' + (e.status || '')); break; }
-      const parsed = CE.ai.parseReply(reply, a);
-      if (!parsed.ok) { await settle(rsv.call_id, usageOf(reply), parsed.reason === 'refusal' ? 'refused' : parsed.reason === 'max_tokens' ? 'max_tokens' : 'error'); notes.push(parsed.reason); if (parsed.reason === 'refusal') break; continue; }
+      const parsed = CE.ai.parseReply(reply, current);
+      if (!parsed.ok) {
+        await settle(rsv.call_id, usageOf(reply), parsed.reason === 'refusal' ? 'refused' : parsed.reason === 'max_tokens' ? 'max_tokens' : 'error');
+        notes.push(parsed.reason); if (parsed.reason === 'refusal') break;
+        if (!sections.length) sections.push(null);
+        continue;
+      }
       next = parsed.article;
     }
     const rep = CE.validate(next, o, { publisher: ctx.publisher, now: ctx.now, teamLists: ctx.teamLists });
     if (rep.ok) {
       if (!rsv.cached) await settle(rsv.call_id, usageOf(reply), 'accepted', next);
-      return { article: next, report: rep, generator: rsv.cached ? 'claude:cached' : 'claude:' + String(reply.model || ctx.model).slice(0, 60), notes, cached: !!rsv.cached };
+      return { article: next, report: rep, generator: rsv.cached ? 'claude:cached' : 'claude:' + String(reply.model || ctx.model).slice(0, 60), notes, cached: !!rsv.cached, calls };
     }
     objections = CE.ai.objections(rep);
     if (!rsv.cached) await settle(rsv.call_id, usageOf(reply), 'discarded', next, objections);
-    notes.push('discarded: ' + objections.join(' | ').slice(0, 300));
+    notes.push('discarded' + (section ? ' (' + section + ')' : '') + ': ' + objections.join(' | ').slice(0, 300));
+    if (o.kind === 'games_to_watch') {
+      const fs = CE.ai.failingSections(rep, next);
+      if (!fs.whole_article && fs.sections.length && fs.sections.length <= 2) { current = next; sections = fs.sections.slice(); continue; }
+    }
+    current = a;
+    if (!sections.length && attempt === 0) sections.push(null);
   }
-  return null;
+  return calls.length ? { article: null, notes, calls } : null;
 }
 
 /* ── discovery ──────────────────────────────────────────────────────────── */
 async function discoverAll(o) {
   const art = o.art || ART.load();
-  const snap = CE.research.fromArtifacts(art, { now: o.now });
+  /* the owner's broadcast verifications (content_engine.broadcast_checks) */
+  let broadcastChecks = o.broadcastChecks || [];
+  if (!o.broadcastChecks && o.db) { try { const r = await o.db.rpc('public', 'content_engine_broadcast_checks_current', {}); if (Array.isArray(r)) broadcastChecks = r; } catch (_) { /* none on file */ } }
+  const snap = CE.research.fromArtifacts(art, { now: o.now, broadcastChecks });
   let news = [], feedProblems = [];
   if (o.network) {
     const fr = await fetchFeeds(['cfb', 'nfl'], { fetch: o.fetch, spend: o.spend });
@@ -178,14 +206,25 @@ async function weekly(o) {
     const targets = await db.rpc('public', 'content_engine_job_targets', { p_publisher: publisher ? publisher.id : null, p_limit: settings.drafts_per_run });
     for (const t of targets || []) {
       const format = (t.formats || [])[0] || (t.league + '_weekly_preview');
+      /* a stored opportunity carries the research it was discovered with;
+         the games-to-watch packets are re-verified against today's
+         broadcast checks before anything is written from them */
+      if (t.kind === 'games_to_watch' && t.research && d.snap.cfb && d.snap.cfb.matchups) {
+        const live = {}; d.snap.cfb.matchups.packets.forEach((m) => { live[m.game_id] = m; });
+        t.research.matchups = (t.research.matchups || []).map((m) => live[m.game_id] || m);
+      }
       let a = CE.draft(t, { publisher, format, now: o.now });
       let rep = CE.validate(a, t, { publisher, now: o.now, teamLists: d.teamLists });
+      let aiCalls = [];
       if (o.anthropicKey) {
         const ai = await aiPass(t, a, { publisher, now: o.now, teamLists: d.teamLists, db, key: o.anthropicKey, model: o.model, fetch: o.fetch, backoffMs: o.backoffMs });
-        if (ai) { a = Object.assign({}, ai.article, { generator: ai.generator }); rep = ai.report; counts.ai_used++; }
+        aiCalls = (ai && ai.calls) || [];
+        if (ai && ai.article) { a = Object.assign({}, ai.article, { generator: ai.generator }); rep = ai.report; counts.ai_used++; }
         else { counts.ai_discarded++; await note('ai_discarded', { opportunity: t.key, reason: 'kept the deterministic draft' }, { p_opportunity: t.id }); }
       }
-      const c = await db.rpc('public', 'content_engine_article_create', { p_opportunity: t.id, p_publisher: publisher ? publisher.id : null, p_format: format, p_angle: 'full_slate', p: Object.assign({}, a, { checks: rep }), p_run: run });
+      /* the editorial review report (READY / HOLD / REJECT) travels with the checks */
+      const review = CE.FORMATS[format] && CE.FORMATS[format].edition ? CE.gamesToWatch.review(a, t, rep) : null;
+      const c = await db.rpc('public', 'content_engine_article_create', { p_opportunity: t.id, p_publisher: publisher ? publisher.id : null, p_format: format, p_angle: 'full_slate', p: Object.assign({}, a, { checks: review ? Object.assign({}, rep, { review }) : rep, ai_calls: aiCalls }), p_run: run });
       if (!c || !c.ok) { await note('generation_failed', { opportunity: t.key, reason: c && (c.detail || c.reason) }, { p_opportunity: t.id }); continue; }
       if (c.existing) continue;
       counts.drafted++;
@@ -197,6 +236,19 @@ async function weekly(o) {
         const gs = row && await db.rpc('public', 'content_engine_article_gate', { p_id: c.id, p_content_hash: row.content_hash, p_report: g });
         if (gs && gs.ok) counts['gate_' + g.verdict.toLowerCase()] = (counts['gate_' + g.verdict.toLowerCase()] || 0) + 1;
       } catch (e) { await note('job_note', { gate: 'not stored', reason: String(e && e.message || e).slice(0, 200) }, { p_article: c.id }); }
+      if (review && review.verdict === 'REJECT') {
+        /* fails an essential requirement even after the retries: rejected
+           automatically, with the reasons, so it never reaches the queue */
+        const rj = await db.rpc('public', 'content_engine_article_auto_reject', { p_id: c.id, p_reasons: review.reject });
+        counts.auto_rejected = (counts.auto_rejected || 0) + (rj && rj.ok ? 1 : 0);
+        await note('auto_rejected', { reasons: review.reject.map((x) => x.id) }, { p_article: c.id, p_opportunity: t.id });
+        continue;
+      }
+      if (review && review.verdict === 'HOLD') {
+        counts.held = (counts.held || 0) + 1;
+        await note('held_for_verification', { hold: review.hold }, { p_article: c.id, p_opportunity: t.id });
+        continue;
+      }
       if (rep.ok) {
         const s = await db.rpc('public', 'content_engine_article_submit', { p_id: c.id });
         if (s && s.ok) counts.queued_for_review++; else counts.kept_as_draft++;
@@ -225,8 +277,11 @@ async function example(o) {
   let rep = CE.validate(a, opp, { publisher, now: o.now, teamLists: d.teamLists });
   let generator = a.generator;
   if (o.ai && o.anthropicKey) {
-    const ai = await aiPass(opp, a, { publisher, now: o.now, teamLists: d.teamLists, key: o.anthropicKey, model: o.model, db: o.db || null });
-    if (ai) { a = ai.article; rep = ai.report; generator = ai.generator; }
+    /* the example's AI pass is metered like every other call: it needs the
+       database's ledger, or it makes no call */
+    if (!o.db) throw new Error('--ai needs the database AI ledger (the content engine’s monthly cap): set SB_URL and SB_SERVICE_ROLE, or leave out --ai for the deterministic draft');
+    const ai = await aiPass(opp, a, { publisher, now: o.now, teamLists: d.teamLists, key: o.anthropicKey, model: o.model, db: o.db });
+    if (ai && ai.article) { a = ai.article; rep = ai.report; generator = ai.generator; }
   }
   const campaign = CE.campaignCode(publisher && publisher.slug, 'example' + CE.util.hash(opp.key).slice(0, 5));
   const ctx = { publisher, campaign, opportunity: opp, landing: CE.SITE + '/today/' };
@@ -240,6 +295,43 @@ async function example(o) {
   return { file: base + '.md', words: a.word_count, ok: rep.ok, failed: rep.failed, warned: rep.warned, generator, priority: opp.priority };
 }
 
+/* ── EdgeDesk's own edition of Five Games to Watch ──────────────────────── */
+/* docs/content-engine/GAMES_TO_WATCH.md §First-party publication. Writes the
+   EdgeDesk edition from this week's packets, checks it, and publishes it
+   through the one article store ONLY when every gate passes and the owner
+   has switched football/content/config.json first_party_auto_publish on.
+   It never contacts an outside publisher. */
+function contentConfig() {
+  try { return JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'football', 'content', 'config.json'), 'utf8')); } catch (_) { return {}; }
+}
+async function firstParty(o) {
+  const FP = require(path.join(__dirname, 'first_party.js'));
+  const d = await discoverAll({ now: o.now, publisher: null, network: false, db: o.db || null, art: o.art });
+  const opp = d.opps.find((x) => x.kind === 'games_to_watch');
+  if (!opp) return { ok: false, action: 'none', reason: 'no games-to-watch opportunity this week (no packets for the current week, or fewer than three games pass the reasoning gate)' };
+  const a = CE.draft(opp, { format: 'weekly_games_to_watch_first_party', now: o.now });
+  /* the publisher edition from the same packets is the sibling it must not duplicate */
+  const sib = CE.draft(opp, { publisher: CE.PUBLISHER_TEMPLATES['stadium-rant'], format: 'weekly_games_to_watch', now: o.now });
+  const rep = CE.validate(a, opp, { now: o.now, teamLists: d.teamLists, siblings: [{ id: 'publisher_edition', title: sib.title, text: sib.sections.map((x) => x.body).join('\n\n') }] });
+  const rec = FP.recordFor(a, opp, rep);
+  const review = rec.gtw.review;
+  const fresh = FP.broadcastsFresh(rec, o.now);
+  const cfg = Object.assign({ first_party_auto_publish: false }, o.config || contentConfig());
+  const out = { ok: false, action: 'draft', id: rec.id, slug: rec.slug, verdict: review.verdict, integrity: rep.integrity_status, broadcasts: fresh, auto_publish: !!cfg.first_party_auto_publish,
+    reject: review.reject, hold: review.hold, informativeness: CE.gamesToWatch.informativeness(a, opp) };
+  if (!cfg.first_party_auto_publish) { out.reason = 'first_party_auto_publish is off (football/content/config.json): nothing published'; return out; }
+  if (review.verdict !== 'READY' || !rep.ok || !fresh.ok) { out.reason = 'not every gate passes: ' + (review.verdict !== 'READY' ? review.verdict : '') + (fresh.ok ? '' : ' broadcasts to re-verify: ' + fresh.held.join(', ')); return out; }
+  const STORE = require(path.join(__dirname, '..', 'articles', 'store.js'));
+  const PUB = require(path.join(__dirname, '..', 'editorial', 'publisher.js'));
+  const prev = STORE.load(rec.id);
+  const res = PUB.publish(Object.assign({}, prev || {}, AMODEL_hydrate(rec)), { now: o.now, others: STORE.loadAll(), previous: prev });
+  out.action = res.action; out.ok = !!res.ok; out.blocking = res.blocking;
+  if (o.dryRun) { out.reason = 'dry run: nothing written'; return out; }
+  if (res.ok) { STORE.save(res.record); STORE.saveIndex(null, { now: o.now }); }
+  return out;
+}
+function AMODEL_hydrate(rec) { return require(path.join(__dirname, '..', 'articles', 'article_model.js')).hydrate(rec); }
+
 /* ── CLI ────────────────────────────────────────────────────────────────── */
 async function main() {
   const cmd = process.argv[2];
@@ -247,9 +339,17 @@ async function main() {
   const anthropicKey = process.env.ANTHROPIC_API_KEY || '';
   const model = process.env.CONTENT_ENGINE_MODEL || 'claude-opus-5-5';
   if (cmd === 'example') {
-    const r = await example({ now, out: arg('out', 'content-example'), league: arg('league'), kind: arg('kind'), format: arg('format'), ai: flag('ai'), anthropicKey, model });
+    const ecfg = flag('ai') ? PGR.config(process.env) : null;
+    const r = await example({ now, out: arg('out', 'content-example'), league: arg('league'), kind: arg('kind'), format: arg('format'), ai: flag('ai'), anthropicKey, model, db: ecfg ? PGR.client(ecfg) : null });
     console.log((r.ok ? 'OK' : 'CHECKS FAIL') + ' | ' + r.file + ' | ' + r.words + ' words | priority ' + r.priority + ' | ' + r.generator + (r.failed.length ? ' | failed: ' + r.failed.join(', ') : '') + (r.warned.length ? ' | warnings: ' + r.warned.join(', ') : ''));
     process.exit(r.ok ? 0 : 1);
+  }
+  if (cmd === 'first-party') {
+    const r = await firstParty({ now, dryRun: flag('dry-run') });
+    console.log('first-party games to watch: ' + r.action + (r.verdict ? ' | review ' + r.verdict : '') + (r.integrity ? ' | integrity ' + r.integrity : '') + (r.reason ? ' | ' + r.reason : '')
+      + (r.informativeness ? ' | ' + r.informativeness.independent_facts + ' independent facts across ' + r.informativeness.games + ' games' : ''));
+    if (r.ok && (r.action === 'published' || r.action === 'republished')) console.log('::notice::published ' + r.slug + ' — rebuild the article site (tools/articles/build_articles.js)');
+    return;
   }
   const cfg = PGR.config(process.env);
   if (cmd === 'discover') {
@@ -275,4 +375,4 @@ async function main() {
 }
 
 if (require.main === module) main().catch((e) => { console.error('content engine: ' + (e && e.stack || e)); process.exit(1); });
-module.exports = { weekly, example, discoverAll, fetchFeeds, callClaude, aiPass };
+module.exports = { firstParty, contentConfig, weekly, example, discoverAll, fetchFeeds, callClaude, aiPass };

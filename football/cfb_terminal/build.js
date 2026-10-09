@@ -71,6 +71,11 @@ const INTEG = (() => { try { return require(path.join(ROOT, 'football', 'cfb_lab
    engine): one BET / LEAN / WATCH / PASS / NO DECISION answer per game, on
    the same model and quotes as quote EV */
 const BDS = require(path.join(__dirname, 'decisions.js'));
+/* KICKOFF TRUTH, WEEK SCOPE AND THE INTEGRITY ENGINE (docs/system-integrity):
+   every row says whether its kickoff is a time or a placeholder, whether it is
+   this week's research or look-ahead, and what each boundary would block */
+const SCHED = require(path.join(ROOT, 'lib', 'edgedesk_schedule.js'));
+const INTEGRITY = require(path.join(ROOT, 'lib', 'edgedesk_integrity.js'));
 
 function arg(name, dflt) { const i = process.argv.indexOf('--' + name); return i > 0 ? process.argv[i + 1] : dflt; }
 function flag(name) { return process.argv.indexOf('--' + name) > 0; }
@@ -287,6 +292,12 @@ function buildGame(ctx, row) {
   const game = { game_id: gid, season: row.season, week: row.week, kickoff: row.kickoff, home: row.home_team, away: row.away_team,
     neutral_site: !!row.neutral_site, venue: row.venue || null, home_conference: row.home_conference, away_conference: row.away_conference,
     matchup_type: row.matchup_type || null, fcs: fcs, cross_conference: !fcs && row.matchup_type && row.matchup_type !== 'conference' };
+  {
+    const kick = SCHED.kickoffOf({ kickoff: row.kickoff, start_time_tbd: row.kickoff_tbd == null ? undefined : row.kickoff_tbd });
+    game.kickoff_tbd = row.kickoff_tbd == null ? null : !!row.kickoff_tbd;
+    game.kickoff_state = kick.state; game.kickoff_basis = kick.basis; game.game_date = kick.game_date;
+    game.week_scope = SCHED.scope(row, ctx.currentWeek);
+  }
 
   /* the market consensus first: the champion's cover curve is conditioned on it */
   const quotesEarly = (ctx.ledger.quotes.get(gid) || []).filter((q) => ms(q.observed_at) != null && ms(q.observed_at) <= now && (!row.kickoff || ms(q.observed_at) < ms(row.kickoff)));
@@ -1034,7 +1045,11 @@ function main() {
   }
   const slateAgeH = (now - Date.parse(slate.generated_at)) / 3600e3;
   if (slateAgeH > 12) warnings.push('The champion slate is ' + Math.round(slateAgeH) + ' h old.');
+  /* the schedule's own week (EDSchedule.currentWeek) on this build's clock */
+  const currentWeek = SCHED.currentWeek(slate.games.map((g) => ({ season: g.season, week: g.week, season_type: g.season_type || null,
+    kickoff: g.kickoff, start_time_tbd: g.kickoff_tbd == null ? undefined : g.kickoff_tbd })), now);
   const ctx = {
+    currentWeek: currentWeek,
     now: now, gov: gov, slate: slate, v2: v2, ledger: ledger, recordRows: recordRows, recordGames: recordFile.games || {},
     metrics: readJson('football/matchup/metrics.json', { teams: {} }), history: loadHistory(season), cfg: cfg,
     etsr: loadEtsr(season), divergenceCut: divergenceCut(), pricingFingerprint: pricingFingerprint(),
@@ -1097,8 +1112,11 @@ function main() {
   const cal = T.calibration(recordRows);
   const bench = T.benchmark(recordRows, { n: (() => { let k = 0; ledger.lines.forEach((ls) => { if (ls.some((l) => l.kind === 'OPEN' && l.market_type === 'spread' && num(l.home_line) != null)) k++; }); return k; })(),
     note: 'openers the Lab archived with a line; the rest are MISSING, so an opener benchmark waits for the archive' });
-  const weekOf = objs.length ? objs.map((o) => o.week).sort()[0] : null;
-  const brief = T.brief(objs, { generated_at: new Date(now).toISOString(), season: season, week: weekOf });
+  /* THIS WEEK'S BRIEF reads this week's games only: a look-ahead game is never
+     in it. (The week used to be objs.map(week).sort()[0], a STRING sort that
+     names week 10 during a week 9–10 slate.) */
+  const weekOf = currentWeek ? currentWeek.week : (objs.length ? objs.map((o) => o.week).filter((w) => w != null).sort((a, b) => a - b)[0] : null);
+  const brief = T.brief(objs.filter((o) => o.week_scope !== 'FUTURE_WEEK'), { generated_at: new Date(now).toISOString(), season: season, week: weekOf });
   ctx.readRows = RL.all_reads; ctx.readGrades = RL.all_grades;
   const pg = postgame(ctx);
 
@@ -1134,6 +1152,45 @@ function main() {
   objs.forEach((o) => { const x = readOf[o.game_id] || {}; games.games[o.game_id] = Object.assign({}, o, { read: x.read || null, read_inputs: x.read_inputs || null, ev: x.ev || null, ev_history: x.ev_history || [], quote_ev: quoteEvGame(x.quote_ev),
     disagreement_explainer: x.explainer || null }); });
   games.read = { version: RD.VERSION, timing_vocabulary: RD.TIMING, research_vocabulary: RD.RESEARCH_STATUS, validation: RL.validation, ledger: RL.paths };
+
+  /* THE INTEGRITY ENGINE at three boundaries, on every game: the research
+     record (the data contract), what the dashboard warns about, what blocks a
+     decision, what blocks a publication — each with its rule ids — and the two
+     classifications explained side by side */
+  const slateById = {};
+  slate.games.forEach((g) => { slateById[String(g.game_id)] = g; });
+  const ictx = { now: now, current_week: currentWeek, champion: gov.champion };
+  const recs = [];
+  board.rows.forEach((row) => {
+    const go = games.games[row.game_id];
+    const rec = INTEGRITY.fromTerminalGame(go, { slate_row: slateById[row.game_id] || null, board_row: row });
+    recs.push(rec);
+  });
+  const sets = {};
+  ['RESEARCH_DASHBOARD', 'BETTING_DECISION', 'PUBLISHER_EXPORT'].forEach((bd) => { sets[bd] = INTEGRITY.evaluateSet(recs, bd, ictx); });
+  const nonPass = (r) => r.checks.filter((c) => c.status !== 'PASS').map((c) => c.rule_id + ':' + c.status);
+  board.rows.forEach((row, i) => {
+    const rec = recs[i], d = sets.RESEARCH_DASHBOARD.results[i], dc = sets.BETTING_DECISION.results[i], ex = sets.PUBLISHER_EXPORT.results[i];
+    const why = INTEGRITY.explainStatuses(rec, { now: now, bet_enabled: !!(gov.policy && gov.policy.bet_enabled) }), evx = INTEGRITY.explainEv(rec);
+    Object.assign(row, { kickoff_state: rec.kickoff.state, kickoff_tbd: games.games[row.game_id].kickoff_tbd, game_date: rec.kickoff.game_date,
+      week_scope: games.games[row.game_id].week_scope, gap_exact: games.games[row.game_id].disagreement ? games.games[row.game_id].disagreement.points_exact || null : null,
+      integrity: { record_id: rec.record_id, calc_version: rec.calc_version, version: INTEGRITY.VERSION,
+        dashboard: { status: d.status, rules: nonPass(d) }, decision: { status: dc.status, blocking: dc.blocking.map((c) => c.rule_id) },
+        publication: { status: ex.status, blocking: ex.blocking.map((c) => c.rule_id) },
+        why_differ: why.why_differ, ev_rejected: evx.rejected, ev_text: evx.rejected ? evx.text : null } });
+    games.games[row.game_id].record = rec;
+    games.games[row.game_id].integrity = { version: INTEGRITY.VERSION,
+      dashboard: { status: d.status, checks: d.checks.filter((c) => c.status !== 'PASS') },
+      decision: { status: dc.status, checks: dc.checks.filter((c) => c.status !== 'PASS') },
+      publication: { status: ex.status, checks: ex.checks.filter((c) => c.status !== 'PASS') },
+      statuses: why, ev: { rejected: evx.rejected, text: evx.text, calibration: evx.calibration } };
+  });
+  board.current_week = currentWeek;
+  /* the corrected counts: each says what it counts, and they reconcile */
+  board.counts.integrity = INTEGRITY.countBoard(board.rows.map((row, i) => ({ research_key: row.research_status, scope: row.week_scope,
+    kickoff_verified: recs[i].kickoff.verified,
+    market_state: !recs[i].market.available ? 'NONE' : (recs[i].market.fault || row.research_status === 'MARKET_FAULT' || row.research_status === 'DATA_FAULT' ? 'FAULT' : (row.market_stale ? 'STALE' : 'FRESH')) })));
+  board.counts.integrity.by_boundary = { dashboard: sets.RESEARCH_DASHBOARD.counts, decision: sets.BETTING_DECISION.counts, publication: sets.PUBLISHER_EXPORT.counts };
   /* what the page needs to re-price the EV read on the reader's clock: the pinned calibrator artifact and policy */
   games.ev = { engine: EV.VERSION, artifact: evCfg.artifact || null, policy: evCfg.policy || null, decision_vocabulary: EV.DECISION, tooltip: EV.TOOLTIP, validation: EVL.validation, ledger: EVL.paths };
   const record = Object.assign({ schema: 'edgedesk_cfb_terminal_record_v1' }, meta, {
@@ -1180,6 +1237,14 @@ function main() {
     if (ev && ev.price_curve && ev.price_curve.coherent === false && ev.decision_status !== 'NO_DECISION') problems.push(o.game_id + ': an incoherent price curve outside NO DECISION');
   });
   BDS.problems(bettors).forEach((p) => problems.push(p));
+  /* the build's own numbers must reconcile, and a placeholder is never a time */
+  sets.RESEARCH_DASHBOARD.results.forEach((r) => {
+    r.checks.forEach((c) => { if (c.rule_id === 'CALC.GAP_RECONCILES' && c.status === 'BLOCKED') problems.push(r.game_id + ': ' + c.explanation); });
+  });
+  board.rows.forEach((row) => {
+    const sr = slateById[row.game_id];
+    if (sr && sr.kickoff_tbd === true && row.kickoff_state === 'CONFIRMED') problems.push(row.game_id + ': a TBA kickoff reached the board as confirmed');
+  });
   if (problems.length) { console.error('terminal build refused:\n  ' + problems.join('\n  ')); process.exit(1); }
 
   const summary = { games: objs.length, counts: board.counts, read_counts: board.read_counts, new_snapshots: newSnaps.length, postgame: pg.length, record_rows: recordRows.length,

@@ -7,8 +7,16 @@
    that measures the game moves. This file pins the page: the card, the copy
    brief and the canonical research payload (which the published brief, the
    AI desk, articles, the newsletter and the editorial snapshot all read)
-   show the floored line, while the raw margin is still what is stored and
-   what is graded.
+   show the model's OWN number at the canonical precision, tagged near
+   pick'em, while the raw margin is still what is stored and what is graded.
+
+   2026-10-08 (docs/system-integrity/AUDIT.md §1a): the page used to print the
+   engine's one-point DISPLAY FLOOR here ("Ole Miss -1.0" on a -0.18 margin)
+   beside a gap measured from the raw margin, so the printed difference could
+   not be reproduced from the printed lines. The floor stays in the engine's
+   output (football/cfb_p4/fair_line.test.js pins it); the page no longer
+   prints it, and every printed difference is the difference of the printed
+   lines (lib/edgedesk_calc.js).
 
    It boots the real module out of app.html (tools/football/_module.js) and
    the committed engine, stages a game, and steers its raw margin through the
@@ -73,7 +81,7 @@ section('1. a near pick’em favouring the home side by 0.37');
   ok(Math.abs(raw - 0.37) < 1e-9, 'the raw margin was steered to 0.37', raw);
   const b = brief(), pr = b.projection;
   eq(pr.fair_spread, raw, 'the payload stores the RAW margin, full precision');
-  eq(pr.fair_spread_text, HOME + ' -1.0', 'the published fair spread is the one-point floor');
+  eq(pr.fair_spread_text, HOME + ' -0.4', 'the published fair spread is the model’s own number, not the one-point floor');
   eq(pr.fair_spread_raw_text, HOME + ' -0.4', 'and the raw line rides beside it in the same form');
   eq(pr.near_pickem, true, 'the payload flags the near pick’em');
   eq(pr.raw_margin_text, HOME + ' +0.37', 'the raw margin is stated for the displayed favourite');
@@ -81,28 +89,30 @@ section('1. a near pick’em favouring the home side by 0.37');
   eq(pr.margin, '0.4', 'the stated margin is still the raw margin');
   ok(pr.win_prob && pr.win_prob.home_pct === Math.round(m.home_win_prob * 100) && pr.win_prob.home_pct <= 51,
     'the win probability is the raw 0.37 margin’s, still a coin flip', pr.win_prob);
-  eq(b.market.model, HOME + ' -1.0', 'the market block shows the display line');
+  eq(b.market.model, HOME + ' -0.4', 'the market block shows the model’s own number');
+  eq(b.market.market, HOME + ' +2.5', 'beside the market line');
   eq(b.market.model_raw, HOME + ' -0.4', 'and carries the raw line for grading');
-  eq(b.market.difference_n, Math.abs(s.p.market.spread_gap), 'the model-vs-market difference is the engine’s raw gap');
-  ok(Math.abs(b.market.difference_n - 2.87) < 1e-9, 'raw 0.37 against home +2.5 is 2.87 points apart, not 3.5', b.market.difference_n);
+  eq(b.market.difference_n, 2.9, 'the printed difference is the difference of the printed lines: Duke -0.4 vs Duke +2.5 is 2.9 (not the floor’s 3.5)');
+  eq(b.market.difference, '2.9 points', 'and is printed as such');
+  ok(Math.abs(b.market.difference_exact - Math.abs(s.p.market.spread_gap)) < 1e-9 && Math.abs(b.market.difference_exact - 2.87) < 1e-9, 'the engine’s raw 2.87 is kept beside it for grading', b.market.difference_exact);
   ok(b.notes.some(n => /near pick’em/.test(n) && n.indexOf(HOME + ' +0.37') >= 0), 'the brief says it is a near pick’em', b.notes);
 
   const html = T.fbGxSummary(s.u, s.p, 'NP1');
-  ok(html.indexOf(HOME + ' -1.0') >= 0, 'the card’s EdgeDesk cell shows ' + HOME + ' -1.0');
+  ok(html.indexOf(HOME + ' -0.4') >= 0, 'the card’s EdgeDesk cell shows ' + HOME + ' -0.4');
   ok(/near pick’em/.test(html), 'and labels it near pick’em');
-  ok(html.indexOf('-0.4') < 0 && html.indexOf('PK') < 0, 'and never the raw -0.4 or PK as the line');
+  ok(html.indexOf(HOME + ' -1.0') < 0 && html.indexOf('PK') < 0, 'and never the -1.0 floor or PK as the line');
   const card = T.fbP4Card(s.u);
-  ok(card.indexOf('Model spread</span><span class="v mdl">' + HOME + ' -1.0') >= 0, 'the detail section’s model spread is the display line');
+  ok(card.indexOf('Model spread</span><span class="v mdl">' + HOME + ' -0.4') >= 0, 'the detail section’s model spread is the model’s own number');
   ok(card.indexOf('Raw margin</span><span class="v mut">' + HOME + ' +0.37') >= 0, 'and the raw margin is in the detail section');
   const txt = T.fbGxBriefText(s.u, s.p);
-  ok(txt.indexOf('Model spread: ' + HOME + ' -1.0 (near pick’em · raw margin ' + HOME + ' +0.37)') >= 0, 'the copied brief says both', txt.split('\n').filter(l => /Model spread/.test(l)));
+  ok(txt.indexOf('Model spread: ' + HOME + ' -0.4 (near pick’em · raw margin ' + HOME + ' +0.37)') >= 0, 'the copied brief says both', txt.split('\n').filter(l => /Model spread/.test(l)));
 
   /* the editorial snapshot stores both, and grades the raw one */
   const snap = SNAP.capture(b, { sport: 'CFB', game_id: 'NP1', home: HOME, away: AWAY, kickoff: '2026-09-19T23:30:00.000Z' },
     { now: '2026-09-18T12:00:00.000Z' });
   if (snap && snap.model) {
     eq(snap.model.fair_spread, raw, 'the snapshot stores the raw margin');
-    eq(snap.model.fair_spread_text, HOME + ' -1.0', 'and the display line');
+    eq(snap.model.fair_spread_text, HOME + ' -0.4', 'and the model’s own line');
     eq(snap.model.fair_spread_raw_text, HOME + ' -0.4', 'and the raw line');
     eq(snap.model.near_pickem, true, 'and the near pick’em flag');
     const acc = G.modelAccuracy(snap, { home_score: 20, away_score: 17 });
@@ -118,7 +128,7 @@ section('2. a near pick’em favouring the away side by 0.49');
   const s = stageAt(-0.49);
   const b = brief(), pr = b.projection;
   ok(Math.abs(pr.fair_spread + 0.49) < 1e-9, 'raw -0.49 is stored as -0.49', pr.fair_spread);
-  eq(pr.fair_spread_text, HOME + ' +1.0', 'the home-stated line is +1.0 — the away side is the one-point favourite');
+  eq(pr.fair_spread_text, HOME + ' +0.5', 'the home-stated line is +0.5 — the away side is favoured by its own 0.49, rounded');
   eq(pr.favourite, AWAY, 'the favourite never flips to the home side');
   eq(pr.raw_margin_text, AWAY + ' +0.49', 'the raw margin is stated for the away favourite');
   const cases = T.fbGxCases(s.u, s.p);
@@ -126,12 +136,12 @@ section('2. a near pick’em favouring the away side by 0.49');
 }
 
 /* ------------------------------------------------------------------------ */
-section('3. an exact tie is shown as a side, never PK');
+section('3. an exact tie is shown as a pick’em, and the engine’s tiebreak still names the side');
 {
   const s = stageAt(0, { neutral: true, noEff: true });
   eq(s.p.model.fair_spread, 0, 'the raw margin is exactly zero');
   const b = brief(), pr = b.projection;
-  ok(/ [+-]1\.0$/.test(pr.fair_spread_text) && !BANNED.test(pr.fair_spread_text), 'shown at one point: ' + pr.fair_spread_text);
+  eq(pr.fair_spread_text, 'Pick’em', 'an exact tie is printed as a pick’em, never as a manufactured one-point line');
   eq(pr.favourite, s.p.model.display_side === 'home' ? HOME : AWAY, 'the favourite is the engine’s tiebreak side');
   eq(pr.fair_spread, 0, 'and the stored margin is still zero');
   eq(pr.near_pickem, true, 'flagged near pick’em');
@@ -154,21 +164,24 @@ section('4. one point and beyond: exactly the line EdgeDesk printed before');
 });
 
 /* ------------------------------------------------------------------------ */
-section('5. no near-pick’em margin ever prints as 0, ±0.5 or PK');
+section('5. every near-pick’em margin prints as its own number, on its own side');
 {
   const bad = [];
   for (let i = -99; i <= 99; i += 7) {
     stageAt(i / 100);
-    const t = brief().projection.fair_spread_text;
-    if (BANNED.test(t) || !/ [+-]1\.0$/.test(t)) bad.push([i / 100, t]);
+    const t = brief().projection.fair_spread_text, raw = i / 100;
+    const want = Math.floor(Math.abs(raw) * 10 + 0.5 + 1e-9) / 10;
+    const exp = want === 0 ? 'Pick’em' : HOME + ' ' + (raw > 0 ? '-' : '+') + want.toFixed(1);
+    if (t !== exp) bad.push([raw, t, exp]);
   }
-  ok(!bad.length, 'every margin from -0.99 to +0.99 prints at one point on its own side', bad);
+  ok(!bad.length, 'every margin from -0.99 to +0.99 prints as itself, rounded half away from zero, home-stated', bad);
 }
 
 /* ------------------------------------------------------------------------ */
 section('6. a model with no display line (the NFL engine) prints its raw number');
 eq(T.fbFairDisp({ fair_spread: -0.4 }), -0.4, 'no display field: the raw number, exactly as before');
-eq(T.fbFairDisp({ fair_spread: 0.3, display_fair_spread: 1 }), 1, 'a display field is preferred when present');
+eq(T.fbFairDisp({ fair_spread: 0.3, display_fair_spread: 1 }), 0.3, 'the engine’s display floor is never what the page prints');
+eq(T.fbFairDisp({ fair_spread: 9.45 }), 9.5, 'canonical rounding: 9.45 prints 9.5 (half away from zero), not the binary 9.4');
 eq(T.fbFairDisp(null), null, 'nothing in, nothing out');
 
 console.log('\n' + (failures ? 'FAILED ' + failures + ' of ' + checks : 'PASS — ' + checks + ' checks'));

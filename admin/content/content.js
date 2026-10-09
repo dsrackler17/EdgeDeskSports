@@ -142,8 +142,8 @@
   }
   async function loadArtifacts() {
     var A = CE.ARTIFACTS;
-    var got = await Promise.all([A.cfb_games, A.cfb_brief, A.rankings, A.nfl_slate, A.nfl_injuries, A.published, A.forecasts].map(getJson));
-    var art = { cfbGames: got[0], cfbBrief: got[1], rankings: got[2], nflSlate: got[3], nflInjuries: got[4], published: got[5], forecasts: got[6], marketSnapshots: [] };
+    var got = await Promise.all([A.cfb_games, A.cfb_brief, A.rankings, A.nfl_slate, A.nfl_injuries, A.published, A.forecasts, A.performance].map(getJson));
+    var art = { cfbGames: got[0], cfbBrief: got[1], rankings: got[2], nflSlate: got[3], nflInjuries: got[4], published: got[5], forecasts: got[6], performance: got[7], marketSnapshots: [] };
     var season = (art.nflSlate && art.nflSlate.season) || (art.cfbGames && art.cfbGames.season) || new Date().getUTCFullYear();
     var weeks = [];
     if (art.nflSlate) { var w = CE.research.chooseWeek(art.nflSlate.games || [], Date.now()); if (w) weeks.push(w); }
@@ -188,12 +188,17 @@
         } catch (e) { notes.push('Search Console unavailable: ' + S.message(e)); }
       }
       say('dMsg', '', 'Saving ' + opps.length + ' opportunities…');
-      var made = 0, refreshed = 0, bad = 0;
+      var made = 0, refreshed = 0, bad = 0, revoked = 0;
       for (var i = 0; i < opps.length; i++) {
         var o = opps[i];
         var r = await rpc('content_engine_opportunity_upsert', { p: Object.assign({}, o, { research_hash: CE.util.hash(JSON.stringify(o.research)) }), p_run: null });
-        if (r && r.ok) { if (r.created) made++; else refreshed++; } else bad++;
+        if (r && r.ok) { if (r.created) made++; else refreshed++; if (r.revoked) revoked += r.revoked; } else bad++;
       }
+      var withheld = [].concat(snap.cfb ? snap.cfb.withheld || [] : [], snap.nfl ? snap.nfl.withheld || [] : []);
+      if (!CE.integrity.ok) notes.push('THE INTEGRITY LAYER DID NOT LOAD: every draft will fail its checks until the page is reloaded');
+      if (withheld.length) notes.push(withheld.length + ' game(s) withheld from every article by the integrity engine: ' + withheld.slice(0, 6).map(function (w) {
+        return w.matchup + ' (' + (w.blocking || []).map(function (b) { return b.rule_id; }).join(', ') + ')'; }).join('; ') + (withheld.length > 6 ? '; …' : ''));
+      if (revoked) notes.push(revoked + ' approval(s) revoked because their research changed');
       await rpc('content_engine_log', { p_kind: 'discovery_run', p_detail: { found: opps.length, created: made, refreshed: refreshed, refused: bad, news: news.length, cfb_week: snap.cfb && snap.cfb.week, nfl_week: snap.nfl && snap.nfl.week } });
       say('dMsg', bad ? 'err' : 'ok', opps.length + ' opportunities: ' + made + ' new, ' + refreshed + ' refreshed' + (bad ? ', ' + bad + ' refused' : '') + '. '
         + 'Research: CFB week ' + (snap.cfb ? snap.cfb.week + ' (' + when(snap.cfb.generated_at) + ')' : '—') + ', NFL week ' + (snap.nfl ? snap.nfl.week + ' (' + when(snap.nfl.generated_at) + ')' : '—') + '.'
@@ -323,6 +328,160 @@
     finally { btn.disabled = false; }
   };
 
+  /* ======================================================================
+     TEMPLATE GENERATOR — Five Games to Watch and the other templates
+     docs/content-engine/GAMES_TO_WATCH.md
+     ====================================================================== */
+  /* one template per purpose: the single-game deep dive is the matchup deep
+     dive, the weekend review is the graded postgame review; Model vs. Market
+     takes its topic's own format (one game, or the slate's report) */
+  var TPL_FORMAT = { upset_watch: 'upset_watch', matchup_preview: 'matchup_deep_dive', game_deep_dive: 'game_deep_dive', postgame_review: 'postgame_review', model_performance: 'model_performance_review' };
+  function tplIsGtw() { return $('tTpl').value === 'games_to_watch'; }
+  function tplSync() {
+    var gtw = tplIsGtw();
+    ['tEdition', 'tCount', 'tReq', 'tHead'].forEach(function (id) { $(id).disabled = !gtw; });
+    if (gtw) $('tSport').value = 'cfb';
+    $('tSport').disabled = gtw; /* the matchup packets are college football */
+    var fp = gtw && $('tEdition').value === 'weekly_games_to_watch_first_party';
+    $('tFlow').value = fp ? $('tFlow').value : 'manual';
+    $('tFlow').querySelector('option[value="automatic"]').disabled = !fp;
+  }
+  ['tTpl', 'tEdition'].forEach(function (id) { $(id).onchange = tplSync; });
+  async function tplArtifacts() {
+    var art = await loadArtifacts();
+    art.packets = await getJson(CE.ARTIFACTS.packets);
+    var checks = [];
+    try { checks = await rpc('content_engine_broadcast_checks_current', { p_days: 14 }); } catch (e) { checks = []; }
+    return { art: art, checks: Array.isArray(checks) ? checks : [] };
+  }
+  function tplOpp(snapArt) {
+    var week = $('tWeek').value ? +$('tWeek').value : undefined;
+    var snap = CE.research.fromArtifacts(snapArt.art, { now: Date.now(), cfbWeek: week, broadcastChecks: snapArt.checks });
+    var req = Array.prototype.slice.call($('tReq').selectedOptions || []).map(function (o) { return o.value; });
+    var pub = publisherById($('gPubSel').value);
+    var opps = CE.discover(snap, { now: Date.now(), publisher: pub, games_to_watch: { count: +$('tCount').value || 5, required: req, prefer_broad: $('tAudience').value !== 'bettors' } });
+    var kind = $('tTpl').value, sport = $('tSport').value;
+    return { snap: snap, opp: opps.filter(function (o) { return o.kind === kind && o.league === sport; })[0] || null, pub: pub, required: req };
+  }
+  function gtwPill(ok, yes, no) { return '<span class="pill ' + (ok ? 'ok' : 'bad') + '">' + esc(ok ? yes : no) + '</span>'; }
+  function packetCard(m, i) {
+    var g = m.gate || {}, A = m.arguments || {}, b = m.broadcast || {}, w = CE.gamesToWatch.when(m);
+    var Q = ['Why watch', 'Deciding matchup', 'Recent evidence', 'EdgeDesk projects', 'Why the model could be wrong', 'What to watch for'];
+    var miss = (g.missing || []).map(function (x) { return x.q; });
+    var ind = (m.facts || []).filter(function (f) { return f.independent; });
+    var probs = (m.problems || []).map(function (p) { return '<li><span class="mono">' + esc(p.code) + '</span> ' + esc(p.text) + (p.hold ? ' <span class="pill warn">hold</span>' : ' <span class="pill bad">blocks</span>') + '</li>'; }).join('');
+    return '<div class="card"><h3 style="margin-top:0">' + (i + 1) + '. ' + esc(m.identity.heading) + ' ' + gtwPill(g.ok, 'passes the reasoning gate', 'fails the reasoning gate') + ' ' + gtwPill(b.publishable, 'broadcast ' + b.status, 'broadcast ' + b.status) + '</h3>'
+      + '<div class="sub">' + (w ? esc(w.date + ', ' + w.et + ' (' + w.ct + ')') : 'kickoff not verified') + ' · ' + esc(b.network ? b.network + ' (' + b.tier + ')' : 'no network on file') + (b.verified_text ? ' · verified ' + esc(b.verified_text) + (b.source ? ' from ' + esc(b.source.name) : '') : '') + (b.hold_reason ? ' · <b>hold:</b> ' + esc(b.hold_reason) : '') + '</div>'
+      + '<ul class="checks">' + Q.map(function (q, k) { return '<li>' + gtwPill(miss.indexOf(k + 1) < 0, 'answered', 'missing') + '<span>' + esc(q) + '</span></li>'; }).join('') + '</ul>'
+      + '<div class="sub" style="margin-top:6px"><b>Deciding matchup:</b> ' + esc(A.deciding ? A.deciding.claim : '—') + '</div>'
+      + '<div class="sub"><b>Upset:</b> ' + esc(A.upset ? (A.upset.credible ? 'a case on the evidence (' + A.upset.dog_win_pct + '% for ' + A.upset.team + ')' : A.upset.reason || 'none') : '—') + '</div>'
+      + '<details style="margin-top:6px"><summary class="sub">' + ind.length + ' independent facts · ' + ((m.facts || []).length - ind.length) + ' analysis</summary><ul class="checks">'
+      + (m.facts || []).map(function (f) { return '<li><span class="pill ' + (f.independent ? 'ok' : 'est') + '">' + (f.independent ? 'independent' : 'analysis') + '</span><span>' + esc(f.text) + '<span class="d"> — ' + esc(f.source ? (f.source.name || '') : '') + '</span></span></li>'; }).join('') + '</ul></details>'
+      + ((g.missing || []).length ? '<div class="sub"><b>Missing evidence:</b> ' + esc(g.missing.map(function (x) { return x.text; }).join('; ')) + '</div>' : '')
+      + (probs ? '<div class="sub"><b>Problems:</b></div><ul class="checks">' + probs + '</ul>' : '')
+      + ((m.unresolved || []).length ? '<div class="sub dim">Unresolved: ' + esc(m.unresolved.map(function (u) { return u.text; }).join('; ')) + '</div>' : '')
+      + '<details style="margin-top:8px"><summary class="sub">Verify the broadcast from an official source</summary><div class="row" style="margin-top:8px" data-gid="' + esc(m.game_id) + '" data-season="' + esc(m.season) + '">'
+      + '<div class="f"><label>Network</label><input data-k="network" value="' + esc(b.network || '') + '" placeholder="e.g. CBS"></div>'
+      + '<div class="f"><label>Streaming (comma-separated)</label><input data-k="streaming" placeholder="optional"></div>'
+      + '<div class="f" style="min-width:260px;flex:2"><label>Official source URL</label><input data-k="source_url" placeholder="https://… conference or school schedule"></div>'
+      + '<div class="f"><label>Source</label><select data-k="source_kind"><option value="conference">Conference</option><option value="school">School</option><option value="network">Network</option><option value="league">League</option><option value="other_official">Other official</option></select></div>'
+      + '<div class="f"><label>Source name</label><input data-k="source_name" placeholder="e.g. Big Ten Conference schedule"></div>'
+      + '<div class="f"><label>Verified new kickoff (only if moved)</label><input data-k="kickoff" type="datetime-local"></div>'
+      + '<div class="f"><label>Reason for a move</label><input data-k="reason" placeholder="e.g. weather"></div>'
+      + '<div class="f"><label>Status</label><select data-k="status"><option value="">On schedule</option><option value="postponed">Postponed</option><option value="canceled">Canceled</option></select></div>'
+      + '<button class="sm" data-act="verify">Record verification</button></div></details></div>';
+  }
+  $('tPreview').onclick = async function () {
+    var btn = $('tPreview'); btn.disabled = true;
+    try {
+      if (!ST.publishers.length) await loadPublishersData();
+      say('tMsg', '', 'Reading the research files and the broadcast verifications…');
+      var sa = ST.tplArt = await tplArtifacts();
+      if (!tplIsGtw()) {
+        var r0 = tplOpp(sa);
+        $('tPreviewOut').innerHTML = r0.opp ? '<div class="card"><b>' + esc(r0.opp.title) + '</b><div class="sub">' + esc(r0.opp.summary || '') + '</div></div>' : '<div class="card"><p class="note">This week’s research has no ' + esc(CE.KINDS[$('tTpl').value] || $('tTpl').value) + ' topic for this sport.</p></div>';
+        $('tPreviewOut').classList.remove('hide'); say('tMsg', r0.opp ? 'ok' : 'err', r0.opp ? 'Topic found.' : 'No topic.'); return;
+      }
+      if (!sa.art.packets) { say('tMsg', 'err', 'No matchup packets on this site yet (football/content/packets.json is built hourly by the CFB lab workflow).'); return; }
+      var r = tplOpp(sa);
+      var all = r.snap.cfb && r.snap.cfb.matchups ? r.snap.cfb.matchups.packets : [];
+      var cur = Array.prototype.slice.call($('tReq').selectedOptions || []).map(function (o) { return o.value; });
+      $('tReq').innerHTML = all.map(function (m) { return '<option value="' + esc(m.game_id) + '"' + (cur.indexOf(m.game_id) >= 0 ? ' selected' : '') + '>' + esc(m.identity.heading) + (m.gate && m.gate.ok ? '' : ' — fails the gate') + '</option>'; }).join('');
+      if (!r.opp) { say('tMsg', 'err', 'Fewer than three games pass the reasoning gate this week, or the packets are for another week (' + (r.snap.cfb && r.snap.cfb.matchups ? 'week ' + r.snap.cfb.matchups.week : 'none') + ').'); return; }
+      ST.tplOpp = r.opp;
+      var sel = r.opp.research.selection;
+      var rej = (sel.rejected || []).slice(0, 40).map(function (x) { return '<li><span>' + esc(x.heading) + '</span><span class="d">' + esc(x.missing.join(', ')) + '</span></li>'; }).join('');
+      $('tPreviewOut').innerHTML = '<div class="card"><b>' + esc(r.opp.title) + '</b><div class="sub">' + esc(sel.basis) + '</div>'
+        + (sel.report.required_failed.length ? '<div class="sub"><b>Required games held for manual review:</b> ' + esc(sel.report.required_failed.map(function (x) { return (x.matchup || x.game_id) + ' (' + x.reason + ')'; }).join('; ')) + '</div>' : '')
+        + '<div class="tw"><table><tr><th>Game</th><th class="r">Score</th><th>Storyline</th><th>Audience</th><th>Broadcast</th></tr>' + sel.games.map(function (g) {
+          return '<tr><td>' + esc(g.heading) + '</td><td class="r">' + esc(g.score) + '</td><td class="mono">' + esc(g.storyline) + '</td><td>' + esc(g.national ? 'national' : 'under the radar') + '</td><td>' + gtwPill(g.publishable, 'ready', 'held') + '</td></tr>';
+        }).join('') + '</table></div>'
+        + (rej ? '<details><summary class="sub">' + sel.rejected.length + ' games that fail the reasoning gate</summary><ul class="checks">' + rej + '</ul></details>' : '') + '</div>'
+        + r.opp.research.matchups.map(packetCard).join('');
+      $('tPreviewOut').classList.remove('hide');
+      var held = r.opp.research.matchups.filter(function (m) { return !m.broadcast.publishable; }).length;
+      say('tMsg', held ? 'err' : 'ok', r.opp.research.matchups.length + ' games selected' + (held ? '; ' + held + ' broadcast(s) must be verified before the article can be approved' : '; every broadcast is verified') + '.');
+    } catch (e) { fail('tMsg', e); }
+    finally { btn.disabled = false; }
+  };
+  $('tPreviewOut').onclick = async function (ev) {
+    var b = ev.target.closest('button[data-act="verify"]'); if (!b) return;
+    var row = b.closest('[data-gid]'), v = function (k) { var el = row.querySelector('[data-k="' + k + '"]'); return el ? el.value.trim() : ''; };
+    try {
+      var ko = v('kickoff') ? new Date(v('kickoff')).toISOString() : null;
+      var r = await rpc('content_engine_broadcast_verify', { p: { game_id: row.getAttribute('data-gid'), season: +row.getAttribute('data-season'), network: v('network') || null,
+        streaming: v('streaming') ? v('streaming').split(',').map(function (x) { return { service: x.trim() }; }).filter(function (x) { return x.service; }) : [],
+        source_url: v('source_url'), source_kind: v('source_kind'), source_name: v('source_name'), kickoff: ko, reason: v('reason') || null, status: v('status') || null } });
+      say('tMsg', r.ok ? 'ok' : 'err', r.ok ? 'Verification recorded. Preview again to see it applied.' : 'Not recorded: ' + (r.detail || r.reason));
+    } catch (e) { fail('tMsg', e); }
+  };
+  $('tCreate').onclick = async function () {
+    var btn = $('tCreate'); btn.disabled = true;
+    try {
+      if (!ST.tplArt) ST.tplArt = await tplArtifacts();
+      var r = tplOpp(ST.tplArt);
+      if (!r.opp) { say('tMsg', 'err', 'No topic for this template in the current research: press Preview first.'); return; }
+      var o = Object.assign({}, r.opp, { research_hash: CE.util.hash(JSON.stringify(r.opp.research)) });
+      var up = await rpc('content_engine_opportunity_upsert', { p: o, p_run: null });
+      if (!up || !up.ok) { say('tMsg', 'err', 'Topic not saved: ' + (up && (up.detail || up.reason))); return; }
+      var full = await rpc('content_engine_opportunity', { p_id: up.id });
+      var format = tplIsGtw() ? $('tEdition').value : (TPL_FORMAT[$('tTpl').value] || (r.opp.formats || [])[0]);
+      var fp = format === 'weekly_games_to_watch_first_party';
+      var pubId = fp ? null : ($('gPubSel').value || null), pub = publisherById(pubId);
+      var a = CE.draft(full, { publisher: pub, format: format, headline_style: $('tHead').value, audience: $('tAudience').value, now: Date.now() });
+      var rep = CE.validate(a, full, { publisher: pub, now: Date.now() });
+      var review = CE.FORMATS[format] && CE.FORMATS[format].edition ? CE.gamesToWatch.review(a, full, rep) : null;
+      var cr = await rpc('content_engine_article_create', { p_opportunity: full.id, p_publisher: pubId, p_format: a.format, p_angle: 'full_slate',
+        p: Object.assign({}, a, { checks: review ? Object.assign({}, rep, { review: review }) : rep }), p_run: null });
+      if (!cr || !cr.ok) { say('tMsg', 'err', 'Not created: ' + (cr && (cr.detail || cr.reason))); return; }
+      if ($('tDate').value) await rpc('content_engine_log', { p_kind: 'publication_date_set', p_detail: { date: $('tDate').value, workflow: $('tFlow').value }, p_article: cr.id });
+      say('tMsg', review && review.verdict !== 'READY' ? 'err' : 'ok', 'Draft saved' + (review ? ' — editorial review: ' + review.verdict + (review.hold.length ? ' (hold: ' + review.hold.map(function (h) { return h.id; }).join(', ') + ')' : '') + (review.reject.length ? ' (reject: ' + review.reject.map(function (h) { return h.id; }).join(', ') + ')' : '') : '') + '.'
+        + (fp ? ' The EdgeDesk edition is published from the site’s article store by the CFB lab workflow when every gate passes and automatic publication is on.' : ' A publisher edition is approved by you and sent only when you press Send.'));
+      tab('gen'); await fillGenerator(); await openEditor(cr.id);
+    } catch (e) { fail('tMsg', e); }
+    finally { btn.disabled = false; }
+  };
+  getJson('football/content/config.json').then(function (c) { var el = $('tAuto'); if (el) el.textContent = c && c.first_party_auto_publish ? 'currently ON' : 'currently OFF'; });
+  tplSync();
+
+  /* the per-template report (content_engine_template_report): EdgeDesk's own
+     pages are named by their published paths, which the site's article
+     index lists */
+  async function loadTemplateReport() {
+    var el = $('tmplOut'); if (!el) return;
+    var pubIdx = await getJson(CE.ARTIFACTS.published);
+    var pages = ((pubIdx && pubIdx.articles) || []).filter(function (a) { return a.type === 'games_to_watch'; })
+      .map(function (a) { return { format: 'weekly_games_to_watch_first_party', path: '/articles/' + a.slug + '/' }; });
+    var r = await rpc('content_engine_template_report', { p_pages: pages });
+    var rows = (r && r.templates) || [];
+    el.innerHTML = '<div class="card tw"><table><tr><th>Template</th><th class="r">Generated</th><th class="r">First-pass approval</th><th class="r">Auto-rejected</th><th class="r">Publisher acceptance</th><th class="r">Placements</th><th class="r">Traffic</th><th class="r">Research visits</th><th class="r">Registrations</th><th class="r">Trials</th><th class="r">Paid</th><th class="r">AI cost</th><th class="r">Revenue</th></tr>'
+      + (rows.map(function (t) {
+        return '<tr><td>' + esc(CE.FORMATS[t.format] ? CE.FORMATS[t.format].label : t.format) + '</td><td class="r">' + num(t.articles_generated) + '</td><td class="r">' + (t.first_pass_approval_rate == null ? '—' : Math.round(t.first_pass_approval_rate * 100) + '%') + '</td><td class="r">' + num(t.auto_rejected) + '</td>'
+          + '<td class="r">' + (t.publisher_acceptance_rate == null ? '—' : Math.round(t.publisher_acceptance_rate * 100) + '% of ' + t.publisher_responses) + '</td><td class="r">' + num(t.external_placements) + '</td><td class="r">' + num(t.traffic_sessions) + '</td><td class="r">' + num(t.research_page_visits) + '</td>'
+          + '<td class="r">' + num(t.registrations) + '</td><td class="r">' + num(t.trials) + '</td><td class="r">' + num(t.paid_subscribers) + '</td><td class="r">$' + esc(t.generation_cost_usd) + '</td><td class="r">' + (t.attributed_revenue_usd == null ? '—' : '$' + esc(t.attributed_revenue_usd)) + '</td></tr>';
+      }).join('') || '<tr><td colspan="13" class="dim">No articles generated yet.</td></tr>') + '</table><p class="note">' + esc(r && r.basis || '') + ' ' + esc(r && r.not_claimed || '') + '</p></div>';
+  }
+
   async function openEditor(id) {
     var row = await rpc('content_engine_article', { p_id: id });
     ST.art = row; ST.opp = row.opportunity; ST.dirty = false;
@@ -376,23 +535,48 @@
     var a = {
       format: row.format, angle: row.angle, title: $('eTitle').value.trim(), slug: CE.util.slugify($('eSlug').value.trim() || $('eTitle').value),
       meta_description: $('eMeta').value.trim(), standfirst: $('eStand').value.trim(), primary_keyword: $('eKw').value.trim(),
-      secondary_keywords: row.secondary_keywords || [], sections: secs, generator: row.generator, research_as_of: row.research_as_of
+      secondary_keywords: row.secondary_keywords || [], sections: secs, generator: row.generator, research_as_of: row.research_as_of, research_hash: row.research_hash
     };
     a.word_count = CE.util.wordCount(a.standfirst + ' ' + secs.map(function (s) { return s.body; }).join(' '));
     return a;
   }
   function checkNow() {
     var row = ST.art;
-    return CE.validate(collect(), row.opportunity, { publisher: row.publisher_profile, siblings: row.siblings || [], now: Date.now() });
+    return CE.validate(collect(), row.opportunity, { publisher: row.publisher_profile, siblings: row.siblings || [], now: Date.now(),
+      current_research_hash: row.opportunity && row.opportunity.research_hash });
   }
   function renderChecks(rep, id) {
     var el = $(id); if (!el) return;
     if (!rep || !rep.checks) { el.innerHTML = '<p class="note">Not checked yet.</p>'; return; }
     var cls = { pass: 'ok', warn: 'warn', fail: 'bad' };
     el.innerHTML = '<div class="sub">' + (rep.ok ? '<span class="pill ok">all hard checks pass</span>' : '<span class="pill bad">' + (rep.failed || []).length + ' failing</span>')
-      + ' <span class="dim">checked ' + when(rep.checked_at) + '</span></div><ul class="checks">' + rep.checks.map(function (c) {
+      + ' ' + integrityPill(rep.integrity_status)
+      + ' <span class="dim">checked ' + when(rep.checked_at) + '</span></div>' + integrityGames(rep) + '<ul class="checks">' + rep.checks.map(function (c) {
         return '<li><span class="pill ' + cls[c.status] + '">' + esc(c.status) + '</span><div><div>' + esc(c.label) + '</div>' + (c.detail ? '<div class="d">' + esc(c.detail) + '</div>' : '') + '</div></li>';
       }).join('') + '</ul>';
+  }
+  /* the integrity engine's verdict (docs/system-integrity/RULES.md): PASS and
+     WARNING may be approved, BLOCKED never (the database refuses it too) */
+  function integrityPill(st) {
+    if (!st) return '<span class="pill bad" title="no integrity verdict: the integrity layer did not load">integrity: unchecked</span>';
+    return '<span class="pill ' + ({ PASS: 'ok', WARNING: 'warn', BLOCKED: 'bad' }[st] || 'bad') + '">integrity: ' + esc(st) + '</span>';
+  }
+  function integrityGames(rep) {
+    var ig = rep && rep.integrity; if (!ig) return '';
+    var bl = (ig.blocking || []).map(function (b) { return '<li><span class="mono">' + esc(b.rule_id) + '</span> ' + esc(b.explanation || '') + '</li>'; }).join('');
+    var gs = (ig.games || []).filter(function (g) { return g.status !== 'PASS'; });
+    return (bl ? '<ul class="checks" style="margin-top:6px">' + bl + '</ul>' : '')
+      + (gs.length ? '<div class="sub">Games not at PASS: ' + gs.map(function (g) { return esc(g.game_id) + ' (' + esc(g.status) + ')'; }).join(', ') + '</div>' : '');
+  }
+  /* the checklist before Ready to send (CE.readiness): every item must pass;
+     the starred ones the database checks again */
+  function readinessHtml(rd) {
+    var cls = { pass: 'ok', fail: 'bad', unknown: 'warn' };
+    return '<h3>Ready-to-send checklist</h3><div class="sub">' + (rd.ok ? '<span class="pill ok">ready</span>' : '<span class="pill bad">' + rd.blocking.length + ' item(s) open</span>') + '</div>'
+      + '<ul class="checks">' + rd.items.map(function (i) {
+        return '<li><span class="pill ' + cls[i.status] + '">' + esc(i.status) + '</span><div><div>' + esc(i.label) + (i.enforced_by_database ? ' <span class="dim" title="the database enforces this again">★</span>' : '') + '</div>'
+          + (i.detail ? '<div class="d">' + esc(i.detail) + '</div>' : '') + '</div></li>';
+      }).join('') + '</ul>' + (rd.snapshot_line ? '<div class="sub mono" style="overflow-wrap:anywhere">' + esc(rd.snapshot_line) + '</div>' : '');
   }
   function exportCtx(row) {
     return { publisher: row.publisher_profile, campaign: row.campaign_code, opportunity: row.opportunity, landing: row.landing_url };
@@ -611,8 +795,10 @@
     var row = await rpc('content_engine_article', { p_id: id });
     ST.art = row;
     var a = { format: row.format, title: row.title, slug: row.slug, meta_description: row.meta_description, standfirst: row.standfirst, primary_keyword: row.primary_keyword,
-      secondary_keywords: row.secondary_keywords, sections: row.sections, word_count: row.word_count, research_as_of: row.research_as_of };
-    var rep = CE.validate(a, row.opportunity, { publisher: row.publisher_profile, siblings: row.siblings || [], now: Date.now() });
+      secondary_keywords: row.secondary_keywords, sections: row.sections, word_count: row.word_count, research_as_of: row.research_as_of, research_hash: row.research_hash };
+    var rep = CE.validate(a, row.opportunity, { publisher: row.publisher_profile, siblings: row.siblings || [], now: Date.now(),
+      current_research_hash: row.opportunity && row.opportunity.research_hash });
+    var blocked = rep.integrity_status !== 'PASS' && rep.integrity_status !== 'WARNING';
     var rv = row.review || {};
     var reviewCurrent = rv.content_hash === row.content_hash;
     $('rDetail').innerHTML = '<div class="card"><div class="otitle">' + esc(row.title) + '</div><div class="sub">' + pill(row.status) + ' · ' + esc(pubName(row.publisher_id)) + ' · ' + esc(row.word_count) + ' words · '
@@ -626,8 +812,8 @@
         return '<label class="chk" style="margin:6px 0;align-items:flex-start"><input type="checkbox" data-rv="' + p[0] + '"' + (reviewCurrent && rv[p[0]] ? ' checked' : '') + '><span><b>' + esc(p[1]) + '</b><div class="sub">' + esc(p[2]) + '</div></span></label>';
       }).join('') + '<div class="f" style="margin-top:6px"><label for="rNotes">Notes</label><textarea id="rNotes">' + esc(reviewCurrent ? rv.notes || '' : '') + '</textarea></div>'
       + (rv.content_hash && !reviewCurrent ? '<div class="banner">The content changed after the last review: review it again.</div>' : '')
-      + '<div class="row" style="margin-top:10px"><button class="g" id="rSave">Save review</button><button id="rApprove"' + (rep.ok && row.checks_ok ? '' : ' disabled title="every automated check must pass first"') + '>Approve this exact version</button>'
-      + '<button class="g" id="rEdit">Edit</button><button class="d" id="rBack">Send back to draft</button></div><div class="msg" id="rMsg" role="status" aria-live="polite"></div></div></div>'
+      + '<div class="row" style="margin-top:10px"><button class="g" id="rSave">Save review</button><button id="rApprove"' + (rep.ok && row.checks_ok && !blocked ? '' : ' disabled title="every automated check must pass and the integrity engine must not block it"') + '>Approve this exact version</button>'
+      + '<button class="g" id="rEdit">Edit</button><button class="d" id="rBack">Send back to draft</button>' + (row.status === 'in_review' ? '<button class="d" id="rReject">Reject…</button>' : '') + '</div><div class="msg" id="rMsg" role="status" aria-live="polite"></div></div></div>'
       + '<div><div class="card"><h3 style="margin-top:0">The article as it will be exported</h3><div class="preview">' + CE.toHtml(a, exportCtx(row)) + '</div></div></div></div>';
     renderChecks(rep, 'rChecks');
     wireGate('rGate', row, function () { return openReview(id); }, 'rMsg');
@@ -645,10 +831,16 @@
         if (gNow.verdict === 'BLOCKED') { say('rMsg', 'err', 'Not approved: the editorial gate is BLOCKED. Fix the flagged sections or record your review of each open market gap.'); return; }
         var r = await rpc('content_engine_article_approve', { p_id: id, p_content_hash: row.content_hash });
         if (r && r.ok) { say('rMsg', 'ok', 'Approved. It is now in the publishing queue: mark it ready, export it, and send it yourself.'); await loadReview(); await loadOverview(); }
-        else say('rMsg', 'err', 'Not approved: ' + (gateWhy(r) || { checks_failed: 'automated checks fail', review_incomplete: 'the review is incomplete', changed_since_loaded: 'the article changed since you opened it — reload', language: 'banned language: ' + JSON.stringify(r.terms), review_is_for_an_older_version: 'the review is for an older version' }[r && r.reason]) || (r && r.reason));
+        else say('rMsg', 'err', 'Not approved: ' + (gateWhy(r) || { checks_failed: 'automated checks fail', integrity_blocked: 'the integrity engine blocks it (see the checks)', research_changed: 'the research changed since this draft was written: refresh it', review_incomplete: 'the review is incomplete', changed_since_loaded: 'the article changed since you opened it — reload', language: 'banned language: ' + JSON.stringify(r.terms), review_is_for_an_older_version: 'the review is for an older version' }[r && r.reason]) || (r && r.reason));
       } catch (e) { fail('rMsg', e); }
     };
     $('rEdit').onclick = async function () { tab('gen'); await openEditor(id); };
+    if ($('rReject')) $('rReject').onclick = async function () {
+      var why = window.prompt('Why is this draft rejected? (kept with the article; it can be reworked from draft or archived)', '');
+      if (why === null) return;
+      if (!why.trim()) { say('rMsg', 'err', 'A rejection needs a reason.'); return; }
+      try { var r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'rejected', p: { reason: why.trim().slice(0, 500) } }); say('rMsg', r.ok ? 'ok' : 'err', r.ok ? 'Rejected.' : 'Not done: ' + (r.detail || r.reason)); if (r.ok) await loadReview(); } catch (e) { fail('rMsg', e); }
+    };
     $('rBack').onclick = async function () { try { var r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'draft', p: { reason: 'sent back from review' } }); say('rMsg', r.ok ? 'ok' : 'err', r.ok ? 'Back to draft.' : r.reason); await loadReview(); } catch (e) { fail('rMsg', e); } };
     $('rDetail').scrollIntoView({ behavior: 'smooth' });
   }
@@ -677,11 +869,12 @@
     ST.art = row;
     var st = row.status;
     var exportable = ['approved', 'ready_to_send', 'sent', 'published'].indexOf(st) >= 0;
+    var rd = CE.readiness(row, { opportunity: row.opportunity, ctx: exportCtx(row) });
     var utm = CE.tagLink(row.landing_url || CE.SITE + '/today/', { source: row.publisher_profile ? row.publisher_profile.utm_source : 'direct', medium: 'publisher', campaign: row.campaign_code, content: row.format });
     var acts = '';
     if (st === 'draft') acts += '<button data-q="edit">Edit</button>';
     if (st === 'in_review') acts += '<button data-q="review">Review</button>';
-    if (st === 'approved') acts += '<button data-q="ready">Mark ready to send</button><button class="g" data-q="toreview">Back to review</button>';
+    if (st === 'approved') acts += '<button data-q="ready"' + (rd.ok ? '' : ' disabled title="the ready-to-send checklist has open items"') + '>Mark ready to send</button><button class="g" data-q="toreview">Back to review</button>';
     if (st === 'ready_to_send') acts += '<button class="g" data-q="unready">Back to approved</button>';
     if (st === 'sent') acts += '<button data-q="published">Mark published…</button>';
     if (st === 'archived' && !row.sent_at) acts += '<button class="g" data-q="restore">Restore to draft</button>';
@@ -690,6 +883,7 @@
       + (row.approved_at ? ' · approved ' + when(row.approved_at) : '') + (row.sent_at ? ' · sent ' + when(row.sent_at) : '') + (row.published_url ? ' · ' + link(row.published_url, 'published copy') : '') + '</div>'
       + '<div class="row" style="margin-top:10px">' + acts + '</div>'
       + (GATE_STATES.indexOf(st) >= 0 ? '<h3>Editorial gate</h3><div id="qGate"><p class="note">Running…</p></div>' : '')
+      + (['approved', 'ready_to_send'].indexOf(st) >= 0 ? readinessHtml(rd) : '')
       + '<h3>Export</h3><div class="row"><button class="g" data-q="docx"' + (exportable ? '' : ' disabled') + '>Download Word (.docx)</button><button class="g" data-q="pdf"' + (exportable ? '' : ' disabled') + '>Save as PDF</button><button class="g" data-q="md"' + (exportable ? '' : ' disabled') + '>Download Markdown</button><button class="g" data-q="html"' + (exportable ? '' : ' disabled') + '>Download HTML</button>'
       + '<button class="g" data-q="copyhtml"' + (exportable ? '' : ' disabled') + '>Copy HTML</button><button class="g" data-q="seo"' + (exportable ? '' : ' disabled') + '>Download SEO sheet</button></div>'
       + (exportable ? '' : '<p class="note">Export unlocks once the owner approves this exact version. Use the editor’s preview until then.</p>')
@@ -726,7 +920,12 @@
         var r;
         if (q === 'edit') { tab('gen'); await openEditor(id); return; }
         if (q === 'review') { tab('review'); await openReview(id); return; }
-        if (q === 'ready') { if (!(await gateFirst())) return; r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'ready_to_send', p: {} }); }
+        if (q === 'ready') {
+          if (!(await gateFirst())) return;
+          var rdy = CE.readiness(row, { opportunity: row.opportunity, ctx: exportCtx(row) });
+          if (!rdy.ok) { say('qMsg', 'err', 'Not ready: ' + rdy.blocking.join(', ')); return; }
+          r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'ready_to_send', p: {} });
+        }
         if (q === 'toreview') r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'in_review', p: {} });
         if (q === 'unready') r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'approved', p: {} });
         if (q === 'archive') { if (!window.confirm('Archive this article?')) return; r = await rpc('content_engine_article_transition', { p_id: id, p_to: 'archived', p: {} }); }
@@ -748,6 +947,10 @@
         }
         if (q === 'md' || q === 'html' || q === 'copyhtml' || q === 'seo' || q === 'docx' || q === 'pdf') {
           var ctx = exportCtx(row);
+          /* every file is the approved snapshot, read back before it leaves */
+          var xc = CE.exportCheck(a, row, ctx);
+          if (!xc.ok) { say('qMsg', 'err', 'Not exported: ' + xc.problems.map(function (p) { return p.detail; }).join(' · ')); return; }
+          ctx.snapshot = xc.snapshot;
           if (q === 'docx') download(row.slug + '.docx', CE.toDocx(a, ctx), CE.DOCX_TYPE);
           if (q === 'pdf') {
             /* the clean standalone article in its own window, then the browser's print dialog,
@@ -761,7 +964,7 @@
           if (q === 'html') download(row.slug + '.html', CE.toHtml(a, Object.assign({ standalone: true }, ctx)), 'text/html');
           if (q === 'copyhtml') copy(CE.toHtml(a, ctx), 'qMsg');
           if (q === 'seo') download(row.slug + '-seo.txt', CE.seoSheet(a, row.opportunity), 'text/plain');
-          await rpc('content_engine_log', { p_kind: 'exported', p_detail: { as: q, revision: row.revision, content_hash: row.content_hash }, p_article: id });
+          await rpc('content_engine_log', { p_kind: 'exported', p_detail: { as: q, revision: row.revision, content_hash: row.content_hash, research_hash: row.research_hash, numbers: xc.snapshot.numbers }, p_article: id });
           if (q === 'pdf') say('qMsg', 'ok', 'Opened revision ' + row.revision + ' to print: choose “Save as PDF” as the destination.');
           else if (q !== 'copyhtml') say('qMsg', 'ok', 'Exported revision ' + row.revision + '.');
           return;
@@ -990,6 +1193,7 @@
     if (!ST.publishers.length) await loadPublishersData();
     loadScorecard().catch(function (e) { $('scOut').innerHTML = '<p class="note">The scorecard is unavailable: ' + esc(S.message(e)) + '</p>'; });
     loadWeekly().catch(function (e) { $('wkOut').innerHTML = '<p class="note">The weekly summary is unavailable: ' + esc(S.message(e)) + '</p>'; });
+    loadTemplateReport().catch(function (e) { var el = $('tmplOut'); if (el) el.innerHTML = '<p class="note">' + esc(S.message(e)) + '</p>'; });
     var p = await rpc('content_engine_performance');
     var m = p.measured || {};
     var rows = p.articles || [];

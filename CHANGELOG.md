@@ -1,5 +1,92 @@
 # Changelog
 
+## 2026-10-09 — Five Games to Watch and system integrity, merged with the content-engine hardening
+
+The hardening on `main` and this work both added an AI ledger, an approval gate and new templates. They now share one of each:
+
+- **One AI ledger:** `content_engine.ai_calls` (6d). This work's `ai_months`/`ai_spend`, its reserve/settle doors, cost report and budget door are gone (they were never applied to production). The weekly job and the Edge Function reserve and settle through it. The $10 default stands.
+  - Added: an identical request that is still in flight is refused, so it is never paid for twice.
+  - A draft's calls are named on its `article_created` event, so the per-template report counts their cost.
+- **Approval:** the editorial gate (6c) and the integrity verdict and research binding (6g) must both pass. The gate reports an integrity block as BLOCKED, so the two never disagree.
+- **Templates:**
+  - The conference race and the generator's Single Game Deep Dive and Weekend Review are main's.
+  - The storyline deep dive appears only when the week's matchup deep dives do not already cover that game.
+  - The scorecard replaces the acquisition report.
+- **Checks that now understand each other:**
+  - The spread check reads main's driver notation, "home field (Missouri +4.1)".
+  - Main's number, injury and quarterback checks read the Five Games to Watch packets: alternate margins and official availability reports.
+  - The gate's verification check uses the statuses the terminal writes; it never writes FAILED.
+- **Quarterbacks:** main's material rule (`qbState`), plus a sourced availability report from `lib/edgedesk_availability.js`. A non-material usage split stays out of the copy.
+
+## 2026-10-08 — Content Engine: Five Games to Watch, from verified matchup packets
+
+**A new weekly template, in the existing content engine. It features about five games, each with where to watch it (verified network, streaming, ET and CT), why it matters, the matchup that decides it, the evidence, EdgeDesk's projection, an honest read on the upset chance and what to watch.** One verified packet per game feeds two articles: the publisher's edition, approved and sent by hand, and EdgeDesk's own page. Docs: `docs/content-engine/GAMES_TO_WATCH.md`.
+
+- **Matchup packets** (`lib/edgedesk_matchup.js`, `tools/content/build_packets.js` → `football/content/packets.json`, hourly):
+  - built from committed artifacts only; every fact has its numbers, its source and whether a reader could check it;
+  - a projection, a rating or EPA never counts as evidence;
+  - **reasoning gate:** six questions, and at least two independent facts per game.
+- **Data truth:**
+  - the sack columns are quarantined. Offense and defense views of the same plays disagree, a 13.9% against 5.4% team mean on the same 2,088 sacks, so no sack rate is printed;
+  - interceptions come from the passer logs, and no turnover margin is stated;
+  - results come only from verified finals.
+- **Broadcasts** (`lib/edgedesk_broadcast.js`, `football/broadcasts/collect.js`, hourly):
+  - ESPN's public, keyless scoreboard: ESPN-operated networks are confirmed, any other network is held until the owner verifies it from an official source;
+  - stale, changed and conflicting listings are held, and postponements are withdrawn;
+  - revalidated at every read and before sending;
+  - verified weather or schedule moves are printed with their source.
+- **Selection:** never by the largest gap. A comparable market gap is capped context, and a stale or faulted market adds nothing. One storyline per game. Count and required games are configurable; a required game that fails the gate is held for review.
+- **Editions:** both written from the same facts in different words and order (24% similar for October 10). EdgeDesk's links each game's research, the free weekly email and the trial, with no campaign tags on its own site.
+- **Checks:** every block listed in the docs. The review report gives READY, HOLD (verify a broadcast) or REJECT; the job rejects its own REJECT drafts automatically, with the reasons.
+- **Cost:** the AI request carries the packets, not the raw research. A failure in one or two games rewrites only those sections. Every call stays under the $10 monthly cap. No new paid service.
+- **First-party publication** goes through the one article store, publisher and renderer (`tools/content/first_party.js`, `article_type: games_to_watch`). It happens only when every gate passes **and** `football/content/config.json` → `first_party_auto_publish` is true. **It is false.**
+- **Database** (`supabase/content_engine.sql`, re-paste; idempotent; additive):
+  - owner broadcast checks (append-only);
+  - the auto-reject door;
+  - the publisher's response, kept apart from publication;
+  - the per-template report.
+
+  **Not applied to production.** Then redeploy the Edge Function (it carries the two libraries verbatim).
+- **Owner page:**
+  - Article generator → Template: Five Games to Watch, Weekly Upset Watch, Model vs. Market, Single Game Deep Dive, Weekend Review; with publisher, sport, week, count, required games, audience, headline style, date and workflow;
+  - the packet and evidence preview, with missing evidence and blockers;
+  - broadcast verification;
+  - Performance → By template.
+
+**Tests:**
+
+- `content:gtw` (new, 135): the October 10 games as a frozen historical fixture, every named case, every block, and the database doors and job on PostgreSQL. It finds 72 independent facts against 12 in the old projection-only preview.
+- `content:e2e` (72; +8 for the template UI).
+- `content:test` (221), `content:sql` (173), `content:fn` (74), `content:job:test` (27).
+- Articles (5,996), editorial (366, plus publisher, runtime and windows), integrity regression (117), matchup research (249): all green.
+
+## 2026-10-08 — System integrity: one calculation layer, one integrity engine, and content checked against its approved numbers
+
+**Every number EdgeDesk prints now comes from one calculation layer, and every game passes one integrity engine before it reaches a board, a brief, an AI prompt, an approval or a publisher.** Docs: `docs/system-integrity/` (start with `REPORT.md` and `OPERATING_GUIDE.md`).
+
+- **Gaps reconcile.** `lib/edgedesk_calc.js` applies one rounding policy, and a displayed gap is always the difference of the two displayed lines. The engine's ±1 near-pick'em floor is never shown or compared: Ole Miss reads −0.2 / −9.5 / 9.3, never "−1.0 … 9.3". Projected scores add to the total and differ by the margin.
+- **Time.** `lib/edgedesk_schedule.js`:
+  - the slate keeps the feed's `start_time_tbd`, so a placeholder reads "time TBA", never "FRI 11:00p";
+  - kickoffs are shown in the reader's chosen zone, with its abbreviation;
+  - the board names the current week and badges look-ahead games "WK n";
+  - future-week games never reach this week's briefs or articles.
+- **The integrity engine** (`lib/edgedesk_integrity.js`). Thirty deterministic rules, each returning PASS / WARNING / BLOCKED with rule id, severity, evidence and remediation, run at seven boundaries. Research status and the decision are two answers, each with its passing and failing rules and one sentence on why they differ.
+  - **Research-grade** no longer counts INVESTIGATE.
+  - **Raw EV** is never an edge: the calibrator is labelled for what it is (no skill shown), and the two EV layers are never printed as one bet.
+- **Markets.** Duplicate, suspended, non-equivalent, alternate-misfiled, polarity-inverted and unmapped quotes are quarantined, never deleted (`football/cfb_lab/integrity.js screenSet`).
+- **Quarterbacks.** `lib/edgedesk_availability.js` assigns seven classes, each with its source and time. A missing announcement is never uncertainty, and a dropback split is a measured fact.
+- **Content engine.**
+  - **Selection and templates:** publishable, current-week games only; one central storyline; five new templates (Biggest Weekend Storylines, Game Deep Dive, Conference Race, Upset Watch, Weekly Model Performance Review).
+  - **Checks:** every number must belong to its game; QB, conference, kickoff and spread claims are checked.
+  - **Exports:** Markdown, HTML and Word are read back and carry the approved snapshot.
+  - **Approval:** changed research revokes it; there is a ready-to-send checklist and a Reject state.
+  - **Cost:** every Claude call is reserved against a **$10 monthly cap** and settled at its measured token cost (duplicates refused, concurrency-safe).
+  - **Acquisition:** an acquisition dashboard against the 90-day targets.
+- **Database** (`supabase/content_engine.sql`, re-paste; idempotent; additive). Approve, ready and send need an integrity verdict and unchanged research. Adds the AI budget tables and doors and the acquisition report. Rollout order and rollback: `docs/system-integrity/MIGRATION.md`. **Not applied to production.**
+- **Edge Function** `content_engine`: reserve → call → settle; redeploy after the SQL and the merge.
+
+**Tests:** `integrity:test` (117 checks: the 17 regression cases + a research-to-publication integration test, on PostgreSQL, required in CI), `content:test` (221), `content:sql` (173), `content:fn` (74), `content:job:test` (27), `content:e2e` (64), and every affected existing suite. `tools/app/first_run.test.js`, `tools/football/quote_ev_ui.e2e.js` and `tools/bettor/decision_ui.e2e.js` each fail one check identically on the base commit (pre-existing, untouched).
+
 ## 2026-10-08 — Content Engine hardening, and EdgeDesk's own Monday/Wednesday/Friday articles
 
 **The content engine now refuses to approve, mark ready or send an article that does not clear a 14-check editorial gate. AI spend runs through a $10 monthly ledger. A business scorecard measures the program against its targets. EdgeDesk can publish up to three of its own articles a week on edgedesksports.com, starting in dry run.** Docs: `docs/content-engine/README.md`.

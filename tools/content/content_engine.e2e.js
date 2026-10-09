@@ -59,10 +59,14 @@ const FIXED = new Date('2026-10-08T17:30:00Z');
 let pass = 0, fail = 0;
 function chk(name, ok, detail) { if (ok) { pass++; return; } fail++; console.log('  FAIL ' + name + (detail !== undefined ? '  ' + JSON.stringify(detail).slice(0, 400) : '')); }
 
+/* files the page reads that a step replaces (Five Games to Watch reads the
+   frozen October 10 fixture, so the step does not move with the week) */
+const OVERRIDES = {};
 function serve() {
   return new Promise((resolve) => {
     const srv = http.createServer((req, res) => {
       let p = decodeURIComponent(req.url.split('?')[0]); if (p.endsWith('/')) p += 'index.html';
+      if (OVERRIDES[p]) { res.writeHead(200, { 'content-type': 'application/json' }); res.end(OVERRIDES[p]); return; }
       const file = path.join(ROOT, path.normalize(p).replace(/^(\.\.[/\\])+/, ''));
       if (!file.startsWith(ROOT) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); res.end(); return; }
       const type = p.endsWith('.html') ? 'text/html; charset=utf-8' : p.endsWith('.js') ? 'text/javascript; charset=utf-8' : p.endsWith('.json') ? 'application/json' : 'application/octet-stream';
@@ -227,17 +231,23 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     await P.click('#rList button[data-open]');
     await P.waitForSelector('#rDetail [data-rv]');
     chk('5 the review shows the sources, the model numbers and the export preview', /EdgeDesk research/.test(await P.textContent('#rDetail')) && /Model numbers to verify/.test(await P.textContent('#rDetail')));
+    chk('5 the review shows the integrity engine’s verdict (the integrity layer loaded on the page)', /integrity: (PASS|WARNING)/.test(await P.textContent('#rChecks')), await P.textContent('#rChecks'));
+    chk('5 a draft in review can be rejected, with a reason', await P.isVisible('#rReject'));
     await P.waitForSelector('#rGate .pill.bad');
     const gateText = await P.textContent('#rGate');
-    chk('5 the gate ran on this version: BLOCKED on the two unexplained market gaps, with evidence and a fix', /BLOCKED/.test(gateText) && /Ole Miss at Vanderbilt/.test(gateText) && /UCLA at Oregon/.test(gateText) && /Evidence:/.test(gateText) && /Fix:/.test(gateText), gateText.slice(0, 400));
+    /* one review per featured game whose gap EdgeDesk's inputs mostly can't
+       explain (a game the integrity engine withholds, such as this week's
+       Ole Miss at Vanderbilt, is never featured) */
+    const nAck = await P.$$eval('#rGate button[data-ack]', (bs) => bs.length);
+    chk('5 the gate ran on this version: BLOCKED on the unexplained market gaps, with evidence and a fix', nAck >= 1 && /BLOCKED/.test(gateText) && /UCLA at Oregon/.test(gateText) && /Evidence:/.test(gateText) && /Fix:/.test(gateText), { nAck, gate: gateText.slice(0, 400) });
     chk('5 … stored with the version it judged', db.sql(`select gate_verdict || '|' || (gate_hash = content_hash)::text from content_engine.articles where id = '${art.id}';`) === 'BLOCKED|true');
     chk('5 … and Approve is locked', await P.isDisabled('#rApprove'));
     if (SHOTS) await P.screenshot({ path: path.join(SHOTS, '3a-gate-blocked.png'), fullPage: false });
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < nAck; i++) {
       await P.click('#rGate button[data-ack]');
       await P.waitForFunction((n) => /Review recorded/.test(document.getElementById('rMsg').textContent) && document.querySelectorAll('#rGate button[data-unack]').length === n, i + 1, { timeout: 30000 });
     }
-    chk('5 the owner’s two written reviews are on record, with the note', db.sql(`select count(*) from content_engine.articles a, jsonb_each(a.acks) k where a.id = '${art.id}' and k.key like 'discrepancy:%' and k.value ->> 'note' like 'Checked the gap%';`) === '2');
+    chk('5 the owner’s written reviews are on record, one per gap, with the note', db.sql(`select count(*) from content_engine.articles a, jsonb_each(a.acks) k where a.id = '${art.id}' and k.key like 'discrepancy:%' and k.value ->> 'note' like 'Checked the gap%';`) === String(nAck));
     await P.waitForSelector('#rGate .pill.warn');
     chk('5 the gate re-ran: WARNING, each gap marked reviewed by the owner', /WARNING/.test(await P.textContent('#rGate')) && /Reviewed by the owner/.test(await P.textContent('#rGate'))
       && db.sql(`select gate_verdict from content_engine.articles where id = '${art.id}';`) === 'WARNING');
@@ -274,6 +284,9 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     await P.click('#pCols button[data-open="' + art.id + '"]');
     await P.waitForSelector('#pDetail button[data-q="ready"]');
     chk('6 approved: export unlocked', !(await P.isDisabled('#pDetail button[data-q="md"]')));
+    const ready = await P.textContent('#pDetail');
+    chk('6 the ready-to-send checklist: every item passes, with the snapshot it was checked on', /Ready-to-send checklist/.test(ready) && /\bready\b/.test(ready)
+      && /Markdown, HTML and Word carry the approved numbers/.test(ready) && /EdgeDesk snapshot: revision \d+ · content [0-9a-f]{12}/.test(ready) && !(await P.isDisabled('#pDetail button[data-q="ready"]')), ready.slice(0, 900));
     const panel = await P.textContent('#pDetail');
     chk('6 the send panel: To the contact, from the edgedesksports.com sender', /Send to Stadium Rant/.test(panel) && /Jordan Editor — jordan@publisher\.example/.test(panel) && /From Davis <davis@edgedesksports\.com>/.test(panel), panel.slice(0, 600));
     chk('6 … the real send is locked until it is marked ready', await P.isDisabled('#pDetail button[data-q="email"]'));
@@ -295,11 +308,14 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     chk('6 the Markdown export: front matter, headline, sections', /^---\ntitle: "College Football Week 6 Predictions/.test(md) && /## How to read these numbers/.test(md) && /### No\. 6 Georgia at No\. 11 Alabama/.test(md), md.slice(0, 300));
     chk('6 … the UTM-tagged EdgeDesk link and the disclaimer', /utm_source=stadiumrant&utm_medium=publisher&utm_campaign=ce_stadiumrant_[0-9a-f]{12}/.test(md) && /21\+\. Gamble responsibly — 1-800-GAMBLER/.test(md));
     chk('6 … and no pick language', !/best bet|lock of|guarantee|our pick/i.test(md));
+    chk('6 … the snapshot it was approved on, in the front matter', /edgedesk_content_hash: "[0-9a-f]{64}"/.test(md) && /edgedesk_approved: true/.test(md) && /edgedesk_research_hash: "/.test(md), md.slice(0, 600));
     if (SHOTS) fs.writeFileSync(path.join(SHOTS, 'export.md'), md);
     const [dl2] = await Promise.all([P.waitForEvent('download'), P.click('#pDetail button[data-q="html"]')]);
     const html = fs.readFileSync(await dl2.path(), 'utf8');
     chk('6 the HTML export is a clean, standalone document with no script', /^<!doctype html>/.test(html) && !/<script/i.test(html) && /<h2>How to read these numbers<\/h2>/.test(html));
     chk('6 each export is logged', +db.sql(`select count(*) from content_engine.events where kind = 'exported' and article_id = '${art.id}';`) === 2);
+    chk('6 … with the numbers fingerprint it was read back against', +db.sql(`select count(*) from content_engine.events where kind = 'exported' and article_id = '${art.id}' and detail ->> 'numbers' ~ '^[0-9a-z]+$';`) === 2);
+    chk('6 the HTML export carries the snapshot', /<meta name="edgedesk-snapshot" content="EdgeDesk snapshot: revision \d+/.test(html));
     if (SHOTS) await P.screenshot({ path: path.join(SHOTS, '4-send.png'), fullPage: false });
 
     await P.fill('#sSubj', 'College Football Week 6 Predictions — for Stadium Rant');
@@ -393,6 +409,49 @@ const RSS = `<?xml version="1.0"?><rss><channel>
       && /AI: billed amounts you entered/.test(await P.textContent('#scOut')));
     chk('7 the three kinds of numbers are named apart', /first-party/.test(await P.textContent('#tab-perf')) && /publisher-reported/i.test(await P.textContent('#tab-perf')) && /Benchmarks/.test(perf));
 
+    chk('7 the per-template report is shown, measured or a dash', /Generated/.test(await P.textContent('#tmplOut')) && /never zero/.test(await P.textContent('#tmplOut')));
+
+    /* 7c · Five Games to Watch: the template, the evidence, the broadcast hold */
+    {
+      const zlib = require('zlib');
+      const FX = JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(ROOT, 'tools', 'content', 'fixtures', 'games_to_watch_2026_w6.json.gz'))).toString('utf8'));
+      const BPK = require(path.join(ROOT, 'tools', 'content', 'build_packets.js'));
+      OVERRIDES['/football/content/packets.json'] = JSON.stringify(BPK.compact(BPK.buildFromFixture(FX, { fixture: null })));
+      OVERRIDES['/football/cfb_terminal/games.json'] = JSON.stringify(FX.terminal);
+      OVERRIDES['/football/cfb_terminal/brief.json'] = JSON.stringify({ week: FX.week });
+      OVERRIDES['/football/rankings/current.json'] = JSON.stringify(FX.rankings);
+      await P.click('.tabs button[data-tab="gen"]');
+      await P.waitForSelector('#tab-gen:not(.hide)');
+      chk('7c the template list: Five Games to Watch, Upset Watch, Model vs. Market, Deep Dive, Weekend Review',
+        JSON.stringify(await P.$$eval('#tTpl option', (os) => os.map((o) => o.textContent))) === JSON.stringify(['Five Games to Watch', 'Weekly Upset Watch', 'Model vs. Market', 'Single Game Deep Dive', 'Weekend Review (last week, graded)', 'Model performance (the season’s live record)']));
+      const ctl = await Promise.all(['#gPubSel', '#tSport', '#tWeek', '#tCount', '#tReq', '#tAudience', '#tHead', '#tDate', '#tFlow'].map((id) => P.$(id)));
+      chk('7c … with publisher, sport, week, count, required games, audience, headline style, date and workflow', ctl.every(Boolean), ctl.map(Boolean));
+      await P.selectOption('#tTpl', 'games_to_watch');
+      await P.click('#tPreview');
+      await P.waitForSelector('#tPreviewOut:not(.hide) .card h3', { timeout: 30000 });
+      let pv = await P.textContent('#tPreviewOut');
+      chk('7c the preview shows the five games, each with the six questions and its independent facts', ['Ole Miss at Vanderbilt', 'Texas A&M at Missouri', 'Texas vs. Oklahoma', 'UCLA at Oregon', 'Georgia at Alabama'].every((h) => pv.indexOf(h) >= 0)
+        && (pv.match(/passes the reasoning gate/g) || []).length === 5 && /independent facts/.test(pv) && /What to watch for/.test(pv), pv.slice(0, 400));
+      chk('7c … and holds CBS until it is verified', /broadcast TENTATIVE/.test(pv) && /must be verified/.test(await P.textContent('#tMsg')));
+      const row = '#tPreviewOut [data-gid="401858484"]';
+      await P.click('#tPreviewOut details:has([data-gid="401858484"]) summary');
+      await P.fill(row + ' [data-k="network"]', 'CBS');
+      await P.fill(row + ' [data-k="source_url"]', 'https://fixture.test/bigten-football-schedule');
+      await P.fill(row + ' [data-k="source_name"]', 'Big Ten Conference football schedule (fixture)');
+      await P.click(row + ' button[data-act="verify"]');
+      await P.waitForFunction(() => /Verification recorded/.test(document.getElementById('tMsg').textContent), null, { timeout: 15000 });
+      chk('7c the owner’s verification is recorded with its source', db.sql(`select network || '|' || source_url || '|' || source_kind from content_engine.broadcast_checks where game_id = '401858484';`) === 'CBS|https://fixture.test/bigten-football-schedule|conference');
+      await P.click('#tPreview');
+      await P.waitForFunction(() => /every broadcast is verified/.test(document.getElementById('tMsg').textContent), null, { timeout: 30000 });
+      pv = await P.textContent('#tPreviewOut');
+      chk('7c … and applied: CBS confirmed, owner-verified', /broadcast CONFIRMED/.test(pv) && /CBS \(OWNER_VERIFIED\)/.test(pv) && !/broadcast TENTATIVE/.test(pv), pv.slice(0, 300));
+      await P.click('#tCreate');
+      await P.waitForFunction(() => /editorial review: READY/.test(document.getElementById('tMsg').textContent), null, { timeout: 30000 });
+      const g = JSON.parse(db.sql(`select to_jsonb(a) from content_engine.articles a where format = 'weekly_games_to_watch' order by created_at desc limit 1;`));
+      chk('7c the draft is saved for the publisher with its review READY and every check passing', g && g.status === 'draft' && g.checks.review.verdict === 'READY' && g.checks.ok === true && g.sections.filter((x) => /^game_/.test(x.key)).length === 5);
+      Object.keys(OVERRIDES).forEach((k) => { delete OVERRIDES[k]; });
+    }
+
     /* 7b · EdgeDesk's own articles: a held Friday preview, its twelve gates, the owner's approval */
     {
       const CEL = require(path.join(ROOT, 'lib', 'content_engine.js'));
@@ -433,6 +492,14 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     chk('8 … and the KPI strip shows it, labelled an estimate', /AI this month\s*\$0\.10 \/ \$10\.00\s*estimated, not billed/.test(await P.textContent('#kpis')), await P.textContent('#kpis'));
     chk('8 … and whether sending is, with the sender (never the key)', /Send to publisher is configured/.test(await P.textContent('#aiStatus')) && !/re_e2e/.test(await P.textContent('#tab-set'))
       && await P.getAttribute('#sSEmail', 'placeholder') === 'davis@edgedesksports.com', await P.textContent('#aiStatus'));
+    /* the one AI budget (main's panel): raising it above the $10 default asks first */
+    await P.fill('#abBudget', '25'); await P.click('#abSave');
+    await P.waitForFunction(() => /Saved: \$25\.00 a month/.test(document.getElementById('abMsg').textContent), null, { timeout: 15000 });
+    chk('8 … raising the monthly AI budget asks first, then saves', dialogs.some((d) => /Raise the monthly AI budget from \$10\.00 to \$25\.00/.test(d))
+      && db.sql(`select ai_monthly_budget_usd from content_engine.settings where id = 1;`) === '25.00');
+    await P.waitForSelector('#aiBudget #abBudget');
+    await P.fill('#abBudget', '10'); await P.click('#abSave');
+    await P.waitForFunction(() => /Saved: \$10\.00 a month/.test(document.getElementById('abMsg').textContent), null, { timeout: 15000 });
     await P.setViewportSize({ width: 390, height: 844 });
     await P.click('.tabs button[data-tab="opps"]');
     await P.waitForSelector('#oList .opp');

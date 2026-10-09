@@ -288,6 +288,14 @@ async function open(opts) {
     vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'cfb_reliability.js'), 'utf8'), win,
       { filename: 'lib/cfb_reliability.js' });
   } catch (e) { log('  reliability: ' + (e && e.message)); }
+  /* THE INTEGRITY LAYER (docs/system-integrity), <script src> tags on the page
+     ahead of the board: the calc layer every fair line and gap is printed
+     through, kickoff truth, availability classes and the integrity engine */
+  ['edgedesk_calc.js', 'edgedesk_schedule.js', 'edgedesk_availability.js', 'edgedesk_integrity.js'].forEach((f) => {
+    if (f === 'edgedesk_calc.js' && win.EDCalc) return;
+    try { vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', f), 'utf8'), win, { filename: 'lib/' + f }); }
+    catch (e) { log('  integrity layer ' + f + ': ' + (e && e.message)); }
+  });
   /* THE ONE RESEARCH CLASSIFIER (lib/edgedesk_canon.js, a <script src> on
      the page): the view's label is canon's researchStatus since audit
      2026-09-30 #6, so a host without it would publish no research label */

@@ -192,6 +192,7 @@ function makeCtx(opts) {
   /* the page loads lib/edgedesk_canon.js before the board (the rating names,
      the explainer, the canonical statuses) */
   ctx.window.EDCanon = require(path.join(ROOT, 'lib', 'edgedesk_canon.js'));
+  ctx.window.EDCalc = require(path.join(ROOT, 'lib', 'edgedesk_calc.js'));
   ctx.window.EDCfbP4Params = PARAMS;
   ctx.window.EDFbs = FBS;
   ctx.fbP4Key = name => FBS.normKey(name);

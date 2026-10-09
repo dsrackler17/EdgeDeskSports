@@ -1,0 +1,61 @@
+# EdgeDesk — the system-integrity regression suite (docs/system-integrity).
+#
+# The seventeen failures the October 8 audit named, each pinned by a test that
+# drives the production code path (the canonical calculation layer, schedule
+# truth, the integrity engine, the market screen, availability classes, the
+# content engine and its database), plus one integration test from committed
+# research to an approved, reconciled article. The database cases run on a real
+# PostgreSQL and are REQUIRED here: a skipped case is a failure, never a pass.
+#
+# Offline: no network, no credentials, nothing written outside temp dirs.
+name: System integrity tests
+
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_calc.js'
+      - 'lib/edgedesk_schedule.js'
+      - 'lib/edgedesk_availability.js'
+      - 'lib/edgedesk_integrity.js'
+      - 'lib/edgedesk_canon.js'
+      - 'lib/cfb_research_view.js'
+      - 'lib/cfb_terminal.js'
+      - 'lib/content_engine.js'
+      - 'football/cfb_lab/integrity.js'
+      - 'football/cfb_terminal/build.js'
+      - 'football/fbs/build_coverage.js'
+      - 'supabase/content_engine.sql'
+      - 'supabase/growth.sql'
+      - 'tools/integrity/**'
+      - 'docs/system-integrity/RULES.md'
+      - 'app.html'
+      - 'package.json'
+      - '.github/workflows/system-integrity-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: system-integrity-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The seventeen regression cases and the research-to-publication integration test (real PostgreSQL)
+        env:
+          INTEGRITY_PG_REQUIRED: '1'
+        run: node tools/integrity/regression.test.js
+      - name: The audit reproduces from committed data (read-only)
+        run: node tools/integrity/audit.js > /dev/null
+      - name: RULES.md is exactly what the integrity engine enforces
+        run: node tools/integrity/rules_doc.js --check
+      - name: The research view's reconcile sweep and the near-pick'em rule
+        run: node tools/football/cfb_research_view.test.js

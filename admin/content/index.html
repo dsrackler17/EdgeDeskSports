@@ -175,6 +175,39 @@ a{color:var(--accent)}
 
     <!-- ── GENERATOR ─────────────────────────────────────────────────── -->
     <section id="tab-gen" role="tabpanel" class="hide">
+      <h2>Template</h2>
+      <div class="card" id="tCard">
+        <div class="row">
+          <div class="f" style="min-width:220px"><label for="tTpl">Template</label>
+            <select id="tTpl">
+              <option value="games_to_watch">Five Games to Watch</option>
+              <option value="upset_watch">Weekly Upset Watch</option>
+              <option value="market_discrepancy">Model vs. Market</option>
+              <option value="matchup_preview">Single Game Deep Dive</option>
+              <option value="postgame_review">Weekend Review (last week, graded)</option>
+              <option value="model_performance">Model performance (the season’s live record)</option>
+            </select></div>
+          <div class="f"><label for="tEdition">Edition</label>
+            <select id="tEdition"><option value="weekly_games_to_watch">Publisher edition</option><option value="weekly_games_to_watch_first_party">EdgeDesk first-party edition</option></select></div>
+          <div class="f"><label for="tSport">Sport</label><select id="tSport"><option value="cfb">College football</option><option value="nfl">NFL</option></select></div>
+          <div class="f" style="max-width:90px"><label for="tWeek">Week</label><input id="tWeek" type="number" min="0" max="20" placeholder="current"></div>
+          <div class="f" style="max-width:110px"><label for="tCount">Featured games</label><input id="tCount" type="number" min="1" max="8" value="5"></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <div class="f" style="min-width:280px;flex:2"><label for="tReq">Required games (optional)</label><select id="tReq" multiple size="4"></select></div>
+          <div class="f"><label for="tAudience">Audience</label><select id="tAudience"><option value="general">General sports fans</option><option value="mixed">Fans and bettors</option><option value="bettors">Experienced bettors</option></select></div>
+          <div class="f"><label for="tHead">Headline style</label><select id="tHead"><option value="standard">Standard</option><option value="listicle">Numbered list</option><option value="where_to_watch">Where to watch</option></select></div>
+          <div class="f"><label for="tDate">Publication date</label><input id="tDate" type="date"></div>
+          <div class="f"><label for="tFlow">Workflow</label><select id="tFlow"><option value="manual">Manual approval</option><option value="automatic">Automatic (EdgeDesk edition, every gate)</option></select></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button id="tPreview" type="button" class="g">Preview matchups and evidence</button>
+          <button id="tCreate" type="button">Create draft from this template</button>
+        </div>
+        <p class="note">Five Games to Watch reads this week’s verified matchup packets (football/content/packets.json): every featured game must answer six questions with at least two independently verifiable facts, and its broadcast is printed only once it is verified and fresh. A publisher edition is always approved by hand and sent only when you press Send. The EdgeDesk edition publishes itself only when every gate passes <b>and</b> automatic publication is switched on in football/content/config.json (<span id="tAuto">checking…</span>).</p>
+        <div class="msg" id="tMsg" role="status" aria-live="polite"></div>
+      </div>
+      <div id="tPreviewOut" class="hide"></div>
       <h2>Choose</h2>
       <div class="card">
         <div class="row">
@@ -224,6 +257,8 @@ a{color:var(--accent)}
       <div id="scOut"><p class="note">Loading…</p></div>
       <h2>Weekly summary</h2>
       <div id="wkOut"><p class="note">Loading…</p></div>
+      <h2>Performance by template</h2>
+      <div id="tmplOut"><p class="note">Loading…</p></div>
       <h2>Performance by article</h2>
       <div class="banner">Three kinds of numbers, never mixed: <b>first-party</b> (EdgeDesk’s own measurement of visits, sign-ups, trials and paid conversions that arrived through each article’s tagged link), <b>publisher-reported</b> (figures a publisher gave you, as entered), and <b>benchmarks</b> (user-reported reference values, not live analytics). A dash means not measured.</div>
       <div id="perfOut"><p class="note">Loading…</p></div>
@@ -274,7 +309,14 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 </script>
 <script src="/lib/edgedesk_auth.js?v=20261005a"></script>
 <script src="/lib/edgedesk_admin_session.js?v=20261007a"></script>
-<script src="/lib/content_engine.js?v=20261009b"></script>
-<script src="/admin/content/content.js?v=20261009b"></script>
+<!-- the integrity layer the core checks every draft with (docs/system-integrity): without it validation fails closed -->
+<script src="/lib/edgedesk_calc.js?v=20261009m"></script>
+<script src="/lib/edgedesk_schedule.js?v=20261009m"></script>
+<script src="/lib/edgedesk_availability.js?v=20261009m"></script>
+<script src="/lib/edgedesk_integrity.js?v=20261009m"></script>
+<script src="/lib/edgedesk_broadcast.js?v=20261009m"></script>
+<script src="/lib/edgedesk_matchup.js?v=20261009m"></script>
+<script src="/lib/content_engine.js?v=20261009m"></script>
+<script src="/admin/content/content.js?v=20261009m"></script>
 </body>
 </html>

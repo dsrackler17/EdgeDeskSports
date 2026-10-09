@@ -14,6 +14,21 @@ Why it exists: publishers asked for broader, search-driven pieces rather than is
 
 **Open it:** `/admin/content/` (outbound owners only).
 
+**System integrity** (`docs/system-integrity/`):
+
+- Every game packet is checked by the integrity engine. A BLOCKED game is
+  withheld from every article: an unconfirmed kickoff, a future week, a faulted
+  or misjoined market, or a gap that does not reconcile.
+- Every draft carries an integrity verdict, which the database enforces at
+  approval and at Ready to Send.
+- Approval is bound to the research it was given on.
+- Every export is read back against the approved numbers.
+- Every Claude call is reserved against a **$10 monthly cap** and settled at
+  its measured cost.
+
+See `OPERATING_GUIDE.md` (daily use), `TEMPLATES.md` (formats and story
+selection), `COST.md`, `RULES.md` and `MIGRATION.md`.
+
 ---
 
 ## How it fits together
@@ -152,7 +167,13 @@ Search Console (existing import) ───────────────�
 | Weekly CFB preview | weekly preview, upset watch, conference race | intro · why it matters · how to read · the games · upset watch · conference races · what the numbers can't see · bottom line |
 | Weekly NFL preview | weekly preview, upset watch, slate-wide model-vs-line | intro · why it matters · how to read · the games · upset watch · where the numbers differ · injury report · limits · bottom line |
 | Trending sports story | a matched headline, an NFL injury implication | intro · what was reported (attributed, linked) · why it matters · what EdgeDesk's research shows · what we don't know · bottom line |
-| Market discrepancy analysis | one game with a current price and a 2+ point gap | intro · the gap (with capture time) · why the numbers differ · how to read · the case for the market · limits · bottom line |
+| Model vs. Market | one research-grade disagreement (Worth Researching or Verified Major) with a current price; never an unverified 7+ gap | intro · the gap (with capture time) · why the numbers differ · how to read · the case for the market · limits · bottom line |
+| Biggest Weekend Storylines | three to five storylines, each one game and one reason | intro · storylines · how to read · limits · bottom line |
+| Individual Game Deep Dive | the week's central game (needs a measured reliability), only when the week's matchup deep dives do not already cover it | intro · the matchup · the numbers · why they differ · what could change · how to read · limits · bottom line |
+| Upset Watch | underdogs at 30–46% | intro · upsets · how to read · limits · bottom line |
+| Weekly Model Performance Review | the season's live-forward record (50+ graded games); the postgame model review below grades the last week | intro · the record · where it missed · calibration · how to read · bottom line |
+| Five Games to Watch (publisher edition) | the week's featured games (default 5), each from a verified matchup packet — see [GAMES_TO_WATCH.md](GAMES_TO_WATCH.md) | intro · the schedule at a glance · one section per game (where to watch · why it matters · the key matchup · EdgeDesk's projection · upset potential · what to watch) · how to read · limits · bottom line |
+| Five Games to Watch (EdgeDesk edition) | the same packets, written as EdgeDesk's own page | intro · research navigation · one section per game (kickoff and broadcast · watch for · the stakes · where it's decided · EdgeDesk's number · the upset case) · how to read · limits · follow these games |
 | Matchup deep dive | the week's two headline games, per league | intro · EdgeDesk's projection (with its typical miss) · how to read · what builds the number · where the matchup tilts · quarterbacks and availability (a starter-out re-run is stated as the model's scenario, never as a report) · EdgeDesk vs. the market · conditions · limits · bottom line |
 | Conference race | games between a conference's three highest-rated teams | intro · why it matters · how to read · the games that shape the race · where the other contenders stand · what it means for the race (no standings feed: no standings claims) · limits · bottom line |
 | Model vs. market report | a league's slate with three or more gaps EdgeDesk can explain | intro · how to read · the biggest gaps (each explained from EdgeDesk's inputs, or its unexplained share stated) · what the gaps have in common (counted, not told) · limits · bottom line |
