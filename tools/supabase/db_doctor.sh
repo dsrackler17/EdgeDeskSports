@@ -154,7 +154,11 @@ diagnose() {
     from pg_stat_user_tables order by pg_total_relation_size(relid) desc limit 20"
   # where the space sits, from the catalog alone: no table is scanned, so this
   # stays cheap on an instance whose disk IO is the scarce thing
+  # reltuples is the planner's row count as of the last VACUUM/ANALYZE; the
+  # n_live_tup above restarts from zero whenever the statistics are reset, so
+  # the two disagreeing is how a "small" table turns out to be a large one
   sql "Largest tables: rows vs out-of-line values vs indexes" "select c.relname,
+    c.reltuples::bigint as est_rows,
     pg_size_pretty(pg_relation_size(c.oid)) as heap,
     pg_size_pretty(coalesce(pg_total_relation_size(nullif(c.reltoastrelid, 0)), 0)) as toast,
     pg_size_pretty(pg_indexes_size(c.oid)) as indexes,
