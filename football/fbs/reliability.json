@@ -2,7 +2,7 @@
  "schema": "edgedesk_cfb_reliability_v1",
  "version": "cfb_reliability/2",
  "season": 2026,
- "generated_at": "2026-10-09T14:54:08.018Z",
+ "generated_at": "2026-10-09T16:35:28.229Z",
  "basis": "Reliability is how much EdgeDesk trusts the completeness, freshness, consistency and stability of the information under each projection. It is NOT a probability that the projection is right and not a betting signal; it moves no number. Scored by lib/cfb_reliability.js from the inputs this build priced from.",
  "market": "NOT JOINED IN THIS BUILD — the market items do not apply to these scores; the board re-scores with its live quote",
  "weights": {
@@ -695,7 +695,7 @@
   ]
  },
  "enrichment": {
-  "artifact_generated_at": "2026-10-09T14:52:56.008Z",
+  "artifact_generated_at": "2026-10-09T16:35:15.111Z",
   "games_with_evidence": 113,
   "summary": {
    "games": 113,
@@ -805,16 +805,16 @@
      "provider": "capture_signals",
      "label": "EdgeDesk capture (signals: books per point)",
      "kind": "market",
-     "state": "DOWN",
-     "reason": "no call answered: timeout ×1",
+     "state": "HEALTHY",
+     "reason": "1 of 1 calls answered",
      "attributable_to": "provider"
     },
     {
      "provider": "cfb_lines",
      "label": "CFBD lines via Supabase cfb.lines (every provider)",
      "kind": "market",
-     "state": "DOWN",
-     "reason": "no call answered: timeout ×2",
+     "state": "HEALTHY",
+     "reason": "2 of 2 calls answered",
      "attributable_to": "provider"
     },
     {
@@ -946,8 +946,8 @@
      "attributable_to": "configuration"
     }
    ],
-   "provider_failures": 6,
-   "stale_evidence_records": 58,
+   "provider_failures": 4,
+   "stale_evidence_records": 60,
    "conflicts": 21
   }
  },
@@ -2696,14 +2696,14 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Texas’s starter record was re-read 2 min ago and describes evidence from 13 days ago",
+      "reason": "Texas’s starter record was re-read 1 min ago and describes evidence from 13 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Oklahoma’s starter record was re-read 2 min ago and describes evidence from 12.8 days ago",
+      "reason": "Oklahoma’s starter record was re-read 1 min ago and describes evidence from 12.9 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -2850,7 +2850,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Ole Miss’s starter record was re-read 2 min ago and describes evidence from 12.8 days ago",
+      "reason": "Ole Miss’s starter record was re-read 1 min ago and describes evidence from 12.9 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -3326,7 +3326,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Ole Miss’s starter record was re-read 2 min ago and describes evidence from 12.8 days ago",
+      "reason": "Ole Miss’s starter record was re-read 1 min ago and describes evidence from 12.9 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -3481,7 +3481,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Oklahoma’s starter record was re-read 2 min ago and describes evidence from 12.8 days ago",
+      "reason": "Oklahoma’s starter record was re-read 1 min ago and describes evidence from 12.9 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -3785,7 +3785,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Texas’s starter record was re-read 2 min ago and describes evidence from 13 days ago",
+      "reason": "Texas’s starter record was re-read 1 min ago and describes evidence from 13 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -3995,7 +3995,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "The Citadel’s starter record was re-read 2 min ago and describes evidence from an unknown time ago",
+      "reason": "The Citadel’s starter record was re-read 1 min ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -4833,7 +4833,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Oklahoma State’s starter record was re-read 2 min ago and describes evidence from 12.7 days ago",
+      "reason": "Oklahoma State’s starter record was re-read 1 min ago and describes evidence from 12.7 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -4980,7 +4980,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Kansas State’s starter record was re-read 2 min ago and describes evidence from 12.7 days ago",
+      "reason": "Kansas State’s starter record was re-read 1 min ago and describes evidence from 12.7 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -5248,7 +5248,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Utah’s starter record was re-read 2 min ago and describes evidence from 12.8 days ago",
+      "reason": "Utah’s starter record was re-read 1 min ago and describes evidence from 12.9 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -5712,7 +5712,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Kansas State’s starter record was re-read 2 min ago and describes evidence from 12.7 days ago",
+      "reason": "Kansas State’s starter record was re-read 1 min ago and describes evidence from 12.7 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -5880,7 +5880,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Oklahoma State’s starter record was re-read 2 min ago and describes evidence from 12.7 days ago",
+      "reason": "Oklahoma State’s starter record was re-read 1 min ago and describes evidence from 12.7 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -6211,7 +6211,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Utah’s starter record was re-read 2 min ago and describes evidence from 12.8 days ago",
+      "reason": "Utah’s starter record was re-read 1 min ago and describes evidence from 12.9 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -6537,14 +6537,14 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Duke’s starter record was re-read 2 min ago and describes evidence from 12.8 days ago",
+      "reason": "Duke’s starter record was re-read 1 min ago and describes evidence from 12.9 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Georgia Tech’s starter record was re-read 2 min ago and describes evidence from 12.5 days ago",
+      "reason": "Georgia Tech’s starter record was re-read 1 min ago and describes evidence from 12.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -7487,7 +7487,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "Charleston Southern’s starter record was re-read 2 min ago and describes evidence from an unknown time ago",
+      "reason": "Charleston Southern’s starter record was re-read 1 min ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -7676,7 +7676,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "Elon’s starter record was re-read 2 min ago and describes evidence from an unknown time ago",
+      "reason": "Elon’s starter record was re-read 1 min ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -8011,7 +8011,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Georgia Tech’s starter record was re-read 2 min ago and describes evidence from 12.5 days ago",
+      "reason": "Georgia Tech’s starter record was re-read 1 min ago and describes evidence from 12.6 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -8364,7 +8364,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Duke’s starter record was re-read 2 min ago and describes evidence from 12.8 days ago",
+      "reason": "Duke’s starter record was re-read 1 min ago and describes evidence from 12.9 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -9622,14 +9622,14 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "UCLA’s starter record was re-read 2 min ago and describes evidence from 12.9 days ago",
+      "reason": "UCLA’s starter record was re-read 1 min ago and describes evidence from 13 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Oregon’s starter record was re-read 2 min ago and describes evidence from 12.6 days ago",
+      "reason": "Oregon’s starter record was re-read 1 min ago and describes evidence from 12.7 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -10850,7 +10850,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Oregon’s starter record was re-read 2 min ago and describes evidence from 12.6 days ago",
+      "reason": "Oregon’s starter record was re-read 1 min ago and describes evidence from 12.7 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -11166,7 +11166,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "UCLA’s starter record was re-read 2 min ago and describes evidence from 12.9 days ago",
+      "reason": "UCLA’s starter record was re-read 1 min ago and describes evidence from 13 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -12515,7 +12515,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Tulane’s starter record was re-read 2 min ago and describes evidence from 12.7 days ago",
+      "reason": "Tulane’s starter record was re-read 1 min ago and describes evidence from 12.7 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -12831,7 +12831,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "East Carolina’s starter record was re-read 2 min ago and describes evidence from 12.8 days ago",
+      "reason": "East Carolina’s starter record was re-read 1 min ago and describes evidence from 12.9 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -13352,7 +13352,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "East Carolina’s starter record was re-read 2 min ago and describes evidence from 12.8 days ago",
+      "reason": "East Carolina’s starter record was re-read 1 min ago and describes evidence from 12.9 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -13518,7 +13518,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Tulane’s starter record was re-read 2 min ago and describes evidence from 12.7 days ago",
+      "reason": "Tulane’s starter record was re-read 1 min ago and describes evidence from 12.7 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -14518,7 +14518,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Northern Illinois’s starter record was re-read 2 min ago and describes evidence from 12.9 days ago",
+      "reason": "Northern Illinois’s starter record was re-read 1 min ago and describes evidence from 12.9 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -14687,7 +14687,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Nevada’s starter record was re-read 2 min ago and describes evidence from 12.5 days ago",
+      "reason": "Nevada’s starter record was re-read 1 min ago and describes evidence from 12.6 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -15214,7 +15214,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Nevada’s starter record was re-read 2 min ago and describes evidence from 12.5 days ago",
+      "reason": "Nevada’s starter record was re-read 1 min ago and describes evidence from 12.6 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -15535,7 +15535,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Northern Illinois’s starter record was re-read 2 min ago and describes evidence from 12.9 days ago",
+      "reason": "Northern Illinois’s starter record was re-read 1 min ago and describes evidence from 12.9 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -16173,7 +16173,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Sacramento State’s starter record was re-read 2 min ago and describes evidence from 12.6 days ago",
+      "reason": "Sacramento State’s starter record was re-read 1 min ago and describes evidence from 12.6 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -17622,7 +17622,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Sacramento State’s starter record was re-read 2 min ago and describes evidence from 12.6 days ago",
+      "reason": "Sacramento State’s starter record was re-read 1 min ago and describes evidence from 12.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -17957,7 +17957,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "App State’s starter record was re-read 2 min ago and describes evidence from 12.6 days ago",
+      "reason": "App State’s starter record was re-read 1 min ago and describes evidence from 12.7 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -18137,7 +18137,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "App State’s starter record was re-read 2 min ago and describes evidence from 12.6 days ago",
+      "reason": "App State’s starter record was re-read 1 min ago and describes evidence from 12.7 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -18343,7 +18343,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Southern Miss’s starter record was re-read 2 min ago and describes evidence from 12.7 days ago",
+      "reason": "Southern Miss’s starter record was re-read 1 min ago and describes evidence from 12.7 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -19389,7 +19389,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Troy’s starter record was re-read 2 min ago and describes evidence from 12.6 days ago",
+      "reason": "Troy’s starter record was re-read 1 min ago and describes evidence from 12.7 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -19564,14 +19564,14 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Florida International’s starter record was re-read 2 min ago and describes evidence from 12.7 days ago",
+      "reason": "Florida International’s starter record was re-read 1 min ago and describes evidence from 12.8 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Jacksonville State’s starter record was re-read 2 min ago and describes evidence from 12.7 days ago",
+      "reason": "Jacksonville State’s starter record was re-read 1 min ago and describes evidence from 12.7 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -19775,14 +19775,14 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Kennesaw State’s starter record was re-read 2 min ago and describes evidence from 12.7 days ago",
+      "reason": "Kennesaw State’s starter record was re-read 1 min ago and describes evidence from 12.7 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Missouri State’s starter record was re-read 2 min ago and describes evidence from 12.6 days ago",
+      "reason": "Missouri State’s starter record was re-read 1 min ago and describes evidence from 12.6 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -20173,7 +20173,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Sam Houston’s starter record was re-read 2 min ago and describes evidence from 13 days ago",
+      "reason": "Sam Houston’s starter record was re-read 1 min ago and describes evidence from 13 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
