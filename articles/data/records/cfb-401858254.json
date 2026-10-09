@@ -21,8 +21,8 @@
   "game_time": "2026-10-09T23:00:00.000Z",
   "game_when_label": "2026-10-09 23:00 UTC",
   "published_at": "2026-10-09T13:10:18.062Z",
-  "updated_at": "2026-10-09T21:50:33.198Z",
-  "generated_at": "2026-10-09T21:50:33.198Z",
+  "updated_at": "2026-10-09T22:20:32.166Z",
+  "generated_at": "2026-10-09T22:20:32.166Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1866,14 +1866,15 @@
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-09. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "snapshot_id": "snap_ab932e3df83360d5",
+  "publication_snapshot_id": "snap_ab932e3df83360d5",
   "timing": {
     "publication_window": "late_window",
     "classified_window": "late_window",
     "scheduled_kickoff": "2026-10-09T23:00:00.000Z",
-    "minutes_before_kickoff": 69,
+    "minutes_before_kickoff": 39,
     "published_at": "2026-10-09T13:10:18.062Z",
     "refreshed": true,
-    "at": "2026-10-09T21:50:33.198Z"
+    "at": "2026-10-09T22:20:32.166Z"
   },
   "featured": {
     "editorial_priority": 48.2,
@@ -2173,24 +2174,37 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-09T21:50:33.198Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Louisville’s availability report lists running back Keyjuan Brown as questionable.",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-09T22:20:32.166Z"
   },
   "publish_state": {
     "ok": true,
-    "at": "2026-10-09T21:50:33.198Z",
+    "at": "2026-10-09T22:20:32.166Z",
     "blocking": [],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Louisville’s availability report lists running back Keyjuan Brown as questionable."
+      }
+    ],
     "hold_reason": null
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "11w7q9kspo9cq",
+    "packet_hash": "17qvruvkzr1et",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Florida State take away Louisville’s big plays?",
@@ -2237,8 +2251,7 @@
     "unknown": [
       "Louisville’s availability report lists running back Keyjuan Brown as questionable.",
       "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Louisville and Florida State.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, conference implications and penalty rate.",
-      "The line on file was captured Oct. 9 and may have moved."
+      "Not in EdgeDesk’s verified data for this game: turnover rates, conference implications and penalty rate."
     ],
     "flags": [
       {
@@ -2275,11 +2288,10 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-09T21:50:33.198Z"
+    "at": "2026-10-09T22:20:32.166Z"
   },
-  "publication_snapshot_id": "snap_ab932e3df83360d5",
   "freshness": {
-    "at": "2026-10-09T21:50:33.198Z",
+    "at": "2026-10-09T22:20:32.166Z",
     "fields": {
       "market.line": {
         "value": "Louisville -4.0",
