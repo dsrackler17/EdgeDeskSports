@@ -16,7 +16,11 @@
      3  Write article → outline (SEO brief) → full draft: every hard check
         passes; the SEO brief shows keyword, slug, meta, demand basis
      4  Rewrite with AI: the function's version is checked and saved
-     5  Submit for review → the five-point review → approve this exact version
+     5  Submit for review → the editorial gate runs on the version under
+        review: the Week 6 preview is BLOCKED on its two unexplained market
+        gaps, Approve is locked; the owner records a written review of each
+        (kept with the article), the gate re-runs to WARNING → the five-point
+        review → approve this exact version (the gate re-runs first)
      6  Publishing queue: export is locked before approval; after it the
         Markdown carries the UTM-tagged link and the disclaimer. Send: the
         publisher's contact is added under Publishers; a test goes to the
@@ -116,7 +120,7 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     globalThis.Deno = { env: { get: () => undefined } };
     globalThis.__claude = (req) => {
       const cur = JSON.parse(/CURRENT DRAFT:\n([\s\S]*)$/.exec(String(req.messages[0].content))[1]);
-      return { stop_reason: 'end_turn', model: 'claude-opus-5-5', content: [{ type: 'text', text: JSON.stringify(Object.assign({}, cur, { standfirst: cur.standfirst + ' Here is what the numbers say.' })) }] };
+      return { stop_reason: 'end_turn', model: 'claude-opus-5-5', usage: { input_tokens: 9000, output_tokens: 3000 }, content: [{ type: 'text', text: JSON.stringify(Object.assign({}, cur, { standfirst: cur.standfirst + ' Here is what the numbers say.' })) }] };
     };
     const FNM = await import(pathToFileURL(INLINE.TARGET).href);
     const fnCfg = { url: SB, anonKey: ANON, anthropicKey: 'sk-ant-e2e-stub-key-0000', resendKey: 're_e2e_stub_key_0000', model: 'claude-opus-5-5', origins: ['http://127.0.0.1:' + site.port], fetch: nodeFetch, timeoutMs: 5000 };
@@ -176,6 +180,7 @@ const RSS = `<?xml version="1.0"?><rss><channel>
       if (/How did you send it/.test(m)) return d.accept('manual_email');
       if (/note for the record/.test(m)) return d.accept('sent by the owner, e2e');
       if (/published article’s URL/.test(m)) return d.accept('https://www.stadiumrant.com/college-football-week-6-predictions');
+      if (/What did you check\?/.test(m)) return d.accept('Checked the gap: no availability or line news on file explains it; the article states it as unexplained.');
       return d.accept();
     });
     await P.goto(BASE + '/admin/content/');
@@ -228,6 +233,25 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     chk('5 the review shows the sources, the model numbers and the export preview', /EdgeDesk research/.test(await P.textContent('#rDetail')) && /Model numbers to verify/.test(await P.textContent('#rDetail')));
     chk('5 the review shows the integrity engine’s verdict (the integrity layer loaded on the page)', /integrity: (PASS|WARNING)/.test(await P.textContent('#rChecks')), await P.textContent('#rChecks'));
     chk('5 a draft in review can be rejected, with a reason', await P.isVisible('#rReject'));
+    await P.waitForSelector('#rGate .pill.bad');
+    const gateText = await P.textContent('#rGate');
+    /* one review per featured game whose gap EdgeDesk's inputs mostly can't
+       explain (a game the integrity engine withholds, such as this week's
+       Ole Miss at Vanderbilt, is never featured) */
+    const nAck = await P.$$eval('#rGate button[data-ack]', (bs) => bs.length);
+    chk('5 the gate ran on this version: BLOCKED on the unexplained market gaps, with evidence and a fix', nAck >= 1 && /BLOCKED/.test(gateText) && /UCLA at Oregon/.test(gateText) && /Evidence:/.test(gateText) && /Fix:/.test(gateText), { nAck, gate: gateText.slice(0, 400) });
+    chk('5 … stored with the version it judged', db.sql(`select gate_verdict || '|' || (gate_hash = content_hash)::text from content_engine.articles where id = '${art.id}';`) === 'BLOCKED|true');
+    chk('5 … and Approve is locked', await P.isDisabled('#rApprove'));
+    if (SHOTS) await P.screenshot({ path: path.join(SHOTS, '3a-gate-blocked.png'), fullPage: false });
+    for (let i = 0; i < nAck; i++) {
+      await P.click('#rGate button[data-ack]');
+      await P.waitForFunction((n) => /Review recorded/.test(document.getElementById('rMsg').textContent) && document.querySelectorAll('#rGate button[data-unack]').length === n, i + 1, { timeout: 30000 });
+    }
+    chk('5 the owner’s written reviews are on record, one per gap, with the note', db.sql(`select count(*) from content_engine.articles a, jsonb_each(a.acks) k where a.id = '${art.id}' and k.key like 'discrepancy:%' and k.value ->> 'note' like 'Checked the gap%';`) === String(nAck));
+    await P.waitForSelector('#rGate .pill.warn');
+    chk('5 the gate re-ran: WARNING, each gap marked reviewed by the owner', /WARNING/.test(await P.textContent('#rGate')) && /Reviewed by the owner/.test(await P.textContent('#rGate'))
+      && db.sql(`select gate_verdict from content_engine.articles where id = '${art.id}';`) === 'WARNING');
+    await P.waitForFunction(() => !document.getElementById('rApprove').disabled, null, { timeout: 15000 });
     await P.click('#rApprove');
     await P.waitForFunction(() => /Confirm all five/.test(document.getElementById('rMsg').textContent), null, { timeout: 15000 });
     chk('5 approval refuses an incomplete review', db.sql(`select status from content_engine.articles where id = '${art.id}';`) === 'in_review');
@@ -372,15 +396,22 @@ const RSS = `<?xml version="1.0"?><rss><channel>
     await P.waitForSelector('#perfOut table');
     const perf = await P.textContent('#perfOut');
     chk('7 the article is listed with its campaign code', perf.indexOf(art.campaign_code) >= 0);
-    await P.waitForSelector('#acqOut table');
-    const acq = await P.textContent('#acqOut');
-    chk('7 the acquisition loop: the 90-day targets, labelled targets, not forecasts', /targets/.test(acq) && /not forecasts/.test(acq) && /target 250/.test(acq) && /target 25/.test(acq) && /Revenue is not profit/.test(acq), acq.slice(0, 600));
-    chk('7 … unmeasured steps show a dash, never a zero', /—/.test(acq));
+    await P.waitForSelector('#scOut table');
+    const sc = await P.textContent('#scOut');
+    chk('7 the scorecard lists every target with goal, needed-now, actual and status', (sc.match(/(met|on track|behind|not measured)/g) || []).length >= 13
+      && /Publisher-ready articles a week/.test(sc) && /Paid subscribers a month \(direct\)/.test(sc) && /Bottleneck:/.test(sc), sc.slice(0, 300));
+    chk('7 … production counted from the record: two articles sent', /Sent\s*2/.test(sc.replace(/\s+/g, ' ')) || /Sent2/.test(sc), sc.slice(0, 600));
+    chk('7 nothing reads NaN, null or undefined', !/\b(NaN|undefined|null)\b/.test(sc));
+    await P.fill('#ccAmt', '0.5'); await P.selectOption('#ccCat', 'ai_billed');
+    await P.click('#ccAdd');
+    await P.waitForFunction(() => /AI cost, billed \(entered\)\s*\$0\.50/.test(document.getElementById('scOut').textContent), null, { timeout: 15000 });
+    chk('7 a billed AI cost is recorded, kept apart from the estimate, and used instead of it', db.sql(`select category || '|' || amount_usd || '|' || basis from content_engine.costs;`) === 'ai_billed|0.50|billed'
+      && /AI: billed amounts you entered/.test(await P.textContent('#scOut')));
     chk('7 the three kinds of numbers are named apart', /first-party/.test(await P.textContent('#tab-perf')) && /publisher-reported/i.test(await P.textContent('#tab-perf')) && /Benchmarks/.test(perf));
 
     chk('7 the per-template report is shown, measured or a dash', /Generated/.test(await P.textContent('#tmplOut')) && /never zero/.test(await P.textContent('#tmplOut')));
 
-    /* 7b · Five Games to Watch: the template, the evidence, the broadcast hold */
+    /* 7c · Five Games to Watch: the template, the evidence, the broadcast hold */
     {
       const zlib = require('zlib');
       const FX = JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(ROOT, 'tools', 'content', 'fixtures', 'games_to_watch_2026_w6.json.gz'))).toString('utf8'));
@@ -391,17 +422,17 @@ const RSS = `<?xml version="1.0"?><rss><channel>
       OVERRIDES['/football/rankings/current.json'] = JSON.stringify(FX.rankings);
       await P.click('.tabs button[data-tab="gen"]');
       await P.waitForSelector('#tab-gen:not(.hide)');
-      chk('7b the template list: Five Games to Watch, Upset Watch, Model vs. Market, Deep Dive, Weekend Review',
-        JSON.stringify(await P.$$eval('#tTpl option', (os) => os.map((o) => o.textContent))) === JSON.stringify(['Five Games to Watch', 'Weekly Upset Watch', 'Model vs. Market', 'Single Game Deep Dive', 'Weekend Review (model performance)']));
+      chk('7c the template list: Five Games to Watch, Upset Watch, Model vs. Market, Deep Dive, Weekend Review',
+        JSON.stringify(await P.$$eval('#tTpl option', (os) => os.map((o) => o.textContent))) === JSON.stringify(['Five Games to Watch', 'Weekly Upset Watch', 'Model vs. Market', 'Single Game Deep Dive', 'Weekend Review (last week, graded)', 'Model performance (the season’s live record)']));
       const ctl = await Promise.all(['#gPubSel', '#tSport', '#tWeek', '#tCount', '#tReq', '#tAudience', '#tHead', '#tDate', '#tFlow'].map((id) => P.$(id)));
-      chk('7b … with publisher, sport, week, count, required games, audience, headline style, date and workflow', ctl.every(Boolean), ctl.map(Boolean));
+      chk('7c … with publisher, sport, week, count, required games, audience, headline style, date and workflow', ctl.every(Boolean), ctl.map(Boolean));
       await P.selectOption('#tTpl', 'games_to_watch');
       await P.click('#tPreview');
       await P.waitForSelector('#tPreviewOut:not(.hide) .card h3', { timeout: 30000 });
       let pv = await P.textContent('#tPreviewOut');
-      chk('7b the preview shows the five games, each with the six questions and its independent facts', ['Ole Miss at Vanderbilt', 'Texas A&M at Missouri', 'Texas vs. Oklahoma', 'UCLA at Oregon', 'Georgia at Alabama'].every((h) => pv.indexOf(h) >= 0)
+      chk('7c the preview shows the five games, each with the six questions and its independent facts', ['Ole Miss at Vanderbilt', 'Texas A&M at Missouri', 'Texas vs. Oklahoma', 'UCLA at Oregon', 'Georgia at Alabama'].every((h) => pv.indexOf(h) >= 0)
         && (pv.match(/passes the reasoning gate/g) || []).length === 5 && /independent facts/.test(pv) && /What to watch for/.test(pv), pv.slice(0, 400));
-      chk('7b … and holds CBS until it is verified', /broadcast TENTATIVE/.test(pv) && /must be verified/.test(await P.textContent('#tMsg')));
+      chk('7c … and holds CBS until it is verified', /broadcast TENTATIVE/.test(pv) && /must be verified/.test(await P.textContent('#tMsg')));
       const row = '#tPreviewOut [data-gid="401858484"]';
       await P.click('#tPreviewOut details:has([data-gid="401858484"]) summary');
       await P.fill(row + ' [data-k="network"]', 'CBS');
@@ -409,33 +440,66 @@ const RSS = `<?xml version="1.0"?><rss><channel>
       await P.fill(row + ' [data-k="source_name"]', 'Big Ten Conference football schedule (fixture)');
       await P.click(row + ' button[data-act="verify"]');
       await P.waitForFunction(() => /Verification recorded/.test(document.getElementById('tMsg').textContent), null, { timeout: 15000 });
-      chk('7b the owner’s verification is recorded with its source', db.sql(`select network || '|' || source_url || '|' || source_kind from content_engine.broadcast_checks where game_id = '401858484';`) === 'CBS|https://fixture.test/bigten-football-schedule|conference');
+      chk('7c the owner’s verification is recorded with its source', db.sql(`select network || '|' || source_url || '|' || source_kind from content_engine.broadcast_checks where game_id = '401858484';`) === 'CBS|https://fixture.test/bigten-football-schedule|conference');
       await P.click('#tPreview');
       await P.waitForFunction(() => /every broadcast is verified/.test(document.getElementById('tMsg').textContent), null, { timeout: 30000 });
       pv = await P.textContent('#tPreviewOut');
-      chk('7b … and applied: CBS confirmed, owner-verified', /broadcast CONFIRMED/.test(pv) && /CBS \(OWNER_VERIFIED\)/.test(pv) && !/broadcast TENTATIVE/.test(pv), pv.slice(0, 300));
+      chk('7c … and applied: CBS confirmed, owner-verified', /broadcast CONFIRMED/.test(pv) && /CBS \(OWNER_VERIFIED\)/.test(pv) && !/broadcast TENTATIVE/.test(pv), pv.slice(0, 300));
       await P.click('#tCreate');
       await P.waitForFunction(() => /editorial review: READY/.test(document.getElementById('tMsg').textContent), null, { timeout: 30000 });
       const g = JSON.parse(db.sql(`select to_jsonb(a) from content_engine.articles a where format = 'weekly_games_to_watch' order by created_at desc limit 1;`));
-      chk('7b the draft is saved for the publisher with its review READY and every check passing', g && g.status === 'draft' && g.checks.review.verdict === 'READY' && g.checks.ok === true && g.sections.filter((x) => /^game_/.test(x.key)).length === 5);
+      chk('7c the draft is saved for the publisher with its review READY and every check passing', g && g.status === 'draft' && g.checks.review.verdict === 'READY' && g.checks.ok === true && g.sections.filter((x) => /^game_/.test(x.key)).length === 5);
       Object.keys(OVERRIDES).forEach((k) => { delete OVERRIDES[k]; });
+    }
+
+    /* 7b · EdgeDesk's own articles: a held Friday preview, its twelve gates, the owner's approval */
+    {
+      const CEL = require(path.join(ROOT, 'lib', 'content_engine.js'));
+      const ARTL = require(path.join(__dirname, 'artifacts.js'));
+      const t = Date.parse('2026-10-09T13:30:00Z'), FPX = CEL.firstParty;
+      const b = FPX.build('research_preview', CEL.research.fromArtifacts(ARTL.load(), { now: t }), { now: t });
+      const slot = FPX.slot(t);
+      const g = FPX.gates(b.article, b.o, { now: t, slot, publishedThisWeek: [{ id: 'a' }, { id: 'b' }, { id: 'c' }], teamLists: ARTL.teamLists(ARTL.load()) });
+      const rec = FPX.record(b.article, b.o, { now: t, slot });
+      db.service(`select public.content_engine_fp_record(${PG.lit(JSON.stringify({ id: slot.id, kind: 'research_preview', slot_date: slot.date, week_of: slot.week, status: 'held', mode: 'auto',
+        title: rec.title, slug: rec.slug, url: rec.canonical_url, article: { record: rec, o: { fp_kind: 'research_preview' } }, content_hash: rec.content_hash, gates: g.gates, failed: g.failed, reason: 'held: ' + g.failed.join(', ') }))}::jsonb);`);
+      await P.click('.tabs button[data-tab="fp"]');
+      await P.waitForSelector('#fpList button[data-fp]');
+      chk('7b the EdgeDesk articles tab lists the held slot with its gates, in dry-run mode by default', /held for review/.test(await P.textContent('#fpList')) && /11 \/ 12/.test(await P.textContent('#fpList'))
+        && await P.inputValue('#fpMode') === 'dry_run', await P.textContent('#fpList'));
+      await P.click('#fpList button[data-fp]');
+      await P.waitForSelector('#fpDetail #fpApprove');
+      const det = await P.textContent('#fpDetail');
+      chk('7b the article and every gate are shown, the failing one with its reason', /At most 3 a week, one per slot/.test(det) && /3 published this week/.test(det) && det.indexOf(rec.title) >= 0);
+      if (SHOTS) await P.screenshot({ path: path.join(SHOTS, '7-edgedesk-articles.png'), fullPage: false });
+      await P.click('#fpApprove');
+      await P.waitForFunction(() => /Approved\. The next run publishes it/.test((document.getElementById('fpDMsg') || {}).textContent || ''), null, { timeout: 15000 });
+      chk('7b the owner approves this exact text', db.sql(`select status || '|' || (decided_by is not null)::text from content_engine.first_party where id = ${PG.lit(slot.id)};`) === 'approved|true');
+      await P.selectOption('#fpMode', 'auto');
+      await P.click('#fpSave');
+      await P.waitForFunction(() => /Saved: auto/.test(document.getElementById('fpMsg').textContent), null, { timeout: 15000 });
+      chk('7b turning automatic publishing on asks first, then the database holds the mode', dialogs.some((d) => /Turn on automatic publishing\?/.test(d)) && db.sql(`select fp_mode from content_engine.settings where id = 1;`) === 'auto');
     }
 
     /* 8 · settings, phone width, errors */
     await P.click('.tabs button[data-tab="set"]');
     await P.waitForFunction(() => /AI drafting is configured/.test(document.getElementById('aiStatus').textContent), null, { timeout: 15000 });
     chk('8 settings say whether AI is configured (never the key)', !/sk-ant/.test(await P.textContent('#tab-set')));
+    await P.waitForSelector('#aiBudget #abBudget');
+    const ab = await P.textContent('#aiBudget');
+    chk('8 the AI budget: the month’s committed spend from the one call, at list price, against $10', /\$0\.10/.test(ab) && /of \$10\.00/.test(ab) && /not your invoice/.test(ab), ab.slice(0, 300));
+    chk('8 … the call is in the ledger, settled with its token counts', db.sql(`select operation || '|' || status || '|' || outcome || '|' || input_tokens || '|' || est_usd from content_engine.ai_calls;`) === 'draft|completed|accepted|9000|0.096000');
+    chk('8 … and the KPI strip shows it, labelled an estimate', /AI this month\s*\$0\.10 \/ \$10\.00\s*estimated, not billed/.test(await P.textContent('#kpis')), await P.textContent('#kpis'));
     chk('8 … and whether sending is, with the sender (never the key)', /Send to publisher is configured/.test(await P.textContent('#aiStatus')) && !/re_e2e/.test(await P.textContent('#tab-set'))
       && await P.getAttribute('#sSEmail', 'placeholder') === 'davis@edgedesksports.com', await P.textContent('#aiStatus'));
-    await P.waitForSelector('#costOut .kpi');
-    const cost = await P.textContent('#costOut');
-    chk('8 the AI spend dashboard: the $10 hard cap, spent, in flight, remaining, refusals', /\$10\.00/.test(cost) && /hard cap/.test(cost) && /In flight/.test(cost) && /Remaining/.test(cost) && /Refused/.test(cost), cost.slice(0, 600));
-    await P.fill('#cMonth', '25'); await P.click('#cSave');
-    await P.waitForFunction(() => /Saved/.test(document.getElementById('cMsg').textContent), null, { timeout: 15000 });
-    chk('8 … raising it above the $10 default asks first, then saves', dialogs.some((d) => /Raise the content engine’s monthly AI budget to \$25\.00/.test(d) && /default is \$10/.test(d))
-      && db.sql(`select monthly_budget_usd from content_engine.settings where id = 1;`) === '25.00');
-    await P.fill('#cMonth', '10'); await P.click('#cSave');
-    await P.waitForFunction(() => /Saved/.test(document.getElementById('cMsg').textContent) && /\$10\.00/.test(document.getElementById('costOut').textContent), null, { timeout: 15000 });
+    /* the one AI budget (main's panel): raising it above the $10 default asks first */
+    await P.fill('#abBudget', '25'); await P.click('#abSave');
+    await P.waitForFunction(() => /Saved: \$25\.00 a month/.test(document.getElementById('abMsg').textContent), null, { timeout: 15000 });
+    chk('8 … raising the monthly AI budget asks first, then saves', dialogs.some((d) => /Raise the monthly AI budget from \$10\.00 to \$25\.00/.test(d))
+      && db.sql(`select ai_monthly_budget_usd from content_engine.settings where id = 1;`) === '25.00');
+    await P.waitForSelector('#aiBudget #abBudget');
+    await P.fill('#abBudget', '10'); await P.click('#abSave');
+    await P.waitForFunction(() => /Saved: \$10\.00 a month/.test(document.getElementById('abMsg').textContent), null, { timeout: 15000 });
     await P.setViewportSize({ width: 390, height: 844 });
     await P.click('.tabs button[data-tab="opps"]');
     await P.waitForSelector('#oList .opp');

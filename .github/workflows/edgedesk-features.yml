@@ -1,0 +1,121 @@
+# EdgeDesk — first-party features on edgedesksports.com.
+#
+# Monday the Weekend Model Review, Wednesday the weekend's storylines, Friday
+# the research preview: at most three a week, at the owner's publish hour in
+# Central Time (default 7 a.m.). GitHub's schedule is UTC, so this fires a
+# heartbeat through the day on those days and tools/editorial/features.js
+# decides, in America/Chicago, whether a slot is due (--if-due).
+#
+# WHAT A RUN CAN DO depends on the owner's mode, set in /admin/content/ →
+# EdgeDesk articles, and enforced by the database (supabase/content_engine.sql
+# 6f), never by this file:
+#   off       nothing
+#   dry_run   (the default) build, gate and record privately; publish nothing
+#   auto      publish what clears all twelve gates; hold the rest for review
+# An article the owner approves after a hold is published by the next run.
+#
+# PUBLISHING IS ONE FILE. A published feature is features/records/<id>.json,
+# pushed alone (tools/ci/push_generated.sh), so it can never overwrite another
+# job's work, and it lives outside articles/ so no other job's push can delete
+# it. The page, the hubs, the sitemap and the published index are rendered by
+# the next site build (the editorial job builds every quarter hour), and the
+# job puts back any published record a race removed.
+#
+# NOTHING UNPUBLISHED IS PRINTED. The log names slots, statuses and gates;
+# held and dry-run articles exist only in the owner-only table.
+#
+# SECRETS (already used by the content engine; nothing new)
+#   SB_URL, SB_SERVICE_ROLE   the job's door into the database. Missing: a
+#                             named warning and a dry run that records nothing.
+name: EdgeDesk features
+
+on:
+  schedule:
+    # Mon/Wed/Fri, hourly 10:41–21:41 UTC (5 a.m.–4 p.m. Central): the job
+    # acts from two hours before the publish hour to the end of the window.
+    - cron: '41 10-21 * * 1,3,5'
+    # once on the other days: publish anything the owner approved, restore
+    # anything a race removed
+    - cron: '41 15 * * 0,2,4,6'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Force a dry run (never more permissive than the owner’s mode)'
+        type: boolean
+        default: true
+  pull_request:
+    paths:
+      - 'tools/editorial/features.js'
+      - 'tools/editorial/features.test.js'
+      - 'tools/editorial/feature_model.js'
+      - 'tools/editorial/features_funnel.test.js'
+      - 'supabase/first_party_funnel.sql'
+      - 'supabase/first_party_funnel_rollback.sql'
+      - 'lib/edgedesk_public.js'
+      - 'lib/edgedesk_track.js'
+      - 'tools/articles/**'
+      - 'lib/content_engine.js'
+      - '.github/workflows/edgedesk-features.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: edgedesk-features
+  cancel-in-progress: false
+
+jobs:
+  tests:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The content engine core
+        run: node tools/content/content.test.js
+      - name: The features — calendar, build, twelve gates, page, job, database
+        run: node tools/editorial/features.test.js
+      - name: The reader funnel — engagement (consent respected) and the Growth Console report
+        run: node tools/editorial/features_funnel.test.js
+      - name: The article system the features join
+        run: node tools/articles/articles.test.js
+
+  run:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The checks first
+        run: |
+          node tools/content/content.test.js
+          node tools/editorial/features.test.js
+      - name: The slot
+        id: fp
+        env:
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          FORCE_DRY: ${{ github.event.inputs.dry_run }}
+        run: |
+          if [ -z "$EDGD_SB_URL" ] || [ -z "$EDGD_SB_SERVICE" ]; then
+            echo "::warning::EdgeDesk features: SB_URL / SB_SERVICE_ROLE are not set — a dry run that records nothing."
+          fi
+          args="--if-due --github-output $GITHUB_OUTPUT"
+          [ "$FORCE_DRY" = "true" ] && args="$args --mode dry_run"
+          node tools/editorial/features.js $args | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Publish the record (one file; the next site build renders it)
+        if: steps.fp.outputs.published == '1'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "features: EdgeDesk first-party article" -- features

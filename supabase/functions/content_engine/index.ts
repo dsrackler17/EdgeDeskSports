@@ -2898,7 +2898,9 @@
     weekend_storylines: 'Biggest weekend storylines',
     game_deep_dive: 'Individual game deep dive',
     model_performance: 'Weekly model performance review',
-    games_to_watch: 'Five games to watch'
+    games_to_watch: 'Five games to watch',
+    matchup_preview: 'Matchup deep dive',
+    postgame_review: 'Postgame model review'
   };
 
   /* Each format names the sections a draft must carry, in order. `required`
@@ -2906,9 +2908,9 @@
   var FORMATS = {
     cfb_weekly_preview: {
       label: 'Weekly CFB preview', league: 'cfb',
-      sections: ['intro', 'why_it_matters', 'how_to_read', 'games', 'upsets', 'conference', 'limits', 'conclusion'],
+      sections: ['intro', 'why_it_matters', 'how_to_read', 'games', 'disagreements', 'upsets', 'conference', 'limits', 'conclusion'],
       required: ['intro', 'why_it_matters', 'how_to_read', 'games', 'limits', 'conclusion'],
-      words: [900, 1800]
+      words: [900, 2000]
     },
     nfl_weekly_preview: {
       label: 'Weekly NFL preview', league: 'nfl',
@@ -2942,12 +2944,6 @@
       required: ['intro', 'the_matchup', 'numbers', 'how_to_read', 'limits', 'conclusion'],
       words: [500, 1200]
     },
-    conference_race: {
-      label: 'Conference Race Analysis', league: 'cfb',
-      sections: ['intro', 'race', 'games', 'how_to_read', 'limits', 'conclusion'],
-      required: ['intro', 'race', 'games', 'how_to_read', 'conclusion'],
-      words: [450, 1200]
-    },
     upset_watch: {
       label: 'Upset Watch', league: null,
       sections: ['intro', 'upsets', 'how_to_read', 'limits', 'conclusion'],
@@ -2976,6 +2972,49 @@
       required: ['intro', 'research_nav', 'game_1', 'game_2', 'game_3', 'how_to_read', 'limits', 'next_steps'],
       words: [1200, 3000]
     },
+    matchup_deep_dive: {
+      label: 'Matchup deep dive', league: null,
+      sections: ['intro', 'the_projection', 'how_to_read', 'what_drives_it', 'matchup', 'personnel', 'market', 'conditions', 'limits', 'conclusion'],
+      required: ['intro', 'the_projection', 'how_to_read', 'limits', 'conclusion'],
+      words: [450, 1500]
+    },
+    conference_race: {
+      label: 'Conference race', league: 'cfb',
+      sections: ['intro', 'why_it_matters', 'how_to_read', 'race_games', 'contenders', 'implications', 'limits', 'conclusion'],
+      required: ['intro', 'how_to_read', 'race_games', 'implications', 'limits', 'conclusion'],
+      words: [600, 1500]
+    },
+    model_vs_market: {
+      label: 'Model vs. market report', league: null,
+      sections: ['intro', 'how_to_read', 'the_gaps', 'pattern', 'limits', 'conclusion'],
+      required: ['intro', 'how_to_read', 'the_gaps', 'limits', 'conclusion'],
+      words: [600, 1600]
+    },
+    postgame_review: {
+      label: 'Postgame model review', league: null,
+      sections: ['intro', 'how_to_read', 'scoreboard', 'closest', 'misses', 'season', 'limits', 'conclusion'],
+      required: ['intro', 'how_to_read', 'scoreboard', 'misses', 'conclusion'],
+      words: [500, 1500]
+    },
+    /* EdgeDesk's own articles (edgedesksports.com), never sent to a publisher */
+    fp_weekend_review: {
+      label: 'Weekend Model Review (EdgeDesk)', league: null, first_party: true,
+      sections: ['intro', 'how_to_read', 'scoreboard', 'closest', 'misses', 'season', 'limits', 'conclusion'],
+      required: ['intro', 'how_to_read', 'scoreboard', 'misses', 'conclusion'],
+      words: [500, 1600]
+    },
+    fp_storylines: {
+      label: 'Weekend Storylines (EdgeDesk)', league: null, first_party: true,
+      sections: ['intro', 'how_to_read', 'story_1', 'story_2', 'story_3', 'story_4', 'story_5', 'limits', 'conclusion'],
+      required: ['intro', 'how_to_read', 'story_1', 'story_2', 'story_3', 'limits', 'conclusion'],
+      words: [500, 1500]
+    },
+    fp_research_preview: {
+      label: 'Weekend Research Preview (EdgeDesk)', league: null, first_party: true,
+      sections: ['intro', 'how_to_read', 'num_1', 'num_2', 'num_3', 'num_4', 'num_5', 'watch', 'limits', 'conclusion'],
+      required: ['intro', 'how_to_read', 'num_1', 'num_2', 'num_3', 'num_4', 'limits', 'conclusion'],
+      words: [500, 1500]
+    },
     publisher_custom: {
       label: 'Publisher-specific article', league: null,
       sections: null, /* from the publisher's profile, else the league preview */
@@ -2991,7 +3030,7 @@
     games: 'The games that matter most',
     upsets: 'Upset watch',
     conference: 'What it means for the conference races',
-    disagreements: 'Where the numbers tell a different story',
+    disagreements: 'Where EdgeDesk and the market disagree',
     injuries: 'Injury report: what to watch',
     limits: 'What the numbers can’t see',
     conclusion: 'The bottom line',
@@ -3005,13 +3044,28 @@
     the_matchup: 'The matchup',
     numbers: 'What EdgeDesk’s numbers say',
     what_could_change: 'What could change it',
-    race: 'The state of the race',
     record: 'How the numbers did',
     where_it_missed: 'Where it missed',
     calibration: 'Were the probabilities honest?',
     watch_guide: 'The schedule at a glance',
     research_nav: 'This week’s research, game by game',
-    next_steps: 'Follow these games on EdgeDesk'
+    next_steps: 'Follow these games on EdgeDesk',
+    the_projection: 'EdgeDesk’s projection',
+    what_drives_it: 'What builds the number',
+    matchup: 'Where the matchup tilts',
+    personnel: 'Quarterbacks and availability',
+    market: 'EdgeDesk vs. the market',
+    conditions: 'Conditions',
+    race_games: 'The games that shape the race',
+    contenders: 'Where the other contenders stand',
+    implications: 'What it means for the race',
+    the_gaps: 'The biggest gaps',
+    pattern: 'What the gaps have in common',
+    scoreboard: 'How the numbers did',
+    closest: 'Where the model was closest',
+    misses: 'The biggest misses',
+    season: 'The season so far',
+    watch: 'What could move these numbers'
   };
 
   var DISCLAIMER = 'EdgeDesk publishes research, not betting advice. Nothing in this article is a pick, a wager or a recommendation. 21+. Gamble responsibly — 1-800-GAMBLER.';
@@ -3091,7 +3145,7 @@
     /\bnavigat(?:e|ing) the (?:complexities|challenges|landscape)\b/i, /\bmust[- ]watch\b/i,
     /\bbuckle up\b/i, /\ball eyes will be on\b/i, /\bwithout a doubt\b/i
   ];
-  var STRINGIFIED_NOTHING = /(^|[\s>(])(null|undefined|NaN)([\s<).,;:]|$)/;
+  var STRINGIFIED_NOTHING = /(^|[\s>(/])(null|undefined|NaN)([\s<).,;:/%]|$)/;
 
   /* ---------------------------------------------------------------- utils */
   function isNum(x) { return typeof x === 'number' && isFinite(x); }
@@ -3189,7 +3243,10 @@
     nfl_slate: 'football/nfl/slate.json',
     nfl_injuries: 'football/injuries/nfl_2026.json',
     published: 'articles/data/published.json',
+    forecasts: 'football/venues/forecasts.json',
     market: 'articles/data/market/{season}-week-{ww}.json',
+    /* the football model's own record: each pregame number, graded on the final and against the close */
+    record: 'record/football/{league}_{season}.json',
     /* the live-forward model record, graded (tools/integrity/performance.js) */
     performance: 'football/validation/integrity_performance.json',
     /* the editorial matchup packets (tools/content/build_packets.js) */
@@ -3258,9 +3315,9 @@
       d.dog_win = (favT === home ? away : home) + ' ' + (100 - favPct) + '%';
     }
     if (proj && isNum(proj.home) && isNum(proj.away)) {
-      /* the scores come from EDCalc.projectedScores: they add to the total and
-         differ by the margin exactly, at one decimal or, when both cannot be
-         exact at one, two */
+      /* the scores add to the total and differ by the margin exactly: from
+         reconcileScore at one decimal (the college packet), or from
+         EDCalc.projectedScores, at two when both cannot be exact at one */
       var dp = proj.decimals === 2 ? 2 : 1, fx = function (v) { return (+v).toFixed(dp); };
       var hi = homeLine == null ? proj.home >= proj.away : homeLine <= 0;
       d.score = (hi ? home + ' ' + fx(proj.home) + ', ' + away + ' ' + fx(proj.away) : away + ' ' + fx(proj.away) + ', ' + home + ' ' + fx(proj.home));
@@ -3281,7 +3338,182 @@
     return line + ' (' + where + ')';
   }
 
-  function cfbPacket(g, rk, now, links) {
+  /* ======================================================================
+     EDITORIAL RELIABILITY — numbers that reconcile, quarterbacks as the data
+     states them, discrepancies explained from the model's own inputs, and
+     the forecast at kickoff. Nothing here invents a figure: when the
+     research disagrees with itself the packet says so and the gate blocks.
+     ====================================================================== */
+  /* a displayed figure may differ from the model's raw figure by rounding only */
+  var NUM_TOL = 0.15;
+  /* a model–market gap worth explaining; when it needs review; when it blocks */
+  var DISCREPANCY = { significant: 3, review_unexplained: 3, block_gap: 7, block_unexplained: 5 };
+  /* a quarterback question is written into a game only when the model's own
+     starter-change scenario moves the number this much, or flips the favorite */
+  var QB_MATERIAL_POINTS = 1.0;
+  var WEATHER = { wind_mph: 20, gust_mph: 35, precip_in: 0.25, cold_f: 25, heat_f: 95, stale_hours: 12,
+    storm_codes: [95, 96, 99], snow_codes: [71, 73, 75, 77, 85, 86], heavy_rain_codes: [65, 67, 82] };
+
+  function r2(x) { return +(+x).toFixed(2); }
+  /* The projected score, margin and total as ONE set of displayed figures:
+     margin and total in tenths, the scores derived from them, so the scores'
+     difference IS the displayed margin and their sum IS the displayed total.
+     Each stays within NUM_TOL of the model's raw figure. If the raw figures
+     disagree with each other, nothing is repaired: ok is false. */
+  function reconcileScore(homeRaw, awayRaw, homeMargin, totalRaw) {
+    var out = { ok: false, problems: [] };
+    if (!isNum(homeMargin)) { out.problems.push('no projected margin'); return out; }
+    if (!isNum(totalRaw) && isNum(homeRaw) && isNum(awayRaw)) totalRaw = homeRaw + awayRaw;
+    if (!isNum(totalRaw)) { out.problems.push('no projected total'); return out; }
+    if (isNum(homeRaw) && isNum(awayRaw)) {
+      /* the source's own scores are rounded to tenths: two roundings may differ by 0.1 */
+      if (Math.abs((homeRaw - awayRaw) - homeMargin) > 0.1 + 1e-6) out.problems.push('the projected scores differ by ' + r2(homeRaw - awayRaw) + ' but the projected margin is ' + r2(homeMargin));
+      if (Math.abs((homeRaw + awayRaw) - totalRaw) > 0.2) out.problems.push('the projected scores add to ' + r2(homeRaw + awayRaw) + ' but the projected total is ' + r2(totalRaw));
+    } else { homeRaw = (totalRaw + homeMargin) / 2; awayRaw = (totalRaw - homeMargin) / 2; }
+    var Mi = Math.round(homeMargin * 10), Ti = Math.round(totalRaw * 10);
+    if (Math.abs(Ti + Mi) % 2 === 1) Ti += (totalRaw * 10 > Ti ? 1 : -1);
+    var home = (Ti + Mi) / 20, away = (Ti - Mi) / 20;
+    out.home = r1(home); out.away = r1(away); out.total = Ti / 10; out.margin = Mi / 10;
+    out.raw = { home: r2(homeRaw), away: r2(awayRaw), margin: r2(homeMargin), total: r2(totalRaw) };
+    if (Math.abs(home - homeRaw) > NUM_TOL || Math.abs(away - awayRaw) > NUM_TOL || Math.abs(out.total - totalRaw) > NUM_TOL)
+      out.problems.push('the displayed figures drift more than rounding from the model’s');
+    if (home < 0 || away < 0) out.problems.push('a negative projected score');
+    out.ok = out.problems.length === 0;
+    return out;
+  }
+  /* a probability that is a probability, pointing the same way as the margin */
+  function probabilityProblems(homeMargin, homeWinProb) {
+    var out = [];
+    if (!isNum(homeWinProb)) return out;
+    if (homeWinProb < 0 || homeWinProb > 1) out.push('win probability ' + homeWinProb + ' is outside 0–1');
+    if (isNum(homeMargin) && Math.abs(homeMargin) >= 1 && (homeMargin > 0) !== (homeWinProb > 0.5))
+      out.push('the projected margin favors ' + (homeMargin > 0 ? 'the home team' : 'the away team') + ' but the win probability favors the other side');
+    return out;
+  }
+
+  /* Quarterbacks, as the starter layer states them (football/starters):
+     CONFIRMED     an official announcement
+     ESTABLISHED   started the last game (or leads the depth chart), uncontested,
+                   no availability report: NOT news, never written as doubt
+     COMPETITION   the play data does not settle on one player (sourced)
+     AVAILABILITY  a sourced availability note (questionable, doubtful, out)
+     UNKNOWN       nothing reliable: no claim either way
+     A contest whose sources disagree on a name is still COMPETITION (player
+     null). `material` is the only door into the copy. */
+  function qbState(q, side, g, homeMargin) {
+    if (!q || (!q.player && !(q.contested || String(q.status || '').toUpperCase() === 'COMPETITION'))) return { player: null, status: 'UNKNOWN', material: false, confirmed: false, contested: false };
+    var raw = String(q.status || '').toUpperCase();
+    var st = raw === 'ANNOUNCED' || q.confirmed ? 'CONFIRMED' : (q.contested || raw === 'COMPETITION') ? 'COMPETITION' : (!raw || raw === 'UNKNOWN') ? 'UNKNOWN' : 'ESTABLISHED';
+    var risk = ((g && g.risks && g.risks.items) || []).filter(function (r) { return r && r.key === 'qb_' + side; })[0];
+    var availM = risk && /\b(OUT|DOUBTFUL|QUESTIONABLE|GAME[ _-]TIME[ _-]DECISION|ruled out|doubtful|questionable|game-time decision|suspended)\b/.exec(String(risk.text || ''));
+    if (availM && st !== 'COMPETITION') st = 'AVAILABILITY';
+    var sens = ((g && g.sensitivity && g.sensitivity.rows) || []).filter(function (r) { return r && r.key === 'qb_out_' + side; })[0];
+    var effect = sens && isNum(sens.delta) ? Math.abs(sens.delta) : null;
+    var flips = !!(sens && isNum(sens.home_margin) && isNum(homeMargin) && Math.abs(homeMargin) >= 0.05 && Math.abs(sens.home_margin) >= 0.05 && (sens.home_margin > 0) !== (homeMargin > 0));
+    var concern = st === 'COMPETITION' || st === 'AVAILABILITY';
+    return {
+      player: q.player, status: st, source_status: raw || null, label: q.label || null, source: q.source || null, as_of: q.as_of || null,
+      availability: availM ? String(risk.text) : null, availability_source: availM ? risk.source || null : null,
+      effect_points: effect == null ? null : r1(effect), flips_favorite: flips,
+      /* a sourced availability report is news on its own; a usage split is
+         material only when the model's starter-change scenario says it matters */
+      material: st === 'AVAILABILITY' || (st === 'COMPETITION' && (effect == null || effect >= QB_MATERIAL_POINTS || flips)),
+      confirmed: st === 'CONFIRMED', contested: st === 'COMPETITION'
+    };
+  }
+  /* "unresolved: A 57% of recent dropbacks and B 38% of recent dropbacks — sources disagree." */
+  function competitionFact(q) {
+    var m = /:\s*(.+?)\s*(?:—|$)/.exec(String(q.label || ''));
+    var core = m ? m[1].replace(/\.$/, '') : null;
+    return core && /\d+%/.test(core) ? core.replace(/ of recent dropbacks and /, ' and ').replace(/ of recent dropbacks$/, ' of recent dropbacks') : null;
+  }
+
+  function cleanLabel(l) { return String(l || '').replace(/\s*\(.*\)\s*/g, '').toLowerCase(); }
+  /* The model–market gap, explained from the model's own decomposition
+     (why.rows sum exactly to EdgeDesk's margin), the term the market
+     disagrees with (why.market_implied), how the closing market has
+     historically discounted each piece (disagreement_explainer) and the
+     terminal's own checks (regime changes, rating divergence, roster
+     conflicts, model disagreement, verification). What the inputs cannot
+     explain is SAID to be unexplained and sent to review. */
+  function discrepancyOf(g, p) {
+    if (!p.gap || !isNum(p.gap.points) || p.gap.points < DISCREPANCY.significant || !p.model.available) return null;
+    var d = g.disagreement || {}, ex = g.disagreement_explainer || {}, why = g.why || {}, e = g.edgedesk || {};
+    var basis = isNum(ex.gap_points) && Math.abs(ex.gap_points) > 0 ? Math.abs(ex.gap_points) : null;
+    var unexplShare = basis != null && isNum(ex.unexplained_points) ? Math.min(1, Math.abs(ex.unexplained_points) / basis) : null;
+    var explPct = unexplShare == null ? null : Math.max(0, Math.min(100, Math.round((isNum(ex.share_explained) ? ex.share_explained : 1 - unexplShare) * 100)));
+    var unexplPct = unexplShare == null ? null : Math.round(unexplShare * 100);
+    var unexplPts = unexplShare == null ? p.gap.points : r1(p.gap.points * unexplShare);
+    var terms = (why.rows || []).filter(function (r) { return r && r.available !== false && isNum(r.points) && Math.abs(r.points) >= 0.5; })
+      .map(function (r) { return { key: r.key, label: cleanLabel(r.label), points: r1(Math.abs(r.points)), team: r.favors }; })
+      .sort(function (a, b) { return b.points - a.points; });
+    var mi = why.market_implied && isNum(why.market_implied.market_implied) && isNum(why.market_implied.edgedesk)
+      ? { term: why.market_implied.term, edgedesk: r1(Math.abs(why.market_implied.edgedesk)), edgedesk_team: why.market_implied.edgedesk < 0 ? p.away : p.home,
+          implied: r1(Math.abs(why.market_implied.market_implied)), implied_team: why.market_implied.market_implied < 0 ? p.away : p.home } : null;
+    var parts = (ex.parts || []).filter(function (x) { return x && x.significant && isNum(x.explained_points) && Math.abs(x.explained_points) >= 0.5; })
+      .map(function (x) { return { key: x.key, label: String(x.label || '').replace(/\s*\(.*\)\s*/g, ''), points: r1(Math.abs(x.explained_points)) }; });
+    var facts = [], evidence = [];
+    var injury = (why.rows || []).filter(function (r) { return r && r.key === 'injury' && isNum(r.points) && Math.abs(r.points) >= 1; })[0];
+    if (injury) facts.push({ key: 'availability', text: 'EdgeDesk’s number includes ' + oneDp(Math.abs(injury.points)) + ' points toward ' + injury.favors + ' for reported player availability.' });
+    ['home', 'away'].forEach(function (s) {
+      var rg = e.regime && e.regime[s];
+      if (rg && rg.regime_change && rg.applied && isNum(rg.weight) && isNum(rg.standard_weight)) {
+        facts.push({ key: 'regime_' + s, text: (s === 'home' ? p.home : p.away) + ' is flagged as a regime change (' + String(rg.reason || 'roster and staff turnover').replace(/;\s*/g, ', ') + '), so its rating weights the long-run record ' + Math.round(rg.weight * 100) + '% instead of the usual ' + Math.round(rg.standard_weight * 100) + '%.' });
+      }
+      var q = p.qb && p.qb[s];
+      if (q && q.status === 'COMPETITION') { var cf = competitionFact(q); evidence.push((s === 'home' ? p.home : p.away) + ' quarterback: ' + (cf || 'unresolved in the play data') + ' (' + (q.source || 'starter layer') + ')'); }
+    });
+    /* the terminal's note, first sentence only: its generic caveat is said once per section */
+    if (g.rating_divergence && g.rating_divergence.flag) facts.push({ key: 'rating_divergence', text: String(g.rating_divergence.text || 'EdgeDesk’s current rating and its pricing state disagree about this matchup.').split(/(?<=\.)\s+(?=[A-Z])/)[0] });
+    var unresolved = (g.contradiction && g.contradiction.unresolved) || [];
+    unresolved.filter(function (u) { return /^Roster:/i.test(u); }).forEach(function (u) { evidence.push(u.replace(/^Roster:\s*/i, 'Roster data: ')); });
+    ((g.risks && g.risks.items) || []).filter(function (r) { return r && /own models disagree/i.test(r.text || ''); }).forEach(function (r) { evidence.push(r.text); });
+    if (g.data_quality && isNum(g.data_quality.reliability) && g.data_quality.reliability < 60) evidence.push('Data reliability ' + g.data_quality.reliability + '/100' + (g.data_quality.main_deduction ? ': ' + g.data_quality.main_deduction : ''));
+    if (p.market.status !== 'current') evidence.push('The comparison uses a ' + (p.market.status === 'stale' ? 'historical line captured ' + p.market.captured_text : 'reference line with no capture time') + ', not a current price.');
+    var review = unexplPts >= DISCREPANCY.review_unexplained ? (p.gap.points >= DISCREPANCY.block_gap && unexplPts >= DISCREPANCY.block_unexplained ? 'BLOCK' : 'REVIEW') : 'NONE';
+    return {
+      points: p.gap.points, toward: p.gap.toward, terms: terms.slice(0, 4), market_implied: mi, parts: parts,
+      explained_pct: explPct, unexplained_pct: unexplPct, unexplained_points: unexplPts,
+      status: unexplPts >= DISCREPANCY.review_unexplained ? 'UNEXPLAINED' : 'EXPLAINED', review: review,
+      facts: facts, evidence: evidence, verification: d.verification || null,
+      investigation: g.contradiction && g.contradiction.status || null,
+      explainer_version: ex.version || null, explainer_caveat: ex.caveat || null
+    };
+  }
+
+  /* the committed forecast at kickoff (football/venues/forecasts.json, open-meteo) */
+  function weatherOf(fc, now) {
+    if (!fc) return { state: 'NOT_CHECKED', hazards: [], reason: 'no forecast on file for this game' };
+    if (fc.dome) return { state: 'INDOOR', hazards: [], source: fc.source || null, as_of: fc.as_of || null };
+    var t = ts(fc.as_of), age = t == null ? null : (now - t) / 3600000;
+    var hz = [], hours = (fc.hours || []).slice(0, 4);
+    if (!hours.length) hours = [fc];
+    function maxOf(k) { var m = null; hours.forEach(function (h) { if (isNum(h[k]) && (m == null || h[k] > m)) m = h[k]; }); return m; }
+    var wind = maxOf('wind_mph'), gust = maxOf('gust_mph'), precip = maxOf('precip_in');
+    var codes = hours.map(function (h) { return h.code; }).filter(isNum);
+    if (isNum(wind) && wind >= WEATHER.wind_mph) hz.push('sustained wind near ' + Math.round(wind) + ' mph');
+    if (isNum(gust) && gust >= WEATHER.gust_mph) hz.push('gusts near ' + Math.round(gust) + ' mph');
+    if (isNum(precip) && precip >= WEATHER.precip_in) hz.push('heavy precipitation (' + precip + ' in. in an hour)');
+    if (codes.some(function (c) { return WEATHER.storm_codes.indexOf(c) >= 0; })) hz.push('thunderstorms (lightning delays possible)');
+    if (codes.some(function (c) { return WEATHER.snow_codes.indexOf(c) >= 0; })) hz.push('snow');
+    if (isNum(fc.temp_f) && fc.temp_f <= WEATHER.cold_f) hz.push(Math.round(fc.temp_f) + '°F at kickoff');
+    if (isNum(fc.temp_f) && fc.temp_f >= WEATHER.heat_f) hz.push(Math.round(fc.temp_f) + '°F at kickoff');
+    return {
+      state: age == null || age > WEATHER.stale_hours ? 'STALE' : hz.length ? 'HAZARD' : 'OK', hazards: hz,
+      text: fc.text || null, temp_f: isNum(fc.temp_f) ? Math.round(fc.temp_f) : null, wind_mph: isNum(wind) ? Math.round(wind) : null,
+      gust_mph: isNum(gust) ? Math.round(gust) : null, source: fc.source || 'open-meteo forecast', as_of: fc.as_of || null,
+      age_hours: age == null ? null : r1(age)
+    };
+  }
+  /* "EdgeDesk’s typical miss on a game like this is 11.7 pts" — or σ·√(2/π) */
+  function typicalMissOf(g, e) {
+    var r = ((g.risks && g.risks.items) || []).filter(function (x) { return x && x.key === 'model_uncertainty'; })[0];
+    var m = r && /typical miss[^0-9]*(\d+(?:\.\d+)?)/i.exec(r.text || '');
+    if (m) return r1(parseFloat(m[1]));
+    return isNum(e.sigma) ? r1(e.sigma * Math.sqrt(2 / Math.PI)) : null;
+  }
+
+  function cfbPacket(g, rk, now, links, forecasts) {
     var e = g.edgedesk || {}, m = g.market || {}, gm = g.game || {};
     var home = gm.home, away = gm.away;
     var kick = ts(g.kickoff), kt = kickoffTruth(g);
@@ -3295,13 +3527,22 @@
       model.home_win_prob = isNum(e.home_win_prob) ? Math.round(e.home_win_prob * 1000) / 1000 : null;
       model.fav_win_pct = isNum(e.home_win_prob) ? (CALC ? CALC.round : function (x) { return Math.round(x); })((f.favorite === away ? 1 - e.home_win_prob : e.home_win_prob) * 100, 0) : null;
       model.dog_win_pct = model.fav_win_pct == null ? null : 100 - model.fav_win_pct;
-      model.fair_total = isNum(e.fair_total) ? r1(e.fair_total) : null;
-      /* scores derived from the margin and total the article prints (EDCalc) */
-      var psc = CALC && isNum(e.fair_total) ? CALC.projectedScores({ home: home, away: away, home_margin: -model.home_line, total: r1(e.fair_total) }) : null;
-      model.projected = psc && psc.available ? { home: psc.home, away: psc.away, decimals: psc.decimals }
-        : (e.projected_score && isNum(e.projected_score.home) ? { home: r1(e.projected_score.home), away: r1(e.projected_score.away) } : null);
+      /* one consistent set of displayed figures (reconcileScore): the scores'
+         difference IS the displayed margin, their sum IS the displayed total */
+      var homeMargin = -model.home_line;
+      var rec = reconcileScore(e.projected_score && e.projected_score.home, e.projected_score && e.projected_score.away, homeMargin, e.fair_total);
+      var probBad = probabilityProblems(isNum(e.home_margin) ? e.home_margin : homeMargin, e.home_win_prob);
+      model.numbers = { ok: rec.ok && !probBad.length, problems: rec.problems.concat(probBad), raw: rec.raw || null };
+      model.fair_total = rec.total != null ? rec.total : (isNum(e.fair_total) ? r1(e.fair_total) : null);
+      model.projected = rec.home != null ? { home: rec.home, away: rec.away } : null;
       var fc = e.football_confidence;
       model.confidence = fc && isNum(fc.score) ? { score: Math.round(fc.score), label: fc.label || fc.tier || null } : null;
+      /* what that score IS (football/fbs confidence ledger: information_confidence):
+         how completely EdgeDesk knows this game's inputs — not who wins */
+      model.data_quality = fc && isNum(fc.score) ? { score: Math.round(fc.score), band: fc.score >= 70 ? 'high' : fc.score >= 45 ? 'medium' : 'low',
+        measures: 'how completely EdgeDesk knows this game’s inputs (ratings, quarterbacks, availability, venue), weighted by importance — not a probability that either team wins' } : null;
+      model.typical_miss = typicalMissOf(g, e);
+      model.snapshot = (model.version || '?') + '@' + (model.as_of || '?');
       model.reliability = g.data_quality && isNum(g.data_quality.reliability) ? Math.round(g.data_quality.reliability) : null;
     }
     /* the market: the freshest quote on file, judged against NOW, not the build */
@@ -3325,19 +3566,23 @@
       .map(function (w) { return { label: w.label, team: w.favors, points: r1(Math.abs(w.points)) }; });
     var matchup = (((g.matchup && g.matchup.cards) || []).filter(function (c) { return c && c.favors && (c.magnitude === 'large' || c.magnitude === 'moderate'); })
       .slice(0, 2).map(function (c) { return { label: c.label, favors: c.favors, magnitude: c.magnitude }; }));
-    function qbOf(q) {
-      if (!q || !q.player) return null;
-      return { player: q.player, confirmed: !!q.confirmed, contested: !!q.contested, label: q.label || null, status: q.status || null, source: q.source || null, as_of: q.as_of || null };
-    }
-    var qb = { home: qbOf(g.qb && g.qb.home), away: qbOf(g.qb && g.qb.away) };
-    /* AVAILABILITY TRUTH (lib/edgedesk_availability.js): an unannounced starter
-       who started last time is an EXPECTED STARTER, not an uncertainty; a
-       dropback split is a measured fact, not a reported competition */
+    var hm = isNum(e.home_margin) ? e.home_margin : (model.available ? -model.home_line : null);
+    var qb = { home: qbState(g.qb && g.qb.home, 'home', g, hm), away: qbState(g.qb && g.qb.away, 'away', g, hm) };
+    if (!qb.home.player && !qb.home.contested) qb.home = null;
+    if (!qb.away.player && !qb.away.contested) qb.away = null;
+    /* AVAILABILITY TRUTH (lib/edgedesk_availability.js), beside qbState: an
+       unannounced starter who started last time is an EXPECTED STARTER, not an
+       uncertainty; a dropback split is a measured fact, not a reported
+       competition; a report is uncertainty only with its source and date */
     var availability = AVAIL ? { home: AVAIL.classify(AVAIL.fromTerminal(home, g.qb && g.qb.home), { kickoff: g.kickoff, now: now }),
       away: AVAIL.classify(AVAIL.fromTerminal(away, g.qb && g.qb.away), { kickoff: g.kickoff, now: now }) } : null;
     var flags = [];
     if (market.status === 'none') flags.push('NO_MARKET');
     if (market.status === 'stale') flags.push('STALE_MARKET');
+    if ((qb.home && qb.home.status === 'COMPETITION') || (qb.away && qb.away.status === 'COMPETITION')) flags.push('QB_CONTESTED');
+    if ((qb.home && qb.home.status === 'AVAILABILITY') || (qb.away && qb.away.status === 'AVAILABILITY')) flags.push('QB_AVAILABILITY');
+    if ((qb.home && qb.home.material) || (qb.away && qb.away.material)) flags.push('QB_MATERIAL');
+    if (model.available && model.numbers && !model.numbers.ok) flags.push('NUMBERS_CONFLICT');
     if (availability && ((availability.home && availability.home.may_assert_uncertainty) || (availability.away && availability.away.may_assert_uncertainty))) flags.push('QB_UNCERTAIN');
     if (availability && ((availability.home && availability.home.measured_note) || (availability.away && availability.away.measured_note))) flags.push('QB_USAGE_SPLIT');
     if (!kt.verified) flags.push('KICKOFF_TBA');
@@ -3367,7 +3612,8 @@
       model: model, market: market, gap: gap,
       favorite_flip: !!(mfav && mfav.favorite && model.favorite && mfav.favorite !== model.favorite),
       drivers: drivers, matchup: matchup, qb: qb,
-      risks: ((g.risks && g.risks.items) || []).map(function (r) { return r.text; }).filter(Boolean).slice(0, 3),
+      /* quarterback notes reach the copy only through qbState (`material`) */
+      risks: ((g.risks && g.risks.items) || []).filter(function (r) { return r && !/^qb_/.test(r.key || ''); }).map(function (r) { return r.text; }).filter(Boolean).slice(0, 3),
       unpriced: ((g.why && g.why.unpriced) || []).slice(0, 4),
       research_status: g.research_status ? { key: g.research_status.key, label: g.research_status.label } : null,
       decision: g.decision_status ? { key: g.decision_status.key, label: g.decision_status.label, reason: g.decision_status.reason || null } : null,
@@ -3381,6 +3627,11 @@
     p.display.market = marketDisplay(market);
     p.display.gap = gap ? gap.text : null;
     if (model.fair_total != null) p.display.total = oneDp(model.fair_total);
+    p.discrepancy = discrepancyOf(g, p);
+    if (p.discrepancy && p.discrepancy.review !== 'NONE') flags.push('DISCREPANCY_' + p.discrepancy.review);
+    p.weather = weatherOf(forecasts && forecasts[String(g.game_id)], now);
+    if (p.weather.state === 'HAZARD') flags.push('WEATHER_HAZARD');
+    p.schedule = { kickoff: g.kickoff || null, venue: gm.venue || null, neutral_site: !!gm.neutral_site, home: home, away: away };
     return p;
   }
 
@@ -3508,7 +3759,7 @@
       var week = isNum(opts.cfbWeek) ? opts.cfbWeek : (art.cfbBrief && isNum(art.cfbBrief.week) ? art.cfbBrief.week : chooseWeek(all, now));
       var tw = targetWeekOf(cg.season || (all[0] && all[0].season), week);
       var games = all.filter(function (g) { return g.week === week; })
-        .map(function (g) { return attachIntegrity(cfbPacket(g, rk, now, links), 'CFB', now, tw); })
+        .map(function (g) { return attachIntegrity(cfbPacket(g, rk, now, links, art.forecasts && art.forecasts.by_game), 'CFB', now, tw); })
         .sort(function (a, b) { return (ts(a.kickoff) || 0) - (ts(b.kickoff) || 0); });
       var fresh = games.filter(function (p) { return p.market.status === 'current'; }).length;
       var brief = art.cfbBrief || {};
@@ -3564,6 +3815,18 @@
     var PF = art.performance && art.performance.live_forward;
     if (PF && PF.overall) snap.performance = { kind: PF.kind, source: PF.source, generated_at: art.performance.generated_at || null,
       overall: PF.overall, by_gap: PF.by_gap_at_close || null, by_reliability: PF.by_reliability || null, look_ahead_guard: PF.look_ahead_guard || null };
+
+    /* ── RESULTS: the model's graded record (postgame reviews) ── */
+    snap.results = {};
+    ['cfb', 'nfl'].forEach(function (lg) {
+      var rec = art.records && art.records[lg];
+      if (!rec || !rec.games) return;
+      var R = resultsOf(rec, lg, now, art.published);
+      if (!R) return;
+      snap.results[lg] = R;
+      snap.sources.push({ id: 'record_' + lg, path: ARTIFACTS.record.replace('{league}', lg).replace('{season}', rec.season), as_of: rec.updated_at || null,
+        what: (lg === 'cfb' ? 'College football' : 'NFL') + ' model record: pregame numbers graded on the final and against the closing line' });
+    });
     return snap;
   }
 
@@ -3637,6 +3900,66 @@
     if (!SCHED || !isNum(week)) return null;
     var g = { season: season, week: week, season_type: seasonType || null };
     return { key: SCHED.weekKey(g), season: season, week: week };
+  }
+
+  /* One graded game, as a review prints it. The model's number is the last
+     one published before kickoff (the record's "pick"); nothing is re-derived. */
+  function resultPacket(g, league, post) {
+    var pk = g.pick || {}, gr = g.grade || {}, fin = g.final || {}, e = gr.error || {};
+    var hl = isNum(pk.home_line) ? pk.home_line : g.home_line, wp = isNum(pk.home_win_prob) ? pk.home_win_prob : g.home_win_prob;
+    var f = favOf(g.home, g.away, r1(hl)) || { favorite: null, underdog: null, margin: 0 };
+    var diff = fin.home_score - fin.away_score;
+    var winner = diff > 0 ? g.home : diff < 0 ? g.away : null, loser = diff > 0 ? g.away : diff < 0 ? g.home : null;
+    var cl = g.close && isNum(g.close.home_line) ? favOf(g.home, g.away, g.close.home_line) : null;
+    return {
+      league: league, game_id: String(g.game_id), week: g.week, kickoff: g.kickoff, kickoff_text: g.kickoff ? whenText(ts(g.kickoff)) : null, home: g.home, away: g.away,
+      final: { home: fin.home_score, away: fin.away_score, winner: winner, loser: loser, margin: Math.abs(diff),
+        score: Math.max(fin.home_score, fin.away_score) + '-' + Math.min(fin.home_score, fin.away_score), source: fin.source || null },
+      pre: { home_line: r1(hl), favorite: f.favorite, underdog: f.underdog, margin: f.margin,
+        fav_win_pct: isNum(wp) && f.favorite ? Math.round((f.favorite === g.home ? wp : 1 - wp) * 100) : null, total: isNum(pk.total) ? r1(pk.total) : isNum(g.total) ? r1(g.total) : null },
+      close: cl ? { home_line: g.close.home_line, favorite: cl.favorite, margin: cl.margin, total: isNum(g.close.total) ? g.close.total : null, book: g.close.book || null } : null,
+      grade: { su: gr.su && gr.su.result || null, spread: gr.spread && gr.spread.result || null, total: gr.total && gr.total.result || null,
+        model_err: isNum(e.model_margin_err) ? r1(e.model_margin_err) : null, close_err: isNum(e.close_margin_err) ? r1(e.close_margin_err) : null },
+      postgame_url: post && post[String(g.game_id)] || null
+    };
+  }
+  function tally(list) {
+    var t = { games: list.length, su_w: 0, su_l: 0, ats_w: 0, ats_l: 0, ats_p: 0, ou_w: 0, ou_l: 0, ou_p: 0, compared: 0, closer: 0, model_err_sum: 0, close_err_sum: 0 };
+    list.forEach(function (x) {
+      var gr = x.grade;
+      if (gr.su === 'win') t.su_w++; else if (gr.su === 'loss') t.su_l++;
+      if (gr.spread === 'win') t.ats_w++; else if (gr.spread === 'loss') t.ats_l++; else if (gr.spread === 'push') t.ats_p++;
+      if (gr.total === 'win') t.ou_w++; else if (gr.total === 'loss') t.ou_l++; else if (gr.total === 'push') t.ou_p++;
+      if (isNum(gr.model_err) && isNum(gr.close_err)) { t.compared++; t.model_err_sum += gr.model_err; t.close_err_sum += gr.close_err; if (gr.model_err < gr.close_err) t.closer++; }
+    });
+    t.su_games = t.su_w + t.su_l;
+    t.su_pct = t.su_games ? Math.round(100 * t.su_w / t.su_games) : null;
+    t.model_err_avg = t.compared ? r1(t.model_err_sum / t.compared) : null;
+    t.close_err_avg = t.compared ? r1(t.close_err_sum / t.compared) : null;
+    delete t.model_err_sum; delete t.close_err_sum;
+    return t;
+  }
+  /* the most recent finished week: every graded game kicked off before now,
+     the last one within six days */
+  function resultsOf(rec, league, now, published) {
+    var post = {};
+    var pub = published && (published.articles || published);
+    if (Array.isArray(pub)) pub.forEach(function (a) { if (a && a.type === 'postgame' && a.game_id && a.url) post[String(a.game_id)] = a.url; });
+    var all = (Array.isArray(rec.games) ? rec.games : Object.keys(rec.games).map(function (k) { return rec.games[k]; }))
+      .filter(function (g) { return g && g.grade && g.grade.status === 'GRADED' && g.final && isNum(g.final.home_score) && ts(g.kickoff) != null && ts(g.kickoff) < now; });
+    if (!all.length) return null;
+    var weeks = uniq(all.map(function (g) { return g.week; })).filter(isNum).sort(function (a, b) { return b - a; });
+    var pick = null;
+    for (var i = 0; i < weeks.length && !pick; i++) {
+      var wk = all.filter(function (g) { return g.week === weeks[i]; });
+      var last = Math.max.apply(null, wk.map(function (g) { return ts(g.kickoff); }));
+      if (now - last <= 6 * 86400000 && wk.length >= (league === 'nfl' ? 4 : 6)) pick = { week: weeks[i], games: wk, last: last };
+      if (now - last > 6 * 86400000) break;
+    }
+    var season = tally(all.map(function (g) { return resultPacket(g, league, post); }));
+    if (!pick) return { season_year: rec.season, week: null, results: [], week_record: null, season_record: season, as_of: rec.updated_at || null };
+    var results = pick.games.map(function (g) { return resultPacket(g, league, post); }).sort(function (a, b) { return (ts(a.kickoff) || 0) - (ts(b.kickoff) || 0); });
+    return { season_year: rec.season, week: pick.week, last_kickoff: iso(pick.last), results: results, week_record: tally(results), season_record: season, as_of: rec.updated_at || null };
   }
 
   /* the week whose games are still to come: the schedule's own week, the
@@ -3881,7 +4204,7 @@
         evidence: rows
       };
     }
-    var est = { weekly_preview: 'high', upset_watch: 'medium', conference_race: 'medium', market_discrepancy: 'low', injury_impact: 'medium', trending_story: 'medium' }[kind] || 'medium';
+    var est = { weekly_preview: 'high', upset_watch: 'medium', conference_race: 'medium', market_discrepancy: 'low', injury_impact: 'medium', trending_story: 'medium', matchup_preview: 'medium', postgame_review: 'medium' }[kind] || 'medium';
     return {
       basis: 'estimate', measured: false, level: est,
       note: 'ESTIMATE, not measured search volume: “' + keyword + '” follows a query pattern that recurs every week of the season. '
@@ -3900,13 +4223,15 @@
   function formatsFor(o) {
     var R = o.research || {};
     if (o.kind === 'trending_story' || o.kind === 'injury_impact') return ['trending_story', 'publisher_custom'];
-    if (o.kind === 'market_discrepancy' && (R.games || []).length === 1) return ['market_discrepancy', 'game_deep_dive', 'publisher_custom'];
+    if (o.kind === 'market_discrepancy') return (R.games || []).length === 1 ? ['market_discrepancy', 'game_deep_dive', 'publisher_custom'] : ['model_vs_market', 'publisher_custom'];
+    if (o.kind === 'matchup_preview') return ['matchup_deep_dive', 'publisher_custom'];
     if (o.kind === 'game_deep_dive') return ['game_deep_dive', 'publisher_custom'];
+    if (o.kind === 'postgame_review') return ['postgame_review', 'publisher_custom'];
     if (o.kind === 'model_performance') return ['model_performance_review'];
     if (o.kind === 'games_to_watch') return ['weekly_games_to_watch', 'weekly_games_to_watch_first_party'];
     if (o.kind === 'weekend_storylines') return ['weekend_storylines', 'publisher_custom'];
     if (o.kind === 'upset_watch') return [o.league + '_weekly_preview', 'upset_watch', 'publisher_custom'];
-    if (o.kind === 'conference_race') return ['cfb_weekly_preview', 'conference_race', 'publisher_custom'];
+    if (o.kind === 'conference_race') return ['conference_race', 'publisher_custom'];
     return [o.league + '_weekly_preview', 'weekend_storylines', 'publisher_custom'];
   }
   function baseFormatOf(o, format) {
@@ -3983,6 +4308,38 @@
     var now = isNum(opts.now) ? opts.now : Date.now();
     var pub = opts.publisher || null;
     var out = [];
+
+    /* 0 · postgame model reviews: the last finished week, graded */
+    Object.keys(snap.results || {}).forEach(function (league) {
+      var R = snap.results[league];
+      if (!R || !R.results.length) return;
+      var Lname = league === 'cfb' ? 'College Football' : 'NFL';
+      var kw = (league === 'cfb' ? 'college football week ' : 'nfl week ') + R.week + ' recap';
+      var d = demandFor(kw, 'postgame_review', opts.gsc);
+      var next = snap[league] && snap[league].games && snap[league].games.length ? Math.min.apply(null, snap[league].games.map(function (p) { return ts(p.kickoff) || Infinity; })) : Infinity;
+      out.push(mkOpp({
+        league: league, season: R.season_year, week: R.week, kind: 'postgame_review',
+        title: Lname + ' Week ' + R.week + ' Recap: How EdgeDesk’s Model Did',
+        angle: 'The week’s results against EdgeDesk’s pregame numbers and the closing line: what held up, what missed, and what one week can’t tell you.',
+        summary: R.week_record.games + ' graded games; right winner in ' + R.week_record.su_w + ' of ' + R.week_record.su_games + '.',
+        teams: uniq([].concat.apply([], R.results.map(function (x) { return [x.home, x.away]; }))),
+        research: { league: league, season: R.season_year, week: R.week, as_of: R.as_of, kind: 'postgame_review', context: { league: league, season: R.season_year, week: R.week },
+          games: [], upsets: [], races: [], results: R.results, week_record: R.week_record, season_record: R.season_record, limitations: [] },
+        sources: snap.sources.filter(function (s) { return s.id === 'record_' + league; }).map(function (s) { return { kind: 'edgedesk_research', label: s.what, path: s.path, url: SITE + '/' + s.path, as_of: s.as_of }; }),
+        demand: d,
+        formats: ['postgame_review', 'publisher_custom'],
+        scores: {
+          search_relevance: { score: d.measured ? 75 : 60, basis: d.measured ? 'measured Search Console exposure' : 'estimate: “week N recap” queries recur every week' },
+          timeliness: { score: clamp(100 - Math.round((now - ts(R.last_kickoff)) / 3600000), 20, 100), basis: 'last graded game ' + whenText(ts(R.last_kickoff)) },
+          audience_interest: { score: 60, basis: 'accountability: how the published numbers did' },
+          research_availability: { score: R.week_record.compared ? 95 : 70, basis: R.week_record.games + ' graded games' + (R.week_record.compared ? ', ' + R.week_record.compared + ' with a closing line' : '') },
+          editorial_relevance: { score: 90, basis: 'grading its own numbers in public is the EdgeDesk distinction' },
+          publisher_fit: publisherFit(pub, league, 'postgame_review', 'broad'),
+          research_confidence: { score: 90, basis: 'final scores and closing lines from the graded record' }
+        },
+        expires_at: iso(isFinite(next) ? next : ts(R.last_kickoff) + 6 * 86400000)
+      }));
+    });
 
     ['cfb', 'nfl'].forEach(function (league) {
       var L = snap[league]; if (!L || !L.games || !L.games.length) return;
@@ -4124,6 +4481,10 @@
         races.forEach(function (p) { (byConf[p.home_conference] = byConf[p.home_conference] || []).push(p); });
         Object.keys(byConf).forEach(function (cname) {
           var gs = byConf[cname];
+          /* the rest of the conference's top three, wherever they play this week */
+          var tops = (L.rankings.conference_top[cname] || []).slice(0, 3);
+          var others = tops.filter(function (t) { return !gs.some(function (p) { return p.home === t || p.away === t; }); })
+            .map(function (t) { return upcoming.filter(function (p) { return p.home === t || p.away === t; })[0]; }).filter(Boolean);
           var kw3 = cname.toLowerCase() + ' championship race';
           var d3 = demandFor(kw3, 'conference_race', opts.gsc);
           var k0 = ts(gs[0].kickoff);
@@ -4133,9 +4494,9 @@
             angle: 'Games between the conference’s highest-rated teams in EdgeDesk’s ratings, and what the projections say about the title race.',
             summary: gs.map(function (p) { return p.away + ' at ' + p.home; }).join('; '),
             teams: uniq([].concat.apply([], gs.map(function (p) { return [p.home, p.away]; }))),
-            research: { league: league, season: L.season, week: L.week, as_of: L.generated_at, kind: 'conference_race', conference: cname, conference_top: L.rankings.conference_top[cname] || [], context: contextOf(snap, league), games: gs, upsets: [], races: gs, limitations: limitations },
+            research: { league: league, season: L.season, week: L.week, as_of: L.generated_at, kind: 'conference_race', conference: cname, conference_top: L.rankings.conference_top[cname] || [], context: contextOf(snap, league), games: gs.concat(uniq(others)), upsets: [], races: gs, limitations: limitations },
             sources: sourcesOf(snap, league), demand: d3,
-            formats: ['cfb_weekly_preview', 'publisher_custom'],
+            formats: ['conference_race', 'publisher_custom'],
             scores: {
               search_relevance: { score: d3.measured ? 80 : 62, basis: d3.measured ? 'measured Search Console exposure' : 'estimate: conference-race queries peak in October and November' },
               timeliness: timelinessScore(k0, now),
@@ -4150,29 +4511,59 @@
         });
       }
 
+      /* 4a · matchup deep dives: the week's two headline games, one at a time */
+      ranked.slice(0, 2).forEach(function (x) {
+        var p = x.p;
+        var kw6 = kwOf(p.away + ' vs ' + p.home) + ' prediction';
+        var d6 = demandFor(kw6, 'matchup_preview', opts.gsc);
+        out.push(mkOpp({
+          league: league, season: L.season, week: L.week, kind: 'matchup_preview', slug_part: String(p.game_id),
+          title: p.away + ' vs. ' + p.home + ' Prediction: EdgeDesk’s Full Matchup Breakdown',
+          angle: 'One headline game, every input EdgeDesk has: the projection, what builds it, the unit matchup, the market and the conditions.',
+          summary: 'EdgeDesk: ' + p.display.fair + ' (' + p.display.win + ')' + (x.why.length ? '; ' + x.why.slice(0, 2).join(', ') : '') + '.',
+          teams: [p.home, p.away],
+          research: { league: league, season: L.season, week: L.week, as_of: L.generated_at, kind: 'matchup_preview', context: contextOf(snap, league), games: [p], upsets: [], races: [], limitations: limitations },
+          sources: sourcesOf(snap, league), demand: d6,
+          formats: ['matchup_deep_dive', 'publisher_custom'],
+          scores: {
+            search_relevance: { score: d6.measured ? 75 : 55, basis: d6.measured ? 'measured Search Console exposure' : 'estimate: “team vs team prediction” queries for a headline game' },
+            timeliness: timelinessScore(ts(p.kickoff), now),
+            audience_interest: { score: clamp(40 + Math.max(0, x.interest) / 2, 0, 100) | 0, basis: x.why.length ? x.why.slice(0, 3).join(', ') : 'one of the week’s featured games' },
+            research_availability: { score: (p.drivers || []).length || (p.injuries && (p.injuries.home || p.injuries.away)) ? 85 : 60, basis: (p.drivers || []).length ? 'projection, drivers, unit matchup and conditions' : 'projection and injury report; no driver breakdown for this league' },
+            editorial_relevance: { score: 80, basis: 'a full research view of one game, explained for fans' },
+            publisher_fit: publisherFit(pub, league, 'matchup_preview', 'narrow'),
+            research_confidence: { score: confidenceScore(avgConfidence([p]), L, league), basis: confidenceBasis(avgConfidence([p]), L, league) }
+          },
+          expires_at: iso(ts(p.kickoff))
+        }));
+      });
+
       /* 4 · market discrepancies: model vs market where a price exists */
       /* AUDIT 2026-10-08 §5 and docs/system-integrity/PERFORMANCE.md: the largest
          gaps are where the model has been least accurate (7+ pts at the close:
          MAE 15.4 vs the close's 10.4 live, 14.7 vs 12.4 in the backtest). A gap
          earns a public story only when research cleared it (WORTH RESEARCHING or
          VERIFIED MAJOR); an unverified 7+ gap is investigated internally
-         (investigations()), never promoted. Ranked by the story score, not size. */
+         (investigations()), never promoted. Ranked by the story score, not size.
+         A college slate report also needs three gaps EdgeDesk's own inputs
+         can explain (discrepancyOf). */
       var cleared = function (p) { var k = p.research_status && p.research_status.key; return league !== 'cfb' || k === 'WORTH_RESEARCHING' || k === 'VERIFIED_MAJOR'; };
       var gaps = upcoming.filter(function (p) { return p.gap && p.gap.points >= RESEARCH_GAP && p.market.status !== 'none' && cleared(p); })
         .sort(function (a, b) { var fa = a.market.status === 'current' ? 1 : 0, fb = b.market.status === 'current' ? 1 : 0; return fb - fa || storyScore(b).story - storyScore(a).story || b.gap.points - a.gap.points; });
-      if (league === 'nfl' && gaps.length >= 3) {
-        var kw4 = 'nfl week ' + L.week + ' predictions vs spread';
+      var explainable = gaps.filter(function (p) { return p.discrepancy; });
+      if (league === 'nfl' ? gaps.length >= 3 : explainable.length >= 3) {
+        var kw4 = (league === 'nfl' ? 'nfl week ' : 'college football week ') + L.week + ' spread predictions';
         var d4 = demandFor(kw4, 'market_discrepancy', opts.gsc);
         var anyCurrent = gaps.some(function (p) { return p.market.status === 'current'; });
         out.push(mkOpp({
           league: league, season: L.season, week: L.week, kind: 'market_discrepancy', slug_part: 'slate',
-          title: 'NFL Week ' + L.week + ': Matchups Where the Numbers Tell a Different Story',
+          title: Lname + ' Week ' + L.week + ': Matchups Where the Numbers Tell a Different Story',
           angle: 'Where EdgeDesk’s projection and the betting line disagree by two points or more — and why a disagreement is a research question, not a bet.',
           summary: gaps.length + ' games with a gap of 2+ points; largest ' + gaps[0].away + ' at ' + gaps[0].home + ' (' + gaps[0].gap.text + ').',
           teams: uniq([].concat.apply([], gaps.slice(0, 5).map(function (p) { return [p.home, p.away]; }))),
           research: { league: league, season: L.season, week: L.week, as_of: L.generated_at, kind: 'market_discrepancy', context: contextOf(snap, league), games: gaps.slice(0, 5), upsets: [], races: [], limitations: limitations },
           sources: sourcesOf(snap, league), demand: d4,
-          formats: ['nfl_weekly_preview', 'market_discrepancy', 'publisher_custom'],
+          formats: ['model_vs_market', 'publisher_custom'],
           scores: {
             search_relevance: { score: d4.measured ? 80 : 70, basis: d4.measured ? 'measured Search Console exposure' : 'estimate: weekly spread-prediction queries recur all season' },
             timeliness: timelinessScore(firstKick, now),
@@ -4187,7 +4578,7 @@
       }
       gaps.filter(function (p) { return league === 'cfb' && p.market.status === 'current'; }).slice(0, 3).forEach(function (p) {
         var verified = p.verified === true;
-        var kw5 = slugify(p.away + ' vs ' + p.home).replace(/-/g, ' ') + ' prediction';
+        var kw5 = kwOf(p.away + ' vs ' + p.home) + ' prediction';
         var d5 = demandFor(kw5, 'market_discrepancy', opts.gsc);
         out.push(mkOpp({
           league: league, season: L.season, week: L.week, kind: 'market_discrepancy', slug_part: String(p.game_id),
@@ -4308,6 +4699,11 @@
       }));
     }
 
+    /* ONE DEEP DIVE PER GAME: the storyline's central game gets its own deep
+       dive only when it is not already one of the week's matchup deep dives */
+    var deep = {};
+    out.forEach(function (o) { if (o.kind === 'matchup_preview') (o.research.games || []).forEach(function (p) { deep[o.league + ':' + p.game_id] = 1; }); });
+    out = out.filter(function (o) { return o.kind !== 'game_deep_dive' || !(o.research.games || []).some(function (p) { return deep[o.league + ':' + p.game_id]; }); });
     out.forEach(function (o) { o.seo = seoBrief(o, pub); o.discovered_at = iso(now); });
     out.sort(function (a, b) { return b.priority - a.priority; });
     return out;
@@ -4347,6 +4743,8 @@
   /* ======================================================================
      SEO — the brief
      ====================================================================== */
+  /* a search phrase as people type it: "texas a&m vs missouri", not "texas a and m vs missouri" */
+  function kwOf(t) { return String(t || '').toLowerCase().replace(/\./g, '').replace(/[^a-z0-9&'’\s-]+/g, ' ').replace(/\s+/g, ' ').trim(); }
   function seoBrief(o, publisher) {
     var L = o.league === 'cfb' ? 'College Football' : 'NFL';
     var l = o.league === 'cfb' ? 'college football' : 'nfl';
@@ -4358,7 +4756,7 @@
     switch (o.kind) {
       case 'weekly_preview':
         b.primary_keyword = l + ' week ' + w + ' predictions';
-        b.secondary_keywords = [l + ' week ' + w + ' preview', l + ' week ' + w + ' upsets', (o.league === 'cfb' ? 'cfb' : 'nfl') + ' week ' + w + ' projections', head ? slugify(head).replace(/-/g, ' ') + ' prediction' : null, l + ' week ' + w + ' games to watch'].filter(Boolean);
+        b.secondary_keywords = [l + ' week ' + w + ' preview', l + ' week ' + w + ' upsets', (o.league === 'cfb' ? 'cfb' : 'nfl') + ' week ' + w + ' projections', head ? kwOf(head) + ' prediction' : null, l + ' week ' + w + ' games to watch'].filter(Boolean);
         b.headline = L + ' Week ' + w + ' Predictions: ' + ((R.upsets || []).length ? 'Biggest Games and Potential Upsets' : 'The Games That Matter Most');
         b.alternatives = [
           L + ' Week ' + w + ' Predictions: ' + (o.league === 'nfl' ? 'Five Matchups Where the Numbers Tell a Different Story' : 'What EdgeDesk’s Model Expects'),
@@ -4381,12 +4779,28 @@
         b.alternatives = [R.conference + ' Title Race: The Week ' + w + ' Games That Matter Most', 'What Week ' + w + ' Means for the ' + R.conference + ' Race'];
         b.structure = ['Intro', 'Who leads EdgeDesk’s ratings in the conference', 'The key games (H3)', 'What the numbers can’t see', 'Bottom line'];
         break;
+      case 'postgame_review':
+        b.primary_keyword = l + ' week ' + w + ' recap';
+        b.secondary_keywords = [l + ' week ' + w + ' results', l + ' week ' + w + ' model review', l + ' week ' + w + ' predictions results'];
+        b.headline = pgHeadline(o) || o.title;
+        b.alternatives = [L + ' Week ' + w + ' Recap: Where the Numbers Held Up and Where They Missed', L + ' Week ' + w + ' Model Review: The Results Against EdgeDesk’s Numbers'];
+        b.structure = ['Intro: the week in one line', 'How to read a model review', 'How the numbers did (winners, closer than the close, the misses)', 'Where the model was closest', 'The biggest misses', 'The season so far', 'What a review can’t show', 'Bottom line'];
+        break;
+      case 'matchup_preview':
+        b.primary_keyword = head ? kwOf(head) + ' prediction' : l + ' prediction';
+        b.secondary_keywords = head ? [kwOf(head) + ' preview', kwOf(head) + ' projection', l + ' week ' + w + ' predictions'] : [];
+        b.headline = head ? [head + ' Prediction: EdgeDesk’s Full Matchup Breakdown', head + ' Prediction: Full Matchup Breakdown', head + ' Prediction and Preview', head + ' Prediction']
+          .filter(function (h, i, all) { return h.length <= 70 || i === all.length - 1; })[0] : o.title;
+        b.alternatives = head ? [head + ' Preview: What EdgeDesk’s Model Expects', head + ': The Numbers Behind the Week ' + w + ' Headliner'] : [];
+        b.structure = ['Intro', 'The projection, with its typical miss', 'How to read it (not a pick)', 'What builds the number', 'The unit matchup', 'Quarterbacks and availability', 'EdgeDesk vs. the market', 'Conditions', 'What the numbers can’t see', 'Bottom line'];
+        break;
       case 'market_discrepancy':
-        b.primary_keyword = o.league === 'nfl' ? 'nfl week ' + w + ' predictions vs spread' : (head ? slugify(head).replace(/-/g, ' ') + ' prediction' : l + ' prediction');
-        b.headline = o.league === 'nfl' ? 'NFL Week ' + w + ' Predictions vs. the Spread: Where the Numbers Disagree' : (head ? head + ' Prediction: Model vs. Line' : o.title);
-        b.secondary_keywords = o.league === 'nfl' ? ['nfl week ' + w + ' model predictions', 'nfl week ' + w + ' spreads', 'nfl week ' + w + ' predictions'] : [head ? slugify(head).replace(/-/g, ' ') + ' odds' : null, head ? slugify(head).replace(/-/g, ' ') + ' spread' : null].filter(Boolean);
+        var slate = (R.games || []).length > 1;
+        b.primary_keyword = slate ? l + ' week ' + w + ' spread predictions' : (head ? kwOf(head) + ' prediction' : l + ' prediction');
+        b.headline = slate ? L + ' Week ' + w + ' Spread Predictions: Model vs. Market' : (head ? head + ' Prediction: Model vs. Line' : o.title);
+        b.secondary_keywords = slate ? [l + ' week ' + w + ' model predictions', l + ' week ' + w + ' spreads', l + ' week ' + w + ' predictions'] : [head ? kwOf(head) + ' odds' : null, head ? kwOf(head) + ' spread' : null].filter(Boolean);
         b.intent = 'informational (comparison)';
-        b.alternatives = [o.league === 'nfl' ? 'NFL Week ' + w + ' Predictions: ' + cap(numWord(Math.min(5, (R.games || []).length))) + ' Games Where the Numbers Tell a Different Story' : (head + ': Why the Model and the Line Disagree'), 'Why EdgeDesk and the Sportsbooks See ' + (head || 'This Game') + ' Differently'];
+        b.alternatives = [slate ? L + ' Week ' + w + ' Predictions: ' + cap(numWord(Math.min(5, (R.games || []).length))) + ' Games Where the Numbers Tell a Different Story' : (head + ': Why the Model and the Line Disagree'), 'Why EdgeDesk and the Sportsbooks See ' + (slate ? 'Week ' + w : head || 'This Game') + ' Differently'];
         b.structure = ['Intro', 'The gap, with capture times', 'Why the numbers differ (drivers)', 'How to read a disagreement (not a bet)', 'The case for the market', 'Bottom line'];
         break;
       case 'games_to_watch':
@@ -4399,7 +4813,7 @@
       case 'injury_impact':
         b.primary_keyword = String((R.focus && R.focus.player) || '').toLowerCase() + ' injury';
         b.headline = (R.focus && R.focus.player) + ' Injury: What It Means for the ' + (R.focus && R.focus.team);
-        b.secondary_keywords = [String((R.focus && R.focus.player) || '').toLowerCase() + ' injury update', String((R.focus && R.focus.team) || '').toLowerCase() + ' quarterback', head ? slugify(head).replace(/-/g, ' ') + ' prediction' : null].filter(Boolean);
+        b.secondary_keywords = [String((R.focus && R.focus.player) || '').toLowerCase() + ' injury update', String((R.focus && R.focus.team) || '').toLowerCase() + ' quarterback', head ? kwOf(head) + ' prediction' : null].filter(Boolean);
         b.intent = 'informational (news)';
         b.alternatives = [R.focus && (R.focus.team + ' Without ' + R.focus.player + '? What EdgeDesk’s Model Says'), head && (head + ': How the Injury Report Moves the Projection')].filter(Boolean);
         b.structure = ['Intro', 'What the injury report says (attributed)', 'What the model says with and without the starter', 'What we don’t know yet', 'Bottom line'];
@@ -4447,72 +4861,111 @@
      ====================================================================== */
   function para() { return Array.prototype.slice.call(arguments).filter(Boolean).join(' '); }
 
-  function fanLine(p) {
-    /* "EdgeDesk’s model makes Alabama a 5.3-point favorite (64% to win)" */
+  function fanLine(p, idx) {
+    /* "EdgeDesk’s model makes Alabama a 5.3-point favorite (64% to win)" — the
+       same facts in a few forms, so six games do not read like six rows */
     var m = p.model;
     if (!m.available) return null;
     if (!m.favorite) return 'EdgeDesk’s model sees ' + p.away + ' at ' + p.home + ' as a pick’em.';
-    if (m.margin < 1) return 'EdgeDesk’s model sees a near coin flip: ' + m.favorite + ' by ' + oneDp(m.margin) + (isNum(m.fav_win_pct) ? ', with a ' + m.fav_win_pct + '% chance to win' : '') + '.';
-    return 'EdgeDesk’s model makes ' + m.favorite + ' ' + aOrAn(oneDp(m.margin)) + ' ' + oneDp(m.margin) + '-point favorite' + (isNum(m.fav_win_pct) ? ', with a ' + m.fav_win_pct + '% chance to win' : '') + '.';
+    var win = isNum(m.fav_win_pct) ? m.fav_win_pct + '%' : null;
+    if (m.margin < 1) return 'EdgeDesk’s model sees a near coin flip: ' + m.favorite + ' by ' + oneDp(m.margin) + (win ? ', with a ' + win + ' chance to win' : '') + '.';
+    var forms = [
+      'EdgeDesk’s model makes ' + m.favorite + ' ' + aOrAn(oneDp(m.margin)) + ' ' + oneDp(m.margin) + '-point favorite' + (win ? ', with a ' + win + ' chance to win' : '') + '.',
+      'EdgeDesk has ' + m.favorite + ' by ' + oneDp(m.margin) + (win ? ', a ' + win + ' chance to win' : '') + '.',
+      m.favorite + ' is EdgeDesk’s ' + oneDp(m.margin) + '-point favorite' + (win ? ' (' + win + ' to win)' : '') + '.'
+    ];
+    return forms[(idx || 0) % forms.length];
   }
-  function scoreLine(p) {
+  function scoreLine(p, idx) {
     if (!p.display.score) return null;
-    return 'Projected score: ' + p.display.score + (p.display.total ? ' (a projected total of ' + p.display.total + ' points).' : '.');
+    var t = p.display.total;
+    return [
+      'Projected score: ' + p.display.score + (t ? ' (a projected total of ' + t + ' points).' : '.'),
+      'The model’s projected score is ' + p.display.score + (t ? ', a total of ' + t + ' points.' : '.'),
+      'That works out to ' + p.display.score + (t ? ' (' + t + ' total points).' : '.')
+    ][(idx || 0) % 3];
   }
-  function driverLine(p) {
+  function driverLine(p, idx) {
     var d = p.drivers || [];
     if (!d.length || !p.model.favorite) return null;
     var parts = d.slice(0, 2).map(function (x) {
       var lab = String(x.label).replace(/\s*\(.*\)\s*/g, '').toLowerCase();
       return lab + ' (' + oneDp(x.points) + ' points toward ' + x.team + ')';
     });
-    return 'The biggest pieces of the projection: ' + sentenceList(parts) + '.';
+    var lead = ['The biggest pieces of the projection: ', 'Most of that number comes from ', 'What drives it: '][(idx || 0) % 3];
+    return lead + sentenceList(parts) + '.';
   }
-  function matchupLine(p) {
+  function matchupLine(p, idx) {
     var mu = p.matchup || [];
     if (!mu.length) return null;
-    var x = mu[0];
-    return 'Matchup to watch: EdgeDesk’s unit data gives ' + x.favors + ' a ' + x.magnitude + ' edge in the ' + String(x.label).toLowerCase() + '.';
+    var x = mu[0], unit = String(x.label).toLowerCase();
+    var forms = [
+      'Matchup to watch: EdgeDesk’s unit data gives ' + x.favors + ' ' + aWord(x.magnitude) + ' ' + x.magnitude + ' edge in the ' + unit + '.',
+      'The unit matchup that stands out is the ' + unit + ', where EdgeDesk’s data gives ' + x.favors + ' ' + aWord(x.magnitude) + ' ' + x.magnitude + ' edge.',
+      'On the field, ' + x.favors + ' has ' + aWord(x.magnitude) + ' ' + x.magnitude + ' edge in the ' + unit + ' by EdgeDesk’s unit data.'
+    ];
+    return forms[(idx || 0) % forms.length];
   }
-  function marketLine(p) {
+  function aWord(w) { return /^[aeiou]/i.test(String(w)) ? 'an' : 'a'; }
+  function marketLine(p, idx) {
     var m = p.market;
     if (!m || m.status === 'none' || !p.display.market) return null;
-    var gapTxt = p.gap && p.gap.points >= 0.1 ? ' That is ' + oneDp(p.gap.points) + ' points away from EdgeDesk’s number, toward ' + p.gap.toward + '.' : ' EdgeDesk’s number is essentially the same.';
+    var gapTxt = p.gap && p.gap.points >= 0.1
+      ? [' That is ' + oneDp(p.gap.points) + ' points away from EdgeDesk’s number, toward ' + p.gap.toward + '.',
+         ' EdgeDesk leans ' + oneDp(p.gap.points) + ' points further toward ' + p.gap.toward + '.',
+         ' The gap: ' + oneDp(p.gap.points) + ' points, with EdgeDesk closer to ' + p.gap.toward + '.'][(idx || 0) % 3]
+      : ' EdgeDesk’s number is essentially the same.';
     if (m.status === 'current') return 'The betting line: ' + p.display.market + '.' + gapTxt + ' A gap is a question for research, not a reason to bet.';
-    if (m.status === 'stale') return 'The last sportsbook line EdgeDesk captured: ' + p.display.market + '. That line is older than EdgeDesk’s three-hour freshness rule, so treat it as context, not a current price.' + gapTxt;
+    if (m.status === 'stale') return 'Historical line: ' + p.display.market + '.' + gapTxt;
     return 'For reference, the ' + p.display.market + ' had ' + (favOf(p.home, p.away, m.home_line).favorite || 'neither team') + ' favored. It is a reference, not a sportsbook price.' + gapTxt;
   }
   /* QUARTERBACKS (docs/system-integrity/AUDIT.md §6). The Week 6 article said,
      game after game, that neither starter was confirmed — because no college
      team announces a starter before kickoff and the writer read that silence
-     as uncertainty. Now: an EXPECTED STARTER gets no sentence at all; a
-     dropback split is printed as the measured fact it is; uncertainty is
-     written only from a sourced report (lib/edgedesk_availability.js), with
-     the source and its date. */
+     as uncertainty. Only a MATERIAL quarterback question reaches the copy
+     (qbState: a sourced availability note, or a usage split the model's own
+     starter-change scenario says matters), or a SOURCED report the
+     availability classifier holds (lib/edgedesk_availability.js), with its
+     source and date. An established starter without an announcement is not
+     news, and no announcement is never written as doubt. */
   function qbLine(p) {
-    if (p.league !== 'cfb' || !AVAIL) return null;
+    if (p.league !== 'cfb') return null;
     var out = [];
     ['away', 'home'].forEach(function (s) {
-      var c = p.availability && p.availability[s]; if (!c) return;
-      if ((c.may_assert_uncertainty && c.verification === 'SOURCED') || c.measured_note) { var t = AVAIL.sentence(c); if (t) out.push(t); }
+      var q = p.qb && p.qb[s];
+      var team = s === 'home' ? p.home : p.away;
+      if (q && q.material) {
+        var move = isNum(q.effect_points) && q.player ? ' EdgeDesk’s model moves ' + oneDp(q.effect_points) + ' points if ' + q.player + ' doesn’t start' + (q.flips_favorite ? ', enough to flip the favorite' : '') + '.' : '';
+        if (q.status === 'AVAILABILITY') { out.push(String(q.availability).replace(/\.?$/, '.') + (q.availability_source ? ' (Source: ' + q.availability_source + '.)' : '') + move); return; }
+        if (q.status === 'COMPETITION') { var f = competitionFact(q); out.push(team + '’s quarterback job is unresolved in the play-by-play data' + (f ? ': ' + f : '') + '.' + move); return; }
+      }
+      /* a SOURCED availability report the starter layer's risk notes do not
+         carry (lib/edgedesk_availability.js), with its source and date */
+      var c = AVAIL && p.availability && p.availability[s];
+      if (c && c.may_assert_uncertainty && c.verification === 'SOURCED') { var t = AVAIL.sentence(c); if (t) out.push(t); }
     });
-    return out.length ? 'Quarterback watch: ' + out.join(' ') : null;
+    return out.length ? 'Quarterback: ' + out.join(' ') : null;
   }
-  function injuryLine(p) {
+  /* qbOnly: the article has its own injury-report section, so a game's
+     capsule names only a listed starting quarterback */
+  function injuryLine(p, qbOnly) {
     var out = [];
     ['away', 'home'].forEach(function (s) {
       var i = p.injuries && p.injuries[s]; if (!i) return;
       var team = s === 'home' ? p.home : p.away;
       var q = (i.qbs || []).filter(function (x) { return x.starter; })[0];
       if (q) out.push(team + ' ' + verb(p.league, 'lists', 'list') + ' starting quarterback ' + q.name + ' as ' + String(q.status).toLowerCase() + (q.injury ? ' (' + String(q.injury).toLowerCase() + ')' : '') + ' on the official injury report.');
-      else if (i.out_count) out.push(team + ' ' + verb(p.league, 'lists', 'list') + ' ' + numWord(i.out_count) + ' player' + (i.out_count === 1 ? '' : 's') + ' as out.');
+      else if (i.out_count && !qbOnly) out.push(team + ' ' + verb(p.league, 'lists', 'list') + ' ' + numWord(i.out_count) + ' player' + (i.out_count === 1 ? '' : 's') + ' as out.');
     });
     return out.length ? 'Injury report: ' + out.join(' ') : null;
   }
+  /* the football confidence score measures EVIDENCE QUALITY (the confidence
+     ledger's information_confidence), so it is printed as data quality and
+     explained once in "How to read these numbers" */
   function confLine(p) {
-    var m = p.model;
-    if (m.confidence) return 'Model confidence: ' + (m.confidence.label || '') + ' (' + m.confidence.score + ' out of 100).';
-    return null;
+    var d = p.model && p.model.data_quality;
+    if (!d || !isNum(d.score)) return null;
+    return 'Data quality: ' + d.score + '/100' + (d.band === 'low' ? ' — low, so several of this game’s inputs are missing or unresolved' : '') + '.';
   }
   function rankTag(p, side) {
     var r = side === 'home' ? p.home_rank : p.away_rank;
@@ -4528,7 +4981,7 @@
   }
   function capsule(p, opts) {
     opts = opts || {};
-    var lines = [fanLine(p), scoreLine(p), driverLine(p), opts.short ? null : matchupLine(p), marketLine(p), p.league === 'cfb' ? qbLine(p) : injuryLine(p), confLine(p)];
+    var lines = [fanLine(p, opts.idx), scoreLine(p, opts.idx), driverLine(p, opts.idx), opts.short ? null : matchupLine(p, opts.idx), marketLine(p, opts.idx), p.league === 'cfb' ? qbLine(p) : injuryLine(p, opts.injurySection), confLine(p)];
     var linkTxt = p.link && opts.links !== false ? 'Full research: [' + p.away + ' vs. ' + p.home + ' on EdgeDesk](' + p.link + ')' : null;
     return '### ' + gameHeading(p) + '\n\n' + lines.filter(Boolean).join(' ') + (linkTxt ? '\n\n' + linkTxt : '');
   }
@@ -4570,9 +5023,16 @@
       'EdgeDesk’s NFL projections are built from each team’s efficiency this season, quarterback play, rest and home field, and they are compared with the betting line only when EdgeDesk knows when that line was captured.');
   }
 
-  function howToRead(o) {
+  function howToRead(o, opts) {
+    opts = opts || {};
+    var gs = (o.research.games || []).filter(function (p) { return p.model.available; });
+    var misses = gs.map(function (p) { return p.model.typical_miss; }).filter(isNum).map(Math.round);
+    var lo = misses.length ? Math.min.apply(null, misses) : null, hi = misses.length ? Math.max.apply(null, misses) : null;
+    var dq = !opts.noDataQuality && gs.some(function (p) { return p.model.data_quality && isNum(p.model.data_quality.score); });
     return para('A projection is the margin and win chance EdgeDesk’s model expects, built from team ratings, home field and matchup data.',
       'A projection is not a bet. A team can be the likelier winner and still be a poor wager if the betting line already expects more than the model does, which is why this article doesn’t make picks.',
+      lo != null ? 'Projections miss: EdgeDesk’s typical miss on games like these is about ' + (lo === hi ? lo : lo + ' to ' + hi) + ' points, which is why a win chance matters more than the margin alone.' : null,
+      dq ? 'Each game also shows a data-quality score out of 100. It measures how completely EdgeDesk knows that game’s inputs (ratings, quarterbacks, availability, venue), not how likely either team is to win: a near coin flip can have excellent data.' : null,
       'When we compare the model with a sportsbook line, we say where the line came from and when it was captured.',
       o.league === 'cfb' ? 'Rankings shown with team names (such as No. 6) are EdgeDesk’s own power ratings, not the AP poll.' : null);
   }
@@ -4580,14 +5040,17 @@
   function upsetsSection(o, gamesShown) {
     var ups = (o.research.upsets || []).filter(function (p) { return o.kind === 'upset_watch' || gamesShown.indexOf(p.game_id) < 0 || true; });
     if (!ups.length) return null;
-    var lines = ups.slice(0, 3).map(function (p) {
+    var caught = uniq(ups.slice(0, 3).filter(function (p) { return p.favorite_flip && p.market.status === 'stale' && p.market.captured_text; }).map(function (p) { return p.market.captured_text; }));
+    var lines = ups.slice(0, 3).map(function (p, i) {
       var favRank = p.model.favorite === p.home ? p.home_rank : p.away_rank;
       var rankTxt = p.league === 'cfb' && isNum(favRank) && favRank <= 25 ? ' (No. ' + favRank + ' in EdgeDesk’s ratings)' : '';
       var s = '- **' + p.model.underdog + '** over ' + p.model.favorite + rankTxt + ': the model gives ' + p.model.underdog + ' a ' + p.model.dog_win_pct + '% chance.';
-      if (p.favorite_flip && p.market.status !== 'none') s += ' The ' + (p.market.status === 'current' ? 'current betting line' : 'last captured line') + ' has the favorite the other way around.';
+      var which = p.market.status === 'current' ? 'current betting line' : p.market.status === 'stale' ? 'historical line' : 'reference line';
+      if (p.favorite_flip && p.market.status !== 'none') s += [' The ' + which + ' has the favorite the other way around.', ' The ' + which + ' favored ' + p.model.underdog + ' instead.', ' The ' + which + ' made ' + p.model.underdog + ' the favorite.'][i % 3];
       return s;
     });
     return para('An underdog the model gives a 30 percent chance or better still loses more often than it wins, but over a full slate a few of them come through.') + '\n\n' + lines.join('\n') + '\n\n'
+      + (caught.length ? 'The historical lines here were captured ' + sentenceList(caught) + '; lines move, so they are context, not current prices. ' : '')
       + 'None of these is a prediction that the underdog wins, and none is a bet: whether an underdog is worth backing depends entirely on the price, which this article doesn’t assess.';
   }
 
@@ -4610,10 +5073,56 @@
       ? 'These comparisons use the consensus line from public schedule data, which has no sportsbook and no capture time: treat each gap as a research note.'
       : any.market.status === 'stale' ? 'These comparisons use the last lines EdgeDesk captured, each older than its three-hour freshness rule: lines move, so treat each gap as a research note.'
       : 'These comparisons use lines EdgeDesk captured within the last three hours.';
-    var lines = gs.slice(0, 5).map(function (p) {
-      return '- **' + p.away + ' at ' + p.home + ':** EdgeDesk has ' + p.display.fair + '; the line was ' + p.display.market + '. Gap: ' + p.gap.text + '.';
+    var lines = gs.slice(0, 5).map(function (p, i) {
+      return '- **' + p.away + ' at ' + p.home + ':** ' + [
+        'EdgeDesk has ' + p.display.fair + '; the line was ' + p.display.market + '. Gap: ' + p.gap.text + '.',
+        'the line was ' + p.display.market + ', while EdgeDesk has ' + p.display.fair + ' — a gap of ' + p.gap.text + '.',
+        'a gap of ' + p.gap.text + ': EdgeDesk has ' + p.display.fair + ' against a line of ' + p.display.market + '.'][i % 3];
     });
     return intro + '\n\n' + lines.join('\n') + '\n\n' + 'A gap means the model and the market weigh something differently. Sometimes the model has spotted something; often the market knows something the model can’t see, like an injury that hasn’t been reported yet.';
+  }
+
+  /* the games whose model–market gap is big enough to explain (≤ 3, largest first) */
+  function disagreementGames(o, shown, max) {
+    var rank = { BLOCK: 0, REVIEW: 1, NONE: 2 };
+    return (shown || o.research.games || []).filter(function (p) { return p.discrepancy; })
+      .sort(function (a, b) { return (rank[a.discrepancy.review] - rank[b.discrepancy.review]) || (b.discrepancy.points - a.discrepancy.points); }).slice(0, max || 3);
+  }
+  /* One gap, explained from EdgeDesk's own inputs — never a story invented to
+     fit the number. What the inputs cannot explain is said to be unexplained. */
+  function discrepancyText(p, idx) {
+    idx = idx || 0;
+    var d = p.discrepancy;
+    if (!d) return null;
+    var mk = p.market.status === 'current' ? 'the current line is ' : p.market.status === 'stale' ? 'the historical line had ' : 'the reference line had ';
+    var ln = p.market.status === 'current' ? 'current line' : p.market.status === 'stale' ? 'historical line' : 'reference line';
+    var head = '**' + p.away + (p.neutral_site ? ' vs. ' : ' at ') + p.home + '.** ';
+    var out = [head + [
+      'EdgeDesk has ' + p.display.fair + '; ' + mk + p.display.market + ', ' + aOrAn(oneDp(d.points)) + ' ' + oneDp(d.points) + '-point gap toward ' + d.toward + '.',
+      cap(mk) + p.display.market + ', against EdgeDesk’s ' + p.display.fair + '. The two are ' + oneDp(d.points) + ' points apart, with EdgeDesk closer to ' + d.toward + '.',
+      'EdgeDesk’s ' + p.display.fair + ' sits ' + oneDp(d.points) + ' points from the ' + ln + ' (' + p.display.market + '), toward ' + d.toward + '.'][idx % 3]];
+    if (d.terms.length) out.push('EdgeDesk’s number is built from ' + sentenceList(d.terms.map(function (t) { return t.label + ' (' + t.team + ' +' + oneDp(t.points) + ')'; })) + '.');
+    var mi = d.market_implied;
+    if (mi && mi.term === 'rating') {
+      out.push(idx % 2 === 0
+        ? 'Holding everything else at EdgeDesk’s values, the market’s consensus implies ' + mi.implied_team + ' is ' + oneDp(mi.implied) + ' points better on a neutral field, where EdgeDesk has ' + mi.edgedesk_team + ' ' + oneDp(mi.edgedesk) + ' points better: the disagreement is about how strong the two teams are.'
+        : 'The disagreement sits in team strength: on a neutral field EdgeDesk has ' + mi.edgedesk_team + ' ' + oneDp(mi.edgedesk) + ' points better, while the market’s consensus implies ' + mi.implied_team + ' ' + oneDp(mi.implied) + ' points better, everything else held at EdgeDesk’s values.');
+    }
+    d.facts.forEach(function (f) { out.push(f.text); });
+    if (d.unexplained_pct == null) out.push('EdgeDesk has no breakdown of this gap, so it can’t say what explains it.');
+    else if (d.status === 'EXPLAINED') out.push('How the closing market has historically weighed parts of EdgeDesk’s number accounts for most of a gap like this (' + d.explained_pct + '%)' + (d.parts.length ? ', chiefly ' + sentenceList(d.parts.slice(0, 2).map(function (x) { return x.label; })) : '') + '.');
+    else out.push('How the closing market has historically weighed parts of EdgeDesk’s number accounts for about ' + d.explained_pct + '% of a gap like this' + (d.parts.length ? ' (' + sentenceList(d.parts.slice(0, 2).map(function (x) { return x.label; })) + ')' : '') + '; the other ' + d.unexplained_pct + '% is not explained by anything EdgeDesk measures.');
+    return out.join(' ');
+  }
+  function discrepancySection(o, shown, max) {
+    var gs = disagreementGames(o, shown, max);
+    if (!gs.length) return null;
+    var open = gs.some(function (p) { return p.discrepancy.review !== 'NONE'; });
+    var div = gs.some(function (p) { return p.discrepancy.facts.some(function (f) { return f.key === 'rating_divergence'; }); });
+    return 'EdgeDesk compares its numbers with the betting market to find questions worth asking, not bets. These are the largest gaps among the games above, with what EdgeDesk’s own inputs can and can’t explain.'
+      + (open ? ' Where most of a gap is unexplained, treat it as a question to investigate, not an edge: it can mean the market knows something the model doesn’t.' : '')
+      + (div ? ' Where EdgeDesk flags a large divergence between a team’s current rating and its pricing state, those games have historically carried larger model error: a research flag, not a price adjustment.' : '')
+      + '\n\n' + gs.map(function (p, i) { return discrepancyText(p, i); }).join('\n\n');
   }
 
   function injuriesSection(o) {
@@ -4627,9 +5136,13 @@
   function limitsSection(o) {
     var R = o.research, gs = R.games || [];
     var bullets = [];
-    var qbN = gs.filter(function (p) { return p.flags.indexOf('QB_UNCERTAIN') >= 0; }).length;
-    if (o.league === 'cfb' && qbN) bullets.push('**Quarterbacks:** in ' + numWord(qbN) + ' of the games above, a reported quarterback situation (named in that game’s section, with its source) could move the number.');
-    else if (o.league === 'cfb') bullets.push('**Quarterbacks:** college teams seldom name a starter before kickoff, so EdgeDesk reads each starter from recent play. A late change would move a projection more than almost anything else.');
+    /* a quarterback note here only when a game's own section carries one
+       (qbLine: a material, sourced situation), so the two never disagree */
+    var qbN = o.league === 'cfb' ? gs.filter(function (p) { return !!qbLine(p); }).length : 0;
+    if (qbN) bullets.push('**Quarterbacks:** in ' + numWord(qbN) + ' of the games above, a reported quarterback situation (named in that game’s section, with its source) could move the number.');
+    gs.filter(function (p) { return p.weather && p.weather.state === 'HAZARD'; }).slice(0, 2).forEach(function (p) {
+      bullets.push('**Weather:** the forecast for ' + p.away + ' at ' + p.home + ' calls for ' + sentenceList(p.weather.hazards) + ' around kickoff (' + (p.weather.source || 'open-meteo forecast') + (p.weather.as_of ? ', as of ' + whenText(ts(p.weather.as_of)) : '') + '). EdgeDesk’s projected margin does not move for weather.');
+    });
     /* only what is unpriced in EVERY featured game: a factor priced in one
        game must not be called unpriced in general */
     var unp = gs.length ? (gs[0].unpriced || []).filter(function (u) { return gs.every(function (p) { return (p.unpriced || []).indexOf(u) >= 0; }); }) : [];
@@ -4855,17 +5368,6 @@
     s.how_to_read = howToRead(o);
     s.limits = limitsSection(o);
     s.conclusion = para('The takeaway: ' + (p.display.fair ? 'EdgeDesk has ' + p.display.fair + '. ' : '') + 'That is an estimate with real uncertainty, not a pick, and it moves if the news or the line does.');
-    return s;
-  }
-  function raceSections(o) {
-    var R = o.research, s = {};
-    s.intro = para('The ' + R.conference + ' race runs through ' + sentenceList((R.games || []).map(function (p) { return p.away + ' at ' + p.home; })) + ' this week.');
-    s.race = para((R.conference_top || []).length ? 'In EdgeDesk’s ratings, ' + sentenceList(R.conference_top.slice(0, 3)) + ' are the conference’s three highest-rated teams.' : null,
-      'EdgeDesk doesn’t carry a conference standings feed, so this reads the race through ratings and projections, not tiebreakers.');
-    s.games = (R.games || []).map(function (p) { return capsule(p, { short: true }); }).join('\n\n');
-    s.how_to_read = howToRead(o);
-    s.limits = limitsSection(o);
-    s.conclusion = para('These games shape the race more than any other in the conference this week. Projections are estimates, not picks.');
     return s;
   }
   function upsetOnlySections(o) {
@@ -5139,13 +5641,216 @@
     return s;
   }
 
+  /* ── POSTGAME MODEL REVIEW: the week graded, the misses named, nothing re-scored ── */
+  function nick(team, league) { return league === 'nfl' ? String(team).split(' ').slice(-1)[0] : team; }
+  function pgHeadline(o) {
+    var R = o.research, W = R.week_record, L = o.league === 'cfb' ? 'College Football' : 'NFL';
+    if (!W || !W.games) return null;
+    var head = L + ' Week ' + o.week + ' Recap: ';
+    var miss = (R.results || []).slice().sort(function (a, b) { return (b.grade.model_err || 0) - (a.grade.model_err || 0); })[0];
+    var opts = [];
+    if (W.compared >= 4 && W.closer / W.compared >= 0.6) opts.push(head + 'EdgeDesk Beat the Closing Line’s Miss in ' + W.closer + ' of ' + W.compared);
+    if (W.su_games >= 4 && W.su_w / W.su_games >= 0.7) opts.push(head + 'EdgeDesk Had the Winner in ' + W.su_w + ' of ' + W.su_games + ' Games');
+    if (miss && miss.final.winner && miss.final.margin >= 17) opts.push(head + nick(miss.final.winner, o.league) + '’ ' + miss.final.score + ' Win Leads the Week’s Misses');
+    opts.push(head + 'Where EdgeDesk’s Numbers Held Up and Where They Missed');
+    return opts.filter(function (h, i) { return h.length <= 75 || i === opts.length - 1; })[0];
+  }
+  function resultLine(x, idx) {
+    var p = x.pre, f = x.final, g = x.grade;
+    var pre = p.favorite ? 'EdgeDesk had ' + p.favorite + ' by ' + oneDp(p.margin) + (isNum(p.fav_win_pct) ? ' (' + p.fav_win_pct + '% to win)' : '') : 'EdgeDesk saw a pick’em';
+    var res = f.winner ? f.winner + ' won ' + f.score : 'it ended in a tie';
+    var errTxt = isNum(g.model_err) ? 'a ' + oneDp(g.model_err) + '-point miss on the margin' : null;
+    var cl = x.close ? (x.close.favorite ? x.close.favorite + ' -' + String(r1(x.close.margin)) : 'pick’em') : null;
+    var close = x.close && isNum(g.close_err) ? ['The closing line (' + cl + ') missed by ' + oneDp(g.close_err) + '.',
+      'The market closed at ' + cl + ', ' + oneDp(g.close_err) + ' points from the final margin.',
+      'For comparison, the closing line of ' + cl + ' was off by ' + oneDp(g.close_err) + '.'][(idx || 0) % 3] : null;
+    var forms = [pre + '; ' + res + (errTxt ? ', ' + errTxt : '') + '.', res + ' after ' + pre.replace(/^EdgeDesk had/, 'EdgeDesk projected').replace(/^EdgeDesk saw/, 'EdgeDesk projected') + (errTxt ? ': ' + errTxt : '') + '.'];
+    return para(forms[(idx || 0) % 2], close);
+  }
+  function pgSections(o) {
+    var R = o.research, W = R.week_record, S = R.season_record, s = {};
+    var L = o.league === 'cfb' ? 'college football' : 'NFL';
+    var res = R.results || [];
+    if (!res.length) return s;
+    s.intro = para('This recap grades every number EdgeDesk published before kickoff in ' + L + ' Week ' + o.week + ': ' + numWord(W.games) + ' games, scored on the final and against the closing line.',
+      'EdgeDesk’s model had the right winner in ' + W.su_w + ' of ' + W.su_games + (W.compared ? ', and its projected margin finished closer to the final than the closing line’s in ' + W.closer + ' of ' + W.compared : '') + '.',
+      'Here is where the numbers held up, where they missed, and what one week can and can’t tell you.');
+    s.how_to_read = para('Each game is graded the same way: EdgeDesk’s last pregame number against the final score, and next to it the closing line, the market’s last word before kickoff.',
+      'A single game can miss by two touchdowns even when the projection was sound, so one week is a small sample; the season record below is the better guide.',
+      'This is a record of a model, not betting advice and not a betting result.');
+    var bul = ['- **Right winner:** ' + W.su_w + ' of ' + W.su_games + '.'];
+    if (W.compared) bul.push('- **Closer to the final than the closing line:** ' + W.closer + ' of ' + W.compared + ' games with a closing line on record.',
+      '- **Average miss on the margin:** EdgeDesk ' + oneDp(W.model_err_avg) + ' points; the closing line ' + oneDp(W.close_err_avg) + '.');
+    if (W.ats_w + W.ats_l + W.ats_p) bul.push('- **Against the closing spread:** ' + W.ats_w + '-' + W.ats_l + (W.ats_p ? '-' + W.ats_p : '') + ' for the side EdgeDesk’s number leaned to. That grades the number against the market; it is not a betting record.');
+    s.scoreboard = bul.join('\n');
+    var closest = res.filter(function (x) { return isNum(x.grade.model_err); }).sort(function (a, b) { return a.grade.model_err - b.grade.model_err; }).slice(0, 3);
+    if (closest.length) s.closest = closest.map(function (x, i) { return '**' + x.away + ' at ' + x.home + '.** ' + resultLine(x, i) + (x.postgame_url ? ' [Read the postgame analysis](' + x.postgame_url + ').' : ''); }).join('\n\n');
+    var ids = closest.map(function (x) { return x.game_id; });
+    var misses = res.filter(function (x) { return isNum(x.grade.model_err) && ids.indexOf(x.game_id) < 0; }).sort(function (a, b) { return b.grade.model_err - a.grade.model_err; }).slice(0, 3);
+    var bothN = misses.filter(function (x) { return isNum(x.grade.close_err) && x.grade.close_err >= x.grade.model_err - 3; }).length;
+    s.misses = misses.length ? (bothN ? (bothN === misses.length ? 'In each of these, the closing line missed by about as much as EdgeDesk did, so the market’s number was no closer.' : 'In ' + numWord(bothN) + ' of these, the closing line missed by about as much as EdgeDesk did.') + '\n\n' : '')
+      + misses.map(function (x, i) { return '**' + x.away + ' at ' + x.home + '.** ' + resultLine(x, i + 1) + (x.postgame_url ? ' [Read the postgame analysis](' + x.postgame_url + ').' : ''); }).join('\n\n')
+      : 'No game missed by enough to single out.';
+    if (S && S.games) s.season = para('Across the ' + R.season + ' season so far, EdgeDesk’s model has had the right winner in ' + S.su_w + ' of ' + S.su_games + ' graded ' + L + ' games (' + S.su_pct + '%).',
+      S.compared ? 'Its average miss on the margin is ' + oneDp(S.model_err_avg) + ' points, against ' + oneDp(S.close_err_avg) + ' for the closing line, across ' + S.compared + ' games with both on record.' : null,
+      (S.ats_w + S.ats_l) ? 'Against the closing spread, the side its number leaned to is ' + S.ats_w + '-' + S.ats_l + (S.ats_p ? '-' + S.ats_p : '') + '.' : null);
+    s.limits = '- **Small samples:** one week of ' + numWord(W.games) + ' games says little about a model on its own; read it next to the season record.\n'
+      + '- **Final scores are noisy:** late scores, turnovers and garbage time move a margin without saying much about how the game was played.\n'
+      + '- **Closing lines:** a game without a closing line on record is graded on the final only.\n'
+      + '- **Uncertainty:** even a 70% favorite loses about three times in ten. Projections describe likelihoods, not outcomes.';
+    var top = misses[0];
+    s.conclusion = para('The short version: ' + W.su_w + ' of ' + W.su_games + ' winners' + (W.compared ? ', and closer than the closing line in ' + W.closer + ' of ' + W.compared : '') + (top ? '; the biggest miss was ' + top.away + ' at ' + top.home : '') + '.',
+      'EdgeDesk publishes these numbers before kickoff and grades every one of them afterward, misses included. None of it is a pick.');
+    return s;
+  }
+
+  /* ── MATCHUP DEEP DIVE: one game, every input EdgeDesk has, nothing more ── */
+  function rankedName(p, side) { return rankTag(p, side) + (side === 'home' ? p.home : p.away); }
+  function ddSections(o) {
+    var p = o.research.games[0], m = p.model, s = {};
+    var sep = p.neutral_site ? ' vs. ' : ' at ';
+    var both = p.league === 'cfb' && isNum(p.home_rank) && isNum(p.away_rank) && p.home_rank <= 25 && p.away_rank <= 25;
+    s.intro = para(rankedName(p, 'away') + sep + rankedName(p, 'home') + (p.kickoff_text ? ' kicks off ' + p.kickoff_text + (p.venue ? ' at ' + p.venue : '') : '') + '.',
+      both ? 'Both teams are in the top 25 of EdgeDesk’s power ratings' + (p.conference_game && p.home_conference ? ', and the result counts in the ' + p.home_conference + ' standings.' : '.') : (p.conference_game && p.home_conference ? 'The result counts in the ' + p.home_conference + ' standings.' : null),
+      fanLine(p, 1),
+      'This is EdgeDesk’s full prediction for the game: what the projection says, what builds it, where the matchup tilts, how it compares with the betting market, and what the number can’t see.');
+    var rng = /80% range ([^)]+)\)/.exec((p.risks || []).filter(function (r) { return /80% range/.test(r); })[0] || '');
+    var tm = m.typical_miss;
+    s.the_projection = para(
+      m.favorite ? 'EdgeDesk’s model makes ' + m.favorite + ' ' + aOrAn(oneDp(m.margin)) + ' ' + oneDp(m.margin) + '-point favorite.' : 'EdgeDesk’s model sees a pick’em.',
+      scoreLine(p, 1),
+      isNum(m.fav_win_pct) ? 'Win chances: ' + m.favorite + ' ' + m.fav_win_pct + '%, ' + m.underdog + ' ' + m.dog_win_pct + '%.' : null,
+      isNum(tm) ? 'EdgeDesk’s typical miss on a game like this is about ' + Math.round(tm) + ' points' + (rng ? ', and its 80% range runs from ' + rng[1] : '') + '. '
+        + (m.margin < tm ? 'A ' + oneDp(m.margin) + '-point margin sits well inside that error, which is why the win chance is the number to watch.' : 'Even a clear projection carries that much error.') : null);
+    s.how_to_read = howToRead(o);
+    var d = p.drivers || [];
+    if (d.length && m.favorite) {
+      var signed = d.reduce(function (a, x) { return a + (x.team === m.favorite ? 1 : -1) * x.points; }, 0);
+      s.what_drives_it = 'EdgeDesk’s number is a sum of parts, and each part points at one team:\n\n'
+        + d.map(function (x) { return '- **' + String(x.label).replace(/\s*\(.*\)\s*/g, '') + ':** ' + oneDp(x.points) + ' points toward ' + x.team + '.'; }).join('\n')
+        + (Math.abs(signed - m.margin) > 0.2 ? '\n\nThese are the largest parts; smaller adjustments make up the rest of the ' + oneDp(m.margin) + '-point margin.' : '');
+    }
+    var mu = p.matchup || [];
+    var style = d.filter(function (x) { return /stylistic/i.test(x.label); })[0];
+    if (mu.length) {
+      s.matchup = 'EdgeDesk’s unit data compares each side’s strengths with the other’s weaknesses:\n\n'
+        + mu.map(function (x) { return '- **' + x.label + ':** ' + aWord(x.magnitude) + ' ' + x.magnitude + ' edge for ' + x.favors + '.'; }).join('\n')
+        + (style ? '\n\nTaken together, the stylistic matchup moves the projection ' + oneDp(style.points) + ' points toward ' + style.team + '.' : '');
+    }
+    var pers = [];
+    if (p.league === 'cfb') {
+      var ql = qbLine(p);
+      if (ql) pers.push(ql.replace(/^Quarterback: /, ''));
+      ['away', 'home'].forEach(function (side) {
+        var q = p.qb && p.qb[side], team = side === 'home' ? p.home : p.away;
+        if (!q || q.material || !q.player) return;
+        if (q.status === 'CONFIRMED') pers.push(q.player + ' is ' + team + '’s announced starter.');
+        else if (q.status === 'ESTABLISHED') pers.push(q.player + ' started ' + team + '’s last game.');
+      });
+    } else {
+      var il = injuryLine(p);
+      if (il) pers.push(il.replace(/^Injury report: /, 'From the official injury report: '));
+    }
+    var avail = p.discrepancy && p.discrepancy.facts.filter(function (f) { return f.key === 'availability'; })[0];
+    if (avail) pers.push(avail.text);
+    /* the model's own re-run with one input changed: a scenario, not a report */
+    ['away', 'home'].forEach(function (side) {
+      var sc = p.scenarios && p.scenarios[side + '_qb_out'];
+      if (!sc || !isNum(sc.home_line)) return;
+      var team = side === 'home' ? p.home : p.away, f2 = favOf(p.home, p.away, sc.home_line);
+      /* never "Team by N": that form is the main projection's, and the checks read it as such */
+      pers.push('If ' + team + '’s listed starter did not play, the model’s re-run moves the projected margin to ' + (f2.favorite ? oneDp(f2.margin) + ' points in ' + f2.favorite + '’s favor' : 'a pick’em') + (isNum(sc.home_win_prob) ? ', with ' + p.home + ' winning ' + pct(sc.home_win_prob) + ' of the time' : '') + '.');
+    });
+    if (p.scenarios && (p.scenarios.home_qb_out || p.scenarios.away_qb_out)) pers.push('Each re-run changes one input and gives the replacement the club’s carried quarterback level; it describes the model, not a report that anyone is out.');
+    if (pers.length) s.personnel = para.apply(null, pers);
+    if (p.market && p.market.status !== 'none' && p.display.market) {
+      s.market = p.discrepancy ? discrepancyText(p, 0) : marketLine(p, 0);
+      if (p.market.status === 'stale') s.market += '\n\nThat line is historical: it was captured more than three hours before this research was read, and lines move.';
+      s.market += ' A gap between a model and a market is a question for research, not a reason to bet.';
+    }
+    var w = p.weather;
+    if (w && w.state === 'INDOOR') s.conditions = 'The game is played indoors, so weather is not a factor.';
+    else if (w && (w.state === 'OK' || w.state === 'HAZARD')) {
+      var bits = [w.text ? String(w.text).toLowerCase() : null, isNum(w.temp_f) ? w.temp_f + '°F' : null, isNum(w.wind_mph) ? 'wind ' + w.wind_mph + ' mph' : null, isNum(w.gust_mph) ? 'gusts to ' + w.gust_mph + ' mph' : null].filter(Boolean);
+      s.conditions = para('The kickoff forecast (' + (w.source || 'open-meteo forecast') + (w.as_of ? ', as of ' + whenText(ts(w.as_of)) : '') + '): ' + bits.join(', ') + '.',
+        w.state === 'HAZARD' ? 'That is enough to matter: ' + sentenceList(w.hazards) + '. EdgeDesk’s projected margin does not move for weather.' : 'Nothing in it is extreme, and EdgeDesk’s projection does not adjust for weather either way.');
+    }
+    s.limits = limitsSection(o);
+    s.conclusion = para(m.favorite ? 'The short version: EdgeDesk makes ' + m.favorite + ' the likelier winner, and ' + m.underdog + '’s ' + m.dog_win_pct + '% is ' + (m.dog_win_pct >= 25 ? 'a real chance, not a long shot.' : 'a long shot, but not nothing.') : 'The short version: EdgeDesk sees a coin flip.',
+      'None of it is a pick: whether either side is worth backing depends on a price this article doesn’t assess.')
+      + (p.link ? '\n\nFull research: [' + p.away + ' vs. ' + p.home + ' on EdgeDesk](' + p.link + ')' : '');
+    return s;
+  }
+
+  /* ── CONFERENCE RACE: the games between the top three, and where the rest stand ── */
+  function crSections(o) {
+    var R = o.research, races = R.races || [], top = (R.conference_top || []).slice(0, 3), s = {};
+    var ids = races.map(function (p) { return p.game_id; });
+    var others = (R.games || []).filter(function (p) { return ids.indexOf(p.game_id) < 0; });
+    var title = function (p) { return p.away + (p.neutral_site ? ' vs. ' : ' at ') + p.home; };
+    s.intro = para('The ' + R.conference + ' championship race runs through ' + sentenceList(races.map(title)) + ' this week.',
+      top.length >= 3 ? 'In EdgeDesk’s ratings, ' + sentenceList(top) + ' are the conference’s three highest-rated teams' + (races.length ? ', and ' + (races.length === 1 ? 'two of them meet' : 'they meet each other') + ' this weekend.' : '.') : null,
+      'Here is what the projections say about the games that shape the title race, and where the other contenders stand.');
+    s.why_it_matters = whyItMatters(o);
+    s.how_to_read = howToRead(o);
+    s.race_games = races.map(function (p, i) { return capsule(p, { idx: i, links: true, explained: [] }); }).join('\n\n');
+    if (others.length) {
+      s.contenders = 'The rest of the top three play this week too:\n\n' + others.map(function (p, i) {
+        var team = top.filter(function (t) { return t === p.home || t === p.away; })[0] || p.home;
+        return '- **' + team + '** (' + title(p) + (p.kickoff_text ? ', ' + p.kickoff_text : '') + '): ' + fanLine(p, i + 1);
+      }).join('\n');
+    }
+    s.implications = races.map(function (p) {
+      var m = p.model;
+      return para('**' + title(p) + ':** whoever wins gets a result against another of the ' + R.conference + '’s three highest-rated teams in EdgeDesk’s ratings.',
+        m.favorite && isNum(m.dog_win_pct) ? 'EdgeDesk gives ' + m.favorite + ' ' + m.fav_win_pct + '% and ' + m.underdog + ' ' + m.dog_win_pct + '%, which makes it ' + (m.dog_win_pct >= 40 ? 'close to a coin flip' : m.dog_win_pct >= 30 ? 'a competitive game' : 'a clear lean') + ' by EdgeDesk’s numbers.' : null);
+    }).join('\n\n') + '\n\nEdgeDesk doesn’t carry a conference standings feed or the tiebreaker rules, so this reads the race through ratings and projections, not the standings table.';
+    s.limits = limitsSection(o);
+    s.conclusion = conclusionSection(o);
+    return s;
+  }
+
+  /* ── MODEL VS. MARKET: every gap explained from EdgeDesk's inputs, or said to be unexplained ── */
+  function mvmSections(o) {
+    var R = o.research, gs = (R.games || []).filter(function (p) { return p.gap && p.market.status !== 'none'; }), s = {};
+    if (!gs.length) return s;
+    var L = o.league === 'cfb' ? 'college football' : 'NFL';
+    var g0 = gs.slice().sort(function (a, b) { return b.gap.points - a.gap.points; })[0];
+    s.intro = para('In ' + numWord(gs.length) + ' ' + L + ' games this week, EdgeDesk’s projection and the betting line (the spread) are two points or more apart: these are EdgeDesk’s spread predictions set against the market.',
+      'The largest gap is ' + g0.away + ' at ' + g0.home + ': EdgeDesk has ' + g0.display.fair + ', and the line was ' + g0.display.market + '.',
+      'A disagreement is not a bet. It is a question about what the model sees that the market doesn’t, or the other way around, and this report says how much of each gap EdgeDesk’s own inputs can explain.');
+    s.how_to_read = howToRead(o);
+    var explained = gs.filter(function (p) { return p.discrepancy; });
+    var small = gs.filter(function (p) { return !p.discrepancy; });
+    s.the_gaps = (explained.length ? discrepancySection(o, gs, 5) : '')
+      + (small.length ? (explained.length ? '\n\n' : '') + 'Smaller gaps, under three points:\n\n' + small.slice(0, 5).map(function (p, i) {
+        return '- **' + p.away + ' at ' + p.home + ':** ' + ['EdgeDesk has ' + p.display.fair + '; the line was ' + p.display.market + '.', 'the line was ' + p.display.market + ', against EdgeDesk’s ' + p.display.fair + '.'][i % 2];
+      }).join('\n') : '');
+    var n = gs.length;
+    var home = gs.filter(function (p) { return p.gap.toward === p.home; }).length;
+    var dog = gs.filter(function (p) { var mf = favOf(p.home, p.away, p.market.home_line).favorite; return mf && p.gap.toward !== mf; }).length;
+    var open = explained.filter(function (p) { return p.discrepancy.review !== 'NONE'; }).length;
+    var stale = gs.filter(function (p) { return p.market.status === 'stale'; }).length, ref = gs.filter(function (p) { return p.market.status === 'reference'; }).length;
+    s.pattern = para('EdgeDesk leans toward the home team in ' + numWord(home) + ' of these ' + numWord(n) + ' gaps, and toward the market’s underdog in ' + numWord(dog) + '.',
+      explained.length ? open === 0 ? 'EdgeDesk’s inputs account for most of every large gap.' : cap(numWord(open)) + ' of the ' + numWord(explained.length) + ' gaps of three points or more ' + (open === 1 ? 'is' : 'are') + ' mostly unexplained by anything EdgeDesk measures, and those are the ones to treat as questions rather than findings.' : null,
+      stale ? cap(numWord(stale)) + ' of the comparisons use historical lines' + (ref ? ' and ' + numWord(ref) + ' use reference lines' : '') + ', so some gaps may have closed since the line was captured.' : ref ? cap(numWord(ref)) + ' of the comparisons use reference lines with no sportsbook or capture time.' : null,
+      'When most gaps lean the same way, the useful question is whether one shared input, such as home field, explains them; the breakdowns above say how much each input does.');
+    s.limits = limitsSection(o);
+    s.conclusion = para('The takeaway: ' + numWord(n) + ' gaps, ' + (open ? numWord(open) + ' of them mostly unexplained' : 'each with an explanation in EdgeDesk’s own inputs') + '.',
+      'These are research questions to follow through the week, not bets. If the quarterback news or the lines change, the answers change with them.');
+    return s;
+  }
+
   function sectionsFor(o, format, ctx) {
     var s = {};
+    if (format === 'postgame_review') return pgSections(o);
+    if (format === 'matchup_deep_dive') return ddSections(o);
+    if (format === 'conference_race') return crSections(o);
+    if (format === 'model_vs_market') return mvmSections(o);
     if (format === 'market_discrepancy' && o.research.games && o.research.games.length === 1 && o.research.games[0].gap) return mdSections(o);
     if (format === 'trending_story') return storySections(o);
     if (format === 'weekend_storylines') return storylinesSections(o);
     if (format === 'game_deep_dive') return deepDiveSections(o);
-    if (format === 'conference_race' && o.research.conference) return raceSections(o);
     if (format === 'upset_watch') return upsetOnlySections(o);
     if (format === 'model_performance_review') return performanceSections(o);
     if (format === 'weekly_games_to_watch' || format === 'weekly_games_to_watch_first_party') return gtwSections(o, FORMATS[format].edition, ctx);
@@ -5161,13 +5866,17 @@
     s.intro = ctxIntro(o);
     s.why_it_matters = whyItMatters(o);
     s.how_to_read = howToRead(o);
+    var maxDisc = ctx.maxDiscrepancies || 3;
+    var explained = disagreementGames(o, shown, maxDisc).map(function (p) { return p.game_id; });
+    var staleN = shown.filter(function (p) { return p.market.status === 'stale'; }).length;
+    var gamesIntro = staleN ? 'The sportsbook lines quoted below are historical: each was captured more than three hours before this research was read, so they are context with a capture time, not current prices.' : null;
     /* ONE CENTRAL STORY (docs/system-integrity/TEMPLATES.md): the lead game in
        full, the supporting games short, so the piece reads as a story with
        context rather than a list of equal summaries */
-    s.games = shown.map(function (p, i) { return capsule(p, { links: ctx.links, short: i > 0 }); }).join('\n\n');
+    s.games = (gamesIntro ? gamesIntro + '\n\n' : '') + shown.map(function (p, i) { return capsule(p, { links: ctx.links, idx: i, short: i > 0, explained: explained, injurySection: o.league === 'nfl' }); }).join('\n\n');
     s.upsets = o.kind === 'upset_watch' ? null : upsetsSection(o, shown.map(function (p) { return p.game_id; }));
     s.conference = o.league === 'cfb' ? conferenceSection(o) : null;
-    s.disagreements = o.league === 'nfl' || format === 'market_discrepancy' ? disagreementsSection(o) : null;
+    s.disagreements = explained.length ? discrepancySection(o, shown, maxDisc) : (o.league === 'nfl' || format === 'market_discrepancy' ? disagreementsSection(o) : null);
     s.injuries = o.league === 'nfl' ? injuriesSection(o) : null;
     s.limits = limitsSection(o);
     s.conclusion = conclusionSection(o);
@@ -5194,7 +5903,8 @@
     var links = ed.links_allowed !== false;
     var baseFormat = baseFormatOf(o, format);
     var maxGames = ed.max_games || (ed.length && ed.length.max && ed.length.max < 1200 ? 4 : 6);
-    var raw = sectionsFor(o, baseFormat, { angle: ctx.angle, maxGames: maxGames, links: links, publisher: publisher, headline_style: ctx.headline_style, audience: ctx.audience, campaign: ctx.campaign });
+    var maxDiscrepancies = ed.length && ed.length.max && ed.length.max <= 1500 ? 2 : 3;
+    var raw = sectionsFor(o, baseFormat, { angle: ctx.angle, maxGames: maxGames, links: links, maxDiscrepancies: maxDiscrepancies, publisher: publisher, headline_style: ctx.headline_style, audience: ctx.audience, campaign: ctx.campaign });
     var preview = /_weekly_preview$/.test(baseFormat);
     var order = format === 'publisher_custom' && preview ? sectionOrder(format, publisher) : sectionOrder(baseFormat, publisher);
     var sections = [];
@@ -5220,6 +5930,8 @@
     if (o.kind === 'upset_watch') return 'The Week ' + o.week + ' underdogs EdgeDesk’s model gives a real chance, and why a possible upset is not the same thing as a bet.';
     if (o.kind === 'conference_race') return 'What EdgeDesk’s ratings and projections say about the ' + o.research.conference + ' race this week.';
     if (o.kind === 'market_discrepancy') return 'Where EdgeDesk’s projection and the betting line disagree, and what could explain the gap.';
+    if (o.kind === 'postgame_review') return 'Every number EdgeDesk published before kickoff, graded on the final score and against the closing line. Nothing is re-scored after the fact.';
+    if (o.kind === 'matchup_preview') { var g = (o.research.games || [])[0]; return 'Everything EdgeDesk’s model knows about ' + (g ? g.away + ' vs. ' + g.home : 'this game') + ': the projection, what builds it, and what it can’t see. Research, not picks.'; }
     return 'The news, and what EdgeDesk’s numbers say about it, kept separate.';
   }
   function researchHash(o) { return hash(JSON.stringify(o && o.research || {})); }
@@ -5296,6 +6008,7 @@
       if (m.identity && m.identity.venue) names[m.identity.venue] = 1;
       ((m.broadcast && m.broadcast.networks) || []).forEach(function (n) { names[n] = 1; });
     });
+    (o.research.results || []).forEach(function (x) { teams[x.home] = 1; teams[x.away] = 1; });
     ((o.research.context && o.research.context.top10) || []).forEach(function (t) { teams[t.team] = 1; });
     (o.research.conference_top || []).forEach(function (t) { teams[t] = 1; });
     (o.research.news || []).forEach(function (n) { (n.teams || []).forEach(function (t) { teams[t] = 1; }); numbersIn(n.title + ' ' + (n.summary || '')).forEach(function (x) { addNum(nums, x); }); });
@@ -5303,6 +6016,12 @@
     return { numbers: nums, teams: teams, names: names, sources: srcs };
   }
 
+  /* the season's teams for the article's league; both leagues for an EdgeDesk weekend article */
+  function knownTeams(o, lists) {
+    lists = lists || {};
+    if (o.league === 'multi') return (lists.cfb || []).concat(lists.nfl || []);
+    return lists[o.league] && lists[o.league].length ? lists[o.league] : ((o.research.context && o.research.context.team_names) || []);
+  }
   function textOf(a) {
     return [a.title, a.standfirst, a.meta_description].concat((a.sections || []).map(function (s) { return (s.heading || '') + '\n' + s.body; })).join('\n\n');
   }
@@ -5387,7 +6106,7 @@
 
     /* 4 teams: no team the research does not cover */
     var lists = opts.teamLists || {};
-    var known = (lists[o.league] && lists[o.league].length ? lists[o.league] : ((o.research.context && o.research.context.team_names) || []));
+    var known = knownTeams(o, lists);
     if (known.length) {
       /* a person's name is masked before teams are matched (Isaiah Marshall is
          not Marshall) — but never a name that is itself a team */
@@ -5475,6 +6194,28 @@
     var dup = (opts.siblings || []).map(function (sb) { return { id: sb.id, title: sb.title, sim: similarity(body, sb.text) }; })
       .sort(function (x, y) { return y.sim - x.sim; })[0];
     if (dup) add('not_duplicate', dup.sim >= 0.7 ? 'fail' : dup.sim >= 0.45 ? 'warn' : 'pass', 'Original against sibling articles', 'closest: ' + Math.round(dup.sim * 100) + '% overlap with “' + dup.title + '”');
+
+    /* 14 every displayed figure reconciles (scores ↔ margin ↔ total ↔ win chance) */
+    var np = numberProblems(text, o);
+    add('numbers_reconcile', np.length ? 'fail' : 'pass', 'Projected scores, margins, totals and win chances reconcile', np.length ? np.slice(0, 6).join(' · ') : null);
+    /* 15 a data-quality score is never sold as confidence in an outcome */
+    /* a sentence saying a model publishes NO confidence score is a fact, not a claim */
+    var cm = CONFIDENCE_MISUSE.exec(String(text).replace(CONFIDENCE_DENIED, ''));
+    add('no_confidence_misuse', cm ? 'fail' : 'pass', 'Data quality is not described as confidence in a result', cm ? '“' + cm[0] + '”' : null);
+    /* 15b a postgame review's scores and pregame numbers are the record's */
+    if ((o.research.results || []).length) {
+      var rr = resultProblems(body, o);
+      add('results_reconcile', rr.length ? 'fail' : 'pass', 'Final scores and pregame numbers match the graded record', rr.length ? rr.slice(0, 6).join(' · ') : null);
+    }
+    /* 16 quarterback doubt only where the starter data shows it */
+    var qbBad = qbClaimProblems(body, o);
+    add('qb_claims_supported', qbBad.length ? 'fail' : 'pass', 'Quarterback uncertainty only where the starter data supports it', qbBad.length ? qbBad.slice(0, 4).join(' · ') : null);
+    /* 17 injury, availability and suspension claims are backed by data on file */
+    var injBad = injuryClaimProblems(body, o, ev);
+    add('injury_claims_supported', injBad.length ? 'fail' : 'pass', 'Injury and availability claims are backed by a report on file', injBad.length ? injBad.slice(0, 4).join(' · ') : null);
+    /* 18 breaking news (postponements, venue or kickoff changes, benchings) only with a source */
+    var newsBad = newsClaimProblems(body, o);
+    add('news_claims_supported', newsBad.length ? 'fail' : 'pass', 'Breaking-news claims carry a cited source', newsBad.length ? newsBad.slice(0, 4).join(' · ') : null);
 
     /* ── EDITORIAL INTEGRITY (docs/system-integrity/RULES.md §EDIT) ──────────
        Deterministic rules over the article and the packets it was written
@@ -5575,11 +6316,21 @@
         (mp.model.other_models || []).forEach(function (x) { alts.push(x.home_margin); });
         alts.filter(isNum).forEach(function (hm) { var t = hm > 0 ? p.home : p.away; (byOk[t] = byOk[t] || {})[r1(Math.abs(hm)).toFixed(1)] = 1; allow(t, -Math.abs(hm)); });
       }
+      /* "home field (Missouri +4.1)": a piece of EdgeDesk's own number, in
+         points toward a team (the drivers and the discrepancy breakdown), is
+         not a spread; nor is a figure the research itself quotes (the model's
+         80% range in its risk note, "Georgia -17 to Alabama -25") */
+      var termOk = {};
+      (p.drivers || []).concat((p.discrepancy && p.discrepancy.terms) || []).forEach(function (x) { if (x && x.team && isNum(x.points)) (termOk[x.team] = termOk[x.team] || {})[r1(x.points).toFixed(1)] = 1; });
+      var quoted = (p.risks || []).concat(p.discrepancy ? p.discrepancy.facts.map(function (f) { return f.text; }).concat(p.discrepancy.evidence || []) : []).join(' \n ');
       [p.home, p.away].forEach(function (team) {
         var re = new RegExp('(^|[^A-Za-z])' + team.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' ([+\\-−])(\\d+(?:\\.\\d)?)(?![\\d.])', 'g'), m;
         while ((m = re.exec(body))) {
           var v = (m[2] === '+' ? 1 : -1) * parseFloat(m[3]);
-          if (!(ok[team] && ok[team][r1(v).toFixed(1)])) lineBad.push(team + ' ' + m[2] + m[3]);
+          if (ok[team] && ok[team][r1(v).toFixed(1)]) continue;
+          if (m[2] === '+' && termOk[team] && termOk[team][r1(v).toFixed(1)]) continue;
+          if (quoted.indexOf(team + ' ' + m[2] + m[3]) >= 0) continue;
+          lineBad.push(team + ' ' + m[2] + m[3]);
         }
         var re2 = new RegExp('(^|[^A-Za-z])' + team.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' by (\\d+(?:\\.\\d)?)\\b', 'g'), m2;
         while ((m2 = re2.exec(body))) {
@@ -5853,6 +6604,1007 @@
       min_facts_per_game: perGame.length ? Math.min.apply(null, perGame.map(function (g) { return g.facts; })) : 0,
       fact_kinds: uniq([].concat.apply([], perGame.map(function (g) { return g.kinds; }))), where_to_watch: where,
       words: wordCount(body), per_game: perGame };
+  }
+
+  /* ---------------------------------------------------- claim checks */
+  var CONFIDENCE_MISUSE = /\b(?:model|edgedesk(?:’s|'s)?) confidence\b|\b(?:high|strong|low|medium|moderate) confidence\b|\bconfidence (?:rating|score|level|grade)\b|\bconfident (?:that|in)\b/i;
+  var CONFIDENCE_DENIED = /\b(?:publishes|has|carries|gives|offers) no confidence (?:rating|score|level|grade)\b/gi;
+  /* a standing statement of what a projection does not price, naming no team */
+  var MODEL_SCOPE = /\b(?:does not|doesn[’']t|do not|cannot) (?:directly )?(?:price|include|account for|model)\b/i;
+  var QB_WORD = /\b(?:quarterbacks?|QBs?|starting job|starter)\b/i;
+  var QB_DOUBT = /\b(?:not (?:been |yet )?confirmed|hasn[’']t been confirmed|has not been confirmed|isn[’']t confirmed|unconfirmed|hasn’t been announced|has not been announced|hasn't been announced|no starter has been announced|uncertain|unsettled|unresolved|up in the air|questionable|doubtful|ruled out|won’t play|will not play|won't play|injur\w*|benched|battle|split)\b/i;
+  var INJ_WORD = /\b(?:injur(?:y|ed|ies)|ruled out|out for the (?:game|season|week)|questionable|doubtful|sidelined|day-to-day|week-to-week|torn|sprain\w*|concussion|suspend(?:ed|sion)|inactive)\b/i;
+  var NEWS_WORD = /\b(?:postponed|canceled|cancelled|relocated|weather delay|delayed by|kickoff (?:was |has been )?(?:moved|changed)|named the starter|will start|has been benched|was benched|fired|resigned)\b/i;
+  function gamesOf(o) { return (o.research.games || []).concat(o.research.upsets || [], o.research.races || []); }
+  function teamsIn(sentence, o) {
+    var out = [];
+    gamesOf(o).forEach(function (p) { [['home', p.home], ['away', p.away]].forEach(function (t) { if (t[1] && sentence.indexOf(t[1]) >= 0) out.push({ p: p, side: t[0], team: t[1] }); }); });
+    return out;
+  }
+  /* a sentence that names a report on file, by publisher or URL, is attributed to it */
+  function citesReport(s, o) {
+    return (o.sources || []).some(function (x) { return x.kind === 'external_report' && ((x.publisher && s.indexOf(x.publisher) >= 0) || (x.url && s.indexOf(x.url) >= 0)); });
+  }
+  function qbClaimProblems(body, o) {
+    var out = [];
+    sentencesOf(body).forEach(function (s) {
+      if (!QB_WORD.test(s) || !QB_DOUBT.test(s)) return;
+      var t = teamsIn(s, o);
+      if (!t.length && MODEL_SCOPE.test(s)) return;
+      if (citesReport(s, o)) return;
+      var ok = t.some(function (x) { var q = x.p.qb && x.p.qb[x.side]; var inj = x.p.injuries && x.p.injuries[x.side];
+        return (q && (q.status === 'COMPETITION' || q.status === 'AVAILABILITY')) || (inj && (inj.qbs || []).some(function (z) { return z.starter && z.status && z.status !== 'Active'; })); });
+      if (!ok) out.push('“' + s.slice(0, 120) + '” — the starter data shows no competition or availability report' + (t.length ? ' for ' + uniq(t.map(function (x) { return x.team; })).join(', ') : ''));
+    });
+    return out;
+  }
+  function resultProblems(text, o) {
+    var out = [], paras = String(text).split(/\n{2,}/);
+    (o.research.results || []).forEach(function (x) {
+      paras.forEach(function (pa) {
+        if (pa.indexOf(x.home) < 0 || pa.indexOf(x.away) < 0) return;
+        var sm, re = /\b(\d{1,3})-(\d{1,3})\b/g;
+        while ((sm = re.exec(pa))) {
+          var hi = Math.max(+sm[1], +sm[2]), lo = Math.min(+sm[1], +sm[2]);
+          if (hi + '-' + lo !== x.final.score) out.push(x.away + ' at ' + x.home + ': ' + sm[0] + ' is not the final (' + x.final.score + ')');
+        }
+        if (x.final.winner) { var wm = new RegExp(escRe(x.final.loser) + ' won\\b').exec(pa); if (wm) out.push(x.away + ' at ' + x.home + ': ' + x.final.loser + ' is said to have won'); }
+        /* the result card's form: "Final: A 55, B 19" */
+        var cm, cre = /Final: (.+?) (\d{1,3}), (.+?) (\d{1,3})\b/g;
+        while ((cm = cre.exec(pa))) {
+          var sc = {}; sc[cm[1].trim()] = +cm[2]; sc[cm[3].trim()] = +cm[4];
+          if (sc[x.home] !== x.final.home || sc[x.away] !== x.final.away) out.push(x.away + ' at ' + x.home + ': “' + cm[0] + '” is not the final (' + x.away + ' ' + x.final.away + ', ' + x.home + ' ' + x.final.home + ')');
+        }
+        if (x.pre.favorite) {
+          var fre = new RegExp('EdgeDesk (?:had|projected|before kickoff:) ' + escRe(x.pre.favorite) + ' by (\\d+(?:\\.\\d+)?)', 'g'), fm;
+          while ((fm = fre.exec(pa))) if (Math.abs(+fm[1] - x.pre.margin) > 0.05) out.push(x.away + ' at ' + x.home + ': EdgeDesk’s pregame margin was ' + oneDp(x.pre.margin) + ', not ' + fm[1]);
+        }
+      });
+    });
+    return uniq(out);
+  }
+  function injuryClaimProblems(body, o, ev) {
+    var out = [], PRE = /\b([A-Z][a-z]+(?:[-'’][A-Z][a-z]+)? [A-Z][a-z]+(?:[-'’][A-Z][a-z]+)?)\b/g;
+    var teamNames = Object.keys(ev.teams);
+    sentencesOf(body).forEach(function (s) {
+      if (!INJ_WORD.test(s)) return;
+      /* our own standing explanations name no team and no person */
+      var t = teamsIn(s, o), m, people = [];
+      PRE.lastIndex = 0;
+      while ((m = PRE.exec(s))) { var nm = m[1]; if (teamNames.some(function (x) { return x.indexOf(nm) >= 0 || nm.indexOf(x) >= 0; })) continue; if (/^(EdgeDesk|Injury Report|Official|The|This|That|Not|Each|Every)\b/.test(nm)) continue; people.push(nm); }
+      var unknown = people.filter(function (n) { return !ev.names[n] && !Object.keys(ev.names).some(function (x) { return x.indexOf(n) >= 0; }); });
+      if (unknown.length) { out.push('“' + s.slice(0, 120) + '” — ' + unknown.join(', ') + ' not in any report on file'); return; }
+      if (!t.length) return;
+      var backed = t.some(function (x) {
+        var inj = x.p.injuries && x.p.injuries[x.side], q = x.p.qb && x.p.qb[x.side];
+        return (inj && (inj.out_count || inj.doubtful_count || (inj.qbs || []).length)) || (q && q.status === 'AVAILABILITY')
+          || (x.p.drivers || []).some(function (d) { return /availability/i.test(d.label); }) || (x.p.discrepancy && x.p.discrepancy.facts.some(function (f) { return f.key === 'availability'; }))
+          || officialAvailability(o, x.p, x.side);
+      });
+      if (!backed) out.push('“' + s.slice(0, 120) + '” — no injury or availability report on file for ' + uniq(t.map(function (x) { return x.team; })).join(', '));
+    });
+    return out;
+  }
+  function newsClaimProblems(body, o) {
+    var out = [], ext = (o.sources || []).filter(function (x) { return x.kind === 'external_report'; });
+    sentencesOf(body).forEach(function (s) {
+      if (!NEWS_WORD.test(s)) return;
+      var cited = ext.some(function (x) { return s.indexOf(x.publisher) >= 0 || s.indexOf(x.url) >= 0; }) || /\bAccording to\b/.test(s) && ext.length;
+      if (!cited) out.push('“' + s.slice(0, 120) + '” — no cited report says this');
+    });
+    return out;
+  }
+  /* FIVE GAMES TO WATCH carries its own verified research per game
+     (research.matchups, lib/edgedesk_matchup.js): the alternative margins it
+     prints, each labelled (the rating sensitivity and EdgeDesk's other
+     models), and the conference's official availability report, by side */
+  function gtwPacketOf(o, p) { return ((o.research && o.research.matchups) || []).filter(function (m) { return String(m.game_id) === String(p.game_id); })[0] || null; }
+  function altMarginsOf(o, p) {
+    var mp = gtwPacketOf(o, p), out = {}, hms = [];
+    if (!mp || !mp.model) return out;
+    if (mp.model.sensitivity) hms.push(mp.model.sensitivity.low_home_margin, mp.model.sensitivity.high_home_margin);
+    (mp.model.other_models || []).forEach(function (x) { hms.push(x.home_margin); });
+    hms.filter(isNum).forEach(function (hm) { var t = hm > 0 ? p.home : p.away; (out[t] = out[t] || {})[r1(Math.abs(hm)).toFixed(1)] = 1; });
+    return out;
+  }
+  function officialAvailability(o, p, side) {
+    var mp = gtwPacketOf(o, p), av = mp && mp.availability && mp.availability[side];
+    return !!(av && av.official && av.source && (av.listed || []).length);
+  }
+  /* the figures the copy prints for each game, against the model's (and each other) */
+  function escRe(x) { return String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  function numberProblems(text, o) {
+    var out = [], paras = String(text).split(/\n{2,}/);
+    (o.research.games || []).forEach(function (p) {
+      if (!p.model || !p.model.available) return;
+      if (p.model.numbers && !p.model.numbers.ok) out.push(p.away + ' at ' + p.home + ': EdgeDesk’s own figures disagree (' + p.model.numbers.problems.join('; ') + ')');
+      var want = -p.model.home_line;
+      paras.forEach(function (pa) {
+        if (pa.indexOf(p.home) < 0 || pa.indexOf(p.away) < 0) return;
+        var sm = new RegExp('(?:Projected score: |projected score is |works out to )(.+?) (\\d+(?:\\.\\d+)?), (.+?) (\\d+(?:\\.\\d+)?)(?: \\(a projected total of (\\d+(?:\\.\\d+)?) points\\)|, a total of (\\d+(?:\\.\\d+)?) points| \\((\\d+(?:\\.\\d+)?) total points\\))?').exec(pa);
+        if (sm) {
+          var hv = sm[1] === p.home ? +sm[2] : sm[3] === p.home ? +sm[4] : null, av = sm[1] === p.away ? +sm[2] : sm[3] === p.away ? +sm[4] : null;
+          var tvs = sm[5] != null ? sm[5] : sm[6] != null ? sm[6] : sm[7];
+          var tv = tvs != null ? +tvs : null;
+          if (hv == null || av == null) out.push(p.away + ' at ' + p.home + ': the projected score does not name both teams');
+          else {
+            if (Math.abs((hv - av) - want) > 0.05) out.push(p.away + ' at ' + p.home + ': the projected scores differ by ' + r1(Math.abs(hv - av)) + ' but the projected margin is ' + oneDp(want));
+            if (tv != null && Math.abs((hv + av) - tv) > 0.05) out.push(p.away + ' at ' + p.home + ': the projected scores add to ' + r1(hv + av) + ' but the stated total is ' + tv);
+            if (p.model.projected && (Math.abs(hv - p.model.projected.home) > NUM_TOL || Math.abs(av - p.model.projected.away) > NUM_TOL)) out.push(p.away + ' at ' + p.home + ': the projected score is not EdgeDesk’s (' + p.display.score + ')');
+            if (tv != null && isNum(p.model.fair_total) && Math.abs(tv - p.model.fair_total) > NUM_TOL) out.push(p.away + ' at ' + p.home + ': the stated total ' + tv + ' is not EdgeDesk’s ' + p.model.fair_total);
+          }
+        }
+        if (p.model.favorite) {
+          /* a margin, never the start of a percentage ("Ole Miss a 50% chance") */
+          var fre = new RegExp(escRe(p.model.favorite) + ' (?:by |a |an |is EdgeDesk’s |is EdgeDesk\'s )(\\d+(?:\\.\\d+)?)(?![\\d.]*%)(?:-point favorite)?', 'g'), fm;
+          var alt = altMarginsOf(o, p)[p.model.favorite] || {};
+          while ((fm = fre.exec(pa))) { if (Math.abs(+fm[1] - p.model.margin) > 0.05 && !alt[(+fm[1]).toFixed(1)]) out.push(p.away + ' at ' + p.home + ': ' + p.model.favorite + ' is described as ' + fm[1] + ' but EdgeDesk has ' + oneDp(p.model.margin)); }
+          var dog = p.model.underdog;
+          [[p.model.favorite, p.model.fav_win_pct], [dog, p.model.dog_win_pct]].forEach(function (x) {
+            if (!x[0] || !isNum(x[1])) return;
+            /* within one line: a heading above a paragraph is not the same sentence */
+            var pre = new RegExp(escRe(x[0]) + '[^.;:\\n]{0,60}?(?:a |\\()(\\d+)% (?:chance|to win)', 'g'), pm;
+            while ((pm = pre.exec(pa))) { if (+pm[1] !== x[1]) out.push(p.away + ' at ' + p.home + ': ' + x[0] + ' is given ' + pm[1] + '% but EdgeDesk has ' + x[1] + '%'); }
+          });
+        }
+      });
+    });
+    return uniq(out);
+  }
+
+  /* ======================================================================
+     THE EDITORIAL GATE — fourteen checks an article must clear before it can
+     be marked Ready to Send (the database refuses a BLOCKED verdict,
+     supabase/content_engine.sql). Each finding says what is wrong, the
+     evidence (or the missing evidence), the fix, and the sections to fix.
+     `kind` keeps apart what is checked deterministically against EdgeDesk's
+     data, what rests on a source (a report, a forecast, the current slate),
+     and what needs the owner's judgment. A confidence score proves nothing
+     here and is never used as proof.
+     ====================================================================== */
+  var GATE_CHECKS = [
+    { key: 'schedule', label: 'Schedule and matchup validity', kind: 'source' },
+    { key: 'teams', label: 'Team, conference and ranking accuracy', kind: 'deterministic' },
+    { key: 'projections', label: 'Projection consistency', kind: 'deterministic' },
+    { key: 'snapshot', label: 'Model snapshot consistency', kind: 'deterministic' },
+    { key: 'market', label: 'Market freshness and attribution', kind: 'deterministic' },
+    { key: 'availability', label: 'Injury and availability claims', kind: 'source' },
+    { key: 'claims', label: 'Unsupported factual claims', kind: 'deterministic' },
+    { key: 'repetition', label: 'Duplicate or repetitive writing', kind: 'deterministic' },
+    { key: 'headline', label: 'Headline accuracy', kind: 'deterministic' },
+    { key: 'seo', label: 'SEO metadata completeness', kind: 'deterministic' },
+    { key: 'publisher', label: 'Publisher-specific formatting', kind: 'deterministic' },
+    { key: 'referral', label: 'Referral link integrity', kind: 'deterministic' },
+    { key: 'responsible', label: 'Responsible gambling disclosures', kind: 'deterministic' },
+    { key: 'reliability', label: 'Overall factual reliability', kind: 'judgment' }
+  ];
+  var GATE_RANK = { PASS: 0, WARNING: 1, BLOCKED: 2 };
+  var SCHEDULE_MOVE_MIN = 15;     /* a kickoff that moved this many minutes is a different kickoff */
+  var SNAPSHOT_BLOCK_PTS = 1.0;   /* the model moved this far since the draft: the copy is out of date */
+  var SNAPSHOT_WARN_PTS = 0.3;
+
+  /* which section of the article carries this text */
+  function sectionWith(a, needle) {
+    var hit = (a.sections || []).filter(function (x) { return needle && String(x.body).indexOf(needle) >= 0; })[0];
+    return hit ? hit.key : null;
+  }
+  function featuredGames(a, o) {
+    var t = textOf(a);
+    return (o.research.games || []).filter(function (p) { return p.home && p.away && t.indexOf(p.home) >= 0 && t.indexOf(p.away) >= 0; });
+  }
+
+  /* a: the article; o: its opportunity (the research frozen when it was drafted)
+     ctx: { now, publisher, campaign, landing, current: { game_id: packet } (the
+     research re-read NOW), acks: { key: {note, at} }, news: [matched items],
+     teamLists, siblings } */
+  function gate(a, o, ctx) {
+    ctx = ctx || {};
+    var now = isNum(ctx.now) ? ctx.now : Date.now();
+    var acks = ctx.acks || {};
+    var items = {};
+    GATE_CHECKS.forEach(function (c) { items[c.key] = { key: c.key, label: c.label, kind: c.kind, status: 'PASS', findings: [] }; });
+    function find(key, status, reason, evidence, fix, sections, ackKey) {
+      var f = { status: status, reason: reason, evidence: (evidence || []).filter(Boolean), fix: fix || null, sections: uniq((sections || []).filter(Boolean)) };
+      if (ackKey) {
+        f.ack_key = ackKey;
+        var ak = acks[ackKey];
+        if (ak && status === 'BLOCKED') { f.status = 'WARNING'; f.acknowledged = { note: ak.note || null, at: ak.at || null }; f.reason = 'Reviewed by the owner: ' + reason; }
+      }
+      items[key].findings.push(f);
+      if (GATE_RANK[f.status] > GATE_RANK[items[key].status]) items[key].status = f.status;
+    }
+    var v = validate(a, o, { now: now, publisher: ctx.publisher, siblings: ctx.siblings, teamLists: ctx.teamLists });
+    var vc = {}; v.checks.forEach(function (c) { vc[c.id] = c; });
+    function failed(id) { return vc[id] && vc[id].status === 'fail'; }
+    function warned(id) { return vc[id] && vc[id].status === 'warn'; }
+    var text = textOf(a), body = (a.sections || []).map(function (x) { return x.body; }).join('\n\n');
+    var feat = featuredGames(a, o);
+    var cur = ctx.current || null;
+    var ed = (ctx.publisher && ctx.publisher.editorial) || {};
+
+    /* 1 schedule */
+    feat.forEach(function (p) {
+      var g = p.away + ' at ' + p.home;
+      var k = ts(p.kickoff);
+      if (k != null && k <= now) find('schedule', 'BLOCKED', g + ' has already kicked off.', ['kickoff ' + (p.kickoff_text || p.kickoff)], 'Remove the game or regenerate the games section from this week’s slate.', ['games', 'intro', 'conclusion']);
+      if (!cur) return;
+      var c = cur[p.game_id];
+      if (!c) { find('schedule', 'BLOCKED', g + ' is no longer on the current slate: it may have been rescheduled, postponed or canceled.', ['game ' + p.game_id + ' missing from the research read ' + whenText(now)], 'Confirm the game’s status, then remove it or regenerate the games section.', ['games', 'intro', 'conclusion']); return; }
+      var ck = ts(c.kickoff);
+      if (k != null && ck != null && Math.abs(ck - k) >= SCHEDULE_MOVE_MIN * 60000) find('schedule', 'BLOCKED', g + ': the kickoff moved from ' + p.kickoff_text + ' to ' + c.kickoff_text + '.', ['research now says ' + c.kickoff], 'Regenerate the games section so the time is right.', ['games', 'intro']);
+      if (c.home !== p.home || c.away !== p.away) find('schedule', 'BLOCKED', g + ': home and away no longer match the current slate (' + c.away + ' at ' + c.home + ').', [], 'Regenerate the article from the current slate.', ['games', 'intro']);
+      if ((c.venue || null) !== (p.venue || null) || !!c.neutral_site !== !!p.neutral_site) find('schedule', 'BLOCKED', g + ': the venue changed (' + (p.venue || 'unknown') + ' → ' + (c.venue || 'unknown') + (c.neutral_site !== p.neutral_site ? ', neutral site ' + (c.neutral_site ? 'yes' : 'no') : '') + ').', [], 'Confirm the venue, then regenerate the games section.', ['games']);
+    });
+    if (!cur && feat.length) find('schedule', 'WARNING', 'The schedule was not re-checked against the current research.', [], 'Re-run the check with the current research loaded.', []);
+    /* a two-league article has a week per league */
+    var weekFor = function (p) { return o.research.weeks && o.research.weeks[p.league] != null ? o.research.weeks[p.league] : o.week; };
+    if (feat.some(function (p) { return p.week !== weekFor(p); })) find('schedule', 'BLOCKED', 'A featured game is from a different week than the article.', feat.filter(function (p) { return p.week !== weekFor(p); }).map(function (p) { return p.away + ' at ' + p.home + ' (week ' + p.week + ')'; }), 'Remove it.', ['games']);
+
+    /* 2 teams, conferences, rankings */
+    if (failed('teams_in_evidence')) find('teams', 'BLOCKED', 'A team is named that this article’s research does not cover.', [vc.teams_in_evidence.detail], 'Remove the team or regenerate the section.', [sectionWith(a, (vc.teams_in_evidence.detail || '').replace(/^.*: /, '').split(',')[0])]);
+    var cre = /\*\*([^*]+?):\*\* (.+?) and (.+?) are both among the conference/g, cm;
+    while ((cm = cre.exec(body))) {
+      var conf = cm[1], t1 = cm[2], t2 = cm[3];
+      var pk = gamesOf(o).filter(function (p) { return (p.home === t1 || p.away === t1) && (p.home === t2 || p.away === t2); })[0];
+      if (!pk) { find('teams', 'BLOCKED', 'The conference section pairs ' + t1 + ' and ' + t2 + ', which are not a game in the research.', [], 'Regenerate the conference section.', ['conference']); continue; }
+      var cs = [pk.home_conference, pk.away_conference];
+      if (cs.some(function (x) { return x !== conf; })) find('teams', 'BLOCKED', t1 + ' and ' + t2 + ' are described as ' + conf + ' but the research lists ' + uniq(cs).join(' / ') + '.', [], 'Regenerate the conference section.', ['conference']);
+    }
+    var rre = /No\. (\d+) ([A-Z][A-Za-z.&'’ ]+?)(?= at | vs\.| over |\)|,| —|:)/g, rm2;
+    while ((rm2 = rre.exec(body))) {
+      var rk = +rm2[1], tn = rm2[2].trim();
+      var hit = gamesOf(o).filter(function (p) { return p.home === tn || p.away === tn; })[0];
+      if (!hit) continue;
+      var have = hit.home === tn ? hit.home_rank : hit.away_rank;
+      if (have !== rk) find('teams', 'BLOCKED', tn + ' is ranked No. ' + rk + ' in the copy but No. ' + (have == null ? 'unranked' : have) + ' in EdgeDesk’s ratings.', [], 'Regenerate the games section.', [sectionWith(a, 'No. ' + rk + ' ' + tn)]);
+    }
+    if (/\bNo\. \d+ /.test(body) && o.league === 'cfb' && !/EdgeDesk’s own power ratings|EdgeDesk's own power ratings/.test(body)) find('teams', 'WARNING', 'Rankings are shown without saying they are EdgeDesk’s own ratings, not the AP poll.', [], 'Keep the ranking note in “How to read these numbers”.', ['how_to_read']);
+
+    /* 3 projections */
+    var dataConflicts = feat.filter(function (p) { return p.model && p.model.numbers && !p.model.numbers.ok; });
+    dataConflicts.forEach(function (p) { find('projections', 'BLOCKED', p.away + ' at ' + p.home + ': EdgeDesk’s own figures disagree, so no consistent number can be printed.', p.model.numbers.problems, 'Leave the game out until the research is rebuilt; never type a replacement number.', []); });
+    (a.sections || []).forEach(function (x) {
+      var probs = numberProblems(x.body, { research: { games: (o.research.games || []).filter(function (p) { return dataConflicts.indexOf(p) < 0; }), matchups: o.research.matchups || [] } });
+      if (probs.length) find('projections', 'BLOCKED', 'Displayed figures do not reconcile in “' + (x.heading || x.key) + '”.', probs, 'Regenerate the section with the reconciled figures; never type a replacement number by hand.', [x.key]);
+    });
+
+    /* 4 snapshot */
+    /* one model version per league (the college and NFL models are different models) */
+    ['cfb', 'nfl'].forEach(function (lg) {
+      var snaps = uniq(feat.filter(function (p) { return (p.league || o.league) === lg; }).map(function (p) { return p.model && p.model.version; }).filter(Boolean));
+      if (snaps.length > 1) find('snapshot', 'BLOCKED', 'The featured games come from different model versions.', snaps, 'Regenerate the article from one research read.', ['games']);
+    });
+    if (cur) feat.forEach(function (p) {
+      var c = cur[p.game_id];
+      if (!c || !c.model || !c.model.available || !p.model.available) return;
+      var g = p.away + ' at ' + p.home;
+      if (c.model.version && p.model.version && c.model.version !== p.model.version) { find('snapshot', 'BLOCKED', g + ': the model version changed (' + p.model.version + ' → ' + c.model.version + ').', [], 'Regenerate the games section.', ['games', 'disagreements', 'conclusion']); return; }
+      var moved = Math.abs((c.model.home_line || 0) - (p.model.home_line || 0));
+      var flip = (c.model.favorite || null) !== (p.model.favorite || null);
+      if (flip || moved >= SNAPSHOT_BLOCK_PTS) find('snapshot', 'BLOCKED', g + ': EdgeDesk’s number moved since the draft (' + p.display.fair + ' → ' + c.display.fair + ').', ['research as of ' + (c.model.as_of || '?')], 'Regenerate the sections that quote this game.', ['games', 'disagreements', 'upsets', 'conclusion', 'intro']);
+      else if (moved >= SNAPSHOT_WARN_PTS || Math.abs((c.model.fav_win_pct || 0) - (p.model.fav_win_pct || 0)) >= 3) find('snapshot', 'WARNING', g + ': EdgeDesk’s number moved a little since the draft (' + p.display.fair + ' → ' + c.display.fair + ').', [], 'Regenerate the games section if you want the latest figures.', ['games']);
+    });
+    if (warned('research_fresh')) find('snapshot', 'WARNING', 'The research behind this draft is old.', [vc.research_fresh.detail], 'Refresh the opportunity and regenerate.', []);
+
+    /* 5 market */
+    if (failed('stale_prices_labelled')) find('market', 'BLOCKED', 'A historical or reference line is presented without its age.', [vc.stale_prices_labelled.detail], 'Label it historical with its capture time.', ['games', 'disagreements']);
+    feat.forEach(function (p) {
+      if (!p.market || p.market.status === 'none') return;
+      var g = p.away + ' at ' + p.home;
+      if (p.display.market && text.indexOf(p.display.market) < 0 && text.indexOf(String(p.display.market).split(' (')[0]) >= 0) find('market', 'WARNING', g + ': the line is quoted without its source and capture time.', [p.display.market], 'Quote the line with its source and capture time.', ['games']);
+      var c = cur && cur[p.game_id];
+      if (c && c.market && c.market.status === 'current' && p.market.status !== 'current') find('market', 'WARNING', g + ': a current line is now available (' + c.display.market + '); the copy quotes a historical one.', [], 'Regenerate the games section to use the current line.', ['games', 'disagreements']);
+    });
+
+    /* 6 availability */
+    if (failed('qb_claims_supported')) find('availability', 'BLOCKED', 'Quarterback uncertainty is claimed without support in the starter data.', String(vc.qb_claims_supported.detail || '').split(' · '), 'Remove the claim: a starter without an announcement is not news.', ['games', 'limits'].filter(function (k) { var sec = (a.sections || []).filter(function (x) { return x.key === k; })[0]; return sec && QB_DOUBT.test(sec.body) && QB_WORD.test(sec.body); }));
+    if (failed('injury_claims_supported')) find('availability', 'BLOCKED', 'An injury or availability claim has no report on file.', String(vc.injury_claims_supported.detail || '').split(' · '), 'Remove the claim or cite the report it comes from.', ['games', 'limits']);
+    feat.forEach(function (p) {
+      ['home', 'away'].forEach(function (sd) {
+        var q = p.qb && p.qb[sd];
+        if (q && q.status === 'AVAILABILITY' && body.indexOf(q.player) < 0) find('availability', 'WARNING', (sd === 'home' ? p.home : p.away) + ': a quarterback availability report is not mentioned.', [q.availability, q.availability_source], 'Mention it in the game’s paragraph (regenerate the games section).', ['games']);
+      });
+    });
+    var injAsOf = o.league === 'nfl' && o.research.context && ts(o.research.context.injuries_as_of);
+    if (injAsOf && (now - injAsOf) > 24 * 3600000) find('availability', 'WARNING', 'The NFL injury report on file is more than a day old.', ['read ' + whenText(injAsOf)], 'Re-read the injury report before sending.', []);
+
+    /* 7 claims */
+    [['numbers_in_evidence', 'A number is not in EdgeDesk’s research or a cited source.'], ['no_recommendation', 'Pick, guarantee or staking language.'],
+     ['reporting_attributed', 'External reporting is not attributed and linked.'], ['unsourced_reporting', 'Reporting is cited with no source on file.'],
+     ['no_stringified_nothing', '“null”, “undefined” or “NaN” in the copy.'], ['projection_not_value', 'The article never says a projection is not a bet.'],
+     ['news_claims_supported', 'A breaking-news claim has no cited source.'], ['no_confidence_misuse', 'A data-quality score is described as confidence in a result.'],
+     ['structure', 'A required section is missing.'], ['empty_sections', 'A section is empty.'], ['headline', 'The headline is missing or too short.'],
+     ['results_reconcile', 'A final score or pregame number does not match the graded record.']
+    ].forEach(function (x) { if (failed(x[0])) find('claims', 'BLOCKED', x[1], [vc[x[0]].detail], 'Fix the copy, or regenerate the section.', [sectionWith(a, String(vc[x[0]].detail || '').replace(/^not in the evidence: |^“|”.*$/g, '').split(',')[0].trim())]); });
+    /* the integrity engine's verdict is the database's (integrity_ok): a
+       version it blocks can never be sent, so the gate never reads PASS on it */
+    if (v.integrity && v.integrity.status === 'BLOCKED') find('claims', 'BLOCKED', 'The integrity engine blocks this version.', (v.integrity.blocking || []).map(function (b) { return b.rule_id + ': ' + String(b.explanation || '').slice(0, 200); }),
+      'Fix what each rule names, or regenerate the sections it points to; the database refuses approval and sending until it passes.', []);
+    if (warned('names_in_evidence')) find('claims', 'WARNING', 'A person is named who is not in the research.', [vc.names_in_evidence.detail], 'Check the name against a source, or remove it.', []);
+    if (warned('no_filler')) find('claims', 'WARNING', 'Generic filler phrasing.', [vc.no_filler.detail], 'Rewrite the phrase.', []);
+
+    /* 8 repetition */
+    var seen = {}, tmpl = {};
+    var gameTeams = uniq([].concat.apply([], (o.research.games || []).map(function (p) { return [p.home, p.away]; }))).sort(function (x, y) { return y.length - x.length; });
+    sentencesOf(body).forEach(function (sx) {
+      var k = sx.trim(); if (wordCount(k) < 6) return;
+      seen[k] = (seen[k] || 0) + 1;
+      var t = k; gameTeams.forEach(function (n) { t = t.split(n).join('T'); });
+      t = t.replace(/\d+(?:\.\d+)?/g, '#').replace(/\([^)]*\)/g, '()');
+      tmpl[t] = (tmpl[t] || 0) + 1;
+    });
+    Object.keys(seen).forEach(function (k) { if (seen[k] >= 2) find('repetition', seen[k] >= 3 ? 'BLOCKED' : 'WARNING', 'The same sentence appears ' + seen[k] + ' times.', ['“' + k.slice(0, 140) + '”'], 'Say it once, or regenerate the section.', [sectionWith(a, k)]); });
+    Object.keys(tmpl).forEach(function (k) { if (tmpl[k] >= 5) find('repetition', 'WARNING', 'The same sentence pattern repeats ' + tmpl[k] + ' times.', ['“' + k.slice(0, 140) + '”'], 'Vary or cut the repeated pattern.', []); });
+    if (failed('not_duplicate')) find('repetition', 'BLOCKED', 'Too close to another article from the same research.', [vc.not_duplicate.detail], 'Choose another angle or archive one of them.', []);
+    else if (warned('not_duplicate')) find('repetition', 'WARNING', 'Overlaps another article from the same research.', [vc.not_duplicate.detail], 'Make the angles more distinct.', []);
+
+    /* 9 headline */
+    var title = String(a.title || '');
+    var wk = /\bWeek (\d+)\b/i.exec(title);
+    if (wk && +wk[1] !== o.week) find('headline', 'BLOCKED', 'The headline says Week ' + wk[1] + ' but the research is Week ' + o.week + '.', [title], 'Fix the week in the headline.', []);
+    if (o.league === 'cfb' && /\bNFL\b/.test(title) || o.league === 'nfl' && /college football|\bCFB\b/i.test(title)) find('headline', 'BLOCKED', 'The headline names the wrong league.', [title], 'Fix the headline.', []);
+    var lists = ctx.teamLists || {};
+    var known = knownTeams(o, lists);
+    var tTeams = teamsMentioned(title, known, []).filter(function (t) { return !feat.some(function (p) { return p.home === t || p.away === t; }) && !(o.teams || []).some(function (x) { return x === t; }); });
+    if (tTeams.length) find('headline', 'BLOCKED', 'The headline names a team the article doesn’t cover: ' + tTeams.join(', ') + '.', [title], 'Fix the headline.', []);
+    var ev = evidenceOf(o);
+    var tNums = numbersIn(stripForNumbers(title)).filter(function (n) { return !ev.numbers[String(+n.toFixed(2))]; });
+    if (tNums.length) find('headline', 'BLOCKED', 'The headline carries a number that is not in the research: ' + tNums.join(', ') + '.', [title], 'Fix the headline.', []);
+    if (title.length > 75) find('headline', 'WARNING', 'The headline is ' + title.length + ' characters; search results cut off near 60–70.', [title], 'Shorten it.', []);
+
+    /* 10 SEO */
+    if (warned('seo_meta')) find('seo', 'WARNING', 'The meta description is outside 90–160 characters.', [vc.seo_meta.detail], 'Rewrite the meta description.', []);
+    if (warned('seo_slug')) find('seo', 'WARNING', 'The URL slug is not clean.', [vc.seo_slug.detail], 'Use lowercase words and hyphens.', []);
+    if (warned('seo_keyword')) find('seo', 'WARNING', 'The primary keyword is missing from the headline or the opening.', [vc.seo_keyword.detail], 'Work the keyword into the headline and first paragraph.', ['intro']);
+    if (!a.primary_keyword) find('seo', 'WARNING', 'No primary keyword.', [], 'Set one in the SEO brief.', []);
+    if (!(a.secondary_keywords || []).length) find('seo', 'WARNING', 'No secondary keywords.', [], 'Add two or three from the SEO brief.', []);
+
+    /* 11 publisher */
+    if (warned('length')) find('publisher', 'WARNING', 'Length is outside the publisher’s range.', [vc.length.detail], 'Trim or extend the article.', []);
+    if (ctx.publisher && (ctx.publisher.status === 'paused' || ctx.publisher.status === 'ended')) find('publisher', 'WARNING', 'This publisher is ' + ctx.publisher.status + '.', [], 'Reactivate the publisher or choose another.', []);
+    if (ed.max_games && feat.length > ed.max_games) find('publisher', 'WARNING', 'The article features ' + feat.length + ' games; the publisher asks for at most ' + ed.max_games + '.', [], 'Trim the games section.', ['games']);
+
+    /* 12 referral link, 13 responsible gambling — on the EXPORT, as the publisher receives it */
+    var expCtx = { publisher: ctx.publisher, campaign: ctx.campaign, opportunity: o, landing: ctx.landing };
+    var exp = toMarkdown(a, expCtx);
+    var edLinks = (exp.match(/\]\((https?:\/\/(?:www\.)?edgedesksports\.com[^)\s]*)\)/g) || []).map(function (x) { return x.slice(2, -1); });
+    var pubUtm = utmFor(ctx.publisher, a, ctx.campaign);
+    /* EdgeDesk's own page: its links are internal, and an internal link must
+       carry NO utm tags (they would overwrite the reader's real source) */
+    /* first_party: a feature in content_engine.first_party; edition
+       'first_party': EdgeDesk's own edition of Five Games to Watch */
+    var F0 = FORMATS[a.base_format || ''] || FORMATS[a.format || ''] || {};
+    var firstParty = !!(F0.first_party || F0.edition === 'first_party');
+    if (firstParty) {
+      edLinks = ((a.sections || []).map(function (x) { return x.body; }).join('\n').match(/\]\((https?:\/\/(?:www\.)?edgedesksports\.com[^)\s]*)\)/g) || []).map(function (x) { return x.slice(2, -1); });
+      edLinks.filter(function (u) { return /[?&]utm_/.test(u); }).forEach(function (u) { find('referral', 'BLOCKED', 'An internal EdgeDesk link carries campaign tags.', [u], 'Remove the utm_ parameters from internal links.', [sectionWith(a, u.split('?')[0])]); });
+      edLinks.filter(function (u) { return !/^https:/.test(u); }).forEach(function (u) { find('referral', 'BLOCKED', 'An EdgeDesk link is not https.', [u], 'Use the https link.', []); });
+    } else if (ed.links_allowed !== false) {
+      if (!edLinks.length) find('referral', 'BLOCKED', 'The export carries no EdgeDesk link, so referrals cannot be measured.', [], 'Restore the attribution line.', []);
+      if (!ctx.campaign) find('referral', 'BLOCKED', 'The article has no campaign code.', [], 'The campaign code is assigned when the article is created; recreate it.', []);
+    }
+    if (!firstParty) edLinks.forEach(function (u) {
+      var q; try { q = new URL(u).searchParams; } catch (e) { q = null; }
+      if (!q || q.get('utm_campaign') !== String(ctx.campaign || '').toLowerCase() || q.get('utm_medium') !== 'publisher' || q.get('utm_source') !== pubUtm.source.toLowerCase().replace(/[^a-z0-9_.-]/g, ''))
+        find('referral', 'BLOCKED', 'An EdgeDesk link is not tagged for this article and publisher.', [u], 'Regenerate the export (links are tagged automatically).', [sectionWith(a, u.split('?')[0])]);
+      if (!/^https:/.test(u)) find('referral', 'BLOCKED', 'An EdgeDesk link is not https.', [u], 'Use the https link.', []);
+    });
+    if (ed.links_allowed === false && edLinks.length) find('referral', 'BLOCKED', 'The publisher allows no link back, but the export carries one.', edLinks.slice(0, 2), 'Remove the link from the body.', []);
+    if (exp.indexOf(DISCLAIMER) < 0) find('responsible', 'BLOCKED', 'The responsible-gambling disclaimer is missing from the export.', [], 'Restore the disclaimer.', []);
+    if (!/21\+/.test(exp) || !/1-800-GAMBLER/.test(exp)) find('responsible', 'BLOCKED', 'The 21+ notice or the 1-800-GAMBLER helpline is missing.', [], 'Restore the disclaimer.', []);
+    if (failed('no_recommendation')) find('responsible', 'BLOCKED', 'Pick, lock or staking language.', [vc.no_recommendation.detail], 'Remove it.', []);
+
+    /* 14 overall reliability: the owner's judgment, with the evidence */
+    feat.forEach(function (p) {
+      var g = p.away + ' at ' + p.home;
+      var d = p.discrepancy;
+      if (d && d.review !== 'NONE') {
+        var evd = ['gap ' + oneDp(d.points) + ' pts toward ' + d.toward, d.unexplained_pct != null ? d.unexplained_pct + '% unexplained by EdgeDesk’s inputs' : 'no breakdown on file']
+          .concat(d.facts.map(function (f) { return f.text; }), d.evidence, d.verification ? ['verification: ' + d.verification] : [], d.investigation ? ['terminal status: ' + d.investigation] : []);
+        find('reliability', d.review === 'BLOCK' ? 'BLOCKED' : 'WARNING', g + ': ' + aOrAn(oneDp(d.points)) + ' ' + oneDp(d.points) + '-point gap with the market that EdgeDesk’s inputs mostly can’t explain.', evd,
+          'Check the game for unreported injuries, quarterback news or data problems; then acknowledge the review (with a note) or remove the game.', [], 'discrepancy:' + p.game_id);
+      }
+      /* the terminal writes VERIFIED, UNVERIFIED, NOT_RUN, DATA_FAULT, MARKET_FAULT
+         or NOT_REQUIRED, never FAILED (docs/system-integrity/AUDIT.md §7): a
+         fault is a failed verification */
+      if (p.verification === 'DATA_FAULT' || p.verification === 'MARKET_FAULT') find('reliability', 'BLOCKED', g + ': EdgeDesk’s own verification of this gap failed (' + p.verification + ').', [], 'Remove the game or wait for the research to be verified.', ['games', 'disagreements']);
+      if (p.model.data_quality && p.model.data_quality.band === 'low') find('reliability', 'WARNING', g + ': low data quality (' + p.model.data_quality.score + '/100).', [p.model.data_quality.measures], 'Say so in the copy, or feature another game.', ['games']);
+      var w = (cur && cur[p.game_id] && cur[p.game_id].weather) || p.weather;
+      if (w && w.state === 'HAZARD') find('reliability', 'WARNING', g + ': the kickoff forecast shows ' + sentenceList(w.hazards) + '.', [(w.source || 'forecast') + (w.as_of ? ', as of ' + whenText(ts(w.as_of)) : '')], 'Check the latest forecast and any delay announcements before sending.', ['limits'], 'weather:' + p.game_id);
+      else if (w && (w.state === 'NOT_CHECKED' || w.state === 'STALE')) find('reliability', 'WARNING', g + ': the weather could not be verified (' + (w.state === 'STALE' ? 'forecast older than ' + WEATHER.stale_hours + ' hours' : w.reason || 'no forecast on file') + ').', [], 'Check the forecast yourself before sending.', []);
+    });
+    var teams = uniq([].concat.apply([], feat.map(function (p) { return [p.home, p.away]; })));
+    (ctx.news || []).forEach(function (n) {
+      var t = ts(n.published_at);
+      if (t != null && now - t > 72 * 3600000) return;
+      if (!/injury|qb_change|suspension/.test(n.kind || '')) return;
+      if (!(n.teams || []).some(function (x) { return teams.indexOf(x) >= 0; })) return;
+      if ((o.sources || []).some(function (x) { return x.url === n.url; })) return;
+      find('reliability', 'WARNING', 'Unverified report about ' + (n.teams || []).filter(function (x) { return teams.indexOf(x) >= 0; }).join(', ') + ': “' + String(n.title).slice(0, 120) + '”.', [(n.publisher || 'feed') + ' — ' + n.url], 'Read the report and confirm it doesn’t change the article before sending.', ['games'], 'news:' + hash(n.url));
+    });
+
+    var list = GATE_CHECKS.map(function (c) { return items[c.key]; });
+    var verdict = list.reduce(function (m, it) { return GATE_RANK[it.status] > GATE_RANK[m] ? it.status : m; }, 'PASS');
+    var counts = { PASS: 0, WARNING: 0, BLOCKED: 0 };
+    list.forEach(function (it) { counts[it.status]++; });
+    return {
+      schema: 'edgedesk_editorial_gate_v1', version: VERSION, verdict: verdict, counts: counts, items: list,
+      checked_at: iso(now), research_as_of: o.research && o.research.as_of || null, rechecked_current: !!cur,
+      acks_applied: Object.keys(acks).length, validation: { ok: v.ok, failed: v.failed, warned: v.warned }
+    };
+  }
+  /* the section keys the gate wants regenerated (BLOCKED first, then WARNING) */
+  function sectionsToFix(report, includeWarnings) {
+    var keys = {};
+    (report.items || []).forEach(function (it) { it.findings.forEach(function (f) {
+      if (f.acknowledged) return;
+      if (f.status === 'BLOCKED' || (includeWarnings && f.status === 'WARNING')) (f.sections || []).forEach(function (k) { if (k) keys[k] = 1; });
+    }); });
+    return Object.keys(keys);
+  }
+  /* Regenerate ONLY the sections the gate flags, deterministically, from the
+     opportunity rebuilt on the CURRENT research (`fresh`); every other section
+     is kept byte for byte. A regenerated games section brings its "How to
+     read" explanation with it. No AI, no cost. */
+  function repair(a, fresh, ctx) {
+    ctx = ctx || {};
+    var want = {};
+    (ctx.sections || []).forEach(function (k) { want[k] = 1; });
+    if (want.games) want.how_to_read = 1;
+    var d = draft(fresh, { publisher: ctx.publisher, format: a.format, angle: a.angle, title: a.title, now: ctx.now });
+    var byKey = {}; d.sections.forEach(function (x) { byKey[x.key] = x; });
+    var changed = [], removed = [];
+    var out = [];
+    (a.sections || []).forEach(function (x) {
+      if (!want[x.key]) { out.push(x); return; }
+      if (byKey[x.key]) { out.push(byKey[x.key]); if (byKey[x.key].body !== x.body) changed.push(x.key); }
+      else { removed.push(x.key); }
+    });
+    /* sections the fresh draft needs that the old one lacked, in the format's order */
+    var order = d.sections.map(function (x) { return x.key; });
+    d.sections.forEach(function (x) {
+      if (!want[x.key] && x.key !== 'disagreements') return;
+      if (out.some(function (y) { return y.key === x.key; })) return;
+      var at = out.length;
+      for (var i = order.indexOf(x.key) + 1; i < order.length; i++) { var j = out.map(function (y) { return y.key; }).indexOf(order[i]); if (j >= 0) { at = j; break; } }
+      out.splice(at, 0, x); changed.push(x.key);
+    });
+    var b = Object.assign({}, a, { sections: out, research_as_of: fresh.research && fresh.research.as_of || a.research_as_of, research_hash: researchHash(fresh),
+      generator: String(a.generator || 'template').replace(/\+repair$/, '') + '+repair' });
+    b.word_count = wordCount(b.standfirst + ' ' + out.map(function (x) { return x.body; }).join(' '));
+    return { article: b, changed: uniq(changed), removed: removed };
+  }
+
+  /* ======================================================================
+     FIRST-PARTY PUBLISHING — EdgeDesk's own articles on edgedesksports.com.
+
+     At most three a week, in Central Time: Monday the Weekend Model Review
+     (the weekend's results against the pregame numbers), Wednesday the
+     upcoming weekend's biggest storylines, Friday the weekend in five
+     numbers. Each builder returns { ok:false, reason } rather than a thin
+     article when the research does not support one: fewer articles, never a
+     filler one.
+
+     Twelve gates decide whether an article may publish without a person
+     (fpGates). Anything short of all twelve is HELD FOR REVIEW. The
+     headlines lead with a storyline, and every storyline is a fact in the
+     research (a ranking, a projection, a result), never a story invented to
+     explain a number.
+     ====================================================================== */
+  var FP_TZ = 'America/Chicago';
+  var FP_SLOTS = { 1: 'weekend_review', 3: 'storylines', 5: 'research_preview' };
+  var FP_KINDS = {
+    weekend_review: { label: 'Weekend Model Review', format: 'fp_weekend_review', day: 'Monday', category: 'weekend-model-review' },
+    storylines: { label: 'Weekend Storylines', format: 'fp_storylines', day: 'Wednesday', category: 'weekend-storylines' },
+    research_preview: { label: 'Weekend Research Preview', format: 'fp_research_preview', day: 'Friday', category: 'weekend-research-preview' }
+  };
+  var FP_DEFAULTS = { publish_hour_ct: 7, window_hours: 10, max_per_week: 3, research_max_age_hours: 36, kickoff_lead_minutes: 60,
+    publisher_similarity_max: 0.35, site_similarity_max: 0.5 };
+  var FP_CTA = { text: 'Explore the full matchup research on EdgeDesk.', href: SITE + '/today/' };
+  var WD3 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  function ctParts(t) {
+    var o = {};
+    new Intl.DateTimeFormat('en-US', { timeZone: FP_TZ, year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short', hour: '2-digit', minute: '2-digit', hour12: false })
+      .formatToParts(new Date(t)).forEach(function (x) { o[x.type] = x.value; });
+    return { y: +o.year, m: +o.month, d: +o.day, wd: WD3.indexOf(o.weekday), h: (+o.hour) % 24, mi: +o.minute };
+  }
+  function ctDate(t) { var p = ctParts(t); return p.y + '-' + (p.m < 10 ? '0' : '') + p.m + '-' + (p.d < 10 ? '0' : '') + p.d; }
+  /* the instant a Central Time wall clock reads h:00 on y-m-d (CST or CDT) */
+  function ctInstant(y, m, d, h) {
+    for (var off = 5; off <= 6; off++) { var t = Date.UTC(y, m - 1, d, h + off); var p = ctParts(t); if (p.h === h && p.d === d) return t; }
+    return Date.UTC(y, m - 1, d, h + 6);
+  }
+  /* the Monday that starts the Central Time week a date falls in */
+  function ctWeekOf(t) { var p = ctParts(t); var back = (p.wd + 6) % 7; return ctDate(ctInstant(p.y, p.m, p.d, 12) - back * 86400000); }
+  function fpSlot(now, settings) {
+    settings = Object.assign({}, FP_DEFAULTS, settings || {});
+    var p = ctParts(now), kind = FP_SLOTS[p.wd];
+    if (!kind) return null;
+    var at = ctInstant(p.y, p.m, p.d, settings.publish_hour_ct);
+    return { kind: kind, label: FP_KINDS[kind].label, date: ctDate(now), week: ctWeekOf(now), publish_at: iso(at), window_end: iso(at + settings.window_hours * 3600000),
+      id: 'feature-' + ctDate(now) + '-' + kind.replace(/_/g, '-') };
+  }
+  var MON3 = ['Jan.', 'Feb.', 'March', 'April', 'May', 'June', 'July', 'Aug.', 'Sept.', 'Oct.', 'Nov.', 'Dec.'];
+  function ctDayText(t) { var p = ctParts(t); return MON3[p.m - 1] + ' ' + p.d; }
+  /* "Fri., Oct. 9, 7 a.m. CT": the publishing schedule is Central Time */
+  function ctWhen(t) {
+    var p = ctParts(t), h = p.h % 12 || 12;
+    return ['Sun.', 'Mon.', 'Tue.', 'Wed.', 'Thu.', 'Fri.', 'Sat.'][p.wd] + ', ' + MON3[p.m - 1] + ' ' + p.d + ', ' + h + (p.mi ? ':' + (p.mi < 10 ? '0' : '') + p.mi : '') + ' ' + (p.h < 12 ? 'a.m.' : 'p.m.') + ' CT';
+  }
+
+  /* the same games every other article may use: a game the integrity engine
+     withholds (PUBLIC_BRIEF) is never featured on EdgeDesk's own pages either */
+  function upcomingOf(L, now, lead) { return (L && L.games || []).filter(function (p) { var k = ts(p.kickoff); return p.model.available && p.publishable !== false && p.flags.indexOf('KICKED_OFF') < 0 && k != null && k > now + (lead || 0); }); }
+  /* a game whose number the market disputes by more than EdgeDesk's inputs
+     explain is not featured in an unattended article: it waits for a person */
+  function undisputed(p) { return !p.discrepancy || p.discrepancy.review === 'NONE'; }
+  function disputedNote(n) {
+    return n ? '- **Left out for review:** ' + numWord(n) + ' upcoming game' + (n === 1 ? '' : 's') + ' where EdgeDesk’s number and the market disagree by more than EdgeDesk’s inputs explain ' + (n === 1 ? 'is' : 'are') + ' not featured here until a person has reviewed the gap.' : null;
+  }
+  function fpOpp(kind, research, snap, extra) {
+    var leagues = research.leagues_used || [];
+    var sources = [];
+    leagues.forEach(function (lg) { sourcesOf(snap, lg).forEach(function (x) { sources.push(x); }); });
+    (snap.sources || []).filter(function (x) { return /^record_/.test(x.id) && leagues.indexOf(x.id.slice(7)) >= 0; })
+      .forEach(function (x) { sources.push({ kind: 'edgedesk_research', label: x.what, path: x.path, url: SITE + '/' + x.path, as_of: x.as_of }); });
+    return Object.assign({ league: 'multi', fp_kind: kind, kind: 'fp_' + kind, season: research.season, week: research.week, research: research, sources: sources, formats: [FP_KINDS[kind].format] }, extra || {});
+  }
+
+  /* ── Monday: the weekend's results against the pregame numbers ── */
+  function fpReview(snap, now) {
+    var leagues = ['cfb', 'nfl'].filter(function (lg) { var R = snap.results && snap.results[lg]; return R && R.results.length && now - ts(R.last_kickoff) <= 4 * 86400000; });
+    if (!leagues.length) return { ok: false, reason: 'no graded games from this weekend in the model record yet' };
+    var res = [], L = {}, asOf = null;
+    leagues.forEach(function (lg) {
+      var R = snap.results[lg];
+      L[lg] = { week: R.week, week_record: R.week_record, season_record: R.season_record };
+      R.results.forEach(function (x) { res.push(x); });
+      if (R.as_of && (!asOf || ts(R.as_of) > ts(asOf))) asOf = R.as_of;
+    });
+    if (res.length < 6) return { ok: false, reason: 'only ' + res.length + ' graded games this weekend: too few for a review' };
+    var season = (snap.results[leagues[0]] || {}).season_year;
+    var research = { kind: 'fp_weekend_review', league: 'multi', leagues_used: leagues, season: season, week: L.cfb ? L.cfb.week : L.nfl.week, as_of: asOf,
+      weeks: { cfb: L.cfb && L.cfb.week, nfl: L.nfl && L.nfl.week },
+      leagues: L, results: res, games: [], upsets: [], races: [], context: {}, limitations: [] };
+    return { ok: true, o: fpOpp('weekend_review', research, snap) };
+  }
+  function lgName(lg, cap0) { return lg === 'nfl' ? 'NFL' : (cap0 ? 'College football' : 'college football'); }
+  function fpReviewHeadline(o) {
+    var R = o.research, head = 'Weekend Model Review: ', opts = [];
+    var lgs = R.leagues_used.slice().sort(function (a, b) { return R.leagues[b].week_record.games - R.leagues[a].week_record.games; });
+    lgs.forEach(function (lg) {
+      var W = R.leagues[lg].week_record, nm = lg === 'nfl' ? 'NFL' : 'College';
+      if (W.compared >= 4 && W.closer / W.compared >= 0.6) opts.push(head + 'EdgeDesk Beat the Close in ' + W.closer + ' of ' + W.compared + ' ' + nm + ' Games');
+      if (W.su_games >= 4 && W.su_w / W.su_games >= 0.7) opts.push(head + 'EdgeDesk’s Favorite Won ' + W.su_w + ' of ' + W.su_games + ' ' + nm + ' Games');
+    });
+    var miss = R.results.slice().sort(function (a, b) { return (b.grade.model_err || 0) - (a.grade.model_err || 0); })[0];
+    if (miss && miss.final.winner && miss.final.margin >= 17) opts.push(head + nick(miss.final.winner, miss.league) + '’ ' + miss.final.score + ' Win Tops the Misses');
+    opts.push(head + 'What Held Up and What Missed');
+    return opts.filter(function (h, i) { return h.length <= 70 || i === opts.length - 1; })[0];
+  }
+  function pgBullets(W) {
+    var b = ['- **Right winner:** ' + W.su_w + ' of ' + W.su_games + '.'];
+    if (W.compared) b.push('- **Closer to the final than the closing line:** ' + W.closer + ' of ' + W.compared + '.', '- **Average miss on the margin:** EdgeDesk ' + oneDp(W.model_err_avg) + ' points, the closing line ' + oneDp(W.close_err_avg) + '.');
+    if (W.ats_w + W.ats_l + W.ats_p) b.push('- **Against the closing spread:** ' + W.ats_w + '-' + W.ats_l + (W.ats_p ? '-' + W.ats_p : '') + ' for the side EdgeDesk’s number leaned to (a grade of the number, not a betting record).');
+    return b.join('\n');
+  }
+  /* EdgeDesk's own result card: the same facts as the publisher recap, in a
+     different shape, so the two are never near-copies of each other */
+  function fpCard(x, lgs) {
+    var p = x.pre, f = x.final, g = x.grade;
+    var fin = f.winner ? (x.home === f.winner ? x.home + ' ' + f.home + ', ' + x.away + ' ' + f.away : x.away + ' ' + f.away + ', ' + x.home + ' ' + f.home) : x.away + ' ' + f.away + ', ' + x.home + ' ' + f.home;
+    var lines = ['- Final: ' + fin + (lgs.length > 1 ? ' (' + (x.league === 'nfl' ? 'NFL' : 'college football') + ')' : ''),
+      '- EdgeDesk before kickoff: ' + (p.favorite ? p.favorite + ' by ' + oneDp(p.margin) + (isNum(p.fav_win_pct) ? ', ' + p.fav_win_pct + '% to win' : '') : 'a pick’em'),
+      isNum(g.model_err) ? '- Off by: ' + oneDp(g.model_err) + ' points' + (isNum(g.close_err) ? ' (closing line' + (x.close ? ' ' + (x.close.favorite ? x.close.favorite + ' -' + String(r1(x.close.margin)) : 'pick’em') : '') + ': off by ' + oneDp(g.close_err) + ')' : '') : null];
+    return '**' + x.away + ' at ' + x.home + '**\n\n' + lines.filter(Boolean).join('\n') + (x.postgame_url ? '\n\n[EdgeDesk’s postgame analysis](' + x.postgame_url + ')' : '');
+  }
+  function fpReviewSections(o) {
+    var R = o.research, s = {}, lgs = R.leagues_used, res = R.results;
+    var desc = lgs.map(function (lg) { return lgName(lg) + ' Week ' + R.leagues[lg].week; });
+    var total = lgs.reduce(function (a, lg) { return a + R.leagues[lg].week_record.games; }, 0);
+    s.intro = para('EdgeDesk publishes its numbers before kickoff and grades every one of them afterward. This weekend model review covers ' + sentenceList(desc) + ': ' + numWord(total) + ' graded games.',
+      lgs.map(function (lg, i) { var W = R.leagues[lg].week_record; return (i ? 'In the ' : 'In ') + (lg === 'nfl' ? 'NFL' : 'college football') + ', the model had the right winner in ' + W.su_w + ' of ' + W.su_games + '.'; }).join(' '),
+      'Here are the calls that held up, the misses, and what one weekend can and can’t say about a model.');
+    s.how_to_read = para('Each game is graded the same way: EdgeDesk’s last pregame number against the final score, next to the closing line, the market’s last word before kickoff.',
+      'A single game can miss by two touchdowns even when the projection was sound, so one weekend is a small sample; the season record below is the better guide.',
+      'This is a record of a model, not betting advice and not a betting result.');
+    s.scoreboard = lgs.map(function (lg) {
+      var W = R.leagues[lg].week_record;
+      return para('**' + lgName(lg, true) + ', Week ' + R.leagues[lg].week + '.** Of ' + numWord(W.games) + ' graded games, EdgeDesk’s pregame favorite won ' + W.su_w + '.',
+        W.compared ? 'Measured by how far each projected margin landed from the final, EdgeDesk averaged ' + oneDp(W.model_err_avg) + ' points and the closing line ' + oneDp(W.close_err_avg) + ', with EdgeDesk the nearer of the two in ' + W.closer + ' games.' : null,
+        (W.ats_w + W.ats_l) ? 'Scored against the closing spread, the side its number leaned to went ' + W.ats_w + '-' + W.ats_l + (W.ats_p ? '-' + W.ats_p : '') + ', a grade of the number rather than a betting record.' : null);
+    }).join('\n\n');
+    var closest = res.filter(function (x) { return isNum(x.grade.model_err); }).sort(function (a, b) { return a.grade.model_err - b.grade.model_err; }).slice(0, 3);
+    var ids = closest.map(function (x) { return x.game_id; });
+    var misses = res.filter(function (x) { return isNum(x.grade.model_err) && ids.indexOf(x.game_id) < 0; }).sort(function (a, b) { return b.grade.model_err - a.grade.model_err; }).slice(0, 3);
+    var tag = function (x) { return lgs.length > 1 ? ' (' + (x.league === 'nfl' ? 'NFL' : 'college football') + ')' : ''; };
+    var withLink = function (x) { return x.postgame_url ? ' [Read the postgame analysis](' + x.postgame_url + ').' : ''; };
+    s.closest = closest.map(function (x) { return fpCard(x, lgs); }).join('\n\n');
+    var bothN = misses.filter(function (x) { return isNum(x.grade.close_err) && x.grade.close_err >= x.grade.model_err - 3; }).length;
+    s.misses = misses.length ? (bothN ? (bothN === misses.length ? 'In each of these, the closing line missed by about as much as EdgeDesk did, so the market’s number was no closer.' : 'In ' + numWord(bothN) + ' of these, the closing line missed by about as much as EdgeDesk did.') + '\n\n' : '')
+      + misses.map(function (x) { return fpCard(x, lgs); }).join('\n\n') : 'No game missed by enough to single out.';
+    void tag; void withLink;
+    s.season = lgs.map(function (lg) {
+      var S = R.leagues[lg].season_record; if (!S || !S.games) return null;
+      return para('**' + lgName(lg, true) + ':** across the season so far, the right winner in ' + S.su_w + ' of ' + S.su_games + ' graded games (' + S.su_pct + '%)'
+        + (S.compared ? '; an average miss on the margin of ' + oneDp(S.model_err_avg) + ' points against ' + oneDp(S.close_err_avg) + ' for the closing line.' : '.'));
+    }).filter(Boolean).join('\n\n');
+    s.limits = '- **Small samples:** one weekend says little about a model on its own; read it next to the season record.\n'
+      + '- **Final scores are noisy:** late scores, turnovers and garbage time move a margin without saying much about how the game was played.\n'
+      + '- **Still to be graded:** a game is reviewed only once its final and its grade are on record, so a late game can be missing here.\n'
+      + '- **Uncertainty:** even a 70% favorite loses about three times in ten. Projections describe likelihoods, not outcomes.';
+    var top = misses[0];
+    s.conclusion = para('The short version: ' + lgs.map(function (lg) { var W = R.leagues[lg].week_record; return W.su_w + ' of ' + W.su_games + ' winners in ' + (lg === 'nfl' ? 'the NFL' : 'college football'); }).join(' and ')
+      + (top ? '; the biggest miss was ' + top.away + ' at ' + top.home : '') + '.',
+      'Every number here was published before kickoff and graded after it, misses included. None of it is a pick.');
+    return s;
+  }
+
+  /* ── Wednesday: the upcoming weekend's biggest storylines ── */
+  function fpStorylines(snap, now, opts) {
+    opts = opts || {};
+    var lead = (opts.kickoff_lead_minutes != null ? opts.kickoff_lead_minutes : FP_DEFAULTS.kickoff_lead_minutes) * 60000;
+    var all0 = { cfb: upcomingOf(snap.cfb, now, lead), nfl: upcomingOf(snap.nfl, now, lead) };
+    var up = { cfb: all0.cfb.filter(undisputed), nfl: all0.nfl.filter(undisputed) };
+    var disputed = all0.cfb.length + all0.nfl.length - up.cfb.length - up.nfl.length;
+    var cands = [];
+    var add = function (kind, p, extra) { if (p) cands.push(Object.assign({ kind: kind, p: p }, extra || {})); };
+    var rc = rankGames('cfb', up.cfb), rn = rankGames('nfl', up.nfl);
+    if (rc[0]) add('headliner', rc[0].p, { why: rc[0].why });
+    if (rn[0]) add('headliner', rn[0].p, { why: rn[0].why });
+    var ids0 = up.cfb.map(function (p) { return p.game_id; });
+    var race = conferenceRaces(snap).filter(function (p) { return ids0.indexOf(p.game_id) >= 0; })[0];
+    if (race) add('race', race);
+    var uc = upsetsOf('cfb', up.cfb)[0], un = upsetsOf('nfl', up.nfl)[0];
+    if (uc) add('upset', uc);
+    var gap = up.cfb.concat(up.nfl).filter(function (p) { return p.discrepancy; }).sort(function (a, b) { return b.discrepancy.points - a.discrepancy.points; })[0];
+    if (gap) add('gap', gap);
+    var wx = up.cfb.filter(function (p) { return p.weather && p.weather.state === 'HAZARD'; })[0];
+    if (wx) add('weather', wx);
+    var qb = up.cfb.filter(function (p) { return p.qb && ((p.qb.home && p.qb.home.material) || (p.qb.away && p.qb.away.material)); })[0];
+    if (qb) add('qb', qb);
+    if (un) add('upset', un);
+    var seen = {}, picks = [];
+    cands.forEach(function (c) { if (picks.length < 5 && !seen[c.p.game_id]) { seen[c.p.game_id] = 1; picks.push(c); } });
+    if (picks.length < 3) return { ok: false, reason: 'only ' + picks.length + ' storyline(s) with research behind them: not enough for the Wednesday piece' };
+    var lgs = uniq(picks.map(function (c) { return c.p.league; }));
+    var L = snap.cfb || snap.nfl;
+    var research = { kind: 'fp_storylines', league: 'multi', leagues_used: lgs, season: L.season, week: snap.cfb ? snap.cfb.week : snap.nfl.week, weeks: { cfb: snap.cfb && snap.cfb.week, nfl: snap.nfl && snap.nfl.week },
+      as_of: [snap.cfb && snap.cfb.generated_at, snap.nfl && snap.nfl.generated_at].filter(Boolean).sort().pop() || null,
+      stories: picks.map(function (c) { return { kind: c.kind, game_id: c.p.game_id, league: c.p.league, why: c.why || [] }; }),
+      games: picks.map(function (c) { return c.p; }), upsets: [], races: race ? [race] : [], context: snap.cfb ? contextOf(snap, 'cfb') : {}, limitations: [],
+      conference_top: race ? (snap.cfb.rankings.conference_top[race.home_conference] || []) : [], disputed: disputed };
+    return { ok: true, o: fpOpp('storylines', research, snap) };
+  }
+  function storyOf(o, st, p, i) {
+    var sep = p.neutral_site ? ' vs. ' : ' at ', g = rankedName(p, 'away') + sep + rankedName(p, 'home');
+    var lnk = p.link ? '\n\nFull research: [' + p.away + ' vs. ' + p.home + ' on EdgeDesk](' + p.link + ')' : '';
+    var lg = p.league === 'nfl' ? 'NFL' : 'college football';
+    if (st.kind === 'headliner') {
+      var both = p.league === 'cfb' && isNum(p.home_rank) && isNum(p.away_rank) && p.home_rank <= 25 && p.away_rank <= 25;
+      return { heading: 'The ' + lg + ' headliner: ' + p.away + sep + p.home,
+        body: para(g + (p.kickoff_text ? ' (' + p.kickoff_text + ')' : '') + ' is the ' + lg + ' game EdgeDesk’s research ranks highest this week' + (both ? ': two top-25 teams in EdgeDesk’s power ratings' + (p.conference_game ? ', in a game that counts in the ' + p.home_conference + ' standings' : '') : '') + '.',
+          fanLine(p, i), driverLine(p, i), marketLine(p, i)) + lnk };
+    }
+    if (st.kind === 'race') {
+      return { heading: 'The ' + p.home_conference + ' race: ' + p.away + sep + p.home,
+        body: para('Both teams are among the ' + p.home_conference + '’s three highest-rated teams in EdgeDesk’s ratings, so the result carries straight into the title race.', fanLine(p, i), matchupLine(p, i), 'EdgeDesk doesn’t carry a standings feed, so this reads the race through ratings, not the table.') + lnk };
+    }
+    if (st.kind === 'upset') {
+      return { heading: 'Upset watch: ' + p.model.underdog + ' against ' + p.model.favorite,
+        body: para('EdgeDesk gives ' + p.model.underdog + ' a ' + p.model.dog_win_pct + '% chance against ' + p.model.favorite + (p.kickoff_text ? ' (' + p.kickoff_text + ')' : '') + '.',
+          'That is a real chance, not a prediction: the favorite still wins this game more often than not.', driverLine(p, i)) + lnk };
+    }
+    if (st.kind === 'gap') {
+      return { heading: 'Model vs. market: ' + p.away + sep + p.home, body: discrepancyText(p, i) + ' A gap between a model and a market is a research question, not a reason to bet.' + lnk };
+    }
+    if (st.kind === 'weather') {
+      var w = p.weather;
+      return { heading: 'Weather watch: ' + p.away + sep + p.home,
+        body: para('The kickoff forecast (' + (w.source || 'open-meteo forecast') + (w.as_of ? ', as of ' + whenText(ts(w.as_of)) : '') + ') calls for ' + sentenceList(w.hazards) + '.', fanLine(p, i), 'EdgeDesk’s projected margin does not move for weather, so this is one to check again before kickoff.') + lnk };
+    }
+    if (st.kind === 'qb') {
+      return { heading: 'Quarterback watch: ' + p.away + sep + p.home, body: para((qbLine(p) || '').replace(/^Quarterback: /, ''), fanLine(p, i)) + lnk };
+    }
+    return null;
+  }
+  function fpStorylinesSections(o) {
+    var R = o.research, s = {};
+    var stories = R.stories.map(function (st, i) { var p = R.games.filter(function (g) { return g.game_id === st.game_id; })[0]; return p ? storyOf(o, st, p, i) : null; }).filter(Boolean);
+    var h0 = R.games[0];
+    s.intro = para('Here are the week ' + R.week + ' storylines EdgeDesk’s research says are worth following, from ' + h0.away + (h0.neutral_site ? ' vs. ' : ' at ') + h0.home + ' to the games where the numbers are closer than the billing.',
+      'Each one is built on a number EdgeDesk publishes, a ranking, a projection or a forecast, and each links to the full matchup research.');
+    s.how_to_read = howToRead(o, { noDataQuality: true });
+    stories.forEach(function (x, i) { s['story_' + (i + 1)] = x; });
+    s.limits = [limitsSection(o), disputedNote(R.disputed)].filter(Boolean).join('\n');
+    s.conclusion = para('Projections move as news and prices arrive during the week, and EdgeDesk updates its numbers as they do. The Friday research preview will have the latest.',
+      'None of this is a pick. It is a guide to where the weekend’s real uncertainty sits.');
+    return s;
+  }
+
+  /* ── Friday: the weekend in five numbers ── */
+  function fpPreview(snap, now, opts) {
+    opts = opts || {};
+    var lead = (opts.kickoff_lead_minutes != null ? opts.kickoff_lead_minutes : FP_DEFAULTS.kickoff_lead_minutes) * 60000;
+    var ac = upcomingOf(snap.cfb, now, lead), an = upcomingOf(snap.nfl, now, lead);
+    var fc = rankGames('cfb', ac.filter(undisputed)).slice(0, 10).map(function (x) { return x.p; });
+    var fn = rankGames('nfl', an.filter(undisputed)).slice(0, 6).map(function (x) { return x.p; });
+    var disputed = ac.length + an.length - ac.filter(undisputed).length - an.filter(undisputed).length;
+    var nums = [], used = {};
+    var take = function (key, p, extra) { if (p && !used[p.game_id + key]) { used[p.game_id + key] = 1; nums.push(Object.assign({ key: key, game_id: p.game_id, league: p.league }, extra || {})); } };
+    var withFav = fc.filter(function (p) { return p.model.favorite && isNum(p.model.fav_win_pct); });
+    var closest = withFav.slice().sort(function (a, b) { return a.model.margin - b.model.margin; })[0];
+    take('closest', closest);
+    var biggest = withFav.concat(fn.filter(function (p) { return p.model.favorite && isNum(p.model.fav_win_pct); })).sort(function (a, b) { return b.model.fav_win_pct - a.model.fav_win_pct; })[0];
+    if (biggest && (!closest || biggest.game_id !== closest.game_id)) take('favorite', biggest);
+    var dog = upsetsOf('cfb', fc).concat(upsetsOf('nfl', fn)).sort(function (a, b) { return b.model.dog_win_pct - a.model.dog_win_pct; })[0];
+    take('underdog', dog);
+    var miss = fc.filter(function (p) { return isNum(p.model.typical_miss); })[0];
+    if (miss) take('miss', miss);
+    var gap = fc.concat(fn).filter(function (p) { return p.discrepancy; }).sort(function (a, b) { return b.discrepancy.points - a.discrepancy.points; })[0];
+    if (gap) take('gap', gap);
+    var nflTop = fn.filter(function (p) { return p.model.favorite; })[0];
+    if (nums.length < 5 && nflTop) take('nfl', nflTop);
+    nums = nums.slice(0, 5);
+    if (nums.length < 4) return { ok: false, reason: 'only ' + nums.length + ' numbers with research behind them: not enough for the Friday preview' };
+    var games = uniq(nums.map(function (n) { return n.game_id; })).map(function (id) { return fc.concat(fn).filter(function (p) { return p.game_id === id; })[0]; });
+    var L = snap.cfb || snap.nfl;
+    var research = { kind: 'fp_research_preview', league: 'multi', leagues_used: uniq(games.map(function (p) { return p.league; })), season: L.season, week: snap.cfb ? snap.cfb.week : snap.nfl.week,
+      weeks: { cfb: snap.cfb && snap.cfb.week, nfl: snap.nfl && snap.nfl.week }, disputed: disputed,
+      as_of: [snap.cfb && snap.cfb.generated_at, snap.nfl && snap.nfl.generated_at].filter(Boolean).sort().pop() || null,
+      numbers: nums, games: games, watch: fc.concat(fn).filter(function (p) { return (p.weather && p.weather.state === 'HAZARD') || (p.qb && ((p.qb.home && p.qb.home.material) || (p.qb.away && p.qb.away.material))); }).slice(0, 3).map(function (p) { return p.game_id; }),
+      upsets: [], races: [], context: snap.cfb ? contextOf(snap, 'cfb') : {}, limitations: [] };
+    research.games = uniq(games.concat(fc.concat(fn).filter(function (p) { return research.watch.indexOf(p.game_id) >= 0; })));
+    return { ok: true, o: fpOpp('research_preview', research, snap) };
+  }
+  function fpPreviewSections(o) {
+    var R = o.research, s = {};
+    var G = function (id) { return R.games.filter(function (p) { return p.game_id === id; })[0]; };
+    var sep = function (p) { return p.neutral_site ? ' vs. ' : ' at '; };
+    s.intro = para('Five numbers frame the week ' + R.week + ' projections from EdgeDesk: the closest call, the biggest favorite, the best underdog chance and the size of a normal miss, each from the research EdgeDesk publishes for every game.',
+      'Each number comes with the game it belongs to and what it does and doesn’t mean.');
+    s.how_to_read = howToRead(o, { noDataQuality: true });
+    R.numbers.forEach(function (n, i) {
+      var p = G(n.game_id), m = p.model, g = p.away + sep(p) + p.home, k = 'num_' + (i + 1);
+      if (n.key === 'closest') s[k] = { heading: oneDp(m.margin) + ' points: the closest call', body: para('**' + oneDp(m.margin) + ' points** is EdgeDesk’s projected margin for ' + g + (p.kickoff_text ? ' (' + p.kickoff_text + ')' : '') + ', the closest call among the college games EdgeDesk features this week.', 'EdgeDesk gives ' + m.favorite + ' a ' + m.fav_win_pct + '% chance to win, close enough that one bounce decides it.', matchupLine(p, i)) };
+      if (n.key === 'favorite') s[k] = { heading: m.fav_win_pct + '%: the biggest favorite', body: para('**' + m.fav_win_pct + '%** is the chance EdgeDesk gives ' + m.favorite + ' against ' + m.underdog + ', the biggest favorite among the games EdgeDesk features this week.', 'It still leaves ' + m.underdog + ' winning ' + m.dog_win_pct + '% of the time: a heavy favorite is not a certainty.', driverLine(p, i)) };
+      if (n.key === 'underdog') s[k] = { heading: m.dog_win_pct + '%: the best underdog chance', body: para('**' + m.dog_win_pct + '%** is the best chance EdgeDesk gives an underdog in a headline game: ' + m.underdog + ' against ' + m.favorite + (p.kickoff_text ? ' (' + p.kickoff_text + ')' : '') + '.', 'That is a real chance, not a prediction: the favorite still wins more often than not.', driverLine(p, i + 1)) };
+      if (n.key === 'miss') s[k] = { heading: 'About ' + Math.round(m.typical_miss) + ' points: a normal miss', body: para('**About ' + Math.round(m.typical_miss) + ' points** is EdgeDesk’s typical miss on a game like ' + g + '.', 'Projected margins are estimates with a wide band around them, which is why a win chance says more than a margin, and why a projection is not a bet.') };
+      if (n.key === 'gap') s[k] = { heading: oneDp(p.discrepancy.points) + ' points: the biggest explained gap with the market', body: discrepancyText(p, i) + ' A gap between a model and a market is a research question, not a reason to bet.' };
+      if (n.key === 'nfl') s[k] = { heading: oneDp(m.margin) + ' points: the NFL headliner', body: para('**' + oneDp(m.margin) + ' points** is EdgeDesk’s margin for ' + m.favorite + ' in ' + g + (p.kickoff_text ? ' (' + p.kickoff_text + ')' : '') + ', the NFL game EdgeDesk’s research ranks highest this week.', 'EdgeDesk gives ' + m.favorite + ' a ' + m.fav_win_pct + '% chance to win.') };
+      if (p.link) s[k].body += '\n\nFull research: [' + p.away + ' vs. ' + p.home + ' on EdgeDesk](' + p.link + ')';
+    });
+    var W = (R.watch || []).map(G).filter(Boolean);
+    if (W.length) s.watch = W.map(function (p) {
+      var bits = [];
+      if (p.weather && p.weather.state === 'HAZARD') bits.push('the forecast calls for ' + sentenceList(p.weather.hazards));
+      var q = qbLine(p); if (q) bits.push(q.replace(/^Quarterback: /, '').replace(/\.$/, ''));
+      return '- **' + p.away + sep(p) + p.home + ':** ' + bits.join('; ') + '.';
+    }).join('\n');
+    s.limits = [limitsSection(o), disputedNote(R.disputed)].filter(Boolean).join('\n');
+    s.conclusion = para('Five numbers, five games, and none of them a pick. EdgeDesk updates every projection as news and prices arrive, and Monday’s weekend model review will grade them.');
+    return s;
+  }
+
+  var FP_BUILD = { weekend_review: fpReview, storylines: fpStorylines, research_preview: fpPreview };
+  var FP_SECTIONS = { weekend_review: fpReviewSections, storylines: fpStorylinesSections, research_preview: fpPreviewSections };
+  function fpSeo(o, now) {
+    var R = o.research, w = R.week;
+    if (o.fp_kind === 'weekend_review') {
+      var t = fpReviewHeadline(o);
+      return { title: t, keyword: 'weekend model review', slug: 'weekend-model-review-' + slugify(ctDayText(now)) + '-' + R.season,
+        meta: 'EdgeDesk’s weekend model review: every pregame number graded on the final and against the closing line, the closest calls and the biggest misses.' };
+    }
+    if (o.fp_kind === 'storylines') {
+      var h = R.games[0], hg = h.away + (h.neutral_site ? ' vs. ' : ' at ') + h.home, n = R.stories.length;
+      var cands = [hg + ' and ' + cap(numWord(n - 1)) + ' More Storylines for Week ' + w, 'Week ' + w + ' Storylines: ' + hg + ' and More', 'Week ' + w + ' Storylines EdgeDesk Is Watching'];
+      return { title: cands.filter(function (x, i) { return x.length <= 70 || i === cands.length - 1; })[0], keyword: 'week ' + w + ' storylines', slug: 'week-' + w + '-storylines-' + R.season,
+        meta: 'The week ' + w + ' storylines EdgeDesk’s research says are worth following: the headliners, the upset chances and the numbers behind them. Research, not picks.' };
+    }
+    return { title: 'The Weekend in ' + cap(numWord(R.numbers.length)) + ' Numbers: Week ' + w + ' Projections From EdgeDesk', keyword: 'week ' + w + ' projections', slug: 'week-' + w + '-projections-in-' + numWord(R.numbers.length) + '-numbers-' + R.season,
+      meta: 'Week ' + w + ' projections from EdgeDesk in ' + numWord(R.numbers.length) + ' numbers: the closest call, the biggest favorite, the best underdog chance and a normal miss.' };
+  }
+  /* the article for a slot, or why there is none */
+  function fpBuild(kind, snap, opts) {
+    opts = opts || {};
+    var now = isNum(opts.now) ? opts.now : Date.now();
+    if (!FP_BUILD[kind]) return { ok: false, reason: 'unknown slot ' + kind };
+    var b = FP_BUILD[kind](snap, now, opts);
+    if (!b.ok) return b;
+    var o = b.o, raw = FP_SECTIONS[kind](o), F = FORMATS[FP_KINDS[kind].format];
+    var sections = [];
+    F.sections.forEach(function (k) {
+      var x = raw[k]; if (!x) return;
+      if (typeof x === 'string') sections.push({ key: k, heading: SECTION_HEADINGS[k] || null, body: x });
+      else sections.push({ key: k, heading: x.heading || null, body: x.body });
+    });
+    var seo = fpSeo(o, now);
+    o.seo = { primary_keyword: seo.keyword, secondary_keywords: [], headline: seo.title, meta_description: seo.meta, slug: seo.slug };
+    var a = { format: FP_KINDS[kind].format, base_format: FP_KINDS[kind].format, angle: kind, title: seo.title, slug: seo.slug,
+      meta_description: seo.meta, primary_keyword: seo.keyword, secondary_keywords: [], standfirst: fpStandfirst(o), sections: sections,
+      generator: 'template:' + VERSION + ':fp', generated_at: iso(now), research_as_of: o.research.as_of || null, research_hash: researchHash(o) };
+    a.word_count = wordCount(a.standfirst + ' ' + sections.map(function (x) { return x.body; }).join(' '));
+    return { ok: true, o: o, article: a };
+  }
+  function fpStandfirst(o) {
+    if (o.fp_kind === 'weekend_review') return 'Every number EdgeDesk published before kickoff, graded on the final and against the closing line: what held up, what missed, and what one weekend can’t say.';
+    if (o.fp_kind === 'storylines') return 'The week ' + o.research.week + ' games EdgeDesk’s research says are worth following, and the numbers behind each one. Research, not picks.';
+    return 'The closest call, the biggest favorite, the best underdog chance and the size of a normal miss: the weekend in numbers, each one explained.';
+  }
+
+  /* THE TWELVE GATES. ctx: { now, slot, settings, current, teamLists,
+     publishedThisWeek: [{id, kind}], site: [{id, slug, title, text}] (every
+     published EdgeDesk page's text), taken: {slug: id}, publisherTexts:
+     [{label, text}] (the week's publisher drafts), ai: {used, ledgered} }.
+     All twelve must pass for an article to publish without a person. */
+  function fpGates(a, o, ctx) {
+    ctx = ctx || {};
+    var now = isNum(ctx.now) ? ctx.now : Date.now();
+    var S = Object.assign({}, FP_DEFAULTS, ctx.settings || {});
+    var g = [];
+    function add(key, label, ok, detail) { g.push({ key: key, label: label, ok: !!ok, detail: detail || null }); }
+    var v = validate(a, o, { now: now, teamLists: ctx.teamLists, siblings: [] });
+    var vc = {}; v.checks.forEach(function (c) { vc[c.id] = c; });
+    var ce = gate(a, o, { now: now, current: ctx.current, teamLists: ctx.teamLists, landing: FP_CTA.href, campaign: null });
+    var slot = ctx.slot;
+    /* 1 the slot */
+    add('slot', 'Today’s Central Time slot is this article’s', slot && slot.kind === o.fp_kind && now <= ts(slot.window_end),
+      slot ? slot.label + ' · publishes ' + ctWhen(ts(slot.publish_at)) + ' · window closes ' + ctWhen(ts(slot.window_end)) : 'no slot today');
+    /* 2 the cadence */
+    var wk = (ctx.publishedThisWeek || []).filter(function (x) { return !slot || x.id !== slot.id; });
+    var dupSlot = (ctx.publishedThisWeek || []).some(function (x) { return slot && x.id === slot.id; });
+    add('cadence', 'At most ' + S.max_per_week + ' a week, one per slot', !dupSlot && wk.length < S.max_per_week, (dupSlot ? 'this slot is already published; ' : '') + wk.length + ' published this week');
+    /* 3 freshness */
+    var age = o.research.as_of ? (now - ts(o.research.as_of)) / 3600000 : null;
+    add('freshness', 'The research is fresh', age != null && age <= S.research_max_age_hours, age == null ? 'no research time on file' : 'research read ' + Math.round(age) + ' hours ago (limit ' + S.research_max_age_hours + ')');
+    /* 4 the schedule */
+    var started = (o.research.games || []).filter(function (p) { var k = ts(p.kickoff); return k != null && k <= now + S.kickoff_lead_minutes * 60000; });
+    var unfinished = (o.research.results || []).filter(function (x) { return !x.final || !isNum(x.final.home); });
+    add('schedule', o.fp_kind === 'weekend_review' ? 'Every game reviewed is final and graded' : 'No featured game has started (or starts within the hour)', !started.length && !unfinished.length,
+      started.length ? started.map(function (p) { return p.away + ' at ' + p.home; }).join(', ') : unfinished.length ? unfinished.length + ' unfinished' : null);
+    /* 5 the editorial gate: nothing blocked, nothing that needs a person's judgment */
+    var judge = [];
+    ce.items.forEach(function (it) { it.findings.forEach(function (f) {
+      if (f.status === 'BLOCKED' || (f.status === 'WARNING' && /^discrepancy:/.test(f.ack_key || '') && !f.acknowledged)) judge.push(it.label + ': ' + f.reason);
+    }); });
+    add('editorial_gate', 'The fourteen-check editorial gate: nothing blocked, no unexplained market gap', !judge.length, judge.length ? judge.slice(0, 4).join(' · ') : 'verdict ' + ce.verdict
+      + (ce.counts && ce.counts.WARNING ? ' (' + ce.counts.WARNING + ' warning(s), none needing a person)' : ''));
+    /* 6 the hard checks */
+    add('hard_checks', 'Every hard validation check passes', v.ok, v.ok ? null : v.failed.join(', '));
+    /* 7 the numbers */
+    var numIds = ['numbers_in_evidence', 'numbers_reconcile', 'results_reconcile'];
+    var numBad = numIds.filter(function (k) { return vc[k] && vc[k].status === 'fail'; });
+    add('numbers', 'Every number traces to the research and reconciles', !numBad.length, numBad.length ? numBad.map(function (k) { return vc[k].detail; }).join(' · ') : null);
+    /* 8 responsible gambling */
+    var resp = ['no_recommendation', 'projection_not_value', 'no_confidence_misuse'].filter(function (k) { return vc[k] && vc[k].status === 'fail'; });
+    add('responsible', 'No pick or staking language; a projection is explained as not a bet; the 21+ disclaimer is on the page', !resp.length, resp.length ? resp.join(', ') : null);
+    /* 9 duplicates on EdgeDesk */
+    var owner = (ctx.taken || {})[a.slug];
+    var simSite = (ctx.site || []).filter(function (x) { return !slot || x.id !== slot.id; }).map(function (x) { return { id: x.id, title: x.title, sim: similarity(textOf(a), x.text) }; }).sort(function (x, y) { return y.sim - x.sim; })[0];
+    add('duplicate_site', 'A URL of its own, and not a near-copy of anything EdgeDesk has published', (!owner || (slot && owner === slot.id)) && (!simSite || simSite.sim < S.site_similarity_max),
+      (owner && (!slot || owner !== slot.id) ? '/articles/' + a.slug + '/ is taken by ' + owner + '; ' : '') + (simSite ? 'closest: ' + Math.round(simSite.sim * 100) + '% overlap with “' + simSite.title + '”' : 'nothing published to compare'));
+    /* 10 duplicates with a publisher's article (a distinct angle, never a copy) */
+    var simPub = (ctx.publisherTexts || []).map(function (x) { return { label: x.label, sim: similarity(textOf(a), x.text) }; }).sort(function (x, y) { return y.sim - x.sim; })[0];
+    add('duplicate_publisher', 'A distinct angle from every publisher article of the same week', !simPub || simPub.sim < S.publisher_similarity_max,
+      simPub ? 'closest: ' + Math.round(simPub.sim * 100) + '% overlap with ' + simPub.label + ' (limit ' + Math.round(S.publisher_similarity_max * 100) + '%)' : 'no publisher article this week');
+    /* 11 SEO */
+    var seoBad = [];
+    if (!a.title || a.title.length < 20 || a.title.length > 75) seoBad.push('headline ' + (a.title || '').length + ' characters');
+    if (!a.meta_description || a.meta_description.length < 90 || a.meta_description.length > 160) seoBad.push('meta description ' + (a.meta_description || '').length + ' characters');
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(a.slug || '')) seoBad.push('slug');
+    if (vc.seo_keyword && vc.seo_keyword.status !== 'pass') seoBad.push('keyword: ' + vc.seo_keyword.detail);
+    add('seo', 'Headline, description, URL and keyword are complete', !seoBad.length, seoBad.join('; ') || null);
+    /* 12 cost */
+    var ai = ctx.ai || null;
+    add('cost', 'Any AI used went through the shared budget ledger', !ai || !ai.used || !!ai.ledgered, ai && ai.used ? (ai.ledgered ? 'AI version kept, ledger call ' + (ai.call || '') : 'AI used without the ledger') : 'no AI used (EdgeDesk’s own writer)');
+    return { ok: g.every(function (x) { return x.ok; }), gates: g, failed: g.filter(function (x) { return !x.ok; }).map(function (x) { return x.key; }), ce_gate: ce, validation: v };
+  }
+  /* the store record (tools/editorial/feature_model.js renders it) */
+  function fpRecord(a, o, ctx) {
+    ctx = ctx || {};
+    var now = isNum(ctx.now) ? ctx.now : Date.now(), slot = ctx.slot || {};
+    var body = a.sections.map(function (x) { return x.body; }).join('\n\n');
+    return {
+      id: slot.id, article_type: 'feature', feature_kind: o.fp_kind, category: FP_KINDS[o.fp_kind].label, category_slug: FP_KINDS[o.fp_kind].category,
+      slot_date: slot.date || ctDate(now), season: o.research.season, week: o.research.week, leagues: o.research.leagues_used,
+      sport: 'FEATURE', sport_label: 'EdgeDesk features', sport_slug: 'features',
+      slug: a.slug, aliases: [], title: a.title, seo_title: a.title + ' | EdgeDesk', seo_description: a.meta_description, canonical_url: SITE + '/articles/' + a.slug + '/',
+      primary_keyword: a.primary_keyword, standfirst: a.standfirst, excerpt: a.standfirst, sections: a.sections, word_count: a.word_count, author: 'EdgeDesk Research',
+      research_as_of: a.research_as_of, research_hash: a.research_hash, content_hash: hash(a.title + '\n' + a.standfirst + '\n' + body), generator: a.generator,
+      game_ids: (o.research.games || []).map(function (p) { return p.game_id; }).concat((o.research.results || []).map(function (x) { return x.game_id; })),
+      research_links: uniq((o.research.games || []).map(function (p) { return p.link; }).filter(Boolean)),
+      sources: (o.sources || []).map(function (x) { return { label: x.label, url: x.url, as_of: x.as_of }; }),
+      disclaimer: DISCLAIMER, cta: FP_CTA,
+      syndication: { canonical: 'self', note: 'Original EdgeDesk article. No other site is named canonical, and EdgeDesk claims no other site’s URL.' },
+      status: ctx.status || 'draft', generated_at: iso(now), published_at: ctx.status === 'published' ? iso(now) : null, updated_at: iso(now)
+    };
+  }
+
+  /* ======================================================================
+     THE WEEKLY SUMMARY — what earned publication, traffic, sign-ups and
+     money; which checks keep failing; which AI work was wasted; and what to
+     change. Built from content_engine_weekly_data (counts only). Nothing is
+     concluded from too little data: a comparison needs SAMPLE.articles
+     articles a side and SAMPLE.visits visits, or it is reported as too early.
+     ====================================================================== */
+  var SAMPLE = { articles: 3, visits: 50, signups: 10, ai_calls: 4 };
+  function weeklyReview(data, opts) {
+    opts = opts || {};
+    var now = isNum(opts.now) ? opts.now : Date.now();
+    var arts = (data && data.articles) || [], ai = (data && data.ai) || {}, gf = (data && data.gate_failures) || {};
+    var fin = function (x) { return x && x.funnel || {}; };
+    var sum = function (list, k) { return list.reduce(function (a, x) { var v = fin(x)[k]; return a + (isNum(v) ? v : 0); }, 0); };
+    var measured = arts.some(function (x) { return isNum(fin(x).visits); });
+    var sent = arts.filter(function (x) { return x.sent_at; }), pub = arts.filter(function (x) { return x.published_at; });
+    var out = { days: data && data.days, counts: { articles: arts.length, sent: sent.length, published: pub.length }, worked: [], failed: [], gate: [], ai: null, recommendations: [], too_early: [] };
+    var firstGate = arts.filter(function (x) { return x.first_gate; });
+    var passed = firstGate.filter(function (x) { return x.first_gate !== 'BLOCKED'; });
+    out.counts.first_pass = firstGate.length ? passed.length + ' of ' + firstGate.length : null;
+
+    /* what earned publication, and what it brought */
+    pub.forEach(function (x) {
+      var f = fin(x);
+      out.worked.push({ title: x.title, format: x.format, publisher: x.publisher || 'EdgeDesk', visits: isNum(f.visits) ? f.visits : null, signups: isNum(f.signups) ? f.signups : null, paid: isNum(f.paid) ? f.paid : null });
+    });
+    /* sent and not published within two weeks: a follow-up, not a verdict */
+    sent.filter(function (x) { return !x.published_at && now - ts(x.sent_at) > 14 * 86400000; }).forEach(function (x) {
+      out.failed.push({ title: x.title, why: 'sent ' + Math.round((now - ts(x.sent_at)) / 86400000) + ' days ago and not published', fix: 'Ask ' + (x.publisher || 'the publisher') + ' whether it will run; archive it if not.' });
+    });
+    /* recurring gate failures on first drafts */
+    var blockedOn = {};
+    firstGate.forEach(function (x) { (x.first_gate_blocked || []).forEach(function (k) { blockedOn[k] = (blockedOn[k] || 0) + 1; }); });
+    Object.keys(gf).forEach(function (k) { if (!blockedOn[k]) blockedOn[k] = gf[k]; });
+    Object.keys(blockedOn).sort(function (a, b) { return blockedOn[b] - blockedOn[a]; }).forEach(function (k) {
+      var lab = (GATE_CHECKS.filter(function (c) { return c.key === k; })[0] || {}).label || k;
+      out.gate.push({ key: k, label: lab, count: blockedOn[k] });
+    });
+    /* AI: what was spent, what was kept */
+    if (ai && isNum(ai.calls)) {
+      out.ai = { calls: ai.calls, accepted: ai.accepted || 0, discarded: ai.discarded || 0, failed: ai.failed || 0, cache_hits: ai.cache_hits || 0, est_usd: ai.est_usd || 0, wasted_usd: ai.wasted_usd || 0 };
+    }
+
+    /* recommendations, each with its evidence */
+    var rec = function (text, evidence) { out.recommendations.push({ text: text, evidence: evidence }); };
+    if (!arts.length) rec('Nothing was written in this window. Run discovery and draft the top opportunity.', 'no articles in ' + (data && data.days) + ' days');
+    if (firstGate.length && firstGate.length < SAMPLE.articles) out.too_early.push('First-pass rate: ' + firstGate.length + ' first draft(s) is too few to judge against the 90% target');
+    else if (firstGate.length && passed.length / firstGate.length < 0.9) {
+      var top = out.gate[0];
+      rec('First drafts pass the gate ' + Math.round(100 * passed.length / firstGate.length) + '% of the time, under the 90% target' + (top ? '; the most common block is “' + top.label + '” (' + top.count + ')' : '') + '.',
+        top && top.key === 'reliability' ? 'reliability blocks are unexplained market gaps: they need your review, not a rewrite' : 'fix the writer or the research for that check before adding volume');
+    }
+    if (out.ai && out.ai.calls >= SAMPLE.ai_calls && out.ai.accepted / out.ai.calls < 0.5)
+      rec('Most AI rewrites were discarded (' + out.ai.accepted + ' kept of ' + out.ai.calls + ', $' + (+out.ai.wasted_usd).toFixed(2) + ' estimated on discarded or failed calls). Prefer section rewrites, or the deterministic draft alone.', 'AI ledger, last ' + (data && data.days) + ' days');
+    else if (out.ai && out.ai.calls > 0 && out.ai.calls < SAMPLE.ai_calls) out.too_early.push('AI acceptance: ' + out.ai.calls + ' call(s) is too few to judge');
+    if (sent.length && !pub.length) rec('Nothing sent in this window has been published yet. Confirm the publisher’s schedule before sending more.', sent.length + ' sent, 0 published');
+    /* format comparison: only with enough articles AND enough traffic on both sides */
+    var byFormat = {};
+    pub.forEach(function (x) { (byFormat[x.format] = byFormat[x.format] || []).push(x); });
+    var fmts = Object.keys(byFormat);
+    if (!measured) out.too_early.push('Traffic: no first-party visit data for these articles yet (or the measurement is not installed)');
+    else if (fmts.length >= 2) {
+      var ready = fmts.filter(function (k) { return byFormat[k].length >= SAMPLE.articles && sum(byFormat[k], 'visits') >= SAMPLE.visits; });
+      if (ready.length >= 2) {
+        var rate = function (k) { return sum(byFormat[k], 'visits') / byFormat[k].length; };
+        ready.sort(function (a, b) { return rate(b) - rate(a); });
+        rec('“' + ((FORMATS[ready[0]] || {}).label || ready[0]) + '” articles bring the most visits per published article (' + Math.round(rate(ready[0])) + ' against ' + Math.round(rate(ready[ready.length - 1])) + ' for “' + ((FORMATS[ready[ready.length - 1]] || {}).label || ready[ready.length - 1]) + '”). Lean toward it.',
+          ready.map(function (k) { return k + ': ' + byFormat[k].length + ' articles, ' + sum(byFormat[k], 'visits') + ' visits'; }).join('; '));
+      } else out.too_early.push('Format comparison: needs ' + SAMPLE.articles + '+ published articles and ' + SAMPLE.visits + '+ visits in each format');
+    }
+    var v = sum(pub, 'visits'), su = sum(pub, 'signups');
+    if (measured && v >= SAMPLE.visits && su / v < 0.02) rec('Visits are arriving but few sign up (' + su + ' of ' + v + '). Test the landing page the tagged links point to.', 'first-party, published articles in the window');
+    else if (measured && v > 0 && v < SAMPLE.visits) out.too_early.push('Conversion: ' + v + ' visits is under the ' + SAMPLE.visits + ' needed to judge sign-up rate');
+    return out;
+  }
+  function weeklyReviewText(r) {
+    var L = ['EdgeDesk content engine — the last ' + r.days + ' days', '',
+      'Articles: ' + r.counts.articles + ' written, ' + r.counts.sent + ' sent, ' + r.counts.published + ' published' + (r.counts.first_pass ? '; first drafts through the gate: ' + r.counts.first_pass : '') + '.'];
+    if (r.worked.length) { L.push('', 'Published:'); r.worked.forEach(function (w) { L.push('- ' + w.title + ' (' + w.publisher + '): ' + (w.visits == null ? 'traffic not measured' : w.visits + ' visits, ' + (w.signups || 0) + ' sign-up' + (w.signups === 1 ? '' : 's') + ', ' + (w.paid || 0) + ' paid')); }); }
+    if (r.failed.length) { L.push('', 'Needs follow-up:'); r.failed.forEach(function (f) { L.push('- ' + f.title + ': ' + f.why + '. ' + f.fix); }); }
+    if (r.gate.length) { L.push('', 'Most common gate blocks:'); r.gate.slice(0, 5).forEach(function (g) { L.push('- ' + g.label + ': ' + g.count); }); }
+    if (r.ai) L.push('', 'AI: ' + r.ai.calls + ' calls, ' + r.ai.accepted + ' kept, ' + r.ai.discarded + ' discarded, ' + r.ai.failed + ' failed, ' + r.ai.cache_hits + ' from cache; $' + (+r.ai.est_usd).toFixed(2) + ' estimated ($' + (+r.ai.wasted_usd).toFixed(2) + ' on discarded or failed calls).');
+    if (r.recommendations.length) { L.push('', 'What to change:'); r.recommendations.forEach(function (x) { L.push('- ' + x.text + (x.evidence ? ' [' + x.evidence + ']' : '')); }); }
+    if (r.too_early.length) { L.push('', 'Too early to say:'); r.too_early.forEach(function (x) { L.push('- ' + x); }); }
+    return L.join('\n');
   }
 
   /* 5-word shingle Jaccard similarity */
@@ -6331,89 +8083,14 @@
   }
 
   /* ======================================================================
-     COST — what a Claude call can cost and did cost (docs/system-integrity/
-     COST.md). One implementation for both hosts that make calls (the Edge
-     Function, the weekly job): each call is RESERVED in the database before
-     it is made at the UPPER BOUND estimate() returns
-     (content_engine_ai_reserve takes one month lock, so concurrent calls
-     cannot pass the $10 cap together) and SETTLED after it at measured()
-     (content_engine_ai_settle). Prices are list prices, USD per million
-     tokens (Anthropic first-party API, 2026-10); cacheWrite is the 5-minute
-     write (1.25× input). A model missing from the table is priced at
-     CEILING, so a new or renamed model is never counted as cheaper than it
-     is.
-     ====================================================================== */
-  var PRICES = {
-    'claude-opus-5-5': { in: 4, out: 20, cacheRead: 0.2, cacheWrite: 5 },
-    'claude-opus-5': { in: 5, out: 25, cacheRead: 0.5, cacheWrite: 6.25 },
-    'claude-opus-4-8': { in: 5, out: 25, cacheRead: 0.5, cacheWrite: 6.25 },
-    'claude-sonnet-5-5': { in: 2, out: 10, cacheRead: 0.2, cacheWrite: 2.5 },
-    'claude-haiku-5-5': { in: 0.1, out: 0.5, cacheRead: 0.01, cacheWrite: 0.125 }
-  };
-  var PRICE_CEILING = { in: 10, out: 50, cacheRead: 1, cacheWrite: 12.5 };
-  /* the models the server-side fallback ('default') can hand a declined request to */
-  var FALLBACK_MODELS = ['claude-opus-5', 'claude-opus-4-8'];
-  function priceOf(model) { return PRICES[String(model || '')] || PRICE_CEILING; }
-  /* the most a request can cost: input at one token per three characters
-     (prose runs nearer four, so this over-counts), output at the full
-     max_tokens (thinking included), and — because a policy decline can be
-     billed and then re-run on a fallback model — the same again at the
-     dearest fallback's price. Capped at the $5 a single reservation may hold. */
-  function costEstimate(req, model) {
-    var inTok = Math.ceil(JSON.stringify({ system: req.system, messages: req.messages }).length / 3) + 500;
-    var outTok = +req.max_tokens || 16000;
-    var p = priceOf(model);
-    var f = FALLBACK_MODELS.map(priceOf).reduce(function (a, b) { return a.out >= b.out ? a : b; });
-    var usd = (inTok * p.in + outTok * p.out) / 1e6 + (inTok * f.in + outTok * f.out) / 1e6;
-    return Math.min(5, Math.ceil(usd * 1e6) / 1e6);
-  }
-  /* the measured cost of a reply, from the token counts the API reports.
-     usage.iterations (present when a fallback ran) is the per-attempt record:
-     a plain attempt is priced at the requested model, the fallback attempt at
-     the model that served it. No usage at all → null: settled at the estimate. */
-  function costMeasured(message, model) {
-    var u = message && message.usage;
-    if (!u) return null;
-    var its = Array.isArray(u.iterations) && u.iterations.length ? u.iterations : [u];
-    var t = { usd: 0, input_tokens: 0, output_tokens: 0, cache_read_tokens: 0, cache_write_tokens: 0, basis: its === u.iterations ? 'iterations' : 'usage' };
-    its.forEach(function (it) {
-      var p = it && it.type === 'fallback_message' ? (PRICES[String(message.model || '')] || PRICE_CEILING) : priceOf(model);
-      var i = +it.input_tokens || 0, o = +it.output_tokens || 0, cr = +it.cache_read_input_tokens || 0, cw = +it.cache_creation_input_tokens || 0;
-      t.input_tokens += i; t.output_tokens += o; t.cache_read_tokens += cr; t.cache_write_tokens += cw;
-      t.usd += (i * p.in + o * p.out + cr * p.cacheRead + cw * p.cacheWrite) / 1e6;
-    });
-    t.usd = Math.round(t.usd * 1e6) / 1e6;
-    return t;
-  }
-  /* the request's fingerprint (SHA-256, hex): the same model, article
-     version, section and prompt make the same key, so a request already made
-     and paid for is refused as a duplicate instead of being paid for twice.
-     scope: { article, content_hash, section } or { opportunity, research_hash, format } */
-  function costRequestKey(model, scope, req) {
-    var body = canonicalJson({ model: model, scope: scope || {}, system: req.system, messages: req.messages, output_config: req.output_config, max_tokens: req.max_tokens });
-    var C = typeof globalThis !== 'undefined' && globalThis.crypto && globalThis.crypto.subtle;
-    if (!C) return Promise.reject(new Error('no WebCrypto in this host'));
-    return C.digest('SHA-256', new TextEncoder().encode(body)).then(function (d) {
-      return Array.prototype.map.call(new Uint8Array(d), function (b) { return (b < 16 ? '0' : '') + b.toString(16); }).join('');
-    });
-  }
-  function canonicalJson(v) {
-    if (v === null || typeof v !== 'object') return JSON.stringify(v === undefined ? null : v);
-    if (Array.isArray(v)) return '[' + v.map(canonicalJson).join(',') + ']';
-    return '{' + Object.keys(v).sort().filter(function (k) { return v[k] !== undefined; }).map(function (k) { return JSON.stringify(k) + ':' + canonicalJson(v[k]); }).join(',') + '}';
-  }
-  /* what the owner is told when the budget door refuses a call */
-  var COST_REFUSALS = {
-    duplicate: 'Claude already rewrote exactly this draft from exactly this research, and that version failed the checks; edit the draft or refresh the research before asking again (nothing was spent)',
-    in_flight: 'a rewrite of this article is already running',
-    retry_limit: 'this request failed too many times; nothing more is spent on it',
-    monthly_budget_exhausted: 'the content engine’s monthly AI budget is used up; the deterministic draft stands',
-    job_budget_exhausted: 'this run’s AI budget is used up; the deterministic draft stands'
-  };
-
-  /* ======================================================================
      AI — the drafting request and the reply. The CALL belongs to the host.
      ====================================================================== */
+  /* a section rewrite returns ONE section, not the whole article (output tokens are the cost) */
+  var AI_SECTION_SCHEMA = {
+    type: 'object', additionalProperties: false, required: ['key', 'heading', 'body'],
+    properties: { key: { type: 'string' }, heading: { type: 'string' }, body: { type: 'string' } }
+  };
+  var AI_MAX_TOKENS = { draft: 16000, section: 6000 };
   var AI_SCHEMA = {
     type: 'object', additionalProperties: false,
     required: ['title', 'meta_description', 'standfirst', 'sections'],
@@ -6441,6 +8118,11 @@
     '5. A market line whose status is "stale" or "reference" must be described with its source and capture time (or "reference, no capture time"), never as the current price.',
     '6. External reporting must be attributed to its outlet with a Markdown link to the URL in the packet, and kept separate from EdgeDesk\'s model inference. Do not add details beyond what the packet quotes.',
     '7. Explain jargon in plain words. No generic filler ("delve into", "game-changer", "at the end of the day", "must-watch", "buckle up").',
+    '8. Projected scores, margins, totals and win chances: copy each game\'s display strings exactly. The two projected scores must differ by exactly the stated margin and add to exactly the stated total.',
+    '9. A game\'s data_quality score measures how completely EdgeDesk knows its inputs. Call it "data quality", never "confidence", and never use it as a measure of who will win.',
+    '10. Quarterbacks: write about a quarterback situation ONLY when that side\'s qb.material is true, using its label and source. A starter without an announcement is not news: never write that a quarterback is unconfirmed, uncertain or unsettled otherwise.',
+    '11. Model–market gaps: explain them ONLY with the game\'s discrepancy fields (terms, market_implied, facts, explained_pct, unexplained_pct). Say plainly what is unexplained. Never invent a reason for a gap.',
+    '12. Injuries, suspensions, postponements, venue or kickoff changes: only what the packet states, attributed to its source.',
     'Formatting: section bodies are Markdown — paragraphs, "### " game headings inside the games section, "- " bullets, **bold**, [text](https://...) links. Do not write the disclaimer or the attribution footer; EdgeDesk adds both.'
   ].join('\n');
 
@@ -6502,7 +8184,7 @@
       ed.seo_requirements ? 'SEO requirements: ' + ed.seo_requirements : null
     ].filter(Boolean).join('\n') : 'PUBLISHER: none (EdgeDesk house style)';
     var task = ctx.section
-      ? 'Rewrite ONLY the section with key "' + ctx.section + '". Return the article object with the title, meta description and standfirst copied unchanged and "sections" holding that one section; EdgeDesk keeps every other section as it is.'
+      ? 'Rewrite ONLY the section with key "' + ctx.section + '". Return just that section as {key, heading, body}; every other section stays as it is in the CURRENT DRAFT.'
       : 'Write the full article. Keep the section keys and order of the CURRENT DRAFT (you may improve every heading and every word). The deterministic CURRENT DRAFT is accurate but plain: make it read like good sports journalism without adding facts.';
     var user = [
       task,
@@ -6519,11 +8201,35 @@
     return {
       system: AI_SYSTEM,
       messages: [{ role: 'user', content: user }],
-      /* a one-section rewrite cannot need the whole article's output budget,
-         and the reservation is made at this bound */
-      max_tokens: ctx.section ? 4000 : 16000,
-      output_config: { effort: 'medium', format: { type: 'json_schema', schema: AI_SCHEMA } }
+      max_tokens: ctx.section ? AI_MAX_TOKENS.section : AI_MAX_TOKENS.draft,
+      output_config: { effort: 'medium', format: { type: 'json_schema', schema: ctx.section ? AI_SECTION_SCHEMA : AI_SCHEMA } },
+      operation: ctx.section ? 'section' : 'draft', section: ctx.section || null
     };
+  }
+  /* the ledger's key for a request: the same model, prompt and draft is the same request */
+  function requestKey(req, model) {
+    return JSON.stringify({ model: model, system: req.system, messages: req.messages, max_tokens: req.max_tokens, output_config: req.output_config });
+  }
+  /* a conservative input-token estimate for the reservation (≈3 characters a token) */
+  function inputEstimate(req) {
+    var n = String(req.system || '').length + (req.messages || []).reduce(function (m, x) { return m + String(x.content || '').length; }, 0);
+    return Math.ceil(n / 3) + 200;
+  }
+  /* Before any AI call: problems the AI cannot fix (the research is stale, a
+     featured game kicked off, EdgeDesk's own figures disagree). Fixing these
+     is a research refresh, not a rewrite — and costs nothing. */
+  function aiPrecheck(a, o, now) {
+    now = isNum(now) ? now : Date.now();
+    var out = [];
+    var asOf = ts(o.research && o.research.as_of);
+    if (asOf != null && now - asOf > 36 * 3600000) out.push('the research is ' + Math.round((now - asOf) / 3600000) + ' hours old: refresh the opportunity first');
+    var feat = featuredGames(a, o);
+    feat.forEach(function (p) {
+      var k = ts(p.kickoff);
+      if (k != null && k <= now) out.push(p.away + ' at ' + p.home + ' has kicked off');
+      if (p.model && p.model.numbers && !p.model.numbers.ok) out.push(p.away + ' at ' + p.home + ': EdgeDesk’s own figures disagree');
+    });
+    return out;
   }
 
   function GTW_RULES(ed) {
@@ -6560,6 +8266,13 @@
     var text = (message.content || []).filter(function (b) { return b && b.type === 'text'; }).map(function (b) { return b.text; }).join('');
     var j;
     try { j = JSON.parse(text); } catch (e) { return { ok: false, reason: 'invalid_json' }; }
+    /* a section rewrite: one section, merged into the current draft */
+    if (j && typeof j.body === 'string' && typeof j.key === 'string' && !j.sections) {
+      if (!base || !(base.sections || []).some(function (x) { return x.key === j.key; })) return { ok: false, reason: 'bad_section' };
+      var merged = Object.assign({}, base, { sections: base.sections.map(function (x) { return x.key === j.key ? { key: x.key, heading: j.heading || x.heading, body: j.body.trim() } : x; }) });
+      merged.word_count = wordCount(merged.standfirst + ' ' + merged.sections.map(function (x) { return x.body; }).join(' '));
+      return { ok: true, article: merged, section: j.key };
+    }
     if (!j || typeof j.title !== 'string' || !Array.isArray(j.sections) || !j.sections.length) return { ok: false, reason: 'bad_shape' };
     var keys = (base && base.sections || []).map(function (s) { return s.key; });
     var secs = j.sections.filter(function (s) { return s && typeof s.key === 'string' && typeof s.body === 'string'; })
@@ -6618,8 +8331,15 @@
     campaignCode: campaignCode, tagLink: tagLink, attribution: attributionFor,
     toMarkdown: toMarkdown, toHtml: toHtml, mdToHtml: mdToHtml, seoSheet: seoSheet, toDocx: toDocx, DOCX_TYPE: DOCX_TYPE,
     exportCheck: exportCheck, snapshotOf: snapshotOf, snapshotLine: snapshotLine, compareCopy: compareCopy, readiness: readiness, numbersFingerprint: numbersFingerprint,
-    ai: { SCHEMA: AI_SCHEMA, SYSTEM: AI_SYSTEM, buildRequest: buildRequest, parseReply: parseReply, objections: objections, failingSections: failingSections },
-    cost: { PRICES: PRICES, CEILING: PRICE_CEILING, FALLBACK_MODELS: FALLBACK_MODELS, priceOf: priceOf, estimate: costEstimate, measured: costMeasured, requestKey: costRequestKey, REFUSALS: COST_REFUSALS },
+    weeklyReview: weeklyReview, weeklyReviewText: weeklyReviewText, SAMPLE: SAMPLE,
+    firstParty: { KINDS: FP_KINDS, SLOTS: FP_SLOTS, DEFAULTS: FP_DEFAULTS, CTA: FP_CTA, TZ: FP_TZ, slot: fpSlot, build: fpBuild, gates: fpGates, record: fpRecord,
+      ctDate: ctDate, ctWeekOf: ctWeekOf, ctParts: ctParts, ctInstant: ctInstant },
+    gate: gate, repair: repair, sectionsToFix: sectionsToFix, GATE_CHECKS: GATE_CHECKS, DISCREPANCY: DISCREPANCY, WEATHER: WEATHER, NUM_TOL: NUM_TOL,
+    reconcileScore: reconcileScore, qbState: qbState,
+    /* the one AI ledger is the database's (content_engine_ai_reserve / _settle):
+       requestKey and inputEstimate feed its reservation */
+    ai: { requestKey: requestKey, inputEstimate: inputEstimate, precheck: aiPrecheck, MAX_TOKENS: AI_MAX_TOKENS, SECTION_SCHEMA: AI_SECTION_SCHEMA, SCHEMA: AI_SCHEMA, SYSTEM: AI_SYSTEM,
+      buildRequest: buildRequest, parseReply: parseReply, objections: objections, failingSections: failingSections },
     util: { slugify: slugify, wordCount: wordCount, hash: hash, whenText: whenText, esc: esc, canTransition: function (from, to) { return (TRANSITIONS[from] || []).indexOf(to) >= 0; } }
   };
 });
@@ -6689,37 +8409,9 @@ async function log(x: Ctx, kind: string, detail: Record<string, unknown>, articl
   try { await db(x, 'content_engine_log', { p_kind: kind, p_detail: detail, p_article: article ?? null, p_opportunity: opportunity ?? null, p_run: null }); } catch (_) { /* a log that fails never fails the answer */ }
 }
 
-// ── what a Claude call costs: the content engine's own $10 hard cap ─────────
-// docs/system-integrity/COST.md. Every call is RESERVED in the database before
-// it is made (content_engine_ai_reserve: one month lock, so concurrent calls
-// cannot pass the cap together) at an UPPER BOUND, and SETTLED after it with
-// the cost of the tokens the API reports (content_engine_ai_settle). Other AI
-// products' budgets are not touched here.
-//
-// The prices, the upper-bound estimate, the measured cost and the request
-// fingerprint are the core's (CE.cost, lib/content_engine.js), shared with the
-// weekly job; exported here for the tests.
-export const PRICES = CE.cost.PRICES;
-export const CEILING = CE.cost.CEILING;
-export const priceOf = (model: string) => CE.cost.priceOf(model);
-export const estimateUsd = (req: any, model: string): number => CE.cost.estimate(req, model);
-export const usageCost = (message: any, model: string) => CE.cost.measured(message, model);
-export const requestKey = (model: string, articleId: string, contentHash: string, section: string | null, req: any): Promise<string> =>
-  CE.cost.requestKey(model, { article: articleId, content_hash: contentHash, section }, req);
-async function settle(x: Ctx, key: string, ok: boolean, cost: any, error: string | null) {
-  try {
-    return await db(x, 'content_engine_ai_settle', { p_request_key: key, p_ok: ok, p_input_tokens: cost ? cost.input_tokens : null, p_output_tokens: cost ? cost.output_tokens : null,
-      p_actual_usd: cost ? cost.usd : null, p_error: error ? String(error).slice(0, 300) : null,
-      p_cache_read_tokens: cost ? cost.cache_read_tokens : null, p_cache_write_tokens: cost ? cost.cache_write_tokens : null });
-  } catch (_) { return null; /* unsettled: the database charges it at its estimate after 30 minutes */ }
-}
-
 // ── one Claude call ─────────────────────────────────────────────────────────
-// maxRetries 0: an SDK retry would be a second billed attempt the reservation
-// never saw. A retry is a new reservation (content_engine_ai_reserve counts
-// attempts against the owner's limit).
 async function claude(x: Ctx, req: any): Promise<any> {
-  const client = new Anthropic({ apiKey: x.c.anthropicKey, timeout: 120_000, maxRetries: 0 });
+  const client = new Anthropic({ apiKey: x.c.anthropicKey, timeout: 120_000, maxRetries: 1 });
   return client.beta.messages.create({
     model: x.c.model, max_tokens: req.max_tokens, system: req.system, messages: req.messages,
     output_config: req.output_config, betas: [FALLBACK_BETA], fallbacks: 'default',
@@ -6736,6 +8428,24 @@ function asArticle(row: any) {
   };
 }
 
+async function sha256Hex(text: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+// the API's own token counts, with the model that actually served the turn
+function usageOf(reply: any): any {
+  return reply && reply.usage ? Object.assign({}, reply.usage, { model: reply.model || undefined }) : null;
+}
+async function settle(x: Ctx, callId: number, usage: any, outcome: string, result: any = null, objections: any = null): Promise<any> {
+  try { return await db(x, 'content_engine_ai_settle', { p_call: callId, p_usage: usage, p_outcome: outcome, p_result: result, p_objections: objections }); }
+  catch (_) { return null; }  // an unsettled reservation keeps counting at its worst case: never under-counted
+}
+
+// Every Claude call: a free precheck (research problems the AI cannot fix),
+// a RESERVATION against the month's budget (content_engine_ai_reserve — which
+// also serves an identical request from the ledger at no cost), the call, a
+// SETTLEMENT with the API's own token counts, then the same validation the
+// page uses. At most two attempts; the second carries the objections.
 async function draft(x: Ctx, articleId: string, section: string | null): Promise<any> {
   const row = await db(x, 'content_engine_article', { p_id: articleId });
   if (!row) throw new Refused('not_found', 'no such article', 404);
@@ -6748,58 +8458,61 @@ async function draft(x: Ctx, articleId: string, section: string | null): Promise
   const publisher = row.publisher_profile || null;
   const base = asArticle(row);
   const siblings = (row.siblings || []).map((s: any) => ({ id: s.id, title: s.title, text: s.text || '' }));
+  const pre = CE.ai.precheck(base, opp, Date.now());
+  if (pre.length) return { ok: false, reason: 'research_first', detail: pre.join('; ') + ' — no AI was used' };
   let objections: string[] = [];
   let lastReason = '';
   let spentUsd = 0;
   for (let attempt = 0; attempt < 2; attempt++) {
     const req = CE.ai.buildRequest(opp, { publisher, format: row.format, section, current: base, objections });
-    /* the money first: reserve the most this call can cost, or make no call */
-    const key = await requestKey(x.c.model, articleId, row.content_hash, section, req);
-    const rsv = await db(x, 'content_engine_ai_reserve', { p_request_key: key, p_estimated_usd: estimateUsd(req, x.c.model),
-      p_purpose: section ? 'section' : 'rewrite', p_article: articleId, p_model: x.c.model, p_run: null });
+    const hash = await sha256Hex(CE.ai.requestKey(req, x.c.model));
+    const rsv = await db(x, 'content_engine_ai_reserve', {
+      p_operation: req.operation, p_article: articleId, p_model: x.c.model, p_request_hash: hash,
+      p_max_output_tokens: req.max_tokens, p_input_tokens_est: CE.ai.inputEstimate(req), p_attempt: attempt + 1,
+    });
     if (!rsv || rsv.ok !== true) {
-      const why = rsv && rsv.reason || 'not_reserved';
-      await log(x, 'ai_not_reserved', { reason: why, attempt, cap_usd: rsv && rsv.cap_usd }, articleId, opp.id);
-      if (attempt > 0) return { ok: false, reason: lastReason || 'validation_failed', objections, llm_calls: x.llmCalls, spent_usd: spentUsd,
-        detail: 'the AI draft did not pass the checks and the second try was not made (' + why + '); nothing was saved and the existing draft stands' };
-      return { ok: false, reason: why, detail: CE.cost.REFUSALS[why] || (rsv && rsv.detail) || 'the AI budget door refused the call', cap_usd: rsv && rsv.cap_usd };
+      await log(x, 'ai_discarded', { reason: rsv?.reason || 'budget_exhausted', attempt }, articleId, opp.id);
+      return { ok: false, reason: rsv?.reason || 'budget_exhausted', detail: rsv?.detail || 'the AI budget refused this call; the existing draft stands', llm_calls: x.llmCalls };
     }
-    if (!(await spend(x, 'llm'))) {
-      await settle(x, key, false, null, 'daily call limit reached before the call');
-      await log(x, 'ai_discarded', { reason: 'budget_exhausted', attempt }, articleId, opp.id);
-      return { ok: false, reason: 'budget_exhausted', detail: 'today’s AI budget is used up; the existing draft stands' };
-    }
-    let reply: any;
-    try { reply = await claude(x, req); } catch (e: any) {
-      lastReason = 'api_error: ' + String(e && (e.status || e.message) || e).slice(0, 120);
-      /* an error the API answered with is not billed: release it. No answer at
-         all (a timeout, a dropped connection) may have been billed: charge the
-         reservation's upper bound rather than guess low. */
-      const answered = typeof (e && e.status) === 'number';
-      await settle(x, key, !answered, null, lastReason + (answered ? '' : ' (no answer: charged at the estimate)'));
-      await log(x, 'generation_failed', { reason: lastReason, attempt }, articleId, opp.id);
-      break;
-    }
-    /* whatever happens to the draft next, the tokens were used: settle them */
-    const cost = usageCost(reply, x.c.model);
-    const st = await settle(x, key, true, cost, null);
-    spentUsd += st && typeof st.actual_usd === 'number' ? st.actual_usd : 0;
-    const parsed = CE.ai.parseReply(reply, base);
-    if (!parsed.ok) { lastReason = parsed.reason; await log(x, 'generation_failed', { reason: parsed.reason, attempt }, articleId, opp.id); if (parsed.reason === 'refusal') break; continue; }
-    let next = parsed.article;
-    if (section) {
-      // only the asked-for section changes
-      next = Object.assign({}, base, { sections: base.sections.map((s: any) => s.key === section ? (next.sections.find((n: any) => n.key === section) || s) : s) });
-      next.word_count = CE.util.wordCount(next.standfirst + ' ' + next.sections.map((s: any) => s.body).join(' '));
+    let next: any = null, reply: any = null;
+    const cached = !!rsv.cached;
+    if (cached) {
+      if (rsv.outcome !== 'accepted' || !rsv.result) {
+        objections = Array.isArray(rsv.objections) ? rsv.objections : objections;
+        lastReason = 'previously_rejected';
+        continue;  // the same request failed the checks before: the retry (with objections) is a different request
+      }
+      next = rsv.result;
+    } else {
+      x.llmCalls++;
+      try { reply = await claude(x, req); } catch (e: any) {
+        const timeout = /timeout|timed out/i.test(String(e && (e.name || e.message) || ''));
+        await settle(x, rsv.call_id, null, timeout ? 'unknown' : 'error');
+        lastReason = 'api_error: ' + String(e && (e.status || e.message) || e).slice(0, 120);
+        await log(x, 'generation_failed', { reason: lastReason, attempt }, articleId, opp.id);
+        break;
+      }
+      const parsed = CE.ai.parseReply(reply, base);
+      if (!parsed.ok) {
+        const st = await settle(x, rsv.call_id, usageOf(reply), parsed.reason === 'refusal' ? 'refused' : parsed.reason === 'max_tokens' ? 'max_tokens' : 'error');
+        spentUsd += st && st.est_usd || 0;
+        lastReason = parsed.reason;
+        await log(x, 'generation_failed', { reason: parsed.reason, attempt }, articleId, opp.id);
+        if (parsed.reason === 'refusal') break;
+        continue;
+      }
+      next = parsed.article;
     }
     const report = CE.validate(next, opp, { publisher, siblings, now: Date.now() });
     if (!report.ok) {
       objections = CE.ai.objections(report);
+      if (!cached) { const st = await settle(x, rsv.call_id, usageOf(reply), 'discarded', next, objections); spentUsd += st && st.est_usd || 0; }
       lastReason = 'validation_failed';
-      await log(x, 'ai_discarded', { attempt, objections }, articleId, opp.id);
+      await log(x, 'ai_discarded', { attempt, objections, cached }, articleId, opp.id);
       continue;
     }
-    const generator = 'claude:' + String(reply.model || x.c.model).slice(0, 60);
+    if (!cached) { const st = await settle(x, rsv.call_id, usageOf(reply), 'accepted', next, null); spentUsd += st && st.est_usd || 0; }
+    const generator = cached ? 'claude:cached' : 'claude:' + String(reply.model || x.c.model).slice(0, 60);
     const saved = await db(x, 'content_engine_article_save', {
       p_id: articleId,
       p: { title: next.title, slug: next.slug, meta_description: next.meta_description, standfirst: next.standfirst, sections: next.sections,
@@ -6807,10 +8520,13 @@ async function draft(x: Ctx, articleId: string, section: string | null): Promise
       p_reason: section ? 'ai: rewrote section ' + section : 'ai: full draft', p_expected_hash: row.content_hash,
     });
     if (!saved || saved.ok !== true) return { ok: false, reason: saved?.reason || 'save_refused', detail: saved?.detail };
-    await log(x, 'ai_accepted', { attempt, generator, section, spent_usd: spentUsd }, articleId, opp.id);
-    return { ok: true, revision: saved.revision, status: saved.status, content_hash: saved.content_hash, checks: report, generator, llm_calls: x.llmCalls, spent_usd: spentUsd };
+    await log(x, 'ai_accepted', { attempt, generator, section, cached, est_usd: spentUsd }, articleId, opp.id);
+    return { ok: true, revision: saved.revision, status: saved.status, content_hash: saved.content_hash, checks: report, generator, cached,
+      est_usd: Math.round(spentUsd * 10000) / 10000, llm_calls: x.llmCalls };
   }
-  return { ok: false, reason: lastReason || 'validation_failed', objections, detail: 'the AI draft did not pass the checks; nothing was saved and the existing draft stands', llm_calls: x.llmCalls, spent_usd: spentUsd };
+  return { ok: false, reason: lastReason || 'validation_failed', objections, est_usd: Math.round(spentUsd * 10000) / 10000,
+    detail: lastReason === 'previously_rejected' ? 'this exact request already failed the checks; edit the draft (or rewrite one section) before trying again — no AI was used'
+      : 'the AI draft did not pass the checks; nothing was saved and the existing draft stands', llm_calls: x.llmCalls };
 }
 
 // ── Send to publisher: the owner's own send ─────────────────────────────────

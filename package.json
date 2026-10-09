@@ -391,10 +391,14 @@
     "content:packets": "node tools/content/build_packets.js",
     "content:broadcasts": "node football/broadcasts/collect.js",
     "content:first-party": "node tools/content/run.js first-party",
-    "content:all": "npm run -s content:test && npm run -s content:sql && npm run -s content:fn && npm run -s content:job:test && npm run -s content:gtw && npm run -s content:e2e",
+    "content:all": "npm run -s content:test && npm run -s content:sql && npm run -s content:fn && npm run -s content:job:test && npm run -s content:gtw && npm run -s content:e2e && npm run -s features:test && npm run -s features:funnel",
     "content:inline": "node tools/content/inline.js",
     "content:discover": "node tools/content/run.js discover",
     "content:weekly": "node tools/content/run.js weekly --network",
-    "content:example": "node tools/content/run.js example --out content-example"
+    "content:example": "node tools/content/run.js example --out content-example",
+    "features:test": "node tools/editorial/features.test.js",
+    "features:funnel": "node tools/editorial/features_funnel.test.js",
+    "features:rehearsal": "node tools/editorial/features_rehearsal.js --out features-rehearsal.md",
+    "features:dry": "node tools/editorial/features.js --out features-dry-run"
   }
 }

@@ -43,7 +43,7 @@ rows you need to send today, send them before applying.
 
 1. **SQL.** Paste `supabase/content_engine.sql` into the SQL editor and run it.
    The last result set is the report. Every row must read `ok`, including:
-   - `AI budget: a monthly dollar cap, reserved before every call` → `$10.00 a month`;
+   - `AI budget: reservations serialized and capped monthly` → `$10.00 a month; …% used (estimated)` (the one ledger, section 6d);
    - `approval binds the research; integrity verdict required`.
 2. **Merge** the pull request. Pages publishes the site, including the new
    `/admin/content/` page and the integrity libraries. The next hourly build
@@ -66,7 +66,7 @@ rows you need to send today, send them before applying.
 | The board reconciles | `node tools/integrity/audit.js` on the freshly built artifacts. It should show 0 canonical mismatches in gaps and score lines, and 0 future-week games in the brief. |
 | Kickoffs | the board header shows "kickoff TBA" with a count; week-7 placeholders read "time TBA" with a "WK 7" badge |
 | The content engine | `/admin/content/` → Discover. The message names the games the integrity engine withheld; a draft shows `integrity: PASS` or `integrity: WARNING` |
-| The budget | Settings → AI spend shows the $10.00 cap. The first AI rewrite shows one call settled at its measured cost. |
+| The budget | Settings → AI budget shows the $10.00 budget. The first AI rewrite shows one call in “Last calls”, settled from its token counts. |
 | Regression | `npm run integrity:test` (the 17 cases + integration), `npm run content:all` |
 
 ## 4. Roll back
@@ -83,26 +83,20 @@ git revert <this merge>        # then run "Deploy content engine"
 
 After a rollback:
 
-- `approved_research_hash`, `ai_months`, `ai_spend` and the settings columns
-  remain and are ignored by the old functions;
+- `approved_research_hash` remains and is ignored by the old functions (the AI
+  ledger, `ai_calls`, is the content-engine hardening's and is not part of
+  this rollback);
 - the widened status, format and kind constraints remain, and accept every
   old value;
 - an article left in `rejected` can no longer be moved by the old matrix;
   archive it with a direct, owner-run `update` if needed.
 
-**Destructive cleanup (only with explicit approval; it deletes the AI spend history):**
+**Destructive cleanup (only with explicit approval):**
 
 ```sql
--- NOT part of the rollout. Run only if the owner decides the spend history is not needed.
-drop function if exists public.content_engine_ai_reserve(text, numeric, text, uuid, text, bigint);
-drop function if exists public.content_engine_ai_settle(text, boolean, int, int, numeric, text, int, int);
-drop function if exists public.content_engine_cost_report();
-drop function if exists public.content_engine_budget_update(jsonb);
-drop function if exists public.content_engine_acquisition_report(int);
-drop table if exists content_engine.ai_spend;
-drop table if exists content_engine.ai_months;
-alter table content_engine.settings drop constraint if exists settings_ai_budget_shape;
-alter table content_engine.settings drop column if exists monthly_budget_usd, drop column if exists job_budget_usd, drop column if exists ai_max_attempts;
+-- NOT part of the rollout. Run only if the owner decides to remove this work's column.
+-- The AI ledger (content_engine.ai_calls, settings.ai_monthly_budget_usd and
+-- settings_ai_budget_shape) belongs to the content-engine hardening: never drop it here.
 alter table content_engine.articles drop column if exists approved_research_hash;
 ```
 

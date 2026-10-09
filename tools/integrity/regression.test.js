@@ -440,6 +440,21 @@ if (db.skip) {
       own(`select public.content_engine_article_submit(${lit(cr.id)});`);
       own(`select public.content_engine_article_review(${lit(cr.id)}, '{"source_verification":true,"data_freshness":true,"model_accuracy":true,"seo_review":true,"compliance":true}'::jsonb);`);
       const h = one(`select content_hash from content_engine.articles where id = ${lit(cr.id)};`);
+      /* the editorial gate (supabase/content_engine.sql 6c), as the owner meets
+         it: run on this version against the research read now; every gap
+         EdgeDesk's inputs can't explain is reviewed by the owner, with a note,
+         before the gate clears; the report is stored for this exact version */
+      const row0 = own(`select public.content_engine_article(${lit(cr.id)});`);
+      const current = {}; ['cfb', 'nfl'].forEach((lg) => ((SNAP[lg] && SNAP[lg].games) || []).forEach((p) => { current[p.game_id] = p; }));
+      const gctx = (acks) => ({ now: NOW, publisher: row0.publisher_profile, campaign: row0.campaign_code, landing: CE.SITE + '/today/', current, teamLists: TL, acks: acks || {} });
+      const g0 = CE.gate(Object.assign({}, A0, { format: 'cfb_weekly_preview' }), PREV, gctx());
+      const ackKeys = [...new Set([].concat(...g0.items.map((i) => i.findings.filter((f) => f.status === 'BLOCKED' && f.ack_key).map((f) => f.ack_key))))];
+      const blockedOther = g0.items.filter((i) => i.findings.some((f) => f.status === 'BLOCKED' && !f.ack_key)).map((i) => i.key);
+      chk('the gate blocks only on what needs the owner’s judgment', blockedOther.length === 0, { verdict: g0.verdict, blockedOther });
+      ackKeys.forEach((k) => own(`select public.content_engine_article_ack(${lit(cr.id)}, ${lit(k)}, 'Reviewed: checked the availability and quarterback news for this game.');`));
+      const g1 = CE.gate(Object.assign({}, A0, { format: 'cfb_weekly_preview' }), PREV, gctx(own(`select public.content_engine_article(${lit(cr.id)});`).acks || {}));
+      const gs = own(`select public.content_engine_article_gate(${lit(cr.id)}, ${lit(h)}, ${lit(JSON.stringify(g1))}::jsonb);`);
+      chk('… and clears once the owner has reviewed them, stored for this version', g1.verdict !== 'BLOCKED' && gs && gs.ok === true, { verdict: g1.verdict, gs });
       const ap = own(`select public.content_engine_article_approve(${lit(cr.id)}, ${lit(h)});`);
       chk('the owner approves exactly this version', ap.ok === true, ap);
       const row = own(`select public.content_engine_article(${lit(cr.id)});`);
@@ -467,41 +482,44 @@ if (db.skip) {
     /* ── 14 ── */
     section('14 duplicate generation cannot create duplicate charges');
     {
-      const k = 'd'.repeat(40);
-      const r1 = svc(`select public.content_engine_ai_reserve(${lit(k)}, 0.40, 'rewrite', null, 'claude-opus-5-5', null);`);
-      const s1 = svc(`select public.content_engine_ai_settle(${lit(k)}, true, 9000, 2000, 0.076, null, null, null);`);
-      const r2 = svc(`select public.content_engine_ai_reserve(${lit(k)}, 0.40, 'rewrite', null, 'claude-opus-5-5', null);`);
-      chk('the same request, made and paid for, is refused the second time', r1.ok && s1.status === 'committed' && r2.ok === false && r2.reason === 'duplicate', { r1, s1, r2 });
-      chk('… and charged once', one(`select count(*) || '|' || round(sum(actual_usd), 3) from content_engine.ai_spend where request_key = ${lit(k)};`) === '1|0.076');
-      const art = one(`select id from content_engine.articles limit 1;`);
-      const k1 = 'e'.repeat(40), k2 = 'f'.repeat(40);
-      const a1 = svc(`select public.content_engine_ai_reserve(${lit(k1)}, 0.40, 'section', ${lit(art)}, 'claude-opus-5-5', null);`);
-      const a2 = svc(`select public.content_engine_ai_reserve(${lit(k2)}, 0.40, 'section', ${lit(art)}, 'claude-opus-5-5', null);`);
-      chk('a second rewrite of the same article while one is running is refused (one in flight per article and purpose)', a1.ok && a2.ok === false && a2.reason === 'in_flight', { a1, a2 });
-      svc(`select public.content_engine_ai_settle(${lit(k1)}, false, 0, 0, null, 'test', null, null);`);
+      /* the one AI ledger (supabase/content_engine.sql 6d): a request is its hash */
+      const H14 = (x) => require('crypto').createHash('sha256').update('integrity-14:' + x).digest('hex');
+      const rq = (h) => `select public.content_engine_ai_reserve('draft', null, 'claude-opus-5-5', ${lit(h)}, 2000, 9000, 1);`;
+      own(`select public.content_engine_settings_save('{"llm_calls_per_day": 200}'::jsonb);`);
+      const r1 = svc(rq(H14(1)));
+      const r1b = svc(rq(H14(1)));
+      chk('the identical request while the first is still in flight is refused, not paid for twice', r1.ok && r1b.ok === false && r1b.reason === 'in_flight', { r1, r1b });
+      const s1 = svc(`select public.content_engine_ai_settle(${r1.call_id}, '{"input_tokens": 9000, "output_tokens": 2000}'::jsonb, 'accepted', '{"title": "x"}'::jsonb, null);`);
+      const r2 = svc(rq(H14(1)));
+      chk('the same request, made and paid for, is served from the ledger the second time: no call, no cost', s1.ok && r2.ok && r2.cached === true && r2.outcome === 'accepted', { s1, r2 });
+      chk('… and charged once ($0.076 for 9,000 in + 2,000 out)', one(`select count(*) filter (where status = 'completed') || '|' || round(sum(est_usd), 3) from content_engine.ai_calls where request_hash = ${lit(H14(1))};`) === '1|0.076');
     }
 
     /* ── 15 ── */
     section('15 concurrent jobs cannot pass the monthly cap');
     {
-      own(`select public.content_engine_budget_update('{"monthly_budget_usd": 1.00, "job_budget_usd": 1.00}'::jsonb);`);
-      const used = +one(`select committed_usd + reserved_usd from content_engine.ai_months;`);
-      const room = Math.max(0, 1 - used), take = (Math.round(room * 0.6 * 1e6) / 1e6).toFixed(6);
+      const H15 = (x) => require('crypto').createHash('sha256').update('integrity-15:' + x).digest('hex');
+      const committed = +own('select public.content_engine_ai_budget();').committed_usd;
+      const cap = Math.ceil((committed + 1) * 100) / 100;
+      own(`select public.content_engine_ai_budget_save('{"ai_monthly_budget_usd": ${cap.toFixed(2)}}'::jsonb);`);
+      /* each racer's worst case: 30,000 output tokens at $20 per million = $0.60, of about $1.00 left */
       const race = (key) => db.background(`begin; set local role service_role;
-        select public.content_engine_ai_reserve('${key}', ${take}, 'other', null, 'claude-opus-5-5', null);
+        select public.content_engine_ai_reserve('draft', null, 'claude-opus-5-5', '${key}', 30000, 0, 1);
         select pg_sleep(1.5); commit;`);
-      const ra = race('1'.repeat(40)), rb = race('2'.repeat(40));
+      const ra = race(H15('a')), rb = race(H15('b'));
       const oa = ra.wait(30000), ob = rb.wait(30000);
-      const ok = [oa.out, ob.out].filter((o) => /"ok": true/.test(o)).length, refused = [oa.out, ob.out].filter((o) => /monthly_budget_exhausted/.test(o)).length;
-      chk('two sessions racing for the last of the cap: one in, one refused', room > 0.01 && ok === 1 && refused === 1, [oa.out, ob.out]);
-      chk('… and the month never passes its cap', +one(`select committed_usd + reserved_usd from content_engine.ai_months;`) <= 1.000001);
-      chk('the cap defaults to $10 and cannot be raised without the owner’s explicit confirmation', own(`select public.content_engine_budget_update('{"monthly_budget_usd": 25}'::jsonb);`).reason === 'confirm_raise');
-      own(`select public.content_engine_budget_update('{"monthly_budget_usd": 10, "job_budget_usd": 2}'::jsonb);`);
+      const ok = [oa.out, ob.out].filter((o) => /"ok": true/.test(o)).length, refused = [oa.out, ob.out].filter((o) => /budget_exhausted/.test(o)).length;
+      chk('two sessions racing for the last of the cap: one in, one refused', cap - committed >= 1 && ok === 1 && refused === 1, [oa.out, ob.out]);
+      chk('… and the month never passes its cap', +own('select public.content_engine_ai_budget();').committed_usd <= cap + 1e-6);
+      chk('the cap defaults to $10, and only the owner changes it', one(`select column_default from information_schema.columns where table_schema = 'content_engine' and table_name = 'settings' and column_name = 'ai_monthly_budget_usd';`) === '10'
+        && !!fails(() => db.service(`select public.content_engine_ai_budget_save('{"ai_monthly_budget_usd": 25}'::jsonb);`)) && !!fails(() => db.as(ADMIN, `select public.content_engine_ai_budget_save('{"ai_monthly_budget_usd": 25}'::jsonb);`)));
+      own(`select public.content_engine_ai_budget_save('{"ai_monthly_budget_usd": 10}'::jsonb);`);
     }
 
     /* ── 16 ── */
     section('16 referral attribution survives registration and payment');
     {
+      const base16 = own('select public.content_engine_scorecard(30);');
       const code = one(`select campaign_code from content_engine.articles limit 1;`);
       const V1 = 'reader-visitor-token-0001';
       /* 1 the reader lands through the article's tagged link (anonymous) */
@@ -519,13 +537,15 @@ if (db.skip) {
            insert into public.stripe_events (id, type, stripe_created, customer_id, subscription_id, payload) values
              ('evt_r1', 'customer.subscription.created', now(), 'cus_reader', 'sub_reader', '{"data":{"object":{"id":"sub_reader","status":"trialing","trial_start":${Math.floor(Date.now() / 1000)},"customer":"cus_reader"}}}'),
              ('evt_r2', 'invoice.paid', now(), 'cus_reader', 'sub_reader', '{"data":{"object":{"id":"in_reader_1","amount_paid":2900,"customer":"cus_reader","subscription":"sub_reader"}}}');`);
-      const ar = own(`select public.content_engine_acquisition_report(1);`);
-      const m0 = ar.months[0];
-      chk('the acquisition loop attributes the visit, the registration, the trial and the paid subscriber to the article', m0.referral_visits >= 1 && m0.registrations >= 1 && m0.trials >= 1 && m0.paid_subscribers >= 1, m0);
-      chk('… with Stripe’s own invoice amount as revenue (gross, not profit)', m0.subscriber_revenue_usd >= 29 && /not profit/.test(ar.revenue), m0);
+      /* the funnel is the scorecard's (supabase/content_engine.sql 6e) */
+      const sc16 = own('select public.content_engine_scorecard(30);');
+      const dd = (k) => sc16.distribution[k] - base16.distribution[k];
+      chk('the scorecard attributes the visit, the registration, the trial and the paid subscriber to the article', dd('referral_visits') >= 1 && dd('registrations') >= 1 && dd('trials') >= 1 && sc16.revenue.paid - base16.revenue.paid >= 1,
+        { distribution: [base16.distribution, sc16.distribution], paid: [base16.revenue.paid, sc16.revenue.paid] });
+      chk('… with Stripe’s own invoice amount as revenue ($29.00)', Math.round((sc16.revenue.collected_usd - base16.revenue.collected_usd) * 100) === 2900, [base16.revenue, sc16.revenue]);
       const fp = J(one(`select content_engine.first_party(${lit(code)})::text;`));
       chk('the per-article first-party counts show the same path: visit, sign-up, trial, paid', fp && fp.visits >= 1 && fp.signups >= 1 && fp.trials >= 1 && fp.paid >= 1, fp);
-      chk('targets are labelled targets, not forecasts', /not forecasts/.test(ar.targets.kind));
+      chk('every target carries its actual and a status; nothing unmeasured is filled in', sc16.targets.length > 0 && sc16.targets.every((t) => ['met', 'on_track', 'behind', 'not_measured'].indexOf(t.status) >= 0));
     }
 
     /* ── 17 ── */
@@ -537,9 +557,9 @@ if (db.skip) {
         `select public.content_engine_article_approve(${lit(art)}, ${lit(h)});`,
         `select public.content_engine_article_transition(${lit(art)}, 'archived', '{}'::jsonb);`,
         `select public.content_engine_article_save(${lit(art)}, '{"title":"Hijacked headline for the test case","sections":[{"key":"intro","body":"x x x x x x x x x"}]}'::jsonb, 'x', ${lit(h)});`,
-        `select public.content_engine_budget_update('{"monthly_budget_usd": 0}'::jsonb);`,
+        `select public.content_engine_ai_budget_save('{"ai_monthly_budget_usd": 0}'::jsonb);`,
         `select public.content_engine_settings_save('{"schedule_enabled": true}'::jsonb);`,
-        `select public.content_engine_ai_reserve('${'9'.repeat(40)}', 0.1, 'other', null, null, null);`
+        `select public.content_engine_ai_reserve('other', null, 'claude-opus-5-5', '${'9'.repeat(64)}', 100, 100, 1);`
       ];
       const asUser = doors.filter((q) => !fails(() => db.as(USER, q)));
       const asAnon = doors.filter((q) => !fails(() => db.anon(q)));
@@ -548,7 +568,8 @@ if (db.skip) {
       const asAdmin = doors.slice(0, 5).filter((q) => !fails(() => db.as(ADMIN, q)));
       chk('an affiliate admin who is not a content owner reaches none', asAdmin.length === 0, asAdmin);
       chk('the service role (the weekly job) can never approve', !!fails(() => db.service(doors[0])));
-      const direct = [`update content_engine.articles set title = 'x';`, `delete from content_engine.ai_spend;`, `update content_engine.settings set monthly_budget_usd = 10;`, `insert into content_engine.ai_months (month) values ('2030-01-01');`];
+      const direct = [`update content_engine.articles set title = 'x';`, `delete from content_engine.ai_calls;`, `update content_engine.settings set ai_monthly_budget_usd = 1000;`,
+        `insert into content_engine.ai_calls (month, actor, operation, model, request_hash, reserved_usd) values ('2030-01-01', 'owner', 'other', 'claude-opus-5-5', '${'8'.repeat(64)}', 0);`];
       chk('no table is writable directly by a reader, anon or the service role', direct.every((q) => fails(() => db.as(USER, q)) && fails(() => db.anon(q)) && fails(() => db.service(q))));
       chk('articles are never deleted, even by the superuser path', !!fails(() => db.sql(`delete from content_engine.articles where id = ${lit(art)};`)));
     }

@@ -237,19 +237,19 @@ Per template:
 - publisher responses and acceptance, recorded by the owner with `content_engine_publisher_response` and kept apart from publication;
 - external placements;
 - traffic sessions, research-page visits, registrations, trials and paid subscribers. These are first-party counts, owners excluded: by campaign code for publisher editions, and by landing path for EdgeDesk pages;
-- generation cost (committed AI spend tied to the article by `content_engine_ai_attribute`);
+- generation cost: the AI ledger's estimate (`content_engine.ai_calls`) for the calls reserved for the article, or named on its `article_created` event when they were made while drafting it;
 - attributed revenue (Stripe-paid invoices of attributed accounts, gross).
 
 A null is "not measured", never zero. No ranking, forecast or projected revenue is reported.
 
 ## Database changes (`supabase/content_engine.sql`; re-paste, idempotent, additive)
 
-- **Constraints:** two formats and one kind added to the format and kind checks.
+- **Constraints:** two formats and one kind added to the one format and kind list (section 1).
 - **Transitions:** `draft → rejected` added to `can_transition` (and the library's `TRANSITIONS`), used only by the auto-reject door.
 - **`content_engine.broadcast_checks`:** append-only, RLS on, no client grants. Doors: `content_engine_broadcast_verify` (owner) and `content_engine_broadcast_checks_current` (owner and job).
 - **Publisher response:** `articles.publisher_response`, `publisher_responded_at` and `publisher_response_note`, with the owner door `content_engine_publisher_response`.
-- **New doors:** `content_engine_article_auto_reject` (job and owner), `content_engine_ai_attribute` (job and owner) and `content_engine_template_report` (owner). Helpers: `content_engine.page_metrics` and `content_engine.attributed_revenue`.
-- **Report:** the file's report gains a row, and the append-only count goes from 5 to 6.
+- **New doors:** `content_engine_article_auto_reject` (job and owner) and `content_engine_template_report` (owner). Helpers: `content_engine.page_metrics` and `content_engine.attributed_revenue`.
+- **Report:** the file's report gains a row; the append-only tables are revisions, deliveries, performance, events, benchmarks, costs and broadcast_checks (7).
 
 **Rollout:**
 

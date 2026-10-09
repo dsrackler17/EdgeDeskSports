@@ -152,10 +152,10 @@ does **not** commit regenerated copies; the next scheduled build writes them.
 |---|---|
 | `content_engine.articles.approved_research_hash` | new column: the research an approval was given on |
 | `articles.status` | adds `rejected` |
-| `articles.format` | adds `weekend_storylines`, `game_deep_dive`, `conference_race`, `upset_watch`, `model_performance_review` |
-| `opportunities.kind` | adds `weekend_storylines`, `game_deep_dive`, `model_performance` |
-| `settings` | `monthly_budget_usd` (default 10.00, owner-configurable to at most 50), `job_budget_usd` (2.00), `ai_max_attempts` (2) |
-| `content_engine.ai_months`, `content_engine.ai_spend` | new tables: the month's committed and reserved spend, and one row per Claude call (request key, purpose, article, run, model, tokens, estimate, actual, billing source) |
-| functions | `integrity_ok`, `research_current`, `revoke_for_research`, `ai_month_now`, `ai_sweep`, and the doors `content_engine_ai_reserve`, `content_engine_ai_settle`, `content_engine_cost_report`, `content_engine_budget_update`, `content_engine_acquisition_report` |
+| `articles.format` | adds `weekend_storylines`, `game_deep_dive`, `upset_watch`, `model_performance_review` (`conference_race` is shared with the hardening's template), in the one list in section 1 |
+| `opportunities.kind` | adds `weekend_storylines`, `game_deep_dive`, `model_performance`, in the same list |
+| functions | `integrity_ok`, `research_current`, `revoke_for_research` (section 6g) |
+| the AI budget | **one ledger:** `content_engine.ai_calls` with `content_engine_ai_reserve` / `_settle` and `settings.ai_monthly_budget_usd` (default 10), section 6d. This work adds only the in-flight refusal of an identical request. |
+| the acquisition funnel | `content_engine_scorecard` (section 6e) |
 
 Rollout and rollback: `MIGRATION.md`.

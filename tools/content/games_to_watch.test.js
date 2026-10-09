@@ -75,8 +75,17 @@ const NOW = Date.parse(FX.now);
 const ID = { vandy: '401856718', mizzou: '401856716', ou: '401856717', oregon: '401858484', bama: '401856712' };
 const CBS_OWNER = { network: 'CBS', source_url: 'https://fixture.test/bigten-football-schedule', source_kind: 'conference', source_name: 'Big Ten Conference football schedule (fixture)', verified_at: '2026-10-08T18:00:00Z' };
 const TEAMS = { cfb: FX.team_names, nfl: [] };
-/* the engine's default model: the first row of its price table */
-const MODEL = Object.keys(CE.cost.PRICES)[0];
+/* THE ONE AI LEDGER is the database's (content_engine_ai_reserve): it
+   reserves input-estimate × input price + max_tokens × output price, at the
+   list prices in content_engine.settings.ai_prices. The same worst case,
+   read from the same defaults, so the test cannot drift from the ledger. */
+const MODEL = 'claude-opus-5-5';
+const PRICE = (function () {
+  const m = new RegExp("'" + MODEL + "',\\s*jsonb_build_object\\('input',\\s*([\\d.]+),\\s*'output',\\s*([\\d.]+)").exec(fs.readFileSync(path.join(ROOT, 'supabase', 'content_engine.sql'), 'utf8'));
+  if (!m) throw new Error('no default price for ' + MODEL + ' in supabase/content_engine.sql');
+  return { input: +m[1], output: +m[2] };
+})();
+const worstUsd = (req) => (CE.ai.inputEstimate(req) * PRICE.input + req.max_tokens * PRICE.output) / 1e6;
 const PUB = { id: null, slug: 'stadium-rant', name: 'Stadium Rant', utm_source: 'stadiumrant', editorial: Object.assign({}, CE.PUBLISHER_TEMPLATES['stadium-rant'].editorial) };
 
 /* the content engine's view of the fixture: the five terminal games, the
@@ -293,9 +302,10 @@ const reqFull = CE.ai.buildRequest(O, { publisher: PUB, format: 'weekly_games_to
 const reqOne = CE.ai.buildRequest(O, { publisher: PUB, format: 'weekly_games_to_watch', current: pubA, section: 'game_3' });
 const user = reqFull.messages[0].content;
 chk('C the request carries the verified facts and the where-to-watch block, not the raw pairings or cards', /where_to_watch_block/.test(user) && !/"pairings"|"adjusted_cards"|"broadcast_input"/.test(user) && /FIVE GAMES TO WATCH — RULES/.test(user));
-chk('C a one-game rewrite carries one packet and a smaller output budget', reqOne.messages[0].content.length < user.length / 3 && reqOne.max_tokens === 4000 && CE.cost.estimate(reqOne, MODEL) < CE.cost.estimate(reqFull, MODEL) / 2,
-  { one: reqOne.messages[0].content.length, full: user.length, est1: CE.cost.estimate(reqOne, MODEL), estF: CE.cost.estimate(reqFull, MODEL) });
-chk('C the full request’s upper-bound reservation fits the $10 month several times over', CE.cost.estimate(reqFull, MODEL) < 1);
+chk('C a one-game rewrite carries one packet and a smaller output budget', reqOne.messages[0].content.length < user.length / 3 && reqOne.max_tokens === CE.ai.MAX_TOKENS.section && reqOne.max_tokens < reqFull.max_tokens
+  && reqOne.operation === 'section' && worstUsd(reqOne) < worstUsd(reqFull) / 2,
+  { one: reqOne.messages[0].content.length, full: user.length, est1: worstUsd(reqOne), estF: worstUsd(reqFull) });
+chk('C the full request’s upper-bound reservation fits the $10 month several times over', worstUsd(reqFull) < 1, worstUsd(reqFull));
 chk('C a failure in one game names that game’s section for a targeted rewrite', (function () {
   const bad = mutate(pubA, X[0][2]); const r = CE.validate(bad, O, { publisher: PUB, now: NOW, teamLists: TEAMS });
   const fsx = CE.ai.failingSections(r, bad); return fsx.sections.length === 1 && fsx.sections[0] === sectionOf(bad, 'Texas A&M at').key && !fsx.whole_article;
@@ -400,13 +410,21 @@ async function database() {
   chk('D the template report counts the template: generated, auto-rejected, first-pass approval', row && row.articles_generated === 2 && row.auto_rejected === 1 && row.first_pass_approval_rate === 0, row);
   chk('D … and the EdgeDesk page by its path, measured or null, never invented', (tr.templates || []).some((t) => t.format === 'weekly_games_to_watch_first_party' && t.first_party_pages === 1) && /never zero/.test(tr.basis) && /no search ranking/.test(tr.not_claimed));
   chk('D the template report is owner-only', !!db.mustFail(() => db.service(`select public.content_engine_template_report('[]'::jsonb);`)));
-  chk('D a reservation is tied to its article once the article exists', (function () {
-    one(`insert into content_engine.ai_months (month) values (content_engine.ai_month_now()) on conflict do nothing;
-         insert into content_engine.ai_spend (request_key, month, purpose, actor, status, estimated_usd, actual_usd) values ('abcdef0123456789abcd', content_engine.ai_month_now(), 'draft', 'schedule', 'committed', 0.5, 0.21);`);
-    const a = svc(`select public.content_engine_ai_attribute('["abcdef0123456789abcd"]'::jsonb, ${lit(readyId)});`);
+  chk('D the AI ledger’s calls for an article count toward its template’s cost (the one ledger, 6d)', (function () {
+    const H = (x) => require('crypto').createHash('sha256').update('gtw-cost:' + x).digest('hex');
+    one(`update content_engine.settings set llm_calls_per_day = 200 where id = 1;`);
+    /* a call reserved for the article itself (an owner's rewrite of it): $0.14 */
+    const r = svc(`select public.content_engine_ai_reserve('section', ${lit(readyId)}, 'claude-opus-5-5', ${lit(H(1))}, 1000, 1000, 1);`);
+    svc(`select public.content_engine_ai_settle(${r.call_id}, '{"input_tokens": 10000, "output_tokens": 5000}'::jsonb, 'discarded', '{"x": 1}'::jsonb, null);`);
+    /* a draft's call, reserved before its article existed and named when the article was created: $0.04 */
+    const r2 = svc(`select public.content_engine_ai_reserve('draft', null, 'claude-opus-5-5', ${lit(H(2))}, 1000, 1000, 1);`);
+    svc(`select public.content_engine_ai_settle(${r2.call_id}, '{"input_tokens": 5000, "output_tokens": 1000}'::jsonb, 'accepted', '{"x": 2}'::jsonb, null);`);
+    const d = svc(`select public.content_engine_article_create(${lit(gtwOpp)}, null, 'weekly_games_to_watch', 'cost_test',
+      ${lit(JSON.stringify({ title: 'College Football Week 6 Games to Watch: a cost test', slug: 'gtw-cost-test', meta_description: 'x', standfirst: 'x', sections: [{ key: 'intro', heading: null, body: 'A projection is not a bet.' }], generator: 'claude:test', checks: { ok: false, failed: ['x'] }, ai_calls: [r2.call_id] }))}::jsonb, null);`);
     const t2 = own(`select public.content_engine_template_report('[]'::jsonb);`).templates.find((t) => t.format === 'weekly_games_to_watch');
-    return a.ok && a.attributed === 1 && Number(t2.generation_cost_usd) === 0.21;
+    return r.ok && r2.ok && d && d.ok && Number(t2.generation_cost_usd) === 0.18;
   })());
+  chk('D the job stored the editorial gate on its draft, for that exact version', one(`select count(*) from content_engine.articles where format = 'weekly_games_to_watch' and gate_hash = content_hash and gate_verdict is not null;`) === '2');
   chk('D draft → rejected is in the database’s transition matrix and the library’s', one(`select content_engine.can_transition('draft', 'rejected');`) === 't' && CE.util.canTransition('draft', 'rejected'));
 }
 

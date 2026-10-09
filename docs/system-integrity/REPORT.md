@@ -125,10 +125,10 @@ with `npm run integrity:audit`.
 | `football/fbs/build_coverage.js` | keeps `start_time_tbd` and `season_type`; kickoff state per game; `current_week` |
 | `football/cfb_lab/integrity.js` | `screenSet`: duplicate, suspended, non-equivalent, alternate-misfiled, polarity and unmapped-team screens (quarantine, never delete) |
 | `football/health/daily_check.js`, `tools/editorial/featured.js` | keep the TBD flag; a TBA game is filed as "time TBA", not "Saturday morning" |
-| `lib/content_engine.js` | the integrity layer (fails closed); kickoff truth and week scope; availability; integrity per packet, with publishable-only discovery; story ranking with four separate concepts and one central storyline; five new templates; editorial integrity checks (numbers per game, QB claims, conference, kickoff, spread, snapshot); export snapshot and read-back (`exportCheck`, `compareCopy`); the ready-to-send checklist (`readiness`); the cost module (`CE.cost`) |
-| `supabase/content_engine.sql` | `rejected` state; approval bound to the content and research hashes; the integrity verdict enforced at approve, ready, send; changed research revokes approval; the AI budget (`ai_months`, `ai_spend`, reserve, settle, sweep, cost report, budget door); the acquisition report |
-| `supabase/functions/content_engine/index.ts` | reserve → call → settle for every Claude call (measured cost, duplicates refused, no SDK retries); carries the integrity layer verbatim |
-| `admin/content/index.html`, `admin/content/content.js` | load the libraries; integrity verdicts and withheld games; Reject; the ready-to-send checklist; exports gated by `exportCheck` and stamped with the snapshot; the AI spend dashboard and budget; the acquisition dashboard |
+| `lib/content_engine.js` | the integrity layer (fails closed); kickoff truth and week scope; availability; integrity per packet, with publishable-only discovery; story ranking with four separate concepts and one central storyline; five new templates; editorial integrity checks (numbers per game, QB claims, conference, kickoff, spread, snapshot); export snapshot and read-back (`exportCheck`, `compareCopy`); the ready-to-send checklist (`readiness`); the AI request's size estimate and request key for the one ledger (`CE.ai.inputEstimate`, `CE.ai.requestKey`) |
+| `supabase/content_engine.sql` | `rejected` state; approval bound to the content and research hashes; the integrity verdict enforced at approve, ready, send; changed research revokes approval; the AI budget is the one ledger of section 6d (`ai_calls`; this work adds the in-flight refusal); the acquisition funnel is the scorecard of 6e; the acquisition report |
+| `supabase/functions/content_engine/index.ts` | reserve → call → settle through the one ledger (the hardening's handler); carries the integrity layer verbatim |
+| `admin/content/index.html`, `admin/content/content.js` | load the libraries; integrity verdicts and withheld games; Reject; the ready-to-send checklist; exports gated by `exportCheck` and stamped with the snapshot; the AI budget and the scorecard are the hardening's panels |
 | `tools/content/run.js` | the weekly job's AI pass is reserved against its run and settled; the local example refuses an unmetered call |
 | `tools/content/inline.js`, `tools/content/artifacts.js`, `tools/articles/research_host.js` | inline the integrity layer; load the performance artifact; the article host loads the layer |
 | `football/cfb_validation/versions.jsonl` | two declared PATCH rows (pricing: the slate's kickoff fields, no price change; research: display consistency) |
@@ -219,11 +219,14 @@ verification steps, and the non-destructive and destructive rollback are in
    with the new code was verified in a scratch directory.
 5. **AI cost before the Edge Function is redeployed.** Until then the deployed
    function makes no reservation, and only the daily call count limits it.
-6. **The price table is maintained by hand** (`CE.cost.PRICES`). Provider
-   invoices are not imported; `billing_source` says which rows are estimates.
-7. **No NFL deep dive.** The NFL model publishes no reliability score, so the
-   NFL deep dive is no longer offered: it qualified before only on an assumed
-   score of 70. Re-enabling it needs a real NFL reliability measure.
+6. **The price table is maintained by hand** (`settings.ai_prices`, the one
+   ledger's list prices). Spend is estimated from token counts; the owner
+   enters billed amounts under Performance → *Record a cost*.
+7. **No NFL storyline deep dive.** The NFL model publishes no reliability
+   score, so this work's storyline deep dive is not offered for the NFL: it
+   qualified before only on an assumed score of 70. The hardening's matchup
+   deep dive covers NFL headline games from the projection and the official
+   injury report, and claims no reliability.
 8. **Approvals waiting at rollout.** Articles approved before the rollout must
    be re-checked before they can be sent (`MIGRATION.md` §1).
 

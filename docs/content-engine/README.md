@@ -94,7 +94,9 @@ Search Console (existing import) ───────────────�
    - Redeploy the `newsletter` function too, so its webhook ignores the events from these emails (`edgedesk=content`).
    - Until the function is deployed, the page still discovers, drafts, reviews and exports. AI rewrites, trending headlines and Send say they are unavailable.
 4. **The weekly job.** It runs from `.github/workflows/content-engine.yml` on Tue/Wed at 13:23 UTC, or by hand. It uses secrets the repository already holds: `SB_URL`, `SB_SERVICE_ROLE`, and optionally `ANTHROPIC_API_KEY`. Without the Supabase secrets it posts a named warning and does nothing.
-5. **Publisher business data** goes into the page, never the repository (see *Privacy* below). Open **Publishers → Stadium Rant** and:
+5. **The reader funnel** for EdgeDesk's own articles: paste `supabase/first_party_funnel.sql` after `growth_engine.sql` and `content_engine.sql`. It adds the Growth Console's report, and registers the `article_engaged` event if `funnel.sql` has not already (re-pasting `funnel.sql` registers it too). Idempotent; every report row should read `ok`.
+6. **EdgeDesk's own articles** (Monday/Wednesday/Friday) run from `.github/workflows/edgedesk-features.yml` with the same `SB_URL` / `SB_SERVICE_ROLE` secrets. They start in **dry run**: nothing is published until you choose **Auto** in **EdgeDesk articles** (see *EdgeDesk's own articles* below).
+7. **Publisher business data** goes into the page, never the repository (see *Privacy* below). Open **Publishers → Stadium Rant** and:
    - add the contacts (name and email: **Send** only goes to these addresses) and the partnership terms;
    - add the **historical benchmarks** as *user-reported* values: the average views of the publisher's recent articles, and the range for EdgeDesk's earlier matchup pieces.
 
@@ -167,12 +169,15 @@ Search Console (existing import) ───────────────�
 | Trending sports story | a matched headline, an NFL injury implication | intro · what was reported (attributed, linked) · why it matters · what EdgeDesk's research shows · what we don't know · bottom line |
 | Model vs. Market | one research-grade disagreement (Worth Researching or Verified Major) with a current price; never an unverified 7+ gap | intro · the gap (with capture time) · why the numbers differ · how to read · the case for the market · limits · bottom line |
 | Biggest Weekend Storylines | three to five storylines, each one game and one reason | intro · storylines · how to read · limits · bottom line |
-| Individual Game Deep Dive | the week's central game (needs a measured reliability) | intro · the matchup · the numbers · why they differ · what could change · how to read · limits · bottom line |
-| Conference Race Analysis | one conference's race | intro · the race · games · how to read · limits · bottom line |
+| Individual Game Deep Dive | the week's central game (needs a measured reliability), only when the week's matchup deep dives do not already cover it | intro · the matchup · the numbers · why they differ · what could change · how to read · limits · bottom line |
 | Upset Watch | underdogs at 30–46% | intro · upsets · how to read · limits · bottom line |
-| Weekly Model Performance Review | the live-forward record (50+ graded games) | intro · the record · where it missed · calibration · how to read · bottom line |
+| Weekly Model Performance Review | the season's live-forward record (50+ graded games); the postgame model review below grades the last week | intro · the record · where it missed · calibration · how to read · bottom line |
 | Five Games to Watch (publisher edition) | the week's featured games (default 5), each from a verified matchup packet — see [GAMES_TO_WATCH.md](GAMES_TO_WATCH.md) | intro · the schedule at a glance · one section per game (where to watch · why it matters · the key matchup · EdgeDesk's projection · upset potential · what to watch) · how to read · limits · bottom line |
 | Five Games to Watch (EdgeDesk edition) | the same packets, written as EdgeDesk's own page | intro · research navigation · one section per game (kickoff and broadcast · watch for · the stakes · where it's decided · EdgeDesk's number · the upset case) · how to read · limits · follow these games |
+| Matchup deep dive | the week's two headline games, per league | intro · EdgeDesk's projection (with its typical miss) · how to read · what builds the number · where the matchup tilts · quarterbacks and availability (a starter-out re-run is stated as the model's scenario, never as a report) · EdgeDesk vs. the market · conditions · limits · bottom line |
+| Conference race | games between a conference's three highest-rated teams | intro · why it matters · how to read · the games that shape the race · where the other contenders stand · what it means for the race (no standings feed: no standings claims) · limits · bottom line |
+| Model vs. market report | a league's slate with three or more gaps EdgeDesk can explain | intro · how to read · the biggest gaps (each explained from EdgeDesk's inputs, or its unexplained share stated) · what the gaps have in common (counted, not told) · limits · bottom line |
+| Postgame model review | the last finished week, from the graded record (`record/football/`) | intro · how to read a model review · how the numbers did (right winners, closer than the close, average miss, against the closing spread — a grade of the number, not a betting record) · where the model was closest · the biggest misses · the season so far · limits · bottom line |
 | Publisher-specific | any of the above | the publisher's own section order, tone, length and attribution |
 
 One research event can produce several **angles** (for example *full slate* or *upsets first*). Each angle is its own article. The database allows one live article per research event × publisher × format × angle, and the validator fails a draft that overlaps a sibling article from the same research by 70% or more.
@@ -245,12 +250,42 @@ These checks run in the page, in the job and in the function, and the database a
 
 An edit after approval returns the article to review, and sent content is frozen.
 
-**AI.** Claude is called with structured JSON output, the frozen research packet, the current draft and the publisher's profile. It is told the hard rules.
-- If its version fails a check, it gets the objections and one more try.
-- If it fails again, nothing is saved and the deterministic draft stands.
-- Every call is counted against the database's daily budget **before** it is made (default 20 calls a day, set in Settings).
-- Every call is also **reserved in dollars** against the content engine's monthly cap ($10 by default) and settled at its measured token cost. An identical request already paid for is refused as a duplicate. See `docs/system-integrity/COST.md`.
-- The default model is `claude-opus-5-5`, with server-side refusal fallbacks.
+**Reliability checks added in the hardening:**
+
+| Check | What it enforces |
+|---|---|
+| Numbers reconcile | a projected score's difference is the margin and its sum the total, to the tenth; a win chance is EdgeDesk's. Conflicting source figures are never repaired: the game is flagged. |
+| Data quality is not confidence | the evidence-quality score is printed as "data quality", never "confidence" in a result |
+| Quarterback claims supported | doubt about a quarterback only where the starter data shows a competition or an availability report (`qbState`: CONFIRMED, ESTABLISHED, COMPETITION, AVAILABILITY, UNKNOWN). A split is written only when the model's starter-out scenario moves the number a point or flips the favorite. |
+| Injury and news claims supported | an injury or news claim names a report on file, or is cut |
+| Results reconcile (postgame) | every final score, winner and pregame margin matches the graded record |
+
+**Model–market discrepancies.** A gap of 3+ points is explained from EdgeDesk's own decomposition and the historical explainer; the share its inputs cannot explain is stated, never filled with a story. 3+ unexplained points → review; a 7+ point gap with 5+ unexplained → **blocked** until the owner records a written review of that game.
+
+**Weather** comes from the committed forecast (`football/venues/forecasts.json`): wind ≥ 20 mph, gusts ≥ 35, precipitation ≥ 0.25 in, storms, snow, ≤ 25°F or ≥ 95°F are hazards; a forecast older than 12 h is stale; a game with no forecast is "not verified".
+
+### The editorial gate (14 checks)
+
+Before an article can be **approved**, marked **Ready to send**, or **sent**, the gate runs on that exact version against the research as it reads *now*: schedule, teams, projections, the model snapshot, market freshness, availability, claims, repetition, headline, SEO, the publisher's format, the referral link, responsible gambling, and overall reliability. Each finding is PASS, WARNING or BLOCKED, with its evidence, its fix and the sections to fix.
+
+- The **database** stores the report with the content hash and refuses approve / Ready / Send (in the doors *and* the table's trigger) unless the report is for this version, under 24 hours old, and not BLOCKED.
+- A block that needs judgment — an unexplained market gap — clears only with the owner's **written review** on record (**Record my review…**). Recording or withdrawing a review makes the gate run again.
+- **Fix flagged sections** rebuilds only those sections from the current research (no AI, no cost); every other section is kept byte for byte.
+
+### AI cost protection
+
+- **One shared monthly budget** (default **$10**, Settings → AI budget). Each call reserves its worst case (the full output allowance at list price) **before** it is made, under one database lock, so parallel calls cannot overrun it; it is settled with the token counts the API returns. Warnings at 50, 75 and 90%; no call that could pass 100%. The engine never raises the budget.
+- **Estimated ≠ billed.** Spend is estimated from token counts at list prices (stored in settings, labelled estimates). Enter the invoice under Performance → *Record a cost*; the scorecard then uses the billed amount.
+- **No wasted calls.** A deterministic precheck runs first (research over 36 h old, a game kicked off, figures in conflict → no call). The same request within 30 days is served from the ledger's cache. Section rewrites ask for one section with a smaller output cap. One retry, after a pause, only on 429/5xx. The daily call cap still applies.
+- **AI.** Claude is called with structured JSON output, the frozen research packet, the current draft and the publisher's profile, and told the hard rules. A version that fails a check gets the objections and one more try; failing again, nothing is saved and the deterministic draft stands. The default model is `claude-opus-5-5`.
+
+### Measurement, targets and the bottleneck
+
+**Performance → Business scorecard** (`content_engine_scorecard`) shows the 90-day targets against what was measured: articles a week and a month, first-pass rate, factual errors, AI spend, active partners, placements, referral visits, registrations, paid, new MRR, cost per customer and revenue to cost — each *met*, *on track* (ramped targets are pro-rated over 90 days), *behind* or *not measured* (never shown as zero). The funnel runs generated → first-pass → approved → sent → published → visits → registrations → trials → paid → retained.
+- **Attribution**: direct = the account's last touch is the article's campaign (within 30 days); assisted = first touch only (within 90), shown apart and never added. Confirmed accounts only; owners excluded.
+- **Revenue** is Stripe's: invoices less refunds, de-duplicated by invoice and charge. MRR is each active subscription's latest invoice.
+- **The bottleneck** is the first stage below the rate the targets imply, with enough of a sample to say so.
+- **The weekly summary** (Performance) says what earned publication, which checks keep failing and which AI work was wasted, and recommends changes; nothing is compared below 3 articles and 50 visits a side, and an AI acceptance rate needs 4 calls.
 
 ---
 
@@ -291,6 +326,54 @@ An edit after approval returns the article to review, and sent content is frozen
 
 ---
 
+## EdgeDesk's own articles (first-party)
+
+EdgeDesk publishes up to **three articles a week on edgedesksports.com**, in Central Time:
+
+| Day | Article | Built from |
+|---|---|---|
+| Monday | **Weekend Model Review** — the weekend's results against the numbers published before kickoff, the closest calls, the biggest misses, the season | the graded record (`record/football/`) |
+| Wednesday | **Weekend Storylines** — three to five storylines, each built on a number (a headliner, a conference race, an upset chance, an explained market gap, weather, a quarterback question) | this week's research |
+| Friday | **The Weekend in Five Numbers** — the closest call, the biggest favorite, the best underdog chance, a normal miss, an explained gap or the NFL headliner | this week's research |
+
+A slot is **skipped, with its reason**, when the research does not support it. Headlines lead with a storyline that is a fact in the research. A game whose market gap EdgeDesk cannot explain is left out of an unattended article, and the article says so.
+
+**The workflow:** RESEARCH → GENERATION → VALIDATION → SCHEDULED → PUBLISHED, or HELD FOR REVIEW. An article is published without a person only when **all twelve gates** pass:
+1. today's Central Time slot is this article's;
+2. at most three a week, one per slot;
+3. the research is fresh (≤ 36 h);
+4. no featured game has started or starts within the hour (Monday: every game reviewed is final and graded);
+5. the 14-check editorial gate: nothing blocked, no unexplained market gap;
+6. every hard validation check;
+7. every number traces to the research and reconciles;
+8. responsible gambling: no pick or staking language, "not a bet" explained, the 21+ disclaimer;
+9. a URL of its own and no near-copy (≥ 50%) of anything EdgeDesk has published;
+10. a distinct angle (< 35% overlap) from the week's publisher articles;
+11. SEO: headline, description, URL and keyword complete;
+12. cost: any AI went through the shared budget ledger.
+
+**The mode** (*EdgeDesk articles* tab; enforced by the database): **Off**, **Dry run** (the default: built, gated and kept here; nothing published), **Auto** (published when all twelve pass; otherwise held). A held article can be read in full, with each gate's reason, and **approved (this exact text)** or **rejected**; the next run publishes what you approved if its research is still fresh and no game in it has started. The job can never approve, never mark anything published that did not clear the gates or your approval, and never exceed three a week.
+
+**Publishing** is one file, `features/records/<id>.json` (outside `articles/`, which other jobs restore wholesale when their pushes race), pushed alone. The next site build (the editorial job builds every quarter hour) renders the page, the features hub (`/articles/features/`: categories and a monthly archive), the strip on `/articles/`, the sitemap and the published index. A published record removed by a race is written back on the next run.
+
+**The page** is server-rendered static HTML: canonical to itself (never to another site), NewsArticle + BreadcrumbList structured data, Open Graph and Twitter tags, byline, Central Time dates, breadcrumbs, related research, sources, the disclaimer, and **one call to action: "Explore the full matchup research on EdgeDesk."** No trial strip, no header button, and no campaign tags on internal links.
+
+**Stadium Rant and other publishers.** First-party articles take a different angle from the publisher pieces (gate 10 measures it), claim no other site's URL, and are never sent to a publisher. Publisher articles keep their own workflow: owner approval, owner send.
+
+**The reader funnel** (Growth Console → *EdgeDesk's own articles*): impressions and organic visits (Google Search Console), visits, engaged readers (30 s visible and half the page read; **never measured for a browser with Global Privacy Control or Do Not Track**), clicks to the matchup research, registrations (direct, and assisted shown apart), trials, paid and revenue — against the 90-day targets of 500 organic visits, 100 article-to-research visits, 25 registrations and 3 paid a month.
+
+**Rehearse before turning on Auto:** `npm run features:rehearsal` copies the whole site and a throwaway database, runs a dry-run Monday then an Auto week, builds the real site, runs the SEO audit and checks every page in Chromium. It last passed 41 of 41 steps.
+
+---
+
+## Rollback
+
+1. Run the previous release of `supabase/content_engine.sql` (`git show 007ac82a:supabase/content_engine.sql`), then `supabase/content_engine_hardening_rollback.sql` (it refuses to run until step 1 is done). This removes the gate, the AI ledger, measurement and first-party state; the activity log is kept.
+2. `supabase/first_party_funnel_rollback.sql` removes the Growth Console report. The `article_engaged` event kind stays: it belongs to `supabase/funnel.sql`'s registry.
+3. Redeploy the previous Edge Function and admin page; disable `edgedesk-features.yml`; to unpublish a feature, delete its record in `features/records/` (its page leaves at the next build).
+
+---
+
 ## Secrets and external services
 
 | Name | Where | Required | Purpose |
@@ -313,11 +396,14 @@ An edit after approval returns the article to review, and sent content is frozen
 ## Tests
 
 ```
-npm run content:test      # the core against the committed research + static guards (192 checks)
-npm run content:sql       # the database on a real PostgreSQL (125)
-npm run content:fn        # the Edge Function as deployed, against that database (61)
-npm run content:job:test  # the weekly job as the service role (23)
-npm run content:e2e       # the owner's whole flow in Chromium, both ways of sending included (54)
+npm run content:test      # the core against the committed research + static guards (301 checks)
+npm run content:sql       # the database on a real PostgreSQL (183)
+npm run content:fn        # the Edge Function as deployed, against that database (69)
+npm run content:job:test  # the weekly job as the service role, through the AI ledger (28)
+npm run content:e2e       # the owner's whole flow in Chromium: the gate, a written review, approval, both ways of sending, the scorecard, the AI budget, EdgeDesk articles (70)
+npm run features:test     # first-party: calendar, builders, the twelve gates, the page, the job, the database rules (90)
+npm run features:funnel   # engagement (consent respected) and the Growth Console report on a real database (25)
+npm run features:rehearsal # the production-like rehearsal: a copy of the site, a dry-run then auto week, the build, the SEO audit, Chromium (41 steps)
 npm run content:example   # write an example article (Word, Markdown, HTML, SEO sheet) from the current research to content-example/
 ```
 
@@ -348,7 +434,12 @@ npm run content:example   # write an example article (Word, Markdown, HTML, SEO 
 - publisher-reported figures and benchmarks;
 - multiple publishers.
 
+**Hardening and first-party publishing: built.** The editorial gate, AI cost protection, measurement and the scorecard, the weekly summary, five more templates, and EdgeDesk's own Monday/Wednesday/Friday articles with their reader funnel (above).
+
 **Limitations**
+- **First-party AI.** EdgeDesk's own articles are written by the deterministic writer; there is no AI pass for them yet (gate 12 is ready for one: any AI must go through the shared ledger).
+- **Organic visits** are Google Search Console clicks; other search engines are not measured.
+- **Consent.** The site has no consent banner. Global Privacy Control and Do Not Track switch off Google Analytics and engagement measurement; the first-party page-view and visit counts (no personal data) still run, as they did before.
 - **CFB prices are mostly stale.** Most CFB games carry no fresh price (5 of 55 in Week 6), and NFL quotes are the last captured lines. The articles say so; market-discrepancy topics score lower until prices are fresh.
 - **NFL confidence.** The NFL model publishes no confidence score, and NFL BET/LEAN/PASS decisions are computed only in the browser, so the engine does not cite them.
 - **CFB records and standings.** CFB win–loss records and conference standings are not in the committed research. Conference pieces read races through ratings and projections, and say so.

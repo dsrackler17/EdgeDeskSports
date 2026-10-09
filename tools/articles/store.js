@@ -36,6 +36,13 @@ const MODEL = require('./article_model.js');
    is populated before anything reads a record, rather than leaving each CLI
    to remember. See tools/articles/article_model.js registerType(). */
 require('../editorial/postgame_model.js');
+/* AND THE THIRD KIND: EdgeDesk's own Monday/Wednesday/Friday features. Their
+   records live in features/records/, outside articles/: the editorial and
+   publishing jobs restore articles/ wholesale when their pushes race, which
+   would delete a record they never wrote. loadAll() is unchanged (every tool
+   that walks game records keeps seeing only game records); the build reads
+   loadFeatures() beside it. */
+require('../editorial/feature_model.js');
 /* and EdgeDesk's own Five Games to Watch (tools/content/first_party.js) */
 require('../content/first_party.js');
 
@@ -44,6 +51,7 @@ const DATA = path.join(ROOT, 'articles', 'data');
 const RECORDS = path.join(DATA, 'records');
 const MARKET = path.join(DATA, 'market');
 const INDEX = path.join(DATA, 'index.json');
+const FEATURES = path.join(ROOT, 'features', 'records');
 
 const DEFAULT_SETTINGS = {
   auto_publish: false,
@@ -87,6 +95,20 @@ function loadAll() {
     .sort((a, b) => String(a.id).localeCompare(String(b.id)));
 }
 function load(id) { return MODEL.hydrate(readJson(recordFile(id), null)); }
+function featureFile(id) { return path.join(FEATURES, String(id) + '.json'); }
+function loadFeatures() {
+  if (!fs.existsSync(FEATURES)) return [];
+  return fs.readdirSync(FEATURES).filter(f => /^feature-.*\.json$/.test(f))
+    .map(f => readJson(path.join(FEATURES, f), null))
+    .filter(r => r && r.article_type === 'feature')
+    .map(MODEL.hydrate)
+    .sort((a, b) => String(a.id).localeCompare(String(b.id)));
+}
+function saveFeature(rec) {
+  if (!rec || !/^feature-/.test(String(rec.id || ''))) throw new Error('a feature record needs a feature- id');
+  writeJson(featureFile(rec.id), MODEL.compact(rec));
+  return rec;
+}
 function save(rec) {
   if (!rec || !rec.id) throw new Error('an article record needs an id');
   writeJson(recordFile(rec.id), MODEL.compact(rec));
@@ -172,8 +194,8 @@ function loadMarketSnapshots() {
 }
 
 module.exports = {
-  ROOT, DATA, RECORDS, MARKET, INDEX, DEFAULT_SETTINGS,
-  readJson, writeJson, recordFile,
+  ROOT, DATA, RECORDS, MARKET, INDEX, FEATURES, DEFAULT_SETTINGS,
+  readJson, writeJson, recordFile, featureFile, loadFeatures, saveFeature,
   loadIndex, settings, loadAll, load, save, remove, published, takenSlugs,
   buildIndex, saveIndex, loadMarketSnapshots
 };

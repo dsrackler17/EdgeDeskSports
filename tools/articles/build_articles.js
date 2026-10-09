@@ -37,6 +37,7 @@ const path = require('path');
 const STORE = require('./store.js');
 const MODEL = require('./article_model.js');
 const R = require('./article_render.js');
+const FEATURE = require('../editorial/feature_model.js');
 
 const ROOT = STORE.ROOT;
 const OUT = path.join(ROOT, 'articles');
@@ -100,7 +101,7 @@ function lastmod(rec) {
    or not the refresh that marks it frozen ever ran (a game that left the
    board before it did kept saying "hourly" forever) */
 function settled(r, nowIso) {
-  if (r.frozen || r.article_type === 'postgame') return true;
+  if (r.frozen || r.article_type === 'postgame' || r.article_type === 'feature') return true;
   const k = Date.parse(r.game_time), n = Date.parse(nowIso || NOW);
   return isFinite(k) && isFinite(n) && k <= n;
 }
@@ -111,6 +112,8 @@ function articleSitemap(recs, nowIso) {
     { loc: SITE + '/articles/college-football/', freq: 'daily', pri: '0.8', lm: newest('CFB') },
     { loc: SITE + '/articles/nfl/', freq: 'daily', pri: '0.8', lm: newest('NFL') }
   ];
+  /* the features hub exists once a feature does */
+  if (recs.some(r => r.article_type === 'feature')) hubs.push({ loc: SITE + '/articles/features/', freq: 'weekly', pri: '0.8', lm: newest('FEATURE') });
   let x = '<?xml version="1.0" encoding="UTF-8"?>\n';
   x += '<!-- EdgeDesk research articles. PUBLISHED ONLY: a draft, a preview and a\n';
   x += '     short alias URL are all deliberately absent. Written by\n';
@@ -163,24 +166,27 @@ function sitemapIndex(articlesXml) {
 function build() {
   const all = STORE.loadAll();
   const pub = all.filter(r => r.status === 'published');
+  /* EdgeDesk's own features: a separate list, so nothing that walks game
+     articles (neighbours, sport hubs, cards) ever meets one */
+  const feats = STORE.loadFeatures().filter(r => r.status === 'published');
   const problems = [];
 
   /* two published articles cannot share a URL */
   const seen = Object.create(null);
-  pub.forEach(r => {
+  pub.concat(feats).forEach(r => {
     [r.slug].concat(r.aliases || []).forEach(s => {
       if (seen[s] && seen[s] !== r.id) problems.push('duplicate URL /articles/' + s + ' claimed by ' + seen[s] + ' and ' + r.id);
       seen[s] = r.id;
     });
   });
   /* and a published article must still pass its own checks */
-  pub.forEach(r => {
+  pub.concat(feats).forEach(r => {
     const v = MODEL.publishable(r);
     if (!v.ok) problems.push(r.slug + ': published but failing ' + v.failed.map(f => f.id).join(', '));
   });
 
   if (CHECK) {
-    log(all.length + ' record(s), ' + pub.length + ' published');
+    log(all.length + ' record(s), ' + pub.length + ' published, ' + feats.length + ' feature(s)');
     problems.forEach(p => log('  PROBLEM: ' + p));
     log(problems.length ? '\n' + problems.length + ' problem(s)' : '\nno problems');
     return { written: [], problems: problems, published: pub.length };
@@ -211,11 +217,24 @@ function build() {
     (r.aliases || []).forEach(a => { written.push(page(a, R.aliasPage(r, a))); });
   });
 
+  /* the features: their pages, their hub, related research for each */
+  const byGame = Object.create(null);
+  pub.forEach(r => { if (r.game_id != null) (byGame[String(r.game_id)] = byGame[String(r.game_id)] || []).push(r); });
+  feats.forEach(r => {
+    const others = feats.filter(o => o.id !== r.id).sort((a, b) => (Date.parse(b.published_at) || 0) - (Date.parse(a.published_at) || 0)).slice(0, 3)
+      .map(o => ({ title: o.title, url: R.slashed(o.canonical_url), kind: (FEATURE.KINDS[o.feature_kind] || {}).label || 'EdgeDesk feature' }));
+    const games = [].concat.apply([], (r.game_ids || []).map(id => byGame[String(id)] || [])).slice(0, 4)
+      .map(g => ({ title: g.away_team + ' vs. ' + g.home_team, url: R.slashed(g.canonical_url), kind: (g.article_type === 'postgame' ? 'Postgame analysis · ' : 'Pregame research · ') + g.sport_label }));
+    written.push(page(r.slug, FEATURE.page(r, { published: published, related: games.concat(others), now: NOW })));
+  });
+  if (feats.length) written.push(page('features', FEATURE.hub(feats)));
+
   /* the hubs. A sport hub is written for every sport the model knows, even
      with nothing published in it yet: an empty section that says so is a
      better answer to a crawler and a reader than a 404. */
   written.push(page('', R.hubPage({
     records: pub, canonical: SITE + '/articles/', active: '/articles/', now: NOW,
+    extraHTML: FEATURE.strip(feats), featuresLink: feats.length > 0,
     title: 'EdgeDesk Research Articles — Model Projections, Fair Spreads and Matchup Analysis',
     og_title: 'EdgeDesk research — every game, priced and explained',
     description: 'EdgeDesk publishes a research article for every game it prices: the fair spread, the projected score, what moved the number, where each team has an edge, and what the model could not measure. Research, not picks.',
@@ -257,14 +276,14 @@ function build() {
   write(path.join(OUT, 'data', 'published.json'), JSON.stringify({
     schema: 'edgedesk_published_articles/1',
     note: 'Published research articles only. Written by tools/articles/build_articles.js.',
-    articles: pub.slice().sort((a, b) => String(a.slug).localeCompare(String(b.slug))).map(r => ({
+    articles: pub.concat(feats).sort((a, b) => String(a.slug).localeCompare(String(b.slug))).map(r => ({
       game_id: r.game_id != null ? String(r.game_id) : null, sport: r.sport, sport_slug: r.sport_slug,
       type: r.article_type || 'pregame', slug: r.slug, url: R.slashed(r.canonical_url),
-      title: r.page_label || (r.away_team + ' vs. ' + r.home_team), game_time: r.game_time || null,
+      title: r.article_type === 'feature' ? r.title : (r.page_label || (r.away_team + ' vs. ' + r.home_team)), game_time: r.game_time || null,
       updated_at: lastmod(r)
     }))
   }, null, 1) + '\n');
-  const articlesXml = articleSitemap(pub, NOW);
+  const articlesXml = articleSitemap(pub.concat(feats), NOW);
   write(path.join(ROOT, 'sitemap-articles.xml'), articlesXml);
   write(path.join(ROOT, 'sitemap.xml'), sitemapIndex(articlesXml));
 
@@ -275,8 +294,8 @@ function build() {
     const rep = require('../seo/audit.js').write(ROOT);
     log('  seo report: ' + rep.summary.pages + ' pages, ' + rep.summary.errors + ' error(s), ' + rep.summary.warnings + ' warning(s)');
   } catch (e) { log('  seo report not written: ' + (e && e.message || e)); }
-  log(written.length + ' file(s) written · ' + pub.length + ' published article(s)');
-  return { written: written, problems: [], published: pub.length };
+  log(written.length + ' file(s) written · ' + pub.length + ' published article(s) · ' + feats.length + ' feature(s)');
+  return { written: written, problems: [], published: pub.length, features: feats.length };
 }
 
 if (require.main === module) {
