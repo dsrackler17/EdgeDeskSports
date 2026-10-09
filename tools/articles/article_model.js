@@ -50,7 +50,7 @@
      it, not what the model currently thinks. */
   var EDITORIAL_FIELDS = ['snapshot_id', 'publication_snapshot_id', 'timing',
     'featured', 'theses', 'quality', 'publish_state', 'related',
-    'manual_review_required', 'manual_review_reason'];
+    'manual_review_required', 'manual_review_reason', 'football_evidence'];
 
   var SPORTS = {
     CFB: { slug: 'college-football', label: 'College Football', short: 'CFB',
@@ -438,6 +438,26 @@
     return t.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
   }
 
+  /* ------------------------------------------- the football behind the number */
+  /* lib/football_evidence.js articleSummary(), attached by the pipeline
+     (tools/articles/evidence_attach.js). Selected, never computed: every line
+     is a sourced claim, EdgeDesk's own assessment of the model-versus-line gap,
+     or what is still unknown. */
+  function footballEvidenceSection(fe, away, home) {
+    if (!fe || !fe.status) return null;
+    var any = (fe.supporting || []).length + (fe.contradicting || []).length + (fe.quarterbacks || []).length;
+    if (!any) return null;
+    var T = fe.gap && fe.gap.toward, O = fe.gap && fe.gap.other;
+    return { kind: 'football_evidence', title: 'The football behind the number',
+      lede: fe.question ? 'The matchup that decides it: ' + fe.question : null,
+      status: String(fe.status).replace(/_/g, ' '), input_suspect: !!fe.input_suspect, assessment: txt(fe.assessment),
+      supporting: { title: T ? 'What points toward ' + T : 'What supports EdgeDesk’s number', items: list(fe.supporting, 4) },
+      contradicting: { title: O ? 'What points toward ' + O : 'What argues against it', items: list(fe.contradicting, 4) },
+      quarterbacks: list(fe.quarterbacks, 8), availability: list(fe.availability, 6),
+      script: { model: list(fe.script && fe.script.model, 4), market: list(fe.script && fe.script.market, 3) },
+      unknown: list(fe.unknown, 6), sources: (fe.sources || []).slice(0, 12) };
+  }
+
   /* -------------------------------------------- what could change the read */
   function uncertaintySection(r) {
     var u = r.uncertainty;
@@ -657,6 +677,7 @@
     push(readSection(r));
     push(snapshotSection(r));
     push(researchReadSection(r));
+    push(footballEvidenceSection(rec.football_evidence, awayName, homeName));
     push(pricingSection(r));
     push(breakdownSection(r));
     var edges = edgesSection(r, awayName, homeName);

@@ -44,6 +44,8 @@ on:
   pull_request:
     paths:
       - 'lib/content_engine.js'
+      - 'lib/football_evidence.js'
+      - 'football/evidence/facts.json'
       # the integrity layer the core checks every draft with (inlined into the Edge Function)
       - 'lib/edgedesk_calc.js'
       - 'lib/edgedesk_schedule.js'
@@ -55,8 +57,10 @@ on:
       - 'football/broadcasts/**'
       - 'football/content/config.json'
       - 'tools/content/**'
+      - 'tools/articles/evidence_attach.js'
       - 'admin/content/**'
       - 'supabase/content_engine.sql'
+      - 'supabase/content_engine_evidence.sql'
       - 'supabase/functions/content_engine/**'
       - 'tools/growth/outbound_auth.js'
       - 'lib/edgedesk_admin_session.js'
@@ -81,10 +85,16 @@ jobs:
           node-version: '22'
       - name: The core — research, discovery, drafts, every check, exports, the page's static guards
         run: node tools/content/content.test.js
-      - name: The Edge Function carries the owner check and the core verbatim
+      - name: The football evidence pipeline — packets, explanations, the editorial gate, both formats, on the frozen Week 6 regression games and today's research
+        run: node tools/content/evidence.test.js
+      - name: The facts ledger — every outside fact dated, sourced and attributed
+        run: node tools/content/add_fact.js --check
+      - name: The Edge Function carries the owner check, the evidence gate and the core verbatim
         run: node tools/content/inline.js --check
       - name: The database on a real PostgreSQL
         run: node tools/content/content_engine_sql.test.js
+      - name: The evidence migration — the database’s evidence floor and the editorial metrics
+        run: node tools/content/content_engine_evidence_sql.test.js
       - name: The Edge Function, as deployed, against the database
         run: node tools/content/content_engine_fn.test.js
       - name: The weekly job, as the service role

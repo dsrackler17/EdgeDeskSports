@@ -69,7 +69,7 @@ const ART_FIXED = (() => { const a = require(path.join(__dirname, 'artifacts.js'
   const client = PGR.client({ url: SB, key: SERVICE }, fakeFetch, { retries: 0 });
   const quiet = () => {};
   try {
-    ['billing.sql', 'stripe_webhook.sql', 'referral_codes.sql', 'personal_research.sql', 'affiliates.sql', 'growth.sql', 'growth_outbound.sql', 'content_engine.sql']
+    ['billing.sql', 'stripe_webhook.sql', 'referral_codes.sql', 'personal_research.sql', 'affiliates.sql', 'growth.sql', 'growth_outbound.sql', 'content_engine.sql', 'content_engine_evidence.sql']
       .forEach((f) => db.applyFileAtomic(path.join(PG.ROOT, 'supabase', f)));
 
     /* L + D — no Claude */

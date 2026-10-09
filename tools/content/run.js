@@ -113,6 +113,8 @@ async function aiPass(o, a, ctx) {
      the article. At most three calls in all, each reserved and settled. */
   let current = a, sections = [null];
   for (let attempt = 0; attempt < 3 && sections.length; attempt++) {
+    /* outside Five Games to Watch: at most CE.ai.MAX_ATTEMPTS calls per draft */
+    if (o.kind !== 'games_to_watch' && attempt >= CE.ai.MAX_ATTEMPTS) break;
     const section = sections.shift();
     if (attempt === 2 && section === null) break;
     const req = CE.ai.buildRequest(o, { publisher: ctx.publisher, format: a.format, current, objections, section: section || undefined });
@@ -146,6 +148,10 @@ async function aiPass(o, a, ctx) {
     if (o.kind === 'games_to_watch') {
       const fs = CE.ai.failingSections(rep, next);
       if (!fs.whole_article && fs.sections.length && fs.sections.length <= 2) { current = next; sections = fs.sections.slice(); continue; }
+    } else {
+      /* one section holds every failure (a game's capsule): the retry rewrites only it */
+      const hit = CE.ai.affectedSections(rep, next, o);
+      if (hit && hit.length === 1) { current = next; sections = [hit[0]]; continue; }
     }
     current = a;
     if (!sections.length && attempt === 0) sections.push(null);
@@ -155,7 +161,7 @@ async function aiPass(o, a, ctx) {
 
 /* ── discovery ──────────────────────────────────────────────────────────── */
 async function discoverAll(o) {
-  const art = o.art || ART.load();
+  const art = o.art || ART.load({ now: o.now });
   /* the owner's broadcast verifications (content_engine.broadcast_checks) */
   let broadcastChecks = o.broadcastChecks || [];
   if (!o.broadcastChecks && o.db) { try { const r = await o.db.rpc('public', 'content_engine_broadcast_checks_current', {}); if (Array.isArray(r)) broadcastChecks = r; } catch (_) { /* none on file */ } }
@@ -183,7 +189,7 @@ function withHash(o) { return Object.assign({}, o, { research_hash: CE.util.hash
 /* ── the weekly run ─────────────────────────────────────────────────────── */
 async function weekly(o) {
   const db = o.db, log = o.log || console.log;
-  const art = o.art || ART.load();
+  const art = o.art || ART.load({ now: o.now });
   const snap0 = CE.research.fromArtifacts(art, { now: o.now });
   const period = [snap0.cfb && snap0.cfb.season || snap0.nfl && snap0.nfl.season, snap0.cfb ? 'cfb-w' + snap0.cfb.week : 'cfb-none', snap0.nfl ? 'nfl-w' + snap0.nfl.week : 'nfl-none'].join('-');
   const begin = await db.rpc('public', 'content_engine_job_begin', { p_job: 'weekly', p_period: period, p_force: !!o.force });
@@ -198,10 +204,15 @@ async function weekly(o) {
     const d = await discoverAll({ art, now: o.now, network: o.network, fetch: o.fetch, spend, db, publisher });
     counts.news = d.news.length; counts.feed_problems = d.feedProblems.length;
     if (d.feedProblems.length) await note('fetch_failed', { problems: d.feedProblems });
+    const refusedKinds = {};
     for (const opp of d.opps) {
       const r = await db.rpc('public', 'content_engine_opportunity_upsert', { p: withHash(opp), p_run: run });
       counts.opportunities++;
-      if (r && r.ok) { if (r.created) counts.created++; else counts.refreshed++; } else counts.refused++;
+      if (r && r.ok) { if (r.created) counts.created++; else counts.refreshed++; } else { counts.refused++; refusedKinds[opp.kind] = (refusedKinds[opp.kind] || 0) + 1; }
+    }
+    if (refusedKinds.matchup_analysis) {
+      log('::warning::the database refused ' + refusedKinds.matchup_analysis + ' matchup analysis topic(s): re-apply supabase/content_engine.sql, then supabase/content_engine_evidence.sql');
+      await note('job_note', { refused: refusedKinds, fix: 're-apply supabase/content_engine.sql, then supabase/content_engine_evidence.sql' });
     }
     const targets = await db.rpc('public', 'content_engine_job_targets', { p_publisher: publisher ? publisher.id : null, p_limit: settings.drafts_per_run });
     for (const t of targets || []) {

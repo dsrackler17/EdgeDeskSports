@@ -37,6 +37,8 @@ const path = require('path');
 const HOST = require('./research_host.js');
 const STORE = require('./store.js');
 const MODEL = require('./article_model.js');
+const EVIDENCE = require('./evidence_attach.js');
+const FE = require('../../lib/football_evidence.js');
 
 function arg(name, fb) {
   const i = process.argv.indexOf('--' + name);
@@ -155,6 +157,9 @@ async function main() {
       diff = out.diff || null;
     }
 
+    /* ---- the football evidence (lib/football_evidence.js), every time ---- */
+    rec = EVIDENCE.attach(rec, NOW);
+
     /* ---- the publication checks, every time, whatever the action ---- */
     const verdict = MODEL.publishable(rec);
     rec.checks = { ok: verdict.ok, failed: verdict.failed.map(f => ({ id: f.id, why: f.why })), at: NOW };
@@ -168,9 +173,16 @@ async function main() {
       && lead <= (settings.auto_publish_max_lead_days || 14) * 1440;
 
     const wantPublish = (PUBLISH && ONLY) || (autoPublish && rec.status === 'ready' && inWindow);
+    /* an automatic publish also needs the football evidence, and is held for a
+       person when EdgeDesk's inputs are suspect or a cited report is unconfirmed */
+    const evGate = rec.status === 'published' ? { ok: true, blocking: [] } : FE.firstPartyGate(rec);
     if (wantPublish) {
       if (!verdict.ok) {
         why = 'held: ' + verdict.failed.map(f => f.id).join(', ');
+        action = action === 'unchanged' ? 'held' : action;
+      } else if (!evGate.ok && !(PUBLISH && ONLY)) {
+        why = 'held for review: ' + evGate.blocking.map(b => b.id).join(', ');
+        rec.manual_review_reason = evGate.blocking.map(b => b.id + ': ' + b.why).join(' · ');
         action = action === 'unchanged' ? 'held' : action;
       } else {
         const before = rec.status;

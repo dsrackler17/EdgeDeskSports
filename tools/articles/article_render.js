@@ -447,6 +447,27 @@
     return h + '</section>';
   }
 
+  function footballEvidenceHTML(s) {
+    var h = '<section class="a-sec a-fev">' + secHead(s.title, s.lede, anchorId(s.title));
+    h += '<p><b>Research status: ' + esc(s.status) + (s.input_suspect ? ' (EdgeDesk’s inputs are suspect)' : '') + '.</b> ' + esc(s.assessment || '') + '</p>';
+    function ul(title, items) { return items && items.length ? '<h3 class="a-h3">' + esc(title) + '</h3><ul class="a-bul">' + items.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul>' : ''; }
+    h += ul(s.supporting.title, s.supporting.items);
+    h += ul(s.contradicting.title, s.contradicting.items);
+    h += ul('The quarterbacks', s.quarterbacks);
+    h += ul('Availability', s.availability);
+    h += ul('For EdgeDesk’s number to look right', s.script.model);
+    h += ul('For the line to look right', s.script.market);
+    h += ul('Still unknown', s.unknown);
+    if (s.sources && s.sources.length) {
+      h += '<h3 class="a-h3">Sources</h3><ul class="a-bul a-dim">' + s.sources.map(function (x) {
+        var label = esc(x.label || 'EdgeDesk research');
+        return '<li>' + (x.url ? '<a href="' + esc(x.url) + '" rel="noopener nofollow">' + label + '</a>' : label)
+          + (x.observed_at ? ' — as of ' + esc(String(x.observed_at).slice(0, 10)) : '') + ' (' + esc(String(x.verification || '').replace(/_/g, ' ').toLowerCase()) + ')</li>';
+      }).join('') + '</ul>';
+    }
+    return h + '</section>';
+  }
+
   function marketHTML(s) {
     var h = '<section class="a-sec a-market">' + secHead(s.title, null, anchorId(s.title));
     if (!s.available) {
@@ -647,7 +668,7 @@
   var SECTION_HTML = {
     read: readHTML, snapshot: snapshotHTML, research_read: researchReadHTML, pricing: pricingHTML, breakdown: breakdownHTML,
     edges: edgesHTML, matchups: matchupsHTML, panel: panelHTML, roster: rosterHTML,
-    cases: casesHTML, uncertainty: uncertaintyHTML, market: marketHTML,
+    cases: casesHTML, uncertainty: uncertaintyHTML, market: marketHTML, football_evidence: footballEvidenceHTML,
     /* postgame */
     thesis_audit: thesisAuditHTML, process: processHTML, scorecard: scorecardHTML,
     watched: watchedHTML, lessons: lessonsHTML, narrative: narrativeHTML,

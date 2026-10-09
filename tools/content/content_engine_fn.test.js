@@ -126,7 +126,7 @@ const claude = (...answers) => { let i = 0; globalThis.__claude = (req, opts) =>
 
 (async () => {
   try {
-    ['billing.sql', 'stripe_webhook.sql', 'referral_codes.sql', 'personal_research.sql', 'affiliates.sql', 'growth.sql', 'growth_outbound.sql', 'content_engine.sql']
+    ['billing.sql', 'stripe_webhook.sql', 'referral_codes.sql', 'personal_research.sql', 'affiliates.sql', 'growth.sql', 'growth_outbound.sql', 'content_engine.sql', 'content_engine_evidence.sql']
       .forEach((f) => db.applyFileAtomic(path.join(PG.ROOT, 'supabase', f)));
     one(`insert into auth.users (id, email, email_confirmed_at) values ('${OWNER}', 'owner@edgedesk.test', now()), ('${ADMIN}', 'admin@edgedesk.test', now());
          insert into public.affiliate_admins (user_id) values ('${OWNER}'), ('${ADMIN}');

@@ -43,6 +43,7 @@ const REPO = path.join(__dirname, '..', '..');
 
 const ASTORE = require('../articles/store.js');
 const AMODEL = require('../articles/article_model.js');
+const EVIDENCE = require('../articles/evidence_attach.js');
 const HOST = require('../articles/research_host.js');
 const FEATURED = require('./featured.js');
 const SNAP = require('./snapshot.js');
@@ -366,6 +367,10 @@ async function phasePregame(host) {
       rec.hero_image = rec.hero_image || GRAPHIC.forRecord(Object.assign({}, rec,
         { article_type: 'pregame', snapshot: snap })).data_uri;
 
+      /* ---- the football evidence: quarterbacks, matchups, availability, and
+         the model-versus-line explanation (lib/football_evidence.js) ---- */
+      rec = EVIDENCE.attach(rec, NOW);
+
       /* ---- the gate ---- */
       const q = QUALITY.inspect(rec, { now: NOW });
       rec.quality = { score: q.score, publishable: q.publishable,
@@ -519,7 +524,7 @@ async function phasePregame(host) {
       }
       /* `prior` is the record as stored, so an unchanged republish leaves
          updated_at alone and a real edit moves it. */
-      const pub = PUBLISH.publish(rec, { now: NOW, quality: gate, others: articles, previous: prior });
+      const pub = PUBLISH.publish(rec, { now: NOW, quality: gate, others: articles, previous: prior, requireEvidence: true });
       rec = pub.record;
       if (pub.ok) {
         /* the timing block the later analytics read: which window it went out

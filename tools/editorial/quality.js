@@ -273,6 +273,8 @@
     add(rec.updated_at); add(rec.generated_at);
     /* the pregame half of a normal article */
     deepAdd(rec.research, add);
+    /* the football evidence summary: every line in it is a sourced claim */
+    deepAdd(rec.football_evidence, add);
     return set;
   }
   function deepAdd(v, add, depth) {

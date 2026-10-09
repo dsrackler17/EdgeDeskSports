@@ -30,11 +30,21 @@ function marketSnapshots(season) {
     .map((f) => readJson(path.join('articles', 'data', 'market', f))).filter(Boolean);
 }
 
-function load() {
+/* opts.now: the moment the evidence packets are judged at (a test pins it).
+   The packets are built fresh from the committed artifacts (tools/content/
+   evidence.js); the browser reads the committed football/evidence/packets.json. */
+function load(opts) {
+  opts = opts || {};
   const A = CE.ARTIFACTS;
   const nflSlate = readJson(A.nfl_slate);
   const season = (nflSlate && nflSlate.season) || 2026;
+  let evidence = null;
+  if (opts.evidence !== false) {
+    try { evidence = require(path.join(ROOT, 'tools', 'content', 'evidence.js')).build({ now: typeof opts.now === 'number' ? opts.now : Date.now() }); }
+    catch (e) { evidence = readJson(A.evidence); }
+  }
   return {
+    evidence,
     cfbGames: readJson(A.cfb_games),
     cfbBrief: readJson(A.cfb_brief),
     rankings: readJson(A.rankings),

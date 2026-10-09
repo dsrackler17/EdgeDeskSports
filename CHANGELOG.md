@@ -1,5 +1,72 @@
 # Changelog
 
+## 2026-10-09 — Content Engine: football evidence, not just the number
+
+**A publisher showed us a Week 6 piece that put EdgeDesk's Ole Miss–Vanderbilt number (Ole Miss by about 1) beside a market that had Ole Miss -9.5, with no football reason for the gap. The old writer printed only the model's mechanics and "Model confidence: High"; the validator checked only that each number existed. The repair is in the shared pipeline: every featured game now carries a football evidence packet, every model–market gap is explained or called UNEXPLAINED, and an editorial gate blocks or holds what the evidence does not support.** Docs: `docs/content-engine/README.md` (*Football evidence*).
+
+- **Evidence packets** (`lib/football_evidence.js`, `tools/content/evidence.js`): one per matchup, deterministic, from committed files only. Each claim carries its source, its time, a verification status and a scope. A model's output and the line are never counted as football evidence.
+  - Coverage: quarterback efficiency, trend and availability; each offense against the other defense; personnel; form; schedule (a labelled proxy); history (dated); rest; weather; home field; conference.
+  - Penalties (CFB) and turnover rates are MISSING with the reason; nothing is estimated.
+  - The hourly Model Lab job rebuilds `football/evidence/packets.json`.
+- **The explanation**: the gap, the model's terms, how much EdgeDesk's explainer accounts for, the supporting and contradicting football, an input audit, the critical matchup, both game scripts, the uncertainty, and a status (EXPLAINED / PARTIALLY_EXPLAINED / UNEXPLAINED). It is never actionable.
+  - The audit's flags: stale line, quarterback input conflict, generic absence pricing, data conflict, cross-model outlier, DATA FAULT, home-field constant, regime change, thin sample.
+  - Ole Miss–Vanderbilt is UNEXPLAINED with suspect inputs. The model expects Berlowitz while the SEC report lists Curtis probable; about 2.0 of the 9.3 points are accounted for; the measured football leans to Ole Miss.
+- **The editorial gate**, in `validate()` everywhere, failing closed without the module. It requires:
+  - football evidence and both quarterbacks;
+  - material injuries and model–report conflicts addressed;
+  - the case against EdgeDesk argued where it differs from the line;
+  - an unexplained gap called unexplained and not an edge.
+
+  It rejects:
+  - causes the model's terms do not support;
+  - injury statuses the report contradicts;
+  - undated history;
+  - wrong gap arithmetic;
+  - edge language and repeated boilerplate;
+  - software terms and code identifiers for publishers;
+  - unknown sources and unattributed reporting.
+
+  The number check is claim-scoped. Every report ends **BLOCKED**, **HOLD_FOR_REVIEW** (unconfirmed reporting, suspect inputs) or **READY**, with an evidence record per claim in the review panel.
+- **Two new formats**, journalist-first (football question → thesis → evidence → counterargument → game script → what to watch):
+  - `matchup_analysis` for publishers: prose, no software terms, manual approval;
+  - `edgedesk_analysis` for EdgeDesk's own pages: a structured research page with every model input, the diagnostics and what is missing. It shares under 45% of its wording with the publisher piece. It is a library format; EdgeDesk's own articles stay out of the publisher queue.
+
+  Discovery offers a matchup analysis for the week's top meetings and the largest gaps. Weekly slate capsules now argue both sides with football, name both quarterbacks, and disclose the gap's status.
+- **The facts ledger** (`football/evidence/facts.json`, `tools/content/add_fact.js`): outside reporting with outlet, URL, date, recorder and expiry.
+  - It enters as REPORTED, is linked in the copy, and holds the article until an editor runs `--verify`.
+  - Seven Week 6 facts are on file: Curtis's knee and status, Lacy's shoulder, the Georgia halftime score, Florida's rushing, Ole Miss's preseason line concern, and Raiola's relief game.
+- **EdgeDesk's own game pages** gain *The football behind the number*. Automatic publishing is held (manual review, with the reason) for a game with no packet, suspect inputs or unconfirmed reporting.
+- **With the hardening below.**
+  - The 14-check editorial gate blocks on any failed evidence check (*Unsupported factual claims*) and warns on each hold.
+  - The quarterback and injury claim checks accept what the packet's official reports and attributed reporting state.
+  - The writer follows qbState's rule: no "not confirmed as the starter" lines.
+  - The matchup deep dive, the model-vs-market report, the conference race and the first-party features carry each game's football and disclose unexplained gaps as not an edge.
+- **With the integrity layer** (Five Games to Watch and system integrity):
+  - A contested quarterback job is printed as the measured dropback split, never as "unsettled" (`lib/edgedesk_availability.js` rule 3); only a sourced report may put a starter in doubt.
+  - The spread check accepts a "Team by N" that the game's evidence packet quotes from the research (EdgeDesk's other models), with a word boundary, so "Georgia -1" never passes for "Georgia -17".
+  - Evidence rounds half away from zero, as `lib/edgedesk_calc.js` does, so a packet and the research agree to the tenth.
+  - Weekend Storylines carries each game's football, the case against and any quarterback ruled out. The Upset Watch list is gated line by line: a measured case for every underdog, a ruled-out quarterback named, and an unexplained model number disclosed as not an edge.
+  - A packet's numbers stay out of the general number pool for listed games too: each is valid only in a sentence that cites its claim.
+- **Cost**:
+  - packets are built once and reused;
+  - outside research covers featured games only, and only what is missing;
+  - at most two AI attempts, the retry rewriting only the failed section, all through the shared monthly AI ledger;
+  - no new paid API.
+- **Database:**
+  - `matchup_analysis` joins the topics and formats in `content_engine.sql`.
+  - `supabase/content_engine_evidence.sql` (**apply by hand** after it) adds:
+    - the floor that refuses approval without the evidence gate;
+    - `content_engine_editorial_metrics()`, with editorial acceptance (including unsupported claims caught), traffic and the AI ledger's cost kept apart, and nulls where nothing is measured.
+- **Edge Function** `content_engine`: carries the evidence module verbatim; redeploy it.
+
+**Tests:**
+- `content:test`:
+  - the core, 317;
+  - the new `tools/content/evidence.test.js`, 188: the publisher's eight failures, the old slate failing and the new one passing, adversarial edits, four more CFB games and an NFL game in both formats, cost and determinism, and today's research.
+- `content:sql`: 183, and 23 for the evidence migration.
+- `content:fn` 69, `content:job:test` 28, `content:e2e` 70.
+- `features:test`, `articles:test` and `editorial:test`: all passing.
+
 ## 2026-10-09 — Five Games to Watch and system integrity, merged with the content-engine hardening
 
 The hardening on `main` and this work both added an AI ledger, an approval gate and new templates. They now share one of each:
