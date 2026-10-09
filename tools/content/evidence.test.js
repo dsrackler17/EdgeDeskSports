@@ -299,6 +299,9 @@ section('L live');
 const ART = require(path.join(__dirname, 'artifacts.js'));
 const LNOW = Date.now();
 const art = ART.load({ now: LNOW });
+/* the hourly matchup packets move with the week, and Five Games to Watch is
+   tested from its frozen fixture in games_to_watch.test.js (as in content.test.js) */
+art.packets = null;
 chk('L today’s evidence set builds from committed files', art.evidence && art.evidence.counts && art.evidence.counts.cfb + art.evidence.counts.nfl > 0, art.evidence && art.evidence.counts);
 const snap = CE.research.fromArtifacts(art, { now: LNOW });
 chk('L a packet built from different numbers than the research is refused, so the gate fails closed', (() => {
