@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-09T17:07:28.000Z",
+ "generated_at": "2026-10-09T18:07:28.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,8 +46,8 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 735,
-    "latest_snapshot_at": "2026-10-09T17:07:28.000Z",
+    "snapshots": 736,
+    "latest_snapshot_at": "2026-10-09T18:07:28.000Z",
     "upcoming_games": 113,
     "avg_confidence_upcoming": 80.4
    },
@@ -55,8 +55,8 @@
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 989,
-    "latest_snapshot_at": "2026-10-09T17:07:28.000Z",
+    "snapshots": 990,
+    "latest_snapshot_at": "2026-10-09T18:07:28.000Z",
     "upcoming_games": 110,
     "avg_confidence_upcoming": 77.7
    },
@@ -64,8 +64,8 @@
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 989,
-    "latest_snapshot_at": "2026-10-09T17:07:28.000Z",
+    "snapshots": 990,
+    "latest_snapshot_at": "2026-10-09T18:07:28.000Z",
     "upcoming_games": 110,
     "avg_confidence_upcoming": 77.7
    }
@@ -911,16 +911,16 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-09T17:07:28.000Z",
-    "quotes_total": 11496,
+    "last_quote_at": "2026-10-09T18:07:28.000Z",
+    "quotes_total": 11618,
     "last_result_at": "2026-10-09T04:07:28.000Z"
    }
   },
   "alerts": [],
   "ledger": {
-   "predictions": 3223,
-   "live_predictions": 2713,
-   "quotes": 11496,
+   "predictions": 3226,
+   "live_predictions": 2716,
+   "quotes": 11618,
    "lines": 1994,
    "results": 348,
    "evaluations": 2413,
@@ -2364,10 +2364,10 @@
    "home": "Massachusetts",
    "away": "Miami (OH)",
    "market": {
-    "current": 2.5,
+    "current": 3.5,
     "open": 2.5,
     "books": 1,
-    "as_of": "2026-10-08T18:07:36.000Z",
+    "as_of": "2026-10-09T18:07:28.000Z",
     "sources": [
      "espn"
     ],
@@ -2376,10 +2376,10 @@
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T48",
+     "checkpoint": "T24",
      "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-08T18:07:36.000Z",
+     "official": true,
+     "prediction_ts": "2026-10-09T18:07:28.000Z",
      "margin": -3.76,
      "fair": "Miami (OH) -4.0",
      "p_home": 0.3985,
@@ -2389,17 +2389,17 @@
      "decision": "PASS",
      "status": "PASS",
      "side": "AWAY",
-     "gap": -1.26,
-     "line": -2.5,
+     "gap": -0.26,
+     "line": -3.5,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "T48",
+     "checkpoint": "T24",
      "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-08T18:07:36.000Z",
+     "official": true,
+     "prediction_ts": "2026-10-09T18:07:28.000Z",
      "margin": -2.56,
      "fair": "Miami (OH) -2.5",
      "p_home": 0.4371,
@@ -2408,9 +2408,9 @@
      "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
-     "side": "AWAY",
-     "gap": -0.06,
-     "line": -2.5,
+     "side": "HOME",
+     "gap": 0.94,
+     "line": 3.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -2420,10 +2420,10 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "T48",
+     "checkpoint": "T24",
      "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-08T18:07:36.000Z",
+     "official": true,
+     "prediction_ts": "2026-10-09T18:07:28.000Z",
      "margin": -3.13,
      "fair": "Miami (OH) -3.0",
      "p_home": 0.4224,
@@ -2432,9 +2432,9 @@
      "dq": "GREEN",
      "decision": "PASS",
      "status": "PASS",
-     "side": "AWAY",
-     "gap": -0.63,
-     "line": -2.5,
+     "side": "HOME",
+     "gap": 0.37,
+     "line": 3.5,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -8210,6 +8210,54 @@
      "line": null,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
+    },
+    "edgedesk_cfb_v2.1.0": {
+     "label": "V2.1 · hardened",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-10-08T11:07:34.000Z",
+     "margin": -4.49,
+     "fair": "Western Michigan -4.5",
+     "p_home": 0.3864,
+     "sigma": 15.686,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null,
+     "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
+     "degraded_modes": [
+      "NO_PLAYER_DATA",
+      "QB_UNCERTAIN",
+      "MARKET_DEGRADED"
+     ]
+    },
+    "edgedesk_cfb_v2.0.0": {
+     "label": "V2 · candidate 001",
+     "checkpoint": "OPEN",
+     "origin": "LIVE",
+     "official": false,
+     "prediction_ts": "2026-10-08T11:07:34.000Z",
+     "margin": -4.73,
+     "fair": "Western Michigan -4.5",
+     "p_home": 0.3809,
+     "sigma": 15.727,
+     "conf": 75,
+     "dq": "YELLOW",
+     "decision": "PASS",
+     "status": "PASS",
+     "side": null,
+     "gap": null,
+     "line": null,
+     "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
+     "degraded_modes": [
+      "NO_PLAYER_DATA",
+      "QB_UNCERTAIN",
+      "MARKET_DEGRADED"
+     ]
     }
    }
   },
@@ -13117,7 +13165,7 @@
   "data_fault": 0,
   "market_fault": 15,
   "verification_not_run": 0,
-  "average_raw_gap": 3.782,
+  "average_raw_gap": 3.774,
   "average_raw_gap_7plus": 10.141,
   "market_movement_toward_verified_pct": null,
   "market_movement_toward_unverified_pct": 50,
