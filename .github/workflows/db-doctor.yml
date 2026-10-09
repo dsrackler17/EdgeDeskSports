@@ -9,7 +9,9 @@ name: DB doctor
 # stuck sessions or restarts the project. See tools/supabase/db_doctor.sh.
 #
 # A push to a claude/db-doctor-* branch runs the read-only diagnosis, so the
-# doctor can be run before this file reaches main.
+# doctor can be run before this file reaches main. Such a push restarts or
+# clears sessions only when its head commit message names the action, as
+# [db-doctor:restart] or [db-doctor:cancel-stuck].
 
 on:
   workflow_dispatch:
@@ -42,7 +44,7 @@ jobs:
         run: ls -d /usr/lib/postgresql/*/bin | tail -1 >> "$GITHUB_PATH"
       - name: Ask the database
         env:
-          ACTION: ${{ inputs.action || 'diagnose' }}
+          ACTION: ${{ inputs.action || (contains(github.event.head_commit.message, '[db-doctor:restart]') && 'restart') || (contains(github.event.head_commit.message, '[db-doctor:cancel-stuck]') && 'cancel-stuck') || 'diagnose' }}
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
           SB_DB_URL: ${{ secrets.SB_DB_URL }}

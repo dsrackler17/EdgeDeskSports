@@ -20,7 +20,8 @@
 #   cancel-stuck  diagnose, then terminate client backends that are idle in a
 #                 transaction for >5 min or running one statement for >10 min
 #                 (never the platform's own roles), then diagnose again
-#   restart       diagnose, then POST /v1/projects/{ref}/restart and poll health
+#   restart       status and health, POST /v1/projects/{ref}/restart, poll
+#                 health, then diagnose
 #
 # NEEDS: SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_REF (the deploy workflows'
 # secrets) and/or SB_DB_URL. No secret value is ever printed.
@@ -185,10 +186,13 @@ probe_rest() {
 {
   echo "# DB doctor · action: ${ACTION} · $(date -u +%FT%TZ)"
   probe_rest
-  diagnose
   case "$ACTION" in
-    cancel-stuck) echo; cancel_stuck; sleep 5; echo; echo "# After"; diagnose; probe_rest ;;
-    restart) echo; restart_project; echo; echo "# After"; probe_rest; diagnose ;;
+    diagnose) diagnose ;;
+    cancel-stuck) diagnose; echo; cancel_stuck; sleep 5; echo; echo "# After"; diagnose; probe_rest ;;
+    # the project is already not answering: do not spend minutes on SQL that
+    # will time out before restarting it
+    restart) project_status; echo; restart_project; echo; echo "# After"; probe_rest; diagnose ;;
+    *) echo "::error::unknown ACTION '${ACTION}'"; exit 1 ;;
   esac
 } 2>&1 | tee /tmp/db_doctor.md
 
