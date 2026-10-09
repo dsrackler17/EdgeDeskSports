@@ -5,15 +5,15 @@
  "season": 2026,
  "status": "SUCCESS",
  "reason": "QUOTES_WRITTEN",
- "why": "304 prop prices from 4 books across 1 of 1 events queried.",
+ "why": "1173 prop prices from 8 books across 1 of 1 events queried.",
  "error_message": null,
- "started_at": "2026-10-09T18:32:00.162Z",
- "completed_at": "2026-10-09T18:32:00.695Z",
- "updated_at": "2026-10-09T18:32:00.695Z",
- "last_attempt": "2026-10-09T18:32:00.162Z",
- "duration_ms": 533,
+ "started_at": "2026-10-09T18:55:50.928Z",
+ "completed_at": "2026-10-09T18:55:51.327Z",
+ "updated_at": "2026-10-09T18:55:51.327Z",
+ "last_attempt": "2026-10-09T18:55:50.928Z",
+ "duration_ms": 399,
  "run": {
-  "id": "37973700965.1",
+  "id": "37976596082.1",
   "trigger": "supabase_cron",
   "refresh_request_id": null,
   "manual": false
@@ -81,11 +81,11 @@
   }
  ],
  "executable_max_minutes": 30,
- "last_run": "2026-10-09T18:32:00.162Z",
- "last_success_at": "2026-10-09T18:32:00.162Z",
- "last_full_success_at": "2026-10-09T18:32:00.162Z",
+ "last_run": "2026-10-09T18:55:50.928Z",
+ "last_success_at": "2026-10-09T18:55:50.928Z",
+ "last_full_success_at": "2026-10-09T18:55:50.928Z",
  "polled_at": {
-  "7556739cc30a38511b7f631581a416e4": "2026-10-09T18:25:51.975Z",
+  "7556739cc30a38511b7f631581a416e4": "2026-10-09T18:55:50.928Z",
   "a168f1bed30ce7d56dc2b77dbfe37705": "2026-10-09T18:25:51.975Z",
   "23614f055733537fb79ab73e68040eca": "2026-10-09T18:25:51.975Z",
   "2ec27bbe3b14c521ba8a3f3f6e46f4ac": "2026-10-09T18:25:51.975Z",
@@ -205,8 +205,8 @@
  },
  "events_state": {
   "7556739cc30a38511b7f631581a416e4": {
-   "polled_ok_at": "2026-10-09T18:25:51.975Z",
-   "attempted_at": "2026-10-09T18:25:51.975Z",
+   "polled_ok_at": "2026-10-09T18:55:50.928Z",
+   "attempted_at": "2026-10-09T18:55:50.928Z",
    "failures": 0,
    "next_retry_at": null,
    "last_http": 200,
@@ -219,7 +219,7 @@
    "books": 8,
    "markets": 12,
    "quotes": 1173,
-   "next_due_at": "2026-10-09T18:55:51.975Z"
+   "next_due_at": "2026-10-09T19:25:50.928Z"
   },
   "a168f1bed30ce7d56dc2b77dbfe37705": {
    "polled_ok_at": "2026-10-09T18:25:51.975Z",
@@ -1473,8 +1473,8 @@
   "rate_limited_until": null,
   "consecutive_failures": 0,
   "last_error": null,
-  "requests_remaining": 9869,
-  "requests_used": 90131
+  "requests_remaining": 9721,
+  "requests_used": 90279
  },
  "pacing": {
   "factor": 1,
@@ -1491,57 +1491,60 @@
  "events_no_markets": 0,
  "events_suspect_empty": 0,
  "event_ids": [
-  "71ed0e11bb0f2e5149ac4821fcde4599"
+  "7556739cc30a38511b7f631581a416e4"
  ],
  "books_returned": [
+  "betmgm",
   "betonlineag",
+  "betrivers",
   "draftkings",
+  "espnbet",
   "fanduel",
-  "hardrockbet"
+  "hardrockbet",
+  "pinnacle"
  ],
  "markets_returned": {
-  "player_anytime_td": 3,
-  "player_pass_tds": 2,
-  "player_pass_tds_alternate": 3,
-  "player_pass_yds": 2,
-  "player_pass_yds_alternate": 4,
-  "player_reception_yds": 2,
-  "player_reception_yds_alternate": 3,
-  "player_rush_yds": 2,
-  "player_rush_yds_alternate": 3,
+  "player_anytime_td": 6,
+  "player_pass_tds_alternate": 5,
+  "player_pass_yds_alternate": 7,
+  "player_reception_yds_alternate": 7,
   "player_receptions_alternate": 2,
-  "player_pass_attempts": 1,
-  "player_pass_completions": 1,
+  "player_rush_yds_alternate": 7,
+  "player_pass_tds": 5,
+  "player_pass_yds": 7,
+  "player_reception_yds": 7,
+  "player_rush_yds": 7,
   "player_rush_reception_yds": 1,
   "player_receptions": 1
  },
- "outcomes_returned": 318,
- "quotes": 304,
- "quotes_normalized": 304,
- "quotes_written": 380,
+ "outcomes_returned": 1212,
+ "quotes": 1173,
+ "quotes_normalized": 1173,
+ "quotes_written": 1173,
  "refused": {
   "team or defense entity, not a player": 4,
-  "duplicate outcome": 10
+  "duplicate outcome": 29,
+  "conflicting duplicate outcome": 6
  },
  "flagged": {},
  "stopped": null,
- "credits_spent": 14,
- "requests_remaining": 9869,
- "requests_used": 90131,
+ "credits_spent": 12,
+ "requests_remaining": 9721,
+ "requests_used": 90279,
  "requests": [
   {
-   "event_id": "71ed0e11bb0f2e5149ac4821fcde4599",
-   "matchup": "Ball State Cardinals @ Northwestern Wildcats",
-   "kickoff": "2026-10-10T16:30:00Z",
+   "event_id": "7556739cc30a38511b7f631581a416e4",
+   "matchup": "Florida State Seminoles @ Louisville Cardinals",
+   "kickoff": "2026-10-09T23:00:00Z",
    "http": 200,
    "attempts": 1,
-   "ms": 113,
-   "books": 4,
-   "markets": 14,
-   "outcomes": 318,
-   "quotes": 304,
-   "cost": 14,
-   "remaining": 9869
+   "ms": 37,
+   "books": 8,
+   "markets": 12,
+   "outcomes": 1212,
+   "quotes": 1173,
+   "cost": 12,
+   "remaining": 9721
   }
  ],
  "feed_quotes": 26275,
@@ -1549,16 +1552,16 @@
  "markets_closed": 5,
  "quotes_carried": 76,
  "closed_events": 0,
- "next_due_at": "2026-10-09T18:55:51.975Z",
+ "next_due_at": "2026-10-09T19:25:50.928Z",
  "health": {
-  "now": "2026-10-09T18:32:00.162Z",
+  "now": "2026-10-09T18:55:50.928Z",
   "active_events": 51,
   "on_target": 51,
   "late_events": [],
   "failed_events": 0,
   "share": 1,
-  "last_success_at": "2026-10-09T18:32:00.162Z",
-  "last_attempt_at": "2026-10-09T18:32:00.162Z",
+  "last_success_at": "2026-10-09T18:55:50.928Z",
+  "last_attempt_at": "2026-10-09T18:55:50.928Z",
   "consecutive_failures": 0,
   "rate_limited_until": null,
   "current_prices": null,
