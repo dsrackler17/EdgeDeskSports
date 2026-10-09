@@ -110,11 +110,13 @@ const post = (body, o) => new Request(URL_ + '/functions/v1/content_engine', { m
   body: o && (o.method === 'GET' || o.method === 'OPTIONS') ? undefined : JSON.stringify(body) });
 
 /* Claude, as the tests need it */
-const reply = (o) => ({ stop_reason: 'end_turn', model: 'claude-opus-5-5', content: [{ type: 'text', text: JSON.stringify(o) }] });
+const reply = (o) => ({ stop_reason: 'end_turn', model: 'claude-opus-5-5', content: [{ type: 'text', text: JSON.stringify(o) }],
+  usage: { input_tokens: 8000, output_tokens: 2500, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } });
 const currentOf = (req) => JSON.parse(/CURRENT DRAFT:\n([\s\S]*)$/.exec(String(req.messages[0].content))[1]);
 const honest = (req) => { const c = currentOf(req); return reply(Object.assign({}, c, { title: c.title.replace('Predictions', 'Predictions and Projections') })); };
 const inventor = (req) => { const c = currentOf(req); const s = c.sections.slice(); s[0] = Object.assign({}, s[0], { body: s[0].body + ' Alabama has won 77 percent of its home games since 1990.' }); return reply(Object.assign({}, c, { sections: s })); };
-const sectionWriter = (key) => (req) => { const c = currentOf(req); return reply(Object.assign({}, c, { title: 'Ignored title change for the section test', sections: c.sections.map((s) => s.key === key ? Object.assign({}, s, { body: 'The short version: EdgeDesk’s model makes Alabama a 5.3-point favorite. None of it is a pick, and a projection is not a bet.' }) : Object.assign({}, s, { body: 'CHANGED ' + s.body })) })); };
+/* a section rewrite answers with ONE section */
+const sectionWriter = (key) => (req) => { const c = currentOf(req); const s = c.sections.filter((x) => x.key === key)[0]; return reply({ key, heading: s.heading || 'The bottom line', body: 'The short version: EdgeDesk’s model makes Alabama a 5.3-point favorite. None of it is a pick, and a projection is not a bet.' }); };
 const claude = (...answers) => { let i = 0; globalThis.__claude = (req, opts) => { CLAUDE_REQS.push(req); CLAUDE_OPTS.push(opts); const a = answers[Math.min(i++, answers.length - 1)]; return a(req); }; };
 
 (async () => {
@@ -173,6 +175,11 @@ const claude = (...answers) => { let i = 0; globalThis.__claude = (req, opts) =>
     chk('D … but not the league-wide team list', !/team_names/.test(req1.messages[0].content.split('CURRENT DRAFT')[0]) || !/"team_names":\[/.test(req1.messages[0].content));
     chk('K the key goes to the SDK only', CLAUDE_OPTS[0] && CLAUDE_OPTS[0].apiKey === KEY && LOG.every((e) => JSON.stringify(e.headers).indexOf(KEY) < 0 && String(e.body || '').indexOf(KEY) < 0));
     chk('K the database is called as the owner', LOG.filter((e) => /\/rest\/v1\/rpc\//.test(e.url)).every((e) => e.headers.authorization === 'Bearer ' + OWNER_T));
+    const call1 = JSON.parse(one(`select to_jsonb(c) from content_engine.ai_calls c order by id limit 1;`));
+    chk('C the call was reserved before it was made and settled from the API’s token counts', call1.status === 'completed' && call1.outcome === 'accepted'
+      && call1.input_tokens === 8000 && call1.output_tokens === 2500 && Math.abs(call1.est_usd - (8000 * 4 + 2500 * 20) / 1e6) < 1e-9 && call1.reserved_usd > call1.est_usd && call1.served_model === 'claude-opus-5-5', call1);
+    chk('C … and the answer says what it cost (estimated)', Math.abs(d1.b.est_usd - 0.082) < 1e-9 && d1.b.cached === false);
+    chk('C a full draft reserves 16,000 output tokens; the reservation used the request’s size', JSON.parse(one(`select to_jsonb(c) from content_engine.ai_calls c order by id limit 1;`)).reserved_usd >= 0.32);
 
     /* ── R retry ────────────────────────────────────────────────────── */
     claude(inventor, honest);
@@ -186,12 +193,19 @@ const claude = (...answers) => { let i = 0; globalThis.__claude = (req, opts) =>
     chk('R refused twice: nothing saved, the draft stands', d3.b.ok === false && d3.b.reason === 'validation_failed' && after.content_hash === before.content_hash && after.revision === before.revision);
     chk('R … the reasons are returned', (d3.b.objections || []).some((x) => /number/i.test(x)));
     chk('R … and logged', +one(`select count(*) from content_engine.events where kind = 'ai_discarded' and article_id = ${lit(AID)};`) >= 3);
+    claude(inventor);
+    const d3b = await run({ action: 'draft', article_id: AID });
+    chk('C the same request again: the ledger already knows both versions failed — no call, no cost', d3b.b.ok === false && d3b.b.reason === 'previously_rejected' && CLAUDE_REQS.length === 0
+      && one(`select count(*) from content_engine.ai_calls where status = 'cache_hit';`) === '2', d3b.b);
+    chk('C discarded versions cost money and are counted as such', +one(`select count(*) from content_engine.ai_calls where outcome = 'discarded' and status = 'completed' and est_usd > 0;`) === 3, one(`select string_agg(status || ':' || coalesce(outcome,'-') || ':' || attempt, ',' order by id) from content_engine.ai_calls;`));
 
     /* ── X one section ──────────────────────────────────────────────── */
     claude(sectionWriter('conclusion'));
     const d4 = await run({ action: 'draft', article_id: AID, section: 'conclusion' });
     const row4 = rowOf();
     const bodies = (r) => Object.fromEntries(r.sections.map((s) => [s.key, s.body]));
+    chk('X a section rewrite asks for one section only (a smaller answer, a smaller reservation)', CLAUDE_REQS[0] && CLAUDE_REQS[0].max_tokens === 6000
+      && JSON.stringify(CLAUDE_REQS[0].output_config.format.schema.required) === JSON.stringify(['key', 'heading', 'body']));
     chk('X only the asked-for section changes', d4.b.ok && row4.title === after.title
       && Object.keys(bodies(row4)).every((k) => k === 'conclusion' ? bodies(row4)[k] !== bodies(after)[k] : bodies(row4)[k] === bodies(after)[k]), d4.b);
     chk('X an unknown section is refused', (await run({ action: 'draft', article_id: AID, section: 'nonsense' })).b.reason === 'bad_section');
@@ -205,10 +219,24 @@ const claude = (...answers) => { let i = 0; globalThis.__claude = (req, opts) =>
     const nobudget = await run({ action: 'draft', article_id: AID });
     chk('B no budget: no call, a plain answer', nobudget.b.reason === 'budget_exhausted' && CLAUDE_REQS.length === 0);
     own(`select public.content_engine_settings_save('{"llm_calls_per_day": 20}'::jsonb);`);
+    own(`select public.content_engine_ai_budget_save('{"ai_monthly_budget_usd": 0.05}'::jsonb);`);
+    claude(honest);
+    const nomonth = await run({ action: 'draft', article_id: AID });
+    chk('B past the monthly AI budget: no call, a plain answer, the draft stands', nomonth.b.reason === 'budget_exhausted' && CLAUDE_REQS.length === 0
+      && +one(`select count(*) from content_engine.events where kind = 'ai_budget_blocked';`) >= 1, nomonth.b);
+    own(`select public.content_engine_ai_budget_save('{"ai_monthly_budget_usd": 10}'::jsonb);`);
+    const oppId = one(`select opportunity_id from content_engine.articles where id = ${lit(AID)};`);
+    const asOf0 = one(`select research ->> 'as_of' from content_engine.opportunities where id = ${lit(oppId)};`);
+    one(`update content_engine.opportunities set research = jsonb_set(research, '{as_of}', to_jsonb((now() - interval '3 days')::text)) where id = ${lit(oppId)};`);
+    claude(honest);
+    const stale = await run({ action: 'draft', article_id: AID });
+    chk('B stale research: refused before any AI call (a refresh is free, a rewrite is not)', stale.b.reason === 'research_first' && /hours old/.test(stale.b.detail) && CLAUDE_REQS.length === 0, stale.b);
+    one(`update content_engine.opportunities set research = jsonb_set(research, '{as_of}', to_jsonb(${lit(asOf0)}::text)) where id = ${lit(oppId)};`);
 
     /* an approved article is not rewritten */
     own(`select public.content_engine_article_submit(${lit(AID)});`);
     own(`select public.content_engine_article_review(${lit(AID)}, '{"source_verification":true,"data_freshness":true,"model_accuracy":true,"seo_review":true,"compliance":true}'::jsonb);`);
+    own(`select public.content_engine_article_gate(${lit(AID)}, ${lit(rowOf().content_hash)}, '{"schema":"edgedesk_editorial_gate_v1","verdict":"PASS","items":[]}'::jsonb);`);
     const ap = own(`select public.content_engine_article_approve(${lit(AID)}, ${lit(rowOf().content_hash)});`);
     claude(honest);
     const locked = await run({ action: 'draft', article_id: AID });
@@ -277,7 +305,7 @@ const claude = (...answers) => { let i = 0; globalThis.__claude = (req, opts) =>
     const matched = CE.news.match(tr.b.items, snap);
     chk('T the page can match the headline to this week’s slate', matched.length === 1 && matched[0].teams.indexOf('Dallas Cowboys') >= 0 && matched[0].kind === 'injury');
 
-    chk('K across the suite the function called only these doors', [...DOORS].every((d) => /^content_engine_(article|article_save|send_claim|send_result|spend|log|overview|is_owner)$/.test(d) || d === 'growth_outbound_is_owner'), [...DOORS]);
+    chk('K across the suite the function called only these doors', [...DOORS].every((d) => /^content_engine_(article|article_save|send_claim|send_result|ai_reserve|ai_settle|spend|log|overview|is_owner)$/.test(d) || d === 'growth_outbound_is_owner'), [...DOORS]);
   } catch (e) {
     chk('the suite reached its end — ' + String(e && e.stack || e).slice(0, 600), false);
   } finally {

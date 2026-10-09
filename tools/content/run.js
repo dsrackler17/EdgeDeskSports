@@ -67,45 +67,65 @@ async function fetchFeeds(leagues, o) {
 }
 
 /* ── one Claude call, raw HTTPS (no dependencies in this repository) ───── */
+/* One request; ONE retry, after a pause, only for an overloaded or
+   rate-limited API (429, 529, 5xx) — inside the same reservation. */
 async function callClaude(req, o) {
   const f = o.fetch || fetch;
-  const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), o.timeoutMs || 150000);
-  try {
-    const r = await f('https://api.anthropic.com/v1/messages', {
-      method: 'POST', signal: ctl.signal,
-      headers: { 'content-type': 'application/json', 'x-api-key': o.key, 'anthropic-version': '2023-06-01', 'anthropic-beta': FALLBACK_BETA },
-      body: JSON.stringify({ model: o.model, max_tokens: req.max_tokens, system: req.system, messages: req.messages, output_config: req.output_config, fallbacks: 'default' })
-    });
-    const text = await r.text();
-    if (!r.ok) { const e = new Error('anthropic ' + r.status + ': ' + text.slice(0, 200)); e.status = r.status; throw e; }
-    return JSON.parse(text);
-  } finally { clearTimeout(t); }
+  for (let attempt = 0; ; attempt++) {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), o.timeoutMs || 150000);
+    try {
+      const r = await f('https://api.anthropic.com/v1/messages', {
+        method: 'POST', signal: ctl.signal,
+        headers: { 'content-type': 'application/json', 'x-api-key': o.key, 'anthropic-version': '2023-06-01', 'anthropic-beta': FALLBACK_BETA },
+        body: JSON.stringify({ model: o.model, max_tokens: req.max_tokens, system: req.system, messages: req.messages, output_config: req.output_config, fallbacks: 'default' })
+      });
+      const text = await r.text();
+      if (!r.ok) {
+        if (attempt === 0 && (r.status === 429 || r.status >= 500)) { await new Promise((ok) => setTimeout(ok, o.backoffMs != null ? o.backoffMs : 2000)); continue; }
+        const e = new Error('anthropic ' + r.status + ': ' + text.slice(0, 200)); e.status = r.status; throw e;
+      }
+      return JSON.parse(text);
+    } finally { clearTimeout(t); }
+  }
 }
+const sha256 = (t) => require('crypto').createHash('sha256').update(t).digest('hex');
+const usageOf = (reply) => (reply && reply.usage ? Object.assign({}, reply.usage, { model: reply.model || undefined }) : null);
 
 /* Improve a deterministic draft with Claude, keeping only a version that
    passes every check. Returns { article, report, generator, notes }. */
 async function aiPass(o, a, ctx) {
   const notes = [];
   let objections = [];
-  /* a retry rewrites only the section that failed (one section, else the
-     whole draft); never more than CE.ai.MAX_ATTEMPTS calls */
+  /* no ledger, no call: every AI dollar goes through the database's budget */
+  if (!ctx.db) { notes.push('no budget ledger: AI skipped'); return null; }
+  const pre = CE.ai.precheck(a, o, ctx.now);
+  if (pre.length) { notes.push('research_first: ' + pre.join('; ')); return null; }
+  const settle = (id, usage, outcome, result, obj) => ctx.db.rpc('public', 'content_engine_ai_settle', { p_call: id, p_usage: usage, p_outcome: outcome, p_result: result || null, p_objections: obj || null }).catch(() => null);
+  /* at most CE.ai.MAX_ATTEMPTS calls; a retry rewrites only the section that
+     failed when one section holds every failure, else the whole draft */
   let current = a, section = null;
   for (let attempt = 0; attempt < CE.ai.MAX_ATTEMPTS; attempt++) {
-    if (ctx.spend && !(await ctx.spend('llm'))) { notes.push('budget_exhausted'); break; }
     const req = CE.ai.buildRequest(o, { publisher: ctx.publisher, format: a.format, current, objections, section });
-    let reply;
-    try { reply = await callClaude(req, ctx); } catch (e) { notes.push('api_error ' + (e.status || '')); break; }
-    if (ctx.usage) ctx.usage(reply);
-    const parsed = CE.ai.parseReply(reply, current);
-    if (!parsed.ok) { notes.push(parsed.reason); if (parsed.reason === 'refusal') break; continue; }
-    let next = parsed.article;
-    if (section) {
-      next = Object.assign({}, current, { sections: current.sections.map((s) => s.key === section ? (next.sections.find((n) => n.key === section) || s) : s) });
-      next.word_count = CE.util.wordCount(next.standfirst + ' ' + next.sections.map((s) => s.body).join(' '));
+    const rsv = await ctx.db.rpc('public', 'content_engine_ai_reserve', { p_operation: req.operation, p_article: null, p_model: ctx.model,
+      p_request_hash: sha256(CE.ai.requestKey(req, ctx.model)), p_max_output_tokens: req.max_tokens, p_input_tokens_est: CE.ai.inputEstimate(req), p_attempt: attempt + 1 }).catch(() => null);
+    if (!rsv || rsv.ok !== true) { notes.push((rsv && rsv.reason) || 'budget_exhausted'); break; }
+    let next, reply = null;
+    if (rsv.cached) {
+      if (rsv.outcome !== 'accepted' || !rsv.result) { objections = Array.isArray(rsv.objections) ? rsv.objections : objections; notes.push('previously_rejected'); continue; }
+      next = rsv.result;
+    } else {
+      try { reply = await callClaude(req, ctx); } catch (e) { await settle(rsv.call_id, null, e.status ? 'error' : 'unknown'); notes.push('api_error ' + (e.status || '')); break; }
+      const parsed = CE.ai.parseReply(reply, current);
+      if (!parsed.ok) { await settle(rsv.call_id, usageOf(reply), parsed.reason === 'refusal' ? 'refused' : parsed.reason === 'max_tokens' ? 'max_tokens' : 'error'); notes.push(parsed.reason); if (parsed.reason === 'refusal') break; continue; }
+      next = parsed.article;
     }
     const rep = CE.validate(next, o, { publisher: ctx.publisher, now: ctx.now, teamLists: ctx.teamLists });
-    if (rep.ok) return { article: next, report: rep, generator: 'claude:' + String(reply.model || ctx.model).slice(0, 60), notes };
+    if (rep.ok) {
+      if (!rsv.cached) await settle(rsv.call_id, usageOf(reply), 'accepted', next);
+      return { article: next, report: rep, generator: rsv.cached ? 'claude:cached' : 'claude:' + String(reply.model || ctx.model).slice(0, 60), notes, cached: !!rsv.cached };
+    }
     objections = CE.ai.objections(rep);
+    if (!rsv.cached) await settle(rsv.call_id, usageOf(reply), 'discarded', next, objections);
     const hit = CE.ai.affectedSections(rep, next, o);
     if (hit && hit.length === 1) { section = hit[0]; current = next; } else { section = null; current = a; }
     notes.push('discarded: ' + objections.join(' | ').slice(0, 300));
@@ -148,8 +168,6 @@ async function weekly(o) {
   const run = begin.run_id, settings = begin.settings || {};
   const counts = { opportunities: 0, created: 0, refreshed: 0, refused: 0, drafted: 0, queued_for_review: 0, kept_as_draft: 0, ai_used: 0, ai_discarded: 0, news: 0, feed_problems: 0 };
   const spend = async (provider) => { const r = await db.rpc('public', 'content_engine_spend', { p_provider: provider, p_n: 1 }); return !!(r && r.ok); };
-  /* what each call cost, when the evidence migration is applied (tokens are logged, then priced) */
-  const usage = (reply) => { const u = reply && reply.usage; if (!u) return; db.rpc('public', 'content_engine_ai_usage_record', { p: { model: reply.model || o.model, purpose: 'draft', input_tokens: u.input_tokens || 0, output_tokens: u.output_tokens || 0 } }).catch(() => null); };
   const note = (kind, detail, ids) => db.rpc('public', 'content_engine_log', Object.assign({ p_kind: kind, p_detail: detail, p_article: null, p_opportunity: null, p_run: run }, ids || {})).catch(() => null);
   try {
     const pubs = await db.rpc('public', 'content_engine_job_publishers', {});
@@ -164,8 +182,8 @@ async function weekly(o) {
       if (r && r.ok) { if (r.created) counts.created++; else counts.refreshed++; } else { counts.refused++; refusedKinds[opp.kind] = (refusedKinds[opp.kind] || 0) + 1; }
     }
     if (refusedKinds.matchup_analysis) {
-      log('::warning::the database refused ' + refusedKinds.matchup_analysis + ' matchup analysis topic(s): apply supabase/content_engine_evidence.sql after supabase/content_engine.sql');
-      await note('job_note', { refused: refusedKinds, fix: 'apply supabase/content_engine_evidence.sql' });
+      log('::warning::the database refused ' + refusedKinds.matchup_analysis + ' matchup analysis topic(s): re-apply supabase/content_engine.sql, then supabase/content_engine_evidence.sql');
+      await note('job_note', { refused: refusedKinds, fix: 're-apply supabase/content_engine.sql, then supabase/content_engine_evidence.sql' });
     }
     const targets = await db.rpc('public', 'content_engine_job_targets', { p_publisher: publisher ? publisher.id : null, p_limit: settings.drafts_per_run });
     for (const t of targets || []) {
@@ -173,7 +191,7 @@ async function weekly(o) {
       let a = CE.draft(t, { publisher, format, now: o.now });
       let rep = CE.validate(a, t, { publisher, now: o.now, teamLists: d.teamLists });
       if (o.anthropicKey) {
-        const ai = await aiPass(t, a, { publisher, now: o.now, teamLists: d.teamLists, spend, usage, key: o.anthropicKey, model: o.model, fetch: o.fetch });
+        const ai = await aiPass(t, a, { publisher, now: o.now, teamLists: d.teamLists, db, key: o.anthropicKey, model: o.model, fetch: o.fetch, backoffMs: o.backoffMs });
         if (ai) { a = Object.assign({}, ai.article, { generator: ai.generator }); rep = ai.report; counts.ai_used++; }
         else { counts.ai_discarded++; await note('ai_discarded', { opportunity: t.key, reason: 'kept the deterministic draft' }, { p_opportunity: t.id }); }
       }
@@ -181,6 +199,14 @@ async function weekly(o) {
       if (!c || !c.ok) { await note('generation_failed', { opportunity: t.key, reason: c && (c.detail || c.reason) }, { p_opportunity: t.id }); continue; }
       if (c.existing) continue;
       counts.drafted++;
+      /* the editorial gate on the first generation, against the research as read now */
+      try {
+        const current = {}; ['cfb', 'nfl'].forEach((lg) => ((d.snap[lg] && d.snap[lg].games) || []).forEach((p) => { current[p.game_id] = p; }));
+        const row = await db.rpc('public', 'content_engine_article', { p_id: c.id });
+        const g = CE.gate(Object.assign({}, a, { format }), t, { now: o.now, publisher, campaign: row && row.campaign_code, landing: CE.SITE + '/today/', current, teamLists: d.teamLists });
+        const gs = row && await db.rpc('public', 'content_engine_article_gate', { p_id: c.id, p_content_hash: row.content_hash, p_report: g });
+        if (gs && gs.ok) counts['gate_' + g.verdict.toLowerCase()] = (counts['gate_' + g.verdict.toLowerCase()] || 0) + 1;
+      } catch (e) { await note('job_note', { gate: 'not stored', reason: String(e && e.message || e).slice(0, 200) }, { p_article: c.id }); }
       if (rep.ok) {
         const s = await db.rpc('public', 'content_engine_article_submit', { p_id: c.id });
         if (s && s.ok) counts.queued_for_review++; else counts.kept_as_draft++;
@@ -209,7 +235,7 @@ async function example(o) {
   let rep = CE.validate(a, opp, { publisher, now: o.now, teamLists: d.teamLists });
   let generator = a.generator;
   if (o.ai && o.anthropicKey) {
-    const ai = await aiPass(opp, a, { publisher, now: o.now, teamLists: d.teamLists, key: o.anthropicKey, model: o.model });
+    const ai = await aiPass(opp, a, { publisher, now: o.now, teamLists: d.teamLists, key: o.anthropicKey, model: o.model, db: o.db || null });
     if (ai) { a = ai.article; rep = ai.report; generator = ai.generator; }
   }
   const campaign = CE.campaignCode(publisher && publisher.slug, 'example' + CE.util.hash(opp.key).slice(0, 5));

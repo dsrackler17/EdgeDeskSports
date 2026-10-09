@@ -151,7 +151,8 @@
     ['terminal', 'Research Terminal', '/app.html'],
     ['pricing', 'Pricing', '/#pricing']
   ];
-  function siteHeader(active) {
+  function siteHeader(active, opts) {
+    opts = opts || {};
     /* every page this file writes sits under Free Research; the hub IS it */
     var exact = active === '/articles/';
     return '<header class="ah">'
@@ -163,7 +164,8 @@
           + (on ? ' aria-current="' + (exact ? 'page' : 'true') + '"' : '') + ' data-ed-nav="' + n[0] + '">' + esc(n[1]) + '</a>';
       }).join('')
       + '</nav>'
-      + '<a class="ah-cta" href="' + TRIAL_HREF + '" data-ed-cta="header_trial">Start free trial</a>'
+      /* an EdgeDesk feature carries one call to action of its own, so no header button */
+      + (opts.noCta ? '' : '<a class="ah-cta" href="' + TRIAL_HREF + '" data-ed-cta="header_trial">Start free trial</a>')
       + '</header>';
   }
   function siteFooter() {
@@ -1045,12 +1047,14 @@
       + '<a class="a-sharebtn" href="/articles/community">Read member posts</a>'
       + '</div>';
 
-    /* the sport filter — three real links, so each is a crawlable URL */
+    /* the sport filter — real links, so each is a crawlable URL; Features
+       only once one is published (an empty section is not a filter) */
     h += '<nav class="a-filters" aria-label="Filter by sport">';
-    [['All', '/articles/'], ['College Football', '/articles/college-football/'], ['NFL', '/articles/nfl/']].forEach(function (f) {
+    [['All', '/articles/'], ['College Football', '/articles/college-football/'], ['NFL', '/articles/nfl/']].concat(o.featuresLink ? [['Features', '/articles/features/']] : []).forEach(function (f) {
       h += '<a class="a-filter' + (canonical === SITE + f[1] ? ' on' : '') + '" href="' + f[1] + '">' + esc(f[0]) + '</a>';
     });
     h += '</nav>';
+    if (o.extraHTML) h += o.extraHTML;
 
     if (!recs.length) {
       h += '<p class="a-nodata">No article is published in this section yet. EdgeDesk publishes one per matchup once the research clears its own publication checks — never a placeholder.</p>';
@@ -1116,7 +1120,9 @@
     narrativeHTML: narrativeHTML,
     scorecardHTML: scorecardHTML, lessonsHTML: lessonsHTML, watchedHTML: watchedHTML,
     hubPage: hubPage, cardHTML: cardHTML, articleBody: articleBody, dateLabel: dateLabel,
-    slashed: slashed, OG_DEFAULT: OG_DEFAULT, TRIAL_LINE: TRIAL_LINE, TRIAL_HREF: TRIAL_HREF
+    slashed: slashed, OG_DEFAULT: OG_DEFAULT, TRIAL_LINE: TRIAL_LINE, TRIAL_HREF: TRIAL_HREF,
+    /* the shared chrome, for the other article types' own pages (tools/editorial/feature_model.js) */
+    siteHeader: siteHeader, siteFooter: siteFooter, shareHTML: shareHTML, SHARE_JS: SHARE_JS, TRACK_JS: TRACK_JS
   };
 });
 /*__EDART_RENDER_END__*/

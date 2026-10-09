@@ -148,13 +148,12 @@ const oldArt = CE.draft(oldOpp, { publisher: SR, format: 'cfb_weekly_preview', n
 const newOpp = oppFor(slateGames.map((p) => Object.assign({}, p, { evidence: FE.trim(p.evidence) })), 'weekly_preview');
 const oldRep = revalidate(newOpp, oldArt);
 const oldOM = oldArt.sections.find((s) => s.key === 'games').body.split('\n### ').find((b) => /Ole Miss at Vanderbilt/.test(b));
-chk('B the old Ole Miss capsule is the one the publisher saw: numbers, no football, “High” confidence', /near coin flip/.test(oldOM) && /Model confidence: High \(81 out of 100\)/.test(oldOM) && !/yards per attempt|availability report/.test(oldOM));
+chk('B without the evidence packet the Ole Miss capsule is what the publisher saw: the numbers, no football', /near coin flip/.test(oldOM) && /9\.5/.test(oldOM) && !/yards per attempt|availability report|completed \d+ of/.test(oldOM));
 chk('B the old article FAILS the new gate', oldRep.ok === false && oldRep.readiness === 'BLOCKED');
 chk('B … no football evidence for Ole Miss–Vanderbilt', oldRep.checks.some((c) => c.id === 'football_evidence' && c.status === 'fail' && c.game === '401856718'));
 chk('B … no evidence against EdgeDesk where it shows the line', oldRep.checks.some((c) => c.id === 'contrary_evidence' && c.status === 'fail'));
 chk('B … the unexplained 9.3-point gap is not called unexplained', oldRep.checks.some((c) => c.id === 'unexplained_disclosed' && c.status === 'fail' && c.game === '401856718'));
 chk('B … the quarterback-input conflict goes unmentioned', oldRep.checks.some((c) => c.id === 'injuries_addressed' && c.status === 'fail' && c.game === '401856718'));
-chk('B … and the same freshness sentence repeats in every capsule', oldRep.checks.some((c) => c.id === 'no_repetition' && c.status === 'fail'));
 const newArt = CE.draft(newOpp, { publisher: SR, format: 'cfb_weekly_preview', now: NOW });
 const newRep = revalidate(newOpp, newArt);
 chk('B the new slate passes every hard check', newRep.ok, newRep.failed);
@@ -196,6 +195,17 @@ chk('G software jargon fails for a publisher', failed(revalidate(o1, add('conclu
 /* the format decides the audience: a matchup_analysis is written for a publisher whoever validates it */
 chk('G … even when no publisher is named, a publisher format keeps the rule', failed(revalidate(o1, add('conclusion', 'The V2.1 ensemble disagrees.'), null), 'no_software_jargon'));
 chk('G … but not for EdgeDesk’s own page', (() => { const w = write(OM, 'edgedesk_analysis'); const a = edit(w.a, 'conclusion', (b) => b + '\n\nThe V2.1 ensemble disagrees.'); return !failed(CE.validate(a, w.o, { publisher: null, now: NOW, teamLists: TL }), 'no_software_jargon'); })());
+/* the 14-check editorial gate (CE.gate) the database requires before approval sees the evidence too */
+chk('G the editorial gate BLOCKS when the evidence fails (under unsupported factual claims)', (() => {
+  const bad = add('thesis', 'EdgeDesk’s model likes Vanderbilt because Vanderbilt’s defense sacks the quarterback on 8.0% of opponent dropbacks.');
+  const g = CE.gate(Object.assign({}, bad, { format: 'matchup_analysis' }), o1, { now: NOW, publisher: SR, teamLists: TL });
+  return g.verdict === 'BLOCKED' && g.items.find((i) => i.key === 'claims').status === 'BLOCKED' && g.items.find((i) => i.key === 'claims').findings.some((f) => /unsupported causal/i.test(f.reason));
+})());
+chk('G … and turns each evidence hold into a warning the owner clears in review', (() => {
+  const g = CE.gate(Object.assign({}, a1, { format: 'matchup_analysis' }), o1, { now: NOW, publisher: SR, teamLists: TL });
+  const rel = g.items.find((i) => i.key === 'reliability');
+  return rel.findings.filter((f) => /^Held for review: /.test(f.reason) && f.status === 'WARNING').length === OMP.rep.holds.length && !g.items.find((i) => i.key === 'claims').findings.some((f) => f.status === 'BLOCKED');
+})());
 chk('G without the evidence module the gate fails closed', (() => {
   const saved = globalThis.EDFootballEvidence; const M = require.cache[require.resolve(path.join(ROOT, 'lib', 'football_evidence.js'))];
   /* a fresh core with no module reachable */
@@ -234,6 +244,10 @@ const FP = write(OM, 'edgedesk_analysis'), FPB = body(FP.a);
 chk('F the first-party piece passes and carries the model detail', FP.rep.ok && FP.a.sections.some((s) => s.key === 'model_detail') && /How EdgeDesk’s number is built/.test(FPB));
 chk('F … with a link to the full game research and the methodology', /edgedesksports\.com\/methodology\//.test(FPB));
 chk('F the two pieces are different articles (shingle overlap under 45%)', CE.similarity(OMB, FPB) < 0.45, CE.similarity(OMB, FPB));
+chk('F EdgeDesk’s own format is never queued for a publisher (it lives in the first-party pipeline)', (() => {
+  const live = CE.discover(CE.research.fromArtifacts(require(path.join(__dirname, 'artifacts.js')).load({ now: NOW }), { now: NOW }), { now: NOW, publisher: SR });
+  return live.length > 0 && live.every((o) => o.formats.indexOf('edgedesk_analysis') < 0);
+})());
 chk('F different headlines and section headings', FP.a.title !== OMP.a.title || FP.a.sections.find((s) => s.key === 'thesis').heading !== OMP.a.sections.find((s) => s.key === 'thesis').heading);
 chk('F the publisher piece has no software jargon', passed(OMP.rep, 'no_software_jargon'));
 

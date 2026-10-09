@@ -79,6 +79,13 @@ const NOW = Date.parse('2026-10-08T17:30:00Z');
     chk('D … for the default publisher', arts.every((a) => a.pub === 'stadium-rant'));
     const top = JSON.parse(one(`select coalesce(jsonb_agg(priority order by priority desc), '[]') from content_engine.opportunities;`));
     chk('D the highest-priority opportunities were drafted first', arts.every((a) => a.prio >= top[2]), { arts, top });
+    chk('G each new draft carries the editorial gate, run against the research as read', (r1.counts.gate_pass || 0) + (r1.counts.gate_warning || 0) + (r1.counts.gate_blocked || 0) === 2
+      && one(`select count(*) from content_engine.articles where gate_hash = content_hash and gate_verdict = first_gate_verdict;`) === '2', r1.counts);
+    const cfbGate = JSON.parse(one(`select gate from content_engine.articles a join content_engine.opportunities o on o.id = a.opportunity_id where o.key = 'cfb:2026:w6:weekly_preview';`));
+    const rel = cfbGate.items.find((i) => i.key === 'reliability');
+    chk('G the college preview is BLOCKED on its two unexplained market gaps, each waiting on the owner', cfbGate.verdict === 'BLOCKED' && rel.status === 'BLOCKED'
+      && rel.findings.filter((f) => f.status === 'BLOCKED').map((f) => f.ack_key).sort().join() === 'discrepancy:401856718,discrepancy:401858484'
+      && cfbGate.items.filter((i) => i.status === 'BLOCKED').length === 1, rel);
     chk('D nothing approved, sent or published', one(`select count(*) from content_engine.articles where status in ('approved','ready_to_send','sent','published');`) === '0');
     const r2 = await RUN.weekly({ db: client, now: NOW, network: false, log: quiet });
     chk('L the same week does not run twice', r2.ran === false && r2.reason === 'already_done');
@@ -96,7 +103,7 @@ const NOW = Date.parse('2026-10-08T17:30:00Z');
       /* first call invents a number; the retry is honest */
       if (calls === 1) { cur.sections[0].body += ' They have won 83 percent of their games since 1987.'; }
       else cur.standfirst = cur.standfirst + ' The numbers, explained.';
-      return { stop_reason: 'end_turn', model: 'claude-opus-5-5', content: [{ type: 'text', text: JSON.stringify(cur) }] };
+      return { stop_reason: 'end_turn', model: 'claude-opus-5-5', usage: { input_tokens: 8000, output_tokens: 2500 }, content: [{ type: 'text', text: JSON.stringify(cur) }] };
     };
     const r4 = await RUN.weekly({ db: client, now: NOW, network: false, force: true, anthropicKey: 'sk-ant-job-key-12345', model: 'claude-opus-5-5', fetch: fakeFetch, log: quiet });
     chk('C Claude was asked twice: an invented number refused, the honest retry kept', r4.counts.ai_used === 1 && CLAUDE.length === 2 && r4.counts.drafted === 1, r4.counts);
@@ -104,6 +111,10 @@ const NOW = Date.parse('2026-10-08T17:30:00Z');
     chk('C raw HTTPS: the key in x-api-key, the version and the fallback beta', h['x-api-key'] === 'sk-ant-job-key-12345' && h['anthropic-version'] === '2023-06-01' && h['anthropic-beta'] === 'server-side-fallback-2026-07-01');
     chk('C structured output, fallbacks, the model', b.output_config && b.output_config.format.type === 'json_schema' && b.fallbacks === 'default' && b.model === 'claude-opus-5-5');
     chk('C the retry carried the objections', /REJECTED FOR/.test(JSON.parse(CLAUDE[1].body).messages[0].content));
+    const led = JSON.parse(one(`select coalesce(jsonb_agg(jsonb_build_object('a', attempt, 'actor', actor, 'op', operation, 'st', status, 'out', outcome, 'est', est_usd, 'in', input_tokens) order by id), '[]') from content_engine.ai_calls;`));
+    chk('$ both calls went through the ledger: reserved first, settled with the usage reported', led.length === 2 && led.every((x) => x.actor === 'schedule' && x.op === 'draft' && x.st === 'completed' && x.in === 8000)
+      && led[0].out === 'discarded' && led[1].out === 'accepted' && led[0].a === 1 && led[1].a === 2, led);
+    chk('$ priced per model at list price: 8,000 in + 2,500 out', led.every((x) => Math.abs(+x.est - (8000 * 4 + 2500 * 20) / 1e6) < 1e-6), led);
     chk('C Claude’s checked version is the saved draft', one(`select count(*) from content_engine.articles where generator like 'claude:%' and standfirst like '%The numbers, explained.%';`) === '1');
     chk('C the key reached no log or row', !/sk-ant-job-key/.test(one(`select coalesce(string_agg(detail::text, ' '), '') from content_engine.events;`)) && !/sk-ant-job-key/.test(one(`select coalesce(string_agg(sections::text, ' '), '') from content_engine.articles;`)));
     CLAUDE = [];
@@ -115,12 +126,17 @@ const NOW = Date.parse('2026-10-08T17:30:00Z');
     CLAUDE = [];
     const r6 = await RUN.weekly({ db: client, now: NOW, network: false, force: true, anthropicKey: 'sk-ant-job-key-12345', model: 'claude-opus-5-5', fetch: fakeFetch, log: quiet });
     chk('C no budget: no call; the draft is still written', CLAUDE.length === 0 && r6.counts.drafted === 1, r6.counts);
+    one(`update content_engine.settings set llm_calls_per_day = 100, ai_monthly_budget_usd = 0.05;`);
+    CLAUDE = [];
+    const r6b = await RUN.weekly({ db: client, now: NOW, network: false, force: true, anthropicKey: 'sk-ant-job-key-12345', model: 'claude-opus-5-5', fetch: fakeFetch, log: quiet });
+    chk('$ the monthly dollar budget refuses the call before it is made; the draft is still written', CLAUDE.length === 0 && r6b.counts.drafted === 1 && r6b.counts.ai_used === 0
+      && one(`select count(*) from content_engine.events where kind = 'ai_discarded' and run_id = '${r6b.run}';`) === '1', r6b.counts);
 
     /* L — the owner's switch */
     one(`update content_engine.settings set schedule_enabled = false;`);
     const r7 = await RUN.weekly({ db: client, now: NOW, network: false, force: true, log: quiet });
     chk('L the owner’s off switch stops the job', r7.ran === false && r7.reason === 'schedule_disabled');
-    chk('L every run is on record (five ran; the refused ones never opened a lease)', +one(`select count(*) from content_engine.runs;`) === 5);
+    chk('L every run is on record (six ran; the refused ones never opened a lease)', +one(`select count(*) from content_engine.runs;`) === 6);
   } catch (e) {
     chk('the suite reached its end — ' + String(e && e.stack || e).slice(0, 600), false);
   } finally {

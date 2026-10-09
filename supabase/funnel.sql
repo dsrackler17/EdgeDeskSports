@@ -158,6 +158,9 @@ insert into public.user_event_kinds (event_name, source, dedupe, stage, signed_i
   ('public_page_view',        'client', 'session_entity',  5, false, 'A public page outside the landing page was opened (props.entity = kind:slug).'),
   ('tool_used',               'client', 'session_entity',  6, false, 'A free tool produced a result (props.entity = tool key).'),
   ('public_cta_clicked',      'client', 'session_entity',  7, false, 'A call to action on a public page was pressed (props.cta names which).'),
+  -- EdgeDesk's own articles (2026-10, first-party features): the reader
+  -- stayed. Reported by supabase/first_party_funnel.sql.
+  ('article_engaged',         'client', 'session_entity',  6, false, 'A reader stayed with an EdgeDesk article: 30 seconds visible and half of it read (props.entity = article:slug). Never sent under Global Privacy Control or Do Not Track.'),
   ('newsletter_signup',       'client', 'session',         8, false, 'The public newsletter form was accepted (a confirmation email was requested).'),
   ('landing_view',            'client', 'session',        10, false, 'The landing page was opened.'),
   ('landing_live_board_view', 'client', 'session',        11, false, 'The live board on the landing page scrolled into view with live data.'),

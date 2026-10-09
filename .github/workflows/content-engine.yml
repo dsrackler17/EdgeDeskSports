@@ -83,7 +83,7 @@ jobs:
         run: node tools/content/inline.js --check
       - name: The database on a real PostgreSQL
         run: node tools/content/content_engine_sql.test.js
-      - name: The evidence migration — the database's evidence floor, the monthly AI cap, editorial metrics
+      - name: The evidence migration — the database’s evidence floor and the editorial metrics
         run: node tools/content/content_engine_evidence_sql.test.js
       - name: The Edge Function, as deployed, against the database
         run: node tools/content/content_engine_fn.test.js

@@ -205,6 +205,13 @@ ul.claims li.badc b{color:var(--neg)}
       <div class="note" id="funNote"></div>
     </div>
 
+    <h2>EdgeDesk’s own articles — the reader funnel</h2>
+    <div class="card">
+      <div class="tw"><table id="fpTargets"></table></div>
+      <div class="tw" style="margin-top:12px"><table id="fpFunnel"></table></div>
+      <div class="note" id="fpNote"></div>
+    </div>
+
     <h2>Public sample research</h2>
     <div class="card">
       <div class="tw"><table id="samples"></table></div>
@@ -667,10 +674,29 @@ Array.prototype.forEach.call(document.querySelectorAll('#touch button'), functio
 async function loadActivation() { renderActivation(await rpc('growth_admin_activation', { p_days: days() })); }
 async function loadFunnel() { renderFunnel(await rpc('growth_admin_funnel', { p_days: days(), p_touch: TOUCH })); }
 async function loadSamples() { renderSamples(await rpc('growth_admin_samples', {})); }
+/* EdgeDesk's own Monday/Wednesday/Friday features: search → visit → engaged →
+   research click → registration → trial → paid (supabase/first_party_funnel.sql) */
+function renderArticleFunnel(f) {
+  var A = f.articles || [], T = f.totals || {}, M = f.measured || {};
+  var n = function (v) { return v == null ? '—' : String(v); };
+  $('fpTargets').innerHTML = '<tr><th>90-day target</th><th class="r">Goal a month</th><th class="r">Actual, scaled to a month</th></tr>'
+    + (f.targets || []).map(function (t) { return '<tr><td>' + esc(t.label) + '</td><td class="r">' + esc(t.target) + '</td><td class="r">' + (t.actual == null ? '<span class="who">not measured</span>' : esc(t.actual)) + '</td></tr>'; }).join('');
+  var row = function (x, head) {
+    return '<tr><td>' + (head ? '<b>' + esc(x.title) + '</b>' : '<a href="/articles/' + esc(x.slug) + '/" target="_blank" rel="noopener">' + esc(x.title || x.slug) + '</a> <span class="who">' + esc(String(x.kind || '').replace(/_/g, ' ')) + '</span>') + '</td>'
+      + '<td class="r">' + n(x.impressions) + '</td><td class="r">' + n(x.organic_visits) + '</td><td class="r">' + n(x.visits) + '</td><td class="r">' + n(x.engaged) + ' <span class="who">' + rate(x.engaged, x.visits) + '</span></td>'
+      + '<td class="r">' + n(x.research_clicks) + ' <span class="who">' + rate(x.research_clicks, x.visits) + '</span></td><td class="r">' + n(x.registrations) + (x.registrations_assisted ? ' <span class="who">+' + x.registrations_assisted + ' assisted</span>' : '') + '</td>'
+      + '<td class="r">' + n(x.trials) + '</td><td class="r">' + n(x.paid) + '</td>' + (head ? '<td class="r">' + (T.revenue_usd == null ? '—' : '$' + T.revenue_usd) + '</td>' : '<td></td>') + '</tr>';
+  };
+  $('fpFunnel').innerHTML = '<tr><th>Article</th><th class="r">Impressions</th><th class="r">Organic visits</th><th class="r">Visits</th><th class="r">Engaged</th><th class="r">Research clicks</th><th class="r">Registrations</th><th class="r">Trials</th><th class="r">Paid</th><th class="r">Revenue</th></tr>'
+    + (A.length ? A.map(function (x) { return row(x, false); }).join('') : '<tr><td colspan="10">No EdgeDesk article has been published yet (or content_engine.sql is not installed).</td></tr>')
+    + row(Object.assign({ title: 'All EdgeDesk articles' }, T), true);
+  $('fpNote').textContent = (f.note || '') + (M.search_console ? '' : ' Search Console has no rows in this window: impressions and organic visits are not measured.') + (M.billing ? '' : ' Billing is not installed: trials and paid are not measured.');
+}
+async function loadArticleFunnel() { renderArticleFunnel(await rpc('growth_admin_article_funnel', { p_days: Math.min(180, days()) })); }
 /* Each section loads on its own: one failing read no longer blanks the rest,
    and an ended session sends the operator back to sign-in exactly once. */
 async function reload() {
-  var parts = [['activation', loadActivation], ['funnel', loadFunnel], ['public samples', loadSamples]];
+  var parts = [['activation', loadActivation], ['funnel', loadFunnel], ['EdgeDesk articles', loadArticleFunnel], ['public samples', loadSamples]];
   var out = await Promise.allSettled(parts.map(function (p) { return p[1](); }));
   var bad = [];
   for (var i = 0; i < out.length; i++) {

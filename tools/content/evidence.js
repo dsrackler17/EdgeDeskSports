@@ -164,8 +164,10 @@ const CACHE = new Map();
 let builds = 0;
 function packetFor(league, g, opts) {
   const x = league === 'cfb' ? cfbInputs(g, opts) : nflInputs(g, opts);
+  /* the build time is part of the key: whether a captured line is still a
+     current price depends on it, so a packet is reused only within one run */
   const key = league + ':' + g.game_id + ':' + FE.util.hash(JSON.stringify([
-    league === 'cfb' ? g.built_at : (g.fingerprint || g.model_home_line), x.as_of,
+    opts.now, league === 'cfb' ? g.built_at : (g.fingerprint || g.model_home_line), x.as_of,
     (x.facts || []).map((f) => f.id + '|' + (f.expires_at || '')),
     league === 'cfb' ? [x.reports.home && x.reports.home.published_at, x.reports.away && x.reports.away.published_at] : null
   ]));

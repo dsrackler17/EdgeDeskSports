@@ -1,6 +1,6 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-10-08T21:50:29.210Z",
+  "generated_at": "2026-10-09T04:10:41.860Z",
   "open": 12,
   "count": 12,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
@@ -124,6 +124,59 @@
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
+      "key": "NFL:market:price market_gap",
+      "sport": "NFL",
+      "category": "market",
+      "question": "Does EdgeDesk’s market handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-09-25T03:20:23.133Z",
+      "updated_at": "2026-10-09T03:20:31.654Z",
+      "evidence": [
+        {
+          "lesson_id": "2026_03_ATL_GB:contradicted:market",
+          "game_id": "2026_03_ATL_GB",
+          "season": 2026,
+          "week": 3,
+          "team": "Green Bay Packers",
+          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at Green Bay Packers -4.8 with a fair total of 44.0, which makes Green Bay Packers the better team here by that margin on this field. EdgeDesk makes it Green Bay Packers -4.8 where the market has Green Bay Packers -6.5 at Pinnacle — a 1.7 points disagreement.",
+          "result": "Green Bay Packers lost by 21 where EdgeDesk projected a 4.8-point edge. Green Bay Packers lost by 21.",
+          "severity": "high",
+          "at": "2026-09-25T03:20:23.133Z"
+        },
+        {
+          "lesson_id": "2026_04_ATL_NO:contradicted:market",
+          "game_id": "2026_04_ATL_NO",
+          "season": 2026,
+          "week": 4,
+          "team": "New Orleans Saints",
+          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at New Orleans Saints -3.5 with a fair total of 43.7, which makes New Orleans Saints the better team here by that margin on this field. EdgeDesk makes it New Orleans Saints -3.5 where the market has New Orleans Saints -2.5 at Caesars — a 1.0 points disagreement.",
+          "result": "New Orleans Saints lost by 21 where EdgeDesk projected a 3.5-point edge. New Orleans Saints lost by 21.",
+          "severity": "high",
+          "at": "2026-10-06T23:51:04.490Z"
+        },
+        {
+          "lesson_id": "2026_05_TB_DAL:contradicted:market",
+          "game_id": "2026_05_TB_DAL",
+          "season": 2026,
+          "week": 5,
+          "team": "Dallas Cowboys",
+          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at Dallas Cowboys -5.8 with a fair total of 50.6, which makes Dallas Cowboys the better team here by that margin on this field. EdgeDesk makes it Dallas Cowboys -5.8 where the market has Dallas Cowboys -8.5 at BetRivers — a 2.7 points disagreement.",
+          "result": "Dallas Cowboys lost by 8 where EdgeDesk projected a 5.8-point edge. Dallas Cowboys lost by 8.",
+          "severity": "high",
+          "at": "2026-10-09T03:20:31.654Z"
+        }
+      ],
+      "occurrences": 3,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
+      "recurring": true,
+      "note": "Seen 3 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
       "key": "NFL:variance:general",
       "sport": "NFL",
       "category": "variance",
@@ -204,46 +257,6 @@
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
-      "key": "NFL:market:price market_gap",
-      "sport": "NFL",
-      "category": "market",
-      "question": "Does EdgeDesk’s market handling need investigating? Raised by a published article whose claim the game contradicted.",
-      "status": "open",
-      "opened_at": "2026-09-25T03:20:23.133Z",
-      "updated_at": "2026-10-06T23:51:04.490Z",
-      "evidence": [
-        {
-          "lesson_id": "2026_03_ATL_GB:contradicted:market",
-          "game_id": "2026_03_ATL_GB",
-          "season": 2026,
-          "week": 3,
-          "team": "Green Bay Packers",
-          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at Green Bay Packers -4.8 with a fair total of 44.0, which makes Green Bay Packers the better team here by that margin on this field. EdgeDesk makes it Green Bay Packers -4.8 where the market has Green Bay Packers -6.5 at Pinnacle — a 1.7 points disagreement.",
-          "result": "Green Bay Packers lost by 21 where EdgeDesk projected a 4.8-point edge. Green Bay Packers lost by 21.",
-          "severity": "high",
-          "at": "2026-09-25T03:20:23.133Z"
-        },
-        {
-          "lesson_id": "2026_04_ATL_NO:contradicted:market",
-          "game_id": "2026_04_ATL_NO",
-          "season": 2026,
-          "week": 4,
-          "team": "New Orleans Saints",
-          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at New Orleans Saints -3.5 with a fair total of 43.7, which makes New Orleans Saints the better team here by that margin on this field. EdgeDesk makes it New Orleans Saints -3.5 where the market has New Orleans Saints -2.5 at Caesars — a 1.0 points disagreement.",
-          "result": "New Orleans Saints lost by 21 where EdgeDesk projected a 3.5-point edge. New Orleans Saints lost by 21.",
-          "severity": "high",
-          "at": "2026-10-06T23:51:04.490Z"
-        }
-      ],
-      "occurrences": 2,
-      "disposition": null,
-      "disposition_note": null,
-      "closed_at": null,
-      "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
-    },
-    {
-      "schema": "edgedesk_model_review_candidate_v1",
       "key": "CFB:market:market_gap price",
       "sport": "CFB",
       "category": "market",
@@ -273,6 +286,46 @@
           "result": "Sacramento State Hornets lost by 29. Sacramento State Hornets lost by 29 where EdgeDesk projected a 3.8-point edge.",
           "severity": "high",
           "at": "2026-10-08T07:15:12.051Z"
+        }
+      ],
+      "occurrences": 2,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
+      "key": "NFL:defence:advantage",
+      "sport": "NFL",
+      "category": "defence",
+      "question": "Does EdgeDesk’s defence handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-10-06T23:51:04.490Z",
+      "updated_at": "2026-10-09T03:20:31.654Z",
+      "evidence": [
+        {
+          "lesson_id": "2026_04_ATL_NO:contradicted:defence",
+          "game_id": "2026_04_ATL_NO",
+          "season": 2026,
+          "week": 4,
+          "team": "New Orleans Saints",
+          "expectation": "New Orleans Saints holds the largest measured edge in this matchup: New Orleans Saints −0.057 (#6 of 32) vs Atlanta Falcons +0.027 (#25 of 32) — 19 places on the league board.",
+          "result": "New Orleans Saints 4.64 yards per play against Atlanta Falcons 7.5.",
+          "severity": "high",
+          "at": "2026-10-06T23:51:04.490Z"
+        },
+        {
+          "lesson_id": "2026_05_TB_DAL:contradicted:defence",
+          "game_id": "2026_05_TB_DAL",
+          "season": 2026,
+          "week": 5,
+          "team": "Tampa Bay Buccaneers",
+          "expectation": "Tampa Bay Buccaneers holds the largest measured edge in this matchup: Tampa Bay Buccaneers −0.052 (#8 of 32) vs Dallas Cowboys +0.076 (#30 of 32) — 22 places on the league board.",
+          "result": "Tampa Bay Buccaneers 6.45 yards per play against Dallas Cowboys 6.65.",
+          "severity": "high",
+          "at": "2026-10-09T03:20:31.654Z"
         }
       ],
       "occurrences": 2,
@@ -418,35 +471,6 @@
           "result": "South Florida Bulls lost by 4 where EdgeDesk projected a 14.9-point edge. South Florida Bulls lost by 4.",
           "severity": "high",
           "at": "2026-10-06T18:25:23.283Z"
-        }
-      ],
-      "occurrences": 1,
-      "disposition": null,
-      "disposition_note": null,
-      "closed_at": null,
-      "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
-    },
-    {
-      "schema": "edgedesk_model_review_candidate_v1",
-      "key": "NFL:defence:advantage",
-      "sport": "NFL",
-      "category": "defence",
-      "question": "Does EdgeDesk’s defence handling need investigating? Raised by a published article whose claim the game contradicted.",
-      "status": "open",
-      "opened_at": "2026-10-06T23:51:04.490Z",
-      "updated_at": "2026-10-06T23:51:04.490Z",
-      "evidence": [
-        {
-          "lesson_id": "2026_04_ATL_NO:contradicted:defence",
-          "game_id": "2026_04_ATL_NO",
-          "season": 2026,
-          "week": 4,
-          "team": "New Orleans Saints",
-          "expectation": "New Orleans Saints holds the largest measured edge in this matchup: New Orleans Saints −0.057 (#6 of 32) vs Atlanta Falcons +0.027 (#25 of 32) — 19 places on the league board.",
-          "result": "New Orleans Saints 4.64 yards per play against Atlanta Falcons 7.5.",
-          "severity": "high",
-          "at": "2026-10-06T23:51:04.490Z"
         }
       ],
       "occurrences": 1,

@@ -1,6 +1,6 @@
 # Changelog
 
-## 2026-10-08 — Content Engine: football evidence, not just the number
+## 2026-10-09 — Content Engine: football evidence, not just the number
 
 **A publisher showed us a Week 6 piece that put EdgeDesk's Ole Miss–Vanderbilt number (Ole Miss by about 1) beside a market that had Ole Miss -9.5, with no football reason for the gap. The old writer printed only the model's mechanics and "Model confidence: High"; the validator checked only that each number existed. The repair is in the shared pipeline: every featured game now carries a football evidence packet, every model–market gap is explained or called UNEXPLAINED, and an editorial gate blocks or holds what the evidence does not support.** Docs: `docs/content-engine/README.md` (*Football evidence*).
 
@@ -29,30 +29,98 @@
   The number check is claim-scoped. Every report ends **BLOCKED**, **HOLD_FOR_REVIEW** (unconfirmed reporting, suspect inputs) or **READY**, with an evidence record per claim in the review panel.
 - **Two new formats**, journalist-first (football question → thesis → evidence → counterargument → game script → what to watch):
   - `matchup_analysis` for publishers: prose, no software terms, manual approval;
-  - `edgedesk_analysis` for EdgeDesk's own pages: a structured research page with every model input, the diagnostics and what is missing. It shares under 45% of its wording with the publisher piece.
+  - `edgedesk_analysis` for EdgeDesk's own pages: a structured research page with every model input, the diagnostics and what is missing. It shares under 45% of its wording with the publisher piece. It is a library format; EdgeDesk's own articles stay out of the publisher queue.
 
   Discovery offers a matchup analysis for the week's top meetings and the largest gaps. Weekly slate capsules now argue both sides with football, name both quarterbacks, and disclose the gap's status.
 - **The facts ledger** (`football/evidence/facts.json`, `tools/content/add_fact.js`): outside reporting with outlet, URL, date, recorder and expiry.
   - It enters as REPORTED, is linked in the copy, and holds the article until an editor runs `--verify`.
   - Seven Week 6 facts are on file: Curtis's knee and status, Lacy's shoulder, the Georgia halftime score, Florida's rushing, Ole Miss's preseason line concern, and Raiola's relief game.
 - **EdgeDesk's own game pages** gain *The football behind the number*. Automatic publishing is held (manual review, with the reason) for a game with no packet, suspect inputs or unconfirmed reporting.
+- **With the hardening below.**
+  - The 14-check editorial gate blocks on any failed evidence check (*Unsupported factual claims*) and warns on each hold.
+  - The quarterback and injury claim checks accept what the packet's official reports and attributed reporting state.
+  - The writer follows qbState's rule: no "not confirmed as the starter" lines.
+  - The matchup deep dive, the model-vs-market report, the conference race and the first-party features carry each game's football and disclose unexplained gaps as not an edge.
 - **Cost**:
   - packets are built once and reused;
   - outside research covers featured games only, and only what is missing;
-  - at most two AI attempts, the retry rewriting only the failed sections;
+  - at most two AI attempts, the retry rewriting only the failed section, all through the shared monthly AI ledger;
   - no new paid API.
-- **Database** (`supabase/content_engine_evidence.sql`, **apply by hand** after `content_engine.sql`):
-  - the two formats;
-  - a floor that refuses approval without the evidence gate;
-  - an optional monthly Claude cap and a token and cost log;
-  - `content_engine_editorial_metrics()`, with editorial acceptance, traffic and cost kept apart and nulls where nothing is measured.
+- **Database:**
+  - `matchup_analysis` joins the topics and formats in `content_engine.sql`.
+  - `supabase/content_engine_evidence.sql` (**apply by hand** after it) adds:
+    - the floor that refuses approval without the evidence gate;
+    - `content_engine_editorial_metrics()`, with editorial acceptance (including unsupported claims caught), traffic and the AI ledger's cost kept apart, and nulls where nothing is measured.
 - **Edge Function** `content_engine`: carries the evidence module verbatim; redeploy it.
 
 **Tests:**
-- `content:test`: core 215, and the new `tools/content/evidence.test.js` 186. The latter covers the publisher's eight failures, the old slate failing and the new one passing, adversarial edits, four more CFB games and an NFL game in both formats, and today's research.
-- `content:sql`: 125, and 30 for the migration.
-- `content:fn` 61, `content:job:test` 23, `content:e2e` 54.
-- `articles:test` and `editorial:test`: unchanged, all passing.
+- `content:test`:
+  - the core, 317;
+  - the new `tools/content/evidence.test.js`, 188: the publisher's eight failures, the old slate failing and the new one passing, adversarial edits, four more CFB games and an NFL game in both formats, cost and determinism, and today's research.
+- `content:sql`: 183, and 23 for the evidence migration.
+- `content:fn` 69, `content:job:test` 28, `content:e2e` 70.
+- `features:test`, `articles:test` and `editorial:test`: all passing.
+
+## 2026-10-08 — Content Engine hardening, and EdgeDesk's own Monday/Wednesday/Friday articles
+
+**The content engine now refuses to approve, mark ready or send an article that does not clear a 14-check editorial gate. AI spend runs through a $10 monthly ledger. A business scorecard measures the program against its targets. EdgeDesk can publish up to three of its own articles a week on edgedesksports.com, starting in dry run.** Docs: `docs/content-engine/README.md`.
+
+- **Editorial reliability** (`lib/content_engine.js`):
+  - Projected scores reconcile with the margin and total, to the tenth.
+  - Quarterback states and materiality: no doubt is written about a settled starter.
+  - "Data quality", never "confidence".
+  - Model–market gaps are explained from EdgeDesk's inputs, and the unexplained share is stated.
+  - Weather comes from the committed forecast.
+  - New checks: numbers reconcile, no confidence misuse, quarterback, injury and news claims supported, postgame results reconcile.
+  - Writer fixes: NFL drafts printed `Data quality: undefined/100`; NFL injury counts appeared twice; repeated phrasing.
+- **The editorial gate.**
+  - 14 checks, each finding with evidence and a fix.
+  - Enforced by the database: the approve, transition and send doors, and the table's own trigger.
+  - Unexplained gaps need the owner's written review.
+  - "Fix flagged sections" rebuilds only those sections (no AI).
+- **AI cost protection.**
+  - Worst-case reservation under one lock, settlement from the API's token counts, and a 30-day cache.
+  - A deterministic precheck before any call, and section-only rewrites.
+  - Alerts at 50/75/90%; nothing past 100%.
+  - Estimated spend is kept apart from billed.
+- **Measurement.**
+  - Scorecard with 13 targets, the funnel, direct and assisted attribution, Stripe-reconciled revenue, costs, CAC and the bottleneck.
+  - Weekly summary with sample-size guards.
+- **Templates:** matchup deep dive, conference race, model-vs-market report, postgame model review.
+- **EdgeDesk's own articles.**
+  - Monday Weekend Model Review, Wednesday Storylines, Friday "The Weekend in Five Numbers", in Central Time.
+  - Twelve publication gates; anything less is held for the owner.
+  - A third article type in the existing store and build: server-rendered pages, a features hub with categories and an archive, NewsArticle structured data, one call to action, sitemap.
+  - `features/records/` holds the records; `.github/workflows/edgedesk-features.yml` runs the job.
+  - The owner-only `first_party` table records every run. **Default: dry run.**
+- **Reader funnel** in the Growth Console (`supabase/first_party_funnel.sql`):
+  - Search impressions, organic visits, visits, engaged readers (never under GPC/DNT), research clicks, registrations, trials, paid and revenue, against the 90-day targets.
+- **Two bugs found by the new tests and fixed:**
+  - A NULL row could slip past the first-party publish guard.
+  - A NULL gate time (after an owner review) read as fresh.
+- **Rollback:**
+  - `supabase/content_engine_hardening_rollback.sql`, run after the previous release's `content_engine.sql`; it refuses to run otherwise.
+  - `supabase/first_party_funnel_rollback.sql`.
+  - Both verified on a fresh database, including rolling forward again.
+
+**Redeploy:**
+- the `content_engine` Edge Function;
+- paste `supabase/content_engine.sql`, then `supabase/first_party_funnel.sql`.
+
+**Tests:**
+
+| Suite | Checks |
+|---|---|
+| `content:test` | 301 |
+| `content:sql` | 183 |
+| `content:fn` | 69 |
+| `content:job:test` | 28 |
+| `content:e2e` | 70 |
+| `features:test` | 90 |
+| `features:funnel` | 25 |
+| `features:rehearsal` | 41 steps, against a copy of the site |
+
+The existing article, editorial, site and growth suites are unchanged and green.
 
 ## 2026-10-08 — Content Engine: Save as PDF, and the page always loads its latest code
 
