@@ -21,8 +21,8 @@
   "game_time": "2026-10-09T23:00:00.000Z",
   "game_when_label": "2026-10-09 23:00 UTC",
   "published_at": "2026-10-09T13:10:18.062Z",
-  "updated_at": "2026-10-09T13:10:18.062Z",
-  "generated_at": "2026-10-09T13:10:18.062Z",
+  "updated_at": "2026-10-09T14:53:17.957Z",
+  "generated_at": "2026-10-09T14:53:17.957Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1444,7 +1444,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 62h old",
+          "text": "odds is 64h old",
           "widening": null
         },
         {
@@ -1514,7 +1514,7 @@
       "total_market": "60.5",
       "book": "captured consensus (stale) · 1 book · best at Pinnacle",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "62 hours old",
+      "capture_age": "64 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1865,12 +1865,16 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-09. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "checks": {
-    "ok": true,
-    "failed": [],
-    "at": "2026-10-09T13:10:18.062Z"
+  "snapshot_id": "snap_a36e9986169d4b09",
+  "timing": {
+    "publication_window": "normal",
+    "classified_window": "normal",
+    "scheduled_kickoff": "2026-10-09T23:00:00.000Z",
+    "minutes_before_kickoff": 487,
+    "published_at": "2026-10-09T13:10:18.062Z",
+    "refreshed": false,
+    "at": "2026-10-09T14:53:17.957Z"
   },
-  "snapshot_id": "snap_0f110490522a6737",
   "featured": {
     "editorial_priority": 48.2,
     "status": "featured",
@@ -2169,28 +2173,121 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-09T13:10:18.062Z"
-  },
-  "timing": {
-    "publication_window": "normal",
-    "classified_window": "normal",
-    "scheduled_kickoff": "2026-10-09T23:00:00.000Z",
-    "minutes_before_kickoff": 590,
-    "published_at": "2026-10-09T13:10:18.062Z",
-    "refreshed": false,
-    "at": "2026-10-09T13:10:18.062Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Louisville’s availability report lists running back Keyjuan Brown as questionable.",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-09T14:53:17.957Z"
   },
   "publish_state": {
     "ok": true,
-    "at": "2026-10-09T13:10:18.062Z",
+    "at": "2026-10-09T14:53:17.957Z",
     "blocking": [],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Louisville’s availability report lists running back Keyjuan Brown as questionable."
+      }
+    ],
     "hold_reason": null
+  },
+  "checks": {
+    "ok": true,
+    "failed": [],
+    "at": "2026-10-09T14:53:17.957Z"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "169eeb71odzl5d",
+    "status": "PARTIALLY_EXPLAINED",
+    "input_suspect": false,
+    "question": "Can Florida State take away Louisville’s big plays?",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Florida State, and its own breakdown accounts for about 0.0 of the 2.0 points, but not the full gap. It is a research question, not a bet.",
+    "gap": {
+      "points": 2,
+      "toward": "Florida State",
+      "other": "Louisville"
+    },
+    "supporting": [
+      "When Louisville has the ball (pass protection against the pass rush): Louisville’s offense has allowed a sack on 6.4% of its dropbacks, and Florida State’s defense sacks the quarterback on 9.5% of opponent dropbacks (FBS average 5.6%).",
+      "When Florida State has the ball (big plays through the air): Florida State’s offense turns 18.6% of its pass plays into explosive gains, and Louisville’s defense gives up explosive gains on 11.2% of opponent pass plays (FBS average 10.4%).",
+      "When Florida State has the ball (the line of scrimmage on running plays): Florida State’s offense is stopped at or behind the line on 13.0% of its runs, and Louisville’s defense stops 8.7% of opponent runs at or behind the line (FBS average 17.4%).",
+      "When Florida State has the ball (the passing game against the pass defense): Florida State’s offense averages 9.8 yards per pass attempt, and Louisville’s defense allows 8.8 yards per pass attempt (FBS average 7.5)."
+    ],
+    "contradicting": [
+      "When Louisville has the ball (the run game against the run defense): Louisville’s offense averages 7.5 yards per carry, and Florida State’s defense allows 5.1 yards per carry (FBS average 5.1).",
+      "When Louisville has the ball (big plays on the ground): Louisville’s offense turns 14.5% of its runs into explosive gains, and Florida State’s defense gives up explosive gains on 5.7% of opponent runs (FBS average 6.6%).",
+      "When Florida State has the ball (pass protection against the pass rush): Florida State’s offense has allowed a sack on 9.2% of its dropbacks, and Louisville’s defense sacks the quarterback on 4.9% of opponent dropbacks (FBS average 5.6%).",
+      "When Florida State has the ball (big plays on the ground): Florida State’s offense turns 5.9% of its runs into explosive gains, and Louisville’s defense gives up explosive gains on 3.4% of opponent runs (FBS average 6.6%)."
+    ],
+    "quarterbacks": [
+      "Lincoln Kienholz has completed 97 of 141 passes (68.8%) for 1,398 yards, 9.9 yards per attempt, 10 touchdowns and 1 interception in five games for Louisville, and has been sacked on 10 of 151 dropbacks.",
+      "Ashton Daniels has completed 70 of 116 passes (60.3%) for 1,109 yards, 9.6 yards per attempt, 6 touchdowns and 6 interceptions in five games for Florida State, and has been sacked on 11 of 127 dropbacks.",
+      "Louisville’s update 2 ACC availability report (published Oct. 8) lists quarterback Lincoln Kienholz as probable.",
+      "Ashton Daniels does not appear on Florida State’s update 2 availability report."
+    ],
+    "availability": [
+      "Louisville’s availability report lists running back Keyjuan Brown as questionable."
+    ],
+    "script": {
+      "model": [
+        "Florida State’s defense has to come out ahead on big pass plays: it gives up explosive gains on 7.8% of opponent pass plays, against an offense that turns 13.9% of its pass plays into explosive gains.",
+        "Florida State’s defense has to slow Louisville on long runs — Louisville’s offense turns 14.5% of its runs into explosive gains.",
+        "Florida State’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 4.9% of opponent dropbacks.",
+        "Florida State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 9.5% of opponent dropbacks, against an offense that has allowed a sack on 6.4% of its dropbacks."
+      ],
+      "market": [
+        "Louisville’s offense has to keep winning on long runs: it turns 14.5% of its runs into explosive gains, and Florida State’s defense gives up explosive gains on 5.7% of opponent runs.",
+        "Louisville’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 4.9% of opponent dropbacks, against an offense that has allowed a sack on 9.2% of its dropbacks.",
+        "Louisville’s offense has to keep winning on big pass plays: it turns 13.9% of its pass plays into explosive gains, and Florida State’s defense gives up explosive gains on 7.8% of opponent pass plays."
+      ]
+    },
+    "unknown": [
+      "Louisville’s availability report lists running back Keyjuan Brown as questionable.",
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Louisville and Florida State.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates, conference implications and penalty rate.",
+      "The line on file was captured Oct. 7 and may have moved."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Louisville), sack rate (Louisville), sack rate allowed (Florida State) and sack rate (Florida State); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-09T13:26:29.370Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-07T23:30:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Atlantic Coast Conference availability report (Update 2)",
+        "url": "https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-09T00:00:00.000Z",
+        "verification": "OFFICIAL_REPORT"
+      }
+    ],
+    "needs_confirmation": []
   }
 }
