@@ -20,7 +20,8 @@
 #   cancel-stuck  diagnose, then terminate client backends that are idle in a
 #                 transaction for >5 min or running one statement for >10 min
 #                 (never the platform's own roles), then diagnose again
-#   restart       diagnose, then POST /v1/projects/{ref}/restart and poll health
+#   restart       status and health, POST /v1/projects/{ref}/restart, poll
+#                 health, then diagnose
 #
 # NEEDS: SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_REF (the deploy workflows'
 # secrets) and/or SB_DB_URL. No secret value is ever printed.
@@ -62,6 +63,9 @@ sql() { # TITLE QUERY — prints the rows as a table, via the API, else psql
       return
     fi
     echo "(management API SQL answered HTTP ${code}: $(echo "$body" | head -c 300))"
+    # a stalled database answers 544 after a 15s connect timeout on every call;
+    # pay that once, not once per query
+    case "$code" in 5*|000) SQL_VIA="psql" ;; esac
   fi
   if [ -n "${SB_DB_URL:-}" ]; then
     PGCONNECT_TIMEOUT=20 psql "$SB_DB_URL" -X -v ON_ERROR_STOP=1 -P pager=off \
@@ -83,6 +87,16 @@ project_status() {
   code="${out##*__HTTP__}"; body="${out%__HTTP__*}"
   echo "GET health -> HTTP ${code}"
   echo "$body" | jq -c '.[] | {name, healthy, status, error: (.error // null)}' 2>/dev/null || echo "$body" | head -c 600
+  # compute size and disk: a database that does not fit the instance's memory
+  # reads from disk on every query, and the smaller instances throttle disk IO
+  # once their burst budget is spent
+  out="$(api GET '/billing/addons' 2>&1)"; code="${out##*__HTTP__}"; body="${out%__HTTP__*}"
+  echo "GET billing/addons -> HTTP ${code}"
+  echo "$body" | jq -c '[.selected_addons[]? | {type, variant: (.variant.identifier // .variant.name // null)}]' 2>/dev/null || echo "$body" | head -c 400
+  out="$(api GET '/config/disk' 2>&1)"; code="${out##*__HTTP__}"; body="${out%__HTTP__*}"
+  echo "GET config/disk -> HTTP ${code}: $(echo "$body" | jq -c . 2>/dev/null || echo "$body" | head -c 300)"
+  out="$(api GET '/config/disk/util' 2>&1)"; code="${out##*__HTTP__}"; body="${out%__HTTP__*}"
+  echo "GET config/disk/util -> HTTP ${code}: $(echo "$body" | jq -c . 2>/dev/null || echo "$body" | head -c 300)"
 }
 
 diagnose() {
@@ -119,11 +133,18 @@ diagnose() {
     p.relid::regclass::text as vacuuming, p.phase
     from pg_stat_activity a left join pg_stat_progress_vacuum p using (pid)
     where a.backend_type not in ('client backend') order by a.backend_type"
-  sql "pg_cron: last 10 hours" "select j.jobname, d.status, to_char(d.start_time at time zone 'utc','MM-DD HH24:MI:SS') as start_utc,
-    date_trunc('second', coalesce(d.end_time, now())-d.start_time)::text as took,
-    left(regexp_replace(coalesce(d.return_message,''), '\s+', ' ', 'g'), 140) as msg
+  # one row per job, not per run: a stall turns every run into the same
+  # "job startup timeout", and 120 of those hide which jobs ever recovered
+  sql "pg_cron: last 10 hours, per job" "select j.jobname,
+    count(*) filter (where d.status='succeeded') as ok_10h,
+    count(*) filter (where d.status='failed') as failed_10h,
+    count(*) filter (where d.status='succeeded' and d.start_time >= pg_postmaster_start_time()) as ok_since_start,
+    count(*) filter (where d.status='failed' and d.start_time >= pg_postmaster_start_time()) as failed_since_start,
+    to_char(max(d.start_time) filter (where d.status='succeeded') at time zone 'utc','MM-DD HH24:MI') as last_ok_utc,
+    left(regexp_replace((array_agg(d.return_message order by d.start_time desc) filter (where d.status='failed'))[1], '\s+', ' ', 'g'), 90) as last_failure
     from cron.job_run_details d left join cron.job j using (jobid)
-    where d.start_time > now()-interval '10 hours' order by d.start_time desc limit 120"
+    where d.start_time > now()-interval '10 hours'
+    group by 1 order by failed_since_start desc, failed_10h desc"
   sql "pg_cron: jobs" "select jobid, jobname, schedule, active, left(regexp_replace(command, '\s+', ' ', 'g'), 110) as command from cron.job order by jobid"
   sql "pg_net backlog" "select (select count(*) from net.http_request_queue) as queued,
     (select count(*) from net._http_response where created > now()-interval '1 hour') as responses_1h,
@@ -131,6 +152,25 @@ diagnose() {
   sql "Largest tables" "select relname, pg_size_pretty(pg_total_relation_size(relid)) as total, n_live_tup, n_dead_tup,
     to_char(last_autovacuum,'MM-DD HH24:MI') as last_autovac
     from pg_stat_user_tables order by pg_total_relation_size(relid) desc limit 20"
+  # where the space sits, from the catalog alone: no table is scanned, so this
+  # stays cheap on an instance whose disk IO is the scarce thing
+  # reltuples is the planner's row count as of the last VACUUM/ANALYZE; the
+  # n_live_tup above restarts from zero whenever the statistics are reset, so
+  # the two disagreeing is how a "small" table turns out to be a large one
+  sql "Largest tables: rows vs out-of-line values vs indexes" "select c.relname,
+    c.reltuples::bigint as est_rows,
+    pg_size_pretty(pg_relation_size(c.oid)) as heap,
+    pg_size_pretty(coalesce(pg_total_relation_size(nullif(c.reltoastrelid, 0)), 0)) as toast,
+    pg_size_pretty(pg_indexes_size(c.oid)) as indexes,
+    (select count(*) from pg_index i where i.indrelid = c.oid) as n_indexes
+    from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    where c.relkind = 'r' and n.nspname not in ('pg_catalog', 'information_schema')
+    order by pg_total_relation_size(c.oid) desc limit 6"
+  sql "Widest columns of the largest table (planner statistics, no scan)" "with t as (
+      select s.relname from pg_stat_user_tables s order by pg_total_relation_size(s.relid) desc limit 1)
+    select st.tablename, st.attname, st.avg_width, round(st.null_frac::numeric, 3) as null_frac
+    from pg_stats st join t on t.relname = st.tablename
+    where st.schemaname = 'public' order by st.avg_width desc limit 12"
 }
 
 cancel_stuck() {
@@ -172,10 +212,13 @@ probe_rest() {
 {
   echo "# DB doctor · action: ${ACTION} · $(date -u +%FT%TZ)"
   probe_rest
-  diagnose
   case "$ACTION" in
-    cancel-stuck) echo; cancel_stuck; sleep 5; echo; echo "# After"; diagnose; probe_rest ;;
-    restart) echo; restart_project; echo; echo "# After"; probe_rest; diagnose ;;
+    diagnose) diagnose ;;
+    cancel-stuck) diagnose; echo; cancel_stuck; sleep 5; echo; echo "# After"; diagnose; probe_rest ;;
+    # the project is already not answering: do not spend minutes on SQL that
+    # will time out before restarting it
+    restart) project_status; echo; restart_project; echo; echo "# After"; probe_rest; diagnose ;;
+    *) echo "::error::unknown ACTION '${ACTION}'"; exit 1 ;;
   esac
 } 2>&1 | tee /tmp/db_doctor.md
 
