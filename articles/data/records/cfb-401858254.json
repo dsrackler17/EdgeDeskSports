@@ -21,8 +21,8 @@
   "game_time": "2026-10-09T23:00:00.000Z",
   "game_when_label": "2026-10-09 23:00 UTC",
   "published_at": "2026-10-09T13:10:18.062Z",
-  "updated_at": "2026-10-09T20:02:26.499Z",
-  "generated_at": "2026-10-09T20:02:26.499Z",
+  "updated_at": "2026-10-09T20:30:58.205Z",
+  "generated_at": "2026-10-09T20:30:58.205Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1444,7 +1444,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 69h old",
+          "text": "odds is 70h old",
           "widening": null
         },
         {
@@ -1514,7 +1514,7 @@
       "total_market": "60.5",
       "book": "captured consensus (stale) · 1 book · best at Pinnacle",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "69 hours old",
+      "capture_age": "70 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1865,15 +1865,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-09. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_1463375e53dc0680",
+  "snapshot_id": "snap_07efdcd47ffbeb73",
   "timing": {
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-09T23:00:00.000Z",
-    "minutes_before_kickoff": 178,
+    "minutes_before_kickoff": 149,
     "published_at": "2026-10-09T13:10:18.062Z",
     "refreshed": false,
-    "at": "2026-10-09T20:02:26.499Z"
+    "at": "2026-10-09T20:30:58.205Z"
   },
   "featured": {
     "editorial_priority": 48.2,
@@ -2173,24 +2173,37 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-09T20:02:26.499Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Louisville’s availability report lists running back Keyjuan Brown as questionable.",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-09T20:30:58.205Z"
   },
   "publish_state": {
     "ok": true,
-    "at": "2026-10-09T20:02:26.499Z",
+    "at": "2026-10-09T20:30:58.205Z",
     "blocking": [],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Louisville’s availability report lists running back Keyjuan Brown as questionable."
+      }
+    ],
     "hold_reason": null
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "a46mum1h7gix8",
+    "packet_hash": "11w7q9kspo9cq",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Florida State take away Louisville’s big plays?",
@@ -2237,7 +2250,8 @@
     "unknown": [
       "Louisville’s availability report lists running back Keyjuan Brown as questionable.",
       "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Louisville and Florida State.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, conference implications and penalty rate."
+      "Not in EdgeDesk’s verified data for this game: turnover rates, conference implications and penalty rate.",
+      "The line on file was captured Oct. 9 and may have moved."
     ],
     "flags": [
       {
@@ -2274,6 +2288,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-09T20:02:26.499Z"
+    "at": "2026-10-09T20:30:58.205Z"
   }
 }
