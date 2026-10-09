@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_pnl_ledger_v1",
  "season": 2026,
- "generated_at": "2026-10-09T04:23:44.645Z",
+ "generated_at": "2026-10-09T04:32:34.134Z",
  "what": "Every EdgeDesk recommendation with a side, one row each, with its settlement and its profit and loss at the price recorded when it was made. Written by tools/record/pnl_ledger.js; nobody edits it by hand.",
  "sources": [
   {
@@ -31,14 +31,14 @@
    "source": "model_record",
    "league": "NFL",
    "file": "record/football/nfl_2026.json",
-   "rows": 143,
+   "rows": 146,
    "note": "priced only through the price lock (a quote EdgeDesk stored at or before the number was published); every other graded row is record only"
   },
   {
    "source": "model_record",
    "league": "CFB",
    "file": "record/football/cfb_2026.json",
-   "rows": 814,
+   "rows": 820,
    "note": "priced only through the price lock (a quote EdgeDesk stored at or before the number was published); every other graded row is record only"
   }
  ],
@@ -364221,6 +364221,500 @@
    "pnl_exclusion_reason": null
   },
   {
+   "source": "model_record",
+   "source_ref": {
+    "file": "record/football/cfb_2026.json",
+    "id": "401862794"
+   },
+   "sport": "football",
+   "league": "CFB",
+   "season": 2026,
+   "week": 6,
+   "event_id": "401862794",
+   "home": "UTSA",
+   "away": "South Florida",
+   "event_label": "South Florida @ UTSA",
+   "game_date": "2026-10-08T23:30:00.000Z",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "engine_version": null,
+   "market_group": "game",
+   "prop_market": null,
+   "player_id": null,
+   "player_name": null,
+   "position": null,
+   "entry_odds": -278,
+   "entry_book": "draftkings",
+   "entry_book_name": "DraftKings",
+   "price_assumed": false,
+   "model_edge_pct": null,
+   "ev_pct": null,
+   "rec_class": "MODEL",
+   "confidence": null,
+   "stage": null,
+   "stake_units": 1,
+   "stake_source": "default",
+   "price_source": "snapshot",
+   "price_ref": {
+    "source": "record_quotes",
+    "quote_id": "edq_d8aae594dd28dda340328f4b",
+    "event_id": "401862794",
+    "market": "moneyline",
+    "side": "home",
+    "line": null,
+    "book": "draftkings",
+    "observed_at": "2026-10-05T14:42:22.392Z",
+    "decided_at": "2026-10-05T18:51:54.845Z",
+    "locked_at": "2026-10-05T18:53:05.938Z"
+   },
+   "recommended_at": "2026-10-05T18:51:54.845Z",
+   "odds_captured_at": "2026-10-05T14:42:22.392Z",
+   "odds_captured_basis": "the quote EdgeDesk stored at or before the number was published (record_quotes)",
+   "evaluation_mode": "LIVE",
+   "closing_odds": -230,
+   "final_score": "24–31",
+   "settled_at": "2026-10-09T04:31:57.502Z",
+   "result_detail": "graded at the closing number; priced at the quote EdgeDesk stored for that number before the model published it",
+   "recommendation_id": "mr:cfb:401862794:moneyline",
+   "market_type": "moneyline",
+   "side": "home",
+   "team": "UTSA",
+   "opponent": "South Florida",
+   "selection": "UTSA ML",
+   "model_line": null,
+   "entry_line": null,
+   "model_prob": 0.5456,
+   "model_gap_points": null,
+   "result": "win",
+   "result_value": 7,
+   "closing_line": null,
+   "clv_points": null,
+   "clv_prob_pp": null,
+   "beat_close": null,
+   "first_recorded_at": "2026-10-09T04:32:34.134Z",
+   "corrections": [],
+   "corrected": false,
+   "price_locked_at": "2026-10-09T04:32:34.134Z",
+   "flat_stake_units": 1,
+   "missing_entry_odds": false,
+   "implied_prob": 0.7354,
+   "profit_units": 0.359712,
+   "flat_profit_units": 0.359712,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
+  },
+  {
+   "source": "model_record",
+   "source_ref": {
+    "file": "record/football/cfb_2026.json",
+    "id": "401862794"
+   },
+   "sport": "football",
+   "league": "CFB",
+   "season": 2026,
+   "week": 6,
+   "event_id": "401862794",
+   "home": "UTSA",
+   "away": "South Florida",
+   "event_label": "South Florida @ UTSA",
+   "game_date": "2026-10-08T23:30:00.000Z",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "engine_version": null,
+   "market_group": "game",
+   "prop_market": null,
+   "player_id": null,
+   "player_name": null,
+   "position": null,
+   "entry_odds": null,
+   "entry_book": "DraftKings",
+   "entry_book_name": "DraftKings",
+   "price_assumed": false,
+   "model_edge_pct": null,
+   "ev_pct": null,
+   "rec_class": "MODEL",
+   "confidence": null,
+   "stage": null,
+   "stake_units": 0,
+   "stake_source": null,
+   "price_source": null,
+   "price_ref": null,
+   "recommended_at": "2026-10-05T18:51:54.845Z",
+   "odds_captured_at": null,
+   "odds_captured_basis": "no price was captured with the model record",
+   "evaluation_mode": "LIVE",
+   "closing_odds": -110,
+   "final_score": "24–31",
+   "settled_at": "2026-10-09T04:31:57.502Z",
+   "result_detail": "graded at the closing line; the model record never captured a price",
+   "recommendation_id": "mr:cfb:401862794:spread",
+   "market_type": "spread",
+   "side": "away",
+   "team": "South Florida",
+   "opponent": "UTSA",
+   "selection": "South Florida +5.5",
+   "model_line": 1.68,
+   "entry_line": 7,
+   "model_prob": null,
+   "model_gap_points": 3.82,
+   "result": "loss",
+   "result_value": 7,
+   "closing_line": 5.5,
+   "clv_points": 1.5,
+   "clv_prob_pp": null,
+   "beat_close": true,
+   "price_lookup": {
+    "status": "historical_price_unavailable",
+    "why": "line_moved",
+    "detail": "at the decision the stored draftkings number was +7; the graded number +5.5 had no stored price then"
+   },
+   "first_recorded_at": "2026-10-09T04:32:34.134Z",
+   "corrections": [],
+   "corrected": false,
+   "flat_stake_units": 1,
+   "missing_entry_odds": true,
+   "implied_prob": null,
+   "profit_units": null,
+   "flat_profit_units": null,
+   "pnl_status": "NO_ENTRY_PRICE",
+   "pnl_eligible": false,
+   "pnl_note": "P&L unavailable — entry price not captured",
+   "record_state": "RECORD_ONLY",
+   "state_reason": "P&L unavailable — entry price not captured",
+   "pnl_verified": false,
+   "pnl_exclusion_reason": "historical_price_unavailable"
+  },
+  {
+   "source": "model_record",
+   "source_ref": {
+    "file": "record/football/cfb_2026.json",
+    "id": "401862794"
+   },
+   "sport": "football",
+   "league": "CFB",
+   "season": 2026,
+   "week": 6,
+   "event_id": "401862794",
+   "home": "UTSA",
+   "away": "South Florida",
+   "event_label": "South Florida @ UTSA",
+   "game_date": "2026-10-08T23:30:00.000Z",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "engine_version": null,
+   "market_group": "game",
+   "prop_market": null,
+   "player_id": null,
+   "player_name": null,
+   "position": null,
+   "entry_odds": null,
+   "entry_book": "DraftKings",
+   "entry_book_name": "DraftKings",
+   "price_assumed": false,
+   "model_edge_pct": null,
+   "ev_pct": null,
+   "rec_class": "MODEL",
+   "confidence": null,
+   "stage": null,
+   "stake_units": 0,
+   "stake_source": null,
+   "price_source": null,
+   "price_ref": null,
+   "recommended_at": "2026-10-05T18:51:54.845Z",
+   "odds_captured_at": null,
+   "odds_captured_basis": "no price was captured with the model record",
+   "evaluation_mode": "LIVE",
+   "closing_odds": -112,
+   "final_score": "24–31",
+   "settled_at": "2026-10-09T04:31:57.502Z",
+   "result_detail": "graded at the closing line; the model record never captured a price",
+   "recommendation_id": "mr:cfb:401862794:total",
+   "market_type": "total",
+   "side": "over",
+   "team": null,
+   "opponent": null,
+   "selection": "Over 49.5",
+   "model_line": 55.8,
+   "entry_line": 53.5,
+   "model_prob": null,
+   "model_gap_points": 6.3,
+   "result": "win",
+   "result_value": 55,
+   "closing_line": 49.5,
+   "clv_points": -4,
+   "clv_prob_pp": null,
+   "beat_close": false,
+   "price_lookup": {
+    "status": "historical_price_unavailable",
+    "why": "line_moved",
+    "detail": "at the decision the stored draftkings number was Over 51.5; the graded number Over 49.5 had no stored price then"
+   },
+   "first_recorded_at": "2026-10-09T04:32:34.134Z",
+   "corrections": [],
+   "corrected": false,
+   "flat_stake_units": 1,
+   "missing_entry_odds": true,
+   "implied_prob": null,
+   "profit_units": null,
+   "flat_profit_units": null,
+   "pnl_status": "NO_ENTRY_PRICE",
+   "pnl_eligible": false,
+   "pnl_note": "P&L unavailable — entry price not captured",
+   "record_state": "RECORD_ONLY",
+   "state_reason": "P&L unavailable — entry price not captured",
+   "pnl_verified": false,
+   "pnl_exclusion_reason": "historical_price_unavailable"
+  },
+  {
+   "source": "model_record",
+   "source_ref": {
+    "file": "record/football/cfb_2026.json",
+    "id": "401869933"
+   },
+   "sport": "football",
+   "league": "CFB",
+   "season": 2026,
+   "week": 6,
+   "event_id": "401869933",
+   "home": "Arkansas State",
+   "away": "South Alabama",
+   "event_label": "South Alabama @ Arkansas State",
+   "game_date": "2026-10-08T23:30:00.000Z",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "engine_version": null,
+   "market_group": "game",
+   "prop_market": null,
+   "player_id": null,
+   "player_name": null,
+   "position": null,
+   "entry_odds": -115,
+   "entry_book": "draftkings",
+   "entry_book_name": "DraftKings",
+   "price_assumed": false,
+   "model_edge_pct": null,
+   "ev_pct": null,
+   "rec_class": "MODEL",
+   "confidence": null,
+   "stage": null,
+   "stake_units": 1,
+   "stake_source": "default",
+   "price_source": "snapshot",
+   "price_ref": {
+    "source": "record_quotes",
+    "quote_id": "edq_a836209b80d8043106b563cf",
+    "event_id": "401869933",
+    "market": "moneyline",
+    "side": "home",
+    "line": null,
+    "book": "draftkings",
+    "observed_at": "2026-10-05T14:42:22.392Z",
+    "decided_at": "2026-10-05T18:51:54.845Z",
+    "locked_at": "2026-10-05T18:53:05.938Z"
+   },
+   "recommended_at": "2026-10-05T18:51:54.845Z",
+   "odds_captured_at": "2026-10-05T14:42:22.392Z",
+   "odds_captured_basis": "the quote EdgeDesk stored at or before the number was published (record_quotes)",
+   "evaluation_mode": "LIVE",
+   "closing_odds": -162,
+   "final_score": "56–49",
+   "settled_at": "2026-10-09T04:31:57.502Z",
+   "result_detail": "graded at the closing number; priced at the quote EdgeDesk stored for that number before the model published it",
+   "recommendation_id": "mr:cfb:401869933:moneyline",
+   "market_type": "moneyline",
+   "side": "home",
+   "team": "Arkansas State",
+   "opponent": "South Alabama",
+   "selection": "Arkansas State ML",
+   "model_line": null,
+   "entry_line": null,
+   "model_prob": 0.6755,
+   "model_gap_points": null,
+   "result": "loss",
+   "result_value": -7,
+   "closing_line": null,
+   "clv_points": null,
+   "clv_prob_pp": null,
+   "beat_close": null,
+   "first_recorded_at": "2026-10-09T04:32:34.134Z",
+   "corrections": [],
+   "corrected": false,
+   "price_locked_at": "2026-10-09T04:32:34.134Z",
+   "flat_stake_units": 1,
+   "missing_entry_odds": false,
+   "implied_prob": 0.5349,
+   "profit_units": -1,
+   "flat_profit_units": -1,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
+  },
+  {
+   "source": "model_record",
+   "source_ref": {
+    "file": "record/football/cfb_2026.json",
+    "id": "401869933"
+   },
+   "sport": "football",
+   "league": "CFB",
+   "season": 2026,
+   "week": 6,
+   "event_id": "401869933",
+   "home": "Arkansas State",
+   "away": "South Alabama",
+   "event_label": "South Alabama @ Arkansas State",
+   "game_date": "2026-10-08T23:30:00.000Z",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "engine_version": null,
+   "market_group": "game",
+   "prop_market": null,
+   "player_id": null,
+   "player_name": null,
+   "position": null,
+   "entry_odds": null,
+   "entry_book": "DraftKings",
+   "entry_book_name": "DraftKings",
+   "price_assumed": false,
+   "model_edge_pct": null,
+   "ev_pct": null,
+   "rec_class": "MODEL",
+   "confidence": null,
+   "stage": null,
+   "stake_units": 0,
+   "stake_source": null,
+   "price_source": null,
+   "price_ref": null,
+   "recommended_at": "2026-10-05T18:51:54.845Z",
+   "odds_captured_at": null,
+   "odds_captured_basis": "no price was captured with the model record",
+   "evaluation_mode": "LIVE",
+   "closing_odds": -115,
+   "final_score": "56–49",
+   "settled_at": "2026-10-09T04:31:57.502Z",
+   "result_detail": "graded at the closing line; the model record never captured a price",
+   "recommendation_id": "mr:cfb:401869933:spread",
+   "market_type": "spread",
+   "side": "home",
+   "team": "Arkansas State",
+   "opponent": "South Alabama",
+   "selection": "Arkansas State -3",
+   "model_line": -6.66,
+   "entry_line": -1.5,
+   "model_prob": null,
+   "model_gap_points": 3.66,
+   "result": "loss",
+   "result_value": -7,
+   "closing_line": -3,
+   "clv_points": 1.5,
+   "clv_prob_pp": null,
+   "beat_close": true,
+   "price_lookup": {
+    "status": "historical_price_unavailable",
+    "why": "line_moved",
+    "detail": "at the decision the stored draftkings number was -1.5; the graded number -3 had no stored price then"
+   },
+   "first_recorded_at": "2026-10-09T04:32:34.134Z",
+   "corrections": [],
+   "corrected": false,
+   "flat_stake_units": 1,
+   "missing_entry_odds": true,
+   "implied_prob": null,
+   "profit_units": null,
+   "flat_profit_units": null,
+   "pnl_status": "NO_ENTRY_PRICE",
+   "pnl_eligible": false,
+   "pnl_note": "P&L unavailable — entry price not captured",
+   "record_state": "RECORD_ONLY",
+   "state_reason": "P&L unavailable — entry price not captured",
+   "pnl_verified": false,
+   "pnl_exclusion_reason": "historical_price_unavailable"
+  },
+  {
+   "source": "model_record",
+   "source_ref": {
+    "file": "record/football/cfb_2026.json",
+    "id": "401869933"
+   },
+   "sport": "football",
+   "league": "CFB",
+   "season": 2026,
+   "week": 6,
+   "event_id": "401869933",
+   "home": "Arkansas State",
+   "away": "South Alabama",
+   "event_label": "South Alabama @ Arkansas State",
+   "game_date": "2026-10-08T23:30:00.000Z",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "engine_version": null,
+   "market_group": "game",
+   "prop_market": null,
+   "player_id": null,
+   "player_name": null,
+   "position": null,
+   "entry_odds": null,
+   "entry_book": "DraftKings",
+   "entry_book_name": "DraftKings",
+   "price_assumed": false,
+   "model_edge_pct": null,
+   "ev_pct": null,
+   "rec_class": "MODEL",
+   "confidence": null,
+   "stage": null,
+   "stake_units": 0,
+   "stake_source": null,
+   "price_source": null,
+   "price_ref": null,
+   "recommended_at": "2026-10-05T18:51:54.845Z",
+   "odds_captured_at": null,
+   "odds_captured_basis": "no price was captured with the model record",
+   "evaluation_mode": "LIVE",
+   "closing_odds": -112,
+   "final_score": "56–49",
+   "settled_at": "2026-10-09T04:31:57.502Z",
+   "result_detail": "graded at the closing line; the model record never captured a price",
+   "recommendation_id": "mr:cfb:401869933:total",
+   "market_type": "total",
+   "side": "under",
+   "team": null,
+   "opponent": null,
+   "selection": "Under 60.5",
+   "model_line": 56.4,
+   "entry_line": 56.5,
+   "model_prob": null,
+   "model_gap_points": 4.1,
+   "result": "loss",
+   "result_value": 105,
+   "closing_line": 60.5,
+   "clv_points": -4,
+   "clv_prob_pp": null,
+   "beat_close": false,
+   "price_lookup": {
+    "status": "historical_price_unavailable",
+    "why": "line_moved",
+    "detail": "at the decision the stored draftkings number was Under 57.5; the graded number Under 60.5 had no stored price then"
+   },
+   "first_recorded_at": "2026-10-09T04:32:34.134Z",
+   "corrections": [],
+   "corrected": false,
+   "flat_stake_units": 1,
+   "missing_entry_odds": true,
+   "implied_prob": null,
+   "profit_units": null,
+   "flat_profit_units": null,
+   "pnl_status": "NO_ENTRY_PRICE",
+   "pnl_eligible": false,
+   "pnl_note": "P&L unavailable — entry price not captured",
+   "record_state": "RECORD_ONLY",
+   "state_reason": "P&L unavailable — entry price not captured",
+   "pnl_verified": false,
+   "pnl_exclusion_reason": "historical_price_unavailable"
+  },
+  {
    "recommendation_id": "pp:ppe_00ab3deb",
    "source": "player_props",
    "source_ref": {
@@ -364296,7 +364790,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_0256a75f",
@@ -364374,7 +364868,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_04bb896a",
@@ -364452,7 +364946,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_08fa04d8",
@@ -364530,7 +365024,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_0b2b4bbb",
@@ -364608,7 +365102,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_17d6d65a",
@@ -364686,7 +365180,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_1a5f2021",
@@ -364764,7 +365258,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_1aba3f56",
@@ -364842,7 +365336,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_1daf7710",
@@ -364920,7 +365414,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_233cd87e",
@@ -364998,7 +365492,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_236d473c",
@@ -365076,7 +365570,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_2373357d",
@@ -365154,7 +365648,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_27ba83d6",
@@ -365232,7 +365726,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_28947095",
@@ -365310,7 +365804,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_2ef10a8e",
@@ -365388,7 +365882,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_31ae9341",
@@ -365466,7 +365960,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_39b52e56",
@@ -365544,7 +366038,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_3e84b64f",
@@ -365622,7 +366116,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_3ec3b69c",
@@ -365700,7 +366194,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_40b63e49",
@@ -365778,7 +366272,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_4224c3a2",
@@ -365856,7 +366350,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_436d4cdd",
@@ -365934,7 +366428,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_45c4ea70",
@@ -366012,7 +366506,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_47fe4d9f",
@@ -366090,7 +366584,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_48c84709",
@@ -366168,7 +366662,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_48ed6e8f",
@@ -366246,7 +366740,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_503bbfc8",
@@ -366324,7 +366818,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_52631b1b",
@@ -366402,7 +366896,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_5b2f9349",
@@ -366480,7 +366974,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_5b5db44e",
@@ -366558,7 +367052,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_5b7adea1",
@@ -366636,7 +367130,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_5f3d9203",
@@ -366714,7 +367208,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_63b7fbaf",
@@ -366792,7 +367286,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_64088e74",
@@ -366870,7 +367364,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_6a636f96",
@@ -366948,7 +367442,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_6a81e25f",
@@ -367026,7 +367520,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_7088337b",
@@ -367104,7 +367598,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_73cd2dcb",
@@ -367182,7 +367676,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_77a9d005",
@@ -367260,7 +367754,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_78acdfd9",
@@ -367338,7 +367832,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_78cec753",
@@ -367416,7 +367910,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_7e6e6b57",
@@ -367494,7 +367988,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_86c811cd",
@@ -367572,7 +368066,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_8bca4bf0",
@@ -367650,7 +368144,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_8fa45fbd",
@@ -367728,7 +368222,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_90e452ff",
@@ -367806,7 +368300,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_93c263a4",
@@ -367884,7 +368378,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_94c24884",
@@ -367962,7 +368456,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_977ad30c",
@@ -368040,7 +368534,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_981fead3",
@@ -368118,7 +368612,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_984d5a49",
@@ -368196,7 +368690,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_9992feff",
@@ -368274,7 +368768,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_9ed36b90",
@@ -368352,7 +368846,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_a3e72383",
@@ -368430,7 +368924,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_a4c20621",
@@ -368508,7 +369002,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_a4f1381c",
@@ -368586,7 +369080,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_a59e0e47",
@@ -368664,7 +369158,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_a9ecadb3",
@@ -368742,7 +369236,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_aa43380d",
@@ -368820,7 +369314,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_b3902c7a",
@@ -368898,7 +369392,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_b48ebbad",
@@ -368976,7 +369470,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_b820b851",
@@ -369054,7 +369548,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_b83c9b14",
@@ -369132,7 +369626,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_baae03cb",
@@ -369210,7 +369704,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_c2264267",
@@ -369288,7 +369782,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_c248f802",
@@ -369366,7 +369860,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_c24e3ec7",
@@ -369444,7 +369938,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_c39445b0",
@@ -369522,7 +370016,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_c54c5198",
@@ -369600,7 +370094,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_c57419c0",
@@ -369678,7 +370172,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_c5f8c352",
@@ -369756,7 +370250,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_c9408d63",
@@ -369834,7 +370328,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_ce77bf55",
@@ -369912,7 +370406,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_d1767709",
@@ -369990,7 +370484,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_da2579c3",
@@ -370068,7 +370562,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_dae98758",
@@ -370146,7 +370640,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_dd09b518",
@@ -370224,7 +370718,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_de783ca6",
@@ -370302,7 +370796,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_e21c4903",
@@ -370380,7 +370874,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_e24ace5a",
@@ -370458,7 +370952,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_e30388cd",
@@ -370536,7 +371030,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_e3c89a29",
@@ -370614,7 +371108,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_e3e40797",
@@ -370692,7 +371186,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_e52af7a6",
@@ -370770,7 +371264,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_e9b119b5",
@@ -370848,7 +371342,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_eaef101b",
@@ -370926,7 +371420,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_ecbaec57",
@@ -371004,7 +371498,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_f83166e3",
@@ -371082,7 +371576,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_fc168457",
@@ -371160,7 +371654,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
   },
   {
    "recommendation_id": "pp:ppe_ffe76402",
@@ -371238,7 +371732,254 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "IN_PROGRESS"
+   "pending_reason": "MISSING_FINAL"
+  },
+  {
+   "source": "model_record",
+   "source_ref": {
+    "file": "record/football/nfl_2026.json",
+    "id": "2026_05_TB_DAL"
+   },
+   "sport": "football",
+   "league": "NFL",
+   "season": 2026,
+   "week": 5,
+   "event_id": "2026_05_TB_DAL",
+   "home": "Dallas Cowboys",
+   "away": "Tampa Bay Buccaneers",
+   "event_label": "TB @ DAL",
+   "game_date": "2026-10-09T00:15:00.000Z",
+   "model_version": "edgedesk_football_v1.0.0",
+   "engine_version": null,
+   "market_group": "game",
+   "prop_market": null,
+   "player_id": null,
+   "player_name": null,
+   "position": null,
+   "entry_odds": -520,
+   "entry_book": "draftkings",
+   "entry_book_name": "DraftKings",
+   "price_assumed": false,
+   "model_edge_pct": null,
+   "ev_pct": null,
+   "rec_class": "MODEL",
+   "confidence": null,
+   "stage": null,
+   "stake_units": 1,
+   "stake_source": "default",
+   "price_source": "snapshot",
+   "price_ref": {
+    "source": "record_quotes",
+    "quote_id": "edq_fe13fcd34634a79908f35aa2",
+    "event_id": "2026_05_TB_DAL",
+    "market": "moneyline",
+    "side": "home",
+    "line": null,
+    "book": "draftkings",
+    "observed_at": "2026-10-05T15:06:55.994Z",
+    "decided_at": "2026-10-05T16:09:49.467Z",
+    "locked_at": "2026-10-05T16:11:11.032Z"
+   },
+   "recommended_at": "2026-10-05T16:09:49.467Z",
+   "odds_captured_at": "2026-10-05T15:06:55.994Z",
+   "odds_captured_basis": "the quote EdgeDesk stored at or before the number was published (record_quotes)",
+   "evaluation_mode": "LIVE",
+   "closing_odds": -535,
+   "final_score": "24–16",
+   "settled_at": "2026-10-09T04:31:57.502Z",
+   "result_detail": "graded at the closing number; priced at the quote EdgeDesk stored for that number before the model published it",
+   "recommendation_id": "mr:nfl:2026_05_TB_DAL:moneyline",
+   "market_type": "moneyline",
+   "side": "home",
+   "team": "DAL",
+   "opponent": "TB",
+   "selection": "DAL ML",
+   "model_line": null,
+   "entry_line": null,
+   "model_prob": 0.7054,
+   "model_gap_points": null,
+   "result": "loss",
+   "result_value": -8,
+   "closing_line": null,
+   "clv_points": null,
+   "clv_prob_pp": null,
+   "beat_close": null,
+   "first_recorded_at": "2026-10-09T04:32:34.134Z",
+   "corrections": [],
+   "corrected": false,
+   "price_locked_at": "2026-10-09T04:32:34.134Z",
+   "flat_stake_units": 1,
+   "missing_entry_odds": false,
+   "implied_prob": 0.8387,
+   "profit_units": -1,
+   "flat_profit_units": -1,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
+  },
+  {
+   "source": "model_record",
+   "source_ref": {
+    "file": "record/football/nfl_2026.json",
+    "id": "2026_05_TB_DAL"
+   },
+   "sport": "football",
+   "league": "NFL",
+   "season": 2026,
+   "week": 5,
+   "event_id": "2026_05_TB_DAL",
+   "home": "Dallas Cowboys",
+   "away": "Tampa Bay Buccaneers",
+   "event_label": "TB @ DAL",
+   "game_date": "2026-10-09T00:15:00.000Z",
+   "model_version": "edgedesk_football_v1.0.0",
+   "engine_version": null,
+   "market_group": "game",
+   "prop_market": null,
+   "player_id": null,
+   "player_name": null,
+   "position": null,
+   "entry_odds": null,
+   "entry_book": "consensus",
+   "entry_book_name": "consensus",
+   "price_assumed": false,
+   "model_edge_pct": null,
+   "ev_pct": null,
+   "rec_class": "MODEL",
+   "confidence": null,
+   "stage": null,
+   "stake_units": 0,
+   "stake_source": null,
+   "price_source": null,
+   "price_ref": null,
+   "recommended_at": "2026-10-05T16:09:49.467Z",
+   "odds_captured_at": null,
+   "odds_captured_basis": "no price was captured with the model record",
+   "evaluation_mode": "LIVE",
+   "closing_odds": -112,
+   "final_score": "24–16",
+   "settled_at": "2026-10-09T04:31:57.502Z",
+   "result_detail": "graded at the closing line; the model record never captured a price",
+   "recommendation_id": "mr:nfl:2026_05_TB_DAL:spread",
+   "market_type": "spread",
+   "side": "away",
+   "team": "TB",
+   "opponent": "DAL",
+   "selection": "TB +9.5",
+   "model_line": 5.78,
+   "entry_line": 9.5,
+   "model_prob": null,
+   "model_gap_points": 3.72,
+   "result": "win",
+   "result_value": -8,
+   "closing_line": 9.5,
+   "clv_points": 0,
+   "clv_prob_pp": null,
+   "beat_close": null,
+   "price_lookup": {
+    "status": "historical_price_unavailable",
+    "why": "line_moved",
+    "detail": "at the decision the stored draftkings number was +10; the graded number +9.5 had no stored price then"
+   },
+   "first_recorded_at": "2026-10-09T04:32:34.134Z",
+   "corrections": [],
+   "corrected": false,
+   "flat_stake_units": 1,
+   "missing_entry_odds": true,
+   "implied_prob": null,
+   "profit_units": null,
+   "flat_profit_units": null,
+   "pnl_status": "NO_ENTRY_PRICE",
+   "pnl_eligible": false,
+   "pnl_note": "P&L unavailable — entry price not captured",
+   "record_state": "RECORD_ONLY",
+   "state_reason": "P&L unavailable — entry price not captured",
+   "pnl_verified": false,
+   "pnl_exclusion_reason": "historical_price_unavailable"
+  },
+  {
+   "source": "model_record",
+   "source_ref": {
+    "file": "record/football/nfl_2026.json",
+    "id": "2026_05_TB_DAL"
+   },
+   "sport": "football",
+   "league": "NFL",
+   "season": 2026,
+   "week": 5,
+   "event_id": "2026_05_TB_DAL",
+   "home": "Dallas Cowboys",
+   "away": "Tampa Bay Buccaneers",
+   "event_label": "TB @ DAL",
+   "game_date": "2026-10-09T00:15:00.000Z",
+   "model_version": "edgedesk_football_v1.0.0",
+   "engine_version": null,
+   "market_group": "game",
+   "prop_market": null,
+   "player_id": null,
+   "player_name": null,
+   "position": null,
+   "entry_odds": null,
+   "entry_book": "consensus",
+   "entry_book_name": "consensus",
+   "price_assumed": false,
+   "model_edge_pct": null,
+   "ev_pct": null,
+   "rec_class": "MODEL",
+   "confidence": null,
+   "stage": null,
+   "stake_units": 0,
+   "stake_source": null,
+   "price_source": null,
+   "price_ref": null,
+   "recommended_at": "2026-10-05T16:09:49.467Z",
+   "odds_captured_at": null,
+   "odds_captured_basis": "no price was captured with the model record",
+   "evaluation_mode": "LIVE",
+   "closing_odds": -110,
+   "final_score": "24–16",
+   "settled_at": "2026-10-09T04:31:57.502Z",
+   "result_detail": "graded at the closing line; the model record never captured a price",
+   "recommendation_id": "mr:nfl:2026_05_TB_DAL:total",
+   "market_type": "total",
+   "side": "over",
+   "team": null,
+   "opponent": null,
+   "selection": "Over 49.5",
+   "model_line": 50.61,
+   "entry_line": 46.5,
+   "model_prob": null,
+   "model_gap_points": 1.11,
+   "result": "loss",
+   "result_value": 40,
+   "closing_line": 49.5,
+   "clv_points": 3,
+   "clv_prob_pp": null,
+   "beat_close": true,
+   "price_lookup": {
+    "status": "historical_price_unavailable",
+    "why": "line_moved",
+    "detail": "at the decision the stored draftkings number was Over 47.5; the graded number Over 49.5 had no stored price then"
+   },
+   "first_recorded_at": "2026-10-09T04:32:34.134Z",
+   "corrections": [],
+   "corrected": false,
+   "flat_stake_units": 1,
+   "missing_entry_odds": true,
+   "implied_prob": null,
+   "profit_units": null,
+   "flat_profit_units": null,
+   "pnl_status": "NO_ENTRY_PRICE",
+   "pnl_eligible": false,
+   "pnl_note": "P&L unavailable — entry price not captured",
+   "record_state": "RECORD_ONLY",
+   "state_reason": "P&L unavailable — entry price not captured",
+   "pnl_verified": false,
+   "pnl_exclusion_reason": "historical_price_unavailable"
   },
   {
    "recommendation_id": "pp:ppe_00f517bc",
