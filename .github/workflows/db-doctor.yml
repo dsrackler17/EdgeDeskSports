@@ -1,0 +1,51 @@
+name: DB doctor
+
+# WHAT IS THE DATABASE DOING? Every other job here speaks PostgREST, so when
+# PostgREST stops answering (2026-10-09: "upstream request timeout" on
+# GET /rest/v1/ from ~08:20 UTC, every reader showing "Database — read
+# failed") nothing in this repository could see why. This asks the database
+# itself — Management API status and health, then sessions, locks, pg_cron and
+# pg_net through the platform's own SQL path — and, only when asked, clears
+# stuck sessions or restarts the project. See tools/supabase/db_doctor.sh.
+#
+# A push to a claude/db-doctor-* branch runs the read-only diagnosis, so the
+# doctor can be run before this file reaches main.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'diagnose (read-only) · cancel-stuck (terminate stuck client sessions) · restart (restart the Supabase project)'
+        type: choice
+        options: [diagnose, cancel-stuck, restart]
+        default: diagnose
+  push:
+    branches: ['claude/db-doctor-**']
+    paths:
+      - '.github/workflows/db-doctor.yml'
+      - 'tools/supabase/db_doctor.sh'
+
+concurrency:
+  group: db-doctor
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  doctor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - name: Add postgres to PATH
+        run: ls -d /usr/lib/postgresql/*/bin | tail -1 >> "$GITHUB_PATH"
+      - name: Ask the database
+        env:
+          ACTION: ${{ inputs.action || 'diagnose' }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          SB_DB_URL: ${{ secrets.SB_DB_URL }}
+          SB_URL: ${{ secrets.SB_URL }}
+          SB_SERVICE_ROLE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: bash tools/supabase/db_doctor.sh
