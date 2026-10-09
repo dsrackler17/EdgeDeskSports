@@ -54,6 +54,10 @@ const MON = Date.parse('2026-10-05T13:30:00Z'), WED = Date.parse('2026-10-07T13:
 const art = ART.load();
 const TL = ART.teamLists(art);
 const snapAt = (t) => CE.research.fromArtifacts(art, { now: t });
+/* the committed record as it stood before the week of t was graded: the live
+   record keeps grading games, so "no graded weekend" is built, never assumed */
+const ungradedAt = (t) => Object.assign({}, art, { records: Object.fromEntries(Object.entries(art.records || {}).map(([lg, rec]) => [lg, rec && rec.games
+  ? Object.assign({}, rec, { games: (Array.isArray(rec.games) ? rec.games : Object.values(rec.games)).filter((g) => Date.parse(g.kickoff) < t - 7 * 864e5) }) : rec])) });
 const currentOf = (snap) => { const c = {}; ['cfb', 'nfl'].forEach((lg) => ((snap[lg] && snap[lg].games) || []).forEach((p) => { c[p.game_id] = p; })); return c; };
 const clone = (x) => JSON.parse(JSON.stringify(x));
 const quiet = () => {};
@@ -96,7 +100,7 @@ function tempStore() {
   chk('B headlines lead with a storyline and fit a search result', [bMon, bWed, bFri].every((b) => b.article.title.length >= 20 && b.article.title.length <= 70), [bMon, bWed, bFri].map((b) => b.article.title));
   chk('B every headline number is in the research', [bMon, bWed, bFri].every((b) => (b.article.title.match(/\d+(?:\.\d+)?/g) || []).every((n) => CE.evidence(b.o).numbers[String(+n)])));
   const late = Date.parse('2026-10-12T15:00:00Z');
-  const noReview = FP.build('weekend_review', snapAt(late), { now: late });
+  const noReview = FP.build('weekend_review', CE.research.fromArtifacts(ungradedAt(late), { now: late }), { now: late });
   chk('B no graded weekend: no review, and why', !noReview.ok && /no graded games/.test(noReview.reason), noReview);
   const empty = FP.build('storylines', { cfb: null, nfl: null, results: {}, sources: [] }, { now: WED });
   chk('B no slate: no storylines, and why', !empty.ok && /storyline/.test(empty.reason));
@@ -274,7 +278,8 @@ function tempStore() {
     fs.unlinkSync(path.join(S.dir, sWed.id + '.json'));
     const h1 = await go(Date.parse('2026-10-08T15:00:00Z'));
     chk('D a published record a push race removed is written back', h1.healed.indexOf(sWed.id) >= 0 && S.load().some((r) => r.id === sWed.id && r.status === 'published'), h1);
-    const nr = await go(Date.parse('2026-10-12T13:30:00Z'));
+    const nrAt = Date.parse('2026-10-12T13:30:00Z');
+    const nr = await go(nrAt, { art: ungradedAt(nrAt) });
     chk('D a Monday with no graded weekend is recorded as skipped, with the reason', nr.results[0].status === 'skipped' && row('feature-2026-10-12-weekend-review').status === 'skipped' && /no graded games/.test(row('feature-2026-10-12-weekend-review').reason));
     chk('D every published file is a feature the build will accept', S.load().filter((r) => r.status === 'published').every((r) => MODEL.publishable(r).ok));
     chk('D the owner turns it off; nothing runs', own(`select public.content_engine_fp_settings_save('{"fp_mode":"off"}'::jsonb) ->> 'ok';`) === 'true' && (await go(Date.parse('2026-10-14T13:30:00Z'))).ran === false);
