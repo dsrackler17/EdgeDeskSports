@@ -1311,8 +1311,9 @@
       if (isNew) body.slug = CE.util.slugify($('pbSlug').value || $('pbName').value); else body.id = p.id;
       try {
         var r = await rpc('content_engine_publisher_save', { p: body });
-        say('pbMsg', r.ok ? 'ok' : 'err', r.ok ? 'Saved.' : 'Not saved: ' + (r.detail || r.reason));
+        /* the reloaded form replaces #pbMsg: say it after, or "Saved." vanishes */
         if (r.ok) { await loadPublishers(); editPublisher(publisherById(r.id)); }
+        say('pbMsg', r.ok ? 'ok' : 'err', r.ok ? 'Saved.' : 'Not saved: ' + (r.detail || r.reason));
       } catch (er) { fail('pbMsg', er); }
     };
     if (!isNew) wireBenchmarks(p);
