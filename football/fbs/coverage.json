@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-09T04:30:34.659Z",
+ "generated_at": "2026-10-09T05:43:00.358Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,29 +119,29 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 117,
+  "total": 113,
   "by_group": {
-   "other": 60,
    "p4": 59,
+   "other": 56,
    "independent": 3
   },
   "by_matchup": {
-   "conference": 108,
+   "conference": 104,
    "non_conference": 6,
    "fbs_fcs": 3
   },
   "by_conference": {
-   "cusa": 6,
-   "american": 14,
-   "sunbelt": 11,
    "acc": 16,
    "bigten": 15,
    "pac12": 6,
    "mwc": 10,
    "big12": 13,
    "sec": 15,
+   "american": 13,
    "mac": 14,
-   "independents": 3
+   "sunbelt": 10,
+   "independents": 3,
+   "cusa": 4
   },
   "fbs_fcs_in_source": 3
  },
@@ -196,22 +196,22 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 117
+  "PREDICTED": 113
  },
  "weather": {
-  "requested": 111,
-  "answered": 111,
-  "dome": 5,
+  "requested": 108,
+  "answered": 108,
+  "dome": 4,
   "no_venue": 0,
   "failed": 0,
   "carried": 0,
   "carry_dropped": 0,
   "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "111 of 111 outdoor game(s) got a forecast; 5 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "108 of 108 outdoor game(s) got a forecast; 4 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 117
+  "NO_MARKET": 113
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
@@ -280,12 +280,12 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 58,
-    "total": 117,
+    "non_power_games": 54,
+    "total": 113,
     "example": [
-     "Sam Houston @ Liberty",
-     "Missouri State @ Western Kentucky",
-     "South Florida @ UTSA"
+     "Washington State @ Utah State",
+     "Wyoming @ San José State",
+     "Tulane @ Army"
     ]
    }
   },
@@ -300,7 +300,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 108,
+    "conference_games": 104,
     "wrong": 0
    }
   },
@@ -334,8 +334,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 117,
-    "audit_total": 117
+    "slate": 113,
+    "audit_total": 113
    }
   },
   {
