@@ -5,7 +5,7 @@
  "season": 2026,
  "model": "EdgeDesk Football Engine · NFL",
  "projection_source": "football/nfl/slate.json",
- "updated_at": "2026-10-09T00:29:32.742Z",
+ "updated_at": "2026-10-09T04:31:57.502Z",
  "conventions": {
   "home_line": "the line the HOME side lays, as a book prints it: negative = home favoured",
   "clv_points": "points the market moved toward the side the model leaned, from the recorded quote to the close; positive = the market came to the model",
@@ -7695,20 +7695,109 @@
     "book": "consensus",
     "at": "2026-10-05T16:09:49.467Z"
    },
-   "close": null,
-   "final": null,
+   "close": {
+    "home_line": -9.5,
+    "total": 49.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "prices": {
+     "home": -108,
+     "away": -112,
+     "over": -110,
+     "under": -110,
+     "home_ml": -535,
+     "away_ml": 400
+    }
+   },
+   "final": {
+    "home_score": 16,
+    "away_score": 24,
+    "source": "nflverse",
+    "at": "2026-10-09T04:31:57.502Z"
+   },
    "grade": {
-    "status": "AWAITING_FINAL",
-    "spread": null,
-    "total": null,
-    "su": null,
-    "clv_entry": null,
-    "clv_pick": null,
-    "error": null,
-    "brier": null,
+    "status": "GRADED",
+    "spread": {
+     "side": "away",
+     "gap": 3.72,
+     "result": "win"
+    },
+    "total": {
+     "side": "over",
+     "gap": 1.11,
+     "result": "loss"
+    },
+    "su": {
+     "side": "home",
+     "result": "loss"
+    },
+    "clv_entry": {
+     "spread": {
+      "side": "away",
+      "market": -9.5,
+      "close": -9.5,
+      "gap": 5.66,
+      "pts": 0
+     },
+     "total": {
+      "side": "over",
+      "market": 46.5,
+      "close": 49.5,
+      "gap": 4.01,
+      "pts": 3
+     }
+    },
+    "clv_pick": {
+     "spread": {
+      "side": "away",
+      "market": -9.5,
+      "close": -9.5,
+      "gap": 3.72,
+      "pts": 0
+     },
+     "total": {
+      "side": "over",
+      "market": 47.5,
+      "close": 49.5,
+      "gap": 3.11,
+      "pts": 2
+     }
+    },
+    "error": {
+     "margin": -8,
+     "model_margin_err": 13.78,
+     "close_margin_err": 17.5,
+     "model_total_err": 10.61,
+     "close_total_err": 9.5
+    },
+    "brier": 0.4976,
     "beyond_guard": false,
     "reliability": null,
-    "pnl": null
+    "pnl": {
+     "spread": {
+      "side": "away",
+      "odds": -112,
+      "basis": "close",
+      "result": "win",
+      "units": 0.8929
+     },
+     "total": {
+      "side": "over",
+      "odds": -110,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "ml": {
+      "side": "home",
+      "odds": -535,
+      "basis": "close",
+      "result": "loss",
+      "units": -1
+     },
+     "units": -1.1071,
+     "bets": 3
+    }
    }
   },
   "2026_05_PHI_JAX": {
