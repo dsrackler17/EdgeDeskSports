@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T23:00:00.000Z",
   "game_when_label": "2026-10-10 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-08T18:48:19.127Z",
-  "generated_at": "2026-10-08T18:48:19.127Z",
+  "updated_at": "2026-10-09T10:24:18.082Z",
+  "generated_at": "2026-10-09T10:24:18.082Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -41,7 +41,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-08. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
+  "research_source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-09. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at Hard Rock Bet on 2026-10-06, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
@@ -129,11 +129,35 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 1,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for UNLV and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for North Dakota State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Mountain West Conference requires an availability report for this game: filed two days before a conference game with an update three hours before kickoff"
+          },
           {
             "field": "off_field",
             "side": "home",
@@ -245,7 +269,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T19:30:00.000Z",
-        "retrieved_at": "2026-10-08T18:30:28.705Z"
+        "retrieved_at": "2026-10-09T05:41:41.040Z"
       },
       "home": {
         "team": "UNLV",
@@ -317,9 +341,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T19:30:00.000Z",
-        "retrieved_at": "2026-10-08T18:30:28.705Z"
+        "retrieved_at": "2026-10-09T05:41:41.040Z"
       },
-      "generated_at": "2026-10-08T18:31:10.795Z",
+      "generated_at": "2026-10-09T05:42:22.554Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -638,15 +662,15 @@
               "a": {
                 "v": "54.5",
                 "n": 54.5,
-                "rank": "#119 of 138",
-                "rank_n": 119,
+                "rank": "#118 of 138",
+                "rank_n": 118,
                 "note": null
               },
               "h": {
                 "v": "57.0",
                 "n": 57,
-                "rank": "#78 of 138",
-                "rank_n": 78,
+                "rank": "#77 of 138",
+                "rank_n": 77,
                 "note": null
               },
               "edge": {
@@ -734,8 +758,8 @@
               "a": {
                 "v": "53.6",
                 "n": 53.6,
-                "rank": "#135 of 138",
-                "rank_n": 135,
+                "rank": "#134 of 138",
+                "rank_n": 134,
                 "note": null
               },
               "h": {
@@ -748,7 +772,7 @@
               "edge": {
                 "side": "h",
                 "gap": 3.1,
-                "rank_gap": 88
+                "rank_gap": 87
               }
             },
             {
@@ -972,13 +996,13 @@
         },
         {
           "k": "Running backs",
-          "rank_gap": 88,
+          "rank_gap": 87,
           "gap": 3.1,
           "lead": "UNLV",
           "trail": "North Dakota State",
           "lead_cell": "56.7 · #47 of 138",
-          "trail_cell": "53.6 · #135 of 138",
-          "text": "UNLV 56.7 (#47 of 138) vs North Dakota State 53.6 (#135 of 138) — 88 places on the national board."
+          "trail_cell": "53.6 · #134 of 138",
+          "text": "UNLV 56.7 (#47 of 138) vs North Dakota State 53.6 (#134 of 138) — 87 places on the national board."
         },
         {
           "k": "Receivers",
@@ -1099,7 +1123,7 @@
           "team": "North Dakota State",
           "label": "QB room",
           "v": "54.5",
-          "rank": "#119 of 138",
+          "rank": "#118 of 138",
           "note": null
         },
         "def": {
@@ -1110,7 +1134,7 @@
           "note": null
         },
         "complete": true,
-        "read": "North Dakota State’s QB room rates 54.5 (#119 of 138) against UNLV’s secondary at 54.1 (#60 of 138). UNLV’s unit stands higher among its own position group, by 59 places."
+        "read": "North Dakota State’s QB room rates 54.5 (#118 of 138) against UNLV’s secondary at 54.1 (#60 of 138). UNLV’s unit stands higher among its own position group, by 58 places."
       },
       {
         "title": "UNLV QB room vs North Dakota State secondary",
@@ -1118,7 +1142,7 @@
           "team": "UNLV",
           "label": "QB room",
           "v": "57.0",
-          "rank": "#78 of 138",
+          "rank": "#77 of 138",
           "note": null
         },
         "def": {
@@ -1129,7 +1153,7 @@
           "note": null
         },
         "complete": true,
-        "read": "UNLV’s QB room rates 57.0 (#78 of 138) against North Dakota State’s secondary at 55.9 (#37 of 138). North Dakota State’s unit stands higher among its own position group, by 41 places."
+        "read": "UNLV’s QB room rates 57.0 (#77 of 138) against North Dakota State’s secondary at 55.9 (#37 of 138). North Dakota State’s unit stands higher among its own position group, by 40 places."
       },
       {
         "title": "North Dakota State offensive line vs UNLV defensive line",
@@ -1175,7 +1199,7 @@
           "team": "North Dakota State",
           "label": "running backs",
           "v": "53.6",
-          "rank": "#135 of 138",
+          "rank": "#134 of 138",
           "note": null
         },
         "def": {
@@ -1186,7 +1210,7 @@
           "note": null
         },
         "complete": true,
-        "read": "North Dakota State’s running backs rates 53.6 (#135 of 138) against UNLV’s linebackers at 49.1 (#123 of 138). UNLV’s unit stands higher among its own position group, by 12 places."
+        "read": "North Dakota State’s running backs rates 53.6 (#134 of 138) against UNLV’s linebackers at 49.1 (#123 of 138). UNLV’s unit stands higher among its own position group, by 11 places."
       },
       {
         "title": "UNLV running backs vs North Dakota State linebackers",
@@ -1391,7 +1415,7 @@
         "bullets": [
           "Playing at UNLV is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality (+4.1 pts).",
           "Depth: UNLV 53.9 (#45 of 138) vs North Dakota State 51.7 (#138 of 138) — 93 places on the national board.",
-          "Running backs: UNLV 56.7 (#47 of 138) vs North Dakota State 53.6 (#135 of 138) — 88 places on the national board.",
+          "Running backs: UNLV 56.7 (#47 of 138) vs North Dakota State 53.6 (#134 of 138) — 87 places on the national board.",
           "Receivers: UNLV 55.3 (#55 of 138) vs North Dakota State 52.6 (#136 of 138) — 81 places on the national board."
         ]
       },
@@ -1431,7 +1455,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 44h old",
+          "text": "odds is 59h old",
           "widening": null
         },
         {
@@ -1541,12 +1565,13 @@
       "model_raw": "UNLV -1.2",
       "market": "UNLV +3.5",
       "difference": "4.7 points",
-      "difference_n": 4.704256743987745,
+      "difference_n": 4.7,
+      "difference_exact": 4.704256743987745,
       "total_model": "51.1",
       "total_market": "47.5",
       "book": "captured consensus (stale) · 1 book · best at Hard Rock Bet",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "44 hours old",
+      "capture_age": "59 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1596,11 +1621,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 87,
+        "pct": 83,
         "tier": "STRONG",
-        "text": "87 · STRONG",
-        "sub": "main deduction: North Dakota State’s availability report is not due yet",
-        "score": 87,
+        "text": "83 · STRONG",
+        "sub": "main deduction: North Dakota State’s availability sources refused",
+        "score": 83,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1614,7 +1639,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.8,
+            "score": 9.3,
             "max": 20
           },
           {
@@ -1626,7 +1651,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.9,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1642,23 +1667,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "North Dakota State’s availability report is not due yet; the impact of North Dakota State’s absences cannot be assessed: no graded availability read",
+        "main_deduction": "North Dakota State’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of North Dakota State’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
         "next_actions": [
           {
-            "action": "Re-read availability inside the filing window (North Dakota State)",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "action": "Restore an injury/availability source for North Dakota State",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Re-read availability inside the filing window (UNLV)",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "action": "Restore an injury/availability source for UNLV",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
             "action": "Refresh the market quote",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1821,8 +1846,8 @@
         },
         {
           "k": "QB room",
-          "a": "54.5  #119",
-          "h": "57.0  #78",
+          "a": "54.5  #118",
+          "h": "57.0  #77",
           "note": null
         },
         {
@@ -1839,7 +1864,7 @@
         },
         {
           "k": "Running backs",
-          "a": "53.6  #135",
+          "a": "53.6  #134",
           "h": "56.7  #47",
           "note": null
         },
@@ -1901,11 +1926,11 @@
     ],
     "context_label": "RESEARCH CONTEXT — position-group, player-quality, roster and scheme figures explain this matchup and move no priced number.",
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
-    "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-08. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
+    "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-09. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-08T18:48:19.127Z"
+    "at": "2026-10-09T10:24:18.082Z"
   }
 }

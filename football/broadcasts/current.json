@@ -1,0 +1,38 @@
+{
+ "schema": "edgedesk_broadcast_listings_v1",
+ "version": "edgedesk_broadcast/1",
+ "generated_at": "2026-10-09T09:49:00.586Z",
+ "week": 6,
+ "source": {
+  "name": "ESPN scoreboard",
+  "url": "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard",
+  "tier": "public, keyless",
+  "cost": "none"
+ },
+ "rule": "A listing is what ESPN’s scoreboard carried at retrieved_at; it is verified by lib/edgedesk_broadcast.js and printed only when CONFIRMED and fresh. A failed fetch keeps the previous listing with its real retrieval time.",
+ "fetches": [
+  {
+   "day": "20261009",
+   "url": "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&limit=300&dates=20261009",
+   "ok": false,
+   "status": 403,
+   "error": "HTTP 403",
+   "retrieved_at": null
+  },
+  {
+   "day": "20261010",
+   "url": "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?groups=80&limit=300&dates=20261010",
+   "ok": false,
+   "status": 403,
+   "error": "HTTP 403",
+   "retrieved_at": null
+  }
+ ],
+ "coverage": {
+  "games": 51,
+  "refreshed": 0,
+  "kept_from_previous": 0
+ },
+ "listings": {},
+ "changes": []
+}
