@@ -1,6 +1,6 @@
 {
  "schema": "cfb_ops_v1",
- "generated_at": "2026-10-09T16:07:48.613Z",
+ "generated_at": "2026-10-09T16:35:01.902Z",
  "season": 2026,
  "in_season": true,
  "reads": [
@@ -183,7 +183,7 @@
    "started_at": "2026-10-08T17:37:22.098Z",
    "completed_at": "2026-10-08T17:39:06.704Z",
    "last_published_at": "2026-10-08T17:39:06.704Z",
-   "age_minutes": 1349,
+   "age_minutes": 1376,
    "stage_groups": {
     "score_ingestion_status": "OK",
     "pbp_status": "OK",
@@ -279,7 +279,7 @@
      "source": "espn_scoreboard",
      "origin": "Model Lab circuit breaker",
      "status": "HEALTHY",
-     "last_success": "2026-10-09T16:07:28.000Z",
+     "last_success": "2026-10-09T16:34:48.000Z",
      "age_minutes": 0,
      "error_rate": 0,
      "incident": null
@@ -288,7 +288,7 @@
      "source": "cfbfastr_schedule",
      "origin": "Model Lab circuit breaker",
      "status": "HEALTHY",
-     "last_success": "2026-10-09T16:07:28.000Z",
+     "last_success": "2026-10-09T16:34:48.000Z",
      "age_minutes": 0,
      "error_rate": 0,
      "incident": null
@@ -298,7 +298,7 @@
   },
   "odds_age": {
    "status": "OK",
-   "newest_quote_at": "2026-10-09T16:07:28.000Z",
+   "newest_quote_at": "2026-10-09T16:34:48.000Z",
    "age_minutes": 0,
    "stale_after_minutes": 180,
    "games_within_48h": 51,
@@ -310,7 +310,7 @@
    "status": "OK",
    "pbp_status": "HEALTHY",
    "last_success": "2026-10-08T17:37:22.098Z",
-   "age_minutes": 1350,
+   "age_minutes": 1378,
    "coverage": 1,
    "error_rate": 0,
    "detail": "final games with play-by-play; DATA_ERROR share 0.0, partial share 0.0331",
@@ -319,7 +319,7 @@
   "failed_jobs": {
    "status": "OK",
    "failed": [],
-   "lab_last_run_at": "2026-10-09T16:07:28.000Z",
+   "lab_last_run_at": "2026-10-09T16:34:48.000Z",
    "lab_last_run_age_minutes": 0,
    "note": "Mirror / workflow failures and heartbeats live in Postgres (cfb_job_heartbeat_status, cfb_incidents_current) and GitHub Actions; this file sees what the jobs committed."
   },
@@ -1691,7 +1691,7 @@
     "YELLOW": 62,
     "RED": 0
    },
-   "canonical_projections_as_of": "2026-10-09T16:07:39.587Z",
+   "canonical_projections_as_of": "2026-10-09T16:34:56.482Z",
    "canonical_by_level": {
     "1": 23,
     "2": 87,
@@ -1701,7 +1701,7 @@
   "predictions": {
    "status": "OK",
    "v21_current_generated_at": "2026-10-08T17:37:22Z",
-   "v21_current_age_minutes": 1350,
+   "v21_current_age_minutes": 1378,
    "v21_rows": 117,
    "v21_mode": "shadow",
    "frozen_snapshot_files": 2,
@@ -1710,8 +1710,8 @@
      "model_version": "edgedesk_cfb_p4_v1.0.0",
      "label": "V1",
      "role": "champion",
-     "snapshots": 730,
-     "latest_snapshot_at": "2026-10-09T16:07:28.000Z",
+     "snapshots": 731,
+     "latest_snapshot_at": "2026-10-09T16:34:48.000Z",
      "upcoming_games": 113,
      "avg_confidence_upcoming": 80.4
     },
@@ -1719,8 +1719,8 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "label": "V2 · candidate 001",
      "role": "candidate",
-     "snapshots": 984,
-     "latest_snapshot_at": "2026-10-09T16:07:28.000Z",
+     "snapshots": 985,
+     "latest_snapshot_at": "2026-10-09T16:34:48.000Z",
      "upcoming_games": 110,
      "avg_confidence_upcoming": 77.7
     },
@@ -1728,8 +1728,8 @@
      "model_version": "edgedesk_cfb_v2.1.0",
      "label": "V2.1 · hardened",
      "role": "challenger",
-     "snapshots": 984,
-     "latest_snapshot_at": "2026-10-09T16:07:28.000Z",
+     "snapshots": 985,
+     "latest_snapshot_at": "2026-10-09T16:34:48.000Z",
      "upcoming_games": 110,
      "avg_confidence_upcoming": 77.7
     }
@@ -1741,12 +1741,12 @@
    "betting_enabled": false,
    "policy": "cfb_decision_policy_v1",
    "policy_status": "SHADOW",
-   "decision_rows": 1588,
+   "decision_rows": 1592,
    "by_role_status": {
     "CURRENT:LEAN": 136,
     "CHALLENGER:RESEARCH": 162,
-    "CURRENT:PASS": 658,
-    "CHALLENGER:PASS": 612,
+    "CURRENT:PASS": 660,
+    "CHALLENGER:PASS": 614,
     "CHALLENGER:NO_BET": 20
    },
    "shadow_counts": {
@@ -1765,339 +1765,17 @@
   "warnings": {
    "status": "OK",
    "warnings": [],
-   "anomaly_rows": 77,
+   "anomaly_rows": 78,
    "anomaly_baseline_weeks": 3
   },
   "incidents": {
-   "status": "CRITICAL",
-   "open": [
-    {
-     "incident_key": "DATABASE_TIMEOUT:cfb_weekly_refresh:cfb_team_week_state:2026-10-05",
-     "status": "OPEN",
-     "severity": "WARNING",
-     "error_code": "DATABASE_TIMEOUT",
-     "runlog_class": "DATABASE",
-     "job": "cfb_weekly_refresh",
-     "occurrences": 1,
-     "opened_at": "2026-10-05T10:10:21.879891+00:00",
-     "last_at": "2026-10-05T10:10:21.879891+00:00",
-     "message": "HTTP 500 {\"code\":\"57014\",\"details\":null,\"hint\":null,\"message\":\"canceling statement due to statement timeout\"}"
-    },
-    {
-     "incident_key": "DATABASE_TIMEOUT:cfb_weekly_refresh:cfb_team_week_state:2026-10-06",
-     "status": "OPEN",
-     "severity": "WARNING",
-     "error_code": "DATABASE_TIMEOUT",
-     "runlog_class": "DATABASE",
-     "job": "cfb_weekly_refresh",
-     "occurrences": 2,
-     "opened_at": "2026-10-06T12:13:38.061444+00:00",
-     "last_at": "2026-10-06T18:24:39.384035+00:00",
-     "message": "HTTP 500 {\"code\":\"57014\",\"details\":null,\"hint\":null,\"message\":\"canceling statement due to statement timeout\"}"
-    },
-    {
-     "incident_key": "JOB_FAILED:cfb_lab_hourly:2026-10-03",
-     "status": "OPEN",
-     "severity": "CRITICAL",
-     "error_code": "UNKNOWN",
-     "runlog_class": "UNKNOWN",
-     "job": "cfb_lab_hourly",
-     "occurrences": 1,
-     "opened_at": "2026-10-03T07:22:46.443817+00:00",
-     "last_at": "2026-10-03T07:22:46.443817+00:00",
-     "message": "cfb_lab_hourly finished with status failure — see the run log for correlation id cfb-lab-37105101433-1"
-    },
-    {
-     "incident_key": "JOB_FAILED:cfb_lab_hourly:2026-10-04",
-     "status": "OPEN",
-     "severity": "CRITICAL",
-     "error_code": "UNKNOWN",
-     "runlog_class": "UNKNOWN",
-     "job": "cfb_lab_hourly",
-     "occurrences": 6,
-     "opened_at": "2026-10-04T03:12:13.081923+00:00",
-     "last_at": "2026-10-04T10:31:25.835744+00:00",
-     "message": "cfb_lab_hourly finished with status failure — see the run log for correlation id cfb-lab-37194159132-1"
-    },
-    {
-     "incident_key": "JOB_FAILED:cfb_lab_hourly:2026-10-09",
-     "status": "OPEN",
-     "severity": "CRITICAL",
-     "error_code": "UNKNOWN",
-     "runlog_class": "UNKNOWN",
-     "job": "cfb_lab_hourly",
-     "occurrences": 1,
-     "opened_at": "2026-10-09T09:54:27.353736+00:00",
-     "last_at": "2026-10-09T09:54:27.353736+00:00",
-     "message": "cfb_lab_hourly finished with status failure — see the run log for correlation id cfb-lab-37912287021-1"
-    },
-    {
-     "incident_key": "JOB_FAILED:cfb_weekly_refresh:2026-10-01",
-     "status": "OPEN",
-     "severity": "CRITICAL",
-     "error_code": "UNKNOWN",
-     "runlog_class": "UNKNOWN",
-     "job": "cfb_weekly_refresh",
-     "occurrences": 1,
-     "opened_at": "2026-10-01T17:13:50.362454+00:00",
-     "last_at": "2026-10-01T17:13:50.362454+00:00",
-     "message": "cfb_weekly_refresh finished with status failure — see the run log for correlation id cfb-v2-shadow-36897288073-1"
-    },
-    {
-     "incident_key": "JOB_FAILED:cfb_weekly_refresh:2026-10-02",
-     "status": "OPEN",
-     "severity": "CRITICAL",
-     "error_code": "UNKNOWN",
-     "runlog_class": "UNKNOWN",
-     "job": "cfb_weekly_refresh",
-     "occurrences": 1,
-     "opened_at": "2026-10-02T10:53:16.706815+00:00",
-     "last_at": "2026-10-02T10:53:16.706815+00:00",
-     "message": "cfb_weekly_refresh finished with status failure — see the run log for correlation id cfb-v2-shadow-36997378777-1"
-    },
-    {
-     "incident_key": "JOB_FAILED:cfb_weekly_refresh:2026-10-05",
-     "status": "OPEN",
-     "severity": "CRITICAL",
-     "error_code": "UNKNOWN",
-     "runlog_class": "UNKNOWN",
-     "job": "cfb_weekly_refresh",
-     "occurrences": 2,
-     "opened_at": "2026-10-05T10:11:28.32997+00:00",
-     "last_at": "2026-10-05T19:17:12.796921+00:00",
-     "message": "cfb_weekly_refresh finished with status failure — see the run log for correlation id cfb-v2-shadow-37361759693-1"
-    },
-    {
-     "incident_key": "JOB_FAILED:cfb_weekly_refresh:2026-10-06",
-     "status": "OPEN",
-     "severity": "CRITICAL",
-     "error_code": "UNKNOWN",
-     "runlog_class": "UNKNOWN",
-     "job": "cfb_weekly_refresh",
-     "occurrences": 2,
-     "opened_at": "2026-10-06T12:15:23.290113+00:00",
-     "last_at": "2026-10-06T18:25:49.63944+00:00",
-     "message": "cfb_weekly_refresh finished with status failure — see the run log for correlation id cfb-v2-shadow-37510546736-1"
-    },
-    {
-     "incident_key": "JOB_FAILED:cfb_weekly_refresh:2026-10-07",
-     "status": "OPEN",
-     "severity": "CRITICAL",
-     "error_code": "UNKNOWN",
-     "runlog_class": "UNKNOWN",
-     "job": "cfb_weekly_refresh",
-     "occurrences": 1,
-     "opened_at": "2026-10-07T17:39:11.441338+00:00",
-     "last_at": "2026-10-07T17:39:11.441338+00:00",
-     "message": "cfb_weekly_refresh finished with status failure — see the run log for correlation id cfb-v2-shadow-37659951258-1"
-    },
-    {
-     "incident_key": "PROVIDER_TRANSIENT:cfb_lab_hourly:cfb_lab_audit_log:2026-10-04",
-     "status": "OPEN",
-     "severity": "CRITICAL",
-     "error_code": "PROVIDER_TRANSIENT",
-     "runlog_class": "TRANSIENT",
-     "job": "cfb_lab_hourly",
-     "occurrences": 1,
-     "opened_at": "2026-10-04T03:10:24.140895+00:00",
-     "last_at": "2026-10-04T03:10:24.140895+00:00",
-     "message": "This operation was aborted"
-    },
-    {
-     "incident_key": "PROVIDER_TRANSIENT:cfb_lab_hourly:cfb_lab_experiments:2026-10-03",
-     "status": "OPEN",
-     "severity": "CRITICAL",
-     "error_code": "PROVIDER_TRANSIENT",
-     "runlog_class": "TRANSIENT",
-     "job": "cfb_lab_hourly",
-     "occurrences": 1,
-     "opened_at": "2026-10-03T07:22:34.530611+00:00",
-     "last_at": "2026-10-03T07:22:34.530611+00:00",
-     "message": "This operation was aborted"
-    },
-    {
-     "incident_key": "PROVIDER_TRANSIENT:cfb_lab_hourly:cfb_lab_model_roles:2026-10-09",
-     "status": "OPEN",
-     "severity": "CRITICAL",
-     "error_code": "PROVIDER_TRANSIENT",
-     "runlog_class": "TRANSIENT",
-     "job": "cfb_lab_hourly",
-     "occurrences": 1,
-     "opened_at": "2026-10-09T09:54:25.629993+00:00",
-     "last_at": "2026-10-09T09:54:25.629993+00:00",
-     "message": "This operation was aborted"
-    },
-    {
-     "incident_key": "PROVIDER_TRANSIENT:cfb_lab_hourly:gate:2026-10-03",
-     "status": "OPEN",
-     "severity": "WARNING",
-     "error_code": "PROVIDER_TRANSIENT",
-     "runlog_class": "TRANSIENT",
-     "job": "cfb_lab_hourly",
-     "occurrences": 6,
-     "opened_at": "2026-10-03T07:12:27.962349+00:00",
-     "last_at": "2026-10-03T07:12:44.936686+00:00",
-     "message": "job lock unavailable: rpc cfb_job_lock: This operation was aborted"
-    },
-    {
-     "incident_key": "PROVIDER_TRANSIENT:cfb_lab_hourly:gate:2026-10-04",
-     "status": "OPEN",
-     "severity": "WARNING",
-     "error_code": "PROVIDER_TRANSIENT",
-     "runlog_class": "TRANSIENT",
-     "job": "cfb_lab_hourly",
-     "occurrences": 4,
-     "opened_at": "2026-10-04T02:56:08.710143+00:00",
-     "last_at": "2026-10-04T10:08:07.795735+00:00",
-     "message": "kill switch unreadable: unreadable (PROVIDER_TRANSIENT): flag cfb_model_lab_enabled: This operation was aborted"
-    },
-    {
-     "incident_key": "PROVIDER_TRANSIENT:cfb_lab_hourly:gate:2026-10-09",
-     "status": "OPEN",
-     "severity": "WARNING",
-     "error_code": "PROVIDER_TRANSIENT",
-     "runlog_class": "TRANSIENT",
-     "job": "cfb_lab_hourly",
-     "occurrences": 1,
-     "opened_at": "2026-10-09T09:54:16.892+00:00",
-     "last_at": "2026-10-09T09:54:16.892+00:00",
-     "message": "kill switch unreadable: unreadable (PROVIDER_TRANSIENT): flag cfb_model_lab_enabled: This operation was aborted"
-    }
-   ],
-   "detail": "cfb_incidents_current"
+   "status": "UNKNOWN",
+   "open": [],
+   "detail": "incidents live in Postgres (cfb_incidents_current); this build had no database credentials"
   }
  },
- "database": {
-  "checks": [
-   {
-    "check_name": "database",
-    "status": "OK",
-    "detail": "connected: 17.6, postgres",
-    "observed": {
-     "now": "2026-10-09T16:07:48.613+00:00",
-     "in_season": true
-    }
-   },
-   {
-    "check_name": "contracts",
-    "status": "OK",
-    "detail": "cfb_lab, cfb_weekly, cfb_decision and cfb_personnel contracts are applied",
-    "observed": null
-   },
-   {
-    "check_name": "model_manifest",
-    "status": "WARNING",
-    "detail": "production edgedesk_cfb_v2.1.0 (ELIGIBLE_FOR_PROMOTION; governance role challenger), champion edgedesk_cfb_p4_v1.0.0, champion_selection NOT_RUN, commit cf9362600044 (DIRTY working tree)",
-    "observed": {
-     "artifacts": 14,
-     "deployed_at": "2026-09-29T12:45:33.409+00:00",
-     "manifest_id": "cfbm_afbfd4eddc58017e039303a8"
-    }
-   },
-   {
-    "check_name": "latest_team_state",
-    "status": "OK",
-    "detail": "newest team state as of 2026-10-06 12:00:00+00 (4568 min old), 2620 rows",
-    "observed": {
-     "rows": 2620,
-     "as_of": "2026-10-06T12:00:00+00:00",
-     "age_minutes": 4568
-    }
-   },
-   {
-    "check_name": "odds_freshness",
-    "status": "OK",
-    "detail": "newest odds_api quote 4 min old; games within 48 h: t",
-    "observed": {
-     "age_minutes": 4,
-     "newest_quote": "2026-10-09T16:04:01.386+00:00",
-     "games_within_48h": true
-    }
-   },
-   {
-    "check_name": "pbp_freshness",
-    "status": "OK",
-    "detail": "PBP HEALTHY at 2026-10-08 17:37:22.098+00; last successful ingestion 1350 min ago",
-    "observed": {
-     "as_of": "2026-10-08T17:37:22.098+00:00",
-     "status": "HEALTHY",
-     "age_minutes": 1350,
-     "last_success": "2026-10-08T17:37:22.098+00:00"
-    }
-   },
-   {
-    "check_name": "prediction_freshness",
-    "status": "OK",
-    "detail": "newest V2.1 weekly projection 2026-10-06 12:00:00+00 (644 rows); newest Model Lab snapshot 2026-10-09 02:32:46+00 (3169 rows)",
-    "observed": {
-     "lab_rows": 3169,
-     "lab_newest": "2026-10-09T02:32:46+00:00",
-     "weekly_rows": 644,
-     "weekly_newest": "2026-10-06T12:00:00+00:00"
-    }
-   },
-   {
-    "check_name": "cron_heartbeats",
-    "status": "CRITICAL",
-    "detail": "overdue: cfb_lab_hourly (last ok 2026-10-09 08:15:56.996348+00); 7 registered jobs have never sent a heartbeat (not yet wired)",
-    "observed": {
-     "overdue": 1,
-     "never_reported": 7
-    }
-   },
-   {
-    "check_name": "open_incidents",
-    "status": "CRITICAL",
-    "detail": "16 open incidents (11 critical)",
-    "observed": {
-     "open": 16,
-     "critical": 11
-    }
-   },
-   {
-    "check_name": "deadlock_storm",
-    "status": "OK",
-    "detail": "0 deadlocks reported in the last hour",
-    "observed": {
-     "last_hour": 0
-    }
-   },
-   {
-    "check_name": "job_locks",
-    "status": "OK",
-    "detail": "no expired lease",
-    "observed": {
-     "expired": 0
-    }
-   },
-   {
-    "check_name": "partial_sync",
-    "status": "OK",
-    "detail": "every mirrored team-state row belongs to a committed run",
-    "observed": {
-     "orphan_state_rows": 0
-    }
-   },
-   {
-    "check_name": "fail_closed_betting",
-    "status": "OK",
-    "detail": "0 BET decisions in the last 7 days; official BET output is DISABLED",
-    "observed": {
-     "bets_7d": 0,
-     "bet_flag": false
-    }
-   },
-   {
-    "check_name": "feature_flags",
-    "status": "OK",
-    "detail": "cfb_bet_actionable_enabled=false, cfb_decision_engine_enabled=true, cfb_matchup_correction_enabled=false, cfb_model_lab_enabled=true, cfb_player_model_enabled=false, cfb_v1_fallback_enabled=true, cfb_v21_pure_model_enabled=true, cfb_weekly_engine_enabled=true",
-    "observed": null
-   }
-  ],
-  "status": "CRITICAL"
- },
  "system": {
-  "status": "CRITICAL",
+  "status": "WARNING",
   "by_section": {
    "model_version": "OK",
    "last_weekly_run": "OK",
@@ -2109,7 +1787,7 @@
    "predictions": "OK",
    "bet_decisions": "OK",
    "warnings": "OK",
-   "incidents": "CRITICAL"
+   "incidents": "UNKNOWN"
   },
   "rule": "the worst section decides; UNKNOWN is never reported as OK"
  }
