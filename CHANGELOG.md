@@ -1,5 +1,66 @@
 # Changelog
 
+## 2026-10-08 — Content Engine hardening, and EdgeDesk's own Monday/Wednesday/Friday articles
+
+**The content engine now refuses to approve, mark ready or send an article that does not clear a 14-check editorial gate. AI spend runs through a $10 monthly ledger. A business scorecard measures the program against its targets. EdgeDesk can publish up to three of its own articles a week on edgedesksports.com, starting in dry run.** Docs: `docs/content-engine/README.md`.
+
+- **Editorial reliability** (`lib/content_engine.js`):
+  - Projected scores reconcile with the margin and total, to the tenth.
+  - Quarterback states and materiality: no doubt is written about a settled starter.
+  - "Data quality", never "confidence".
+  - Model–market gaps are explained from EdgeDesk's inputs, and the unexplained share is stated.
+  - Weather comes from the committed forecast.
+  - New checks: numbers reconcile, no confidence misuse, quarterback, injury and news claims supported, postgame results reconcile.
+  - Writer fixes: NFL drafts printed `Data quality: undefined/100`; NFL injury counts appeared twice; repeated phrasing.
+- **The editorial gate.**
+  - 14 checks, each finding with evidence and a fix.
+  - Enforced by the database: the approve, transition and send doors, and the table's own trigger.
+  - Unexplained gaps need the owner's written review.
+  - "Fix flagged sections" rebuilds only those sections (no AI).
+- **AI cost protection.**
+  - Worst-case reservation under one lock, settlement from the API's token counts, and a 30-day cache.
+  - A deterministic precheck before any call, and section-only rewrites.
+  - Alerts at 50/75/90%; nothing past 100%.
+  - Estimated spend is kept apart from billed.
+- **Measurement.**
+  - Scorecard with 13 targets, the funnel, direct and assisted attribution, Stripe-reconciled revenue, costs, CAC and the bottleneck.
+  - Weekly summary with sample-size guards.
+- **Templates:** matchup deep dive, conference race, model-vs-market report, postgame model review.
+- **EdgeDesk's own articles.**
+  - Monday Weekend Model Review, Wednesday Storylines, Friday "The Weekend in Five Numbers", in Central Time.
+  - Twelve publication gates; anything less is held for the owner.
+  - A third article type in the existing store and build: server-rendered pages, a features hub with categories and an archive, NewsArticle structured data, one call to action, sitemap.
+  - `features/records/` holds the records; `.github/workflows/edgedesk-features.yml` runs the job.
+  - The owner-only `first_party` table records every run. **Default: dry run.**
+- **Reader funnel** in the Growth Console (`supabase/first_party_funnel.sql`):
+  - Search impressions, organic visits, visits, engaged readers (never under GPC/DNT), research clicks, registrations, trials, paid and revenue, against the 90-day targets.
+- **Two bugs found by the new tests and fixed:**
+  - A NULL row could slip past the first-party publish guard.
+  - A NULL gate time (after an owner review) read as fresh.
+- **Rollback:**
+  - `supabase/content_engine_hardening_rollback.sql`, run after the previous release's `content_engine.sql`; it refuses to run otherwise.
+  - `supabase/first_party_funnel_rollback.sql`.
+  - Both verified on a fresh database, including rolling forward again.
+
+**Redeploy:**
+- the `content_engine` Edge Function;
+- paste `supabase/content_engine.sql`, then `supabase/first_party_funnel.sql`.
+
+**Tests:**
+
+| Suite | Checks |
+|---|---|
+| `content:test` | 301 |
+| `content:sql` | 183 |
+| `content:fn` | 69 |
+| `content:job:test` | 28 |
+| `content:e2e` | 70 |
+| `features:test` | 90 |
+| `features:funnel` | 25 |
+| `features:rehearsal` | 41 steps, against a copy of the site |
+
+The existing article, editorial, site and growth suites are unchanged and green.
+
 ## 2026-10-08 — Content Engine: Save as PDF, and the page always loads its latest code
 
 - **Save as PDF** in the publishing queue (the export row and the *Send it yourself* card). It opens the article's clean, script-free print view, with the tagged EdgeDesk link and the disclaimer, and the browser's print dialog, where *Save as PDF* is the destination. Word stays the format to send for editing.
