@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_live_validation_v1",
- "generated_at": "2026-10-09T05:07:37.559Z",
+ "generated_at": "2026-10-09T06:07:41.132Z",
  "season": 2026,
  "question": "Is the current version actually getting better?",
  "freeze": {
@@ -137,6 +137,28 @@
    "reason": "the pricing path changed: football/cfb_p4/engine.js -- coverProbSpread re-centres the market-conditioned margin PMF by reweighting it in place instead of shifting it a whole number of points, so a tie (margin 0) keeps no mass and the key-number spikes stay on their margins (UConn @ Temple 2026-10-04: the shift put the 'no ties' hole on Temple -3). The fair spread, win probability, sigma and ratings are unchanged; cover and push probabilities move (the mean now lands exactly on the fair spread)",
    "changed_files": [
     "football/cfb_p4/engine.js"
+   ]
+  },
+  {
+   "event": "PATCH",
+   "kind": "PRICING",
+   "version": "edgedesk_cfb_r1+p6",
+   "effective_at": "2026-10-08T21:09:27.438Z",
+   "reason": "the pricing path changed: football/fbs/build_coverage.js -- the slate keeps the feed's start_time_tbd and season_type and labels every kickoff (kickoff_tbd, kickoff_state, kickoff_basis, game_date) and the artifact's current week through lib/edgedesk_schedule.js, so a placeholder midnight-Eastern time is never a confirmed kickoff (docs/system-integrity/AUDIT.md §2). No projection, price, rating or coverage rule changes",
+   "changed_files": [
+    "football/fbs/build_coverage.js"
+   ]
+  },
+  {
+   "event": "PATCH",
+   "kind": "RESEARCH",
+   "version": "edgedesk_cfb_r1.research+r5",
+   "effective_at": "2026-10-08T21:09:27.438Z",
+   "reason": "the research path changed: lib/edgedesk_canon.js, lib/cfb_terminal.js, lib/cfb_research_view.js -- display and classification consistency (docs/system-integrity): every model-market gap is computed from the two displayed lines under one rounding policy (lib/edgedesk_calc.js), so a research status at a threshold edge can move by at most 0.1 point to agree with the gap it prints; the engine's near-pick'em ±1 display floor is no longer a printed or compared number; projected scores are derived from the margin and total; quarterback wording follows lib/edgedesk_availability.js (a dropback split is a measured fact, a missing announcement is not uncertainty). No projection, fair line, win probability or threshold value changes",
+   "changed_files": [
+    "lib/edgedesk_canon.js",
+    "lib/cfb_terminal.js",
+    "lib/cfb_research_view.js"
    ]
   }
  ],
@@ -1301,7 +1323,13 @@
     "what": "pricing code",
     "kind": "SOFTWARE",
     "from": "ace1bbe0c6d64b38",
-    "to": "dbb650846e570ffc"
+    "to": "f6fc9d15df4dc2b3"
+   },
+   {
+    "what": "research-gate code",
+    "kind": "SOFTWARE",
+    "from": "a8260f08e1ec209f",
+    "to": "c250afccd07d92b8"
    },
    {
     "what": "current FBS power rating rebuilt",
@@ -1313,7 +1341,7 @@
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
     "from": "2026-10-02T23:53:17.270Z",
-    "to": "2026-10-09T04:30:34.659Z"
+    "to": "2026-10-09T05:43:00.358Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
@@ -1328,7 +1356,7 @@
     "to": 4
    }
   ],
-  "summary": "SOFTWARE: pricing code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
+  "summary": "SOFTWARE: pricing code · SOFTWARE: research-gate code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
  },
  "lab_alerts": [],
  "definitions": "docs/cfb-validation/DELIVERABLE.md · docs/cfb-lab/METRICS.md"
