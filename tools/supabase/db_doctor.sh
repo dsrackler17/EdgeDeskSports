@@ -62,6 +62,9 @@ sql() { # TITLE QUERY — prints the rows as a table, via the API, else psql
       return
     fi
     echo "(management API SQL answered HTTP ${code}: $(echo "$body" | head -c 300))"
+    # a stalled database answers 544 after a 15s connect timeout on every call;
+    # pay that once, not once per query
+    case "$code" in 5*|000) SQL_VIA="psql" ;; esac
   fi
   if [ -n "${SB_DB_URL:-}" ]; then
     PGCONNECT_TIMEOUT=20 psql "$SB_DB_URL" -X -v ON_ERROR_STOP=1 -P pager=off \
@@ -83,6 +86,16 @@ project_status() {
   code="${out##*__HTTP__}"; body="${out%__HTTP__*}"
   echo "GET health -> HTTP ${code}"
   echo "$body" | jq -c '.[] | {name, healthy, status, error: (.error // null)}' 2>/dev/null || echo "$body" | head -c 600
+  # compute size and disk: a database that does not fit the instance's memory
+  # reads from disk on every query, and the smaller instances throttle disk IO
+  # once their burst budget is spent
+  out="$(api GET '/billing/addons' 2>&1)"; code="${out##*__HTTP__}"; body="${out%__HTTP__*}"
+  echo "GET billing/addons -> HTTP ${code}"
+  echo "$body" | jq -c '[.selected_addons[]? | {type, variant: (.variant.identifier // .variant.name // null)}]' 2>/dev/null || echo "$body" | head -c 400
+  out="$(api GET '/config/disk' 2>&1)"; code="${out##*__HTTP__}"; body="${out%__HTTP__*}"
+  echo "GET config/disk -> HTTP ${code}: $(echo "$body" | jq -c . 2>/dev/null || echo "$body" | head -c 300)"
+  out="$(api GET '/config/disk/util' 2>&1)"; code="${out##*__HTTP__}"; body="${out%__HTTP__*}"
+  echo "GET config/disk/util -> HTTP ${code}: $(echo "$body" | jq -c . 2>/dev/null || echo "$body" | head -c 300)"
 }
 
 diagnose() {
