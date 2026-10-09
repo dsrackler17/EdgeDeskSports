@@ -65,7 +65,7 @@ try {
   chk('K a matchup analysis topic is recorded', u && u.ok === true, u);
   const content = (extra) => Object.assign({ title: 'Ole Miss vs. Vanderbilt: Can Vanderbilt’s Pass Rush Get to Chambliss?', slug: 'ole-miss-vs-vanderbilt-pass-rush',
     meta_description: 'm', standfirst: 's', primary_keyword: 'ole miss vs vanderbilt prediction', secondary_keywords: [], sections: SECTIONS, word_count: 12,
-    generator: 'template:content_engine_v2', checks: { ok: true, failed: [], warned: [], readiness: 'HOLD_FOR_REVIEW', checks: [GATE_CHECK] } }, extra || {});
+    generator: 'template:content_engine_v2', checks: { ok: true, failed: [], warned: [], readiness: 'HOLD_FOR_REVIEW', integrity_status: 'PASS', checks: [GATE_CHECK] } }, extra || {});
   const pa = own(`select public.content_engine_article_create(${lit(u.id)}, ${lit(SR.id)}, 'matchup_analysis', 'full_slate', ${lit(JSON.stringify(content()))}::jsonb, null);`);
   chk('K the publisher format is allowed', pa && pa.ok, pa);
   /* EdgeDesk's own pages are not publisher articles (they live in content_engine.first_party) */
@@ -85,18 +85,27 @@ try {
     own(`select public.content_engine_article_review(${lit(id)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
     return db.mustFail(() => own(`select public.content_engine_article_approve(${lit(id)}, ${lit(hashOf(id))});`));
   };
-  /* an article whose checks never ran the evidence gate (an old page) */
-  own(`select public.content_engine_article_save(${lit(pa.id)}, ${lit(JSON.stringify({ checks: { ok: true, failed: [], warned: [] } }))}::jsonb, 'old page', null);`);
+  /* content_engine.sql's integrity guard runs first: the evidence gate on
+     record is not enough without the integrity engine's verdict on this text */
+  own(`select public.content_engine_article_save(${lit(pa.id)}, ${lit(JSON.stringify({ checks: { ok: true, failed: [], warned: [], readiness: 'HOLD_FOR_REVIEW', checks: [GATE_CHECK] } }))}::jsonb, 'no integrity verdict', null);`);
+  own(`select public.content_engine_article_submit(${lit(pa.id)});`);
+  own(`select public.content_engine_article_gate(${lit(pa.id)}, ${lit(hashOf(pa.id))}, ${lit(JSON.stringify(GATE_PASS))}::jsonb);`);
+  own(`select public.content_engine_article_review(${lit(pa.id)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
+  const noIntegrity = own(`select public.content_engine_article_approve(${lit(pa.id)}, ${lit(hashOf(pa.id))});`);
+  chk('E no approval without the integrity verdict, even with the evidence gate on record', noIntegrity && noIntegrity.ok === false && noIntegrity.reason === 'integrity_blocked'
+    && one(`select status from content_engine.articles where id = ${lit(pa.id)};`) === 'in_review', noIntegrity);
+  /* an article whose checks never ran the evidence gate (an old page; the integrity engine passed it) */
+  own(`select public.content_engine_article_save(${lit(pa.id)}, ${lit(JSON.stringify({ checks: { ok: true, failed: [], warned: [], integrity_status: 'PASS' } }))}::jsonb, 'old page', null);`);
   own(`select public.content_engine_article_submit(${lit(pa.id)});`);
   chk('E no approval without the evidence gate in the checks', /football evidence gate/.test(reviewAndApprove(pa.id) || ''));
   chk('E … the article stays in review', one(`select status from content_engine.articles where id = ${lit(pa.id)};`) === 'in_review');
   /* re-checked with the current page: held for review, then approved by the owner */
-  own(`select public.content_engine_article_save(${lit(pa.id)}, ${lit(JSON.stringify({ checks: { ok: true, failed: [], warned: [], readiness: 'HOLD_FOR_REVIEW', checks: [GATE_CHECK] } }))}::jsonb, 'current page', null);`);
+  own(`select public.content_engine_article_save(${lit(pa.id)}, ${lit(JSON.stringify({ checks: { ok: true, failed: [], warned: [], readiness: 'HOLD_FOR_REVIEW', integrity_status: 'PASS', checks: [GATE_CHECK] } }))}::jsonb, 'current page', null);`);
   own(`select public.content_engine_article_submit(${lit(pa.id)});`);
   const err = reviewAndApprove(pa.id);
   chk('E with the gate on record, a held article is approved after the owner’s review', err === null && one(`select status from content_engine.articles where id = ${lit(pa.id)};`) === 'approved', err);
   /* a blocked article (a direct write that claims ok but carries the gate's BLOCKED) */
-  own(`select public.content_engine_article_save(${lit(fp.id)}, ${lit(JSON.stringify({ checks: { ok: true, failed: [], readiness: 'BLOCKED', checks: [GATE_CHECK] } }))}::jsonb, 'blocked', null);`);
+  own(`select public.content_engine_article_save(${lit(fp.id)}, ${lit(JSON.stringify({ checks: { ok: true, failed: [], readiness: 'BLOCKED', integrity_status: 'PASS', checks: [GATE_CHECK] } }))}::jsonb, 'blocked', null);`);
   own(`select public.content_engine_article_submit(${lit(fp.id)});`);
   chk('E never when the gate blocked', /blocks this article/.test(reviewAndApprove(fp.id) || ''));
 
@@ -117,7 +126,7 @@ try {
   chk('M the service role cannot read metrics', !!fails(() => db.service(`select public.content_engine_editorial_metrics(90);`)));
   chk('M nor can anon', !!fails(() => db.anon(`select public.content_engine_editorial_metrics(90);`)));
   /* a revision that failed the evidence gate counts as an unsupported claim caught */
-  own(`select public.content_engine_article_save(${lit(fp.id)}, ${lit(JSON.stringify({ standfirst: 'changed', checks: { ok: false, failed: ['football_evidence', 'causal_supported'], readiness: 'BLOCKED', checks: [GATE_CHECK] } }))}::jsonb, 'gate failed', null);`);
+  own(`select public.content_engine_article_save(${lit(fp.id)}, ${lit(JSON.stringify({ standfirst: 'changed', checks: { ok: false, failed: ['football_evidence', 'causal_supported'], readiness: 'BLOCKED', integrity_status: 'PASS', checks: [GATE_CHECK] } }))}::jsonb, 'gate failed', null);`);
   const m2 = own(`select public.content_engine_editorial_metrics(90);`);
   chk('M failing evidence checks are counted by check', m2.editorial.unsupported_claims_caught.football_evidence >= 1 && m2.editorial.unsupported_claims_caught.causal_supported >= 1 && m2.editorial.unsupported_claims_caught_total >= 2, m2.editorial);
 } catch (e) {
