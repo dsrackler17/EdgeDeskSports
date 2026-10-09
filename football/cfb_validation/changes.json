@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-10-09T09:48:59.543Z",
+ "generated_at": "2026-10-09T16:07:44.294Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
   "available": true,
-  "since": "2026-10-03T07:16:50.203Z",
+  "since": "2026-10-03T15:07:54.076Z",
   "changes": [
    {
     "what": "pricing code",
@@ -28,8 +28,8 @@
    {
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
-    "from": "2026-10-03T05:27:20.986Z",
-    "to": "2026-10-09T06:20:58.238Z"
+    "from": "2026-10-03T14:27:07.767Z",
+    "to": "2026-10-09T14:54:08.018Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
@@ -38,13 +38,19 @@
     "to": 85
    },
    {
+    "what": "market coverage (% of slate games with 2+ fresh books)",
+    "kind": "MARKET",
+    "from": 17,
+    "to": 0
+   },
+   {
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
-    "from": 5,
-    "to": 2
+    "from": 40,
+    "to": 10
    }
   ],
-  "summary": "SOFTWARE: pricing code · SOFTWARE: research-gate code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
+  "summary": "SOFTWARE: pricing code · SOFTWARE: research-gate code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with 2+ fresh books) · MARKET: market coverage (% of slate games with a fresh quote)"
  },
  "games": [
   {
@@ -405,7 +411,7 @@
   },
   {
    "from_at": "2026-09-30T02:47:34.357Z",
-   "to_at": "2026-10-07T19:22:16.527Z",
+   "to_at": "2026-10-09T14:54:08.018Z",
    "old_fair": 0.28,
    "new_fair": 4.74,
    "change": 4.46,
@@ -429,10 +435,10 @@
    "game_id": "401860922",
    "game": "Washington State @ Utah State",
    "market_then": null,
-   "market_now": -5.12,
+   "market_now": -5.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "MARKET_ALIGNED",
    "price_state": "NO INITIAL EDGE"
   },
   {
@@ -675,7 +681,7 @@
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-07T23:32:52.302Z",
+   "to_at": "2026-10-09T14:54:08.018Z",
    "old_fair": 4.69,
    "new_fair": 8.19,
    "change": 3.5,
@@ -699,10 +705,10 @@
    "game_id": "401866436",
    "game": "Sacramento State @ Bowling Green",
    "market_then": null,
-   "market_now": -7.62,
+   "market_now": -8.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "MARKET_ALIGNED",
    "price_state": "NO INITIAL EDGE"
   },
   {
@@ -767,11 +773,11 @@
    "market_change": null,
    "status_then": "NO_MARKET",
    "status_now": "MARKET_ALIGNED",
-   "price_state": "EDGE MOSTLY PRICED IN"
+   "price_state": "PRICE NO LONGER ATTRACTIVE"
   },
   {
    "from_at": "2026-09-30T02:47:34.357Z",
-   "to_at": "2026-10-09T06:20:58.238Z",
+   "to_at": "2026-10-09T14:54:08.018Z",
    "old_fair": 0.01,
    "new_fair": 3.25,
    "change": 3.24,
@@ -800,10 +806,10 @@
    "game_id": "401858487",
    "game": "Iowa @ Washington",
    "market_then": null,
-   "market_now": -3,
+   "market_now": -2.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "MARKET_ALIGNED",
    "price_state": "NO INITIAL EDGE"
   },
   {
@@ -840,7 +846,7 @@
   },
   {
    "from_at": "2026-10-01T06:18:17.322Z",
-   "to_at": "2026-10-08T19:18:16.037Z",
+   "to_at": "2026-10-09T14:54:08.018Z",
    "old_fair": 4.05,
    "new_fair": 1.2,
    "change": -2.85,
@@ -867,7 +873,7 @@
    "market_now": 3,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
@@ -909,7 +915,7 @@
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-08T19:18:16.037Z",
+   "to_at": "2026-10-09T14:54:08.018Z",
    "old_fair": -4.93,
    "new_fair": -7.43,
    "change": -2.5,
@@ -936,7 +942,7 @@
    "market_now": 3,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
@@ -973,7 +979,7 @@
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-08T23:29:33.228Z",
+   "to_at": "2026-10-09T14:54:08.018Z",
    "old_fair": 7.66,
    "new_fair": 5.2,
    "change": -2.46,
@@ -1000,12 +1006,12 @@
    "market_now": -1.5,
    "market_change": 0,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "INVESTIGATE",
    "price_state": "PART OF THE EDGE PRICED IN"
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-08T23:29:33.228Z",
+   "to_at": "2026-10-09T14:54:08.018Z",
    "old_fair": -14.31,
    "new_fair": -12.17,
    "change": 2.14,
@@ -1032,7 +1038,7 @@
    "market_now": 7.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "INVESTIGATE",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
@@ -1416,11 +1422,11 @@
    "market_change": null,
    "status_then": "NO_MARKET",
    "status_now": "INVESTIGATE",
-   "price_state": "PART OF THE EDGE PRICED IN"
+   "price_state": "PRICE STILL AVAILABLE"
   },
   {
    "from_at": "2026-10-01T06:18:17.322Z",
-   "to_at": "2026-10-07T13:40:54.483Z",
+   "to_at": "2026-10-09T14:54:08.018Z",
    "old_fair": -12.48,
    "new_fair": -11.59,
    "change": 0.89,
@@ -1444,10 +1450,10 @@
    "game_id": "401864516",
    "game": "Air Force @ Northern Illinois",
    "market_then": null,
-   "market_now": 8.5,
+   "market_now": 7,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "INVESTIGATE",
    "price_state": "NO INITIAL EDGE"
   },
   {
@@ -1548,7 +1554,7 @@
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-08T23:29:33.228Z",
+   "to_at": "2026-10-09T14:54:08.018Z",
    "old_fair": 16.11,
    "new_fair": 15.43,
    "change": -0.68,
@@ -1572,10 +1578,10 @@
    "game_id": "401866439",
    "game": "Kent State @ Western Michigan",
    "market_then": null,
-   "market_now": -13.5,
+   "market_now": -14,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "MARKET_ALIGNED",
    "price_state": "NO INITIAL EDGE"
   },
   {
