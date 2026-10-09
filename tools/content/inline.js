@@ -9,7 +9,12 @@
        the function keeps must pass it, exactly as in the page and the job);
      · lib/content_engine.js          between BEGIN/END CONTENT ENGINE CORE
        (the same research, validation and AI request code the admin page and
-       the weekly job run).
+       the weekly job run);
+     · lib/edgedesk_calc.js, edgedesk_schedule.js, edgedesk_availability.js,
+       edgedesk_integrity.js, edgedesk_broadcast.js, edgedesk_matchup.js
+                                      between BEGIN/END INTEGRITY LAYER, ahead
+       of the core (docs/system-integrity): the core reads them from globalThis
+       and fails its validation closed without them.
 
    Why a copy and not an import: the dashboard deploy bundles ONE folder, and
    an import that cannot resolve fails the bundle while the previous version
@@ -54,6 +59,12 @@ function spliceEvidence(src) {
   const eol = src.indexOf('\n', b);
   return src.slice(0, a) + evBlock() + src.slice(eol < 0 ? src.length : eol + 1);
 }
+const IBEGIN = '// ── BEGIN INTEGRITY LAYER';
+const IEND = '// ── END INTEGRITY LAYER';
+/* the order matters: each file finds the ones before it on globalThis.
+   edgedesk_broadcast.js and edgedesk_matchup.js carry Five Games to Watch
+   (docs/content-engine/GAMES_TO_WATCH.md) */
+const INTEGRITY_FILES = ['edgedesk_calc.js', 'edgedesk_schedule.js', 'edgedesk_availability.js', 'edgedesk_integrity.js', 'edgedesk_broadcast.js', 'edgedesk_matchup.js'];
 
 function coreBlock() {
   return BEGIN + ' ────────────────────────────────────────────\n'
@@ -68,7 +79,29 @@ function spliceCore(src) {
   const eol = src.indexOf('\n', b);
   return src.slice(0, a) + coreBlock() + src.slice(eol < 0 ? src.length : eol + 1);
 }
-function build(src) { return spliceCore(spliceEvidence(AUTH_INLINE.splice(src, TARGET))); }
+function integrityBlock() {
+  return IBEGIN + ' ──────────────────────────────────────────────\n'
+    + '// Canonical sources: lib/' + INTEGRITY_FILES.join(', lib/') + ',\n'
+    + '// copied VERBATIM by tools/content/inline.js. Edit the canonical files, then run it.\n'
+    + INTEGRITY_FILES.map((f) => '// ── lib/' + f + '\n' + fs.readFileSync(path.join(ROOT, 'lib', f), 'utf8').trimEnd() + '\n').join('')
+    + IEND + ' ────────────────────────────────────────────────\n';
+}
+/* the integrity layer sits immediately before the core block; on the first
+   run it is inserted there */
+function spliceIntegrity(src) {
+  const a = src.indexOf(IBEGIN);
+  if (a >= 0) {
+    const b = src.indexOf(IEND, a);
+    if (b < 0) throw new Error('supabase/functions/content_engine/index.ts has a BEGIN without an END INTEGRITY LAYER marker');
+    const eol = src.indexOf('\n', b);
+    return src.slice(0, a) + integrityBlock() + src.slice(eol < 0 ? src.length : eol + 1);
+  }
+  const c = src.indexOf(BEGIN);
+  if (c < 0) throw new Error('supabase/functions/content_engine/index.ts has no BEGIN CONTENT ENGINE CORE marker');
+  return src.slice(0, c) + integrityBlock() + src.slice(c);
+}
+/* order before the core: the integrity layer, then the football evidence module */
+function build(src) { return spliceCore(spliceEvidence(spliceIntegrity(AUTH_INLINE.splice(src, TARGET)))); }
 function drifted() { const s = fs.readFileSync(TARGET, 'utf8'); return build(s) !== s; }
 
 if (require.main === module) {

@@ -259,6 +259,8 @@
     deepAdd(rec.snapshot && rec.snapshot.uncertainty, add);
     deepAdd(rec.snapshot && rec.snapshot.game, add);
     deepAdd(rec.snapshot && rec.snapshot.research_view, add);
+    /* a games-to-watch page: the matchup packets it was written from */
+    if (AMODEL.typeOf(rec) === 'games_to_watch') deepAdd(rec.research, add);
     /* the result record */
     deepAdd(rec.result, add);
     /* the computed grading and audit: every figure in them was produced by
@@ -312,7 +314,12 @@
 
     /* team names must be the teams */
     var home = txt(rec.home_team), away = txt(rec.away_team);
-    bad(integrity, 'team_names', !!home && !!away && home !== away,
+    if (type === 'games_to_watch') {
+      /* a several-game page: every featured game names two different teams */
+      var gs = (rec.gtw && rec.gtw.games) || [];
+      bad(integrity, 'team_names', gs.length > 0 && gs.every(function (g) { return txt(g.home) && txt(g.away) && g.home !== g.away; }),
+        'every featured game must name two different teams', gs.map(function (g) { return g.away + ' at ' + g.home; }).join('; '));
+    } else bad(integrity, 'team_names', !!home && !!away && home !== away,
       'both teams must be named and must be different teams', home + ' / ' + away);
 
     if (type === 'postgame') {

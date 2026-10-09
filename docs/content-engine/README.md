@@ -14,6 +14,21 @@ Why it exists: publishers asked for broader, search-driven pieces rather than is
 
 **Open it:** `/admin/content/` (outbound owners only).
 
+**System integrity** (`docs/system-integrity/`):
+
+- Every game packet is checked by the integrity engine. A BLOCKED game is
+  withheld from every article: an unconfirmed kickoff, a future week, a faulted
+  or misjoined market, or a gap that does not reconcile.
+- Every draft carries an integrity verdict, which the database enforces at
+  approval and at Ready to Send.
+- Approval is bound to the research it was given on.
+- Every export is read back against the approved numbers.
+- Every Claude call is reserved against a **$10 monthly cap** and settled at
+  its measured cost.
+
+See `OPERATING_GUIDE.md` (daily use), `TEMPLATES.md` (formats and story
+selection), `COST.md`, `RULES.md` and `MIGRATION.md`.
+
 ---
 
 ## How it fits together
@@ -158,7 +173,13 @@ Search Console (existing import) ───────────────�
 | Weekly CFB preview | weekly preview, upset watch, conference race | intro · why it matters · how to read · the games · upset watch · conference races · what the numbers can't see · bottom line |
 | Weekly NFL preview | weekly preview, upset watch, slate-wide model-vs-line | intro · why it matters · how to read · the games · upset watch · where the numbers differ · injury report · limits · bottom line |
 | Trending sports story | a matched headline, an NFL injury implication | intro · what was reported (attributed, linked) · why it matters · what EdgeDesk's research shows · what we don't know · bottom line |
-| Market discrepancy analysis | one game with a current price and a 2+ point gap | intro · the gap (with capture time) · why the numbers differ · how to read · the case for the market · limits · bottom line |
+| Model vs. Market | one research-grade disagreement (Worth Researching or Verified Major) with a current price; never an unverified 7+ gap | intro · the gap (with capture time) · why the numbers differ · how to read · the case for the market · limits · bottom line |
+| Biggest Weekend Storylines | three to five storylines, each one game and one reason | intro · storylines · how to read · limits · bottom line |
+| Individual Game Deep Dive | the week's central game (needs a measured reliability), only when the week's matchup deep dives do not already cover it | intro · the matchup · the numbers · why they differ · what could change · how to read · limits · bottom line |
+| Upset Watch | underdogs at 30–46% | intro · upsets · how to read · limits · bottom line |
+| Weekly Model Performance Review | the season's live-forward record (50+ graded games); the postgame model review below grades the last week | intro · the record · where it missed · calibration · how to read · bottom line |
+| Five Games to Watch (publisher edition) | the week's featured games (default 5), each from a verified matchup packet — see [GAMES_TO_WATCH.md](GAMES_TO_WATCH.md) | intro · the schedule at a glance · one section per game (where to watch · why it matters · the key matchup · EdgeDesk's projection · upset potential · what to watch) · how to read · limits · bottom line |
+| Five Games to Watch (EdgeDesk edition) | the same packets, written as EdgeDesk's own page | intro · research navigation · one section per game (kickoff and broadcast · watch for · the stakes · where it's decided · EdgeDesk's number · the upset case) · how to read · limits · follow these games |
 | **Matchup analysis** (for a publisher) | one featured game | the football question · what EdgeDesk sees differently · the football evidence (quarterbacks, both offenses, personnel, form, history, conditions) · what could make EdgeDesk wrong · what has to happen on the field · what to watch and what we still don't know. Prose, no software terms, 800–1,600 words; manual approval always |
 | **EdgeDesk analysis** (first-party, library format) | the same game, for EdgeDesk's own pages (not offered in the publisher queue: EdgeDesk's own articles live in `content_engine.first_party`) | the same journalist-first order as a research page: a fact sheet, the numbers, the evidence by unit, the case against EdgeDesk, a scorecard of what each number needs, **inside EdgeDesk's number** (every model term, the diagnostics, the research status, what is not on file), what to watch. Shares under 45% of its wording with the publisher piece |
 | Matchup deep dive | the week's two headline games, per league | intro · EdgeDesk's projection (with its typical miss) · how to read · what builds the number · where the matchup tilts · quarterbacks and availability (a starter-out re-run is stated as the model's scenario, never as a report) · EdgeDesk vs. the market · conditions · limits · bottom line |
@@ -327,6 +348,11 @@ The quarterback and injury claim checks accept a sentence that states an officia
   - the case each way;
   - both quarterbacks;
   - what EdgeDesk cannot explain, said to be not an edge.
+- Weekend Storylines, and each story in the Wednesday first-party piece, carry the same: the case each way, both quarterbacks, any quarterback the report rules out, and the disclosure. A section whose own heading names the game ("The college football headliner: Georgia at Alabama") is that game's block, so every story is checked, not only the one with a bold game lead.
+- The Upset Watch list is checked line by line. Each underdog's bullet needs a measured football case and names a quarterback the report rules out. When EdgeDesk cannot explain its own number, or its inputs are suspect, the bullet says so and that it is not an edge. Quarterback debate and contrary evidence are left to the formats that argue a game in full.
+- Five Games to Watch (both editions) is written only from the verified matchup packets (`football/content/packets.json`), whose own fact, number, availability and gap checks gate each game. The evidence gate records that it saw the article and defers to them, so the database floor still holds. Unifying the two packet systems is a separate decision.
+
+**Quarterback usage.** A split in recent dropbacks is printed as the measurement ("Dylan Raiola has taken 42% of Oregon's recent dropbacks and Dante Moore 39%"), never as "the job is unsettled" (`lib/edgedesk_availability.js` rule 3). Only a sourced report may put a starter in doubt.
 
 ### EdgeDesk's own game pages
 

@@ -134,6 +134,7 @@ const BOOT = M.boot({ probe: ['fbP4ViewFor', 'fbP4Request', 'fbP4Market', 'fbP4C
 if (BOOT.error) { console.error('the football module would not run: ' + (BOOT.error.message || BOOT.error)); process.exit(1); }
 const win = BOOT.win, T = win.__FBTEST;
 const E = M.loadEngine(win, ROOT);
+if (!win.EDCalc) vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_calc.js'), 'utf8'), win, { filename: 'lib/edgedesk_calc.js' });
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'cfb_research_view.js'), 'utf8'), win, { filename: 'lib/cfb_research_view.js' });
 /* the one research classifier the view delegates to, as the page loads it (audit 2026-09-30 #6) */
 vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_canon.js'), 'utf8'), win, { filename: 'lib/edgedesk_canon.js' });

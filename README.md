@@ -83,6 +83,31 @@ sent or published except by the owner, and the database enforces it
 (`supabase/content_engine.sql`). See
 [`docs/content-engine/README.md`](docs/content-engine/README.md).
 
+## System integrity: one calculation layer, one integrity engine
+
+Every number EdgeDesk prints is computed in one place:
+
+- `lib/edgedesk_calc.js`: one rounding policy, so a displayed gap is always
+  the difference of the two displayed lines;
+- `lib/edgedesk_schedule.js`: kickoff truth (time TBA is never a clock time),
+  UTC instants shown in the reader's zone, and current-week scope;
+- `lib/edgedesk_availability.js`: a missing quarterback announcement is never
+  uncertainty.
+
+`lib/edgedesk_integrity.js` checks each game at seven boundaries, from the
+research dashboard to the publisher export. Each check returns PASS, WARNING
+or BLOCKED, with its rule, evidence and remediation, and BLOCKED never reaches
+Ready to Send. Research status and the betting decision are two separately
+explained answers.
+
+See [`docs/system-integrity/`](docs/system-integrity/):
+
+- `OPERATING_GUIDE.md` for the owner's daily check and article approval;
+- `REPORT.md` for what changed and why.
+
+Tests: `npm run integrity:test` (the 17 regression cases plus an
+integration test on PostgreSQL) and `npm run integrity:audit`.
+
 ## EdgeDesk Intelligence — the research desk
 
 The chat panel in `app.html` is served by `supabase/functions/edgedesk_ai`.

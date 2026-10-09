@@ -67,7 +67,7 @@ function fnSrc(name) {
   return APP.slice(at, end + 3);
 }
 const HELPERS = fnSrc('fbWinPair') + '\n' + fnSrc('fbWinText') + '\n'
-  + fnSrc('fbFairDisp') + '\n' + fnSrc('fbRawMarginText') + '\n'
+  + fnSrc('fbFairDisp') + '\n' + fnSrc('fbRawMarginText') + '\n' + fnSrc('fbFavHome') + '\n' + fnSrc('fbCalcGap') + '\n'
   /* the research-view adapter the card reads; with lib/cfb_research_view.js
      not loaded here it returns null and the card renders its fallback */
   + fnSrc('fbP4ViewFor') + '\n' + fnSrc('fbRvNearBadge') + '\n';

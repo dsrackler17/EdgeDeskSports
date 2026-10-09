@@ -115,8 +115,13 @@ const reply = (o) => ({ stop_reason: 'end_turn', model: 'claude-opus-5-5', conte
 const currentOf = (req) => JSON.parse(/CURRENT DRAFT:\n([\s\S]*)$/.exec(String(req.messages[0].content))[1]);
 const honest = (req) => { const c = currentOf(req); return reply(Object.assign({}, c, { title: c.title.replace('Predictions', 'Predictions and Projections') })); };
 const inventor = (req) => { const c = currentOf(req); const s = c.sections.slice(); s[0] = Object.assign({}, s[0], { body: s[0].body + ' Alabama has won 77 percent of its home games since 1990.' }); return reply(Object.assign({}, c, { sections: s })); };
+/* Alabama's margin as every surface prints it: the stored number under the
+   canonical rounding policy (lib/edgedesk_calc.js), read from the research */
+const ALA_MARGIN = (() => { const a = ART.load(), CALC = require(path.join(__dirname, '..', '..', 'lib', 'edgedesk_calc.js'));
+  const g = Object.values(a.cfbGames.games).find((x) => x.game && x.game.home === 'Alabama' && x.game.away === 'Georgia');
+  return g ? Math.abs(CALC.round(g.edgedesk.fair_home_line, 1)).toFixed(1) : '5.4'; })();
 /* a section rewrite answers with ONE section */
-const sectionWriter = (key) => (req) => { const c = currentOf(req); const s = c.sections.filter((x) => x.key === key)[0]; return reply({ key, heading: s.heading || 'The bottom line', body: 'The short version: EdgeDesk’s model makes Alabama a 5.3-point favorite. None of it is a pick, and a projection is not a bet.' }); };
+const sectionWriter = (key) => (req) => { const c = currentOf(req); const s = c.sections.filter((x) => x.key === key)[0]; return reply({ key, heading: s.heading || 'The bottom line', body: 'The short version: EdgeDesk’s model makes Alabama a ' + ALA_MARGIN + '-point favorite. None of it is a pick, and a projection is not a bet.' }); };
 const claude = (...answers) => { let i = 0; globalThis.__claude = (req, opts) => { CLAUDE_REQS.push(req); CLAUDE_OPTS.push(opts); const a = answers[Math.min(i++, answers.length - 1)]; return a(req); }; };
 
 (async () => {
@@ -180,6 +185,10 @@ const claude = (...answers) => { let i = 0; globalThis.__claude = (req, opts) =>
       && call1.input_tokens === 8000 && call1.output_tokens === 2500 && Math.abs(call1.est_usd - (8000 * 4 + 2500 * 20) / 1e6) < 1e-9 && call1.reserved_usd > call1.est_usd && call1.served_model === 'claude-opus-5-5', call1);
     chk('C … and the answer says what it cost (estimated)', Math.abs(d1.b.est_usd - 0.082) < 1e-9 && d1.b.cached === false);
     chk('C a full draft reserves 16,000 output tokens; the reservation used the request’s size', JSON.parse(one(`select to_jsonb(c) from content_engine.ai_calls c order by id limit 1;`)).reserved_usd >= 0.32);
+    /* ── $ the money: reserved before the call, settled after it ───── */
+    const rpcOrder = LOG.filter((e) => /\/rpc\//.test(e.url)).map((e) => e.url.split('/rpc/')[1]);
+    chk('$ the call is reserved before it is made and settled after', rpcOrder.indexOf('content_engine_ai_reserve') >= 0 && rpcOrder.indexOf('content_engine_ai_reserve') < rpcOrder.indexOf('content_engine_ai_settle')
+      && rpcOrder.indexOf('content_engine_ai_settle') < rpcOrder.indexOf('content_engine_article_save'), rpcOrder);
 
     /* ── R retry ────────────────────────────────────────────────────── */
     claude(inventor, honest);

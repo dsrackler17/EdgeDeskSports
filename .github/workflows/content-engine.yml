@@ -46,6 +46,16 @@ on:
       - 'lib/content_engine.js'
       - 'lib/football_evidence.js'
       - 'football/evidence/facts.json'
+      # the integrity layer the core checks every draft with (inlined into the Edge Function)
+      - 'lib/edgedesk_calc.js'
+      - 'lib/edgedesk_schedule.js'
+      - 'lib/edgedesk_availability.js'
+      - 'lib/edgedesk_integrity.js'
+      # Five Games to Watch: the matchup packets and broadcast verification
+      - 'lib/edgedesk_broadcast.js'
+      - 'lib/edgedesk_matchup.js'
+      - 'football/broadcasts/**'
+      - 'football/content/config.json'
       - 'tools/content/**'
       - 'tools/articles/evidence_attach.js'
       - 'admin/content/**'
@@ -89,6 +99,8 @@ jobs:
         run: node tools/content/content_engine_fn.test.js
       - name: The weekly job, as the service role
         run: node tools/content/run.test.js
+      - name: Five Games to Watch — the October 10, 2026 regression (frozen fixture), every block, the database doors and the job
+        run: node tools/content/games_to_watch.test.js
       - name: Playwright and Chromium
         run: |
           npm install --no-save playwright@1.49.1

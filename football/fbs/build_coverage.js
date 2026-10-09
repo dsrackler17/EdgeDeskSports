@@ -98,6 +98,9 @@ const EXPL = require(path.join(ROOT, 'lib', 'edgedesk_explainer.js'));
 const GE = require(path.join(ROOT, 'lib', 'game_evidence.js'));
 const ROI = require(path.join(ROOT, 'football', 'enrichment', 'roi.js'));
 const AUDIT = require(path.join(ROOT, 'football', 'enrichment', 'audit.js'));
+/* kickoff truth and week scope (docs/system-integrity/AUDIT.md §2): the feed's
+   start_time_tbd decides whether a timestamp is a time or a placeholder */
+const KICK = require(path.join(ROOT, 'lib', 'edgedesk_schedule.js'));
 const P = global.EDCfbP4Params;
 
 const SCHED = y => `https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/schedules/csv/cfb_schedules_${y}.csv`;
@@ -156,7 +159,11 @@ async function loadSeason(season, offline) {
 /* the same row shape the browser builds from this feed */
 function normRows(raw) {
   return raw.map(r => ({
-    game_id: r.game_id, season: NUM(r.season), week: NUM(r.week), start_date: r.start_date,
+    game_id: r.game_id, season: NUM(r.season), week: NUM(r.week), season_type: r.season_type || null, start_date: r.start_date,
+    /* the feed's own flag: TRUE means the timestamp is a placeholder (midnight
+       Eastern), not a kickoff. null when the column is absent, so a reader can
+       tell "not TBA" from "not said" (lib/edgedesk_schedule.js kickoffOf) */
+    start_time_tbd: r.start_time_tbd == null || r.start_time_tbd === '' ? null : TRUE(r.start_time_tbd),
     completed: TRUE(r.completed), neutral_site: TRUE(r.neutral_site),
     conference_game: TRUE(r.conference_game),
     venue_id: NUM(r.venue_id), venue: r.venue,
@@ -803,8 +810,12 @@ async function main() {
         conflicts: (r.conflicts || []).length, priced: false,
         priced_why: asm.qb_pricing && asm.qb_pricing[side] ? asm.qb_pricing[side].why : null };
     };
+    const kick = KICK.kickoffOf({ kickoff: g.start_date, start_time_tbd: g.start_time_tbd });
     return {
-      game_id: m.id, season: g.season, week: g.week, kickoff: g.start_date,
+      game_id: m.id, season: g.season, week: g.week, season_type: g.season_type || null, kickoff: g.start_date,
+      /* KICKOFF TRUTH: a TBA game keeps its placeholder timestamp for ordering
+         and for its date, and says so; nothing downstream may print it as a time */
+      kickoff_tbd: g.start_time_tbd == null ? null : !!g.start_time_tbd, kickoff_state: kick.state, kickoff_basis: kick.basis, game_date: kick.game_date,
       neutral_site: !!g.neutral_site, venue: g.venue || null,
       home_team: g.home_team, away_team: g.away_team,
       home_team_id: m.home.key, away_team_id: m.away.key,
@@ -976,6 +987,12 @@ async function main() {
     season: a.season, generated_at: report.generated_at,
     source: universe.source, lookahead_days: a.lookahead,
     window: built.window,
+    /* the schedule's own week the slate is in, and the rule (EDSchedule.currentWeek):
+       the rolling window above still decides which games are listed; this
+       decides which of them are THIS week's research and which are look-ahead */
+    current_week: (() => { const cw = KICK.currentWeek(slate.map(x => ({ season: x.g.season, week: x.g.week, season_type: x.g.season_type,
+      kickoff: x.g.start_date, start_time_tbd: x.g.start_time_tbd, completed: x.g.completed })), Date.now());
+      return cw ? Object.assign(cw, { rule: 'the earliest schedule week with an unstarted game inside its own schedule cluster', schedule: KICK.VERSION }) : null; })(),
     counts: {
       slate: slate.length,
       fbs_teams: universe.counts.fbs_teams,

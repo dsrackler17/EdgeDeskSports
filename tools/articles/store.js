@@ -43,6 +43,8 @@ require('../editorial/postgame_model.js');
    that walks game records keeps seeing only game records); the build reads
    loadFeatures() beside it. */
 require('../editorial/feature_model.js');
+/* and EdgeDesk's own Five Games to Watch (tools/content/first_party.js) */
+require('../content/first_party.js');
 
 const ROOT = path.join(__dirname, '..', '..');
 const DATA = path.join(ROOT, 'articles', 'data');

@@ -52,8 +52,11 @@ function load(opts) {
     nflInjuries: readJson(A.nfl_injuries),
     marketSnapshots: marketSnapshots(season),
     published: readJson(A.published),
+    performance: readJson(A.performance),
     forecasts: readJson(A.forecasts),
-    records: { cfb: readJson(A.record.replace('{league}', 'cfb').replace('{season}', season)), nfl: readJson(A.record.replace('{league}', 'nfl').replace('{season}', season)) }
+    records: { cfb: readJson(A.record.replace('{league}', 'cfb').replace('{season}', season)), nfl: readJson(A.record.replace('{league}', 'nfl').replace('{season}', season)) },
+    /* the editorial matchup packets (tools/content/build_packets.js) */
+    packets: readJson(A.packets)
   };
 }
 

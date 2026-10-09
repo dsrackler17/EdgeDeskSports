@@ -96,6 +96,10 @@ function boot(opts) {
   }
   const win = stubWindow();
   vm.createContext(win);
+  /* the integrity layer app.html loads with <script> tags before the board
+     (docs/system-integrity): the calc layer, kickoff truth, availability, the engine */
+  ['lib/edgedesk_calc.js', 'lib/edgedesk_schedule.js', 'lib/edgedesk_availability.js', 'lib/edgedesk_integrity.js']
+    .forEach((f) => vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), win, { filename: f }));
   const stubbed = [];
   let error = null;
   for (let i = 0; i < 60; i++) {

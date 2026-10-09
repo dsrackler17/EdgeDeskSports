@@ -184,6 +184,30 @@ jobs:
         if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
         run: node tools/content/evidence.js build || echo "::warning::the football evidence packets could not be rebuilt; the last packets stay up"
 
+      # Five Games to Watch (docs/content-engine/GAMES_TO_WATCH.md). The week's
+      # broadcast listings from ESPN's public, keyless scoreboard (no key, no
+      # cost; a failed fetch keeps the last listing with its real retrieval
+      # time, so it ages out of the publication window rather than vanishing),
+      # then one verified matchup packet per game from the research rebuilt
+      # above. The EdgeDesk edition is then written and checked; it is
+      # published to the site ONLY when every gate passes AND
+      # football/content/config.json switches it on (off by default). Nothing
+      # here contacts an outside publisher.
+      - name: Broadcast listings and matchup packets (football/broadcasts, football/content)
+        if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
+        run: |
+          node football/broadcasts/collect.js || echo "::warning::broadcast listings were not refreshed; the last listings stay and age out of the publication window"
+          node tools/content/build_packets.js || echo "::warning::the matchup packets were not rebuilt; the last packets stay up"
+
+      - name: EdgeDesk edition of Five Games to Watch (every gate, and switched on)
+        if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
+        run: |
+          out="$(node tools/content/run.js first-party 2>&1)" || echo "::warning::the games-to-watch check did not run"
+          echo "$out"
+          if printf '%s' "$out" | grep -q '::notice::published'; then
+            node tools/articles/build_articles.js || echo "::warning::the article site was not rebuilt after publishing"
+          fi
+
       - name: Operations report (football/cfb_production/reports/ops.json, admin/cfb-ops)
         if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
         env:
@@ -205,7 +229,8 @@ jobs:
             record/football/cfb_model_lab.json football/cfb_decision football/cfb_market/ledger \
             football/cfb_production/reports/ops.json football/cfb_production/reports/projections.json \
             football/cfb_production/reports/traces.json football/cfb_terminal football/cfb_validation football/markets \
-            football/validation/model_health.json football/evidence/packets.json
+            football/validation/model_health.json football/broadcasts/current.json football/content/packets.json football/evidence/packets.json \
+            articles sitemap-articles.xml sitemap.xml
 
       - name: Insert-only copy to Supabase (when secrets are configured)
         if: ${{ steps.gate.outputs.proceed == 'true' && ((github.event.inputs.mode || 'hourly') == 'hourly' || github.event.inputs.mode == 'run') }}

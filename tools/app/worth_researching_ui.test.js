@@ -65,7 +65,7 @@ function fnSrc(name) {
 }
 const PAGE_HELPERS = [lineSrc('function edEsc('), lineSrc('function _escHtml('), lineSrc('function fbEsc('), lineSrc('function edAttrJs('),
   lineSrc('function fbPts('), lineSrc('function fbHomeLine('), lineSrc('function ago('), lineSrc('function whenLabel('),
-  lineSrc('var FB_GUARD='), fnSrc('fbRecDisagrees'), fnSrc('fbP4StatusFor'), fnSrc('fbNflResearchState')].join('\n');
+  lineSrc('var FB_GUARD='), fnSrc('fbCalcGap'), fnSrc('fbRecDisagrees'), fnSrc('fbP4StatusFor'), fnSrc('fbNflResearchState')].join('\n');
 
 const NOW = Date.now();
 const iso = (ms) => new Date(ms).toISOString();
@@ -153,6 +153,8 @@ function makeCtx(opts) {
   if (opts.layer !== false) ['research_core.js', 'research_eval.js', 'game_research.js'].forEach((f) =>
     vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', f), 'utf8'), c));
   if (opts.priority !== false) vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'research_priority.js'), 'utf8'), c);
+  /* the canonical calculation layer the page loads before the classifier (docs/system-integrity) */
+  vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_calc.js'), 'utf8'), c);
   /* the one research classifier the board word is read off (audit 2026-09-30 #6), as the page loads it */
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_canon.js'), 'utf8'), c);
   vm.runInContext(fs.readFileSync(path.join(ROOT, 'football', 'params.js'), 'utf8'), c);

@@ -61,7 +61,7 @@ win.edEvent = win.edEvent || (() => {});
 const E = M.loadEngine(win, ROOT);
 /* the libraries the page loads with <script> tags: the one classifier, the
    research view, the shared research layer and the reading order */
-['lib/edgedesk_canon.js', 'lib/cfb_research_view.js', 'lib/research_core.js', 'lib/research_eval.js', 'lib/game_research.js', 'lib/research_priority.js']
+['lib/edgedesk_calc.js', 'lib/edgedesk_canon.js', 'lib/cfb_research_view.js', 'lib/research_core.js', 'lib/research_eval.js', 'lib/game_research.js', 'lib/research_priority.js']
   .forEach((f) => vm.runInContext(fs.readFileSync(path.join(ROOT, f), 'utf8'), win, { filename: f }));
 const C = win.EDCanon;
 chk('the page\'s libraries are loaded (the classifier, the view, the research layer, the reading order)',

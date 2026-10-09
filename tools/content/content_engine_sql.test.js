@@ -74,7 +74,7 @@ const SECTIONS = [{ key: 'intro', heading: null, body: 'EdgeDesk’s model makes
 const content = (extra) => Object.assign({ title: 'College Football Week 6 Predictions: Biggest Games', slug: 'college-football-week-6-predictions',
   meta_description: 'EdgeDesk’s Week 6 projections.', standfirst: 'Research, not picks.', primary_keyword: 'college football week 6 predictions',
   secondary_keywords: ['cfb week 6'], sections: SECTIONS, word_count: 20, generator: 'template:content_engine_v1',
-  checks: { ok: true, failed: [], warned: [] } }, extra || {});
+  checks: { ok: true, failed: [], warned: [], integrity_status: 'PASS' } }, extra || {});
 const REVIEW = { source_verification: true, data_freshness: true, model_accuracy: true, seo_review: true, compliance: true, notes: 'ok' };
 const hashOf = (id) => one(`select content_hash from content_engine.articles where id = ${lit(id)};`);
 /* an editorial gate report (lib/content_engine.js gate) for the current version */
@@ -164,7 +164,7 @@ try {
   chk('A a different angle on the same research is its own article', c3.ok && c3.existing === false && c3.id !== c1.id);
   chk('A the opportunity is now assigned', one(`select status from content_engine.opportunities where id = ${lit(u1.id)};`) === 'assigned');
   chk('A revision 1 is recorded', one(`select count(*) from content_engine.revisions where article_id = ${lit(c1.id)};`) === '1');
-  const js1 = svc(`select public.content_engine_article_save(${lit(c1.id)}, ${lit(JSON.stringify({ generator: 'claude:claude-opus-5-5', sections: SECTIONS.concat([{ key: 'conclusion', heading: 'The bottom line', body: 'None of it is a pick.' }]), checks: { ok: true } }))}::jsonb, 'ai pass', null);`);
+  const js1 = svc(`select public.content_engine_article_save(${lit(c1.id)}, ${lit(JSON.stringify({ generator: 'claude:claude-opus-5-5', sections: SECTIONS.concat([{ key: 'conclusion', heading: 'The bottom line', body: 'None of it is a pick.' }]), checks: { ok: true, integrity_status: 'PASS' } }))}::jsonb, 'ai pass', null);`);
   chk('A the job may rewrite its own untouched draft', js1.ok && js1.revision === 2);
   const stale = own(`select public.content_engine_article_save(${lit(c1.id)}, ${lit(JSON.stringify({ title: 'College Football Week 6 Predictions: Edited by the owner' }))}::jsonb, 'owner edit', 'not-the-hash');`);
   chk('A a save over a version the caller never saw is refused', stale.ok === false && stale.reason === 'changed_since_loaded');
@@ -177,7 +177,7 @@ try {
   own(`select public.content_engine_article_save(${lit(c1.id)}, ${lit(JSON.stringify({ checks: { ok: false, failed: ['numbers_in_evidence'] } }))}::jsonb, 'checks', null);`);
   const sub0 = own(`select public.content_engine_article_submit(${lit(c1.id)});`);
   chk('S failed checks cannot go to review', sub0.ok === false && sub0.reason === 'checks_failed');
-  own(`select public.content_engine_article_save(${lit(c1.id)}, ${lit(JSON.stringify({ checks: { ok: true, failed: [] } }))}::jsonb, 'checks', null);`);
+  own(`select public.content_engine_article_save(${lit(c1.id)}, ${lit(JSON.stringify({ checks: { ok: true, failed: [], integrity_status: 'PASS' } }))}::jsonb, 'checks', null);`);
   chk('S checks passed: to review', own(`select public.content_engine_article_submit(${lit(c1.id)});`).ok && statusOf(c1.id) === 'in_review');
   chk('S a direct status write cannot approve (no door)', !!fails(() => one(`update content_engine.articles set status = 'approved', approved_by = ${lit(OWNER)}, approved_hash = content_hash where id = ${lit(c1.id)};`)));
   chk('S a direct write cannot skip ahead to sent', !!fails(() => one(`update content_engine.articles set status = 'sent' where id = ${lit(c1.id)};`)));
@@ -225,7 +225,7 @@ try {
   own(`select public.content_engine_article_review(${lit(c1.id)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
   /* language: the database's own floor */
   const badSecs = SECTIONS.concat([{ key: 'conclusion', heading: 'x', body: 'Alabama is a guaranteed winner.' }]);
-  own(`select public.content_engine_article_save(${lit(c3.id)}, ${lit(JSON.stringify({ sections: badSecs, checks: { ok: true } }))}::jsonb, 'bad words', null);`);
+  own(`select public.content_engine_article_save(${lit(c3.id)}, ${lit(JSON.stringify({ sections: badSecs, checks: { ok: true, integrity_status: 'PASS' } }))}::jsonb, 'bad words', null);`);
   own(`select public.content_engine_article_submit(${lit(c3.id)});`);
   own(`select public.content_engine_article_review(${lit(c3.id)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
   gateAs(c3.id, 'PASS');   /* even a passing report: the database's own language floor still refuses */
@@ -494,6 +494,66 @@ try {
   chk('M no identity in the scorecard', !/reader\d@example|00000000-0000-0000-0000-00000000010/.test(JSON.stringify(sc)));
   const wd = own('select public.content_engine_weekly_data(28);');
   chk('M the weekly data: articles with their funnel, gate failures, AI waste', Array.isArray(wd.articles) && wd.articles.length >= 2 && wd.gate_failures.claims >= 1 && wd.ai.calls >= 5 && wd.ai.cache_hits === 2, { ai: wd.ai, gf: wd.gate_failures });
+  }
+
+
+  /* ── I integrity, research binding and REJECTED (docs/system-integrity) ── */
+  const io = own(`select public.content_engine_opportunity_upsert(${lit(JSON.stringify(opp('cfb:2026:w6:integrity', { research_hash: 'r1' })))}::jsonb, null);`);
+  const ia = own(`select public.content_engine_article_create(${lit(io.id)}, null, 'cfb_weekly_preview', 'integrity', ${lit(JSON.stringify(content({ slug: 'integrity-test', checks: { ok: true, failed: [], integrity_status: 'BLOCKED', integrity: { blocking: [{ rule_id: 'SCHED.KICKOFF_VERIFIED' }] } } })))}::jsonb, null);`);
+  own(`select public.content_engine_article_submit(${lit(ia.id)});`);
+  own(`select public.content_engine_article_review(${lit(ia.id)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
+  const iap = own(`select public.content_engine_article_approve(${lit(ia.id)}, ${lit(hashOf(ia.id))});`);
+  chk('I a BLOCKED integrity verdict cannot be approved, and the blocking rule is named', iap.ok === false && iap.reason === 'integrity_blocked' && /KICKOFF/.test(JSON.stringify(iap.blocking)), iap);
+  own(`select public.content_engine_article_save(${lit(ia.id)}, ${lit(JSON.stringify({ checks: { ok: true, failed: [] } }))}::jsonb, 'no verdict', null);`);
+  own(`select public.content_engine_article_review(${lit(ia.id)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
+  chk('I a MISSING integrity verdict is BLOCKED, never PASS', own(`select public.content_engine_article_approve(${lit(ia.id)}, ${lit(hashOf(ia.id))});`).reason === 'integrity_blocked');
+  chk('I … and the guard refuses it even past the door', /integrity engine blocks/.test(fails(() => db.sql(`begin; select set_config('content_engine.door', 'approve', true); select set_config('request.jwt.claim.sub', ${lit(OWNER)}, true);
+       update content_engine.articles set status = 'approved', approved_by = ${lit(OWNER)}, approved_hash = content_hash where id = ${lit(ia.id)}; commit;`)) || ''));
+  own(`select public.content_engine_article_save(${lit(ia.id)}, ${lit(JSON.stringify({ checks: { ok: true, failed: [], integrity_status: 'WARNING' } }))}::jsonb, 'warn', null);`);
+  own(`select public.content_engine_article_review(${lit(ia.id)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
+  gateAs(ia.id, 'PASS');
+  chk('I a WARNING verdict can be approved (warnings are for the reviewer)', own(`select public.content_engine_article_approve(${lit(ia.id)}, ${lit(hashOf(ia.id))});`).ok === true && statusOf(ia.id) === 'approved');
+  chk('I approval records the research it approved', one(`select approved_research_hash from content_engine.articles where id = ${lit(ia.id)};`) === 'r1');
+  chk('I ready to send on unchanged research', own(`select public.content_engine_article_transition(${lit(ia.id)}, 'ready_to_send', '{}'::jsonb);`).ok === true && statusOf(ia.id) === 'ready_to_send');
+  const iu = own(`select public.content_engine_opportunity_upsert(${lit(JSON.stringify(opp('cfb:2026:w6:integrity', { research_hash: 'r2' })))}::jsonb, null);`);
+  chk('I changed research REVOKES the approval: back to review', iu.research_changed === true && statusOf(ia.id) === 'in_review'
+    && one(`select approved_hash is null and approved_research_hash is null from content_engine.articles where id = ${lit(ia.id)};`) === 't');
+  chk('I … and the revocation is logged with both research hashes', one(`select detail ->> 'old_research_hash' || '>' || (detail ->> 'new_research_hash') from content_engine.events where kind = 'approval_revoked' and article_id = ${lit(ia.id)};`) === 'r1>r2');
+  own(`select public.content_engine_article_review(${lit(ia.id)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
+  const iap2 = own(`select public.content_engine_article_approve(${lit(ia.id)}, ${lit(hashOf(ia.id))});`);
+  chk('I a draft written on the OLD research cannot be re-approved until it is refreshed', iap2.ok === false && iap2.reason === 'research_changed', iap2);
+  own(`select public.content_engine_article_save(${lit(ia.id)}, ${lit(JSON.stringify({ research_hash: 'r2', checks: { ok: true, failed: [], integrity_status: 'PASS' } }))}::jsonb, 'refreshed', null);`);
+  own(`select public.content_engine_article_review(${lit(ia.id)}, ${lit(JSON.stringify(REVIEW))}::jsonb);`);
+  gateAs(ia.id, 'PASS');
+  chk('I refreshed on the new research: approved again', own(`select public.content_engine_article_approve(${lit(ia.id)}, ${lit(hashOf(ia.id))});`).ok === true);
+  one(`update content_engine.opportunities set research_hash = 'r3' where id = ${lit(io.id)};`);
+  const irs = own(`select public.content_engine_article_transition(${lit(ia.id)}, 'ready_to_send', '{}'::jsonb);`);
+  chk('I research changed behind the door: ready-to-send is refused', irs.ok === false && irs.reason === 'research_changed', irs);
+  chk('I … and Send is refused too', own(`select public.content_engine_send_claim(${lit(ia.id)}, 'x@y.test', 'S', ${lit(hashOf(ia.id))}, false, null);`).reason === 'research_changed');
+  const ib = own(`select public.content_engine_article_create(${lit(io.id)}, null, 'cfb_weekly_preview', 'rejectme', ${lit(JSON.stringify(content({ slug: 'reject-me' })))}::jsonb, null);`);
+  own(`select public.content_engine_article_submit(${lit(ib.id)});`);
+  chk('I REJECTED needs a reason', own(`select public.content_engine_article_transition(${lit(ib.id)}, 'rejected', '{}'::jsonb);`).reason === 'reason_required');
+  chk('I in review → rejected, with the reason logged', own(`select public.content_engine_article_transition(${lit(ib.id)}, 'rejected', '{"reason":"the central story is weak"}'::jsonb);`).ok && statusOf(ib.id) === 'rejected'
+    && one(`select detail ->> 'reason' from content_engine.events where kind = 'article_rejected' and article_id = ${lit(ib.id)};`) === 'the central story is weak');
+  chk('I a rejected draft cannot be approved as it stands', own(`select public.content_engine_article_transition(${lit(ib.id)}, 'approved', '{}'::jsonb);`).ok === false);
+  chk('I … it can be reworked (back to draft) or archived', own(`select public.content_engine_article_transition(${lit(ib.id)}, 'draft', '{}'::jsonb);`).ok && statusOf(ib.id) === 'draft');
+  chk('I the new formats and kinds are accepted', !!own(`select public.content_engine_opportunity_upsert(${lit(JSON.stringify(opp('cfb:2026:w6:storylines', { kind: 'weekend_storylines', formats: ['weekend_storylines'] })))}::jsonb, null);`).ok);
+
+  /* ── B the one AI ledger (6d): an identical request still in flight is
+     refused, so the same request is never paid for twice (main's AB tests
+     cover the cap, the cache, the settlement and the race) ── */
+  {
+    const HB = (x) => require('crypto').createHash('sha256').update('edgedesk-inflight:' + x).digest('hex');
+    const rq = (h) => `select public.content_engine_ai_reserve('draft', null, 'claude-opus-5-5', ${lit(h)}, 1000, 1000, 1);`;
+    own(`select public.content_engine_settings_save('{"llm_calls_per_day": 200}'::jsonb);`);
+    const f1 = svc(rq(HB(1)));
+    const f2 = svc(rq(HB(1)));
+    chk('B the identical request while the first is still in flight is refused, not charged twice', f1.ok === true && f2.ok === false && f2.reason === 'in_flight'
+      && one(`select count(*) from content_engine.ai_calls where request_hash = ${lit(HB(1))};`) === '1', { f1, f2 });
+    svc(`select public.content_engine_ai_settle(${f1.call_id}, null, 'error', null, null);`);
+    chk('B … once it is settled (here: an error, nothing billed), the same request may be made again', svc(rq(HB(1))).ok === true);
+    chk('B a different request is not held up by it', svc(rq(HB(2))).ok === true);
+    own(`select public.content_engine_settings_save('{"llm_calls_per_day": 20}'::jsonb);`);
   }
 
 } catch (e) {

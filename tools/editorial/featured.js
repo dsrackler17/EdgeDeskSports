@@ -121,6 +121,7 @@
     return { key: 'other', label: null, national: false };
   }
   function cfbWindow(p) {
+    if (p.tba) return { key: 'time_tba', label: 'time TBA', national: false };
     var late = p.hour >= 19 || (p.hour === 18 && p.minute >= 30);
     if (p.weekday === 'Sat' && late) return { key: 'saturday_night', label: 'Saturday night', national: true };
     if (p.weekday === 'Fri' && late) return { key: 'friday_night', label: 'Friday night', national: true };
@@ -331,6 +332,13 @@
     var t = num(entry.kickoff_ms) != null ? num(entry.kickoff_ms) : Date.parse(entry.kickoff);
     var p = easternParts(isFinite(t) ? t : Date.now());
     p.source = 'converted from the kickoff timestamp';
+    /* KICKOFF TRUTH (docs/system-integrity/AUDIT.md §2): a time the schedule
+       marks TBA — or, with no flag, the feed's midnight-Eastern placeholder — is
+       not a broadcast window. It used to land in "Saturday morning". */
+    var st = txt(entry.kickoff_state), flag = entry.kickoff_tbd === true || entry.start_time_tbd === true;
+    if (flag || st === 'TBA' || st === 'SUSPECT_PLACEHOLDER' || (entry.kickoff_tbd == null && entry.start_time_tbd == null && !st && p.hour === 0 && p.minute === 0)) {
+      p.tba = true; p.source = 'the kickoff time is not announced (TBA)';
+    }
     return p;
   }
 

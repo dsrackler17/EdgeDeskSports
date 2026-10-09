@@ -45,7 +45,8 @@
     freshness: 'cfb_source_freshness_v1',
     settlement: 'cfb_settlement_safety_v1',
     review: 'cfb_extreme_review_v1',
-    volume: 'cfb_bet_volume_guard_v1'
+    volume: 'cfb_bet_volume_guard_v1',
+    set_screen: 'cfb_market_set_screen_v1'
   };
 
   /* Hard bounds. Evidence (docs/cfb-production/MARKET_INTEGRITY.md §2): the raw
@@ -431,8 +432,86 @@
     return out;
   }
 
+  /* ------------------------------------ 6. the set screen (Problem E)
+     docs/system-integrity/RULES.md §MKT. One game, one market, many quotes.
+     Compares EQUIVALENT markets only, and quarantines — never deletes — what
+     cannot be main-line consensus. A legitimate outlier that is merely far
+     from the others is left to screenQuote (it quarantines for validation and
+     is released when corroborated); this screen catches what is not a main-
+     line quote at all.
+       DUPLICATE_QUOTE          the same quote twice (same id, or same source,
+                                book, line, prices and capture time)
+       SUSPENDED_MARKET         the book flags the market suspended / off the
+                                board, or a priced market arrives without prices
+       NON_EQUIVALENT_MARKET    a different market definition (period, line
+                                type, market type) than the one being compared
+       ALT_LINE_MISFILED        filed as a main line, but its number sits off
+                                the main band with the lopsided prices of an
+                                alternate rung
+       PRICE_POLARITY           a main line near consensus whose two prices are
+                                lopsided the wrong way (the side laying points
+                                priced as the big underdog): swapped prices
+       UNMAPPED_TEAM            the quote's teams do not resolve to this game
+     opts: { target: { market_type, period, line_type }, sameTeam, game } */
+  var SET = { MAIN_BAND: { spread: 3.5, total: 5 }, LOPSIDED_IMPLIED: 0.12, POLARITY_IMPLIED: 0.12 };
+  function marketDefinition(q) {
+    return { market_type: q.market_type || null, period: String(q.period || 'game').toLowerCase(),
+      line_type: q.is_alternate === true || /alt/i.test(String(q.line_type || '')) ? 'alternate' : 'main' };
+  }
+  function definitionKey(d) { return [d.market_type, d.period, d.line_type].join('|'); }
+  function screenSet(quotes, opts) {
+    opts = opts || {};
+    var tgt = opts.target || { market_type: 'spread', period: 'game', line_type: 'main' };
+    var tkey = definitionKey({ market_type: tgt.market_type, period: String(tgt.period || 'game').toLowerCase(), line_type: tgt.line_type || 'main' });
+    var accepted = [], quarantined = [], seen = {};
+    function q8(q, reasons, ev) { quarantined.push({ quote: q, reasons: reasons, evidence: ev || null, action: 'QUARANTINE' }); }
+    var cand = [];
+    (quotes || []).forEach(function (q) {
+      if (!q) return;
+      var d = marketDefinition(q), key = definitionKey(d);
+      if (key !== tkey) { q8(q, ['NON_EQUIVALENT_MARKET'], { definition: key, target: tkey }); return; }
+      var dup = q.quote_id ? 'id:' + q.quote_id : ['k', q.source, q.book, lineOf(q), q.price_home, q.price_away, q.price_over, q.price_under, ms(q.observed_at)].join('|');
+      if (seen[dup]) { q8(q, ['DUPLICATE_QUOTE'], { duplicate_of: seen[dup] }); return; }
+      seen[dup] = q.quote_id || dup;
+      var cols = priceCols(q);
+      if (q.suspended === true || /suspend|off[_ ]?board|closed|halted/i.test(String(q.market_status || q.status || ''))
+          || (q.priced === true && !isNum(num(q[cols[0]])) && !isNum(num(q[cols[1]]))))
+      { q8(q, ['SUSPENDED_MARKET'], { status: q.market_status || q.status || null }); return; }
+      if (opts.game) {
+        var same = opts.sameTeam || defaultSameTeam;
+        if (present(q.home_team) && present(q.away_team)) {
+          var straight = same(q.home_team, opts.game.home) === true && same(q.away_team, opts.game.away) === true;
+          var swapped = same(q.home_team, opts.game.away) === true && same(q.away_team, opts.game.home) === true;
+          if (!straight && !swapped) { q8(q, ['UNMAPPED_TEAM'], { home_team: q.home_team, away_team: q.away_team }); return; }
+        }
+      }
+      cand.push(q);
+    });
+    var lines = cand.map(lineOf).filter(isNum), med = median(lines), mt = tgt.market_type;
+    cand.forEach(function (q) {
+      var x = lineOf(q), cols = priceCols(q), p1 = implied(q[cols[0]]), p2 = implied(q[cols[1]]), ev = { line: x, consensus: r(med, 3) };
+      if (isNum(p1) && isNum(p2) && (mt === 'spread' || mt === 'total')) {
+        var s = p1 + p2, n1 = p1 / s, imb = n1 - 0.5;
+        ev.no_vig_first = r(n1, 4);
+        var off = isNum(x) && isNum(med) ? Math.abs(x - med) : 0;
+        /* an alternate rung: far from the main number, priced lopsided */
+        if (off > SET.MAIN_BAND[mt] && Math.abs(imb) >= SET.LOPSIDED_IMPLIED) { q8(q, ['ALT_LINE_MISFILED'], ev); return; }
+        /* polarity: a spread side LAYING points (home_line < 0 → home) priced as the big underdog */
+        if (mt === 'spread' && isNum(x) && Math.abs(x) >= 1 && off <= SET.MAIN_BAND[mt]) {
+          var layingHome = x < 0, homeImb = imb;
+          if ((layingHome && homeImb <= -SET.POLARITY_IMPLIED) || (!layingHome && homeImb >= SET.POLARITY_IMPLIED)) { q8(q, ['PRICE_POLARITY'], ev); return; }
+        }
+      }
+      accepted.push(q);
+    });
+    return { rule: RULES.set_screen, target: tkey, accepted: accepted, quarantined: quarantined,
+      counts: { input: (quotes || []).length, accepted: accepted.length, quarantined: quarantined.length },
+      note: 'quarantined quotes are kept for validation and never enter main-line consensus or a publisher-facing number' };
+  }
+
   return {
     RULES: RULES, BOUNDS: BOUNDS, OUTLIER: OUTLIER, CONSENSUS: CONSENSUS, FRESHNESS: FRESHNESS, EXTREME: EXTREME, VOLUME: VOLUME,
+    SET: SET, marketDefinition: marketDefinition, screenSet: screenSet,
     num: num, implied: implied, validateQuote: validateQuote, screenQuote: screenQuote, crossMarket: crossMarket,
     quoteAgeH: quoteAgeH, freshnessOf: freshnessOf, assessMarket: assessMarket,
     finalProblem: finalProblem, rescheduled: rescheduled, extremeReview: extremeReview, betGate: betGate, betVolume: betVolume,
