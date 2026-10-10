@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-10-10T17:07:41.277Z",
+ "generated_at": "2026-10-10T18:07:36.337Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
@@ -29,7 +29,7 @@
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
     "from": "2026-10-04T16:25:34.047Z",
-    "to": "2026-10-10T15:36:23.322Z"
+    "to": "2026-10-10T17:55:40.204Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
@@ -41,13 +41,13 @@
     "what": "market coverage (% of slate games with 2+ fresh books)",
     "kind": "MARKET",
     "from": 2,
-    "to": 12
+    "to": 13
    },
    {
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
     "from": 78,
-    "to": 33
+    "to": 30
    }
   ],
   "summary": "SOFTWARE: pricing code · SOFTWARE: research-gate code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with 2+ fresh books) · MARKET: market coverage (% of slate games with a fresh quote)"
@@ -668,42 +668,6 @@
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-10T15:36:23.322Z",
-   "old_fair": -1.67,
-   "new_fair": -3.76,
-   "change": -2.09,
-   "material": true,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "QB_STATUS",
-     "detail": "away: David McComb (PREVIOUS_GAME) → Caleb Heavner (COMPETITION)"
-    },
-    {
-     "cause": "MATCHUP_UPDATE",
-     "term": "matchup",
-     "points": 0.22
-    }
-   ],
-   "unexplained": 0,
-   "game_id": "401866440",
-   "game": "Miami (OH) @ Massachusetts",
-   "market_then": null,
-   "market_now": 5.38,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "MARKET_ALIGNED",
-   "price_state": "NO INITIAL EDGE"
-  },
-  {
-   "from_at": "2026-09-30T05:47:24.470Z",
    "to_at": "2026-10-10T12:47:33.688Z",
    "old_fair": 5.35,
    "new_fair": 7.39,
@@ -909,7 +873,7 @@
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-10T12:47:33.688Z",
+   "to_at": "2026-10-10T17:55:40.204Z",
    "old_fair": -6.28,
    "new_fair": -5.33,
    "change": 0.95,
@@ -933,10 +897,10 @@
    "game_id": "401856715",
    "game": "LSU @ Kentucky",
    "market_then": null,
-   "market_now": 9.5,
+   "market_now": 9,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "INVESTIGATE",
+   "status_now": "NO_MARKET",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
@@ -973,7 +937,7 @@
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-08T19:18:16.037Z",
+   "to_at": "2026-10-10T17:55:40.204Z",
    "old_fair": 1.62,
    "new_fair": 0.79,
    "change": -0.83,
@@ -997,10 +961,10 @@
    "game_id": "401858480",
    "game": "Illinois @ Michigan State",
    "market_then": null,
-   "market_now": 2.75,
+   "market_now": 2.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "INVESTIGATE",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
@@ -1187,7 +1151,7 @@
   },
   {
    "from_at": "2026-09-30T05:47:24.470Z",
-   "to_at": "2026-10-10T12:47:33.688Z",
+   "to_at": "2026-10-10T17:55:40.204Z",
    "old_fair": -6.26,
    "new_fair": -6.24,
    "change": 0.02,
@@ -1202,10 +1166,10 @@
    "game_id": "401858255",
    "game": "Duke @ Georgia Tech",
    "market_then": null,
-   "market_now": 6,
+   "market_now": 5.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "MARKET_ALIGNED",
+   "status_now": "NO_MARKET",
    "price_state": "NO INITIAL EDGE"
   },
   {
@@ -1233,7 +1197,7 @@
   },
   {
    "from_at": "2026-10-01T06:18:17.322Z",
-   "to_at": "2026-10-10T12:47:33.688Z",
+   "to_at": "2026-10-10T17:55:40.204Z",
    "old_fair": -9.75,
    "new_fair": -9.75,
    "change": 0,
@@ -1251,7 +1215,7 @@
    "market_now": 7.5,
    "market_change": -0.25,
    "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
+   "status_now": "NO_MARKET",
    "price_state": "PART OF THE EDGE PRICED IN"
   },
   {
