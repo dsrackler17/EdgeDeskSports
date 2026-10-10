@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-10T19:30:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-10. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1895,107 +1895,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-10. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "18342j69nruy8",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can Duke contain Georgia Tech’s explosive runs?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 1.7 points.",
-    "gap": {
-      "points": 1.7,
-      "toward": "Duke",
-      "other": "Georgia Tech"
-    },
-    "supporting": [
-      "When Georgia Tech has the ball (pass protection against the pass rush): Georgia Tech’s offense has allowed a sack on 7.4% of its dropbacks, and Duke’s defense sacks the quarterback on 8.9% of opponent dropbacks (FBS average 5.6%).",
-      "When Georgia Tech has the ball (big plays on the ground): Georgia Tech’s offense turns 9.1% of its runs into explosive gains, and Duke’s defense gives up explosive gains on 2.5% of opponent runs (FBS average 6.6%).",
-      "When Duke has the ball (pass protection against the pass rush): Duke’s offense has allowed a sack on 0.9% of its dropbacks, and Georgia Tech’s defense sacks the quarterback on 6.0% of opponent dropbacks (FBS average 5.6%).",
-      "When Duke has the ball (big plays through the air): Duke’s offense turns 14.4% of its pass plays into explosive gains, and Georgia Tech’s defense gives up explosive gains on 14.6% of opponent pass plays (FBS average 10.4%)."
-    ],
-    "contradicting": [
-      "EdgeDesk’s position-group ratings put Georgia Tech’s offensive line No. 52 nationally and Duke’s No. 95.",
-      "EdgeDesk’s position-group ratings put Georgia Tech’s running backs No. 10 nationally and Duke’s No. 52.",
-      "When Duke has the ball (third down): Duke’s offense converts 33.5% of its third downs, and Georgia Tech’s defense allows opponents to convert 40.4% of their third downs (FBS average 39.6%).",
-      "When Duke has the ball (the red zone): Duke’s offense succeeds on 35.4% of its red-zone plays, and Georgia Tech’s defense allows success on 32.8% of opponent red-zone plays (FBS average 43.8%)."
-    ],
-    "quarterbacks": [
-      "Alberto Mendoza has completed 82 of 122 passes (67.2%) for 960 yards, 7.9 yards per attempt, 6 touchdowns and 3 interceptions in four games for Georgia Tech, and has been sacked on 10 of 132 dropbacks.",
-      "Walker Eget has completed 56 of 92 passes (60.9%) for 731 yards, 7.9 yards per attempt, 6 touchdowns and 1 interception in four games for Duke, and has been sacked on 1 of 93 dropbacks.",
-      "Alberto Mendoza does not appear on Georgia Tech’s update 2 availability report.",
-      "Duke’s update 2 ACC availability report (published Oct. 9) lists quarterback Lawrence Gardner as out.",
-      "Walker Eget does not appear on Duke’s update 2 availability report."
-    ],
-    "availability": [
-      "Georgia Tech’s availability report lists receiver Jaiven Plummer as questionable.",
-      "Duke’s availability report lists seven players as out, including offensive linemen Kai Jacobowitz, Reagan McCranie and Roman Fina."
-    ],
-    "script": {
-      "model": [
-        "Duke’s defense has to come out ahead on long runs: it gives up explosive gains on 2.5% of opponent runs, against an offense that turns 9.1% of its runs into explosive gains.",
-        "Duke’s offense has to hold its own on third down against a defense that allows opponents to convert 40.4% of their third downs.",
-        "Duke’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 8.9% of opponent dropbacks, against an offense that has allowed a sack on 7.4% of its dropbacks.",
-        "Duke’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 0.9% of its dropbacks, and Georgia Tech’s defense sacks the quarterback on 6.0% of opponent dropbacks."
-      ],
-      "market": [
-        "Georgia Tech’s defense has to come out ahead on third down: it allows opponents to convert 40.4% of their third downs, against an offense that converts 33.5% of its third downs.",
-        "Georgia Tech’s offense has to keep winning on long runs: it turns 9.1% of its runs into explosive gains, and Duke’s defense gives up explosive gains on 2.5% of opponent runs.",
-        "Mendoza keeps producing at his season rate (67.2% completions, 7.9 yards per attempt, 6 TD, 3 INT)."
-      ]
-    },
-    "unknown": [
-      "Georgia Tech’s availability report lists receiver Jaiven Plummer as questionable.",
-      "Weather: 65 degrees, partly cloudy, gusts near 27 mph.",
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Georgia Tech and Duke.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Georgia Tech), sack rate (Georgia Tech), sack rate allowed (Duke) and sack rate (Duke); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "THIN_SAMPLE",
-        "severity": "medium",
-        "text": "One team has played only 4 games; ratings this early carry wide error."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-10T15:35:51.954Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-10T15:35:20.402Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-07T23:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Atlantic Coast Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=ACC&sport=Football&conf=ACC&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-10T00:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T17:18:12.827Z"
+    "at": "2026-10-10T21:34:09.542Z"
   }
 }

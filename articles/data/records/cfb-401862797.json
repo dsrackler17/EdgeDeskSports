@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-10T20:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-10. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1912,92 +1912,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-10. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1qbgj5e4yiqog",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": false,
-    "question": "Can East Carolina’s pass rush get to Jacurri Brown?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward East Carolina, and its own breakdown accounts for about 0.7 of the 3.9 points, but not the full gap. It is a research question, not a bet.",
-    "gap": {
-      "points": 3.9,
-      "toward": "East Carolina",
-      "other": "Rice"
-    },
-    "supporting": [
-      "When East Carolina has the ball (big plays on the ground): East Carolina’s offense turns 5.2% of its runs into explosive gains, and Rice’s defense gives up explosive gains on 11.4% of opponent runs (FBS average 6.6%).",
-      "When Rice has the ball (pass protection against the pass rush): Rice’s offense has allowed a sack on 8.9% of its dropbacks, and East Carolina’s defense sacks the quarterback on 9.8% of opponent dropbacks (FBS average 5.6%).",
-      "When Rice has the ball (the line of scrimmage on running plays): Rice’s offense is stopped at or behind the line on 18.4% of its runs, and East Carolina’s defense stops 29.6% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When East Carolina has the ball (the line of scrimmage on running plays): East Carolina’s offense is stopped at or behind the line on 15.0% of its runs, and Rice’s defense stops 16.1% of opponent runs at or behind the line (FBS average 17.4%)."
-    ],
-    "contradicting": [
-      "When East Carolina has the ball (pass protection against the pass rush): East Carolina’s offense has allowed a sack on 8.1% of its dropbacks, and Rice’s defense sacks the quarterback on 3.0% of opponent dropbacks (FBS average 5.6%).",
-      "When East Carolina has the ball (third down): East Carolina’s offense converts 22.5% of its third downs, and Rice’s defense allows opponents to convert 43.3% of their third downs (FBS average 39.6%).",
-      "In his last two games (Old Dominion and northcarolinacentral), Griffis averaged 3.7 yards per attempt, against 6.9 in his two games before that.",
-      "When East Carolina has the ball (the red zone): East Carolina’s offense succeeds on 34.9% of its red-zone plays, and Rice’s defense allows success on 34.2% of opponent red-zone plays (FBS average 43.8%)."
-    ],
-    "quarterbacks": [
-      "Mitch Griffis has completed 37 of 68 passes (54.4%) for 423 yards, 6.2 yards per attempt, 3 touchdowns and 1 interception in four games for East Carolina, and has been sacked on 5 of 73 dropbacks.",
-      "Emory Williams has completed 30 of 45 passes (66.7%) for 385 yards, 8.6 yards per attempt, 3 touchdowns and 1 interception in three games for East Carolina, and has been sacked on 4 of 49 dropbacks.",
-      "Jacurri Brown has completed 36 of 67 passes (53.7%) for 410 yards, 6.1 yards per attempt, 3 touchdowns and 1 interception in five games for Rice, and has been sacked on 7 of 74 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "East Carolina’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 9.8% of opponent dropbacks, against an offense that has allowed a sack on 8.9% of its dropbacks.",
-        "East Carolina’s offense has to hold its own on third down against a defense that allows opponents to convert 43.3% of their third downs.",
-        "East Carolina’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 3.0% of opponent dropbacks.",
-        "East Carolina’s offense has to keep winning on long runs: it turns 5.2% of its runs into explosive gains, and Rice’s defense gives up explosive gains on 11.4% of opponent runs."
-      ],
-      "market": [
-        "Rice’s defense has to come out ahead on third down: it allows opponents to convert 43.3% of their third downs, against an offense that converts 22.5% of its third downs.",
-        "Rice’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 3.0% of opponent dropbacks, against an offense that has allowed a sack on 8.1% of its dropbacks.",
-        "Rice’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 8.9% of its dropbacks, and East Carolina’s defense sacks the quarterback on 9.8% of opponent dropbacks."
-      ]
-    },
-    "unknown": [
-      "Weather: 72 degrees, drizzle, gusts near 32 mph.",
-      "EdgeDesk’s own sources disagree on sack rate and sack rate allowed for East Carolina and Rice.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel, conference implications and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate (East Carolina) and sack rate allowed (Rice); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "HFA_CONSTANT",
-        "severity": "medium",
-        "text": "EdgeDesk’s model gives East Carolina 4.1 points for playing at home — a league-wide value, not one measured for this stadium; historically, the closing market has priced about 61% of EdgeDesk’s home-field number."
-      },
-      {
-        "key": "THIN_SAMPLE",
-        "severity": "medium",
-        "text": "One team has played only 4 games; ratings this early carry wide error."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-10T15:35:51.954Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-07T23:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T17:18:12.827Z"
+    "at": "2026-10-10T21:34:09.542Z"
   }
 }

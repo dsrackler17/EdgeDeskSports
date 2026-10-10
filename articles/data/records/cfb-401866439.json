@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-10T19:30:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-10. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1863,85 +1863,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-10. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "eomwora5qzx5",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can Kent State contain Western Michigan’s explosive runs?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 1.4 points.",
-    "gap": {
-      "points": 1.4,
-      "toward": "Western Michigan",
-      "other": "Kent State"
-    },
-    "supporting": [
-      "When Kent State has the ball (big plays on the ground): Kent State’s offense turns 3.2% of its runs into explosive gains, and Western Michigan’s defense gives up explosive gains on 4.9% of opponent runs (FBS average 6.6%).",
-      "When Western Michigan has the ball (the line of scrimmage on running plays): Western Michigan’s offense is stopped at or behind the line on 13.5% of its runs, and Kent State’s defense stops 16.0% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When Kent State has the ball (the run game against the run defense): Kent State’s offense averages 3.6 yards per carry, and Western Michigan’s defense allows 4.4 yards per carry (FBS average 5.1).",
-      "When Kent State has the ball (big plays through the air): Kent State’s offense turns 7.6% of its pass plays into explosive gains, and Western Michigan’s defense gives up explosive gains on 10.6% of opponent pass plays (FBS average 10.4%)."
-    ],
-    "contradicting": [
-      "When Western Michigan has the ball (pass protection against the pass rush): Western Michigan’s offense has allowed a sack on 6.3% of its dropbacks, and Kent State’s defense sacks the quarterback on 8.7% of opponent dropbacks (FBS average 5.6%).",
-      "When Western Michigan has the ball (big plays through the air): Western Michigan’s offense turns 4.9% of its pass plays into explosive gains, and Kent State’s defense gives up explosive gains on 10.1% of opponent pass plays (FBS average 10.4%).",
-      "When Western Michigan has the ball (big plays on the ground): Western Michigan’s offense turns 3.0% of its runs into explosive gains, and Kent State’s defense gives up explosive gains on 5.0% of opponent runs (FBS average 6.6%).",
-      "When Kent State has the ball (pass protection against the pass rush): Kent State’s offense has allowed a sack on 3.6% of its dropbacks, and Western Michigan’s defense sacks the quarterback on 5.6% of opponent dropbacks (FBS average 5.6%)."
-    ],
-    "quarterbacks": [
-      "Broc Lowry has completed 78 of 114 passes (68.4%) for 736 yards, 6.5 yards per attempt, 4 touchdowns and 1 interception in five games for Western Michigan, and has been sacked on 8 of 122 dropbacks.",
-      "Dru DeShields has completed 70 of 121 passes (57.9%) for 757 yards, 6.3 yards per attempt, 3 touchdowns and 5 interceptions in five games for Kent State, and has been sacked on 4 of 125 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Western Michigan’s offense has to keep winning on long runs: it turns 3.0% of its runs into explosive gains, and Kent State’s defense gives up explosive gains on 5.0% of opponent runs.",
-        "Western Michigan’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 8.7% of opponent dropbacks.",
-        "Western Michigan’s defense has to come out ahead on long runs: it gives up explosive gains on 4.9% of opponent runs, against an offense that turns 3.2% of its runs into explosive gains.",
-        "Western Michigan’s defense has to come out ahead on the ground: it allows 4.4 yards per carry, against an offense that averages 3.6 yards per carry."
-      ],
-      "market": [
-        "Kent State’s defense has to come out ahead on long runs: it gives up explosive gains on 5.0% of opponent runs, against an offense that turns 3.0% of its runs into explosive gains.",
-        "Kent State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 8.7% of opponent dropbacks, against an offense that has allowed a sack on 6.3% of its dropbacks.",
-        "DeShields keeps producing at his season rate (57.9% completions, 6.3 yards per attempt, 3 TD, 5 INT)."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Western Michigan and Kent State.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Western Michigan), sack rate (Western Michigan), sack rate allowed (Kent State) and sack rate (Kent State); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "HFA_CONSTANT",
-        "severity": "medium",
-        "text": "EdgeDesk’s model gives Western Michigan 4.1 points for playing at home — a league-wide value, not one measured for this stadium; historically, the closing market has priced about 61% of EdgeDesk’s home-field number."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-10T15:35:51.954Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-07T23:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T17:18:12.827Z"
+    "at": "2026-10-10T21:34:09.542Z"
   }
 }

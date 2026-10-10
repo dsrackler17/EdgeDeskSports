@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-10T19:45:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-10. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1935,92 +1935,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-10. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1cjboy910xbmyb",
-    "status": "EXPLAINED",
-    "input_suspect": false,
-    "question": "Can UConn contain Temple’s explosive runs?",
-    "assessment": "Most of the 2.6-point difference traces to home field (engine constant) (about 1.6 points), which the closing market has historically priced differently. That explains the gap; it does not make either number a bet.",
-    "gap": {
-      "points": 2.6,
-      "toward": "Temple",
-      "other": "UConn"
-    },
-    "supporting": [
-      "When Temple has the ball (big plays through the air): Temple’s offense turns 15.4% of its pass plays into explosive gains, and UConn’s defense gives up explosive gains on 11.4% of opponent pass plays (FBS average 10.4%).",
-      "When UConn has the ball (big plays on the ground): UConn’s offense turns 6.9% of its runs into explosive gains, and Temple’s defense gives up explosive gains on 3.5% of opponent runs (FBS average 6.6%).",
-      "In his last two games (Army and South Florida), Sheppard averaged 9.8 yards per attempt, against 7.8 in his three games before that.",
-      "In his last two games (Miami (OH) and Syracuse), Osborne averaged 7.3 yards per attempt, against 9.6 in his three games before that."
-    ],
-    "contradicting": [
-      "When Temple has the ball (pass protection against the pass rush): Temple’s offense has allowed a sack on 8.7% of its dropbacks, and UConn’s defense sacks the quarterback on 6.7% of opponent dropbacks (FBS average 5.6%).",
-      "When UConn has the ball (big plays through the air): UConn’s offense turns 16.3% of its pass plays into explosive gains, and Temple’s defense gives up explosive gains on 13.8% of opponent pass plays (FBS average 10.4%).",
-      "When UConn has the ball (the line of scrimmage on running plays): UConn’s offense is stopped at or behind the line on 15.3% of its runs, and Temple’s defense stops 10.7% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When UConn has the ball (third down): UConn’s offense converts 42.2% of its third downs, and Temple’s defense allows opponents to convert 51.4% of their third downs (FBS average 39.6%)."
-    ],
-    "quarterbacks": [
-      "Ajani Sheppard has completed 40 of 72 passes (55.6%) for 631 yards, 8.8 yards per attempt, 6 touchdowns and no interceptions in five games for Temple, and has been sacked on 6 of 78 dropbacks.",
-      "Jaxon Smolik has completed 14 of 23 passes (60.9%) for 116 yards, 5.0 yards per attempt, 1 touchdown and 1 interception in three games for Temple, and has been sacked on 3 of 26 dropbacks.",
-      "Kalieb Osborne has completed 80 of 140 passes (57.1%) for 1,176 yards, 8.4 yards per attempt, 10 touchdowns and 2 interceptions in five games for UConn, and has been sacked on 13 of 153 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Temple’s offense has to keep winning on long runs: it turns 8.9% of its runs into explosive gains, and UConn’s defense gives up explosive gains on 2.6% of opponent runs.",
-        "Temple’s defense has to slow UConn on big pass plays — UConn’s offense turns 16.3% of its pass plays into explosive gains.",
-        "Temple’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 6.7% of opponent dropbacks.",
-        "Temple’s offense has to keep winning on big pass plays: it turns 15.4% of its pass plays into explosive gains, and UConn’s defense gives up explosive gains on 11.4% of opponent pass plays."
-      ],
-      "market": [
-        "UConn’s offense has to keep winning on big pass plays: it turns 16.3% of its pass plays into explosive gains, and Temple’s defense gives up explosive gains on 13.8% of opponent pass plays.",
-        "UConn’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 6.7% of opponent dropbacks, against an offense that has allowed a sack on 8.7% of its dropbacks.",
-        "UConn’s defense has to come out ahead on long runs: it gives up explosive gains on 2.6% of opponent runs, against an offense that turns 8.9% of its runs into explosive gains."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Temple and UConn.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, conference implications and penalty rate.",
-      "The line on file was captured Oct. 9 and may have moved."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Temple), sack rate (Temple) and sack rate allowed (UConn); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "HFA_CONSTANT",
-        "severity": "medium",
-        "text": "EdgeDesk’s model gives Temple 4.1 points for playing at home — a league-wide value, not one measured for this stadium; historically, the closing market has priced about 61% of EdgeDesk’s home-field number."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "UConn: new head coach; returning roster share at the 4th percentile; returning production at the 2nd percentile; transfers out at the 96th percentile. The long-run state is weighted 68% (regime curve) instead of 80% (standard curve) at 5 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-10T15:35:51.954Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-07T23:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T17:18:12.827Z"
+    "at": "2026-10-10T21:34:09.542Z"
   }
 }

@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "UAB vs. Memphis: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "UAB vs. Memphis 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk fair spread for UAB at Memphis: Memphis -15.6, fair total 56.7. Memphis wins 86% of simulations. Data confidence 83%. Model status AGREEMENT. Research, not picks.",
+  "seo_description": "EdgeDesk fair spread for UAB at Memphis: Memphis -15.6, fair total 56.1. Memphis wins 86% of simulations. Data confidence 83%. Model status AGREEMENT. Research, not picks.",
   "excerpt": "Memphis carries the stronger underlying team rating — -0.7 against -3.3, a 2.5-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Memphis -15.6 before any sportsbook number is consulted, with Memphis winning 86% of…",
   "home_team": "Memphis",
   "away_team": "UAB",
@@ -21,15 +21,15 @@
   "game_time": "2026-10-10T23:00:00.000Z",
   "game_when_label": "2026-10-10 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-10T17:18:12.827Z",
-  "generated_at": "2026-10-10T17:18:12.827Z",
+  "updated_at": "2026-10-10T21:34:09.542Z",
+  "generated_at": "2026-10-10T21:34:09.542Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
   "confidence": 83,
   "priced": true,
   "fair_spread_text": "Memphis -15.6",
-  "fair_total": "56.7",
+  "fair_total": "56.1",
   "hero_image": null,
   "canonical_url": "https://edgedesksports.com/articles/uab-vs-memphis-2026",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
@@ -78,11 +78,11 @@
       "favourite": "Memphis",
       "underdog": "UAB",
       "margin": "15.6",
-      "total": "56.7",
+      "total": "56.1",
       "score": {
         "away": {
           "team": "UAB",
-          "points": "21"
+          "points": "20"
         },
         "home": {
           "team": "Memphis",
@@ -129,9 +129,9 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 4
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 6
         },
         "absent": [
           {
@@ -139,6 +139,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Memphis and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses American Athletic Conference requires an availability report for this game: a single game-day report for each conference game, published two hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for UAB and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses American Athletic Conference requires an availability report for this game: a single game-day report for each conference game, published two hours before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. American Athletic Conference requires an availability report for this game: a single game-day report for each conference game, published two hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. American Athletic Conference requires an availability report for this game: a single game-day report for each conference game, published two hours before kickoff"
           },
           {
             "field": "off_field",
@@ -243,7 +267,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T19:30:00.000Z",
-        "retrieved_at": "2026-10-10T15:34:58.086Z"
+        "retrieved_at": "2026-10-10T19:20:57.385Z"
       },
       "home": {
         "team": "Memphis",
@@ -327,9 +351,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T15:00:00.000Z",
-        "retrieved_at": "2026-10-10T15:34:58.086Z"
+        "retrieved_at": "2026-10-10T19:20:57.385Z"
       },
-      "generated_at": "2026-10-10T15:35:44.864Z",
+      "generated_at": "2026-10-10T19:21:42.747Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -648,21 +672,21 @@
               "a": {
                 "v": "54.4",
                 "n": 54.4,
-                "rank": "#118 of 138",
-                "rank_n": 118,
+                "rank": "#116 of 138",
+                "rank_n": 116,
                 "note": null
               },
               "h": {
                 "v": "57.4",
                 "n": 57.4,
-                "rank": "#68 of 138",
-                "rank_n": 68,
+                "rank": "#67 of 138",
+                "rank_n": 67,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 3,
-                "rank_gap": 50
+                "rank_gap": 49
               }
             },
             {
@@ -696,8 +720,8 @@
               "a": {
                 "v": "53.9",
                 "n": 53.9,
-                "rank": "#120 of 138",
-                "rank_n": 120,
+                "rank": "#118 of 138",
+                "rank_n": 118,
                 "note": null
               },
               "h": {
@@ -710,7 +734,7 @@
               "edge": {
                 "side": "h",
                 "gap": 1.5,
-                "rank_gap": 69
+                "rank_gap": 67
               }
             },
             {
@@ -744,8 +768,8 @@
               "a": {
                 "v": "56.2",
                 "n": 56.2,
-                "rank": "#63 of 138",
-                "rank_n": 63,
+                "rank": "#64 of 138",
+                "rank_n": 64,
                 "note": null
               },
               "h": {
@@ -758,7 +782,7 @@
               "edge": {
                 "side": "a",
                 "gap": 0.3,
-                "rank_gap": 10
+                "rank_gap": 9
               }
             },
             {
@@ -840,21 +864,21 @@
               "a": {
                 "v": "57.8",
                 "n": 57.8,
-                "rank": "#6 of 137",
+                "rank": "#6 of 136",
                 "rank_n": 6,
                 "note": null
               },
               "h": {
                 "v": "55.0",
                 "n": 55,
-                "rank": "#98 of 137",
-                "rank_n": 98,
+                "rank": "#97 of 136",
+                "rank_n": 97,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 2.8,
-                "rank_gap": 92
+                "rank_gap": 91
               }
             }
           ]
@@ -920,13 +944,13 @@
       "away": [
         {
           "k": "Kicking",
-          "rank_gap": 92,
+          "rank_gap": 91,
           "gap": 2.8,
           "lead": "UAB",
           "trail": "Memphis",
-          "lead_cell": "57.8 · #6 of 137",
-          "trail_cell": "55.0 · #98 of 137",
-          "text": "UAB 57.8 (#6 of 137) vs Memphis 55.0 (#98 of 137) — 92 places on the national board."
+          "lead_cell": "57.8 · #6 of 136",
+          "trail_cell": "55.0 · #97 of 136",
+          "text": "UAB 57.8 (#6 of 136) vs Memphis 55.0 (#97 of 136) — 91 places on the national board."
         },
         {
           "k": "Pass defense",
@@ -1002,23 +1026,23 @@
         },
         {
           "k": "Receivers",
-          "rank_gap": 69,
+          "rank_gap": 67,
           "gap": 1.5,
           "lead": "Memphis",
           "trail": "UAB",
           "lead_cell": "55.4 · #51 of 138",
-          "trail_cell": "53.9 · #120 of 138",
-          "text": "Memphis 55.4 (#51 of 138) vs UAB 53.9 (#120 of 138) — 69 places on the national board."
+          "trail_cell": "53.9 · #118 of 138",
+          "text": "Memphis 55.4 (#51 of 138) vs UAB 53.9 (#118 of 138) — 67 places on the national board."
         },
         {
           "k": "QB room",
-          "rank_gap": 50,
+          "rank_gap": 49,
           "gap": 3,
           "lead": "Memphis",
           "trail": "UAB",
-          "lead_cell": "57.4 · #68 of 138",
-          "trail_cell": "54.4 · #118 of 138",
-          "text": "Memphis 57.4 (#68 of 138) vs UAB 54.4 (#118 of 138) — 50 places on the national board."
+          "lead_cell": "57.4 · #67 of 138",
+          "trail_cell": "54.4 · #116 of 138",
+          "text": "Memphis 57.4 (#67 of 138) vs UAB 54.4 (#116 of 138) — 49 places on the national board."
         }
       ],
       "measured": [],
@@ -1109,7 +1133,7 @@
           "team": "UAB",
           "label": "QB room",
           "v": "54.4",
-          "rank": "#118 of 138",
+          "rank": "#116 of 138",
           "note": null
         },
         "def": {
@@ -1120,7 +1144,7 @@
           "note": null
         },
         "complete": true,
-        "read": "UAB’s QB room rates 54.4 (#118 of 138) against Memphis’s secondary at 50.7 (#94 of 138). Memphis’s unit stands higher among its own position group, by 24 places."
+        "read": "UAB’s QB room rates 54.4 (#116 of 138) against Memphis’s secondary at 50.7 (#94 of 138). Memphis’s unit stands higher among its own position group, by 22 places."
       },
       {
         "title": "Memphis QB room vs UAB secondary",
@@ -1128,7 +1152,7 @@
           "team": "Memphis",
           "label": "QB room",
           "v": "57.4",
-          "rank": "#68 of 138",
+          "rank": "#67 of 138",
           "note": null
         },
         "def": {
@@ -1139,7 +1163,7 @@
           "note": null
         },
         "complete": true,
-        "read": "Memphis’s QB room rates 57.4 (#68 of 138) against UAB’s secondary at 52.6 (#77 of 138). Memphis’s unit stands higher among its own position group, by 9 places."
+        "read": "Memphis’s QB room rates 57.4 (#67 of 138) against UAB’s secondary at 52.6 (#77 of 138). Memphis’s unit stands higher among its own position group, by 10 places."
       },
       {
         "title": "UAB offensive line vs Memphis defensive line",
@@ -1185,7 +1209,7 @@
           "team": "UAB",
           "label": "running backs",
           "v": "56.2",
-          "rank": "#63 of 138",
+          "rank": "#64 of 138",
           "note": null
         },
         "def": {
@@ -1196,7 +1220,7 @@
           "note": null
         },
         "complete": true,
-        "read": "UAB’s running backs rates 56.2 (#63 of 138) against Memphis’s linebackers at 48.7 (#129 of 138). UAB’s unit stands higher among its own position group, by 66 places."
+        "read": "UAB’s running backs rates 56.2 (#64 of 138) against Memphis’s linebackers at 48.7 (#129 of 138). UAB’s unit stands higher among its own position group, by 65 places."
       },
       {
         "title": "Memphis running backs vs UAB linebackers",
@@ -1223,7 +1247,7 @@
           "team": "UAB",
           "label": "receivers",
           "v": "53.9",
-          "rank": "#120 of 138",
+          "rank": "#118 of 138",
           "note": null
         },
         "def": {
@@ -1234,7 +1258,7 @@
           "note": null
         },
         "complete": true,
-        "read": "UAB’s receivers rates 53.9 (#120 of 138) against Memphis’s secondary at 50.7 (#94 of 138). Memphis’s unit stands higher among its own position group, by 26 places."
+        "read": "UAB’s receivers rates 53.9 (#118 of 138) against Memphis’s secondary at 50.7 (#94 of 138). Memphis’s unit stands higher among its own position group, by 24 places."
       },
       {
         "title": "Memphis receivers vs UAB secondary",
@@ -1419,7 +1443,7 @@
         "team": "UAB",
         "heading": "Why UAB can keep it close",
         "bullets": [
-          "Kicking: UAB 57.8 (#6 of 137) vs Memphis 55.0 (#98 of 137) — 92 places on the national board.",
+          "Kicking: UAB 57.8 (#6 of 136) vs Memphis 55.0 (#97 of 136) — 91 places on the national board.",
           "Pass defense: UAB 61.6 (#17 of 138) vs Memphis 47.5 (#80 of 138) — 63 places on the national board.",
           "Continuity: UAB 43.4 (#77 of 138) vs Memphis 23.8 (#137 of 138) — 60 places on the national board.",
           "The outcome range is 14.6 points wide at one sigma — p10 -6.4 to p90 +35.6 for Memphis, so a projection of +15.6 still produces results a long way either side of it.",
@@ -1439,7 +1463,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 90h old",
+          "text": "odds is 95h old",
           "widening": null
         },
         {
@@ -1557,11 +1581,12 @@
       "difference": "1.6 points",
       "difference_n": 1.6,
       "difference_exact": 1.608705738735134,
-      "total_model": "56.7",
+      "total_model": "56.1",
       "total_market": "56.0",
+      "total_market_held": null,
       "book": "captured consensus (stale) · 1 book · best at Pinnacle",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "90 hours old",
+      "capture_age": "95 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1611,11 +1636,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 88,
+        "pct": 84,
         "tier": "STRONG",
-        "text": "88 · STRONG",
-        "sub": "main deduction: UAB’s availability report is not due yet",
-        "score": 88,
+        "text": "84 · STRONG",
+        "sub": "main deduction: UAB’s availability sources refused",
+        "score": 84,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1629,7 +1654,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.5,
+            "score": 9,
             "max": 20
           },
           {
@@ -1641,7 +1666,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.9,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1657,23 +1682,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "UAB’s availability report is not due yet; the impact of UAB’s absences cannot be assessed: no graded availability read",
+        "main_deduction": "UAB’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of UAB’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
         "next_actions": [
           {
-            "action": "Re-read availability inside the filing window (UAB)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Restore an injury/availability source for UAB",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Re-read availability inside the filing window (Memphis)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Restore an injury/availability source for Memphis",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
             "action": "Refresh the market quote",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1757,7 +1782,7 @@
       },
       "note": "Research, not picks. Every value is read off EdgeDesk’s own projection and the market it was compared with; nothing here is a recommendation to bet."
     },
-    "headline": "EdgeDesk projects Memphis 36, UAB 21.",
+    "headline": "EdgeDesk projects Memphis 36, UAB 20.",
     "state": {
       "label": "AGREEMENT",
       "note": null,
@@ -1766,7 +1791,7 @@
     "score": {
       "away": {
         "team": "UAB",
-        "points": "21"
+        "points": "20"
       },
       "home": {
         "team": "Memphis",
@@ -1842,8 +1867,8 @@
         },
         {
           "k": "QB room",
-          "a": "54.4  #118",
-          "h": "57.4  #68",
+          "a": "54.4  #116",
+          "h": "57.4  #67",
           "note": null
         },
         {
@@ -1854,13 +1879,13 @@
         },
         {
           "k": "Receivers",
-          "a": "53.9  #120",
+          "a": "53.9  #118",
           "h": "55.4  #51",
           "note": null
         },
         {
           "k": "Running backs",
-          "a": "56.2  #63",
+          "a": "56.2  #64",
           "h": "55.9  #73",
           "note": null
         },
@@ -1909,7 +1934,7 @@
       ]
     },
     "notes": [
-      "EdgeDesk’s line is Memphis -15.6 on a neutral read of the two teams, before any book is consulted. Projected total 56.7.",
+      "EdgeDesk’s line is Memphis -15.6 on a neutral read of the two teams, before any book is consulted. Projected total 56.1.",
       "Memphis wins 86% of the time in EdgeDesk’s simulation, UAB 14%.",
       "Eight games in ten land between -6.4 and +35.6 for Memphis. A single result inside that band tells you nothing new about either team.",
       "The market has Memphis -14.0 at captured consensus (stale) · 1 book · best at Pinnacle, 1.6 points from EdgeDesk’s number.",
@@ -1926,13 +1951,13 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1jjmjab1voz30h",
+    "packet_hash": "1cxfq75vj5t1f",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can UAB take away Memphis’ big plays?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.8 points.",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.1 points.",
     "gap": {
-      "points": 0.8,
+      "points": 0.1,
       "toward": "Memphis",
       "other": "UAB"
     },
@@ -1967,7 +1992,6 @@
       ]
     },
     "unknown": [
-      "Weather: 72 degrees, overcast, gusts near 27 mph.",
       "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for UAB.",
       "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
     ],
@@ -1993,14 +2017,14 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-10T15:35:51.954Z",
+        "observed_at": "2026-10-10T19:21:49.975Z",
         "verification": "VERIFIED_DATA"
       },
       {
         "label": "EdgeDesk play-by-play quarterback logs (2026)",
         "url": null,
         "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-07T23:30:00.000Z",
+        "observed_at": "2026-10-10T02:15:00.000Z",
         "verification": "VERIFIED_DATA"
       }
     ],
@@ -2009,6 +2033,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T17:18:12.827Z"
+    "at": "2026-10-10T21:34:09.542Z"
   }
 }
