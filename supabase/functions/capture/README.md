@@ -17,6 +17,46 @@ if any of them starts to.
 
 ---
 
+## Since v12 (2026-10-10): every price comes through `odds_gateway`
+
+Capture no longer holds a provider key or builds a provider URL. Every odds
+request is a POST to `supabase/functions/odds_gateway`, which decides against
+the shared control plane (`supabase/odds_api_gateway.sql`) whether to serve the
+stored snapshot, collapse into a request already in flight, refuse (breaker,
+budget, cadence, live or finished game), or buy. See
+`docs/odds-api-incident-2026-10/INCIDENT.md` for why: on 2026-10-10, 99,336 of
+100,000 monthly credits were gone in 9.5 days.
+
+What that changes here:
+
+- **Categories, not parameters.** Game lines ask for `featured`, alternates
+  for `alternates`, props for `props` (and `props_alt` only when configured).
+  The gateway's category defines the markets, bookmakers and format, so
+  `CAPTURE_REGIONS` / `CAPTURE_BOOKMAKERS` / `CAPTURE_MARKETS` no longer shape
+  what is bought; the gateway's 10-book list (one region-equivalent, Pinnacle
+  included) does.
+- **Fixed sports.** NFL, NCAAF, MMA and MLB (`DEFAULT_SPORTS`, or
+  `CAPTURE_SPORTS`), never every active sport the provider lists.
+- **Cadence is the gateway's.** A tick inside a snapshot's interval (20 / 60 /
+  120 / 360 min by hours to the nearest kickoff) is a free cache hit. The
+  schedules were slowed to match (`supabase/capture_cron.sql`: near `*/20`, day
+  hourly at :04, board every 6 h; `capture.yml` every 3 h, no curl retry).
+- **No overlap.** A run takes `odds_api_job_lock` for its tier; a second run of
+  the same tier answers `skipped_overlap` and spends nothing.
+- **An untiered call is the day tier**, narrowed to `?sport=` when given (the
+  desk's quote refresh used to trigger a full multi-sport capture).
+- **Breaker off = `provider_paused`, not an error.** The run stops asking, keeps
+  every stored row, and says so. `capture_poke` queues nothing while
+  `odds_api_enabled()` is false.
+- **The prop pass is off by default** (`CAPTURE_PLAYER_PROPS=false`); the GitHub
+  prop pipeline is the single buyer. Turned on, it shares the `props`
+  fingerprint, so it cannot buy an event twice.
+
+The cost and cadence sections below describe the provider's billing rules and
+v9–v11 behaviour; where they disagree with this section, this section wins.
+
+---
+
 ## Deploy
 
 ```bash
@@ -63,7 +103,7 @@ rule.
 | Variable | Why |
 |---|---|
 | `CRON_SECRET` | Unset means `authorized()` rejects every caller **including the scheduler**, forever, silently. Capture now says so in the 401 body. |
-| `ODDS_API_KEY` | Every request would fail. |
+| `odds_gateway` deployed (and `supabase/odds_api_gateway.sql` applied) | Every odds request would be refused. Capture holds **no** provider key since v12; `ODDS_API_KEY` is read only by the gateway, as a fallback for `ODDS_GATEWAY_PROVIDER_KEY`. |
 | `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | Without them capture would price the board and discard it. It now refuses rather than reporting a successful empty pass. |
 
 ### Changed in v9 — review these
@@ -168,11 +208,11 @@ one per player: a response already carries every player a book offers.
 
 | Variable | Default | What it does |
 |---|---|---|
-| `CAPTURE_PLAYER_PROPS` | `true` | The prop pass at all. `?props=0` turns it off for one run. |
-| `CAPTURE_PLAYER_PROP_MARKETS` | the 33 provider markets (`PLAYER_PROP_MARKETS`) | Standard player markets. `none` = empty. Never put these in `CAPTURE_MARKETS`: the sport-wide endpoint refuses them, so capture strips them and names them in `markets_ignored`. |
-| `CAPTURE_PLAYER_PROP_ALT_MARKETS` | the 26 alternates (`PLAYER_PROP_ALT_MARKETS`) | Alternate ladders, filed under their base market; `source_market` keeps the provenance. `none` = off. |
+| `CAPTURE_PLAYER_PROPS` | `false` (since v12) | The prop pass at all. `?props=0` turns it off for one run. |
+| `CAPTURE_PLAYER_PROP_MARKETS` | the 33 provider markets (`PLAYER_PROP_MARKETS`) | Non-empty means the pass asks the gateway's `props` category, which buys that category's 11 core markets whatever this lists. `none` = empty (no `props` request). |
+| `CAPTURE_PLAYER_PROP_ALT_MARKETS` | empty (since v12) | Alternate ladders, filed under their base market; `source_market` keeps the provenance. Set it to ask the `props_alt` category, which the gateway refuses until an operator enables it. |
 | `CAPTURE_PLAYER_PROP_MAX_HOURS` / `_NEAR_HOURS` | `30` / `3` | DAY window / NEAR window (BOARD buys no props). |
-| `CAPTURE_PLAYER_PROP_INTERVAL_MIN` / `_NEAR_INTERVAL_MIN` | `120` / `20` | An event's own refresh clock beyond / inside the near window, read from `player_prop_event_polls`. |
+| `CAPTURE_PLAYER_PROP_INTERVAL_MIN` / `_NEAR_INTERVAL_MIN` | `120` / `60` | An event's own refresh clock beyond / inside the near window, read from `player_prop_event_polls`. The gateway's limits apply on top. |
 | `CAPTURE_PLAYER_PROP_MAX_EVENTS` / `_CONCURRENCY` / `_MARKETS_PER_REQUEST` | `80` / `4` / `12` | Events per sport per run, events at once, markets per request. |
 | `CAPTURE_PROP_MAX_CREDITS_PER_RUN` | `1000` | Checked before every request against spent + in flight + that batch's worst case (markets × region-equivalents). |
 | `CAPTURE_PROP_MAX_MARKET_REQUESTS_PER_RUN` | `2000` | (event × market) pairs per run. |
@@ -368,8 +408,9 @@ Written down rather than left to be discovered.
    - No prop has an edge floor, so no prop is actionable.
    - The close function does not close props. The tick history
      (`player_prop_quote_ticks`) is what a prop close and CLV will be read from.
-   - The GitHub-Actions prop capture in `football/props/capture.js` spends the
-     same `ODDS_API_KEY`. Run one or the other, not both.
+   - The GitHub-Actions prop capture in `football/props/capture.js` is the
+     prop buyer. Both ask the gateway's `props` category, so running both no
+     longer pays twice; this pass is off by default anyway.
 8. **Tier B's `CONFIRMATIONS = 2` costs one capture cycle of price movement.** On
    a fast-moving line the price may be gone by the second sighting. That is the
    intended trade — a single snapshot of a consensus with no independent reference

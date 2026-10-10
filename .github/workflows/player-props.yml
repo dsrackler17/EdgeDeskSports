@@ -127,7 +127,7 @@ jobs:
       # This step ALWAYS runs. Repository variables and secrets are NOT shell
       # variables: each is mapped into the environment here, explicitly.
       # capture.js normalizes PROPS_CAPTURE (on / true / 1 / yes, any case),
-      # prints whether the key is present (never the key), and writes
+      # prints whether the gateway credential is present (never its value), and writes
       # capture_state.json on EVERY outcome that reached the provider — NOT_RUN,
       # NO_MARKETS, SUCCESS, PARTIAL or ERROR — plus each game's own record,
       # the provider's (429 back-off, failures), the pipeline health and when

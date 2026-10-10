@@ -42,17 +42,24 @@ Without prices the board is honest but incomplete. It shows EdgeDesk
 projections and fair lines, every prop reads **NO MARKET**, and nothing gets
 an EV or a decision. To capture prices:
 
-1. **Add the repository secret `ODDS_API_KEY`** (Settings → Secrets and
-   variables → Actions). This is the same key the CFB alternates capture uses
-   (`READ_ALT_CAPTURE`), so both draw on one credit balance.
+1. **Since 2026-10-10 no runner holds the provider key.** The capture asks
+   the odds gateway (`supabase/functions/odds_gateway`) with the database
+   secrets the workflow already maps (`SB_URL` / `SB_SERVICE_ROLE` as
+   `EDGD_SB_URL` / `EDGD_SB_SERVICE`). The gateway alone holds the key and
+   decides, against the shared monthly budget, whether a request is served
+   from its stored snapshot or bought
+   (`docs/odds-api-incident-2026-10/INCIDENT.md`). Delete any old
+   `ODDS_API_KEY` repository secret; `tools/odds/no_bypass.test.js` fails if a
+   workflow maps it again.
 2. **Set the repository variable `PROPS_CAPTURE` to `on`.** `on`, `true`,
    `1` and `yes` in any case all count. Anything else, unset included, means
    the capture spends nothing and records `NOT_RUN`. The workflow maps both
    into the capture step's environment explicitly (repository variables and
    secrets are not shell variables on their own), and the step always runs:
-   its log opens with `ODDS_API_KEY present: true|false`,
-   `PROPS_CAPTURE raw: "…"` and `PROPS_CAPTURE parsed enabled: true|false`.
-   The key itself is never printed.
+   its log opens with `odds gateway credential present: true|false`,
+   `PROPS_CAPTURE raw: "…"` and `PROPS_CAPTURE parsed enabled: true|false`. While the gateway's circuit
+   breaker is off the run records `NOT_RUN` / `PROVIDER_PAUSED` and the board
+   keeps its stored prices, labelled with their age.
 3. Optionally, **tune the budget** with the repository variables below.
 4. Run **Actions → Player props → Run workflow** once. GitHub's scheduler
    skips hours on this repository (it fired the old hourly schedule twice in
@@ -101,30 +108,35 @@ are kept in `quotes.json` before any name is matched.
 
 | Variable | Default | What it does |
 |---|---|---|
-| `PROPS_WINDOW_H` | 96 | Only events kicking off inside this many hours are asked for. A manual run can override it (`window_h` input). |
+| `PROPS_WINDOW_H` | NFL 48, CFB 24 | Only events kicking off inside this many hours are asked for. A manual run can override it (`window_h` input); the gateway still refuses NFL props beyond 48 h and CFB props beyond 24 h. |
 | `PROPS_LEAGUES` | `nfl,cfb` | Which leagues to capture. Set `nfl` to leave college unpriced. |
-| `PROPS_MARKET_GROUPS` | NFL `core,long,alt`, CFB `core,alt` | Groups from `football/props/config.js`: `core` (11), `long` (3), `td` (4), `alt` (6), `kick` (2), `defense` (3). |
+| `PROPS_MARKET_GROUPS` | `core` for both leagues | Groups from `football/props/config.js`: `core` (11), `long` (3), `td` (4), `alt` (6), `kick` (2), `defense` (3). Anything beyond `core` is refused by the gateway unless an operator enables `props_extra` / `props_alt` (`odds_api_set_category`). |
 | `PROPS_BOOKMAKERS` | 10 books: eight US books, Pinnacle and BetOnline (`football/props/config.js`) | Up to ten books count as one region. Eleven or more count as two. |
 | `PROPS_MAX_CREDITS` | 800 | The most one run may spend, per league. |
 | `PROPS_MAX_EVENTS` | 64 | Games per run per league, nearest kickoff first. A manual refresh re-prices a full college Saturday in one run. |
-| `PROPS_CADENCE` | `1.5:15,6:30,24:60,48:120,*:360` | Each game's re-poll clock: hours to kickoff : minutes between polls. |
+| `PROPS_CADENCE` | `3:60,24:120,*:360` | Each game's re-poll clock: hours to kickoff : minutes between polls. The gateway's own limits (NFL 60 / 120 / 360 to 48 h; CFB 60 / 180 to 24 h) apply whatever this says: a faster clock only collects cache hits. |
 | `PROPS_FRESH_MIN` / `PROPS_AGING_MIN` / `PROPS_STALE_MIN` | 15 / 30 / 90 | Quote age states (FRESH / AGING / STALE; EXPIRED beyond). |
 | `PROPS_EXEC_MAX_MIN` | 30 | The oldest a quote may be and still price a RECORDED decision (the ledger, the desk, the opportunity layer). |
 | `PROPS_LATEST_MAX_MIN` | 1440 | The Props page decides every prop on its game's newest capture up to this old, and shows each price's age. |
 | `PROPS_LOW_CREDITS` / `PROPS_CRITICAL_CREDITS` | 5000 / 1500 | Credit pacing: games more than 6 h out are polled half as often below the first; only games inside 6 h are polled below the second. |
 
 `PROPS_MIN_INTERVAL_H` and `PROPS_FAR_INTERVAL_H` are gone; `PROPS_CADENCE`
-replaces both. The capture stops at once on a 401 or 429, when the provider
-reports fewer than 200 credits left, and before a run would pass
-`PROPS_MAX_CREDITS`. After a 429 nothing is asked, a manual refresh included,
-until its `Retry-After` has passed. A failed game is retried on its own
-back-off (5, 10, 20, 40, 60 min, ± jitter), sooner than its cadence. The
-other games are never held up by it.
+replaces both. The capture stops at once on a 401 or 429, when the gateway
+reports its breaker off, when the provider reports fewer than 200 credits
+left, and before a run would pass `PROPS_MAX_CREDITS`. A game the gateway
+defers (daily budget, cadence) is recorded as deferred, not failed. After a
+429 nothing is asked, a manual refresh included, until its `Retry-After` has
+passed. A request is never retried inside the run (the gateway owns the one
+bounded retry loop); a failed game is asked again on its own back-off
+(5, 10, 20, 40, 60 min, ± jitter), sooner than its cadence. The other games
+are never held up by it.
 
-### Two captures, one key
+### Two captures, one gateway
 
-There are now two ways to buy prop prices. Both spend the same `ODDS_API_KEY`,
-so run one of them, not both.
+There are two prop captures. Both ask the odds gateway's shared `props`
+category, so the second to ask for an event inside its interval is served the
+first one's snapshot at no cost. The GitHub capture is the buyer; the
+Supabase function's prop pass is **off by default** since 2026-10-10.
 
 1. **The Supabase capture function, from build `capture-v11-player-props-r1`
    (`-r2` isolates a game whose answer cannot be priced, instead of losing the
@@ -144,10 +156,10 @@ so run one of them, not both.
    - It is the capture with the recovery, health record and manual refresh
      in `docs/player-props/FRESHNESS.md`.
 
-**While both run, the key pays twice for NFL and NCAAF props inside 30 hours.**
-The page does not read the Supabase capture's prop tables. If the credit
-balance matters more than that queryable copy, set `CAPTURE_PLAYER_PROPS=false`
-on the capture function; its game lines are unaffected.
+Before 2026-10-10 both ran and the key paid twice for NFL and NCAAF props
+inside 30 hours (one of the incident's root causes). The page does not read
+the Supabase capture's prop tables; `CAPTURE_PLAYER_PROPS=true` turns that
+queryable copy back on without a second purchase.
 
 ### The credit arithmetic
 
@@ -156,39 +168,33 @@ per event. The capture budgets each request as markets × regions. The
 provider's `x-requests-last` header reports the real cost, and the run counts
 that figure.
 
-With the default cadence (`PROPS_CADENCE`), one game is polled about 53 times
-from 96 h out to kickoff. Manual refreshes come on top of that, and credit
-pacing takes some away:
+With the default cadence, an NFL game is polled about 17 times inside its
+48-hour window and a college game about 10 times inside 24 hours. Manual
+refreshes do not add purchases: the gateway serves its snapshot inside the
+interval.
 
-| Time before kickoff | Re-poll interval | Polls |
+| Time before kickoff | NFL | College |
 |---|---|---|
-| 96 h to 48 h | every 6 h | about 8 |
-| 48 h to 24 h | every 2 h | about 12 |
-| 24 h to 6 h | every 60 min | about 18 |
-| 6 h to 90 min | every 30 min | about 9 |
-| Last 90 min | every 15 min | about 6 |
+| 48 h to 24 h | every 6 h, about 4 | not polled |
+| 24 h to 3 h | every 2 h, about 10 | every 3 h, about 7 |
+| Last 3 h | every 60 min, about 3 | every 60 min, about 3 |
 
 | Setup | Credits per poll | Per game | Per week |
 |---|---|---|---|
-| NFL, `core,long,alt` (20 markets) | ≤ 20 | ≤ 1,060 | 16 games → ≤ ~17,000 |
-| NFL, `core` (11) | ≤ 11 | ≤ 580 | ≤ ~9,300 |
-| CFB, `core,alt` (17) | ≤ 17 | ≤ 900 | capped by `PROPS_MAX_EVENTS` and credit pacing |
-| CFB, `core` (11) | ≤ 11 | ≤ 580 | capped the same way |
+| NFL, `core` (11) | ≤ 11 | ≤ ~190 | 16 games → ≤ ~3,000 |
+| CFB, `core` (11) | ≤ 11 (about 7 returned) | ≤ ~110 | ~45 games → ≤ ~5,000 |
 
-A college game with few markets posted costs far less than its ceiling (the
-provider bills markets returned). To spend less, lengthen the far tiers, for
-example `PROPS_CADENCE=1.5:15,6:30,24:90,*:480`. The Props page decides every
-prop on its game's latest capture (up to `PROPS_LATEST_MAX_MIN`) and shows the
-price's age, so a slower clock means older prices on the board, not a dark one.
-The recorded decisions still use the 30-minute execution window.
+These are ceilings before the budget. Props are priority 3 in the gateway:
+on a heavy day they are the first thing after alternate ladders to be shed
+(at 80% of the day's allowance), and they are refused outright past 80% of
+the month. The Props page decides every prop on its game's latest capture
+(up to `PROPS_LATEST_MAX_MIN`) and shows the price's age, so a shed refresh
+means an older, labelled price, not a dark board. The recorded decisions
+still use the 30-minute execution window.
 
-These are ceilings. A book that posts no props for a small college game
-returns fewer markets. The per-run cap (`max_events` 64, nearest kickoff
-first) also limits a crowded Saturday.
-
-- **Small plan:** NFL `core` only (`PROPS_LEAGUES=nfl`,
-  `PROPS_MARKET_GROUPS=core`) fits in about 20K credits a month.
-- **Both leagues with alternates:** plan for about 130K a month.
+Before 2026-10-10 the defaults (20 / 17 markets, a 96 h window, 15-minute
+polls inside 90 minutes) spent 54,958 credits in the first 9.5 days of
+October.
 
 `football/props/<league>/capture_state.json` records what each run spent and
 what remains.
@@ -215,7 +221,7 @@ through localStorage.
 |---|---|
 | `npm run props:board` | Rebuild the NFL board (`--offline` uses only the cache). |
 | `npm run props:board:cfb` | Rebuild the college board (parquet needs `pip install pyarrow`). |
-| `npm run props:capture` | Capture prices (needs `ODDS_API_KEY` in the environment; budgeted as above). |
+| `npm run props:capture` | Capture prices through the odds gateway (needs `EDGD_SB_URL` and `EDGD_SB_SERVICE`, or `ODDS_GATEWAY_SECRET`; budgeted as above). |
 | `npm run props:grade` | Grade finished games and write `performance.json`. |
 | `npm run props:backtest` | Walk-forward distribution backtest, writes `football/props/nfl/calibration.json`. |
 | `npm run props:correlation` | Same-game correlation from the game logs, writes `football/props/nfl/correlation.json`. |

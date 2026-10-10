@@ -896,12 +896,18 @@ three.
 
 | tier | cron | window |
 |---|---|---|
-| near | `*/10 * * * *` | sports with an event inside 8 hours |
-| day | `4,34 * * * *` | anything kicking off inside 30 hours |
-| board | `18 */4 * * *` | the full 14-day horizon, nothing skipped |
+| near | `*/20 * * * *` | sports with an event inside 8 hours |
+| day | `4 * * * *` | anything kicking off inside 30 hours |
+| board | `18 */6 * * *` | the full 14-day horizon, nothing skipped |
+
+(Slowed on 2026-10-10 from `*/10`, `4,34` and `18 */4`. Since then every tier
+asks `supabase/functions/odds_gateway`, which buys a sport's board at most
+every 20 / 60 / 120 / 360 minutes by hours to its nearest kickoff and serves
+its snapshot to every tick in between —
+`docs/odds-api-incident-2026-10/INCIDENT.md`.)
 
 Every run reports which reader rungs its own cadence **cannot** keep — a
-ten-minute cadence cannot serve the five-minute rung — rather than leaving it
+twenty-minute cadence cannot serve the five- or fifteen-minute rungs — rather than leaving it
 to be discovered from a complaint. `tools/capture/capture.test.js` parses the
 SQL and the workflow and fails if a cadence changes in one place only.
 

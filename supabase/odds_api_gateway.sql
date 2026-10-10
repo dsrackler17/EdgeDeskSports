@@ -840,7 +840,9 @@ begin
     begin
       if r.endpoint in ('odds', 'events') and jsonb_typeof(v_body) = 'array' then
         insert into public.odds_api_events (event_id, sport_key, commence_time, home_team, away_team, last_seen_at)
-        select distinct on (e->>'id') e->>'id', coalesce(e->>'sport_key', r.sport_key), (e->>'commence_time')::timestamptz,
+        -- the REQUESTED sport, never the body's own label: the clock of a sport
+        -- must not be fed by a response that says it is about another one
+        select distinct on (e->>'id') e->>'id', r.sport_key, (e->>'commence_time')::timestamptz,
                e->>'home_team', e->>'away_team', v_now
           from jsonb_array_elements(v_body) e
          where coalesce(e->>'id', '') <> '' and coalesce(e->>'commence_time', '') <> ''
@@ -848,7 +850,7 @@ begin
           away_team = excluded.away_team, last_seen_at = excluded.last_seen_at;
       elsif r.endpoint = 'event_odds' and jsonb_typeof(v_body) = 'object' and coalesce(v_body->>'commence_time', '') <> '' then
         insert into public.odds_api_events (event_id, sport_key, commence_time, home_team, away_team, last_seen_at)
-        values (coalesce(v_body->>'id', r.event_id), coalesce(v_body->>'sport_key', r.sport_key),
+        values (r.event_id, r.sport_key,
                 (v_body->>'commence_time')::timestamptz, v_body->>'home_team', v_body->>'away_team', v_now)
         on conflict (event_id) do update set commence_time = excluded.commence_time, last_seen_at = excluded.last_seen_at;
       end if;
@@ -1044,12 +1046,22 @@ begin
       when 'degraded' then 'Sportsbook prices are refreshing less often than usual. Check each price''s capture time.'
       else 'Sportsbook prices refresh on an event-aware schedule: more often as kickoff approaches.' end,
     'checked_at', now(),
+    /* per sport: when its prices were last verified, its next kickoff, and the
+       longest the board may now go between refreshes (the event-aware cadence,
+       stretched under budget pressure) — so a reader can tell "on schedule"
+       from "behind" without assuming a fixed 30-minute capture */
     'sports', coalesce((select jsonb_agg(jsonb_build_object('sport_key', s.sport_key, 'label', s.label,
-        'last_verified_at', f.last_ok, 'age_minutes', round(extract(epoch from (now() - f.last_ok)) / 60))
+        'last_verified_at', f.last_ok, 'age_minutes', round(extract(epoch from (now() - f.last_ok)) / 60),
+        'next_kickoff', k.next_ko,
+        'expected_refresh_minutes', round((public.odds_api_interval('featured', s.sport_group,
+            case when k.next_ko is null then null else extract(epoch from (k.next_ko - now())) / 3600 end)->>'interval')::numeric
+            * public.odds_api_level_stretch(v_level)))
         order by s.priority, s.sport_key)
       from public.odds_api_sports s
       left join lateral (select max(last_success_at) as last_ok from public.odds_api_snapshots n
                           where n.sport_key = s.sport_key and n.category in ('featured', 'close', 'collective')) f on true
+      left join lateral (select min(commence_time) as next_ko from public.odds_api_events e
+                          where e.sport_key = s.sport_key and e.commence_time > now() and e.last_seen_at > now() - interval '4 days') k on true
       where s.enabled), '[]'::jsonb),
     'props', coalesce((select jsonb_agg(jsonb_build_object('sport_key', x.sport_key, 'last_verified_at', x.last_ok))
       from (select n.sport_key, max(n.last_success_at) as last_ok from public.odds_api_snapshots n

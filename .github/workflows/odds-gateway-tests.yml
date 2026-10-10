@@ -1,0 +1,58 @@
+# The Odds API gateway — the suites every pull request must pass.
+#
+# 2026-10-10 (docs/odds-api-incident-2026-10/INCIDENT.md): six call paths held
+# the same The Odds API key, each with a private budget, and spent 99,336 of
+# 100,000 monthly credits in 9.5 days. These suites keep it from happening
+# again: a static guard that fails the moment a second path to the provider
+# appears (any file, so this runs on every pull request), the control plane
+# against a real PostgreSQL (budget under concurrency, single flight, shedding,
+# the breaker), the deployed gateway end to end against a MOCK provider, and
+# every former caller as rewired. Offline: no suite spends a credit.
+name: Odds gateway tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: odds-gateway-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: No path around the gateway (only odds_gateway holds the key or names the provider host)
+        run: node tools/odds/no_bypass.test.js
+      - name: The control plane against a real PostgreSQL (budget, reservations under concurrency, single flight, shedding, breaker)
+        env:
+          ODDS_SQL_REQUIRED: '1'
+        run: node tools/odds/gateway_sql.test.js
+      - name: The deployed gateway end to end (real PostgreSQL, mock provider; 429, 401, timeout, bounded retries, redaction)
+        env:
+          ODDS_SQL_REQUIRED: '1'
+        run: node tools/odds/gateway_fn.test.js
+      - name: The hourly budget watch
+        run: node tools/odds/budget_watch.test.js
+      - name: The callers as rewired (capture, its pricer, the CFB lab feed, props_cron, props pipeline, alternates, the props factory)
+        run: |
+          node tools/capture/capture.test.js
+          node tools/capture/pricer_parity.test.js
+          node football/cfb_lab/capture_feed.test.js
+          node tools/props/props_cron.test.js
+          node tools/props/props_freshness.test.js
+          node football/props/pipeline.test.js
+          node football/cfb_terminal/alternates.test.js
+          node football/props/factory/odds.test.js
+      - name: The SQL editor parts are in sync with their sources
+        run: node tools/sql/split_sql.test.js

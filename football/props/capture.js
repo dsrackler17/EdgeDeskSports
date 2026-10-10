@@ -624,9 +624,10 @@ async function run(opts) {
   }
   /* WHICH EVENTS ARE OWED A POLL. Each event keeps its own clock (EDProps
      FRESHNESS.cadence, by hours to kickoff): a game days away is re-polled
-     rarely, one about to kick off every 15 minutes. A failed event is retried
-     on its back-off, sooner than its cadence. A manual refresh (--force) asks
-     again for every event not captured in the last few minutes. */
+     rarely, one about to kick off hourly (the odds gateway's prop limits). A
+     failed event is retried on its back-off, sooner than its cadence. A manual
+     refresh (--force) asks again for every event not captured in the last
+     FRESHNESS.manual.min_age_minutes (60). */
   const only = opts.only_events && opts.only_events.length ? new Set(opts.only_events) : null;
   const slack = O.slack_min * 60e3;
   const minManual = EDP.FRESHNESS.manual.min_age_minutes * 60e3;

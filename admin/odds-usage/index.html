@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>EdgeDesk — Odds API usage</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<!-- ===========================================================================
+     THE ODDS API COST CONSOLE (supabase/odds_api_gateway.sql,
+     supabase/functions/odds_gateway; docs/odds-api-incident-2026-10/INCIDENT.md).
+
+     One page that answers "what is spending the odds credits, and is it on
+     budget" from LOCAL records only: everything here is the gateway's own
+     ledger (public.odds_api_requests), whose costs are the provider's own
+     x-requests-last / -used / -remaining headers. Opening or refreshing this
+     page NEVER calls The Odds API — it calls one database function,
+     odds_api_dashboard(), under the operator's own token, which checks the
+     operator list in the database.
+
+       credits today / this month / remaining, the projection and the reset
+       the breaker, the shedding level, the cooldown
+       daily usage by caller (edge function / job), sport, endpoint, category
+       player-prop spend, cache hit rate, duplicate requests collapsed
+       last successful refresh per sport and category
+       alerts (warning 50%, critical 80%, emergency 95%, pace, untracked usage)
+
+     One action: PAUSE paid retrieval (odds_api_admin_pause). Turning it back
+     on is deliberately NOT a button: it is odds_api_set_enabled(true, reason)
+     in the SQL editor, after the checklist in the incident runbook.
+     =========================================================================== -->
+<style>
+:root{--bg:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;--text:#f1ebdf;--dim:#a29581;--faint:#6f6553;
+      --accent:#2fa79a;--on-accent:#042320;--pos:#76bd3e;--neg:#e26044;--warn:#d99a2b;--grid:#2a2318}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;color-scheme:dark;accent-color:var(--accent)}
+.mono{font-family:'JetBrains Mono',monospace}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px 40px}
+header{border-bottom:1px solid var(--border);background:rgba(16,14,10,.92);position:sticky;top:0;z-index:10}
+.hd{display:flex;align-items:center;gap:9px;padding:13px 0;flex-wrap:wrap}
+.logo{font-weight:800;font-size:16px}
+.tag{font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--warn);border:1px solid var(--warn);border-radius:13px;padding:2px 7px;font-weight:600}
+.sp{flex:1}.hide{display:none!important}
+.who{font-size:11px;color:var(--dim)}
+nav a{font-size:12px;color:var(--dim);text-decoration:none;margin-left:10px}
+h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin:22px 0 8px;font-weight:600}
+h3{font-size:13px;margin:14px 0 6px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.f{display:flex;flex-direction:column;gap:4px;min-width:120px;flex:1}
+label{font-size:11px;color:var(--dim);font-weight:600}
+input,select{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font:500 13px Inter,system-ui,sans-serif;width:100%}
+button{border:none;border-radius:8px;background:var(--accent);color:var(--on-accent);font:700 12.5px Inter,system-ui,sans-serif;padding:9px 13px;cursor:pointer}
+button.g{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+button.danger{background:var(--neg);color:#1a0703}
+button.sm{padding:5px 9px;font-size:11.5px}
+button:disabled{opacity:.5;cursor:default}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{text-align:left;padding:6px 7px;border-top:1px solid var(--border);vertical-align:top}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+th{color:var(--faint);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+.tw{overflow-x:auto}
+.msg{font-size:12px;margin-top:8px}.msg.err{color:var(--neg)}.msg.ok{color:var(--pos)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.kpi{border:1px solid var(--border);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.kpi i{display:block;font-style:normal;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.kpi b{display:block;font-size:22px;margin-top:4px;font-weight:650}
+.kpi small{display:block;font-size:11px;color:var(--dim);margin-top:2px}
+.state{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:10px;border:1px solid var(--border);margin-bottom:12px}
+.state b{font-size:15px}.state small{display:block;color:var(--dim);font-size:12px;margin-top:3px}
+.state .ic{font-size:18px;line-height:1.1}
+.state.on .ic{color:var(--pos)} .state.off .ic{color:var(--neg)} .state.warn .ic{color:var(--warn)}
+.state.on{border-color:rgba(118,189,62,.5)} .state.off{border-color:rgba(226,96,68,.55)} .state.warn{border-color:rgba(217,154,43,.55)}
+.meter{height:10px;border-radius:5px;background:#1f2b29;overflow:hidden;margin-top:8px}
+.meter > span{display:block;height:100%;border-radius:5px;background:var(--accent)}
+.meter.w > span{background:var(--warn)} .meter.c > span{background:var(--neg)}
+.lvl{font-size:11px;font-weight:700;padding:2px 7px;border-radius:10px;border:1px solid var(--border);color:var(--dim)}
+.badge{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:8px;border:1px solid var(--border)}
+.badge.warning{color:var(--warn);border-color:rgba(217,154,43,.5)} .badge.critical,.badge.emergency{color:var(--neg);border-color:rgba(226,96,68,.5)} .badge.info{color:var(--dim)}
+.note{font-size:11.5px;color:var(--dim);line-height:1.5;margin-top:8px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:820px){.grid2{grid-template-columns:1fr}}
+.chart{position:relative;overflow:visible}
+@media (max-width:560px){.kpi b{font-size:19px}}
+.chart svg{display:block;width:100%;height:auto}
+.tip{position:absolute;pointer-events:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 8px;font-size:11.5px;color:var(--text);white-space:nowrap;transform:translate(-50%,-100%);margin-top:-8px}
+</style>
+</head>
+<body>
+<header><div class="wrap hd"><span class="logo">EdgeDesk</span><span class="tag">odds usage</span><nav><a href="/admin/data-health/">Data health</a><a href="/admin/billing/">Billing</a></nav><span class="sp"></span><span class="who" id="who"></span></div></header>
+<div class="wrap">
+  <div id="gate" class="card" style="max-width:420px;margin:40px auto">
+    <h2 style="margin-top:0">Operator sign-in</h2>
+    <div class="f"><label for="gEmail">Email</label><input id="gEmail" type="email" autocomplete="username"></div>
+    <div class="f" style="margin-top:8px"><label for="gPass">Password</label><input id="gPass" type="password" autocomplete="current-password"></div>
+    <div class="row" style="margin-top:12px"><button id="gGo">Sign in</button></div>
+    <div class="msg" id="gMsg"></div>
+  </div>
+  <div id="app" class="hide">
+    <div class="row" style="margin-top:16px"><span class="note" style="margin:0">Local records only. Opening this page never calls The Odds API.</span><span class="sp"></span>
+      <label for="days" style="margin:0">Days</label><select id="days" style="width:auto"><option>7</option><option selected>14</option><option>31</option></select>
+      <button class="g sm" id="reload">Refresh</button></div>
+    <div id="stateBox"></div>
+    <h2>Budget</h2>
+    <div class="card"><div class="kpis" id="kpis"></div><div id="meterBox"></div><div class="note" id="budgetNote"></div></div>
+    <h2>Credits per day</h2>
+    <div class="card"><div class="chart" id="chart"></div><div class="note">Provider-reported credits (x-requests-last) per UTC day. Hover a column for requests, cache hits and collapsed duplicates; every number is also in the tables below.</div></div>
+    <div class="grid2">
+      <div><h2>By caller (edge function / job)</h2><div class="card tw"><table id="byCaller"></table></div></div>
+      <div><h2>By sport</h2><div class="card tw"><table id="bySport"></table></div></div>
+    </div>
+    <h2>By endpoint and category</h2>
+    <div class="card tw"><table id="byEndpoint"></table></div>
+    <h2>Alerts</h2>
+    <div class="card tw"><table id="alerts"></table></div>
+    <h2>Last successful refresh</h2>
+    <div class="card tw"><table id="fresh"></table></div>
+    <h2>Recent gateway decisions</h2>
+    <div class="card tw"><table id="recent"></table><div class="note">Every request reaches the gateway; only <b>granted</b> ones reach the provider. Cache hits and collapsed duplicates cost nothing.</div></div>
+    <h2>Controls</h2>
+    <div class="card">
+      <div class="row"><input id="pauseWhy" placeholder="Why pause paid retrieval?" style="flex:1;min-width:220px"><button class="danger" id="pauseBtn">Pause paid retrieval</button></div>
+      <div class="msg" id="pauseMsg"></div>
+      <div class="note">Pausing is immediate and safe: every research surface keeps reading stored prices, labelled with their capture time. <b>Resuming is not a button.</b> In the SQL editor, after the checklist in <span class="mono">docs/odds-api-incident-2026-10/INCIDENT.md</span>: <span class="mono">select public.odds_api_set_enabled(true, '&lt;reason&gt;');</span></div>
+    </div>
+  </div>
+</div>
+<script>
+var SB_URL = "https://iattxbkbufslbauoumga.supabase.co";
+var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8";
+var KEY = 'edgedesk_odds_admin_session';
+var SESSION = null;
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function say(id, kind, t) { var el = $(id); el.className = 'msg ' + kind; el.textContent = t; }
+function when(v) { return v ? String(v).replace('T', ' ').slice(0, 16) + 'Z' : '—'; }
+function n(v) { var x = Number(v); return v == null || !isFinite(x) ? '—' : x >= 10000 ? (x / 1000).toFixed(1).replace(/\.0$/, '') + 'K' : x.toLocaleString('en-US'); }
+function pct(v) { return v == null ? '—' : Math.round(Number(v) * 100) + '%'; }
+function ago(v) { if (!v) return '—'; var m = Math.round((Date.now() - Date.parse(v)) / 60000); return m < 60 ? m + ' min ago' : m < 2880 ? Math.round(m / 60) + ' h ago' : Math.round(m / 1440) + ' d ago'; }
+function tok() { return (SESSION && SESSION.access_token) || SB_KEY; }
+async function rpc(name, body) {
+  var r = await fetch(SB_URL + '/rest/v1/rpc/' + name, { method: 'POST', headers: { apikey: SB_KEY, authorization: 'Bearer ' + tok(), 'content-type': 'application/json' }, body: JSON.stringify(body || {}) });
+  var txt = await r.text();
+  if (!r.ok) throw new Error(r.status + ': ' + txt.slice(0, 200));
+  return txt ? JSON.parse(txt) : null;
+}
+function kpi(label, v, sub) { return '<div class="kpi"><i>' + esc(label) + '</i><b>' + esc(v) + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</div>'; }
+function table(id, head, rows) {
+  $(id).innerHTML = '<tr>' + head.map(function (h) { return '<th' + (h[1] ? ' class="n"' : '') + '>' + esc(h[0]) + '</th>'; }).join('') + '</tr>'
+    + (rows.length ? rows.map(function (r) { return '<tr>' + r.map(function (c, i) { return '<td' + (head[i][1] ? ' class="n"' : '') + '>' + c + '</td>'; }).join('') + '</tr>'; }).join('')
+      : '<tr><td colspan="' + head.length + '" style="color:var(--dim)">Nothing recorded in this window.</td></tr>');
+}
+/* sum a per-day breakdown over the window into one row per key */
+function rollup(list, keyOf) {
+  var m = {};
+  (list || []).forEach(function (r) { var k = keyOf(r); var a = m[k] || (m[k] = { key: k, requests: 0, credits: 0, sample: r }); a.requests += Number(r.requests) || 0; a.credits += Number(r.credits) || 0; });
+  return Object.keys(m).map(function (k) { return m[k]; }).sort(function (a, b) { return b.credits - a.credits; });
+}
+
+var LEVELS = ['0 · everything enabled', '1 · alternate ladders shed', '2 · props and far boards shed', '3 · main markets inside 24 h only', '4 · nothing paid'];
+
+function renderState(d) {
+  var b = d.breaker || {}, st = d.budget || {}, lvl = d.shed_level_now;
+  var cls, ic, head, sub;
+  if (!b.enabled) { cls = 'off'; ic = '⏸'; head = 'Paid retrieval is PAUSED'; sub = (b.reason || 'no reason recorded') + ' · since ' + when(b.changed_at) + ' by ' + (b.changed_by || '—') + '. Stored prices are served, labelled with their capture time.'; }
+  else if (b.cooldown_until && Date.parse(b.cooldown_until) > Date.now()) { cls = 'warn'; ic = '⚠'; head = 'Cooling down until ' + when(b.cooldown_until); sub = b.cooldown_reason || ''; }
+  else if (!st.quota_confirmed) { cls = 'warn'; ic = '⚠'; head = 'Breaker on, quota not confirmed for this cycle'; sub = 'Paid calls wait for odds_api_confirm_quota(used, remaining) or a free quota probe.'; }
+  else { cls = 'on'; ic = '●'; head = 'Paid retrieval is ON'; sub = 'Shedding level ' + (LEVELS[lvl] || lvl) + '.'; }
+  $('stateBox').innerHTML = '<div class="state ' + cls + '"><span class="ic">' + ic + '</span><div><b>' + esc(head) + '</b><small>' + esc(sub) + '</small></div></div>';
+}
+
+function renderBudget(d) {
+  var st = d.budget || {}, t = d.today || {};
+  var used = st.budget_used_pct == null ? null : Number(st.budget_used_pct);
+  $('kpis').innerHTML = [
+    kpi('Credits today', n(st.spent_today), 'allowance ' + n(st.daily_allowance) + ' (weight ' + (st.day_weight == null ? '—' : st.day_weight) + ')'),
+    kpi('Credits this cycle', n(st.spent_cycle), 'budget ' + n(st.monthly_budget) + ' · ' + pct(used)),
+    kpi('Provider remaining', n(st.provider_remaining), 'reserve ' + n(st.monthly_reserve) + ' · seen ' + ago(st.provider_observed_at)),
+    kpi('Projected cycle', n(st.projected_cycle), st.projected_cycle != null && st.monthly_budget ? (Number(st.projected_cycle) > Number(st.monthly_budget) ? 'over budget at this pace' : 'inside budget at this pace') : 'too early to project'),
+    kpi('Cache hit rate today', pct(t.cache_hit_rate), n(t.cache_hits) + ' hits · ' + n(t.dispatched) + ' bought'),
+    kpi('Duplicates collapsed', n(t.collapsed_in_flight), 'requests merged into one in flight'),
+    kpi('Player-prop credits today', n(t.props_credits), 'of ' + n(t.credits) + ' today'),
+    kpi('Next provider reset', when(st.next_reset).slice(0, 10), 'cycle started ' + (st.cycle_start || '—'))
+  ].join('');
+  var w = used == null ? 0 : Math.min(100, Math.round(used * 100));
+  var cls = used == null ? '' : used >= 0.8 ? ' c' : used >= 0.5 ? ' w' : '';
+  $('meterBox').innerHTML = '<div class="row" style="margin-top:14px"><span style="font-size:12px;color:var(--dim)">Monthly operational budget</span><span class="sp"></span><span class="lvl">' + esc((st.threshold || '').toUpperCase()) + '</span></div>'
+    + '<div class="meter' + cls + '" role="img" aria-label="' + w + '% of the monthly budget used"><span style="width:' + w + '%"></span></div>';
+  $('budgetNote').textContent = 'Warning at ' + n(st.warning_at) + ' (50%), critical at ' + n(st.critical_at) + ' (80%: props and far boards shed for the rest of the cycle), emergency breaker at '
+    + n(st.emergency_at) + ' (95%). Open reservations: ' + n(st.open_reservations) + '. Spend is the larger of the ledger and the provider’s own x-requests-used.';
+}
+
+/* ONE SERIES, so no legend: the title names it. Columns <= 24px, 4px rounded
+   cap, square at the baseline, 2px surface gap; only today's and the largest
+   value are labelled; the hover tooltip and the tables carry the rest. */
+function renderChart(daily) {
+  var box = $('chart');
+  if (!daily || !daily.length) { box.innerHTML = '<div class="note">No billed requests in this window.</div>'; return; }
+  /* drawn at the container's own width, so text stays legible on a phone */
+  var W = Math.max(300, Math.round(box.clientWidth || 900)), Hh = W < 560 ? 200 : 220, padL = 40, padR = 16, padB = 26, padT = 18, n0 = daily.length;
+  var max = Math.max(10, Math.max.apply(null, daily.map(function (d) { return Number(d.credits) || 0; })));
+  var step = Math.pow(10, Math.floor(Math.log10(max))), top = Math.ceil(max / step) * step;
+  var band = (W - padL - padR) / n0, bw = Math.min(24, Math.max(4, band - 2));
+  var y = function (v) { return padT + (Hh - padT - padB) * (1 - v / top); };
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + Hh + '" role="img" aria-label="Credits per day">';
+  [0, top / 2, top].forEach(function (t) { svg += '<line x1="' + padL + '" x2="' + W + '" y1="' + y(t) + '" y2="' + y(t) + '" stroke="var(--grid)" stroke-width="1"/>'
+    + '<text x="' + (padL - 6) + '" y="' + (y(t) + 4) + '" fill="var(--faint)" font-size="10" text-anchor="end">' + n(t) + '</text>'; });
+  var maxIdx = 0; daily.forEach(function (d, i) { if ((Number(d.credits) || 0) > (Number(daily[maxIdx].credits) || 0)) maxIdx = i; });
+  daily.forEach(function (d, i) {
+    var v = Number(d.credits) || 0, x = padL + i * band + (band - bw) / 2, yy = y(v), h = Math.max(0, y(0) - yy), r = Math.min(4, h / 2, bw / 2);
+    var path = h <= 0 ? '' : 'M' + x + ',' + y(0) + 'V' + (yy + r) + 'Q' + x + ',' + yy + ' ' + (x + r) + ',' + yy + 'H' + (x + bw - r) + 'Q' + (x + bw) + ',' + yy + ' ' + (x + bw) + ',' + (yy + r) + 'V' + y(0) + 'Z';
+    svg += '<g class="col" data-i="' + i + '"><rect x="' + (padL + i * band) + '" y="' + padT + '" width="' + band + '" height="' + (Hh - padT - padB) + '" fill="transparent"/>'
+      + (path ? '<path d="' + path + '" fill="var(--accent)"/>' : '') + '</g>';
+    if (i === maxIdx || i === n0 - 1) svg += '<text x="' + (x + bw / 2) + '" y="' + (yy - 5) + '" fill="var(--text)" font-size="10.5" text-anchor="middle">' + n(v) + '</text>';
+    var every = Math.max(1, Math.ceil(n0 / Math.max(3, Math.floor(W / 64))));
+    /* the last day is always labelled; a regular tick too close to it gives way */
+    if ((i % every === 0 && n0 - 1 - i >= every) || i === n0 - 1) svg += '<text x="' + (x + bw / 2) + '" y="' + (Hh - 8) + '" fill="var(--faint)" font-size="10" text-anchor="middle">' + esc(String(d.day).slice(5)) + '</text>';
+  });
+  svg += '<line x1="' + padL + '" x2="' + W + '" y1="' + y(0) + '" y2="' + y(0) + '" stroke="var(--border)" stroke-width="1"/></svg>';
+  box.innerHTML = svg + '<div class="tip hide" id="tip"></div>';
+  var tip = $('tip');
+  box.querySelectorAll('g.col').forEach(function (g) {
+    g.addEventListener('mousemove', function (ev) {
+      var d = daily[+g.getAttribute('data-i')], rb = box.getBoundingClientRect();
+      tip.innerHTML = '<b>' + esc(d.day) + '</b><br>' + n(d.credits) + ' credits · ' + n(d.dispatched) + ' bought<br>' + n(d.cache_hits) + ' cache hits · ' + n(d.collapsed) + ' collapsed · ' + n(d.denied) + ' refused';
+      tip.classList.remove('hide');
+      /* kept inside the chart: a tooltip must never push the page sideways */
+      var half = tip.offsetWidth / 2, x = Math.min(Math.max(ev.clientX - rb.left, half), rb.width - half);
+      tip.style.left = x + 'px'; tip.style.top = (ev.clientY - rb.top) + 'px';
+    });
+    g.addEventListener('mouseleave', function () { tip.classList.add('hide'); });
+  });
+}
+
+function render(d) {
+  renderState(d); renderBudget(d); renderChart(d.daily);
+  table('byCaller', [['Caller'], ['Requests', 1], ['Credits', 1]], rollup(d.by_caller, function (r) { return r.caller; }).map(function (r) { return ['<span class="mono">' + esc(r.key) + '</span>', n(r.requests), n(r.credits)]; }));
+  table('bySport', [['Sport'], ['Requests', 1], ['Credits', 1]], rollup(d.by_sport, function (r) { return r.sport_key; }).map(function (r) { return [esc(r.key), n(r.requests), n(r.credits)]; }));
+  table('byEndpoint', [['Endpoint'], ['Category'], ['Requests', 1], ['Credits', 1], ['Avg per request', 1]], rollup(d.by_endpoint, function (r) { return r.endpoint + '|' + r.category; }).map(function (r) {
+    var p = r.key.split('|'); return ['<span class="mono">' + esc(p[0]) + '</span>', esc(p[1]), n(r.requests), n(r.credits), r.requests ? (r.credits / r.requests).toFixed(1) : '—']; }));
+  table('alerts', [['When'], ['Level'], ['What'], ['']], (d.alerts || []).map(function (a) {
+    return [when(a.at), '<span class="badge ' + esc(a.level) + '">' + esc(a.level) + '</span>', esc(a.message), a.acknowledged_at ? '<span style="color:var(--dim)">ack ' + when(a.acknowledged_at) + '</span>' : '<button class="g sm" data-ack="' + esc(a.id) + '">Acknowledge</button>']; }));
+  table('fresh', [['Sport'], ['Category'], ['Last success'], ['Age'], ['Failing', 1]], (d.freshness || []).map(function (f) {
+    return [esc(f.sport_key || '—'), esc(f.category), when(f.last_success_at), f.last_success_at ? ago(f.last_success_at) : 'never', n(f.failing)]; }));
+  table('recent', [['When'], ['Caller'], ['Category'], ['Sport / event'], ['Decision'], ['Reserved', 1], ['Charged', 1], ['HTTP', 1], ['Remaining', 1]], (d.recent || []).map(function (r) {
+    return [when(r.at), '<span class="mono">' + esc(r.caller) + '</span>', esc(r.category), esc((r.sport_key || '') + (r.event_id ? ' / ' + r.event_id : '')),
+      esc(r.decision) + (r.reason ? '<div style="color:var(--dim);font-size:11px">' + esc(String(r.reason).slice(0, 90)) + '</div>' : ''),
+      n(r.reserved), r.actual == null ? '—' : n(r.actual) + (r.exact === false ? '*' : ''), r.http == null ? '—' : esc(r.http), n(r.remaining)]; }));
+  document.querySelectorAll('[data-ack]').forEach(function (b) { b.onclick = async function () { b.disabled = true; try { await rpc('odds_api_ack_alert', { p_id: Number(b.getAttribute('data-ack')) }); await load(); } catch (e) { b.disabled = false; } }; });
+}
+
+async function load() {
+  try { render(await rpc('odds_api_dashboard', { p_days: Number($('days').value) || 14 })); }
+  catch (e) { $('stateBox').innerHTML = '<div class="state off"><span class="ic">⛔</span><div><b>The dashboard could not be read</b><small>' + esc(e.message) + ' — is supabase/odds_api_gateway.sql applied, and is this account on the operator list?</small></div></div>'; }
+}
+async function boot() {
+  $('gate').classList.add('hide'); $('app').classList.remove('hide');
+  $('who').textContent = (SESSION && SESSION.user && SESSION.user.email) || '';
+  await load();
+}
+$('gGo').onclick = async function () {
+  var email = $('gEmail').value.trim(), pass = $('gPass').value;
+  if (!email || !pass) return;
+  try {
+    var r = await fetch(SB_URL + '/auth/v1/token?grant_type=password', { method: 'POST', headers: { apikey: SB_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ email: email, password: pass }) });
+    var j = await r.json();
+    if (!r.ok) throw new Error(j.error_description || j.msg || 'sign-in failed');
+    SESSION = j; try { localStorage.setItem(KEY, JSON.stringify(j)); } catch (e) {}
+    await boot();
+  } catch (e) { say('gMsg', 'err', String(e.message || e)); }
+};
+$('reload').onclick = load;
+$('days').onchange = load;
+$('pauseBtn').onclick = async function () {
+  var why = $('pauseWhy').value.trim();
+  if (!why) { say('pauseMsg', 'err', 'Say why, so the next operator knows.'); return; }
+  try { await rpc('odds_api_admin_pause', { p_reason: why }); say('pauseMsg', 'ok', 'Paid retrieval paused. Stored prices keep serving.'); await load(); }
+  catch (e) { say('pauseMsg', 'err', String(e.message || e)); }
+};
+(function () {
+  try { var s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.access_token && (!s.expires_at || s.expires_at * 1000 > Date.now())) { SESSION = s; boot(); } } catch (e) {}
+})();
+</script>
+</body>
+</html>

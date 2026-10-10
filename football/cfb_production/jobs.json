@@ -103,9 +103,9 @@
    "trigger_kind": "pg_cron",
    "github_crons": [],
    "pg_cron": [
-    { "file": "supabase/capture_cron.sql", "name": "capture_near", "schedule": "*/10 * * * *" },
-    { "file": "supabase/capture_cron.sql", "name": "capture_day", "schedule": "4,34 * * * *" },
-    { "file": "supabase/capture_cron.sql", "name": "capture_board", "schedule": "18 */4 * * *" }
+    { "file": "supabase/capture_cron.sql", "name": "capture_near", "schedule": "*/20 * * * *" },
+    { "file": "supabase/capture_cron.sql", "name": "capture_day", "schedule": "4 * * * *" },
+    { "file": "supabase/capture_cron.sql", "name": "capture_board", "schedule": "18 */6 * * *" }
    ],
    "season_months": [8, 9, 10, 11, 12, 1],
    "max_silence_minutes": 60,
@@ -116,8 +116,8 @@
    "lock_scope": "row-level + advisory xact lock cfb_lab_ingest_quotes",
    "severity_on_miss": "CRITICAL",
    "purpose": "Per-sportsbook odds capture (edge function capture) into cfb_lab_market_quotes via cfb_lab_ingest_quotes()",
-   "dependencies": ["The Odds API"],
-   "retry": "the next tick (10 min near kickoff)",
+   "dependencies": ["The Odds API, through supabase/functions/odds_gateway (shared budget; docs/odds-api-incident-2026-10/INCIDENT.md)"],
+   "retry": "the next tick (20 min near kickoff); the gateway serves its snapshot inside the event-aware interval",
    "failure_alert": "no heartbeat (edge function, not wired): watched through cfb_health odds_freshness (warn 180 min / critical 360 min with a game inside 48 h)",
    "writes_git": [],
    "reads_git": [],

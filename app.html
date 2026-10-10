@@ -6852,6 +6852,30 @@ var EDGE_MAX_AGE_MIN=90;              // an edge not re-priced in 90 min is a zo
 var MINBOOKS=3;                       // need >=3 books quoting for a fair line to mean anything
 var STALE_AMBER_MIN=45, STALE_RED_MIN=120;   // ~30-min capture cadence; behind at 45m, down at 2h
 var SLICE=null, SLICE_AT=0;
+/* THE ODDS FEED STATE (2026-10-10, docs/odds-api-incident-2026-10/INCIDENT.md).
+   Prices are bought by the odds gateway on an EVENT-AWARE cadence -- every 20 min
+   inside 3 h of a sport's next kickoff, hourly inside 24 h, every 2 h inside
+   72 h, every 6 h beyond, never during or after a game -- and paid retrieval can
+   be paused by the provider budget's circuit breaker. So a board six hours old
+   on a quiet Tuesday is ON SCHEDULE, not down, and a paused feed is labelled
+   paused, never live. Read with the public key from the odds_feed_status RPC:
+   a read, cached five minutes, that can never trigger a purchase. */
+var ODDS_FEED=null, ODDS_FEED_AT=0;
+async function loadOddsFeed(){
+  if(ODDS_FEED&&(Date.now()-ODDS_FEED_AT)<300000)return ODDS_FEED;
+  try{
+    var r=await fetch(SB_URL+'/rest/v1/rpc/odds_feed_status',{method:'POST',
+      headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY,'content-type':'application/json'},body:'{}'});
+    if(r.ok){ODDS_FEED=await r.json();ODDS_FEED_AT=Date.now();}
+  }catch(_){}
+  return ODDS_FEED;
+}
+/* the tightest refresh interval the feed promises right now, among sports with a game ahead */
+function oddsExpectedMin(){
+  var f=ODDS_FEED,m=null;if(!f||!f.sports)return null;
+  f.sports.forEach(function(x){if(x&&x.next_kickoff&&x.expected_refresh_minutes!=null){var v=+x.expected_refresh_minutes;if(isFinite(v)&&(m==null||v<m))m=v;}});
+  return m;
+}
 function setStale(latest){
   var b=$('edgeStale'),lw=$('leadWrap');if(!b)return;
   /* THE SCHEMA FAULT OUTRANKS EVERY OTHER BANNER STATE. If capture-v9's
@@ -6869,10 +6893,24 @@ function setStale(latest){
     if(lw)lw.classList.add('stale');
     return;
   }
+  /* PAUSED IS NOT DOWN, AND NOT LIVE. The breaker stops paid retrieval; every
+     stored price stands at its own capture time. Say exactly that. */
+  if(ODDS_FEED&&ODDS_FEED.state==='paused'){
+    b.className='stalebanner amber';
+    b.innerHTML='\u23f8 <b>Sportsbook price refresh is paused</b> \u2014 these are the last verified prices'+(latest?', captured '+ago(latest):'')
+      +'. They are not live; check each price\u2019s capture time before acting on it.'
+      +'<div class="sb-sub">Paid odds retrieval is paused to protect the monthly provider budget. Research, projections and the record keep working from stored data.</div>';
+    if(lw)lw.classList.add('stale');return;
+  }
   if(!latest){b.className='stalebanner red';b.innerHTML='\u26d4 No data loaded \u2014 the capture pipeline hasn\u2019t reported. Nothing below is current; do not trust it.';if(lw)lw.classList.add('stale');return;}
   var mins=(Date.now()-latest)/60000;
-  if(mins>=STALE_RED_MIN){b.className='stalebanner red';b.innerHTML='\u26d4 STALE \u2014 last updated '+ago(latest)+'. The capture pipeline is down, so these are old prices. Do not bet off this list.<div class="sb-sub">Healthy refresh is every ~30 min. Fix capture before trusting anything here.</div>';if(lw)lw.classList.add('stale');}
-  else if(mins>=STALE_AMBER_MIN){b.className='stalebanner amber';b.innerHTML='\u26a0 Running behind \u2014 last updated '+ago(latest)+'. A capture cycle was missed; prices may have moved.';if(lw)lw.classList.remove('stale');}
+  /* judged against the refresh the feed actually promises now, not a fixed 30 min */
+  var exp=oddsExpectedMin(),amberMin=STALE_AMBER_MIN,redMin=STALE_RED_MIN;
+  if(exp!=null){amberMin=Math.max(STALE_AMBER_MIN,Math.round(exp*1.5)+10);redMin=Math.max(STALE_RED_MIN,exp*3);}
+  var cadTxt=exp!=null?'every ~'+(exp>=60?Math.round(exp/60)+' h':exp+' min')+' right now':'on an event-aware schedule';
+  if(mins>=redMin){b.className='stalebanner red';b.innerHTML='\u26d4 STALE \u2014 last updated '+ago(latest)+'. Prices are older than the refresh schedule allows, so these are old prices. Do not bet off this list.<div class="sb-sub">Prices refresh '+cadTxt+'. Fix capture before trusting anything here.</div>';if(lw)lw.classList.add('stale');}
+  else if(mins>=amberMin){b.className='stalebanner amber';b.innerHTML='\u26a0 Running behind \u2014 last updated '+ago(latest)+'. A refresh was missed; prices may have moved.';if(lw)lw.classList.remove('stale');}
+  else if(ODDS_FEED&&ODDS_FEED.state==='degraded'){b.className='stalebanner amber';b.innerHTML='\u26a0 Prices are refreshing less often than usual to protect the provider budget \u2014 last updated '+ago(latest)+'. Check each price\u2019s capture time.';if(lw)lw.classList.remove('stale');}
   else{b.className='stalebanner hide';b.innerHTML='';if(lw)lw.classList.remove('stale');}
 }
 async function loadSliceStats(){
@@ -7007,7 +7045,8 @@ async function loadEdges(){
     // keying off displayed edges falsely reads "down" when capture is live but the in-window edges are old.
     var hb=0;try{var h=await sbGet('signals?select=last_seen_at&last_seen_at=not.is.null&order=last_seen_at.desc.nullslast&limit=1');if(h&&h[0]&&h[0].last_seen_at)hb=new Date(h[0].last_seen_at).getTime();}catch(_){}
     window.__edgeLatest=hb;
-    $('fresh').textContent=hb?('captured '+ago(hb)):'—';
+    await loadOddsFeed();
+    $('fresh').textContent=hb?('captured '+ago(hb)+(ODDS_FEED&&ODDS_FEED.state==='paused'?' \u00b7 refresh paused':'')):'—';
     setStale(hb);
     // sharpest in-window line regardless of sign — proves the scanner ran and shows how close the board is to a play
     window.__bestNearMiss=null;
