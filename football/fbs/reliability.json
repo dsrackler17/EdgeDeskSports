@@ -2,7 +2,7 @@
  "schema": "edgedesk_cfb_reliability_v1",
  "version": "cfb_reliability/2",
  "season": 2026,
- "generated_at": "2026-10-10T18:31:48.682Z",
+ "generated_at": "2026-10-10T19:22:22.642Z",
  "basis": "Reliability is how much EdgeDesk trusts the completeness, freshness, consistency and stability of the information under each projection. It is NOT a probability that the projection is right and not a betting signal; it moves no number. Scored by lib/cfb_reliability.js from the inputs this build priced from.",
  "market": "NOT JOINED IN THIS BUILD — the market items do not apply to these scores; the board re-scores with its live quote",
  "weights": {
@@ -695,7 +695,7 @@
   ]
  },
  "enrichment": {
-  "artifact_generated_at": "2026-10-10T18:31:40.648Z",
+  "artifact_generated_at": "2026-10-10T19:22:13.245Z",
   "games_with_evidence": 108,
   "summary": {
    "games": 108,
@@ -894,7 +894,7 @@
      "label": "The Odds API (per-book spreads, totals, moneylines)",
      "kind": "market",
      "state": "NOT_CONFIGURED",
-     "reason": "ODDS_API_KEY is not set for this job (capture holds it as a Supabase function secret; the build does not)",
+     "reason": "The Odds API is reached only through odds_gateway (the shared, budgeted gateway); this build reads its captured quotes via capture_signals and cfb_lines",
      "attributable_to": "configuration"
     },
     {
@@ -9296,7 +9296,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "UCLA’s starter record was re-read 1 min ago and describes evidence from 14 days ago",
+      "reason": "UCLA’s starter record was re-read 1 min ago and describes evidence from 14.1 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -10697,7 +10697,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "UCLA’s starter record was re-read 1 min ago and describes evidence from 14 days ago",
+      "reason": "UCLA’s starter record was re-read 1 min ago and describes evidence from 14.1 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -12150,7 +12150,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "East Carolina’s starter record was re-read 1 min ago and describes evidence from 13.9 days ago",
+      "reason": "East Carolina’s starter record was re-read 1 min ago and describes evidence from 14 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -12687,7 +12687,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "East Carolina’s starter record was re-read 1 min ago and describes evidence from 13.9 days ago",
+      "reason": "East Carolina’s starter record was re-read 1 min ago and describes evidence from 14 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -13853,7 +13853,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Northern Illinois’s starter record was re-read 1 min ago and describes evidence from 14 days ago",
+      "reason": "Northern Illinois’s starter record was re-read 1 min ago and describes evidence from 14.1 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -14708,7 +14708,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Northern Illinois’s starter record was re-read 1 min ago and describes evidence from 14 days ago",
+      "reason": "Northern Illinois’s starter record was re-read 1 min ago and describes evidence from 14.1 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -15344,7 +15344,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Sacramento State’s starter record was re-read 1 min ago and describes evidence from 13.7 days ago",
+      "reason": "Sacramento State’s starter record was re-read 1 min ago and describes evidence from 13.8 days ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -16856,7 +16856,7 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Sacramento State’s starter record was re-read 1 min ago and describes evidence from 13.7 days ago",
+      "reason": "Sacramento State’s starter record was re-read 1 min ago and describes evidence from 13.8 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
@@ -19024,7 +19024,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Missouri State’s starter record was re-read 1 min ago and describes evidence from 13.7 days ago",
+      "reason": "Missouri State’s starter record was re-read 1 min ago and describes evidence from 13.8 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
