@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T19:30:00.000Z",
   "game_when_label": "2026-10-10 19:30 UTC",
   "published_at": "2026-10-10T05:30:32.475Z",
-  "updated_at": "2026-10-10T17:20:31.148Z",
-  "generated_at": "2026-10-10T17:20:31.148Z",
+  "updated_at": "2026-10-10T17:48:26.080Z",
+  "generated_at": "2026-10-10T17:48:26.080Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1440,7 +1440,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 90h old",
+          "text": "odds is 91h old",
           "widening": null
         },
         {
@@ -1534,7 +1534,7 @@
       "total_market": "39.5",
       "book": "captured consensus (stale) · 1 book · best at BetMGM",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "90 hours old",
+      "capture_age": "91 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1885,15 +1885,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-10. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_41148c852293d385",
+  "snapshot_id": "snap_a5cc11ea9d28caf7",
   "timing": {
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-10T19:30:00.000Z",
-    "minutes_before_kickoff": 129,
+    "minutes_before_kickoff": 102,
     "published_at": "2026-10-10T05:30:32.475Z",
     "refreshed": false,
-    "at": "2026-10-10T17:20:31.148Z"
+    "at": "2026-10-10T17:48:26.080Z"
   },
   "featured": {
     "editorial_priority": 59.2,
@@ -2175,24 +2175,37 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-10T17:20:31.148Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Oklahoma’s availability report lists offensive lineman Eddy Pierre-Louis as doubtful.",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-10T17:48:26.080Z"
   },
   "publish_state": {
     "ok": true,
-    "at": "2026-10-10T17:20:31.148Z",
+    "at": "2026-10-10T17:48:26.080Z",
     "blocking": [],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Oklahoma’s availability report lists offensive lineman Eddy Pierre-Louis as doubtful."
+      }
+    ],
     "hold_reason": null
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1akad7p1oudcxz",
+    "packet_hash": "9q1cvo1kvvqvq",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Oklahoma get Texas off the field on third down?",
@@ -2240,7 +2253,8 @@
     "unknown": [
       "Oklahoma’s availability report lists offensive lineman Eddy Pierre-Louis as doubtful.",
       "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Oklahoma and Texas.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, weather and penalty rate."
+      "Not in EdgeDesk’s verified data for this game: turnover rates, weather and penalty rate.",
+      "The line on file was captured Oct. 10 and may have moved."
     ],
     "flags": [
       {
@@ -2282,6 +2296,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T17:20:31.148Z"
+    "at": "2026-10-10T17:48:26.080Z"
   }
 }
