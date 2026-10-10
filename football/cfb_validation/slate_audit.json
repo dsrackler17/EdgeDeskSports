@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-10T14:42:14.924Z",
- "board_generated_at": "2026-10-10T14:42:11.738Z",
+ "generated_at": "2026-10-10T15:07:36.625Z",
+ "board_generated_at": "2026-10-10T15:07:34.348Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -24,6 +24,46 @@
    "market": "Ohio -2.5",
    "books": 1,
    "gap": 5.6,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
+   "game_id": "401862795",
+   "game": "Tulane @ Army",
+   "kickoff": "2026-10-10T16:00:00.000Z",
+   "named": false,
+   "edgedesk": "Army -8.6",
+   "market": "Army -4.0",
+   "books": 1,
+   "gap": 4.6,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
+   "game_id": "401856715",
+   "game": "LSU @ Kentucky",
+   "kickoff": "2026-10-10T23:00:00.000Z",
+   "named": false,
+   "edgedesk": "LSU -5.3",
+   "market": "LSU -9.5",
+   "books": 1,
+   "gap": 4.2,
    "gap_class": "MODERATE",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -76,14 +116,14 @@
    "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
-   "game_id": "401869943",
-   "game": "Coastal Carolina @ Marshall",
-   "kickoff": "2026-10-10T23:00:00.000Z",
+   "game_id": "401862796",
+   "game": "Charlotte @ North Texas",
+   "kickoff": "2026-10-10T19:30:00.000Z",
    "named": false,
-   "edgedesk": "Marshall -7.4",
-   "market": "Marshall -4.5",
+   "edgedesk": "North Texas -32.2",
+   "market": "North Texas -28.5",
    "books": 1,
-   "gap": 2.9,
+   "gap": 3.7,
    "gap_class": "MODERATE",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -96,14 +136,14 @@
    "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
-   "game_id": "401862796",
-   "game": "Charlotte @ North Texas",
-   "kickoff": "2026-10-10T19:30:00.000Z",
+   "game_id": "401869943",
+   "game": "Coastal Carolina @ Marshall",
+   "kickoff": "2026-10-10T23:00:00.000Z",
    "named": false,
-   "edgedesk": "North Texas -32.2",
-   "market": "North Texas -29.5",
+   "edgedesk": "Marshall -7.4",
+   "market": "Marshall -4.5",
    "books": 1,
-   "gap": 2.7,
+   "gap": 2.9,
    "gap_class": "MODERATE",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -202,6 +242,92 @@
    "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; submodel support fail."
   },
   {
+   "game_id": "401862799",
+   "game": "Tulsa @ Navy",
+   "kickoff": "2026-10-10T19:30:00.000Z",
+   "named": false,
+   "edgedesk": "Navy -10.0",
+   "market": "Navy -3.0",
+   "books": 1,
+   "gap": 7,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT RUN",
+   "root_cause": null,
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "current team states",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    }
+   ],
+   "consistent": true,
+   "verdict": "INVESTIGATE is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
+  },
+  {
+   "game_id": "401858257",
+   "game": "Stanford @ Notre Dame",
+   "kickoff": "2026-10-10T19:30:00.000Z",
+   "named": false,
+   "edgedesk": "Notre Dame -38.5",
+   "market": "Notre Dame -40.5",
+   "books": 1,
+   "gap": 2,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
    "game_id": "401856718",
    "game": "Ole Miss @ Vanderbilt",
    "kickoff": "2026-10-10T19:30:00.000Z",
@@ -276,72 +402,6 @@
    "market": "Oregon -11.0",
    "books": 0,
    "gap": 7.5,
-   "gap_class": "MAJOR",
-   "favorite_flip": false,
-   "research_status": "NO_MARKET",
-   "research_label": "STALE MARKET",
-   "decision_status": "NO_DECISION",
-   "gate_status": "NOT RUN",
-   "root_cause": null,
-   "requirements": [
-    {
-     "requirement": "correct game",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "correct home/away",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "fresh multi-book consensus",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "current team states",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "resolved QB",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "no abnormal availability",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "component adjustments within historical bounds",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "submodel support",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    },
-    {
-     "requirement": "football-only calibration preserves the major gap",
-     "result": "NOT RUN",
-     "detail": "no check of this kind ran for this game"
-    }
-   ],
-   "consistent": true,
-   "verdict": "STALE MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
-  },
-  {
-   "game_id": "401862799",
-   "game": "Tulsa @ Navy",
-   "kickoff": "2026-10-10T19:30:00.000Z",
-   "named": false,
-   "edgedesk": "Navy -10.0",
-   "market": "Navy -2.0",
-   "books": 0,
-   "gap": 8,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "NO_MARKET",
