@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T19:30:00.000Z",
   "game_when_label": "2026-10-10 19:30 UTC",
   "published_at": "2026-10-10T05:30:32.475Z",
-  "updated_at": "2026-10-10T19:00:39.318Z",
-  "generated_at": "2026-10-10T19:00:39.318Z",
+  "updated_at": "2026-10-10T19:22:22.075Z",
+  "generated_at": "2026-10-10T19:22:22.075Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -34,7 +34,7 @@
   "canonical_url": "https://edgedesksports.com/articles/texas-vs-oklahoma-2026",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
   "hub_url": "https://edgedesksports.com/articles/college-football",
-  "status": "published",
+  "status": "ready_too_late",
   "article_type": "pregame",
   "related": null,
   "frozen": false,
@@ -1889,13 +1889,13 @@
   "snapshot_id": "snap_b5d26813981a09ec",
   "publication_snapshot_id": "snap_b5d26813981a09ec",
   "timing": {
-    "publication_window": "late_window",
-    "classified_window": "late_window",
+    "publication_window": "final_window",
+    "classified_window": "final_window",
     "scheduled_kickoff": "2026-10-10T19:30:00.000Z",
-    "minutes_before_kickoff": 29,
-    "published_at": "2026-10-10T05:30:32.475Z",
-    "refreshed": true,
-    "at": "2026-10-10T19:00:39.318Z"
+    "minutes_before_kickoff": 8,
+    "published_at": null,
+    "refreshed": false,
+    "at": "2026-10-10T19:22:22.075Z"
   },
   "featured": {
     "editorial_priority": 59.2,
@@ -2190,24 +2190,18 @@
         "cost": 12
       }
     ],
-    "at": "2026-10-10T19:00:39.318Z"
+    "at": "2026-10-10T19:22:22.075Z"
   },
   "publish_state": {
-    "ok": true,
-    "at": "2026-10-10T19:00:39.318Z",
+    "ok": false,
+    "at": "2026-10-10T19:22:22.075Z",
     "blocking": [],
-    "warnings": [
-      {
-        "id": "craft_duplicate_paragraph",
-        "why": "the same paragraph must not appear twice on one page",
-        "detail": "Oklahoma’s availability report lists offensive lineman Eddy Pierre-Louis as doubtful."
-      }
-    ],
-    "hold_reason": null
+    "warnings": [],
+    "hold_reason": "inside final pregame publication floor"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "f16zyrlyjii9",
+    "packet_hash": "1iam019toa8pb",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Oklahoma get Texas off the field on third down?",
@@ -2255,8 +2249,7 @@
     "unknown": [
       "Oklahoma’s availability report lists offensive lineman Eddy Pierre-Louis as doubtful.",
       "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Oklahoma and Texas.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, weather and penalty rate.",
-      "The line on file was captured Oct. 10 and may have moved."
+      "Not in EdgeDesk’s verified data for this game: turnover rates, weather and penalty rate."
     ],
     "flags": [
       {
@@ -2298,99 +2291,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T19:00:39.318Z"
-  },
-  "freshness": {
-    "at": "2026-10-10T19:00:39.318Z",
-    "fields": {
-      "market.line": {
-        "value": "Oklahoma +8.0",
-        "provider": "captured consensus (stale) · 1 book · best at BetMGM",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "market.total": {
-        "value": 39.5,
-        "provider": "captured consensus (stale) · 1 book · best at BetMGM",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "market.book": {
-        "value": "captured consensus (stale) · 1 book · best at BetMGM",
-        "provider": "research market",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "fixture.status": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.kickoff": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.venue": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "availability.out": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      },
-      "availability.qb": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      }
-    },
-    "changes": [],
-    "blind": [
-      {
-        "field": "fixture.status",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.kickoff",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.venue",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "availability.out",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      },
-      {
-        "field": "availability.qb",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      }
-    ],
-    "material": false,
-    "rules_hit": [],
-    "minor": [],
-    "summary": "nothing moved"
+    "at": "2026-10-10T19:22:22.075Z"
   }
 }
