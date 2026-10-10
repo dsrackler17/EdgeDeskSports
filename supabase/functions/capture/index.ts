@@ -2357,6 +2357,21 @@ export async function gatewayRequest(gw: Gateway, q: Record<string, unknown>): P
   }
 }
 
+/** Should the run stop asking after this gateway answer? null = carry on.
+    Paid retrieval off for EVERY sport (the breaker, no budget, an unconfirmed
+    or exhausted quota, a cooldown, the provider refusing the key or rate-
+    limiting it) stops the run: the sports, ladders and props not yet asked are
+    not asked, and nothing is retried here. A per-sport answer (a cache hit, a
+    cadence or window skip, a daily-budget deferral) never stops it; a gateway
+    that cannot be reached is an error, not a pause. close's closeGatewayStop is
+    the same rule (tools/resilience/quota_guard.test.js holds them together). */
+export function gatewayRunStop(decision: string): string | null {
+  const d = String(decision ?? "").replace(/:.*$/, "").trim();
+  if (/^denied_(breaker|gateway_disabled|no_budget|unconfirmed_quota|ceiling|emergency|cooldown)$/.test(d)) return d;
+  if (/^provider_http_(401|402|403|429)$/.test(d)) return d;
+  return null;
+}
+
 /** Gateway envelope -> the OddsResult shape the rest of capture reads. */
 export function oddsResultOf(env: any, asArray: (d: any) => any[]): OddsResult {
   const q = env?.quota ?? {};
@@ -3514,9 +3529,10 @@ export async function handle(req: Request): Promise<Response> {
 
   for (const sport of sportList) {
     if (outOfTime()) { skippedForTime.push(sport); continue; }
-    /* The breaker is account-wide: once the gateway says it is off, asking
-       for the next sport would only add a refusal to the ledger. */
-    if (paused) { gatewaySkipped.push({ sport, decision: pausedDecision, reason: "breaker off: not asked" }); perSport[sport] = 0; continue; }
+    /* Paid retrieval is account-wide: once the gateway says it is off for
+       every sport (gatewayRunStop), asking for the next one would only add a
+       refusal to the ledger. */
+    if (paused) { gatewaySkipped.push({ sport, decision: pausedDecision, reason: "paid retrieval off (" + pausedDecision + "): not asked" }); perSport[sport] = 0; continue; }
 
     /* The event-aware cadence that used to be CAPTURE_NEAR_HOURS (a free
        /events call per sport) lives in the gateway now: a sport with nothing
@@ -3527,12 +3543,13 @@ export async function handle(req: Request): Promise<Response> {
     if (res.quotaRemaining) quotaRemaining = res.quotaRemaining;
     if (res.quotaUsed) quotaUsed = res.quotaUsed;
     quotaSpent += Number(res.lastCost) || 0;
+    const runStop = gatewayRunStop(res.decision);
+    if (runStop && !paused) { paused = true; pausedDecision = runStop; }
     if (!res.ok) {
       if (!res.refused || res.decision === "denied_gateway_error") {
         errored.push({ sport, status: res.status, detail: res.detail });
       } else {
         gatewaySkipped.push({ sport, decision: res.decision, reason: res.detail });
-        if (res.decision === "denied_breaker" || res.decision === "denied_gateway_disabled") { paused = true; pausedDecision = res.decision; }
       }
       perSport[sport] = 0;
       continue;
@@ -3578,7 +3595,7 @@ export async function handle(req: Request): Promise<Response> {
     const altHours = alternateHoursForTier(cfg, tier);
     const group = sportGroup(sport);
     const altStat = perSportAlt[sport] = { eligible: 0, requested: 0, merged: 0, failed: 0 };
-    if (altHours > 0 && (group === "nfl" || group === "ncaaf")) {
+    if (altHours > 0 && !diag && !paused && (group === "nfl" || group === "ncaaf")) {
       const eligible = res.data
         .map((ev: any) => ({ ev, t: Date.parse(String(ev?.commence_time ?? "")) }))
         .filter((x: any) => Number.isFinite(x.t) && x.t >= nowMs && x.t <= nowMs + altHours * 3600000)

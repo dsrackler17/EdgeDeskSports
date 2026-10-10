@@ -277,8 +277,17 @@ async function backfillHistorical(wh, league, opts) {
         appendListings(league, season, parsed.listings.filter((x) => Date.parse(x.snapshot_at) < Date.parse(g.kickoff_utc)));
       } catch (e) {
         if (e.status === 'refused') { out.stopped = 'odds gateway: ' + e.decision + (e.reason ? ' — ' + e.reason : ''); return out; }
-        if (e.status === 429 || e.status === 401 || e.status === 422) { out.stopped = 'provider refused: ' + e.status; return out; }
+        if (e.status === 429 || e.status === 401 || e.status === 402 || e.status === 403 || e.status === 422) { out.stopped = 'provider refused: ' + e.status; return out; }
+        /* any other failure is counted and named, never swallowed; three in a
+           row stop the backfill rather than billing into an outage */
+        out.errors = (out.errors || 0) + 1;
+        out.consecutive_errors = (out.consecutive_errors || 0) + 1;
+        if (!out.error_samples) out.error_samples = [];
+        if (out.error_samples.length < 5) out.error_samples.push(String(e && (e.name === 'TimeoutError' ? 'timeout' : e.message) || e).replace(/apiKey=[^&\s]+/, 'apiKey=***').slice(0, 160));
+        if (out.consecutive_errors >= 3) { out.stopped = 'circuit open: ' + out.consecutive_errors + ' consecutive failures'; return out; }
+        continue;
       }
+      out.consecutive_errors = 0;
     }
   }
   return out;

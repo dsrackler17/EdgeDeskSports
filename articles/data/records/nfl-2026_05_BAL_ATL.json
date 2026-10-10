@@ -23,8 +23,8 @@
   "game_time": "2026-10-12T00:20:00.000Z",
   "game_when_label": "2026-10-12 00:20 UTC",
   "published_at": null,
-  "updated_at": "2026-10-10T09:44:27.485Z",
-  "generated_at": "2026-10-10T09:44:27.485Z",
+  "updated_at": "2026-10-10T17:18:12.827Z",
+  "generated_at": "2026-10-10T17:18:12.827Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 3.7-point gap is context only and the game is excluded from research ranking.",
@@ -1169,7 +1169,7 @@
       "total_market": "43.5",
       "total_difference": "3.7 points",
       "book": "Caesars",
-      "capture_age": "84 hours old",
+      "capture_age": "91 hours old",
       "stale": false,
       "classification": "STALE MARKET",
       "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 3.7-point gap is context only and the game is excluded from research ranking.",
@@ -1314,7 +1314,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "y02lbz6geh0d",
+    "packet_hash": "gl9j5yeqzbl0",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can the Ravens stop the Falcons’ run game?",
@@ -1340,7 +1340,10 @@
       "Atlanta Falcons’ passers have completed 63 of 99 (63.6%) for 767 yards, 7.7 yards per attempt, with 3 touchdowns, 6 interceptions and 8 sacks taken in four games.",
       "Baltimore Ravens’ passers have completed 76 of 105 (72.4%) for 1,030 yards, 9.8 yards per attempt, with 6 touchdowns, 1 interceptions and 7 sacks taken in four games."
     ],
-    "availability": [],
+    "availability": [
+      "The official injury report lists one Atlanta Falcons player as out or doubtful, including LB Yasir Abdullah (out).",
+      "The official injury report lists three Baltimore Ravens players as out or doubtful, including C Cam Jurgens (out), QB Lamar Jackson (out) and LB Trey Hendrickson (out)."
+    ],
     "script": {
       "model": [
         "The Baltimore Ravens have to win on the ground (Atlanta Falcons’ No. 5 run game against Baltimore Ravens’ No. 1 run defense).",
@@ -1355,7 +1358,7 @@
       ]
     },
     "unknown": [
-      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel, weather and conference implications.",
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, weather and conference implications.",
       "The line on file was captured Oct. 6 and may have moved."
     ],
     "flags": [],
@@ -1371,8 +1374,15 @@
         "label": "nflverse team-week stats (2026)",
         "url": null,
         "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-10T09:43:45.200Z",
+        "observed_at": "2026-10-10T17:18:06.614Z",
         "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Official NFL injury report (nflverse)",
+        "url": null,
+        "path": "football/injuries/nfl_2026.json",
+        "observed_at": "2026-10-10T12:36:21.909Z",
+        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1380,6 +1390,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T09:44:27.485Z"
+    "at": "2026-10-10T17:18:12.827Z"
   }
 }

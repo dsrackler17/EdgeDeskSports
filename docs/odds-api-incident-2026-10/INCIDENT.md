@@ -437,6 +437,14 @@ For the full stop including schedules, re-run
 
 ## 10. Open items to check in production
 
+- **`supabase/odds_quota.sql` (merged from `main`, written in parallel on
+  2026-10-10) is superseded and not applied.** Before it was deployed, the
+  gateway replaced its guards inside `capture` and `close`, which kept the key
+  and failed open without the ledger. Do not apply it: no caller asks it, and
+  a second breaker would only confuse operators. Its scenarios are held
+  against the gateway in `tools/resilience/quota_guard.test.js`, and its SQL
+  suite still runs.
+
 - **`EDGEDESK_QUOTE_REFRESH`** on `edgedesk_ai` (`GET edgedesk_ai?probe=1` → `board.quote_refresh.enabled`). It is now safe either way, because an untiered capture is the day tier for one sport, served from cache. It is still worth knowing.
 - **`odds.settings` `provider.default`** for `collective_odds_ingest`. If it is `theoddsapi`, its polls now spend from the shared budget at the `collective` cadence.
 - **The deployed-only functions listed in §2.** Their source is not in the repository. Download them with `tools/supabase/download_functions.sh` and either route them through the gateway or retire them. Their jobs stay paused.

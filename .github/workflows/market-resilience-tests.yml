@@ -1,0 +1,61 @@
+# EdgeDesk — market resilience (docs/market-resilience).
+#
+# Research must never depend on a sportsbook. These suites pin it: the thirteen
+# market scenarios on real research objects built from the committed slate,
+# the quota guard driving the deployed capture function under a Deno shim, and
+# the two migrations (odds_quota.sql, research_snapshots.sql) on a real
+# PostgreSQL — REQUIRED here: a skipped SQL case is a failure, never a pass.
+#
+# Offline: no network, no credentials, nothing written outside temp dirs.
+name: Market resilience tests
+
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_market_state.js'
+      - 'lib/edgedesk_research_engine.js'
+      - 'lib/cfb_terminal.js'
+      - 'football/cfb_terminal/build.js'
+      - 'football/cfb_terminal/resilience.js'
+      - 'football/cfb_terminal/research_sync.js'
+      - 'research/cfb/**'
+      - 'supabase/functions/capture/index.ts'
+      - 'supabase/functions/close/index.ts'
+      - 'supabase/odds_quota*.sql'
+      - 'supabase/research_snapshots*.sql'
+      - 'tools/resilience/**'
+      - 'tools/football/manual_market.js'
+      - 'app.html'
+      - '.github/workflows/market-resilience-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: market-resilience-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The thirteen market scenarios (research survives every market state)
+        run: node tools/resilience/resilience.test.js
+      - name: The quota guard on the deployed capture function, and close's stop rule
+        run: node tools/resilience/quota_guard.test.js
+      - name: The central request budget on a real PostgreSQL
+        env:
+          RESILIENCE_SQL_REQUIRED: '1'
+        run: node tools/resilience/odds_quota_sql.test.js
+      - name: The research snapshot ledger on a real PostgreSQL
+        env:
+          RESILIENCE_SQL_REQUIRED: '1'
+        run: node tools/resilience/research_snapshots_sql.test.js
+      - name: The terminal still builds and passes its own refusal checks
+        run: node football/cfb_terminal/build.js --check > /dev/null

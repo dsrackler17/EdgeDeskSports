@@ -23,8 +23,8 @@
   "game_time": "2026-10-11T13:30:00.000Z",
   "game_when_label": "2026-10-11 13:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-10T09:44:27.485Z",
-  "generated_at": "2026-10-10T09:44:27.485Z",
+  "updated_at": "2026-10-10T17:18:12.827Z",
+  "generated_at": "2026-10-10T17:18:12.827Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 2.7-point gap is context only and the game is excluded from research ranking.",
@@ -1185,7 +1185,7 @@
       "total_market": "42.0",
       "total_difference": "0.5 points",
       "book": "Pinnacle",
-      "capture_age": "84 hours old",
+      "capture_age": "91 hours old",
       "stale": false,
       "classification": "STALE MARKET",
       "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 2.7-point gap is context only and the game is excluded from research ranking.",
@@ -1330,7 +1330,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "f1svny1b20iuk",
+    "packet_hash": "429uk812zrq1m",
     "status": "UNEXPLAINED",
     "input_suspect": false,
     "question": "Can the Eagles’ pass defense slow the Jaguars’ passing game?",
@@ -1356,7 +1356,10 @@
       "Jacksonville Jaguars’ passers have completed 72 of 104 (69.2%) for 843 yards, 8.1 yards per attempt, with 8 touchdowns, 2 interceptions and 8 sacks taken in four games.",
       "Philadelphia Eagles’ passers have completed 68 of 115 (59.1%) for 713 yards, 6.2 yards per attempt, with 7 touchdowns, 4 interceptions and 12 sacks taken in four games."
     ],
-    "availability": [],
+    "availability": [
+      "The official injury report lists two Jacksonville Jaguars players as out or doubtful, including CB Jaylon Jones (out) and S Eric Murray (doubtful).",
+      "The official injury report lists five Philadelphia Eagles players as out or doubtful, including WR DeVonta Smith (out), C Drew Kendall (out), S Marcus Epps (out) and WR Marquise Brown (out)."
+    ],
     "script": {
       "model": [
         "The Philadelphia Eagles have to win through the air (Jacksonville Jaguars’ No. 3 passing game against Philadelphia Eagles’ No. 6 pass defense).",
@@ -1369,7 +1372,7 @@
       ]
     },
     "unknown": [
-      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel and conference implications.",
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and conference implications.",
       "The line on file was captured Oct. 6 and may have moved."
     ],
     "flags": [],
@@ -1385,8 +1388,15 @@
         "label": "nflverse team-week stats (2026)",
         "url": null,
         "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-10T09:43:45.200Z",
+        "observed_at": "2026-10-10T17:18:06.614Z",
         "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Official NFL injury report (nflverse)",
+        "url": null,
+        "path": "football/injuries/nfl_2026.json",
+        "observed_at": "2026-10-10T12:36:21.909Z",
+        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1394,6 +1404,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T09:44:27.485Z"
+    "at": "2026-10-10T17:18:12.827Z"
   }
 }

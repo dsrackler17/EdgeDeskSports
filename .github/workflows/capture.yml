@@ -141,9 +141,11 @@ jobs:
           # -s so a failure does not print the URL with its query string, --fail-with-body
           # so a 401 still shows the reason capture gave rather than an empty exit code.
           # The secret goes in a header from the environment and is never echoed.
-          # NO --retry (2026-10-10): curl retries on 5xx/504/timeouts, and a 504
-          # after capture had already bought its boards re-ran the whole capture
-          # up to twice more. The next scheduled run is the retry.
+          # NO --retry (2026-10-10; docs/odds-api-incident-2026-10, docs/market-resilience):
+          # curl retries timeouts and 5xx, and a 504 can arrive AFTER capture has
+          # already bought its boards, so one tick could bill up to three full
+          # runs. The next scheduled run is the retry, and the odds gateway
+          # answers a repeat inside the snapshot's interval from its cache.
           CODE=$(curl -sS -o /tmp/capture.json -w '%{http_code}' \
             --max-time 180 \
             -X POST "${SB_URL%/}/functions/v1/capture?$QS" \

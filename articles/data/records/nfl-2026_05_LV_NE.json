@@ -23,8 +23,8 @@
   "game_time": "2026-10-11T17:00:00.000Z",
   "game_when_label": "2026-10-11 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-10T09:44:27.485Z",
-  "generated_at": "2026-10-10T09:44:27.485Z",
+  "updated_at": "2026-10-10T17:18:12.827Z",
+  "generated_at": "2026-10-10T17:18:12.827Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 4.7-point gap is context only and the game is excluded from research ranking.",
@@ -1153,7 +1153,7 @@
       "total_market": "45.0",
       "total_difference": "2.8 points",
       "book": "theScore Bet",
-      "capture_age": "84 hours old",
+      "capture_age": "91 hours old",
       "stale": false,
       "classification": "STALE MARKET",
       "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 4.7-point gap is context only and the game is excluded from research ranking.",
@@ -1298,7 +1298,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "hotzyu3tn9o4",
+    "packet_hash": "12tif9arq7l3w",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can the Raiders stop the Patriots’ run game?",
@@ -1324,7 +1324,10 @@
       "New England Patriots’ passers have completed 77 of 123 (62.6%) for 900 yards, 7.3 yards per attempt, with 4 touchdowns, 7 interceptions and 10 sacks taken in four games.",
       "Las Vegas Raiders’ passers have completed 93 of 144 (64.6%) for 1,026 yards, 7.1 yards per attempt, with 11 touchdowns, 4 interceptions and 5 sacks taken in four games."
     ],
-    "availability": [],
+    "availability": [
+      "The official injury report lists six New England Patriots players as out or doubtful, including CB Carlton Davis III (out), CB Channing Canada (out), CB Christian Gonzalez (out) and CB Karon Prunty (out).",
+      "The official injury report lists three Las Vegas Raiders players as out or doubtful, including WR Dont'e Thornton Jr. (out), WR Jalen Nailor (out) and C Trey Zuhn III (out)."
+    ],
     "script": {
       "model": [
         "The New England Patriots have to win on the ground (New England Patriots’ No. 8 run game against Las Vegas Raiders’ No. 7 run defense).",
@@ -1338,7 +1341,7 @@
       ]
     },
     "unknown": [
-      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel and conference implications.",
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and conference implications.",
       "The line on file was captured Oct. 6 and may have moved."
     ],
     "flags": [],
@@ -1354,8 +1357,15 @@
         "label": "nflverse team-week stats (2026)",
         "url": null,
         "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-10T09:43:45.200Z",
+        "observed_at": "2026-10-10T17:18:06.614Z",
         "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Official NFL injury report (nflverse)",
+        "url": null,
+        "path": "football/injuries/nfl_2026.json",
+        "observed_at": "2026-10-10T12:36:21.909Z",
+        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1363,6 +1373,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T09:44:27.485Z"
+    "at": "2026-10-10T17:18:12.827Z"
   }
 }

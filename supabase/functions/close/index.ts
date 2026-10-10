@@ -419,6 +419,21 @@ async function fetchOdds(sport: string, _markets: string) {
       source: "none", observedMs: null, cost: 0 };
   }
 }
+/** Should the run stop asking after this gateway answer? null = carry on.
+    Paid retrieval off for every sport (the breaker, no budget, an unconfirmed
+    or exhausted quota, a cooldown, the provider refusing the key or rate-
+    limiting it) stops the run: the sports not yet asked take the provider-down
+    path (a started game closes from its last observed tick, an upcoming one is
+    deferred), so nothing is retried and nothing is written off. A per-sport
+    answer (a cache hit, a skipped live sport, a daily-budget deferral) never
+    stops it. The same rule as capture's gatewayRunStop
+    (tools/resilience/quota_guard.test.js holds them together). */
+export function closeGatewayStop(decision: string): string | null {
+  const d = String(decision ?? "").replace(/:.*$/, "").trim();
+  if (/^denied_(breaker|gateway_disabled|no_budget|unconfirmed_quota|ceiling|emergency|cooldown)$/.test(d)) return d;
+  if (/^provider_http_(401|402|403|429)$/.test(d)) return d;
+  return null;
+}
 
 /** Bisection that can say "there is no root here" instead of returning a
     midpoint that means nothing. Copied from capture. */
@@ -1203,13 +1218,22 @@ Deno.serve(async (req) => {
   const fresh = new Map<string, any>();
   const fetchOk = new Set<string>();
   const providers: Record<string, any> = {};
+  /* THE RUN'S QUOTA VIEW. Every request goes through odds_gateway, which
+     holds the one shared budget (supabase/odds_api_gateway.sql); this only
+     records what it answered and stops asking once paid retrieval is off. */
+  const quota: any = { via: "odds_gateway", spent: 0, remaining: null as number | null, stopped: null as string | null, decisions: {} as Record<string, string> };
   for (const sport of sports) {
+    if (quota.stopped && !EDSPORTS.isRetiredKey(sport)) { providers[sport] = { ok: false, reason: "odds gateway: " + quota.stopped + " (not requested; closes from the last observed tick or defers)" }; continue; }
     /* A retired sport's live close is never bought (EDSPORTS). Its rows take the
        provider-not-ok path below: a started event closes from its last observed
        tick, an upcoming one is deferred until it starts. Nothing is written off. */
     if (EDSPORTS.isRetiredKey(sport)) { providers[sport] = { ok: false, reason: "retired sport: no live close requested; closes from the last observed tick" }; continue; }
     try {
-      const { data, ok, decision, source, observedMs, cost } = await fetchOdds(sport, MARKETS);
+      const { data, ok, decision, source, observedMs, cost, quota: rem } = await fetchOdds(sport, MARKETS);
+      quota.spent += cost; quota.decisions[sport] = decision;
+      if (rem !== "" && Number.isFinite(Number(rem))) quota.remaining = Number(rem);
+      const stop = closeGatewayStop(decision);
+      if (stop) quota.stopped = stop;
       if (!ok) { providers[sport] = { ok: false, reason: "gateway: " + decision, source }; continue; }
       /* A board bought a few minutes ago by capture is priced as of when it was
          bought, so its quote ages are true. */
@@ -1308,6 +1332,7 @@ Deno.serve(async (req) => {
     null_commence_seen: noTime?.length ?? 0,
     ...(staleBacklog ? { stale_backlog_remaining: true } : {}),
     excluded_by_reason: byReason, updateErrors, providers,
+    quota_guard: quota,
     /* How each stored fair was arrived at. "sharp" is the reference book's own
        de-vig; "robust_consensus" is the trimmed median of the independent
        families that are not the best-priced one, and it is a WEAKER close that

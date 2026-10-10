@@ -76,6 +76,12 @@ const BDS = require(path.join(__dirname, 'decisions.js'));
    this week's research or look-ahead, and what each boundary would block */
 const SCHED = require(path.join(ROOT, 'lib', 'edgedesk_schedule.js'));
 const INTEGRITY = require(path.join(ROOT, 'lib', 'edgedesk_integrity.js'));
+/* MARKET RESILIENCE (docs/market-resilience): the market-data state of every
+   game (LIVE / CACHED / HISTORICAL / MANUAL / UNAVAILABLE / FAULT) and the
+   independent research layer that never depends on it */
+const MKS = require(path.join(ROOT, 'lib', 'edgedesk_market_state.js'));
+const RENG = require(path.join(ROOT, 'lib', 'edgedesk_research_engine.js'));
+const RES = require(path.join(__dirname, 'resilience.js'));
 
 function arg(name, dflt) { const i = process.argv.indexOf('--' + name); return i > 0 ? process.argv[i + 1] : dflt; }
 function flag(name) { return process.argv.indexOf('--' + name) > 0; }
@@ -252,8 +258,20 @@ function loadLedger(season) {
   const alts = quotes.filter((q) => isAlt(q) && !q.is_heartbeat && q.is_pregame !== false)
     .concat(readJsonl('football/cfb_terminal/read/' + season + '/alternates.jsonl'))
     .map((q) => Object.assign({}, q, { market_type: 'spread', alternate: true }));
-  return { preds: byGame(preds, 'game_id'), quotes: byGame(quotes.filter((q) => q.market_type === 'spread' && !isAlt(q) && !q.is_heartbeat && q.is_pregame !== false), 'game_id'),
+  /* A HEARTBEAT IS AN OBSERVATION (docs/cfb-board-integrity/AUDIT.md §3,
+     docs/market-resilience): the Lab writes an unchanged line again every 6 h
+     (and every 50 min near kickoff) precisely to say "the book still deals
+     this". Dropping heartbeats made a line confirmed minutes ago read days
+     old, and pushed every steady market into STALE / NO MARKET. They count as
+     the latest observation of the main spread; TERMINAL_HEARTBEATS_CONFIRM=0
+     restores the old rule. */
+  const hb = RES.heartbeatsConfirm();
+  const mainSpread = (q) => q.market_type === 'spread' && !isAlt(q) && (hb || !q.is_heartbeat) && q.is_pregame !== false;
+  /* main-line totals, read only by the market-state layer (never priced here) */
+  const mainTotal = (q) => q.market_type === 'total' && !isAlt(q) && (hb || !q.is_heartbeat) && q.is_pregame !== false;
+  return { preds: byGame(preds, 'game_id'), quotes: byGame(quotes.filter(mainSpread), 'game_id'),
     alts: byGame(alts, 'game_id'), ml: byGame(quotes.filter((q) => q.market_type === 'moneyline' && !q.is_heartbeat && q.is_pregame !== false), 'game_id'),
+    totals: byGame(quotes.filter(mainTotal), 'game_id'), heartbeats_confirm: hb,
     lines: byGame(lines, 'game_id'), n_preds: preds.length, n_quotes: quotes.length, n_alts: alts.length };
 }
 
@@ -1153,6 +1171,31 @@ function main() {
     disagreement_explainer: x.explainer || null }); });
   games.read = { version: RD.VERSION, timing_vocabulary: RD.TIMING, research_vocabulary: RD.RESEARCH_STATUS, validation: RL.validation, ledger: RL.paths };
 
+  /* MARKET RESILIENCE (docs/market-resilience): every game's market-data
+     state and its independent research layer. Research visibility never
+     reads the market; a large disagreement is kept (INVESTIGATE), explained
+     (sensitivity) and never promoted. */
+  const slateRowOf = {};
+  slate.games.forEach((g) => { slateRowOf[String(g.game_id)] = g; });
+  const rctx = { now: now, ledger: ledger, cfg: cfg, mode: RES.mode(), provider: RES.providerStatus(season, now), manual: RES.manualEntries(season),
+    params: window.EDCfbP4Params, betting_enabled: !!(gov.policy && gov.policy.bet_enabled) };
+  const resOf = {};
+  objs.forEach((o) => {
+    const x = RES.buildFor(games.games[o.game_id], slateRowOf[o.game_id] || null, rctx);
+    resOf[o.game_id] = x;
+    Object.assign(games.games[o.game_id], { market_state: x.market_state, carryover: x.carryover, resilience: x.resilience });
+  });
+  board.rows.forEach((row) => { const x = resOf[row.game_id]; if (x) Object.assign(row, RES.boardFields(games.games[row.game_id], x)); });
+  board.resilience = { engine: RENG.VERSION, market_state: MKS.VERSION, mode: rctx.mode, provider: rctx.provider, heartbeats_confirm: ledger.heartbeats_confirm,
+    market_states: (() => { const c = {}; MKS.STATE_KEYS.forEach((k) => { c[k] = 0; }); objs.forEach((o) => { c[resOf[o.game_id].market_state.state]++; }); return c; })(),
+    verdicts: (() => { const c = {}; objs.forEach((o) => { const k = resOf[o.game_id].resilience.verdict.key; c[k] = (c[k] || 0) + 1; }); return c; })(),
+    research_visibility: (() => { const c = {}; objs.forEach((o) => { const k = resOf[o.game_id].resilience.axes.research_visibility.key; c[k] = (c[k] || 0) + 1; }); return c; })(),
+    /* THE MODEL-ONLY RESEARCH QUEUE: by research priority, never by price */
+    research_queue: RENG.queue(objs.map((o) => ({ game_id: o.game_id, research_priority: resOf[o.game_id].resilience.research_priority }))).map((x) => x.game_id),
+    priority_keys: RENG.PRIORITY_KEYS.map((k) => ({ key: k, label: RENG.PRIORITY_LABEL[k], weight: RENG.PRIORITY_W[k] })),
+    rule: 'Research is never gated on a sportsbook. Market states affect only the calculations that need a market; a cached or historical price is never live; an unverified disagreement is INVESTIGATE, never an edge.' };
+  games.resilience = { engine: RENG.VERSION, market_state: MKS.VERSION, mode: rctx.mode, provider: rctx.provider, states: MKS.STATES, capabilities: MKS.CAPABILITIES, axes: RENG.AXES };
+
   /* THE INTEGRITY ENGINE at three boundaries, on every game: the research
      record (the data contract), what the dashboard warns about, what blocks a
      decision, what blocks a publication — each with its rule ids — and the two
@@ -1237,6 +1280,17 @@ function main() {
     if (ev && ev.price_curve && ev.price_curve.coherent === false && ev.decision_status !== 'NO_DECISION') problems.push(o.game_id + ': an incoherent price curve outside NO DECISION');
   });
   BDS.problems(bettors).forEach((p) => problems.push(p));
+  /* RESILIENCE INVARIANTS: research never gated on the market; nothing
+     betting-eligible on anything but a live, verified quote */
+  objs.forEach((o) => {
+    const x = resOf[o.game_id];
+    if (!x) { problems.push(o.game_id + ': no resilience layer'); return; }
+    const R = x.resilience;
+    if (o.edgedesk.available && R.axes.research_visibility.key !== 'AVAILABLE') problems.push(o.game_id + ': a projected game is not research-visible');
+    if (R.axes.betting_validation.key === 'ELIGIBLE' && !(x.market_state.state === 'LIVE' && x.market_state.verified)) problems.push(o.game_id + ': betting-eligible without a live verified quote');
+    if (x.market_state.state !== 'LIVE' && R.disagreement.key === 'VERIFIED_MAJOR') problems.push(o.game_id + ': a verified disagreement on a ' + x.market_state.state + ' market');
+    if (/\b(lock|guarantee|best bet|bet now|smash|hammer)\b/i.test(R.verdict.headline + ' ' + R.verdict.text)) problems.push(o.game_id + ': verdict wording');
+  });
   /* the build's own numbers must reconcile, and a placeholder is never a time */
   sets.RESEARCH_DASHBOARD.results.forEach((r) => {
     r.checks.forEach((c) => { if (c.rule_id === 'CALC.GAP_RECONCILES' && c.status === 'BLOCKED') problems.push(r.game_id + ': ' + c.explanation); });
@@ -1249,7 +1303,11 @@ function main() {
 
   const summary = { games: objs.length, counts: board.counts, read_counts: board.read_counts, new_snapshots: newSnaps.length, postgame: pg.length, record_rows: recordRows.length,
     read_snapshots_new: RL.new_reads.length, read_grades_new: RL.new_grades.length, ev_counts: board.ev_counts, ev_snapshots_new: EVL.new_snaps.length, ev_grades_new: EVL.new_grades.length,
-    bettor_counts: BDS.counts(bettors.map((x) => x.decision)).decisions, bettor_snapshots_new: DL.new_snaps.length, bettor_grades_new: DL.new_grades.length };
+    bettor_counts: BDS.counts(bettors.map((x) => x.decision)).decisions, bettor_snapshots_new: DL.new_snaps.length, bettor_grades_new: DL.new_grades.length,
+    market_states: board.resilience.market_states, verdicts: board.resilience.verdicts, research_visibility: board.resilience.research_visibility, research_snapshots_new: 0 };
+  /* the research snapshot record: append-only, once per change */
+  const resSnaps = RES.newSnapshots(RES.loadSnapshots(season), objs.map((o) => RES.snapshotRow(games.games[o.game_id], resOf[o.game_id], { now: now, inputs_sha256: meta.inputs_sha256 })));
+  summary.research_snapshots_new = resSnaps.length;
   if (check) { console.log(JSON.stringify(summary, null, 1)); return; }
   /* --out <dir>: write the four artifacts elsewhere (demos, replays); the
      append-only history is only ever written by a normal build */
@@ -1264,6 +1322,11 @@ function main() {
     const hp = historyPath(season);
     fs.mkdirSync(path.dirname(hp), { recursive: true });
     fs.appendFileSync(hp, newSnaps.map((s) => JSON.stringify(s)).join('\n') + '\n');
+  }
+  if (resSnaps.length && outDir === OUT) {
+    const rp0 = RES.snapshotPath(season);
+    fs.mkdirSync(path.dirname(rp0), { recursive: true });
+    fs.appendFileSync(rp0, resSnaps.map((s) => JSON.stringify(s)).join('\n') + '\n');
   }
   /* the Read record is append-only and, like the history, only a normal build writes it */
   if (outDir === OUT) {

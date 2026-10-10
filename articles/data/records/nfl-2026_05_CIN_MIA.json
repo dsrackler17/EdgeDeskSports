@@ -23,8 +23,8 @@
   "game_time": "2026-10-11T17:00:00.000Z",
   "game_when_label": "2026-10-11 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-10T09:44:27.485Z",
-  "generated_at": "2026-10-10T09:44:27.485Z",
+  "updated_at": "2026-10-10T17:18:12.827Z",
+  "generated_at": "2026-10-10T17:18:12.827Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 4.5-point gap is context only and the game is excluded from research ranking.",
@@ -1172,7 +1172,7 @@
       "total_market": "42.5",
       "total_difference": "3.7 points",
       "book": "Pinnacle",
-      "capture_age": "84 hours old",
+      "capture_age": "91 hours old",
       "stale": false,
       "classification": "STALE MARKET",
       "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 4.5-point gap is context only and the game is excluded from research ranking.",
@@ -1317,7 +1317,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1yy4e1ktbiyi",
+    "packet_hash": "m8gtb91gzqzuv",
     "status": "UNEXPLAINED",
     "input_suspect": false,
     "question": "Can the Bengals’ pass rush get to Malik Willis?",
@@ -1343,7 +1343,10 @@
       "Miami Dolphins’ passers have completed 58 of 103 (56.3%) for 712 yards, 6.9 yards per attempt, with 1 touchdowns, 2 interceptions and 11 sacks taken in four games.",
       "Cincinnati Bengals’ passers have completed 112 of 157 (71.3%) for 1,171 yards, 7.5 yards per attempt, with 7 touchdowns, 3 interceptions and 9 sacks taken in four games."
     ],
-    "availability": [],
+    "availability": [
+      "The official injury report lists four Miami Dolphins players as out or doubtful, including WR Caleb Douglas (out), TE Justin Joly (out), CB Reese Taylor (out) and DE Rob Beal Jr. (out).",
+      "The official injury report lists one Cincinnati Bengals player as out or doubtful, including S Kyle Dugger (out)."
+    ],
     "script": {
       "model": [
         "The Miami Dolphins have to win in the pass-rush matchup (Miami Dolphins’ No. 26 pass protection against Cincinnati Bengals’ No. 10 pass rush).",
@@ -1355,7 +1358,7 @@
       ]
     },
     "unknown": [
-      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel and conference implications.",
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and conference implications.",
       "The line on file was captured Oct. 6 and may have moved."
     ],
     "flags": [],
@@ -1371,8 +1374,15 @@
         "label": "nflverse team-week stats (2026)",
         "url": null,
         "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-10T09:43:45.200Z",
+        "observed_at": "2026-10-10T17:18:06.614Z",
         "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Official NFL injury report (nflverse)",
+        "url": null,
+        "path": "football/injuries/nfl_2026.json",
+        "observed_at": "2026-10-10T12:36:21.909Z",
+        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1380,6 +1390,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T09:44:27.485Z"
+    "at": "2026-10-10T17:18:12.827Z"
   }
 }

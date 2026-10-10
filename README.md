@@ -108,6 +108,23 @@ See [`docs/system-integrity/`](docs/system-integrity/):
 Tests: `npm run integrity:test` (the 17 regression cases plus an
 integration test on PostgreSQL) and `npm run integrity:audit`.
 
+## Market resilience — research never depends on a sportsbook
+
+Every game's football research (projection, matchup, explanation,
+uncertainty) is built without a market and stays complete when the odds
+provider is down, the quota is exhausted, or a quote fails a check. Market
+data is labelled LIVE / CACHED / HISTORICAL / MANUAL / UNAVAILABLE / FAULT
+(`lib/edgedesk_market_state.js`). Each game gets three separate answers:
+research visibility, market integrity and betting validation
+(`lib/edgedesk_research_engine.js`). A large unverified disagreement is
+labelled INVESTIGATE and explained by a sensitivity panel, never promoted.
+The research page has a RESEARCH ONLY mode and a model-only research
+priority. One request budget protects the Odds API quota: every request goes
+through `supabase/functions/odds_gateway` and its control plane
+(`supabase/odds_api_gateway.sql`; `docs/odds-api-incident-2026-10/INCIDENT.md`). See
+[`docs/market-resilience/README.md`](docs/market-resilience/README.md).
+Tests: `npm run resilience:test`.
+
 ## EdgeDesk Intelligence — the research desk
 
 The chat panel in `app.html` is served by `supabase/functions/edgedesk_ai`.

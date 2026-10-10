@@ -23,8 +23,8 @@
   "game_time": "2026-10-11T20:05:00.000Z",
   "game_when_label": "2026-10-11 20:05 UTC",
   "published_at": null,
-  "updated_at": "2026-10-10T09:44:27.485Z",
-  "generated_at": "2026-10-10T09:44:27.485Z",
+  "updated_at": "2026-10-10T17:18:12.827Z",
+  "generated_at": "2026-10-10T17:18:12.827Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 2.4-point gap is context only and the game is excluded from research ranking.",
@@ -1172,7 +1172,7 @@
       "total_market": "42.5",
       "total_difference": "1.9 points",
       "book": "BetRivers",
-      "capture_age": "84 hours old",
+      "capture_age": "91 hours old",
       "stale": false,
       "classification": "STALE MARKET",
       "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 2.4-point gap is context only and the game is excluded from research ranking.",
@@ -1317,7 +1317,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "7q3zap10drh03",
+    "packet_hash": "jneij08jp0ha",
     "status": "UNEXPLAINED",
     "input_suspect": false,
     "question": "Can the Chargers’ pass rush get to Bo Nix?",
@@ -1343,7 +1343,10 @@
       "Los Angeles Chargers’ passers have completed 71 of 120 (59.2%) for 816 yards, 6.8 yards per attempt, with 4 touchdowns, 6 interceptions and 12 sacks taken in four games.",
       "Denver Broncos’ passers have completed 81 of 135 (60.0%) for 819 yards, 6.1 yards per attempt, with 5 touchdowns, 3 interceptions and 5 sacks taken in four games."
     ],
-    "availability": [],
+    "availability": [
+      "The official injury report lists eight Los Angeles Chargers players as out or doubtful, including WR Brenen Thompson (out), S Derwin James (out), CB Donte Jackson (out) and T Joe Alt (out).",
+      "The official injury report lists two Denver Broncos players as out or doubtful, including CB Pat Surtain II (out) and CB Riley Moss (out)."
+    ],
     "script": {
       "model": [
         "The Los Angeles Chargers have to win in the pass-rush matchup (Denver Broncos’ No. 5 pass protection against Los Angeles Chargers’ No. 3 pass rush).",
@@ -1358,7 +1361,7 @@
       ]
     },
     "unknown": [
-      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and injuries and personnel.",
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field and strength of schedule.",
       "The line on file was captured Oct. 6 and may have moved."
     ],
     "flags": [],
@@ -1374,8 +1377,15 @@
         "label": "nflverse team-week stats (2026)",
         "url": null,
         "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-10T09:43:45.200Z",
+        "observed_at": "2026-10-10T17:18:06.614Z",
         "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Official NFL injury report (nflverse)",
+        "url": null,
+        "path": "football/injuries/nfl_2026.json",
+        "observed_at": "2026-10-10T12:36:21.909Z",
+        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1383,6 +1393,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T09:44:27.485Z"
+    "at": "2026-10-10T17:18:12.827Z"
   }
 }

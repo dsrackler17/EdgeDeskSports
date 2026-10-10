@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-10T16:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-09. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1909,87 +1909,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-09. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1alm6go9tn4gq",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can Bowling Green’s pass rush get to Jackson Sharman?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.3 points.",
-    "gap": {
-      "points": 0.3,
-      "toward": "Sacramento State",
-      "other": "Bowling Green"
-    },
-    "supporting": [
-      "When Sacramento State has the ball (the run game against the run defense): Sacramento State’s offense averages 4.1 yards per carry, and Bowling Green’s defense allows 7.8 yards per carry (FBS average 5.1).",
-      "When Sacramento State has the ball (big plays on the ground): Sacramento State’s offense turns 5.4% of its runs into explosive gains, and Bowling Green’s defense gives up explosive gains on 10.5% of opponent runs (FBS average 6.6%).",
-      "When Bowling Green has the ball (the run game against the run defense): Bowling Green’s offense averages 3.1 yards per carry, and Sacramento State’s defense allows 5.6 yards per carry (FBS average 5.1).",
-      "When Bowling Green has the ball (down-to-down efficiency): Bowling Green’s offense succeeds on 37.3% of its offensive plays, and Sacramento State’s defense allows opponents to succeed on 38.9% of their plays (FBS average 42.4%)."
-    ],
-    "contradicting": [
-      "When Bowling Green has the ball (pass protection against the pass rush): Bowling Green’s offense has allowed a sack on 3.6% of its dropbacks, and Sacramento State’s defense sacks the quarterback on 6.5% of opponent dropbacks (FBS average 5.6%).",
-      "When Sacramento State has the ball (pass protection against the pass rush): Sacramento State’s offense has allowed a sack on 3.5% of its dropbacks, and Bowling Green’s defense sacks the quarterback on 15.5% of opponent dropbacks (FBS average 5.6%).",
-      "When Sacramento State has the ball (big plays through the air): Sacramento State’s offense turns 3.1% of its pass plays into explosive gains, and Bowling Green’s defense gives up explosive gains on 12.6% of opponent pass plays (FBS average 10.4%).",
-      "When Sacramento State has the ball (the passing game against the pass defense): Sacramento State’s offense averages 5.3 yards per pass attempt, and Bowling Green’s defense allows 8.6 yards per pass attempt (FBS average 7.5)."
-    ],
-    "quarterbacks": [
-      "Jay Kastantin has completed 82 of 128 passes (64.1%) for 849 yards, 6.6 yards per attempt, 4 touchdowns and 2 interceptions in five games for Bowling Green, and has been sacked on 5 of 133 dropbacks.",
-      "Jackson Sharman has completed 83 of 144 passes (57.6%) for 859 yards, 6.0 yards per attempt, 5 touchdowns and 5 interceptions in four games for Sacramento State, and has been sacked on 5 of 149 dropbacks.",
-      "Carson Conklin has completed 25 of 46 passes (54.3%) for 224 yards, 4.9 yards per attempt, no touchdowns and 1 interception in one game for Sacramento State, and has been sacked on 2 of 48 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Sacramento State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.5% of its dropbacks, and Bowling Green’s defense sacks the quarterback on 15.5% of opponent dropbacks.",
-        "Sacramento State’s offense has to hold its own on big pass plays against a defense that gives up explosive gains on 12.6% of opponent pass plays.",
-        "Sacramento State’s offense has to keep winning on long runs: it turns 5.4% of its runs into explosive gains, and Bowling Green’s defense gives up explosive gains on 10.5% of opponent runs.",
-        "Sacramento State’s offense has to keep winning on the ground: it averages 4.1 yards per carry, and Bowling Green’s defense allows 7.8 yards per carry."
-      ],
-      "market": [
-        "Bowling Green’s defense has to come out ahead on big pass plays: it gives up explosive gains on 12.6% of opponent pass plays, against an offense that turns 3.1% of its pass plays into explosive gains.",
-        "Bowling Green’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 15.5% of opponent dropbacks, against an offense that has allowed a sack on 3.5% of its dropbacks.",
-        "Kastantin keeps producing at his season rate (64.1% completions, 6.6 yards per attempt, 4 TD, 2 INT)."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Bowling Green and Sacramento State.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, historical meetings, injuries and personnel and penalty rate.",
-      "The line on file was captured Oct. 9 and may have moved."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Bowling Green), sack rate (Bowling Green) and sack rate allowed (Sacramento State); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "medium",
-        "text": "EdgeDesk’s published number sits 4.8 points from the middle of its own other models."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-10T05:56:27.335Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-07T23:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T09:44:27.485Z"
+    "at": "2026-10-10T17:18:12.827Z"
   }
 }
