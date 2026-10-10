@@ -1,6 +1,6 @@
 {
  "attribution": "each row is graded under the model_version that produced it (its own, else its snapshot file's); never relabelled (audit F-02)",
- "bias": -1.5919152542372879,
+ "bias": -1.7211323529411768,
  "by_model_version": {
   "edgedesk_cfb_v2.0.0": {
    "bias": -0.448646511627907,
@@ -13,13 +13,13 @@
    }
   },
   "edgedesk_cfb_v2.1.0": {
-   "bias": -1.5919152542372879,
+   "bias": -1.7211323529411768,
    "fcs_not_priced_games": 3,
-   "games_scored": 59,
-   "mae": 13.318050847457629,
-   "major_miss_share": 0.1864406779661017,
+   "games_scored": 68,
+   "mae": 13.070985294117648,
+   "major_miss_share": 0.16176470588235295,
    "sources": {
-    "FROZEN": 59
+    "FROZEN": 68
    }
   }
  },
@@ -31,9 +31,9 @@
    "week": 5
   },
   {
-   "bias": -8.262,
-   "mae": 8.262,
-   "n": 3,
+   "bias": -3.992,
+   "mae": 10.654,
+   "n": 12,
    "week": 6
   }
  ],
@@ -44,14 +44,14 @@
   "mae": 9.369333333333332,
   "note": "FBS-vs-FCS rows are NOT PRICED; tracked so the known bias stays measured"
  },
- "games_scored": 59,
- "generated_at": "2026-10-09T17:14:45Z",
+ "games_scored": 68,
+ "generated_at": "2026-10-10T16:00:25Z",
  "graded_with": {
   "finality_rule": "cfb_v2_finality_v2",
   "market_orientation_rule": "none (no multi-book archive: CFBD provider lines only)"
  },
- "mae": 13.318050847457629,
- "major_miss_share": 0.1864406779661017,
+ "mae": 13.070985294117648,
+ "major_miss_share": 0.16176470588235295,
  "miss_classes": {
   "explosive_variance": 2,
   "garbage_time": 2,
@@ -65,6 +65,6 @@
  "scope": "priced games (FBS-vs-FBS) of edgedesk_cfb_v2.1.0 only; rows of other versions are in by_model_version",
  "season": 2026,
  "sources": {
-  "FROZEN": 59
+  "FROZEN": 68
  }
 }
