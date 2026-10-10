@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T23:30:00.000Z",
   "game_when_label": "2026-10-10 23:30 UTC",
   "published_at": "2026-10-10T11:31:10.239Z",
-  "updated_at": "2026-10-10T21:00:37.270Z",
-  "generated_at": "2026-10-10T21:00:37.270Z",
+  "updated_at": "2026-10-10T21:30:32.510Z",
+  "generated_at": "2026-10-10T21:30:32.510Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1457,7 +1457,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 94h old",
+          "text": "odds is 95h old",
           "widening": null
         },
         {
@@ -1540,7 +1540,7 @@
       "total_market_held": null,
       "book": "captured consensus (stale) · 1 book · best at BetMGM",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "94 hours old",
+      "capture_age": "95 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1887,15 +1887,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-10. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_b3180b0d6c4c38c9",
+  "snapshot_id": "snap_56cf3b1c00786de0",
   "timing": {
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-10T23:30:00.000Z",
-    "minutes_before_kickoff": 149,
+    "minutes_before_kickoff": 119,
     "published_at": "2026-10-10T11:31:10.239Z",
     "refreshed": false,
-    "at": "2026-10-10T21:00:37.270Z"
+    "at": "2026-10-10T21:30:32.510Z"
   },
   "featured": {
     "editorial_priority": 61.2,
@@ -2171,24 +2171,37 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-10T21:00:37.270Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Gunner Stockton has completed 76 of 101 passes (75.2%) for 1,047 yards, 10.4 yards per att",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-10T21:30:32.510Z"
   },
   "publish_state": {
     "ok": true,
-    "at": "2026-10-10T21:00:37.270Z",
+    "at": "2026-10-10T21:30:32.510Z",
     "blocking": [],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Gunner Stockton has completed 76 of 101 passes (75.2%) for 1,047 yards, 10.4 yards per att"
+      }
+    ],
     "hold_reason": null
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1p1avn71ivqnrl",
+    "packet_hash": "1qgyqk31bo4mxd",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Alabama win at the line of scrimmage?",
@@ -2290,6 +2303,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T21:00:37.270Z"
+    "at": "2026-10-10T21:30:32.510Z"
   }
 }
