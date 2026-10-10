@@ -21,8 +21,8 @@
   "game_time": "2026-10-11T02:30:00.000Z",
   "game_when_label": "2026-10-11 02:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-10T14:30:33.665Z",
-  "generated_at": "2026-10-10T14:30:33.665Z",
+  "updated_at": "2026-10-10T14:40:34.968Z",
+  "generated_at": "2026-10-10T14:40:34.968Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1900,115 +1900,16 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-10. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "10z9uxv1ovpddt",
-    "status": "UNEXPLAINED",
-    "input_suspect": true,
-    "question": "Can Boise State’s pass rush get to Jayden Mandal?",
-    "assessment": "EdgeDesk’s number is 7.1 points closer to Fresno State than the line, and EdgeDesk cannot account for most of that: its own breakdown accounts for about 2.8 of the 7.1 points. The measured football evidence leans toward Boise State, not toward EdgeDesk’s number. There is a specific reason to suspect EdgeDesk’s inputs: EdgeDesk’s published number sits 7.4 points from the middle of its own other models. Treat the gap as an open research question, not as an edge.",
-    "gap": {
-      "points": 7.1,
-      "toward": "Fresno State",
-      "other": "Boise State"
-    },
-    "supporting": [
-      "When Fresno State has the ball (big plays on the ground): Fresno State’s offense turns 9.7% of its runs into explosive gains, and Boise State’s defense gives up explosive gains on 7.9% of opponent runs (FBS average 6.6%).",
-      "When Fresno State has the ball (big plays through the air): Fresno State’s offense turns 10.4% of its pass plays into explosive gains, and Boise State’s defense gives up explosive gains on 14.6% of opponent pass plays (FBS average 10.4%).",
-      "When Boise State has the ball (pass protection against the pass rush): Boise State’s offense has allowed a sack on 3.6% of its dropbacks, and Fresno State’s defense sacks the quarterback on 8.9% of opponent dropbacks (FBS average 5.6%).",
-      "EdgeDesk’s position-group ratings put Fresno State’s secondary No. 35 nationally and Boise State’s No. 96."
-    ],
-    "contradicting": [
-      "When Fresno State has the ball (the line of scrimmage on running plays): Fresno State’s offense is stopped at or behind the line on 23.7% of its runs, and Boise State’s defense stops 27.5% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When Fresno State has the ball (third down): Fresno State’s offense converts 36.6% of its third downs, and Boise State’s defense allows opponents to convert 26.9% of their third downs (FBS average 39.6%).",
-      "When Boise State has the ball (third down): Boise State’s offense converts 50.8% of its third downs, and Fresno State’s defense allows opponents to convert 31.1% of their third downs (FBS average 39.6%).",
-      "When Boise State has the ball (big plays through the air): Boise State’s offense turns 12.6% of its pass plays into explosive gains, and Fresno State’s defense gives up explosive gains on 8.5% of opponent pass plays (FBS average 10.4%)."
-    ],
-    "quarterbacks": [
-      "Jayden Mandal has completed 91 of 140 passes (65.0%) for 1,034 yards, 7.4 yards per attempt, 6 touchdowns and 1 interception in five games for Fresno State, and has been sacked on 5 of 145 dropbacks.",
-      "Maddux Madsen has completed 87 of 132 passes (65.9%) for 1,058 yards, 8.0 yards per attempt, 11 touchdowns and no interceptions in five games for Boise State, and has been sacked on 5 of 137 dropbacks."
-    ],
-    "availability": [
-      "Fresno State’s availability report lists receiver Harold Duvall as questionable.",
-      "Fresno State’s availability report lists running back Rayshon Luke as questionable.",
-      "Boise State’s availability report lists receiver Rasean Jones as questionable."
-    ],
-    "script": {
-      "model": [
-        "Fresno State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.4% of its dropbacks, and Boise State’s defense sacks the quarterback on 8.5% of opponent dropbacks.",
-        "Fresno State’s offense has to hold its own at the line of scrimmage against a defense that stops 27.5% of opponent runs at or behind the line.",
-        "Fresno State’s offense has to hold its own on third down against a defense that allows opponents to convert 26.9% of their third downs.",
-        "Fresno State’s offense has to keep winning on long runs: it turns 9.7% of its runs into explosive gains, and Boise State’s defense gives up explosive gains on 7.9% of opponent runs."
-      ],
-      "market": [
-        "Boise State’s defense has to come out ahead at the line of scrimmage: it stops 27.5% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 23.7% of its runs.",
-        "Boise State’s defense has to come out ahead on third down: it allows opponents to convert 26.9% of their third downs, against an offense that converts 36.6% of its third downs.",
-        "Boise State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 8.5% of opponent dropbacks, against an offense that has allowed a sack on 3.4% of its dropbacks."
-      ]
-    },
-    "unknown": [
-      "Fresno State’s availability report lists receiver Harold Duvall as questionable.",
-      "Fresno State’s availability report lists running back Rayshon Luke as questionable.",
-      "Boise State’s availability report lists receiver Rasean Jones as questionable.",
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Fresno State and Boise State.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate.",
-      "The line on file was captured Oct. 9 and may have moved."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Fresno State), sack rate (Fresno State), sack rate allowed (Boise State) and sack rate (Boise State); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "high",
-        "text": "EdgeDesk’s published number sits 7.4 points from the middle of its own other models."
-      },
-      {
-        "key": "HFA_CONSTANT",
-        "severity": "medium",
-        "text": "EdgeDesk’s model gives Fresno State 4.1 points for playing at home — a league-wide value, not one measured for this stadium; historically, the closing market has priced about 61% of EdgeDesk’s home-field number."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-10T12:45:57.679Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-10T12:45:24.151Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-07T23:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Pac-12 Conference availability report (Third Report)",
-        "url": "https://pac-12.com/news/2026/9/11/2026-football-reports.aspx",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-10T02:10:05.936Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
-  "checks": {
-    "ok": true,
-    "failed": [],
-    "at": "2026-10-10T14:30:33.665Z"
-  },
   "snapshot_id": "snap_94610e1289efdcc6",
+  "timing": {
+    "publication_window": "normal",
+    "classified_window": "normal",
+    "scheduled_kickoff": "2026-10-11T02:30:00.000Z",
+    "minutes_before_kickoff": 709,
+    "published_at": null,
+    "refreshed": false,
+    "at": "2026-10-10T14:40:34.968Z"
+  },
   "featured": {
     "editorial_priority": 55.8,
     "status": "featured",
@@ -2300,33 +2201,17 @@
     }
   ],
   "quality": {
-    "score": 88,
+    "score": 100,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [
-      {
-        "id": "duplicate_paragraph",
-        "why": "the same paragraph must not appear twice on one page",
-        "detail": "Fresno State’s availability report lists receiver Harold Duvall as questionable. | Fresno State’s availability report lists running back Rayshon Luke as questionable.",
-        "cost": 12
-      }
-    ],
-    "at": "2026-10-10T14:30:33.665Z"
-  },
-  "timing": {
-    "publication_window": "normal",
-    "classified_window": "normal",
-    "scheduled_kickoff": "2026-10-11T02:30:00.000Z",
-    "minutes_before_kickoff": 719,
-    "published_at": null,
-    "refreshed": false,
-    "at": "2026-10-10T14:30:33.665Z"
+    "craft_failed": [],
+    "at": "2026-10-10T14:40:34.968Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-10T14:30:33.665Z",
+    "at": "2026-10-10T14:40:34.968Z",
     "blocking": [
       {
         "id": "evidence_inputs_suspect",
@@ -2334,13 +2219,115 @@
         "detail": "CROSS_MODEL_OUTLIER"
       }
     ],
-    "warnings": [
+    "warnings": [],
+    "hold_reason": "evidence_inputs_suspect"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "10z9uxv1ovpddt",
+    "status": "UNEXPLAINED",
+    "input_suspect": true,
+    "question": "Can Boise State’s pass rush get to Jayden Mandal?",
+    "assessment": "EdgeDesk’s number is 7.1 points closer to Fresno State than the line, and EdgeDesk cannot account for most of that: its own breakdown accounts for about 2.8 of the 7.1 points. The measured football evidence leans toward Boise State, not toward EdgeDesk’s number. There is a specific reason to suspect EdgeDesk’s inputs: EdgeDesk’s published number sits 7.4 points from the middle of its own other models. Treat the gap as an open research question, not as an edge.",
+    "gap": {
+      "points": 7.1,
+      "toward": "Fresno State",
+      "other": "Boise State"
+    },
+    "supporting": [
+      "When Fresno State has the ball (big plays on the ground): Fresno State’s offense turns 9.7% of its runs into explosive gains, and Boise State’s defense gives up explosive gains on 7.9% of opponent runs (FBS average 6.6%).",
+      "When Fresno State has the ball (big plays through the air): Fresno State’s offense turns 10.4% of its pass plays into explosive gains, and Boise State’s defense gives up explosive gains on 14.6% of opponent pass plays (FBS average 10.4%).",
+      "When Boise State has the ball (pass protection against the pass rush): Boise State’s offense has allowed a sack on 3.6% of its dropbacks, and Fresno State’s defense sacks the quarterback on 8.9% of opponent dropbacks (FBS average 5.6%).",
+      "EdgeDesk’s position-group ratings put Fresno State’s secondary No. 35 nationally and Boise State’s No. 96."
+    ],
+    "contradicting": [
+      "When Fresno State has the ball (the line of scrimmage on running plays): Fresno State’s offense is stopped at or behind the line on 23.7% of its runs, and Boise State’s defense stops 27.5% of opponent runs at or behind the line (FBS average 17.4%).",
+      "When Fresno State has the ball (third down): Fresno State’s offense converts 36.6% of its third downs, and Boise State’s defense allows opponents to convert 26.9% of their third downs (FBS average 39.6%).",
+      "When Boise State has the ball (third down): Boise State’s offense converts 50.8% of its third downs, and Fresno State’s defense allows opponents to convert 31.1% of their third downs (FBS average 39.6%).",
+      "When Boise State has the ball (big plays through the air): Boise State’s offense turns 12.6% of its pass plays into explosive gains, and Fresno State’s defense gives up explosive gains on 8.5% of opponent pass plays (FBS average 10.4%)."
+    ],
+    "quarterbacks": [
+      "Jayden Mandal has completed 91 of 140 passes (65.0%) for 1,034 yards, 7.4 yards per attempt, 6 touchdowns and 1 interception in five games for Fresno State, and has been sacked on 5 of 145 dropbacks.",
+      "Maddux Madsen has completed 87 of 132 passes (65.9%) for 1,058 yards, 8.0 yards per attempt, 11 touchdowns and no interceptions in five games for Boise State, and has been sacked on 5 of 137 dropbacks."
+    ],
+    "availability": [
+      "Fresno State’s availability report lists receiver Harold Duvall as questionable.",
+      "Fresno State’s availability report lists running back Rayshon Luke as questionable.",
+      "Boise State’s availability report lists receiver Rasean Jones as questionable."
+    ],
+    "script": {
+      "model": [
+        "Fresno State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.4% of its dropbacks, and Boise State’s defense sacks the quarterback on 8.5% of opponent dropbacks.",
+        "Fresno State’s offense has to hold its own at the line of scrimmage against a defense that stops 27.5% of opponent runs at or behind the line.",
+        "Fresno State’s offense has to hold its own on third down against a defense that allows opponents to convert 26.9% of their third downs.",
+        "Fresno State’s offense has to keep winning on long runs: it turns 9.7% of its runs into explosive gains, and Boise State’s defense gives up explosive gains on 7.9% of opponent runs."
+      ],
+      "market": [
+        "Boise State’s defense has to come out ahead at the line of scrimmage: it stops 27.5% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 23.7% of its runs.",
+        "Boise State’s defense has to come out ahead on third down: it allows opponents to convert 26.9% of their third downs, against an offense that converts 36.6% of its third downs.",
+        "Boise State’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 8.5% of opponent dropbacks, against an offense that has allowed a sack on 3.4% of its dropbacks."
+      ]
+    },
+    "unknown": [
+      "Fresno State’s availability report lists receiver Harold Duvall as questionable.",
+      "Fresno State’s availability report lists running back Rayshon Luke as questionable.",
+      "Boise State’s availability report lists receiver Rasean Jones as questionable.",
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Fresno State and Boise State.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate.",
+      "The line on file was captured Oct. 9 and may have moved."
+    ],
+    "flags": [
       {
-        "id": "craft_duplicate_paragraph",
-        "why": "the same paragraph must not appear twice on one page",
-        "detail": "Fresno State’s availability report lists receiver Harold Duvall as questionable. | Fresno State’s availability report lists running back Rayshon Luke as questionable."
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Fresno State), sack rate (Fresno State), sack rate allowed (Boise State) and sack rate (Boise State); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      },
+      {
+        "key": "CROSS_MODEL_OUTLIER",
+        "severity": "high",
+        "text": "EdgeDesk’s published number sits 7.4 points from the middle of its own other models."
+      },
+      {
+        "key": "HFA_CONSTANT",
+        "severity": "medium",
+        "text": "EdgeDesk’s model gives Fresno State 4.1 points for playing at home — a league-wide value, not one measured for this stadium; historically, the closing market has priced about 61% of EdgeDesk’s home-field number."
       }
     ],
-    "hold_reason": "evidence_inputs_suspect"
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-10T12:45:57.679Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk position-group ratings",
+        "url": null,
+        "path": "football/rankings/current.json",
+        "observed_at": "2026-10-10T12:45:24.151Z",
+        "verification": "RATING"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-07T23:30:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Pac-12 Conference availability report (Third Report)",
+        "url": "https://pac-12.com/news/2026/9/11/2026-football-reports.aspx",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-10T02:10:05.936Z",
+        "verification": "OFFICIAL_REPORT"
+      }
+    ],
+    "needs_confirmation": []
+  },
+  "checks": {
+    "ok": true,
+    "failed": [],
+    "at": "2026-10-10T14:40:34.968Z"
   }
 }
