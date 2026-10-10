@@ -270,7 +270,7 @@ async function buildFixture() {
     console.log('stale');
     ({ ctx, page, errors } = await open({ width: 1440, height: 900 }, '#playerprops/nfl', NOW + 2 * 3600e3));
     await page.waitForFunction(() => EDPropsUI.state.reprice.nfl === 'done', null, { timeout: 20000 });
-    /* two hours on, a game 33 h out is on its 2-hour cadence: the pipeline is
+    /* two hours on, a game 33 h out is on its 6-hour cadence: the pipeline is
        on schedule, but no price is executable — said once, calmly, in the
        strip (never a banner over every visit, never "0 current prices", never
        a STALE pill on every row); the ⓘ explains the price clock */
@@ -282,7 +282,7 @@ async function buildFixture() {
     chk('two hours on (between the far game\'s checks): no banner, and the strip says "on schedule" and how old the last prices are — never "0 current prices"', /Sportsbook prices: on schedule/.test(st2.shown) && /last 2\.\d h ago/.test(st2.shown) && !/current prices/.test(st2.shown) && !st2.banner && st2.health === 'HEALTHY', st2.shown + ' || ' + st2.banner);
     const fold = await page.evaluate(() => { const d = document.querySelector('.pp-strip .pp-sched'); return d ? { open: d.open, h: d.querySelector('span').getBoundingClientRect().height, vis: d.querySelector('span').checkVisibility ? d.querySelector('span').checkVisibility() : null } : null; });
     chk('…its explanation is folded away until asked for', !!fold && !fold.open && (fold.h === 0 || fold.vis === false), fold);
-    chk('…and its ⓘ explains the price clock: every prop decided on its latest capture, each price with its age, Refresh prices', /every 1 h inside 24 h, 2 h inside 48 h, 6 h beyond/.test(st2.sched) && /decided on its game's latest capture \(up to 24 h old\)/.test(st2.sched) && /shows its age/.test(st2.sched) && /Refresh prices/.test(st2.sched), st2.sched);
+    chk('…and its ⓘ explains the price clock: every prop decided on its latest capture, each price with its age, Refresh prices', /every 1 h inside 3 h, 2 h inside 24 h, 6 h beyond/.test(st2.sched) && /decided on its game's latest capture \(up to 24 h old\)/.test(st2.sched) && /shows its age/.test(st2.sched) && /Refresh prices/.test(st2.sched), st2.sched);
     chk('THE BOARD STAYS LIT: two hours on, every priced prop is still decided on its game\'s latest capture — nothing waits', st2.rows.length > 0 && st2.rows.every((r) => !r.wait) && st2.rows.some((r) => r.cand && (r.decision === 'BET' || r.decision === 'LEAN')) && st2.rows.filter((r) => r.cand).every((r) => r.latest && !r.live), st2.rows.filter((r) => r.wait).length);
     chk('no STALE pill on any row', st2.pills === 0, st2.pills);
     await shot(page, 'desktop_between_checks');
@@ -329,22 +329,33 @@ async function buildFixture() {
       await o.ctx.close();
       served[bp] = keep;
     }
-    /* the far game is now past its 2-hour target: DELAYED, with recovery */
-    ({ ctx, page, errors } = await open({ width: 1440, height: 900 }, '#playerprops/nfl', NOW + 2.75 * 3600e3));
-    await page.waitForFunction(() => EDPropsUI.state.reprice.nfl === 'done', null, { timeout: 20000 });
-    const d3 = await page.evaluate(() => ({ strip: document.querySelector('.pp-strip').textContent, banner: (document.querySelector('.pp-banner.delayed') || {}).textContent || '' }));
-    await shot(page, 'desktop_delayed');
-    chk('past its check target: DELAYED — "temporarily unavailable", last capture, recovery running, no stale decision', /prices delayed/.test(d3.strip) && /Current sportsbook pricing temporarily unavailable/.test(d3.banner) && /Last successful capture: 2\.\d h ago/.test(d3.banner) && /Automatic recovery is running/.test(d3.banner) && /Every prop stays decided on its game's latest capture \(up to 24 h old\), each price with its age/.test(d3.banner), d3);
-    chk('…and the board stays lit through it', await page.evaluate(() => EDPropsUI._rowsOf('nfl').filter((r) => r.priced && r.r.p).every((r) => !r.wait)));
-    await ctx.close();
-    /* nothing has even tried for five hours: OUTAGE, and it says the capture is overdue */
-    ({ ctx, page, errors } = await open({ width: 1440, height: 900 }, '#playerprops/nfl', NOW + 5 * 3600e3));
-    await page.waitForFunction(() => EDPropsUI.state.reprice.nfl === 'done', null, { timeout: 20000 });
-    const d5 = await page.evaluate(() => (document.querySelector('.pp-banner.outage') || {}).textContent || '');
-    await shot(page, 'desktop_outage');
-    chk('no capture attempt for five hours: OUTAGE, naming the overdue capture', /Current sportsbook pricing is unavailable/.test(d5) && /overdue/.test(d5) && /decided on its game's latest capture/.test(d5), d5);
-    chk('no page errors across the freshness states', errors.length === 0, errors);
-    await ctx.close();
+    /* past its check target. The far game (33 h out at NOW) is on the 6-hour
+       clock beyond 24 h (the odds gateway's prop limits since 2026-10-10), so
+       it falls behind 6 h 15 min after its last poll. A real capture always
+       records when it next owes a poll; with that on the board the page tells
+       a scheduler that is merely behind (DELAYED) from one that has gone
+       silent (OUTAGE, an hour past its due time). */
+    {
+      const bp = '/football/props/nfl/board.json', keep = served[bp];
+      served[bp] = JSON.stringify(Object.assign({}, FX.board, { capture: Object.assign({}, FX.board.capture, { next_due_at: new Date(Date.parse(OBS) + 360 * 60e3).toISOString() }) }));
+      ({ ctx, page, errors } = await open({ width: 1440, height: 900 }, '#playerprops/nfl', NOW + 6.5 * 3600e3));
+      await page.waitForFunction(() => EDPropsUI.state.reprice.nfl === 'done', null, { timeout: 20000 });
+      const d3 = await page.evaluate(() => ({ strip: document.querySelector('.pp-strip').textContent, banner: (document.querySelector('.pp-banner.delayed') || {}).textContent || '' }));
+      await shot(page, 'desktop_delayed');
+      chk('past its check target: DELAYED — "temporarily unavailable", last capture, recovery running, no stale decision', /prices delayed/.test(d3.strip) && /Current sportsbook pricing temporarily unavailable/.test(d3.banner) && /Last successful capture: 6\.\d h ago/.test(d3.banner) && /Automatic recovery is running/.test(d3.banner) && /Every prop stays decided on its game's latest capture \(up to 24 h old\), each price with its age/.test(d3.banner), d3);
+      chk('…and the board stays lit through it', await page.evaluate(() => EDPropsUI._rowsOf('nfl').filter((r) => r.priced && r.r.p).every((r) => !r.wait)));
+      chk('no page errors while delayed', errors.length === 0, errors);
+      await ctx.close();
+      /* nothing has tried for two hours past the capture's due time: OUTAGE, and it says the capture is overdue */
+      ({ ctx, page, errors } = await open({ width: 1440, height: 900 }, '#playerprops/nfl', NOW + 8 * 3600e3));
+      await page.waitForFunction(() => EDPropsUI.state.reprice.nfl === 'done', null, { timeout: 20000 });
+      const d5 = await page.evaluate(() => (document.querySelector('.pp-banner.outage') || {}).textContent || '');
+      await shot(page, 'desktop_outage');
+      chk('no capture attempt for two hours past its due time: OUTAGE, naming the overdue capture', /Current sportsbook pricing is unavailable/.test(d5) && /overdue/.test(d5) && /decided on its game's latest capture/.test(d5), d5);
+      chk('no page errors across the freshness states', errors.length === 0, errors);
+      await ctx.close();
+      served[bp] = keep;
+    }
 
     /* the capture's status reaches the page as itself: a provider answer with
        no markets, a failed capture and a capture that never ran each say so */

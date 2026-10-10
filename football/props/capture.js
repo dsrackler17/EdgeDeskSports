@@ -30,8 +30,9 @@
      - only events that have not kicked off and start inside --window-h hours,
        nearest kickoff first, at most --max-events;
      - each event on its own clock, EDProps FRESHNESS.cadence by hours to
-       kickoff (defaults: every 15 min inside 90 min, 30 min inside 6 h, 60
-       min inside 24 h, 2 h inside 48 h, 6 h beyond; PROPS_CADENCE overrides).
+       kickoff (defaults since 2026-10-10: hourly inside 3 h, every 2 h inside
+       24 h, 6 h beyond; PROPS_CADENCE overrides, and the odds gateway's own
+       prop limits apply whatever it says).
        The scheduler that wakes it is supabase/functions/props_cron (pg_cron,
        every five minutes), with the workflow's own cron as the backup;
      - RECOVERY: a failed event is retried on its own back-off (5, 10, 20, 40,
