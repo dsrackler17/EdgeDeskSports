@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-10T19:22:22.642Z",
+ "generated_at": "2026-10-10T21:51:57.266Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,35 +119,35 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 108,
+  "total": 98,
   "by_group": {
-   "p4": 56,
-   "other": 54,
+   "p4": 49,
+   "other": 50,
    "independent": 3
   },
   "by_matchup": {
-   "conference": 99,
-   "non_conference": 6,
+   "conference": 90,
+   "non_conference": 5,
    "fbs_fcs": 3
   },
   "by_conference": {
-   "sec": 15,
-   "big12": 12,
-   "acc": 15,
-   "bigten": 14,
-   "american": 13,
-   "mac": 14,
-   "sunbelt": 10,
+   "sec": 14,
+   "american": 12,
+   "mac": 12,
+   "big12": 10,
+   "acc": 13,
    "independents": 3,
+   "bigten": 12,
    "pac12": 5,
    "mwc": 9,
+   "sunbelt": 9,
    "cusa": 4
   },
   "fbs_fcs_in_source": 3
  },
  "ok": true,
  "lookahead_days": 10,
- "absorbed_games": 390,
+ "absorbed_games": 412,
  "engine": {
   "model_version": "edgedesk_cfb_p4_v1.0.0",
   "trained_through": 2025,
@@ -169,8 +169,29 @@
    "artifact_team_game_rows": 1387,
    "games_absorbed_with_stats": 390,
    "team_rows_absorbed": 661,
-   "final_games_without_play_stats": 0,
-   "missing_game_ids": [],
+   "final_games_without_play_stats": 22,
+   "missing_game_ids": [
+    "401871090",
+    "401871051",
+    "401871066",
+    "401870766",
+    "401871052",
+    "401862794",
+    "401869933",
+    "401858254",
+    "401858487",
+    "401860922",
+    "401864519",
+    "401856826",
+    "401856716",
+    "401856823",
+    "401856824",
+    "401858256",
+    "401858260",
+    "401858481",
+    "401862795",
+    "401866436"
+   ],
    "measured_features": [
     "success_rate",
     "early_down_success",
@@ -196,11 +217,11 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 108
+  "PREDICTED": 98
  },
  "weather": {
-  "requested": 103,
-  "answered": 103,
+  "requested": 93,
+  "answered": 93,
   "dome": 4,
   "no_venue": 0,
   "failed": 0,
@@ -208,18 +229,18 @@
   "carry_dropped": 0,
   "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "103 of 103 outdoor game(s) got a forecast; 4 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "93 of 93 outdoor game(s) got a forecast; 4 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 108
+  "NO_MARKET": 98
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
   "season": 2026,
   "games_in_artifact": 700,
-  "completed_games_replayed": 390,
+  "completed_games_replayed": 412,
   "completed_games_with_both_team_efficiency": 271,
-  "missing_count": 119,
+  "missing_count": 141,
   "problem": null
  },
  "checks": [
@@ -280,12 +301,12 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 52,
-    "total": 108,
+    "non_power_games": 49,
+    "total": 98,
     "example": [
-     "Tulane @ Army",
-     "Sacramento State @ Bowling Green",
-     "Old Dominion @ App State"
+     "Rice @ East Carolina",
+     "Miami (OH) @ Massachusetts",
+     "Charlotte @ North Texas"
     ]
    }
   },
@@ -300,7 +321,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 99,
+    "conference_games": 90,
     "wrong": 0
    }
   },
@@ -334,8 +355,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 108,
-    "audit_total": 108
+    "slate": 98,
+    "audit_total": 98
    }
   },
   {
@@ -415,8 +436,20 @@
  "warnings": [
   {
    "name": "completed games waiting on play-level efficiency",
-   "count": 119,
+   "count": 141,
    "detail": [
+    {
+     "game_id": "401856767",
+     "game": "Bethune-Cookman @ UCF",
+     "home": true,
+     "away": false
+    },
+    {
+     "game_id": "401866409",
+     "game": "UAlbany @ Buffalo",
+     "home": true,
+     "away": false
+    },
     {
      "game_id": "401864425",
      "game": "West Georgia @ Kennesaw State",
@@ -430,14 +463,8 @@
      "away": false
     },
     {
-     "game_id": "401866409",
-     "game": "UAlbany @ Buffalo",
-     "home": true,
-     "away": false
-    },
-    {
-     "game_id": "401856767",
-     "game": "Bethune-Cookman @ UCF",
+     "game_id": "401858422",
+     "game": "Eastern Illinois @ Minnesota",
      "home": true,
      "away": false
     },
@@ -448,26 +475,20 @@
      "away": false
     },
     {
-     "game_id": "401858422",
-     "game": "Eastern Illinois @ Minnesota",
-     "home": true,
-     "away": false
-    },
-    {
      "game_id": "401856768",
      "game": "Idaho @ Utah",
      "home": true,
      "away": false
     },
     {
-     "game_id": "401858435",
-     "game": "Indiana State @ Purdue",
+     "game_id": "401866623",
+     "game": "North Carolina A&T @ Georgia State",
      "home": true,
      "away": false
     },
     {
-     "game_id": "401866623",
-     "game": "North Carolina A&T @ Georgia State",
+     "game_id": "401858435",
+     "game": "Indiana State @ Purdue",
      "home": true,
      "away": false
     },
