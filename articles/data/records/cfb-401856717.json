@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T19:30:00.000Z",
   "game_when_label": "2026-10-10 19:30 UTC",
   "published_at": "2026-10-10T05:30:32.475Z",
-  "updated_at": "2026-10-10T14:40:34.968Z",
-  "generated_at": "2026-10-10T14:40:34.968Z",
+  "updated_at": "2026-10-10T15:11:04.208Z",
+  "generated_at": "2026-10-10T15:11:04.208Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1890,10 +1890,10 @@
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-10T19:30:00.000Z",
-    "minutes_before_kickoff": 289,
+    "minutes_before_kickoff": 259,
     "published_at": "2026-10-10T05:30:32.475Z",
     "refreshed": false,
-    "at": "2026-10-10T14:40:34.968Z"
+    "at": "2026-10-10T15:11:04.208Z"
   },
   "featured": {
     "editorial_priority": 59.2,
@@ -2175,24 +2175,37 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-10T14:40:34.968Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Oklahoma’s availability report lists offensive lineman Eddy Pierre-Louis as doubtful.",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-10T15:11:04.208Z"
   },
   "publish_state": {
     "ok": true,
-    "at": "2026-10-10T14:40:34.968Z",
+    "at": "2026-10-10T15:11:04.208Z",
     "blocking": [],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Oklahoma’s availability report lists offensive lineman Eddy Pierre-Louis as doubtful."
+      }
+    ],
     "hold_reason": null
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "13peundgyem4r",
+    "packet_hash": "1bs4pgg1h8ldqa",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Oklahoma get Texas off the field on third down?",
@@ -2240,8 +2253,7 @@
     "unknown": [
       "Oklahoma’s availability report lists offensive lineman Eddy Pierre-Louis as doubtful.",
       "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Oklahoma and Texas.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, weather and penalty rate.",
-      "The line on file was captured Oct. 9 and may have moved."
+      "Not in EdgeDesk’s verified data for this game: turnover rates, weather and penalty rate."
     ],
     "flags": [
       {
@@ -2283,6 +2295,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T14:40:34.968Z"
+    "at": "2026-10-10T15:11:04.208Z"
   }
 }
