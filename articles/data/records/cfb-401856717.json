@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T19:30:00.000Z",
   "game_when_label": "2026-10-10 19:30 UTC",
   "published_at": "2026-10-10T05:30:32.475Z",
-  "updated_at": "2026-10-10T10:41:25.013Z",
-  "generated_at": "2026-10-10T10:41:25.013Z",
+  "updated_at": "2026-10-10T12:37:21.498Z",
+  "generated_at": "2026-10-10T12:37:21.498Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -1440,7 +1440,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 84h old",
+          "text": "odds is 86h old",
           "widening": null
         },
         {
@@ -1534,7 +1534,7 @@
       "total_market": "39.5",
       "book": "captured consensus (stale) · 1 book · best at BetMGM",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "84 hours old",
+      "capture_age": "86 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1885,15 +1885,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-09. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_f42d0daaeaba0d59",
+  "snapshot_id": "snap_9746962890f8c07e",
   "timing": {
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-10T19:30:00.000Z",
-    "minutes_before_kickoff": 529,
+    "minutes_before_kickoff": 413,
     "published_at": "2026-10-10T05:30:32.475Z",
     "refreshed": false,
-    "at": "2026-10-10T10:41:25.013Z"
+    "at": "2026-10-10T12:37:21.498Z"
   },
   "featured": {
     "editorial_priority": 59.2,
@@ -2175,19 +2175,32 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-10T10:41:25.013Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Oklahoma’s availability report lists offensive lineman Eddy Pierre-Louis as doubtful.",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-10T12:37:21.498Z"
   },
   "publish_state": {
     "ok": true,
-    "at": "2026-10-10T10:41:25.013Z",
+    "at": "2026-10-10T12:37:21.498Z",
     "blocking": [],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Oklahoma’s availability report lists offensive lineman Eddy Pierre-Louis as doubtful."
+      }
+    ],
     "hold_reason": null
   },
   "football_evidence": {
@@ -2260,7 +2273,7 @@
         "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-10T05:56:27.335Z",
+        "observed_at": "2026-10-10T12:36:22.349Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2283,6 +2296,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T10:41:25.013Z"
+    "at": "2026-10-10T12:37:21.498Z"
   }
 }
