@@ -23,8 +23,8 @@
   "game_time": "2026-10-11T17:00:00.000Z",
   "game_when_label": "2026-10-11 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-09T10:24:18.082Z",
-  "generated_at": "2026-10-09T18:18:52.635Z",
+  "updated_at": "2026-10-10T00:43:46.619Z",
+  "generated_at": "2026-10-10T00:43:46.619Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 5.1-point gap is context only and the game is excluded from research ranking.",
@@ -43,7 +43,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 64 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
+  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 65 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
   "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at Pinnacle on 2026-10-06, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "NFL_GAME",
@@ -117,8 +117,8 @@
         "note": "Quoted from the perspective of New York Jets, off the engine’s own learned margin distribution (conditioned on this spread, so real key-number mass is kept). Eight results in ten land inside p10–p90."
       },
       "confidence_pct": null,
-      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 64 absorbed 2026 games.",
-      "sample_games": 64,
+      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 65 absorbed 2026 games.",
+      "sample_games": 65,
       "seeded": true,
       "status": "STALE MARKET",
       "status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 5.1-point gap is context only and the game is excluded from research ranking.",
@@ -1062,7 +1062,7 @@
         "reads": [
           "Each situational factor is shown with the points the engine’s own context model assigned it, so nothing here is a rule of thumb. A factor with no weight in the fit is worth nothing in this number and says so rather than being quietly rounded up.",
           "No forecast reached this game, so temperature and wind entered the total at their neutral defaults. That is a missing input, not a mild day.",
-          "The ratings behind this projection are the trained seeds plus 64 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
+          "The ratings behind this projection are the trained seeds plus 65 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
         ]
       }
     ],
@@ -1148,7 +1148,7 @@
       "total_market": "40.0",
       "total_difference": "0.2 points",
       "book": "Pinnacle",
-      "capture_age": "60 hours old",
+      "capture_age": "75 hours old",
       "stale": false,
       "classification": "STALE MARKET",
       "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 5.1-point gap is context only and the game is excluded from research ranking.",
@@ -1289,16 +1289,11 @@
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
     "context_label": "RESEARCH CONTEXT — every rating below is opponent-adjusted and printed as a deviation from the league mean. The injury report and the quarterback panel explain the matchup and move no priced number.",
-    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 64 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
-  },
-  "checks": {
-    "ok": true,
-    "failed": [],
-    "at": "2026-10-09T18:18:52.635Z"
+    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 65 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1va0ynpognm53",
+    "packet_hash": "37hqo01uivopu",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can the Browns’ pass defense slow the Jets’ passing game?",
@@ -1346,17 +1341,22 @@
         "label": "EdgeDesk NFL team ratings (2026)",
         "url": null,
         "path": "football/nfl/slate.json",
-        "observed_at": "2026-10-08T19:17:48.997Z",
+        "observed_at": "2026-10-09T18:50:10.065Z",
         "verification": "VERIFIED_DATA"
       },
       {
         "label": "nflverse team-week stats (2026)",
         "url": null,
         "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-09T18:18:44.243Z",
+        "observed_at": "2026-10-10T00:43:35.463Z",
         "verification": "VERIFIED_DATA"
       }
     ],
     "needs_confirmation": []
+  },
+  "checks": {
+    "ok": true,
+    "failed": [],
+    "at": "2026-10-10T00:43:46.619Z"
   }
 }
