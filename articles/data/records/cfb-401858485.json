@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T23:30:00.000Z",
   "game_when_label": "2026-10-10 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-10T23:00:36.993Z",
-  "generated_at": "2026-10-10T23:00:36.993Z",
+  "updated_at": "2026-10-10T23:10:36.462Z",
+  "generated_at": "2026-10-10T23:10:36.462Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -34,7 +34,7 @@
   "canonical_url": "https://edgedesksports.com/articles/usc-vs-penn-state-2026",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
   "hub_url": "https://edgedesksports.com/articles/college-football",
-  "status": "manual_review",
+  "status": "ready_too_late",
   "article_type": "pregame",
   "related": null,
   "frozen": false,
@@ -1860,13 +1860,13 @@
   "snapshot_id": "snap_6bf352fa5369e0d9",
   "publication_snapshot_id": "snap_6bf352fa5369e0d9",
   "timing": {
-    "publication_window": "late_window",
-    "classified_window": "late_window",
+    "publication_window": "final_window",
+    "classified_window": "final_window",
     "scheduled_kickoff": "2026-10-10T23:30:00.000Z",
-    "minutes_before_kickoff": 29,
+    "minutes_before_kickoff": 19,
     "published_at": null,
-    "refreshed": true,
-    "at": "2026-10-10T23:00:36.993Z"
+    "refreshed": false,
+    "at": "2026-10-10T23:10:36.462Z"
   },
   "featured": {
     "editorial_priority": 38.4,
@@ -2148,24 +2148,18 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-10T23:00:36.993Z"
+    "at": "2026-10-10T23:10:36.462Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-10T23:00:36.993Z",
-    "blocking": [
-      {
-        "id": "evidence_inputs_suspect",
-        "why": "EdgeDesk’s own inputs for this game are suspect, so a person reviews the page before it goes out",
-        "detail": "CROSS_MODEL_OUTLIER"
-      }
-    ],
+    "at": "2026-10-10T23:10:36.462Z",
+    "blocking": [],
     "warnings": [],
-    "hold_reason": "evidence_inputs_suspect"
+    "hold_reason": "inside final pregame publication floor"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "13h2hs3rfxoi",
+    "packet_hash": "1yqd43jn6vr31",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": true,
     "question": "Can Penn State take away USC’s big plays?",
@@ -2264,99 +2258,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T23:00:36.993Z"
-  },
-  "freshness": {
-    "at": "2026-10-10T23:00:36.993Z",
-    "fields": {
-      "market.line": {
-        "value": "Penn State -1.0",
-        "provider": "captured consensus (stale) · 1 book · best at Pinnacle",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "market.total": {
-        "value": 54.5,
-        "provider": "captured consensus (stale) · 1 book · best at Pinnacle",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "market.book": {
-        "value": "captured consensus (stale) · 1 book · best at Pinnacle",
-        "provider": "research market",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "fixture.status": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.kickoff": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.venue": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "availability.out": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      },
-      "availability.qb": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      }
-    },
-    "changes": [],
-    "blind": [
-      {
-        "field": "fixture.status",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.kickoff",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.venue",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "availability.out",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      },
-      {
-        "field": "availability.qb",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      }
-    ],
-    "material": false,
-    "rules_hit": [],
-    "minor": [],
-    "summary": "nothing moved"
+    "at": "2026-10-10T23:10:36.462Z"
   }
 }

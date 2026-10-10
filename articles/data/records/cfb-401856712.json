@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T23:30:00.000Z",
   "game_when_label": "2026-10-10 23:30 UTC",
   "published_at": "2026-10-10T11:31:10.239Z",
-  "updated_at": "2026-10-10T22:47:01.795Z",
-  "generated_at": "2026-10-10T22:47:01.795Z",
+  "updated_at": "2026-10-10T23:10:36.462Z",
+  "generated_at": "2026-10-10T23:10:36.462Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -34,7 +34,7 @@
   "canonical_url": "https://edgedesksports.com/articles/georgia-vs-alabama-2026",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
   "hub_url": "https://edgedesksports.com/articles/college-football",
-  "status": "published",
+  "status": "ready_too_late",
   "article_type": "pregame",
   "related": null,
   "frozen": false,
@@ -1676,9 +1676,9 @@
         "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
-        "key": "STABLE",
-        "label": "STABLE",
-        "text": "EdgeDesk’s number is unchanged since the latest published number."
+        "key": "LINE_MOVING",
+        "label": "LINE MOVING",
+        "text": "EdgeDesk’s number is steady, but the market has moved 5.5 pts toward Alabama (espn · DraftKings)."
       },
       "stability": {
         "tier": "LOW",
@@ -1693,25 +1693,25 @@
           "text": "Alabama -1.9"
         },
         {
-          "at": "2026-10-05T18:51:54.845Z",
+          "at": "2026-10-10T21:51:57.266Z",
           "source": "latest published",
           "home_margin": 5.35,
           "text": "Alabama -5.3"
         }
       ],
-      "revisions": 5,
+      "revisions": 6,
       "change_since_published": {
         "comparable": true,
         "points": 0,
         "toward_team": "Georgia",
-        "since_at": "2026-10-05T18:51:54.845Z",
+        "since_at": "2026-10-10T21:51:57.266Z",
         "text": "unchanged since the latest published number"
       },
       "what_changed": {
         "available": true,
         "summary": "EdgeDesk moved 3.4 points toward Alabama since the first published number.",
         "attribution_text": "Projection changed 3.4 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
-        "market": null,
+        "market": "Market moved 5.5 pts toward Alabama (espn · DraftKings)",
         "model_version": null
       },
       "parity": {
@@ -1887,16 +1887,16 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-10. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_d45272838b5ad862",
+  "snapshot_id": "snap_e23b517220eaf4f1",
   "publication_snapshot_id": "snap_d45272838b5ad862",
   "timing": {
-    "publication_window": "late_window",
-    "classified_window": "late_window",
+    "publication_window": "final_window",
+    "classified_window": "final_window",
     "scheduled_kickoff": "2026-10-10T23:30:00.000Z",
-    "minutes_before_kickoff": 43,
-    "published_at": "2026-10-10T11:31:10.239Z",
-    "refreshed": true,
-    "at": "2026-10-10T22:47:01.795Z"
+    "minutes_before_kickoff": 19,
+    "published_at": null,
+    "refreshed": false,
+    "at": "2026-10-10T23:10:36.462Z"
   },
   "featured": {
     "editorial_priority": 61.2,
@@ -2172,24 +2172,31 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-10T22:47:01.795Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Gunner Stockton has completed 76 of 101 passes (75.2%) for 1,047 yards, 10.4 yards per att",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-10T23:10:36.462Z"
   },
   "publish_state": {
-    "ok": true,
-    "at": "2026-10-10T22:47:01.795Z",
+    "ok": false,
+    "at": "2026-10-10T23:10:36.462Z",
     "blocking": [],
     "warnings": [],
-    "hold_reason": null
+    "hold_reason": "inside final pregame publication floor"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "l6ih5p14bscfz",
+    "packet_hash": "4u21g31ee5ucx",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Alabama win at the line of scrimmage?",
@@ -2291,99 +2298,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T22:47:01.795Z"
-  },
-  "freshness": {
-    "at": "2026-10-10T22:47:01.795Z",
-    "fields": {
-      "market.line": {
-        "value": "Alabama -2.0",
-        "provider": "captured consensus (stale) · 1 book · best at BetMGM",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "market.total": {
-        "value": 52.5,
-        "provider": "captured consensus (stale) · 1 book · best at BetMGM",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "market.book": {
-        "value": "captured consensus (stale) · 1 book · best at BetMGM",
-        "provider": "research market",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "fixture.status": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.kickoff": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.venue": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "availability.out": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      },
-      "availability.qb": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      }
-    },
-    "changes": [],
-    "blind": [
-      {
-        "field": "fixture.status",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.kickoff",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.venue",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "availability.out",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      },
-      {
-        "field": "availability.qb",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      }
-    ],
-    "material": false,
-    "rules_hit": [],
-    "minor": [],
-    "summary": "nothing moved"
+    "at": "2026-10-10T23:10:36.462Z"
   }
 }
