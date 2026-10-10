@@ -1,17 +1,17 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-10T00:06:07.580Z",
+ "generated_at": "2026-10-10T06:03:21.791Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-10T00:06:07.580Z",
-  "reliability_generated_at": "2026-10-10T00:06:07.580Z",
-  "enrichment_generated_at": "2026-10-10T00:05:56.747Z",
+  "at": "2026-10-10T06:03:21.791Z",
+  "reliability_generated_at": "2026-10-10T06:03:21.791Z",
+  "enrichment_generated_at": "2026-10-10T06:02:00.425Z",
   "counts": {
-   "games": 113,
-   "mean": 86.3,
+   "games": 112,
+   "mean": 86.2,
    "median": 89,
    "by_band": {
-    "VERY_STRONG": 20,
+    "VERY_STRONG": 19,
     "ADEQUATE": 17,
     "STRONG": 70,
     "LOW": 3,
@@ -21,11 +21,11 @@
    "qb_conflicts_open": 6,
    "qb_confirmed": 0,
    "games_lacking_injury_information": 21,
-   "unrated_meaningful_absences": 398,
+   "unrated_meaningful_absences": 378,
    "fcs_games_thin_data": 3,
-   "games_under_two_market_sources": 113,
-   "stale_evidence_records": 56,
-   "provider_failures": 4,
+   "games_under_two_market_sources": 112,
+   "stale_evidence_records": 4,
+   "provider_failures": 6,
    "provider_failures_attributable_to_run": 0
   },
   "providers": [
@@ -39,11 +39,11 @@
    },
    {
     "provider": "capture_signals",
-    "state": "HEALTHY"
+    "state": "DOWN"
    },
    {
     "provider": "cfb_lines",
-    "state": "HEALTHY"
+    "state": "DOWN"
    },
    {
     "provider": "cfbfastr_schedules",
@@ -153,7 +153,7 @@
    },
    "401856714": {
     "game": "South Carolina @ Florida",
-    "score": 95,
+    "score": 96,
     "grade": "VERY_STRONG",
     "fam": {
      "attribution": 1.5,
@@ -161,7 +161,6 @@
      "qb_identity": 0.8,
      "rating_sample": 0.6,
      "transfer_turnover": 0.3,
-     "player_identity": 0.2,
      "availability": 0.1
     },
     "qb": {
@@ -179,8 +178,8 @@
     "grade": "VERY_STRONG",
     "fam": {
      "stability": 0.7,
-     "attribution": 1.2,
      "qb_identity": 1.1,
+     "attribution": 1.1,
      "rating_sample": 0.6,
      "transfer_turnover": 0.6
     },
@@ -478,12 +477,12 @@
    },
    "401856823": {
     "game": "Arizona @ West Virginia",
-    "score": 94,
+    "score": 95,
     "grade": "VERY_STRONG",
     "fam": {
-     "attribution": 2.5,
+     "attribution": 2.2,
      "stability": 0.9,
-     "player_identity": 0.5,
+     "player_identity": 0.6,
      "qb_identity": 0.8,
      "rating_sample": 0.6,
      "transfer_turnover": 0.3
@@ -526,9 +525,9 @@
     "fam": {
      "availability": 1.5,
      "stability": 1.4,
-     "attribution": 0.9,
      "favorite_flips": 0.7,
      "rating_sample": 1,
+     "attribution": 0.6,
      "starters": 0.6,
      "qb_identity": 0.8
     },
@@ -547,11 +546,11 @@
     "grade": "VERY_STRONG",
     "fam": {
      "stability": 1.8,
-     "attribution": 2,
+     "attribution": 1.9,
      "qb_identity": 1.1,
      "rating_sample": 1,
-     "transfer_turnover": 0.3,
-     "player_identity": 0.2
+     "player_identity": 0.3,
+     "transfer_turnover": 0.3
     },
     "qb": {
      "home": "EXPECTED",
@@ -713,28 +712,6 @@
      "away": "NOT_DUE_YET"
     }
    },
-   "401858254": {
-    "game": "Florida State @ Louisville",
-    "score": 93,
-    "grade": "VERY_STRONG",
-    "fam": {
-     "attribution": 2.6,
-     "stability": 1.4,
-     "favorite_flips": 0.7,
-     "qb_identity": 1.1,
-     "rating_sample": 0.6,
-     "transfer_turnover": 0.6,
-     "player_identity": 0.1
-    },
-    "qb": {
-     "home": "EXPECTED",
-     "away": "EXPECTED"
-    },
-    "avail": {
-     "home": "COMPREHENSIVE_OFFICIAL",
-     "away": "COMPREHENSIVE_OFFICIAL"
-    }
-   },
    "401858255": {
     "game": "Duke @ Georgia Tech",
     "score": 89,
@@ -802,15 +779,16 @@
    },
    "401858258": {
     "game": "Syracuse @ Virginia",
-    "score": 91,
+    "score": 90,
     "grade": "VERY_STRONG",
     "fam": {
-     "qb_identity": 2.9,
-     "attribution": 2.9,
+     "qb_identity": 3.6,
+     "attribution": 2.8,
      "stability": 1.1,
      "qb_conflict": 0.8,
      "rating_sample": 1,
-     "transfer_turnover": 0.3
+     "transfer_turnover": 0.3,
+     "player_identity": 0.1
     },
     "qb": {
      "home": "EXPECTED",
@@ -848,7 +826,7 @@
     "grade": "VERY_STRONG",
     "fam": {
      "stability": 1.5,
-     "attribution": 2.1,
+     "attribution": 2,
      "favorite_flips": 0.4,
      "qb_identity": 0.8,
      "rating_sample": 0.6,
@@ -1395,8 +1373,8 @@
      "contract_conflicts": 1.2,
      "starters": 1.2,
      "stability": 0.6,
-     "player_identity": 0.3,
-     "rating_sample": 0.6
+     "rating_sample": 0.6,
+     "player_identity": 0.2
     },
     "qb": {
      "home": "EXPECTED",
@@ -1474,15 +1452,14 @@
    },
    "401860922": {
     "game": "Washington State @ Utah State",
-    "score": 88,
+    "score": 86,
     "grade": "STRONG",
     "fam": {
      "stability": 2.4,
+     "availability": 3.8,
      "qb_status": 4,
-     "availability": 1.8,
      "qb_identity": 1.9,
      "qb_conflict": 0.8,
-     "attribution": 0.5,
      "rating_sample": 0.6,
      "transfer_turnover": 0.3
     },
@@ -2562,10 +2539,10 @@
   }
  },
  "previous": {
-  "at": "2026-10-09T19:35:12.789Z",
+  "at": "2026-10-10T00:06:07.580Z",
   "counts": {
    "games": 113,
-   "mean": 86.2,
+   "mean": 86.3,
    "median": 89,
    "by_band": {
     "VERY_STRONG": 20,
@@ -2578,48 +2555,30 @@
    "qb_conflicts_open": 6,
    "qb_confirmed": 0,
    "games_lacking_injury_information": 21,
-   "unrated_meaningful_absences": 417,
+   "unrated_meaningful_absences": 398,
    "fcs_games_thin_data": 3,
    "games_under_two_market_sources": 113,
-   "stale_evidence_records": 60,
+   "stale_evidence_records": 56,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
   "baseline_of": null
  },
  "what_improved": [
-  "+0.1 mean reliability (86.2 → 86.3)",
-  "-19 unrated meaningful absences (417 → 398)",
-  "-4 stale evidence records (60 → 56)"
+  "-20 unrated meaningful absences (398 → 378)",
+  "-1 games under two market sources (113 → 112)",
+  "-52 stale evidence records (56 → 4)"
  ],
- "what_degraded": [],
- "why": [],
+ "what_degraded": [
+  "-0.1 mean reliability (86.3 → 86.2)",
+  "+2 provider failures (4 → 6)",
+  "provider capture_signals: HEALTHY → DOWN",
+  "provider cfb_lines: HEALTHY → DOWN"
+ ],
+ "why": [
+  "the slate itself changed: 0 games entered the window, 1 left it (kicked off or rolled out)"
+ ],
  "history": [
-  {
-   "at": "2026-10-03T11:48:48.797Z",
-   "counts": {
-    "games": 112,
-    "mean": 85.7,
-    "median": 87,
-    "by_band": {
-     "VERY_STRONG": 19,
-     "LOW": 3,
-     "STRONG": 75,
-     "ADEQUATE": 12,
-     "CAUTION": 3
-    },
-    "missing_qb_status": 175,
-    "qb_conflicts_open": 5,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 22,
-    "unrated_meaningful_absences": 409,
-    "fcs_games_thin_data": 3,
-    "games_under_two_market_sources": 112,
-    "stale_evidence_records": 7,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-10-03T11:51:34.859Z",
    "counts": {
@@ -4056,6 +4015,31 @@
     "games_under_two_market_sources": 113,
     "stale_evidence_records": 56,
     "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-10T06:03:21.791Z",
+   "counts": {
+    "games": 112,
+    "mean": 86.2,
+    "median": 89,
+    "by_band": {
+     "VERY_STRONG": 19,
+     "ADEQUATE": 17,
+     "STRONG": 70,
+     "LOW": 3,
+     "CAUTION": 3
+    },
+    "missing_qb_status": 175,
+    "qb_conflicts_open": 6,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 21,
+    "unrated_meaningful_absences": 378,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 112,
+    "stale_evidence_records": 4,
+    "provider_failures": 6,
     "provider_failures_attributable_to_run": 0
    }
   }
