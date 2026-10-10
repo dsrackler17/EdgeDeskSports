@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T23:00:00.000Z",
   "game_when_label": "2026-10-10 23:00 UTC",
   "published_at": "2026-10-10T11:31:10.239Z",
-  "updated_at": "2026-10-10T21:34:09.542Z",
-  "generated_at": "2026-10-10T21:34:09.542Z",
+  "updated_at": "2026-10-10T21:40:30.494Z",
+  "generated_at": "2026-10-10T21:40:30.494Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1883,10 +1883,10 @@
     "publication_window": "late_window",
     "classified_window": "late_window",
     "scheduled_kickoff": "2026-10-10T23:00:00.000Z",
-    "minutes_before_kickoff": 89,
+    "minutes_before_kickoff": 79,
     "published_at": "2026-10-10T11:31:10.239Z",
     "refreshed": true,
-    "at": "2026-10-10T21:30:32.510Z"
+    "at": "2026-10-10T21:40:30.494Z"
   },
   "featured": {
     "editorial_priority": 37.1,
@@ -2168,18 +2168,18 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-10T21:30:32.510Z"
+    "at": "2026-10-10T21:40:30.494Z"
   },
   "publish_state": {
     "ok": true,
-    "at": "2026-10-10T21:30:32.510Z",
+    "at": "2026-10-10T21:40:30.494Z",
     "blocking": [],
     "warnings": [],
     "hold_reason": null
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "10pcvco1r99yu2",
+    "packet_hash": "16dbbp4grk6hm",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can LSU keep Kentucky behind schedule?",
@@ -2205,8 +2205,8 @@
       "Kenny Minchey has completed 94 of 140 passes (67.1%) for 1,144 yards, 8.2 yards per attempt, 10 touchdowns and 1 interception in five games for Kentucky, and has been sacked on 11 of 151 dropbacks.",
       "Sam Leavitt has completed 92 of 139 passes (66.2%) for 1,220 yards, 8.8 yards per attempt, 8 touchdowns and 7 interceptions in five games for LSU, and has been sacked on 7 of 146 dropbacks.",
       "Landen Clark has completed 14 of 31 passes (45.2%) for 235 yards, 7.6 yards per attempt, 1 touchdown and no interceptions in four games for LSU, and has been sacked on 0 of 31 dropbacks.",
-      "Kenny Minchey does not appear on Kentucky’s update 2 availability report.",
-      "Sam Leavitt does not appear on LSU’s update 2 availability report."
+      "Kenny Minchey does not appear on Kentucky’s game day availability report.",
+      "Sam Leavitt does not appear on LSU’s game day availability report."
     ],
     "availability": [],
     "script": {
@@ -2272,10 +2272,10 @@
         "verification": "RATING"
       },
       {
-        "label": "Southeastern Conference availability report (Update 2)",
+        "label": "Southeastern Conference availability report (Game Day)",
         "url": "https://app.hdintelligence.com/?source=SEC&sport=Football&conf=SEC&type=report",
         "path": "football/availability/reports/",
-        "observed_at": "2026-10-10T00:10:00.000Z",
+        "observed_at": "2026-10-10T21:30:00.000Z",
         "verification": "OFFICIAL_REPORT"
       }
     ],
@@ -2284,6 +2284,99 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T21:34:09.542Z"
+    "at": "2026-10-10T21:40:30.494Z"
+  },
+  "freshness": {
+    "at": "2026-10-10T21:40:30.494Z",
+    "fields": {
+      "market.line": {
+        "value": "Kentucky +8.5",
+        "provider": "captured consensus (stale) · 1 book · best at DraftKings",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "market.total": {
+        "value": 52.5,
+        "provider": "captured consensus (stale) · 1 book · best at DraftKings",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "market.book": {
+        "value": "captured consensus (stale) · 1 book · best at DraftKings",
+        "provider": "research market",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "fixture.status": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.kickoff": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.venue": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "availability.out": {
+        "value": null,
+        "provider": "EdgeDesk availability",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no availability file on disk"
+      },
+      "availability.qb": {
+        "value": null,
+        "provider": "EdgeDesk availability",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no availability file on disk"
+      }
+    },
+    "changes": [],
+    "blind": [
+      {
+        "field": "fixture.status",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.kickoff",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.venue",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "availability.out",
+        "why": "no availability file on disk",
+        "provider": "EdgeDesk availability"
+      },
+      {
+        "field": "availability.qb",
+        "why": "no availability file on disk",
+        "provider": "EdgeDesk availability"
+      }
+    ],
+    "material": false,
+    "rules_hit": [],
+    "minor": [],
+    "summary": "nothing moved"
   }
 }
