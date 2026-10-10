@@ -1,5 +1,5 @@
 {
- "started_at": "2026-10-10T01:21:22.000Z",
+ "started_at": "2026-10-10T07:44:36.000Z",
  "season": 2026,
  "steps": {
   "seed": {
@@ -7,12 +7,12 @@
    "roles": 0,
    "experiments": 0,
    "partitions": 0,
-   "ms": 1
+   "ms": 0
   },
   "supabase_pull": {
    "ok": false,
-   "error": "CfbError: pull cfb_lab_market_quotes: This operation was aborted |     at Object.withRetry (/home/runner/work/EdgeDeskSports/EdgeDeskSports/football/cfb_production/db.js:80:15) |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)",
-   "ms": 246509
+   "error": "CfbError: HTTP 503 {\"code\":\"PGRST002\",\"details\":null,\"hint\":null,\"message\":\"Could not query the database for the schema cache. Retrying.\"} |     at Object.request (/home/runner/work/EdgeDeskSports/EdgeDeskSports/football/cfb_production/db.js:107:13) |     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)",
+   "ms": 10882
   },
   "market": {
    "ok": true,
@@ -20,7 +20,7 @@
     "espn": {
      "days": 12,
      "errors": [],
-     "candidates": 322,
+     "candidates": 307,
      "schema": {
       "rejected_payloads": 0,
       "rejected_events": 0,
@@ -34,9 +34,9 @@
       "cooldown_min": null,
       "last_error": null,
       "last_error_class": null,
-      "last_success_at": "2026-10-10T01:21:22.000Z",
+      "last_success_at": "2026-10-10T07:44:36.000Z",
       "last_failure_at": null,
-      "calls": 7441,
+      "calls": 7464,
       "failures": 0
      }
     },
@@ -52,8 +52,8 @@
       "cfb_market_quote_integrity_v1",
       "cfb_market_outlier_v1"
      ],
-     "candidates": 2026,
-     "accepted": 2026,
+     "candidates": 2011,
+     "accepted": 2011,
      "rejected": 0,
      "quarantined": 0,
      "quarantine_written": 0,
@@ -62,47 +62,42 @@
     }
    },
    "dedupe": {
-    "received": 2026,
-    "written": 46,
-    "duplicates": 1980,
+    "received": 2011,
+    "written": 183,
+    "duplicates": 1828,
     "refused": 0,
     "refusals": {}
    },
-   "written": 46,
+   "written": 183,
    "conflicts": [],
-   "schedule_games": 119,
-   "ms": 1183
+   "schedule_games": 117,
+   "ms": 1176
   },
   "freeze_import": {
    "ok": true,
    "files": 2,
    "imported": 0,
    "skipped": [],
-   "ms": 488
+   "ms": 386
   },
   "checkpoints": {
    "ok": true,
-   "now": "2026-10-10T01:21:22.000Z",
+   "now": "2026-10-10T07:44:36.000Z",
    "season": 2026,
-   "due": 3,
-   "taken": 3,
+   "due": 90,
+   "taken": 90,
    "skipped_no_projection": 0,
    "by_model": {
-    "edgedesk_cfb_p4_v1.0.0": 1,
-    "edgedesk_cfb_v2.1.0": 1,
-    "edgedesk_cfb_v2.0.0": 1
+    "edgedesk_cfb_p4_v1.0.0": 30,
+    "edgedesk_cfb_v2.1.0": 30,
+    "edgedesk_cfb_v2.0.0": 30
    },
    "by_checkpoint": {
-    "T2": 3
+    "T12": 81,
+    "T24": 9
    },
    "skipped_schedule": {},
    "kickoff_moved": [
-    {
-     "game_id": "401856826",
-     "model_version": "edgedesk_cfb_p4_v1.0.0",
-     "from": "2026-10-10T02:15:00.000Z",
-     "to": "2026-10-10T02:30:00.000Z"
-    },
     {
      "game_id": "401862797",
      "model_version": "edgedesk_cfb_p4_v1.0.0",
@@ -114,6 +109,12 @@
      "model_version": "edgedesk_cfb_p4_v1.0.0",
      "from": "2026-10-11T01:30:00.000Z",
      "to": "2026-10-11T02:30:00.000Z"
+    },
+    {
+     "game_id": "401856827",
+     "model_version": "edgedesk_cfb_p4_v1.0.0",
+     "from": "2026-10-11T02:15:00.000Z",
+     "to": "2026-10-11T00:00:00.000Z"
     },
     {
      "game_id": "401856719",
@@ -344,12 +345,6 @@
      "to": "2026-10-18T00:00:00.000Z"
     },
     {
-     "game_id": "401856826",
-     "model_version": "edgedesk_cfb_v2.1.0",
-     "from": "2026-10-10T02:15:00.000Z",
-     "to": "2026-10-10T02:30:00.000Z"
-    },
-    {
      "game_id": "401862797",
      "model_version": "edgedesk_cfb_v2.1.0",
      "from": "2026-10-10T20:00:00.000Z",
@@ -362,10 +357,10 @@
      "to": "2026-10-11T02:30:00.000Z"
     },
     {
-     "game_id": "401856826",
-     "model_version": "edgedesk_cfb_v2.0.0",
-     "from": "2026-10-10T02:15:00.000Z",
-     "to": "2026-10-10T02:30:00.000Z"
+     "game_id": "401856827",
+     "model_version": "edgedesk_cfb_v2.1.0",
+     "from": "2026-10-11T02:15:00.000Z",
+     "to": "2026-10-11T00:00:00.000Z"
     },
     {
      "game_id": "401862797",
@@ -378,21 +373,27 @@
      "model_version": "edgedesk_cfb_v2.0.0",
      "from": "2026-10-11T01:30:00.000Z",
      "to": "2026-10-11T02:30:00.000Z"
+    },
+    {
+     "game_id": "401856827",
+     "model_version": "edgedesk_cfb_v2.0.0",
+     "from": "2026-10-11T02:15:00.000Z",
+     "to": "2026-10-11T00:00:00.000Z"
     }
    ],
    "rescheduled_adhoc": 0,
    "bet_gated": 0,
    "refused_duplicate_checkpoint": [],
-   "ms": 1628
+   "ms": 1399
   },
   "audit": {
    "ok": true,
    "events": 0,
-   "ms": 0
+   "ms": 1
   },
   "settle": {
    "ok": true,
-   "now": "2026-10-10T01:21:22.000Z",
+   "now": "2026-10-10T07:44:36.000Z",
    "season": 2026,
    "espn_schema": {
     "rejected_payloads": 0,
@@ -408,9 +409,9 @@
      "cooldown_min": null,
      "last_error": null,
      "last_error_class": null,
-     "last_success_at": "2026-10-10T01:21:22.000Z",
+     "last_success_at": "2026-10-10T07:44:36.000Z",
      "last_failure_at": null,
-     "calls": 324,
+     "calls": 325,
      "failures": 0
     },
     "espn_scoreboard": {
@@ -421,71 +422,71 @@
      "cooldown_min": null,
      "last_error": null,
      "last_error_class": null,
-     "last_success_at": "2026-10-10T01:21:22.000Z",
+     "last_success_at": "2026-10-10T07:44:36.000Z",
      "last_failure_at": null,
-     "calls": 7452,
+     "calls": 7475,
      "failures": 0
     }
    },
    "readings": [
-    66,
+    71,
     390
    ],
-   "results": 0,
+   "results": 5,
    "result_disagreements": [],
    "results_refused": [],
    "lines": {
-    "derived": 0,
-    "written": 0,
+    "derived": 70,
+    "written": 70,
     "conflicts": [],
     "waiting_for_result": 0
    },
-   "evaluations": 0,
-   "miss_reviews": 0,
-   "ms": 1365
+   "evaluations": 127,
+   "miss_reviews": 6,
+   "ms": 1412
   },
   "report": {
    "ok": true,
-   "now": "2026-10-10T01:21:22.000Z",
+   "now": "2026-10-10T07:44:36.000Z",
    "weekly_written": [],
    "research_events": 0,
    "alerts": 0,
-   "public_graded": 66,
-   "ms": 311
+   "public_graded": 71,
+   "ms": 246
   },
   "verify": {
    "ok": true,
    "problems": 0,
-   "ms": 900
+   "ms": 698
   }
  },
  "freshness": {
   "rule": "cfb_source_freshness_v1",
-  "at": "2026-10-10T01:21:22.000Z",
+  "at": "2026-10-10T07:44:36.000Z",
   "odds": {
    "source": "odds",
    "status": "FRESH",
    "age_h": 0,
    "max_age_h": 6,
    "importance": "CRITICAL",
-   "upcoming_quotes": 4215
+   "upcoming_quotes": 4200
   },
   "schedule": {
    "source": "schedule",
    "status": "FRESH",
-   "age_h": 1.25,
+   "age_h": 1.69,
    "max_age_h": 26,
    "importance": "CRITICAL"
   },
   "model_features": {
    "source": "pbp",
    "status": "FRESH",
-   "age_h": 8.14,
+   "age_h": 14.53,
    "max_age_h": 192,
    "importance": "CRITICAL"
   },
-  "results_newest": "2026-10-09T04:07:28.000Z"
+  "results_newest": "2026-10-10T07:44:36.000Z"
  },
- "finished_at": "2026-10-10T01:25:34.827Z",
+ "finished_at": "2026-10-10T07:44:53.235Z",
  "ok": false
 }
