@@ -21,8 +21,8 @@
   "game_time": "2026-10-11T02:30:00.000Z",
   "game_when_label": "2026-10-11 02:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-10T19:22:22.075Z",
-  "generated_at": "2026-10-10T19:22:22.075Z",
+  "updated_at": "2026-10-10T19:30:17.878Z",
+  "generated_at": "2026-10-10T19:30:17.878Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -331,9 +331,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-04T01:30:00.000Z",
-        "retrieved_at": "2026-10-10T18:30:31.780Z"
+        "retrieved_at": "2026-10-10T19:20:57.385Z"
       },
-      "generated_at": "2026-10-10T18:31:13.511Z",
+      "generated_at": "2026-10-10T19:21:42.747Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1448,7 +1448,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 92h old",
+          "text": "odds is 93h old",
           "widening": null
         },
         {
@@ -1543,7 +1543,7 @@
       "total_market_held": null,
       "book": "captured consensus (stale) · 1 book · best at BetRivers",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "92 hours old",
+      "capture_age": "93 hours old",
       "stale": false,
       "classification": "RESEARCH",
       "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1901,15 +1901,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-10. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_fee2e87d94c245eb",
+  "snapshot_id": "snap_032acd6c75128dcf",
   "timing": {
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-11T02:30:00.000Z",
-    "minutes_before_kickoff": 428,
+    "minutes_before_kickoff": 420,
     "published_at": null,
     "refreshed": false,
-    "at": "2026-10-10T19:22:22.075Z"
+    "at": "2026-10-10T19:30:17.878Z"
   },
   "featured": {
     "editorial_priority": 55.8,
@@ -2202,17 +2202,24 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-10T19:22:22.075Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Fresno State’s availability report lists receiver Harold Duvall as questionable. | Fresno State’s availability report lists running back Rayshon Luke as questionable.",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-10T19:30:17.878Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-10T19:22:22.075Z",
+    "at": "2026-10-10T19:30:17.878Z",
     "blocking": [
       {
         "id": "evidence_inputs_suspect",
@@ -2220,12 +2227,18 @@
         "detail": "CROSS_MODEL_OUTLIER"
       }
     ],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Fresno State’s availability report lists receiver Harold Duvall as questionable. | Fresno State’s availability report lists running back Rayshon Luke as questionable."
+      }
+    ],
     "hold_reason": "evidence_inputs_suspect"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "yrax6w1f8wsh6",
+    "packet_hash": "18l9yoa14sryzs",
     "status": "UNEXPLAINED",
     "input_suspect": true,
     "question": "Can Boise State’s pass rush get to Jayden Mandal?",
@@ -2298,14 +2311,14 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-10T18:31:19.422Z",
+        "observed_at": "2026-10-10T19:21:49.975Z",
         "verification": "VERIFIED_DATA"
       },
       {
         "label": "EdgeDesk position-group ratings",
         "url": null,
         "path": "football/rankings/current.json",
-        "observed_at": "2026-10-10T18:30:53.431Z",
+        "observed_at": "2026-10-10T19:21:18.442Z",
         "verification": "RATING"
       },
       {
@@ -2328,6 +2341,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T19:22:22.075Z"
+    "at": "2026-10-10T19:30:17.878Z"
   }
 }
