@@ -2,7 +2,7 @@
 //  FILE:    supabase/functions/capture/index.ts
 //  TYPE:    Edge Function (deployed) - cron job
 //  DEPLOY:  supabase functions deploy capture --no-verify-jwt
-//  BUILD:   capture-v11-player-props-r2   (authoritative value: `export const BUILD` below)
+//  BUILD:   capture-v12-gateway-r1   (authoritative value: `export const BUILD` below)
 //  IMPORTS: NONE. Not one. See "WHY THIS FILE HAS NO IMPORTS" below.
 //  TESTS:   node tools/capture/capture.test.js   (imports THIS file, no network)
 // ============================================================
@@ -358,7 +358,7 @@
 /*__EDSPORTS_END__*/
 const EDSPORTS: any = (globalThis as any).EDSPORTS;
 
-export const BUILD = "capture-v11-player-props-r2";
+export const BUILD = "capture-v12-gateway-r1";
 
 /* Bumped whenever the QUALIFICATION RULES change, independently of BUILD. It is
    written to `flagged_policy` on every freeze so the record can segment its
@@ -497,21 +497,30 @@ export interface CadenceTier {
   cadenceMin: number;
   note: string;
 }
+/* 2026-10-10: THE TIERS ARE NOW POKES, NOT PURCHASES. Whether a sport's board
+   is bought on a given run is decided by odds_gateway's event-aware cadence
+   (public.odds_api_cadence: 20 min inside 3 h of the sport's next kickoff,
+   60 min inside 24 h, 2 h inside 72 h, 6 h beyond; nothing live or
+   finished), by the shared credit budget and by the circuit breaker. A tier
+   that fires more often than its sport is due costs a cache hit and nothing
+   else. The cron cadences were loosened to match the gateway's tightest
+   interval: near every 20 minutes (was 10), day hourly (was 30), board every
+   6 hours (was 4). */
 export const CADENCE_TIERS: Record<string, CadenceTier> = {
   near: {
-    nearHours: 8, maxDaysToStart: 2, cadenceMin: 10,
-    note: "Only sports with an event inside 8 hours. On a day with no such event "
-      + "this costs the free event index per sport and not one billed request.",
+    nearHours: 8, maxDaysToStart: 2, cadenceMin: 20,
+    note: "Pokes every 20 minutes: the gateway buys a sport's board only when its "
+      + "snapshot is older than that sport's event-aware cadence (20 min inside 3 h of kickoff).",
   },
   day: {
-    nearHours: 30, maxDaysToStart: 3, cadenceMin: 30,
-    note: "Anything kicking off inside 30 hours, which is the board a customer "
-      + "researches the night before and the morning of.",
+    nearHours: 30, maxDaysToStart: 3, cadenceMin: 60,
+    note: "Hourly, for the board a customer researches the night before and the morning of; "
+      + "alternate ladders inside 24 h at the gateway's ladder cadence.",
   },
   board: {
-    nearHours: 0, maxDaysToStart: 14, cadenceMin: 240,
-    note: "The full horizon with no sport skipped. Every sport costs a billed "
-      + "request on this tier, which is why it runs six times a day and not more.",
+    nearHours: 0, maxDaysToStart: 14, cadenceMin: 360,
+    note: "The full horizon every 6 hours. A far board is refreshed at most every 6 hours "
+      + "by the gateway whichever tier asks.",
   },
 };
 
@@ -868,14 +877,6 @@ export interface Config {
   /** Props stop when the provider reports fewer credits than this left on the
       account, so game-line capture always has quota to run on. */
   propMinQuotaRemaining: number;
-  /** THE RUN GUARD for game lines and alternate ladders (PART 7b): credits one
-      run may spend, the provider balance it never spends below, and how many
-      consecutive timeouts / 5xx stop the run. */
-  quotaMaxCreditsPerRun: number;
-  quotaMinRemaining: number;
-  quotaBreakerFailures: number;
-  /** Ask supabase/odds_quota.sql before a run (fail-open when it is not applied). */
-  quotaLedger: boolean;
   /** Also write two-sided player props into `signals`. OFF by default: see
       PLAYER PROP SIGNALS in the handler for the three places game-line capture
       would pay for it. */
@@ -996,7 +997,9 @@ export function defaultConfig(env: EnvGet): Config {
        markets at all. Every knob can be overridden without a redeploy. */
     alternateLines: bool("CAPTURE_ALT_LINES", true),
     alternateMarkets: list("CAPTURE_ALT_MARKETS", "alternate_spreads,alternate_totals"),
-    alternateMaxHours: Math.max(0, num("CAPTURE_ALT_MAX_HOURS", 30)),
+    /* 30 h -> 24 h (2026-10-10): the gateway never polls a ladder further out
+       than 24 h, so asking beyond it only fills the ledger with refusals. */
+    alternateMaxHours: Math.max(0, num("CAPTURE_ALT_MAX_HOURS", 24)),
     alternateNearHours: Math.max(0, num("CAPTURE_ALT_NEAR_HOURS", 2)),
     alternateMaxEvents: Math.max(0, Math.floor(num("CAPTURE_ALT_MAX_EVENTS", 80))),
     alternateConcurrency: Math.max(1, Math.floor(num("CAPTURE_ALT_CONCURRENCY", 6))),
@@ -1004,23 +1007,30 @@ export function defaultConfig(env: EnvGet): Config {
        ways — per run in credits, per run in (event × market) requests, and by a
        floor on the account's remaining quota. A market list set to "none" or
        "off" is empty; unset or "" is the full provider list below. */
-    playerProps: bool("CAPTURE_PLAYER_PROPS", true),
+    /* OFF BY DEFAULT since 2026-10-10. The GitHub prop pipeline
+       (football/props/capture.js) is the single buyer of player props: it
+       feeds the props board, projections and grades. This pass bought the
+       same events again with 59 markets at two region-equivalents — the
+       documented double spend (docs/runbooks/player-props.md). Turned on, it
+       now asks the gateway's shared `props` category, so it can no longer
+       double-buy: the second consumer of a fetch is a cache hit. */
+    playerProps: bool("CAPTURE_PLAYER_PROPS", false),
     playerPropMarkets: propMarketList(env("CAPTURE_PLAYER_PROP_MARKETS"), PLAYER_PROP_MARKETS, false),
-    playerPropAlternateMarkets: propMarketList(env("CAPTURE_PLAYER_PROP_ALT_MARKETS"), PLAYER_PROP_ALT_MARKETS, true),
+    /* Alternate prop ladders are not fetched by default (the gateway's
+       props_alt category is off). "" or unset is now the empty list. */
+    playerPropAlternateMarkets: env("CAPTURE_PLAYER_PROP_ALT_MARKETS")
+      ? propMarketList(env("CAPTURE_PLAYER_PROP_ALT_MARKETS"), PLAYER_PROP_ALT_MARKETS, true) : [],
     playerPropMaxHours: Math.max(0, num("CAPTURE_PLAYER_PROP_MAX_HOURS", 30)),
     playerPropNearHours: Math.max(0, num("CAPTURE_PLAYER_PROP_NEAR_HOURS", 3)),
     playerPropMaxEvents: Math.max(0, Math.floor(num("CAPTURE_PLAYER_PROP_MAX_EVENTS", 80))),
     playerPropConcurrency: Math.max(1, Math.floor(num("CAPTURE_PLAYER_PROP_CONCURRENCY", 4))),
     playerPropMarketsPerRequest: Math.max(1, Math.floor(num("CAPTURE_PLAYER_PROP_MARKETS_PER_REQUEST", 12))),
     playerPropIntervalMin: Math.max(0, num("CAPTURE_PLAYER_PROP_INTERVAL_MIN", 120)),
-    playerPropNearIntervalMin: Math.max(0, num("CAPTURE_PLAYER_PROP_NEAR_INTERVAL_MIN", 20)),
+    /* 20 -> 60 (2026-10-10): props inside 3 h refresh at most hourly. */
+    playerPropNearIntervalMin: Math.max(0, num("CAPTURE_PLAYER_PROP_NEAR_INTERVAL_MIN", 60)),
     propMaxCreditsPerRun: Math.max(0, num("CAPTURE_PROP_MAX_CREDITS_PER_RUN", 1000)),
     propMaxMarketRequestsPerRun: Math.max(0, Math.floor(num("CAPTURE_PROP_MAX_MARKET_REQUESTS_PER_RUN", 2000))),
     propMinQuotaRemaining: Math.max(0, num("CAPTURE_PROP_MIN_QUOTA_REMAINING", 5000)),
-    quotaMaxCreditsPerRun: Math.max(0, num("CAPTURE_MAX_CREDITS_PER_RUN", 1200)),
-    quotaMinRemaining: Math.max(0, num("CAPTURE_MIN_QUOTA_REMAINING", 1000)),
-    quotaBreakerFailures: Math.max(1, Math.floor(num("CAPTURE_BREAKER_FAILURES", 3))),
-    quotaLedger: bool("CAPTURE_QUOTA_LEDGER", true),
     playerPropSignals: bool("CAPTURE_PLAYER_PROP_SIGNALS", false),
     sportsEnv: g("CAPTURE_SPORTS", ""),
     /* v8 CONCATENATED "americanfootball_nfl" onto whatever this was set to, so
@@ -2271,232 +2281,165 @@ export function dropColumns(rows: any[], cols: Set<string>): any[] {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PART 7 — ODDS API
+// PART 7 — ODDS, THROUGH THE GATEWAY
+//
+// 2026-10-10 (docs/odds-api-incident-2026-10/INCIDENT.md): capture no longer
+// holds a provider key or builds a provider URL. Every request — the featured
+// board, an alternate ladder, a player-prop board — is a POST to
+// supabase/functions/odds_gateway, which serves the stored snapshot inside the
+// event-aware cadence window, collapses duplicates in flight, applies the
+// shared credit budget and the circuit breaker, and only then buys. Markets,
+// books and regions are the gateway's (per category), so capture, close and
+// every other consumer of a category share ONE fetch.
+//
+// What capture does with the answer:
+//   - source provider, or cache it has NOT processed yet (another consumer
+//     bought it): process it, stamped with the snapshot's own fetch time;
+//   - cache it HAS processed, a stale snapshot, or a refusal: write nothing
+//     for that sport — a re-written row would claim a sighting that never
+//     happened, and the reader's freshness labels would lie.
 // ═══════════════════════════════════════════════════════════════════════════
 
-const ODDS_BASE = "https://api.the-odds-api.com/v4";
-/* Every provider call has a deadline (docs/cfb-production/PROVIDERS.md): a
-   hung request must not eat the whole run budget. The billed /odds call is
-   NOT retried here (a retry is a second billed request; the next scheduled
-   run is the retry); a timeout reports status 0 with a TIMEOUT detail. */
-export const ODDS_TIMEOUT_MS = 20000;
+/* The gateway itself enforces deadlines on the provider call and retries only
+   temporary failures (bounded). Capture's own deadline covers the gateway hop,
+   which can include an in-flight wait. It is never retried here. */
+export const ODDS_TIMEOUT_MS = 45000;
 export function deadline(ms: number): AbortSignal | undefined {
   try { return (AbortSignal as any).timeout(ms); } catch { return undefined; }
+}
+
+export interface Gateway {
+  url: string;
+  key: string;
+  caller: string;
+  trigger: string;
+}
+export function makeGateway(sbUrl: string, sbKey: string, caller: string, trigger: string): Gateway {
+  return { url: String(sbUrl ?? "").replace(/\/$/, ""), key: sbKey, caller, trigger };
 }
 
 export interface OddsResult {
   data: any[]; ok: boolean; status: number; detail: string;
   quotaRemaining: string; quotaUsed: string; lastCost: string;
+  /** provider | cache | stale_cache | none */
+  source: string;
+  /** odds_api_acquire's decision (granted, cache_hit, denied_breaker, ...). */
+  decision: string;
+  /** True when capture has not processed this snapshot before and it is fresh
+      for its cadence: the only data capture writes. */
+  isNew: boolean;
+  /** The gateway declined (breaker, budget, cadence window, live/completed
+      event, a stale snapshot only): not a provider failure, not a purchase. */
+  refused: boolean;
+  fetchedAt: string | null;
+  ageSeconds: number | null;
 }
 
-/**
- * Fetch the board for one sport.
- *
- * Returns the STATUS on failure. "errored" without a status cannot be acted on:
- * 401 (bad key), 422 (rotated sport key) and 429 (quota exhausted) need three
- * different fixes and were indistinguishable before v5.
- *
- * `bookmakers` and `regions` are mutually exclusive at the provider. An explicit
- * bookmaker list is the only way to reach Pinnacle (an `eu` book) and the US
- * retail books in a single request; `?probe=1` measures what each actually costs
- * on this account rather than trusting a docs page.
- */
-export async function fetchOdds(key: string, sport: string, cfg: Config): Promise<OddsResult> {
-  const sel = cfg.bookmakers.length
-    ? `bookmakers=${encodeURIComponent(cfg.bookmakers.join(","))}`
-    : `regions=${encodeURIComponent(cfg.regions)}`;
-  const u = `${ODDS_BASE}/sports/${encodeURIComponent(sport)}/odds/?apiKey=${encodeURIComponent(key)}`
-    + `&${sel}&markets=${encodeURIComponent(cfg.markets)}&oddsFormat=decimal&dateFormat=iso`;
+/** One gateway request. A transport failure is an answer, not an exception. */
+export async function gatewayRequest(gw: Gateway, q: Record<string, unknown>): Promise<any> {
   try {
-    const r = await fetch(u, { signal: deadline(ODDS_TIMEOUT_MS) });
-    const h = (n: string) => r.headers.get(n) ?? "";
-    const meta = { quotaRemaining: h("x-requests-remaining"), quotaUsed: h("x-requests-used"), lastCost: h("x-requests-last") };
-    if (!r.ok) {
-      const body = await r.text().catch(() => "");
-      return { data: [], ok: false, status: r.status, detail: body.slice(0, 240), ...meta };
-    }
-    const data = await r.json();
-    return { data: Array.isArray(data) ? data : [], ok: true, status: 200, detail: "", ...meta };
+    const r = await fetch(`${gw.url}/functions/v1/odds_gateway`, {
+      method: "POST",
+      headers: { "content-type": "application/json", apikey: gw.key, authorization: `Bearer ${gw.key}` },
+      body: JSON.stringify({ action: "odds", caller: gw.caller, trigger: gw.trigger, consumer: "capture", ...q }),
+      signal: deadline(ODDS_TIMEOUT_MS),
+    });
+    const text = await r.text();
+    try {
+      const env = JSON.parse(text);
+      if (env && typeof env === "object") return env;
+    } catch { /* fall through */ }
+    return { ok: false, decision: "gateway_unreachable", reason: `HTTP ${r.status}: ${text.slice(0, 160)}`, source: "none", data: null };
   } catch (e) {
     const name = String((e as Error)?.name ?? "");
     const timeout = name === "TimeoutError" || name === "AbortError";
-    return { data: [], ok: false, status: 0, detail: (timeout ? "TIMEOUT after " + ODDS_TIMEOUT_MS + " ms: " : "") + String((e as Error)?.message ?? e), quotaRemaining: "", quotaUsed: "", lastCost: "" };
+    return { ok: false, decision: "gateway_unreachable", reason: (timeout ? "gateway TIMEOUT: " : "") + String((e as Error)?.message ?? e), source: "none", data: null };
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// PART 7b — THE QUOTA GUARD (docs/market-resilience, supabase/odds_quota.sql)
-// ═══════════════════════════════════════════════════════════════════════════
-/* Two layers, so the quota is protected whether or not the ledger is applied:
-
-     1. THE LEDGER (cross-run, cross-caller): before the run, one
-        odds_quota_acquire() decides from the mode, the breaker, exhaustion,
-        in-flight coalescing, the key's minimum interval (cache-first) and the
-        daily/monthly budget with its reserve. A denial ends the run with
-        ok:true and `skipped` — the scheduler must not retry it. After the run,
-        odds_quota_settle() records what the provider charged and reported.
-        Missing ledger (the SQL is not applied) = FAIL OPEN to layer 2.
-     2. THE RUN GUARD (in-run): a credit cap per run, a floor on the provider's
-        reported balance, and a stop on the first 429 / 401 / exhausted quota
-        or on N consecutive timeouts. Nothing billed is retried; the next
-        scheduled run is the retry. */
-export type QuotaFailure = "RATE_LIMITED" | "QUOTA_EXHAUSTED" | "AUTH_FAILED" | "TIMEOUT" | "FAILED";
-export function classifyOddsFailure(status: number, detail: string, remaining: string): QuotaFailure | null {
-  const rem = remaining === "" || remaining == null ? NaN : Number(remaining);
-  if (status >= 200 && status < 300) return Number.isFinite(rem) && rem <= 0 ? "QUOTA_EXHAUSTED" : null;
-  if (status === 429) return "RATE_LIMITED";
-  if (status === 401 || status === 402 || status === 403) {
-    return /quota|usage|credit|limit reached|out of requests/i.test(String(detail ?? "")) || (Number.isFinite(rem) && rem <= 0) ? "QUOTA_EXHAUSTED" : "AUTH_FAILED";
-  }
-  if (status === 0) return /TIMEOUT/i.test(String(detail ?? "")) ? "TIMEOUT" : "FAILED";
-  if (status >= 500) return "FAILED";
-  return null; /* 404 / 422: one sport's problem (a rotated key), not the provider's health */
+/** Should the run stop asking after this gateway answer? null = carry on.
+    Paid retrieval off for EVERY sport (the breaker, no budget, an unconfirmed
+    or exhausted quota, a cooldown, the provider refusing the key or rate-
+    limiting it) stops the run: the sports, ladders and props not yet asked are
+    not asked, and nothing is retried here. A per-sport answer (a cache hit, a
+    cadence or window skip, a daily-budget deferral) never stops it; a gateway
+    that cannot be reached is an error, not a pause. close's closeGatewayStop is
+    the same rule (tools/resilience/quota_guard.test.js holds them together). */
+export function gatewayRunStop(decision: string): string | null {
+  const d = String(decision ?? "").replace(/:.*$/, "").trim();
+  if (/^denied_(breaker|gateway_disabled|no_budget|unconfirmed_quota|ceiling|emergency|cooldown)$/.test(d)) return d;
+  if (/^provider_http_(401|402|403|429)$/.test(d)) return d;
+  return null;
 }
 
-export interface RunGuard {
-  maxCredits: number; minRemaining: number; breakerFailures: number;
-  stopped: string | null; spent: number; remaining: number; used: number; consecutive: number;
-  failures: Record<string, number>; lastFailure: QuotaFailure | null; lastHttp: number;
-}
-export function makeRunGuard(maxCredits: number, minRemaining: number, breakerFailures: number, startRemaining = ""): RunGuard {
-  const r = startRemaining === "" ? NaN : Number(startRemaining);
-  return { maxCredits, minRemaining, breakerFailures, stopped: null, spent: 0, remaining: Number.isFinite(r) ? r : NaN, used: NaN,
-    consecutive: 0, failures: {}, lastFailure: null, lastHttp: 0 };
-}
-/** May the run spend about `est` more credits? Sets `stopped` (and says why) when not. */
-export function guardCanSpend(g: RunGuard, est: number): boolean {
-  if (g.stopped) return false;
-  if (g.spent + est > g.maxCredits) { g.stopped = "credit_budget"; return false; }
-  if (Number.isFinite(g.remaining) && g.remaining - est < g.minRemaining) { g.stopped = "quota_floor"; return false; }
-  return true;
-}
-/** Record one billed response: spend, balance, and whether the provider is telling us to stop. */
-export function guardRecord(g: RunGuard, res: OddsResult): QuotaFailure | null {
-  const rem = res.quotaRemaining === "" ? NaN : Number(res.quotaRemaining);
-  if (Number.isFinite(rem)) g.remaining = rem;
-  const used = res.quotaUsed === "" ? NaN : Number(res.quotaUsed);
-  if (Number.isFinite(used)) g.used = used;
-  g.spent += Number(res.lastCost) || 0;
-  g.lastHttp = res.status;
-  const f = classifyOddsFailure(res.status, res.detail, res.quotaRemaining);
-  if (!f) { if (res.ok) g.consecutive = 0; return null; }
-  g.failures[f] = (g.failures[f] ?? 0) + 1;
-  g.lastFailure = f;
-  if (f === "RATE_LIMITED" || f === "QUOTA_EXHAUSTED" || f === "AUTH_FAILED") { g.stopped = "provider_" + f.toLowerCase(); return f; }
-  g.consecutive++;
-  if (g.consecutive >= g.breakerFailures) g.stopped = "circuit_open";
-  return f;
-}
-/** The status the ledger records for the whole run. */
-export function guardSettleStatus(g: RunGuard, anyOk: boolean): string {
-  if (g.lastFailure === "QUOTA_EXHAUSTED" || (Number.isFinite(g.remaining) && g.remaining <= 0)) return "QUOTA_EXHAUSTED";
-  if (g.lastFailure === "RATE_LIMITED") return "RATE_LIMITED";
-  if (g.lastFailure === "AUTH_FAILED") return "AUTH_FAILED";
-  if (!anyOk && g.lastFailure === "TIMEOUT") return "TIMEOUT";
-  if (!anyOk && g.lastFailure) return "FAILED";
-  return g.stopped || Object.keys(g.failures).length ? "PARTIAL" : "OK";
-}
-
-export interface QuotaTicket { allowed: boolean; reason: string; request_id: string | null; ledger: "on" | "missing" | "error"; retry_after?: string | null; budget?: any; detail?: string }
-/** Which ledger key, priority and estimate a capture run asks for. A reader-
-    triggered refresh (reason=board_refresh) shares the scheduled near tier's
-    key, so it is coalesced with it and never spends the reserve. */
-export function captureQuotaRequest(tier: string | null, reason: string | undefined, nSports: number, cfg: Config, mode = ""): { key: string; priority: string; est: number; perSport: number; altPerEvent: number } {
-  const perSport = Math.max(1, String(cfg.markets || "").split(",").filter(Boolean).length)
-    * (cfg.bookmakers.length ? Math.ceil(cfg.bookmakers.length / 10) : Math.max(1, String(cfg.regions || "").split(",").filter(Boolean).length));
-  const regionEq = cfg.bookmakers.length ? Math.ceil(cfg.bookmakers.length / 10) : Math.max(1, String(cfg.regions || "").split(",").filter(Boolean).length);
-  const refresh = reason === "board_refresh";
-  /* a reader refresh shares the near tier's key: cache-first against the last
-     scheduled near run, coalesced with one in flight */
-  const key = mode ? "capture:" + mode : (refresh ? "capture:near" : "capture:" + (tier || "untiered"));
-  const priority = mode ? "low" : (refresh ? "low" : (tier === "near" ? "critical" : (tier === "board" ? "low" : "normal")));
-  return { key, priority, est: perSport * Math.max(1, nSports), perSport, altPerEvent: Math.max(1, cfg.alternateMarkets.length) * regionEq };
-}
-async function quotaRpc(url: string, key: string, fn: string, body: any): Promise<{ ok: boolean; status: number; json: any; text: string }> {
-  try {
-    const r = await fetch(url.replace(/\/+$/, "") + "/rest/v1/rpc/" + fn, {
-      method: "POST", headers: { apikey: key, Authorization: `Bearer ${key}`, "content-type": "application/json" },
-      body: JSON.stringify(body), signal: deadline(5000),
-    });
-    const text = await r.text().catch(() => "");
-    let json: any = null; try { json = JSON.parse(text); } catch { json = null; }
-    return { ok: r.ok, status: r.status, json, text };
-  } catch (e) { return { ok: false, status: 0, json: null, text: String((e as Error)?.message ?? e) }; }
-}
-export async function quotaAcquire(url: string, key: string, a: { caller: string; key: string; est: number; priority: string; sport?: string | null; endpoint?: string | null; minIntervalS?: number | null }): Promise<QuotaTicket> {
-  if (!url || !key) return { allowed: true, reason: "ledger_unreachable", request_id: null, ledger: "missing" };
-  const r = await quotaRpc(url, key, "odds_quota_acquire", { p_caller: a.caller, p_key: a.key, p_est_cost: Math.max(0, Math.round(a.est)), p_priority: a.priority,
-    p_sport: a.sport ?? null, p_endpoint: a.endpoint ?? null, p_min_interval_s: a.minIntervalS ?? null });
-  /* the SQL is not applied: fail OPEN to the run guard, and say so */
-  if (r.status === 404 || (r.json && (r.json.code === "PGRST202" || r.json.code === "42883"))) return { allowed: true, reason: "ledger_missing", request_id: null, ledger: "missing", detail: "supabase/odds_quota.sql is not applied" };
-  if (!r.ok || !r.json || typeof r.json.allowed !== "boolean") return { allowed: true, reason: "ledger_error", request_id: null, ledger: "error", detail: `HTTP ${r.status}: ${r.text.slice(0, 200)}` };
-  return { allowed: r.json.allowed, reason: String(r.json.reason ?? ""), request_id: r.json.request_id ?? null, ledger: "on", retry_after: r.json.retry_after ?? null, budget: r.json.budget ?? null };
-}
-export async function quotaSettle(url: string, key: string, t: QuotaTicket, status: string, g: RunGuard, detail: string): Promise<any> {
-  if (!t.request_id || t.ledger !== "on") return null;
-  const r = await quotaRpc(url, key, "odds_quota_settle", { p_request_id: t.request_id, p_status: status, p_cost: Math.round(g.spent),
-    p_remaining: Number.isFinite(g.remaining) ? Math.round(g.remaining) : null, p_used: Number.isFinite(g.used) ? Math.round(g.used) : null,
-    p_http: g.lastHttp || null, p_detail: detail.slice(0, 480) });
-  return r.ok ? r.json : { settled: false, error: `HTTP ${r.status}: ${r.text.slice(0, 160)}` };
+/** Gateway envelope -> the OddsResult shape the rest of capture reads. */
+export function oddsResultOf(env: any, asArray: (d: any) => any[]): OddsResult {
+  const q = env?.quota ?? {};
+  const s = (v: unknown) => (v == null ? "" : String(v));
+  const src = String(env?.source ?? "none");
+  const usable = !!env?.ok && env?.data != null && (src === "provider" || src === "cache");
+  const failed = String(env?.decision ?? "").startsWith("provider_") || env?.decision === "gateway_unreachable";
+  return {
+    data: usable ? asArray(env.data) : [],
+    ok: usable,
+    status: usable ? 200 : (Number(env?.status) || 0),
+    detail: usable ? "" : `${env?.decision ?? "unknown"}: ${env?.reason ?? env?.detail ?? ""}`.slice(0, 240),
+    quotaRemaining: s(q.remaining), quotaUsed: s(q.used),
+    lastCost: src === "provider" ? s(env?.cost ?? q.last) : "0",
+    source: failed ? "none" : src,
+    decision: String(env?.decision ?? "unknown"),
+    isNew: usable && env?.new_for_consumer !== false,
+    refused: !usable && !failed,
+    fetchedAt: env?.fetched_at ?? null,
+    ageSeconds: env?.age_seconds == null ? null : Number(env.age_seconds),
+  };
 }
 
 /**
- * The event index for one sport, WITHOUT odds.
- *
- * `/v4/sports/{sport}/events` does not count against the quota. That makes it a
- * free way to ask "does this sport have anything starting soon" before spending
- * a billed odds request on it — which is the only honest cadence lever
- * available, because the odds endpoint returns the whole board per call and a
- * far-out game therefore costs nothing extra. What costs is calling often, for
- * sports with nothing to price.
- *
- * A failure here returns ok:false and the CALLER CAPTURES THE SPORT ANYWAY.
- * Skipping a sport because a free optimisation call failed would turn a
- * cost-saving into an outage.
+ * The featured board for one sport (h2h / spreads / totals, every upcoming
+ * event in one request). `category` is `featured` for capture; the gateway
+ * owns which markets and books that means.
  */
-export async function fetchEvents(key: string, sport: string): Promise<{ commences: number[]; ok: boolean }> {
-  try {
-    const r = await fetch(`${ODDS_BASE}/sports/${encodeURIComponent(sport)}/events/?apiKey=${encodeURIComponent(key)}`, { signal: deadline(ODDS_TIMEOUT_MS) });
-    if (!r.ok) return { commences: [], ok: false };
-    const list = await r.json();
-    if (!Array.isArray(list)) return { commences: [], ok: false };
-    return { commences: list.map((e: any) => Date.parse(e?.commence_time)).filter((t: number) => Number.isFinite(t)), ok: true };
-  } catch { return { commences: [], ok: false }; }
+export async function fetchOdds(gw: Gateway, sport: string, _cfg: Config, category = "featured"): Promise<OddsResult> {
+  const env = await gatewayRequest(gw, { category, sport_key: sport, odds_format: "decimal" });
+  return oddsResultOf(env, (d) => (Array.isArray(d) ? d : []));
 }
 
 /**
- * Fetch non-featured markets for ONE event: alternate spreads/totals, and every
- * player market. The provider serves these only on this endpoint, one event per
- * request, and bills each request at (unique markets RETURNED) × (region
- * equivalents) — so a batch of twelve player markets on an event where books
- * post eight costs eight, and a market nobody posts costs nothing. The same
- * bookmaker/region selection as fetchOdds(), so reference and consensus policy
- * do not change because a quote came from a ladder.
+ * Non-featured markets for ONE event (alternate ladders, player props). The
+ * provider serves these only per event and bills markets RETURNED x region
+ * equivalents; the gateway's category fixes the market list so every caller
+ * of a category shares the same snapshot. `commence` lets the gateway apply
+ * the event's own cadence before it has learned the kickoff itself.
  */
 export async function fetchEventOdds(
-  key: string, sport: string, eventId: string, cfg: Config, markets = cfg.alternateMarkets,
+  gw: Gateway, sport: string, eventId: string, _cfg: Config, category = "alternates",
+  commence?: string, oddsFormat = "decimal",
 ): Promise<OddsResult> {
-  const sel = cfg.bookmakers.length
-    ? `bookmakers=${encodeURIComponent(cfg.bookmakers.join(","))}`
-    : `regions=${encodeURIComponent(cfg.regions)}`;
-  const u = `${ODDS_BASE}/sports/${encodeURIComponent(sport)}/events/${encodeURIComponent(eventId)}/odds`
-    + `?apiKey=${encodeURIComponent(key)}&${sel}&markets=${encodeURIComponent(markets.join(","))}`
-    + `&oddsFormat=decimal&dateFormat=iso`;
-  try {
-    const r = await fetch(u, { signal: deadline(ODDS_TIMEOUT_MS) });
-    const h = (n: string) => r.headers.get(n) ?? "";
-    const meta = { quotaRemaining: h("x-requests-remaining"), quotaUsed: h("x-requests-used"), lastCost: h("x-requests-last") };
-    if (!r.ok) {
-      const body = await r.text().catch(() => "");
-      return { data: [], ok: false, status: r.status, detail: body.slice(0, 240), ...meta };
-    }
-    const data = await r.json();
-    return { data: data && typeof data === "object" && !Array.isArray(data) ? [data] : [], ok: true, status: 200, detail: "", ...meta };
-  } catch (e) {
-    const name = String((e as Error)?.name ?? "");
-    const timeout = name === "TimeoutError" || name === "AbortError";
-    return { data: [], ok: false, status: 0, detail: (timeout ? "TIMEOUT after " + ODDS_TIMEOUT_MS + " ms: " : "") + String((e as Error)?.message ?? e), quotaRemaining: "", quotaUsed: "", lastCost: "" };
-  }
+  const env = await gatewayRequest(gw, { category, sport_key: sport, event_id: eventId, commence_time: commence, odds_format: oddsFormat });
+  return oddsResultOf(env, (d) => (d && typeof d === "object" && !Array.isArray(d) ? [d] : []));
+}
+
+/** American -> decimal, exactly. The prop category is shared with the GitHub
+    prop pipeline, which reads american prices, so the board is fetched once
+    in american and converted here (-110 -> 1.90909..., +150 -> 2.5). */
+export function americanToDecimal(a: unknown): number | null {
+  const n = Number(a);
+  if (!Number.isFinite(n) || n === 0 || (n > -100 && n < 100)) return null;
+  return n > 0 ? 1 + n / 100 : 1 + 100 / Math.abs(n);
+}
+export function eventToDecimal(ev: any): any {
+  if (!ev || typeof ev !== "object") return ev;
+  return {
+    ...ev,
+    bookmakers: (ev.bookmakers ?? []).map((bk: any) => ({
+      ...bk,
+      markets: (bk?.markets ?? []).map((mk: any) => ({
+        ...mk,
+        outcomes: (mk?.outcomes ?? []).map((o: any) => ({ ...o, price: americanToDecimal(o?.price) ?? o?.price })),
+      })),
+    })),
+  };
 }
 
 /**
@@ -2588,6 +2531,17 @@ export function regionEquivalents(cfg: Config): number {
   return Math.max(1, cfg.regions.split(",").map((x) => x.trim()).filter(Boolean).length);
 }
 
+/** The gateway prop categories this pass asks for, with an upper-bound market
+    count per category for the run caps (mirrors public.odds_api_categories;
+    only an estimate — the gateway's own reservation is the real guard). */
+export const PROP_CATEGORY_MARKETS: Record<string, number> = { props: 11, props_alt: 6 };
+export function propGatewayCategories(cfg: Config): { category: string; markets: number }[] {
+  const out: { category: string; markets: number }[] = [];
+  if (cfg.playerPropMarkets.length) out.push({ category: "props", markets: PROP_CATEGORY_MARKETS.props });
+  if (cfg.playerPropAlternateMarkets.length) out.push({ category: "props_alt", markets: PROP_CATEGORY_MARKETS.props_alt });
+  return out;
+}
+
 /** The prop markets one run requests, standard first, in batches. */
 export function propMarketBatches(cfg: Config): string[][] {
   const all = [...new Set([...cfg.playerPropMarkets, ...cfg.playerPropAlternateMarkets])];
@@ -2596,16 +2550,13 @@ export function propMarketBatches(cfg: Config): string[][] {
   return out;
 }
 
-export async function fetchActiveSports(key: string): Promise<{ keys: string[]; ok: boolean; detail: string }> {
-  try {
-    const r = await fetch(`${ODDS_BASE}/sports/?apiKey=${encodeURIComponent(key)}`, { signal: deadline(ODDS_TIMEOUT_MS) });
-    if (!r.ok) return { keys: [], ok: false, detail: `HTTP ${r.status}: ${(await r.text().catch(() => "")).slice(0, 160)}` };
-    const list = await r.json();
-    return { keys: (list ?? []).filter((s: any) => s.active && !s.has_outrights).map((s: any) => s.key), ok: true, detail: "" };
-  } catch (e) {
-    return { keys: [], ok: false, detail: String((e as Error)?.message ?? e) };
-  }
-}
+/* WHICH SPORTS CAPTURE ASKS FOR when CAPTURE_SPORTS is empty. It used to ask
+   the provider's /sports discovery and capture EVERY active sport (soccer,
+   hockey, ...). Now it is these, and the gateway refuses any sport its own
+   allowlist (public.odds_api_sports) does not carry, whatever this says.
+   Football is the product; MMA and MLB feed the UFC and Baseball research
+   modules and are shed first under budget pressure. */
+export const DEFAULT_SPORTS = ["americanfootball_nfl", "americanfootball_ncaaf", "mma_mixed_martial_arts", "baseball_mlb"];
 
 // ═══════════════════════════════════════════════════════════════════════════
 // PART 8 — ROW SHAPES
@@ -3049,7 +3000,7 @@ function explainWriteError(phase: string, e: string): string {
 export interface PropQueueItem { sport: string; events: any[] }
 
 export async function runPlayerProps(o: {
-  cfg: Config; tier: string | null; oddsKey: string; rest: Rest; nowMs: number; nowIso: string;
+  cfg: Config; tier: string | null; gw: Gateway; rest: Rest; nowMs: number; nowIso: string;
   outOfTime: () => boolean; queue: PropQueueItem[]; quotaRemaining: string; diag: boolean; disabledByRequest?: boolean;
 }): Promise<any> {
   const { cfg, tier, rest, nowMs, nowIso } = o;
@@ -3100,8 +3051,14 @@ export async function runPlayerProps(o: {
   if (pr.error) T.poll_state_error = pr.error.slice(0, 200);
   else for (const r of pr.rows) { const t = Date.parse(String(r?.last_polled_at ?? "")); if (r?.event_id && Number.isFinite(t)) polled.set(String(r.event_id), t); }
 
-  const batches = propMarketBatches(cfg);
+  /* One gateway request per prop CATEGORY per event (2026-10-10): the
+     gateway's `props` category is the core market set the props board uses;
+     `props_alt` is asked only when alternate ladders are configured (and the
+     gateway refuses it unless that category is switched on). */
+  const batches = propGatewayCategories(cfg);
   let reserved = 0, spent = 0, marketReqs = 0;
+  T.gateway_decisions = {} as Record<string, number>;
+  T.events_skipped_gateway = 0;
   let quotaLeft = o.quotaRemaining === "" ? NaN : Number(o.quotaRemaining);
   let stopped: string | null = null;
   const players = new Set<string>(), playerMarkets = new Set<string>();
@@ -3125,15 +3082,19 @@ export async function runPlayerProps(o: {
       id: ev?.id, sport_key: ev?.sport_key ?? sport, sport_title: ev?.sport_title,
       commence_time: ev?.commence_time, home_team: ev?.home_team, away_team: ev?.away_team, bookmakers: [],
     };
-    let okReqs = 0, failReqs = 0, eventCost = 0, requested = 0, cut = false;
+    let okReqs = 0, failReqs = 0, eventCost = 0, requested = 0, cut = false, refused = 0;
     const returned = new Set<string>();
     for (const batch of batches) {
-      if (!canSpend(batch.length)) { cut = true; break; }
-      const est = batch.length * regionEq;
-      reserved += est; marketReqs += batch.length;
-      const r = await fetchEventOdds(o.oddsKey, sport, eventId, cfg, batch);
+      if (!canSpend(batch.markets)) { cut = true; break; }
+      const est = batch.markets * regionEq;
+      reserved += est; marketReqs += batch.markets;
+      const r = await fetchEventOdds(o.gw, sport, eventId, cfg, batch.category, ev?.commence_time, "american");
       reserved -= est;
-      T.requests++; T.markets_requested += batch.length; requested += batch.length;
+      T.requests++; T.markets_requested += batch.markets; requested += batch.markets;
+      T.gateway_decisions[r.decision] = (T.gateway_decisions[r.decision] ?? 0) + 1;
+      /* A refusal, or a board this pass already processed, is not a failure
+         and not a purchase: the event is simply not re-priced this run. */
+      if (r.refused || (r.ok && !r.isNew)) { refused++; continue; }
       /* Spend is what the provider says it charged. If a response ever arrives
          without x-requests-last, the budget counts the worst case instead and
          the total is labelled inexact rather than presented as a measurement. */
@@ -3145,18 +3106,21 @@ export async function runPlayerProps(o: {
       if (r.quotaUsed) T.last_quota_used = r.quotaUsed;
       if (!r.ok) {
         failReqs++; T.failures++;
-        if (failureSamples.length < 8) failureSamples.push({ sport, event_id: eventId, status: r.status, detail: r.detail, markets: batch });
+        if (failureSamples.length < 8) failureSamples.push({ sport, event_id: eventId, status: r.status, detail: r.detail, category: batch.category });
         if (r.status === 401 || r.status === 429) { stopped = `provider_${r.status}`; break; }
         continue;
       }
       okReqs++;
-      const extra = r.data[0];
+      /* The shared prop board is american (the GitHub prop pipeline reads
+         american); priceEvent works in decimal. Converted exactly. */
+      const extra = r.data[0] ? eventToDecimal(r.data[0]) : null;
       if (extra) {
         for (const bk of extra.bookmakers ?? []) for (const mk of bk?.markets ?? []) if (mk?.key) returned.add(String(mk.key));
         merged = mergeEventOdds(merged, extra);
       }
     }
     if (!okReqs && !failReqs) {
+      if (refused && !cut) { T.events_skipped_gateway++; return; }
       if (stopped === "wall_clock") { T.events_skipped_time++; PS.skipped_time++; }
       else { T.events_skipped_budget++; PS.skipped_budget++; }
       return;
@@ -3378,7 +3342,6 @@ export async function handle(req: Request): Promise<Response> {
   const envGet: EnvGet = (k) => (typeof Deno !== "undefined" ? Deno.env.get(k) : undefined);
   const baseCfg = defaultConfig(envGet);
   const CRON_SECRET = envGet("CRON_SECRET") ?? "";
-  const ODDS_KEY = envGet("ODDS_API_KEY") ?? "";
   const SB_URL = envGet("SUPABASE_URL") ?? "";
   const SB_KEY = envGet("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
@@ -3391,7 +3354,12 @@ export async function handle(req: Request): Promise<Response> {
      serves every cadence; see CADENCE_TIERS. The tier is applied BEFORE the
      auth check reads nothing from it and BEFORE any request is made, and it
      is echoed in the response so a run says which schedule produced it. */
-  const { cfg, tier } = applyCadenceTier(baseCfg, params.tier);
+  /* An untiered call (the desk's quote refresh sends `?sport=X&reason=...`
+     and no tier) used to run the environment's full horizon with alternates
+     and props — a whole-board purchase per question. It is the DAY tier now,
+     and `sport` narrows it to that sport. */
+  const { cfg, tier } = applyCadenceTier(baseCfg, params.tier || "day");
+  const onlySport = String(params.sport ?? "").trim();
 
   const startedAt = Date.now();
   const elapsed = () => Date.now() - startedAt;
@@ -3406,30 +3374,31 @@ export async function handle(req: Request): Promise<Response> {
         : "the x-cron-secret header did not match CRON_SECRET.",
     }, 401);
   }
-  if (!ODDS_KEY) {
-    return json({ ok: false, build: BUILD, error: "ODDS_API_KEY is not set", reason: "Every odds request would fail. Nothing was attempted." }, 500);
-  }
-  if (!diag && !probe && (!SB_URL || !SB_KEY)) {
+  /* NO ODDS KEY HERE ANY MORE. The gateway holds it; capture needs the
+     database credentials, which also authenticate it to the gateway. */
+  if (!SB_URL || !SB_KEY) {
     return json({ ok: false, build: BUILD, error: "SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not set",
-      reason: "Capture could price the board and would then discard every row. Refusing to run rather than reporting a successful empty pass." }, 500);
+      reason: "Capture reaches odds only through odds_gateway, which needs the service role, and could not store a row "
+        + "without it. Nothing was attempted." }, 500);
   }
 
   const rest = makeRest(SB_URL, SB_KEY);
+  const gw = makeGateway(SB_URL, SB_KEY, `capture:${tier ?? "day"}`, String(params.reason || params.source || "schedule").slice(0, 40));
 
   // ---- sports -------------------------------------------------------------
+  /* No discovery call: an empty CAPTURE_SPORTS means DEFAULT_SPORTS, and the
+     auto prefixes add the default keys they match. The gateway refuses any
+     sport outside its own allowlist regardless. */
   const stable = cfg.sportsEnv.split(",").map((s) => s.trim()).filter(Boolean);
-  let sports: string[] = [], autoAdded: string[] = [], discoveryOk = true, discoveryDetail = "";
+  let sports: string[] = [], autoAdded: string[] = [];
+  const discoveryOk = true, discoveryDetail = "";
   if (!stable.length) {
-    const all = await fetchActiveSports(ODDS_KEY);
-    sports = all.keys; discoveryOk = all.ok; discoveryDetail = all.detail;
+    sports = [...DEFAULT_SPORTS];
   } else {
-    if (cfg.autoPrefixes.length) {
-      const active = await fetchActiveSports(ODDS_KEY);
-      discoveryOk = active.ok; discoveryDetail = active.detail;
-      autoAdded = active.keys.filter((k) => cfg.autoPrefixes.some((p) => k.startsWith(p)) && !stable.includes(k));
-    }
+    autoAdded = DEFAULT_SPORTS.filter((k) => cfg.autoPrefixes.some((p) => k.startsWith(p)) && !stable.includes(k));
     sports = [...new Set([...stable, ...autoAdded])];
   }
+  if (onlySport) sports = sports.filter((k) => k === onlySport);
   /* RETIRED SPORTS ARE NEVER REQUESTED. Whatever CAPTURE_SPORTS names or the
      /sports discovery returns (an empty CAPTURE_SPORTS captures every active
      sport), a retired key (EDSPORTS) is dropped here, before a single odds
@@ -3451,75 +3420,56 @@ export async function handle(req: Request): Promise<Response> {
     }, 500);
   }
 
-  /* ── THE QUOTA GUARD (PART 7b). Asked once, before the first billed request.
-     A denial is a normal, successful answer: the stored board is fresh enough,
-     or the budget/breaker says no. ok:true + skipped, so no scheduler retries. */
-  const qreq = captureQuotaRequest(tier, params.reason, diag || probe ? 1 : sports.length, cfg, probe ? "probe" : (diag ? "diag" : ""));
-  const ticket: QuotaTicket = cfg.quotaLedger
-    ? await quotaAcquire(SB_URL, SB_KEY, { caller: params.reason === "board_refresh" ? "edgedesk_ai" : "capture", key: qreq.key, est: probe ? qreq.perSport * 2 : qreq.est, priority: qreq.priority, endpoint: "odds" })
-    : { allowed: true, reason: "ledger_disabled", request_id: null, ledger: "missing" };
-  if (!ticket.allowed) {
-    return json({
-      ok: true, status: "skipped", skipped: true, build: BUILD, reason: ticket.reason, retry_after: ticket.retry_after ?? null,
-      quota_guard: { ledger: ticket.ledger, key: qreq.key, priority: qreq.priority, estimate: qreq.est, decision: ticket.reason, budget: ticket.budget ?? null },
-      note: ticket.reason === "cache_fresh" ? "This key was refreshed inside its minimum interval; the stored board is used and no credit was spent."
-        : ticket.reason === "coalesced" ? "An identical capture is already running; this one was not bought twice."
-        : "The central quota ledger (supabase/odds_quota.sql) held this run: " + ticket.reason + ". Nothing was requested and nothing is retried.",
-    });
-  }
-  const guard = makeRunGuard(cfg.quotaMaxCreditsPerRun, cfg.quotaMinRemaining, cfg.quotaBreakerFailures, ticket.budget && ticket.budget.provider_remaining != null ? String(ticket.budget.provider_remaining) : "");
-  const quotaSkipped: string[] = [];
-
-  /* ?probe=1 — spend at most two odds requests on ONE sport and report which
-     books each selection strategy actually returns, and what the provider
-     charged for it. This is how the Pinnacle question and the billing question
-     get answered with measurements instead of assumptions. Writes nothing. */
+  /* ?probe=1 — a ZERO-COST report (2026-10-10). It used to buy two boards to
+     compare region and bookmaker billing; the gateway now owns that choice and
+     every request's real cost is in public.odds_api_requests (x-requests-last).
+     This asks the gateway for its budget and feed status and buys nothing. */
   if (probe) {
-    const sport = sports[0];
-    const byRegion = await fetchOdds(ODDS_KEY, sport, { ...cfg, bookmakers: [] });
-    guardRecord(guard, byRegion);
-    const byBooks = guard.stopped ? { ...byRegion, data: [], ok: false, detail: "not requested: " + guard.stopped } : await fetchOdds(ODDS_KEY, sport, { ...cfg, bookmakers: cfg.bookmakers.length ? cfg.bookmakers : SUGGESTED_BOOKMAKERS });
-    if (!guard.stopped) guardRecord(guard, byBooks);
-    await quotaSettle(SB_URL, SB_KEY, ticket, guardSettleStatus(guard, byRegion.ok || byBooks.ok), guard, "probe " + sport);
-    const booksOf = (r: OddsResult) => [...new Set(r.data.flatMap((e: any) => (e.bookmakers ?? []).map((b: any) => b.key)))].sort();
-    const stampsOf = (r: OddsResult) => {
-      let withMarket = 0, withBook = 0, none = 0;
-      for (const e of r.data) for (const b of e.bookmakers ?? []) for (const m of b.markets ?? []) {
-        if (m.last_update) withMarket++; else if (b.last_update) withBook++; else none++;
-      }
-      return { market_level: withMarket, book_level_only: withBook, none };
-    };
+    let gateway: any = null;
+    try {
+      const r = await fetch(`${gw.url}/functions/v1/odds_gateway`, {
+        method: "POST", headers: { "content-type": "application/json", apikey: SB_KEY, authorization: `Bearer ${SB_KEY}` },
+        body: JSON.stringify({ action: "status" }), signal: deadline(15000),
+      });
+      gateway = await r.json().catch(() => null);
+    } catch (e) { gateway = { ok: false, error: String((e as Error)?.message ?? e) }; }
     return json({
-      ok: byRegion.ok || byBooks.ok, build: BUILD, mode: "probe", persistence: "skipped_intentionally",
-      sport,
-      by_regions: {
-        regions: cfg.regions, ok: byRegion.ok, status: byRegion.status, events: byRegion.data.length,
-        books: booksOf(byRegion), reference_present: booksOf(byRegion).some((b) => cfg.referenceBooks.includes(b)),
-        cost_charged: byRegion.lastCost, quota_remaining: byRegion.quotaRemaining, timestamps: stampsOf(byRegion),
-      },
-      by_bookmakers: {
-        bookmakers: cfg.bookmakers.length ? cfg.bookmakers : SUGGESTED_BOOKMAKERS,
-        ok: byBooks.ok, status: byBooks.status, events: byBooks.data.length,
-        books: booksOf(byBooks), reference_present: booksOf(byBooks).some((b) => cfg.referenceBooks.includes(b)),
-        cost_charged: byBooks.lastCost, quota_remaining: byBooks.quotaRemaining, timestamps: stampsOf(byBooks),
-      },
-      expected_billing: `markets x regions. The bookmakers parameter substitutes for the regions term and is `
-        + `charged in groups of ten, rounded up — so ${SUGGESTED_BOOKMAKERS.length} keys should cost the same as `
-        + `ONE region, and an eleventh would double it. cost_charged below is the provider's own x-requests-last `
-        + `header and is the only authority; if it disagrees with that formula, believe the header.`,
-      how_to_read: "If by_bookmakers.reference_present is true and its cost_charged is at or below by_regions, set "
-        + "CAPTURE_BOOKMAKERS and leave CAPTURE_REGIONS unused: that reaches Pinnacle for what the broken us-only "
-        + "configuration used to cost. If `timestamps.none` is not 0, the feed is not sending update stamps for "
-        + "some quotes and those quotes will never count as fresh — that is deliberate, but you should know it. "
-        + "`market_level` counting 0 while `book_level_only` is large means this account's responses carry only "
-        + "the bookmaker timestamp, which is coarser but still works.",
+      ok: !!gateway?.ok, build: BUILD, mode: "probe", persistence: "skipped_intentionally", credits_spent: 0,
+      sports, gateway,
+      how_to_read: "Selection (bookmakers vs regions), markets and cadence are odds_gateway's, per category "
+        + "(public.odds_api_categories / odds_api_cadence). Per-request cost is the provider's own x-requests-last, "
+        + "recorded in public.odds_api_requests; see /admin/odds-usage/.",
     });
   }
 
   // ---- the run ------------------------------------------------------------
   const nowIso = new Date().toISOString();
   const nowMs = Date.now();
+  const runIso = nowIso, runMs = nowMs;
   const sportList = diag ? sports.slice(0, 1) : sports;
+
+  /* ONE RUN PER TIER AT A TIME. pg_cron and the GitHub backup can fire the same
+     tier together, and a slow run can overlap the next tick. The gateway already
+     collapses their provider requests; this stops the second run doing the
+     database work twice. An unavailable lock function never blocks a run. */
+  const lockJob = `capture:${tier ?? "day"}`;
+  const lockHolder = `${lockJob}:${startedAt}:${Math.random().toString(36).slice(2, 8)}`;
+  let lockHeld = false;
+  if (!diag) {
+    try {
+      const r = await fetch(`${gw.url}/rest/v1/rpc/odds_api_job_lock`, {
+        method: "POST", headers: { "content-type": "application/json", apikey: SB_KEY, authorization: `Bearer ${SB_KEY}` },
+        body: JSON.stringify({ p_job: lockJob, p_holder: lockHolder, p_ttl_seconds: Math.ceil(cfg.budgetMs / 1000) + 60 }),
+        signal: deadline(10000),
+      });
+      const v = r.ok ? await r.json().catch(() => null) : null;
+      if (v === false) {
+        return json({ ok: true, status: "skipped_overlap", build: BUILD, tier,
+          reason: `another ${lockJob} run holds the lock; this run did nothing and spent nothing.` });
+      }
+      lockHeld = v === true;
+    } catch { /* lock unavailable: run anyway — the gateway still bounds spend */ }
+  }
 
   let priced = 0, inserted = 0, updated = 0, flagged = 0;
   let flagDeferred = 0, flagErrors = 0, ticksWritten = 0, tickErrors = 0;
@@ -3541,6 +3491,13 @@ export async function handle(req: Request): Promise<Response> {
   const eventErrorSamples: any[] = [];
   const skippedForTime: string[] = [];
   const skippedNoNearEvents: string[] = [];
+  /* What the gateway answered per sport, and which sports it did not let
+     capture write: refused (breaker, budget, cadence window) or already
+     processed (a cache hit capture has seen). */
+  const gatewayBySport: Record<string, any> = {};
+  const gatewaySkipped: { sport: string; decision: string; reason: string }[] = [];
+  const servedFromCache: string[] = [];
+  let paused = false, pausedDecision = "";
   const writeErrors: string[] = [];
   const schemaGaps = new Set<string>();
   const rejected: Record<string, number> = {};
@@ -3549,7 +3506,7 @@ export async function handle(req: Request): Promise<Response> {
   const tierCounts: Record<string, number> = { A: 0, B: 0, PASS: 0 };
   const perSegment: Record<string, { candidates: number; actionable: number }> = {};
   let quotaRemaining = "", quotaUsed = "", quotaSpent = 0;
-  let altEligible = 0, altRequested = 0, altMerged = 0, altFailed = 0, altSkippedByCap = 0;
+  let altEligible = 0, altRequested = 0, altMerged = 0, altFailed = 0, altSkippedByCap = 0, altSkippedGateway = 0;
   const altErrorSamples: any[] = [];
   const perSportAlt: Record<string, { eligible: number; requested: number; merged: number; failed: number }> = {};
   /* The football boards this run captured, handed to the player-prop pass
@@ -3572,35 +3529,38 @@ export async function handle(req: Request): Promise<Response> {
 
   for (const sport of sportList) {
     if (outOfTime()) { skippedForTime.push(sport); continue; }
-    /* the provider said stop (429 / 401 / exhausted / repeated timeouts): no
-       further request of any kind this run, free index included */
-    if (guard.stopped) { quotaSkipped.push(sport); perSport[sport] = 0; continue; }
+    /* Paid retrieval is account-wide: once the gateway says it is off for
+       every sport (gatewayRunStop), asking for the next one would only add a
+       refusal to the ledger. */
+    if (paused) { gatewaySkipped.push({ sport, decision: pausedDecision, reason: "paid retrieval off (" + pausedDecision + "): not asked" }); perSport[sport] = 0; continue; }
 
-    /* FREE CALL BEFORE A BILLED ONE. Only when explicitly configured — a sport
-       with no near event still has a board worth storing for research, so this
-       is a cadence tier the operator opts into, not a default. */
-    if (cfg.nearHours > 0) {
-      const idx = await fetchEvents(ODDS_KEY, sport);
-      if (idx.ok) {
-        const cutoff = nowMs + cfg.nearHours * 3600000;
-        if (!idx.commences.some((t) => t >= nowMs - 3600000 && t <= cutoff)) {
-          skippedNoNearEvents.push(sport);
-          perSport[sport] = 0;
-          continue;
-        }
-      }
-      /* idx.ok === false: the free call failed, so capture the sport anyway.
-         Skipping because an optimisation call failed would turn a cost saving
-         into an outage. */
-    }
-
-    if (!guardCanSpend(guard, qreq.perSport)) { quotaSkipped.push(sport); perSport[sport] = 0; continue; }
-    const res = await fetchOdds(ODDS_KEY, sport, cfg);
-    guardRecord(guard, res);
+    /* The event-aware cadence that used to be CAPTURE_NEAR_HOURS (a free
+       /events call per sport) lives in the gateway now: a sport with nothing
+       near kickoff is served from its snapshot until its own interval is up. */
+    const res = await fetchOdds(gw, sport, cfg);
+    gatewayBySport[sport] = { decision: res.decision, source: res.source, is_new: res.isNew,
+      fetched_at: res.fetchedAt, age_seconds: res.ageSeconds, cost: Number(res.lastCost) || 0 };
     if (res.quotaRemaining) quotaRemaining = res.quotaRemaining;
     if (res.quotaUsed) quotaUsed = res.quotaUsed;
     quotaSpent += Number(res.lastCost) || 0;
-    if (!res.ok) { errored.push({ sport, status: res.status, detail: res.detail }); perSport[sport] = 0; continue; }
+    const runStop = gatewayRunStop(res.decision);
+    if (runStop && !paused) { paused = true; pausedDecision = runStop; }
+    if (!res.ok) {
+      if (!res.refused || res.decision === "denied_gateway_error") {
+        errored.push({ sport, status: res.status, detail: res.detail });
+      } else {
+        gatewaySkipped.push({ sport, decision: res.decision, reason: res.detail });
+      }
+      perSport[sport] = 0;
+      continue;
+    }
+    /* A snapshot capture has already priced and written: nothing new to say. */
+    if (!res.isNew) { servedFromCache.push(sport); perSport[sport] = 0; continue; }
+    /* THE OBSERVATION TIME is the snapshot's own. A board another consumer
+       bought a few minutes ago is priced as of when it was bought, so quote
+       ages, hours to kickoff and last_seen_at all tell the truth. */
+    const nowIso = res.fetchedAt ?? runIso;
+    const nowMs = Number.isFinite(Date.parse(nowIso)) ? Date.parse(nowIso) : runMs;
 
     perSportEvents[sport] = res.data.length;
 
@@ -3635,7 +3595,7 @@ export async function handle(req: Request): Promise<Response> {
     const altHours = alternateHoursForTier(cfg, tier);
     const group = sportGroup(sport);
     const altStat = perSportAlt[sport] = { eligible: 0, requested: 0, merged: 0, failed: 0 };
-    if (altHours > 0 && !diag && !guard.stopped && (group === "nfl" || group === "ncaaf")) {
+    if (altHours > 0 && !diag && !paused && (group === "nfl" || group === "ncaaf")) {
       const eligible = res.data
         .map((ev: any) => ({ ev, t: Date.parse(String(ev?.commence_time ?? "")) }))
         .filter((x: any) => Number.isFinite(x.t) && x.t >= nowMs && x.t <= nowMs + altHours * 3600000)
@@ -3647,20 +3607,20 @@ export async function handle(req: Request): Promise<Response> {
 
       for (let i = 0; i < selected.length && !outOfTime(); i += cfg.alternateConcurrency) {
         const batch = selected.slice(i, i + cfg.alternateConcurrency);
-        /* the run guard covers ladders too: a 429 or the credit cap ends them */
-        if (!guardCanSpend(guard, batch.length * qreq.altPerEvent)) { altSkippedByCap += selected.length - i; break; }
         const results = await Promise.all(batch.map(async ({ ev }: any) => {
           const eventId = String(ev?.id ?? "");
           if (!eventId) return { eventId, ev, res: null as OddsResult | null };
-          return { eventId, ev, res: await fetchEventOdds(ODDS_KEY, sport, eventId, cfg) };
+          return { eventId, ev, res: await fetchEventOdds(gw, sport, eventId, cfg, "alternates", ev?.commence_time) };
         }));
         for (const item of results) {
           if (!item.res) continue;
-          guardRecord(guard, item.res);
           altRequested++; altStat.requested++;
           if (item.res.quotaRemaining) quotaRemaining = item.res.quotaRemaining;
           if (item.res.quotaUsed) quotaUsed = item.res.quotaUsed;
           quotaSpent += Number(item.res.lastCost) || 0;
+          /* A refusal (cadence window, budget shedding, breaker) is not a
+             failure: the ladder simply is not merged this run. */
+          if (item.res.refused) { altSkippedGateway++; continue; }
           if (!item.res.ok) {
             altFailed++; altStat.failed++;
             if (altErrorSamples.length < 8) altErrorSamples.push({
@@ -3926,17 +3886,11 @@ export async function handle(req: Request): Promise<Response> {
   }
 
   /* ── THE PLAYER-PROP PASS. Every game line above is already written. ───── */
-  const providerStopped = !!(guard.stopped && /^provider_|^circuit_open$/.test(guard.stopped));
   const playerProps = await runPlayerProps({
-    cfg, tier, oddsKey: ODDS_KEY, rest, nowMs, nowIso, outOfTime, queue: providerStopped ? [] : propQueue,
+    cfg, tier, gw, rest, nowMs: runMs, nowIso: runIso, outOfTime, queue: propQueue,
     quotaRemaining, diag, disabledByRequest: params.props === "0",
   });
-  if (providerStopped) (playerProps as any).skipped_by_quota_guard = guard.stopped;
   quotaSpent += playerProps.quota_spent || 0;
-  guard.spent += playerProps.quota_spent || 0;
-  if (playerProps.last_quota_remaining && Number.isFinite(Number(playerProps.last_quota_remaining))) guard.remaining = Number(playerProps.last_quota_remaining);
-  const quotaSettled = await quotaSettle(SB_URL, SB_KEY, ticket, guardSettleStatus(guard, Object.keys(perSportEvents).length > 0), guard,
-    (tier || "untiered") + " · " + sportList.length + " sport(s) · " + (guard.stopped ? "stopped: " + guard.stopped : "complete"));
   if (playerProps.last_quota_remaining) quotaRemaining = playerProps.last_quota_remaining;
   if (playerProps.last_quota_used) quotaUsed = playerProps.last_quota_used;
 
@@ -3945,14 +3899,42 @@ export async function handle(req: Request): Promise<Response> {
   const rejectedTotal = Object.values(rejected).reduce((a, b) => a + b, 0);
   const capturedNothing = priced === 0;
   const allErrored = errored.length === sportList.length;
+  /* NOTHING NEW IS NOT A FAILURE. With the gateway deciding cadence, most runs
+     find every sport inside its interval (a cache hit capture already wrote)
+     or refused (breaker off, budget shed): that run is idle, and says so. A
+     run that hit provider errors, or ran out of clock, is never idle. */
+  const idle = capturedNothing && !errored.length && !skippedForTime.length
+    && gatewaySkipped.length + servedFromCache.length > 0;
 
   const status = diag ? "diagnostic"
+    : (capturedNothing && paused) ? "provider_paused"
+    : idle ? "idle"
     : capturedNothing ? "failed"
     : (errored.length || eventErrors || writeErrors.length || skippedForTime.length || schemaGaps.size) ? "partial" : "ok";
 
+  if (lockHeld) {
+    try {
+      await fetch(`${gw.url}/rest/v1/rpc/odds_api_job_unlock`, {
+        method: "POST", headers: { "content-type": "application/json", apikey: SB_KEY, authorization: `Bearer ${SB_KEY}` },
+        body: JSON.stringify({ p_job: lockJob, p_holder: lockHolder }), signal: deadline(10000),
+      });
+    } catch { /* the lock expires on its own */ }
+  }
+
   const body: any = {
-    ok: diag ? (!allErrored && !capturedNothing) : !capturedNothing,
+    ok: diag ? (!allErrored && !capturedNothing) : (!capturedNothing || idle),
     status, build: BUILD, policy: POLICY_VERSION,
+
+    // ── what the gateway answered (2026-10-10) ────────────────────────────
+    gateway: {
+      by_sport: gatewayBySport,
+      skipped: gatewaySkipped,
+      served_from_cache: servedFromCache,
+      paused,
+      note: paused
+        ? "The Odds API circuit breaker is off: nothing was bought and nothing was rewritten. Stored prices stand, labelled with their capture time."
+        : "Each sport's board is bought only when its snapshot is older than its event-aware cadence; a snapshot capture already wrote is never rewritten.",
+    },
 
     ...(diag ? {
       mode: "diagnostic",
@@ -3994,6 +3976,7 @@ export async function handle(req: Request): Promise<Response> {
       merged_events: altMerged,
       failed_requests: altFailed,
       skipped_by_cap: altSkippedByCap,
+      skipped_by_gateway: altSkippedGateway,
       per_sport: perSportAlt,
       ...(altErrorSamples.length ? { errors: altErrorSamples } : {}),
       note: tier === "board"
@@ -4107,14 +4090,6 @@ export async function handle(req: Request): Promise<Response> {
         + `run. Everything written before the cutoff is committed.`,
     } : {}),
     quota_remaining: quotaRemaining, quota_used: quotaUsed, quota_spent_this_run: quotaSpent,
-    quota_guard: {
-      ledger: ticket.ledger, key: qreq.key, priority: qreq.priority, estimate: qreq.est, decision: ticket.reason,
-      ledger_detail: ticket.detail ?? null, settled: quotaSettled,
-      run: { spent: guard.spent, max_credits: guard.maxCredits, floor: guard.minRemaining, remaining: Number.isFinite(guard.remaining) ? guard.remaining : null,
-        stopped: guard.stopped, failures: guard.failures, sports_not_requested: quotaSkipped },
-      rule: "One ledger decision before the run; a credit cap, a balance floor and a stop on the first 429 / 401 / exhausted quota (or "
-        + cfg.quotaBreakerFailures + " consecutive timeouts) inside it. Nothing billed is retried.",
-    },
 
     // ── the policy in force, echoed so a run explains its own decisions ────
     policy_in_force: {

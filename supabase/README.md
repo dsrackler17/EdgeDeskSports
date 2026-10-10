@@ -427,7 +427,13 @@ label with a sample floor. Tested against a real PostgreSQL by
 `Deploy intelligence` workflow's `apply_research_packets` input. The
 function reports its last write in `?probe=1 → packet_health`.
 
-### `odds_quota.sql` — one request budget for every Odds API caller
+### `odds_quota.sql` — one request budget for every Odds API caller (superseded)
+**Superseded on 2026-10-10 by `odds_api_gateway.sql`.** No caller asks this
+ledger any more: every Odds API request goes through `functions/odds_gateway`,
+which holds the only copy of the provider key, enforces one shared budget and
+fails closed (`docs/odds-api-incident-2026-10/INCIDENT.md`). What follows
+describes the file as it was written.
+
 The central quota ledger (`docs/market-resilience/README.md`, § Quota
 protection). `odds_quota_acquire(caller, key, est_cost, priority, …)` decides
 atomically, before a billed request, from the mode (`LIVE` or `RESEARCH_ONLY`),

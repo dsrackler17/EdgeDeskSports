@@ -9,9 +9,11 @@
 #
 # Every run:
 #   1. the kernel and the pipeline suites must pass before anything is written;
-#   2. the prop capture (football/props/capture.js) asks The Odds API for player
-#      markets — ONLY when the repository variable PROPS_CAPTURE is on (on, true,
-#      1 or yes, any case) and the ODDS_API_KEY secret exists; the step always
+#   2. the prop capture (football/props/capture.js) asks for player markets
+#      THROUGH supabase/functions/odds_gateway (2026-10-10: no provider key on
+#      this runner; the gateway's shared budget, cadence and circuit breaker
+#      decide what is bought) — ONLY when the repository variable PROPS_CAPTURE
+#      is on (on, true, 1 or yes, any case); the step always
 #      runs and records its outcome in capture_state.json either way. Each game
 #      is re-polled on its own clock by hours to kickoff (lib/edgedesk_props.js
 #      FRESHNESS.cadence: 15 min inside 90 min, 30 inside 6 h, 60 inside 24 h,
@@ -39,10 +41,10 @@ name: Player props
 
 on:
   schedule:
-    # the BACKUP scheduler, every 15 minutes through the season (August–January).
-    # The capture decides for itself which games are due; a run with nothing due
-    # spends nothing and rebuilds nothing unless the board is 50 minutes old.
-    - cron: '8,23,38,53 * * 8-12,1 *'
+    # the BACKUP scheduler, every 30 minutes through the season (August–January;
+    # was 15). The capture decides for itself which games are due, the odds
+    # gateway decides what is bought, and a run with nothing due spends nothing.
+    - cron: '8,38 * * 8-12,1 *'
   workflow_dispatch:
     inputs:
       backtest:
@@ -125,7 +127,7 @@ jobs:
       # This step ALWAYS runs. Repository variables and secrets are NOT shell
       # variables: each is mapped into the environment here, explicitly.
       # capture.js normalizes PROPS_CAPTURE (on / true / 1 / yes, any case),
-      # prints whether the key is present (never the key), and writes
+      # prints whether the gateway credential is present (never its value), and writes
       # capture_state.json on EVERY outcome that reached the provider — NOT_RUN,
       # NO_MARKETS, SUCCESS, PARTIAL or ERROR — plus each game's own record,
       # the provider's (429 back-off, failures), the pipeline health and when
@@ -133,7 +135,10 @@ jobs:
       - name: Capture sportsbook prop prices (opt-in, budgeted)
         id: capture
         env:
-          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          # the odds gateway credential (the same service role every DB step uses);
+          # NO provider key reaches this runner (docs/odds-api-incident-2026-10)
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
           PROPS_CAPTURE: ${{ vars.PROPS_CAPTURE }}
           PROPS_BOOKMAKERS: ${{ vars.PROPS_BOOKMAKERS }}
           PROPS_MARKET_GROUPS: ${{ vars.PROPS_MARKET_GROUPS }}
@@ -153,7 +158,7 @@ jobs:
           PROPS_TRIGGER: ${{ github.event.inputs.source || github.event_name }}
           FORCE_CAPTURE: ${{ github.event.inputs.force_capture }}
         run: |
-          # capture.js prints "ODDS_API_KEY present: true|false" and PROPS_CAPTURE
+          # capture.js prints "odds gateway credential present: true|false" and PROPS_CAPTURE
           # raw / parsed for each league; no run line here touches the secret
           # (tools/cfb/secret_audit.js refuses any echo that names it)
           echo "event: $GITHUB_EVENT_NAME · trigger: $PROPS_TRIGGER · ref: $GITHUB_REF_NAME"

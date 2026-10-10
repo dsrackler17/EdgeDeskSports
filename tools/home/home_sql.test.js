@@ -56,8 +56,13 @@ const SUM = { nfl: readJson('football/props/nfl/summary.json'), cfb: readJson('f
 const NOW = Date.now();
 /* the committed files are a snapshot: move every kickoff so the slate is
    upcoming relative to the test's clock, keeping each game's order */
-const firstKick = Math.min(...CFB.rows.map((r) => Date.parse(r.kickoff)).filter(isFinite), ...NFL.games.map((g) => Date.parse(g.kickoff)).filter(isFinite));
-const shift = (NOW + 6 * 3600e3) - firstKick;
+const kicks = CFB.rows.map((r) => Date.parse(r.kickoff)).concat(NFL.games.map((g) => Date.parse(g.kickoff))).filter(isFinite);
+const firstKick = Math.min(...kicks);
+let shift = (NOW + 6 * 3600e3) - firstKick;
+/* a kickoff landing exactly on the 8-day edge races the database's own now(),
+   a few seconds later than this clock (2026-10-10: an NFL 13:30 kickoff sat
+   exactly 8 days out): nudge the slate off the edge, keeping every order */
+if (kicks.some((k) => Math.abs(k + shift - (NOW + 8 * 864e5)) < 5 * 60e3)) shift += 11 * 60e3;
 const kick = (t) => new Date(Date.parse(t) + shift).toISOString();
 
 function propsBlock(lg, gid) {

@@ -18,9 +18,19 @@
 // .github/workflows/player-props.yml; a second capture here would be a second
 // pipeline that disagrees with the first. It POKES that one pipeline:
 //
-//   pg_cron (5 min) ──► THIS ──► workflow_dispatch ──► player-props.yml
-//   the page's Refresh ─► THIS ──► workflow_dispatch (force, this request)
+//   pg_cron (15 min) ─► THIS ──► workflow_dispatch ──► player-props.yml
+//   the page's Refresh ─► THIS ──► workflow_dispatch (NOT forced, this request)
 //   github schedule ─────────────────────────────────► (backup)
+//
+// 2026-10-10 (docs/odds-api-incident-2026-10/INCIDENT.md): A READER CAN NO
+// LONGER BUY ODDS. A Refresh used to dispatch a FORCED capture that re-bought
+// every game not captured in the last ten minutes, even with credits critical.
+// Now a Refresh asks the pipeline to look for newer stored prices: the prop
+// capture goes through odds_gateway, which buys only when an event's own
+// cadence is due and the shared budget allows. While The Odds API circuit
+// breaker is off a Refresh is answered at once with the last verified time and
+// nothing is dispatched, and a tick does not wake the pipeline for a price
+// check (it still wakes it on the fallback interval, for boards and grading).
 //
 // WHEN IT POKES (a tick). It reads player_props_pipeline_health, which the
 // pipeline writes after every run (football/props/health_sync.js): each
@@ -171,11 +181,13 @@ export async function tick(nowMs?: number): Promise<TickResult> {
   const nextDue = dueAt.length ? Math.min(...dueAt) : null;
   const quietFor = Math.min(...LEAGUES.map((lg) => byLeague[lg] ? now - (ms(byLeague[lg].updated_at) || 0) : Infinity));
   let why = '';
-  if (queued) why = 'a reader\'s refresh (' + queued.id + ') is waiting';
-  else if (nextDue != null && nextDue <= now + 60e3) why = 'a game is due for a price check (' + new Date(nextDue).toISOString() + ')';
+  const feed = await feedState(c);
+  const paused = !!feed && feed.state === 'paused';
+  if (queued && !paused) why = 'a reader\'s refresh (' + queued.id + ') is waiting';
+  else if (!paused && nextDue != null && nextDue <= now + 60e3) why = 'a game is due for a price check (' + new Date(nextDue).toISOString() + ')';
   else if (!rows || !rows.length || !Number.isFinite(quietFor) || quietFor > c.fallbackMinutes * 60e3) why = rows ? 'the health record has been quiet for ' + (Number.isFinite(quietFor) ? Math.round(quietFor / 60e3) + ' min' : 'ever') + ' (fallback)' : 'the health record is unreadable (fallback)';
   if (!why) {
-    const out: TickResult = { ok: true, action: 'not_due', reason: 'no game is due' + (nextDue != null ? ' before ' + new Date(nextDue).toISOString() : ''), next_due_at: nextDue != null ? new Date(nextDue).toISOString() : null };
+    const out: TickResult = { ok: true, action: 'not_due', reason: (paused ? 'The Odds API circuit breaker is off: no price check is dispatched' : 'no game is due') + (nextDue != null ? ' before ' + new Date(nextDue).toISOString() : ''), next_due_at: nextDue != null ? new Date(nextDue).toISOString() : null };
     await stamp(c, out.action, out.reason, false, nowIso);
     return out;
   }
@@ -189,10 +201,10 @@ export async function tick(nowMs?: number): Promise<TickResult> {
     await stamp(c, out.action, out.reason, false, nowIso);
     return out;
   }
-  const inputs: Record<string, string> = queued
-    ? { source: 'manual_refresh', force_capture: 'true', refresh_request: queued.id, leagues: queued.league === 'all' ? 'nfl,cfb' : queued.league, events: (queued.event_ids || []).join(',') }
+  const inputs: Record<string, string> = queued && !paused
+    ? { source: 'manual_refresh', force_capture: 'false', refresh_request: queued.id, leagues: queued.league === 'all' ? 'nfl,cfb' : queued.league, events: (queued.event_ids || []).join(',') }
     : { source: 'supabase_cron' };
-  const d = await dispatch(c, inputs, queued ? { force_capture: 'true' } : {});
+  const d = await dispatch(c, inputs, queued && !paused ? { force_capture: 'false' } : {});
   if (!d.ok) {
     const out: TickResult = { ok: false, action: 'error', reason: 'workflow_dispatch -> ' + d.status, detail: d.detail };
     await stamp(c, out.action, out.reason + ': ' + d.detail, false, nowIso);
@@ -216,11 +228,26 @@ async function getUser(c: Cfg, req: Request): Promise<{ id: string } | null> {
   } catch (_) { return null; }
 }
 
+/* The Odds API feed state (supabase/odds_api_gateway.sql odds_feed_status).
+   null when it cannot be read: the gateway still bounds every purchase. */
+async function feedState(c: Cfg): Promise<{ state: string; message: string } | null> {
+  try {
+    const r = await sbFor(c)('rpc/odds_feed_status', { method: 'POST', body: '{}' });
+    if (!r.ok) return null;
+    const j = await r.json().catch(() => null) as { state?: string; message?: string } | null;
+    return j && typeof j.state === 'string' ? { state: j.state, message: String(j.message ?? '') } : null;
+  } catch (_) { return null; }
+}
+
 export async function refresh(req: Request, body: Record<string, unknown>, nowMs?: number) {
   const c = config();
   const now = nowMs ?? Date.now(), nowIso = new Date(now).toISOString();
   const user = await getUser(c, req);
   if (!user) return json({ ok: false, reason: 'sign_in_required', message: 'Sign in to ask for a fresh price capture. The page has reloaded the latest published prices.' }, 401);
+  const feed = await feedState(c);
+  if (feed && feed.state === 'paused') {
+    return json({ ok: false, reason: 'provider_paused', message: 'Sportsbook price refresh is paused. The prices shown are the last verified prices, each with the time it was captured.' }, 200);
+  }
   const league = String(body.league ?? 'all').toLowerCase();
   if (['nfl', 'cfb', 'all'].indexOf(league) < 0) return json({ ok: false, reason: 'bad_league', message: 'league must be nfl, cfb or all' }, 400);
   const events = Array.isArray(body.event_ids) ? (body.event_ids as unknown[]).map(String).filter((x) => /^[A-Za-z0-9_-]{1,64}$/.test(x)).slice(0, 20) : [];
@@ -235,7 +262,9 @@ export async function refresh(req: Request, body: Record<string, unknown>, nowMs
     await patch({ status: 'failed', reason: 'the scheduler has no GitHub token (PROPS_GH_TOKEN)', completed_at: nowIso });
     return json({ ok: false, reason: 'no_token', request_id: a.request_id, message: 'A fresh capture cannot be started: the price scheduler is not configured (no GitHub token). The latest published prices are shown.' }, 503);
   }
-  const d = await dispatch(c, { source: 'manual_refresh', force_capture: 'true', refresh_request: a.request_id, leagues: league === 'all' ? 'nfl,cfb' : league, events: events.join(',') }, { force_capture: 'true' });
+  /* NOT forced: the capture looks for anything newer, and odds_gateway buys
+     only what each event's cadence and the shared budget allow. */
+  const d = await dispatch(c, { source: 'manual_refresh', force_capture: 'false', refresh_request: a.request_id, leagues: league === 'all' ? 'nfl,cfb' : league, events: events.join(',') }, { force_capture: 'false' });
   if (!d.ok) {
     await patch({ status: 'failed', reason: 'workflow_dispatch -> ' + d.status + ': ' + d.detail.slice(0, 200), completed_at: nowIso });
     return json({ ok: false, reason: 'dispatch_failed', request_id: a.request_id, message: 'A fresh capture could not be started (GitHub answered ' + d.status + '). The latest published prices are shown.' }, 502);

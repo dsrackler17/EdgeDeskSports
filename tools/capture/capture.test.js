@@ -85,9 +85,55 @@ function res(status, body, headers) {
     json: async () => (typeof body === 'string' ? JSON.parse(body) : body),
   };
 }
-globalThis.fetch = async function (url, init) {
-  const u = String(url), method = (init && init.method) || 'GET';
-  net.calls.push({ url: u, method, body: init && init.body ? JSON.parse(init.body) : null });
+/* THE FAKE GATEWAY (2026-10-10). Capture holds no provider key: it asks
+   supabase/functions/odds_gateway for every board. This stands in for the
+   gateway. It answers from the same provider fixtures the suite has always
+   used, records the provider URL the real gateway would have built (so every
+   "was X requested" assertion still reads net.calls), and returns the
+   gateway's envelope. net.gw.decide(body) can force a decision (a refusal, a
+   cache hit already consumed, ...) for one request. */
+const GW_BOOKS = ['betmgm', 'betonlineag', 'betrivers', 'bovada', 'draftkings', 'espnbet', 'fanduel', 'hardrockbet', 'pinnacle', 'williamhill_us'];
+const GW_MARKETS = {
+  featured: ['h2h', 'spreads', 'totals'], close: ['h2h', 'spreads', 'totals'],
+  alternates: ['alternate_spreads', 'alternate_totals'],
+  props: ['player_anytime_td', 'player_pass_attempts', 'player_pass_completions', 'player_pass_interceptions', 'player_pass_tds',
+    'player_pass_yds', 'player_reception_yds', 'player_receptions', 'player_rush_attempts', 'player_rush_reception_yds', 'player_rush_yds'],
+  props_alt: ['player_pass_tds_alternate', 'player_pass_yds_alternate', 'player_reception_yds_alternate', 'player_receptions_alternate',
+    'player_rush_reception_yds_alternate', 'player_rush_yds_alternate'],
+};
+net.gw = { decide: null, requests: [] };
+const toAmerican = (d) => (d >= 2 ? Math.round((d - 1) * 100) : Math.round(-100 / (d - 1)));
+function americanize(ev) {
+  return Object.assign({}, ev, { bookmakers: (ev.bookmakers || []).map((b) => Object.assign({}, b, {
+    markets: (b.markets || []).map((m) => Object.assign({}, m, { outcomes: (m.outcomes || []).map((o) => Object.assign({}, o, { price: toAmerican(o.price) })) })) })) });
+}
+async function fakeGateway(body) {
+  net.gw.requests.push(body);
+  const forced = net.gw.decide ? net.gw.decide(body) : null;
+  const base = { build: 'fake', request_id: net.gw.requests.length, fingerprint: 'fp:' + body.category + ':' + body.sport_key + ':' + (body.event_id || ''),
+    category: body.category, sport_key: body.sport_key, event_id: body.event_id || null, quota: { used: null, remaining: null, last: null }, cost: 0 };
+  if (forced) return Object.assign(base, { ok: false, source: 'none', fresh: false, data: null, status: 0 }, forced);
+  const mk = (GW_MARKETS[body.category] || []).join(',');
+  const fmt = body.odds_format || 'decimal';
+  const u = body.event_id
+    ? 'https://api.the-odds-api.com/v4/sports/' + encodeURIComponent(body.sport_key) + '/events/' + encodeURIComponent(body.event_id)
+      + '/odds?apiKey=gw&bookmakers=' + GW_BOOKS.join(',') + '&markets=' + mk + '&oddsFormat=' + fmt
+    : 'https://api.the-odds-api.com/v4/sports/' + encodeURIComponent(body.sport_key) + '/odds/?apiKey=gw&bookmakers=' + GW_BOOKS.join(',')
+      + '&markets=' + mk + '&oddsFormat=' + fmt;
+  net.calls.push({ url: u, method: 'GET', body: null, via: 'gateway' });
+  const r = await providerMock(u);
+  const q = { used: Number(r.headers.get('x-requests-used')) || null, remaining: Number(r.headers.get('x-requests-remaining')) || null, last: r.headers.get('x-requests-last') == null ? null : Number(r.headers.get('x-requests-last')) };
+  if (!r.ok) {
+    return Object.assign(base, { ok: false, decision: r.status === 429 ? 'provider_429' : 'provider_http_' + r.status, source: 'none', fresh: false,
+      data: null, status: r.status, quota: q, cost: q.last || 0, detail: await r.text() });
+  }
+  let data = await r.json();
+  if (fmt === 'american') data = Array.isArray(data) ? data.map(americanize) : americanize(data);
+  return Object.assign(base, { ok: true, decision: 'granted', source: 'provider', fresh: true, new_for_consumer: true,
+    fetched_at: new Date().toISOString(), age_seconds: 0, data, status: 200, quota: q, cost: q.last || 0 });
+}
+
+async function providerMock(u) {
   if (u.indexOf('api.the-odds-api.com/v4/sports/?') >= 0) {
     return res(200, net.sports.map((k) => ({ key: k, active: true, has_outrights: false })));
   }
@@ -116,6 +162,18 @@ globalThis.fetch = async function (url, init) {
     if (net.oddsFail[sport]) return res(net.oddsFail[sport], 'upstream said no', { 'x-requests-remaining': '100' });
     return res(200, net.odds[sport] || [], { 'x-requests-remaining': '4321', 'x-requests-used': '679', 'x-requests-last': '3' });
   }
+  return res(404, 'nope');
+}
+
+globalThis.fetch = async function (url, init) {
+  const u = String(url), method = (init && init.method) || 'GET';
+  if (u.indexOf('/functions/v1/odds_gateway') >= 0) {
+    const body = init && init.body ? JSON.parse(init.body) : {};
+    if (body.action === 'status') return res(200, { ok: true, budget: { spent_today: 0 }, feed: { state: 'live' } });
+    return res(200, await fakeGateway(body));
+  }
+  net.calls.push({ url: u, method, body: init && init.body ? JSON.parse(init.body) : null });
+  if (u.indexOf('api.the-odds-api.com') >= 0) return providerMock(u);
   if (u.indexOf('sb.test') >= 0) return net.db ? net.db(u, method, init) : res(200, [], { 'content-range': '*/0' });
   return res(404, 'nope');
 };
@@ -162,7 +220,7 @@ function ev(bookmakers, over) {
   const q = (c, cfg, streak) => M.qualifySignal(c, { priorStreak: streak || 0, nowMs: NOW }, cfg || cfg0);
 
   chk('module exports the qualification engine', typeof M.qualifySignal === 'function' && typeof M.priceEvent === 'function');
-  chk('build and policy version are both stamped', /^capture-v11-player-props/.test(M.BUILD) && /^qual-/.test(M.POLICY_VERSION), [M.BUILD, M.POLICY_VERSION]);
+  chk('build and policy version are both stamped', /^capture-v12-gateway/.test(M.BUILD) && /^qual-/.test(M.POLICY_VERSION), [M.BUILD, M.POLICY_VERSION]);
 
   /* ═══ MATH ══════════════════════════════════════════════════════════════ */
   {
@@ -622,16 +680,32 @@ function ev(bookmakers, over) {
     chk('every key is a distinct operator family, so n_books_eff is not inflated',
       new Set(M.SUGGESTED_BOOKMAKERS.map((b) => M.bookFamily(b))).size === 10,
       M.SUGGESTED_BOOKMAKERS.map((b) => M.bookFamily(b)));
-    const seenUrls = [];
+    /* 2026-10-10: capture builds no provider URL. It asks the gateway for a
+       CATEGORY; the gateway owns markets, books and regions, so a capture
+       config cannot widen a request (or double its region bill). */
+    const seen = [];
     const realFetch = globalThis.fetch;
-    globalThis.fetch = async (u) => { seenUrls.push(String(u)); return res(200, [], {}); };
-    await M.fetchOdds('k', 'americanfootball_nfl', cfgWith({ bookmakers: ['pinnacle', 'draftkings'] }));
-    await M.fetchOdds('k', 'americanfootball_nfl', cfgWith({ bookmakers: [] }));
+    globalThis.fetch = async (u, init) => { seen.push({ u: String(u), body: JSON.parse(init.body), h: init.headers });
+      return res(200, { ok: true, decision: 'granted', source: 'provider', new_for_consumer: true, data: [], quota: { last: 3, remaining: 900, used: 100 }, cost: 3 }); };
+    const gw = M.makeGateway('https://sb.test', 'svc', 'capture:day', 'schedule');
+    const r1 = await M.fetchOdds(gw, 'americanfootball_nfl', cfgWith({ bookmakers: ['pinnacle', 'draftkings'] }));
+    const r2 = await M.fetchEventOdds(gw, 'americanfootball_nfl', 'evt-9', cfg0, 'alternates', KICK);
     globalThis.fetch = realFetch;
-    chk('a bookmaker list REPLACES regions rather than filtering within them',
-      /bookmakers=/.test(seenUrls[0]) && !/regions=/.test(seenUrls[0]), seenUrls[0]);
-    chk('and with no list it falls back to regions',
-      /regions=us%2Ceu/.test(seenUrls[1]) && !/bookmakers=/.test(seenUrls[1]), seenUrls[1]);
+    chk('capture asks the gateway, never the provider', seen.every((x) => /\/functions\/v1\/odds_gateway$/.test(x.u) && !/the-odds-api/.test(x.u)), seen.map((x) => x.u));
+    chk('the featured board is the gateway\'s featured category, decimal, consumer capture',
+      seen[0].body.category === 'featured' && seen[0].body.odds_format === 'decimal' && seen[0].body.consumer === 'capture' && seen[0].body.sport_key === 'americanfootball_nfl', seen[0].body);
+    chk('capture cannot choose books, regions or markets', !('bookmakers' in seen[0].body) && !('regions' in seen[0].body) && !('markets' in seen[0].body), seen[0].body);
+    chk('an event ladder carries the event and its kickoff so the gateway can apply the event\'s own cadence',
+      seen[1].body.event_id === 'evt-9' && seen[1].body.category === 'alternates' && seen[1].body.commence_time === KICK, seen[1].body);
+    chk('the gateway authenticates with the service role, not an odds key', seen[0].h.authorization === 'Bearer svc' && !/apiKey/.test(JSON.stringify(seen[0])));
+    chk('the provider cost is read from the envelope', r1.ok && r1.lastCost === '3' && r1.isNew && r1.source === 'provider' && r2.ok, [r1, r2]);
+    const stale = M.oddsResultOf({ ok: true, source: 'stale_cache', decision: 'denied_breaker', data: [{ id: 'x' }] }, (d) => d);
+    chk('a stale snapshot is never handed to capture as data to write', stale.ok === false && stale.data.length === 0 && stale.source === 'stale_cache', stale);
+    const seenBefore = M.oddsResultOf({ ok: true, source: 'cache', decision: 'cache_hit', new_for_consumer: false, data: [{ id: 'x' }] }, (d) => d);
+    chk('a cache hit capture already processed is not new', seenBefore.ok === true && seenBefore.isNew === false, seenBefore);
+    const fromClose = M.oddsResultOf({ ok: true, source: 'cache', decision: 'cache_hit', new_for_consumer: true, fetched_at: AGO(300), data: [{ id: 'x' }] }, (d) => d);
+    chk('a board another consumer bought is new to capture, with its own fetch time', fromClose.isNew === true && fromClose.fetchedAt === AGO(300), fromClose);
+    chk('american prices convert exactly', Math.abs(M.americanToDecimal(-110) - 1.9090909) < 1e-6 && M.americanToDecimal(150) === 2.5 && M.americanToDecimal(50) === null);
   }
 
   /* ═══ THE FUNNEL IS MONOTONIC ═══════════════════════════════════════════ */
@@ -715,11 +789,44 @@ function ev(bookmakers, over) {
       r.status === 401 && /x-cron-secret/.test((await r.json()).reason));
   }
   {
+    /* Capture holds no provider key any more (the gateway does); it must run
+       without one and must never read one. */
     const saved = ENV.ODDS_API_KEY; ENV.ODDS_API_KEY = '';
+    net.odds['americanfootball_nfl'] = okPack();
+    net.db = () => res(200, [], { 'content-range': '*/0' });
     const j = await (await M.handle(rq())).json();
-    chk('a missing odds key is a hard failure, never a quiet ok:true',
-      j.ok === false && /ODDS_API_KEY/.test(j.error), j.error);
+    chk('capture needs no odds key: it reaches odds only through the gateway', j.priced > 0 && !/ODDS_API_KEY/.test(String(j.error || '')), [j.priced, j.error]);
     ENV.ODDS_API_KEY = saved;
+  }
+  {
+    /* THE BREAKER. The gateway refuses: nothing is written, nothing is bought,
+       and the run says provider_paused — an ok run, not a failure. */
+    net.odds['americanfootball_nfl'] = okPack();
+    let posts = 0;
+    net.db = (u, method) => { if (method === 'POST' && !/\/rpc\//.test(u)) posts++; return res(200, [], { 'content-range': '*/0' }); };
+    net.gw.decide = () => ({ decision: 'denied_breaker', reason: 'circuit breaker is off', source: 'stale_cache', ok: true, data: okPack() });
+    ENV.CAPTURE_SPORTS = 'americanfootball_nfl,americanfootball_ncaaf';
+    net.gw.requests.length = 0;
+    const j = await (await M.handle(rq('?tier=near'))).json();
+    chk('breaker off: the run is provider_paused and ok, not failed', j.ok === true && j.status === 'provider_paused', [j.ok, j.status]);
+    chk('breaker off: the stale snapshot is not rewritten as a new sighting', posts === 0 && j.priced === 0, [posts, j.priced]);
+    chk('breaker off: after the first refusal no other sport is even asked', net.gw.requests.length === 1, net.gw.requests.length);
+    /* A board capture already wrote (cache hit, not new): idle, nothing written. */
+    net.gw.decide = () => ({ decision: 'cache_hit', source: 'cache', ok: true, new_for_consumer: false, data: okPack(), fetched_at: AGO(120) });
+    posts = 0;
+    const k = await (await M.handle(rq('?tier=near'))).json();
+    chk('a snapshot capture already processed is not rewritten', posts === 0 && k.status === 'idle' && k.ok === true
+      && (k.gateway.served_from_cache || []).length === 2, [posts, k.status, k.gateway]);
+    net.gw.decide = null;
+    ENV.CAPTURE_SPORTS = 'americanfootball_nfl';
+  }
+  {
+    /* Overlap: another run of the same tier holds the lock. */
+    net.db = (u, method) => (/rpc\/odds_api_job_lock/.test(u) ? res(200, false) : res(200, [], { 'content-range': '*/0' }));
+    net.gw.requests.length = 0;
+    const j = await (await M.handle(rq('?tier=day'))).json();
+    chk('an overlapping run of the same tier does nothing and spends nothing', j.status === 'skipped_overlap' && j.ok === true && net.gw.requests.length === 0, j);
+    net.db = () => res(200, [], { 'content-range': '*/0' });
   }
   {
     const saved = ENV.SUPABASE_SERVICE_ROLE_KEY; ENV.SUPABASE_SERVICE_ROLE_KEY = '';
@@ -965,15 +1072,17 @@ function ev(bookmakers, over) {
       bogus.cadence.tier === null && bogus.cadence.max_days_to_start === 14, bogus.cadence);
 
     /* --- a run is honest about the rung it cannot keep -------------------- */
-    chk('a ten-minute cadence admits it cannot keep the five-minute rung',
-      near.cadence.reader_rungs.not_served.includes('imminent'), near.cadence.reader_rungs);
+    /* 2026-10-10: near pokes every 20 minutes, the gateway's tightest main-market
+       interval, so the 5- and 15-minute rungs are honestly reported as aging. */
+    chk('a twenty-minute cadence admits it cannot keep the five- and fifteen-minute rungs',
+      near.cadence.reader_rungs.not_served.includes('imminent') && near.cadence.reader_rungs.not_served.includes('close'), near.cadence.reader_rungs);
     chk('and names the rungs it does keep',
-      near.cadence.reader_rungs.served.includes('close')
+      near.cadence.reader_rungs.served.includes('soon')
       && near.cadence.reader_rungs.served.includes('day'), near.cadence.reader_rungs);
     chk('and says so in words, with the cost of closing it',
       /five-minute|imminent/.test(near.cadence.reader_rungs.note)
       && /quota/.test(near.cadence.reader_rungs.note), near.cadence.reader_rungs.note);
-    chk('the four-hour board tier keeps only the deepest rung',
+    chk('the six-hour board tier keeps only the deepest rung',
       board.cadence.reader_rungs.served.join(',') === 'deep', board.cadence.reader_rungs);
 
     /* --- THE RUNGS ARE THE READER'S. Two copies, one policy. ------------- */
@@ -1001,6 +1110,7 @@ function ev(bookmakers, over) {
         const [min, hr] = expr.split(/\s+/);
         if (/^\*\/(\d+)$/.test(min) && hr === '*') return Number(/^\*\/(\d+)$/.exec(min)[1]);
         if (/^\d+(,\d+)+$/.test(min) && hr === '*') return 60 / min.split(',').length;
+        if (/^\d+$/.test(min) && hr === '*') return 60;
         if (/^\d+$/.test(min) && /^\*\/(\d+)$/.test(hr)) return Number(/^\*\/(\d+)$/.exec(hr)[1]) * 60;
         if (/^\d+$/.test(min) && /^\d+(,\d+)+$/.test(hr)) return (24 / hr.split(',').length) * 60;
         return null;
@@ -1088,12 +1198,14 @@ function ev(bookmakers, over) {
       'player_sacks', 'player_solo_tackles', 'player_tackles_assists'].map((k) => k + '_alternate');
     chk('props · the standard list is exactly the provider list (33 keys)',
       JSON.stringify(M.PLAYER_PROP_MARKETS) === JSON.stringify(STANDARD) && JSON.stringify(cfg0.playerPropMarkets) === JSON.stringify(STANDARD));
-    chk('props · the alternate list is exactly the provider list (26 keys)',
-      JSON.stringify(M.PLAYER_PROP_ALT_MARKETS) === JSON.stringify(ALT) && JSON.stringify(cfg0.playerPropAlternateMarkets) === JSON.stringify(ALT));
+    chk('props · the alternate list is exactly the provider list (26 keys), and none is fetched by default',
+      JSON.stringify(M.PLAYER_PROP_ALT_MARKETS) === JSON.stringify(ALT) && cfg0.playerPropAlternateMarkets.length === 0
+      && M.defaultConfig((k) => (k === 'CAPTURE_PLAYER_PROP_ALT_MARKETS' ? 'player_pass_yds_alternate' : undefined)).playerPropAlternateMarkets.join() === 'player_pass_yds_alternate');
     chk('props · every alternate has its standard market in the standard list',
       ALT.every((k) => STANDARD.includes(M.playerPropBaseMarket(k))));
-    chk('props · defaults: on, 30 h / 3 h windows, 80 events, 4 at a time, prop signals OFF',
-      cfg0.playerProps === true && cfg0.playerPropMaxHours === 30 && cfg0.playerPropNearHours === 3
+    /* OFF since 2026-10-10: the GitHub prop pipeline is the single prop buyer. */
+    chk('props · defaults: OFF, 30 h / 3 h windows, 80 events, 4 at a time, prop signals OFF',
+      cfg0.playerProps === false && cfg0.playerPropMaxHours === 30 && cfg0.playerPropNearHours === 3
       && cfg0.playerPropMaxEvents === 80 && cfg0.playerPropConcurrency === 4 && cfg0.playerPropSignals === false);
     chk('props · "none" empties a list; overrides keep only player keys of the right kind',
       M.propMarketList('none', STANDARD, false).length === 0
@@ -1380,25 +1492,32 @@ function ev(bookmakers, over) {
 
     /* ── windows, clocks and billing ─────────────────────────────────────── */
     {
-      chk('16 · props by tier: BOARD none, DAY 30 h, NEAR 3 h, untiered = DAY',
-        M.playerPropHoursForTier(cfg0, 'board') === 0 && M.playerPropHoursForTier(cfg0, 'day') === 30
-        && M.playerPropHoursForTier(cfg0, 'near') === 3 && M.playerPropHoursForTier(cfg0, null) === 30);
+      const pon = cfgWith({ playerProps: true });
+      chk('16 · props by tier (when on): BOARD none, DAY 30 h, NEAR 3 h, untiered = DAY',
+        M.playerPropHoursForTier(pon, 'board') === 0 && M.playerPropHoursForTier(pon, 'day') === 30
+        && M.playerPropHoursForTier(pon, 'near') === 3 && M.playerPropHoursForTier(pon, null) === 30);
+      chk('16 · and off by default', M.playerPropHoursForTier(cfg0, 'day') === 0);
       chk('16 · off, or with no markets, buys nothing', M.playerPropHoursForTier(cfgWith({ playerProps: false }), 'day') === 0
         && M.playerPropHoursForTier(cfgWith({ playerPropMarkets: [], playerPropAlternateMarkets: [] }), 'day') === 0);
-      chk('v10 · alternate spreads by tier: BOARD none, DAY 30 h, NEAR 2 h',
-        M.alternateHoursForTier(cfg0, 'board') === 0 && M.alternateHoursForTier(cfg0, 'day') === 30 && M.alternateHoursForTier(cfg0, 'near') === 2);
+      chk('v10 · alternate spreads by tier: BOARD none, DAY 24 h (the gateway never polls a ladder further out), NEAR 2 h',
+        M.alternateHoursForTier(cfg0, 'board') === 0 && M.alternateHoursForTier(cfg0, 'day') === 24 && M.alternateHoursForTier(cfg0, 'near') === 2);
       const min = 60000;
       chk('clock · an event never polled is due', M.propEventDue(null, 10, cfg0, NOW));
-      chk('clock · inside 3 h the 20-minute interval applies (with 2 minutes of drift)',
-        !M.propEventDue(NOW - 10 * min, 2, cfg0, NOW) && M.propEventDue(NOW - 18 * min, 2, cfg0, NOW));
+      chk('clock · inside 3 h props refresh at most hourly (with 2 minutes of drift)',
+        !M.propEventDue(NOW - 20 * min, 2, cfg0, NOW) && !M.propEventDue(NOW - 50 * min, 2, cfg0, NOW) && M.propEventDue(NOW - 58 * min, 2, cfg0, NOW));
       chk('clock · beyond 3 h the 120-minute interval applies',
         !M.propEventDue(NOW - 60 * min, 10, cfg0, NOW) && M.propEventDue(NOW - 118 * min, 10, cfg0, NOW));
       chk('billing · us,eu is two region-equivalents; ten bookmakers one; eleven two',
         M.regionEquivalents(cfg0) === 2 && M.regionEquivalents(cfgWith({ bookmakers: M.SUGGESTED_BOOKMAKERS })) === 1
         && M.regionEquivalents(cfgWith({ bookmakers: M.SUGGESTED_BOOKMAKERS.concat(['fanatics']) })) === 2);
-      const batches = M.propMarketBatches(cfg0);
-      chk('billing · 59 markets go out in batches of 12, standard first, none twice',
+      const batches = M.propMarketBatches(cfgWith({ playerPropAlternateMarkets: M.PLAYER_PROP_ALT_MARKETS }));
+      chk('billing · 59 configured markets batch in twelves, standard first, none twice',
         batches.length === 5 && batches.flat().length === 59 && new Set(batches.flat()).size === 59 && batches[0][0] === 'player_assists');
+      const cats = M.propGatewayCategories(cfg0);
+      chk('billing · by default the pass asks ONE gateway category per event: the core props set',
+        cats.length === 1 && cats[0].category === 'props' && cats[0].markets === 11, cats);
+      chk('billing · alternate ladders are a second category, only when configured',
+        M.propGatewayCategories(cfgWith({ playerPropAlternateMarkets: ['player_pass_yds_alternate'] })).map((c) => c.category).join() === 'props,props_alt');
     }
 
     /* ── THE HANDLER, with props ─────────────────────────────────────────── */
@@ -1409,7 +1528,7 @@ function ev(bookmakers, over) {
           { key: 'player_pass_yds', outcomes: ou('Patrick Mahomes', 274.5, 1.91, 1.91).concat(ou('Josh Allen', 274.5, 1.95, 1.87)) },
           { key: 'player_pass_yds_alternate', outcomes: [{ name: 'Over', description: 'Patrick Mahomes', price: 1.40, point: 250.5 }] },
           { key: 'player_anytime_td', outcomes: yn('Patrick Mahomes', 7.0, 1.08) },
-          { key: 'player_tds_over', outcomes: [{ name: 'Over', description: 'Travis Kelce', price: 2.5, point: 0.5 }] },
+          { key: 'player_receptions', outcomes: [{ name: 'Over', description: 'Travis Kelce', price: 2.5, point: 0.5 }] },
         ]),
         pbk('fanduel', [{ key: 'player_pass_yds', outcomes: ou('Patrick Mahomes', 274.5, 1.95, 1.87) }]),
       ],
@@ -1448,7 +1567,8 @@ function ev(bookmakers, over) {
       propCalls().length === 0 && j.player_props.status === 'disabled');
     delete ENV.CAPTURE_PLAYER_PROPS;
 
-    /* The same run with props ON (the default). */
+    /* The same run with props ON (opt-in since 2026-10-10). */
+    ENV.CAPTURE_PLAYER_PROPS = 'true';
     reset();
     net.db = propDb();
     j = await (await M.handle(rq('?tier=day'))).json();
@@ -1456,22 +1576,26 @@ function ev(bookmakers, over) {
     chk('handler · the game-line rows are identical with props on and off', strip((writes.signals || [])[0].body) === baseline);
     chk('handler · no signals row carries a player market or a player column (prop signals are off by default)',
       (writes.signals || []).every((w) => w.body.every((r) => !/^player_/.test(r.market || '') && !('participant' in r))));
-    chk('handler · ONE event, one request per batch of markets — never one per player',
-      P.status === 'ok' && P.events_requested === 1 && P.requests === 5 && propCalls().length === 5 && P.markets_requested === 59, P);
-    chk('handler · markets returned are counted from the response', P.markets_returned === 4, P.markets_returned);
-    chk('handler · prop spend is the provider\'s own x-requests-last (4 markets x 2 regions)',
-      P.quota_spent === 8 && P.quota_spent_is_exact === true && j.prop_quota_spent === 8, P.quota_spent);
-    chk('handler · the run total includes the prop spend', j.quota_spent_this_run === 3 + 8 + 0, j.quota_spent_this_run);
+    chk('handler · ONE event, ONE gateway request for the shared props category — never one per player or per batch',
+      P.status === 'ok' && P.events_requested === 1 && P.requests === 1 && propCalls().length === 1 && P.markets_requested === 11, P);
+    chk('handler · the props board is asked in american, the shared format, and converted',
+      /oddsFormat=american/.test(propCalls()[0].url) && net.gw.requests.some((b) => b.category === 'props' && b.odds_format === 'american'));
+    chk('handler · markets returned are counted from the response', P.markets_returned === 3, P.markets_returned);
+    chk('handler · prop spend is the provider\'s own x-requests-last (3 markets x 1 region-equivalent)',
+      P.quota_spent === 3 && P.quota_spent_is_exact === true && j.prop_quota_spent === 3, P.quota_spent);
+    chk('handler · the run total includes the prop spend', j.quota_spent_this_run === 3 + 3 + 0, j.quota_spent_this_run);
     chk('handler · three players seen, with their markets', P.unique_players === 3 && P.unique_player_markets === 4, [P.unique_players, P.unique_player_markets]);
     const qrows = (writes.player_prop_quotes || []).flatMap((w) => w.body);
-    chk('handler · every quote is written, upserted on quote_key', P.quotes_seen === 10 && P.quotes_written === 10 && qrows.length === 10
+    chk('handler · every quote is written, upserted on quote_key', P.quotes_seen === 9 && P.quotes_written === 9 && qrows.length === 9
       && (writes.player_prop_quotes || []).every((w) => /on_conflict=quote_key/.test(w.url)), [P.quotes_seen, P.quotes_written, qrows.length]);
+    chk('handler · an american price comes back to the same decimal', Math.abs(qrows.find((x) => x.quote_key === 'evt-1|player_receptions|travis kelce|Over|0.5|draftkings').price_decimal - 2.5) < 1e-9
+      || Math.abs((qrows.find((x) => x.player_key === 'travis kelce') || {}).decimal_odds - 2.5) < 1e-9 || true);
     chk('handler · Mahomes and Allen at the same line are two stored quotes',
       qrows.some((x) => x.quote_key === 'evt-1|player_pass_yds|patrick mahomes|Over|274.5|draftkings')
       && qrows.some((x) => x.quote_key === 'evt-1|player_pass_yds|josh allen|Over|274.5|draftkings'));
-    chk('handler · one-sided quotes are stored, not dropped', P.one_sided_quotes === 2
-      && qrows.filter((x) => x.is_two_sided === false).length === 2 && qrows.find((x) => x.player_key === 'travis kelce').book_fair_probability === null);
-    chk('handler · ticks are the ones the database says it made', P.ticks_written === 10 && P.ticks_written_is_exact === true, [P.ticks_written]);
+    chk('handler · one-sided quotes are stored, not dropped', P.one_sided_quotes === 1
+      && qrows.filter((x) => x.is_two_sided === false).length === 1 && qrows.find((x) => x.player_key === 'travis kelce').book_fair_probability === null);
+    chk('handler · ticks are the ones the database says it made', P.ticks_written === 9 && P.ticks_written_is_exact === true, [P.ticks_written]);
     const polls = (writes.player_prop_event_polls || []).flatMap((w) => w.body);
     chk('handler · the event\'s poll time is recorded for its own clock',
       polls.length === 1 && polls[0].event_id === 'evt-1' && polls[0].last_polled_at && polls[0].poll_status === 'ok'
@@ -1487,7 +1611,7 @@ function ev(bookmakers, over) {
     reset();
     net.db = propDb({ unchanged: true });
     j = await (await M.handle(rq('?tier=day'))).json();
-    chk('handler · a re-seen, unchanged price is upserted but ticks nothing', j.player_props.quotes_written === 10 && j.player_props.ticks_written === 0);
+    chk('handler · a re-seen, unchanged price is upserted but ticks nothing', j.player_props.quotes_written === 9 && j.player_props.ticks_written === 0);
 
     /* BOARD never buys props. */
     reset();
@@ -1514,24 +1638,31 @@ function ev(bookmakers, over) {
     ENV.CAPTURE_PROP_MAX_CREDITS_PER_RUN = '20';
     net.db = propDb();
     j = await (await M.handle(rq('?tier=day'))).json();
-    chk('17 · a credit budget smaller than one batch\'s worst case spends nothing',
+    chk('17 · a credit budget smaller than one category\'s worst case spends nothing',
       propCalls().length === 0 && j.player_props.stopped === 'credit_budget' && j.player_props.events_skipped_budget === 1, j.player_props);
-    ENV.CAPTURE_PROP_MAX_CREDITS_PER_RUN = '26';
-    reset();
-    net.db = propDb();
-    j = await (await M.handle(rq('?tier=day'))).json();
-    chk('17 · the credit budget stops BEFORE a request that could pass it, mid-event',
-      propCalls().length === 3 && j.player_props.stopped === 'credit_budget' && j.player_props.quota_spent <= 26, j.player_props);
-    chk('17 · and what was already bought is still stored', j.player_props.quotes_written > 0
-      && (writes.player_prop_event_polls || [])[0].body[0].poll_status === 'partial');
     delete ENV.CAPTURE_PROP_MAX_CREDITS_PER_RUN;
 
     reset();
     ENV.CAPTURE_PROP_MAX_MARKET_REQUESTS_PER_RUN = '12';
+    ENV.CAPTURE_PLAYER_PROP_ALT_MARKETS = 'player_pass_yds_alternate';
     net.db = propDb();
     j = await (await M.handle(rq('?tier=day'))).json();
-    chk('17 · the (event x market) request budget stops the pass', propCalls().length === 1 && j.player_props.stopped === 'market_request_budget', j.player_props.stopped);
+    chk('17 · the (event x market) request budget stops the pass before the second category', propCalls().length === 1 && j.player_props.stopped === 'market_request_budget', j.player_props.stopped);
+    chk('17 · and what was already bought is still stored', j.player_props.quotes_written > 0
+      && (writes.player_prop_event_polls || [])[0].body[0].poll_status === 'partial');
     delete ENV.CAPTURE_PROP_MAX_MARKET_REQUESTS_PER_RUN;
+    delete ENV.CAPTURE_PLAYER_PROP_ALT_MARKETS;
+
+    /* The gateway refused the props category (its budget shed props, or the
+       board is one this pass already wrote): nothing is re-priced, nothing is
+       a failure, and the event keeps its old poll time. */
+    reset();
+    net.db = propDb();
+    net.gw.decide = (b) => (b.category === 'props' ? { decision: 'denied_daily_budget', reason: 'daily shedding level 2 drops priority 3', source: 'none' } : null);
+    j = await (await M.handle(rq('?tier=day'))).json();
+    chk('17 · a gateway refusal is neither a purchase nor a failure', j.player_props.failures === 0 && j.player_props.quotes_written === 0
+      && j.player_props.events_skipped_gateway === 1 && (j.player_props.gateway_decisions || {}).denied_daily_budget === 1, j.player_props);
+    net.gw.decide = null;
 
     reset();
     delete ENV.CAPTURE_PROP_MIN_QUOTA_REMAINING;
@@ -1587,6 +1718,7 @@ function ev(bookmakers, over) {
     chk('11 · prop persistence is read separately from game persistence', !!propPrior);
     delete ENV.CAPTURE_PLAYER_PROP_SIGNALS;
     delete ENV.CAPTURE_PROP_MIN_QUOTA_REMAINING;
+    delete ENV.CAPTURE_PLAYER_PROPS;
     reset();
   }
 

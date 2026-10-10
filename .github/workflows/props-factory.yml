@@ -13,8 +13,9 @@
 #            league), summarize, and — only when a new season opens — train
 #            the new immutable model versions.
 #   backfill (manual): The Odds API historical player props into the
-#            lineage-checked quote store (needs ODDS_API_KEY with historical
-#            access), for market backtests.
+#            lineage-checked quote store, for market backtests — THROUGH
+#            supabase/functions/odds_gateway, whose historical categories
+#            are OFF until an operator switches them on (10x credits).
 #   apply_sql(manual): apply supabase/props_factory.sql.
 #   test     (manual, and every pull request touching the factory): the
 #            factory suites and the SQL contract only; nothing is fetched,
@@ -115,7 +116,8 @@ jobs:
       - name: Historical prop backfill (manual, budgeted)
         if: ${{ env.MODE == 'backfill' }}
         env:
-          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
         run: node --max-old-space-size=8192 football/props/factory/run.js backfill --network --offline --from "${{ github.event.inputs.backfill_from }}" --max-games 25 $LEAGUE_ARG
 
       - name: Project upcoming games for the terminal

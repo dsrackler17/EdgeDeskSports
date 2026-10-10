@@ -2,19 +2,37 @@
 /* ============================================================================
    PLAYER PROPS — sportsbook prop capture (The Odds API, per-event endpoint).
 
+   2026-10-10 — THROUGH THE ODDS GATEWAY (docs/odds-api-incident-2026-10/).
+   This job spent 54,958 of the account's 100,000 October credits in 9.5 days.
+   It holds no provider key any more and builds no provider URL: every request
+   is a POST to supabase/functions/odds_gateway (tools/lib/odds_gateway.js),
+   which serves the stored snapshot inside each event's prop cadence (at most
+   hourly inside 3 h, every 2 h inside 24 h, every 6 h beyond — NFL to 48 h,
+   college to 24 h), applies the shared monthly / daily budget (props are shed
+   first) and the circuit breaker, and records the provider's own headers.
+   The market list is the gateway's `props` category (the 11 core markets the
+   board, projections and grades use); `long` / `alt` groups map to the
+   `props_extra` / `props_alt` categories, which are off unless switched on.
+   A refusal is not a failure: no back-off, no lost clock, and with the
+   breaker off the run says PROVIDER_PAUSED and the page keeps the last
+   verified prices at their own capture times. The paragraphs below describe
+   the pipeline as before; where they mention the key or the provider, read
+   "the gateway".
+
    Player markets exist only on /v4/sports/{sport}/events/{eventId}/odds (the
    bulk /odds endpoint rejects them), one request per event, billed markets ×
    regions (a bookmakers list of up to ten books is one region). The event
    index is free. So the runner is BUDGETED and OPT-IN, on the pattern of
    football/cfb_terminal/alternates.js:
 
-     - it runs only with --network and ODDS_API_KEY (the scheduled workflow
+     - it runs only with --network and an odds gateway credential (the scheduled workflow
        runs it only when the repository variable PROPS_CAPTURE is 'on');
      - only events that have not kicked off and start inside --window-h hours,
        nearest kickoff first, at most --max-events;
      - each event on its own clock, EDProps FRESHNESS.cadence by hours to
-       kickoff (defaults: every 15 min inside 90 min, 30 min inside 6 h, 60
-       min inside 24 h, 2 h inside 48 h, 6 h beyond; PROPS_CADENCE overrides).
+       kickoff (defaults since 2026-10-10: hourly inside 3 h, every 2 h inside
+       24 h, 6 h beyond; PROPS_CADENCE overrides, and the odds gateway's own
+       prop limits apply whatever it says).
        The scheduler that wakes it is supabase/functions/props_cron (pg_cron,
        every five minutes), with the workflow's own cron as the backup;
      - RECOVERY: a failed event is retried on its own back-off (5, 10, 20, 40,
@@ -72,7 +90,11 @@ const path = require('path');
 const C = require('./config.js');
 const EDP = require(path.join(C.ROOT, 'lib', 'edgedesk_props.js'));
 
-const API = 'https://api.the-odds-api.com/v4';
+/* Requests are DESCRIBED in the provider's path shape (the tests and the logs
+   read them that way) and SENT to odds_gateway by gatewayGetter below. No key
+   is ever part of one. */
+const API = 'odds_gateway:/v4';
+const G = require(path.join(C.ROOT, 'tools', 'lib', 'odds_gateway.js'));
 const QUOTES_SCHEMA = 'edgedesk_player_props_quotes_v1';
 const LINES_SCHEMA = 'edgedesk_player_props_lines_v1';
 const MAX_SERIES = 48;
@@ -318,24 +340,76 @@ function scrub(text, url) {
   return s;
 }
 
-async function getJson(url, o) {
-  const t0 = Date.now();
-  let res;
-  try { res = await fetch(url, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout((o && o.timeout_ms) || 30000) }); }
-  catch (e) {
-    const timeout = e && (e.name === 'TimeoutError' || e.name === 'AbortError');
-    throw Object.assign(new Error((timeout ? 'TIMEOUT after ' + ((o && o.timeout_ms) || 30000) + ' ms ' : 'network error ') + scrub(url, url)), { status: timeout ? 'timeout' : 'network', body: scrub(e && e.message, url), ms: Date.now() - t0 });
-  }
-  const meta = { status: res.status, remaining: num(res.headers.get('x-requests-remaining')), used: num(res.headers.get('x-requests-used')), last: num(res.headers.get('x-requests-last')),
-    retry_after: num(res.headers.get('retry-after')), ms: Date.now() - t0 };
-  if (!res.ok) {
-    let body = ''; try { body = await res.text(); } catch (e) { body = ''; }
-    throw Object.assign(new Error('HTTP ' + res.status + ' ' + scrub(url, url)), meta, { body: scrub(body, url).slice(0, 500) });
-  }
-  let body;
-  try { body = await res.json(); } catch (e) { throw Object.assign(new Error('malformed JSON ' + scrub(url, url)), meta, { status: 'malformed', body: 'the provider answered HTTP ' + res.status + ' with a body that is not JSON' }); }
-  return Object.assign({ body }, meta);
+/* WHICH GATEWAY CATEGORY serves which market group. Only `props` is on by
+   default (public.odds_api_categories); the others are refused until an
+   operator switches them on, and a refusal is not a failure. */
+const CATEGORY_OF_GROUP = { core: 'props', long: 'props_extra', td: 'props_extra', kick: 'props_extra', defense: 'props_extra', alt: 'props_alt' };
+function categoriesFor(markets) {
+  const out = [];
+  Object.keys(C.MARKET_GROUPS).forEach((g) => {
+    if (C.MARKET_GROUPS[g].some((k) => markets.indexOf(k) >= 0)) { const c = CATEGORY_OF_GROUP[g] || 'props'; if (out.indexOf(c) < 0) out.push(c); }
+  });
+  return out.length ? out : ['props'];
 }
+/* one event's answers from several categories, as one event */
+function mergeBodies(a, b) {
+  if (!a) return b; if (!b) return a;
+  const books = {};
+  (a.bookmakers || []).forEach((bk) => { books[bk.key] = Object.assign({}, bk, { markets: (bk.markets || []).slice() }); });
+  (b.bookmakers || []).forEach((bk) => { const cur = books[bk.key] || Object.assign({}, bk, { markets: [] }); cur.markets = cur.markets.concat(bk.markets || []); books[bk.key] = cur; });
+  return Object.assign({}, a, { bookmakers: Object.keys(books).map((k) => books[k]) });
+}
+function refusal(env) {
+  return Object.assign(new Error('odds gateway: ' + (env.decision || 'refused') + (env.reason ? ' — ' + env.reason : '')),
+    { status: 'refused', decision: env.decision || 'refused', body: String(env.reason || env.decision || 'refused').slice(0, 300) });
+}
+function providerError(env) {
+  const q = env.quota || {};
+  const st = Number(env.status) || (env.decision === 'provider_timeout' ? 'timeout' : 'network');
+  return Object.assign(new Error('odds gateway: ' + env.decision), { status: st, body: String(env.detail || env.reason || env.decision).slice(0, 500),
+    remaining: q.remaining != null ? Number(q.remaining) : null, used: q.used != null ? Number(q.used) : null, last: q.last != null ? Number(q.last) : null, retry_after: null });
+}
+/* The default getter: a described request -> odds_gateway -> the shape the
+   run has always read ({ body, status, remaining, used, last, ms }), or a
+   thrown error carrying `status` (a provider HTTP code, 'timeout', 'network',
+   or 'refused' with the gateway's decision). A board this consumer already
+   processed is a refusal ('already_processed'): it is never rewritten. */
+function gatewayGetter(client, ctx) {
+  return async function (url) {
+    const t0 = Date.now();
+    const m = /\/sports\/([^/?]+)\/events(?:\/([^/?]+)\/odds)?(?:\?(.*))?$/.exec(String(url));
+    if (!m) throw Object.assign(new Error('not a gateway request'), { status: 'network', body: 'unrecognised request ' + String(url).slice(0, 120) });
+    const q = new URLSearchParams(m[3] || '');
+    const sport = decodeURIComponent(m[1]), eventId = m[2] ? decodeURIComponent(m[2]) : null;
+    const base = { caller: ctx.caller, consumer: ctx.consumer, trigger: ctx.trigger, sport_key: sport };
+    const asked = eventId
+      ? categoriesFor((q.get('markets') || '').split(',').filter(Boolean)).map((cat) => Object.assign({}, base,
+        { category: cat, event_id: eventId, commence_time: q.get('commence_time') || undefined, odds_format: 'american' }))
+      : [Object.assign({}, base, { category: 'events_index' })];
+    let body = null, remaining = null, used = null, last = 0, any = false, firstRefusal = null, providerErr = null;
+    for (const req of asked) {
+      const env = await client.request(req);
+      const qq = env.quota || {};
+      if (qq.remaining != null) remaining = Number(qq.remaining);
+      if (qq.used != null) used = Number(qq.used);
+      /* the free event index may be a stale snapshot: it only schedules */
+      const usable = env.ok && env.data != null && (env.source === 'provider' || env.source === 'cache' || (!eventId && env.source === 'stale_cache'));
+      if (usable) {
+        if (env.source === 'provider') last += Number(env.cost) || 0;
+        if (eventId && env.new_for_consumer === false) { firstRefusal = firstRefusal || { decision: 'already_processed', reason: 'this snapshot was already captured' }; continue; }
+        any = true;
+        body = eventId ? mergeBodies(body, env.data) : env.data;
+        continue;
+      }
+      if (/^provider_|^gateway_unreachable$|^denied_gateway_error$/.test(String(env.decision))) { providerErr = providerErr || env; continue; }
+      firstRefusal = firstRefusal || env;
+    }
+    if (any) return { body, status: 200, remaining, used, last, ms: Date.now() - t0 };
+    if (providerErr) throw providerError(providerErr);
+    throw refusal(firstRefusal || { decision: 'refused' });
+  };
+}
+
 /* a timeout, a network error, a malformed body or a 5xx is worth one more
    try inside the run; a 4xx is an answer and is not */
 function transient(err) { const s = err && err.status; return s === 'timeout' || s === 'network' || s === 'malformed' || s == null || (typeof s === 'number' && (s >= 500 || s === 408)); }
@@ -421,10 +495,11 @@ async function run(opts) {
   const season = opts.season || C.seasonOf(now), P = opts.paths || C.leaguePaths(league, season);
   const state = readJson(P.capture_state) || {};
   const log = opts.log || (() => {});
-  const getter = opts.getJson || getJson;
+  /* tests inject getJson; production asks the gateway */
+  const getter = opts.getJson || (opts.gateway ? gatewayGetter(opts.gateway, { caller: 'props_capture:' + league, consumer: 'props_capture', trigger: opts.trigger || null }) : null);
   const sleep = opts.sleep || sleepMs;
   const rnd = opts.random || Math.random;
-  const key = opts.key;
+  const key = !!getter;   /* "the capture can ask": a gateway route (or a test's getter) */
   const markets = marketList(league, opts.groups);
   const books = String(opts.bookmakers || D.bookmakers).split(',').map((b) => b.trim()).filter(Boolean);
   const regionsCost = Math.max(1, Math.ceil(books.length / 10));
@@ -484,9 +559,9 @@ async function run(opts) {
       why: 'Player props capture skipped: PROPS_CAPTURE disabled. Set the repository variable PROPS_CAPTURE to on (on, true, 1 or yes).' })), { skipped: 'PROPS_CAPTURE disabled: nothing captured, nothing spent' });
   }
   if (!key) {
-    log(tag + ': ERROR — PROPS_CAPTURE is on but ODDS_API_KEY is empty in this step: nothing requested, nothing spent');
-    return Object.assign(finish(Object.assign(base, { status: 'ERROR', reason: 'NO_API_KEY',
-      why: 'The capture ran with PROPS_CAPTURE on, but the ODDS_API_KEY secret did not reach it: no request was made.', error_message: 'ODDS_API_KEY is empty' })), { skipped: 'no ODDS_API_KEY: nothing captured, nothing spent' });
+    log(tag + ': ERROR — PROPS_CAPTURE is on but no odds gateway credential reached this step (SB_SERVICE_ROLE / ODDS_GATEWAY_SECRET): nothing requested, nothing spent');
+    return Object.assign(finish(Object.assign(base, { status: 'ERROR', reason: 'NO_GATEWAY_CREDENTIAL',
+      why: 'The capture ran with PROPS_CAPTURE on, but no credential for the odds gateway reached it: no request was made.', error_message: 'no odds gateway credential' })), { skipped: 'no odds gateway credential: nothing captured, nothing spent' });
   }
   /* the provider asked us to wait (a 429): nothing is asked before then, a
      manual refresh included — the answer says exactly until when */
@@ -499,11 +574,22 @@ async function run(opts) {
   }
 
   /* the event index is free: asked twice before the run gives up on it */
-  const indexUrl = API + '/sports/' + L.sport + '/events?apiKey=' + encodeURIComponent(key) + '&dateFormat=iso';
+  const indexUrl = API + '/sports/' + L.sport + '/events?dateFormat=iso';
   let ev, idxErr = null;
   for (let a = 1; a <= O.request_attempts; a++) {
     try { ev = await getter(indexUrl, { timeout_ms: O.timeout_ms }); idxErr = null; break; }
     catch (e) { idxErr = e; if (!transient(e) || a === O.request_attempts) break; await sleep(Math.round(O.retry_delay_ms * (0.75 + 0.5 * rnd()))); }
+  }
+  if (idxErr && idxErr.status === 'refused') {
+    /* the gateway declined the (free) index: the breaker is off, or nothing is
+       stored yet. Not a provider failure: no back-off, no failure count. */
+    const pausedNow = /^denied_breaker$|^denied_gateway_disabled$/.test(idxErr.decision || '');
+    log(tag + ': ' + (pausedNow ? 'PROVIDER_PAUSED' : 'GATEWAY_DEFERRED') + ' — the odds gateway answered ' + idxErr.decision + ': nothing requested, nothing spent');
+    const s = finish(Object.assign(base, { status: 'NOT_RUN', reason: pausedNow ? 'PROVIDER_PAUSED' : 'GATEWAY_DEFERRED',
+      why: pausedNow ? 'Sportsbook price refresh is paused (The Odds API circuit breaker). Stored prices stand at their own capture times.'
+        : 'The odds gateway deferred the event index (' + idxErr.decision + '): no prop was requested.' }));
+    s.closed_events = archiveFinished(P, league, now, opts.dry_run);
+    return Object.assign({ skipped: 'odds gateway: ' + idxErr.decision }, s);
   }
   if (idxErr) {
     const e = idxErr, er = errorOf(e, indexUrl);
@@ -539,9 +625,10 @@ async function run(opts) {
   }
   /* WHICH EVENTS ARE OWED A POLL. Each event keeps its own clock (EDProps
      FRESHNESS.cadence, by hours to kickoff): a game days away is re-polled
-     rarely, one about to kick off every 15 minutes. A failed event is retried
-     on its back-off, sooner than its cadence. A manual refresh (--force) asks
-     again for every event not captured in the last few minutes. */
+     rarely, one about to kick off hourly (the odds gateway's prop limits). A
+     failed event is retried on its back-off, sooner than its cadence. A manual
+     refresh (--force) asks again for every event not captured in the last
+     FRESHNESS.manual.min_age_minutes (60). */
   const only = opts.only_events && opts.only_events.length ? new Set(opts.only_events) : null;
   const slack = O.slack_min * 60e3;
   const minManual = EDP.FRESHNESS.manual.min_age_minutes * 60e3;
@@ -570,7 +657,8 @@ async function run(opts) {
   log(tag + ': events due ' + due.length + ', querying ' + take.length + ' · markets requested (' + markets.length + ') ' + markets.join(',') + ' · books requested (' + books.length + ') ' + books.join(',') + ' · budget ' + costPerEvent + ' credits per event, at most ' + opts.max_credits_run + ' this run' + (pace.reason ? ' · pacing: ' + pace.reason : ''));
   if (!opts.dry_run) writeState(P.capture_state, Object.assign({}, base, discovered, { status: 'RUNNING', events_due: due.length, why: 'A capture started at ' + attemptAt + ' and has not finished.' }));
 
-  const polled = [], refused = {}, flagged = {}, requests = [], booksBack = new Set(), marketsBack = {};
+  const polled = [], refused = {}, flagged = {}, requests = [], booksBack = new Set(), marketsBack = {}, deferred = {};
+  let paused = false;
   let remaining = ev.remaining, used = ev.used != null ? ev.used : null, spent = 0, calls = 0, attempts = 0, failed = 0, noMarkets = 0, outcomes = 0, stopped = null, nq = 0, suspect = 0;
   const prior = readJson(P.quotes);
   const priorCount = (id) => { const e = prior && prior.events && prior.events[id]; return e && Array.isArray(e.quotes) ? e.quotes.length : 0; };
@@ -578,8 +666,8 @@ async function run(opts) {
     if (remaining != null && remaining - costPerEvent < opts.min_remaining) { stopped = 'credits below floor (' + remaining + ' remaining, floor ' + opts.min_remaining + ')'; break; }
     if (spent + costPerEvent > opts.max_credits_run) { stopped = 'run budget reached (' + spent + ' of ' + opts.max_credits_run + ')'; break; }
     const rec = eventsState[e.id];
-    const url = API + '/sports/' + L.sport + '/events/' + encodeURIComponent(e.id) + '/odds?apiKey=' + encodeURIComponent(key)
-      + '&markets=' + encodeURIComponent(markets.join(',')) + '&bookmakers=' + encodeURIComponent(books.join(',')) + '&oddsFormat=american&dateFormat=iso';
+    const url = API + '/sports/' + L.sport + '/events/' + encodeURIComponent(e.id) + '/odds?markets=' + encodeURIComponent(markets.join(','))
+      + '&bookmakers=' + encodeURIComponent(books.join(',')) + '&oddsFormat=american&dateFormat=iso&commence_time=' + encodeURIComponent(e.commence_time);
     attempts++;
     rec.attempted_at = attemptAt;
     /* ONE event is isolated from the rest: whatever it throws is its own
@@ -635,6 +723,15 @@ async function run(opts) {
           + ' · outcomes ' + cs.outcomes + ' · quotes normalized ' + parsed.quotes.length + ' · cost ' + (r.last != null ? r.last : '?') + ' · remaining ' + (r.remaining != null ? r.remaining : '?') + (tries > 1 ? ' · after ' + tries + ' tries' : '') + (cs.outcomes ? '' : ' · MARKETS_NOT_RELEASED (no book has posted a requested player market)'));
       } catch (x) { err = Object.assign(x instanceof Error ? x : new Error(String(x)), { status: 'parse' }); }
     }
+    if (err && err.status === 'refused') {
+      /* THE GATEWAY DECLINED this event (its cadence window, the budget's
+         shedding, a board already captured, the breaker): not a failure, no
+         back-off, the event keeps its clock. */
+      deferred[err.decision] = (deferred[err.decision] || 0) + 1;
+      requests.push({ event_id: e.id, matchup: rec.matchup, kickoff: e.commence_time, http: null, attempts: tries, gateway: err.decision });
+      if (/^denied_breaker$|^denied_gateway_disabled$/.test(err.decision)) { paused = true; stopped = 'odds provider paused (circuit breaker): nothing bought'; break; }
+      continue;
+    }
     if (err) {
       failed++;
       const er = errorOf(err, url);
@@ -660,6 +757,10 @@ async function run(opts) {
     reason = status === 'SUCCESS' ? 'QUOTES_WRITTEN' : (stopped ? 'STOPPED' : failed ? 'SOME_REQUESTS_FAILED' : 'SUSPECT_EMPTY_ANSWER');
     why = nq + ' prop prices from ' + booksBack.size + ' books across ' + polled.filter((p) => p.quotes.length).length + ' of ' + attempts + ' events queried' + (stopped ? '; the run stopped early: ' + stopped : '') + (failed ? '; ' + failed + ' requests failed (retried on back-off)' : '') + (suspect ? '; ' + suspect + ' empty answer' + (suspect === 1 ? '' : 's') + ' kept for a retry' : '') + '.';
     if (failed || stopped) errorMessage = (stopped ? stopped + (failures.length ? '; ' : '') : '') + failures.join('; ') || null;
+  } else if (!calls && !failed && (paused || Object.keys(deferred).length)) {
+    status = 'NOT_RUN'; reason = paused ? 'PROVIDER_PAUSED' : 'GATEWAY_DEFERRED';
+    why = paused ? 'Sportsbook price refresh is paused (The Odds API circuit breaker). Stored prices stand at their own capture times.'
+      : 'The odds gateway deferred every due event (' + Object.keys(deferred).map((k) => k + ' ' + deferred[k]).join(', ') + '): nothing new was bought.';
   } else if (calls > 0 && !failed) {
     status = 'NO_MARKETS'; reason = suspect ? 'SUSPECT_EMPTY_ANSWER' : 'MARKETS_NOT_RELEASED';
     why = 'The Odds API answered for ' + calls + ' ' + L.label + ' event' + (calls === 1 ? '' : 's') + ' (HTTP 200) with no player market from any of the ' + books.length + ' books asked' + (suspect ? ' (where the last poll had prices: kept, and retried shortly)' : ': the books have not released these props yet') + '.' + (stopped ? ' The run stopped early: ' + stopped + '.' : '');
@@ -681,7 +782,7 @@ async function run(opts) {
     status, reason, why, error_message: errorMessage,
     events_due: due.length, events_checked: attempts, events_polled: calls, events_failed: failed, events_no_markets: noMarkets, events_suspect_empty: suspect, event_ids: take.slice(0, attempts).map((e) => e.id),
     books_returned: Array.from(booksBack).sort(), markets_returned: marketsBack, outcomes_returned: outcomes,
-    quotes: nq, quotes_normalized: nq, quotes_written: 0, refused, flagged, stopped,
+    quotes: nq, quotes_normalized: nq, quotes_written: 0, refused, flagged, stopped, gateway_deferred: deferred,
     credits_spent: spent, requests_remaining: remaining, requests_used: used, requests,
     last_run: calls > 0 ? attemptAt : (state.last_run || null), last_success_at: nq > 0 ? attemptAt : (state.last_success_at || null),
     last_full_success_at: allOk ? attemptAt : (state.last_full_success_at || null) });
@@ -724,7 +825,8 @@ function stepSummary(s) {
   const f = process.env.GITHUB_STEP_SUMMARY; if (!f) return;
   const row = (k, v) => '| ' + k + ' | ' + String(v == null ? '—' : v).replace(/\|/g, '/') + ' |\n';
   let md = '\n### Player props capture — ' + s.league + ': **' + (s.status || 'no request this run (last status ' + (s.last_status || 'none') + ')') + '**' + (s.reason ? ' (' + s.reason + ')' : '') + '\n\n| | |\n|---|---|\n';
-  md += row('PROPS_CAPTURE raw / enabled', s.flag ? JSON.stringify(s.flag.raw) + ' / ' + s.flag.enabled : '—') + row('ODDS_API_KEY present', s.key_present);
+  md += row('PROPS_CAPTURE raw / enabled', s.flag ? JSON.stringify(s.flag.raw) + ' / ' + s.flag.enabled : '—') + row('odds gateway credential present', s.key_present)
+    + (s.gateway_deferred && Object.keys(s.gateway_deferred).length ? row('deferred by the gateway', JSON.stringify(s.gateway_deferred)) : '');
   md += row('events discovered / in window / due / queried', [s.events_discovered, s.events_in_window, s.events_due, s.events_checked].map((x) => x == null ? '—' : x).join(' / '));
   md += row('books returned', s.books_returned ? s.books_returned.length + ' ' + s.books_returned.join(', ') : null) + row('markets returned', s.markets_returned ? Object.keys(s.markets_returned).length : null);
   md += row('outcomes returned', s.outcomes_returned) + row('quotes normalized / written', s.quotes_normalized != null ? s.quotes_normalized + ' / ' + s.quotes_written : null);
@@ -744,7 +846,7 @@ if (require.main === module) {
     const r = parseEventProps(ev, new Date().toISOString());
     console.log(JSON.stringify({ quotes: r.quotes.length, books: r.books, markets: r.markets, refused: r.refused }, null, 1));
   } else if (!flag('network')) {
-    console.log('[props capture] offline: pass --network (and ODDS_API_KEY) to capture; nothing spent.');
+    console.log('[props capture] offline: pass --network (the odds gateway credential comes from SB_URL / SB_SERVICE_ROLE) to capture; nothing spent.');
   } else {
     const D = C.DEFAULTS;
     const envFresh = C.freshnessFromEnv();
@@ -755,15 +857,16 @@ if (require.main === module) {
     const raw = process.env.PROPS_CAPTURE;
     const gated = raw !== undefined || process.env.GITHUB_ACTIONS === 'true';
     const enabled = gated ? captureEnabled(raw) : true;
-    const key = String(process.env.ODDS_API_KEY || '').trim() || null;
+    const gcfg = G.config(process.env);
+    const gateway = gcfg ? G.client(gcfg) : null;
     const ci = process.env.GITHUB_ACTIONS === 'true';
-    console.log('[props capture] ' + league + ' · ODDS_API_KEY present: ' + !!key + ' · PROPS_CAPTURE raw: ' + (raw === undefined ? '(not set)' : JSON.stringify(raw))
+    console.log('[props capture] ' + league + ' · odds gateway credential present: ' + !!gateway + ' · PROPS_CAPTURE raw: ' + (raw === undefined ? '(not set)' : JSON.stringify(raw))
       + ' · PROPS_CAPTURE parsed enabled: ' + enabled + (gated ? '' : ' (by-hand run: --network is the opt-in)'));
     const envNum = (k, d) => { const v = process.env[k]; return v != null && String(v).trim() !== '' && Number.isFinite(Number(v)) ? Number(v) : d; };
     const onlyEvents = String(arg('events', process.env.PROPS_REFRESH_EVENTS || '')).split(',').map((x) => x.trim()).filter(Boolean);
-    run({ key, enabled, flag: { raw: raw === undefined ? null : raw, enabled, gated }, league, log: (m) => console.log(m),
+    run({ gateway, enabled, flag: { raw: raw === undefined ? null : raw, enabled, gated }, league, log: (m) => console.log(m),
       groups: arg('groups', process.env.PROPS_MARKET_GROUPS || '') ? String(arg('groups', process.env.PROPS_MARKET_GROUPS)).split(',').map((g) => g.trim()).filter(Boolean) : null,
-      window_h: Number(arg('window-h', envNum('PROPS_WINDOW_H', D.window_h))), max_events: Number(arg('max-events', envNum('PROPS_MAX_EVENTS', D.max_events))),
+      window_h: Number(arg('window-h', envNum('PROPS_WINDOW_H', (D.window_h_league && D.window_h_league[league]) || D.window_h))), max_events: Number(arg('max-events', envNum('PROPS_MAX_EVENTS', D.max_events))),
       min_remaining: Number(arg('min-remaining', envNum('PROPS_MIN_REMAINING', D.min_remaining))),
       low_credits: envNum('PROPS_LOW_CREDITS', D.low_credits), critical_credits: envNum('PROPS_CRITICAL_CREDITS', D.critical_credits),
       max_credits_run: Number(arg('max-credits', envNum('PROPS_MAX_CREDITS', D.max_credits_run))),

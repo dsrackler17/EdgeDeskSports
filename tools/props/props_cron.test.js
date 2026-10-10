@@ -33,7 +33,7 @@ globalThis.Deno = { env: { get: (k) => ENV[k] } };
 
 const NOW = Date.parse('2026-10-01T18:00:00Z');
 const iso = (m) => new Date(NOW + m * 60e3).toISOString();
-let HEALTH = [], QUEUED = [], ADMIT = null, DISPATCH = 204, REJECT_INPUTS = false, USER = { id: '00000000-0000-0000-0000-00000000000a' }, REQ_ROWS = [];
+let HEALTH = [], QUEUED = [], ADMIT = null, DISPATCH = 204, REJECT_INPUTS = false, USER = { id: '00000000-0000-0000-0000-00000000000a' }, REQ_ROWS = [], FEED = null;
 const SEEN = [];
 function res(status, body) { return { ok: status >= 200 && status < 300, status, json: async () => body, text: async () => (typeof body === 'string' ? body : JSON.stringify(body)) }; }
 globalThis.fetch = async function (url, init) {
@@ -46,6 +46,7 @@ globalThis.fetch = async function (url, init) {
   if (u.includes('/rest/v1/player_props_refresh_requests?select=id,league,status')) return res(200, REQ_ROWS);
   if (u.includes('/rest/v1/player_props_refresh_requests?id=eq.')) return res(204, '');
   if (u.includes('/rest/v1/rpc/player_props_refresh_admit')) return ADMIT ? res(200, [ADMIT]) : res(404, 'no function');
+  if (u.includes('/rest/v1/rpc/odds_feed_status')) return FEED ? res(200, FEED) : res(404, 'no function');
   if (u.includes('/actions/workflows/') && u.endsWith('/dispatches')) {
     const b = JSON.parse(init.body);
     if (REJECT_INPUTS && Object.keys(b.inputs || {}).some((k) => k !== 'force_capture')) return res(422, JSON.stringify({ message: 'Unexpected inputs provided: ["source"]' }));
@@ -57,7 +58,7 @@ const FN = path.join(__dirname, '..', '..', 'supabase', 'functions', 'props_cron
 const dispatches = () => SEEN.filter((s) => s.url.endsWith('/dispatches'));
 const stamps = () => SEEN.filter((s) => s.url.includes('player_props_pipeline_health?on_conflict'));
 const patches = () => SEEN.filter((s) => s.url.includes('player_props_refresh_requests?id=eq.') && s.method === 'PATCH');
-function reset() { HEALTH = []; QUEUED = []; ADMIT = null; DISPATCH = 204; REJECT_INPUTS = false; USER = { id: '00000000-0000-0000-0000-00000000000a' }; REQ_ROWS = []; SEEN.length = 0; ENV.PROPS_GH_TOKEN = 'gh-token'; }
+function reset() { HEALTH = []; QUEUED = []; ADMIT = null; DISPATCH = 204; REJECT_INPUTS = false; USER = { id: '00000000-0000-0000-0000-00000000000a' }; REQ_ROWS = []; FEED = null; SEEN.length = 0; ENV.PROPS_GH_TOKEN = 'gh-token'; }
 const fresh = (lg, over) => Object.assign({ league: lg, next_due_at: iso(40), last_dispatch_at: iso(-30), updated_at: iso(-10), rate_limited_until: null, health: 'HEALTHY' }, over || {});
 const reqOf = (body, auth) => new Request('https://fn.test/props_cron', { method: 'POST', headers: { authorization: auth || 'Bearer user-jwt', 'content-type': 'application/json' }, body: JSON.stringify(body) });
 
@@ -96,7 +97,7 @@ const reqOf = (body, auth) => new Request('https://fn.test/props_cron', { method
   reset(); HEALTH = [fresh('nfl'), fresh('cfb')]; QUEUED = [{ id: '11111111-1111-1111-1111-111111111111', league: 'cfb', event_ids: ['evA'], status: 'queued', dispatched_at: null }];
   t = await mod.tick(NOW);
   const qd = dispatches()[0];
-  chk('a reader\'s refresh whose dispatch failed earlier is retried by the tick, as that refresh', t.action === 'dispatched' && qd.body.inputs.source === 'manual_refresh' && qd.body.inputs.refresh_request === QUEUED[0].id && qd.body.inputs.leagues === 'cfb' && qd.body.inputs.events === 'evA' && qd.body.inputs.force_capture === 'true', qd && qd.body);
+  chk('a reader\'s refresh whose dispatch failed earlier is retried by the tick, as that refresh', t.action === 'dispatched' && qd.body.inputs.source === 'manual_refresh' && qd.body.inputs.refresh_request === QUEUED[0].id && qd.body.inputs.leagues === 'cfb' && qd.body.inputs.events === 'evA' && qd.body.inputs.force_capture === 'false', qd && qd.body);
   chk('…and the request is marked dispatched', patches().some((p) => p.body.status === 'dispatched'));
   reset(); HEALTH = [fresh('nfl'), fresh('cfb')]; QUEUED = [{ id: '44444444-4444-4444-4444-444444444444', league: 'nfl', event_ids: null, status: 'dispatched', dispatched_at: iso(-9) }];
   t = await mod.tick(NOW);
@@ -120,7 +121,7 @@ const reqOf = (body, auth) => new Request('https://fn.test/props_cron', { method
   r = await mod.refresh(reqOf({ action: 'refresh', league: 'nfl', event_ids: ['ev1', 'bad id!'] }), { action: 'refresh', league: 'nfl', event_ids: ['ev1', 'bad id!'] }, NOW);
   j = await r.json();
   const rd = dispatches()[0];
-  chk('an admitted refresh dispatches a FORCED capture carrying its request id', r.status === 202 && j.ok && j.request_id === ID && j.status === 'dispatched' && rd.body.inputs.force_capture === 'true' && rd.body.inputs.refresh_request === ID && rd.body.inputs.leagues === 'nfl' && rd.body.inputs.source === 'manual_refresh', [r.status, j, rd && rd.body]);
+  chk('an admitted refresh dispatches a capture carrying its request id — NOT forced: a reader cannot buy odds (2026-10-10)', r.status === 202 && j.ok && j.request_id === ID && j.status === 'dispatched' && rd.body.inputs.force_capture === 'false' && rd.body.inputs.refresh_request === ID && rd.body.inputs.leagues === 'nfl' && rd.body.inputs.source === 'manual_refresh', [r.status, j, rd && rd.body]);
   chk('only well-formed event ids reach the run', rd.body.inputs.events === 'ev1');
   const admitCall = SEEN.find((s) => s.url.includes('rpc/player_props_refresh_admit'));
   chk('admission is the database\'s (atomic, cool-downs), for the verified reader', admitCall && admitCall.body.p_user === '00000000-0000-0000-0000-00000000000a' && admitCall.body.p_user_cooldown_s === 300 && admitCall.body.p_global_cooldown_s === 120, admitCall && admitCall.body);
@@ -144,13 +145,28 @@ const reqOf = (body, auth) => new Request('https://fn.test/props_cron', { method
   reset(); ADMIT = { admitted: true, request_id: ID, status: 'queued' }; REJECT_INPUTS = true;
   r = await mod.refresh(reqOf({ action: 'refresh', league: 'nfl' }), { action: 'refresh', league: 'nfl' }, NOW);
   j = await r.json();
-  chk('a workflow that predates the new inputs still runs a forced capture, and says so', r.status === 202 && dispatches().length === 2 && JSON.stringify(dispatches()[1].body.inputs) === '{"force_capture":"true"}' && /does not accept/.test(j.message), [r.status, j]);
+  chk('a workflow that predates the new inputs still runs an unforced capture, and says so', r.status === 202 && dispatches().length === 2 && JSON.stringify(dispatches()[1].body.inputs) === '{"force_capture":"false"}' && /does not accept/.test(j.message), [r.status, j]);
   reset(); ADMIT = null;
   r = await mod.refresh(reqOf({ action: 'refresh', league: 'nfl' }), { action: 'refresh', league: 'nfl' }, NOW);
   chk('the SQL not installed: 503 and says which file', r.status === 503 && /player_props_pipeline\.sql/.test((await r.json()).message));
   reset();
   r = await mod.refresh(reqOf({ action: 'refresh', league: 'nba' }), { action: 'refresh', league: 'nba' }, NOW);
   chk('an unknown league is refused', r.status === 400);
+
+  console.log('— the circuit breaker (2026-10-10)');
+  reset(); FEED = { state: 'paused', message: 'paused' }; ADMIT = { admitted: true, request_id: ID, status: 'queued', reason: null, retry_after_s: null };
+  r = await mod.refresh(reqOf({ action: 'refresh', league: 'nfl' }), { action: 'refresh', league: 'nfl' }, NOW);
+  j = await r.json();
+  chk('breaker off: a reader\'s Refresh dispatches nothing and says prices are the last verified ones',
+    j.ok === false && j.reason === 'provider_paused' && /last verified/.test(j.message) && dispatches().length === 0
+    && !SEEN.some((x) => x.url.includes('rpc/player_props_refresh_admit')), j);
+  reset(); FEED = { state: 'paused', message: 'paused' }; HEALTH = [fresh('nfl', { next_due_at: iso(-2) }), fresh('cfb')];
+  t = await mod.tick(NOW);
+  chk('breaker off: a game due for a price check wakes nothing', t.action === 'not_due' && /circuit breaker/.test(t.reason) && dispatches().length === 0, t);
+  reset(); FEED = { state: 'paused', message: 'paused' }; HEALTH = [fresh('nfl', { updated_at: iso(-90), last_dispatch_at: iso(-90) }), fresh('cfb', { updated_at: iso(-90), last_dispatch_at: iso(-90) })];
+  t = await mod.tick(NOW);
+  chk('breaker off: the hourly fallback still wakes the pipeline for boards and grading, unforced',
+    t.action === 'dispatched' && /fallback|quiet/.test(t.reason) && dispatches()[0].body.inputs.source === 'supabase_cron' && dispatches()[0].body.inputs.force_capture === undefined, t);
 
   console.log('— status and the server');
   reset(); REQ_ROWS = [{ id: ID, league: 'nfl', status: 'completed', reason: 'fresh prices captured', result: { leagues: { nfl: { quotes: 2400 } } } }];

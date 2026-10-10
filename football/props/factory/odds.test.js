@@ -99,9 +99,17 @@ chk('the captured quotes price cleanly through the kernel', () => {
   const e = EDP.evaluateQuote(EDP.dist.compressCdf([0, 40, 60, 80, 120, 200], [0, 0.2, 0.45, 0.7, 0.93, 1], 20, true), q, {});
   assert.ok(e.ok && e.fair_american != null); void d;
 });
-chk('the historical backfill spends nothing without a key', async () => {
+chk('the historical backfill spends nothing without an odds gateway credential', async () => {
   const r = await O.backfillHistorical({ leagues: { NFL: { games: [] } } }, 'NFL', { key: null });
-  assert.ok(/no ODDS_API_KEY/.test(r.skipped));
+  assert.ok(/no odds gateway credential/.test(r.skipped));
+});
+chk('the historical backfill asks the gateway, and stops on its refusal (historical is off by default)', async () => {
+  const asked = [];
+  const wh = { leagues: { NFL: { games: [{ game_id: 'g1', status: 'final', season: 2025, kickoff_utc: '2025-10-05T17:00:00Z', home_team_id: 'KC', away_team_id: 'BUF' }], playerGames: [] } }, identity: { players: [] } };
+  const gateway = { request: async (q) => { asked.push(q); return { ok: false, source: 'none', decision: 'denied_category', reason: 'category disabled: historical_events' }; } };
+  const r = await O.backfillHistorical(wh, 'NFL', { gateway, from: '2025-10-01T00:00:00Z', to: '2025-10-10T00:00:00Z' });
+  assert.ok(asked.length === 1 && asked[0].category === 'historical_events' && !!asked[0].date && !('apiKey' in asked[0]), JSON.stringify(asked));
+  assert.ok(/odds gateway: denied_category/.test(r.stopped || ''), r.stopped);
 });
 chk('the historical backfill stops at a 401 and never writes a post-kickoff quote', async () => {
   const kick = '2024-10-06T17:00:00.000Z';

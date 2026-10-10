@@ -94,8 +94,12 @@ globalThis.Deno = { env: { get: () => undefined }, serve: () => {} };
   /* ── 2 · the reference book is reachable ───────────────────────────────── */
   chk('close reads CAPTURE_BOOKMAKERS, the same env capture reads',
     /CAPTURE_BOOKMAKERS/.test(CODE));
-  chk('close builds bookmakers= when a list is configured',
-    /bookmakers=\$\{encodeURIComponent\(BOOKMAKERS\.join\(","\)\)\}/.test(CODE));
+  /* 2026-10-10: neither function builds a provider URL. Both ask odds_gateway,
+     close for its `close` category and capture for `featured`, which share one
+     fingerprint — so the books on the closing side are by construction the
+     books on the entry side (docs/odds-api-incident-2026-10/INCIDENT.md). */
+  chk('close asks odds_gateway for the close category and builds no provider URL',
+    /category: "close"/.test(CODE) && /\/functions\/v1\/odds_gateway/.test(CODE) && !/the-odds-api\.com/.test(CLOSE) && !/apiKey=/.test(CODE));
   chk('close defaults CAPTURE_REGIONS to us,eu — Pinnacle is an eu book',
     /CAPTURE_REGIONS"\) \?\? "us,eu"/.test(CODE),
     'a "us" default makes the reference book structurally unreachable');

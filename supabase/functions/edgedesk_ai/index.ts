@@ -26429,12 +26429,17 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     /* injury / availability reports (the NFL sync runs every six hours) */
     injury: { current_hours: 8, aging_hours: 24, aging_factor: 0.9, stale_factor: 0.7 },
     /* the capture's own clock per event, by hours to kickoff (first match
-       wins). A started game is never polled for pregame props. */
+       wins). A started game is never polled for pregame props.
+       2026-10-10 (docs/odds-api-incident-2026-10/INCIDENT.md): loosened from
+       15/30/60/120/360 to the odds gateway's prop policy — at most hourly
+       inside 3 h, every 2 h inside 24 h, every 6 h beyond — which is also an
+       upper limit the gateway enforces whatever this says. A quote still has
+       to be inside executable_max_minutes to price an EV, so near kickoff a
+       prop EV is offered for the half hour after each refresh and is labelled
+       aging after that, never presented as current. */
     cadence: [
-      { within_h: 1.5, every_min: 15 },
-      { within_h: 6, every_min: 30 },
-      { within_h: 24, every_min: 60 },
-      { within_h: 48, every_min: 120 },
+      { within_h: 3, every_min: 60 },
+      { within_h: 24, every_min: 120 },
       { within_h: null, every_min: 360 }
     ],
     /* a failed event is retried sooner than its cadence, backing off */
@@ -26444,8 +26449,9 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     /* pipeline health: share of active events refreshed inside their cadence target */
     health: { healthy_share: 0.95, delayed_share: 0.5, grace_minutes: 15, silent_minutes: 60, silent_hours: 3, failures_for_outage: 3 },
     /* a manual refresh never re-buys an event captured more recently than this
-       (the refresh cool-downs are the scheduler's: supabase/functions/props_cron) */
-    manual: { min_age_minutes: 10 }
+       (the refresh cool-downs are the scheduler's: supabase/functions/props_cron).
+       60 since 2026-10-10: the gateway would serve its snapshot inside that anyway. */
+    manual: { min_age_minutes: 60 }
   };
   function mergeCfg(base, over) {
     if (!over || typeof over !== 'object') return base;
@@ -26664,7 +26670,11 @@ const EDPERSONNEL: any = (globalThis as any).EDPERSONNEL;
     var res = function (state, reason, text) { base.state = state; base.reason = reason; base.text = text; return base; };
     var st = String(cap.status || '').toUpperCase(), rs = String(cap.reason || '').toUpperCase();
     if (cap.enabled === false || rs === 'PROPS_CAPTURE_DISABLED') return res('OUTAGE', 'CAPTURE_OFF', 'The sportsbook price capture is switched off.');
-    if (rs === 'NO_API_KEY') return res('OUTAGE', 'NO_API_KEY', 'The price capture has no provider key.');
+    if (rs === 'NO_API_KEY' || rs === 'NO_GATEWAY_CREDENTIAL') return res('OUTAGE', 'NO_API_KEY', 'The price capture cannot reach the odds gateway.');
+    /* The Odds API circuit breaker (supabase/odds_api_gateway.sql): the
+       capture is fine, paid retrieval is paused. Prices stand at their own
+       capture times and age honestly. */
+    if (rs === 'PROVIDER_PAUSED') return res('DELAYED', 'PROVIDER_PAUSED', 'Sportsbook price refresh is paused. The prices shown are the last verified prices, each with the time it was captured.');
     if (!active.length) return res('HEALTHY', 'NO_EVENTS_IN_WINDOW', 'No game is inside the price-capture window.');
     base.recovering = true;
     /* silence is judged against when the capture was next owed a poll: a game
@@ -36355,7 +36365,7 @@ function mlbStartersFromResearch(research: ResearchOut | null): { label: string;
    build identifier in the response there is no way to tell those apart, and
    this function shipped for months with no way to answer "which version is
    answering?". That is what this constant exists to end. */
-export const BUILD = "edgedesk_ai-2026-10-08-r21-anon-gate";
+export const BUILD = "edgedesk_ai-2026-10-10-r22-props-cadence";
 
 /* THE DECISION LAYER'S OWN SWITCH, set by the deployment rather than by code.
    `EDGEDESK_DECISIONS_ENABLED=0` stops EdgeDesk producing recommendations
@@ -38941,11 +38951,12 @@ async function refreshQuotes(sport: string, now: number, fetchImpl?: typeof fetc
   try {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), QUOTE_REFRESH_TIMEOUT_MS);
-    /* tier=near: the scoped window (events inside 8 h), never the untiered
-       14-day board. Capture asks the central quota ledger first under the near
-       tier's key (supabase/odds_quota.sql): a refresh right after a scheduled
-       run is answered from the stored board (cache_fresh), one already running
-       is not bought twice (coalesced), and a refresh never spends the reserve. */
+    /* tier=near: the scoped window (events inside 8 h) for this one sport,
+       never the untiered 14-day board. Every odds request capture makes goes
+       through odds_gateway (supabase/odds_api_gateway.sql): a refresh inside a
+       board's event-aware interval is answered from the stored snapshot, one
+       already in flight is not bought twice, and the shared daily and monthly
+       budget decides the rest (docs/odds-api-incident-2026-10). */
     const r = await f(`${SUPABASE_URL}/functions/v1/capture?tier=near&sport=${encodeURIComponent(sport)}&reason=board_refresh`, {
       method: "POST", headers: { "x-cron-secret": CAPTURE_SECRET, "content-type": "application/json" }, body: "{}", signal: ctl.signal,
     });

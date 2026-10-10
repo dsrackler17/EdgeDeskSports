@@ -24,6 +24,13 @@
    natural keys. Nothing here assumes a credential.
    =========================================================================== */
 'use strict';
+/* the odds gateway client for --network backfills (2026-10-10): the provider
+   key lives on supabase/functions/odds_gateway, never in this job */
+function gatewayClient() {
+  const G = require('../../../tools/lib/odds_gateway.js');
+  const c = G.config(process.env);
+  return c ? G.client(c) : null;
+}
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
@@ -269,7 +276,7 @@ async function main(argv) {
   }
   if (a.stage === 'backtest') { await stageBacktest(wh, a); done('backtest', { leagues: a.leagues, last_n: a.lastN || 3 }); }
   if (a.stage === 'train' || a.stage === 'all') { const reg = await stageTrain(wh, a); done('train', { champions: reg.models.filter((m) => m.status === 'CHAMPION').length }); }
-  if (a.stage === 'backfill') { for (const lg of a.leagues) log('backfill ' + lg + ': ' + JSON.stringify(await O.backfillHistorical(wh, lg, { key: a.network ? process.env.ODDS_API_KEY : null, from: a.from, to: a.to, max_games: a.maxGames }))); done('backfill'); }
+  if (a.stage === 'backfill') { for (const lg of a.leagues) log('backfill ' + lg + ': ' + JSON.stringify(await O.backfillHistorical(wh, lg, { gateway: a.network ? gatewayClient() : null, from: a.from, to: a.to, max_games: a.maxGames }))); done('backfill'); }
   if (a.stage === 'project' || a.stage === 'all') { await stageProject(wh, a); done('project', { leagues: a.leagues }); }
   if (a.stage === 'sync' || (a.stage === 'all' && process.env.SUPABASE_DB_URL)) { const s = await stageSync(wh, a); done('sync', s || {}); }
   writeStatus(Object.assign(status, { generated_at: new Date().toISOString() }));

@@ -36,7 +36,12 @@ function done(note) {
 /* real rows: build the slate into a temp dir and snapshot every game */
 const RES = require(path.join(ROOT, 'football', 'cfb_terminal', 'resilience.js'));
 const out = fs.mkdtempSync(path.join(os.tmpdir(), 'rsnap-'));
-cp.execFileSync(process.execPath, [path.join(ROOT, 'football', 'cfb_terminal', 'build.js'), '--out', out], { stdio: 'ignore' });
+/* the build's clock is PINNED to four hours before UCF @ Oklahoma State
+   (2026-10-10 16:00Z), the fixture every scenario is written around: on the
+   live clock the game leaves the slate at kickoff and the suite has nothing
+   to stand on (it broke that way the afternoon it merged). */
+const BUILD_NOW = '2026-10-10T12:00:00Z';
+cp.execFileSync(process.execPath, [path.join(ROOT, 'football', 'cfb_terminal', 'build.js'), '--out', out, '--now', BUILD_NOW], { stdio: 'ignore' });
 const G = JSON.parse(fs.readFileSync(path.join(out, 'games.json'), 'utf8'));
 const NOW = Date.parse(G.generated_at);
 const rows = Object.keys(G.games).map((id) => { const o = G.games[id]; return RES.snapshotRow(o, { market_state: o.market_state, resilience: o.resilience }, { now: NOW, inputs_sha256: G.inputs_sha256 }); });

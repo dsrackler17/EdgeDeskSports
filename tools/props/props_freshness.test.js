@@ -154,7 +154,7 @@ const X = (min, ctx) => E.isExecutableQuote(Q('dk', 84.5, 'over', -105, min), Ob
 
   /* ------------------------------------------------------------ cadence */
   section('capture cadence and back-off (14 FUTURE GAME PRIORITY)');
-  chk('cadence by hours to kickoff: 15 / 30 / 60 / 120 / 360 minutes', E.cadenceFor(1) === 15 && E.cadenceFor(5) === 30 && E.cadenceFor(20) === 60 && E.cadenceFor(40) === 120 && E.cadenceFor(80) === 360);
+  chk('cadence by hours to kickoff: 60 / 120 / 360 minutes (the odds gateway\'s prop limits since 2026-10-10)', E.cadenceFor(1) === 60 && E.cadenceFor(3) === 60 && E.cadenceFor(5) === 120 && E.cadenceFor(20) === 120 && E.cadenceFor(40) === 360 && E.cadenceFor(80) === 360);
   chk('PROPS_CADENCE overrides it', (() => { const c = C.parseCadence('2:10,12:45,*:240'); return E.cadenceFor(1, { cadence: c }) === 10 && E.cadenceFor(10, { cadence: c }) === 45 && E.cadenceFor(50, { cadence: c }) === 240; })());
   chk('a malformed PROPS_CADENCE is ignored, never half-applied', C.parseCadence('2:ten,4:30') === null && C.freshnessFromEnv({ PROPS_CADENCE: 'nonsense' }) === null);
   const d1 = E.retryDelay(1, 0.5), d2 = E.retryDelay(2, 0.5), d3 = E.retryDelay(3, 0.5), d9 = E.retryDelay(9, 0.5);
@@ -206,7 +206,7 @@ const X = (min, ctx) => E.isExecutableQuote(Q('dk', 84.5, 'over', -105, min), Ob
   let feed = JSON.parse(fs.readFileSync(P.quotes, 'utf8'));
   chk('7 · PIT @ CLE captured while IND @ WAS failed: PIT @ CLE is committed and current', s.status === 'PARTIAL' && feed.events.evA && feed.events.evA.n_quotes === 8 && !feed.events.evB, [s.status, Object.keys(feed.events)]);
   chk('7 · …the failed game carries its own record and retry time; the good one is clean', s.events_state.evB.failures === 1 && s.events_state.evB.next_retry_at === new Date(NOW + 5 * 60e3).toISOString() && s.events_state.evA.failures === 0 && s.events_state.evA.polled_ok_at === new Date(NOW).toISOString(), s.events_state);
-  chk('7 · …a 5xx was retried once inside the run before it failed', g.seen.filter((u) => /evB/.test(u)).length === 2);
+  chk('7 · …a 5xx is not retried inside the run: the odds gateway owns the one bounded retry loop', g.seen.filter((u) => /evB/.test(u)).length === 1);
   chk('7 · …health: DEGRADED, not stale (one game failed, the other is current)', s.health.state === 'DEGRADED' && s.health.failed_events === 1, s.health);
   chk('7 · …the scheduler is told the failed game is due at its retry, sooner than its cadence', s.next_due_at === s.events_state.evB.next_retry_at, [s.next_due_at]);
 
@@ -224,7 +224,7 @@ const X = (min, ctx) => E.isExecutableQuote(Q('dk', 84.5, 'over', -105, min), Ob
   P = paths();
   g = getterOf(async (id) => { if (id === 'evA') throw Object.assign(new Error('TIMEOUT after 30000 ms'), { status: 'timeout', body: 'timed out' }); return { status: 200, body: oddsFor(id, ['draftkings']), remaining: 4990, last: 2 }; });
   s = await CAP.run(base(P, { now: NOW, getJson: g }));
-  chk('8 · a provider timeout is retried once, then recorded on that game alone; the other is captured', g.seen.filter((u) => /evA/.test(u)).length === 2 && s.events_state.evA.last_http === 'timeout' && s.events_polled === 1 && s.status === 'PARTIAL', [s.status, s.events_state.evA]);
+  chk('8 · a provider timeout is never retried (it may have been billed), and is recorded on that game alone; the other is captured', g.seen.filter((u) => /evA/.test(u)).length === 1 && s.events_state.evA.last_http === 'timeout' && s.events_polled === 1 && s.status === 'PARTIAL', [s.status, s.events_state.evA]);
 
   /* 9 · a 429 */
   P = paths();
@@ -241,15 +241,15 @@ const X = (min, ctx) => E.isExecutableQuote(Q('dk', 84.5, 'over', -105, min), Ob
   /* 10 · a partial answer: one book missing */
   P = paths();
   s = await CAP.run(base(P, { now: NOW, getJson: getterOf(async (id) => ({ status: 200, body: oddsFor(id, ['draftkings', 'fanduel']), remaining: 4990, last: 2 })) }));
-  s2 = await CAP.run(base(P, { now: NOW + 35 * 60e3, getJson: getterOf(async (id) => ({ status: 200, body: oddsFor(id, ['draftkings']), remaining: 4980, last: 2 })) }));
+  s2 = await CAP.run(base(P, { now: NOW + 65 * 60e3, getJson: getterOf(async (id) => ({ status: 200, body: oddsFor(id, ['draftkings']), remaining: 4980, last: 2 })) }));
   feed = JSON.parse(fs.readFileSync(P.quotes, 'utf8'));
   const qa = feed.events.evA.quotes.map(CAP.unpackQuote);
   const fdQ = qa.filter((q) => q.book === 'fanduel'), dkQ = qa.filter((q) => q.book === 'draftkings');
   chk('10 · a book missing from the answer keeps its quotes at their OWN capture time (never re-stamped)', fdQ.length === 4 && fdQ.every((q) => q.captured_at === new Date(NOW).toISOString()) && feed.events.evA.books_missing[0] === 'fanduel', fdQ.map((q) => q.captured_at));
-  chk('10 · …the book that answered is current', dkQ.every((q) => q.captured_at === new Date(NOW + 35 * 60e3).toISOString()));
-  chk('10 · …and the missing book\'s old price can never be executable', fdQ.every((q) => !E.isExecutableQuote(q, { now: NOW + 35 * 60e3 }).executable) && dkQ.every((q) => E.isExecutableQuote(q, { now: NOW + 35 * 60e3 }).executable));
+  chk('10 · …the book that answered is current', dkQ.every((q) => q.captured_at === new Date(NOW + 65 * 60e3).toISOString()));
+  chk('10 · …and the missing book\'s old price can never be executable', fdQ.every((q) => !E.isExecutableQuote(q, { now: NOW + 65 * 60e3 }).executable) && dkQ.every((q) => E.isExecutableQuote(q, { now: NOW + 65 * 60e3 }).executable));
   chk('10 · …no market is marked closed on a partial answer', !feed.events.evA.closed);
-  await CAP.run(base(P, { now: NOW + 100 * 60e3, getJson: getterOf(async (id) => ({ status: 200, body: oddsFor(id, ['draftkings']), remaining: 4970, last: 2 })) }));
+  await CAP.run(base(P, { now: NOW + 130 * 60e3, getJson: getterOf(async (id) => ({ status: 200, body: oddsFor(id, ['draftkings']), remaining: 4970, last: 2 })) }));
   feed = JSON.parse(fs.readFileSync(P.quotes, 'utf8'));
   chk('10 · …once past the stale band the missing book drops out of the CURRENT listing', feed.events.evA.quotes.map(CAP.unpackQuote).every((q) => q.book === 'draftkings'));
 
@@ -257,15 +257,15 @@ const X = (min, ctx) => E.isExecutableQuote(Q('dk', 84.5, 'over', -105, min), Ob
   P = paths();
   await CAP.run(base(P, { now: NOW, getJson: getterOf(async (id) => ({ status: 200, body: oddsFor(id, ['draftkings']), remaining: 4990, last: 2 })) }));
   const pulled = (id) => { const o = oddsFor(id, ['draftkings']); o.bookmakers[0].markets = o.bookmakers[0].markets.slice(0, 1); return o; };
-  await CAP.run(base(P, { now: NOW + 35 * 60e3, getJson: getterOf(async (id) => ({ status: 200, body: pulled(id), remaining: 4980, last: 2 })) }));
+  await CAP.run(base(P, { now: NOW + 65 * 60e3, getJson: getterOf(async (id) => ({ status: 200, body: pulled(id), remaining: 4980, last: 2 })) }));
   feed = JSON.parse(fs.readFileSync(P.quotes, 'utf8'));
-  chk('14 · a market the answering book stopped dealing is recorded CLOSED, with when', feed.events.evA.closed && feed.events.evA.closed[E.normName('Jerry Jeudy') + '|rec_yds'] === new Date(NOW + 35 * 60e3).toISOString(), feed.events.evA.closed);
+  chk('14 · a market the answering book stopped dealing is recorded CLOSED, with when', feed.events.evA.closed && feed.events.evA.closed[E.normName('Jerry Jeudy') + '|rec_yds'] === new Date(NOW + 65 * 60e3).toISOString(), feed.events.evA.closed);
   /* an empty answer where there were prices is not believed at once */
   const empty = (id) => ({ id, bookmakers: [] });
-  s = await CAP.run(base(P, { now: NOW + 70 * 60e3, getJson: getterOf(async (id) => ({ status: 200, body: empty(id), remaining: 4970, last: 0 })) }));
+  s = await CAP.run(base(P, { now: NOW + 130 * 60e3, getJson: getterOf(async (id) => ({ status: 200, body: empty(id), remaining: 4970, last: 0 })) }));
   feed = JSON.parse(fs.readFileSync(P.quotes, 'utf8'));
   chk('an empty answer where the last poll had prices is kept (not a wipe) and retried soon', s.events_suspect_empty === 2 && feed.events.evA.n_quotes > 0 && s.events_state.evA.failures === 1 && s.status === 'NO_MARKETS' && s.reason === 'SUSPECT_EMPTY_ANSWER', [s.status, s.reason, s.events_suspect_empty]);
-  s = await CAP.run(base(P, { now: NOW + 76 * 60e3, getJson: getterOf(async (id) => ({ status: 200, body: empty(id), remaining: 4970, last: 0 })) }));
+  s = await CAP.run(base(P, { now: NOW + 136 * 60e3, getJson: getterOf(async (id) => ({ status: 200, body: empty(id), remaining: 4970, last: 0 })) }));
   feed = JSON.parse(fs.readFileSync(P.quotes, 'utf8'));
   chk('…a second empty answer is believed: every market recorded CLOSED', feed.events.evA.n_quotes === 0 && Object.keys(feed.events.evA.closed || {}).length === 2, feed.events.evA);
 
@@ -275,8 +275,8 @@ const X = (min, ctx) => E.isExecutableQuote(Q('dk', 84.5, 'over', -105, min), Ob
   const gm = getterOf(async (id) => ({ status: 200, body: oddsFor(id, ['draftkings', 'fanduel']), remaining: 4980, last: 2 }));
   s = await CAP.run(base(P, { now: NOW + 5 * 60e3, getJson: gm, force: true }));
   chk('11 · a manual refresh five minutes after a capture re-buys nothing, and says so', s.status === null && /manual refresh/.test(s.skipped) && gm.seen.filter((u) => /\/odds\?/.test(u)).length === 0, s.skipped);
-  s = await CAP.run(base(P, { now: NOW + 12 * 60e3, getJson: gm, force: true, only_events: ['evB'], trigger: 'manual_refresh', refresh_request_id: 'req-1' }));
-  chk('11 · twelve minutes on it captures now — inside the game\'s own 30-minute clock — only the games asked', s.events_polled === 1 && gm.seen.some((u) => /evB/.test(u)) && !gm.seen.some((u) => /events\/evA\/odds/.test(u)) && s.run.refresh_request_id === 'req-1' && s.run.manual === true, [s.events_polled, s.run]);
+  s = await CAP.run(base(P, { now: NOW + 61 * 60e3, getJson: gm, force: true, only_events: ['evB'], trigger: 'manual_refresh', refresh_request_id: 'req-1' }));
+  chk('11 · an hour on it captures now — inside the game\'s own 2-hour clock — only the games asked', s.events_polled === 1 && gm.seen.some((u) => /evB/.test(u)) && !gm.seen.some((u) => /events\/evA\/odds/.test(u)) && s.run.refresh_request_id === 'req-1' && s.run.manual === true, [s.events_polled, s.run]);
 
   /* credit pacing */
   P = paths();

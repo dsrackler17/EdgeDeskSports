@@ -1,0 +1,39 @@
+# The Odds API budget watch — hourly, and it spends nothing.
+#
+# Reads rpc/odds_api_dashboard with the service role (tools/odds/budget_watch.js)
+# and goes red on an unacknowledged critical or emergency alert (80 % / 95 % of
+# the monthly budget, a quota refusal, provider usage the ledger did not make),
+# or on a day's spend past its ceiling while paid retrieval is on. A red
+# scheduled run emails the schedule's owner; acknowledge the alert on
+# admin/odds-usage/ once it is handled. It never calls odds_gateway or the
+# provider, so it costs zero credits.
+#
+# SECRETS: SB_URL and SB_SERVICE_ROLE (the ones the capture jobs already use).
+name: Odds API budget watch
+
+on:
+  schedule:
+    - cron: '41 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: odds-budget-watch
+  cancel-in-progress: true
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Read the ledger (zero credits)
+        env:
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: node tools/odds/budget_watch.js

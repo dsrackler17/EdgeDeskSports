@@ -4,29 +4,41 @@
    under Node with a Deno shim, as tools/capture/capture.test.js does) and the
    close function's stop rule. Nothing reaches a network.
 
-   Scenarios (docs/market-resilience):
-     Q1  the ledger says cache_fresh / coalesced / research_only → ok:true,
-         skipped, and NOT ONE odds request is made
-     Q2  the ledger is not applied (404) → capture runs on its in-run guard
-         and says "ledger_missing"
-     Q3  HTTP 429 on the first sport → no further sport, ladder or prop request;
-         the run is settled RATE_LIMITED with the provider's numbers
-     Q4  a balance under the floor → the run stops before spending into it
-     Q5  three timeouts in a row → circuit_open, nothing more is requested
-     Q6  401 "usage quota reached" → QUOTA_EXHAUSTED, the run stops
-     Q7  a reader-triggered refresh asks under the near tier's key at low
-         priority (cache-first against the scheduled run, never the reserve)
-     Q8  a recovered provider (API access resumes) → the next run is allowed
-         and settles OK, which closes the breaker in the ledger
-     Q9  close and capture classify every failure the same way
-     Q10 ?diag=1 never buys alternate ladders
+   Since 2026-10-10 every odds request goes through ONE gateway
+   (supabase/functions/odds_gateway, supabase/odds_api_gateway.sql): capture
+   and close hold no provider key, and the shared budget, breaker, single
+   flight and cache-first intervals live there (docs/odds-api-incident-2026-10).
+   These are docs/market-resilience's quota-guard scenarios, held against that
+   design. The gateway is scripted here; its own behaviour (budget under
+   concurrency, the breaker tripping on a quota 429, bounded retries) is proven
+   on PostgreSQL in tools/odds/gateway_sql.test.js and gateway_fn.test.js.
+
+     Q1  a gateway refusal (cache hit, in flight, breaker, no budget, an
+         unconfirmed quota, daily budget, the reserve, a cooldown) → ok:true,
+         nothing bought, and NOT ONE request to the provider
+     Q2  the control plane missing or the gateway unreachable → FAIL CLOSED:
+         nothing is bought, the run says why (never a silent direct call)
+     Q3  HTTP 429 on the first sport → no further sport, ladder or prop is
+         asked for this run
+     Q4  the provider's reserve (denied_reserve) → that request buys nothing,
+         and the run is not reported as a failure
+     Q5  provider timeouts → reported per sport; once the gateway opens its
+         cooldown the run stops asking
+     Q6  401 "usage quota reached", the monthly ceiling or the 95% emergency →
+         the run stops at that answer
+     Q7  a reader-triggered refresh (the desk's quote refresh) asks for the
+         near tier of ONE sport, and inside its interval buys nothing
+     Q8  a recovered provider → the next run is granted and buys exactly once
+     Q9  close and capture stop on the same gateway answers
+     Q10 ?diag=1 never asks for alternate ladders
+     and every scenario: capture never names the provider host
 
    Run: node tools/resilience/quota_guard.test.js
    =========================================================================== */
 'use strict';
-const fs = require('fs');
-const os = require('os');
 const path = require('path');
+const os = require('os');
+const fs = require('fs');
 
 let pass = 0, fail = 0; const failures = [];
 function chk(name, ok, detail) { if (ok) { pass++; return; } fail++; failures.push({ name, detail }); }
@@ -36,10 +48,10 @@ function done() {
   process.exit(fail === 0 ? 0 : 1);
 }
 
+const SPORTS = 'americanfootball_nfl,americanfootball_ncaaf,baseball_mlb';
 const ENV = {
-  CRON_SECRET: 'test-secret', ODDS_API_KEY: 'test-odds-key', SUPABASE_URL: 'https://sb.test', SUPABASE_SERVICE_ROLE_KEY: 'svc',
-  CAPTURE_NO_SERVE: '1', CAPTURE_SPORTS: 'americanfootball_nfl,americanfootball_ncaaf,basketball_nba', CAPTURE_AUTO_PREFIXES: '',
-  CAPTURE_PLAYER_PROPS: 'true'
+  CRON_SECRET: 'test-secret', SUPABASE_URL: 'https://sb.test', SUPABASE_SERVICE_ROLE_KEY: 'svc',
+  CAPTURE_NO_SERVE: '1', CAPTURE_SPORTS: SPORTS, CAPTURE_AUTO_PREFIXES: '', CAPTURE_PLAYER_PROPS: 'true'
 };
 globalThis.Deno = { env: { get: (k) => ENV[k] } };
 
@@ -54,130 +66,134 @@ const event = (sport) => ({ id: 'evt-' + sport, sport_key: sport, sport_title: s
   bookmakers: ['dk', 'fd', 'mgm'].map((k) => ({ key: k, title: k, last_update: new Date(NOW - 60e3).toISOString(),
     markets: [{ key: 'spreads', last_update: new Date(NOW - 60e3).toISOString(), outcomes: [{ name: 'Home', price: 1.91, point: -3.5 }, { name: 'Away', price: 1.91, point: 3.5 }] }] })) });
 
+/* the gateway's envelope: what odds_gateway answers (supabase/functions/odds_gateway) */
+const granted = (data, cost) => ({ ok: true, decision: 'granted', source: 'provider', fresh: true, new_for_consumer: true, fetched_at: new Date(NOW).toISOString(),
+  age_seconds: 0, data, status: 200, quota: { remaining: 5000, used: 100, last: cost }, cost });
+const refused = (decision, over) => Object.assign({ ok: false, decision, source: 'none', fresh: false, new_for_consumer: false, fetched_at: null, age_seconds: null,
+  data: null, status: 0, quota: {}, cost: 0, reason: decision }, over || {});
+const failed = (status, detail) => ({ ok: false, decision: status ? 'provider_http_' + status : 'provider_timeout', source: 'none', fresh: false, new_for_consumer: false,
+  fetched_at: null, age_seconds: null, data: null, status, quota: { remaining: status === 401 ? 0 : 4000 }, cost: 0, reason: detail || '' });
+const cacheHit = (data, isNew) => ({ ok: true, decision: 'cache_hit', source: 'cache', fresh: true, new_for_consumer: !!isNew, fetched_at: new Date(NOW - 300e3).toISOString(),
+  age_seconds: 300, data, status: 200, quota: { remaining: 5000 }, cost: 0 });
+
 let net;
-function reset(over) {
-  net = Object.assign({ calls: [], ledger: null, settles: [], oddsStatus: {}, oddsRemaining: '5000', timeouts: false, eventCalls: 0 }, over || {});
+function reset(script) {
+  /* script(q, n) → an envelope, or a Response-like to answer at the HTTP level */
+  net = { calls: [], gw: [], script: script || ((q) => q.category === 'featured' ? granted([event(q.sport_key)], 3) : granted(event(q.sport_key), 1)) };
 }
 globalThis.fetch = async function (url, init) {
   const u = String(url), method = (init && init.method) || 'GET', body = init && init.body ? JSON.parse(init.body) : null;
   net.calls.push({ u, method, body });
-  if (u.indexOf('/rest/v1/rpc/odds_quota_acquire') >= 0) return net.ledger ? net.ledger(body) : res(404, { code: 'PGRST202', message: 'Could not find the function' });
-  if (u.indexOf('/rest/v1/rpc/odds_quota_settle') >= 0) { net.settles.push(body); return res(200, { settled: true, status: body.p_status }); }
-  if (u.indexOf('sb.test') >= 0) return res(200, [], { 'content-range': '*/0' });
-  if (u.indexOf('api.the-odds-api.com/v4/sports/?') >= 0) return res(200, []);
-  if (/\/events\/?\?/.test(u)) return res(200, [{ id: 'x', commence_time: KICK }]);
-  if (/\/events\/[^/]+\/odds/.test(u)) { net.eventCalls++; return res(200, { id: 'evt', bookmakers: [] }, { 'x-requests-remaining': net.oddsRemaining, 'x-requests-last': '0' }); }
-  const m = /\/v4\/sports\/([^/]+)\/odds/.exec(u);
-  if (m) {
-    const sport = decodeURIComponent(m[1]);
-    if (net.timeouts) { const e = new Error('The operation was aborted due to timeout'); e.name = 'TimeoutError'; throw e; }
-    const st = net.oddsStatus[sport];
-    if (st) return res(st.status, st.body || 'no', Object.assign({ 'x-requests-remaining': net.oddsRemaining, 'x-requests-last': '0' }, st.headers || {}));
-    return res(200, [event(sport)], { 'x-requests-remaining': net.oddsRemaining, 'x-requests-used': '100', 'x-requests-last': '6' });
+  if (/the-odds-api\.com/.test(u)) return res(500, 'a direct provider call from capture');
+  if (u.indexOf('/functions/v1/odds_gateway') >= 0) {
+    net.gw.push(body);
+    const out = net.script(body, net.gw.length);
+    return out && typeof out.status === 'number' && typeof out.text === 'function' ? out : res(200, out);
   }
+  if (u.indexOf('/rest/v1/rpc/odds_api_job_lock') >= 0) return res(200, true);
+  if (u.indexOf('sb.test') >= 0) return res(200, [], { 'content-range': '*/0' });
   return res(404, 'nope');
 };
-const oddsCalls = () => net.calls.filter((c) => /api\.the-odds-api\.com\/v4\/sports\/[^?]+\/odds/.test(c.u) && !/\/events\//.test(c.u)).length;
-const allProviderCalls = () => net.calls.filter((c) => /api\.the-odds-api\.com/.test(c.u)).length;
+const providerCalls = () => net.calls.filter((c) => /the-odds-api\.com/.test(c.u)).length;
+const boardAsks = () => net.gw.filter((b) => b.category === 'featured').length;
+const ladderOrPropAsks = () => net.gw.filter((b) => b.category === 'alternates' || /^props/.test(String(b.category))).length;
 const rq = (qs) => new Request('https://fn.test/capture' + (qs || ''), { headers: { 'x-cron-secret': 'test-secret' } });
-const allow = (extra) => () => res(200, Object.assign({ allowed: true, reason: 'allowed', request_id: '11111111-1111-1111-1111-111111111111', budget: { provider_remaining: null } }, extra || {}));
-const deny = (reason) => () => res(200, { allowed: false, reason, request_id: null, retry_after: new Date(NOW + 600e3).toISOString() });
 
 (async function main() {
   const M = await import(path.join(__dirname, '..', '..', 'supabase', 'functions', 'capture', 'index.ts'));
 
-  /* Q1 — a denial spends nothing */
-  for (const reason of ['cache_fresh', 'coalesced', 'research_only', 'circuit_open', 'quota_exhausted', 'daily_budget', 'reserve_held']) {
-    reset({ ledger: deny(reason) });
+  /* Q1 — a refusal spends nothing */
+  const perRequest = ['in_flight', 'denied_daily_budget', 'denied_reserve', 'skipped_window'];
+  const runWide = ['denied_breaker', 'denied_no_budget', 'denied_unconfirmed_quota', 'denied_cooldown'];
+  for (const d of perRequest.concat(runWide)) {
+    reset(() => refused(d));
     const j = await (await M.handle(rq('?tier=day'))).json();
-    chk('Q1 ' + reason + ': ok:true, skipped, with the reason', j.ok === true && j.skipped === true && j.reason === reason, j);
-    chk('Q1 ' + reason + ': not one provider request', allProviderCalls() === 0, net.calls.map((c) => c.u));
+    chk('Q1 ' + d + ': ok:true and nothing bought', j.ok === true && Number(j.quota_spent_this_run) === 0, [j.ok, j.status, j.quota_spent_this_run]);
+    chk('Q1 ' + d + ': not one provider request', providerCalls() === 0, net.calls.map((c) => c.u));
+    if (runWide.indexOf(d) >= 0) chk('Q1 ' + d + ' is account-wide: the next sports are not asked', boardAsks() === 1, boardAsks());
+    else chk('Q1 ' + d + ' is one request\'s answer: every sport is still asked', boardAsks() === 3, boardAsks());
   }
-  reset({ ledger: deny('cache_fresh') });
-  await M.handle(rq('?tier=near'));
-  const ask = net.calls.find((c) => /odds_quota_acquire/.test(c.u));
-  chk('Q1 the scheduled near tier asks under capture:near at critical priority', ask && ask.body.p_key === 'capture:near' && ask.body.p_priority === 'critical' && ask.body.p_est_cost > 0, ask && ask.body);
+  reset((q) => q.category === 'featured' ? cacheHit([event(q.sport_key)], false) : refused('skipped_window'));
+  let j = await (await M.handle(rq('?tier=near'))).json();
+  chk('Q1 a snapshot capture already wrote (cache hit): served from cache, nothing bought', j.ok === true && Number(j.quota_spent_this_run) === 0
+    && j.gateway && j.gateway.served_from_cache.length === 3 && providerCalls() === 0, j.gateway);
 
-  /* Q2 — the ledger is not applied: fail open, in-run guard on */
-  reset({ ledger: null });
-  let j = await (await M.handle(rq('?tier=board'))).json();
-  chk('Q2 a missing ledger fails open and says so', j.quota_guard && j.quota_guard.ledger === 'missing' && j.quota_guard.decision === 'ledger_missing', j.quota_guard);
-  chk('Q2 every configured sport is requested once', oddsCalls() === 3, oddsCalls());
-  chk('Q2 the run guard reports what it spent', j.quota_guard.run.spent === 18 && j.quota_guard.run.stopped === null, j.quota_guard.run);
-  chk('Q2 nothing is settled without a ledger ticket', net.settles.length === 0);
+  /* Q2 — the control plane missing / the gateway unreachable: fail CLOSED */
+  reset(() => refused('denied_gateway_error', { reason: 'gateway error (fail closed): function public.odds_api_acquire(jsonb) does not exist' }));
+  j = await (await M.handle(rq('?tier=board'))).json();
+  chk('Q2 the gateway SQL not applied: nothing bought, no provider request, the run is not "ok"', Number(j.quota_spent_this_run) === 0 && providerCalls() === 0 && j.status !== 'ok', [j.status, providerCalls()]);
+  reset(() => res(404, '<html>Function not found</html>'));
+  j = await (await M.handle(rq('?tier=board'))).json();
+  chk('Q2 the gateway not deployed (404): nothing bought, no provider request, and the run says so', Number(j.quota_spent_this_run) === 0 && providerCalls() === 0
+    && j.status !== 'ok' && JSON.stringify(j).indexOf('gateway_unreachable') >= 0, [j.status, providerCalls()]);
 
-  /* Q3 — 429 on the first sport stops the run */
-  reset({ ledger: allow(), oddsStatus: { americanfootball_nfl: { status: 429, body: 'Too many requests' } } });
+  /* Q3 — a 429 on the first sport stops the run */
+  reset((q, n) => n === 1 ? failed(429, 'Too many requests') : granted(q.category === 'featured' ? [event(q.sport_key)] : event(q.sport_key), 3));
   j = await (await M.handle(rq('?tier=day'))).json();
-  chk('Q3 a 429 stops the run: one board request, no second sport', oddsCalls() === 1, net.calls.map((c) => c.u.replace(/apiKey=[^&]+/, '')));
-  chk('Q3 no alternate ladder or prop request after a 429', net.eventCalls === 0, net.eventCalls);
-  chk('Q3 the run says why it stopped and which sports it did not request', j.quota_guard.run.stopped === 'provider_rate_limited'
-    && j.quota_guard.run.sports_not_requested.length === 2, j.quota_guard.run);
-  chk('Q3 the ledger is settled RATE_LIMITED with the provider’s status', net.settles.length === 1 && net.settles[0].p_status === 'RATE_LIMITED' && net.settles[0].p_http === 429, net.settles);
+  chk('Q3 a 429 stops the run: one board asked, no second sport', boardAsks() === 1, net.gw.map((b) => b.category + ':' + b.sport_key));
+  chk('Q3 no alternate ladder or prop is asked after a 429', ladderOrPropAsks() === 0, ladderOrPropAsks());
+  chk('Q3 the run says which sports it did not ask, and why', j.gateway && j.gateway.skipped.filter((x) => /not asked/.test(x.reason) && x.decision === 'provider_http_429').length === 2, j.gateway && j.gateway.skipped);
+  chk('Q3 no provider request from capture', providerCalls() === 0);
 
-  /* Q4 — the provider floor */
-  reset({ ledger: allow(), oddsRemaining: '1003' });
+  /* Q4 — the reserve */
+  reset((q) => q.category === 'featured' && q.sport_key === 'baseball_mlb' ? refused('denied_reserve') : (q.category === 'featured' ? granted([event(q.sport_key)], 3) : granted(event(q.sport_key), 1)));
   j = await (await M.handle(rq('?tier=board'))).json();
-  chk('Q4 under the floor the run stops after the balance is reported', oddsCalls() === 1 && j.quota_guard.run.stopped === 'quota_floor', [oddsCalls(), j.quota_guard.run]);
-  reset({ ledger: allow({ budget: { provider_remaining: 900 } }) });
+  chk('Q4 a request the reserve refuses buys nothing and the run is not a failure', boardAsks() === 3 && ['ok', 'partial'].indexOf(j.status) >= 0
+    && j.gateway.skipped.some((x) => x.sport === 'baseball_mlb' && x.decision === 'denied_reserve'), [j.status, j.gateway && j.gateway.skipped]);
+
+  /* Q5 — timeouts, then the gateway's cooldown */
+  ENV.CAPTURE_SPORTS = SPORTS + ',icehockey_nhl,basketball_nba';
+  reset((q, n) => q.category !== 'featured' ? refused('skipped_window') : (n <= 2 ? failed(0, 'TIMEOUT after 20000 ms') : refused('denied_cooldown', { reason: 'provider cooling down: 5 consecutive failures' })));
   j = await (await M.handle(rq('?tier=board'))).json();
-  chk('Q4 a balance the ledger already knows is under the floor buys nothing', oddsCalls() === 0 && j.quota_guard.run.stopped === 'quota_floor', [oddsCalls(), j.quota_guard.run]);
+  chk('Q5 each timeout is reported on its sport; the cooldown stops the run (no fourth ask)', boardAsks() === 3 && j.status !== 'ok'
+    && j.gateway.skipped.filter((x) => /not asked/.test(x.reason)).length === 2, [boardAsks(), j.status, j.gateway && j.gateway.skipped]);
+  ENV.CAPTURE_SPORTS = SPORTS;
 
-  /* Q5 — three timeouts open the circuit */
-  reset({ ledger: allow(), timeouts: true });
-  ENV.CAPTURE_SPORTS = 'americanfootball_nfl,americanfootball_ncaaf,basketball_nba,baseball_mlb,icehockey_nhl';
-  j = await (await M.handle(rq('?tier=board'))).json();
-  chk('Q5 three consecutive timeouts open the circuit; the rest are not requested', oddsCalls() === 3 && j.quota_guard.run.stopped === 'circuit_open'
-    && j.quota_guard.run.sports_not_requested.length === 2, [oddsCalls(), j.quota_guard.run]);
-  chk('Q5 settled TIMEOUT', net.settles[0] && net.settles[0].p_status === 'TIMEOUT', net.settles);
-  ENV.CAPTURE_SPORTS = 'americanfootball_nfl,americanfootball_ncaaf,basketball_nba';
+  /* Q6 — an exhausted quota, the ceiling, the emergency */
+  for (const env of [failed(401, 'Usage quota has been reached'), refused('denied_ceiling'), refused('denied_emergency')]) {
+    reset((q, n) => n === 1 ? env : granted([event(q.sport_key)], 3));
+    j = await (await M.handle(rq('?tier=day'))).json();
+    chk('Q6 ' + env.decision + ' stops the run at the first answer', boardAsks() === 1 && ladderOrPropAsks() === 0 && Number(j.quota_spent_this_run) === 0, [boardAsks(), j.quota_spent_this_run]);
+  }
 
-  /* Q6 — exhausted quota */
-  reset({ ledger: allow(), oddsStatus: { americanfootball_nfl: { status: 401, body: 'Usage quota has been reached' } }, oddsRemaining: '0' });
-  j = await (await M.handle(rq('?tier=day'))).json();
-  chk('Q6 an exhausted quota stops the run at the first answer', oddsCalls() === 1 && j.quota_guard.run.stopped === 'provider_quota_exhausted', j.quota_guard.run);
-  chk('Q6 settled QUOTA_EXHAUSTED', net.settles[0] && net.settles[0].p_status === 'QUOTA_EXHAUSTED', net.settles);
-
-  /* Q7 — a reader-triggered refresh */
-  reset({ ledger: deny('cache_fresh') });
+  /* Q7 — the desk's quote refresh */
+  reset((q) => q.category === 'featured' ? cacheHit([event(q.sport_key)], false) : refused('skipped_window'));
   j = await (await M.handle(rq('?tier=near&reason=board_refresh&sport=americanfootball_ncaaf'))).json();
-  const ask7 = net.calls.find((c) => /odds_quota_acquire/.test(c.u));
-  chk('Q7 a refresh asks under the near tier’s key at low priority (never the reserve)', ask7.body.p_key === 'capture:near' && ask7.body.p_priority === 'low' && ask7.body.p_caller === 'edgedesk_ai', ask7.body);
-  chk('Q7 right after a scheduled run it is answered from the stored board', j.skipped === true && j.reason === 'cache_fresh' && allProviderCalls() === 0, j);
+  chk('Q7 a refresh asks for exactly the one sport, under the near tier', boardAsks() === 1 && net.gw[0].sport_key === 'americanfootball_ncaaf'
+    && /^capture:near$/.test(net.gw[0].caller) && net.gw[0].trigger === 'board_refresh', net.gw.map((b) => [b.caller, b.trigger, b.sport_key]));
+  chk('Q7 inside the interval it is answered from the stored board: nothing bought', Number(j.quota_spent_this_run) === 0 && providerCalls() === 0, j.quota_spent_this_run);
 
-  /* Q8 — API access resumes: allowed again, settled OK */
-  reset({ ledger: allow() });
+  /* Q8 — recovery */
+  reset((q) => q.category === 'featured' ? granted([event(q.sport_key)], 3) : refused('skipped_window'));
   j = await (await M.handle(rq('?tier=day'))).json();
-  chk('Q8 after recovery the run is allowed and settles OK (which closes the ledger’s breaker)', net.settles.length === 1 && ['OK', 'PARTIAL'].indexOf(net.settles[0].p_status) >= 0 && j.quota_guard.run.stopped === null, [net.settles, j.quota_guard.run]);
-  chk('Q8 the settle carries the provider’s balance', net.settles[0].p_remaining === 5000, net.settles[0]);
+  chk('Q8 after recovery the run is granted, buys each board once and reports the provider\'s balance', j.status === 'ok' && boardAsks() === 3
+    && Number(j.quota_spent_this_run) === 9 && String(j.quota_remaining) === '5000', [j.status, boardAsks(), j.quota_spent_this_run, j.quota_remaining]);
 
-  /* Q9 — the two functions classify failures alike */
-  const S = os.tmpdir(), stub = path.join(fs.mkdtempSync(path.join(S, 'closechk-')), 'close.ts');
+  /* Q9 — close and capture stop on the same answers */
+  const stub = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'closechk-')), 'close.ts');
   fs.writeFileSync(stub, fs.readFileSync(path.join(__dirname, '..', '..', 'supabase', 'functions', 'close', 'index.ts'), 'utf8')
     .replace(/^import \{ createClient \} from "https:\/\/esm\.sh\/@supabase\/supabase-js@2";/m, 'const createClient = (..._a: any[]): any => ({});'));
   const prevServe = globalThis.Deno.serve; globalThis.Deno.serve = () => {};
   const C = await import(stub);
   globalThis.Deno.serve = prevServe;
-  const cases = [[200, '', '500'], [200, '', '0'], [429, 'slow down', '10'], [401, 'Usage quota has been reached', ''], [401, 'Invalid API key', '100'], [402, 'credits', ''], [403, 'forbidden', '5'], [404, 'unknown sport', '10'], [422, 'bad', '']];
-  cases.forEach((c) => {
-    const a = M.classifyOddsFailure(c[0], c[1], c[2]), b = C.closeQuotaStop(c[0], c[1], c[2]);
-    const stops = (x) => x === 'RATE_LIMITED' || x === 'QUOTA_EXHAUSTED' || x === 'AUTH_FAILED' ? x : null;
-    chk('Q9 capture and close agree on HTTP ' + c[0] + ' "' + c[1] + '"', stops(a) === b, [a, b]);
-  });
-  chk('Q9 a timeout is a TIMEOUT, a 5xx a FAILED (counted toward the circuit, not an instant stop)', M.classifyOddsFailure(0, 'TIMEOUT after 20000 ms', '') === 'TIMEOUT' && M.classifyOddsFailure(503, '', '') === 'FAILED');
+  const decisions = ['granted', 'cache_hit', 'in_flight', 'skipped_live', 'skipped_window', 'denied_daily_budget', 'denied_reserve', 'denied_category',
+    'denied_breaker', 'denied_gateway_disabled', 'denied_no_budget', 'denied_unconfirmed_quota', 'denied_ceiling', 'denied_emergency', 'denied_cooldown',
+    'provider_http_429', 'provider_http_401', 'provider_http_402', 'provider_http_403', 'provider_http_404', 'provider_http_503', 'provider_timeout',
+    'gateway_unreachable', 'gateway_unreachable: HTTP 404', 'denied_gateway_error'];
+  decisions.forEach((d) => chk('Q9 capture and close agree on "' + d + '"', M.gatewayRunStop(d) === C.closeGatewayStop(d), [M.gatewayRunStop(d), C.closeGatewayStop(d)]));
+  chk('Q9 the account-wide answers stop; per-request answers and transient failures never do',
+    ['denied_breaker', 'denied_no_budget', 'denied_cooldown', 'provider_http_429', 'provider_http_401'].every((d) => M.gatewayRunStop(d))
+    && ['cache_hit', 'denied_daily_budget', 'denied_reserve', 'provider_http_503', 'provider_timeout', 'gateway_unreachable'].every((d) => M.gatewayRunStop(d) === null));
 
   /* Q10 — diagnostics never buy ladders */
-  reset({ ledger: allow() });
   ENV.CAPTURE_SPORTS = 'americanfootball_nfl';
+  reset();
   j = await (await M.handle(rq('?diag=1'))).json();
-  chk('Q10 ?diag=1 buys no alternate ladder', net.eventCalls === 0, net.eventCalls);
-  const ask10 = net.calls.find((c) => /odds_quota_acquire/.test(c.u));
-  chk('Q10 a diagnostic is still metered, at low priority', ask10 && ask10.body.p_key === 'capture:diag' && ask10.body.p_priority === 'low', ask10 && ask10.body);
+  chk('Q10 ?diag=1 asks for no alternate ladder and no prop', ladderOrPropAsks() === 0, net.gw.map((b) => b.category));
+  ENV.CAPTURE_SPORTS = SPORTS;
 
-  /* the pure guard */
-  const g = M.makeRunGuard(20, 100, 3);
-  chk('guard: the per-run credit cap', M.guardCanSpend(g, 12) && (g.spent = 12, !M.guardCanSpend(g, 12)) && g.stopped === 'credit_budget', g);
-  const g2 = M.makeRunGuard(1000, 100, 3, '150');
-  chk('guard: the floor from the ledger’s known balance', !M.guardCanSpend(g2, 60) && g2.stopped === 'quota_floor', g2);
+  /* the design: capture holds no provider key and never names the host */
+  const src = fs.readFileSync(path.join(__dirname, '..', '..', 'supabase', 'functions', 'capture', 'index.ts'), 'utf8');
+  chk('capture never names the provider host or reads its key', !/api\.the-odds-api\.com/.test(src) && !/Deno\.env\.get\(\s*["'](ODDS_API_KEY|THE_ODDS_API_KEY)["']/.test(src));
   done();
 })().catch((e) => { chk('the suite ran', false, String(e && e.stack || e).slice(0, 800)); done(); });

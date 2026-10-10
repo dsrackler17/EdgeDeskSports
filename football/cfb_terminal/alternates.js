@@ -27,7 +27,7 @@
    store prices it cannot evaluate.
 
    CONTROLS. The runner is budgeted and opt-in:
-     - it runs only with --network and an ODDS_API_KEY;
+     - it runs only with --network and an odds gateway credential (2026-10-10: the key lives on odds_gateway);
      - --league cfb|nfl picks the sport key (americanfootball_ncaaf / _nfl);
      - only games that have not kicked off and start inside --window-h hours
        (default 72), nearest kickoff first, at most --max-events (default 12);
@@ -42,7 +42,7 @@
      - dedup: a duplicated outcome is refused, never averaged.
    Scheduling is the owner's decision (.github/workflows/cfb-lab.yml runs it
    only when the repository variable READ_ALT_CAPTURE is 'on' and an
-   ODDS_API_KEY secret exists). Until then nothing is spent and every surface
+   gateway credential exists). Until then nothing is spent and every surface
    says "Alternate spread pricing is not captured yet" — never an invented
    price.
 
@@ -62,7 +62,13 @@ const path = require('path');
 const crypto = require('crypto');
 
 const ROOT = path.resolve(__dirname, '..', '..');
-const API = 'https://api.the-odds-api.com/v4';
+/* 2026-10-10 (docs/odds-api-incident-2026-10/INCIDENT.md): no provider key and
+   no provider URL here any more. Requests are DESCRIBED in the provider's path
+   shape and SENT to supabase/functions/odds_gateway (tools/lib/odds_gateway.js)
+   as its `alternates` category (inside 24 h only, at most every 6 h beyond
+   3 h of kickoff and every 2 h inside it, shed first under budget pressure). */
+const API = 'odds_gateway:/v4';
+const G = require(path.join(__dirname, '..', '..', 'tools', 'lib', 'odds_gateway.js'));
 const LEAGUES = {
   cfb: { sport: 'americanfootball_ncaaf', join: true },
   nfl: { sport: 'americanfootball_nfl', join: false },
@@ -252,14 +258,25 @@ function writeFeed(file, feed) {
   return true;
 }
 
-/* every billed request has a deadline (docs/market-resilience): a hung call
-   must not hold the job, and it is never retried here */
-const FETCH_TIMEOUT_MS = 20000;
-async function getJson(url) {
-  const res = await fetch(url, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
-  const remaining = num(res.headers.get('x-requests-remaining')), last = num(res.headers.get('x-requests-last'));
-  if (!res.ok) throw Object.assign(new Error('HTTP ' + res.status + ' ' + url.replace(/apiKey=[^&]+/, 'apiKey=***')), { status: res.status, remaining });
-  return { body: await res.json(), remaining, last };
+/* A described request -> odds_gateway -> { body, remaining, last }, or a thrown
+   error carrying `status` (a provider HTTP code, or 'refused' with the
+   gateway's decision: a refusal is not a provider failure). */
+function gatewayGetter(client, league) {
+  return async function (url) {
+    const m = /\/sports\/([^/?]+)\/events(?:\/([^/?]+)\/odds)?(?:\?(.*))?$/.exec(String(url));
+    if (!m) throw Object.assign(new Error('not a gateway request'), { status: 'network' });
+    const q = new URLSearchParams(m[3] || '');
+    const eventId = m[2] ? decodeURIComponent(m[2]) : null;
+    const env = await client.request(Object.assign({ caller: 'read_alternates:' + league, consumer: 'read_alternates', sport_key: decodeURIComponent(m[1]) },
+      eventId ? { category: 'alternates', event_id: eventId, commence_time: q.get('commence_time') || undefined, odds_format: 'american' } : { category: 'events_index' }));
+    const qq = env.quota || {};
+    const usable = env.ok && env.data != null && (env.source === 'provider' || env.source === 'cache' || (!eventId && env.source === 'stale_cache'));
+    if (usable && !(eventId && env.new_for_consumer === false)) {
+      return { body: env.data, remaining: qq.remaining != null ? Number(qq.remaining) : null, last: env.source === 'provider' ? Number(env.cost) || 0 : 0 };
+    }
+    if (/^provider_|^gateway_unreachable$/.test(String(env.decision))) throw Object.assign(new Error('odds gateway: ' + env.decision), { status: Number(env.status) || 'network', remaining: qq.remaining != null ? Number(qq.remaining) : null });
+    throw Object.assign(new Error('odds gateway: ' + (usable ? 'already_processed' : env.decision)), { status: 'refused', decision: usable ? 'already_processed' : (env.decision || 'refused') });
+  };
 }
 
 function seasonOf(now) {
@@ -270,18 +287,18 @@ function seasonOf(now) {
 }
 
 async function run(opts) {
-  const now = opts.now || Date.now(), key = opts.key, league = leagueOf(opts.league), L = LEAGUES[league];
+  const now = opts.now || Date.now(), league = leagueOf(opts.league), L = LEAGUES[league];
   const sport = opts.sport || L.sport;
   const season = opts.season || seasonOf(now);
   const P = opts.paths || ledgerPaths(season, league);
   const state = readJson(P.state) || {};
-  const getter = opts.getJson || getJson;
-  if (!key) return { league, skipped: 'no ODDS_API_KEY: nothing captured, nothing spent' };
+  const getter = opts.getJson || (opts.gateway ? gatewayGetter(opts.gateway, league) : null);
+  if (!getter) return { league, skipped: 'no odds gateway credential: nothing captured, nothing spent' };
   if (state.last_run && now - Date.parse(state.last_run) < opts.min_interval_h * 3600e3) return { league, skipped: 'ran ' + state.last_run + ' (every ' + opts.min_interval_h + ' h at most)' };
   const attemptAt = new Date(now).toISOString();
   /* the event index is free: it costs no credit */
   let ev;
-  try { ev = await getter(API + '/sports/' + sport + '/events?apiKey=' + encodeURIComponent(key) + '&dateFormat=iso'); }
+  try { ev = await getter(API + '/sports/' + sport + '/events?dateFormat=iso'); }
   catch (e) {
     const s = Object.assign({}, state, { league, last_attempt: attemptAt, last_error: 'event index failed: ' + (e.status || 'network') });
     if (!opts.dry_run) { fs.mkdirSync(P.dir, { recursive: true }); fs.writeFileSync(P.state, JSON.stringify(s, null, 1) + '\n'); }
@@ -306,8 +323,8 @@ async function run(opts) {
   for (const p of take) {
     if (remaining != null && opts.min_remaining != null && remaining < opts.min_remaining) { stopped = 'credits below floor (' + remaining + ' < ' + opts.min_remaining + ')'; break; }
     try {
-      const r = await getter(API + '/sports/' + sport + '/events/' + encodeURIComponent(p.event.id) + '/odds?apiKey=' + encodeURIComponent(key)
-        + '&markets=alternate_spreads&bookmakers=' + encodeURIComponent(opts.bookmakers) + '&oddsFormat=american&dateFormat=iso');
+      const r = await getter(API + '/sports/' + sport + '/events/' + encodeURIComponent(p.event.id) + '/odds?markets=alternate_spreads'
+        + '&bookmakers=' + encodeURIComponent(opts.bookmakers) + '&oddsFormat=american&dateFormat=iso&commence_time=' + encodeURIComponent(p.event.commence_time));
       calls++; if (r.remaining != null) remaining = r.remaining;
       const parsed = parseEventOdds(r.body, p.game_id, observedAt, { season, league });
       all.push(...parsed.quotes);
@@ -315,6 +332,11 @@ async function run(opts) {
       evInfo[p.event.id] = { provider_event_id: p.event.id, game_id: p.game_id, home_team: p.event.home_team, away_team: p.event.away_team, kickoff_ts: iso(p.event.commence_time) };
       Object.keys(parsed.refused).forEach((k) => { refused[k] = (refused[k] || 0) + parsed.refused[k]; });
     } catch (e) {
+      if (e.status === 'refused') {
+        refused['gateway: ' + e.decision] = (refused['gateway: ' + e.decision] || 0) + 1;
+        if (/^denied_breaker$|^denied_gateway_disabled$/.test(e.decision)) { stopped = 'odds provider paused (circuit breaker)'; break; }
+        continue;
+      }
       if (e.status === 429 || e.status === 401) { refused['quota or key: ' + e.status] = 1; stopped = 'provider refused: ' + e.status; break; }
       refused['event failed: ' + (e.status || 'network')] = (refused['event failed: ' + (e.status || 'network')] || 0) + 1;
     }
@@ -359,9 +381,10 @@ if (require.main === module) {
   } else if (flag('feed-only')) {
     console.log('[read alternates]', JSON.stringify(feedOnly({ league, dry_run: flag('dry-run') })));
   } else if (!flag('network')) {
-    console.log('[read alternates] offline: pass --network (and ODDS_API_KEY) to capture; nothing spent.');
+    console.log('[read alternates] offline: pass --network (the odds gateway credential comes from SB_URL / SB_SERVICE_ROLE) to capture; nothing spent.');
   } else {
-    run({ key: process.env.ODDS_API_KEY || null, league, sport: arg('sport', null), window_h: Number(arg('window-h', DEFAULTS.window_h)),
+    const gcfg = G.config(process.env);
+    run({ gateway: gcfg ? G.client(gcfg) : null, league, sport: arg('sport', null), window_h: Number(arg('window-h', DEFAULTS.window_h)),
       max_events: Number(arg('max-events', DEFAULTS.max_events)), min_interval_h: Number(arg('min-interval-h', DEFAULTS.min_interval_h)),
       min_remaining: Number(arg('min-remaining', DEFAULTS.min_remaining)),
       bookmakers: arg('bookmakers', process.env.READ_ALT_BOOKMAKERS || DEFAULTS.bookmakers), dry_run: flag('dry-run') })

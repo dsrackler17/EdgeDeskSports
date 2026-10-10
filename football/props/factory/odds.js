@@ -2,8 +2,8 @@
    EdgeDesk player props — OBSERVED SPORTSBOOK PROP QUOTES (Phase C).
 
    Extends the existing The Odds API integration the way the alternate-spread
-   capture does (football/cfb_terminal/alternates.js): the same provider, the
-   same key (ODDS_API_KEY), the per-event endpoint (the bulk /odds endpoint
+   capture does (football/cfb_terminal/alternates.js): the same provider
+   (reached only through odds_gateway since 2026-10-10), the per-event endpoint (the bulk /odds endpoint
    does not serve player props), the free /events index, a credit floor read
    from x-requests-remaining, a minimum interval, a stop on 401/429 and a
    change-only append-only ledger. The production capture edge function is NOT
@@ -43,7 +43,14 @@ const cfbSrc = require('./sources/cfb.js');
 const nflSrc = require('./sources/nfl.js');
 const MK = require('./config/markets.json');
 
-const API = 'https://api.the-odds-api.com/v4';
+/* 2026-10-10 (docs/odds-api-incident-2026-10/INCIDENT.md): no provider key and
+   no provider URL here. A backfill request is DESCRIBED in the provider's path
+   shape and SENT to supabase/functions/odds_gateway as its `historical_events`
+   / `historical_props` categories, which are OFF unless an operator switches
+   them on (historical odds bill at 10x and are never part of normal polling).
+   A refusal stops the backfill and says why; nothing is spent. */
+const API = 'odds_gateway:/v4';
+const G = require(path.join(__dirname, '..', '..', '..', 'tools', 'lib', 'odds_gateway.js'));
 const PROVIDER = 'the-odds-api';
 const SPORT = { NFL: 'americanfootball_nfl', CFB: 'americanfootball_ncaaf' };
 const DEFAULTS = { window_h: 96, max_events: 16, min_interval_h: 2, min_remaining: 50, regions: null,
@@ -199,14 +206,24 @@ function appendLedger(league, season, rows) {
   return rows.length;
 }
 
-/* historical odds bill at 10x: every call has a deadline and none is retried
-   here (docs/market-resilience) */
-const FETCH_TIMEOUT_MS = 30000;
-async function getJson(url) {
-  const res = await fetch(url, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
-  const remaining = num(res.headers.get('x-requests-remaining')), last = num(res.headers.get('x-requests-last'));
-  if (!res.ok) throw Object.assign(new Error('HTTP ' + res.status + ' ' + url.replace(/apiKey=[^&]+/, 'apiKey=***')), { status: res.status, remaining });
-  return { body: await res.json(), remaining, last };
+/* A described historical request -> odds_gateway -> { body, remaining, last },
+   or a thrown error carrying `status` ('refused' with the gateway's decision,
+   or the provider's HTTP code). A stored snapshot of the same historical
+   moment is reused at zero cost. */
+function gatewayGetter(client, league) {
+  return async function (url) {
+    const m = /\/historical\/sports\/([^/?]+)\/events(?:\/([^/?]+)\/odds)?(?:\?(.*))?$/.exec(String(url));
+    if (!m) throw Object.assign(new Error('not a gateway request'), { status: 'network' });
+    const q = new URLSearchParams(m[3] || '');
+    const env = await client.request({ caller: 'props_factory_backfill:' + league, sport_key: decodeURIComponent(m[1]), date: q.get('date'),
+      category: m[2] ? 'historical_props' : 'historical_events', event_id: m[2] ? decodeURIComponent(m[2]) : undefined, odds_format: 'american' });
+    const qq = env.quota || {};
+    if (env.ok && env.data != null && (env.source === 'provider' || env.source === 'cache')) {
+      return { body: env.data, remaining: qq.remaining != null ? Number(qq.remaining) : null, last: env.source === 'provider' ? Number(env.cost) || 0 : 0 };
+    }
+    if (/^provider_|^gateway_unreachable$/.test(String(env.decision))) throw Object.assign(new Error('odds gateway: ' + env.decision), { status: Number(env.status) || 'network' });
+    throw Object.assign(new Error('odds gateway: ' + env.decision), { status: 'refused', decision: env.decision || 'refused', reason: env.reason || null });
+  };
 }
 
 /* rosters of the two teams (recent players, from the warehouse) */
@@ -228,8 +245,8 @@ function rosterFor(wh, league, game, season) {
 /* ------------------------------------------------------------ historical backfill */
 async function backfillHistorical(wh, league, opts) {
   opts = Object.assign({}, DEFAULTS, opts || {});
-  const key = opts.key; const getter = opts.getJson || getJson;
-  if (!key) return { league, skipped: 'no ODDS_API_KEY' };
+  const getter = opts.getJson || (opts.gateway ? gatewayGetter(opts.gateway, league) : null);
+  if (!getter) return { league, skipped: 'no odds gateway credential' };
   const from = Math.max(Date.parse(DEFAULTS.HISTORICAL_FROM), Date.parse(opts.from || DEFAULTS.HISTORICAL_FROM));
   const to = Math.min(Date.now(), Date.parse(opts.to || new Date().toISOString()));
   const games = wh.leagues[league].games.filter((g) => g.status === 'final' && Date.parse(g.kickoff_utc) >= from && Date.parse(g.kickoff_utc) <= to)
@@ -244,12 +261,12 @@ async function backfillHistorical(wh, league, opts) {
       if (Array.from(done).some((s) => Math.abs(Date.parse(s) - Date.parse(at)) < 20 * 60000)) { out.skipped_done++; continue; }
       if (out.remaining != null && out.remaining < opts.min_remaining) { out.stopped = 'credits below floor'; return out; }
       try {
-        const evs = await getter(API + '/historical/sports/' + SPORT[league] + '/events?apiKey=' + encodeURIComponent(key) + '&date=' + encodeURIComponent(at));
+        const evs = await getter(API + '/historical/sports/' + SPORT[league] + '/events?date=' + encodeURIComponent(at));
         out.calls++; out.remaining = evs.remaining;
         const list = (evs.body && evs.body.data) || [];
         const ev = list.find((e) => linkEvent(reg, league, e, [g]).game_id === g.game_id);
         if (!ev) continue;
-        const r = await getter(API + '/historical/sports/' + SPORT[league] + '/events/' + encodeURIComponent(ev.id) + '/odds?apiKey=' + encodeURIComponent(key) + '&date=' + encodeURIComponent(at)
+        const r = await getter(API + '/historical/sports/' + SPORT[league] + '/events/' + encodeURIComponent(ev.id) + '/odds?date=' + encodeURIComponent(at)
           + '&markets=' + encodeURIComponent(opts.markets) + '&bookmakers=' + encodeURIComponent(opts.bookmakers) + '&oddsFormat=american&dateFormat=iso');
         out.calls++; out.remaining = r.remaining;
         const snapAt = (r.body && r.body.timestamp) || at;
@@ -259,6 +276,7 @@ async function backfillHistorical(wh, league, opts) {
         out.written += appendLedger(league, season, fresh);
         appendListings(league, season, parsed.listings.filter((x) => Date.parse(x.snapshot_at) < Date.parse(g.kickoff_utc)));
       } catch (e) {
+        if (e.status === 'refused') { out.stopped = 'odds gateway: ' + e.decision + (e.reason ? ' — ' + e.reason : ''); return out; }
         if (e.status === 429 || e.status === 401 || e.status === 402 || e.status === 403 || e.status === 422) { out.stopped = 'provider refused: ' + e.status; return out; }
         /* any other failure is counted and named, never swallowed; three in a
            row stop the backfill rather than billing into an outage */

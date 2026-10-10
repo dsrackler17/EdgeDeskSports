@@ -115,9 +115,15 @@ function authorized(req: Request): boolean {
 const json = (o: unknown, status = 200) =>
   new Response(JSON.stringify(o), { status, headers: { "content-type": "application/json" } });
 
-// ---- from _shared/oddsapi.ts ------------------------------------------------
-const ODDS_KEY = Deno.env.get("ODDS_API_KEY") ?? "";
-const ODDS_BASE = "https://api.the-odds-api.com/v4";
+// ---- odds: through supabase/functions/odds_gateway (2026-10-10) -------------
+// close holds no provider key and builds no provider URL any more. It asks the
+// gateway for the `close` category, which shares its fingerprint (markets,
+// books, format) with capture's `featured` board: a board capture bought inside
+// the cadence window (20 min within 3 h of kickoff) serves close at zero cost,
+// and two consumers never buy the same board twice. See
+// docs/odds-api-incident-2026-10/INCIDENT.md.
+const GATEWAY_URL = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, "") + "/functions/v1/odds_gateway";
+const GATEWAY_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
 /* RETIRED SPORTS (lib/edgedesk_sports.js, inlined by tools/presentation/inline.js).
    A retired sport's live close is never requested; its open signals close from
@@ -380,41 +386,52 @@ const MIN_PACK = Number(Deno.env.get("CLOSE_MIN_PACK_FAMILIES") ?? "2");
    against a different reference and must never be averaged with these. */
 export const CLOSE_POLICY = Deno.env.get("CLOSE_POLICY") ?? "close-2026.09.1";
 
-/* QUOTA GUARD (docs/market-resilience, supabase/odds_quota.sql). Every
-   billed request has a deadline, the provider's quota headers are kept, and
-   the first 429 / 401 / exhausted quota stops the run: the sports not yet
-   requested take the provider-down path (a started game closes from its last
-   observed tick, an upcoming one is deferred), so nothing is retried and
-   nothing is written off. */
-const CLOSE_TIMEOUT_MS = 20000;
-async function fetchOdds(sport: string, markets: string) {
-  const scope = BOOKMAKERS.length
-    ? `bookmakers=${encodeURIComponent(BOOKMAKERS.join(","))}`
-    : `regions=${encodeURIComponent(REGIONS)}`;
-  const u = `${ODDS_BASE}/sports/${sport}/odds/?apiKey=${ODDS_KEY}&${scope}`
-    + `&markets=${encodeURIComponent(markets)}&oddsFormat=decimal&dateFormat=iso`;
-  let signal: AbortSignal | undefined;
-  try { signal = (AbortSignal as any).timeout(CLOSE_TIMEOUT_MS); } catch { signal = undefined; }
+/* `markets` is kept in the signature for the callers; the gateway's `close`
+   category decides the markets (h2h, spreads, totals) and the books, so close
+   and capture always ask for the same board. Only a board the gateway calls
+   fresh for its cadence (bought now, or a cache hit inside the window) is a
+   close: a stale snapshot served while the breaker is off is NOT, and the row
+   takes the provider-not-ok path (a started event closes from its last
+   observed tick, an upcoming one is deferred). Never retried here: the
+   gateway retries temporary provider failures itself, within budget. */
+async function fetchOdds(sport: string, _markets: string) {
   try {
-    const r = await fetch(u, { signal });
-    const h = (n: string) => r.headers.get(n) ?? "";
-    const detail = r.ok ? "" : (await r.text().catch(() => "")).slice(0, 240);
-    return { data: r.ok ? await r.json() : [], quota: h("x-requests-remaining"), used: h("x-requests-used"), last: h("x-requests-last"), ok: r.ok, status: r.status, detail };
+    const r = await fetch(GATEWAY_URL, {
+      method: "POST",
+      headers: { "content-type": "application/json", apikey: GATEWAY_KEY, authorization: `Bearer ${GATEWAY_KEY}` },
+      body: JSON.stringify({ action: "odds", caller: "close", category: "close", sport_key: sport, odds_format: "decimal" }),
+      signal: AbortSignal.timeout(45000),
+    });
+    const env = await r.json().catch(() => null);
+    const usable = !!env && env.ok === true && env.data != null && (env.source === "provider" || env.source === "cache");
+    const fetchedMs = env?.fetched_at ? Date.parse(env.fetched_at) : NaN;
+    return {
+      data: usable && Array.isArray(env.data) ? env.data : [],
+      quota: env?.quota?.remaining == null ? "" : String(env.quota.remaining),
+      ok: usable,
+      decision: String(env?.decision ?? "gateway_unreachable"),
+      source: String(env?.source ?? "none"),
+      observedMs: Number.isFinite(fetchedMs) ? fetchedMs : null,
+      cost: env?.source === "provider" ? Number(env.cost) || 0 : 0,
+    };
   } catch (e) {
-    const name = String((e as Error)?.name ?? "");
-    return { data: [], quota: "", used: "", last: "", ok: false, status: 0,
-      detail: (name === "TimeoutError" || name === "AbortError" ? "TIMEOUT after " + CLOSE_TIMEOUT_MS + " ms: " : "") + String((e as Error)?.message ?? e) };
+    return { data: [], quota: "", ok: false, decision: "gateway_unreachable: " + String((e as Error)?.message ?? e).slice(0, 120),
+      source: "none", observedMs: null, cost: 0 };
   }
 }
-/** Should the run stop after this response? null = carry on. (Mirrors
-    capture's classifyOddsFailure; tools/resilience/quota_guard.test.js holds
-    the two to the same answers.) */
-export function closeQuotaStop(status: number, detail: string, remaining: string): string | null {
-  const rem = remaining === "" || remaining == null ? NaN : Number(remaining);
-  if (status >= 200 && status < 300) return Number.isFinite(rem) && rem <= 0 ? "QUOTA_EXHAUSTED" : null;
-  if (status === 429) return "RATE_LIMITED";
-  if (status === 401 || status === 402 || status === 403)
-    return /quota|usage|credit|limit reached|out of requests/i.test(String(detail ?? "")) || (Number.isFinite(rem) && rem <= 0) ? "QUOTA_EXHAUSTED" : "AUTH_FAILED";
+/** Should the run stop asking after this gateway answer? null = carry on.
+    Paid retrieval off for every sport (the breaker, no budget, an unconfirmed
+    or exhausted quota, a cooldown, the provider refusing the key or rate-
+    limiting it) stops the run: the sports not yet asked take the provider-down
+    path (a started game closes from its last observed tick, an upcoming one is
+    deferred), so nothing is retried and nothing is written off. A per-sport
+    answer (a cache hit, a skipped live sport, a daily-budget deferral) never
+    stops it. The same rule as capture's gatewayRunStop
+    (tools/resilience/quota_guard.test.js holds them together). */
+export function closeGatewayStop(decision: string): string | null {
+  const d = String(decision ?? "").replace(/:.*$/, "").trim();
+  if (/^denied_(breaker|gateway_disabled|no_budget|unconfirmed_quota|ceiling|emergency|cooldown)$/.test(d)) return d;
+  if (/^provider_http_(401|402|403|429)$/.test(d)) return d;
   return null;
 }
 
@@ -1023,7 +1040,10 @@ Deno.serve(async (req) => {
          reference_books are not inside the scope, every close falls back to a
          labelled consensus and Tier-A-equivalent CLV is unreachable. */
       pricing: {
-        scope: BOOKMAKERS.length ? `bookmakers=${BOOKMAKERS.join(",")}` : `regions=${REGIONS}`,
+        /* Selection is odds_gateway's (public.odds_api_categories `close`,
+           else odds_api_config.bookmakers); these env values are the legacy
+           ones capture and close used to send, kept for comparison only. */
+        scope: "odds_gateway category close (legacy env: " + (BOOKMAKERS.length ? `bookmakers=${BOOKMAKERS.join(",")}` : `regions=${REGIONS}`) + ")",
         reference_books: REFERENCE_BOOKS,
         reference_reachable: BOOKMAKERS.length
           ? REFERENCE_BOOKS.some((b) => BOOKMAKERS.includes(b))
@@ -1198,54 +1218,33 @@ Deno.serve(async (req) => {
   const fresh = new Map<string, any>();
   const fetchOk = new Set<string>();
   const providers: Record<string, any> = {};
-  /* THE LEDGER, once per run, CRITICAL priority (closing lines are a refresh
-     window worth the reserve). Missing ledger = fail open to the in-run stop. */
-  const billable = sports.filter((s0) => !EDSPORTS.isRetiredKey(s0));
-  const perSportCost = Math.max(1, MARKETS.split(",").filter(Boolean).length) * (BOOKMAKERS.length ? Math.ceil(BOOKMAKERS.length / 10) : Math.max(1, REGIONS.split(",").filter(Boolean).length));
-  const quota: any = { ledger: "missing", decision: null, request_id: null, spent: 0, remaining: null as number | null, used: null as number | null, stopped: null as string | null, last_http: null as number | null };
-  if (billable.length) {
-    try {
-      const { data: t, error } = await db.rpc("odds_quota_acquire", { p_caller: "close", p_key: "close", p_est_cost: perSportCost * billable.length, p_priority: "critical",
-        p_sport: null, p_endpoint: "odds", p_min_interval_s: null });
-      if (error) { quota.ledger = /PGRST202|42883|does not exist|Could not find/i.test(String(error.code ?? "") + " " + String(error.message ?? "")) ? "missing" : "error"; quota.decision = String(error.message ?? error).slice(0, 160); }
-      else if (t && typeof t.allowed === "boolean") {
-        quota.ledger = "on"; quota.decision = t.reason; quota.request_id = t.request_id ?? null;
-        if (!t.allowed) quota.stopped = "ledger_" + t.reason;
-      }
-    } catch (e) { quota.ledger = "error"; quota.decision = String((e as Error)?.message ?? e).slice(0, 160); }
-  }
+  /* THE RUN'S QUOTA VIEW. Every request goes through odds_gateway, which
+     holds the one shared budget (supabase/odds_api_gateway.sql); this only
+     records what it answered and stops asking once paid retrieval is off. */
+  const quota: any = { via: "odds_gateway", spent: 0, remaining: null as number | null, stopped: null as string | null, decisions: {} as Record<string, string> };
   for (const sport of sports) {
-    if (quota.stopped && !EDSPORTS.isRetiredKey(sport)) { providers[sport] = { ok: false, reason: "quota guard: " + quota.stopped + " (not requested; closes from the last observed tick or defers)" }; continue; }
+    if (quota.stopped && !EDSPORTS.isRetiredKey(sport)) { providers[sport] = { ok: false, reason: "odds gateway: " + quota.stopped + " (not requested; closes from the last observed tick or defers)" }; continue; }
     /* A retired sport's live close is never bought (EDSPORTS). Its rows take the
        provider-not-ok path below: a started event closes from its last observed
        tick, an upcoming one is deferred until it starts. Nothing is written off. */
     if (EDSPORTS.isRetiredKey(sport)) { providers[sport] = { ok: false, reason: "retired sport: no live close requested; closes from the last observed tick" }; continue; }
     try {
-      const res = await fetchOdds(sport, MARKETS);
-      const { data, ok } = res;
-      quota.spent += Number(res.last) || 0; quota.last_http = res.status;
-      if (res.quota !== "" && Number.isFinite(Number(res.quota))) quota.remaining = Number(res.quota);
-      if (res.used !== "" && Number.isFinite(Number(res.used))) quota.used = Number(res.used);
-      const stop = closeQuotaStop(res.status, res.detail, res.quota);
-      if (stop) quota.stopped = "provider_" + stop.toLowerCase();
-      if (!ok) { providers[sport] = { ok: false, reason: "provider returned not-ok (HTTP " + res.status + (res.detail ? ": " + res.detail.slice(0, 120) : "") + ")" }; continue; }
+      const { data, ok, decision, source, observedMs, cost, quota: rem } = await fetchOdds(sport, MARKETS);
+      quota.spent += cost; quota.decisions[sport] = decision;
+      if (rem !== "" && Number.isFinite(Number(rem))) quota.remaining = Number(rem);
+      const stop = closeGatewayStop(decision);
+      if (stop) quota.stopped = stop;
+      if (!ok) { providers[sport] = { ok: false, reason: "gateway: " + decision, source }; continue; }
+      /* A board bought a few minutes ago by capture is priced as of when it was
+         bought, so its quote ages are true. */
+      const asOf = observedMs ?? now;
       let priced = 0;
-      for (const ev of data) for (const o of priceEvent(ev, METHOD, REFERENCE_BOOKS, now)) { fresh.set(sigKey(o), o); priced++; }
+      for (const ev of data) for (const o of priceEvent(ev, METHOD, REFERENCE_BOOKS, asOf)) { fresh.set(sigKey(o), o); priced++; }
       fetchOk.add(sport);
-      providers[sport] = { ok: true, events: data.length, priced };
+      providers[sport] = { ok: true, events: data.length, priced, source, decision, cost, observed_at: new Date(asOf).toISOString() };
     } catch (e) {
       providers[sport] = { ok: false, reason: String(e).slice(0, 200) };
     }
-  }
-
-  if (quota.request_id) {
-    const st = /exhausted/.test(String(quota.stopped)) || quota.remaining === 0 ? "QUOTA_EXHAUSTED" : /rate_limited/.test(String(quota.stopped)) ? "RATE_LIMITED"
-      : /auth_failed/.test(String(quota.stopped)) ? "AUTH_FAILED" : (fetchOk.size ? (Object.values(providers).some((x: any) => !x.ok) ? "PARTIAL" : "OK") : "FAILED");
-    try {
-      const { data: sr } = await db.rpc("odds_quota_settle", { p_request_id: quota.request_id, p_status: st, p_cost: quota.spent, p_remaining: quota.remaining,
-        p_used: quota.used, p_http: quota.last_http, p_detail: "close · " + billable.length + " sport(s)" + (quota.stopped ? " · stopped: " + quota.stopped : "") });
-      quota.settled = sr ?? null;
-    } catch (e) { quota.settled = { settled: false, error: String((e as Error)?.message ?? e).slice(0, 160) }; }
   }
 
   /* Sweep-phase recoveries are already written; they are seeded into the tallies

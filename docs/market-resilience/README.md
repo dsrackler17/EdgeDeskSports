@@ -277,9 +277,11 @@ It reads no sportsbook number, and its note says it is not a ranking of bets.
   brief export (Markdown) and the assistant keep working.
 - **Build.** `node football/cfb_terminal/build.js --mode research-only`, or
   `EDGEDESK_MODE=RESEARCH_ONLY`.
-- **Live requests.** `update public.odds_quota_config set mode = 'RESEARCH_ONLY';`
-  denies every live odds request centrally (`research_only`). Capture returns
-  `ok:true, skipped`.
+- **Live requests.** `select public.odds_api_set_enabled(false, '<reason>', '<you>');`
+  (or **Pause paid retrieval** on `admin/odds-usage/`) denies every paid odds
+  request centrally at the odds gateway. Capture returns `ok:true` with
+  `provider_paused`, and every page serves its stored prices with their age.
+  (Superseded: `odds_quota_config.mode` is no longer read by any caller.)
 
 ### The page (`research/cfb/`)
 
@@ -326,6 +328,19 @@ disagreement, sensitivity, total and verdict questions from stored data
   already have been charged.
 
 ### What changed
+
+> **Superseded for quota (2026-10-10).** The quota half of this section, the
+> `odds_quota.sql` ledger and the guards inside `capture` and `close`, was
+> replaced by one gateway before it was deployed. Every Odds API request now
+> goes through `supabase/functions/odds_gateway`, the only holder of the
+> provider key, under `supabase/odds_api_gateway.sql`'s shared budget, breaker,
+> single flight and event-aware cache. It fails closed where this ledger failed
+> open (`docs/odds-api-incident-2026-10/INCIDENT.md`). The same scenarios
+> (refusals spend nothing, a 429 or an exhausted quota stops the run, the
+> desk's refresh is scoped, `?diag=1` buys no ladders) are held against the
+> gateway by `tools/resilience/quota_guard.test.js`. The research, integrity and
+> snapshot work in this document is unaffected. The table below describes the
+> quota design as it was written.
 
 | Layer | Change |
 |---|---|
@@ -392,7 +407,10 @@ The steps are independent and can be applied in any order. Each is reversible.
      46. **BET 0 either way**, and betting stays disabled by the frozen policy.
    - Revert just the heartbeat rule: set `TERMINAL_HEARTBEATS_CONFIRM=0` in the
      `cfb-lab.yml` terminal step.
-2. **Apply `supabase/odds_quota.sql`** (SQL editor; the report rows must all
+2. **Skip this step: superseded.** Quota is enforced by the odds gateway
+   (`docs/odds-api-incident-2026-10/INCIDENT.md` §9 has its deploy order).
+   No caller asks `odds_quota.sql`. As originally written: apply
+   `supabase/odds_quota.sql` (SQL editor; the report rows must all
    read `ok`). Then set your plan:
 
    ```sql
@@ -416,7 +434,7 @@ The steps are independent and can be applied in any order. Each is reversible.
    - Rollback: `supabase/research_snapshots_rollback.sql`. The committed ledger
      restores every row.
 5. **Optional.**
-   - Research-only operation: `update public.odds_quota_config set mode = 'RESEARCH_ONLY';`
+   - Research-only operation (superseded): `select public.odds_api_set_enabled(false, '<reason>', '<you>');`
    - Record a number by hand:
      `node tools/football/manual_market.js add --game <id> --spread <home line> [--total N]`,
      then rebuild.

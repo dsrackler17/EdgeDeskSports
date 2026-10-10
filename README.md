@@ -119,8 +119,9 @@ research visibility, market integrity and betting validation
 (`lib/edgedesk_research_engine.js`). A large unverified disagreement is
 labelled INVESTIGATE and explained by a sensitivity panel, never promoted.
 The research page has a RESEARCH ONLY mode and a model-only research
-priority. One request budget protects the Odds API quota
-(`supabase/odds_quota.sql`). See
+priority. One request budget protects the Odds API quota: every request goes
+through `supabase/functions/odds_gateway` and its control plane
+(`supabase/odds_api_gateway.sql`; `docs/odds-api-incident-2026-10/INCIDENT.md`). See
 [`docs/market-resilience/README.md`](docs/market-resilience/README.md).
 Tests: `npm run resilience:test`.
 

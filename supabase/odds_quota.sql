@@ -1,4 +1,11 @@
 -- =============================================================================
+-- SUPERSEDED (2026-10-10) by supabase/odds_api_gateway.sql. No caller asks this
+-- ledger any more: every Odds API request goes through
+-- supabase/functions/odds_gateway, the only holder of the provider key, which
+-- enforces one shared budget, breaker, single flight and cache-first interval
+-- and FAILS CLOSED (docs/odds-api-incident-2026-10/INCIDENT.md). Kept, with its
+-- rollback and its SQL suite, as history; applying it changes nothing.
+-- =============================================================================
 -- odds_quota — ONE request budget for every caller of The Odds API.
 -- docs/market-resilience/README.md (§ Quota protection)
 --
