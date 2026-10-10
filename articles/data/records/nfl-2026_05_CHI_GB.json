@@ -23,8 +23,8 @@
   "game_time": "2026-10-11T17:00:00.000Z",
   "game_when_label": "2026-10-11 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-10T09:44:27.485Z",
-  "generated_at": "2026-10-10T09:44:27.485Z",
+  "updated_at": "2026-10-10T17:18:12.827Z",
+  "generated_at": "2026-10-10T17:18:12.827Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 2.6-point gap is context only and the game is excluded from research ranking.",
@@ -1159,7 +1159,7 @@
       "total_market": "46.0",
       "total_difference": "0.6 points",
       "book": "Hard Rock Bet",
-      "capture_age": "84 hours old",
+      "capture_age": "91 hours old",
       "stale": false,
       "classification": "STALE MARKET",
       "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 2.6-point gap is context only and the game is excluded from research ranking.",
@@ -1304,7 +1304,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "g6z1f0743avi",
+    "packet_hash": "1s43mf91vnbq93",
     "status": "UNEXPLAINED",
     "input_suspect": false,
     "question": "Can the Packers stop the Bears’ run game?",
@@ -1329,7 +1329,10 @@
       "Green Bay Packers’ passers have completed 87 of 154 (56.5%) for 1,041 yards, 6.8 yards per attempt, with 8 touchdowns, 3 interceptions and 8 sacks taken in four games.",
       "Chicago Bears’ passers have completed 90 of 132 (68.2%) for 976 yards, 7.4 yards per attempt, with 4 touchdowns, 2 interceptions and 7 sacks taken in four games."
     ],
-    "availability": [],
+    "availability": [
+      "The official injury report lists four Green Bay Packers players as out or doubtful, including RB Chris Brooks (out), WR Savion Williams (out), G Aaron Banks (doubtful) and C Jacob Monk (doubtful).",
+      "The official injury report lists two Chicago Bears players as out or doubtful, including LB Keyshaun Elliott (out) and RB Kyle Monangai (out)."
+    ],
     "script": {
       "model": [
         "The Green Bay Packers have to win on the ground (Chicago Bears’ No. 6 run game against Green Bay Packers’ No. 10 run defense).",
@@ -1344,7 +1347,7 @@
       ]
     },
     "unknown": [
-      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and injuries and personnel.",
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field and strength of schedule.",
       "The line on file was captured Oct. 6 and may have moved."
     ],
     "flags": [],
@@ -1360,8 +1363,15 @@
         "label": "nflverse team-week stats (2026)",
         "url": null,
         "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-10T09:43:45.200Z",
+        "observed_at": "2026-10-10T17:18:06.614Z",
         "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Official NFL injury report (nflverse)",
+        "url": null,
+        "path": "football/injuries/nfl_2026.json",
+        "observed_at": "2026-10-10T12:36:21.909Z",
+        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1369,6 +1379,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T09:44:27.485Z"
+    "at": "2026-10-10T17:18:12.827Z"
   }
 }

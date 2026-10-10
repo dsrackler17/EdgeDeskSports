@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-10T16:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-09. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1894,105 +1894,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-09. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "7r7hwsegjyq6",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can Indiana’s pass rush get to Anthony Colandrea?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 1.4 points.",
-    "gap": {
-      "points": 1.4,
-      "toward": "Indiana",
-      "other": "Nebraska"
-    },
-    "supporting": [
-      "When Nebraska has the ball (pass protection against the pass rush): Nebraska’s offense has allowed a sack on 2.4% of its dropbacks, and Indiana’s defense sacks the quarterback on 11.1% of opponent dropbacks (FBS average 5.6%).",
-      "When Indiana has the ball (big plays through the air): Indiana’s offense turns 15.0% of its pass plays into explosive gains, and Nebraska’s defense gives up explosive gains on 9.0% of opponent pass plays (FBS average 10.4%).",
-      "When Indiana has the ball (big plays on the ground): Indiana’s offense turns 12.7% of its runs into explosive gains, and Nebraska’s defense gives up explosive gains on 4.4% of opponent runs (FBS average 6.6%).",
-      "When Indiana has the ball (the line of scrimmage on running plays): Indiana’s offense is stopped at or behind the line on 12.4% of its runs, and Nebraska’s defense stops 16.1% of opponent runs at or behind the line (FBS average 17.4%)."
-    ],
-    "contradicting": [
-      "When Indiana has the ball (pass protection against the pass rush): Indiana’s offense has allowed a sack on 5.8% of its dropbacks, and Nebraska’s defense sacks the quarterback on 10.8% of opponent dropbacks (FBS average 5.6%).",
-      "When Indiana has the ball (third down): Indiana’s offense converts 48.3% of its third downs, and Nebraska’s defense allows opponents to convert 17.4% of their third downs (FBS average 39.6%).",
-      "In his last two games (Northwestern and Rutgers), Hoover averaged 8.1 yards per attempt, against 13.0 in his three games before that.",
-      "EdgeDesk’s position-group ratings put Nebraska’s offensive line No. 10 nationally and Indiana’s No. 58."
-    ],
-    "quarterbacks": [
-      "Anthony Colandrea has completed 94 of 145 passes (64.8%) for 1,182 yards, 8.2 yards per attempt, 13 touchdowns and 2 interceptions in five games for Nebraska, and has been sacked on 5 of 150 dropbacks.",
-      "Josh Hoover has completed 76 of 106 passes (71.7%) for 1,102 yards, 10.4 yards per attempt, 15 touchdowns and no interceptions in five games for Indiana, and has been sacked on 6 of 112 dropbacks.",
-      "Anthony Colandrea does not appear on Nebraska’s update 2 availability report.",
-      "Josh Hoover does not appear on Indiana’s update 2 availability report."
-    ],
-    "availability": [
-      "Nebraska’s availability report lists tight end Carter Nelson as questionable."
-    ],
-    "script": {
-      "model": [
-        "Indiana’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 11.1% of opponent dropbacks, against an offense that has allowed a sack on 2.4% of its dropbacks.",
-        "Indiana’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 10.8% of opponent dropbacks.",
-        "Indiana’s offense has to hold its own on third down against a defense that allows opponents to convert 17.4% of their third downs.",
-        "Indiana’s offense has to keep winning on long runs: it turns 12.7% of its runs into explosive gains, and Nebraska’s defense gives up explosive gains on 4.4% of opponent runs."
-      ],
-      "market": [
-        "Nebraska’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 10.8% of opponent dropbacks, against an offense that has allowed a sack on 5.8% of its dropbacks.",
-        "Nebraska’s defense has to come out ahead on third down: it allows opponents to convert 17.4% of their third downs, against an offense that converts 48.3% of its third downs.",
-        "Nebraska’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 2.4% of its dropbacks, and Indiana’s defense sacks the quarterback on 11.1% of opponent dropbacks."
-      ]
-    },
-    "unknown": [
-      "Nebraska’s availability report lists tight end Carter Nelson as questionable.",
-      "Weather: 77 degrees, clear, gusts near 38 mph.",
-      "EdgeDesk’s own sources disagree on sack rate and sack rate allowed for Nebraska and Indiana.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate (Nebraska), sack rate allowed (Indiana) and sack rate (Indiana); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "medium",
-        "text": "EdgeDesk’s published number sits 4.5 points from the middle of its own other models."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-10T05:56:27.335Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-07T23:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-09T16:34:23.322Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "Big Ten Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=B10&sport=Football&conf=B10&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-10T00:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T09:44:27.485Z"
+    "at": "2026-10-10T17:18:12.827Z"
   }
 }

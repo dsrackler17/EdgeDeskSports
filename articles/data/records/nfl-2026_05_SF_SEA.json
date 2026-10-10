@@ -21,8 +21,8 @@
   "game_time": "2026-10-11T20:25:00.000Z",
   "game_when_label": "2026-10-11 20:25 UTC",
   "published_at": null,
-  "updated_at": "2026-10-10T09:44:27.485Z",
-  "generated_at": "2026-10-10T09:44:27.485Z",
+  "updated_at": "2026-10-10T17:18:12.827Z",
+  "generated_at": "2026-10-10T17:18:12.827Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 1.2-point gap is context only and the game is excluded from research ranking.",
@@ -1177,7 +1177,7 @@
       "total_market": "46.5",
       "total_difference": "0.6 points",
       "book": "Pinnacle",
-      "capture_age": "84 hours old",
+      "capture_age": "91 hours old",
       "stale": false,
       "classification": "STALE MARKET",
       "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 1.2-point gap is context only and the game is excluded from research ranking.",
@@ -1322,7 +1322,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "2fhexg1s31uye",
+    "packet_hash": "tn9od71f36em1",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can the Seahawks’ pass defense slow the 49ers’ passing game?",
@@ -1348,7 +1348,10 @@
       "Seattle Seahawks’ passers have completed 81 of 118 (68.6%) for 996 yards, 8.4 yards per attempt, with 10 touchdowns, 3 interceptions and 6 sacks taken in four games.",
       "San Francisco 49ers’ passers have completed 79 of 113 (69.9%) for 1,007 yards, 8.9 yards per attempt, with 11 touchdowns, 1 interceptions and 0 sacks taken in four games."
     ],
-    "availability": [],
+    "availability": [
+      "The official injury report lists three Seattle Seahawks players as out or doubtful, including LB Chazz Surratt (out), CB Julian Neal (out) and RB Zach Charbonnet (out).",
+      "The official injury report lists four San Francisco 49ers players as out or doubtful, including DT James Thompson Jr. (out), S Marques Sigle (out) and DE Nick Bosa (out)."
+    ],
     "script": {
       "model": [
         "The Seattle Seahawks have to win through the air (San Francisco 49ers’ No. 1 passing game against Seattle Seahawks’ No. 2 pass defense).",
@@ -1362,7 +1365,7 @@
       ]
     },
     "unknown": [
-      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and injuries and personnel.",
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field and strength of schedule.",
       "The line on file was captured Oct. 6 and may have moved."
     ],
     "flags": [],
@@ -1378,8 +1381,15 @@
         "label": "nflverse team-week stats (2026)",
         "url": null,
         "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-10T09:43:45.200Z",
+        "observed_at": "2026-10-10T17:18:06.614Z",
         "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Official NFL injury report (nflverse)",
+        "url": null,
+        "path": "football/injuries/nfl_2026.json",
+        "observed_at": "2026-10-10T12:36:21.909Z",
+        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1387,6 +1397,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T09:44:27.485Z"
+    "at": "2026-10-10T17:18:12.827Z"
   }
 }

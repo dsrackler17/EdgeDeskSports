@@ -23,8 +23,8 @@
   "game_time": "2026-10-11T20:25:00.000Z",
   "game_when_label": "2026-10-11 20:25 UTC",
   "published_at": null,
-  "updated_at": "2026-10-10T09:44:27.485Z",
-  "generated_at": "2026-10-10T09:44:27.485Z",
+  "updated_at": "2026-10-10T17:18:12.827Z",
+  "generated_at": "2026-10-10T17:18:12.827Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 0.5-point gap is context only and the game is excluded from research ranking.",
@@ -1147,7 +1147,7 @@
       "total_market": "53.5",
       "total_difference": "2.0 points",
       "book": "Caesars",
-      "capture_age": "84 hours old",
+      "capture_age": "91 hours old",
       "stale": false,
       "classification": "STALE MARKET",
       "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 0.5-point gap is context only and the game is excluded from research ranking.",
@@ -1292,7 +1292,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "svzbbj1nf4g31",
+    "packet_hash": "1tr7w3m1n3328w",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can the Cardinals’ pass defense slow the Lions’ passing game?",
@@ -1315,7 +1315,10 @@
       "Arizona Cardinals’ passers have completed 103 of 152 (67.8%) for 818 yards, 5.4 yards per attempt, with 6 touchdowns, 4 interceptions and 7 sacks taken in four games.",
       "Detroit Lions’ passers have completed 109 of 161 (67.7%) for 1,214 yards, 7.5 yards per attempt, with 9 touchdowns, 0 interceptions and 8 sacks taken in four games."
     ],
-    "availability": [],
+    "availability": [
+      "The official injury report lists two Arizona Cardinals players as out or doubtful, including S Andrew Wingard (out) and G Isaiah Adams (out).",
+      "The official injury report lists four Detroit Lions players as out or doubtful, including G Ben Bartch (out), S Brian Branch (out), C Cade Mays (out) and CB Rock Ya-Sin (out)."
+    ],
     "script": {
       "model": [
         "The Arizona Cardinals have to win through the air (Detroit Lions’ No. 5 passing game against Arizona Cardinals’ No. 29 pass defense).",
@@ -1327,7 +1330,7 @@
       ]
     },
     "unknown": [
-      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel, weather and conference implications.",
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, weather and conference implications.",
       "The line on file was captured Oct. 6 and may have moved."
     ],
     "flags": [],
@@ -1343,8 +1346,15 @@
         "label": "nflverse team-week stats (2026)",
         "url": null,
         "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-10T09:43:45.200Z",
+        "observed_at": "2026-10-10T17:18:06.614Z",
         "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Official NFL injury report (nflverse)",
+        "url": null,
+        "path": "football/injuries/nfl_2026.json",
+        "observed_at": "2026-10-10T12:36:21.909Z",
+        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1352,6 +1362,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T09:44:27.485Z"
+    "at": "2026-10-10T17:18:12.827Z"
   }
 }

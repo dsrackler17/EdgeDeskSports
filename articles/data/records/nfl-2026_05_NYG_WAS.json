@@ -23,8 +23,8 @@
   "game_time": "2026-10-11T17:00:00.000Z",
   "game_when_label": "2026-10-11 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-10T09:44:27.485Z",
-  "generated_at": "2026-10-10T09:44:27.485Z",
+  "updated_at": "2026-10-10T17:18:12.827Z",
+  "generated_at": "2026-10-10T17:18:12.827Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 2.0-point gap is context only and the game is excluded from research ranking.",
@@ -1169,7 +1169,7 @@
       "total_market": "44.0",
       "total_difference": "0.1 points",
       "book": "Pinnacle",
-      "capture_age": "84 hours old",
+      "capture_age": "91 hours old",
       "stale": false,
       "classification": "STALE MARKET",
       "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 2.0-point gap is context only and the game is excluded from research ranking.",
@@ -1314,7 +1314,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1lts18i1rh6nj4",
+    "packet_hash": "1i5k5sx8rek1v",
     "status": "UNEXPLAINED",
     "input_suspect": false,
     "question": "Can the Giants’ pass defense slow the Commanders’ passing game?",
@@ -1340,7 +1340,10 @@
       "Washington Commanders’ passers have completed 78 of 137 (56.9%) for 786 yards, 5.7 yards per attempt, with 8 touchdowns, 1 interceptions and 5 sacks taken in four games.",
       "New York Giants’ passers have completed 69 of 112 (61.6%) for 729 yards, 6.5 yards per attempt, with 6 touchdowns, 3 interceptions and 11 sacks taken in four games."
     ],
-    "availability": [],
+    "availability": [
+      "The official injury report lists six Washington Commanders players as out or doubtful, including DE Charles Omenihu (out), QB Marcus Mariota (out), S Nick Cross (out) and S Percy Butler (out).",
+      "The official injury report lists two New York Giants players as out or doubtful, including DE Chauncey Golston (out) and S Jason Pinnock (out)."
+    ],
     "script": {
       "model": [
         "The New York Giants have to win through the air (Washington Commanders’ No. 14 passing game against New York Giants’ No. 14 pass defense).",
@@ -1355,7 +1358,7 @@
       ]
     },
     "unknown": [
-      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and injuries and personnel.",
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field and strength of schedule.",
       "The line on file was captured Oct. 6 and may have moved."
     ],
     "flags": [],
@@ -1371,8 +1374,15 @@
         "label": "nflverse team-week stats (2026)",
         "url": null,
         "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-10T09:43:45.200Z",
+        "observed_at": "2026-10-10T17:18:06.614Z",
         "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Official NFL injury report (nflverse)",
+        "url": null,
+        "path": "football/injuries/nfl_2026.json",
+        "observed_at": "2026-10-10T12:36:21.909Z",
+        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1380,6 +1390,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T09:44:27.485Z"
+    "at": "2026-10-10T17:18:12.827Z"
   }
 }

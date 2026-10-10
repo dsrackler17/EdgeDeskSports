@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-10T16:45:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-09. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1862,100 +1862,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-09. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1ha7oktslm3pr",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": false,
-    "question": "Can Florida contain South Carolina’s explosive runs?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward South Carolina, and its own breakdown accounts for about 0.0 of the 3.1 points, but not the full gap. It is a research question, not a bet.",
-    "gap": {
-      "points": 3.1,
-      "toward": "South Carolina",
-      "other": "Florida"
-    },
-    "supporting": [
-      "When South Carolina has the ball (the line of scrimmage on running plays): South Carolina’s offense is stopped at or behind the line on 15.1% of its runs, and Florida’s defense stops 11.0% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When South Carolina has the ball (the run game against the run defense): South Carolina’s offense averages 6.8 yards per carry, and Florida’s defense allows 5.3 yards per carry (FBS average 5.1).",
-      "When South Carolina has the ball (third down): South Carolina’s offense converts 47.8% of its third downs, and Florida’s defense allows opponents to convert 48.3% of their third downs (FBS average 39.6%).",
-      "In his last two games (Ole Miss and Missouri), Philo averaged 8.0 yards per attempt, against 11.7 in his three games before that."
-    ],
-    "contradicting": [
-      "When Florida has the ball (big plays through the air): Florida’s offense turns 15.7% of its pass plays into explosive gains, and South Carolina’s defense gives up explosive gains on 12.7% of opponent pass plays (FBS average 10.4%).",
-      "When Florida has the ball (the passing game against the pass defense): Florida’s offense averages 9.7 yards per pass attempt, and South Carolina’s defense allows 7.9 yards per pass attempt (FBS average 7.5).",
-      "Aaron Philo has completed 84 of 121 passes (69.4%) for 1,205 yards, 10.0 yards per attempt, 8 touchdowns and 2 interceptions in five games for Florida, and has been sacked on 5 of 126 dropbacks.",
-      "Tramell Jones Jr. has completed 17 of 21 passes (81.0%) for 212 yards, 10.1 yards per attempt, 2 touchdowns and 1 interception in three games for Florida, and has been sacked on 1 of 22 dropbacks."
-    ],
-    "quarterbacks": [
-      "Aaron Philo has completed 84 of 121 passes (69.4%) for 1,205 yards, 10.0 yards per attempt, 8 touchdowns and 2 interceptions in five games for Florida, and has been sacked on 5 of 126 dropbacks.",
-      "Tramell Jones Jr. has completed 17 of 21 passes (81.0%) for 212 yards, 10.1 yards per attempt, 2 touchdowns and 1 interception in three games for Florida, and has been sacked on 1 of 22 dropbacks.",
-      "LaNorris Sellers has completed 92 of 153 passes (60.1%) for 1,059 yards, 6.9 yards per attempt, 8 touchdowns and 4 interceptions in five games for South Carolina, and has been sacked on 7 of 160 dropbacks.",
-      "Aaron Philo does not appear on Florida’s update 2 availability report.",
-      "LaNorris Sellers does not appear on South Carolina’s update 2 availability report."
-    ],
-    "availability": [
-      "Florida’s availability report lists receiver Vernell Brown III as questionable.",
-      "South Carolina’s availability report lists eight players as out, including offensive linemen Carter Miller and Josiah Thompson."
-    ],
-    "script": {
-      "model": [
-        "South Carolina’s offense has to keep winning on long runs: it turns 8.5% of its runs into explosive gains, and Florida’s defense gives up explosive gains on 5.0% of opponent runs.",
-        "South Carolina’s defense has to slow Florida on big pass plays — Florida’s offense turns 15.7% of its pass plays into explosive gains.",
-        "South Carolina’s defense has to slow Florida through the air — Florida’s offense averages 9.7 yards per pass attempt.",
-        "South Carolina’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 15.1% of its runs, and Florida’s defense stops 11.0% of opponent runs at or behind the line."
-      ],
-      "market": [
-        "Florida’s offense has to keep winning on big pass plays: it turns 15.7% of its pass plays into explosive gains, and South Carolina’s defense gives up explosive gains on 12.7% of opponent pass plays.",
-        "Florida’s offense has to keep winning through the air: it averages 9.7 yards per pass attempt, and South Carolina’s defense allows 7.9 yards per pass attempt.",
-        "Florida’s defense has to come out ahead on long runs: it gives up explosive gains on 5.0% of opponent runs, against an offense that turns 8.5% of its runs into explosive gains."
-      ]
-    },
-    "unknown": [
-      "Florida’s availability report lists receiver Vernell Brown III as questionable.",
-      "EdgeDesk’s own sources disagree on sack rate allowed for South Carolina.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate.",
-      "The line on file was captured Oct. 9 and may have moved."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (South Carolina); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Florida: new head coach; transfers out at the 93rd percentile. The long-run state is weighted 68% (regime curve) instead of 80% (standard curve) at 5 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-10T05:56:27.335Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-07T23:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Southeastern Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=SEC&sport=Football&conf=SEC&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-10T00:10:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T09:44:27.485Z"
+    "at": "2026-10-10T17:18:12.827Z"
   }
 }

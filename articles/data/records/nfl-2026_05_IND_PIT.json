@@ -23,8 +23,8 @@
   "game_time": "2026-10-11T17:00:00.000Z",
   "game_when_label": "2026-10-11 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-10T09:44:27.485Z",
-  "generated_at": "2026-10-10T09:44:27.485Z",
+  "updated_at": "2026-10-10T17:18:12.827Z",
+  "generated_at": "2026-10-10T17:18:12.827Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 0.8-point gap is context only and the game is excluded from research ranking.",
@@ -1173,7 +1173,7 @@
       "total_market": "44.0",
       "total_difference": "2.4 points",
       "book": "FanDuel",
-      "capture_age": "84 hours old",
+      "capture_age": "91 hours old",
       "stale": false,
       "classification": "STALE MARKET",
       "classification_note": "The captured quotes for this game are older than the freshness limit: it is not a current price, so the 0.8-point gap is context only and the game is excluded from research ranking.",
@@ -1318,7 +1318,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "8kdmqa1hrtk6o",
+    "packet_hash": "1qbwbqp1jcej9v",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can the Steelers stop the Colts’ run game?",
@@ -1344,7 +1344,10 @@
       "Pittsburgh Steelers’ passers have completed 88 of 155 (56.8%) for 999 yards, 6.4 yards per attempt, with 7 touchdowns, 4 interceptions and 13 sacks taken in four games.",
       "Indianapolis Colts’ passers have completed 84 of 132 (63.6%) for 754 yards, 5.7 yards per attempt, with 3 touchdowns, 4 interceptions and 8 sacks taken in four games."
     ],
-    "availability": [],
+    "availability": [
+      "The official injury report lists three Pittsburgh Steelers players as out or doubtful, including S DeShon Elliott (out), CB Jamel Dean (out) and WR Michael Pittman (out).",
+      "The official injury report lists four Indianapolis Colts players as out or doubtful, including DE Arden Key (out), WR Ashton Dulin (out), LB Jaylon Carlies (out) and TE Will Mallory (out)."
+    ],
     "script": {
       "model": [
         "The Indianapolis Colts have to win on the ground (Indianapolis Colts’ No. 2 run game against Pittsburgh Steelers’ No. 13 run defense).",
@@ -1357,7 +1360,7 @@
       ]
     },
     "unknown": [
-      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule, injuries and personnel and conference implications.",
+      "Not in EdgeDesk’s verified data for this game: offensive efficiency, third-down conversion, red-zone production, recent opponent strength, third-down defense, red-zone defense, position-group advantages, turnover rates, home field, strength of schedule and conference implications.",
       "The line on file was captured Oct. 6 and may have moved."
     ],
     "flags": [],
@@ -1373,8 +1376,15 @@
         "label": "nflverse team-week stats (2026)",
         "url": null,
         "path": "football/nfl/stats_team_week_2026.csv",
-        "observed_at": "2026-10-10T09:43:45.200Z",
+        "observed_at": "2026-10-10T17:18:06.614Z",
         "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Official NFL injury report (nflverse)",
+        "url": null,
+        "path": "football/injuries/nfl_2026.json",
+        "observed_at": "2026-10-10T12:36:21.909Z",
+        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1382,6 +1392,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T09:44:27.485Z"
+    "at": "2026-10-10T17:18:12.827Z"
   }
 }
