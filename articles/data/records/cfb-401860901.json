@@ -21,8 +21,8 @@
   "game_time": "2026-10-11T02:30:00.000Z",
   "game_when_label": "2026-10-11 02:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-10T19:00:39.318Z",
-  "generated_at": "2026-10-10T19:00:39.318Z",
+  "updated_at": "2026-10-10T19:10:30.004Z",
+  "generated_at": "2026-10-10T19:10:30.004Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1906,10 +1906,10 @@
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-11T02:30:00.000Z",
-    "minutes_before_kickoff": 449,
+    "minutes_before_kickoff": 439,
     "published_at": null,
     "refreshed": false,
-    "at": "2026-10-10T19:00:39.318Z"
+    "at": "2026-10-10T19:10:30.004Z"
   },
   "featured": {
     "editorial_priority": 55.8,
@@ -2202,17 +2202,24 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-10T19:00:39.318Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Fresno State’s availability report lists receiver Harold Duvall as questionable. | Fresno State’s availability report lists running back Rayshon Luke as questionable.",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-10T19:10:30.004Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-10T19:00:39.318Z",
+    "at": "2026-10-10T19:10:30.004Z",
     "blocking": [
       {
         "id": "evidence_inputs_suspect",
@@ -2220,18 +2227,24 @@
         "detail": "CROSS_MODEL_OUTLIER"
       }
     ],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Fresno State’s availability report lists receiver Harold Duvall as questionable. | Fresno State’s availability report lists running back Rayshon Luke as questionable."
+      }
+    ],
     "hold_reason": "evidence_inputs_suspect"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "ybterys7rcz0",
+    "packet_hash": "yrax6w1f8wsh6",
     "status": "UNEXPLAINED",
     "input_suspect": true,
     "question": "Can Boise State’s pass rush get to Jayden Mandal?",
-    "assessment": "EdgeDesk’s number is 7.6 points closer to Fresno State than the line, and EdgeDesk cannot account for most of that: its own breakdown accounts for about 2.9 of the 7.6 points. The measured football evidence leans toward Boise State, not toward EdgeDesk’s number. There is a specific reason to suspect EdgeDesk’s inputs: EdgeDesk’s published number sits 7.4 points from the middle of its own other models. Treat the gap as an open research question, not as an edge.",
+    "assessment": "EdgeDesk’s number is 8.6 points closer to Fresno State than the line, and EdgeDesk cannot account for most of that: its own breakdown accounts for about 2.8 of the 8.6 points. The measured football evidence leans toward Boise State, not toward EdgeDesk’s number. There is a specific reason to suspect EdgeDesk’s inputs: EdgeDesk’s published number sits 7.4 points from the middle of its own other models. Treat the gap as an open research question, not as an edge.",
     "gap": {
-      "points": 7.6,
+      "points": 8.6,
       "toward": "Fresno State",
       "other": "Boise State"
     },
@@ -2328,6 +2341,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T19:00:39.318Z"
+    "at": "2026-10-10T19:10:30.004Z"
   }
 }
