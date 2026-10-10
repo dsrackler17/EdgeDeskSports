@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-10T21:51:57.266Z",
+ "generated_at": "2026-10-10T23:41:50.224Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,29 +119,29 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 98,
+  "total": 99,
   "by_group": {
-   "p4": 49,
-   "other": 50,
+   "other": 52,
+   "p4": 48,
    "independent": 3
   },
   "by_matchup": {
-   "conference": 90,
+   "conference": 91,
    "non_conference": 5,
    "fbs_fcs": 3
   },
   "by_conference": {
-   "sec": 14,
-   "american": 12,
    "mac": 12,
+   "sec": 13,
    "big12": 10,
    "acc": 13,
    "independents": 3,
    "bigten": 12,
+   "american": 11,
    "pac12": 5,
    "mwc": 9,
-   "sunbelt": 9,
-   "cusa": 4
+   "sunbelt": 10,
+   "cusa": 6
   },
   "fbs_fcs_in_source": 3
  },
@@ -165,33 +165,12 @@
   "efficiency_replay": {
    "source_schema": "edgedesk_cfb_engine_efficiency_v1",
    "season": 2026,
-   "artifact_games_with_stats": 700,
-   "artifact_team_game_rows": 1387,
-   "games_absorbed_with_stats": 390,
-   "team_rows_absorbed": 661,
-   "final_games_without_play_stats": 22,
-   "missing_game_ids": [
-    "401871090",
-    "401871051",
-    "401871066",
-    "401870766",
-    "401871052",
-    "401862794",
-    "401869933",
-    "401858254",
-    "401858487",
-    "401860922",
-    "401864519",
-    "401856826",
-    "401856716",
-    "401856823",
-    "401856824",
-    "401858256",
-    "401858260",
-    "401858481",
-    "401862795",
-    "401866436"
-   ],
+   "artifact_games_with_stats": 738,
+   "artifact_team_game_rows": 1463,
+   "games_absorbed_with_stats": 412,
+   "team_rows_absorbed": 705,
+   "final_games_without_play_stats": 0,
+   "missing_game_ids": [],
    "measured_features": [
     "success_rate",
     "early_down_success",
@@ -217,11 +196,11 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 98
+  "PREDICTED": 99
  },
  "weather": {
-  "requested": 93,
-  "answered": 93,
+  "requested": 94,
+  "answered": 94,
   "dome": 4,
   "no_venue": 0,
   "failed": 0,
@@ -229,18 +208,18 @@
   "carry_dropped": 0,
   "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "93 of 93 outdoor game(s) got a forecast; 4 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "94 of 94 outdoor game(s) got a forecast; 4 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 98
+  "NO_MARKET": 99
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
   "season": 2026,
-  "games_in_artifact": 700,
+  "games_in_artifact": 738,
   "completed_games_replayed": 412,
-  "completed_games_with_both_team_efficiency": 271,
-  "missing_count": 141,
+  "completed_games_with_both_team_efficiency": 293,
+  "missing_count": 119,
   "problem": null
  },
  "checks": [
@@ -301,12 +280,12 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 49,
-    "total": 98,
+    "non_power_games": 51,
+    "total": 99,
     "example": [
-     "Rice @ East Carolina",
      "Miami (OH) @ Massachusetts",
-     "Charlotte @ North Texas"
+     "Charlotte @ North Texas",
+     "Tulsa @ Navy"
     ]
    }
   },
@@ -321,7 +300,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 90,
+    "conference_games": 91,
     "wrong": 0
    }
   },
@@ -355,8 +334,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 98,
-    "audit_total": 98
+    "slate": 99,
+    "audit_total": 99
    }
   },
   {
@@ -436,7 +415,7 @@
  "warnings": [
   {
    "name": "completed games waiting on play-level efficiency",
-   "count": 141,
+   "count": 119,
    "detail": [
     {
      "game_id": "401856767",
