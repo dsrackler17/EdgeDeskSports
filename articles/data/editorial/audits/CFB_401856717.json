@@ -1,0 +1,655 @@
+{
+  "schema": "edgedesk_game_audit_v1",
+  "key": "CFB:401856717",
+  "game_id": "401856717",
+  "sport": "CFB",
+  "snapshot_id": "snap_6e324a225070a2a5",
+  "audited_at": "2026-10-10T23:40:32.636Z",
+  "theses": [
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "price",
+      "kind": "price",
+      "claim": "EdgeDesk prices this game at Oklahoma +9.7 with a fair total of 45.9, which makes Texas the better team here by that margin on this field.",
+      "basis": "the model’s own fair spread",
+      "source_path": "model.fair_spread_text",
+      "category": "market",
+      "weight": 9.7,
+      "favours_side": "away",
+      "favours_team": "Texas",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 9.748364347745785,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "falsifier": "Oklahoma winning the game outright, or the margin landing on the wrong side of zero.",
+      "watch": "Whether Texas is ahead on the scoreboard in a way that looks like Oklahoma +9.7 rather than a coin flip.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "claim": "EdgeDesk makes it Oklahoma +9.7 where the market has Oklahoma +8.0 at captured consensus (stale) · 1 book · best at BetMGM — a 1.7 points disagreement.",
+      "basis": "EdgeDesk’s own number against a captured sportsbook quote",
+      "source_path": "market.difference",
+      "category": "market",
+      "weight": 1.7,
+      "favours_side": "away",
+      "favours_team": "Texas",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": 1.7,
+        "unit": "points",
+        "market_margin": 8,
+        "market_text": "Oklahoma +8.0",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "falsifier": "the game landing between the two numbers, or on the market’s side of them — either of which means the market read this matchup better than EdgeDesk did.",
+      "watch": "Whether the scoreboard ever reaches the gap between Oklahoma +8.0 and Oklahoma +9.7.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "claim": "Texas is the better football team by 10.3 points on opponent-adjusted results — but about 55% of that rating is still last season carried forward, and in a portal era last season is a different team — worth -10.3 of the EdgeDesk number, in Texas’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[0]",
+      "category": "model",
+      "weight": 10.3,
+      "favours_side": "away",
+      "favours_team": "Texas",
+      "expected_signal": null,
+      "falsifier": "Oklahoma winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "claim": "Stylistically the matchup favours Oklahoma by 0.5 points: early-down offence vs early-down defence — worth +0.5 of the EdgeDesk number, in Oklahoma’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[1]",
+      "category": "defence",
+      "weight": 0.5,
+      "favours_side": "home",
+      "favours_team": "Oklahoma",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_play"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Texas winning this part of the game instead.",
+      "watch": "Whether Oklahoma is actually ahead on yards per play.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "claim": "Texas’s pass offense rates 60.3 (#26 of 137) against Oklahoma’s pass defense at 72.6 (#1 of 138). Oklahoma’s unit stands higher among its own position group, by 25 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[0]",
+      "category": "passing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Texas pass offense handles Oklahoma pass defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "claim": "Texas’s run offense rates 48.3 (#83 of 138) against Oklahoma’s run defense at 72.5 (#7 of 138). Oklahoma’s unit stands higher among its own position group, by 76 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[1]",
+      "category": "rushing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Texas run offense handles Oklahoma run defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "claim": "Oklahoma’s pass offense rates 59.2 (#30 of 137) against Texas’s pass defense at 71.4 (#3 of 138). Texas’s unit stands higher among its own position group, by 27 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[2]",
+      "category": "passing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Oklahoma pass offense handles Texas pass defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "claim": "Oklahoma’s run offense rates 38.8 (#122 of 138) against Texas’s run defense at 72.5 (#8 of 138). Texas’s unit stands higher among its own position group, by 114 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[3]",
+      "category": "rushing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Oklahoma run offense handles Texas run defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "claim": "Texas holds the largest measured edge in this matchup: Texas 58.2 (#13 of 138) vs Oklahoma 54.2 (#131 of 138) — 118 places on the national board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.away[0]",
+      "category": "matchup",
+      "weight": 29.5,
+      "favours_side": "away",
+      "favours_team": "Texas",
+      "expected_signal": null,
+      "falsifier": "Oklahoma winning that category on the day.",
+      "watch": "Whether Texas’s edge in Running backs shows up in the box score.",
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Running backs"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "claim": "Oklahoma holds the largest measured edge in this matchup: Oklahoma 50.7 (#50 of 130) vs Texas 48.7 (#103 of 130) — 53 places on the national board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.home[0]",
+      "category": "special_teams",
+      "weight": 13.3,
+      "favours_side": "home",
+      "favours_team": "Oklahoma",
+      "expected_signal": null,
+      "falsifier": "Texas winning that category on the day.",
+      "watch": "Whether Oklahoma’s edge in Special teams shows up in the box score.",
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Special teams"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "claim": "The largest stated risk to this read: College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+      "basis": "the model’s own highest-severity published uncertainty",
+      "source_path": "uncertainty.items[0]",
+      "category": "data_quality",
+      "weight": 2,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": "the game passing off without the stated gap mattering.",
+      "watch": "Anything that turns on sample.",
+      "observable": false,
+      "not_observable_why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "audit": [
+    {
+      "thesis_id": "price",
+      "kind": "price",
+      "category": "market",
+      "claim": "EdgeDesk prices this game at Oklahoma +9.7 with a fair total of 45.9, which makes Texas the better team here by that margin on this field.",
+      "weight": 9.7,
+      "favours_team": "Texas",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 9.748364347745785,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": 3,
+          "away": -3,
+          "diff": -3
+        }
+      ],
+      "observed_result": "Texas Longhorns lost by 3 where EdgeDesk projected a 9.7-point edge.",
+      "evaluation": "NOT CONFIRMED",
+      "confidence": "high",
+      "why": "Oklahoma Sooners won the game outright"
+    },
+    {
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "category": "market",
+      "claim": "EdgeDesk makes it Oklahoma +9.7 where the market has Oklahoma +8.0 at captured consensus (stale) · 1 book · best at BetMGM — a 1.7 points disagreement.",
+      "weight": 1.7,
+      "favours_team": "Texas",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": 1.7,
+        "unit": "points",
+        "market_margin": 8,
+        "market_text": "Oklahoma +8.0",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": 3,
+          "away": -3,
+          "diff": -3
+        }
+      ],
+      "observed_result": "Texas Longhorns lost by 3.",
+      "evaluation": "NOT CONFIRMED",
+      "confidence": "high",
+      "why": "the result landed on the market’s side of the disagreement"
+    },
+    {
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Texas is the better football team by 10.3 points on opponent-adjusted results — but about 55% of that rating is still last season carried forward, and in a portal era last season is a different team — worth -10.3 of the EdgeDesk number, in Texas’s favour.",
+      "weight": 10.3,
+      "favours_team": "Texas",
+      "favours_side": "away",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "category": "defence",
+      "claim": "Stylistically the matchup favours Oklahoma by 0.5 points: early-down offence vs early-down defence — worth +0.5 of the EdgeDesk number, in Oklahoma’s favour.",
+      "weight": 0.5,
+      "favours_team": "Oklahoma",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_play"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_play",
+          "available": false,
+          "label": "yards per play",
+          "unit": "yards",
+          "why": "the box score for this game published no yards per play"
+        }
+      ],
+      "observed_result": "Not published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the box score for this game published no yards per play"
+    },
+    {
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Texas’s pass offense rates 60.3 (#26 of 137) against Oklahoma’s pass defense at 72.6 (#1 of 138). Oklahoma’s unit stands higher among its own position group, by 25 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Texas’s run offense rates 48.3 (#83 of 138) against Oklahoma’s run defense at 72.5 (#7 of 138). Oklahoma’s unit stands higher among its own position group, by 76 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Oklahoma’s pass offense rates 59.2 (#30 of 137) against Texas’s pass defense at 71.4 (#3 of 138). Texas’s unit stands higher among its own position group, by 27 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Oklahoma’s run offense rates 38.8 (#122 of 138) against Texas’s run defense at 72.5 (#8 of 138). Texas’s unit stands higher among its own position group, by 114 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "category": "matchup",
+      "claim": "Texas holds the largest measured edge in this matchup: Texas 58.2 (#13 of 138) vs Oklahoma 54.2 (#131 of 138) — 118 places on the national board.",
+      "weight": 29.5,
+      "favours_team": "Texas",
+      "favours_side": "away",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes Running backs"
+    },
+    {
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "category": "special_teams",
+      "claim": "Oklahoma holds the largest measured edge in this matchup: Oklahoma 50.7 (#50 of 130) vs Texas 48.7 (#103 of 130) — 53 places on the national board.",
+      "weight": 13.3,
+      "favours_team": "Oklahoma",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes Special teams"
+    },
+    {
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "category": "data_quality",
+      "claim": "The largest stated risk to this read: College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+      "weight": 2,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "tally": {
+    "counts": {
+      "CONFIRMED": 0,
+      "PARTIALLY CONFIRMED": 0,
+      "NOT CONFIRMED": 2,
+      "INCONCLUSIVE": 9
+    },
+    "graded": 2,
+    "total": 11,
+    "not_observable": 9,
+    "headline": "0 of 2 gradeable claims held up, 2 did not"
+  },
+  "grading": {
+    "schema": "edgedesk_result_vs_process_v1",
+    "game_id": "401856717",
+    "sport": "CFB",
+    "snapshot_id": "snap_6e324a225070a2a5",
+    "graded_at": "2026-10-10T23:40:32.636Z",
+    "final": {
+      "home_team": "Oklahoma Sooners",
+      "away_team": "Texas Longhorns",
+      "home_score": 27,
+      "away_score": 24,
+      "margin": 3,
+      "total_points": 51,
+      "winner": "Oklahoma Sooners"
+    },
+    "implied_side": {
+      "available": true,
+      "side": "away",
+      "team": "Texas",
+      "point": -8,
+      "line_text": "Texas -8",
+      "book": "captured consensus (stale) · 1 book · best at BetMGM",
+      "market_home_margin": 8,
+      "model_home_margin": 9.7,
+      "gap": 1.7,
+      "why": "EdgeDesk’s own number sat 1.7 points toward Texas of the quote EdgeDesk captured at captured consensus (stale) · 1 book · best at BetMGM. That is what the disagreement implied. It was published as research, not as a recommendation to bet it."
+    },
+    "implied_total": {
+      "available": true,
+      "side": "over",
+      "line": 39.5,
+      "model_total": 45.9,
+      "gap": 6.4,
+      "why": "EdgeDesk’s fair total of 45.9 sat 6.4 points above the captured total of 39.5."
+    },
+    "bet_result": {
+      "spread": {
+        "outcome": "loss",
+        "cover_margin": -11,
+        "side": "away",
+        "point": -8,
+        "team": "Texas",
+        "line_text": "Texas -8"
+      },
+      "total": {
+        "outcome": "win",
+        "points": 51,
+        "line": 39.5,
+        "side": "over",
+        "by": 11.5,
+        "direction": "over"
+      },
+      "moneyline": {
+        "outcome": "loss",
+        "side": "away",
+        "team": "Texas"
+      }
+    },
+    "bet_headline": "LOSS",
+    "closing_line": {
+      "available": false,
+      "why": "no closing line is held for this game: the Collective captured none and the schedule feed carries none. Closing-line value is left blank rather than estimated from the result."
+    },
+    "model_accuracy": {
+      "available": true,
+      "projected_home_margin": -9.7,
+      "actual_home_margin": 3,
+      "margin_error": 12.7,
+      "right_side": false,
+      "projected_total": 45.9,
+      "actual_total": 51,
+      "total_error": 5.1,
+      "projected_score": {
+        "away": 28,
+        "home": 18
+      },
+      "inside_published_range": true,
+      "range_text": "-31.7 → +10.3 (Oklahoma)"
+    },
+    "process": {
+      "grade": "UNTESTED",
+      "reasons": [
+        "None of the mechanism EdgeDesk named before kickoff could be graded against the statistics published for this game. The scoreboard is not evidence about a mechanism nobody could observe."
+      ],
+      "confirmed": 0,
+      "partial": 0,
+      "wrong": 0,
+      "graded": 0,
+      "basis": "the drivers, matchups and measured advantages only — never the price or the market claim, which are the result in longer words"
+    },
+    "process_headline": "UNTESTED",
+    "variance_markers": [
+      {
+        "key": "turnover_edge",
+        "severity": "medium",
+        "label": "A two-turnover edge",
+        "text": "Oklahoma Sooners won the turnover battle by two, which is worth roughly a touchdown of scoreboard on average and is largely noise game to game."
+      },
+      {
+        "key": "nonoffensive_score",
+        "severity": "medium",
+        "label": "2 non-offensive or return scores",
+        "text": "Points that arrived without an offensive drive. They count the same on the scoreboard and belong to a different distribution from the one the model prices."
+      },
+      {
+        "key": "one_score",
+        "severity": "medium",
+        "label": "A 3-point game",
+        "text": "A game this close is decided inside the noise of any projection. Whichever way it fell, it is weak evidence about either team."
+      }
+    ],
+    "verdict": {
+      "key": "wrong_untested",
+      "line": "The number did not land, in a game the statistics cannot grade the reasoning on. It goes in the record and teaches little."
+    },
+    "separation_note": "The bet result and the process grade above are computed separately and are allowed to disagree. A winning number with a broken thesis is recorded as exactly that."
+  },
+  "lessons": [
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "401856717:contradicted:market",
+      "game_id": "401856717",
+      "sport": "CFB",
+      "season": 2026,
+      "week": 6,
+      "article_id": "postgame-cfb-401856717",
+      "snapshot_id": "snap_6e324a225070a2a5",
+      "thesis_id": "price market_gap",
+      "team": "Texas",
+      "opponent": "Oklahoma Sooners",
+      "category": "market",
+      "evaluation": "NOT CONFIRMED",
+      "pregame_expectation": "2 published claims said the same thing: EdgeDesk prices this game at Oklahoma +9.7 with a fair total of 45.9, which makes Texas the better team here by that margin on this field. EdgeDesk makes it Oklahoma +9.7 where the market has Oklahoma +8.0 at captured consensus (stale) · 1 book · best at BetMGM — a 1.7 points disagreement.",
+      "actual_result": "Texas Longhorns lost by 3 where EdgeDesk projected a 9.7-point edge. Texas Longhorns lost by 3.",
+      "lesson": "EdgeDesk named Texas as better in market and the game went the other way, across 2 separate published claims. One game does not overturn a season-long rating, but this is the direction to watch: Oklahoma Sooners won the game outright",
+      "severity": "high",
+      "model_review_required": true,
+      "suggested_investigation": "These claims carried 11.4 points of the published number between them and were contradicted. Check whether the same category has been contradicted in other games this season before touching anything.",
+      "bet_result": "LOSS",
+      "process_grade": "UNTESTED",
+      "created_at": "2026-10-10T23:40:32.636Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "401856717:unobservable",
+      "game_id": "401856717",
+      "sport": "CFB",
+      "season": 2026,
+      "week": 6,
+      "article_id": "postgame-cfb-401856717",
+      "snapshot_id": "snap_6e324a225070a2a5",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "data_quality",
+      "evaluation": "INCONCLUSIVE",
+      "pregame_expectation": "8 of the claims in this article rested on model, defence, passing, rushing, matchup, special_teams.",
+      "actual_result": "None of them could be graded: no single-game statistic in EdgeDesk’s vocabulary observes this driver; the box score for this game published no yards per play.",
+      "lesson": "EdgeDesk prices these games partly on signals it has no way to observe afterwards. That is not an error in the model — it is a gap in the audit, and it means the platform cannot tell, from results alone, whether those parts of the number are earning their weight.",
+      "severity": "medium",
+      "model_review_required": false,
+      "suggested_investigation": "Consider whether a postgame data source exists for model, defence, passing.",
+      "bet_result": "LOSS",
+      "process_grade": "UNTESTED",
+      "created_at": "2026-10-10T23:40:32.636Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "401856717:market_better",
+      "game_id": "401856717",
+      "sport": "CFB",
+      "season": 2026,
+      "week": 6,
+      "article_id": "postgame-cfb-401856717",
+      "snapshot_id": "snap_6e324a225070a2a5",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "market",
+      "evaluation": "NOT CONFIRMED",
+      "pregame_expectation": "EdgeDesk makes it Oklahoma +9.7 where the market has Oklahoma +8.0 at captured consensus (stale) · 1 book · best at BetMGM — a 1.7 points disagreement.",
+      "actual_result": "Texas Longhorns lost by 3. the result landed on the market’s side of the disagreement",
+      "lesson": "The market had the better estimate here. EdgeDesk’s disagreement was not information on this game, and the honest reading is that the price already contained what the model thought it had found.",
+      "severity": "medium",
+      "model_review_required": false,
+      "suggested_investigation": "Track disagreements of this size across the season. The question is not whether one landed; it is whether the class of them has any edge at all.",
+      "bet_result": "LOSS",
+      "process_grade": "UNTESTED",
+      "created_at": "2026-10-10T23:40:32.636Z"
+    }
+  ]
+}
