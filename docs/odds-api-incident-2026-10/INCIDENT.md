@@ -6,8 +6,12 @@ Every caller now goes through one gateway. It re-enables on 2026-11-01 under a
 60,000-credit operational budget, using the runbook in §9.
 
 **Plan:** $59/month, 100,000 credits. On 2026-10-10 at 12:24Z the provider
-reported **99,336 used and 664 remaining**. The quota resets at
-**2026-11-01 00:00 UTC**.
+reported **99,336 used and 664 remaining**. By 13:55Z it reported **100,000
+used and 0 remaining** (the CFB props capture's own `capture_state.json`): the
+October quota is spent, and every paid call is refused until the reset at
+**2026-11-01 00:00 UTC**. The stop and the gateway must be in place before
+then. Otherwise every old path resumes at its old rate the moment the quota
+returns.
 
 **Constraints kept:**
 - No plan upgrade, no credit purchase, and the application stays up.
@@ -412,30 +416,11 @@ The **Deploy odds gateway** workflow applies 1 (opt-in) and 2 when the
 
     The budget watch runs at :41 every hour.
 
-### An October bridge (optional, not recommended)
+### No October bridge
 
-October's 664 credits can buy only about 220 game-line refreshes. If a game
-day before November needs them, use a deliberately tiny bridge, priority-1
-main markets only:
-
-```sql
-select public.odds_api_set_category(c, false) from unnest(array['props','alternates','collective']) c;
-select public.odds_api_set_budget(99836, 150, 300);   -- spend counts provider_used (99,336): ≤ 500 more, keep 150
-select public.odds_api_confirm_quota(99336, 664, 'provider header 2026-10-10 12:24Z');
-select public.odds_api_set_enabled(true, 'October bridge: main markets only', '<your name>');
-```
-
-Spend is also paced by the daily allowance: about 500 credits spread over the days left in October, so roughly 25 a day.
-
-Undo it before November:
-- `select public.odds_api_set_enabled(false, 'bridge over', '<you>');`
-- re-enable the three categories.
-
-The 95% emergency threshold trips at 94,844, which is already below the
-October spend, so a bridge also needs
-`update public.odds_api_config set emergency_pct = 0.999 where id = 1;`.
-Restore it to 0.95 afterwards. This is exactly why the bridge is not
-recommended.
+The provider reported 0 credits remaining at 13:55Z on 2026-10-10, so nothing
+can be bought before the reset. Every page serves its last stored prices,
+labelled with their age.
 
 ### To stop again at any time
 
