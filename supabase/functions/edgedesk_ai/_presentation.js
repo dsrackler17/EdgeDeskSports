@@ -2206,7 +2206,9 @@
     h += box('Difference', mk.difference || '—', mk.classification || null);
     if (mk.total_model || mk.total_market) {
       h += box('EdgeDesk total', mk.total_model || '—', null);
-      h += box('Market total', mk.total_market || '—', mk.total_difference ? mk.total_difference + ' apart' : null);
+      /* a held total (failed the plausibility gate) is shown as held, with why — never as the market */
+      h += box('Market total', mk.total_market || (mk.total_market_held ? 'Unavailable' : '—'),
+        mk.total_market_held ? 'held for verification: ' + mk.total_market_held.reason : (mk.total_difference ? mk.total_difference + ' apart' : null));
     }
     h += '</div>';
     if (mk.reference) h += '<p class="edb-secnote">' + esc(mk.reference) + '</p>';

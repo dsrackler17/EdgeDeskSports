@@ -427,6 +427,40 @@ label with a sample floor. Tested against a real PostgreSQL by
 `Deploy intelligence` workflow's `apply_research_packets` input. The
 function reports its last write in `?probe=1 → packet_health`.
 
+### `odds_quota.sql` — one request budget for every Odds API caller
+The central quota ledger (`docs/market-resilience/README.md`, § Quota
+protection). `odds_quota_acquire(caller, key, est_cost, priority, …)` decides
+atomically, before a billed request, from the mode (`LIVE` or `RESEARCH_ONLY`),
+the circuit breaker (429 → exponential back-off with a HALF_OPEN probe; 401 →
+long hold; repeated timeouts → cool-down), quota exhaustion (held until the
+monthly reset), in-flight coalescing, the key's minimum interval (cache-first),
+the daily and monthly limits with a reserve only `critical` work may spend,
+and a floor on the provider's reported balance. `odds_quota_settle()` records
+what the provider charged and reported; `odds_quota_status()` and the
+`odds_quota_daily` view report spend and the credits not spent. The request
+ledger is append-only (settled once, never edited or deleted). Service role
+only. Callers fail OPEN to their in-run guards when the file is not applied.
+Configure with `update public.odds_quota_config set daily_limit = …,
+monthly_limit = …, reserve_credits = …, min_remaining = …;` and clear a hold with
+`select public.odds_quota_reset('all', 'owner');`. Rollback:
+`odds_quota_rollback.sql`. Tested on a real PostgreSQL by
+`tools/resilience/odds_quota_sql.test.js`.
+
+### `research_snapshots.sql` — what EdgeDesk said, and which market it saw
+Mirrors the terminal build's append-only research ledger
+(`football/cfb_terminal/history/<season>/research_snapshots.jsonl`): the
+projection with its model and input versions, the market state (LIVE / CACHED /
+HISTORICAL / MANUAL / UNAVAILABLE / FAULT) with sources, capture time,
+verification and integrity failures, the three answers (research visibility,
+market integrity, betting validation), the disagreement, the verdict and the
+model-only research priority. Append-only for every role, pregame only, a
+betting-eligible row needs a LIVE verified market, a FAULT carries no market
+number. Insert through `research_snapshots_ingest()` (service role,
+idempotent); synced hourly by `football/cfb_terminal/research_sync.js` in the
+Model Lab job. Rollback: `research_snapshots_rollback.sql` (the committed
+ledger restores every row). Tested by
+`tools/resilience/research_snapshots_sql.test.js`.
+
 ### `props_factory.sql` — the player-prop data factory (`props` schema)
 The warehouse under the Player Props terminal (`docs/player-props/FACTORY.md`;
 the terminal's own live ledger is `player_props.sql`). The catalog (27

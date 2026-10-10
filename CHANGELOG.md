@@ -1,5 +1,64 @@
 # Changelog
 
+## 2026-10-10 — Market resilience: research never depends on a sportsbook
+
+**When the odds provider was down, the quota ran out, or a quote went stale, 92 of 108 games read NO MARKET. Each one was unrankable, its research interest was capped at 10, and seven of the eight 7+ point disagreements read "STALE MARKET". Now every projected game is research-visible in every market state. Market data is labelled LIVE / CACHED / HISTORICAL / MANUAL / UNAVAILABLE / FAULT, and a large disagreement is kept, explained and labelled INVESTIGATE, never promoted to an edge.** Docs: `docs/market-resilience/README.md`.
+
+- **The biggest cause was false staleness.** The terminal build dropped the Model Lab's heartbeats, so a line re-confirmed seconds before the build read days old.
+  - Heartbeats now count as observations (`TERMINAL_HEARTBEATS_CONFIRM=0` restores the old rule).
+  - Today's slate: 62 LIVE, 2 CACHED and 44 UNAVAILABLE (look-ahead), against 16 fresh, 48 stale and 44 none before.
+- **Two engines.**
+  - `lib/edgedesk_research_engine.js` builds the independent research and never reads a market.
+  - `lib/edgedesk_market_state.js` holds the six market states, the per-quote integrity checks and what each state may feed:
+    - per-quote checks: market key by name, game, season, kickoff, orientation, ranges, total/spread confusion, odds format, price arithmetic;
+    - cross-book checks: outliers, opposite favourites, contradictions, dispersion;
+    - a lone total far from EdgeDesk's total is held.
+- **Three answers, kept apart:**
+  - research visibility (never decided by the market);
+  - market integrity;
+  - betting validation (every blocker named; ELIGIBLE only hands the price to the decision engine).
+- **A research verdict per game**, for example "INVESTIGATE — 5.9-POINT DISAGREEMENT" for UCF @ Oklahoma State, or "RESEARCH AVAILABLE — MARKET OFFLINE".
+- **A sensitivity panel for every 4+ point gap.**
+  - Rows: current-season emphasis inside the learned prior-weight curve (it reconstructs the engine's rating term exactly), the roster adjustment, measured QB availability effects, EdgeDesk's other models, and the uncertainty range.
+  - Every row is SUPPORTED, HYPOTHETICAL or MODEL, and none changes the official fair line.
+  - The panel says whether the gap persists.
+- **A model-only research priority:** uncertainty, mismatches, rating divergence, roster turnover, injuries, model stability, game script and relevance. It is never a ranking of bets.
+- **The research page** (`research/cfb/`, `research/cfb/resilience_ui.js`):
+  - the verdict and six sections on every game: Projection, Football Matchup Research, Model Explanation, Uncertainty and Limitations, Market Comparison, Research Verdict;
+  - **RESEARCH ONLY** mode (header toggle or `?mode=research`): no market read, market values "Unavailable", no price cards;
+  - a Research priority view and a Markdown research-brief export;
+  - the assistant answers market-state, disagreement, sensitivity, total and verdict questions from stored data.
+- **The 34.5 "market total" (UCF @ Oklahoma State), traced.**
+  - No committed artifact ever carried it; every committed total is 52.5–54.5.
+  - The verified mechanism: alternate-total ladders stored as `totals`, with every rung stamped at one time. `pickMarket` broke the tie by best price, which picks the longest shot (an Under 34.5). The app's fetch also truncated ladders from the bottom under its 5,000-row cap.
+  - Fixed: the main line is the modal row, else the price nearest even money; modal rows are fetched first; totals carry their price; the brief holds an implausible total as "Unavailable — held for verification".
+  - The production row itself is unconfirmed (no database access here; the query is in the docs).
+- **Quota protection.**
+  - `supabase/odds_quota.sql`: one atomic budget for every caller. It covers mode, breaker, exhaustion hold, in-flight coalescing, cache-first intervals, daily and monthly limits with a critical reserve, and a balance floor. The ledger is append-only and reports the credits not spent.
+  - `capture`: one ledger ask per run, plus a per-run credit cap, a floor, and a stop on the first 429/401/exhausted quota or 3 timeouts. Diagnostics buy no ladders.
+  - `close`: timeout, the same stop and the ledger.
+  - AI-triggered refreshes: scoped to the near tier and cache-first.
+  - `capture.yml`: no curl retry on the billed call.
+  - Timeouts in `alternates.js` and the props factory (the props capture's single retry on timeout is unchanged: it is a pinned design, left as an open decision).
+- **Audit:**
+  - an append-only research snapshot ledger (`football/cfb_terminal/history/<season>/research_snapshots.jsonl`), mirrored by `supabase/research_snapshots.sql` and synced hourly;
+  - append-only manual market entries (`tools/football/manual_market.js`).
+- **Small fixes:**
+  - the no-market summary keeps the model's own largest term instead of "No market to compare with.";
+  - board rows carry the fair total, projected score and win probability.
+- **Database (not applied to production):**
+  - `supabase/odds_quota.sql` and `supabase/research_snapshots.sql`, each with a `_rollback.sql`;
+  - redeploy `capture`, `close` and `edgedesk_ai`.
+
+**Tests:**
+- `resilience:test`:
+  - the 13 scenarios, 112;
+  - the quota guard on the deployed capture handler, 47;
+  - the quota ledger on PostgreSQL, 48;
+  - the snapshot ledger on PostgreSQL, 22.
+- Every existing suite that covers this code passes.
+- `content.test.js`, `evidence.test.js` and `features.test.js` fail identically on the unmodified base commit.
+
 ## 2026-10-09 — Content Engine: football evidence, not just the number
 
 **A publisher showed us a Week 6 piece that put EdgeDesk's Ole Miss–Vanderbilt number (Ole Miss by about 1) beside a market that had Ole Miss -9.5, with no football reason for the gap. The old writer printed only the model's mechanics and "Model confidence: High"; the validator checked only that each number existed. The repair is in the shared pipeline: every featured game now carries a football evidence packet, every model–market gap is explained or called UNEXPLAINED, and an editorial gate blocks or holds what the evidence does not support.** Docs: `docs/content-engine/README.md` (*Football evidence*).
