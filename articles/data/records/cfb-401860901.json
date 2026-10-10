@@ -21,8 +21,8 @@
   "game_time": "2026-10-11T02:30:00.000Z",
   "game_when_label": "2026-10-11 02:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-10T17:50:33.800Z",
-  "generated_at": "2026-10-10T17:50:33.800Z",
+  "updated_at": "2026-10-10T18:00:35.545Z",
+  "generated_at": "2026-10-10T18:00:35.545Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -331,9 +331,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-04T01:30:00.000Z",
-        "retrieved_at": "2026-10-10T15:34:58.086Z"
+        "retrieved_at": "2026-10-10T17:54:48.051Z"
       },
-      "generated_at": "2026-10-10T15:35:44.864Z",
+      "generated_at": "2026-10-10T17:54:46.741Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1900,15 +1900,15 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-10. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_37798f01db898c61",
+  "snapshot_id": "snap_c33047f9eb5deab4",
   "timing": {
     "publication_window": "normal",
     "classified_window": "normal",
     "scheduled_kickoff": "2026-10-11T02:30:00.000Z",
-    "minutes_before_kickoff": 519,
+    "minutes_before_kickoff": 509,
     "published_at": null,
     "refreshed": false,
-    "at": "2026-10-10T17:50:33.800Z"
+    "at": "2026-10-10T18:00:35.545Z"
   },
   "featured": {
     "editorial_priority": 55.8,
@@ -2201,17 +2201,24 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-10T17:50:33.800Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Fresno State’s availability report lists receiver Harold Duvall as questionable. | Fresno State’s availability report lists running back Rayshon Luke as questionable.",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-10T18:00:35.545Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-10T17:50:33.800Z",
+    "at": "2026-10-10T18:00:35.545Z",
     "blocking": [
       {
         "id": "evidence_inputs_suspect",
@@ -2219,12 +2226,18 @@
         "detail": "CROSS_MODEL_OUTLIER"
       }
     ],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Fresno State’s availability report lists receiver Harold Duvall as questionable. | Fresno State’s availability report lists running back Rayshon Luke as questionable."
+      }
+    ],
     "hold_reason": "evidence_inputs_suspect"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "l2cjv7zcmfzl",
+    "packet_hash": "1t8ght8547lam",
     "status": "UNEXPLAINED",
     "input_suspect": true,
     "question": "Can Boise State’s pass rush get to Jayden Mandal?",
@@ -2297,7 +2310,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-10T15:35:51.954Z",
+        "observed_at": "2026-10-10T17:55:09.515Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2311,7 +2324,7 @@
         "label": "EdgeDesk play-by-play quarterback logs (2026)",
         "url": null,
         "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-07T23:30:00.000Z",
+        "observed_at": "2026-10-10T02:15:00.000Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2327,6 +2340,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T17:50:33.800Z"
+    "at": "2026-10-10T18:00:35.545Z"
   }
 }
