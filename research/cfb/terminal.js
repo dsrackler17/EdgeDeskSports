@@ -8,12 +8,16 @@
   var T = window.EDCfbTerminal;
   var RD = window.EDRead || null;
   var EVX = window.EDEV || null;
+  /* MARKET RESILIENCE (research/cfb/resilience_ui.js): the six sections in
+     every market state, RESEARCH ONLY mode and the model-only queue */
+  var RZ = window.EDResilienceUI || null;
   var DATA = '/football/cfb_terminal/';
   /* ?asof=ISO pins the Read's clock (review and demo builds); otherwise every read is re-priced at the reader's own clock,
      so a quote that has aged past the freshness rule stops being a price the moment it does */
   var ASOF = (function () { var m = /[?&]asof=([^&#]+)/.exec(location.search); var t = m ? Date.parse(decodeURIComponent(m[1])) : NaN; return isFinite(t) ? t : null; })();
   function nowMs() { return ASOF != null ? ASOF : Date.now(); }
-  var S = { board: null, games: null, record: null, brief: null, filters: [], readFilters: [], status: null, sort: 'queue', recFilters: [], recPage: 1 };
+  var S = { board: null, games: null, record: null, brief: null, filters: [], readFilters: [], status: null, sort: RZ && RZ.mode() === 'RESEARCH_ONLY' ? 'prio' : 'queue', recFilters: [], recPage: 1, prioKey: 'score' };
+  function researchOnly() { return !!(RZ && RZ.mode() === 'RESEARCH_ONLY'); }
   var cache = {};
   var $ = function (id) { return document.getElementById(id); };
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -186,9 +190,11 @@
     var r = m ? 'game' : (h.replace(/^#\//, '').split(/[/?]/)[0] || 'queue');
     Array.prototype.forEach.call(document.querySelectorAll('#nav a'), function (a) { a.classList.toggle('on', a.getAttribute('data-r') === r); });
     window.scrollTo(0, 0);
+    modeToggle();
     load('board').then(function (b) {
       S.board = b; renderTrust(b);
       if (r === 'game') return renderGame(decodeURIComponent(m[1]));
+      if (r === 'priority') return renderPriority();
       if (r === 'brief') return renderBrief();
       if (r === 'watch') return renderWatch();
       if (r === 'record') return renderRecord();
@@ -205,9 +211,28 @@
     });
   }
   window.addEventListener('hashchange', route);
+  /* RESEARCH ONLY: one switch in the header; nothing is fetched either way */
+  function modeToggle() {
+    if (!RZ) return;
+    var host = document.querySelector('.brand');
+    if (!host) return;
+    var old = $('modeBtn'); if (old) old.parentNode.removeChild(old);
+    host.insertAdjacentHTML('beforeend', RZ.modeButton());
+    $('modeBtn').onclick = function () {
+      var next = researchOnly() ? 'FULL' : 'RESEARCH_ONLY';
+      RZ.setMode(next); S.sort = next === 'RESEARCH_ONLY' ? 'prio' : 'queue';
+      track('mode', { detail: next }); route();
+    };
+  }
+  function renderPriority() {
+    if (!RZ) { $('view').innerHTML = '<div class="empty">The research priority module did not load.</div>'; return; }
+    track('board_view', { detail: 'priority' });
+    $('view').innerHTML = RZ.priorityHTML(S.board, S.prioKey);
+    var sel = $('prioSort'); if (sel) sel.onchange = function () { S.prioKey = this.value; renderPriority(); };
+  }
 
   /* ================================================================ QUEUE */
-  var SORTS = { queue: 'Research queue (default)', read: 'Cleanest price first', kickoff: 'Kickoff', gap: 'Raw gap (secondary)', uncertain: 'Most uncertain' };
+  var SORTS = { queue: 'Research queue (default)', prio: 'Research priority (model-only)', read: 'Cleanest price first', kickoff: 'Kickoff', gap: 'Raw gap (secondary)', uncertain: 'Most uncertain' };
   /* ONE COUNTER HIERARCHY (lib/edgedesk_canon.js COUNTERS). Every counter
      names its population, threshold, sport and status in its tooltip, and
      the CFB buckets sum to the slate. */
@@ -250,8 +275,11 @@
     else if (S.sort === 'kickoff') rows.sort(function (a, c) { return Date.parse(a.kickoff) - Date.parse(c.kickoff); });
     else if (S.sort === 'gap') rows.sort(function (a, c) { return (c.gap || 0) - (a.gap || 0); });
     else if (S.sort === 'uncertain') rows.sort(function (a, c) { return c.uncertainty - a.uncertainty; });
+    else if (S.sort === 'prio') rows.sort(function (a, c) { return ((c.research_priority || {}).score || 0) - ((a.research_priority || {}).score || 0); });
     var c = b.counts;
     var h = '';
+    if (researchOnly()) h += '<div class="banner"><b>MODE: RESEARCH ONLY.</b> No market is read. Every game’s projection, matchup, explanation and uncertainty stay available; market columns read Unavailable, and the queue is ranked by the model-only research priority (not a ranking of bets).</div>';
+    else if (b.resilience && b.resilience.provider && b.resilience.provider.status && ['OK', 'UNKNOWN'].indexOf(b.resilience.provider.status) < 0) h += '<div class="banner warn"><b>Market data: ' + esc(b.resilience.provider.status.replace(/_/g, ' ')) + '.</b> ' + esc(b.resilience.provider.detail || '') + ' Research is unaffected; stored lines are labelled with their age.</div>';
     if (!c.BET) h += '<div class="banner"><b>No certified bets on this slate.</b> ' + esc(b.decision.calibrated_ev_note || 'The decision engine certifies none today.')
       + ' That is a normal answer. The research below is ranked by how worth opening each game is — never by edge size alone.</div>';
     h += countersHTML(c);    h += '<div class="filters">' + b.filters.map(function (f) {
@@ -287,8 +315,9 @@
       + '<div class="g"><div class="m"><button class="star' + (watched ? ' on' : '') + '" data-w="' + esc(r.game_id) + '" title="Watch">★</button> ' + esc(r.away) + ' @ ' + esc(r.home) + '</div>'
       + '<div class="k">' + esc(kick(r)) + (r.fcs ? ' · FCS' : '') + (r.week_scope === 'FUTURE_WEEK' ? ' · <b title="A later schedule week: look-ahead research, not this week’s">LOOK-AHEAD · WK ' + esc(r.week) + '</b>' : '') + igMark(r) + '</div></div>'
       + '<div class="c ed"><div class="l">EdgeDesk</div><div class="v">' + esc(r.fair || '—') + '</div></div>'
-      + '<div class="c mk"><div class="l">Market</div><div class="v">' + esc(r.market || '—') + (r.market_stale ? ' <span class="mut">stale</span>' : '') + '</div></div>'
-      + '<div class="c gap"><div class="l">Gap</div><div class="v">' + gap + '</div></div>'
+      + (researchOnly() ? '<div class="c mk"><div class="l">Market</div><div class="v"><span class="mut">Unavailable</span></div></div><div class="c gap"><div class="l">Priority</div><div class="v">' + esc(String(r.research_priority ? r.research_priority.score : '—')) + '</div></div>'
+        : '<div class="c mk"><div class="l">Market</div><div class="v">' + esc(r.market || '—') + (r.market_stale ? ' <span class="mut">stale</span>' : '') + (r.market_state ? ' <span class="rz-chip ' + ({ LIVE: 'ok', CACHED: 'warn', MANUAL: 'warn', FAULT: 'bad' }[r.market_state.state] || 'off') + '" title="' + esc(r.market_state.label + (r.market_state.age_text ? ' · ' + r.market_state.age_text : '')) + '">' + esc(r.market_state.state) + '</span>' : '') + '</div></div>'
+        + '<div class="c gap"><div class="l">Gap</div><div class="v">' + gap + '</div></div>')
       + '<div class="s">' + (r.research_status ? rsChip(r.research_status) + (r.bettor ? dsChip(r.bettor.decision, r.bettor.reason, r.bettor.units) : dsChip(r.decision_status, r.decision_reason)) : stChip(r.status, r.status_label) + (r.verified ? vBadge() : (r.gap_class === 'MAJOR' ? '<span class="ubadge">UNVERIFIED</span>' : '')))
       + (r.favorite_flip ? flipBadge() : '') + priceBadge(r.price_state, r.price_state_label) + divBadge(r.rating_divergence) + (r.read ? rdChip(r.read.timing, true) : '') + '</div>'
       + '<div class="mini"><span><b>ED</b>' + esc(r.fair || '—') + '</span><span><b>MKT</b>' + esc(r.market || '—') + (r.market_stale ? '*' : '') + '</span><span><b>GAP</b>' + gap + '</span></div>'
@@ -299,6 +328,8 @@
       + '<div class="ln"><span class="l">Risk</span><span>' + esc(s.risk || '—') + '</span></div>'
       + '<div class="ln"><span class="l">Price</span><span>' + esc(s.price || '—') + '</span></div>'
       + (r.read ? '<div class="ln"><span class="l">Read</span><span>' + esc(readLine(r.read)) + '</span></div>' : '')
+      + (r.verdict ? '<div class="ln"><span class="l">Verdict</span><span><b>' + esc(r.verdict.headline) + '</b></span></div>' : '')
+      + (r.research_priority ? '<div class="ln"><span class="l">Priority</span><span>' + esc(r.research_priority.score + ' · ' + (r.research_priority.reasons || []).slice(0, 2).join(' · ')) + '</span></div>' : '')
       + '<div class="ln"><span class="l">Research</span><span>' + esc(r.research_reason || r.status_reason || '') + '</span></div>'
       + (r.decision_reason ? '<div class="ln"><span class="l">Decision</span><span>' + esc(r.decision_reason) + '</span></div>' : '')
       + '<div class="ln"><span class="l">Quality</span><span class="mono">confidence ' + (r.confidence == null ? '—' : r.confidence) + ' · reliability ' + (r.reliability == null ? '—' : r.reliability) + ' · models ' + esc(r.agreement || '—') + (r.model_sd != null ? ' (SD ' + r.model_sd.toFixed(1) + ')' : '') + ' · interest ' + r.research_interest + '</span></div>'
@@ -848,11 +879,27 @@
         + '<div class="meta">' + esc(kick(o)) + (o.week_scope === 'FUTURE_WEEK' ? ' · LOOK-AHEAD (a later week)' : '') + ' · ' + esc([g.away_conference, g.home_conference].filter(Boolean).join(' at ')) + (g.venue ? ' · ' + esc(g.venue) : '') + (g.neutral_site ? ' · neutral site' : '') + (g.fcs ? ' · FCS opponent' : '') + ' · week ' + esc(o.week) + '</div>'
         + '<div class="tools"><button class="btn sm" id="watchBtn">' + (watched ? '★ Watching' : '☆ Watch') + '</button>'
         + '<button class="btn sm" id="expBtn">Copy research card</button>'
+        + '<button class="btn sm" id="briefBtn">Export research brief</button>'
         + '<button class="btn sm" id="flagBtn">Flag an issue ▾</button></div>'
         + '<div class="pillset hide" id="flagMenu"><button class="fchip" data-flag="Wrong or missing data" data-what="incorrect player status">Incorrect player status</button>'
         + '<button class="fchip" data-flag="Wrong or missing data" data-what="bad market quote">Bad market quote</button>'
         + '<button class="fchip" data-flag="Confusing or hard to use" data-what="confusing explanation">Confusing explanation</button>'
         + '<span class="mut" style="font-size:11.5px">Reports go to review. They never change EdgeDesk’s data or model by themselves.</span></div></div>';
+      /* THE SIX SECTIONS (research/cfb/resilience_ui.js): the independent
+         research in every market state, the verdict on top. In RESEARCH ONLY
+         mode the price-specific cards below are not drawn at all. */
+      S.rz = RZ ? RZ.build(o, S.board, nowMs()) : null;
+      if (RZ) h += RZ.html(o, S.rz);
+      if (researchOnly()) {
+        S.read = null; S.ev = null;
+        h += '<div class="banner"><b>MODE: RESEARCH ONLY.</b> Price-specific cards (the Read, EV, line shopping, player-prop prices) are Unavailable in this mode. The football depth sections follow.</div>';
+        h += '<nav class="secnav">' + [['d', 'D · Why'], ['e', 'E · What could be wrong'], ['h', 'H · History'], ['ask', 'Ask'], ['adv', 'Advanced']]
+          .map(function (x) { return '<a href="#/game/' + esc(id) + '" data-jump="s-' + x[0] + '">' + x[1] + '</a>'; }).join('') + '</nav>';
+        h += secA(o) + secD(o) + secE(o) + secH(o) + secAsk(o) + secAdv(o);
+        $('view').innerHTML = h;
+        bindGame(o);
+        return;
+      }
       /* THE EDGEDESK READ — first, before everything else on the page */
       S.read = liveRead(o);
       h += '<div id="rdWrap">' + readCard(o, S.read) + '</div>';
@@ -1122,9 +1169,20 @@
       store.set(KW, w); this.textContent = w[id] ? '★ Watching' : '☆ Watch';
     };
     $('expBtn').onclick = function () {
-      var txt = T.exportCard(S.read ? Object.assign({}, o, { read: S.read }) : o) + (EVX && S.ev ? '\n\n' + EVX.exportText(S.ev) : '');
+      var txt = researchOnly() && RZ && S.rz ? RZ.brief(o, S.rz)
+        : T.exportCard(S.read ? Object.assign({}, o, { read: S.read }) : o) + (EVX && S.ev ? '\n\n' + EVX.exportText(S.ev) : '');
       try { navigator.clipboard.writeText(txt); this.textContent = 'Copied'; } catch (e) { window.prompt('Research card', txt); }
       track('export', { game_id: id });
+    };
+    if ($('briefBtn')) $('briefBtn').onclick = function () {
+      var md = RZ && S.rz ? RZ.brief(o, S.rz) : T.exportCard(o);
+      try {
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
+        a.download = 'edgedesk-research-' + id + '.md'; document.body.appendChild(a); a.click(); a.remove();
+        this.textContent = 'Exported';
+      } catch (e) { window.prompt('Research brief', md); }
+      track('export', { game_id: id, detail: 'research_brief' + (researchOnly() ? '_research_only' : '') });
     };
     $('flagBtn').onclick = function () { $('flagMenu').classList.toggle('hide'); };
     Array.prototype.forEach.call(document.querySelectorAll('[data-flag]'), function (x) {
@@ -1144,8 +1202,11 @@
       /* the assistant reads the Read the reader is looking at: their clock, their book. EV questions
          (is the alt worth the juice, bet now or wait, worst price, did we miss it, why is EV positive,
          why not a bet despite positive raw EV) read the EV object first — never a recomputation */
-      var ea = EVX && S.ev && !/sharp|split|handle|public/i.test(q) ? EVX.ask(q, S.ev) : null;
-      var a = ea ? { intent: 'ev_' + ea.intent, text: ea.text, facts: ea.facts.map(function (f) { return { claim: f.claim, source: f.source + ' · ' + S.ev.schema, updated: S.ev.generated_at, confidence: 'deterministic' }; }).concat(evProvFacts(ea.provenance)) }
+      /* market state, disagreement, sensitivity and verdict questions: the
+         research layer answers from stored data, with the provider up or down */
+      var ra = RZ && S.rz ? RZ.ask(q, o, S.rz) : null;
+      var ea = !ra && EVX && S.ev && !/sharp|split|handle|public/i.test(q) ? EVX.ask(q, S.ev) : null;
+      var a = ra ? ra : ea ? { intent: 'ev_' + ea.intent, text: ea.text, facts: ea.facts.map(function (f) { return { claim: f.claim, source: f.source + ' · ' + S.ev.schema, updated: S.ev.generated_at, confidence: 'deterministic' }; }).concat(evProvFacts(ea.provenance)) }
         : T.ask(q, S.read ? Object.assign({}, o, { read: S.read }) : o, null);
       track('ask', { game_id: id, detail: a.intent });
       var body = esc(a.text).replace(/^UNKNOWN\./, '<span class="unk">UNKNOWN.</span>');

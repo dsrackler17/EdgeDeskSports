@@ -380,14 +380,42 @@ const MIN_PACK = Number(Deno.env.get("CLOSE_MIN_PACK_FAMILIES") ?? "2");
    against a different reference and must never be averaged with these. */
 export const CLOSE_POLICY = Deno.env.get("CLOSE_POLICY") ?? "close-2026.09.1";
 
+/* QUOTA GUARD (docs/market-resilience, supabase/odds_quota.sql). Every
+   billed request has a deadline, the provider's quota headers are kept, and
+   the first 429 / 401 / exhausted quota stops the run: the sports not yet
+   requested take the provider-down path (a started game closes from its last
+   observed tick, an upcoming one is deferred), so nothing is retried and
+   nothing is written off. */
+const CLOSE_TIMEOUT_MS = 20000;
 async function fetchOdds(sport: string, markets: string) {
   const scope = BOOKMAKERS.length
     ? `bookmakers=${encodeURIComponent(BOOKMAKERS.join(","))}`
     : `regions=${encodeURIComponent(REGIONS)}`;
   const u = `${ODDS_BASE}/sports/${sport}/odds/?apiKey=${ODDS_KEY}&${scope}`
     + `&markets=${encodeURIComponent(markets)}&oddsFormat=decimal&dateFormat=iso`;
-  const r = await fetch(u);
-  return { data: r.ok ? await r.json() : [], quota: r.headers.get("x-requests-remaining") ?? "", ok: r.ok };
+  let signal: AbortSignal | undefined;
+  try { signal = (AbortSignal as any).timeout(CLOSE_TIMEOUT_MS); } catch { signal = undefined; }
+  try {
+    const r = await fetch(u, { signal });
+    const h = (n: string) => r.headers.get(n) ?? "";
+    const detail = r.ok ? "" : (await r.text().catch(() => "")).slice(0, 240);
+    return { data: r.ok ? await r.json() : [], quota: h("x-requests-remaining"), used: h("x-requests-used"), last: h("x-requests-last"), ok: r.ok, status: r.status, detail };
+  } catch (e) {
+    const name = String((e as Error)?.name ?? "");
+    return { data: [], quota: "", used: "", last: "", ok: false, status: 0,
+      detail: (name === "TimeoutError" || name === "AbortError" ? "TIMEOUT after " + CLOSE_TIMEOUT_MS + " ms: " : "") + String((e as Error)?.message ?? e) };
+  }
+}
+/** Should the run stop after this response? null = carry on. (Mirrors
+    capture's classifyOddsFailure; tools/resilience/quota_guard.test.js holds
+    the two to the same answers.) */
+export function closeQuotaStop(status: number, detail: string, remaining: string): string | null {
+  const rem = remaining === "" || remaining == null ? NaN : Number(remaining);
+  if (status >= 200 && status < 300) return Number.isFinite(rem) && rem <= 0 ? "QUOTA_EXHAUSTED" : null;
+  if (status === 429) return "RATE_LIMITED";
+  if (status === 401 || status === 402 || status === 403)
+    return /quota|usage|credit|limit reached|out of requests/i.test(String(detail ?? "")) || (Number.isFinite(rem) && rem <= 0) ? "QUOTA_EXHAUSTED" : "AUTH_FAILED";
+  return null;
 }
 
 /** Bisection that can say "there is no root here" instead of returning a
@@ -1170,14 +1198,37 @@ Deno.serve(async (req) => {
   const fresh = new Map<string, any>();
   const fetchOk = new Set<string>();
   const providers: Record<string, any> = {};
+  /* THE LEDGER, once per run, CRITICAL priority (closing lines are a refresh
+     window worth the reserve). Missing ledger = fail open to the in-run stop. */
+  const billable = sports.filter((s0) => !EDSPORTS.isRetiredKey(s0));
+  const perSportCost = Math.max(1, MARKETS.split(",").filter(Boolean).length) * (BOOKMAKERS.length ? Math.ceil(BOOKMAKERS.length / 10) : Math.max(1, REGIONS.split(",").filter(Boolean).length));
+  const quota: any = { ledger: "missing", decision: null, request_id: null, spent: 0, remaining: null as number | null, used: null as number | null, stopped: null as string | null, last_http: null as number | null };
+  if (billable.length) {
+    try {
+      const { data: t, error } = await db.rpc("odds_quota_acquire", { p_caller: "close", p_key: "close", p_est_cost: perSportCost * billable.length, p_priority: "critical",
+        p_sport: null, p_endpoint: "odds", p_min_interval_s: null });
+      if (error) { quota.ledger = /PGRST202|42883|does not exist|Could not find/i.test(String(error.code ?? "") + " " + String(error.message ?? "")) ? "missing" : "error"; quota.decision = String(error.message ?? error).slice(0, 160); }
+      else if (t && typeof t.allowed === "boolean") {
+        quota.ledger = "on"; quota.decision = t.reason; quota.request_id = t.request_id ?? null;
+        if (!t.allowed) quota.stopped = "ledger_" + t.reason;
+      }
+    } catch (e) { quota.ledger = "error"; quota.decision = String((e as Error)?.message ?? e).slice(0, 160); }
+  }
   for (const sport of sports) {
+    if (quota.stopped && !EDSPORTS.isRetiredKey(sport)) { providers[sport] = { ok: false, reason: "quota guard: " + quota.stopped + " (not requested; closes from the last observed tick or defers)" }; continue; }
     /* A retired sport's live close is never bought (EDSPORTS). Its rows take the
        provider-not-ok path below: a started event closes from its last observed
        tick, an upcoming one is deferred until it starts. Nothing is written off. */
     if (EDSPORTS.isRetiredKey(sport)) { providers[sport] = { ok: false, reason: "retired sport: no live close requested; closes from the last observed tick" }; continue; }
     try {
-      const { data, ok } = await fetchOdds(sport, MARKETS);
-      if (!ok) { providers[sport] = { ok: false, reason: "provider returned not-ok" }; continue; }
+      const res = await fetchOdds(sport, MARKETS);
+      const { data, ok } = res;
+      quota.spent += Number(res.last) || 0; quota.last_http = res.status;
+      if (res.quota !== "" && Number.isFinite(Number(res.quota))) quota.remaining = Number(res.quota);
+      if (res.used !== "" && Number.isFinite(Number(res.used))) quota.used = Number(res.used);
+      const stop = closeQuotaStop(res.status, res.detail, res.quota);
+      if (stop) quota.stopped = "provider_" + stop.toLowerCase();
+      if (!ok) { providers[sport] = { ok: false, reason: "provider returned not-ok (HTTP " + res.status + (res.detail ? ": " + res.detail.slice(0, 120) : "") + ")" }; continue; }
       let priced = 0;
       for (const ev of data) for (const o of priceEvent(ev, METHOD, REFERENCE_BOOKS, now)) { fresh.set(sigKey(o), o); priced++; }
       fetchOk.add(sport);
@@ -1185,6 +1236,16 @@ Deno.serve(async (req) => {
     } catch (e) {
       providers[sport] = { ok: false, reason: String(e).slice(0, 200) };
     }
+  }
+
+  if (quota.request_id) {
+    const st = /exhausted/.test(String(quota.stopped)) || quota.remaining === 0 ? "QUOTA_EXHAUSTED" : /rate_limited/.test(String(quota.stopped)) ? "RATE_LIMITED"
+      : /auth_failed/.test(String(quota.stopped)) ? "AUTH_FAILED" : (fetchOk.size ? (Object.values(providers).some((x: any) => !x.ok) ? "PARTIAL" : "OK") : "FAILED");
+    try {
+      const { data: sr } = await db.rpc("odds_quota_settle", { p_request_id: quota.request_id, p_status: st, p_cost: quota.spent, p_remaining: quota.remaining,
+        p_used: quota.used, p_http: quota.last_http, p_detail: "close · " + billable.length + " sport(s)" + (quota.stopped ? " · stopped: " + quota.stopped : "") });
+      quota.settled = sr ?? null;
+    } catch (e) { quota.settled = { settled: false, error: String((e as Error)?.message ?? e).slice(0, 160) }; }
   }
 
   /* Sweep-phase recoveries are already written; they are seeded into the tallies
@@ -1272,6 +1333,7 @@ Deno.serve(async (req) => {
     null_commence_seen: noTime?.length ?? 0,
     ...(staleBacklog ? { stale_backlog_remaining: true } : {}),
     excluded_by_reason: byReason, updateErrors, providers,
+    quota_guard: quota,
     /* How each stored fair was arrived at. "sharp" is the reference book's own
        de-vig; "robust_consensus" is the trimmed median of the independent
        families that are not the best-priced one, and it is a WEAKER close that

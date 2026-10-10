@@ -252,8 +252,11 @@ function writeFeed(file, feed) {
   return true;
 }
 
+/* every billed request has a deadline (docs/market-resilience): a hung call
+   must not hold the job, and it is never retried here */
+const FETCH_TIMEOUT_MS = 20000;
 async function getJson(url) {
-  const res = await fetch(url, { headers: { accept: 'application/json' } });
+  const res = await fetch(url, { headers: { accept: 'application/json' }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
   const remaining = num(res.headers.get('x-requests-remaining')), last = num(res.headers.get('x-requests-last'));
   if (!res.ok) throw Object.assign(new Error('HTTP ' + res.status + ' ' + url.replace(/apiKey=[^&]+/, 'apiKey=***')), { status: res.status, remaining });
   return { body: await res.json(), remaining, last };

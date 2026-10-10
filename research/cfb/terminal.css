@@ -318,3 +318,29 @@ svg.fr .hit:hover{fill:rgba(241,235,223,.05)}
 .ev-card .mono{font-family:'JetBrains Mono',monospace;font-size:10.5px;margin-right:4px}
 .ev-card .askrow input{min-width:0;flex:1}
 @media (max-width:640px){.ev-card .rd-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ---- MARKET RESILIENCE: the six sections, the verdict, the axes (docs/market-resilience) ---- */
+.rz{margin:12px 0 4px}
+.rz-top{border:1px solid var(--border);border-left:4px solid var(--st-research);background:var(--surface);border-radius:var(--rad);padding:12px 14px;margin-bottom:8px}
+.rz-top .h,.rz-verdict .h{font-family:'JetBrains Mono',monospace;font-weight:800;letter-spacing:.04em;font-size:14px}
+.rz-top .t,.rz-verdict .t{color:var(--dim);margin-top:4px;font-size:13px}
+.rz-top .ax{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.rz-top.investigate,.rz-verdict.investigate{border-left-color:var(--st-investigate)}
+.rz-top.fault,.rz-verdict.fault{border-left-color:var(--st-fault)}
+.rz-top.quiet,.rz-verdict.quiet{border-left-color:var(--st-nomarket)}
+.rz-top.aligned,.rz-verdict.aligned{border-left-color:var(--st-pass)}
+.rz-top.verified,.rz-verdict.verified{border-left-color:var(--verified)}
+.rz-verdict{border:1px solid var(--border);border-left:4px solid var(--st-research);background:var(--surface2);border-radius:var(--rad-s);padding:10px 12px;margin-bottom:10px}
+.rz-chip{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;letter-spacing:.05em;padding:2px 7px;border-radius:999px;border:1px solid var(--border);color:var(--dim);vertical-align:middle;white-space:nowrap}
+.rz-chip.ok{color:var(--pos);border-color:#2f4a1c}.rz-chip.warn{color:var(--warn);border-color:#5a4520}.rz-chip.bad{color:var(--neg);border-color:#5a2a1c}
+.rz-chip.info{color:var(--s-ed);border-color:#1f3a5c}.rz-chip.off{color:var(--faint)}
+.rz-na{color:var(--faint);font-weight:500;font-size:12px}
+.rz-mstate{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--dim)}
+.rz-bars{display:flex;flex-direction:column;gap:4px;margin-top:4px}
+.rz-bar{display:grid;grid-template-columns:minmax(120px,1.4fr) 3fr 44px;gap:8px;align-items:center;font-size:12px}
+.rz-bar .track{height:10px;background:var(--surface2);border:1px solid var(--hair);border-radius:6px;overflow:hidden}
+.rz-bar .track i{display:block;height:100%;background:var(--s-ed)}
+.rz-bar .v{text-align:right;color:var(--dim)}
+.modebtn{margin-left:8px}
+.modebtn.on{border-color:var(--st-investigate);color:var(--st-investigate)}
+@media (max-width:640px){.rz-bar{grid-template-columns:1fr 2fr 40px}.modebtn{margin-left:0}}

@@ -246,6 +246,9 @@ jobs:
           # a 23514 on bettor_decision_snapshots_decision_check is not a missing file: production
           # runs a bettor_decisions.sql older than the v2 engine's WATCH / LEAN (re-apply it)
           node football/cfb_terminal/decisions_sync.js || echo "::warning::bettor decision sync failed — read the error above. 23514 on bettor_decision_snapshots_decision_check: production runs a pre-WATCH supabase/bettor_decisions.sql; re-apply it (Deploy Record P&L schema, apply_bettor_decisions). 404 / PGRST205: apply supabase/bettor_decisions.sql"
+          # the research snapshot ledger (supabase/research_snapshots.sql): what EdgeDesk said and which
+          # market it saw; skips with a note until that file is applied, never fatal
+          node football/cfb_terminal/research_sync.js || echo "::warning::research snapshot sync failed — read the error above (apply supabase/research_snapshots.sql)"
 
       - name: Fail the run if any lab step failed
         if: ${{ steps.gate.outputs.proceed == 'true' && steps.run.outputs.status != '0' }}

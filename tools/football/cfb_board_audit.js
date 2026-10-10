@@ -140,8 +140,11 @@ function referenceMarket(rows, kickoff, now, freshMin) {
       observed_at: x.observed_at, heartbeat: !!x.is_heartbeat }))
   };
 }
-/* the rule the terminal build applies today (football/cfb_terminal/build.js
-   loadLedger + lib/cfb_terminal.js latestPerBook): heartbeats dropped, 180 min */
+/* the rule the terminal build applied until 2026-10-10 (football/cfb_terminal/build.js
+   loadLedger + lib/cfb_terminal.js latestPerBook): heartbeats dropped, 180 min. The
+   build now counts heartbeats as observations (docs/market-resilience); this
+   reproduction is kept so the audit can still measure the old rule's false staleness,
+   and TERMINAL_HEARTBEATS_CONFIRM=0 restores it in the build. */
 function boardRuleMarket(rows, kickoff, now) {
   const q = spreadQuotesFor(rows.filter((x) => !x.is_heartbeat), kickoff, now);
   const by = {};

@@ -339,6 +339,11 @@ async function getJson(url, o) {
 /* a timeout, a network error, a malformed body or a 5xx is worth one more
    try inside the run; a 4xx is an answer and is not */
 function transient(err) { const s = err && err.status; return s === 'timeout' || s === 'network' || s === 'malformed' || s == null || (typeof s === 'number' && (s >= 500 || s === 408)); }
+/* A BILLED request is retried only when the provider certainly never answered
+   it (a connection failure, a 5xx). A timeout or an unreadable body may arrive
+   after the provider has already charged for it, so it waits for the event's
+   back-off instead of being bought twice (docs/market-resilience). */
+function billedTransient(err) { const s = err && err.status; return s === 'network' || (typeof s === 'number' && (s >= 500 || s === 408)); }
 
 function marketList(league, groups) {
   const gs = groups && groups.length ? groups : C.DEFAULT_GROUPS[league];
@@ -594,7 +599,7 @@ async function run(opts) {
       } catch (x) {
         err = x; r = null;
         if (x && x.remaining != null) remaining = x.remaining;
-        if (!transient(x) || a === O.request_attempts) break;
+        if (!billedTransient(x) || a === O.request_attempts) break;
         await sleep(Math.round(O.retry_delay_ms * (0.75 + 0.5 * rnd())));
       }
     }

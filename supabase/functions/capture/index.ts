@@ -868,6 +868,14 @@ export interface Config {
   /** Props stop when the provider reports fewer credits than this left on the
       account, so game-line capture always has quota to run on. */
   propMinQuotaRemaining: number;
+  /** THE RUN GUARD for game lines and alternate ladders (PART 7b): credits one
+      run may spend, the provider balance it never spends below, and how many
+      consecutive timeouts / 5xx stop the run. */
+  quotaMaxCreditsPerRun: number;
+  quotaMinRemaining: number;
+  quotaBreakerFailures: number;
+  /** Ask supabase/odds_quota.sql before a run (fail-open when it is not applied). */
+  quotaLedger: boolean;
   /** Also write two-sided player props into `signals`. OFF by default: see
       PLAYER PROP SIGNALS in the handler for the three places game-line capture
       would pay for it. */
@@ -1009,6 +1017,10 @@ export function defaultConfig(env: EnvGet): Config {
     propMaxCreditsPerRun: Math.max(0, num("CAPTURE_PROP_MAX_CREDITS_PER_RUN", 1000)),
     propMaxMarketRequestsPerRun: Math.max(0, Math.floor(num("CAPTURE_PROP_MAX_MARKET_REQUESTS_PER_RUN", 2000))),
     propMinQuotaRemaining: Math.max(0, num("CAPTURE_PROP_MIN_QUOTA_REMAINING", 5000)),
+    quotaMaxCreditsPerRun: Math.max(0, num("CAPTURE_MAX_CREDITS_PER_RUN", 1200)),
+    quotaMinRemaining: Math.max(0, num("CAPTURE_MIN_QUOTA_REMAINING", 1000)),
+    quotaBreakerFailures: Math.max(1, Math.floor(num("CAPTURE_BREAKER_FAILURES", 3))),
+    quotaLedger: bool("CAPTURE_QUOTA_LEDGER", true),
     playerPropSignals: bool("CAPTURE_PLAYER_PROP_SIGNALS", false),
     sportsEnv: g("CAPTURE_SPORTS", ""),
     /* v8 CONCATENATED "americanfootball_nfl" onto whatever this was set to, so
@@ -2312,6 +2324,122 @@ export async function fetchOdds(key: string, sport: string, cfg: Config): Promis
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// PART 7b — THE QUOTA GUARD (docs/market-resilience, supabase/odds_quota.sql)
+// ═══════════════════════════════════════════════════════════════════════════
+/* Two layers, so the quota is protected whether or not the ledger is applied:
+
+     1. THE LEDGER (cross-run, cross-caller): before the run, one
+        odds_quota_acquire() decides from the mode, the breaker, exhaustion,
+        in-flight coalescing, the key's minimum interval (cache-first) and the
+        daily/monthly budget with its reserve. A denial ends the run with
+        ok:true and `skipped` — the scheduler must not retry it. After the run,
+        odds_quota_settle() records what the provider charged and reported.
+        Missing ledger (the SQL is not applied) = FAIL OPEN to layer 2.
+     2. THE RUN GUARD (in-run): a credit cap per run, a floor on the provider's
+        reported balance, and a stop on the first 429 / 401 / exhausted quota
+        or on N consecutive timeouts. Nothing billed is retried; the next
+        scheduled run is the retry. */
+export type QuotaFailure = "RATE_LIMITED" | "QUOTA_EXHAUSTED" | "AUTH_FAILED" | "TIMEOUT" | "FAILED";
+export function classifyOddsFailure(status: number, detail: string, remaining: string): QuotaFailure | null {
+  const rem = remaining === "" || remaining == null ? NaN : Number(remaining);
+  if (status >= 200 && status < 300) return Number.isFinite(rem) && rem <= 0 ? "QUOTA_EXHAUSTED" : null;
+  if (status === 429) return "RATE_LIMITED";
+  if (status === 401 || status === 402 || status === 403) {
+    return /quota|usage|credit|limit reached|out of requests/i.test(String(detail ?? "")) || (Number.isFinite(rem) && rem <= 0) ? "QUOTA_EXHAUSTED" : "AUTH_FAILED";
+  }
+  if (status === 0) return /TIMEOUT/i.test(String(detail ?? "")) ? "TIMEOUT" : "FAILED";
+  if (status >= 500) return "FAILED";
+  return null; /* 404 / 422: one sport's problem (a rotated key), not the provider's health */
+}
+
+export interface RunGuard {
+  maxCredits: number; minRemaining: number; breakerFailures: number;
+  stopped: string | null; spent: number; remaining: number; used: number; consecutive: number;
+  failures: Record<string, number>; lastFailure: QuotaFailure | null; lastHttp: number;
+}
+export function makeRunGuard(maxCredits: number, minRemaining: number, breakerFailures: number, startRemaining = ""): RunGuard {
+  const r = startRemaining === "" ? NaN : Number(startRemaining);
+  return { maxCredits, minRemaining, breakerFailures, stopped: null, spent: 0, remaining: Number.isFinite(r) ? r : NaN, used: NaN,
+    consecutive: 0, failures: {}, lastFailure: null, lastHttp: 0 };
+}
+/** May the run spend about `est` more credits? Sets `stopped` (and says why) when not. */
+export function guardCanSpend(g: RunGuard, est: number): boolean {
+  if (g.stopped) return false;
+  if (g.spent + est > g.maxCredits) { g.stopped = "credit_budget"; return false; }
+  if (Number.isFinite(g.remaining) && g.remaining - est < g.minRemaining) { g.stopped = "quota_floor"; return false; }
+  return true;
+}
+/** Record one billed response: spend, balance, and whether the provider is telling us to stop. */
+export function guardRecord(g: RunGuard, res: OddsResult): QuotaFailure | null {
+  const rem = res.quotaRemaining === "" ? NaN : Number(res.quotaRemaining);
+  if (Number.isFinite(rem)) g.remaining = rem;
+  const used = res.quotaUsed === "" ? NaN : Number(res.quotaUsed);
+  if (Number.isFinite(used)) g.used = used;
+  g.spent += Number(res.lastCost) || 0;
+  g.lastHttp = res.status;
+  const f = classifyOddsFailure(res.status, res.detail, res.quotaRemaining);
+  if (!f) { if (res.ok) g.consecutive = 0; return null; }
+  g.failures[f] = (g.failures[f] ?? 0) + 1;
+  g.lastFailure = f;
+  if (f === "RATE_LIMITED" || f === "QUOTA_EXHAUSTED" || f === "AUTH_FAILED") { g.stopped = "provider_" + f.toLowerCase(); return f; }
+  g.consecutive++;
+  if (g.consecutive >= g.breakerFailures) g.stopped = "circuit_open";
+  return f;
+}
+/** The status the ledger records for the whole run. */
+export function guardSettleStatus(g: RunGuard, anyOk: boolean): string {
+  if (g.lastFailure === "QUOTA_EXHAUSTED" || (Number.isFinite(g.remaining) && g.remaining <= 0)) return "QUOTA_EXHAUSTED";
+  if (g.lastFailure === "RATE_LIMITED") return "RATE_LIMITED";
+  if (g.lastFailure === "AUTH_FAILED") return "AUTH_FAILED";
+  if (!anyOk && g.lastFailure === "TIMEOUT") return "TIMEOUT";
+  if (!anyOk && g.lastFailure) return "FAILED";
+  return g.stopped || Object.keys(g.failures).length ? "PARTIAL" : "OK";
+}
+
+export interface QuotaTicket { allowed: boolean; reason: string; request_id: string | null; ledger: "on" | "missing" | "error"; retry_after?: string | null; budget?: any; detail?: string }
+/** Which ledger key, priority and estimate a capture run asks for. A reader-
+    triggered refresh (reason=board_refresh) shares the scheduled near tier's
+    key, so it is coalesced with it and never spends the reserve. */
+export function captureQuotaRequest(tier: string | null, reason: string | undefined, nSports: number, cfg: Config, mode = ""): { key: string; priority: string; est: number; perSport: number; altPerEvent: number } {
+  const perSport = Math.max(1, String(cfg.markets || "").split(",").filter(Boolean).length)
+    * (cfg.bookmakers.length ? Math.ceil(cfg.bookmakers.length / 10) : Math.max(1, String(cfg.regions || "").split(",").filter(Boolean).length));
+  const regionEq = cfg.bookmakers.length ? Math.ceil(cfg.bookmakers.length / 10) : Math.max(1, String(cfg.regions || "").split(",").filter(Boolean).length);
+  const refresh = reason === "board_refresh";
+  /* a reader refresh shares the near tier's key: cache-first against the last
+     scheduled near run, coalesced with one in flight */
+  const key = mode ? "capture:" + mode : (refresh ? "capture:near" : "capture:" + (tier || "untiered"));
+  const priority = mode ? "low" : (refresh ? "low" : (tier === "near" ? "critical" : (tier === "board" ? "low" : "normal")));
+  return { key, priority, est: perSport * Math.max(1, nSports), perSport, altPerEvent: Math.max(1, cfg.alternateMarkets.length) * regionEq };
+}
+async function quotaRpc(url: string, key: string, fn: string, body: any): Promise<{ ok: boolean; status: number; json: any; text: string }> {
+  try {
+    const r = await fetch(url.replace(/\/+$/, "") + "/rest/v1/rpc/" + fn, {
+      method: "POST", headers: { apikey: key, Authorization: `Bearer ${key}`, "content-type": "application/json" },
+      body: JSON.stringify(body), signal: deadline(5000),
+    });
+    const text = await r.text().catch(() => "");
+    let json: any = null; try { json = JSON.parse(text); } catch { json = null; }
+    return { ok: r.ok, status: r.status, json, text };
+  } catch (e) { return { ok: false, status: 0, json: null, text: String((e as Error)?.message ?? e) }; }
+}
+export async function quotaAcquire(url: string, key: string, a: { caller: string; key: string; est: number; priority: string; sport?: string | null; endpoint?: string | null; minIntervalS?: number | null }): Promise<QuotaTicket> {
+  if (!url || !key) return { allowed: true, reason: "ledger_unreachable", request_id: null, ledger: "missing" };
+  const r = await quotaRpc(url, key, "odds_quota_acquire", { p_caller: a.caller, p_key: a.key, p_est_cost: Math.max(0, Math.round(a.est)), p_priority: a.priority,
+    p_sport: a.sport ?? null, p_endpoint: a.endpoint ?? null, p_min_interval_s: a.minIntervalS ?? null });
+  /* the SQL is not applied: fail OPEN to the run guard, and say so */
+  if (r.status === 404 || (r.json && (r.json.code === "PGRST202" || r.json.code === "42883"))) return { allowed: true, reason: "ledger_missing", request_id: null, ledger: "missing", detail: "supabase/odds_quota.sql is not applied" };
+  if (!r.ok || !r.json || typeof r.json.allowed !== "boolean") return { allowed: true, reason: "ledger_error", request_id: null, ledger: "error", detail: `HTTP ${r.status}: ${r.text.slice(0, 200)}` };
+  return { allowed: r.json.allowed, reason: String(r.json.reason ?? ""), request_id: r.json.request_id ?? null, ledger: "on", retry_after: r.json.retry_after ?? null, budget: r.json.budget ?? null };
+}
+export async function quotaSettle(url: string, key: string, t: QuotaTicket, status: string, g: RunGuard, detail: string): Promise<any> {
+  if (!t.request_id || t.ledger !== "on") return null;
+  const r = await quotaRpc(url, key, "odds_quota_settle", { p_request_id: t.request_id, p_status: status, p_cost: Math.round(g.spent),
+    p_remaining: Number.isFinite(g.remaining) ? Math.round(g.remaining) : null, p_used: Number.isFinite(g.used) ? Math.round(g.used) : null,
+    p_http: g.lastHttp || null, p_detail: detail.slice(0, 480) });
+  return r.ok ? r.json : { settled: false, error: `HTTP ${r.status}: ${r.text.slice(0, 160)}` };
+}
+
 /**
  * The event index for one sport, WITHOUT odds.
  *
@@ -3323,6 +3451,25 @@ export async function handle(req: Request): Promise<Response> {
     }, 500);
   }
 
+  /* ── THE QUOTA GUARD (PART 7b). Asked once, before the first billed request.
+     A denial is a normal, successful answer: the stored board is fresh enough,
+     or the budget/breaker says no. ok:true + skipped, so no scheduler retries. */
+  const qreq = captureQuotaRequest(tier, params.reason, diag || probe ? 1 : sports.length, cfg, probe ? "probe" : (diag ? "diag" : ""));
+  const ticket: QuotaTicket = cfg.quotaLedger
+    ? await quotaAcquire(SB_URL, SB_KEY, { caller: params.reason === "board_refresh" ? "edgedesk_ai" : "capture", key: qreq.key, est: probe ? qreq.perSport * 2 : qreq.est, priority: qreq.priority, endpoint: "odds" })
+    : { allowed: true, reason: "ledger_disabled", request_id: null, ledger: "missing" };
+  if (!ticket.allowed) {
+    return json({
+      ok: true, status: "skipped", skipped: true, build: BUILD, reason: ticket.reason, retry_after: ticket.retry_after ?? null,
+      quota_guard: { ledger: ticket.ledger, key: qreq.key, priority: qreq.priority, estimate: qreq.est, decision: ticket.reason, budget: ticket.budget ?? null },
+      note: ticket.reason === "cache_fresh" ? "This key was refreshed inside its minimum interval; the stored board is used and no credit was spent."
+        : ticket.reason === "coalesced" ? "An identical capture is already running; this one was not bought twice."
+        : "The central quota ledger (supabase/odds_quota.sql) held this run: " + ticket.reason + ". Nothing was requested and nothing is retried.",
+    });
+  }
+  const guard = makeRunGuard(cfg.quotaMaxCreditsPerRun, cfg.quotaMinRemaining, cfg.quotaBreakerFailures, ticket.budget && ticket.budget.provider_remaining != null ? String(ticket.budget.provider_remaining) : "");
+  const quotaSkipped: string[] = [];
+
   /* ?probe=1 — spend at most two odds requests on ONE sport and report which
      books each selection strategy actually returns, and what the provider
      charged for it. This is how the Pinnacle question and the billing question
@@ -3330,7 +3477,10 @@ export async function handle(req: Request): Promise<Response> {
   if (probe) {
     const sport = sports[0];
     const byRegion = await fetchOdds(ODDS_KEY, sport, { ...cfg, bookmakers: [] });
-    const byBooks = await fetchOdds(ODDS_KEY, sport, { ...cfg, bookmakers: cfg.bookmakers.length ? cfg.bookmakers : SUGGESTED_BOOKMAKERS });
+    guardRecord(guard, byRegion);
+    const byBooks = guard.stopped ? { ...byRegion, data: [], ok: false, detail: "not requested: " + guard.stopped } : await fetchOdds(ODDS_KEY, sport, { ...cfg, bookmakers: cfg.bookmakers.length ? cfg.bookmakers : SUGGESTED_BOOKMAKERS });
+    if (!guard.stopped) guardRecord(guard, byBooks);
+    await quotaSettle(SB_URL, SB_KEY, ticket, guardSettleStatus(guard, byRegion.ok || byBooks.ok), guard, "probe " + sport);
     const booksOf = (r: OddsResult) => [...new Set(r.data.flatMap((e: any) => (e.bookmakers ?? []).map((b: any) => b.key)))].sort();
     const stampsOf = (r: OddsResult) => {
       let withMarket = 0, withBook = 0, none = 0;
@@ -3422,6 +3572,9 @@ export async function handle(req: Request): Promise<Response> {
 
   for (const sport of sportList) {
     if (outOfTime()) { skippedForTime.push(sport); continue; }
+    /* the provider said stop (429 / 401 / exhausted / repeated timeouts): no
+       further request of any kind this run, free index included */
+    if (guard.stopped) { quotaSkipped.push(sport); perSport[sport] = 0; continue; }
 
     /* FREE CALL BEFORE A BILLED ONE. Only when explicitly configured — a sport
        with no near event still has a board worth storing for research, so this
@@ -3441,7 +3594,9 @@ export async function handle(req: Request): Promise<Response> {
          into an outage. */
     }
 
+    if (!guardCanSpend(guard, qreq.perSport)) { quotaSkipped.push(sport); perSport[sport] = 0; continue; }
     const res = await fetchOdds(ODDS_KEY, sport, cfg);
+    guardRecord(guard, res);
     if (res.quotaRemaining) quotaRemaining = res.quotaRemaining;
     if (res.quotaUsed) quotaUsed = res.quotaUsed;
     quotaSpent += Number(res.lastCost) || 0;
@@ -3480,7 +3635,7 @@ export async function handle(req: Request): Promise<Response> {
     const altHours = alternateHoursForTier(cfg, tier);
     const group = sportGroup(sport);
     const altStat = perSportAlt[sport] = { eligible: 0, requested: 0, merged: 0, failed: 0 };
-    if (altHours > 0 && (group === "nfl" || group === "ncaaf")) {
+    if (altHours > 0 && !diag && !guard.stopped && (group === "nfl" || group === "ncaaf")) {
       const eligible = res.data
         .map((ev: any) => ({ ev, t: Date.parse(String(ev?.commence_time ?? "")) }))
         .filter((x: any) => Number.isFinite(x.t) && x.t >= nowMs && x.t <= nowMs + altHours * 3600000)
@@ -3492,6 +3647,8 @@ export async function handle(req: Request): Promise<Response> {
 
       for (let i = 0; i < selected.length && !outOfTime(); i += cfg.alternateConcurrency) {
         const batch = selected.slice(i, i + cfg.alternateConcurrency);
+        /* the run guard covers ladders too: a 429 or the credit cap ends them */
+        if (!guardCanSpend(guard, batch.length * qreq.altPerEvent)) { altSkippedByCap += selected.length - i; break; }
         const results = await Promise.all(batch.map(async ({ ev }: any) => {
           const eventId = String(ev?.id ?? "");
           if (!eventId) return { eventId, ev, res: null as OddsResult | null };
@@ -3499,6 +3656,7 @@ export async function handle(req: Request): Promise<Response> {
         }));
         for (const item of results) {
           if (!item.res) continue;
+          guardRecord(guard, item.res);
           altRequested++; altStat.requested++;
           if (item.res.quotaRemaining) quotaRemaining = item.res.quotaRemaining;
           if (item.res.quotaUsed) quotaUsed = item.res.quotaUsed;
@@ -3768,11 +3926,17 @@ export async function handle(req: Request): Promise<Response> {
   }
 
   /* ── THE PLAYER-PROP PASS. Every game line above is already written. ───── */
+  const providerStopped = !!(guard.stopped && /^provider_|^circuit_open$/.test(guard.stopped));
   const playerProps = await runPlayerProps({
-    cfg, tier, oddsKey: ODDS_KEY, rest, nowMs, nowIso, outOfTime, queue: propQueue,
+    cfg, tier, oddsKey: ODDS_KEY, rest, nowMs, nowIso, outOfTime, queue: providerStopped ? [] : propQueue,
     quotaRemaining, diag, disabledByRequest: params.props === "0",
   });
+  if (providerStopped) (playerProps as any).skipped_by_quota_guard = guard.stopped;
   quotaSpent += playerProps.quota_spent || 0;
+  guard.spent += playerProps.quota_spent || 0;
+  if (playerProps.last_quota_remaining && Number.isFinite(Number(playerProps.last_quota_remaining))) guard.remaining = Number(playerProps.last_quota_remaining);
+  const quotaSettled = await quotaSettle(SB_URL, SB_KEY, ticket, guardSettleStatus(guard, Object.keys(perSportEvents).length > 0), guard,
+    (tier || "untiered") + " · " + sportList.length + " sport(s) · " + (guard.stopped ? "stopped: " + guard.stopped : "complete"));
   if (playerProps.last_quota_remaining) quotaRemaining = playerProps.last_quota_remaining;
   if (playerProps.last_quota_used) quotaUsed = playerProps.last_quota_used;
 
@@ -3943,6 +4107,14 @@ export async function handle(req: Request): Promise<Response> {
         + `run. Everything written before the cutoff is committed.`,
     } : {}),
     quota_remaining: quotaRemaining, quota_used: quotaUsed, quota_spent_this_run: quotaSpent,
+    quota_guard: {
+      ledger: ticket.ledger, key: qreq.key, priority: qreq.priority, estimate: qreq.est, decision: ticket.reason,
+      ledger_detail: ticket.detail ?? null, settled: quotaSettled,
+      run: { spent: guard.spent, max_credits: guard.maxCredits, floor: guard.minRemaining, remaining: Number.isFinite(guard.remaining) ? guard.remaining : null,
+        stopped: guard.stopped, failures: guard.failures, sports_not_requested: quotaSkipped },
+      rule: "One ledger decision before the run; a credit cap, a balance floor and a stop on the first 429 / 401 / exhausted quota (or "
+        + cfg.quotaBreakerFailures + " consecutive timeouts) inside it. Nothing billed is retried.",
+    },
 
     // ── the policy in force, echoed so a run explains its own decisions ────
     policy_in_force: {

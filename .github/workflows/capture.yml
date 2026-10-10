@@ -135,8 +135,13 @@ jobs:
           # -s so a failure does not print the URL with its query string, --fail-with-body
           # so a 401 still shows the reason capture gave rather than an empty exit code.
           # The secret goes in a header from the environment and is never echoed.
+          # NO --retry (docs/market-resilience): curl retries timeouts and 5xx,
+          # and a gateway timeout can arrive AFTER capture has already bought the
+          # boards, so one tick could bill up to three full runs. The next
+          # scheduled run is the retry, and capture's quota ledger answers a
+          # duplicate with "cache_fresh" instead of spending again.
           CODE=$(curl -sS -o /tmp/capture.json -w '%{http_code}' \
-            --max-time 180 --retry 2 --retry-delay 5 --retry-connrefused \
+            --max-time 180 \
             -X POST "${SB_URL%/}/functions/v1/capture?$QS" \
             -H "content-type: application/json" \
             -H "x-cron-secret: ${CAPTURE_CRON_SECRET}" \

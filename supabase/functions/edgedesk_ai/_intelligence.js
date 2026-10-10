@@ -1805,12 +1805,24 @@
     });
 
     function capturedFor(marketKey, wantSide) {
+      /* the main line, never a ladder rung: the capture's modal point first,
+         then the price nearest even money among the newest captures (a run
+         stamps every rung with one time, so "newest" alone picked whichever
+         rung came first) */
       var hit = null;
+      var gap = function (s) { var d = num(s.best_dec); return d != null && d > 1 ? Math.abs(1 / d - 0.5) : 1; };
+      var better = function (s, h) {
+        var ms = s.point_is_modal === true, mh = h.point_is_modal === true;
+        if (ms !== mh) return ms;
+        var ts = String(s.last_seen_at || ''), th = String(h.last_seen_at || '');
+        if (ts !== th) return ts > th;
+        return gap(s) < gap(h) - 1e-9;
+      };
       sigs.forEach(function (s) {
         if (normMarket(s.market) !== marketKey) return;
         if (wantSide && String(s.selection || '').toLowerCase().indexOf(wantSide) < 0) return;
         if (num(s.best_dec) == null) return;
-        if (!hit || String(s.last_seen_at || '') > String(hit.last_seen_at || '')) hit = s;
+        if (!hit || better(s, hit)) hit = s;
       });
       return hit;
     }
@@ -2124,6 +2136,9 @@
           observed_at: s.last_seen_at || null,
           books_quoting: num(s.n_books),
           book_families: num(s.n_books_eff),
+          /* the capture's modal point: the number most books deal (the main
+             line), as opposed to a rung of an alternate ladder */
+          main: s.point_is_modal === true,
           opened: (num(s.first_best_dec) != null && num(s.first_best_dec) > 1) ? {
             price_decimal: num(s.first_best_dec),
             price_american: fmtAmerican(decToAmerican(num(s.first_best_dec))),
@@ -2164,13 +2179,26 @@
     function pickMarket(mk) {
       var mine = rows.filter(function (r) { return r.market === mk; });
       if (!mine.length) return null;
-      /* The freshest capture is the current line; a tie goes to the better
-         price, which is the only tie-break that can never mislead. */
-      mine.sort(function (a, b) {
+      /* THE MAIN LINE, NEVER A LADDER RUNG (docs/market-resilience, the
+         UCF @ Oklahoma State "market total 34.5"). Capture files alternate
+         ladders under the same market key and stamps every row of a run with
+         one time, so "freshest, then best price" picked the LONGEST SHOT of
+         the ladder — an Under 34.5 at +1000 beside a 53.5 main total. The
+         current line is the capture's modal point when one is flagged, else a
+         price near even money; ties go to the price nearest even money, then
+         to more books. */
+      var evenGap = function (r) { return r.price_decimal > 1 ? Math.abs(1 / r.price_decimal - 0.5) : 1; };
+      var flagged = mine.filter(function (r) { return r.main; });
+      var near = mine.filter(function (r) { return evenGap(r) <= 0.15; });
+      var pool = flagged.length ? flagged : (near.length ? near : mine);
+      pool = pool.slice().sort(function (a, b) {
         var t = String(b.observed_at || '').localeCompare(String(a.observed_at || ''));
-        return t !== 0 ? t : (b.price_decimal - a.price_decimal);
+        if (t !== 0) return t;
+        var e = evenGap(a) - evenGap(b);
+        if (Math.abs(e) > 1e-9) return e;
+        return (b.books_quoting || 0) - (a.books_quoting || 0);
       });
-      var lead = mine[0];
+      var lead = pool[0];
       var sides = {};
       mine.forEach(function (r) {
         if (!r.side) return;
