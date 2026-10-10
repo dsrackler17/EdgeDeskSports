@@ -48,7 +48,8 @@ function chk(name, ok, detail) {
   fail++; failures.push({ name, detail });
   console.log('  FAIL ' + name + (detail !== undefined ? '  ' + JSON.stringify(detail).slice(0, 600) : ''));
 }
-function has(hay, needle, name) { chk(name, String(hay).indexOf(needle) >= 0, { missing: needle }); }
+/* the answer is HTML: "Texas A&M" arrives as "Texas A&amp;M" */
+function has(hay, needle, name) { chk(name, String(hay).replace(/&amp;/g, '&').indexOf(needle) >= 0, { missing: needle }); }
 function lacks(hay, re, name) {
   const m = String(hay).match(re);
   chk(name, !m, m ? { found: String(m[0]).slice(0, 120) } : undefined);

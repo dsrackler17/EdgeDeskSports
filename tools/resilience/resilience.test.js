@@ -49,7 +49,12 @@ function done() {
 
 /* ---- real research objects ------------------------------------------------ */
 const out = fs.mkdtempSync(path.join(os.tmpdir(), 'resil-'));
-cp.execFileSync(process.execPath, [path.join(ROOT, 'football', 'cfb_terminal', 'build.js'), '--out', out], { stdio: 'ignore' });
+/* the build's clock is PINNED to four hours before UCF @ Oklahoma State
+   (2026-10-10 16:00Z), the fixture every scenario is written around: on the
+   live clock the game leaves the slate at kickoff and the suite has nothing
+   to stand on (it broke that way the afternoon it merged). */
+const BUILD_NOW = '2026-10-10T12:00:00Z';
+cp.execFileSync(process.execPath, [path.join(ROOT, 'football', 'cfb_terminal', 'build.js'), '--out', out, '--now', BUILD_NOW], { stdio: 'ignore' });
 const G = JSON.parse(fs.readFileSync(path.join(out, 'games.json'), 'utf8'));
 const BOARD = JSON.parse(fs.readFileSync(path.join(out, 'board.json'), 'utf8'));
 fs.rmSync(out, { recursive: true, force: true });
@@ -73,7 +78,13 @@ function build(o, s, ctx) { return RE.build(o, s, Object.assign({ now: NOW, bett
 const research = (R) => JSON.stringify([R.sections.projection, R.sections.matchup, R.sections.explanation, R.sections.uncertainty, R.research_priority]);
 const BANNED = /\b(lock|guarantee[ds]?|best bet|bet now|smash|hammer|free money)\b/i;
 
-chk('the fixture: UCF @ Oklahoma State is in the build with a projection', !!(OSU && OSU.edgedesk.available && OSU.edgedesk.fair_text === 'Oklahoma State -4.6'), OSU && OSU.edgedesk.fair_text);
+/* the projection moves with each week's ratings (-4.6 when this was written,
+   -4.0 by that evening): the scenarios read it from the build, and hold only what
+   they are about, Oklahoma State favoured and a -10.5 market far from it */
+const OSU_FAIR = OSU && OSU.edgedesk.fair_text;
+const OSU_GAP = OSU ? Math.round(Math.abs(10.5 - OSU.edgedesk.home_margin) * 10) / 10 : null;
+const esc = (t) => String(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+chk('the fixture: UCF @ Oklahoma State is in the build with a projection, Oklahoma State favoured', !!(OSU && OSU.edgedesk.available && /^Oklahoma State -\d+(\.\d)?$/.test(OSU_FAIR) && OSU_GAP >= 4), [OSU_FAIR, OSU_GAP]);
 chk('the fixture: a projected, decision-evaluated game without a regime change exists', !!plain, null);
 
 /* every scenario's snapshot, for the cross-scenario invariants at the end */
@@ -128,7 +139,7 @@ section('S4 no market snapshot exists');
   const R = record('S4', OSU, s, build(OSU, s));
   chk('S4 UNAVAILABLE', s.state === 'UNAVAILABLE' && !s.spread.available && !s.total.available);
   chk('S4 verdict: RESEARCH AVAILABLE — MARKET OFFLINE, with the projection', R.sections.verdict.headline === 'RESEARCH AVAILABLE — MARKET OFFLINE'
-    && /^EdgeDesk projects Oklahoma State -4\.6\. No verified current sportsbook market is available/.test(R.sections.verdict.text) && /Independent football analysis remains accessible\./.test(R.sections.verdict.text), R.sections.verdict);
+    && new RegExp('^EdgeDesk projects ' + esc(OSU_FAIR) + '\\. No verified current sportsbook market is available').test(R.sections.verdict.text) && /Independent football analysis remains accessible\./.test(R.sections.verdict.text), R.sections.verdict);
   chk('S4 every market value is null with an "Unavailable" reason — never a zero', R.sections.market.spread === null && R.sections.market.total === null
     && R.sections.market.unavailable.length >= 4 && R.sections.market.unavailable.every((u) => /^Unavailable/.test(u.reason)), R.sections.market.unavailable);
   chk('S4 no model number stands in for the market', s.spread.value === null && s.total.value === null);
@@ -201,8 +212,8 @@ section('S8 a team with major roster turnover');
 {
   const s = snap(OSU, [q('draftkings', -10.5, 20, { source: 'espn' })], 'OK');
   const R = record('S8', OSU, s, build(OSU, s));
-  chk('S8 UCF @ Oklahoma State: INVESTIGATE — 5.9-POINT DISAGREEMENT', R.sections.verdict.headline === 'INVESTIGATE — 5.9-POINT DISAGREEMENT', R.sections.verdict.headline);
-  chk('S8 the verdict text matches the owner’s example', /^EdgeDesk projects Oklahoma State -4\.6 against a market of -10\.5\. Major roster turnover \(Oklahoma State: new head coach/.test(R.sections.verdict.text)
+  chk('S8 UCF @ Oklahoma State: INVESTIGATE — the model-to-market gap in points', R.sections.verdict.headline === 'INVESTIGATE — ' + OSU_GAP.toFixed(1) + '-POINT DISAGREEMENT', [R.sections.verdict.headline, OSU_GAP]);
+  chk('S8 the verdict text matches the owner’s example', new RegExp('^EdgeDesk projects ' + esc(OSU_FAIR) + ' against a market of -10\\.5\\. Major roster turnover \\(Oklahoma State: new head coach').test(R.sections.verdict.text)
     && /No validated betting edge has been established\.$/.test(R.sections.verdict.text), R.sections.verdict.text);
   const S = R.sensitivity;
   chk('S8 the prior-season share is stated for both teams', S.carryover.available && /Oklahoma State: 69% of the rating is carried/.test(S.carryover.text) && /UCF: 80%/.test(S.carryover.text), S.carryover.text);
