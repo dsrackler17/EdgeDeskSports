@@ -100,7 +100,7 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
   /* the runner */
   const P = paths('nfl');
   const noKey = await CAP.run({ key: null, league: 'nfl', now: NOW, paths: P, window_h: 96, max_events: 4, min_remaining: 50, max_credits_run: 500 });
-  chk('no key: nothing captured, nothing spent', /no ODDS_API_KEY/.test(noKey.skipped));
+  chk('no gateway credential: nothing captured, nothing spent', /no odds gateway credential/.test(noKey.skipped), noKey.skipped);
   const calls = [];
   const getter = (remaining, fail429) => async (url) => {
     calls.push(url.replace(/apiKey=[^&]+/, 'apiKey=***'));
@@ -112,7 +112,9 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
   const RUN = { key: 'k', league: 'nfl', now: NOW, paths: P, window_h: 96, max_events: 4, min_remaining: 50, max_credits_run: 500, groups: ['core', 'long'], low_credits: 0, critical_credits: 0, retry_delay_ms: 0 };
   const r1 = await CAP.run(Object.assign({}, RUN, { getJson: getter(1000) }));
   chk('a run polls every event in the window, nearest kickoff first', r1.events_polled === 2 && /events\/e2\//.test(calls[1]) && calls[2].indexOf(EVENT.id) > 0, calls);
-  chk('the key never appears in a logged URL', calls.every((u) => u.indexOf('apiKey=***') > 0));
+  chk('no request carries a provider key: each is a description sent to the odds gateway, which holds the key',
+    calls.every((u) => !/apiKey/i.test(u) && /^odds_gateway:\/v4\/sports\//.test(u)), calls);
+  chk('an event request carries its kickoff, so the gateway can apply the event\'s own cadence', calls.filter((u) => /\/odds\?/.test(u)).every((u) => /commence_time=/.test(u)), calls);
   chk('the run writes the listing, the movement and its state', fs.existsSync(P.quotes) && fs.existsSync(P.lines) && fs.existsSync(P.capture_state));
   chk('cost per event = markets × regions (ten books = one region)', r1.cost_per_event === CAP.marketList('nfl', ['core', 'long']).length, r1.cost_per_event);
   const r2 = await CAP.run(Object.assign({}, RUN, { now: NOW + 30 * 60000, getJson: getter(1000) }));
@@ -153,7 +155,7 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
   chk('PROPS_CAPTURE off: NOT_RUN is written, nothing requested, and the log says so', sOff.status === 'NOT_RUN' && sOff.reason === 'PROPS_CAPTURE_DISABLED' && fs.existsSync(P.capture_state + '.s' + n)
     && logs.some((l) => /^Player props capture skipped: PROPS_CAPTURE disabled/.test(l)), sOff);
   const sNoKey = await CAP.run(Object.assign({}, S0, { paths: fresh(), key: null }));
-  chk('on without a key: ERROR (NO_API_KEY), written — not "not run"', sNoKey.status === 'ERROR' && sNoKey.reason === 'NO_API_KEY' && JSON.parse(fs.readFileSync(P.capture_state + '.s' + n, 'utf8')).status === 'ERROR');
+  chk('on without a gateway credential: ERROR (NO_GATEWAY_CREDENTIAL), written — not "not run"', sNoKey.status === 'ERROR' && sNoKey.reason === 'NO_GATEWAY_CREDENTIAL' && JSON.parse(fs.readFileSync(P.capture_state + '.s' + n, 'utf8')).status === 'ERROR');
   const sIdx = await CAP.run(Object.assign({}, S0, { paths: fresh(), getJson: async (url) => { throw Object.assign(new Error('HTTP 401 ' + url), { status: 401, body: '{"message":"API key sekrit-key-123456 is not valid"}' }); } }));
   chk('the event index failing is an ERROR carrying the status and a safe body', sIdx.status === 'ERROR' && sIdx.reason === 'EVENT_INDEX_FAILED' && /401/.test(sIdx.error_message) && /not valid/.test(sIdx.error_message), sIdx.error_message);
   const sEmpty = await CAP.run(Object.assign({}, S0, { paths: fresh(), getJson: fake(async (url) => ({ status: 200, body: { id: /fixture_evt/.test(url) ? EVENT.id : 'e2', bookmakers: [] }, remaining: 4990, last: 0 })) }));
@@ -170,8 +172,61 @@ const paths = (lg) => { const p = C.leaguePaths(lg, 2026); const map = {}; Objec
   chk('every request refused (422): ERROR (REQUESTS_FAILED) with the provider\'s own message', sBad.status === 'ERROR' && sBad.reason === 'REQUESTS_FAILED' && /Invalid markets/.test(sBad.error_message) && sBad.requests.length === 2);
   chk('the per-event diagnostics are logged: HTTP, books, markets, outcomes, quotes, remaining', logs.some((l) => /event fixture_evt.*HTTP 200 · books \d+ .* markets \d+ · outcomes \d+ · quotes normalized \d+ · cost 14 · remaining 4980/.test(l)), logs.filter((l) => /event /.test(l)).slice(0, 2));
   chk('an error is logged with its body and the markets requested', logs.some((l) => /HTTP 422 · body: .*Invalid markets.* · markets requested: player_pass_yds/.test(l)));
-  chk('the key never reaches a log line, an error or a state file', logs.every((l) => l.indexOf('sekrit-key-123456') < 0) && [1, 2, 3, 4, 5, 6, 7].every((i) => { try { return fs.readFileSync(P.capture_state + '.s' + i, 'utf8').indexOf('sekrit-key-123456') < 0; } catch (e) { return true; } }));
+  /* The capture never holds the key (odds_gateway does, and redacts provider
+     text: tools/odds/gateway_fn.test.js). What it writes carries no key slot. */
+  chk('no log line or state file carries an apiKey parameter', logs.every((l) => !/apiKey=/i.test(l)) && [1, 2, 3, 4, 5, 6, 7].every((i) => { try { return !/apiKey=/i.test(fs.readFileSync(P.capture_state + '.s' + i, 'utf8')); } catch (e) { return true; } }));
   chk('the key is scrubbed from any text that carries it', CAP.scrub('GET /x?apiKey=abc123456789&y=1 key abc123456789', '/x?apiKey=abc123456789').indexOf('abc123456789') < 0);
+
+  /* THROUGH THE ODDS GATEWAY (2026-10-10): a fake gateway client stands in for
+     tools/lib/odds_gateway.js and answers with envelopes. */
+  {
+    const gwCalls = [];
+    const gw = (decide) => ({ request: async (q) => { gwCalls.push(q); return decide(q); } });
+    const IDX = [{ id: EVENT.id, commence_time: EVENT.commence_time, home_team: EVENT.home_team, away_team: EVENT.away_team }];
+    const idxEnv = (src) => ({ ok: true, source: src || 'cache', decision: 'cache_hit', data: IDX, quota: {} });
+    const G0 = Object.assign({}, RUN, { getJson: undefined, groups: null });
+
+    gwCalls.length = 0;
+    const gOk = await CAP.run(Object.assign({}, G0, { paths: fresh(), gateway: gw((q) => (q.category === 'events_index' ? idxEnv()
+      : { ok: true, source: 'provider', decision: 'granted', new_for_consumer: true, data: EVENT, cost: 11, quota: { remaining: 4321, used: 99, last: 11 } })) }));
+    const propReqs = gwCalls.filter((q) => q.category !== 'events_index');
+    chk('gateway · by default ONE category per event: the core props set, in american, with the kickoff',
+      propReqs.length === 1 && propReqs[0].category === 'props' && propReqs[0].odds_format === 'american' && propReqs[0].event_id === EVENT.id
+      && propReqs[0].commence_time === EVENT.commence_time && propReqs[0].consumer === 'props_capture', propReqs);
+    chk('gateway · a provider answer is captured, and its cost is the provider\'s', gOk.quotes_written > 0 && gOk.credits_spent === 11 && gOk.requests_remaining === 4321, [gOk.status, gOk.credits_spent]);
+    chk('gateway · the default market list is the core group only', JSON.stringify(CAP.marketList('nfl')) === JSON.stringify(C.MARKET_GROUPS.core) && JSON.stringify(CAP.marketList('cfb')) === JSON.stringify(C.MARKET_GROUPS.core));
+
+    gwCalls.length = 0;
+    await CAP.run(Object.assign({}, G0, { paths: fresh(), groups: ['core', 'long', 'alt'], gateway: gw((q) => (q.category === 'events_index' ? idxEnv()
+      : q.category === 'props' ? { ok: true, source: 'provider', decision: 'granted', new_for_consumer: true, data: EVENT, cost: 11, quota: {} }
+      : { ok: false, source: 'none', decision: 'denied_category', reason: 'category disabled: ' + q.category })) }));
+    chk('gateway · extra groups are separate categories, refused unless switched on',
+      gwCalls.filter((q) => q.category !== 'events_index').map((q) => q.category).sort().join() === 'props,props_alt,props_extra', gwCalls.map((q) => q.category));
+
+    const gPaused = await CAP.run(Object.assign({}, G0, { paths: fresh(), gateway: gw((q) => (q.category === 'events_index' ? idxEnv('stale_cache')
+      : { ok: true, source: 'stale_cache', decision: 'denied_breaker', reason: 'circuit breaker is off', data: EVENT })) }));
+    chk('gateway · breaker off: NOT_RUN (PROVIDER_PAUSED), nothing written, nothing failed, no back-off',
+      gPaused.status === 'NOT_RUN' && gPaused.reason === 'PROVIDER_PAUSED' && gPaused.events_failed === 0 && gPaused.quotes_written === 0
+      && !Object.values(gPaused.events_state || {}).some((r) => r.failures > 0), [gPaused.status, gPaused.reason, gPaused.events_failed]);
+    chk('gateway · and the page is told prices are paused, not broken', gPaused.health && gPaused.health.reason === 'PROVIDER_PAUSED' && gPaused.health.state === 'DELAYED', gPaused.health);
+
+    const gIdxPaused = await CAP.run(Object.assign({}, G0, { paths: fresh(), gateway: gw(() => ({ ok: false, source: 'none', decision: 'denied_breaker', reason: 'off' })) }));
+    chk('gateway · breaker off with no stored index: NOT_RUN (PROVIDER_PAUSED), not EVENT_INDEX_FAILED', gIdxPaused.status === 'NOT_RUN' && gIdxPaused.reason === 'PROVIDER_PAUSED', [gIdxPaused.status, gIdxPaused.reason]);
+
+    const gShed = await CAP.run(Object.assign({}, G0, { paths: fresh(), gateway: gw((q) => (q.category === 'events_index' ? idxEnv()
+      : { ok: false, source: 'none', decision: 'denied_daily_budget', reason: 'daily shedding level 2 drops priority 3' })) }));
+    chk('gateway · props shed by the daily budget: deferred, not a failure, the clock untouched',
+      gShed.status === 'NOT_RUN' && gShed.reason === 'GATEWAY_DEFERRED' && gShed.events_failed === 0 && (gShed.gateway_deferred || {}).denied_daily_budget === 1
+      && !Object.values(gShed.events_state || {}).some((r) => r.failures > 0 || r.polled_ok_at), gShed);
+
+    const gSeen = await CAP.run(Object.assign({}, G0, { paths: fresh(), gateway: gw((q) => (q.category === 'events_index' ? idxEnv()
+      : { ok: true, source: 'cache', decision: 'cache_hit', new_for_consumer: false, data: EVENT, quota: {} })) }));
+    chk('gateway · a board this capture already processed is never rewritten', gSeen.quotes_written === 0 && (gSeen.gateway_deferred || {}).already_processed === 1, gSeen.gateway_deferred);
+
+    const g429 = await CAP.run(Object.assign({}, G0, { paths: fresh(), gateway: gw((q) => (q.category === 'events_index' ? idxEnv()
+      : { ok: false, source: 'none', decision: 'provider_429', status: 429, detail: 'HTTP 429: OUT_OF_USAGE_CREDITS', quota: { remaining: 0 } })) }));
+    chk('gateway · a provider 429 relayed by the gateway still stops the run', /429/.test(g429.stopped || '') && g429.status === 'ERROR', [g429.status, g429.stopped]);
+  }
   const cbNone = B.captureBlock(null, 'nfl'), cbOk = B.captureBlock(sPart, 'nfl');
   chk('the board says NOT_RUN when no state was ever published, and carries the status otherwise', cbNone.status === 'NOT_RUN' && cbNone.last_run === null && cbOk.status === 'PARTIAL' && cbOk.quotes_written === sPart.quotes_written && cbOk.books_returned.length > 0);
 

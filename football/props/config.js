@@ -28,7 +28,12 @@ const MARKET_GROUPS = {
   kick: ['player_field_goals', 'player_kicking_points'],
   defense: ['player_tackles_assists', 'player_solo_tackles', 'player_sacks']
 };
-const DEFAULT_GROUPS = { nfl: ['core', 'long', 'alt'], cfb: ['core', 'alt'] };
+/* 2026-10-10: core only (docs/odds-api-incident-2026-10/INCIDENT.md). The
+   six alternate ladders and the three "longest" markets were 9 of NFL's 20
+   billed markets per event poll; the board, projections and grades are built
+   on the core set. PROPS_MARKET_GROUPS can still ask for more, and the odds
+   gateway refuses those categories unless an operator switches them on. */
+const DEFAULT_GROUPS = { nfl: ['core'], cfb: ['core'] };
 
 /* The capture's CADENCE (how often each event is re-polled, by hours to
    kickoff), its retry/backoff and every freshness threshold live in ONE
@@ -37,14 +42,15 @@ const DEFAULT_GROUPS = { nfl: ['core', 'long', 'alt'], cfb: ['core', 'alt'] };
    board so the page judges prices by the same numbers. */
 const DEFAULTS = {
   bookmakers: 'draftkings,fanduel,betmgm,williamhill_us,espnbet,betrivers,hardrockbet,fanatics,pinnacle,betonlineag',
-  window_h: 96,            /* only events kicking off inside this window */
+  window_h: 48,            /* only events kicking off inside this window (was 96: the gateway never polls NFL props beyond 48 h) */
+  window_h_league: { nfl: 48, cfb: 24 },  /* college props: inside 24 h only */
   max_events: 64,          /* per run; due events are taken nearest kickoff first (a full college Saturday fits one run) */
   slack_min: 3,            /* an event this close to its next poll is taken now (the scheduler ticks every 5 min) */
   min_remaining: 200,      /* stop before spending below this many provider credits */
   low_credits: 5000,       /* below this, events more than six hours out are polled half as often */
   critical_credits: 1500,  /* below this, only events inside six hours of kickoff are polled */
   max_credits_run: 800,    /* one run never spends more than this */
-  request_attempts: 2,     /* a timeout, network error or 5xx is retried once inside the run… */
+  request_attempts: 1,     /* the odds gateway retries temporary provider failures itself (bounded, budgeted); a second loop here would multiply them */
   retry_delay_ms: 1500,    /* …after this long, ± jitter */
   timeout_ms: 30000        /* one provider request never waits longer than this */
 };

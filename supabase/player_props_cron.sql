@@ -1,6 +1,6 @@
 -- ============================================================================
 -- THE PRIMARY PLAYER PROPS SCHEDULER — pg_cron calling the props_cron edge
--- function every five minutes.
+-- function every fifteen minutes (every five until 2026-10-10).
 --
 -- WHY NOT GITHUB ACTIONS. Because it does not fire. On 2026-09-29 the hourly
 -- Player props workflow ran on schedule twice in eight hours (08:42 and
@@ -66,9 +66,11 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
--- THE JOB. Every five minutes: the tightest capture cadence is fifteen minutes
--- (inside ninety minutes of kickoff) and a failed game's first retry is five,
--- so a five-minute tick meets both. Fire-and-forget: pg_net queues the request
+-- THE JOB. Every fifteen minutes (2026-10-10, docs/odds-api-incident-2026-10):
+-- the tightest prop cadence is now hourly (inside 3 h of kickoff), and every
+-- purchase goes through odds_gateway, which serves its snapshot until an
+-- event is due. Five-minute ticks dispatched the workflow up to 201 times a
+-- day for a capture that is due a few times an hour at most. Fire-and-forget: pg_net queues the request
 -- and returns at once; thirty seconds leaves room for a slow GitHub answer
 -- (pg_net's own default is five). props_cron debounces against its own last
 -- dispatch and the workflow's concurrency group serializes runs, so a
@@ -79,7 +81,7 @@ select cron.unschedule('player_props_dispatch')
 
 select cron.schedule(
   'player_props_dispatch',
-  '*/5 * * * *',
+  '*/15 * * * *',
   $job$
     select net.http_post(
       url                  := 'https://iattxbkbufslbauoumga.supabase.co/functions/v1/props_cron',
@@ -91,14 +93,14 @@ select cron.schedule(
 );
 
 -- THE REPORT. Every row should say ok. Whether the ticks ARRIVE is proven
--- five minutes later, not here:
+-- fifteen minutes later, not here:
 --   select league, scheduler_tick_at, scheduler_action, scheduler_reason
 --   from player_props_pipeline_health;
--- scheduler_tick_at within the last five minutes is a working scheduler; still
+-- scheduler_tick_at within the last fifteen minutes is a working scheduler; still
 -- empty, look for a 401 in net._http_response (JWT verification is still on).
 with checks as (
-  select 1 as n, 'the player_props_dispatch job is scheduled every five minutes' as check_name,
-         (select count(*) from cron.job where jobname = 'player_props_dispatch' and schedule = '*/5 * * * *' and active)::int as got, 1 as want
+  select 1 as n, 'the player_props_dispatch job is scheduled every fifteen minutes' as check_name,
+         (select count(*) from cron.job where jobname = 'player_props_dispatch' and schedule = '*/15 * * * *' and active)::int as got, 1 as want
   union all select 2, 'the job calls props_cron with no key and no database setting',
          (select count(*) from cron.job where jobname = 'player_props_dispatch'
             and command like '%/functions/v1/props_cron%' and command not like '%current_setting%')::int, 1

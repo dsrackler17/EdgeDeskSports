@@ -6,7 +6,10 @@
                        one; this keeps them all)
      capture_signals   EdgeDesk's own capture (public.signals): per point, the
                        best book and how many books quote it
-     odds_api          The Odds API, per book, when ODDS_API_KEY is set
+     odds_api          The Odds API — never called from here (2026-10-10): the
+                       key lives on supabase/functions/odds_gateway, and every
+                       per-book quote it buys reaches this build through
+                       capture_signals and cfb_lines
      lines_archive     football/pricing/lines_cfb.json (closing medians of past
                        seasons; never a current quote)
 
@@ -96,12 +99,13 @@ const captureSignals = {
 const oddsApi = {
   name: 'odds_api', label: 'The Odds API (per-book spreads, totals, moneylines)', kind: 'market', source_type: 'SECONDARY_STRUCTURED',
   role: 'PER-BOOK QUOTES',
-  configured() { return process.env.ODDS_API_KEY ? true : 'ODDS_API_KEY is not set for this job (capture holds it as a Supabase function secret; the build does not)'; },
-  async healthCheck() {
-    if (!process.env.ODDS_API_KEY) return null;
-    return http('https://api.the-odds-api.com/v4/sports?apiKey=' + encodeURIComponent(process.env.ODDS_API_KEY),
-      { accept: (t) => { try { return Array.isArray(JSON.parse(t)) ? true : 'not a list'; } catch (_) { return 'not JSON'; } } });
-  },
+  /* NEVER CONFIGURED HERE (2026-10-10, docs/odds-api-incident-2026-10/INCIDENT.md).
+     Every Odds API request goes through supabase/functions/odds_gateway, the
+     one holder of the key, under one shared credit budget. This build reads
+     the quotes that gateway bought through capture (capture_signals) and the
+     cfb.lines table — the same prices, at no cost. */
+  configured() { return 'The Odds API is reached only through odds_gateway (the shared, budgeted gateway); this build reads its captured quotes via capture_signals and cfb_lines'; },
+  async healthCheck() { return null; },
   normalize() { return []; }
 };
 

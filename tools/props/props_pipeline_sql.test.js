@@ -35,7 +35,7 @@ chk('PostgREST is told to reload', /notify pgrst, 'reload schema'/.test(SQL));
 chk('under the SQL editor paste limit (18 KB)', Buffer.byteLength(SQL) <= 18000, Buffer.byteLength(SQL));
 chk('the database execution window is the kernel\'s (EDProps FRESHNESS)', new RegExp('player_props_executable_max_minutes\\(\\)\\s*returns integer language sql immutable as \\$\\$ select ' + EDP.FRESHNESS.executable_max_minutes + ' \\$\\$').test(SQL));
 const CRON_SQL = fs.readFileSync(CRON, 'utf8');
-chk('the scheduler file: no meta-commands, replaces its own job, every five minutes', !/^\\/m.test(CRON_SQL) && /cron\.unschedule\('player_props_dispatch'\)/.test(CRON_SQL) && /\*\/5 \* \* \* \*/.test(CRON_SQL));
+chk('the scheduler file: no meta-commands, replaces its own job, every fifteen minutes (2026-10-10: purchases go through odds_gateway)', !/^\\/m.test(CRON_SQL) && /cron\.unschedule\('player_props_dispatch'\)/.test(CRON_SQL) && /\*\/15 \* \* \* \*/.test(CRON_SQL));
 /* Supabase refuses `alter database postgres set edgedesk.*` (42501), so a job
    that reads those settings can never be configured: the URL is the project's
    own, and props_cron runs with JWT verification off, so no key is sent */

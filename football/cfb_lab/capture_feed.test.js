@@ -52,6 +52,15 @@ function res(status, body, headers) {
 }
 globalThis.fetch = async function (url, init) {
   const u = String(url), method = (init && init.method) || 'GET';
+  /* capture asks supabase/functions/odds_gateway for every board (2026-10-10);
+     this stands in for it, answering from the same fixtures as a provider fetch */
+  if (u.indexOf('/functions/v1/odds_gateway') >= 0) {
+    const b = init && init.body ? JSON.parse(init.body) : {};
+    if (b.event_id) return res(200, { ok: false, source: 'none', decision: 'skipped_window', data: null, quota: {} });
+    net.calls.push({ url: 'https://api.the-odds-api.com/v4/sports/' + b.sport_key + '/odds/?via=gateway', method: 'GET', body: null });
+    return res(200, { ok: true, source: 'provider', decision: 'granted', new_for_consumer: true, fetched_at: new Date().toISOString(),
+      data: net.odds[b.sport_key] || [], quota: { remaining: 4321, used: 1, last: 1 }, cost: 1 });
+  }
   net.calls.push({ url: u, method, body: init && init.body ? JSON.parse(init.body) : null });
   if (u.indexOf('api.the-odds-api.com/v4/sports/?') >= 0) return res(200, ['americanfootball_ncaaf', 'americanfootball_nfl'].map((k) => ({ key: k, active: true })));
   const m = /\/v4\/sports\/([^/]+)\/odds/.exec(u);

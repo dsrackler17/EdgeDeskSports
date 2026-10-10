@@ -143,7 +143,24 @@ const base = { key: 'test-key', league: 'nfl', now: NOW, window_h: 72, max_event
 (async function () {
   {
     const r = await ALT.run(Object.assign({}, base, { key: null, paths: tmpPaths() }));
-    chk('no key: nothing captured, nothing spent', /no ODDS_API_KEY/.test(r.skipped));
+    chk('no odds gateway credential: nothing captured, nothing spent', /no odds gateway credential/.test(r.skipped), r.skipped);
+  }
+  {
+    /* 2026-10-10: through the odds gateway. A refusal (breaker off) stops the
+       run without counting a provider failure; a provider answer prices. */
+    const calls = [];
+    const gw = (decide) => ({ request: async (q) => { calls.push(q); return decide(q); } });
+    const idx = { ok: true, source: 'cache', decision: 'cache_hit', data: index, quota: {} };
+    let r = await ALT.run(Object.assign({}, base, { key: undefined, paths: tmpPaths(), gateway: gw((q) => (q.category === 'events_index' ? idx
+      : { ok: false, source: 'none', decision: 'denied_breaker', reason: 'off' })) }));
+    chk('gateway · breaker off: the run stops, nothing priced, no provider failure counted',
+      r.events_priced === 0 && /circuit breaker/.test(r.stopped || '') && !Object.keys(r.refused).some((k) => /event failed/.test(k)), r);
+    calls.length = 0;
+    r = await ALT.run(Object.assign({}, base, { key: undefined, paths: tmpPaths(), gateway: gw((q) => (q.category === 'events_index' ? idx
+      : { ok: true, source: 'provider', decision: 'granted', new_for_consumer: true, data: q.event_id === 'nfl_ev_1' ? E1 : E2, cost: 2, quota: { remaining: 900 } })) }));
+    const ev = calls.filter((q) => q.category === 'alternates');
+    chk('gateway · each event asks the alternates category, american, with its kickoff, and prices',
+      r.events_priced === 2 && ev.length === 2 && ev.every((q) => q.odds_format === 'american' && q.commence_time && q.consumer === 'read_alternates'), [r.events_priced, ev]);
   }
   {
     const P = tmpPaths(), S = stubProvider({ events: index, bodies: { nfl_ev_1: E1, nfl_ev_2: E2 } });

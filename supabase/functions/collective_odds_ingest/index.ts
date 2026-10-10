@@ -1374,13 +1374,23 @@ const oddsBlazeProvider: OddsProvider = {
 };
 
 // ---------- inlined _shared/theoddsapi.ts ----------
-// The Odds API provider (the-odds-api.com).
+// The Odds API provider.
+//
+// 2026-10-10 (docs/odds-api-incident-2026-10/INCIDENT.md): THIS FUNCTION NO
+// LONGER HOLDS THE ODDS API KEY OR CALLS THE PROVIDER. Every request goes to
+// supabase/functions/odds_gateway as the `collective` category (h2h, spreads,
+// totals, american prices, the gateway's books). The gateway serves the stored
+// snapshot inside the event-aware cadence window, collapses duplicates,
+// applies the shared monthly / daily credit budget and the circuit breaker,
+// and records the provider's own x-requests-* headers. This function's own
+// cadence (60 s live, 5 min pregame) therefore costs a cache hit when the
+// board is not due — the live cadence can no longer run up credits.
 //
 // The ONLY file in the Collective that knows what a The Odds API response
 // looks like. Everything else consumes NormalizedSlate.
 //
-//   GET https://api.the-odds-api.com/v4/sports/<sportKey>/odds
-//         ?apiKey=<key>&regions=us&markets=h2h,spreads,totals
+//   GET <provider>/v4/sports/<sportKey>/odds   (built by odds_gateway, never here)
+//         ?markets=h2h,spreads,totals
 //         &oddsFormat=american&dateFormat=iso
 //
 // oddsFormat is not optional in practice. The API defaults to DECIMAL, and a
@@ -1402,55 +1412,34 @@ const oddsBlazeProvider: OddsProvider = {
 // the credits per poll. That is the whole cost of this feature and it is why
 // the college cadence defaults slower.
 
-const TA_DEFAULT_BASE = "https://api.the-odds-api.com/v4/";
-const TA_DEFAULT_TIMEOUT_MS = 15000;
+const TA_DEFAULT_TIMEOUT_MS = 45000;
 const TA_DEFAULT_REGIONS = "us";
 
 /** Reported as the book on rows that are not attributable to one book, so an
  *  unmapped report never has an empty book column. */
 const TA_NO_BOOK = "(response)";
 
-/**
- * The credential, trimmed, with an empty value treated as absent.
- *
- * TRIM: a secret is set by pasting, and a paste carries a trailing newline or
- * space more often than not. Untrimmed, that whitespace is percent-encoded
- * into the query string and the provider answers 401 — a "wrong key" error for
- * a key that is entirely correct.
- *
- * EMPTY IS ABSENT: `??` only falls through on null and undefined, so a
- * THE_ODDS_API_KEY that exists but is empty would win over a perfectly good
- * NFL_ODDS_API_KEY and send apiKey= with nothing after it.
- */
-function taApiKey(): string {
-  const preferred = (Deno.env.get("THE_ODDS_API_KEY") ?? "").trim();
-  if (preferred !== "") return preferred;
-  return (Deno.env.get("NFL_ODDS_API_KEY") ?? "").trim();
+/** The gateway is reached with this function's own service role. */
+function taGatewayKey(): string {
+  return (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "").trim();
+}
+function taGatewayUrl(): string {
+  return (Deno.env.get("SUPABASE_URL") ?? "").trim().replace(/\/$/, "") + "/functions/v1/odds_gateway";
+}
+function taGatewayReady(): boolean {
+  return taGatewayKey().length > 0 && (Deno.env.get("SUPABASE_URL") ?? "").trim().length > 0;
 }
 
-/** Shape of the configured credential, for diagnostics. Reports LENGTH and
- *  whether it matches the provider's documented form — never the value. */
+/** Shape of the credential, for diagnostics. The provider key lives on
+ *  odds_gateway now; what this function needs is the gateway route. */
 function taKeyShape(): {
   present: boolean;
   length: number;
   looks_like_key: boolean;
   source: string | null;
 } {
-  const raw = Deno.env.get("THE_ODDS_API_KEY");
-  const fromPreferred = typeof raw === "string" && raw.trim() !== "";
-  const key = taApiKey();
-  return {
-    present: key.length > 0,
-    length: key.length,
-    // The Odds API issues 32 character lowercase hex keys.
-    looks_like_key: /^[0-9a-f]{32}$/.test(key),
-    source: key.length === 0 ? null : (fromPreferred ? "THE_ODDS_API_KEY" : "NFL_ODDS_API_KEY"),
-  };
-}
-
-function taBaseUrl(): string {
-  const raw = (Deno.env.get("THE_ODDS_API_BASE_URL") ?? "").trim() || TA_DEFAULT_BASE;
-  return raw.endsWith("/") ? raw : `${raw}/`;
+  const ready = taGatewayReady();
+  return { present: ready, length: 0, looks_like_key: ready, source: ready ? "odds_gateway" : null };
 }
 
 /**
@@ -1757,32 +1746,15 @@ function taBuildUrlForTest(opts: FetchOptions): string {
   return taBuildUrl(opts);
 }
 
-function taBuildUrl(opts: FetchOptions): string {
-  // The id arrives from `<league>.league_id`, whose documented job is to point
-  // a league at a different PROVIDER-side id without a redeploy. That could
-  // never work: normKey strips the underscore out of a vendor key like
-  // americanfootball_ncaaf, the TA_SPORT_KEY lookup then misses, and the
-  // STRIPPED string went to the API as the sport key -- 404 "Unknown sport"
-  // for a value that was exactly right. So the fallback is the raw string,
-  // and `ncaaf` and `americanfootball_ncaaf` now both resolve.
+/** What is asked of the gateway, as a URL for diagnostics. No key, no
+ *  provider host: the gateway builds the provider request itself. */
+function taSportKey(opts: FetchOptions): string {
   const raw = String(opts.league ?? "").trim();
   const league = normKey(raw) || "nfl";
-  const sport = TA_SPORT_KEY[league] ?? (raw || league);
-  const markets = (opts.markets.length ? opts.markets : GAME_MARKETS)
-    .map((m) => TA_MARKET_PARAM[m])
-    .filter(Boolean);
-  const u = new URL(`sports/${sport}/odds`, taBaseUrl());
-  // These two strings are the PROVIDER'S wire names and have nothing to do
-  // with our function names. A symbol rename once matched them inside these
-  // literals and shipped ?taApiKey=...&taRegions=..., which the API answers
-  // with 401 — a wrong-key error for a correct key.
-  u.searchParams.set("apiKey", taApiKey());
-  u.searchParams.set("regions", taRegions(league));
-  u.searchParams.set("markets", (markets.length ? markets : ["h2h", "spreads", "totals"]).join(","));
-  // Pinned, not defaulted. See the header note.
-  u.searchParams.set("oddsFormat", "american");
-  u.searchParams.set("dateFormat", "iso");
-  return u.toString();
+  return TA_SPORT_KEY[league] ?? (raw || league);
+}
+function taBuildUrl(opts: FetchOptions): string {
+  return `${taGatewayUrl()}?category=collective&sport_key=${encodeURIComponent(taSportKey(opts))}&odds_format=american`;
 }
 
 function taReasonFor(status: number): string {
@@ -1811,7 +1783,7 @@ async function taErrorDetail(res: Response): Promise<string> {
   } catch {
     // Not JSON. The raw text is still better than nothing.
   }
-  const safe = redactSecret(detail, taApiKey()).replace(/\s+/g, " ").slice(0, 300);
+  const safe = redactSecret(detail, taGatewayKey()).replace(/\s+/g, " ").slice(0, 300);
   return safe ? `: ${safe}` : "";
 }
 
@@ -1824,48 +1796,42 @@ interface TaRawFetch {
 }
 
 async function taRequest(opts: FetchOptions): Promise<TaRawFetch> {
-  const url = taBuildUrl(opts);
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), opts.timeoutMs ?? TA_DEFAULT_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), Math.max(opts.timeoutMs ?? 0, TA_DEFAULT_TIMEOUT_MS));
   const empty: ProviderQuota = { remaining: null, used: null, last_cost: null };
   try {
-    const res = await fetch(url, { signal: controller.signal });
-    const quota = readTaQuota(res.headers);
-    if (!res.ok) {
-      // The vendor explains itself on an error, and the explanation is the
-      // whole diagnosis: "the api key provided is invalid" and "usage quota
-      // has been reached" are both 401, and they need opposite fixes.
+    const key = taGatewayKey();
+    const res = await fetch(taGatewayUrl(), {
+      method: "POST",
+      signal: controller.signal,
+      headers: { "content-type": "application/json", apikey: key, authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        action: "odds", caller: "collective_odds_ingest", consumer: "collective_odds_ingest",
+        category: "collective", sport_key: taSportKey(opts), odds_format: "american",
+      }),
+    });
+    const env = await res.json().catch(() => null) as Record<string, any> | null;
+    if (!env || typeof env !== "object") {
+      return { ok: false, status: res.status, body: null, quota: empty, reason: `odds_gateway answered HTTP ${res.status} without an envelope` };
+    }
+    const q = env.quota ?? {};
+    const num = (v: unknown): number | null => (v == null || v === "" || !Number.isFinite(Number(v)) ? null : Number(v));
+    // Only a provider fetch reports the account's balance; a cache hit spent nothing.
+    const quota: ProviderQuota = env.source === "provider"
+      ? { remaining: num(q.remaining), used: num(q.used), last_cost: num(env.cost ?? q.last) }
+      : { remaining: null, used: null, last_cost: 0 };
+    const usable = env.ok === true && env.data != null && (env.source === "provider" || env.source === "cache");
+    if (!usable) {
+      const st = Number(env.status) || null;
       return {
-        ok: false,
-        status: res.status,
-        body: null,
-        quota,
-        reason: `${taReasonFor(res.status)}${await taErrorDetail(res)}`,
+        ok: false, status: st, body: null, quota,
+        reason: st ? `${taReasonFor(st)} (via odds_gateway)` : `odds_gateway: ${env.decision ?? "refused"}${env.reason ? " — " + String(env.reason).slice(0, 200) : ""}`,
       };
     }
-    const text = await res.text();
-    let body: unknown = null;
-    try {
-      body = JSON.parse(text);
-    } catch {
-      return {
-        ok: false,
-        status: res.status,
-        body: null,
-        quota,
-        reason: "the response was not JSON",
-      };
-    }
-    return { ok: true, status: res.status, body, quota, reason: null };
+    return { ok: true, status: 200, body: env.data, quota, reason: null };
   } catch (e) {
-    const msg = redactSecret(String((e as Error)?.message ?? e), taApiKey());
-    return {
-      ok: false,
-      status: null,
-      body: null,
-      quota: empty,
-      reason: msg.includes("abort") ? "the request timed out" : msg,
-    };
+    const msg = redactSecret(String((e as Error)?.message ?? e), taGatewayKey());
+    return { ok: false, status: null, body: null, quota: empty, reason: msg.includes("abort") ? "the request timed out" : msg };
   } finally {
     clearTimeout(timer);
   }
@@ -1878,7 +1844,7 @@ const theOddsApiProvider: OddsProvider = {
   name: "The Odds API",
 
   isConfigured(): boolean {
-    return taApiKey().length > 0;
+    return taGatewayReady();
   },
 
   async fetchSlate(opts: FetchOptions): Promise<NormalizedSlate> {
@@ -1899,7 +1865,7 @@ const theOddsApiProvider: OddsProvider = {
     };
 
     if (!theOddsApiProvider.isConfigured()) {
-      base.books_failed = [{ book: TA_NO_BOOK, reason: "no API key configured" }];
+      base.books_failed = [{ book: TA_NO_BOOK, reason: "odds_gateway is not reachable from this function (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)" }];
       return base;
     }
 
@@ -1990,7 +1956,7 @@ const theOddsApiProvider: OddsProvider = {
     };
 
     if (!theOddsApiProvider.isConfigured()) {
-      return { ...empty, error: "no API key configured" };
+      return { ...empty, error: "odds_gateway is not reachable from this function (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)" };
     }
 
     const res = await taRequest(opts);
@@ -2368,7 +2334,7 @@ function diagnose(
           `The configured key is ${shape.length} characters and does not match ` +
           `this provider's form (32 lowercase hex). A trailing newline or space ` +
           `from a paste is the usual cause, and it reads as a wrong key at the provider.`,
-        fix: `Re-set ${shape.source ?? "NFL_ODDS_API_KEY"} with no trailing whitespace.`,
+        fix: "Check SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY on this function: The Odds API is reached only through odds_gateway.",
       };
     }
   }
@@ -2378,7 +2344,7 @@ function diagnose(
       state: "no_credential",
       detail: `The "${provider.id}" provider has no API key in this function's environment.`,
       fix: provider.id === "theoddsapi"
-        ? "Add THE_ODDS_API_KEY (or NFL_ODDS_API_KEY) to the edge function secrets."
+        ? "The Odds API key lives on odds_gateway (ODDS_GATEWAY_PROVIDER_KEY). This function needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to reach it."
         : "Add NFL_ODDS_API_KEY to the edge function secrets.",
     };
   }
@@ -2711,7 +2677,7 @@ Deno.serve(async (req) => {
         // whatever the last full ingest reported and the reserve guard then
         // compared real spending against a stale number. The comment on the
         // old block claimed this and the placement contradicted it.
-        if (slate.quota) {
+        if (slate.quota && slate.quota.remaining != null) {
           await rpc("odds_set_setting", {
             p_key: "provider.quota",
             p_value: { ...slate.quota, observed_at: new Date().toISOString() },

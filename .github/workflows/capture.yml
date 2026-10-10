@@ -30,12 +30,18 @@ name: Capture the board
 # both. This workflow knows a URL and a shared secret, and that is all it can
 # leak.
 
+# 2026-10-10 (docs/odds-api-incident-2026-10/INCIDENT.md): capture buys nothing
+# itself any more — odds_gateway serves a sport's stored board until its own
+# cadence is due, so a backup run that duplicates pg_cron costs a cache hit.
+# This backup was nonetheless a duplicate of pg_cron on every healthy hour, and
+# its curl retried a 5xx/504 up to twice, which re-ran a whole capture after a
+# platform timeout. The day tier is now every 3 hours, and nothing is retried.
+
 on:
   schedule:
-    # Hourly on the `day` tier: anything kicking off inside 30 hours. This is
-    # the one that matters if the primary is down -- it keeps the board a
-    # customer is actually researching from aging out.
-    - cron: '26 * * * *'
+    # Every 3 hours on the `day` tier (was hourly): the backup keeps the board
+    # a customer researches from aging out if pg_cron stops.
+    - cron: '26 */3 * * *'
     # Four times a day on the full horizon, so a fortnight of fixtures is never
     # more than six hours behind even with pg_cron stopped entirely.
     - cron: '41 1,7,13,19 * * *'
@@ -135,8 +141,11 @@ jobs:
           # -s so a failure does not print the URL with its query string, --fail-with-body
           # so a 401 still shows the reason capture gave rather than an empty exit code.
           # The secret goes in a header from the environment and is never echoed.
+          # NO --retry (2026-10-10): curl retries on 5xx/504/timeouts, and a 504
+          # after capture had already bought its boards re-ran the whole capture
+          # up to twice more. The next scheduled run is the retry.
           CODE=$(curl -sS -o /tmp/capture.json -w '%{http_code}' \
-            --max-time 180 --retry 2 --retry-delay 5 --retry-connrefused \
+            --max-time 180 \
             -X POST "${SB_URL%/}/functions/v1/capture?$QS" \
             -H "content-type: application/json" \
             -H "x-cron-secret: ${CAPTURE_CRON_SECRET}" \
