@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T23:30:00.000Z",
   "game_when_label": "2026-10-10 23:30 UTC",
   "published_at": "2026-10-10T11:31:10.239Z",
-  "updated_at": "2026-10-10T21:40:30.494Z",
-  "generated_at": "2026-10-10T21:40:30.494Z",
+  "updated_at": "2026-10-10T22:00:21.827Z",
+  "generated_at": "2026-10-10T22:00:21.827Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "RESEARCH",
   "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
@@ -1889,13 +1889,13 @@
   },
   "snapshot_id": "snap_56cf3b1c00786de0",
   "timing": {
-    "publication_window": "normal",
-    "classified_window": "normal",
+    "publication_window": "late_window",
+    "classified_window": "late_window",
     "scheduled_kickoff": "2026-10-10T23:30:00.000Z",
-    "minutes_before_kickoff": 109,
+    "minutes_before_kickoff": 90,
     "published_at": "2026-10-10T11:31:10.239Z",
-    "refreshed": false,
-    "at": "2026-10-10T21:40:30.494Z"
+    "refreshed": true,
+    "at": "2026-10-10T22:00:21.827Z"
   },
   "featured": {
     "editorial_priority": 61.2,
@@ -2171,24 +2171,37 @@
     }
   ],
   "quality": {
-    "score": 100,
+    "score": 88,
     "publishable": true,
     "manual_review_required": false,
     "hold_reason": null,
     "integrity_failed": [],
-    "craft_failed": [],
-    "at": "2026-10-10T21:40:30.494Z"
+    "craft_failed": [
+      {
+        "id": "duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Gunner Stockton has completed 76 of 101 passes (75.2%) for 1,047 yards, 10.4 yards per att",
+        "cost": 12
+      }
+    ],
+    "at": "2026-10-10T22:00:21.827Z"
   },
   "publish_state": {
     "ok": true,
-    "at": "2026-10-10T21:40:30.494Z",
+    "at": "2026-10-10T22:00:21.827Z",
     "blocking": [],
-    "warnings": [],
+    "warnings": [
+      {
+        "id": "craft_duplicate_paragraph",
+        "why": "the same paragraph must not appear twice on one page",
+        "detail": "Gunner Stockton has completed 76 of 101 passes (75.2%) for 1,047 yards, 10.4 yards per att"
+      }
+    ],
     "hold_reason": null
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1qgyqk31bo4mxd",
+    "packet_hash": "g7p2m31h6xvkp",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can Alabama win at the line of scrimmage?",
@@ -2260,7 +2273,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-10T19:21:49.975Z",
+        "observed_at": "2026-10-10T21:47:17.085Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2290,6 +2303,100 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T21:40:30.494Z"
+    "at": "2026-10-10T22:00:21.827Z"
+  },
+  "publication_snapshot_id": "snap_56cf3b1c00786de0",
+  "freshness": {
+    "at": "2026-10-10T22:00:21.827Z",
+    "fields": {
+      "market.line": {
+        "value": "Alabama -2.0",
+        "provider": "captured consensus (stale) · 1 book · best at BetMGM",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "market.total": {
+        "value": 52.5,
+        "provider": "captured consensus (stale) · 1 book · best at BetMGM",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "market.book": {
+        "value": "captured consensus (stale) · 1 book · best at BetMGM",
+        "provider": "research market",
+        "retrieved_at": null,
+        "status": "ok",
+        "note": null
+      },
+      "fixture.status": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.kickoff": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "fixture.venue": {
+        "value": null,
+        "provider": "espn scoreboard",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "the fixture feed was not read this run"
+      },
+      "availability.out": {
+        "value": null,
+        "provider": "EdgeDesk availability",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no availability file on disk"
+      },
+      "availability.qb": {
+        "value": null,
+        "provider": "EdgeDesk availability",
+        "retrieved_at": null,
+        "status": "unavailable",
+        "note": "no availability file on disk"
+      }
+    },
+    "changes": [],
+    "blind": [
+      {
+        "field": "fixture.status",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.kickoff",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "fixture.venue",
+        "why": "the fixture feed was not read this run",
+        "provider": "espn scoreboard"
+      },
+      {
+        "field": "availability.out",
+        "why": "no availability file on disk",
+        "provider": "EdgeDesk availability"
+      },
+      {
+        "field": "availability.qb",
+        "why": "no availability file on disk",
+        "provider": "EdgeDesk availability"
+      }
+    ],
+    "material": false,
+    "rules_hit": [],
+    "minor": [],
+    "summary": "nothing moved"
   }
 }
