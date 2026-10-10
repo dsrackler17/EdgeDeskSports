@@ -21,8 +21,8 @@
   "game_time": "2026-10-10T23:00:00.000Z",
   "game_when_label": "2026-10-10 23:00 UTC",
   "published_at": "2026-10-10T11:31:10.239Z",
-  "updated_at": "2026-10-10T22:24:37.236Z",
-  "generated_at": "2026-10-10T22:24:37.236Z",
+  "updated_at": "2026-10-10T22:47:01.795Z",
+  "generated_at": "2026-10-10T22:47:01.795Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "INVESTIGATE",
   "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -34,7 +34,7 @@
   "canonical_url": "https://edgedesksports.com/articles/lsu-vs-kentucky-2026",
   "terminal_url": "https://edgedesksports.com/app.html#research/football",
   "hub_url": "https://edgedesksports.com/articles/college-football",
-  "status": "published",
+  "status": "ready_too_late",
   "article_type": "pregame",
   "related": null,
   "frozen": false,
@@ -1453,7 +1453,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 95h old",
+          "text": "odds is 96h old",
           "widening": null
         },
         {
@@ -1542,7 +1542,7 @@
       "total_market_held": null,
       "book": "captured consensus (stale) · 1 book · best at DraftKings",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "95 hours old",
+      "capture_age": "96 hours old",
       "stale": false,
       "classification": "INVESTIGATE",
       "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
@@ -1877,16 +1877,16 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-10. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "snapshot_id": "snap_78be9ad0c1a8b567",
+  "snapshot_id": "snap_af60a6cbf86d2fbe",
   "publication_snapshot_id": "snap_78be9ad0c1a8b567",
   "timing": {
-    "publication_window": "late_window",
-    "classified_window": "late_window",
+    "publication_window": "final_window",
+    "classified_window": "final_window",
     "scheduled_kickoff": "2026-10-10T23:00:00.000Z",
-    "minutes_before_kickoff": 35,
-    "published_at": "2026-10-10T11:31:10.239Z",
-    "refreshed": true,
-    "at": "2026-10-10T22:24:37.236Z"
+    "minutes_before_kickoff": 13,
+    "published_at": null,
+    "refreshed": false,
+    "at": "2026-10-10T22:47:01.795Z"
   },
   "featured": {
     "editorial_priority": 37.1,
@@ -2168,14 +2168,14 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-10T22:24:37.236Z"
+    "at": "2026-10-10T22:47:01.795Z"
   },
   "publish_state": {
-    "ok": true,
-    "at": "2026-10-10T22:24:37.236Z",
+    "ok": false,
+    "at": "2026-10-10T22:47:01.795Z",
     "blocking": [],
     "warnings": [],
-    "hold_reason": null
+    "hold_reason": "inside final pregame publication floor"
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
@@ -2284,99 +2284,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T22:24:37.236Z"
-  },
-  "freshness": {
-    "at": "2026-10-10T22:24:37.236Z",
-    "fields": {
-      "market.line": {
-        "value": "Kentucky +8.5",
-        "provider": "captured consensus (stale) · 1 book · best at DraftKings",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "market.total": {
-        "value": 52.5,
-        "provider": "captured consensus (stale) · 1 book · best at DraftKings",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "market.book": {
-        "value": "captured consensus (stale) · 1 book · best at DraftKings",
-        "provider": "research market",
-        "retrieved_at": null,
-        "status": "ok",
-        "note": null
-      },
-      "fixture.status": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.kickoff": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "fixture.venue": {
-        "value": null,
-        "provider": "espn scoreboard",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "the fixture feed was not read this run"
-      },
-      "availability.out": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      },
-      "availability.qb": {
-        "value": null,
-        "provider": "EdgeDesk availability",
-        "retrieved_at": null,
-        "status": "unavailable",
-        "note": "no availability file on disk"
-      }
-    },
-    "changes": [],
-    "blind": [
-      {
-        "field": "fixture.status",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.kickoff",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "fixture.venue",
-        "why": "the fixture feed was not read this run",
-        "provider": "espn scoreboard"
-      },
-      {
-        "field": "availability.out",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      },
-      {
-        "field": "availability.qb",
-        "why": "no availability file on disk",
-        "provider": "EdgeDesk availability"
-      }
-    ],
-    "material": false,
-    "rules_hit": [],
-    "minor": [],
-    "summary": "nothing moved"
+    "at": "2026-10-10T22:47:01.795Z"
   }
 }
