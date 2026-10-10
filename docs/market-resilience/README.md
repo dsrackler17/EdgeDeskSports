@@ -334,7 +334,7 @@ disagreement, sensitivity, total and verdict questions from stored data
 | **close** | 20 s timeout. Keeps the quota headers. Stops on the first 429/401/exhausted quota: the remaining sports take the existing provider-down path (a started game closes from its last tick, an upcoming one defers; nothing is written off). Asks the ledger at critical priority with a 4-minute interval. |
 | **edgedesk_ai** | A reader-triggered refresh asks for the scoped near tier and shares its ledger key. A refresh right after a scheduled run is answered `cache_fresh`, one already running is `coalesced`, and it never spends the reserve. |
 | **capture.yml** | `--retry` removed from the billed POST. |
-| **Node jobs** | Timeouts on `alternates.js` and the props factory. The factory counts and names its errors and stops after 3 in a row. The props per-event billed call is no longer retried on timeout or an unreadable body. |
+| **Node jobs** | Timeouts on `alternates.js` and the props factory. The factory counts and names its errors and stops after 3 in a row. `props/capture.js` keeps its single bounded retry on timeout: it is a pinned design (`tools/props/props_freshness.test.js` case 8), so it is left as an open decision (§8). |
 | **Research page** | Never fetches odds, and no timer polls (tested). |
 
 Defaults in `odds_quota_config`: daily 2,500, monthly 60,000, reserve 500,
@@ -471,6 +471,13 @@ Run them: `npm run resilience:test`. CI: `.github/workflows/market-resilience-te
     the replacement there.
   - The canonical `research_status` vocabulary is unchanged, because ~15 suites
     and several surfaces read it. The new verdict sits beside it.
+- **The props capture's retry on timeout.** `football/props/capture.js` retries
+  a per-event request once on a timeout or an unreadable body. A timed-out
+  request may already have been charged, so that retry can bill twice. The
+  single bounded retry is a deliberate, tested design
+  (`tools/props/props_freshness.test.js` case 8), so it is unchanged here.
+  Retrying only connection failures and 5xx would remove the double-billing
+  risk.
 - **Freshness window.** Still 180 minutes. Heartbeats arrive every 6 h, so a
   steady line can still age into CACHED between heartbeats, and is labelled as
   such. The audit's open question about recording "the last sync that

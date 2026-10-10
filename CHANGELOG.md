@@ -39,7 +39,7 @@
   - `close`: timeout, the same stop and the ledger.
   - AI-triggered refreshes: scoped to the near tier and cache-first.
   - `capture.yml`: no curl retry on the billed call.
-  - Timeouts in `alternates.js` and the props factory, and no retry of a possibly-billed prop call.
+  - Timeouts in `alternates.js` and the props factory (the props capture's single retry on timeout is unchanged: it is a pinned design, left as an open decision).
 - **Audit:**
   - an append-only research snapshot ledger (`football/cfb_terminal/history/<season>/research_snapshots.jsonl`), mirrored by `supabase/research_snapshots.sql` and synced hourly;
   - append-only manual market entries (`tools/football/manual_market.js`).
