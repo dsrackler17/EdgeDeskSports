@@ -2,7 +2,7 @@
  "schema": "edgedesk_cfb_reliability_v1",
  "version": "cfb_reliability/2",
  "season": 2026,
- "generated_at": "2026-10-11T22:59:06.369Z",
+ "generated_at": "2026-10-11T23:51:55.616Z",
  "basis": "Reliability is how much EdgeDesk trusts the completeness, freshness, consistency and stability of the information under each projection. It is NOT a probability that the projection is right and not a betting signal; it moves no number. Scored by lib/cfb_reliability.js from the inputs this build priced from.",
  "market": "NOT JOINED IN THIS BUILD — the market items do not apply to these scores; the board re-scores with its live quote",
  "weights": {
@@ -78,7 +78,7 @@
  ],
  "summary": {
   "games": 65,
-  "mean": 85.6,
+  "mean": 85.5,
   "median": 89,
   "percentiles": {
    "p10": 79,
@@ -154,8 +154,8 @@
    },
    {
     "n": 6,
-    "mean": 81.2,
-    "median": 79,
+    "mean": 81,
+    "median": 78.5,
     "conference": "Conference USA"
    },
    {
@@ -252,7 +252,7 @@
    {
     "key": "freshness",
     "label": "Freshness",
-    "mean": 15,
+    "mean": 14.9,
     "max": 15
    },
    {
@@ -330,6 +330,12 @@
     "points": 33.3
    },
    {
+    "key": "starters",
+    "label": "Starter evidence stale",
+    "games": 6,
+    "points": 4.3
+   },
+   {
     "key": "fcs_rating",
     "label": "Unrated (FCS) opponent",
     "games": 3,
@@ -352,12 +358,6 @@
     "label": "Player production attribution incomplete",
     "games": 3,
     "points": 2.6
-   },
-   {
-    "key": "starters",
-    "label": "Starter evidence stale",
-    "games": 3,
-    "points": 2.1
    },
    {
     "key": "venue",
@@ -549,7 +549,7 @@
    {
     "key": "freshness",
     "label": "Freshness",
-    "mean": 15,
+    "mean": 14.9,
     "max": 15
    },
    {
@@ -627,6 +627,12 @@
     "points": 33.3
    },
    {
+    "key": "starters",
+    "label": "Starter evidence stale",
+    "games": 6,
+    "points": 4.3
+   },
+   {
     "key": "fcs_rating",
     "label": "Unrated (FCS) opponent",
     "games": 3,
@@ -651,12 +657,6 @@
     "points": 2.6
    },
    {
-    "key": "starters",
-    "label": "Starter evidence stale",
-    "games": 3,
-    "points": 2.1
-   },
-   {
     "key": "venue",
     "label": "Venue/coordinates unresolved",
     "games": 2,
@@ -671,7 +671,7 @@
   ]
  },
  "enrichment": {
-  "artifact_generated_at": "2026-10-11T22:12:37.777Z",
+  "artifact_generated_at": "2026-10-11T23:51:48.535Z",
   "games_with_evidence": 65,
   "summary": {
    "games": 65,
@@ -851,7 +851,7 @@
      "label": "FCS rating bridge build",
      "kind": "fcs_ratings",
      "state": "HEALTHY",
-     "reason": "built 6h ago",
+     "reason": "built 0h ago",
      "attributable_to": null
     },
     {
@@ -932,14 +932,14 @@
     "label": "Availability feed",
     "games_affected": 65,
     "current_points_lost": 483.5,
-    "maximum_recoverable_points": 429,
-    "games_recoverable": 53,
+    "maximum_recoverable_points": 430,
+    "games_recoverable": 54,
     "cost": 3,
     "feasible": 0.6,
     "how": "official conference reports cover conference games in the SEC, Big Ten, ACC and Big 12; the rest need a structured injury feed or team releases",
     "recover": "games whose availability read is missing, refused or not comprehensive",
-    "estimated_recoverable_points": 257.4,
-    "enrichment_roi": 85.8,
+    "estimated_recoverable_points": 258,
+    "enrichment_roi": 86,
     "engineering_priority": 1
    },
    {
@@ -947,14 +947,14 @@
     "label": "QB confirmation",
     "games_affected": 65,
     "current_points_lost": 95.4,
-    "maximum_recoverable_points": 71,
-    "games_recoverable": 17,
+    "maximum_recoverable_points": 72,
+    "games_recoverable": 18,
     "cost": 3,
     "feasible": 0.5,
     "how": "official announcements, a provider depth chart, or trusted beat reporting above the observed previous start",
     "recover": "starters resolved only from the previous game",
-    "estimated_recoverable_points": 35.5,
-    "enrichment_roi": 11.83,
+    "estimated_recoverable_points": 36,
+    "enrichment_roi": 12,
     "engineering_priority": 2
    },
    {
@@ -978,7 +978,7 @@
     "games_affected": 23,
     "current_points_lost": 28.7,
     "maximum_recoverable_points": 12,
-    "games_recoverable": 3,
+    "games_recoverable": 4,
     "cost": 2,
     "feasible": 0.8,
     "how": "the source hierarchy resolves a disagreement when the evidence permits; an independent source settles the rest",
@@ -986,6 +986,21 @@
     "estimated_recoverable_points": 9.6,
     "enrichment_roi": 4.8,
     "engineering_priority": 4
+   },
+   {
+    "key": "starters",
+    "label": "Starter evidence staleness",
+    "games_affected": 6,
+    "current_points_lost": 4.3,
+    "maximum_recoverable_points": 1,
+    "games_recoverable": 1,
+    "cost": 1,
+    "feasible": 0.9,
+    "how": "the starter job re-reads on the refresh windows",
+    "recover": "stale starter records",
+    "estimated_recoverable_points": 0.9,
+    "enrichment_roi": 0.9,
+    "engineering_priority": 5
    },
    {
     "key": "attribution",
@@ -998,21 +1013,6 @@
     "feasible": 0.3,
     "how": "measured production for linemen needs charting data no public feed carries",
     "recover": "absent starters with no measured player quality",
-    "estimated_recoverable_points": 0,
-    "enrichment_roi": 0,
-    "engineering_priority": 5
-   },
-   {
-    "key": "starters",
-    "label": "Starter evidence staleness",
-    "games_affected": 3,
-    "current_points_lost": 2.1,
-    "maximum_recoverable_points": 0,
-    "games_recoverable": 0,
-    "cost": 1,
-    "feasible": 0.9,
-    "how": "the starter job re-reads on the refresh windows",
-    "recover": "stale starter records",
     "estimated_recoverable_points": 0,
     "enrichment_roi": 0,
     "engineering_priority": 6
@@ -1081,7 +1081,7 @@
   ],
   "potential": {
    "games": 65,
-   "mean_score": 85.6,
+   "mean_score": 85.5,
    "mean_potential": 96.3,
    "basis": "the mean score if every input with a recovery action were resolved; not a probability and not a forecast"
   }
@@ -5268,7 +5268,7 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 91.6,
+    "raw": 91,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
@@ -5287,7 +5287,7 @@
       "max": 20
      },
      "freshness": {
-      "score": 15,
+      "score": 14.4,
       "max": 15
      },
      "source_integrity": {
@@ -5338,6 +5338,13 @@
       "reason": "Boston College’s availability report is not due yet — nobody is assumed fit",
       "family": "qb_status",
       "action_key": "availability:home"
+     },
+     {
+      "component": "freshness",
+      "points": 0.6,
+      "reason": "Pittsburgh’s starter record was re-read 1 min ago and describes evidence from 9 days ago",
+      "family": "starters",
+      "action_key": "starters:away"
      },
      {
       "component": "projection_stability",
@@ -11333,7 +11340,7 @@
     "grade": "ADEQUATE",
     "grade_label": "ADEQUATE",
     "tier": "ADEQUATE",
-    "raw": 78.4,
+    "raw": 77.7,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -11350,7 +11357,7 @@
       "max": 20
      },
      "freshness": {
-      "score": 15,
+      "score": 14.3,
       "max": 15
      },
      "source_integrity": {
@@ -11431,6 +11438,13 @@
       "action_key": "contract_conflicts"
      },
      {
+      "component": "freshness",
+      "points": 0.8,
+      "reason": "Delaware’s starter record was re-read 1 min ago and describes evidence from 9 days ago",
+      "family": "starters",
+      "action_key": "starters:away"
+     },
+     {
       "component": "projection_stability",
       "points": 0.5,
       "reason": "the projected spread moves ±1.63 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
@@ -11486,11 +11500,6 @@
     ],
     "next_actions": [
      {
-      "action": "Resolve Delaware’s starter conflict",
-      "key": "qb_conflict:away",
-      "potential_gain": 2
-     },
-     {
       "action": "Restore an injury/availability source for Delaware",
       "key": "availability:away",
       "potential_gain": 1
@@ -11506,20 +11515,20 @@
       "potential_gain": 1
      },
      {
-      "action": "Confirm Delaware’s starting QB (EJ Archield Jr.)",
-      "key": "qb_identity:away",
+      "action": "Resolve Delaware’s starter conflict",
+      "key": "qb_conflict:away",
       "potential_gain": 1
      },
      {
-      "action": "Confirm Middle Tennessee’s starting QB (Roman Gagliano)",
-      "key": "qb_identity:home",
+      "action": "Confirm Delaware’s starting QB (EJ Archield Jr.)",
+      "key": "qb_identity:away",
       "potential_gain": 1
      }
     ],
     "recoverable_by_family": {
      "availability": 1,
      "contract_conflicts": 1,
-     "qb_conflict": 2,
+     "qb_conflict": 1,
      "qb_identity": 1
     }
    },
@@ -11736,11 +11745,11 @@
    "legacy_input_coverage": 0.769,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 79,
+    "score": 78,
     "grade": "ADEQUATE",
     "grade_label": "ADEQUATE",
     "tier": "ADEQUATE",
-    "raw": 78.7,
+    "raw": 77.9,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -11757,7 +11766,7 @@
       "max": 20
      },
      "freshness": {
-      "score": 15,
+      "score": 14.2,
       "max": 15
      },
      "source_integrity": {
@@ -11852,6 +11861,13 @@
       "action_key": "qb_conflict:away"
      },
      {
+      "component": "freshness",
+      "points": 0.8,
+      "reason": "Delaware’s starter record was re-read 1 min ago and describes evidence from 9 days ago",
+      "family": "starters",
+      "action_key": "starters:home"
+     },
+     {
       "component": "team_data",
       "points": 0.3,
       "reason": "Missouri State: 5 of 6 games for a full in-season sample",
@@ -11896,8 +11912,45 @@
      "qb_availability:away",
      "availability:away"
     ],
-    "next_actions": [],
-    "recoverable_by_family": {}
+    "next_actions": [
+     {
+      "action": "Restore an injury/availability source for Missouri State",
+      "key": "availability:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Restore an injury/availability source for Delaware",
+      "key": "availability:home",
+      "potential_gain": 1
+     },
+     {
+      "action": "Resolve conflicting sources",
+      "key": "contract_conflicts",
+      "potential_gain": 1
+     },
+     {
+      "action": "Resolve Missouri State’s starter conflict",
+      "key": "qb_conflict:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Resolve Delaware’s starter conflict",
+      "key": "qb_conflict:home",
+      "potential_gain": 1
+     },
+     {
+      "action": "Confirm Missouri State’s starting QB (Skyler Locklear)",
+      "key": "qb_identity:away",
+      "potential_gain": 1
+     }
+    ],
+    "recoverable_by_family": {
+     "availability": 1,
+     "contract_conflicts": 1,
+     "qb_conflict": 1,
+     "qb_identity": 1,
+     "starters": 1
+    }
    },
    "reliability_without_evidence": {
     "score": 79,
