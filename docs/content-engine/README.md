@@ -343,7 +343,7 @@ The quarterback and injury claim checks accept a sentence that states an officia
 
 **Every format that features a game argues it with football.**
 - The weekly previews and the conference race use the evidence capsule.
-- The matchup deep dive is held to the single-game standard: its unit matchups, quarterbacks and availability come from the packet.
+- The matchup deep dive and the individual game deep dive are held to the single-game standard: their unit matchups, quarterbacks and availability come from the packet, and the game deep dive adds the case each way to why the numbers differ.
 - The model-vs-market report and the first-party features add the football to each gap they explain:
   - the case each way;
   - both quarterbacks;
@@ -570,7 +570,7 @@ A slot is **skipped, with its reason**, when the research does not support it. H
 ## Tests
 
 ```
-npm run content:test      # the core against the committed research + static guards (317 checks), the football evidence pipeline (188), the facts ledger, the inline copy
+npm run content:test      # the core against the research committed for Week 6 + static guards (317 checks), the football evidence pipeline (188), the facts ledger, the inline copy
 npm run content:evidence:test  # the evidence pipeline, the facts ledger and the evidence migration on their own
 npm run content:evidence  # rebuild football/evidence/packets.json from the committed research
 npm run content:sql       # the database on a real PostgreSQL (183) and the evidence migration (23)
@@ -590,6 +590,8 @@ npm run content:example   # write an example article (Word, Markdown, HTML, SEO 
 - Georgia–Alabama, Texas–Oklahoma, Missouri–Texas A&M, UCLA–Oregon and an NFL game must pass in both analysis formats (publisher and first-party);
 - the two formats must stay different articles;
 - today's research must also pass, generated end to end.
+
+The core, the weekly job, the Edge Function, the browser flow and the first-party features read the research as committed for CFB Week 6 and NFL Week 5 (`tools/content/fixtures/research_2026_w6.json.gz`, read by `ART.frozen()`; `fixtures/freeze_research.js` wrote it from the commit of 14:54 UTC on October 9 and checks that its trims leave the research unchanged). The live files roll to the next week every weekend; the fixture does not. Where a suite also runs the Edge Function or the database, both read the suite's Thursday clock (`tools/content/_clock.js`), so an opportunity is not expired by the wall clock before its games kick off in the test.
 
 ---
 

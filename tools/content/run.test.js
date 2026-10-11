@@ -31,15 +31,19 @@ const CE = require(path.join(__dirname, '..', '..', 'lib', 'content_engine.js'))
 const T = PG.kit('content engine weekly job');
 const chk = T.chk;
 const NOW = Date.parse('2026-10-08T17:30:00Z');
-/* the committed research without the hourly matchup packets, so this test
-   does not change with the week; the games-to-watch path of the job is
-   tested from its frozen fixture in games_to_watch.test.js */
-const ART_FIXED = (() => { const a = require(path.join(__dirname, 'artifacts.js')).load(); a.packets = null; return a; })();
+/* the research as committed for CFB Week 6 and NFL Week 5 (ART.frozen()),
+   without the hourly matchup packets, so this test does not change with the
+   week; the games-to-watch path of the job is tested from its frozen fixture
+   in games_to_watch.test.js */
+const ART_FIXED = require(path.join(__dirname, 'artifacts.js')).frozen();
+/* the database's clock is the research's Thursday too (_clock.js): the job
+   drafts only opportunities whose first kickoff is still ahead */
+const CLOCK = require(path.join(__dirname, '_clock.js'));
 
 (async () => {
   /* X — no database needed */
   const out = fs.mkdtempSync(path.join(os.tmpdir(), 'ce-example-'));
-  const ex = await RUN.example({ now: NOW, out });
+  const ex = await RUN.example({ art: ART_FIXED, now: NOW, out });
   const md = fs.readFileSync(ex.file, 'utf8');
   chk('X the example article passes every hard check', ex.ok, ex.failed);
   chk('X … and carries the disclaimer, the UTM link and no pick language', /1-800-GAMBLER/.test(md) && /utm_campaign=ce_stadiumrant_/.test(md) && !/best bet|our pick|guarantee/i.test(md));
@@ -48,6 +52,7 @@ const ART_FIXED = (() => { const a = require(path.join(__dirname, 'artifacts.js'
 
   const db = PG.start('contentjob');
   if (db.skip) { console.log((process.env.CONTENT_PG_REQUIRED ? 'FAIL | ' : 'NOTE | ') + db.skip + ' — skipped'); if (process.env.CONTENT_PG_REQUIRED) process.exit(1); process.exit(T.done()); }
+  CLOCK.database(db, NOW);
   const lit = PG.lit;
   const one = (s) => db.sql(s);
   const SB = 'https://job.supabase.test', SERVICE = 'service-role-key-for-tests';
@@ -139,7 +144,7 @@ const ART_FIXED = (() => { const a = require(path.join(__dirname, 'artifacts.js'
     /* the example's AI pass makes no call without the database's AI ledger */
     CLAUDE = [];
     let exErr = null;
-    try { await RUN.example({ now: NOW, out: path.join(require('os').tmpdir(), 'ce-example-test'), ai: true, anthropicKey: 'sk-ant-job-key-12345', model: 'claude-opus-5-5' }); } catch (e) { exErr = e; }
+    try { await RUN.example({ art: ART_FIXED, now: NOW, out: path.join(require('os').tmpdir(), 'ce-example-test'), ai: true, anthropicKey: 'sk-ant-job-key-12345', model: 'claude-opus-5-5' }); } catch (e) { exErr = e; }
     chk('$ the local example refuses an unmetered AI call', exErr && /AI ledger/.test(exErr.message) && CLAUDE.length === 0, exErr && exErr.message);
     one(`update content_engine.settings set llm_calls_per_day = 0;`);
     CLAUDE = [];
@@ -147,7 +152,7 @@ const ART_FIXED = (() => { const a = require(path.join(__dirname, 'artifacts.js'
     chk('C no budget: no call; the draft is still written', CLAUDE.length === 0 && r6.counts.drafted === 1, r6.counts);
     one(`update content_engine.settings set llm_calls_per_day = 100, ai_monthly_budget_usd = 0.05;`);
     CLAUDE = [];
-    const r6b = await RUN.weekly({ db: client, now: NOW, network: false, force: true, anthropicKey: 'sk-ant-job-key-12345', model: 'claude-opus-5-5', fetch: fakeFetch, log: quiet });
+    const r6b = await RUN.weekly({ db: client, art: ART_FIXED, now: NOW, network: false, force: true, anthropicKey: 'sk-ant-job-key-12345', model: 'claude-opus-5-5', fetch: fakeFetch, log: quiet });
     chk('$ the monthly dollar budget refuses the call before it is made; the draft is still written', CLAUDE.length === 0 && r6b.counts.drafted === 1 && r6b.counts.ai_used === 0
       && one(`select count(*) from content_engine.events where kind = 'ai_discarded' and run_id = '${r6b.run}';`) === '1', r6b.counts);
 

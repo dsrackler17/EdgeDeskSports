@@ -44,6 +44,13 @@ const DX = require(path.join(__dirname, '_docx.js'));
 const INLINE = require(path.join(__dirname, 'inline.js'));
 const CE = require(path.join(__dirname, '..', '..', 'lib', 'content_engine.js'));
 const ART = require(path.join(__dirname, 'artifacts.js'));
+/* one Thursday of CFB Week 6 for the whole world: the research is the frozen
+   week (ART.frozen()), and the function's clock and the database's read the
+   same moment (_clock.js), or the function would judge that research at
+   today's date (its games long kicked off) */
+const CLOCK = require(path.join(__dirname, '_clock.js'));
+const NOW = Date.parse('2026-10-08T17:30:00Z');
+CLOCK.node(NOW);
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -59,6 +66,7 @@ chk('K the function claims a send in the database before it calls Resend', SRC.i
 
 const db = PG.start('contentfn');
 if (db.skip) { console.log((process.env.CONTENT_PG_REQUIRED ? 'FAIL | ' : 'NOTE | ') + db.skip + ' — skipped'); if (process.env.CONTENT_PG_REQUIRED) process.exit(1); process.exit(0); }
+CLOCK.database(db, NOW);
 register(pathToFileURL(path.join(__dirname, '..', 'growth', '_stubs', 'hooks.mjs')));
 
 const URL_ = 'https://proj.supabase.test';
@@ -117,7 +125,7 @@ const honest = (req) => { const c = currentOf(req); return reply(Object.assign({
 const inventor = (req) => { const c = currentOf(req); const s = c.sections.slice(); s[0] = Object.assign({}, s[0], { body: s[0].body + ' Alabama has won 77 percent of its home games since 1990.' }); return reply(Object.assign({}, c, { sections: s })); };
 /* Alabama's margin as every surface prints it: the stored number under the
    canonical rounding policy (lib/edgedesk_calc.js), read from the research */
-const ALA_MARGIN = (() => { const a = ART.load(), CALC = require(path.join(__dirname, '..', '..', 'lib', 'edgedesk_calc.js'));
+const ALA_MARGIN = (() => { const a = ART.frozen(), CALC = require(path.join(__dirname, '..', '..', 'lib', 'edgedesk_calc.js'));
   const g = Object.values(a.cfbGames.games).find((x) => x.game && x.game.home === 'Alabama' && x.game.away === 'Georgia');
   return g ? Math.abs(CALC.round(g.edgedesk.fair_home_line, 1)).toFixed(1) : '5.4'; })();
 /* a section rewrite answers with ONE section */
@@ -132,9 +140,8 @@ const claude = (...answers) => { let i = 0; globalThis.__claude = (req, opts) =>
          insert into public.affiliate_admins (user_id) values ('${OWNER}'), ('${ADMIN}');
          select growth_outbound.grant_owner('owner@edgedesk.test');`);
 
-    /* a real opportunity, from the committed research */
-    const art = ART.load();
-    const NOW = Date.parse('2026-10-08T17:30:00Z');
+    /* a real opportunity, from the committed research (the frozen week) */
+    const art = ART.frozen();
     const snap = CE.research.fromArtifacts(art, { now: NOW });
     const pubRow = own('select public.content_engine_publishers();').find((p) => p.slug === 'stadium-rant');
     const opps = CE.discover(snap, { now: NOW, publisher: pubRow });

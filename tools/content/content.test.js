@@ -71,10 +71,11 @@ function chk(name, cond, detail) {
 function section(t) { console.log('\n' + t); }
 
 const NOW = Date.parse('2026-10-08T17:30:00Z');
-const art = ART.load();
-/* the hourly matchup packets move with the week; Five Games to Watch is
-   tested from its frozen fixture in games_to_watch.test.js */
-art.packets = null;
+/* the research as committed for CFB Week 6 and NFL Week 5 (ART.frozen()): the
+   live artifacts roll to the next week every weekend, and this suite asserts
+   what Week 6 said. It carries no hourly matchup packets; Five Games to Watch
+   is tested from its frozen fixture in games_to_watch.test.js */
+const art = ART.frozen();
 const TL = ART.teamLists(art);
 const snap = CE.research.fromArtifacts(art, { now: NOW });
 const SR = CE.PUBLISHER_TEMPLATES['stadium-rant'];
@@ -421,7 +422,7 @@ chk('T … and every kind', JSON.stringify(listOf(/add constraint opportunities_
 section('P postgame review');
 const pgs = allT.filter((o) => o.kind === 'postgame_review');
 chk('P the last finished week of each league becomes a recap', pgs.map((o) => o.key).sort().join() === 'cfb:2026:w5:postgame_review,nfl:2026:w4:postgame_review', pgs.map((o) => o.key));
-const recN = JSON.parse(fs.readFileSync(path.join(ROOT, 'record', 'football', 'nfl_2026.json'), 'utf8'));
+const recN = art.records.nfl;
 const wk4 = (Array.isArray(recN.games) ? recN.games : Object.values(recN.games)).filter((g) => g.week === 4 && g.grade && g.grade.status === 'GRADED');
 const pgN = pgs.find((o) => o.league === 'nfl');
 if (pgN) {

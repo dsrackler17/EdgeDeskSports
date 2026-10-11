@@ -2,13 +2,17 @@
 /* ===========================================================================
    /admin/content/ — THE WHOLE FLOW, IN A REAL BROWSER.
 
-   The page is the shipped file, served from this repository, so it reads the
-   REAL committed research (football/cfb_terminal, rankings, the NFL slate…).
+   The page is the shipped file, served from this repository, and it reads
+   EdgeDesk's real committed research at its real paths (football/cfb_terminal,
+   rankings, the NFL slate…): the research as committed for CFB Week 6 and NFL
+   Week 5 (ART.frozenFiles()), served in place of the live files, which roll
+   to the next week every weekend.
    Supabase is not mocked away: every /rest/v1/rpc call runs in a throwaway
    PostgreSQL with supabase/content_engine.sql applied (tools/growth/_rpc_shim.js),
    and /functions/v1/content_engine runs the DEPLOYED Edge Function file in
    Node. Only Claude, Resend and the RSS feeds are stubbed. The page's clock is fixed
-   at Thursday of CFB Week 6 so the committed slate is in the future.
+   at Thursday of CFB Week 6 so that slate is in the future, and the function's
+   and the database's clocks read the same Thursday (_clock.js).
 
      1  an owner signs in; a non-owner affiliate admin is turned away
      2  Discover now: research read, a trending headline matched, the
@@ -55,13 +59,18 @@ const SB = 'https://iattxbkbufslbauoumga.supabase.co';
 const SKEY = 'edgedesk_content_admin_session';
 const ANON = /var SB_KEY = "([^"]+)"/.exec(fs.readFileSync(path.join(ROOT, 'admin', 'content', 'index.html'), 'utf8'))[1];
 const FIXED = new Date('2026-10-08T17:30:00Z');
+const CLOCK = require(path.join(__dirname, '_clock.js'));
+CLOCK.node(FIXED.getTime());
 
 let pass = 0, fail = 0;
 function chk(name, ok, detail) { if (ok) { pass++; return; } fail++; console.log('  FAIL ' + name + (detail !== undefined ? '  ' + JSON.stringify(detail).slice(0, 400) : '')); }
 
+/* the research files the page reads, as committed for Week 6 */
+const WEEK6 = {};
+(function () { const fx = require(path.join(__dirname, 'artifacts.js')).frozenFiles(); Object.keys(fx.files).forEach((f) => { WEEK6['/' + f] = JSON.stringify(fx.files[f]); }); })();
 /* files the page reads that a step replaces (Five Games to Watch reads the
    frozen October 10 fixture, so the step does not move with the week) */
-const OVERRIDES = {};
+const OVERRIDES = Object.assign({}, WEEK6);
 function serve() {
   return new Promise((resolve) => {
     const srv = http.createServer((req, res) => {
@@ -93,6 +102,7 @@ const RSS = `<?xml version="1.0"?><rss><channel>
   if (!pw) { console.log('SKIPPED: playwright is not installed here'); process.exit(0); }
   const db = PG.start('contente2e');
   if (db.skip) { console.log('SKIPPED: ' + db.skip); process.exit(0); }
+  CLOCK.database(db, FIXED.getTime());
   const site = await serve();
   let browser;
   try {
@@ -450,6 +460,7 @@ const RSS = `<?xml version="1.0"?><rss><channel>
       const g = JSON.parse(db.sql(`select to_jsonb(a) from content_engine.articles a where format = 'weekly_games_to_watch' order by created_at desc limit 1;`));
       chk('7c the draft is saved for the publisher with its review READY and every check passing', g && g.status === 'draft' && g.checks.review.verdict === 'READY' && g.checks.ok === true && g.sections.filter((x) => /^game_/.test(x.key)).length === 5);
       Object.keys(OVERRIDES).forEach((k) => { delete OVERRIDES[k]; });
+      Object.assign(OVERRIDES, WEEK6);
     }
 
     /* 7b · EdgeDesk's own articles: a held Friday preview, its twelve gates, the owner's approval */
@@ -457,9 +468,9 @@ const RSS = `<?xml version="1.0"?><rss><channel>
       const CEL = require(path.join(ROOT, 'lib', 'content_engine.js'));
       const ARTL = require(path.join(__dirname, 'artifacts.js'));
       const t = Date.parse('2026-10-09T13:30:00Z'), FPX = CEL.firstParty;
-      const b = FPX.build('research_preview', CEL.research.fromArtifacts(ARTL.load(), { now: t }), { now: t });
+      const b = FPX.build('research_preview', CEL.research.fromArtifacts(ARTL.frozen(), { now: t }), { now: t });
       const slot = FPX.slot(t);
-      const g = FPX.gates(b.article, b.o, { now: t, slot, publishedThisWeek: [{ id: 'a' }, { id: 'b' }, { id: 'c' }], teamLists: ARTL.teamLists(ARTL.load()) });
+      const g = FPX.gates(b.article, b.o, { now: t, slot, publishedThisWeek: [{ id: 'a' }, { id: 'b' }, { id: 'c' }], teamLists: ARTL.teamLists(ARTL.frozen()) });
       const rec = FPX.record(b.article, b.o, { now: t, slot });
       db.service(`select public.content_engine_fp_record(${PG.lit(JSON.stringify({ id: slot.id, kind: 'research_preview', slot_date: slot.date, week_of: slot.week, status: 'held', mode: 'auto',
         title: rec.title, slug: rec.slug, url: rec.canonical_url, article: { record: rec, o: { fp_kind: 'research_preview' } }, content_hash: rec.content_hash, gates: g.gates, failed: g.failed, reason: 'held: ' + g.failed.join(', ') }))}::jsonb);`);
