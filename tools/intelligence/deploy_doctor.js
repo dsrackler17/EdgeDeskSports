@@ -210,6 +210,24 @@ async function doctor(opts) {
      nearest kickoff, not against a flat number, so a six-day-out board that
      is two hours old reads healthy and a board two hours old twenty minutes
      before kickoff does not. */
+  /* A BOARD NOBODY IS ALLOWED TO BUY IS NOT A BOARD NOBODY IS CALLING.
+     2026-10-10 the month's Odds API credits were spent and paid retrieval was
+     stopped on purpose until the reset (docs/odds-api-incident-2026-10). From
+     then on the board ages by decision, and this check went red four times a
+     day for a pause it had no way to see. The gateway records the pause and
+     says so to anyone (rpc/odds_feed_status, granted to anon): while it
+     answers "paused", an aging or empty board is that decision, reported as
+     PAUSED, and the check resumes the moment refresh is switched back on.
+     When the feed state cannot be read, nothing is assumed: the board keeps
+     its own verdict. */
+  async function feedPaused() {
+    const f = await get(`${url}/rest/v1/rpc/odds_feed_status`, { apikey: key, authorization: 'Bearer ' + key });
+    let j = null; try { j = f.ok ? JSON.parse(f.text) : null; } catch (_) { /* unreadable is not paused */ }
+    return j && j.state === 'paused' ? j : null;
+  }
+  const PAUSED_FIX_HINT = ' If paid odds retrieval is meant to be paused (docs/odds-api-incident-2026-10/INCIDENT.md), '
+    + 'apply supabase/odds_api_emergency_stop.sql and supabase/odds_api_gateway.sql (the Deploy odds gateway workflow) '
+    + 'so the pause is recorded where this check can read it.';
   if (!key) {
     add('the board is being captured', 'UNKNOWN', 'no SB_ANON or SB_SERVICE_ROLE in the environment',
       'SB_ANON=... node tools/intelligence/deploy_doctor.js');
@@ -228,9 +246,16 @@ async function doctor(opts) {
         `row-level security refused this key (HTTP ${b.status}), so the board's age could not be read`,
         'Pass SB_SERVICE_ROLE to read it.');
     } else if (!Array.isArray(rows) || !rows.length) {
-      add('the board is being captured', 'EMPTY',
-        'not one signal row exists for any game that has not started yet',
-        'Apply supabase/capture_cron.sql, then check cron.job_run_details.');
+      const paused = await feedPaused();
+      if (paused) {
+        add('the board is being captured', 'PAUSED',
+          'not one signal row exists for any game that has not started yet, and paid odds retrieval is paused '
+          + `(odds_feed_status: ${paused.message || 'paused'}). Not a fault while the pause holds.`);
+      } else {
+        add('the board is being captured', 'EMPTY',
+          'not one signal row exists for any game that has not started yet',
+          'Apply supabase/capture_cron.sql, then check cron.job_run_details.' + PAUSED_FIX_HINT);
+      }
     } else {
       const r = rows[0];
       const ageMin = (Date.now() - Date.parse(r.last_seen_at)) / 60000;
@@ -257,7 +282,14 @@ async function doctor(opts) {
       const floor = cadence + 3;
       const state = ageMin <= limit ? 'CURRENT' : ageMin <= floor ? 'AGING' : 'STALE';
       const age = ageMin >= 120 ? `${(ageMin / 60).toFixed(1)} hours` : `${Math.round(ageMin)} minutes`;
-      if (state === 'AGING') {
+      const paused = state === 'STALE' ? await feedPaused() : null;
+      if (paused) {
+        add('the board is being captured', 'PAUSED',
+          `the newest capture on an upcoming game is ${age} old (${r.sport_key || 'unknown sport'}, `
+          + `kicks off ${r.commence_time || 'at an unknown time'}), and paid odds retrieval is paused `
+          + `(odds_feed_status: ${paused.message || 'paused'}). Not a fault while the pause holds; `
+          + 'it is lifted by the re-enable runbook in docs/odds-api-incident-2026-10/INCIDENT.md.');
+      } else if (state === 'AGING') {
         add('the board is being captured', 'AGING',
           `the newest capture on an upcoming game is ${age} old, inside the ${cadence}-minute cadence that `
           + `feeds it but outside the ${limit}-minute rung for a game starting in ${hrsToKick.toFixed(1)} hours `
@@ -282,7 +314,7 @@ async function doctor(opts) {
             : `${Math.round(ageMin)} minutes is beyond the ${cadence}-minute cadence for this tier, so capture is `
               + 'not being called on it. Read the next check first — it says whether capture is refusing its '
               + 'callers or simply not being called. Then apply supabase/capture_cron.sql and check '
-              + 'cron.job_run_details; the GitHub backup is .github/workflows/capture.yml.');
+              + 'cron.job_run_details; the GitHub backup is .github/workflows/capture.yml.' + PAUSED_FIX_HINT);
       }
     }
   }
@@ -552,11 +584,14 @@ function annotations(r, opts) {
     + (fix ? ' | fix: ' + fix : '');
   const bad = (r.checks || []).filter(needsAction);
   const unknown = (r.checks || []).filter((c) => c.state === 'UNKNOWN');
+  /* a recorded pause is no failure, but it is never silent either */
+  const paused = (r.checks || []).filter((c) => c.state === 'PAUSED');
   const deploying = (c) => autoDeploy && c.state === 'STALE' && AUTO_DEPLOYABLE[c.name];
   bad.forEach((c) => out.push(deploying(c)
     ? one('warning', c, null) + ` | auto-deploying ${AUTO_DEPLOYABLE[c.name]} in this run`
     : one('error', c, c.fix)));
   unknown.forEach((c) => out.push(one('warning', c, c.fix)));
+  paused.forEach((c) => out.push(one('warning', c, null)));
   /* The verdict last, so it is the line nearest the summary. A run that found
      nothing wrong still says so — silence reads the same as not having run. */
   const nDeploying = bad.filter(deploying).length;
