@@ -16,7 +16,10 @@
      5  every former caller now asks the gateway (and says which category);
      6  the emergency stop's patterns cover every function that can spend;
      7  a reader cannot buy odds: Refresh is never forced, capture's untiered
-        call is the day tier, and the props cadence is the gateway's.
+        call is the day tier, and the props cadence is the gateway's;
+     8  the app's dormant oddsFetch() door to the deployed-only `odds`
+        function stays uncalled;
+     9  the linemaker (sheets, desk, calibration, grader) spends nothing.
 
    Static, so it runs everywhere, offline. Run: node tools/odds/no_bypass.test.js
    =========================================================================== */
@@ -104,6 +107,32 @@ chk('7 · the props cadence is the gateway\'s: hourly inside 3 h, 2 h inside 24 
   JSON.stringify(EDP.FRESHNESS.cadence) === JSON.stringify([{ within_h: 3, every_min: 60 }, { within_h: 24, every_min: 120 }, { within_h: null, every_min: 360 }]), EDP.FRESHNESS.cadence);
 const PCFG = require(path.join(ROOT, 'football', 'props', 'config.js'));
 chk('7 · the prop capture asks for the core markets only by default', JSON.stringify(PCFG.DEFAULT_GROUPS) === JSON.stringify({ nfl: ['core'], cfb: ['core'] }));
+
+/* ── 8 · the browser's dormant door to the deployed-only `odds` function ──
+   app.html carries oddsFetch(), a GET to /functions/v1/odds with
+   caller-chosen regions and markets. `odds` is deployed but not in this
+   repository, so nothing here can say what it spends; today nothing in the
+   page calls oddsFetch (it is only defined and exported for diagnostics).
+   This keeps it that way: a new caller fails the build until it goes through
+   odds_gateway instead (docs/linemaker/AUDIT.md G9). */
+{
+  const APP = read('app.html');
+  const calls = (APP.match(/\boddsFetch\s*\(/g) || []).length;
+  const defs = (APP.match(/function\s+oddsFetch\s*\(/g) || []).length;
+  chk('8 · nothing in the app calls oddsFetch (one definition, no caller)', defs === 1 && calls === defs, { defs, calls });
+  const fnGet = (APP.match(/callFnGet\(\s*'odds'/g) || []).length;
+  chk('8 · and the only GET to the odds function is inside oddsFetch', fnGet === 1, fnGet);
+  chk('8 · the source registry\'s probe never wakes a metered function', /PROBE_SKIP=\{run_slate:1,project_game:1,edgedesk_ai:1,team_brief:1\}/.test(APP));
+  chk('8 · the browser never names a provider host', !/api\.the-odds-api\.com|oddsblaze\.com/.test(APP));
+}
+/* ── 9 · the linemaker spends nothing ───────────────────────────────────
+   The fair-line sheets are built from committed projections; the price
+   check prices a quote the READER typed. No file of it reaches a gateway, a
+   capture or a provider. */
+['lib/edgedesk_fairline.js', 'lib/edgedesk_linemaker_ui.js', 'football/linemaker/desk.js', 'tools/football/build_fair_lines.js', 'tools/football/linemaker_grade.js', 'tools/football/linemaker_calibrate.js'].forEach((f) => {
+  const t = read(f);
+  chk('9 · ' + f + ' calls no odds gateway, capture or provider', !/odds_gateway|functions\/v1\/(capture|odds|close)\b|the-odds-api|oddsblaze/.test(t));
+});
 
 failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 500) : '')));
 console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'no path around the odds gateway — ' + pass + ' passed, ' + fail + ' failed');

@@ -2914,6 +2914,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_personal.css?v=20260929e">
 <link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20261005dr1">
 <link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929calm1">
+<link rel="stylesheet" href="/lib/edgedesk_linemaker.css?v=20261011lm1">
 <link rel="stylesheet" href="/lib/edgedesk_first_run.css?v=20260930a">
 <link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261003y">
 <link rel="stylesheet" href="/lib/edgedesk_workspace.css?v=20261004b">
@@ -3211,7 +3212,7 @@ body.focus .dk-focusnote{display:block}
          The fourth seat names the module that is open, so a reader on UFC sees
          "UFC" lit rather than a vague "Other". -->
     <nav class="stseg research-sub" aria-label="Research"><button data-sub="football" class="on" aria-current="page" onclick="researchGo('football')">Football</button><button data-sub="pprops" onclick="researchGo('pprops')">Props</button><button data-sub="edges" onclick="researchGo('edges')">Edges</button><button data-sub="other" class="rs-oth" id="rsOtherBtn" aria-expanded="false" aria-controls="rsOther" onclick="rsOtherToggle()"><span id="rsOtherLbl">Other</span><svg class="rs-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></nav>
-    <div class="rs-oth-row hide" id="rsOther" role="group" aria-label="Other sports and research tools"><span class="k">Sports</span><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="baseball" onclick="researchGo('baseball')">Baseball</button><span class="k">Tools</span><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button><button data-sub="rdesk" onclick="researchGo('rdesk')">Desk</button></div>
+    <div class="rs-oth-row hide" id="rsOther" role="group" aria-label="Other sports and research tools"><span class="k">Sports</span><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="baseball" onclick="researchGo('baseball')">Baseball</button><span class="k">Tools</span><button data-sub="lines" onclick="researchGo('lines')">Lines</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button><button data-sub="rdesk" onclick="researchGo('rdesk')">Desk</button></div>
     <!-- RESEARCH DESK — the landing state of the Research shell. Answers
          "where should I research?" from the football engine's own today-items,
          the board's model/market disagreements and the data warnings the
@@ -3337,6 +3338,12 @@ body.focus .dk-focusnote{display:block}
          Research, not picks. docs/player-props/DESIGN.md. A Research panel since the
          five-destination navigation; its #playerprops/… links are its own. -->
     <div id="v-pprops" class="rpanel hide"><div id="ppHost"></div></div>
+    <!-- FAIR LINES — the linemaker (lib/edgedesk_linemaker_ui.js over lib/edgedesk_fairline.js):
+         EdgeDesk's own price for the spread, moneyline, total and both team totals of every
+         upcoming NFL and FBS game, the alternate ladders, a price check and the held-out
+         record behind every probability. Research → Other → Lines, #research/lines[/<game>].
+         docs/linemaker/DESIGN.md. -->
+    <div id="v-lines" class="rpanel hide"><div id="linesHost" class="lm"></div></div>
     <!-- EDGES — a Research panel since the five-destination navigation (docs/ia/NAVIGATION_AUDIT.md):
          an edge is an output of research, so it lives in the research shell beside
          Football and Props rather than holding a seat of its own. Every id and
@@ -3996,6 +4003,7 @@ window.mcRefresh=function(){
      (lib/edgedesk_opportunity.js, docs/opportunity/DESIGN.md) -->
 <script src="/lib/edgedesk_opportunity.js?v=20260930pnl"></script>
 <script src="/lib/edgedesk_props_ui.js?v=20260930a"></script>
+<script src="/lib/edgedesk_saved_research.js?v=20261011lm1"></script>
 <!-- PORTFOLIO: engine → importer → connector contract → page, in that order -->
 <script src="/lib/edgedesk_portfolio.js?v=20261005pf3"></script>
 <script src="/lib/edgedesk_portfolio_import.js?v=20261005pf3"></script>
@@ -4263,6 +4271,10 @@ function edRefreshShared(){
   if(!_edRefreshing)_edRefreshing=edRefreshSession().then(function(v){_edRefreshing=null;return v;});
   return _edRefreshing;
 }
+/* SAVED RESEARCH ON THE ACCOUNT (lib/edgedesk_saved_research.js over
+   supabase/saved_research.sql), configured with this page's project and the
+   reader's own token at the moment of use. null when the client did not load. */
+window.edSaved=function(){ if(!window.EDSaved)return null; window.EDSaved.configure({url:SB_URL,key:SB_KEY,token:edToken}); return window.EDSaved; };
 async function edToken(){
   var s=edSession();
   if(!s||!s.access_token)return SB_KEY;
@@ -5450,8 +5462,15 @@ var RS_RETIRED=EDSPORTS.retiredModuleRoutes();
    second row — the other sports, then the research tools — and, while one of
    them is open, carries its name ("UFC ▾"), so the lit seat always says where
    the reader is. */
-var RS_OTHER={ufc:'UFC',baseball:'Baseball',stats:'Stats',lab:'Lab',rdesk:'Desk'};
+var RS_OTHER={ufc:'UFC',baseball:'Baseball',lines:'Lines',stats:'Stats',lab:'Lab',rdesk:'Desk'};
 var RS_OTHER_OPEN=false,RS_OTHER_FOLDED=false;
+/* THE SCREEN THE DESK SEES. A research panel says what is open on it (the
+   Lines panel: the game and the market tab); the shell resets it when the
+   reader changes panel. Identifiers only; the desk re-verifies a game id
+   against the published card before it uses it. */
+var ED_SCREEN={panel:null,sport:null,game_id:null,home:null,away:null,market:null,at:0};
+window.edScreenSet=function(o){o=o||{};ED_SCREEN={panel:o.panel||ED_SCREEN.panel||null,sport:o.sport||null,game_id:o.game_id!=null?String(o.game_id).slice(0,40):null,home:o.home?String(o.home).slice(0,80):null,away:o.away?String(o.away).slice(0,80):null,market:o.market?String(o.market).slice(0,24):null,at:Date.now()};};
+window.edScreenGet=function(){return ED_SCREEN.panel?Object.assign({},ED_SCREEN):null;};
 function rsNavPaint(sub){
   var inOther=!!RS_OTHER[sub];
   var bars=document.querySelectorAll('.research-sub button,#rsOther button');
@@ -5497,7 +5516,7 @@ window.researchGo=function(sub){
   window.scrollTo(0,0);
   plStop();
   try{var _pp=prefs();_pp.lastTab='research';_pp.lastResearchSub=sub;localStorage.setItem('edgedesk_prefs',JSON.stringify(_pp));}catch(_){}
-  if(prev!==sub)researchDeactivate(prev);
+  if(prev!==sub){researchDeactivate(prev);try{window.edScreenSet({panel:sub});}catch(_){}}
   researchActivate(sub,false);
   /* Player Props owns #playerprops/… (lib/edgedesk_props_ui.js reads it on mount
      and writes it as the reader moves), so the shell never overwrites one */
@@ -5694,6 +5713,23 @@ researchRegister({id:'pprops',label:'Props',schema:'public',cadenceMs:null,
   render:function(){},hasData:function(){return !!this._opened;},search:function(q){return [];},
   openEntity:null,closeEntity:null,entityOpen:null,
   freshness:function(){return {loadedAt:null,builtAt:null};},
+  availability:function(){return null;},limitations:function(){return [];},provenance:{}});
+/* FAIR LINES — the linemaker panel. Its two scripts load on first open (the
+   pricing library, then the panel; lib/research_core.js is already on the
+   page), so a reader who never opens Lines downloads neither. A script that
+   fails to load is an error state on the panel, never a blank one. */
+var LM_SCRIPTS=['/lib/edgedesk_fairline.js?v=20261011lm1','/lib/edgedesk_linemaker_ui.js?v=20261011lm1'];
+function lmScript(src){return new Promise(function(res,rej){var have=document.querySelector('script[data-lm="'+src+'"]');if(have){if(have.getAttribute('data-ok'))res();else{have.addEventListener('load',function(){res();});have.addEventListener('error',function(){rej(new Error('failed to load '+src));});}return;}var s=document.createElement('script');s.src=src;s.setAttribute('data-lm',src);s.onload=function(){s.setAttribute('data-ok','1');res();};s.onerror=function(){s.remove();rej(new Error('failed to load '+src));};document.head.appendChild(s);});}
+function lmReady(){if(window.EDLinemakerUI&&window.EDFairLine)return Promise.resolve();return lmScript(LM_SCRIPTS[0]).then(function(){return lmScript(LM_SCRIPTS[1]);});}
+function lmFail(e){var h=$('linesHost');if(h)h.innerHTML='<div class="lm-banner err" role="alert"><b>Fair lines could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in their place. <button class="lm-btn" onclick="researchRefresh(\'lines\')">Try again</button></div>';}
+researchRegister({id:'lines',label:'Lines',schema:'public',cadenceMs:null,
+  load:function(force,signal){var self=this;self._opened=true;var ent=(researchParseHash()||{}).entity||null;return lmReady().then(function(){if(force)return window.EDLinemakerUI.refresh();return window.EDLinemakerUI.show($('linesHost'),ent);}).catch(lmFail);},
+  render:function(){},hasData:function(){return !!(window.EDLinemakerUI&&window.EDLinemakerUI.hasData());},search:function(q){return [];},
+  openEntity:function(id){lmReady().then(function(){window.EDLinemakerUI.show($('linesHost'));window.EDLinemakerUI.openGame(id);}).catch(lmFail);},
+  closeEntity:function(){if(window.EDLinemakerUI)window.EDLinemakerUI.closeGame();},
+  entityOpen:function(){return !!(window.EDLinemakerUI&&window.EDLinemakerUI.entityOpen());},
+  entityKey:function(){return window.EDLinemakerUI?window.EDLinemakerUI.entityKey():null;},
+  freshness:function(){return window.EDLinemakerUI?window.EDLinemakerUI.freshness():{loadedAt:null,builtAt:null};},
   availability:function(){return null;},limitations:function(){return [];},provenance:{}});
 RESEARCH_SUB='rdesk';
 
@@ -36271,7 +36307,17 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(LAST_BOARD) c.board=LAST_BOARD;
     if(LAST_MLB) c.mlb_pitchers=LAST_MLB;
     if(LAST_DESK) c.desk=LAST_DESK;
-    return (LAST_CTX||LAST_BOARD||LAST_MLB||LAST_DESK)?c:null;
+    /* WHAT THE READER IS LOOKING AT (window.edScreenGet). Identifiers only.
+       When the conversation carries no game of its own, the game on screen
+       becomes the subject, through the same door a carried game uses: the
+       server keeps identifiers only, re-reads the game id against the
+       published card, and a game named in the question still wins. */
+    var scr=null; try{ scr=typeof window.edScreenGet==='function'?window.edScreenGet():null; }catch(_){ scr=null; }
+    if(scr){
+      c.screen={panel:scr.panel||null, sport:scr.sport||null, game_id:scr.game_id||null, market:scr.market||null};
+      if(!c.game_id&&scr.game_id&&scr.sport){ c.sport=scr.sport; c.game_id=String(scr.game_id); if(scr.home)c.home=scr.home; if(scr.away)c.away=scr.away; c.from_screen=true; }
+    }
+    return (LAST_CTX||LAST_BOARD||LAST_MLB||LAST_DESK||scr)?c:null;
   }
   /* The last question, so a failed narration can be asked for again without
      the reader retyping it. */
@@ -44631,7 +44677,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
        by construction, so saved reading can never be laundered into measured
        performance. Frozen on save, so the pregame explanation is never
        rewritten in the light of a result. */
-    saveResearch:function(){
+    saveResearch:async function(){
       var B=DESK.brief; if(!B){ push('a','<p>There is no matchup research open to save. Ask about a game first.</p>'); return; }
       var snap=EDINTEL.researchSnapshot({brief:B, model_version:deskModelVersion(DESK.res),
         question:(DESK.question||null), user_quote:DESK.quote||null,
@@ -44639,6 +44685,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var all=deskSnapsAll(); all.push(snap);
       var w=deskSnapsWrite(all);
       DESK.snapshot=snap;
+      /* the account copy (supabase/saved_research.sql), beside the device copy */
+      var acct=null, SV=(typeof window.edSaved==='function')?window.edSaved():null;
+      if(SV){ try{ acct=await SV.save({kind:'desk_answer', sport:snap.sport||B.sport||null, game_id:snap.game_id||B.game_id||null, title:snap.matchup||'Saved research', question:snap.question||null, payload:snap}); }catch(_){ acct={ok:false, why:'the account save failed'}; } }
       var body='<p style="font-size:12.5px;color:var(--text);line-height:1.55">Saved <b>'+esc(snap.matchup||'this matchup')+'</b>'
         +(snap.observed_price?(' with the price EdgeDesk had observed: '+esc((snap.observed_price.selection||'')+' '
           +(snap.observed_price.handicap!=null?((snap.observed_price.handicap>0?'+':'')+snap.observed_price.handicap+' '):'')
@@ -44646,6 +44695,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         +(snap.model&&snap.model.version?(', from model build '+esc(snap.model.version)):'')+'.</p>'
         +'<p style="font-size:11.5px;color:var(--dim);line-height:1.5">'+esc(snap.record_note)+'</p>'
         +(w.ok?'':'<p style="font-size:11.5px;color:var(--warn)">It could not be written to this browser\u2019s storage: '+esc(w.error)+'</p>')
+        +(acct&&acct.ok?'<p style="font-size:11.5px;color:var(--dim)">Saved to your account, so it is on every device you sign in on.</p>'
+          :'<p style="font-size:11.5px;color:var(--dim)">Saved on this device only'+(acct&&acct.why?': '+esc(acct.why):'')+'.</p>')
         +'<div class="ed-acts">'
         +'<button class="edai-qa" onclick="EDAI.watchAdd()">Add to watchlist</button>'
         +'<button class="edai-qa" onclick="EDAI.compareSaved()">Compare with now</button>'
@@ -44666,10 +44717,19 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var diff=EDINTEL.compareSnapshots(saved,now);
       push('a',deskSec('Against the research you saved',deskDiffHTML(diff)));
     },
-    savedResearch:function(){
+    savedResearch:async function(){
       window.EDAI.open();
       var all=deskSnapsAll();
-      if(!all.length){ push('a','<p>No research has been saved yet.</p>'); return; }
+      /* the account's saved items first (every device), then this device's */
+      var acct=null, SV=(typeof window.edSaved==='function')?window.edSaved():null;
+      if(SV){ try{ acct=await SV.list({limit:25}); }catch(_){ acct={ok:false, why:'the account list failed'}; } }
+      var acctRows=acct&&acct.ok?acct.rows:[];
+      if(acctRows.length){
+        push('a',deskSec('Saved to your account','<div class="ed-scroll"><table class="ed-tbl"><tr><th>saved</th><th>title</th><th>kind</th></tr>'
+          +acctRows.map(function(x){ return '<tr><td>'+esc(whenText(x.created_at)||'')+'</td><td>'+esc(x.title||'')+'</td><td>'+esc(x.kind==='fair_line'?'fair-line sheet':x.kind==='desk_answer'?'desk answer':'note')+'</td></tr>'; }).join('')
+          +'</table></div><p style="margin:8px 0 0;font-size:11.5px;color:var(--dim);line-height:1.5">On your account, visible only to you, on every device you sign in on. None of it is a wager.</p>'));
+      } else if(acct&&!acct.ok&&acct.why){ push('a','<p style="font-size:11.5px;color:var(--dim)">Account saves: '+esc(acct.why)+'.</p>'); }
+      if(!all.length){ if(!acctRows.length) push('a','<p>No research has been saved yet.</p>'); return; }
       var body='<div class="ed-scroll"><table class="ed-tbl"><tr><th>saved</th><th>matchup</th><th>model</th><th>price then</th><th></th></tr>'
         +all.slice().reverse().slice(0,25).map(function(sn){
           return '<tr><td>'+esc(whenText(sn.saved_at)||'')+'</td><td>'+esc(sn.matchup||'')+'</td>'

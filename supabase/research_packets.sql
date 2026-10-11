@@ -133,7 +133,12 @@ grant usage, select on sequence public.research_packets_id_seq to authenticated;
 -- with no sig_key, or whose signal has not closed, carries nulls and is counted
 -- as ungraded. `signals` columns are read through to_jsonb so a deployment
 -- whose signals table predates a column still builds the view.
-create or replace view public.research_packet_grades as
+-- security_invoker (2026-10-11): the view runs with the CALLER's rights, so
+-- the table's row level security applies through it and a reader sees only
+-- their own packets. Without it a view owned by postgres bypassed RLS and any
+-- signed-in reader (and anon, under Supabase's default grants) read every
+-- reader's packets: tools/intelligence/research_packets_rls_sql.test.js.
+create or replace view public.research_packet_grades with (security_invoker = true) as
 select
   p.id, p.packet_id, p.built_at, p.sport, p.game_id, p.matchup, p.kickoff, p.season, p.week,
   p.model_version, p.model_tier, p.market, p.selection, p.side, p.handicap, p.odds_decimal, p.book,
@@ -183,7 +188,7 @@ group by model_version, sport, market, label;
 -- can compare the desk's number with the close in POINTS (the archive or a
 -- captured close), beside the probability-based CLV the signals join already
 -- carries. A packet without pricing_summary reads null in every price field.
-create or replace view public.research_packet_pricing as
+create or replace view public.research_packet_pricing with (security_invoker = true) as
 select
   g.packet_id, g.built_at, g.sport, g.game_id, g.kickoff, g.season, g.week, g.model_version, g.label,
   p.packet -> 'pricing_summary' ->> 'headline'                              as headline,
@@ -211,6 +216,17 @@ join public.research_packets p on p.packet_id = g.packet_id;
 grant select on public.research_packet_grades to authenticated;
 grant select on public.research_packet_calibration to authenticated;
 grant select on public.research_packet_pricing to authenticated;
+-- No view here is for the public key: a reader signs in. The calibration view
+-- aggregates the grades view, so a signed-in reader's calibration covers their
+-- own packets and the service role's (the learning loop's) covers every packet;
+-- it carries no reader id and no packet id.
+do $anon$ begin
+  if exists (select 1 from pg_roles where rolname = 'anon') then
+    revoke all on public.research_packet_grades from anon;
+    revoke all on public.research_packet_calibration from anon;
+    revoke all on public.research_packet_pricing from anon;
+  end if;
+end $anon$;
 
 -- PostgREST caches the schema; without this the table is invisible to the
 -- function's insert until the next restart. Fires after commit.
@@ -232,4 +248,8 @@ select 'grades view', case when to_regclass('public.research_packet_grades') is 
 union all
 select 'calibration view', case when to_regclass('public.research_packet_calibration') is not null then 'ok' else 'CHECK THIS' end
 union all
-select 'pricing view', case when to_regclass('public.research_packet_pricing') is not null then 'ok' else 'CHECK THIS' end;
+select 'pricing view', case when to_regclass('public.research_packet_pricing') is not null then 'ok' else 'CHECK THIS' end
+union all
+select 'per-row views run with the caller''s rights',
+       case when (select count(*) from pg_class where relname in ('research_packet_grades','research_packet_pricing')
+                  and relnamespace = 'public'::regnamespace and reloptions @> array['security_invoker=true']) = 2 then 'ok' else 'CHECK THIS' end;

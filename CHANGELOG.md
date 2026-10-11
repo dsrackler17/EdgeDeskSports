@@ -1,5 +1,57 @@
 # Changelog
 
+## 2026-10-11 — The linemaker: one projection priced in every market, with an honest record behind each probability
+
+**EdgeDesk's own NFL and CFB engines are now priced in every football market: spread, moneyline, total, both team totals and the alternate lines around each. Every probability carries the calibration record that stands behind it, measured on seasons the method never saw. A new Lines panel, desk answers for team totals and alternate lines, a clock on the model call, a shared AI allowance with Lite/Pro routing, the on-screen game passed to the desk, saved research on the reader's account, and a fix for a cross-user read.** Docs: `docs/linemaker/DESIGN.md`, `AUDIT.md`, `REPORT.md`.
+
+- **Security: a cross-user read, fixed (not applied to production).**
+  - The views `research_packet_grades` and `research_packet_pricing` ran with their owner's rights, so RLS on `research_packets` did not apply through them. Any signed-in reader could read every reader's packets, and on Supabase's default grants so could the anon key.
+  - Reproduced on PostgreSQL. `supabase/research_packets_views_rls.sql` makes both views `security_invoker` and revokes anon. The same change is in `research_packets.sql`, with a `_rollback.sql`.
+- **The calibration record** (`tools/football/linemaker_calibrate.js` → `football/validation/linemaker_{nfl,cfb}.json`).
+  - Cold replays batched by week, so no game sees its own slate.
+  - Four candidate methods per market: the engine, a normal, a walk-forward recentred normal, and a discrete joint team-score kernel. Each market's method is chosen on 2016–20 (NFL) / 2014–19 (CFB) by a pre-declared rule and confirmed on 2021–25 / 2020–25.
+  - A market is CALIBRATED only if its confirmation window passes every rule: n, calibration-in-the-large, slope, every 5-point bin, and skill over climatology. Otherwise it is PROVISIONAL with its reasons.
+  - Results: CALIBRATED for the NFL spread and the CFB total; PROVISIONAL for everything else. Team totals have no market line to grade at.
+  - Probabilities at the market's own number are reported separately. Their held-out slopes are 0.17 (NFL spread), 0.30 (NFL total), −0.08 (CFB spread) and 0.21 (CFB total): the engines barely separate outcomes at the posted number.
+- **The sheets** (`lib/edgedesk_fairline.js`, `tools/football/build_fair_lines.js` → `football/linemaker/fair_lines.json`).
+  - Per game: fair spread, moneyline and total, home and away team totals, ladders with push probabilities, and the calibration band for every rung.
+  - The price check uses `lib/research_core.js` for every piece of odds arithmetic. It reports NO VALUE, THIN or VALUE, and says VALUE only for a CALIBRATED market with an at-market band whose conservative edge is still positive and whose ROI is at least 2%.
+  - The sportsbook reference is shown next to the fair line, never mixed into it.
+- **The ledger and the grades.**
+  - An append-only, pregame-only ledger (`football/linemaker/ledger/<season>/sheets.jsonl`). A record is written when a sheet's material numbers change.
+  - `tools/football/linemaker_grade.js` grades the last pregame sheet for each game: moneyline Brier and log loss, spread and total at the close, team totals, error, and movement toward the fair number.
+- **The Lines panel** (Research → Other → Lines, `#research/lines[/<game>]`).
+  - Shows the slate, a game's full sheet, every market's status and reasons, the ladders, the reference market, the record, and the grades.
+  - Loading, empty, error and stale states; desktop and a 390 px phone.
+  - Ask about this and Save this sheet.
+- **The desk.**
+  - **Model clock:** 45 s per call and 100 s per turn (`EDGEDESK_AI_TIMEOUT_MS`, `EDGEDESK_AI_DEADLINE_MS`). A timeout is a 504 with its reason, never a hang.
+  - **Shared daily allowance** (`supabase/ai_usage.sql`): atomic per reader with an advisory lock; the ledger is append-only.
+    - Every question claims one LITE unit before any work, and a question deeper than QUICK also claims PRO. Over the PRO limit it is answered the LITE way, and over the LITE limit it is refused with the reset time.
+    - A LITE answer makes no tool calls and never refreshes odds.
+    - The default limits are 100 PRO and 600 LITE a day. No subscription or price changed.
+  - **Screen context:** the open panel, game and market are sent as allow-listed context.
+  - **Team totals and alternate lines** are answered from the sheet deterministically. They are never VALUE for a team total.
+  - **Saved research** (`supabase/saved_research.sql`, `lib/edgedesk_saved_research.js`): the reader's own rows only, frozen at save, capped at 500. The device copy remains when the account save is not possible, with the reason.
+- **Odds API.** The linemaker reads committed artifacts only and spends no credit. `no_bypass.test.js` now also proves that `app.html`'s `oddsFetch` has no caller and that no linemaker file reaches the gateway, capture or a provider.
+- **CI:** `.github/workflows/linemaker.yml` runs the tests on PRs. It rebuilds the sheets every three hours and recalibrates weekly, and commits only when something changed and the suites pass.
+- **Database (not applied to production):** `supabase/research_packets_views_rls.sql` (apply first), `supabase/ai_usage.sql`, `supabase/saved_research.sql`, each with a `_rollback.sql`. Redeploy `edgedesk_ai`.
+
+**Tests:**
+- New suites:
+  - `linemaker.test.js`, 119;
+  - `linemaker_desk.test.js`, 28;
+  - `linemaker_ui.e2e.js`, 84;
+  - `research_packets_rls_sql.test.js`, 28;
+  - `ai_usage_sql.test.js`, 35;
+  - `saved_research_sql.test.js`, 25;
+  - `saved_research_client.test.js`, 16;
+  - `ai_route.test.js`, 22;
+  - `model_timeout.test.js`, 9;
+  - `no_bypass.test.js`, 37.
+- Every existing suite that covers this code passes.
+- `intelligence.test.js` (2 of 574), `resilience.test.js`, `research_snapshots_sql.test.js` (1) and `first_run.test.js` (1) fail identically on the unmodified base commit.
+
 ## 2026-10-10 — Market resilience: research never depends on a sportsbook
 
 **When the odds provider was down, the quota ran out, or a quote went stale, 92 of 108 games read NO MARKET. Each one was unrankable, its research interest was capped at 10, and seven of the eight 7+ point disagreements read "STALE MARKET". Now every projected game is research-visible in every market state. Market data is labelled LIVE / CACHED / HISTORICAL / MANUAL / UNAVAILABLE / FAULT, and a large disagreement is kept, explained and labelled INVESTIGATE, never promoted to an edge.** Docs: `docs/market-resilience/README.md`.

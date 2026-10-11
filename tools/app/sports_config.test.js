@@ -89,7 +89,7 @@ const other = (APP.match(/<div class="rs-oth-row hide" id="rsOther"[^\n]*?<\/div
 const subs = ((nav + other).match(/data-sub="([a-z]+)"/g) || []).map((x) => x.slice(10, -1));
 const cov = S.RESEARCH_COVERAGE.map((c) => c.id);
 chk('the Research tabs are the first covered sport, Props, Edges and Other, then the rest of the coverage and the tools',
-  JSON.stringify(subs) === JSON.stringify([cov[0], 'pprops', 'edges', 'other'].concat(cov.slice(1), ['stats', 'lab', 'rdesk'])), subs);
+  JSON.stringify(subs) === JSON.stringify([cov[0], 'pprops', 'edges', 'other'].concat(cov.slice(1), ['lines', 'stats', 'lab', 'rdesk'])), subs);
 chk('every covered sport has a Research tab, in coverage order', JSON.stringify(subs.filter((x) => cov.indexOf(x) >= 0)) === JSON.stringify(cov), subs);
 S.RETIRED.forEach((r) => r.modules.forEach((m) => {
   chk('no Research tab for retired module ' + m, subs.indexOf(m) < 0);

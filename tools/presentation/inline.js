@@ -161,6 +161,23 @@ const LIBS = [
     start: '/*__EDGAMERES_START__*/', end: '/*__EDGAMERES_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* The linemaker: one projection priced in every market (lib/edgedesk_fairline.js,
+     the same file the Lines panel loads) and the desk's deterministic answers
+     for team totals and alternate lines over the published sheets
+     (football/linemaker/desk.js). ORDER MATTERS: both read EDResearchCore,
+     and the desk reads EDFairLine. */
+  {
+    name: 'EDFAIRLINE',
+    src: path.join(ROOT, 'lib', 'edgedesk_fairline.js'),
+    start: '/*__EDFAIRLINE_START__*/', end: '/*__EDFAIRLINE_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  {
+    name: 'EDLINESDESK',
+    src: path.join(ROOT, 'football', 'linemaker', 'desk.js'),
+    start: '/*__EDLINESDESK_START__*/', end: '/*__EDLINESDESK_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
   /* The desk layer: the sport-aware typed-evidence contract, the price
      verdict and ladder, the deterministic board ranking, intent, the
      conversation state, Similar Situations' gate and the short answer.

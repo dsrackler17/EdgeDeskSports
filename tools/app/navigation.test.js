@@ -99,9 +99,11 @@ const SUB = (APP.match(/<nav class="stseg research-sub" aria-label="Research">[^
 eq('Research reads Football · Props · Edges · Other', JSON.stringify(SUB.match(/data-sub="[a-z]+"/g)),
    JSON.stringify(['football', 'pprops', 'edges', 'other'].map(s => 'data-sub="' + s + '"')));
 const OTHER = (APP.match(/<div class="rs-oth-row hide" id="rsOther"[^\n]*?<\/div>/) || [''])[0];
+/* Lines (the linemaker's fair-line sheets, 2026-10-11) is a research tool,
+   so it joins the Tools half of the Other row rather than taking a seat */
 eq('Other holds the other sports, then the research tools', JSON.stringify(OTHER.match(/data-sub="[a-z]+"/g)),
-   JSON.stringify(['ufc', 'baseball', 'stats', 'lab', 'rdesk'].map(s => 'data-sub="' + s + '"')));
-has(APP, "var RS_OTHER={ufc:'UFC',baseball:'Baseball',stats:'Stats',lab:'Lab',rdesk:'Desk'};", 'and the fourth seat names whichever of them is open');
+   JSON.stringify(['ufc', 'baseball', 'lines', 'stats', 'lab', 'rdesk'].map(s => 'data-sub="' + s + '"')));
+has(APP, "var RS_OTHER={ufc:'UFC',baseball:'Baseball',lines:'Lines',stats:'Stats',lab:'Lab',rdesk:'Desk'};", 'and the fourth seat names whichever of them is open');
 /* Football: NFL and CFB first, rosters last, highlighted by name not position */
 eq('Football reads NFL · CFB · Players · Rankings · Rosters', JSON.stringify((APP.match(/<div class="stseg fb-seg" id="fbSeg"[^\n]*?<\/div>/) || [''])[0].match(/data-fs="[a-z0-9]+"/g)),
    JSON.stringify(['nfl', 'p4', 'players', 'rankings', 'cfb'].map(s => 'data-fs="' + s + '"')));

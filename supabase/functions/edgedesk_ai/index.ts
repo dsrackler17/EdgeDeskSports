@@ -23988,6 +23988,681 @@ const EDSPORTS: any = (globalThis as any).EDSPORTS;
   return G;
 });
 /*__EDGAMERES_END__*/
+/*__EDFAIRLINE_START__*/
+(function (root, factory) {
+  var api = factory(root);
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  if (root) root.EDFairLine = api;
+})(typeof globalThis !== 'undefined' ? globalThis : (typeof self !== 'undefined' ? self : this), function (root) {
+  'use strict';
+
+  var VERSION = '1.0.0';
+  var SCHEMA = 'edgedesk_fairline_v1';
+  var MARKETS = ['spread', 'moneyline', 'total', 'team_total'];
+  var METHODS = ['NORMAL_RAW', 'NORMAL_CAL', 'KERNEL_JOINT', 'ENGINE'];
+  var STATUSES = ['CALIBRATED', 'PROVISIONAL', 'UNCALIBRATED'];
+  var VERDICTS = ['VALUE', 'THIN', 'NO_VALUE', 'CANNOT_EVALUATE'];
+  var EPS = 1e-12;
+
+  /* ------------------------------------------------------------ odds */
+  var R_ = null;
+  function R() {
+    if (R_) return R_;
+    /* EDResearchCore is the collision-free name: app.html's AI desk publishes
+       its own window.EDResearch (tool primitives) over the library's */
+    var r = root && root.EDResearchCore && root.EDResearchCore.odds ? root.EDResearchCore : (root && root.EDResearch && root.EDResearch.odds ? root.EDResearch : null);
+    if (!r && typeof require === 'function') { try { r = require('./research_core.js'); } catch (_) { r = null; } }
+    if (!r || !r.odds) throw new Error('lib/research_core.js (EDResearch) must be loaded before EDFairLine prices anything');
+    return (R_ = r);
+  }
+
+  /* ------------------------------------------------------------ util */
+  function num(v) { if (v === null || v === undefined || v === '') return null; var n = Number(v); return Number.isFinite(n) ? n : null; }
+  function r1(v) { return v == null ? null : Math.round(v * 10) / 10; }
+  function r4(v) { return v == null ? null : Math.round(v * 10000) / 10000; }
+  function half(v) { return Math.round(v * 2) / 2; }
+  function erf(x) { var t = 1 / (1 + 0.3275911 * Math.abs(x)); var y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x); return x >= 0 ? y : -y; }
+  function normCdf(x) { return 0.5 * (1 + erf(x / Math.SQRT2)); }
+
+  /* ------------------------------------------------------------- PMFs
+     A PMF over integers is {lo, p}: p[i] = P(X = lo + i). Every function
+     returns a new object and leaves its inputs alone. */
+  function pmf(lo, p) { return { lo: lo, p: p }; }
+  function total(a) { var s = 0; for (var i = 0; i < a.p.length; i++) s += a.p[i]; return s; }
+  function normalize(a) { var s = total(a); if (!(s > 0)) return null; return pmf(a.lo, a.p.map(function (x) { return x / s; })); }
+
+  /** a normal discretised onto the integers lo..hi (each integer owns [k-½, k+½]) */
+  function normalPmf(mu, sd, lo, hi) {
+    if (num(mu) == null || !(sd > 0)) return null;
+    lo = Math.floor(lo); hi = Math.ceil(hi);
+    var p = [];
+    for (var k = lo; k <= hi; k++) p.push(normCdf((k + 0.5 - mu) / sd) - normCdf((k - 0.5 - mu) / sd));
+    return normalize(pmf(lo, p));
+  }
+  /** (1-w)·a + w·b */
+  function mix(a, b, w) {
+    if (!a) return b; if (!b || !(w > 0)) return a;
+    var lo = Math.min(a.lo, b.lo), hi = Math.max(a.lo + a.p.length, b.lo + b.p.length) - 1, p = [];
+    for (var k = lo; k <= hi; k++) p.push((1 - w) * at(a, k) + w * at(b, k));
+    return normalize(pmf(lo, p));
+  }
+  function at(a, k) { var i = k - a.lo; return i >= 0 && i < a.p.length ? a.p[i] : 0; }
+  /** the margin (h − a) and total (h + a) of two independent team PMFs */
+  function convolve(h, a) {
+    if (!h || !a) return null;
+    var hn = h.p.length, an = a.p.length;
+    var mLo = h.lo - (a.lo + an - 1), tLo = h.lo + a.lo;
+    var m = new Array(hn + an - 1), t = new Array(hn + an - 1), i, j, x;
+    for (i = 0; i < m.length; i++) { m[i] = 0; t[i] = 0; }
+    for (i = 0; i < hn; i++) {
+      if (!h.p[i]) continue;
+      for (j = 0; j < an; j++) {
+        x = h.p[i] * a.p[j];
+        if (!x) continue;
+        m[(h.lo + i) - (a.lo + j) - mLo] += x;
+        t[i + j] += x;
+      }
+    }
+    return { margin: pmf(mLo, m), total: pmf(tLo, t) };
+  }
+  /** P(X > line), P(X = line), P(X < line) */
+  function tail(a, line) {
+    if (!a || num(line) == null) return null;
+    var over = 0, push = 0, under = 0;
+    for (var i = 0; i < a.p.length; i++) {
+      var k = a.lo + i;
+      if (Math.abs(k - line) < 1e-9) push += a.p[i]; else if (k > line) over += a.p[i]; else under += a.p[i];
+    }
+    var s = over + push + under; if (!(s > 0)) return null;
+    return { over: over / s, push: push / s, under: under / s };
+  }
+  function mean(a) { var s = 0, w = 0; for (var i = 0; i < a.p.length; i++) { s += (a.lo + i) * a.p[i]; w += a.p[i]; } return w > 0 ? s / w : null; }
+  function sd(a) { var m = mean(a), s = 0, w = 0; for (var i = 0; i < a.p.length; i++) { s += Math.pow(a.lo + i - m, 2) * a.p[i]; w += a.p[i]; } return w > 0 ? Math.sqrt(s / w) : null; }
+  /** a quantile, each integer's mass spread evenly over [k-½, k+½] */
+  function quantile(a, q) {
+    var s = total(a), c = 0;
+    for (var i = 0; i < a.p.length; i++) {
+      var x = a.p[i] / s;
+      if (c + x >= q && x > 0) return a.lo + i - 0.5 + (q - c) / x;
+      c += x;
+    }
+    return a.lo + a.p.length - 0.5;
+  }
+  /** a compact copy: mass under `floor` trimmed from both ends, values rounded */
+  function compact(a, floor, decimals) {
+    floor = floor == null ? 1e-6 : floor;
+    var f = Math.pow(10, decimals == null ? 6 : decimals);
+    var i0 = 0, i1 = a.p.length - 1;
+    while (i0 < i1 && a.p[i0] < floor) i0++;
+    while (i1 > i0 && a.p[i1] < floor) i1--;
+    var p = a.p.slice(i0, i1 + 1).map(function (x) { return Math.round(x * f) / f; });
+    return normalize(pmf(a.lo + i0, p));
+  }
+
+  /* -------------------------------------------- the team-points grid
+     The calibration record ships, per league, the kernel team-points PMF at
+     every grid value of projected points (fitted on every completed season
+     up to the record's cut). Between grid values the two neighbours are
+     blended linearly; outside the grid the edge row is used and flagged. */
+  function gridPmf(grid, p) {
+    if (!grid || !grid.rows || !grid.rows.length || num(p) == null) return null;
+    var x = (p - grid.p0) / grid.step, n = grid.rows.length, clamped = false;
+    if (x <= 0) { x = 0; clamped = p < grid.p0; }
+    if (x >= n - 1) { x = n - 1; clamped = p > grid.p0 + (n - 1) * grid.step; }
+    var i = Math.floor(x), w = x - i;
+    var A = grid.rows[i], B = grid.rows[Math.min(n - 1, i + 1)];
+    var a = pmf(A.lo, A.p), b = pmf(B.lo, B.p);
+    var out = w > 1e-9 ? mix(a, b, w) : normalize(a);
+    if (out) out.clamped = clamped;
+    return out;
+  }
+
+  /* --------------------------------------------------- the centres */
+  function centres(raw, model) {
+    var m = num(raw && raw.home_margin), t = num(raw && raw.total);
+    var c = (model && model.centres) || {};
+    var lin = function (x, f) { return x == null || !f ? null : f.a + f.b * x; };
+    var mc = lin(m, c.margin), tc = lin(t, c.total);
+    return {
+      raw: { home_margin: m, total: t, home_points: m != null && t != null ? (t + m) / 2 : null, away_points: m != null && t != null ? (t - m) / 2 : null },
+      calibrated: { home_margin: mc, total: tc, home_points: mc != null && tc != null ? (tc + mc) / 2 : null, away_points: mc != null && tc != null ? (tc - mc) / 2 : null }
+    };
+  }
+
+  /* ---------------------------------------------- the distributions
+     raw:    { home_margin, total, sigma?, sigma_base? }   (engine conventions: + = home ahead)
+     model:  the `live` block of a calibration record
+     Returns PMFs for every market whose method this module computes
+     (NORMAL_RAW, NORMAL_CAL, KERNEL_JOINT). A market whose method is ENGINE
+     is left null and listed in `engine`: the shipped engine answers it line by
+     line through hooks (see sheet()), because the college engine borrows a
+     different learned row for each line and cannot be reduced to one PMF.
+     Returns { centres, margin, total, home, away, moneyline:{home, tie, away}|null, method, engine:[...], notes } */
+  function distributions(raw, model) {
+    if (!model || !model.markets) return { error: 'no calibration record for this league' };
+    var C = centres(raw, model);
+    if (C.raw.home_margin == null || C.raw.total == null) return { error: 'the projection carries no fair margin or no fair total' };
+    var M = model.markets, notes = [], engine = [];
+    var MW = model.margin_range || [-90, 90], TW = model.total_range || [0, 160], PW = model.points_range || [0, 90];
+    var joint = null;
+    function needJoint() {
+      if (joint) return joint;
+      var h = gridPmf(model.team_grid, C.calibrated.home_points), a = gridPmf(model.team_grid, C.calibrated.away_points);
+      if (!h || !a) return null;
+      if (h.clamped || a.clamped) notes.push('a projected team score lies outside the fitted grid; the edge row of the grid is used');
+      var mixw = num(model.team_grid.normal_mix) || 0;
+      if (mixw > 0) { h = mix(h, normalPmf(C.calibrated.home_points, model.team_grid.sd, PW[0], PW[1]), mixw); a = mix(a, normalPmf(C.calibrated.away_points, model.team_grid.sd, PW[0], PW[1]), mixw); }
+      var j = convolve(h, a);
+      joint = { home: h, away: a, margin: j.margin, total: j.total };
+      return joint;
+    }
+    function forMarket(key, kind) {
+      var spec = M[key]; if (!spec) return null;
+      var method = spec.method;
+      if (method === 'ENGINE') { if (engine.indexOf(key) < 0) engine.push(key); return null; }
+      if (method === 'KERNEL_JOINT') { var J = needJoint(); return J ? J[kind] : null; }
+      var centre = method === 'NORMAL_CAL' ? C.calibrated : C.raw;
+      var mu = kind === 'margin' ? centre.home_margin : kind === 'total' ? centre.total : kind === 'home' ? centre.home_points : centre.away_points;
+      var rng = kind === 'margin' ? MW : kind === 'total' ? TW : PW;
+      return normalPmf(mu, spec.sd, rng[0], rng[1]);
+    }
+    var out = {
+      centres: C,
+      margin: forMarket('spread', 'margin'),
+      total: forMarket('total', 'total'),
+      home: forMarket('team_total', 'home'),
+      away: forMarket('team_total', 'away'),
+      method: { spread: M.spread && M.spread.method, moneyline: M.moneyline && M.moneyline.method, total: M.total && M.total.method, team_total: M.team_total && M.team_total.method },
+      engine: engine, notes: notes
+    };
+    /* MONEYLINE: P(home ahead) from the moneyline's own method, with a tie
+       carried at the league's measured tie rate (NFL ties happen; college
+       football has none since overtime). A discretised normal puts ~3% on a
+       zero margin, which is not a tie rate, so the tie mass is never read
+       off the distribution. An ENGINE moneyline is filled in by sheet(). */
+    var mlDist = M.moneyline ? forMarket('moneyline', 'margin') : null;
+    var tie = num(model.tie_rate) || 0;
+    if (mlDist) { var tt = tail(mlDist, 0); var pn = tt && (tt.over + tt.under) > 0 ? tt.over / (tt.over + tt.under) : null; out.moneyline = pn == null ? null : moneylineFrom(pn, tie); }
+    else out.moneyline = null;
+    out.tie_rate = tie;
+    return out;
+  }
+  function moneylineFrom(pHomeNoTie, tie) { return { home: (1 - tie) * pHomeNoTie, tie: tie, away: (1 - tie) * (1 - pHomeNoTie) }; }
+
+  /* ------------------------------------------------- fair prices */
+  /** the no-vig fair American price for a side that wins with `win` and pushes with `push` */
+  function fairAmerican(win, push) {
+    var w = num(win), q = num(push) || 0;
+    if (w == null || !(w > EPS) || q < 0 || w + q > 1 + 1e-9) return null;
+    if (w >= 1 - q - 1e-12) return null; /* a certainty has no price */
+    return R().odds.decToAm((1 - q) / w);
+  }
+  function rung(t, line) {
+    if (!t) return null;
+    return { line: line, over: r4(t.over), push: r4(t.push), under: r4(t.under), over_fair: fairAmerican(t.over, t.push), under_fair: fairAmerican(t.under, t.push) };
+  }
+  /** home spread ladder: a home line L covers when margin + L > 0, i.e. margin > -L.
+      tailAt(threshold) -> {over, push, under} of the home margin. */
+  function spreadLadder(tailAt, centreMargin, width) {
+    var rows = [], c = half(-centreMargin);
+    for (var L = c - width; L <= c + width + 1e-9; L += 0.5) {
+      var t = tailAt(-L); if (!t) continue;
+      rows.push({ home_line: L, home: r4(t.over), push: r4(t.push), away: r4(t.under), home_fair: fairAmerican(t.over, t.push), away_fair: fairAmerican(t.under, t.push) });
+    }
+    return rows;
+  }
+  function overUnderLadder(tailAt, centre, width) {
+    var rows = [], c = half(centre);
+    for (var L = c - width; L <= c + width + 1e-9; L += 0.5) { if (L <= 0) continue; var r = rung(tailAt(L), L); if (r) rows.push(r); }
+    return rows;
+  }
+
+  /** a sheet's ladder, read back with fair prices: from the published rows
+      where the sheet carries them (ENGINE markets), otherwise rebuilt from
+      the published distribution. key: spread | total | home_team_total | away_team_total */
+  var LADDER_DIST = { spread: 'margin', total: 'total', home_team_total: 'home', away_team_total: 'away' };
+  function ladder(sh, key, opts) {
+    opts = opts || {};
+    if (!sh || !LADDER_DIST[key]) return [];
+    var rows = sh.ladders && sh.ladders[key];
+    if (rows && rows.length) {
+      return rows.map(function (r) {
+        var o = Object.assign({}, r);
+        if (key === 'spread') { if (o.home_fair === undefined) o.home_fair = fairAmerican(o.home, o.push); if (o.away_fair === undefined) o.away_fair = fairAmerican(o.away, o.push); }
+        else { if (o.over_fair === undefined) o.over_fair = fairAmerican(o.over, o.push); if (o.under_fair === undefined) o.under_fair = fairAmerican(o.under, o.push); }
+        return o;
+      });
+    }
+    var D = sh.dist && sh.dist[LADDER_DIST[key]];
+    if (!D) return [];
+    var m = sh.markets || {};
+    if (key === 'spread') return spreadLadder(function (thr) { return tail(D, thr); }, quantile(D, 0.5), opts.width || 10);
+    var centre = key === 'total' ? (m.total && m.total.fair_total) : key === 'home_team_total' ? (m.team_total && m.team_total.home_fair) : (m.team_total && m.team_total.away_fair);
+    if (centre == null) centre = quantile(D, 0.5);
+    return overUnderLadder(function (L) { return tail(D, L); }, centre, opts.width || (key === 'total' ? 10 : 7));
+  }
+
+  /* --------------------------------------------- calibration bands
+     model.bands[market] = [{lo, hi, n, mean_p, observed, wilson_lo, wilson_hi}]
+     built from held-out predictions only. band() returns the interval for the
+     bin a probability falls in, or null with the reason. */
+  function band(model, market, p, which) {
+    var key = which === 'at_market' ? 'bands_at_market' : 'bands';
+    var b = model && model[key] && model[key][market];
+    if (!b || num(p) == null) return { available: false, kind: which || 'all_lines', reason: which === 'at_market' ? 'this market has never been tested at numbers the market posted (no closing line is archived for it)' : 'no held-out calibration table for this market' };
+    for (var i = 0; i < b.length; i++) {
+      var x = b[i];
+      if (p >= x.lo && (p < x.hi || (i === b.length - 1 && p <= x.hi))) {
+        if (!(x.n >= (model.band_min_n || 100))) return { available: false, kind: which || 'all_lines', reason: 'only ' + (x.n || 0) + ' held-out events in this probability range' + (which === 'at_market' ? ' at market numbers' : ''), n: x.n || 0 };
+        return { available: true, kind: which || 'all_lines', lo: x.lo, hi: x.hi, n: x.n, mean_p: x.mean_p, observed: x.observed, wilson_lo: x.wilson_lo, wilson_hi: x.wilson_hi,
+          /* how far reality sat from the model, at worst and at best, for probabilities like this one */
+          shift_lo: r4(x.wilson_lo - x.mean_p), shift_hi: r4(x.wilson_hi - x.mean_p) };
+      }
+    }
+    return { available: false, kind: which || 'all_lines', reason: 'probability outside the calibration table' };
+  }
+
+  /* ---------------------------------------------------- the sheet
+     input: { sport, game_id, home, away, kickoff, raw:{home_margin,total,sigma?,sigma_base?}, reference? }
+     model: the `live` block of the calibration record (status and tier per market)
+     hooks: ENGINE answers, line by line (the Node builder supplies them):
+       { cover(raw, threshold) -> {over, push, under} of the home margin,
+         over(raw, threshold)  -> {over, push, under} of the game total,
+         winProb(raw)          -> P(home ahead), no tie }
+     Without hooks an ENGINE market is omitted and says why. */
+  function sheet(input, model, hooks, opts) {
+    opts = opts || {};
+    var d = distributions(input.raw, model);
+    if (d.error) return { ok: false, game_id: input.game_id, error: d.error };
+    var C = d.centres, raw = input.raw;
+    var mk = model.markets;
+    var H = hooks || null;
+    function meta(key) { var s = mk[key] || {}; return { method: s.method || null, status: s.status || 'UNCALIBRATED', status_reasons: s.status_reasons || [], tier: s.tier || null, tier_basis: s.tier_basis || null }; }
+    var out = {
+      ok: true, schema: SCHEMA, version: VERSION, sport: input.sport, game_id: input.game_id,
+      home: input.home, away: input.away, kickoff: input.kickoff || null,
+      centres: { raw: roundObj(C.raw), calibrated: roundObj(C.calibrated) },
+      markets: {}, ladders: {}, notes: d.notes.slice(), dist: {}
+    };
+    var SW = opts.spread_width || 10, TW = opts.total_width || 10, KW = opts.team_width || 7;
+    /* SPREAD: the fair home line is minus the margin median */
+    if (d.margin) {
+      var med = quantile(d.margin, 0.5);
+      var fl = -med, at0 = tail(d.margin, -half(fl));
+      out.markets.spread = Object.assign(meta('spread'), {
+        fair_home_line: r1(fl), fair_home_line_half: half(fl),
+        at_fair: at0 ? { home: r4(at0.over), push: r4(at0.push), away: r4(at0.under) } : null,
+        margin_p10: r1(quantile(d.margin, 0.1)), margin_p90: r1(quantile(d.margin, 0.9)), margin_sd: r1(sd(d.margin))
+      });
+      out.ladders.spread = spreadLadder(function (thr) { return tail(d.margin, thr); }, med, SW);
+      out.dist.margin = compact(d.margin);
+    } else if (d.engine.indexOf('spread') >= 0) {
+      if (H && typeof H.cover === 'function') {
+        var em = C.raw.home_margin, ea = H.cover(raw, -half(-em));
+        out.markets.spread = Object.assign(meta('spread'), { fair_home_line: r1(-em), fair_home_line_half: half(-em),
+          at_fair: ea ? { home: r4(ea.over), push: r4(ea.push), away: r4(ea.under) } : null, margin_p10: null, margin_p90: null, margin_sd: null });
+        out.ladders.spread = spreadLadder(function (thr) { return H.cover(raw, thr); }, em, SW);
+      } else out.notes.push('the spread is priced by the shipped engine and no engine was supplied');
+    }
+    /* MONEYLINE */
+    var ml = d.moneyline;
+    if (!ml && d.engine.indexOf('moneyline') >= 0 && H && typeof H.winProb === 'function') { var wp = num(H.winProb(raw)); if (wp != null) ml = moneylineFrom(wp, d.tie_rate); }
+    if (ml) {
+      out.markets.moneyline = Object.assign(meta('moneyline'), {
+        home_win: r4(ml.home), away_win: r4(ml.away), tie: r4(ml.tie),
+        home_fair: fairAmerican(ml.home, ml.tie), away_fair: fairAmerican(ml.away, ml.tie)
+      });
+    }
+    /* TOTAL */
+    if (d.total) {
+      var tm = quantile(d.total, 0.5);
+      out.markets.total = Object.assign(meta('total'), { fair_total: r1(tm), fair_total_half: half(tm), total_p10: r1(quantile(d.total, 0.1)), total_p90: r1(quantile(d.total, 0.9)), total_sd: r1(sd(d.total)) });
+      out.ladders.total = overUnderLadder(function (L) { return tail(d.total, L); }, tm, TW);
+      out.dist.total = compact(d.total);
+    } else if (d.engine.indexOf('total') >= 0) {
+      if (H && typeof H.over === 'function') {
+        var et = C.raw.total;
+        out.markets.total = Object.assign(meta('total'), { fair_total: r1(et), fair_total_half: half(et), total_p10: null, total_p90: null, total_sd: null });
+        out.ladders.total = overUnderLadder(function (L) { return H.over(raw, L); }, et, TW);
+      } else out.notes.push('the total is priced by the shipped engine and no engine was supplied');
+    }
+    /* TEAM TOTALS */
+    if (d.home && d.away) {
+      var hm = quantile(d.home, 0.5), am = quantile(d.away, 0.5);
+      out.markets.team_total = Object.assign(meta('team_total'), {
+        home_fair: r1(hm), away_fair: r1(am), home_fair_half: half(hm), away_fair_half: half(am),
+        home_p10: r1(quantile(d.home, 0.1)), home_p90: r1(quantile(d.home, 0.9)),
+        away_p10: r1(quantile(d.away, 0.1)), away_p90: r1(quantile(d.away, 0.9))
+      });
+      out.ladders.home_team_total = overUnderLadder(function (L) { return tail(d.home, L); }, hm, KW);
+      out.ladders.away_team_total = overUnderLadder(function (L) { return tail(d.away, L); }, am, KW);
+      out.dist.home = compact(d.home); out.dist.away = compact(d.away);
+    }
+    out.method = d.method;
+    if (input.reference) out.reference = input.reference;
+    return out;
+  }
+  function roundObj(o) { var x = {}; Object.keys(o).forEach(function (k) { x[k] = o[k] == null ? null : Math.round(o[k] * 100) / 100; }); return x; }
+
+  /* -------------------------------------------------- price check
+     q: { market: 'spread'|'total'|'team_total'|'moneyline', side, line, american, team?: 'home'|'away' }
+       spread    side 'home'|'away', line = that side's line (home -3.5 / away +3.5)
+       total     side 'over'|'under', line = the total
+       team_total side 'over'|'under', team 'home'|'away', line
+       moneyline side 'home'|'away' (line ignored)
+     Reads the stored distributions of a published sheet, or of distributions(). */
+  function probabilities(sh, q) {
+    if (!sh) return { error: 'no sheet' };
+    var D = sh.dist || {}, Lg = sh.ladders || {};
+    var line = num(q.line);
+    if (q.market === 'moneyline') {
+      var ml = sh.markets && sh.markets.moneyline;
+      if (!ml) return { error: 'no moneyline on this sheet' };
+      if (q.side === 'home') return { win: ml.home_win, push: ml.tie, lose: ml.away_win };
+      if (q.side === 'away') return { win: ml.away_win, push: ml.tie, lose: ml.home_win };
+      return { error: 'moneyline side must be home or away' };
+    }
+    if (line == null) return { error: 'a line is required for this market' };
+    if (Math.abs(line * 2 - Math.round(line * 2)) > 1e-9) return { error: 'lines are priced in half points' };
+    var t;
+    if (q.market === 'spread') {
+      if (q.side !== 'home' && q.side !== 'away') return { error: 'spread side must be home or away' };
+      var homeLine = q.side === 'home' ? line : -line;
+      if (D.margin) t = tail(D.margin, -homeLine);
+      else t = fromLadder(Lg.spread, 'home_line', homeLine, 'home', 'away');
+      if (!t) return { error: 'that line is outside the published ladder' };
+      return q.side === 'home' ? { win: t.over, push: t.push, lose: t.under } : { win: t.under, push: t.push, lose: t.over };
+    }
+    if (q.market !== 'total' && q.market !== 'team_total') return { error: 'unknown market ' + q.market };
+    if (q.market === 'team_total' && q.team !== 'home' && q.team !== 'away') return { error: 'team total needs team home or away' };
+    if (!(line > 0)) return { error: 'a total line must be positive' };
+    if (q.side !== 'over' && q.side !== 'under') return { error: 'side must be over or under' };
+    var dist = q.market === 'total' ? D.total : (q.team === 'home' ? D.home : D.away);
+    var lad = q.market === 'total' ? Lg.total : (q.team === 'home' ? Lg.home_team_total : Lg.away_team_total);
+    t = dist ? tail(dist, line) : fromLadder(lad, 'line', line, 'over', 'under');
+    if (!t) return { error: 'that line is outside the published ladder' };
+    return q.side === 'over' ? { win: t.over, push: t.push, lose: t.under } : { win: t.under, push: t.push, lose: t.over };
+  }
+  /** a published ladder row read back as {over, push, under} (ENGINE markets ship no PMF) */
+  function fromLadder(rows, key, value, a, b) {
+    if (!rows) return null;
+    for (var i = 0; i < rows.length; i++) if (Math.abs(rows[i][key] - value) < 1e-9) return { over: rows[i][a], push: rows[i].push, under: rows[i][b] };
+    return null;
+  }
+
+  var VALUE_MIN_ROI = 0.02; /* VALUE needs at least +2% expected return per unit at the quoted price */
+
+  function priceCheck(sh, q, model) {
+    var out = { market: q.market, side: q.side, line: num(q.line), american: num(q.american), team: q.team || null,
+      verdict: 'CANNOT_EVALUATE', why: [], status: null, tier: null };
+    var mkKey = q.market;
+    var M = sh && sh.markets && sh.markets[mkKey];
+    if (!M) { out.why.push('this sheet has no ' + mkKey + ' market'); return out; }
+    out.status = M.status; out.tier = M.tier;
+    var p = probabilities(sh, q);
+    if (!p || p.error) { out.why.push(p ? p.error : 'the line is outside the distribution'); return out; }
+    var pa = R().priceAssessment(q.american, p.win, p.push);
+    if (pa.reason) { out.why.push(pa.reason); out.probs = { win: r4(p.win), push: r4(p.push), lose: r4(p.lose) }; return out; }
+    out.probs = { win: r4(p.win), push: r4(p.push), lose: r4(p.lose) };
+    out.cover_prob = r4(pa.cover_prob);
+    out.break_even = r4(pa.break_even);
+    out.prob_edge = r4(pa.prob_edge);
+    out.expected_roi = r4(pa.expected_roi);
+    out.fair_american = fairAmerican(p.win, p.push);
+    /* Two held-out tables (football/validation/linemaker_<league>.json):
+       - all_lines: how often probabilities like this one came true across
+         every line scored. It describes the sheet.
+       - at_market: how often they came true at the number the market
+         actually closed at. A price check IS a market number, so this is the
+         table the verdict reads. On the held-out seasons the model's
+         probabilities at market numbers had almost no resolution: when it
+         said two in three, it was about one in two. */
+    var mdl = model || sh.model || null;
+    out.band_all_lines = band(mdl, mkKey, pa.cover_prob);
+    var bd = band(mdl, mkKey, pa.cover_prob, 'at_market');
+    out.band = bd;
+    if (bd.available) {
+      var lo = Math.max(0, Math.min(1, pa.cover_prob + bd.shift_lo));
+      out.market_tested_cover = r4(bd.observed);
+      out.conservative_cover = r4(lo);
+      out.conservative_edge = r4(lo - pa.break_even);
+      /* expected return at the conservative probability, with the same push */
+      out.conservative_roi = r4(R().expectedRoi(lo * (1 - (p.push || 0)), q.american, p.push || 0));
+    }
+    if (!(pa.expected_roi > 0)) { out.verdict = 'NO_VALUE'; out.why.push('at ' + fmtAm(q.american) + ' the price needs ' + pct(pa.break_even) + ' and EdgeDesk gives ' + pct(pa.cover_prob)); return out; }
+    if (M.status !== 'CALIBRATED') { out.verdict = 'THIN'; out.why.push('positive at this price, but the ' + mkKey.replace('_', ' ') + ' probabilities are ' + String(M.status).toLowerCase() + ' on held-out seasons'); }
+    else if (!bd.available) { out.verdict = 'THIN'; out.why.push('positive at this price, but ' + bd.reason); }
+    else if (!(out.conservative_edge > 0)) { out.verdict = 'THIN'; out.why.push('positive at this price, but at numbers the market posted, held-out probabilities like ' + pct(pa.cover_prob) + ' came true ' + pct(bd.observed) + ' of the time (n ' + bd.n + '), and the low end of that, ' + pct(out.conservative_cover) + ', does not clear the ' + pct(pa.break_even) + ' the price needs'); }
+    else if (!(pa.expected_roi >= VALUE_MIN_ROI)) { out.verdict = 'THIN'; out.why.push('positive but under the ' + Math.round(VALUE_MIN_ROI * 100) + '% expected-return floor'); }
+    else { out.verdict = 'VALUE'; out.why.push('clears break-even at this price even at the low end of what probabilities like this one did at market numbers, held out'); }
+    if (out.verdict !== 'NO_VALUE' && M.tier !== 'VALIDATED') out.why.push('the model has not shown it beats the closing line in this market (tier ' + (M.tier || 'RESEARCH') + '): this is arithmetic on a probability, not a betting record');
+    return out;
+  }
+  function fmtAm(v) { var n = num(v); return n == null ? '—' : (n > 0 ? '+' : '') + Math.round(n); }
+  function pct(v) { return v == null ? '—' : (Math.round(v * 1000) / 10) + '%'; }
+
+  /** the no-vig market probability when both sides of the same line are quoted */
+  function noVig(americanA, americanB) {
+    var nv = R().noVigTwoWay(americanA, americanB);
+    return nv ? { a: r4(nv.a), b: r4(nv.b), overround: r4(nv.overround) } : null;
+  }
+
+  /* ----------------------------------------------------- ranking
+     quotes: [{ game_id, market, side, line, american, team?, book?, observed_at? }]
+     sheets: { game_id: sheet }
+     Every quote is priced; only VALUE survives; the list may be empty.
+     Ordered by the conservative expected return, then the plain one. A quote
+     older than maxAgeMin (when it carries observed_at) is STALE and never ranks. */
+  function rankQuotes(sheets, quotes, models, opts) {
+    opts = opts || {};
+    var now = num(opts.now) || Date.now(), maxAge = num(opts.maxAgeMin) || 90;
+    var evaluated = (quotes || []).map(function (q) {
+      var sh = sheets && sheets[q.game_id];
+      var model = models && sh ? models[sh.sport] : null;
+      var r = sh ? priceCheck(sh, q, model) : { verdict: 'CANNOT_EVALUATE', why: ['no sheet for game ' + q.game_id] };
+      r.game_id = q.game_id; r.book = q.book || null; r.observed_at = q.observed_at || null;
+      if (q.observed_at) {
+        var age = (now - Date.parse(q.observed_at)) / 60000;
+        r.age_min = Number.isFinite(age) ? Math.round(age) : null;
+        if (!(age <= maxAge)) { r.stale = true; if (r.verdict === 'VALUE') { r.verdict = 'THIN'; r.why.push('the quote is ' + (Number.isFinite(age) ? Math.round(age) + ' minutes old' : 'of unknown age') + '; a stale price is never an opportunity'); } }
+      }
+      return r;
+    });
+    var ranked = evaluated.filter(function (r) { return r.verdict === 'VALUE'; }).sort(function (a, b) {
+      return (b.conservative_roi - a.conservative_roi) || (b.expected_roi - a.expected_roi);
+    });
+    return { ranked: ranked, evaluated: evaluated, qualified: ranked.length };
+  }
+
+  return {
+    VERSION: VERSION, SCHEMA: SCHEMA, MARKETS: MARKETS, METHODS: METHODS, STATUSES: STATUSES, VERDICTS: VERDICTS, VALUE_MIN_ROI: VALUE_MIN_ROI,
+    pmf: { normal: normalPmf, mix: mix, convolve: convolve, tail: tail, mean: mean, sd: sd, quantile: quantile, compact: compact, at: at, normalize: normalize },
+    gridPmf: gridPmf, centres: centres, distributions: distributions, sheet: sheet, ladder: ladder,
+    fairAmerican: fairAmerican, band: band, probabilities: probabilities, priceCheck: priceCheck, noVig: noVig, rankQuotes: rankQuotes,
+    _normCdf: normCdf
+  };
+});
+/*__EDFAIRLINE_END__*/
+/*__EDLINESDESK_START__*/
+(function (root, factory) {
+  var api = factory(root);
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  if (root) root.EDLinesDesk = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
+  'use strict';
+  var VERSION = 1;
+  var SCHEMA = 'edgedesk_lines_desk_v1';
+  var FEED_SCHEMA = 'edgedesk_fair_lines_v1';
+  /* the questions this answers, and only these */
+  var GATE = /\bteam[\s-]?totals?\b|\balt(?:ernate)?\.?\s*(?:lines?|spreads?|totals?)\b|\bladder\b|\bhow many points (?:will|do|does|should)\b/i;
+  var ALT_TOTAL = /\balt(?:ernate)?\.?\s*totals?\b/i;
+  var ALT_SPREAD = /\balt(?:ernate)?\.?\s*(?:lines?|spreads?)\b/i;
+
+  function FL() { var f = root && root.EDFairLine; if (!f && typeof require === 'function') { try { f = require('../../lib/edgedesk_fairline.js'); } catch (_) { f = null; } } return f; }
+  function norm(s) { return String(s == null ? '' : s).toLowerCase().replace(/[’']/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); }
+  function pct(v) { return v == null ? '—' : (Math.round(v * 1000) / 10) + '%'; }
+  function am(v) { return v == null ? '—' : (v > 0 ? '+' : '') + Math.round(v); }
+  function ln(v) { return v == null ? '—' : (v > 0 ? '+' : '') + v; }
+
+  /** the names a reader may use for a team: the full name, and an NFL club's nickname */
+  function aliases(name, league) {
+    var n = norm(name), out = [n];
+    if (league === 'NFL') { var w = n.split(' '); if (w.length > 1) out.push(w[w.length - 1]); }
+    return out.filter(Boolean);
+  }
+  /** where (if anywhere) a team is named in the question: the earliest index of its longest alias */
+  function named(qn, name, league) {
+    var best = null;
+    aliases(name, league).forEach(function (a) {
+      var re = new RegExp('(^| )' + a.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '( |$)');
+      var m = re.exec(qn);
+      if (m && (best == null || a.length > best.len)) best = { at: m.index, len: a.length };
+    });
+    return best;
+  }
+
+  /** the game a question is about: one named in it, else the carried/on-screen subject */
+  function resolveGame(q, feed, subject) {
+    if (!feed || !Array.isArray(feed.games)) return { game: null, why: 'no fair-line sheets on file' };
+    var qn = ' ' + norm(q) + ' ';
+    var both = [], one = [];
+    feed.games.forEach(function (g) {
+      var h = named(qn, g.home, g.league), a = named(qn, g.away, g.league);
+      if (h && a) both.push(g); else if (h || a) one.push({ g: g, side: h ? 'home' : 'away', len: (h || a).len });
+    });
+    if (both.length === 1) return { game: both[0], via: 'named' };
+    if (both.length > 1) return { game: null, why: 'that names more than one game on the sheets' };
+    /* one team named: the longest match wins (Texas State over Texas); the
+       same team on two upcoming weeks means its NEXT game */
+    if (one.length) {
+      one.sort(function (x, y) { return (y.len - x.len) || String(x.g.kickoff).localeCompare(String(y.g.kickoff)); });
+      var top = one.filter(function (x) { return x.len === one[0].len; });
+      var teamOf = function (x) { return norm(x.side === 'home' ? x.g.home : x.g.away); };
+      var sameTeam = top.every(function (x) { return teamOf(x) === teamOf(top[0]); });
+      if (top.length === 1 || sameTeam) return { game: top[0].g, via: 'team', side: top[0].side };
+      return { game: null, why: 'that name matches more than one team\u2019s upcoming game' };
+    }
+    if (subject && subject.game_id) {
+      var s = feed.games.filter(function (g) { return String(g.game_id) === String(subject.game_id); })[0];
+      if (s) return { game: s, via: subject.from_screen ? 'screen' : 'conversation' };
+    }
+    return { game: null, why: 'no game is named and none is open' };
+  }
+
+  /** what is being asked: the intent, the side or team, and any quoted line and price */
+  /* a player prop is the props desk's question, never this one */
+  var PLAYER = /\b(rushing|receiving|passing|yards|yds|receptions?|catches|targets?|carries|completions?|interceptions?|touchdowns?|tds?|sacks?|tackles?|props?|player|anytime)\b/i;
+  function classify(q, ctx) {
+    q = String(q || '');
+    if (!GATE.test(q) || PLAYER.test(q)) return null;
+    var intent = /\bteam[\s-]?totals?\b|\bhow many points\b/i.test(q) ? 'TEAM_TOTAL' : ALT_TOTAL.test(q) ? 'ALT_TOTAL' : ALT_SPREAD.test(q) ? 'ALT_SPREAD' : (/\b(over|under)\b/i.test(q) ? 'ALT_TOTAL' : 'ALT_SPREAD');
+    var price = /(?:^|[\s(@])([+-]\d{3,4})(?![\d.])/.exec(q);
+    var ou = /\b(over|under|o|u)\s*(\d{1,3}(?:\.5)?)\b/i.exec(q);
+    var spread = /(?:^|\s)([+-]\d{1,2}(?:\.5)?)(?=\s|$|[^\d.])/.exec(q.replace(/([+-]\d{3,4})(?![\d.])/g, ' '));
+    var quote = { american: price ? Number(price[1]) : null };
+    if (intent === 'TEAM_TOTAL' || intent === 'ALT_TOTAL') { if (ou) { quote.side = /^o/i.test(ou[1]) ? 'over' : 'under'; quote.line = Number(ou[2]); } }
+    else if (spread) quote.line = Number(spread[1]);
+    return { intent: intent, quote: quote };
+  }
+
+  function sideFor(q, g) {
+    var qn = ' ' + norm(q) + ' ';
+    var h = named(qn, g.home, g.league), a = named(qn, g.away, g.league);
+    if (h && !a) return 'home'; if (a && !h) return 'away';
+    if (h && a) {
+      /* both named: the one written closest before "team total" (or before the line) */
+      var k = qn.search(/ team ?totals? | [+-]?\d/);
+      if (k >= 0) { var dh = k - h.at, da = k - a.at; if (dh >= 0 && (da < 0 || dh < da)) return 'home'; if (da >= 0) return 'away'; }
+    }
+    return null;
+  }
+
+  function statusLine(m, market) {
+    if (!m) return '';
+    var s = 'These ' + market + ' probabilities are ' + String(m.status || 'UNCALIBRATED').toLowerCase() + ' against outcomes on seasons the model never saw';
+    s += m.tier && m.tier !== 'VALIDATED' ? ', and the model has not shown it beats the closing line here (' + String(m.tier).toLowerCase() + ').' : '.';
+    return s;
+  }
+
+  /** the answer: deterministic text plus the structured block the panel renders */
+  function answer(q, cls, feed, res, now) {
+    var F = FL(); if (!F) return null;
+    var g = res.game, m = g.markets || {}, md = feed.models && feed.models[g.sport] || null;
+    var who = g.away + ' @ ' + g.home, lines = [], block = { schema: SCHEMA, version: VERSION, intent: cls.intent, game_id: g.game_id, sport: g.sport, league: g.league,
+      source: 'football/linemaker/fair_lines.json', feed_generated_at: feed.generated_at || null, resolved_via: res.via, rungs: [], price_check: null };
+    var built = Date.parse(feed.generated_at), age = isFinite(built) ? (now - built) / 36e5 : null;
+    var q2 = cls.quote || {};
+    if (cls.intent === 'TEAM_TOTAL') {
+      var tt = m.team_total;
+      if (!tt) return { text: 'EdgeDesk has no team-total sheet for ' + who + '.', block: block, intent: cls.intent };
+      var side = sideFor(q, g) || res.side || null;
+      if (!side) {
+        lines.push('EdgeDesk’s fair team totals for ' + who + ': ' + g.home + ' ' + tt.home_fair_half + ', ' + g.away + ' ' + tt.away_fair_half + '.');
+        lines.push('Middle 80% of outcomes: ' + g.home + ' ' + tt.home_p10 + '–' + tt.home_p90 + ', ' + g.away + ' ' + tt.away_p10 + '–' + tt.away_p90 + ' points.');
+      } else {
+        var team = side === 'home' ? g.home : g.away, fair = side === 'home' ? tt.home_fair_half : tt.away_fair_half;
+        var line = q2.line != null ? q2.line : fair;
+        var lad = F.ladder(g, side === 'home' ? 'home_team_total' : 'away_team_total');
+        var rung = lad.filter(function (r) { return r.line === line; })[0];
+        lines.push('EdgeDesk’s fair team total for ' + team + ' (' + who + ') is ' + fair + '.');
+        if (rung) lines.push('At ' + line + ': over ' + pct(rung.over) + (rung.push > 0.0005 ? ', push ' + pct(rung.push) : '') + ', under ' + pct(rung.under) + ' (fair ' + am(rung.over_fair) + ' / ' + am(rung.under_fair) + ').');
+        block.rungs = lad.filter(function (r) { return Math.abs(r.line - line) <= 2; });
+        if (q2.american != null && q2.side && q2.line != null) {
+          var pc = F.priceCheck(g, { market: 'team_total', team: side, side: q2.side, line: q2.line, american: q2.american }, md);
+          block.price_check = pc;
+          lines.push(priceSentence(team + ' ' + q2.side + ' ' + q2.line + ' at ' + am(q2.american), pc));
+        }
+      }
+      lines.push((block.price_check && block.price_check.verdict !== 'NO_VALUE' ? '' : statusLine(tt, 'team-total') + ' ') + 'No closing team-total line is archived, so these have never been tested at a number the market posted, and EdgeDesk does not call a team-total price VALUE.');
+    } else if (cls.intent === 'ALT_TOTAL') {
+      var mt = m.total; if (!mt) return { text: 'EdgeDesk has no total sheet for ' + who + '.', block: block, intent: cls.intent };
+      var L = q2.line != null ? q2.line : mt.fair_total_half;
+      var lt = F.ladder(g, 'total');
+      var r2 = lt.filter(function (r) { return r.line === L; })[0];
+      lines.push('EdgeDesk’s fair total for ' + who + ' is ' + mt.fair_total_half + '.');
+      if (r2) lines.push('At ' + L + ': over ' + pct(r2.over) + (r2.push > 0.0005 ? ', push ' + pct(r2.push) : '') + ', under ' + pct(r2.under) + ' (fair ' + am(r2.over_fair) + ' / ' + am(r2.under_fair) + ').');
+      else if (q2.line != null) lines.push(L + ' is outside the published ladder (fair ± 10).');
+      block.rungs = lt.filter(function (r) { return Math.abs(r.line - L) <= 3; });
+      if (q2.american != null && q2.side && q2.line != null) {
+        var pt = F.priceCheck(g, { market: 'total', side: q2.side, line: q2.line, american: q2.american }, md);
+        block.price_check = pt; lines.push(priceSentence((q2.side === 'over' ? 'Over ' : 'Under ') + q2.line + ' at ' + am(q2.american), pt));
+      }
+      if (!block.price_check || block.price_check.verdict === 'NO_VALUE') lines.push(statusLine(mt, 'total'));
+    } else {
+      var ms = m.spread; if (!ms) return { text: 'EdgeDesk has no spread sheet for ' + who + '.', block: block, intent: cls.intent };
+      var sd = sideFor(q, g) || res.side || 'home';
+      var team2 = sd === 'home' ? g.home : g.away;
+      var fairSide = sd === 'home' ? ms.fair_home_line_half : -ms.fair_home_line_half;
+      var lineSide = q2.line != null ? q2.line : fairSide;
+      var homeLine = sd === 'home' ? lineSide : -lineSide;
+      var ls = F.ladder(g, 'spread');
+      var r3 = ls.filter(function (r) { return r.home_line === homeLine; })[0];
+      lines.push('EdgeDesk’s fair line for ' + who + ' is ' + team2 + ' ' + ln(fairSide) + '.');
+      if (r3) { var cov = sd === 'home' ? r3.home : r3.away, fr = sd === 'home' ? r3.home_fair : r3.away_fair; lines.push('At ' + team2 + ' ' + ln(lineSide) + ': covers ' + pct(cov) + (r3.push > 0.0005 ? ', push ' + pct(r3.push) : '') + ' (fair ' + am(fr) + ').'); }
+      else if (q2.line != null) lines.push(team2 + ' ' + ln(lineSide) + ' is outside the published ladder (fair ± 10).');
+      block.rungs = ls.filter(function (r) { return Math.abs(r.home_line - homeLine) <= 3; });
+      if (q2.american != null && q2.line != null) {
+        var ps = F.priceCheck(g, { market: 'spread', side: sd, line: lineSide, american: q2.american }, md);
+        block.price_check = ps; lines.push(priceSentence(team2 + ' ' + ln(lineSide) + ' at ' + am(q2.american), ps));
+      }
+      if (!block.price_check || block.price_check.verdict === 'NO_VALUE') lines.push(statusLine(ms, 'spread'));
+    }
+    if (age != null && age > 18) lines.push('The sheets were built ' + Math.round(age) + ' hours ago; the projection may have moved since.');
+    if (res.via === 'screen') lines.push('(The game open on your screen.)');
+    return { text: lines.join(' '), block: block, intent: cls.intent };
+  }
+  function priceSentence(label, pc) {
+    if (!pc) return '';
+    if (pc.verdict === 'CANNOT_EVALUATE') return label + ': cannot be evaluated (' + pc.why.join('; ') + ').';
+    var head = pc.verdict === 'VALUE' ? 'VALUE' : pc.verdict === 'THIN' ? 'THIN' : 'NO VALUE';
+    var base = label + ' is ' + head + ': it needs ' + pct(pc.break_even) + ' and EdgeDesk gives ' + pct(pc.cover_prob) + (pc.expected_roi != null ? ' (' + (pc.expected_roi > 0 ? '+' : '') + pct(pc.expected_roi) + ' per unit)' : '') + '.';
+    /* a NO VALUE's only reason is the arithmetic just stated */
+    return pc.verdict === 'NO_VALUE' ? base : base + ' ' + pc.why.map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1) + (/[.!?]$/.test(w) ? '' : '.'); }).join(' ');
+  }
+
+  return { VERSION: VERSION, SCHEMA: SCHEMA, FEED_SCHEMA: FEED_SCHEMA, GATE: GATE, classify: classify, resolveGame: resolveGame, answer: answer, _named: named, _sideFor: sideFor };
+});
+/*__EDLINESDESK_END__*/
 /*__EDDESK_START__*/
 /* ===========================================================================
    EdgeDesk DESK KERNEL — the analyst's answer, built from typed evidence.
@@ -36587,6 +37262,63 @@ export async function subscriptionGate(
   };
 }
 
+/* ── THE SHARED ALLOWANCE AND THE ROUTE (supabase/ai_usage.sql) ─────────
+   The per-isolate limiter above stays: it is free and it stops a burst. This
+   is the shared half. Every question claims one LITE unit under the reader's
+   own token before any work; a question that reaches the full research
+   pipeline (any depth but QUICK) also claims a PRO unit. A spent PRO
+   allowance answers the question the LITE way:
+     LITE  no live investigation providers, no quote refresh, no tool loop,
+           a smaller answer, EDGEDESK_AI_LITE_MODEL when one is configured;
+     PRO   the full pipeline, unchanged.
+   A spent LITE allowance is a 429 with the reset time. A claim that cannot
+   be made (the file is not applied, the database is unreachable) is answered
+   UNMETERED and logged, the same rule subscriptionGate follows: an outage
+   must not lock out paying readers, and the per-isolate limit still holds.
+   Every claim is settled once afterwards with the model's token counts. */
+const AI_USAGE = (Deno.env.get("EDGEDESK_AI_USAGE") ?? "1") !== "0";
+const LITE_MODEL = Deno.env.get("EDGEDESK_AI_LITE_MODEL") ?? "";
+const LITE_MAX_TOKENS = 1600;
+export function routeTier(depth: string): "LITE" | "PRO" { return depth === "QUICK" ? "LITE" : "PRO"; }
+export async function usageClaim(auth: string, route: "LITE" | "PRO", questionChars: number, fetchImpl: typeof fetch = fetch): Promise<any> {
+  if (!AI_USAGE) return { ok: true, route, status: "UNMETERED", metered: false, why: "EDGEDESK_AI_USAGE=0" };
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { ok: true, route, status: "UNMETERED", metered: false, why: "no database configured" };
+  try {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 4000);
+    const r = await fetchImpl(`${SUPABASE_URL}/rest/v1/rpc/ai_usage_claim`, { method: "POST", signal: ctl.signal,
+      headers: { apikey: SUPABASE_ANON_KEY, authorization: auth, "content-type": "application/json" },
+      body: JSON.stringify({ p_route: route, p_question_chars: Math.max(0, Math.min(100000, questionChars | 0)) }) });
+    clearTimeout(t);
+    if (r.status === 404) return { ok: true, route, status: "UNMETERED", metered: false, why: "supabase/ai_usage.sql is not applied" };
+    if (!r.ok) { const why = `the allowance answered ${r.status}`; try { console.warn("edgedesk_ai usage claim", why); } catch { /* no console */ } return { ok: true, route, status: "UNMETERED", metered: false, why }; }
+    const j = await r.json();
+    if (!j || typeof j.ok !== "boolean") return { ok: true, route, status: "UNMETERED", metered: false, why: "the allowance answered without a verdict" };
+    return Object.assign({ metered: j.status !== "UNMETERED" }, j);
+  } catch (e) {
+    const why = "the allowance could not be reached: " + String((e as Error)?.message ?? e).slice(0, 120);
+    try { console.warn("edgedesk_ai usage claim", why); } catch { /* no console */ }
+    return { ok: true, route, status: "UNMETERED", metered: false, why };
+  }
+}
+export async function usageSettle(auth: string, claim: any, outcome: string, usage: any, ms: number, model: string | null, fetchImpl: typeof fetch = fetch): Promise<boolean> {
+  if (!claim || !claim.event_id || !SUPABASE_URL || !SUPABASE_ANON_KEY) return false;
+  try {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 3000);
+    const r = await fetchImpl(`${SUPABASE_URL}/rest/v1/rpc/ai_usage_settle`, { method: "POST", signal: ctl.signal,
+      headers: { apikey: SUPABASE_ANON_KEY, authorization: auth, "content-type": "application/json" },
+      body: JSON.stringify({ p_event_id: claim.event_id, p_outcome: outcome, p_model: model, p_tokens_in: usage?.input_tokens ?? null, p_tokens_out: usage?.output_tokens ?? null, p_ms: Math.max(0, Math.round(ms)) }) });
+    clearTimeout(t);
+    return r.ok;
+  } catch { return false; }
+}
+/** what the reader is told about the route their question took */
+export function routeNote(turn: any): any {
+  const c = turn.tier === "PRO" ? turn.pro : (turn.pro && turn.pro.status === "DOWNGRADED" ? turn.pro : turn.lite);
+  return { tier: turn.tier, why: turn.why, status: c ? c.status : null, metered: !!(c && c.metered),
+    used: c && c.used != null ? c.used : null, limit: c && c.limit != null ? c.limit : null,
+    note: turn.tier === "LITE" ? "Answered from EdgeDesk's cached research and committed artifacts: no outside lookup ran for this question." : "Full research: the live investigation providers ran under their own budgets." };
+}
+
 /* Where the published static artifacts live. The FBS board's own slate is a
    build output committed to the site, not a table, so the research engine
    reads it the same way a browser does. Overridable so a preview deployment
@@ -38353,6 +39085,25 @@ export function sanitizeSubject(raw: unknown): ResearchSubject | null {
   return out;
 }
 
+/* THE READER'S SCREEN (2026-10-11): which research panel is open, and the
+   game and market on it, as identifiers. It never carries a number. When the
+   conversation has no game of its own the browser also offers the on-screen
+   game as the subject (research_context.game_id with from_screen: true), and
+   that goes through sanitizeSubject and the published-card re-read like any
+   carried game; a game named in the question still wins. */
+const SCREEN_PANELS = new Set(["lines", "football", "pprops", "edges", "ufc", "baseball", "stats", "lab", "rdesk", "card", "portfolio"]);
+const SCREEN_MARKETS = new Set(["spread", "total", "moneyline", "home_team_total", "away_team_total", "team_total", "props"]);
+export function sanitizeScreen(raw: unknown): { panel: string; sport: string | null; game_id: string | null; market: string | null } | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const panel = typeof r.panel === "string" && SCREEN_PANELS.has(r.panel) ? r.panel : null;
+  if (!panel) return null;
+  const sport = typeof r.sport === "string" && SPORT_INTELLIGENCE[r.sport] ? r.sport : null;
+  const gid = typeof r.game_id === "string" && /^[A-Za-z0-9_.:-]{1,40}$/.test(r.game_id) ? r.game_id : null;
+  const market = typeof r.market === "string" && SCREEN_MARKETS.has(r.market) ? r.market : null;
+  return { panel, sport, game_id: gid, market };
+}
+
 /**
  * Slice 3: the structured conversation state the client hands back. Only the
  * fields the SERVER produced last turn survive — a side, a market, the quoted
@@ -39054,7 +39805,9 @@ async function sweepBoard(o: {
     let refresh: any = null;
     const targets = refreshTargets(si.index, now);
     if (targets.length) {
-      refresh = await refreshQuotes(sport, now, dal.fetchImpl());
+      refresh = (dal as any).lite
+        ? { attempted: false, state: "LITE_ROUTE", dependency: "a LITE question never asks capture for fresh quotes; a stale price is reported as stale" }
+        : await refreshQuotes(sport, now, dal.fetchImpl());
       refresh.targeted = targets.length;
       if (refresh.state === "REFRESHED") {
         try { si = await dal.getSlateIndex(sport, sport === ((o.boardScope as any).sport ?? null) ? o.boardScope : {}); refresh.reread = true; } catch { refresh.reread = false; }
@@ -41266,25 +42019,56 @@ export function boardCritic(answer: string, board: any, knownGames: any[] | null
 /* THE MODEL CALL — one function, with and without the tool loop            */
 /* ======================================================================== */
 
-interface ModelCall { ok: boolean; status: number; data: any; detail: string | null; tool_trace: any[]; rounds: number }
+interface ModelCall { ok: boolean; status: number; data: any; detail: string | null; tool_trace: any[]; rounds: number; timed_out?: boolean }
 
-async function callModel(o: { system: string; messages: any[]; max_tokens: number; packet?: any | null; mlbHistory?: any | null; mlbOffense?: any | null }): Promise<ModelCall> {
+/* THE MODEL CALL HAS A CLOCK (2026-10-11). Before this, `fetch` to the
+   writing model carried no AbortController: an upstream that accepted the
+   connection and never answered held the reader's request open until the
+   platform killed the isolate, and the research already paid for on this turn
+   was lost with it. Now each round trip has MODEL_TIMEOUT_MS and the whole
+   tool loop MODEL_DEADLINE_MS. A timeout is an ordinary narration failure:
+   ok:false, status 504, timed_out:true, and every caller already answers that
+   with the deterministic research intact and `retryable: true`. A network
+   error is the same with status 502, instead of an exception. */
+const MODEL_TIMEOUT_MS = envInt("EDGEDESK_AI_TIMEOUT_MS", 45000, 1000, 120000);
+const MODEL_DEADLINE_MS = envInt("EDGEDESK_AI_DEADLINE_MS", 100000, 2000, 150000);
+export function modelClock(): { timeout_ms: number; deadline_ms: number } { return { timeout_ms: MODEL_TIMEOUT_MS, deadline_ms: MODEL_DEADLINE_MS }; }
+
+export async function callModel(o: { system: string; messages: any[]; max_tokens: number; packet?: any | null; mlbHistory?: any | null; mlbOffense?: any | null; model?: string; noTools?: boolean }): Promise<ModelCall> {
   const headers = { "content-type": "application/json", "x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" };
+  const started = Date.now();
   /* The MLB historical tools need no packet — they read a database keyed on a
      pitcher, not on a game — so a turn that carries the archive service can
      run the loop even when there is no matchup to build a packet from. */
-  const useTools = TOOL_LOOP && !!EDRESEARCH && (!!o.packet || !!o.mlbHistory || !!o.mlbOffense);
+  const useTools = TOOL_LOOP && !o.noTools && !!EDRESEARCH && (!!o.packet || !!o.mlbHistory || !!o.mlbOffense);
   const tools = useTools ? EDRESEARCH.toolDefinitions(TOOL_ALLOWLIST) : null;
   const budget = { max: TOOL_BUDGET, used: 0 };
   const trace: any[] = [];
   let messages = o.messages.slice();
   let rounds = 0;
   for (;;) {
-    const body: any = { model: MODEL, max_tokens: o.max_tokens, system: o.system, messages };
+    const body: any = { model: o.model || MODEL, max_tokens: o.max_tokens, system: o.system, messages };
     if (tools && tools.length) body.tools = tools;
-    const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers, body: JSON.stringify(body) });
-    if (!r.ok) return { ok: false, status: r.status, data: null, detail: await r.text().catch(() => ""), tool_trace: trace, rounds };
-    const data = await r.json();
+    const left = MODEL_DEADLINE_MS - (Date.now() - started);
+    if (left <= 0) {
+      trace.push({ note: "deadline reached before round " + (rounds + 1) });
+      return { ok: false, status: 504, data: null, detail: `the model call ran past its ${MODEL_DEADLINE_MS} ms deadline after ${rounds} round(s)`, tool_trace: trace, rounds, timed_out: true };
+    }
+    const wait = Math.min(MODEL_TIMEOUT_MS, left);
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), wait);
+    let r: Response, data: any;
+    try {
+      r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers, body: JSON.stringify(body), signal: ctrl.signal });
+      if (!r.ok) { const detail = await r.text().catch(() => ""); clearTimeout(timer); return { ok: false, status: r.status, data: null, detail, tool_trace: trace, rounds }; }
+      data = await r.json();
+    } catch (e) {
+      clearTimeout(timer);
+      const aborted = ctrl.signal.aborted;
+      return { ok: false, status: aborted ? 504 : 502, data: null, tool_trace: trace, rounds, timed_out: aborted,
+        detail: aborted ? `the writing model did not answer within ${wait} ms` : `the writing model could not be reached: ${String((e as Error)?.message ?? e).slice(0, 160)}` };
+    }
+    clearTimeout(timer);
     rounds++;
     const uses = (data?.content ?? []).filter((b: any) => b?.type === "tool_use");
     if (!useTools || data?.stop_reason !== "tool_use" || !uses.length || rounds > TOOL_LOOP_MAX_ROUNDS) {
@@ -43033,6 +43817,52 @@ export async function propsTurn(o: { body: any; auth: string; now?: number; fetc
 }
 
 /* ========================================================================
+   THE LINEMAKER ON THE DESK (football/linemaker/desk.js over
+   lib/edgedesk_fairline.js and football/linemaker/fair_lines.json)
+     "What's the Jets team total?" · "Is Patriots -10.5 at +180 any good?" ·
+     "alt total over 50.5 +150 for Eagles at Jaguars"
+   Team totals and alternate lines are out of scope for the research pipeline
+   (_board.js UNSUPPORTED_MARKETS); this answers them from the published
+   sheets, deterministically, with the status of every probability. No model
+   call, no outside read beyond the committed artifact. A question it does not
+   recognise, or whose game it cannot place, returns null and runs on as
+   before. EDGEDESK_LINES=0 switches it off.
+   ======================================================================== */
+const EDFairLine: any = (globalThis as any).EDFairLine;
+const EDLINESDESK: any = (globalThis as any).EDLinesDesk;
+const LINES_ENABLED = (Deno.env.get("EDGEDESK_LINES") ?? "1") !== "0";
+export async function linesTurn(o: { body: any; auth: string; now?: number; fetchImpl?: typeof fetch }): Promise<any | null> {
+  if (!LINES_ENABLED || !EDLINESDESK || !EDFairLine || !o.body) return null;
+  const q = String(o.body.question ?? "").trim();
+  if (!q || q.length > 400 || DESK_OTHER_SPORTS.test(q)) return null;
+  const cls = EDLINESDESK.classify(q);
+  if (!cls) return null;
+  const now = o.now ?? Date.now();
+  const dal = new Dal({ supabaseUrl: SUPABASE_URL ?? "", apikey: SUPABASE_ANON_KEY ?? "", authorization: o.auth, budget: 2, mlbFallback: MLB_FALLBACK, fetchImpl: o.fetchImpl });
+  const a = await dal.getArtifact("football/linemaker/fair_lines.json");
+  const feed = a.json;
+  if (!feed || feed.schema !== EDLINESDESK.FEED_SCHEMA || !Array.isArray(feed.games)) return null;
+  const rc = (o.body as any)?.research_context ?? null;
+  const subj = sanitizeSubject(rc);
+  const res = EDLINESDESK.resolveGame(q, feed, subj ? { game_id: subj.game_id, from_screen: rc?.from_screen === true } : null);
+  if (!res.game) return null;
+  const out = EDLINESDESK.answer(q, cls, feed, res, now);
+  if (!out?.text) return null;
+  const g = res.game;
+  return {
+    answer: out.text, model: null,
+    desk: { schema: EDDESK?.ANSWER_SCHEMA ?? "edgedesk_desk_answer_v1", version: EDDESK?.VERSION ?? null, intent: "LINES", focus: null, compare: null, board: null,
+      evaluations: [], counts: null, ranking_rule: null, similar: null, coverage: [], deterministic_answer: out.text,
+      narration: { ok: true, prose: "DETERMINISTIC", critic: null }, write: null },
+    deterministic_desk_answer: out.text,
+    narration: { ok: true, prose: "DETERMINISTIC", critic: null },
+    lines: Object.assign({ fairline_version: EDFairLine.VERSION }, out.block),
+    research: { research_context: { sport: g.sport, game_id: String(g.game_id), home: g.home, away: g.away, turns: 1 } },
+    build: BUILD,
+  };
+}
+
+/* ========================================================================
    THE READER'S OWN RESEARCH (supabase/personal_research.sql, _mine.js)
      "What changed in my watchlist today?" · "Which five games are most worth
      researching?" · "How has my CLV looked this month?" · "Why did this
@@ -43219,6 +44049,11 @@ export async function handle(req: Request): Promise<Response> {
       ok: true,
       build: BUILD,
       model: MODEL,
+      /* the clock on every model call: per round trip and for the whole tool loop */
+      model_clock: modelClock(),
+      /* the shared allowance and the route (supabase/ai_usage.sql) */
+      ai_usage: { enabled: AI_USAGE, lite_model: LITE_MODEL || null, lite_max_tokens: LITE_MAX_TOKENS, pro_depths: ["STANDARD", "DEEP", "SLATE", "FULL"], lite_depths: ["QUICK"],
+        migration: "supabase/ai_usage.sql", note: "Every question claims one LITE unit; a question past QUICK depth also claims a PRO unit, and a spent PRO allowance is answered the LITE way. Unreachable allowance = UNMETERED (the per-isolate limit still holds)." },
       research_enabled: RESEARCH_ENABLED,
       /* The first thing to check when the desk stops recommending: whether it
          was told to. An explicit boolean, not a threshold to be interpreted. */
@@ -43381,10 +44216,36 @@ export async function handle(req: Request): Promise<Response> {
 
   const history = Array.isArray(body?.history) ? body.history.slice(-8) : [];
 
+  /* THE SHARED ALLOWANCE (supabase/ai_usage.sql): one LITE unit per question,
+     claimed before any work. `rjson` answers every exit below: it tells the
+     reader which route the question took and settles the claim once. */
+  const turnT0 = Date.now();
+  const qChars = String(body?.question ?? "").length;
+  const screenCtx = sanitizeScreen((body as any)?.research_context?.screen);
+  const subjectFromScreen = (body as any)?.research_context?.from_screen === true && !!screenCtx?.game_id;
+  const turn: any = { tier: "LITE", why: "answered from EdgeDesk's own research", lite: null, pro: null, usage: null, model: null };
+  if (!dry) {
+    turn.lite = await usageClaim(auth, "LITE", qChars);
+    if (!turn.lite.ok) return json({ error: "daily limit reached", note: turn.lite.reason, route: routeNote(turn) }, 429);
+  }
+  const rjson = async (payload: any, status = 200, outcome?: string): Promise<Response> => {
+    try { if (payload && typeof payload === "object" && !Array.isArray(payload) && !payload.route) payload.route = routeNote(turn); } catch { /* keep the body */ }
+    try { if (screenCtx && payload && typeof payload === "object" && !Array.isArray(payload) && !payload.screen) payload.screen = Object.assign({ subject_from_screen: subjectFromScreen }, screenCtx); } catch { /* keep the body */ }
+    const out = outcome ?? (status >= 500 ? (payload?.narration?.timed_out ? "timed_out" : "narration_failed") : "answered");
+    const ms = Date.now() - turnT0;
+    const settle = Promise.all([
+      usageSettle(auth, turn.lite, turn.tier === "LITE" ? out : "answered", turn.tier === "LITE" ? turn.usage : null, ms, turn.tier === "LITE" ? turn.model : null),
+      turn.pro && turn.pro.route === "PRO" ? usageSettle(auth, turn.pro, out, turn.usage, ms, turn.model) : Promise.resolve(false),
+    ]).catch(() => [false, false]);
+    const rt = (globalThis as any).EdgeRuntime;
+    if (rt?.waitUntil) rt.waitUntil(settle); else await settle;
+    return json(payload, status);
+  };
+
   /* --- the reader's own research: watchlist, alerts, journal, CLV, the
      research-priority list. Deterministic, under the caller's token. ---- */
   if (!dry) {
-    try { const mt = await mineTurn({ body, auth }); if (mt) return json(mt); }
+    try { const mt = await mineTurn({ body, auth }); if (mt) return await rjson(mt, 200, "deterministic"); }
     catch (e) { try { console.error("edgedesk_ai mine turn threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
   }
 
@@ -43393,7 +44254,7 @@ export async function handle(req: Request): Promise<Response> {
      before the desk, retrieval and the model. */
   {
     const rb = retiredSportTurn({ question: String(body?.question ?? ""), sportKey: body?.packet?.game?.sport_key ?? body?.packet?.sport_key ?? null, stage: "question" });
-    if (rb) return json(rb);
+    if (rb) return await rjson(rb, 200, "deterministic");
   }
 
   /* --- player props: answered from the committed Player Props boards, for a
@@ -43402,11 +44263,17 @@ export async function handle(req: Request): Promise<Response> {
   /* --- the connected research desk: one game's GAME and PLAYER PROP
      signals, and the reader's own Card (games and props, one exposure) --- */
   if (!dry) {
-    try { const ot = await opportunityTurn({ body, auth }); if (ot) return json(ot); }
+    try { const ot = await opportunityTurn({ body, auth }); if (ot) return await rjson(ot, 200, "deterministic"); }
     catch (e) { try { console.error("edgedesk_ai opportunity turn threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
   }
+  /* team totals and alternate lines, from the published fair-line sheets,
+     before the props desk (whose gate also reads "over" and "under") */
   if (!dry) {
-    try { const pt = await propsTurn({ body, auth }); if (pt) return json(pt); }
+    try { const lt = await linesTurn({ body, auth }); if (lt) return await rjson(lt, 200, "deterministic"); }
+    catch (e) { try { console.error("edgedesk_ai lines turn threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
+  }
+  if (!dry) {
+    try { const pt = await propsTurn({ body, auth }); if (pt) return await rjson(pt, 200, "deterministic"); }
     catch (e) { try { console.error("edgedesk_ai props turn threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
   }
 
@@ -43415,9 +44282,9 @@ export async function handle(req: Request): Promise<Response> {
      does not answer returns null here and runs the full pipeline below. */
   if (!dry && body?.desk === true) {
     /* a non-QB personnel question on one game: the measured injury impact, deterministic, moving no number */
-    try { const p = await personnelTurn({ body, auth }); if (p) return json(p); }
+    try { const p = await personnelTurn({ body, auth }); if (p) return await rjson(p, 200, "deterministic"); }
     catch (e) { try { console.error("edgedesk_ai personnel turn threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
-    try { const d = await deskTurn({ body, auth }); if (d) return json(d); }
+    try { const d = await deskTurn({ body, auth }); if (d) return await rjson(d, 200, "deterministic"); }
     catch (e) { try { console.error("edgedesk_ai desk turn threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
   }
 
@@ -43452,6 +44319,17 @@ export async function handle(req: Request): Promise<Response> {
   const state = deriveState(history, plan, body?.packet, prevState, String(body?.question ?? ""));
   const presentationMode = presentationModeOf(body, plan);
 
+  /* --- the route ---------------------------------------------------------
+     A QUICK question (a price, a follow-up on the game already on screen) is
+     answered the LITE way and spends no PRO unit. Anything deeper claims one;
+     a spent PRO allowance answers it the LITE way and says so. */
+  if (routeTier(plan.depth) === "PRO") {
+    turn.pro = dry ? { ok: true, route: "PRO", status: "UNMETERED", metered: false } : await usageClaim(auth, "PRO", qChars);
+    if (turn.pro.ok && turn.pro.route === "PRO") { turn.tier = "PRO"; turn.why = "full research at " + plan.depth + " depth"; }
+    else { turn.tier = "LITE"; turn.why = turn.pro.reason || "the full-research allowance is spent"; }
+  } else { turn.tier = "LITE"; turn.why = "a quick question is answered from EdgeDesk's cached research"; }
+  const liteTurn = turn.tier === "LITE";
+
   /* --- research --------------------------------------------------------- */
   let research: ResearchOut | null = null;
   let dal: Dal | null = null;
@@ -43462,6 +44340,8 @@ export async function handle(req: Request): Promise<Response> {
         supabaseUrl: SUPABASE_URL, apikey: SUPABASE_ANON_KEY,
         authorization: auth, budget: plan.budget, mlbFallback: MLB_FALLBACK,
       });
+      /* a LITE question never asks capture for fresh quotes */
+      (dal as any).lite = liteTurn;
       research = await runResearch(plan, state, body?.packet, dal, String(body?.question ?? ""), String(body?.mode ?? ""),
         { board: { timezone: clientTz, state: carriedBoard, follow_up: boardFollow } });
     } catch (e) {
@@ -43480,7 +44360,7 @@ export async function handle(req: Request): Promise<Response> {
   {
     const resolved = (research as any)?.focus?.sport_key ?? (research as any)?.context?.sport ?? (research as any)?.state?.sport ?? null;
     const rb = retiredSportTurn({ question: String(body?.question ?? ""), sportKey: resolved, stage: "retrieval" });
-    if (rb) return json(rb);
+    if (rb) return await rjson(rb, 200, "deterministic");
   }
 
   /* --- the deterministic presentation, BEFORE the model ------------------
@@ -43541,7 +44421,9 @@ export async function handle(req: Request): Promise<Response> {
     try {
       followUp = EDANALYST.followUp({ question: String(body?.question ?? ""), state: carriedState && carriedState.game_id === String(research.context.game_id ?? "") ? carriedState : null });
       try { identity = await dal.getIdentity({ sport: research.context.sport, home_id: research.context.home_id, away_id: research.context.away_id, season: research.context.season ?? null }); } catch (e) { identity = { home: null, away: null, errors: [String((e as Error)?.message ?? e).slice(0, 120)] }; }
-      if (INVESTIGATE) {
+      if (INVESTIGATE && liteTurn) {
+        investigation = { schema: "edgedesk_investigation_v1", enabled: false, plan: [], log: [], outcomes: {}, budget: null, providers_tried: {}, conflicts: [], applied: [], note: "LITE route: no outside provider was asked; the answer reads EdgeDesk's committed artifacts and stored rows. " + turn.why };
+      } else if (INVESTIGATE) {
         investigation = await investigate({ packet: rpacket, research, dal, identity });
         if (investigation?.applied?.length) { try { const rebuilt = turnResearchPacket(research); if (rebuilt) { rpacket = rebuilt; (research as any).research_packet = rpacket; } } catch { /* keep the first packet */ } }
       } else investigation = { schema: "edgedesk_investigation_v1", enabled: false, plan: [], log: [], outcomes: {}, budget: null, providers_tried: {}, conflicts: [], applied: [], note: "EDGEDESK_INVESTIGATE=0: the loop is switched off; nothing was checked beyond the artifacts." };
@@ -43823,7 +44705,7 @@ export async function handle(req: Request): Promise<Response> {
      spending a token or depending on the answer to reveal a retrieval bug. */
   if (dry) {
     const content = buildUserContent(body, research, evidenceMax(), presentation);
-    return json({
+    return await rjson({
       dry: true,
       research_error: researchError,
       /* The whole packet, in the order the analyst reads it, so exactly what
@@ -43998,10 +44880,13 @@ export async function handle(req: Request): Promise<Response> {
     : presentationMode === "STANDARD" ? 1200
     : presentationMode === "PUBLISHER" ? 1400
     : (MAX_TOKENS[plan.depth] ?? 1000);
-  const maxTokens = Math.max(baseTokens + (presentation ? 400 : 0), board ? 1800 : 0);
+  const maxTokens0 = Math.max(baseTokens + (presentation ? 400 : 0), board ? 1800 : 0);
+  const maxTokens = liteTurn ? Math.min(maxTokens0, LITE_MAX_TOKENS) : maxTokens0;
+  const turnModel = liteTurn && LITE_MODEL ? LITE_MODEL : MODEL;
+  turn.model = turnModel;
 
   try {
-    const r = await callModel({ system, messages, max_tokens: maxTokens, packet: rpacket, mlbHistory: mlbHistorySvc, mlbOffense: mlbOffenseSvc });
+    const r = await callModel({ system, messages, max_tokens: maxTokens, packet: rpacket, mlbHistory: mlbHistorySvc, mlbOffense: mlbOffenseSvc, model: turnModel, noTools: liteTurn });
 
     if (!r.ok) {
       const detail = r.detail ?? "";
@@ -44015,10 +44900,10 @@ export async function handle(req: Request): Promise<Response> {
          The status stays 502 because the narration genuinely failed; the body
          now carries the research so a client can render the facts and offer a
          retry instead of inventing an opinion. */
-      return json({
+      return await rjson({
         error: `anthropic ${r.status}`, detail, presentation,
         answer: null,
-        narration: { ok: false, reason: `the writing model answered ${r.status}`, retryable: true },
+        narration: { ok: false, reason: r.timed_out ? `the writing model did not answer in time (${detail})` : `the writing model answered ${r.status}`, retryable: true, timed_out: !!r.timed_out },
         matchup_summary: summary,
         research_packet: rpacket, structured: structuredFor(null, null),
         board, board_state: boardState, deterministic_board_answer: board && EDBOARD ? EDBOARD.render(board) : null,
@@ -44030,6 +44915,7 @@ export async function handle(req: Request): Promise<Response> {
       }, 502);
     }
     const data = r.data;
+    turn.usage = data?.usage ?? null;
     let TOOL_TRACE: any[] = r.tool_trace ?? [];
     const textOf = (d: any) => (d?.content ?? [])
       .filter((b: any) => b?.type === "text").map((b: any) => b.text).join("\n").trim();
@@ -44068,7 +44954,7 @@ export async function handle(req: Request): Promise<Response> {
       RETRY_NOTE = { attempted: true, reason: stop === "max_tokens" ? "the first answer ran out of room"
         : "the first call returned no text", evidence_budget: retryBudget,
         first_input_tokens: usage?.input_tokens ?? null, first_max_tokens: maxTokens };
-      const r2 = await callModel({ system, messages: trimmed, max_tokens: Math.max(2000, maxTokens * 2), packet: rpacket, mlbHistory: mlbHistorySvc, mlbOffense: mlbOffenseSvc });
+      const r2 = await callModel({ system, messages: trimmed, max_tokens: Math.max(2000, maxTokens * 2), packet: rpacket, mlbHistory: mlbHistorySvc, mlbOffense: mlbOffenseSvc, model: turnModel, noTools: liteTurn });
       if (r2.ok) { answer = textOf(r2.data); TOOL_TRACE = TOOL_TRACE.concat(r2.tool_trace ?? []); }
       /* Still nothing. Say WHY, with the numbers, instead of two words — and do
          it as a 200 carrying the research, so the caller keeps the deterministic
@@ -44080,7 +44966,7 @@ export async function handle(req: Request): Promise<Response> {
            layer already computed. A reader who asked about a football game
            gets a football answer; what they do not get is a lean nobody
            made. */
-        return json({
+        return await rjson({
           answer: "",
           error: "empty completion",
           why: `the model returned no text (stop_reason ${stop ?? "unknown"}). `
@@ -44238,7 +45124,7 @@ export async function handle(req: Request): Promise<Response> {
     const rt = (globalThis as any).EdgeRuntime;
     if (rt?.waitUntil) rt.waitUntil(remember); else remember.catch(() => {});
 
-    return json({
+    return await rjson({
       answer,
       model: data?.model ?? MODEL,
       cached: false,
@@ -44289,7 +45175,7 @@ export async function handle(req: Request): Promise<Response> {
   } catch (e) {
     /* Same reasoning as the non-200 branch above: the research survives a
        transport failure in the narration call and travels with the error. */
-    return json({
+    return await rjson({
       error: String((e as Error)?.message ?? e), presentation,
       answer: null,
       narration: { ok: false, reason: "the writing model could not be reached", retryable: true },
