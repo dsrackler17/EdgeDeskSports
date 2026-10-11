@@ -1913,7 +1913,10 @@ const SCOPE = { sport: 'americanfootball_ncaaf', season: 2026, week: 3, label: '
        college question never reached any of this. Same properties, asserted
        against the one implementation both hosts run. */
     {
-      const cardGames = FX.SLATE.games.map((g) => ({
+      /* The real card plus the fixture's own North Texas @ Texas State game,
+         which build() always puts on the front. The committed slate alone
+         carries North Texas only in the weeks it happens to play. */
+      const cardGames = [FX.build().slate.games[0]].concat(FX.SLATE.games).map((g) => ({
         game_id: String(g.game_id), home_team: g.home_team, away_team: g.away_team,
         home_id: g.home_team_id, away_id: g.away_team_id,
       }));
