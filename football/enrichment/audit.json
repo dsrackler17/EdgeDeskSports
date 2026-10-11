@@ -1,29 +1,29 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-11T06:06:15.120Z",
+ "generated_at": "2026-10-11T12:36:44.935Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-11T06:06:15.120Z",
-  "reliability_generated_at": "2026-10-11T06:06:15.120Z",
-  "enrichment_generated_at": "2026-10-11T06:06:06.357Z",
+  "at": "2026-10-11T12:36:44.935Z",
+  "reliability_generated_at": "2026-10-11T12:36:44.935Z",
+  "enrichment_generated_at": "2026-10-11T12:36:38.375Z",
   "counts": {
-   "games": 67,
-   "mean": 85.3,
+   "games": 65,
+   "mean": 85.4,
    "median": 89,
    "by_band": {
-    "STRONG": 53,
+    "STRONG": 52,
     "LOW": 3,
-    "ADEQUATE": 10,
+    "ADEQUATE": 9,
     "CAUTION": 1
    },
-   "missing_qb_status": 134,
-   "qb_conflicts_open": 5,
+   "missing_qb_status": 130,
+   "qb_conflicts_open": 4,
    "qb_confirmed": 0,
    "games_lacking_injury_information": 14,
-   "unrated_meaningful_absences": 15,
+   "unrated_meaningful_absences": 0,
    "fcs_games_thin_data": 3,
-   "games_under_two_market_sources": 67,
-   "stale_evidence_records": 54,
+   "games_under_two_market_sources": 65,
+   "stale_evidence_records": 83,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -279,27 +279,6 @@
     "avail": {
      "home": "NOT_DUE_YET",
      "away": "NOT_DUE_YET"
-    }
-   },
-   "401856808": {
-    "game": "Hawai'i @ Arizona State",
-    "score": 87,
-    "grade": "STRONG",
-    "fam": {
-     "stability": 2.6,
-     "availability": 5,
-     "qb_status": 3,
-     "rating_sample": 1,
-     "qb_identity": 0.8,
-     "transfer_turnover": 0.3
-    },
-    "qb": {
-     "home": "EXPECTED",
-     "away": "EXPECTED"
-    },
-    "avail": {
-     "home": "NOT_REQUIRED",
-     "away": "NOT_REQUIRED"
     }
    },
    "401856809": {
@@ -797,31 +776,6 @@
     "avail": {
      "home": "NOT_DUE_YET",
      "away": "NOT_DUE_YET"
-    }
-   },
-   "401860901": {
-    "game": "Boise State @ Fresno State",
-    "score": 79,
-    "grade": "ADEQUATE",
-    "fam": {
-     "favorite_flips": 6,
-     "qb_identity": 2.9,
-     "qb_status": 4,
-     "availability": 3.2,
-     "qb_conflict": 1.4,
-     "contract_conflicts": 1.2,
-     "starters": 1.2,
-     "stability": 0.6,
-     "player_identity": 0.3,
-     "rating_sample": 0.6
-    },
-    "qb": {
-     "home": "EXPECTED",
-     "away": "CONFLICTED"
-    },
-    "avail": {
-     "home": "OFFICIAL_THIS_GAME",
-     "away": "OFFICIAL_THIS_GAME"
     }
    },
    "401860903": {
@@ -1550,7 +1504,7 @@
   }
  },
  "previous": {
-  "at": "2026-10-11T06:02:52.393Z",
+  "at": "2026-10-11T06:06:15.120Z",
   "counts": {
    "games": 67,
    "mean": 85.3,
@@ -1574,33 +1528,20 @@
   },
   "baseline_of": null
  },
- "what_improved": [],
- "what_degraded": [],
- "why": [],
+ "what_improved": [
+  "+0.1 mean reliability (85.3 → 85.4)",
+  "-4 QB statuses missing (134 → 130)",
+  "-1 open QB conflicts (5 → 4)",
+  "-15 unrated meaningful absences (15 → 0)",
+  "-2 games under two market sources (67 → 65)"
+ ],
+ "what_degraded": [
+  "+29 stale evidence records (54 → 83)"
+ ],
+ "why": [
+  "the slate itself changed: 0 games entered the window, 2 left it (kicked off or rolled out)"
+ ],
  "history": [
-  {
-   "at": "2026-10-04T17:35:19.519Z",
-   "counts": {
-    "games": 60,
-    "mean": 86.2,
-    "median": 88,
-    "by_band": {
-     "STRONG": 51,
-     "ADEQUATE": 8,
-     "CAUTION": 1
-    },
-    "missing_qb_status": 120,
-    "qb_conflicts_open": 4,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 14,
-    "unrated_meaningful_absences": 0,
-    "fcs_games_thin_data": 0,
-    "games_under_two_market_sources": 60,
-    "stale_evidence_records": 80,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-10-04T17:43:47.869Z",
    "counts": {
@@ -3039,6 +2980,30 @@
     "fcs_games_thin_data": 3,
     "games_under_two_market_sources": 67,
     "stale_evidence_records": 54,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-11T12:36:44.935Z",
+   "counts": {
+    "games": 65,
+    "mean": 85.4,
+    "median": 89,
+    "by_band": {
+     "STRONG": 52,
+     "LOW": 3,
+     "ADEQUATE": 9,
+     "CAUTION": 1
+    },
+    "missing_qb_status": 130,
+    "qb_conflicts_open": 4,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 14,
+    "unrated_meaningful_absences": 0,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 65,
+    "stale_evidence_records": 83,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
    }

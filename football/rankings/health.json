@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_rankings_health_v1",
- "generated_at": "2026-10-11T06:01:02.348Z",
+ "generated_at": "2026-10-11T12:35:44.286Z",
  "build_version": {
   "schema_version": "1.1.0",
   "versions": {
@@ -14,7 +14,7 @@
    "scheme_matchup": "scheme_matchup_v1",
    "simulation": "simulation_v1"
   },
-  "digest": "de7ece81b5a53e7a"
+  "digest": "9538e4f48efbcf08"
  },
  "season": 2026,
  "week": 6,
@@ -331,22 +331,22 @@
   }
  ],
  "ingestion": {
-  "completed_games_in_schedule": 446,
-  "last_completed_kickoff": "2026-10-11T00:00:00.000Z",
-  "team_games_read": 1624,
+  "completed_games_in_schedule": 448,
+  "last_completed_kickoff": "2026-10-11T02:30:00.000Z",
+  "team_games_read": 1628,
   "teams_with_a_performance_rating": 138,
-  "special_teams_team_games_joined": 888,
-  "special_teams_coverage_joined": 839,
+  "special_teams_team_games_joined": 892,
+  "special_teams_coverage_joined": 843,
   "special_teams_box_available": true,
   "opponent_adjustment_converged": true
  },
  "source_freshness": {
-  "completed_games": 446,
-  "latest_completed_kickoff": "2026-10-11T00:00:00.000Z",
-  "completed_games_digest": "e3da711bfc8d7b94",
+  "completed_games": 448,
+  "latest_completed_kickoff": "2026-10-11T02:30:00.000Z",
+  "completed_games_digest": "db25fa0f670e8455",
   "finality": {
    "schedule_final": 432,
-   "confirmed_by_box_alone": 14,
+   "confirmed_by_box_alone": 16,
    "games": [
     {
      "game_id": "401860902",
@@ -459,11 +459,27 @@
      "week": 6,
      "start_date": "2026-10-11T00:00:00.000Z",
      "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
+    },
+    {
+     "game_id": "401860901",
+     "home": "Fresno State",
+     "away": "Boise State",
+     "week": 6,
+     "start_date": "2026-10-11T02:30:00.000Z",
+     "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
+    },
+    {
+     "game_id": "401856808",
+     "home": "Arizona State",
+     "away": "Hawai'i",
+     "week": 6,
+     "start_date": "2026-10-11T02:30:00.000Z",
+     "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
     }
    ],
    "basis": "a game is FINAL when a feed this pipeline reads says it was played: the schedule feed with a score, or the ESPN box by carrying both teams. Whichever publishes first is believed, and the board says which one it was."
   },
-  "team_games_read": 1624,
+  "team_games_read": 1628,
   "teams_with_a_performance_rating": 138,
   "basis": "the completed games and team-games this build actually read out of the season in progress, and how many teams that was enough to rate. A rebuild that read a stale cache shows the same numbers as the week before it."
  },
@@ -472,13 +488,13 @@
   "season": 2026,
   "reference_season": 2025,
   "per_team_game": {
-   "team_games": 889,
-   "fg_att": 1.41,
-   "xp_att": 3.11,
-   "punts": 4.14,
-   "punts_in20": 1.27,
-   "kr": 1.43,
-   "pr": 1.26
+   "team_games": 893,
+   "fg_att": 1.46,
+   "xp_att": 3.17,
+   "punts": 4.21,
+   "punts_in20": 1.31,
+   "kr": 1.47,
+   "pr": 1.28
   },
   "reference_per_team_game": {
    "team_games": 1914,
@@ -490,14 +506,14 @@
    "pr": 1.26
   },
   "ratio_to_reference": {
-   "fg_att": 0.93,
-   "xp_att": 1.03,
-   "punts": 1,
-   "punts_in20": 0.96,
-   "kr": 0.85,
-   "pr": 1
+   "fg_att": 0.96,
+   "xp_att": 1.05,
+   "punts": 1.02,
+   "punts_in20": 0.99,
+   "kr": 0.88,
+   "pr": 1.02
   },
-  "mean_ratio": 0.96,
+  "mean_ratio": 0.99,
   "basis": "per-team-game kicking, punting and return volumes in this season’s box artifact against the most recent completed season this build read. A season in progress publishes in pieces — a game lands, then the punter’s line lands — so a ratio below one is the FEED still filling in, not football that did not happen. It moves no rating: it is why some teams have no special-teams number yet."
  },
  "history": {
@@ -516,12 +532,12 @@
    "week_ordinal": 6,
    "week_label": "Week 6",
    "season_type": "regular",
-   "generated_at": "2026-10-11T06:01:02.348Z",
+   "generated_at": "2026-10-11T12:35:44.286Z",
    "team_count": 138,
    "rating_version": "team_rating_v1"
   }
  },
- "last_rankings_build": "2026-10-11T06:01:02.348Z",
+ "last_rankings_build": "2026-10-11T12:35:44.286Z",
  "notes": [
   "Every count here is of FBS teams. A team with no rating in a category is listed by name in genuinely_unavailable with the reason that team was given, so a gap is a lookup rather than an investigation.",
   "A rating exists when the evidence exists. Sample size is carried by CONFIDENCE and by the reliability shrink, never by a null."
