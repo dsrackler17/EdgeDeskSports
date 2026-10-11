@@ -1,0 +1,181 @@
+# EdgeDesk — the linemaker: fair-line sheets, their ledger and grades, the
+# calibration record, and the suites that hold them (docs/linemaker/DESIGN.md).
+#
+#   tests      on every pull request and push that touches this work: the
+#              pricing library, the calibration rules, the sheets, the
+#              append-only ledger, the desk's answers, the AI allowance and
+#              saved research on a throwaway PostgreSQL, the no-bypass guard,
+#              and the panel in Chromium.
+#   build      every three hours: rebuild football/linemaker/fair_lines.json
+#              from the committed slates, append changed pregame sheets to the
+#              ledger, regrade, and commit only when something changed. No
+#              network, no odds credit, no secret.
+#   calibrate  weekly (Tuesday, after the week's results are in): replay both
+#              engines from public history (nflverse, cfbfastR; keyless) and
+#              rewrite football/validation/linemaker_<league>.json. A replay
+#              with a missing season is REFUSED and leaves the record as it is.
+#              The suites run again on the new record before anything commits.
+name: Linemaker
+run-name: Linemaker · ${{ inputs.mode || github.event_name }}
+
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_fairline.js'
+      - 'lib/edgedesk_linemaker_ui.js'
+      - 'lib/edgedesk_linemaker.css'
+      - 'lib/edgedesk_saved_research.js'
+      - 'lib/research_core.js'
+      - 'football/linemaker/**'
+      - 'football/validation/linemaker_*.json'
+      - 'tools/football/linemaker*'
+      - 'tools/football/build_fair_lines.js'
+      - 'tools/intelligence/ai_usage_sql.test.js'
+      - 'tools/intelligence/saved_research*.test.js'
+      - 'tools/intelligence/research_packets_rls_sql.test.js'
+      - 'tools/intelligence/ai_route.test.js'
+      - 'tools/intelligence/model_timeout.test.js'
+      - 'tools/odds/no_bypass.test.js'
+      - 'supabase/ai_usage*.sql'
+      - 'supabase/saved_research*.sql'
+      - 'supabase/research_packets*.sql'
+      - 'supabase/functions/edgedesk_ai/**'
+      - 'app.html'
+      - '.github/workflows/linemaker.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/edgedesk_fairline.js'
+      - 'football/linemaker/desk.js'
+      - 'tools/football/linemaker*'
+      - 'tools/football/build_fair_lines.js'
+      - 'supabase/functions/edgedesk_ai/**'
+      - 'app.html'
+  schedule:
+    - cron: '23 */3 * * *'   # build
+    - cron: '17 9 * * 2'     # calibrate
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'build or calibrate'
+        required: false
+        default: 'build'
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The library, the calibration rules, the sheets, the ledger and the grader
+        run: node tools/football/linemaker.test.js
+      - name: The desk answers team totals and alternate lines from the sheets, and nothing else
+        run: node tools/football/linemaker_desk.test.js
+      - name: The committed record and sheets pass their checks
+        run: node tools/football/linemaker_calibrate.js --check && node tools/football/build_fair_lines.js --check
+      - name: The model call has a clock; the allowance routes Lite and Pro; saved research client
+        run: node tools/intelligence/model_timeout.test.js && node tools/intelligence/ai_route.test.js && node tools/intelligence/saved_research_client.test.js
+      # The runner image ships PostgreSQL; each suite starts its own throwaway cluster.
+      - name: A reader reads only their own research packets, through every view
+        env: { INTEL_SQL_REQUIRED: '1' }
+        run: node tools/intelligence/research_packets_rls_sql.test.js
+      - name: The AI allowance is atomic per reader and its ledger is append-only
+        env: { INTEL_SQL_REQUIRED: '1' }
+        run: node tools/intelligence/ai_usage_sql.test.js
+      - name: Saved research is the reader's own, frozen at save
+        env: { INTEL_SQL_REQUIRED: '1' }
+        run: node tools/intelligence/saved_research_sql.test.js
+      - name: No path around the odds gateway (the linemaker spends nothing)
+        run: node tools/odds/no_bypass.test.js
+      - name: The navigation names Lines
+        run: node tools/app/navigation.test.js && node tools/app/sports_config.test.js
+      - name: Install Chromium for the panel
+        continue-on-error: true
+        run: npm install --no-save playwright@1.49.1 && npx playwright install --with-deps chromium
+      - name: The Fair Lines panel in Chromium, desktop and a 390 px phone
+        run: node tools/football/linemaker_ui.e2e.js
+
+  build:
+    if: (github.event_name == 'schedule' && github.event.schedule == '23 */3 * * *') || (github.event_name == 'workflow_dispatch' && (inputs.mode == '' || inputs.mode == 'build'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    concurrency:
+      group: linemaker-artifacts
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The suites pass before anything is written
+        run: node tools/football/linemaker.test.js
+      - name: Build the sheets, append the ledger, grade
+        run: node tools/football/build_fair_lines.js && node tools/football/linemaker_grade.js --write && node tools/football/build_fair_lines.js --check
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A -- football/linemaker/
+          if git diff --cached --quiet; then
+            echo 'fair lines unchanged — nothing to commit'
+            exit 0
+          fi
+          git commit -m 'linemaker: fair-line sheets, ledger and grades'
+          for i in 1 2 3 4; do
+            git push origin main && exit 0
+            git pull --rebase origin main || true
+            sleep $((2 ** i))
+          done
+          echo 'could not push the fair-line sheets after 4 attempts'
+          exit 1
+
+  calibrate:
+    if: (github.event_name == 'schedule' && github.event.schedule == '17 9 * * 2') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'calibrate')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    concurrency:
+      group: linemaker-artifacts
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Replay both engines and write the calibration record (public, keyless history)
+        run: node tools/football/linemaker_calibrate.js --sport both --write
+      - name: Rebuild the sheets on the new record
+        run: node tools/football/build_fair_lines.js
+      - name: The suites pass on the new record before anything commits
+        run: node tools/football/linemaker_calibrate.js --check && node tools/football/linemaker.test.js && node tools/football/linemaker_desk.test.js
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A -- football/validation/ football/linemaker/
+          if git diff --cached --quiet; then
+            echo 'calibration unchanged — nothing to commit'
+            exit 0
+          fi
+          git commit -m 'linemaker: weekly calibration record'
+          for i in 1 2 3 4; do
+            git push origin main && exit 0
+            git pull --rebase origin main || true
+            sleep $((2 ** i))
+          done
+          echo 'could not push the calibration record after 4 attempts'
+          exit 1
