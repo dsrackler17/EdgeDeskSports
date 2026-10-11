@@ -4489,9 +4489,18 @@
       add('injury_status_correct', wrong.length ? 'fail' : 'pass', 'Injury and starter status match the report', wrong.length ? uniq(wrong).join('; ') : null, p.game_id);
       /* historical facts carry their date — in EVERY sentence that states
          them: one dated mention does not license an undated one elsewhere */
+      /* the last meeting's score counts as a mention only when it is written
+         as a score ("13–10", "13-10", "13 to 10"): the two numbers anywhere in
+         one sentence also matched "Oct. 10, Julian Sayin went 13 of 21", a
+         dated box score charged as the undated 13–10 meeting */
+      function scoreIn(s, a, b) {
+        var pair = function (x, y) { return '(^|[^0-9.])' + x + '\\s*(?:[–—-]|to)\\s*' + y + '(?![0-9]|\\.[0-9])'; };
+        return new RegExp(pair(a, b) + '|' + pair(b, a)).test(s);
+      }
       var undated = ev.claims.filter(function (c) { return c.scope === 'historical' && c.topic !== 'model'; }).filter(function (c) {
         return sents.some(function (s) {
-          var mentions = citedIn(c, [s]) || !!(c.values && c.values.last && hasNum(s, String(c.values.last.home_points)) && hasNum(s, String(c.values.last.away_points)));
+          var last = c.values && c.values.last;
+          var mentions = citedIn(c, [s]) || !!(last && isNum(last.home_points) && isNum(last.away_points) && scoreIn(s, last.home_points, last.away_points));
           return mentions && !HIST_DATE_RE.test(s);
         });
       });
@@ -7390,7 +7399,15 @@
             'EdgeDesk can account for roughly ' + e + ' of the ' + g + ' points and cannot explain the rest',
             'About ' + e + ' of the ' + g + ' points trace to known pieces of the model; EdgeDesk cannot explain the other part',
             'EdgeDesk’s breakdown explains roughly ' + e + ' of these ' + g + ' points and leaves the rest unexplained' ][v];
-      var warn = flags.length ? (flags.length === 1 ? ' One warning sign points at EdgeDesk’s inputs rather than the football: ' : ' ' + cap(numWord(flags.length)) + ' warning signs point at EdgeDesk’s inputs rather than the football: ') + flags.join('; ') + '.' : '';
+      /* worded by v like the sentences around it: the flags themselves are
+         stock phrases, so a slate of flagged games otherwise prints this one
+         sentence three times and the gate's no_repetition check fails it */
+      var nW = flags.length === 1 ? 'One warning sign' : cap(numWord(flags.length)) + ' warning signs', pt = flags.length === 1 ? 'points' : 'point';
+      var warn = flags.length ? ' ' + [nW + ' ' + pt + ' at EdgeDesk’s inputs rather than the football: ',
+        nW + ' ' + pt + ' to EdgeDesk’s inputs, not the football: ',
+        'The football is not the only suspect; ' + nW.charAt(0).toLowerCase() + nW.slice(1) + ' ' + pt + ' at EdgeDesk’s inputs: ',
+        nW + ' in EdgeDesk’s own inputs ' + (flags.length === 1 ? 'deserves' : 'deserve') + ' a look first: ',
+        'Before the football, check EdgeDesk’s inputs; ' + nW.charAt(0).toLowerCase() + nW.slice(1) + ' ' + pt + ' there: '][v] + flags.join('; ') + '.' : '';
       var end = [' Until that changes, the gap is an open question, not an edge.', ' Treat it as an open question, not an edge.', ' That makes it a research question, not an edge.', ' It is not an edge until EdgeDesk can say why.', ' Read the gap as a question for research, not an edge.'][v];
       return exp + '.' + warn + end;
     }
