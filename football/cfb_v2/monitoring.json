@@ -1,16 +1,5 @@
 {
- "alerts": [
-  {
-   "evidence": {
-    "noise_q99": 0.325,
-    "psi": 0.333,
-    "reference_weeks": "week6"
-   },
-   "kind": "feature_drift",
-   "level": "info",
-   "message": "pred_total differs from the 2024-25 reference at week6 (PSI 0.33; sampling noise alone reaches 0.32)"
-  }
- ],
+ "alerts": [],
  "bet_enabled": false,
  "by_week": [
   {
@@ -55,15 +44,21 @@
    "week": 5
   },
   {
-   "ats_at_close": 0.61,
-   "ats_at_freeze_line": 0.561,
-   "bias": 0.114,
-   "brier": 0.2177,
-   "clv_mean": 0.119,
+   "ats_at_close": 0.607,
+   "ats_at_freeze_line": 0.579,
+   "bias": -0.769,
+   "brier": 0.2065,
+   "clv_mean": 0.237,
    "disagreement_c_d_mean": 1.482,
-   "final": 42,
+   "final": 58,
    "frozen_games": 58,
    "largest_misses": [
+    {
+     "abs_error": 37.8,
+     "final": 52.0,
+     "game": "San Diego State @ Oregon State",
+     "v2": 14.2
+    },
     {
      "abs_error": 35.7,
      "final": -15.0,
@@ -71,46 +66,40 @@
      "v2": 20.7
     },
     {
-     "abs_error": 31.2,
-     "final": -35.0,
-     "game": "Ole Miss @ Vanderbilt",
-     "v2": -3.8
-    },
-    {
-     "abs_error": 27.5,
-     "final": -19.0,
-     "game": "South Carolina @ Florida",
-     "v2": 8.5
+     "abs_error": 32.7,
+     "final": 28.0,
+     "game": "Minnesota @ Purdue",
+     "v2": -4.7
     }
    ],
-   "mae": 11.976,
-   "mae_candidate_001_same_games": 12.09,
-   "mae_close": 11.994,
-   "mae_line_at_freeze": 13.3,
-   "mae_v1_same_games": 12.203,
-   "mae_v2_same_close_games": 11.976,
-   "mae_v2_same_line_at_freeze_games": 12.219,
-   "mae_v2_vs_candidate_001_games": 11.976,
-   "mae_v2_vs_v1_games": 11.976,
-   "rmse": 14.768,
+   "mae": 11.231,
+   "mae_candidate_001_same_games": 11.353,
+   "mae_close": 11.457,
+   "mae_line_at_freeze": 11.846,
+   "mae_v1_same_games": 12.019,
+   "mae_v2_same_close_games": 11.231,
+   "mae_v2_same_line_at_freeze_games": 10.544,
+   "mae_v2_vs_candidate_001_games": 11.231,
+   "mae_v2_vs_v1_games": 11.231,
+   "rmse": 14.602,
    "week": 6
   }
  ],
  "current_json_age_hours": 0.0,
  "feature_drift_psi": {
-  "ens_pred": 0.051,
+  "ens_pred": 0.075,
   "ens_pred_noise_q99": 0.325,
-  "ens_sd": 0.127,
+  "ens_sd": 0.103,
   "ens_sd_noise_q99": 0.325,
-  "pred_total": 0.333,
+  "pred_total": 0.107,
   "pred_total_noise_q99": 0.325,
   "reference_weeks": "week6",
-  "sigma": 0.244,
+  "sigma": 0.234,
   "sigma_noise_q99": 0.325
  },
- "generated_at": "2026-10-11T10:08:22Z",
+ "generated_at": "2026-10-11T16:18:20Z",
  "learning": {
-  "bias": -0.6567448979591836,
+  "bias": -0.9979473684210529,
   "by_model_version": {
    "edgedesk_cfb_v2.0.0": {
     "bias": -0.448646511627907,
@@ -123,32 +112,32 @@
     }
    },
    "edgedesk_cfb_v2.1.0": {
-    "bias": -0.6567448979591836,
+    "bias": -0.9979473684210529,
     "fcs_not_priced_games": 3,
-    "games_scored": 98,
-    "mae": 12.897622448979593,
-    "major_miss_share": 0.15306122448979592,
+    "games_scored": 114,
+    "mae": 12.38943859649123,
+    "major_miss_share": 0.14912280701754385,
     "sources": {
-     "FROZEN": 98
+     "FROZEN": 114
     }
    }
   },
   "expected_major_miss_share_if_calibrated": 0.134,
-  "games_scored": 98,
-  "mae": 12.897622448979593,
-  "major_miss_share": 0.15306122448979592,
+  "games_scored": 114,
+  "mae": 12.38943859649123,
+  "major_miss_share": 0.14912280701754385,
   "miss_classes": {
    "explosive_variance": 2,
-   "garbage_time": 2,
+   "garbage_time": 3,
    "market_news_unavailable": 2,
-   "ordinary_variance": 5,
+   "ordinary_variance": 6,
    "qb_injury_miss": 2,
    "special_teams": 1,
    "turnover_variance": 1
   },
   "model_version": "edgedesk_cfb_v2.1.0",
   "sources": {
-   "FROZEN": 98
+   "FROZEN": 114
   }
  },
  "model_version": "edgedesk_cfb_v2.1.0",
@@ -1830,8 +1819,8 @@
  "scope": "FROZEN shadow projections only (replays excluded); priced games (FBS-vs-FBS) unless noted",
  "season": 2026,
  "season_to_date": {
-  "final": 98,
+  "final": 114,
   "frozen_games": 114,
-  "mae": 12.898
+  "mae": 12.389
  }
 }
