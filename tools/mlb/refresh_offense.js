@@ -260,6 +260,14 @@ async function main() {
   try {
     result = await IMPORT.runImport(db, ds, verdict, { log, chunk: 1000, ledger });
   } catch (e) {
+    /* A FAILED IMPORT IS ABANDONED, not left staged. A gate cancelled by the
+       statement timeout rolls back, so its staged rows stay; this path never
+       cleared them, and from 2026-10-06 each red night left ~40,000 more in
+       mlbhist.stg_* under an import that could never promote. Those rows are
+       what kept the next night's gate misestimating staging — see
+       supabase/fix_slow_promote_mlb.sql. The abandon touches only this
+       import's staging and its ledger row; the live archive is untouched. */
+    await IMPORT.abandonImport(db, e);
     await fail('import', e.message);
   }
 

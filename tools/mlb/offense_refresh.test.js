@@ -19,7 +19,8 @@
         panel reads, so an operator sees an aged, failed pipeline rather than
         rows that still look fine.
      4  STAGING IS PER-IMPORT. A second run cannot double-stage, and one run's
-        staged rows are not another's to delete.
+        staged rows are not another's to delete. A FAILED import names itself
+        and is abandoned, so its rows do not pile up in staging.
      5  THE COMMITTED COPY IS ONLY REFRESHED ON PURPOSE, and never carries a
         second copy of the shared team identity table.
 
@@ -72,6 +73,23 @@ console.log('mlb offense refresh path');
   ok('P.client is never called without a config',
     !/P\.client\(\s*\)/.test(src),
     'P.client() called bare — it fails lazily and the guard around it cannot fire');
+}
+
+/* ── A FAILED IMPORT IS ABANDONED, NOT LEFT IN STAGING ─────────────────────
+   From 2026-10-06 PostgREST's statement timeout cancelled the offensive gate
+   every night, and this path reported the failure and left the staged rows
+   where they were: the importer's error carried no import id and the refresh
+   never called the abandon gate. ~40,000 rows a night piled up under imports
+   that could never promote, and they are what kept staging's statistics
+   describing the wrong import (supabase/fix_slow_promote_mlb.sql). Like the
+   credential check above, this is a fact about how the source is wired, so it
+   reads the source. */
+{
+  const src = fs.readFileSync(path.join(__dirname, 'refresh_offense.js'), 'utf8');
+  const importCatch = /IMPORT\.runImport\([^)]*\);\s*\}\s*catch \(e\) \{([\s\S]*?)await fail\('import'/.exec(src);
+  ok('the refresh abandons a failed import before it reports the failure',
+    !!importCatch && /await IMPORT\.abandonImport\(db, e\);/.test(importCatch[1]),
+    'refresh_offense.js reports an import failure without abandoning its staging');
 }
 
 
@@ -226,6 +244,31 @@ if (!conn) {
       eq('…and the archive is untouched', count('batter_seasons'), before);
       eq('…and the previously promoted import is still promoted',
         count('import_runs', "dataset = 'offense' and status = 'promoted'"), 1);
+
+      /* THE REFUSAL NAMES ITS IMPORT, AND ABANDONING IT CLEARS ITS STAGING —
+         exactly what the refresh now does on every failed import. */
+      const deadId = caught && caught.import_id;
+      ok('…the refusal names the import it refused', /^mlboff-/.test(String(deadId)), String(deadId));
+      ok('…whose staged rows stay until it is abandoned',
+        count('stg_batter_team_seasons', `import_id = '${deadId}'`) > 0);
+      eq('…the importer abandons it', await IMPORT.abandonImport(db, caught), true);
+      eq('…which clears exactly its staged rows',
+        count('stg_batter_seasons', `import_id = '${deadId}'`)
+          + count('stg_batter_team_seasons', `import_id = '${deadId}'`), 0);
+      eq('…and leaves its ledger row failed, with the reason',
+        count('import_runs', `import_id = '${deadId}' and status = 'failed' and message like '%COUNT_MISMATCH%'`), 1);
+      eq('…and the promoted import is still the promoted one',
+        count('import_runs', "dataset = 'offense' and status = 'promoted'"), 1);
+      /* Keyed and best effort: no id means no call, and an abandon that fails
+         is reported as not run rather than thrown over the failure the caller
+         is about to report. */
+      const calls = [];
+      const down = { rpc: async (s, fn) => { calls.push(fn); throw new Error('PostgREST is down'); } };
+      eq('…an error that names no import abandons nothing', await IMPORT.abandonImport(down, new Error('x')), false);
+      eq('…and makes no call', calls.length, 0);
+      eq('…an abandon that itself fails says so instead of throwing',
+        await IMPORT.abandonImport(down, Object.assign(new Error('x'), { import_id: 'mlboff-x' })), false);
+      eq('…after trying the abandon gate', calls.join(','), 'abandon_offense_import');
 
       /* THE OPERATOR LEDGER. The panel's freshness line reads these keys. */
       const meta = {};

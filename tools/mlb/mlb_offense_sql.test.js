@@ -19,13 +19,24 @@
      * the two archives share one ledger without interfering: each gate
        supersedes only its own dataset and each status view reads only its own
        rows — the bug this file was written after finding;
-     * the indexes the product's reads depend on exist.
+     * the indexes the product's reads depend on exist;
+     * THE GATE IS ONE DEFINITION. mlb_offense_history.sql, the safeupdate
+       amendment and supabase/fix_slow_promote_mlb.sql each re-create the
+       offensive gate whole, so all three must carry the same body — a stale
+       copy re-applied would put back the grain check that PostgREST's
+       statement timeout cancelled on every run from 2026-10-06;
+     * the slow-promote amendment clears only dead staging: offensive imports
+       that never promoted and were opened more than six hours ago, keeping a
+       refused run's own reason, an in-flight run and the pitching ledger.
 
    Without a reachable PostgreSQL it skips loudly and passes.
 
    Run: node tools/mlb/mlb_offense_sql.test.js
    =========================================================================== */
 'use strict';
+const cp = require('child_process');
+const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const PG = require('./pg_client.js');
 
@@ -34,6 +45,8 @@ const DB = 'edgedesk_mlboff_sql';
 const SHIM = path.join(ROOT, 'tools', 'games', 'sql', 'supabase_shim.sql');
 const PITCH_SQL = path.join(ROOT, 'supabase', 'mlb_pitcher_history.sql');
 const OFF_SQL = path.join(ROOT, 'supabase', 'mlb_offense_history.sql');
+const FIX_DELETES_SQL = path.join(ROOT, 'supabase', 'fix_promote_deletes_mlb.sql');
+const FIX_SLOW_SQL = path.join(ROOT, 'supabase', 'fix_slow_promote_mlb.sql');
 
 let pass = 0, fail = 0;
 function ok(name, cond, detail) {
@@ -67,7 +80,7 @@ const STAGING = RECORD.map((t) => 'stg_' + t);
 
     /* ---- 1. applies, and applies again -------------------------------- */
     for (const round of [1, 2]) {
-      for (const f of [PITCH_SQL, OFF_SQL]) {
+      for (const f of [PITCH_SQL, OFF_SQL, FIX_DELETES_SQL, FIX_SLOW_SQL]) {
         const r = PG.applyFile(conn, DB, f);
         ok(`${path.basename(f)} applies (pass ${round})`, r.ok,
           r.ok ? '' : r.stderr.split('\n').slice(0, 4).join(' | '));
@@ -87,6 +100,16 @@ const STAGING = RECORD.map((t) => 'stg_' + t);
     const pReport = PG.applyFile(conn, DB, PITCH_SQL);
     const pBad = (pReport.stdout || '').split('\n').filter((l) => /CHECK THIS/.test(l));
     eq('every row of the pitching report still reads ok', pBad.length, 0, pBad.slice(0, 3).join(' | '));
+
+    /* The two amendments end in reports too, and they are what an operator
+       pastes into production. */
+    for (const f of [FIX_DELETES_SQL, FIX_SLOW_SQL]) {
+      const fr = PG.applyFile(conn, DB, f);
+      const rows = (fr.stdout || '').split('\n').filter((l) => /\b(ok|CHECK THIS)\b/.test(l));
+      ok(path.basename(f) + ' printed its report', fr.ok && rows.length >= 4, fr.stderr.split('\n')[0]);
+      eq('every row of the ' + path.basename(f) + ' report reads ok',
+        rows.filter((l) => /CHECK THIS/.test(l)).length, 0);
+    }
 
     /* ---- 2. the tables, the keys and the indexes ---------------------- */
     const tables = db.rows(`select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -192,6 +215,86 @@ const STAGING = RECORD.map((t) => 'stg_' + t);
     eq('two_way_players is a view, not a table', twKind.relkind, 'v');
     eq('…and mlbhist.teams was not duplicated for the offensive archive',
       db.rows(`select to_regclass('mlbhist.team_offense_teams') is null as ok`)[0].ok, true);
+
+    /* ---- 6. the offensive gate is ONE definition, in three files ------- */
+    /* Each file re-creates the gate whole, and whichever ran last is the gate
+       production has. Byte-identical or this fails: a copy that drifted would
+       be a revert waiting for someone to re-run an old amendment. */
+    const gateOf = (f) => {
+      const m = /create or replace function mlbhist\.promote_offense_import\(p_import_id text\)[\s\S]*?\nend \$\$;/
+        .exec(fs.readFileSync(f, 'utf8'));
+      return m ? m[0] : null;
+    };
+    const gates = [OFF_SQL, FIX_DELETES_SQL, FIX_SLOW_SQL].map(gateOf);
+    ok('every file that re-creates the offensive gate carries it', gates.every(Boolean));
+    ok('…and all three carry the same gate, byte for byte',
+      gates.every((g) => g === gates[0]),
+      [OFF_SQL, FIX_DELETES_SQL, FIX_SLOW_SQL].filter((f, i) => gates[i] !== gates[0]).map((f) => path.basename(f)).join(', '));
+
+    /* ---- 7. its grain check cannot go quadratic ----------------------- */
+    /* The join of staging to an aggregate of staging is what the planner
+       turned into a nested loop over 10,000 x 10,000 rows. Its replacement
+       is a single grouped pass — tools/mlb/offense_import.test.js times it
+       through the importer under a statement timeout with the statistics
+       set against it. */
+    const src = db.rows(`select p.prosrc from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                          where n.nspname = 'mlbhist' and p.proname = 'promote_offense_import'`)[0].prosrc;
+    ok('the installed grain check no longer joins staging to an aggregate of staging',
+      !/join\s*\(\s*select\s+player_id,\s*season,\s*sum\(plate_appearances\)/i.test(src));
+    ok('…it groups both grains in one pass',
+      /bool_or\(g\.combined\)\s+and\s+bool_or\(not g\.combined\)/.test(src));
+    ok('…and it still refuses a grain violation by name', /'GRAIN_VIOLATION'/.test(src));
+
+    /* ---- 8. the amendment clears dead staging, and only dead staging -- */
+    db.sql(`insert into mlbhist.import_runs (import_id, dataset, status, started_at, message) values
+              ('off-dead',     'offense',  'validated', now() - interval '3 days', null),
+              ('off-refused',  'offense',  'failed',    now() - interval '2 days', 'staged rows disagree with the package: x'),
+              ('off-inflight', 'offense',  'validated', now() - interval '20 minutes', null),
+              ('pit-dead',     'pitching', 'validated', now() - interval '3 days', null);
+            insert into mlbhist.stg_batter_seasons (player_id, season, player_name, name_key, import_id) values
+              (1, 2016, 'a', 'a', 'off-dead'), (2, 2016, 'b', 'b', 'off-refused'), (3, 2016, 'c', 'c', 'off-inflight');
+            insert into mlbhist.stg_batter_team_seasons (player_id, season, team_id, player_name, name_key, import_id) values
+              (1, 2016, 147, 'a', 'a', 'off-dead');
+            insert into mlbhist.stg_pitcher_seasons (player_id, season, player_name, name_key, import_id) values
+              (4, 2016, 'd', 'd', 'pit-dead');`);
+    const sweep = PG.applyFile(conn, DB, FIX_SLOW_SQL);
+    ok('the amendment re-applies over dead staging', sweep.ok, sweep.stderr.split('\n')[0]);
+    eq('…and its report reads ok once it has cleared it',
+      (sweep.stdout || '').split('\n').filter((l) => /CHECK THIS/.test(l)).length, 0);
+    const staged = (id, t) => Number(db.rows(`select count(*)::int as n from mlbhist.${t || 'stg_batter_seasons'}
+                                                where import_id = '${id}'`)[0].n);
+    const run = (id) => db.rows(`select status, message from mlbhist.import_runs where import_id = '${id}'`)[0];
+    eq('a run that never promoted and was opened days ago loses its staged rows',
+      staged('off-dead') + staged('off-dead', 'stg_batter_team_seasons'), 0);
+    eq('…and its ledger row is failed', run('off-dead').status, 'failed');
+    ok('…with a reason an operator can read', /never promoted and never abandoned/.test(run('off-dead').message || ''),
+      run('off-dead').message);
+    eq('a run the gate already refused loses its staged rows', staged('off-refused'), 0);
+    eq('…but keeps the refusal it recorded', run('off-refused').message, 'staged rows disagree with the package: x');
+    eq('a run opened twenty minutes ago is in flight and is not touched', staged('off-inflight'), 1);
+    eq('…nor is its ledger row', run('off-inflight').status, 'validated');
+    eq('the pitching archive’s staging is none of its business', staged('pit-dead', 'stg_pitcher_seasons'), 1);
+    eq('…nor is its ledger', run('pit-dead').status, 'validated');
+    eq('…and the promoted offensive run is still the promoted one',
+      db.rows(`select import_id from mlbhist.offense_status`)[0].import_id, 'off-1');
+
+    /* ---- 9. the amendment's pasteable parts are current --------------- */
+    /* At ~28 KB it is past what the Supabase SQL editor reliably accepts, so
+       it ships split; a stale split is a production gate built from a file
+       the repository has moved past. */
+    {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mlb-slow-parts-'));
+      cp.execFileSync(process.execPath, [path.join(ROOT, 'tools', 'sql', 'split_sql.js'), FIX_SLOW_SQL, dir, '18000']);
+      const isPart = (f) => /^fix_slow_promote_mlb\.part\d+-of-\d+\.sql$/.test(f);
+      const fresh = fs.readdirSync(dir).filter(isPart).sort();
+      const committed = fs.readdirSync(path.join(ROOT, 'supabase', 'parts')).filter(isPart).sort();
+      ok('supabase/parts/fix_slow_promote_mlb.part*.sql are the parts the splitter makes now',
+        fresh.length > 1 && JSON.stringify(fresh) === JSON.stringify(committed)
+          && fresh.every((f) => fs.readFileSync(path.join(dir, f), 'utf8')
+            === fs.readFileSync(path.join(ROOT, 'supabase', 'parts', f), 'utf8')),
+        'regenerate with: npm run sql:split -- supabase/fix_slow_promote_mlb.sql supabase/parts 18000');
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
 
     console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + pass + ' passed, ' + fail + ' failed');
     if (fail === 0) console.log('PASS | mlb offense history SQL | ' + pass + ' assertions against a real PostgreSQL');

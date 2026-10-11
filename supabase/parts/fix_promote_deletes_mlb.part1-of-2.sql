@@ -34,6 +34,13 @@
    because a function body cannot be patched in place; "create or replace"
    swaps each one atomically, so a reader mid-query is never served a half
    function. Safe to run more than once.
+
+   ONE LATER CHANGE IS CARRIED HERE TOO. The offensive gate's grain check was
+   rewritten by supabase/fix_slow_promote_mlb.sql after PostgREST's statement
+   timeout cancelled it on every run from 2026-10-06. Because this file
+   re-creates that gate whole, its copy carries the rewrite as well — otherwise
+   running this amendment again would quietly put the timed-out form back.
+   tools/mlb/mlb_offense_sql.test.js fails if the copies ever differ.
    =========================================================================== */
 
 

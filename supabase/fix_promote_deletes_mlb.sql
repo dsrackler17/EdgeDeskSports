@@ -30,6 +30,13 @@
    because a function body cannot be patched in place; "create or replace"
    swaps each one atomically, so a reader mid-query is never served a half
    function. Safe to run more than once.
+
+   ONE LATER CHANGE IS CARRIED HERE TOO. The offensive gate's grain check was
+   rewritten by supabase/fix_slow_promote_mlb.sql after PostgREST's statement
+   timeout cancelled it on every run from 2026-10-06. Because this file
+   re-creates that gate whole, its copy carries the rewrite as well — otherwise
+   running this amendment again would quietly put the timed-out form back.
+   tools/mlb/mlb_offense_sql.test.js fails if the copies ever differ.
    =========================================================================== */
 
 
@@ -339,15 +346,30 @@ begin
   -- appearances must be equal for every player-season that has splits. This is
   -- the check that would catch a package which lost a traded player's second
   -- club — the exact failure that makes a career look smaller than it was.
+  --
+  -- ONE GROUPED PASS, NO JOIN (supabase/fix_slow_promote_mlb.sql). This was a
+  -- join of the staged seasons to an aggregate of the staged splits, and how
+  -- long it took depended on what the planner believed staging held. Staging
+  -- is bulk-filled and bulk-emptied, so its statistics routinely describe an
+  -- earlier import or none; the planner then expected one row a side, chose a
+  -- nested loop and re-ran the aggregate once per player-season — 118 million
+  -- comparisons at 2026's volume, 47 s — and PostgREST cancelled the gate
+  -- (57014) on every run from 2026-10-06. Stacking the grains and grouping once
+  -- asks the same question with no plan to get wrong: a key counts only when
+  -- it has a combined row AND at least one split, exactly what the inner join
+  -- kept, and the duplicate check above has already proved the combined row
+  -- unique.
   select count(*) into grain_breaks from (
-    select s.player_id, s.season
-      from mlbhist.stg_batter_seasons s
-      join (select player_id, season, sum(plate_appearances) pa
-              from mlbhist.stg_batter_team_seasons where import_id = p_import_id
-             group by 1, 2) t
-        on t.player_id = s.player_id and t.season = s.season
-     where s.import_id = p_import_id
-       and coalesce(s.plate_appearances, 0) <> coalesce(t.pa, 0)) d;
+    select g.player_id, g.season
+      from (select player_id, season, plate_appearances, true as combined
+              from mlbhist.stg_batter_seasons where import_id = p_import_id
+            union all
+            select player_id, season, plate_appearances, false
+              from mlbhist.stg_batter_team_seasons where import_id = p_import_id) g
+     group by g.player_id, g.season
+    having bool_or(g.combined) and bool_or(not g.combined)
+       and coalesce(sum(g.plate_appearances) filter (where g.combined), 0)
+        <> coalesce(sum(g.plate_appearances) filter (where not g.combined), 0)) d;
   if grain_breaks > 0 then
     update mlbhist.import_runs set status = 'failed', staged_counts = staged,
       message = format('%s player-season(s) disagree with the sum of their own team splits on plate appearances', grain_breaks),

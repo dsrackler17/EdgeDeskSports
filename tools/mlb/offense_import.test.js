@@ -26,7 +26,10 @@
     11  a 2020 workload screen borrowed from a 162-game season, which erases
         the season entirely;
     12  a corrupted dataset replacing a good archive;
-    13  the archive being read as a lineup.
+    13  the archive being read as a lineup;
+    14  a gate that only fits inside PostgREST's statement timeout when
+        staging's statistics happen to be right — the failure of every
+        scheduled run from 2026-10-06.
 
    Without a reachable PostgreSQL it skips loudly and passes.
 
@@ -335,6 +338,8 @@ if (!conn) {
       } catch (e) { caught = e; }
       ok(name, !!caught && caught.code === wantCode,
         caught ? 'code ' + caught.code : 'the gate did not refuse it');
+      ok('  …the refusal names its import, so the caller can abandon it',
+        !!caught && /^mlboff-/.test(String(caught.import_id)), caught && String(caught.import_id));
       /* And nothing live moved. */
       eq('  …the live archive is untouched', count('batter_seasons'), before.seasons);
       eq('  …Judge is still there', Number(db.rows(
@@ -361,6 +366,15 @@ if (!conn) {
           && r.season === traded.season)[0];
         hit.plate_appearances = hit.plate_appearances - 7;
       }, 'GRAIN_VIOLATION');
+    /* …and from the other side. The grain check groups both grains together,
+       so a split that drifts from its combined row must be caught exactly as
+       a combined row that drifts from its splits. */
+    await refuse('a club split that disagrees with its player-season is refused',
+      (bad, rows) => {
+        const split = rows.batter_team_seasons.filter((r) => r.player_id === traded.player_id
+          && r.season === traded.season)[0];
+        split.plate_appearances = split.plate_appearances + 4;
+      }, 'GRAIN_VIOLATION');
     await refuse('an empty dataset is refused as empty staging',
       (bad, rows) => {
         TABLES_EMPTY(rows);
@@ -373,6 +387,99 @@ if (!conn) {
       ['batter_seasons', 'batter_team_seasons', 'batter_overview', 'team_offense_seasons']
         .forEach((t) => { rows[t] = []; });
     }
+
+    /* ══ 11b. THE GATE FITS INSIDE POSTGREST'S STATEMENT TIMEOUT, WHATEVER
+       STAGING'S STATISTICS SAY ════════════════════════════════════════════
+       Every scheduled run from 2026-10-06 staged this archive and then had
+       its gate cancelled at 36 s (57014). The grain check joined staging to
+       an aggregate of staging, the planner believed the import being promoted
+       was one row — staging's statistics described an earlier import that
+       never promoted — and chose a nested loop: 47 s at 2026's volume.
+
+       This puts the database in exactly that state and calls the gate through
+       the shipped importer under a statement timeout. Autovacuum is held off
+       the two staging tables so the statistics are the ones this test made,
+       not whatever a background worker got to first — otherwise a slow gate
+       could pass by luck. */
+    db.sql(`alter table mlbhist.stg_batter_seasons set (autovacuum_enabled = false);
+            alter table mlbhist.stg_batter_team_seasons set (autovacuum_enabled = false);`);
+    db.sql(`create or replace function public.test_estimated_rows(q text) returns numeric
+              language plpgsql as $f$
+              declare plan json;
+              begin
+                execute 'explain (format json) ' || q into plan;
+                return (plan->0->'Plan'->>'Plan Rows')::numeric;
+              end $f$;`);
+
+    /* 1. A night whose gate was cancelled: staged in full, then the promote
+          fails the way PostgREST failed it, and — as the refresh used to —
+          nobody abandons it. */
+    const cancelled = Object.assign({}, db, {
+      async rpc(schema, fn, args) {
+        if (fn !== 'promote_offense_import') return db.rpc(schema, fn, args);
+        throw Object.assign(new Error('RPC mlbhist.promote_offense_import -> 500: {"code":"57014",'
+          + '"message":"canceling statement due to statement timeout"}'), { status: 500 });
+      }
+    });
+    let dead = null;
+    try {
+      await IMPORT.runImport(cancelled, ds, verdict, { log: () => {}, chunk: 1000, importId: 'mlboff-cancelled-1' });
+    } catch (e) { dead = e; }
+    ok('a cancelled gate surfaces as a failure that names its import',
+      !!dead && dead.import_id === 'mlboff-cancelled-1', dead && String(dead.import_id));
+    eq('…and its staged rows stay behind until someone abandons them',
+      count('stg_batter_seasons', "import_id = 'mlboff-cancelled-1'"), R.batter_seasons);
+    /* 2. Autovacuum reaches staging while only that import is in it. */
+    db.sql('analyze mlbhist.stg_batter_seasons; analyze mlbhist.stg_batter_team_seasons;');
+
+    /* 3. The next night stages again and promotes — under a statement timeout,
+          set on the database the way Supabase sets it on the API's roles, so
+          the gate is timed exactly as PostgREST times it. 10 s is under a
+          third of where production gave up. */
+    let estimate = null;
+    const timed = Object.assign({}, db, {
+      async rpc(schema, fn, args) {
+        if (fn !== 'promote_offense_import') return db.rpc(schema, fn, args);
+        estimate = Number(db.rows(`select public.test_estimated_rows($q$select 1 from mlbhist.stg_batter_seasons
+                                     where import_id = 'mlboff-next-1'$q$) as n`)[0].n);
+        db.sql(`alter database ${DB} set statement_timeout = '10s';`);
+        try { return await db.rpc(schema, fn, args); }
+        finally { db.sql(`alter database ${DB} reset statement_timeout;`); }
+      }
+    });
+    let next = null, nextErr = null;
+    const t1 = Date.now();
+    try {
+      next = await IMPORT.runImport(timed, ds, verdict, { log: () => {}, chunk: 1000, importId: 'mlboff-next-1' });
+    } catch (e) { nextErr = e; }
+    const gateSecs = ((Date.now() - t1) / 1000).toFixed(1);
+    /* The test is only worth something if it reproduced the misestimate. If
+       a future PostgreSQL estimates this correctly, this says so rather than
+       letting the timing assertion below pass for the wrong reason. */
+    ok('the planner expected (almost) none of the import being promoted — production\'s state',
+      estimate !== null && estimate <= 10, `estimated ${estimate} of ${R.batter_seasons} staged rows`);
+    ok('…and the gate still promoted inside a 10 s statement timeout',
+      !!next && next.promote && next.promote.ok === true,
+      nextErr ? String(nextErr.message).slice(0, 200) : JSON.stringify(next && next.promote).slice(0, 200));
+    console.log(`  ..   staged and promoted in ${gateSecs}s with the statistics against it`);
+    eq('…replacing the archive with the same rows, not adding to it', count('batter_seasons'), before.seasons);
+    eq('…Judge’s 2025 line unchanged', Number(db.rows(
+      `select plate_appearances from mlbhist.batter_seasons
+        where player_id = ${judgeCsv.player_id} and season = 2025`)[0].plate_appearances), before.judgePa);
+    eq('…and the cancelled night’s rows are still not the gate’s to delete',
+      count('stg_batter_seasons', "import_id = 'mlboff-cancelled-1'"), R.batter_seasons);
+
+    /* 4. What the refresh now does with a failed import. */
+    eq('abandoning the cancelled import runs', await IMPORT.abandonImport(db, dead), true);
+    eq('…and clears its staged rows', count('stg_batter_seasons', "import_id = 'mlboff-cancelled-1'")
+      + count('stg_batter_team_seasons', "import_id = 'mlboff-cancelled-1'"), 0);
+    eq('…and its ledger row says it failed, and why',
+      count('import_runs', "import_id = 'mlboff-cancelled-1' and status = 'failed' and message like '%57014%'"), 1);
+    eq('…while the promoted import stays the promoted one',
+      count('import_runs', "import_id = 'mlboff-next-1' and status = 'promoted'"), 1);
+    db.sql(`alter table mlbhist.stg_batter_seasons reset (autovacuum_enabled);
+            alter table mlbhist.stg_batter_team_seasons reset (autovacuum_enabled);
+            drop function public.test_estimated_rows(text);`);
 
     /* ══ 12. THE PITCHING ARCHIVE BESIDE IT, AND THE TWO-WAY JOIN ══════ */
     const pds = PD.loadDataset(PD.DEFAULT_DIR);
