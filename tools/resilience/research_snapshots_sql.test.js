@@ -18,6 +18,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const cp = require('child_process');
+const zlib = require('zlib');
 const PG = require('../personal/_pg.js');
 
 const ROOT = path.join(__dirname, '..', '..');
@@ -36,15 +37,20 @@ function done(note) {
 /* real rows: build the slate into a temp dir and snapshot every game */
 const RES = require(path.join(ROOT, 'football', 'cfb_terminal', 'resilience.js'));
 const out = fs.mkdtempSync(path.join(os.tmpdir(), 'rsnap-'));
-/* the build's clock is PINNED to four hours before UCF @ Oklahoma State
-   (2026-10-10 16:00Z), the fixture every scenario is written around: on the
-   live clock the game leaves the slate at kickoff and the suite has nothing
-   to stand on (it broke that way the afternoon it merged). */
-const BUILD_NOW = '2026-10-10T12:00:00Z';
+/* UCF @ Oklahoma State (2026-10-10 16:00Z) is the game the verdict check is
+   written around. Pinning the build's clock four hours before it kept the
+   game on the card only until the committed slate moved on to the next week,
+   so its research object is the frozen one the scenario suite reads
+   (tools/resilience/fixtures/freeze_research.js), snapshotted next to every
+   game a fresh build of today's committed slate carries at the same clock. */
+const FX = JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(__dirname, 'fixtures', 'research_2026_10_10.json.gz'))).toString('utf8'));
+const BUILD_NOW = FX.now;
 cp.execFileSync(process.execPath, [path.join(ROOT, 'football', 'cfb_terminal', 'build.js'), '--out', out, '--now', BUILD_NOW], { stdio: 'ignore' });
 const G = JSON.parse(fs.readFileSync(path.join(out, 'games.json'), 'utf8'));
 const NOW = Date.parse(G.generated_at);
-const rows = Object.keys(G.games).map((id) => { const o = G.games[id]; return RES.snapshotRow(o, { market_state: o.market_state, resilience: o.resilience }, { now: NOW, inputs_sha256: G.inputs_sha256 }); });
+const snapRow = (o, sha) => RES.snapshotRow(o, { market_state: o.market_state, resilience: o.resilience }, { now: NOW, inputs_sha256: sha });
+const rows = Object.keys(G.games).filter((id) => id !== FX.osu_id).map((id) => snapRow(G.games[id], G.inputs_sha256))
+  .concat([snapRow(FX.games[FX.osu_id], FX.inputs_sha256)]);
 
 const db = PG.start('rsnap');
 if (!db || db.skip) done('SKIP | ' + ((db && db.skip) || 'no postgres') + ' — the SQL layer did not run');

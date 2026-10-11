@@ -30,6 +30,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const cp = require('child_process');
+const zlib = require('zlib');
 
 const ROOT = path.join(__dirname, '..', '..');
 const MKS = require(path.join(ROOT, 'lib', 'edgedesk_market_state.js'));
@@ -48,20 +49,25 @@ function done() {
 }
 
 /* ---- real research objects ------------------------------------------------ */
+/* THE SCENARIO GAMES ARE FROZEN. Every scenario is written around UCF @
+   Oklahoma State four hours before kickoff (2026-10-10 16:00Z). Pinning the
+   build's clock kept the game on the card only until the committed slate
+   itself moved on to the next week, and then the suite had nothing to stand
+   on again (2026-10-11). The two research objects the scenarios read are
+   therefore the build's own output at that clock, frozen once from the
+   artifacts of that day (tools/resilience/fixtures/freeze_research.js). */
+const FX = JSON.parse(zlib.gunzipSync(fs.readFileSync(path.join(__dirname, 'fixtures', 'research_2026_10_10.json.gz'))).toString('utf8'));
+const OSU = FX.games[FX.osu_id];                   /* UCF @ Oklahoma State: a regime change */
+const plain = FX.games[FX.plain_id];
+/* The whole-build checks (S11, and the build's own layer at the end) still
+   run on a fresh build of today's committed artifacts, at the same clock. */
 const out = fs.mkdtempSync(path.join(os.tmpdir(), 'resil-'));
-/* the build's clock is PINNED to four hours before UCF @ Oklahoma State
-   (2026-10-10 16:00Z), the fixture every scenario is written around: on the
-   live clock the game leaves the slate at kickoff and the suite has nothing
-   to stand on (it broke that way the afternoon it merged). */
-const BUILD_NOW = '2026-10-10T12:00:00Z';
+const BUILD_NOW = FX.now;
 cp.execFileSync(process.execPath, [path.join(ROOT, 'football', 'cfb_terminal', 'build.js'), '--out', out, '--now', BUILD_NOW], { stdio: 'ignore' });
 const G = JSON.parse(fs.readFileSync(path.join(out, 'games.json'), 'utf8'));
 const BOARD = JSON.parse(fs.readFileSync(path.join(out, 'board.json'), 'utf8'));
 fs.rmSync(out, { recursive: true, force: true });
 const NOW = Date.parse(G.generated_at);
-const OSU = G.games['401856824'];                  /* UCF @ Oklahoma State: a regime change */
-const plain = Object.values(G.games).find((o) => o.week_scope !== 'FUTURE_WEEK' && o.edgedesk.available && !(o.edgedesk.regime && (o.edgedesk.regime.home || o.edgedesk.regime.away))
-  && o.decision_status && o.decision_status.key !== 'NO_DECISION');
 const ago = (min) => new Date(NOW - min * 60000).toISOString();
 const gameOf = (o) => ({ game_id: o.game_id, season: o.season, kickoff: o.kickoff, home: o.game.home, away: o.game.away });
 const modelOf = (o) => ({ home_margin: o.edgedesk.home_margin, fair_total: o.edgedesk.fair_total });
