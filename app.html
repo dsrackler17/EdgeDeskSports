@@ -2914,6 +2914,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_personal.css?v=20260929e">
 <link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20261005dr1">
 <link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929calm1">
+<link rel="stylesheet" href="/lib/edgedesk_linemaker.css?v=20261011lm1">
 <link rel="stylesheet" href="/lib/edgedesk_first_run.css?v=20260930a">
 <link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261003y">
 <link rel="stylesheet" href="/lib/edgedesk_workspace.css?v=20261004b">
@@ -3211,7 +3212,7 @@ body.focus .dk-focusnote{display:block}
          The fourth seat names the module that is open, so a reader on UFC sees
          "UFC" lit rather than a vague "Other". -->
     <nav class="stseg research-sub" aria-label="Research"><button data-sub="football" class="on" aria-current="page" onclick="researchGo('football')">Football</button><button data-sub="pprops" onclick="researchGo('pprops')">Props</button><button data-sub="edges" onclick="researchGo('edges')">Edges</button><button data-sub="other" class="rs-oth" id="rsOtherBtn" aria-expanded="false" aria-controls="rsOther" onclick="rsOtherToggle()"><span id="rsOtherLbl">Other</span><svg class="rs-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></nav>
-    <div class="rs-oth-row hide" id="rsOther" role="group" aria-label="Other sports and research tools"><span class="k">Sports</span><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="baseball" onclick="researchGo('baseball')">Baseball</button><span class="k">Tools</span><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button><button data-sub="rdesk" onclick="researchGo('rdesk')">Desk</button></div>
+    <div class="rs-oth-row hide" id="rsOther" role="group" aria-label="Other sports and research tools"><span class="k">Sports</span><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="baseball" onclick="researchGo('baseball')">Baseball</button><span class="k">Tools</span><button data-sub="lines" onclick="researchGo('lines')">Lines</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button><button data-sub="rdesk" onclick="researchGo('rdesk')">Desk</button></div>
     <!-- RESEARCH DESK — the landing state of the Research shell. Answers
          "where should I research?" from the football engine's own today-items,
          the board's model/market disagreements and the data warnings the
@@ -3337,6 +3338,12 @@ body.focus .dk-focusnote{display:block}
          Research, not picks. docs/player-props/DESIGN.md. A Research panel since the
          five-destination navigation; its #playerprops/… links are its own. -->
     <div id="v-pprops" class="rpanel hide"><div id="ppHost"></div></div>
+    <!-- FAIR LINES — the linemaker (lib/edgedesk_linemaker_ui.js over lib/edgedesk_fairline.js):
+         EdgeDesk's own price for the spread, moneyline, total and both team totals of every
+         upcoming NFL and FBS game, the alternate ladders, a price check and the held-out
+         record behind every probability. Research → Other → Lines, #research/lines[/<game>].
+         docs/linemaker/DESIGN.md. -->
+    <div id="v-lines" class="rpanel hide"><div id="linesHost" class="lm"></div></div>
     <!-- EDGES — a Research panel since the five-destination navigation (docs/ia/NAVIGATION_AUDIT.md):
          an edge is an output of research, so it lives in the research shell beside
          Football and Props rather than holding a seat of its own. Every id and
@@ -5450,7 +5457,7 @@ var RS_RETIRED=EDSPORTS.retiredModuleRoutes();
    second row — the other sports, then the research tools — and, while one of
    them is open, carries its name ("UFC ▾"), so the lit seat always says where
    the reader is. */
-var RS_OTHER={ufc:'UFC',baseball:'Baseball',stats:'Stats',lab:'Lab',rdesk:'Desk'};
+var RS_OTHER={ufc:'UFC',baseball:'Baseball',lines:'Lines',stats:'Stats',lab:'Lab',rdesk:'Desk'};
 var RS_OTHER_OPEN=false,RS_OTHER_FOLDED=false;
 function rsNavPaint(sub){
   var inOther=!!RS_OTHER[sub];
@@ -5694,6 +5701,23 @@ researchRegister({id:'pprops',label:'Props',schema:'public',cadenceMs:null,
   render:function(){},hasData:function(){return !!this._opened;},search:function(q){return [];},
   openEntity:null,closeEntity:null,entityOpen:null,
   freshness:function(){return {loadedAt:null,builtAt:null};},
+  availability:function(){return null;},limitations:function(){return [];},provenance:{}});
+/* FAIR LINES — the linemaker panel. Its two scripts load on first open (the
+   pricing library, then the panel; lib/research_core.js is already on the
+   page), so a reader who never opens Lines downloads neither. A script that
+   fails to load is an error state on the panel, never a blank one. */
+var LM_SCRIPTS=['/lib/edgedesk_fairline.js?v=20261011lm1','/lib/edgedesk_linemaker_ui.js?v=20261011lm1'];
+function lmScript(src){return new Promise(function(res,rej){var have=document.querySelector('script[data-lm="'+src+'"]');if(have){if(have.getAttribute('data-ok'))res();else{have.addEventListener('load',function(){res();});have.addEventListener('error',function(){rej(new Error('failed to load '+src));});}return;}var s=document.createElement('script');s.src=src;s.setAttribute('data-lm',src);s.onload=function(){s.setAttribute('data-ok','1');res();};s.onerror=function(){s.remove();rej(new Error('failed to load '+src));};document.head.appendChild(s);});}
+function lmReady(){if(window.EDLinemakerUI&&window.EDFairLine)return Promise.resolve();return lmScript(LM_SCRIPTS[0]).then(function(){return lmScript(LM_SCRIPTS[1]);});}
+function lmFail(e){var h=$('linesHost');if(h)h.innerHTML='<div class="lm-banner err" role="alert"><b>Fair lines could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in their place. <button class="lm-btn" onclick="researchRefresh(\'lines\')">Try again</button></div>';}
+researchRegister({id:'lines',label:'Lines',schema:'public',cadenceMs:null,
+  load:function(force,signal){var self=this;self._opened=true;var ent=(researchParseHash()||{}).entity||null;return lmReady().then(function(){if(force)return window.EDLinemakerUI.refresh();return window.EDLinemakerUI.show($('linesHost'),ent);}).catch(lmFail);},
+  render:function(){},hasData:function(){return !!(window.EDLinemakerUI&&window.EDLinemakerUI.hasData());},search:function(q){return [];},
+  openEntity:function(id){lmReady().then(function(){window.EDLinemakerUI.show($('linesHost'));window.EDLinemakerUI.openGame(id);}).catch(lmFail);},
+  closeEntity:function(){if(window.EDLinemakerUI)window.EDLinemakerUI.closeGame();},
+  entityOpen:function(){return !!(window.EDLinemakerUI&&window.EDLinemakerUI.entityOpen());},
+  entityKey:function(){return window.EDLinemakerUI?window.EDLinemakerUI.entityKey():null;},
+  freshness:function(){return window.EDLinemakerUI?window.EDLinemakerUI.freshness():{loadedAt:null,builtAt:null};},
   availability:function(){return null;},limitations:function(){return [];},provenance:{}});
 RESEARCH_SUB='rdesk';
 
