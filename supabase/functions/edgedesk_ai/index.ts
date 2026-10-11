@@ -38410,6 +38410,25 @@ export function sanitizeSubject(raw: unknown): ResearchSubject | null {
   return out;
 }
 
+/* THE READER'S SCREEN (2026-10-11): which research panel is open, and the
+   game and market on it, as identifiers. It never carries a number. When the
+   conversation has no game of its own the browser also offers the on-screen
+   game as the subject (research_context.game_id with from_screen: true), and
+   that goes through sanitizeSubject and the published-card re-read like any
+   carried game; a game named in the question still wins. */
+const SCREEN_PANELS = new Set(["lines", "football", "pprops", "edges", "ufc", "baseball", "stats", "lab", "rdesk", "card", "portfolio"]);
+const SCREEN_MARKETS = new Set(["spread", "total", "moneyline", "home_team_total", "away_team_total", "team_total", "props"]);
+export function sanitizeScreen(raw: unknown): { panel: string; sport: string | null; game_id: string | null; market: string | null } | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const panel = typeof r.panel === "string" && SCREEN_PANELS.has(r.panel) ? r.panel : null;
+  if (!panel) return null;
+  const sport = typeof r.sport === "string" && SPORT_INTELLIGENCE[r.sport] ? r.sport : null;
+  const gid = typeof r.game_id === "string" && /^[A-Za-z0-9_.:-]{1,40}$/.test(r.game_id) ? r.game_id : null;
+  const market = typeof r.market === "string" && SCREEN_MARKETS.has(r.market) ? r.market : null;
+  return { panel, sport, game_id: gid, market };
+}
+
 /**
  * Slice 3: the structured conversation state the client hands back. Only the
  * fields the SERVER produced last turn survive — a side, a market, the quoted
@@ -43481,6 +43500,8 @@ export async function handle(req: Request): Promise<Response> {
      reader which route the question took and settles the claim once. */
   const turnT0 = Date.now();
   const qChars = String(body?.question ?? "").length;
+  const screenCtx = sanitizeScreen((body as any)?.research_context?.screen);
+  const subjectFromScreen = (body as any)?.research_context?.from_screen === true && !!screenCtx?.game_id;
   const turn: any = { tier: "LITE", why: "answered from EdgeDesk's own research", lite: null, pro: null, usage: null, model: null };
   if (!dry) {
     turn.lite = await usageClaim(auth, "LITE", qChars);
@@ -43488,6 +43509,7 @@ export async function handle(req: Request): Promise<Response> {
   }
   const rjson = async (payload: any, status = 200, outcome?: string): Promise<Response> => {
     try { if (payload && typeof payload === "object" && !Array.isArray(payload) && !payload.route) payload.route = routeNote(turn); } catch { /* keep the body */ }
+    try { if (screenCtx && payload && typeof payload === "object" && !Array.isArray(payload) && !payload.screen) payload.screen = Object.assign({ subject_from_screen: subjectFromScreen }, screenCtx); } catch { /* keep the body */ }
     const out = outcome ?? (status >= 500 ? (payload?.narration?.timed_out ? "timed_out" : "narration_failed") : "answered");
     const ms = Date.now() - turnT0;
     const settle = Promise.all([

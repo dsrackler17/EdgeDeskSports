@@ -99,6 +99,14 @@ globalThis.fetch = async function (url, init) {
   ok('an unreachable allowance is UNMETERED and the question is answered', r.status === 200 && r.body.route && r.body.route.metered === false, { status: r.status, route: r.body && r.body.route });
   ok('and nothing is settled for a claim that was never made', settles.length === 0, settles);
 
+  /* the reader's screen */
+  ok('a screen is identifiers from allow-lists', JSON.stringify(m.sanitizeScreen({ panel: 'lines', sport: 'americanfootball_nfl', game_id: '2026_06_NYJ_NE', market: 'spread', home_line: -7 })) === JSON.stringify({ panel: 'lines', sport: 'americanfootball_nfl', game_id: '2026_06_NYJ_NE', market: 'spread' }));
+  ok('an unknown panel is no screen', m.sanitizeScreen({ panel: 'admin', game_id: 'x' }) === null && m.sanitizeScreen(null) === null && m.sanitizeScreen('lines') === null);
+  ok('a game id that is not an identifier is dropped', m.sanitizeScreen({ panel: 'lines', game_id: "x'; drop table--" }).game_id === null);
+  ok('an unknown sport or market is dropped', m.sanitizeScreen({ panel: 'lines', sport: 'curling', market: 'corners' }).sport === null && m.sanitizeScreen({ panel: 'lines', market: 'corners' }).market === null);
+  claimMode = { LITE: 'grant', PRO: 'grant' };
+  r = await ask('What is the fair price here?', { research_context: { screen: { panel: 'lines', sport: 'americanfootball_nfl', game_id: '2026_06_NYJ_NE', market: 'total' }, sport: 'americanfootball_nfl', game_id: '2026_06_NYJ_NE', from_screen: true } });
+  ok('the response says the subject came from the reader’s screen', r.body && r.body.screen && r.body.screen.subject_from_screen === true && r.body.screen.panel === 'lines' && r.body.screen.game_id === '2026_06_NYJ_NE', r.body && r.body.screen);
   const probe = await (await m.handle(new Request('https://fn.test/edgedesk_ai?probe=1'))).json();
   ok('?probe=1 describes the route', probe.ai_usage && probe.ai_usage.enabled === true && probe.ai_usage.lite_model === 'lite-model-test' && probe.ai_usage.lite_depths.join() === 'QUICK', probe.ai_usage);
   console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'ai route — ' + pass + ' passed, ' + fail + ' failed');

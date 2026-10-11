@@ -49,6 +49,8 @@ const NFL_N = FEED.games.filter((g) => g.league === 'NFL').length, CFB_N = FEED.
   try { pw = require('playwright'); } catch (_) { try { pw = require('/opt/node22/lib/node_modules/playwright'); } catch (e2) { pw = null; } }
   if (!pw) { console.log('SKIPPED: playwright is not installed here'); process.exit(0); }
   let feedMode = 'ok';
+  const deskBodies = [];
+  const saves = [];
   const feedBody = () => {
     if (feedMode === 'ok') return JSON.stringify(FEED);
     if (feedMode === 'stale') return JSON.stringify(Object.assign({}, FEED, { generated_at: new Date(Date.parse(NOW) - 40 * 36e5).toISOString() }));
@@ -89,6 +91,8 @@ const NFL_N = FEED.games.filter((g) => g.league === 'NFL').length, CFB_N = FEED.
     await ctx.route('**/*', (route) => {
       const u = route.request().url();
       if (u.startsWith('http://127.0.0.1')) return route.continue();
+      if (/functions\/v1\/edgedesk_ai/.test(u) && route.request().method() === 'POST') { try { deskBodies.push(JSON.parse(route.request().postData() || 'null')); } catch (e) { deskBodies.push(null); } return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ answer: 'stub', research: {} }) }); }
+      if (/rest\/v1\/saved_research/.test(u) && route.request().method() === 'POST') { try { saves.push(JSON.parse(route.request().postData() || 'null')); } catch (e) { saves.push(null); } return route.fulfill({ status: 201, contentType: 'application/json', body: JSON.stringify([{ id: '11111111-2222-3333-4444-555555555555' }]) }); }
       if (/supabase\.co/.test(u)) {
         if (/subscriptions/.test(u)) return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ status: 'active', current_period_end: '2027-06-01T00:00:00Z' }]) });
         return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
@@ -193,6 +197,12 @@ const NFL_N = FEED.games.filter((g) => g.league === 'NFL').length, CFB_N = FEED.
       chk(label + ': the held-out record lists the four markets with their at-market slope', await page.evaluate(() => /slope|never tested/.test(document.getElementById('lmAccBody').textContent)));
       await shot(page, label + '_check');
       /* ask the desk */
+      saves.length = 0;
+      await page.click('button[data-act="save"]');
+      await page.waitForFunction(() => /Saved to your account|Not saved/.test(document.getElementById('lmSaved').textContent), null, { timeout: 10000 });
+      const saved = saves[0];
+      chk(label + ': Save this sheet posts the sheet to the reader\u2019s saved research, under their token', !!saved && saved.kind === 'fair_line' && saved.game_id === gid && saved.payload && saved.payload.markets && !('user_id' in saved), saved && Object.keys(saved));
+      chk(label + ': and says it was saved to the account', /Saved to your account/.test(await page.evaluate(() => document.getElementById('lmSaved').textContent)));
       await page.click('button[data-act="ask"]');
       chk(label + ': Ask EdgeDesk opens the desk', await page.evaluate(() => document.getElementById('edaiPanel').classList.contains('open')));
       await page.evaluate(() => { try { EDAI.close && EDAI.close(); } catch (e) { /* closed */ } });
@@ -200,6 +210,45 @@ const NFL_N = FEED.games.filter((g) => g.league === 'NFL').length, CFB_N = FEED.
       await page.click('button[data-act="back"]');
       chk(label + ': Back returns to the list', (await cards(page)) > 0 && await page.evaluate(() => location.hash) === '#research/lines');
       chk(label + ': no page error', errors.length === 0, errors);
+      await ctx.close();
+    }
+
+    /* ------------------------------------------- the desk sees the screen
+       A CFB game: its card is committed (football/fbs/slate.json), so the
+       desk's own matchup resolver finds it and the question reaches the
+       server with the screen beside it. (An NFL card is built in the browser
+       from nflverse feeds this harness does not serve.) */
+    {
+      const cfbG = FEED.games.find((g) => g.league === 'CFB');
+      const { ctx, page, errors } = await open({ width: 1440, height: 900 }, '#research/lines/' + cfbG.game_id);
+      await page.waitForSelector('.lm-tab.main', { timeout: 20000 });
+      deskBodies.length = 0;
+      await page.click('button[data-act="ask"]');
+      for (let i = 0; i < 80 && !deskBodies.some((b) => b && /fair price/.test(String(b.question || ''))); i++) await page.waitForTimeout(250);
+      if (process.env.LM_DEBUG) console.log('desk bodies', JSON.stringify(deskBodies.map((b) => b && { q: b.question, rc: b.research_context })).slice(0, 1500));
+      const sent = deskBodies.find((b) => b && /fair price/.test(String(b.question || '')));
+      const rc = sent && sent.research_context;
+      chk('the desk request carries the Lines panel and this game as the screen', !!rc && rc.screen && rc.screen.panel === 'lines' && rc.screen.game_id === cfbG.game_id && rc.screen.sport === 'americanfootball_ncaaf', rc);
+      chk('and the screen is identifiers only, never a number', !!rc && Object.keys(rc.screen).sort().join() === 'game_id,market,panel,sport', rc && rc.screen);
+      chk('the question about the game on screen is about that game', !!rc && rc.game_id === cfbG.game_id, rc);
+      chk('no page error', errors.length === 0, errors);
+      await ctx.close();
+    }
+    /* a question that names no team, asked while a game is on screen and the
+       conversation has none: the on-screen game becomes the subject */
+    {
+      const cfbG = FEED.games.find((g) => g.league === 'CFB');
+      const { ctx, page, errors } = await open({ width: 1440, height: 900 }, '#research/lines/' + cfbG.game_id);
+      await page.waitForSelector('.lm-tab.main', { timeout: 20000 });
+      await page.click('.lm-tabs button[data-tab="total"]');
+      deskBodies.length = 0;
+      await page.evaluate(() => { EDAI.open(); const t = document.getElementById('edaiText'); t.value = 'Is the over a good price here?'; EDAI.sendText(); });
+      for (let i = 0; i < 80 && !deskBodies.some((b) => b && /good price here/.test(String(b.question || ''))); i++) await page.waitForTimeout(250);
+      const sent = deskBodies.find((b) => b && /good price here/.test(String(b.question || '')));
+      const rc = sent && sent.research_context;
+      chk('with no game in the conversation, the on-screen game is the subject (from_screen)', !!rc && rc.game_id === cfbG.game_id && rc.from_screen === true && rc.sport === 'americanfootball_ncaaf', rc);
+      chk('and the screen names the tab the reader is on', !!rc && rc.screen && rc.screen.market === 'total', rc && rc.screen);
+      chk('no page error', errors.length === 0, errors);
       await ctx.close();
     }
 
