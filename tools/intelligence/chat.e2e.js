@@ -208,6 +208,17 @@ const MLB_SIGNALS = [{
       const log = document.getElementById('edaiLog');
       return log && log.children.length > n + 1 && !document.getElementById('edaiThink');
     }, before, { timeout: 45000 });
+    /* A matchup card is on screen after pass 1, and its note reads "reading
+       market and results…" then "asking for a read…" until the reasoning
+       function has answered or failed (app.html matchupTurn). A fixed sleep
+       raced that call on a loaded runner and read the card before the
+       narration, or its failure notice, had landed. */
+    await page.waitForFunction(() => {
+      const kids = Array.prototype.slice.call(document.getElementById('edaiLog').children);
+      const last = kids.filter(k => k.className.indexOf('edai-msg a') >= 0).pop();
+      return !last || !Array.prototype.some.call(last.querySelectorAll('.edai-src'),
+        (n) => /(reading market and results|asking for a read)…$/.test(n.textContent.trim()));
+    }, null, { timeout: 45000 });
     /* let the progressive passes land */
     await page.waitForTimeout(1200);
     return page.evaluate(() => {

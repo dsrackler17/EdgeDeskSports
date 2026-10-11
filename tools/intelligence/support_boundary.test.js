@@ -44,7 +44,10 @@ globalThis.fetch = async function (url, init) {
     return { ok: true, status: 200, json: async () => out, text: async () => JSON.stringify(out) };
   }
   if (u.indexOf('sb.test') >= 0) {
-    if (u.indexOf('/subscriptions') < 0) dbReads.push(u);
+    /* The gates the handler runs on EVERY question before any work: the
+       subscription read, and the shared allowance's one LITE claim
+       (supabase/ai_usage.sql). Anything else is retrieval. */
+    if (u.indexOf('/subscriptions') < 0 && u.indexOf('/rpc/ai_usage_claim') < 0) dbReads.push(u);
     if (u.indexOf('/subscriptions') >= 0) {
       const sub = [{ status: 'active', price_id: 'price_test', current_period_end: new Date(Date.now() + 30 * 864e5).toISOString() }];
       return { ok: true, status: 200, text: async () => JSON.stringify(sub), json: async () => sub };
