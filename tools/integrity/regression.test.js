@@ -436,6 +436,24 @@ if (db.skip) {
       const up = own(`select public.content_engine_opportunity_upsert(${lit(JSON.stringify(withHash(PREV)))}::jsonb, null);`);
       const v0 = CE.validate(A0, PREV, { publisher: pub, now: NOW, teamLists: TL });
       chk('the deterministic draft passes every hard check and the integrity engine', v0.ok && (v0.integrity_status === 'PASS' || v0.integrity_status === 'WARNING'), v0.failed);
+      /* the week 7 research (committed October 11) features Cincinnati at West
+         Virginia, a coin flip at West Virginia by 0.3, beside Virginia at SMU,
+         and the spread check read the draft's "West Virginia by 0.3" as a
+         claim about Virginia: a correct draft BLOCKED on EDIT.CONTRADICTION,
+         which no owner review can clear. The committed slate rolls over every
+         week, so the pair is built here rather than hoped for: the longer
+         name's line is its own, and the shorter team's contradiction is still
+         caught, in both spellings */
+      {
+        const g = (id, home, away, favorite, underdog, margin) => ({ game_id: id, home, away, model: { available: true, favorite, underdog, margin } });
+        const pair = { league: 'cfb', kind: 'weekly_preview', research: { games: [g('wv', 'West Virginia', 'Cincinnati', 'West Virginia', 'Cincinnati', 0.3), g('uva', 'SMU', 'Virginia', 'SMU', 'Virginia', 6.2)], matchups: [] } };
+        const spread = (body) => CE.validate({ format: 'cfb_weekly_preview', sections: [{ key: 'games', heading: 'The games that matter most', body }] }, pair, { publisher: pub, now: NOW, teamLists: TL })
+          .checks.find((c) => c.id === 'spread_claims');
+        const wv = spread('EdgeDesk’s model sees a near coin flip: West Virginia by 0.3, West Virginia -0.3 as a line, and SMU by 6.2 over Virginia.');
+        chk('… a line printed for West Virginia is West Virginia’s, never charged to Virginia', wv && wv.status === 'pass', wv);
+        const uva = spread('EdgeDesk’s model sees Virginia by 0.3 at SMU, Virginia -0.3 as a line.');
+        chk('… while the same number printed for Virginia is still a contradiction', uva && uva.status === 'fail' && /Virginia by 0\.3/.test(uva.detail) && /Virginia -0\.3/.test(uva.detail) && !/West Virginia/.test(uva.detail), uva);
+      }
       const cr = own(`select public.content_engine_article_create(${lit(up.id)}, ${lit(pub.id)}, 'cfb_weekly_preview', 'full_slate', ${lit(JSON.stringify(Object.assign({}, A0, { checks: v0 })))}::jsonb, null);`);
       own(`select public.content_engine_article_submit(${lit(cr.id)});`);
       own(`select public.content_engine_article_review(${lit(cr.id)}, '{"source_verification":true,"data_freshness":true,"model_accuracy":true,"seo_review":true,"compliance":true}'::jsonb);`);
