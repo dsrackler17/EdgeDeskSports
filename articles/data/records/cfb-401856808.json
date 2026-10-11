@@ -21,8 +21,8 @@
   "game_time": "2026-10-11T02:30:00.000Z",
   "game_when_label": "2026-10-11 02:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-11T00:20:30.587Z",
-  "generated_at": "2026-10-11T00:20:30.587Z",
+  "updated_at": "2026-10-11T00:30:42.409Z",
+  "generated_at": "2026-10-11T00:30:42.409Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "DATA FAULT",
   "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1453,7 +1453,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 97h old",
+          "text": "odds is 98h old",
           "widening": null
         },
         {
@@ -1576,7 +1576,7 @@
       "total_market_held": null,
       "book": "captured consensus (stale) · 1 book · best at Pinnacle",
       "captured": "2026-10-06T23:00:13.589+00:00",
-      "capture_age": "97 hours old",
+      "capture_age": "98 hours old",
       "stale": false,
       "classification": "DATA FAULT",
       "classification_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1954,103 +1954,16 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-10. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1xs20nx1gxodbz",
-    "status": "UNEXPLAINED",
-    "input_suspect": true,
-    "question": "Can Arizona State contain Hawai'i’s explosive runs?",
-    "assessment": "EdgeDesk’s number is 8.6 points closer to Hawai'i than the line, and EdgeDesk cannot account for most of that: its own breakdown accounts for about 0.0 of the 8.6 points. The measured football evidence leans toward Arizona State, not toward EdgeDesk’s number. There is a specific reason to suspect EdgeDesk’s inputs: EdgeDesk’s game page already labels this gap a DATA FAULT: EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game. Treat the gap as an open research question, not as an edge.",
-    "gap": {
-      "points": 8.6,
-      "toward": "Hawai'i",
-      "other": "Arizona State"
-    },
-    "supporting": [
-      "In his last two games (Kansas and Baylor), Boley averaged 6.1 yards per attempt, against 10.5 in his two games before that.",
-      "When Arizona State has the ball (the red zone): Arizona State’s offense succeeds on 26.6% of its red-zone plays, and Hawai'i’s defense allows success on 45.4% of opponent red-zone plays (FBS average 43.9%).",
-      "In his last two games (Wyoming and San José State), Alejado averaged 6.9 yards per attempt, against 5.7 in his three games before that.",
-      "EdgeDesk’s position-group ratings put Hawai'i’s offensive line No. 94 nationally and Arizona State’s No. 125."
-    ],
-    "contradicting": [
-      "When Arizona State has the ball (big plays through the air): Arizona State’s offense turns 12.4% of its pass plays into explosive gains, and Hawai'i’s defense gives up explosive gains on 12.3% of opponent pass plays (FBS average 10.4%).",
-      "When Hawai'i has the ball (big plays on the ground): Hawai'i’s offense turns 5.0% of its runs into explosive gains, and Arizona State’s defense gives up explosive gains on 4.4% of opponent runs (FBS average 6.6%).",
-      "When Arizona State has the ball (the line of scrimmage on running plays): Arizona State’s offense is stopped at or behind the line on 16.4% of its runs, and Hawai'i’s defense stops 13.0% of opponent runs at or behind the line (FBS average 17.4%).",
-      "EdgeDesk’s position-group ratings put Arizona State’s defensive line No. 47 nationally and Hawai'i’s No. 110."
-    ],
-    "quarterbacks": [
-      "Cutter Boley has completed 77 of 126 passes (61.1%) for 1,040 yards, 8.3 yards per attempt, 10 touchdowns and 3 interceptions in four games for Arizona State, and has been sacked on 7 of 133 dropbacks.",
-      "Micah Alejado has completed 130 of 219 passes (59.4%) for 1,348 yards, 6.2 yards per attempt, 4 touchdowns and 3 interceptions in five games for Hawai'i, and has been sacked on 14 of 233 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Hawai'i’s offense has to keep winning on long runs: it turns 5.0% of its runs into explosive gains, and Arizona State’s defense gives up explosive gains on 4.4% of opponent runs.",
-        "Hawai'i’s defense has to slow Arizona State on big pass plays — Arizona State’s offense turns 12.4% of its pass plays into explosive gains."
-      ],
-      "market": [
-        "Arizona State’s defense has to come out ahead on long runs: it gives up explosive gains on 4.4% of opponent runs, against an offense that turns 5.0% of its runs into explosive gains.",
-        "Arizona State’s offense has to keep winning on big pass plays: it turns 12.4% of its pass plays into explosive gains, and Hawai'i’s defense gives up explosive gains on 12.3% of opponent pass plays.",
-        "Boley keeps producing at his season rate (61.1% completions, 8.3 yards per attempt, 10 TD, 3 INT)."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Arizona State and Hawai'i.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, historical meetings, injuries and personnel, conference implications and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Arizona State), sack rate (Arizona State), sack rate allowed (Hawai'i) and sack rate (Hawai'i); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "medium",
-        "text": "EdgeDesk’s published number sits 5.7 points from the middle of its own other models."
-      },
-      {
-        "key": "DATA_FAULT",
-        "severity": "high",
-        "text": "EdgeDesk’s game page already labels this gap a DATA FAULT: EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game."
-      },
-      {
-        "key": "THIN_SAMPLE",
-        "severity": "medium",
-        "text": "One team has played only 4 games; ratings this early carry wide error."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-10T18:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-11T00:17:13.809Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-10T23:40:45.744Z",
-        "verification": "RATING"
-      }
-    ],
-    "needs_confirmation": []
+  "snapshot_id": "snap_0eb0f01bc00106ee",
+  "timing": {
+    "publication_window": "normal",
+    "classified_window": "normal",
+    "scheduled_kickoff": "2026-10-11T02:30:00.000Z",
+    "minutes_before_kickoff": 119,
+    "published_at": null,
+    "refreshed": false,
+    "at": "2026-10-11T00:30:42.409Z"
   },
-  "checks": {
-    "ok": true,
-    "failed": [],
-    "at": "2026-10-11T00:20:30.587Z"
-  },
-  "snapshot_id": "snap_c2018c68f7e32177",
   "featured": {
     "editorial_priority": 36.6,
     "status": "featured",
@@ -2351,20 +2264,11 @@
     "hold_reason": null,
     "integrity_failed": [],
     "craft_failed": [],
-    "at": "2026-10-11T00:20:30.587Z"
-  },
-  "timing": {
-    "publication_window": "normal",
-    "classified_window": "normal",
-    "scheduled_kickoff": "2026-10-11T02:30:00.000Z",
-    "minutes_before_kickoff": 129,
-    "published_at": null,
-    "refreshed": false,
-    "at": "2026-10-11T00:20:30.587Z"
+    "at": "2026-10-11T00:30:42.409Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-11T00:20:30.587Z",
+    "at": "2026-10-11T00:30:42.409Z",
     "blocking": [
       {
         "id": "evidence_inputs_suspect",
@@ -2374,5 +2278,101 @@
     ],
     "warnings": [],
     "hold_reason": "evidence_inputs_suspect"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1xs20nx1gxodbz",
+    "status": "UNEXPLAINED",
+    "input_suspect": true,
+    "question": "Can Arizona State contain Hawai'i’s explosive runs?",
+    "assessment": "EdgeDesk’s number is 8.6 points closer to Hawai'i than the line, and EdgeDesk cannot account for most of that: its own breakdown accounts for about 0.0 of the 8.6 points. The measured football evidence leans toward Arizona State, not toward EdgeDesk’s number. There is a specific reason to suspect EdgeDesk’s inputs: EdgeDesk’s game page already labels this gap a DATA FAULT: EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game. Treat the gap as an open research question, not as an edge.",
+    "gap": {
+      "points": 8.6,
+      "toward": "Hawai'i",
+      "other": "Arizona State"
+    },
+    "supporting": [
+      "In his last two games (Kansas and Baylor), Boley averaged 6.1 yards per attempt, against 10.5 in his two games before that.",
+      "When Arizona State has the ball (the red zone): Arizona State’s offense succeeds on 26.6% of its red-zone plays, and Hawai'i’s defense allows success on 45.4% of opponent red-zone plays (FBS average 43.9%).",
+      "In his last two games (Wyoming and San José State), Alejado averaged 6.9 yards per attempt, against 5.7 in his three games before that.",
+      "EdgeDesk’s position-group ratings put Hawai'i’s offensive line No. 94 nationally and Arizona State’s No. 125."
+    ],
+    "contradicting": [
+      "When Arizona State has the ball (big plays through the air): Arizona State’s offense turns 12.4% of its pass plays into explosive gains, and Hawai'i’s defense gives up explosive gains on 12.3% of opponent pass plays (FBS average 10.4%).",
+      "When Hawai'i has the ball (big plays on the ground): Hawai'i’s offense turns 5.0% of its runs into explosive gains, and Arizona State’s defense gives up explosive gains on 4.4% of opponent runs (FBS average 6.6%).",
+      "When Arizona State has the ball (the line of scrimmage on running plays): Arizona State’s offense is stopped at or behind the line on 16.4% of its runs, and Hawai'i’s defense stops 13.0% of opponent runs at or behind the line (FBS average 17.4%).",
+      "EdgeDesk’s position-group ratings put Arizona State’s defensive line No. 47 nationally and Hawai'i’s No. 110."
+    ],
+    "quarterbacks": [
+      "Cutter Boley has completed 77 of 126 passes (61.1%) for 1,040 yards, 8.3 yards per attempt, 10 touchdowns and 3 interceptions in four games for Arizona State, and has been sacked on 7 of 133 dropbacks.",
+      "Micah Alejado has completed 130 of 219 passes (59.4%) for 1,348 yards, 6.2 yards per attempt, 4 touchdowns and 3 interceptions in five games for Hawai'i, and has been sacked on 14 of 233 dropbacks."
+    ],
+    "availability": [],
+    "script": {
+      "model": [
+        "Hawai'i’s offense has to keep winning on long runs: it turns 5.0% of its runs into explosive gains, and Arizona State’s defense gives up explosive gains on 4.4% of opponent runs.",
+        "Hawai'i’s defense has to slow Arizona State on big pass plays — Arizona State’s offense turns 12.4% of its pass plays into explosive gains."
+      ],
+      "market": [
+        "Arizona State’s defense has to come out ahead on long runs: it gives up explosive gains on 4.4% of opponent runs, against an offense that turns 5.0% of its runs into explosive gains.",
+        "Arizona State’s offense has to keep winning on big pass plays: it turns 12.4% of its pass plays into explosive gains, and Hawai'i’s defense gives up explosive gains on 12.3% of opponent pass plays.",
+        "Boley keeps producing at his season rate (61.1% completions, 8.3 yards per attempt, 10 TD, 3 INT)."
+      ]
+    },
+    "unknown": [
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Arizona State and Hawai'i.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates, historical meetings, injuries and personnel, conference implications and penalty rate."
+    ],
+    "flags": [
+      {
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Arizona State), sack rate (Arizona State), sack rate allowed (Hawai'i) and sack rate (Hawai'i); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      },
+      {
+        "key": "CROSS_MODEL_OUTLIER",
+        "severity": "medium",
+        "text": "EdgeDesk’s published number sits 5.7 points from the middle of its own other models."
+      },
+      {
+        "key": "DATA_FAULT",
+        "severity": "high",
+        "text": "EdgeDesk’s game page already labels this gap a DATA FAULT: EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game."
+      },
+      {
+        "key": "THIN_SAMPLE",
+        "severity": "medium",
+        "text": "One team has played only 4 games; ratings this early carry wide error."
+      }
+    ],
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-10T18:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-11T00:17:13.809Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk position-group ratings",
+        "url": null,
+        "path": "football/rankings/current.json",
+        "observed_at": "2026-10-10T23:40:45.744Z",
+        "verification": "RATING"
+      }
+    ],
+    "needs_confirmation": []
+  },
+  "checks": {
+    "ok": true,
+    "failed": [],
+    "at": "2026-10-11T00:30:42.409Z"
   }
 }
