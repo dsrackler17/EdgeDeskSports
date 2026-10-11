@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-11T22:07:33.000Z",
+ "generated_at": "2026-10-11T23:07:28.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,8 +46,8 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 963,
-    "latest_snapshot_at": "2026-10-11T02:07:27.000Z",
+    "snapshots": 964,
+    "latest_snapshot_at": "2026-10-11T23:07:28.000Z",
     "upcoming_games": 65,
     "avg_confidence_upcoming": 74.4
    },
@@ -55,8 +55,8 @@
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 1223,
-    "latest_snapshot_at": "2026-10-11T17:07:26.000Z",
+    "snapshots": 1224,
+    "latest_snapshot_at": "2026-10-11T23:07:28.000Z",
     "upcoming_games": 62,
     "avg_confidence_upcoming": 75.3
    },
@@ -64,8 +64,8 @@
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 1223,
-    "latest_snapshot_at": "2026-10-11T17:07:26.000Z",
+    "snapshots": 1224,
+    "latest_snapshot_at": "2026-10-11T23:07:28.000Z",
     "upcoming_games": 62,
     "avg_confidence_upcoming": 75.5
    }
@@ -924,8 +924,8 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-11T22:07:33.000Z",
-    "quotes_total": 13599,
+    "last_quote_at": "2026-10-11T23:07:28.000Z",
+    "quotes_total": 13633,
     "last_result_at": "2026-10-11T07:07:14.000Z"
    }
   },
@@ -959,9 +959,9 @@
    }
   ],
   "ledger": {
-   "predictions": 3919,
-   "live_predictions": 3409,
-   "quotes": 13599,
+   "predictions": 3922,
+   "live_predictions": 3412,
+   "quotes": 13633,
    "lines": 2709,
    "results": 399,
    "evaluations": 3716,
@@ -976,10 +976,10 @@
    "home": "Middle Tennessee",
    "away": "Delaware",
    "market": {
-    "current": 2.5,
+    "current": 3,
     "open": 1.5,
     "books": 1,
-    "as_of": "2026-10-11T17:07:26.000Z",
+    "as_of": "2026-10-11T22:07:33.000Z",
     "sources": [
      "espn"
     ],
@@ -988,30 +988,30 @@
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T72",
+     "checkpoint": "T48",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-10T23:07:30.000Z",
+     "prediction_ts": "2026-10-11T23:07:28.000Z",
      "margin": -0.77,
      "fair": "Delaware -1.0",
      "p_home": 0.479,
      "sigma": null,
      "conf": 78,
      "dq": "GREEN",
-     "decision": "PASS",
-     "status": "PASS",
+     "decision": "LEAN",
+     "status": "LEAN",
      "side": "HOME",
-     "gap": 0.73,
-     "line": 1.5,
+     "gap": 2.23,
+     "line": 3,
      "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": null
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "ADHOC",
+     "checkpoint": "T48",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-11T17:07:26.000Z",
+     "prediction_ts": "2026-10-11T23:07:28.000Z",
      "margin": 0.72,
      "fair": "Middle Tennessee -0.5",
      "p_home": 0.5179,
@@ -1021,8 +1021,8 @@
      "decision": "PASS",
      "status": "PASS",
      "side": "HOME",
-     "gap": 3.22,
-     "line": 2.5,
+     "gap": 3.72,
+     "line": 3,
      "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -1032,21 +1032,21 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "ADHOC",
+     "checkpoint": "T48",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-11T17:07:26.000Z",
+     "prediction_ts": "2026-10-11T23:07:28.000Z",
      "margin": 0.8,
      "fair": "Middle Tennessee -1.0",
      "p_home": 0.5201,
      "sigma": 16.026,
      "conf": 75,
      "dq": "GREEN",
-     "decision": "PASS",
-     "status": "PASS",
+     "decision": "LEAN",
+     "status": "LEAN",
      "side": "HOME",
-     "gap": 3.3,
-     "line": 2.5,
+     "gap": 3.8,
+     "line": 3,
      "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
      "degraded_modes": [
       "NO_PLAYER_DATA",
@@ -10560,7 +10560,7 @@
   "data_fault": 0,
   "market_fault": 15,
   "verification_not_run": 0,
-  "average_raw_gap": 3.765,
+  "average_raw_gap": 3.777,
   "average_raw_gap_7plus": 10.154,
   "market_movement_toward_verified_pct": null,
   "market_movement_toward_unverified_pct": 50,
