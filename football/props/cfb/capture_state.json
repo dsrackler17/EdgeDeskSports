@@ -7,13 +7,13 @@
  "reason": "GATEWAY_DEFERRED",
  "why": "The odds gateway deferred the event index (refused): no prop was requested.",
  "error_message": null,
- "started_at": "2026-10-11T02:25:45.348Z",
- "completed_at": "2026-10-11T02:25:45.492Z",
- "updated_at": "2026-10-11T02:25:45.492Z",
- "last_attempt": "2026-10-11T02:25:45.348Z",
- "duration_ms": 144,
+ "started_at": "2026-10-11T02:30:53.201Z",
+ "completed_at": "2026-10-11T02:30:53.327Z",
+ "updated_at": "2026-10-11T02:30:53.327Z",
+ "last_attempt": "2026-10-11T02:30:53.201Z",
+ "duration_ms": 126,
  "run": {
-  "id": "38105080499.1",
+  "id": "38105356961.1",
   "trigger": "supabase_cron",
   "refresh_request_id": null,
   "manual": false
@@ -428,7 +428,7 @@
    "books": 6,
    "markets": 11,
    "quotes": 492,
-   "next_due_at": "2026-10-11T02:25:45.348Z"
+   "next_due_at": null
   },
   "c4db3412210ed8e1045807c73f69b377": {
    "polled_ok_at": "2026-10-10T06:05:09.096Z",
@@ -445,7 +445,7 @@
    "books": 5,
    "markets": 9,
    "quotes": 447,
-   "next_due_at": "2026-10-11T02:25:45.348Z"
+   "next_due_at": null
   },
   "62dd374d95f55eaaad10717b58220ce7": {
    "polled_ok_at": "2026-10-09T23:01:54.118Z",
@@ -1102,19 +1102,16 @@
   "requests_remaining": 0,
   "requests_used": 100000
  },
- "next_due_at": "2026-10-11T02:25:45.348Z",
+ "next_due_at": null,
  "health": {
-  "now": "2026-10-11T02:25:45.348Z",
-  "active_events": 2,
+  "now": "2026-10-11T02:30:53.201Z",
+  "active_events": 0,
   "on_target": 0,
-  "late_events": [
-   "7dd6e0d9f2657c834974c28b286ff58d",
-   "c4db3412210ed8e1045807c73f69b377"
-  ],
+  "late_events": [],
   "failed_events": 0,
-  "share": 0,
+  "share": 1,
   "last_success_at": "2026-10-10T13:55:50.186Z",
-  "last_attempt_at": "2026-10-11T02:25:45.348Z",
+  "last_attempt_at": "2026-10-11T02:30:53.201Z",
   "consecutive_failures": 0,
   "rate_limited_until": null,
   "current_prices": null,
@@ -1122,9 +1119,9 @@
   "books_current": [],
   "books_delayed": [],
   "error": null,
-  "recovering": true,
-  "state": "DELAYED",
-  "reason": "PRICES_BEHIND",
-  "text": "0 of 2 games were price-checked on schedule."
+  "recovering": false,
+  "state": "HEALTHY",
+  "reason": "NO_EVENTS_IN_WINDOW",
+  "text": "No game is inside the price-capture window."
  }
 }
