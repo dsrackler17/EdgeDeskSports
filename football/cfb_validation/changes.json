@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-10-11T10:07:44.409Z",
+ "generated_at": "2026-10-11T11:07:43.482Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
   "available": true,
-  "since": "2026-10-05T10:07:32.053Z",
+  "since": "2026-10-05T11:07:34.449Z",
   "changes": [
    {
     "what": "pricing code",
@@ -38,13 +38,19 @@
     "to": 80
    },
    {
+    "what": "market coverage (% of slate games with 2+ fresh books)",
+    "kind": "MARKET",
+    "from": 0,
+    "to": 2
+   },
+   {
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
-    "from": 8,
-    "to": 14
+    "from": 2,
+    "to": 23
    }
   ],
-  "summary": "SOFTWARE: pricing code · SOFTWARE: research-gate code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
+  "summary": "SOFTWARE: pricing code · SOFTWARE: research-gate code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with 2+ fresh books) · MARKET: market coverage (% of slate games with a fresh quote)"
  },
  "games": [
   {
@@ -181,10 +187,10 @@
    "game_id": "401858263",
    "game": "Florida State @ Miami",
    "market_then": -16.5,
-   "market_now": -20.25,
-   "market_change": -3.75,
+   "market_now": -21,
+   "market_change": -4.5,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
@@ -344,10 +350,10 @@
    "game_id": "401858266",
    "game": "North Carolina @ Duke",
    "market_then": -4.5,
-   "market_now": -3.75,
-   "market_change": 0.75,
+   "market_now": -3,
+   "market_change": 1.5,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
    "price_state": "PART OF THE EDGE PRICED IN"
   },
   {
@@ -455,7 +461,7 @@
    "market_now": 1.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "MARKET_ALIGNED",
    "price_state": "NO INITIAL EDGE"
   },
   {
@@ -555,7 +561,7 @@
    "market_now": 3,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "INVESTIGATE",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
@@ -805,7 +811,7 @@
    "market_now": 12.5,
    "market_change": 2.5,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "MARKET_FAULT",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
@@ -1660,10 +1666,10 @@
    "game_id": "401856720",
    "game": "Mississippi State @ LSU",
    "market_then": null,
-   "market_now": -12,
+   "market_now": -11.5,
    "market_change": null,
    "status_then": "NO_MARKET",
-   "status_now": "NO_MARKET",
+   "status_now": "MARKET_ALIGNED",
    "price_state": "NO INITIAL EDGE"
   },
   {
