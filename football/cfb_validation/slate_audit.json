@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-11T13:07:41.867Z",
- "board_generated_at": "2026-10-11T13:07:39.596Z",
+ "generated_at": "2026-10-11T14:07:41.529Z",
+ "board_generated_at": "2026-10-11T14:07:39.515Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -36,41 +36,21 @@
    "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
-   "game_id": "401871054",
-   "game": "Kennesaw State @ Missouri State",
-   "kickoff": "2026-10-14T23:30:00.000Z",
-   "named": false,
-   "edgedesk": "Missouri State -0.2",
-   "market": "Kennesaw State -3.0",
-   "books": 1,
-   "gap": 3.2,
-   "gap_class": "MODERATE",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
-   "gate_status": "NOT REQUIRED (under 7 pts)",
-   "root_cause": null,
-   "requirements": null,
-   "consistent": true,
-   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
-  },
-  {
    "game_id": "401856809",
    "game": "Notre Dame @ BYU",
    "kickoff": "2026-10-17T23:30:00.000Z",
    "named": false,
    "edgedesk": "Notre Dame -3.2",
    "market": "Notre Dame -12.5",
-   "books": 2,
+   "books": 1,
    "gap": 9.3,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
    "research_label": "INVESTIGATE",
    "decision_status": "PASS",
-   "gate_status": "INVESTIGATE",
-   "root_cause": "PLAYER_AVAILABILITY_ERROR",
+   "gate_status": "MARKET_FAULT",
+   "root_cause": "THIN_MARKET",
    "requirements": [
     {
      "requirement": "correct game",
@@ -84,8 +64,8 @@
     },
     {
      "requirement": "fresh multi-book consensus",
-     "result": "PASS",
-     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 0 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 0"
+     "result": "FAIL",
+     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
     },
     {
      "requirement": "current team states",
@@ -119,7 +99,7 @@
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: no abnormal availability fail."
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; no abnormal availability fail."
   },
   {
    "game_id": "401860923",
