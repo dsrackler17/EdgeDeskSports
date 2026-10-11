@@ -69,39 +69,61 @@
     best: /\b(best|top|strongest|biggest|largest|safest)\b.*\b(bet|bets|play|plays|value|edge|edges|opportunit\w*|underdog|dog|favou?rite|moneyline|ev|price|trade|wager)\b|\bpositive[- ]?ev\b|\+ ?ev\b|\bwhat should i (bet|play|take)\b|\bmost likely to (go )?(under|over)\b|\bshould i bet anything\b/i,
     underdog: /\b(under ?dog|dogs?)\b/i,
     favorite: /\bfavou?rites?\b/i,
-    coverage: /\b(which|what) (sports?|leagues?|markets?)\b.*\b(couldn'?t|could not|can'?t|cannot|weren'?t|were not|didn'?t|did not|not|unable|missing|skipped|scan(ned)?|cover(ed)?)\b|\b(coverage|scan coverage)\b|\bwhat did you (scan|check|cover)\b/i,
-    outage: /\b(odds|price|market|pricing)\s*(api|feed|provider|data)?\b.*\b(fail|fails|failed|down|offline|out|unavailable|breaks?|outage)\b|\bif (the )?(odds|market|book)\w* (are|is|go|goes)? ?(down|offline|unavailable)\b|\bwithout (the )?(odds|market|prices?)\b/i,
+    /* which SPORTS were scanned: never the football word "coverage" (pass coverage, man or zone) */
+    coverage: /\b(which|what) (sports?|leagues?)\b.*\b(couldn'?t|could not|can'?t|cannot|weren'?t|were not|didn'?t|did not|unable|missing|skipped|scan(ned)?|cover(ed)?|check(ed)?|evaluat(ed|e)|includ(ed|e)|look(ed)? at|support(ed)?)\b|\bcoverage\b.*\b(scan\w*|sports|leagues)\b|\b(scan\w*|sports|leagues)\b.*\bcoverage\b|\bwhat did you (scan|check|cover)\b/i,
+    /* an explicit feed failure: a provider word AND a failure word ("ruled out" is injury news, not an outage) */
+    outage: /\b(odds|price|pricing|market|sportsbook|line)s?\s*(api|feed|provider|service|data source)\b.*\b(fail\w*|down|offline|unavailable|break\w*|broke|outage|stops?|dies|died)\b|\b(api|feed|provider)\b.*\b(fail\w*|down|offline|outage)\b|\bif (the )?(odds|market|book)\w* (api|feed|provider|service) (are|is|goes|go)? ?(down|offline|unavailable)\b|\bwithout (the )?(odds|market|pricing) (api|feed|data)\b/i,
+    /* a named game: "Lions vs Bills", "this game" — a best-bet question about ONE game is not a cross-sport scan */
+    namedGame: /\b(this|that) (game|matchup|match|fight|bout)\b|[a-z.]\s+(?:vs\.?|versus|v\.|@)\s+[a-z]/i,
     explainEv: /\b(explain|why)\b.*\b(negative|positive|-|\+)? ?ev\b|\bwhy (is|does) (this|that|it) .*\b(bad|negative|lose|losing|pass)\b|\bexplain (this|that) (contract|price|bet)\b/i,
     contractWords: /\bkalshi\b|\bpoly ?market\b|\bcontracts?\b|\byes\b.*\bat\b|\b\d{1,2}(?:\.\d+)?\s*(?:¢|c\b|cents?\b)|\$\s?0?\.\d{1,2}\b/i,
     betterPrice: /\bbetter price\b|\bcheaper\b|\bbeat (this|that) price\b|\bfind me a better\b|\bshop (this|that)\b/i,
     priceCheck: /\b(is|was)\b.*[+-]\d{3,4}\b.*\b(good|fair|worth|value|positive|bet|price|ev)\b|[+-]\d{3,4}\b.*\b(good|fair|worth|value)\b/i,
-    risk: /\$\s?(\d{1,6}(?:\.\d{1,2})?)\b(?!\s*(?:¢|c\b|cents?))/
+    risk: /\$\s?(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d{1,6}(?:\.\d{1,2})?)\b(?!\s*(?:¢|c\b|cents?))/,
+    /* markets the quant desk does not price from a captured moneyline or spread */
+    unsupported: [
+      ['a total', /\b(?:over|under|o|u)\s*\d+(?:\.\d)?\b(?!\s*(?:%|percent|cents?|¢|c\b))|\bo\/u\b|\btotals?\b|\bteam total\b/i],
+      ['a futures market', /\b(world series|super bowl|stanley cup|nba finals|national champion\w*|pennant|make the playoffs|to make the|win totals?|futures?|mvp|cy young|heisman|championship odds)\b|\bto win the (title|championship|division|conference|league|series|cup)\b/i],
+      ['a player prop', /\b(props?|strikeouts?|passing yards|rushing yards|receiving yards|yards|touchdowns?|rebounds|assists|home runs?|receptions?|anytime (?:scorer|td|touchdown))\b/i],
+      ['a partial-game market', /\b(first (?:half|quarter|period|five|5|inning)|1st (?:half|quarter|period|inning)|f5|nrfi|yrfi|second half|2nd half)\b/i]
+    ]
   };
   /**
    * q: the question; o.state: the carried quant state; o.has_board_state: a
    * board follow-up is in flight (leave it to the board).
    */
+  /** The kind of market a question asks about when it is not a moneyline or a spread, else null. */
+  function unsupportedMarket(q) {
+    q = str(q);
+    for (var i = 0; i < RX.unsupported.length; i++) if (RX.unsupported[i][1].test(q)) return RX.unsupported[i][0];
+    return null;
+  }
   function classify(q, o) {
     q = str(q).trim(); o = o || {};
-    var out = { intent: null, question: q, filter: null, risk_dollars: null, price: null, league_named: RX.league.test(q), football_named: RX.football.test(q), all_sports: RX.allSports.test(q) };
+    var out = { intent: null, question: q, filter: null, risk_dollars: null, price: null, league_named: RX.league.test(q), football_named: RX.football.test(q), all_sports: RX.allSports.test(q), named_game: RX.namedGame.test(q) };
     if (!q || q.length > 400) return out;
     var F_ = F();
     var price = F_.parsePrice(q);
     out.price = price;
     var rm = q.match(RX.risk);
-    if (rm && !/\$\s?0?\.\d/.test(rm[0])) out.risk_dollars = num(rm[1]);
+    if (rm && !/\$\s?0?\.\d/.test(rm[0])) out.risk_dollars = num(rm[1].replace(/,/g, ''));
     if (RX.underdog.test(q)) out.filter = 'underdog';
     else if (RX.favorite.test(q)) out.filter = 'favorite';
     var st = sanitizeState(o.state);
     if (RX.coverage.test(q)) { out.intent = 'COVERAGE'; return out; }
     if (RX.outage.test(q) && /\b(can|could|still|will|do|does|able)\b/i.test(q)) { out.intent = 'OUTAGE'; return out; }
     if (RX.explainEv.test(q) && st && st.contract && !(price.contract && price.contract.price_cents)) { out.intent = 'EXPLAIN_EV'; return out; }
-    if (price.contract && price.contract.price_cents) { out.intent = 'CONTRACT'; return out; }
+    /* a cents number is a contract price only with something that says so: a venue, the ¢ sign or
+       "$0.61", "contract", a YES/NO side, or "cents" in a price question — never "12c" or "my 2 cents" */
+    var ct = price.contract;
+    var contractContext = !!ct && (!!price.venue || ct.symbol === true || !!price.side || /\bcontracts?\b/i.test(q)
+      || (/\d\s*cents?\b/i.test(q) && /\b(ev|worth|value|price|buy|fair|edge|good|bet)\b/i.test(q)));
+    if (ct && contractContext && (ct.price_cents || ct.error)) { out.intent = 'CONTRACT'; out.unsupported_market = unsupportedMarket(q); return out; }
     if (RX.betterPrice.test(q) && (price.venue || (st && st.contract))) { out.intent = 'CONTRACT'; out.better_price = true; return out; }
     if (price.venue && /\b(price|worth|ev|value|good|bet|buy)\b/i.test(q)) { out.intent = 'CONTRACT'; return out; }
-    if (price.american != null && RX.priceCheck.test(q) && !out.football_named) { out.intent = 'PRICE'; return out; }
+    if (price.american != null && RX.priceCheck.test(q) && !out.football_named) { out.intent = 'PRICE'; out.unsupported_market = unsupportedMarket(q); return out; }
     if (o.has_board_state) return out;
-    if (RX.best.test(q) && (out.all_sports || !out.league_named)) { out.intent = 'SCAN'; return out; }
+    if (RX.best.test(q) && (out.all_sports || (!out.league_named && !out.named_game))) { out.intent = 'SCAN'; return out; }
     return out;
   }
 
@@ -298,7 +320,11 @@
     var F_ = F();
     var e = o.evaluation;
     var lines = [];
-    if (!e || !e.ok) return 'EdgeDesk could not price that: ' + (e && e.error ? e.error.message : 'no result') + '.';
+    if (!e || !e.ok) {
+      var miss = (o.missing || []).slice();
+      if (e && e.error) miss.unshift(e.error.message);
+      return 'EdgeDesk did not price that' + (o.game ? ' (' + o.game.matchup + ')' : '') + ': ' + (miss.length ? miss.join('; ') : 'no result') + '. No expected value is quoted without a priced market, a known side and a fair probability.';
+    }
     var x = F_.explain(e, { selection: o.selection });
     lines.push(x.headline);
     lines.push('');
@@ -344,8 +370,11 @@
   function renderCoverage(o) {
     o = o || {};
     var st = sanitizeState(o.state);
-    var rows = st && st.coverage && st.coverage.length ? st.coverage : (o.coverage || []);
-    var source = st && st.coverage && st.coverage.length ? 'the scan at ' + (st.built_at || 'the last turn') : 'EdgeDesk\'s capture configuration and the price rows on file now';
+    /* the live read is the fact; a scan carried by the client is used only when that read came back empty,
+       and is labelled as the earlier scan it claims to be */
+    var live = o.coverage && o.coverage.length ? o.coverage : null;
+    var rows = live || (st && st.coverage && st.coverage.length ? st.coverage : []);
+    var source = live ? 'EdgeDesk\'s capture configuration and the price rows on file now' : 'the earlier scan this conversation carries (' + (st && st.built_at || 'time unknown') + '); the live read returned nothing';
     var lines = [];
     var bad = rows.filter(function (c) { return c.status !== 'EVALUATED' && c.status !== 'NO_GAMES' && c.status !== 'NO_ELIGIBLE_GAMES' && c.status !== 'OUT_OF_SEASON'; });
     var ok = rows.filter(function (c) { return c.status === 'EVALUATED'; });
@@ -430,7 +459,7 @@
 
   return {
     VERSION: VERSION, STATE_SCHEMA: STATE_SCHEMA, NO_EDGE: NO_EDGE, RX: RX,
-    classify: classify, candidatesFromBoard: candidatesFromBoard, matchesFilter: matchesFilter,
+    classify: classify, unsupportedMarket: unsupportedMarket, candidatesFromBoard: candidatesFromBoard, matchesFilter: matchesFilter,
     scanResult: scanResult, renderScan: renderScan, coverageSentence: coverageSentence,
     renderContract: renderContract, renderExplain: renderExplain, renderCoverage: renderCoverage, renderOutage: renderOutage,
     stateFrom: stateFrom, sanitizeState: sanitizeState, critic: critic

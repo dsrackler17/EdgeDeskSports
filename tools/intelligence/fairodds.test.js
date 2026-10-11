@@ -215,8 +215,10 @@ const AUDIT_OK = { status: 'CONFIRMED' };
   eq('a quote with no capture time is never actionable', noTime.classification, 'UNVERIFIED_DATA');
   const future = F.evaluateWager(Object.assign({}, base, { quote_observed_at: '2026-10-11T23:30:00Z' }));
   eq('a quote timestamped in the future is UNKNOWN', future.data_freshness.quote.status, 'UNKNOWN');
-  const aging = F.evaluateWager(Object.assign({}, base, { quote_observed_at: '2026-10-11T20:00:00Z' }));
-  eq('an aging quote caps at POTENTIAL EDGE', aging.classification, 'POTENTIAL_EDGE');
+  const aging = F.evaluateWager(Object.assign({}, base, { quote_observed_at: '2026-10-11T21:00:00Z' }));
+  eq('an aging quote (60 of 90 min) caps at POTENTIAL EDGE', aging.classification, 'POTENTIAL_EDGE');
+  const past = F.evaluateWager(Object.assign({}, base, { quote_observed_at: '2026-10-11T20:00:00Z' }));
+  eq('a 120-minute quote is STALE, as EDINTEL.quoteState says (not AGING)', [past.data_freshness.quote.status, past.classification], ['STALE', 'UNVERIFIED_DATA']);
   const noFair = F.evaluateWager(Object.assign({}, base, { fair_probability: null }));
   eq('no fair probability: UNVERIFIED DATA, never an invented one', [noFair.classification, noFair.net_expected_value], ['UNVERIFIED_DATA', null]);
   const research = F.evaluateWager(Object.assign({}, base, { fair_source: { kind: 'MODEL', tier: 'RESEARCH', label: 'edgedesk_baseball_v1.0.0', observed_at: FRESH } }));
@@ -359,6 +361,97 @@ const AUDIT_OK = { status: 'CONFIRMED' };
   chk('the verdict leads', /^PASS: Rays YES at 61¢ on Kalshi\./.test(x.headline), x.headline);
   chk('every required line is present', ['Available price', 'Fair probability', 'Fees', 'Break-even', 'Net EV', 'Maximum entry', 'Calibration', 'Decision'].every((k) => x.lines.some((l) => l[0] === k)), x.lines.map((l) => l[0]));
   chk('no certainty words', !/guarantee|lock|sure thing|can't lose/i.test(JSON.stringify(x)), x);
+}
+
+/* ═══ 14. INDEPENDENT-AUDIT REGRESSIONS (quant audit M1 M4 M5 M6 M8 L1 L2 L4 L5 L10) ═══ */
+{
+  const base = { book: 'pinnacle', american: 120, fair_probability: 0.5, fair_source: SHARP, quote_observed_at: FRESH, now: NOW, confirmation: { pass: true, books: 4 }, audit: AUDIT_OK };
+  /* M1 no confirmation data is capped like a failed confirmation */
+  const noConf = F.evaluateWager(Object.assign({}, base, { confirmation: null }));
+  eq('M1: a wager with no confirmation data is POTENTIAL EDGE, not VERIFIED', [noConf.classification, noConf.market_liquidity.status], ['POTENTIAL_EDGE', 'UNKNOWN']);
+  chk('M1: …and says why', noConf.caps.some((c) => c.binding && /no independent book/.test(c.reason)), noConf.caps);
+  /* M4 the cents parser */
+  const p161 = F.parsePrice('Rays at 161c on kalshi');
+  chk('M4: "161c" is not read as 61¢', !(p161.contract && p161.contract.price_cents === '61'), p161.contract);
+  const p150 = F.parsePrice('Rays 150c');
+  chk('M4: "150c" is not read as 50¢', !(p150.contract && p150.contract.price_cents === '50'), p150.contract);
+  const two = F.parsePrice('Texans 2c better than Kalshi at 61c');
+  eq('M4: two different cents values are refused, not resolved by order', [two.contract && two.contract.ambiguous, two.contract && two.contract.price_cents], [true, undefined]);
+  eq('M4: "your 2 cents" is not a price', F.parsePrice('What is your 2 cents on Lions vs Bills?').contract, null);
+  eq('M4: a temperature is not a price', F.parsePrice('Kickoff temperature 12c in Buffalo, does that favor the under?').contract, null);
+  eq('M4: …but 61¢ with the sign still is', F.parsePrice('Analyze Rays vs. Guardians: is Rays at 61¢ positive EV?').contract.price_cents, '61');
+  eq('M4: the same value said twice is one price', F.parsePrice('Rays 61c on Kalshi — yes, 61 cents').contract.price_cents, '61');
+  /* M5 the side needs a price after it */
+  eq('M5: "yes or no at that price" sets no side', F.parsePrice('would you say yes or no at that price?').side, null);
+  eq('M5: "no contract fees" sets no side', F.parsePrice('there are no contract fees on Polymarket at 55c').side, null);
+  eq('M5: "no for real" sets no side', F.parsePrice('no for real, Rays 61c?').side, null);
+  eq('M5: "NO at 44¢" → NO', F.parsePrice('Buy Rays NO at 44¢ on Kalshi?').side, 'NO');
+  eq('M5: "YES is 55c" → YES', F.parsePrice('Will the Guardians beat the Rays? YES is 55c on Kalshi').side, 'YES');
+  eq('M5: "buy NO" → NO', F.parsePrice('should I buy NO on the Rays at 44c').side, 'NO');
+  /* M6 exchanges are never zero-fee books */
+  ['betfair_ex_eu', 'betfair_ex_uk', 'matchbook', 'novig', 'prophetx', 'betopenly'].forEach((k) => eq('M6: ' + k + ' is an exchange', F.venueOf(k) && F.venueOf(k).model, 'EXCHANGE_COMMISSION'));
+  eq('M6: an unknown key is not assumed to be a sportsbook', F.venueOf('somethingbet'), null);
+  eq('M6: draftkings is still a sportsbook', F.venueOf('draftkings').model, 'SPORTSBOOK');
+  const ex = F.evaluateWager(Object.assign({}, base, { book: 'novig' }));
+  eq('M6: an exchange price has no net EV, fees UNKNOWN, WATCH', [ex.ok, ex.net_ev_per_dollar, ex.expected_fees.status, ex.classification], [true, null, 'UNKNOWN', 'WATCH']);
+  near('M6: …gross EV is still the exact p(D−1) − (1−p)', ex.gross_expected_value, 0.1, 1e-9);
+  near('M6: …and the commission it can absorb is reported (1 − 0.5/(0.5·1.2) = 16.67%)', ex.commission_headroom, 1 - 0.5 / 0.6, 1e-6);
+  chk('M6: …and it says the fee is unknown', /commission/.test(ex.reasons[0]), ex.reasons);
+  const unk = F.evaluateWager(Object.assign({}, base, { book: 'mysterybook' }));
+  eq('M6: an unknown book key: fees UNKNOWN, never VERIFIED', [unk.expected_fees.status, unk.classification], ['UNKNOWN', 'WATCH']);
+  const exNeg = F.evaluateWager(Object.assign({}, base, { book: 'matchbook', american: -150 }));
+  eq('M6: negative gross at an exchange is PASS', exNeg.classification, 'PASS');
+  const cmpX = F.compareVenues([{ book: 'draftkings', american: 120 }, { book: 'novig', american: 125 }], { fair_probability: 0.5, fair_source: SHARP, quote_observed_at: FRESH, now: NOW });
+  eq('M6: compareVenues does not rank an exchange at zero commission', [cmpX.ranked.map((x) => x.venue), cmpX.not_priced.map((x) => x.venue)], [['draftkings'], ['novig']]);
+  /* M8 freshness agrees with EDINTEL.quoteState */
+  eq('M8: 30 of 90 min is LIVE', F.freshness(Date.parse('2026-10-11T21:30:00Z'), NOW, 90).status, 'LIVE');
+  eq('M8: 60 of 90 min is AGING', F.freshness(Date.parse('2026-10-11T21:00:00Z'), NOW, 90).status, 'AGING');
+  eq('M8: 95 of 90 min is STALE', F.freshness(Date.parse('2026-10-11T20:25:00Z'), NOW, 90).status, 'STALE');
+  const I = globalThis.EDINTEL;
+  const kq = F.freshness(Date.parse('2026-10-11T21:59:30Z'), NOW, 90, 'the quote', { market: 'h2h', kickoff: NOW + 60000 });
+  const iq = I.quoteState({ captured_at: Date.parse('2026-10-11T21:59:30Z'), market: 'h2h', kickoff: NOW + 60000, now: NOW });
+  eq('M8: with a kickoff a minute away the quote is not actionable (EDINTEL kickoff guard)', [kq.status, kq.basis, iq.actionable], ['STALE', 'EDINTEL.quoteState', false]);
+  [10, 40, 60, 89, 91, 150].forEach((age) => {
+    const at = NOW - age * 60000;
+    const f = F.freshness(at, NOW, 90, 'q', { market: 'h2h', kickoff: NOW + 48 * 3600000 });
+    const q = I.quoteState({ captured_at: at, market: 'h2h', kickoff: NOW + 48 * 3600000, now: NOW });
+    eq('M8: ' + age + ' min, 48h out: EDFAIR and EDINTEL agree', f.status, q.status === 'CURRENT' ? 'LIVE' : q.actionable ? q.status : 'STALE');
+  });
+  const agingFair = F.evaluateWager(Object.assign({}, base, { fair_source: Object.assign({}, SHARP, { observed_at: '2026-10-11T21:00:00Z' }) }));
+  eq('M8: a fair reference 60 of 90 min old caps at POTENTIAL EDGE', agingFair.classification, 'POTENTIAL_EDGE');
+  /* L1 liquidity */
+  const cBase = { venue: 'kalshi', side: 'YES', price_cents: 50, fair_probability: 0.6, fair_source: SHARP, quote_observed_at: FRESH, now: NOW, fee_override: { coefficient: '0.07', verified: true }, audit: AUDIT_OK, settlement: { verified: true }, contracts: 500 };
+  const est = F.evaluateContract(Object.assign({}, cBase, { slippage_cents: '0.0001' }));
+  eq('L1: a slippage estimate is not a walked book: POTENTIAL EDGE', [est.market_liquidity.status, est.classification], ['ESTIMATED', 'POTENTIAL_EDGE']);
+  const empty = F.evaluateContract(Object.assign({}, cBase, { orderbook: { asks: [[0.5, 0]] } }));
+  eq('L1: a book with no resting size is INSUFFICIENT (WATCH)', [empty.market_liquidity.status, empty.classification], ['INSUFFICIENT', 'WATCH']);
+  const deep = F.evaluateContract(Object.assign({}, cBase, { orderbook: { asks: [[0.5, 1000]] } }));
+  eq('L1: a deep book still verifies', deep.classification, 'VERIFIED_EDGE');
+  /* L2 stake sizing pays the execution price */
+  const sz = F.evaluateContract({ venue: 'kalshi', side: 'YES', price_cents: 61, fair_probability: 0.7, stake_dollars: 20, slippage_cents: 2, fair_source: SHARP, quote_observed_at: FRESH, now: NOW });
+  chk('L2: $20 with 2¢ slippage never costs more than $20 all-in', Number(sz.all_in_cost) * sz.contracts <= 20 + 1e-9, { contracts: sz.contracts, cost: sz.all_in_cost });
+  const thin = F.evaluateContract({ venue: 'kalshi', side: 'YES', price_cents: 61, fair_probability: 0.7, stake_dollars: 20, orderbook: { asks: [[0.61, 10], [0.65, 10], [0.70, 100]] }, fair_source: SHARP, quote_observed_at: FRESH, now: NOW });
+  chk('L2: …and walking a thin book, neither', Number(thin.all_in_cost) * thin.contracts <= 20 + 1e-9, { contracts: thin.contracts, cost: thin.all_in_cost });
+  /* L4 never -100 */
+  const evenish = F.evaluateWager({ american: 105, fair_probability: 0.5047, fair_source: SHARP, quote_observed_at: FRESH, now: NOW });
+  chk('L4: a maximum entry is never printed -100', evenish.maximum_entry_price !== -100, evenish.maximum_entry_price);
+  /* L5 1/fair an integer ≥ 100 */
+  const tiny = F.evaluateContract({ venue: 'kalshi', side: 'YES', price_cents: 1, fair_probability: 0.01, fair_source: SHARP, quote_observed_at: FRESH, now: NOW });
+  eq('L5: a 1% fair evaluates (no DECIMAL_LOOKS_AMERICAN crash)', [tiny.ok, tiny.fair_american_odds], [true, 9900]);
+  eq('L5: …0.5% too', F.evaluateWager({ american: 25000, fair_probability: 0.005, fair_source: SHARP, quote_observed_at: FRESH, now: NOW }).ok, true);
+  eq('L5: …and 0.2%', F.probToAmerican(0.002), '49900');
+  /* L10 parser */
+  eq('L10: "Rays +150." (trailing period) → +150', F.parsePrice('Rays +150.').american, 150);
+  eq('L10: a Unicode minus → -150', F.parsePrice('Guardians \u2212150 tonight').american, -150);
+  eq('L10: a spread is still not odds', F.parsePrice('Cleveland +1.5 at 61 cents').american, null);
+  /* L8 the operator kill switch */
+  const off = F.evaluateWager(Object.assign({}, base, { thresholds: { decisions_enabled: 'false' } }));
+  eq('L8: with decisions switched off nothing is BUY', [off.classification, off.decision], ['WATCH', 'WATCH']);
+  const saved = globalThis.EDINTEL;
+  const cfg0 = saved.CONFIG || saved.config();
+  globalThis.EDINTEL = Object.assign({}, saved, { CONFIG: Object.assign({}, cfg0, { decisions_enabled: false }) });
+  try { eq('L8: …read from EDINTEL.CONFIG.decisions_enabled', F.evaluateWager(base).classification, 'WATCH'); }
+  finally { globalThis.EDINTEL = saved; }
 }
 
 done();

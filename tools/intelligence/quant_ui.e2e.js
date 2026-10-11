@@ -128,6 +128,7 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       if (/Rays at 61/.test(q)) return R.contract_rays.response;
       if (/couldn.t be scanned/.test(q)) return R.coverage.response;
       if (/Explain why/.test(q)) return R.explain.response;
+      if (/46c on Kalshi fair for Rays vs Guardians/.test(q)) return R.contract_ambiguous.response;
       return { answer: 'ok', build: 'e2e' };
     };
     for (const vp of [{ width: 1280, height: 900, tag: 'desktop' }, { width: 390, height: 844, tag: 'phone' }]) {
@@ -178,6 +179,11 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       await page.waitForTimeout(1500);
       const notOnCard = await page.evaluate(() => /on any card EdgeDesk publishes/.test(document.getElementById('edaiLog').innerText));
       chk(vp.tag + ': an MLB matchup is not answered as a football game missing from the card', !notOnCard && SENT.length > before, { notOnCard, sent: SENT.length - before });
+
+      /* 6. a price attached to neither team: nothing is priced, and the chip says so */
+      await ask(page, R.contract_ambiguous.question, 5);
+      const amb = await lastAnswer(page);
+      chk(vp.tag + ': an unattached price renders as Unverified data with the "which side" request, no edge chip', amb && /unverified/i.test(amb.chip || '') && /say which side/.test(amb.text) && !/verified edge|potential edge/i.test(amb.chip || ''), amb && [amb.chip, amb.text.slice(0, 300)]);
 
       chk(vp.tag + ': no page errors', errors.length === 0, errors);
       await ctx.close();

@@ -69,14 +69,21 @@ try {
   db.sql(`create table public.signals (sig_key text primary key, closing_sharp_fair numeric, clv numeric, result text, graded_at timestamptz);
           insert into public.signals values ('k1', 0.55, 0.021, 'win', now());`);
 
+  /* Supabase's own default: authenticated and anon are granted ALL on new public tables */
+  db.sql('alter default privileges for role postgres in schema public grant all on tables to anon, authenticated;');
+
   /* ═══ 1. APPLY, TWICE ═════════════════════════════════════════════════ */
   const r1 = db.applyFile(FILE);
   chk('first apply: every report row ok', !/CHECK THIS/.test(r1) && (r1.match(/\|\s*ok/g) || []).length >= 9, r1.slice(-900));
   const audit = (id, uid, over) => `insert into public.opportunity_audits (audit_id, user_id, audited_at, candidate_id, sport, game_id, market, selection, odds_american, sig_key, fair_probability, status, reason, independent_ev, rounds, checks, classification, calc_version, audit_version)
     values (${L(id)}, ${L(uid)}, now(), 'baseball_mlb|g1|h2h|away', 'baseball_mlb', 'g1', 'h2h', 'Tampa Bay Rays', ${over && over.odds != null ? over.odds : 120}, 'k1', ${over && over.fair != null ? over.fair : 0.4655}, ${L(over && over.status || 'CONFIRMED')}, 'every check passed', 0.024, ${over && over.rounds || 1}, '[{"id":"A1_GAME_STATUS","result":"PASS"}]'::jsonb, 'VERIFIED_EDGE', 'fairodds_calc_1.0.0', 'edgedesk_audit_v1')`;
   db.as(A, audit('aud_1', A));
+  /* an earlier apply of this file keyed the ledgers globally: emulate it, then re-apply */
+  db.sql(`alter table public.opportunity_audits drop constraint opportunity_audits_user_audit_key; alter table public.opportunity_audits add constraint opportunity_audits_audit_id_key unique (audit_id);
+          alter table public.fair_price_estimates drop constraint fair_price_estimates_user_estimate_key; alter table public.fair_price_estimates add constraint fair_price_estimates_estimate_id_key unique (estimate_id);`);
   const r2 = db.applyFile(FILE);
   chk('second apply: still ok (idempotent)', !/CHECK THIS/.test(r2), r2.slice(-600));
+  chk('…and it replaced the old global keys with per-user keys', /per-user ledger keys\s*\|\s*ok/.test(r2), r2.slice(-900));
   chk('re-running kept the row', db.service('select count(*) from public.opportunity_audits').trim() === '1');
 
   /* ═══ 2. ROW LEVEL SECURITY ═══════════════════════════════════════════ */
@@ -86,6 +93,18 @@ try {
   const anonRead = db.mustFail(() => db.anon('select count(*) from public.opportunity_audits'));
   chk('anon cannot read the audit trail', anonRead !== null || db.anon('select count(*) from public.opportunity_audits').trim() === '0', anonRead);
   chk('the service role reads everything', db.service('select count(*) from public.opportunity_audits').trim() === '1');
+
+  /* ═══ 2b. PER-USER KEYS, NO TRUNCATE (security audit S8, S12) ══════════ */
+  db.as(B, audit('aud_1', B) + ' on conflict (user_id, audit_id) do nothing');
+  chk('another user\'s identical audit id is stored for them, not swallowed', db.as(B, "select count(*) from public.opportunity_audits where audit_id = 'aud_1'").trim() === '1');
+  db.as(A, audit('aud_1', A) + ' on conflict (user_id, audit_id) do nothing');
+  chk('the same user\'s repeat of an id is ignored (deduplicated)', db.as(A, "select count(*) from public.opportunity_audits where audit_id = 'aud_1'").trim() === '1');
+  chk('a reader cannot TRUNCATE the audit trail (it would bypass the row triggers)', db.mustFail(() => db.as(A, 'truncate public.opportunity_audits')) !== null);
+  chk('…nor the estimates', db.mustFail(() => db.as(A, 'truncate public.fair_price_estimates')) !== null);
+  chk('…nor the fee schedules', db.mustFail(() => db.as(A, 'truncate public.market_execution_costs')) !== null);
+  const grants = db.sql("select string_agg(distinct privilege_type, ',' order by privilege_type) from information_schema.role_table_grants where grantee = 'authenticated' and table_schema = 'public' and table_name in ('opportunity_audits','fair_price_estimates')");
+  chk('authenticated holds only SELECT and INSERT on the ledgers', grants.trim() === 'INSERT,SELECT', grants);
+  db.sql("select set_config('edgedesk.quant_prune', 'on', false); delete from public.opportunity_audits where user_id = '" + B + "';");
 
   /* ═══ 3. WRITE ONCE, NO READER DELETES, ONE RETENTION DOOR ═════════════ */
   chk('an audit row cannot be updated', /write-once/.test(db.mustFail(() => db.service("update public.opportunity_audits set status = 'REJECTED' where audit_id = 'aud_1'")) || ''));

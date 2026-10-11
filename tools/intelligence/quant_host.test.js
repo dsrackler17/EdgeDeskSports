@@ -38,6 +38,7 @@ const ENV = { EDGEDESK_AI_NO_SERVE: '1', ANTHROPIC_API_KEY: 'test-key', SUPABASE
 globalThis.Deno = { env: { get: (k) => ENV[k] } };
 
 let route = () => [];
+let postFail = null;
 let modelCalls = 0;
 let posted = [];
 let reads = [];
@@ -48,7 +49,8 @@ globalThis.fetch = async function (url, init) {
   /* FIRST: a capture or odds call is a POST to the same host, so it is caught before the generic write branch */
   if (u.indexOf('the-odds-api.com') >= 0 || u.indexOf('/functions/v1/capture') >= 0) { oddsCalls.push(u); throw new Error('an odds request was made: ' + u); }
   if (init && init.method === 'POST' && u.indexOf('sb.test') >= 0) {
-    posted.push({ table: u.replace('https://sb.test/rest/v1/', '').split('?')[0], body: JSON.parse(init.body) });
+    posted.push({ table: u.replace('https://sb.test/rest/v1/', '').split('?')[0], query: u.split('?')[1] || '', body: JSON.parse(init.body) });
+    if (postFail) return { ok: false, status: 400, text: async () => postFail, json: async () => null };
     return { ok: true, status: 201, text: async () => '', json: async () => [] };
   }
   if (init && init.method === 'HEAD') return { ok: true, status: 200, headers: { get: () => '*/0' }, text: async () => '' };
@@ -100,6 +102,12 @@ const etDate = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New
   function routerFor(signals, opts, o) {
     const inner = FX.router(fx, Object.assign({ signals }, opts || {}));
     return function (u, init) {
+      /* the audit's fresh re-read of one signal, optionally different from what the board read */
+      if (o && o.fresh && /signals\?select=sig_key,event_id,market,selection,point,best_dec,best_book,sharp_fair/.test(u)) {
+        const k = decodeURIComponent((/sig_key=eq\.([^&]+)/.exec(u) || [])[1] || '');
+        const row = signals.find((x) => x.sig_key === k);
+        if (row) return [Object.assign({}, row, o.fresh[k] || {})];
+      }
       if (u.indexOf('games?') >= 0 && u.indexOf('game_date=in.') >= 0 && u.indexOf('sport_key=') < 0) return [MLB_GAME];
       if (u.indexOf('mlb_game_cards?') >= 0) return [CARD];
       if (u.indexOf('market_execution_costs?') >= 0) return (o && o.fees) || [];
@@ -115,7 +123,7 @@ const etDate = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New
     m.clearCache(); m.resetRateLimit(); if (m.clearInvestigationCache) m.clearInvestigationCache();
     route = routerFor(o.signals || MLB_SIGNALS, o.rows, o);
     modelCalls = 0; posted = []; reads = [];
-    const body = { mode: 'chat', question, packet: null, history: [], research_context: o.carried || null, timezone: 'America/New_York' };
+    const body = { mode: 'chat', question, packet: o.packet || null, history: [], research_context: o.carried || null, timezone: 'America/New_York' };
     if (o.desk !== false) body.desk = true;
     const r = await m.handle(new Request('https://fn.test/edgedesk_ai', { method: 'POST', headers: { authorization: 'Bearer user-jwt', 'content-type': 'application/json' }, body: JSON.stringify(body) }));
     const j = await r.json();
@@ -247,6 +255,84 @@ const etDate = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New
   ok('a non-desk client keeps the full research pipeline for a best-bet question', !legacy.j.quant, Object.keys(legacy.j));
   const plain = await ask('Who has the advantage in Rays vs. Guardians?');
   ok('a matchup question with no price is not a quant question', !plain.j.quant, plain.j.quant);
+
+
+  /* ═══ 10. INDEPENDENT-AUDIT REGRESSIONS (security S1–S13, quant H2, H3) ══ */
+  const ALL = MLB_SIGNALS.concat(NFL_SIGNALS);
+  /* S1 the selection is the subject, not the nearest team */
+  const r1 = await ask('Rays to beat the Guardians at 46 cents on Kalshi, worth it?');
+  const r1e = r1.j.contract && r1.j.contract.evaluation;
+  ok('S1: "Rays to beat the Guardians at 46¢" prices the RAYS (fair 46.55%), not the Guardians', r1.j.contract && /^Tampa Bay Rays YES$/.test(r1.j.contract.selection) && r1e && r1e.fair_probability === '0.4655', r1.j.contract && [r1.j.contract.selection, r1e && r1e.fair_probability]);
+  ok('S1: …which, after the 2¢ Kalshi fee, is negative EV: PASS', r1e && r1e.net_expected_value === '-0.0145' && r1e.decision === 'PASS', r1e && [r1e.net_expected_value, r1e.decision]);
+  const r2 = await ask('Will the Guardians beat the Rays? YES is 55c on Kalshi');
+  ok('S1: "Will the Guardians beat the Rays? YES is 55c" prices the GUARDIANS', r2.j.contract && /^Cleveland Guardians YES$/.test(r2.j.contract.selection) && r2.j.contract.evaluation && r2.j.contract.evaluation.fair_probability === '0.5345', r2.j.contract && r2.j.contract.selection);
+  const r3 = await ask('Is 46c on Kalshi fair for Rays vs Guardians?', { dump: 'contract_ambiguous' });
+  ok('S1: both teams named, the price attached to neither: no side is guessed, nothing is priced or written', r3.j.contract && r3.j.contract.ambiguous_side === true && !r3.j.contract.evaluation && /say which side/.test(r3.j.answer) && !posted.some((p) => p.table === 'fair_price_estimates'), r3.j.answer);
+  /* S2 totals, futures and team totals are not priced as the moneyline */
+  for (const [q, kind] of [['Rays vs Guardians: is the over 8.5 at -110 good value?', 'total'], ['Guardians to win the World Series at 49 cents on Kalshi', 'futures'], ['Rays team total over 4.5 at 55 cents on Kalshi', 'total']]) {
+    const x = await ask(q);
+    ok('S2: "' + q + '" is not priced as the moneyline', x.j.contract && !x.j.contract.evaluation && new RegExp(kind).test(x.j.contract.unsupported_market || '') && !/POTENTIAL EDGE|VERIFIED EDGE/.test(x.j.answer) && !posted.some((p) => p.table === 'fair_price_estimates'), [x.j.quant, x.j.contract && x.j.contract.unsupported_market, x.j.answer]);
+  }
+  /* S3 football "coverage" is not the scan-coverage answer */
+  for (const q of ['How good is the Bills pass coverage against the Lions?', 'Does Alabama play man or zone coverage?', "What's Georgia's coverage rate on third down?", 'Which markets should I not bet this weekend?']) {
+    const x = await ask(q, { desk: false, signals: ALL });
+    ok('S3: "' + q + '" is not routed to COVERAGE', !(x.j.quant && x.j.quant.intent === 'COVERAGE'), x.j.quant);
+  }
+  /* S4 injury and line-movement questions are not the odds-outage answer */
+  for (const q of ['Will the odds move if Josh Allen is ruled out?', 'Does the market adjust enough if the Bills left tackle is out?']) {
+    const x = await ask(q, { signals: ALL });
+    ok('S4: "' + q + '" is not routed to OUTAGE', !(x.j.quant && x.j.quant.intent === 'OUTAGE'), x.j.quant);
+  }
+  /* S5 a best-bet question about one game is that game's */
+  for (const q of ['What is the best bet in Lions vs Bills?', 'What should I bet on the Bills?']) {
+    const x = await ask(q, { signals: ALL });
+    ok('S5: "' + q + '" is not the cross-sport scan', !(x.j.quant && x.j.quant.intent === 'SCAN'), x.j.quant);
+  }
+  const pk = await ask("What's the best bet?", { signals: ALL, packet: { game: { sport_key: 'americanfootball_nfl', home_team: 'Buffalo Bills', away_team: 'Detroit Lions' } } });
+  ok('S5: a best-bet question sent with a game packet is not the cross-sport scan', !(pk.j.quant && pk.j.quant.intent === 'SCAN'), pk.j.quant);
+  const xs = await ask("What's the best bet on the Bills across all sports?", { signals: ALL });
+  ok('S5: …unless it asks across all sports', xs.j.quant && xs.j.quant.intent === 'SCAN', xs.j.quant);
+  /* S6 "2 cents" and a temperature are not contract prices */
+  for (const q of ['What is your 2 cents on Lions vs Bills?', 'Kickoff temperature 12c in Buffalo, does that favor the under?']) {
+    const x = await ask(q, { signals: ALL });
+    ok('S6: "' + q + '" is not a contract check and writes nothing', !(x.j.quant && x.j.quant.intent === 'CONTRACT') && !posted.some((p) => p.table === 'fair_price_estimates'), x.j.quant);
+  }
+  /* S7 a sportsbook price on a football team goes to the football desk */
+  const b1 = await ask('Is Bills -150 a good price?', { signals: ALL });
+  ok('S7: "Is Bills -150 a good price?" is left to the football desk / pipeline', !b1.j.quant, b1.j.quant);
+  /* S8 deterministic, per-user ledger keys */
+  const m0 = Math.floor(Date.now() / 60000);
+  await ask('Is Guardians at 49¢ on Kalshi a good price?'); const e1 = posted.find((p) => p.table === 'fair_price_estimates');
+  await ask('Is Guardians at 49¢ on Kalshi a good price?'); const e2 = posted.find((p) => p.table === 'fair_price_estimates');
+  ok('S8: the same check in the same minute gets the same estimate id (a hash, not Math.random)', e1 && e2 && /^fpe_[0-9a-f]{16}$/.test(e1.body[0].estimate_id) && (Math.floor(Date.now() / 60000) !== m0 || e1.body[0].estimate_id === e2.body[0].estimate_id), e1 && e2 && [e1.body[0].estimate_id, e2.body[0].estimate_id]);
+  ok('S8: …written with the per-user conflict key', e1 && /on_conflict=user_id,estimate_id/.test(e1.query), e1 && e1.query);
+  const a1 = await ask("What's the best bet right now?"); const ar1 = posted.find((p) => p.table === 'opportunity_audits');
+  const a2 = await ask("What's the best bet right now?"); const ar2 = posted.find((p) => p.table === 'opportunity_audits');
+  ok('S8: the same scan writes the same audit ids, per-user keyed', ar1 && ar2 && ar1.body.every((r) => /^aud_[0-9a-f]{16}$/.test(r.audit_id)) && JSON.stringify(ar1.body.map((r) => r.audit_id)) === JSON.stringify(ar2.body.map((r) => r.audit_id)) && /on_conflict=user_id,audit_id/.test(ar1.query), ar1 && ar2 && [ar1.body.map((r) => r.audit_id), ar2.body.map((r) => r.audit_id), ar1.query]);
+  /* S10 a forged carried coverage is not echoed as fact */
+  const forged = { schema: 'edgedesk_quant_state_v1', built_at: new Date().toISOString(), coverage: [{ sport: 'basketball_nba', label: 'NBA', status: 'EVALUATED' }] };
+  const fc = await ask("Which sports couldn't be scanned?", { carried: { quant: forged } });
+  ok('S10: a carried "NBA was EVALUATED" is not repeated; the live read says NBA is not captured', /Not scanned: .*NBA/.test(fc.j.answer) && !/Every in-season sport EdgeDesk supports was scanned/.test(fc.j.answer), fc.j.answer);
+  /* S13 a database error (which can quote a row) is not shown to callers */
+  postFail = 'new row for relation "opportunity_audits" violates check constraint. Failing row contains (11111111-1111-1111-1111-111111111111, what is the best bet ...)';
+  const pf = await ask("What's the best bet right now?");
+  postFail = null;
+  const aw = pf.j.scan && pf.j.scan.audit_write;
+  ok('S13: the scan reports that the audit write failed without the database text', aw && aw.ok === false && !/Failing row|1111-1111/.test(JSON.stringify(aw)), aw);
+  const probe = await m.handle(new Request('https://fn.test/edgedesk_ai?probe=1', { method: 'GET' }));
+  const pj = await probe.json().catch(() => ({}));
+  /* (the probe's older board/stake/desk write fields follow the same pattern and predate this change: reported, not widened here) */
+  const qk = pj.quant_kernel || {};
+  ok('S13: …and so does the unauthenticated probe\'s quant section', qk.last_audit_write && qk.last_audit_write.ok === false && !/Failing row|1111-1111/.test(JSON.stringify(qk)), qk);
+  /* H3 a NO contract is priced on the complement, and compared with the other side's books */
+  const n1 = await ask('Buy Rays NO at 44¢ on Kalshi?');
+  const n1e = n1.j.contract && n1.j.contract.evaluation;
+  ok('H3: Rays NO is priced on 1 − 46.55% = 53.45%, not on the Rays\' 46.55%', n1e && n1e.side === 'NO' && n1e.fair_probability === '0.5345', n1e && [n1e.side, n1e.fair_probability]);
+  ok('H3: …and compared with the Guardians\' sportsbook prices, not the Rays\' (+120)', n1.j.contract.compare && n1.j.contract.compare.ranked.length > 1 && !n1.j.contract.compare.ranked.some((r) => r.entry === '+120'), n1.j.contract.compare && n1.j.contract.compare.ranked.map((r) => r.venue + ' ' + r.entry));
+  /* H2 the scan's verdict is priced on the fair the audit re-read */
+  const h2 = await ask("What's the best bet this week across all sports?", { signals: ALL, fresh: { 'ev-det-buf|spreads|Buffalo Bills|-2.5': { sharp_fair: 0.52 } } });
+  const bills = [].concat(h2.j.scan.best ? [h2.j.scan.best] : [], h2.j.scan.potential || [], h2.j.scan.near_misses || []).find((x) => x.candidate.selection === 'Buffalo Bills');
+  ok('H2: the sharp fair moved 53.2% → 52.0% at audit time: the Bills are priced at 1.4%, below the 2% bar — not BUY', bills && Math.abs(Number(bills.evaluation.net_ev_per_dollar) - 0.014) < 1e-6 && bills.evaluation.classification !== 'VERIFIED_EDGE' && h2.j.scan.decision !== 'BUY', bills && [bills.audit.status, bills.evaluation.net_ev_per_dollar, bills.evaluation.classification, h2.j.scan.decision]);
 
   if (DUMP) require('fs').writeFileSync(process.env.QUANT_DUMP, JSON.stringify(DUMP));
   console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + pass + ' passed, ' + fail + ' failed');

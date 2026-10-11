@@ -36,7 +36,7 @@ function rowsFor(league) {
   const res = new Map(jsonl(path.join(dir, 'results.jsonl')).map((r) => [r.evaluation_id, r]));
   return ev.map((e) => {
     const r = res.get(e.evaluation_id);
-    const outcome = !r ? null : r.result === 'WIN' ? 1 : r.result === 'LOSS' ? 0 : null;
+    const outcome = !r ? null : r.result === 'WIN' ? 1 : r.result === 'LOSS' ? 0 : r.result === 'PUSH' ? 'push' : null;
     const close = r && r.clv && r.clv.available && r.clv.close_novig != null && Number(r.clv.close_line) === Number(e.line) ? Number(r.clv.close_novig) : null;
     return { id: e.evaluation_id, predicted_at: e.evaluated_at, event_start: e.kickoff, prob: e.p_side, outcome, close_prob: close, american: e.american, fee: 0,
       bet: e.decision === 'BET' || e.decision === 'LEAN', sport: league === 'nfl' ? 'americanfootball_nfl' : 'americanfootball_ncaaf', market: e.market, model_version: e.model_version || null,

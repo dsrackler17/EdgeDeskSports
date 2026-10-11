@@ -2,7 +2,7 @@
  "schema": "edgedesk_calibration_report_v1",
  "calibration_version": "edgedesk_calibration_v1",
  "season": 2026,
- "generated_at": "2026-10-11T22:50:32.547Z",
+ "generated_at": "2026-10-11T23:27:18.265Z",
  "source": "football/props/<league>/2026/{evaluations,results}.jsonl — frozen pregame evaluations joined to their graded results",
  "baseline": "the no-vig closing probability of the same side at the same line (results.clv.close_novig)",
  "leagues": {
@@ -194,6 +194,7 @@
     },
     "staking": {
      "bets": 3874,
+     "pushes": 0,
      "staked": 3874,
      "profit": -36.595,
      "roi_after_fees": -0.0094,
@@ -324,6 +325,7 @@
       },
       "staking": {
        "bets": 145,
+       "pushes": 0,
        "staked": 145,
        "profit": -14.871,
        "roi_after_fees": -0.1026,
@@ -403,6 +405,7 @@
       },
       "staking": {
        "bets": 115,
+       "pushes": 0,
        "staked": 115,
        "profit": -2.688,
        "roi_after_fees": -0.0234,
@@ -482,6 +485,7 @@
       },
       "staking": {
        "bets": 113,
+       "pushes": 0,
        "staked": 113,
        "profit": -0.138,
        "roi_after_fees": -0.0012,
@@ -551,6 +555,7 @@
       },
       "staking": {
        "bets": 50,
+       "pushes": 0,
        "staked": 50,
        "profit": -4.354,
        "roi_after_fees": -0.0871,
@@ -630,6 +635,7 @@
       },
       "staking": {
        "bets": 92,
+       "pushes": 0,
        "staked": 92,
        "profit": -5.588,
        "roi_after_fees": -0.0607,
@@ -729,6 +735,7 @@
       },
       "staking": {
        "bets": 60,
+       "pushes": 0,
        "staked": 60,
        "profit": 15.217,
        "roi_after_fees": 0.2536,
@@ -828,6 +835,7 @@
       },
       "staking": {
        "bets": 171,
+       "pushes": 0,
        "staked": 171,
        "profit": -54.048,
        "roi_after_fees": -0.3161,
@@ -927,6 +935,7 @@
       },
       "staking": {
        "bets": 488,
+       "pushes": 0,
        "staked": 488,
        "profit": -24.421,
        "roi_after_fees": -0.05,
@@ -936,8 +945,8 @@
        },
        "max_drawdown": 41.012
       },
-      "calibration_status": "NOT_CALIBRATED",
-      "calibration_why": "Brier 0.2667 is worse than the no-vig close at 0.2506 on the same rows",
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "only 152 of 608 settled predictions carry a closing probability; the comparison with the market needs 500+",
       "profit_claim": "NOT_SUPPORTED",
       "profit_why": "488 bets: a profit claim needs 500+ and an interval above zero",
       "key": "rec_long"
@@ -1046,6 +1055,7 @@
       },
       "staking": {
        "bets": 962,
+       "pushes": 0,
        "staked": 962,
        "profit": 5.23,
        "roi_after_fees": 0.0054,
@@ -1055,8 +1065,8 @@
        },
        "max_drawdown": 47.723
       },
-      "calibration_status": "NOT_CALIBRATED",
-      "calibration_why": "Brier 0.2724 is worse than the no-vig close at 0.2502 on the same rows",
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "only 159 of 1086 settled predictions carry a closing probability; the comparison with the market needs 500+",
       "profit_claim": "NOT_SUPPORTED",
       "profit_why": "the 95% ROI interval after fees (-0.0636 to 0.0744) includes zero or is negative",
       "key": "rec_yds"
@@ -1175,6 +1185,7 @@
       },
       "staking": {
        "bets": 620,
+       "pushes": 0,
        "staked": 620,
        "profit": 7.504,
        "roi_after_fees": 0.0121,
@@ -1184,8 +1195,8 @@
        },
        "max_drawdown": 21.999
       },
-      "calibration_status": "NOT_CALIBRATED",
-      "calibration_why": "Brier 0.2691 is worse than the no-vig close at 0.2502 on the same rows",
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "only 293 of 720 settled predictions carry a closing probability; the comparison with the market needs 500+",
       "profit_claim": "NOT_SUPPORTED",
       "profit_why": "the 95% ROI interval after fees (-0.074 to 0.0982) includes zero or is negative",
       "key": "receptions"
@@ -1274,6 +1285,7 @@
       },
       "staking": {
        "bets": 237,
+       "pushes": 0,
        "staked": 237,
        "profit": -25.051,
        "roi_after_fees": -0.1057,
@@ -1373,6 +1385,7 @@
       },
       "staking": {
        "bets": 206,
+       "pushes": 0,
        "staked": 206,
        "profit": -7.881,
        "roi_after_fees": -0.0383,
@@ -1482,6 +1495,7 @@
       },
       "staking": {
        "bets": 184,
+       "pushes": 0,
        "staked": 184,
        "profit": -10.215,
        "roi_after_fees": -0.0555,
@@ -1601,6 +1615,7 @@
       },
       "staking": {
        "bets": 431,
+       "pushes": 0,
        "staked": 431,
        "profit": 84.708,
        "roi_after_fees": 0.1965,
@@ -1610,8 +1625,8 @@
        },
        "max_drawdown": 15.513
       },
-      "calibration_status": "NOT_CALIBRATED",
-      "calibration_why": "1 of 5 well-filled buckets sit outside their 95% interval",
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "only 82 of 500 settled predictions carry a closing probability; the comparison with the market needs 500+",
       "profit_claim": "NOT_SUPPORTED",
       "profit_why": "431 bets: a profit claim needs 500+ and an interval above zero",
       "key": "rush_yds"
@@ -1712,6 +1727,7 @@
       },
       "staking": {
        "bets": 366,
+       "pushes": 0,
        "staked": 366,
        "profit": 33.46,
        "roi_after_fees": 0.0914,
@@ -1811,6 +1827,7 @@
       },
       "staking": {
        "bets": 375,
+       "pushes": 0,
        "staked": 375,
        "profit": 67.47,
        "roi_after_fees": 0.1799,
@@ -1820,8 +1837,8 @@
        },
        "max_drawdown": 28.29
       },
-      "calibration_status": "NOT_CALIBRATED",
-      "calibration_why": "Brier 0.1811 is worse than the no-vig close at 0.1777 on the same rows",
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "only 20 of 594 settled predictions carry a closing probability; the comparison with the market needs 500+",
       "profit_claim": "NOT_SUPPORTED",
       "profit_why": "375 bets: a profit claim needs 500+ and an interval above zero",
       "key": "+200 or longer"
@@ -1910,6 +1927,7 @@
       },
       "staking": {
        "bets": 1188,
+       "pushes": 0,
        "staked": 1188,
        "profit": 70.866,
        "roi_after_fees": 0.0597,
@@ -1919,8 +1937,8 @@
        },
        "max_drawdown": 20.946
       },
-      "calibration_status": "NOT_CALIBRATED",
-      "calibration_why": "Brier 0.2582 is worse than the no-vig close at 0.2487 on the same rows",
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "only 441 of 1363 settled predictions carry a closing probability; the comparison with the market needs 500+",
       "profit_claim": "ALLOWED",
       "profit_why": "ROI after fees 0.0597 with a 95% interval above zero over 1188 bets",
       "key": "-110 to +110"
@@ -1999,6 +2017,7 @@
       },
       "staking": {
        "bets": 1896,
+       "pushes": 0,
        "staked": 1896,
        "profit": -198.132,
        "roi_after_fees": -0.1045,
@@ -2078,6 +2097,7 @@
       },
       "staking": {
        "bets": 49,
+       "pushes": 0,
        "staked": 49,
        "profit": -10.259,
        "roi_after_fees": -0.2094,
@@ -2159,6 +2179,7 @@
       },
       "staking": {
        "bets": 374,
+       "pushes": 0,
        "staked": 374,
        "profit": -6.124,
        "roi_after_fees": -0.0164,
@@ -2278,6 +2299,7 @@
       },
       "staking": {
        "bets": 3500,
+       "pushes": 0,
        "staked": 3500,
        "profit": -30.471,
        "roi_after_fees": -0.0087,
@@ -2397,6 +2419,7 @@
       },
       "staking": {
        "bets": 0,
+       "pushes": 0,
        "staked": 0,
        "profit": 0,
        "roi_after_fees": null,
@@ -2516,6 +2539,7 @@
       },
       "staking": {
        "bets": 0,
+       "pushes": 0,
        "staked": 0,
        "profit": 0,
        "roi_after_fees": null,
@@ -2657,6 +2681,7 @@
       },
       "staking": {
        "bets": 3835,
+       "pushes": 0,
        "staked": 3835,
        "profit": -46.416,
        "roi_after_fees": -0.0121,
@@ -2766,6 +2791,7 @@
       },
       "staking": {
        "bets": 39,
+       "pushes": 0,
        "staked": 39,
        "profit": 9.821,
        "roi_after_fees": 0.2518,
@@ -2844,7 +2870,7 @@
      "detail": "null"
     }
    ],
-   "excluded_unsettled": 491,
+   "excluded_unsettled": 490,
    "lookahead_violations": 0,
    "first": "2026-09-29T13:25:30.261Z",
    "last": "2026-10-10T14:21:08.400Z",
@@ -2962,6 +2988,7 @@
     },
     "staking": {
      "bets": 3321,
+     "pushes": 0,
      "staked": 3321,
      "profit": -46.634,
      "roi_after_fees": -0.014,
@@ -3082,6 +3109,7 @@
       },
       "staking": {
        "bets": 108,
+       "pushes": 0,
        "staked": 108,
        "profit": -5.156,
        "roi_after_fees": -0.0477,
@@ -3171,6 +3199,7 @@
       },
       "staking": {
        "bets": 123,
+       "pushes": 0,
        "staked": 123,
        "profit": -4.147,
        "roi_after_fees": -0.0337,
@@ -3260,6 +3289,7 @@
       },
       "staking": {
        "bets": 98,
+       "pushes": 0,
        "staked": 98,
        "profit": -9.428,
        "roi_after_fees": -0.0962,
@@ -3369,6 +3399,7 @@
       },
       "staking": {
        "bets": 170,
+       "pushes": 0,
        "staked": 170,
        "profit": -18.1,
        "roi_after_fees": -0.1065,
@@ -3478,6 +3509,7 @@
       },
       "staking": {
        "bets": 358,
+       "pushes": 0,
        "staked": 358,
        "profit": -1.836,
        "roi_after_fees": -0.0051,
@@ -3587,6 +3619,7 @@
       },
       "staking": {
        "bets": 1201,
+       "pushes": 0,
        "staked": 1201,
        "profit": 5.308,
        "roi_after_fees": 0.0044,
@@ -3596,8 +3629,8 @@
        },
        "max_drawdown": 42.049
       },
-      "calibration_status": "NOT_CALIBRATED",
-      "calibration_why": "Brier 0.2587 is worse than the no-vig close at 0.2492 on the same rows",
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "only 232 of 1468 settled predictions carry a closing probability; the comparison with the market needs 500+",
       "profit_claim": "NOT_SUPPORTED",
       "profit_why": "the 95% ROI interval after fees (-0.0527 to 0.0615) includes zero or is negative",
       "key": "rec_yds"
@@ -3696,6 +3729,7 @@
       },
       "staking": {
        "bets": 478,
+       "pushes": 0,
        "staked": 478,
        "profit": -16.88,
        "roi_after_fees": -0.0353,
@@ -3705,8 +3739,8 @@
        },
        "max_drawdown": 27.941
       },
-      "calibration_status": "NOT_CALIBRATED",
-      "calibration_why": "2 of 5 well-filled buckets sit outside their 95% interval",
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "only 216 of 640 settled predictions carry a closing probability; the comparison with the market needs 500+",
       "profit_claim": "NOT_SUPPORTED",
       "profit_why": "478 bets: a profit claim needs 500+ and an interval above zero",
       "key": "receptions"
@@ -3775,6 +3809,7 @@
       },
       "staking": {
        "bets": 125,
+       "pushes": 0,
        "staked": 125,
        "profit": 7.772,
        "roi_after_fees": 0.0622,
@@ -3874,6 +3909,7 @@
       },
       "staking": {
        "bets": 660,
+       "pushes": 0,
        "staked": 660,
        "profit": -4.166,
        "roi_after_fees": -0.0063,
@@ -3883,8 +3919,8 @@
        },
        "max_drawdown": 37.684
       },
-      "calibration_status": "NOT_CALIBRATED",
-      "calibration_why": "Brier 0.2642 is worse than the no-vig close at 0.2501 on the same rows",
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "only 125 of 814 settled predictions carry a closing probability; the comparison with the market needs 500+",
       "profit_claim": "NOT_SUPPORTED",
       "profit_why": "the 95% ROI interval after fees (-0.0771 to 0.0644) includes zero or is negative",
       "key": "rush_yds"
@@ -3995,6 +4031,7 @@
       },
       "staking": {
        "bets": 241,
+       "pushes": 0,
        "staked": 241,
        "profit": 27.38,
        "roi_after_fees": 0.1136,
@@ -4004,8 +4041,8 @@
        },
        "max_drawdown": 10
       },
-      "calibration_status": "NOT_CALIBRATED",
-      "calibration_why": "3 of 6 well-filled buckets sit outside their 95% interval",
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "only 57 of 718 settled predictions carry a closing probability; the comparison with the market needs 500+",
       "profit_claim": "NOT_SUPPORTED",
       "profit_why": "241 bets: a profit claim needs 500+ and an interval above zero",
       "key": "+111 to +199"
@@ -4114,6 +4151,7 @@
       },
       "staking": {
        "bets": 229,
+       "pushes": 0,
        "staked": 229,
        "profit": 28.21,
        "roi_after_fees": 0.1232,
@@ -4123,8 +4161,8 @@
        },
        "max_drawdown": 18.27
       },
-      "calibration_status": "NOT_CALIBRATED",
-      "calibration_why": "Brier 0.1468 is worse than the no-vig close at 0.1255 on the same rows",
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "only 2 of 939 settled predictions carry a closing probability; the comparison with the market needs 500+",
       "profit_claim": "NOT_SUPPORTED",
       "profit_why": "229 bets: a profit claim needs 500+ and an interval above zero",
       "key": "+200 or longer"
@@ -4233,6 +4271,7 @@
       },
       "staking": {
        "bets": 584,
+       "pushes": 0,
        "staked": 584,
        "profit": -38.775,
        "roi_after_fees": -0.0664,
@@ -4242,8 +4281,8 @@
        },
        "max_drawdown": 67.765
       },
-      "calibration_status": "NOT_CALIBRATED",
-      "calibration_why": "Brier 0.2603 is worse than the no-vig close at 0.2479 on the same rows",
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "only 190 of 856 settled predictions carry a closing probability; the comparison with the market needs 500+",
       "profit_claim": "NOT_SUPPORTED",
       "profit_why": "the 95% ROI interval after fees (-0.1457 to 0.0129) includes zero or is negative",
       "key": "-110 to +110"
@@ -4342,6 +4381,7 @@
       },
       "staking": {
        "bets": 2182,
+       "pushes": 0,
        "staked": 2182,
        "profit": -43.786,
        "roi_after_fees": -0.0201,
@@ -4451,6 +4491,7 @@
       },
       "staking": {
        "bets": 85,
+       "pushes": 0,
        "staked": 85,
        "profit": -19.663,
        "roi_after_fees": -0.2313,
@@ -4562,6 +4603,7 @@
       },
       "staking": {
        "bets": 3321,
+       "pushes": 0,
        "staked": 3321,
        "profit": -46.634,
        "roi_after_fees": -0.014,
@@ -4681,6 +4723,7 @@
       },
       "staking": {
        "bets": 0,
+       "pushes": 0,
        "staked": 0,
        "profit": 0,
        "roi_after_fees": null,
@@ -4790,6 +4833,7 @@
       },
       "staking": {
        "bets": 0,
+       "pushes": 0,
        "staked": 0,
        "profit": 0,
        "roi_after_fees": null,
@@ -4921,6 +4965,7 @@
       },
       "staking": {
        "bets": 3282,
+       "pushes": 0,
        "staked": 3282,
        "profit": -39.158,
        "roi_after_fees": -0.0119,
@@ -5040,6 +5085,7 @@
       },
       "staking": {
        "bets": 39,
+       "pushes": 0,
        "staked": 39,
        "profit": -7.476,
        "roi_after_fees": -0.1917,

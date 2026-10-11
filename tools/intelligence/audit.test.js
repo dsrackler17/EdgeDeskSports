@@ -54,7 +54,8 @@ function freshRow(over) {
 }
 const BOOKS = [{ book: 'fanduel', dec: 2.2 }, { book: 'draftkings', dec: 2.18 }, { book: 'betmgm', dec: 2.15 }, { book: 'caesars', dec: 2.12 }, { book: 'pinnacle', dec: 2.08 }];
 const STARTERS = { home: { name: 'Tanner Bibee', source: 'mlb_game_cards', observed_at: T(1) }, away: { name: 'Shane Baz', source: 'mlb_game_cards', observed_at: T(1) } };
-function evidence(over) { return Object.assign({ fresh: freshRow(), books: BOOKS, availability: [], starters_now: STARTERS }, over || {}); }
+/* availability: the source was read for both teams (complete) 30 minutes ago and lists nobody */
+function evidence(over) { return Object.assign({ fresh: freshRow(), books: BOOKS, availability: [], availability_complete: true, availability_as_of: T(30), starters_now: STARTERS }, over || {}); }
 
 /* ═══ 1. SPORT ADAPTERS — capture, models, settlement ═══════════════════ */
 {
@@ -204,8 +205,13 @@ function evidence(over) { return Object.assign({ fresh: freshRow(), books: BOOKS
   const bare = AU.auditCandidate(candidate(Object.assign({}, nfl, { model_case: { gap_points: 9, cover_at_market: 0.6 } })), evidence({ starters_now: null }), { now: NOW });
   eq('a 9-point model gap with no explanation: REJECTED', [check(bare, 'A14_MODEL_DISAGREEMENT').result, bare.status], ['FAIL', 'REJECTED']);
   const said = AU.auditCandidate(candidate(Object.assign({}, nfl, { model_case: { gap_points: 9, cover_at_market: 0.6 }, explanation: ['Titans starting QB out (official report)', 'Texans pass rush vs Titans pass protection: +1.2 z'] })), evidence({ starters_now: null }), { now: NOW });
-  eq('…with the drivers written down: a warning that carries them, DOWNGRADED', [check(said, 'A14_MODEL_DISAGREEMENT').result, said.status], ['WARN', 'DOWNGRADED']);
-  chk('…and the explanation rides in the detail', /pass rush/.test(check(said, 'A14_MODEL_DISAGREEMENT').detail));
+  eq('…with drivers written down it is STILL refused: 9 points is past EDINTEL\'s 7-point EXTREME limit (a suspected data fault)', [check(said, 'A14_MODEL_DISAGREEMENT').result, said.status], ['FAIL', 'REJECTED']);
+  chk('…and the detail names the limit', /EXTREME/.test(check(said, 'A14_MODEL_DISAGREEMENT').detail), check(said, 'A14_MODEL_DISAGREEMENT').detail);
+  const ppSaid = AU.auditCandidate(candidate(Object.assign({}, nfl, { model_case: { gap_points: 4, cover_at_market: 0.6 }, explanation: ['Titans starting QB out (official report)', 'Texans pass rush vs Titans pass protection: +1.2 z'] })), evidence({ starters_now: null }), { now: NOW });
+  eq('a 4-point gap that is 13 probability points from the sharp fair, explained: a warning that carries the drivers, DOWNGRADED', [check(ppSaid, 'A14_MODEL_DISAGREEMENT').result, ppSaid.status], ['WARN', 'DOWNGRADED']);
+  chk('…and the explanation rides in the detail', /pass rush/.test(check(ppSaid, 'A14_MODEL_DISAGREEMENT').detail));
+  const ppBare = AU.auditCandidate(candidate(Object.assign({}, nfl, { model_case: { gap_points: 4, cover_at_market: 0.6 } })), evidence({ starters_now: null }), { now: NOW });
+  eq('…unexplained, REJECTED', [check(ppBare, 'A14_MODEL_DISAGREEMENT').result, ppBare.status], ['FAIL', 'REJECTED']);
 }
 
 /* ═══ 10. SETTLEMENT, FEES AND LIQUIDITY ON A CONTRACT ══════════════════ */
@@ -235,6 +241,61 @@ function evidence(over) { return Object.assign({ fresh: freshRow(), books: BOOKS
   eq('only the top 3 are audited by default (the second stage is for the strongest)', many.audited.length, 3);
   const thrown = AU.run({ candidates: [candidate()], gather: () => { throw new Error('host read blew up'); }, now: NOW });
   chk('a gather that throws is contained by the caller, not silently confirmed', thrown == null || thrown.audited == null || thrown.audited.every((x) => x.audit.status !== 'CONFIRMED'));
+}
+
+/* ═══ 14. INDEPENDENT-AUDIT REGRESSIONS (quant audit H1 H2 M2 M3 L6 L7 L8) ═══ */
+{
+  /* H1 a fresh read with no fair never confirms on the candidate's own copy */
+  const noFair = freshRow({ sharp_fair: null, pin_dec: null, pin_opp_dec: null, consensus_fair: null });
+  const h1 = AU.auditCandidate(candidate(), evidence({ fresh: noFair, books: null }), { now: NOW });
+  eq('H1: no fresh fair: A4 does not PASS, the audit is not CONFIRMED', [check(h1, 'A4_INDEPENDENT_EV').result !== 'PASS', h1.status, h1.independent_ev, h1.independent_fair], [true, 'DOWNGRADED', null, null]);
+  eq('H1: …and A13 has nothing to compare', check(h1, 'A13_MOVEMENT').result, 'NOT_CHECKED');
+  chk('H1: …the recomputation lists no CAPTURE_SHIN fair borrowed from the candidate', !h1.recomputed.fairs.some((f) => f.method === 'CAPTURE_SHIN'), h1.recomputed.fairs);
+  const fx = AU.recompute(candidate(), null, NOW, 45);
+  eq('H1: recompute with no fresh read has no fairs at all', fx.fairs.length, 0);
+  /* H1 in the loop: a stale quote "corrected" by a read with no fair is held, not re-priced on the old fair */
+  const stale = candidate({ quote: Object.assign({}, candidate().quote, { captured_at: T(200) }) });
+  const held = AU.run({ candidates: [stale], gather: () => evidence({ fresh: freshRow({ best_dec: 2.25, sharp_fair: null, pin_dec: null, pin_opp_dec: null, last_seen_at: T(1) }) }), now: NOW });
+  const hr = held.audited[0];
+  eq('H1: the correction is held: NEEDS_RECHECK, not CONFIRMED', [hr.audit.status, hr.audit.correction_held, (hr.candidate.corrected || []).length, hr.candidate.quote.odds_decimal], ['NEEDS_RECHECK', true, 0, 2.2]);
+  chk('H1: …the trail says why', held.trail.some((t) => t.step === 'HOLD' && /no fair probability/.test(t.detail)), held.trail.map((t) => t.step));
+  eq('H1: …and nothing is verified', held.verified.length, 0);
+  /* …but a read with the sharp book's two sides still re-prices it */
+  const pinOnly = AU.run({ candidates: [stale], gather: () => evidence({ fresh: freshRow({ best_dec: 2.25, sharp_fair: null, pin_dec: 2.08, pin_opp_dec: 1.81, last_seen_at: T(1) }) }), now: NOW });
+  const pr = pinOnly.audited[0];
+  chk('H1: a fresh read with the sharp book\'s two sides supplies the fair (multiplicative de-vig)', pr.candidate.fair.reread === true && Math.abs(pr.candidate.fair.probability - (1 / 2.08) / (1 / 2.08 + 1 / 1.81)) < 1e-9, pr.candidate.fair);
+  /* H2 the audit reports the fair behind its EV */
+  const moved = AU.auditCandidate(candidate(), evidence({ fresh: freshRow({ sharp_fair: 0.4605, pin_dec: 2.12, pin_opp_dec: 1.78 }), books: [{ book: 'fanduel', dec: 2.2 }, { book: 'dk', dec: 2.18 }, { book: 'mgm', dec: 2.18 }, { book: 'czr', dec: 2.12 }] }), { now: NOW });
+  eq('H2: the audit exposes the fresh fair it priced (0.4605), not the candidate\'s 0.4655', [moved.independent_fair, moved.independent_fair_method, moved.independent_price_decimal], [0.4605, 'CAPTURE_SHIN', 2.2]);
+  const atFresh = F.evaluateWager({ decimal: '2.2', fair_probability: String(moved.independent_fair), fair_source: { kind: 'SHARP_NO_VIG', observed_at: T(2) }, quote_observed_at: T(5), now: NOW, ttl_min: 45, confirmation: { pass: true }, audit: { status: moved.status }, settlement: { verified: true } });
+  eq('H2: priced on that fair the same price is WATCH (1.31%), not VERIFIED (2.41% on the stale fair)', [atFresh.classification, Number(atFresh.net_ev_per_dollar).toFixed(4)], ['WATCH', '0.0131']);
+  /* M2 one book clearing is not confirmation */
+  const one = AU.auditCandidate(candidate(), evidence({ books: [{ book: 'fanduel', dec: 2.2 }, { book: 'dk', dec: 2.12 }, { book: 'mgm', dec: 2.10 }, { book: 'czr', dec: 2.08 }] }), { now: NOW });
+  eq('M2: 1 of 4 books clearing the floor: WARN, DOWNGRADED', [check(one, 'A7_CONFIRMATION').result, one.status], ['WARN', 'DOWNGRADED']);
+  const zero = AU.auditCandidate(candidate(), evidence({ books: [{ book: 'dk', dec: 2.12 }, { book: 'mgm', dec: 2.10 }, { book: 'czr', dec: 2.08 }] }), { now: NOW });
+  eq('M2: 0 of 3: WARN', check(zero, 'A7_CONFIRMATION').result, 'WARN');
+  eq('M2: 2 or more clearing: PASS', check(AU.auditCandidate(candidate(), evidence(), { now: NOW }), 'A7_CONFIRMATION').result, 'PASS');
+  /* M3 availability on missing or old data */
+  const nfl = candidate({ id: 'nfl|g2|spreads|home', sport: 'americanfootball_nfl', sport_label: 'NFL', market: 'spreads', home: 'Houston Texans', away: 'Tennessee Titans', selection: 'Houston Texans', starters: null });
+  const emptyUnresolved = AU.auditCandidate(nfl, evidence({ availability: [], availability_complete: false, availability_why: 'neither team code resolved', starters_now: null }), { now: NOW });
+  eq('M3: an empty list when no team resolved: NOT_CHECKED, not CONFIRMED', [check(emptyUnresolved, 'A8_AVAILABILITY').result, emptyUnresolved.status], ['NOT_CHECKED', 'DOWNGRADED']);
+  const untimedQb = AU.auditCandidate(nfl, evidence({ availability: [{ team: 'Houston Texans', player: 'C.J. Stroud', role: 'QB', key: true, status: 'Out', observed_at: null }], starters_now: null }), { now: NOW });
+  eq('M3: a starting QB Out with no report time: NOT_CHECKED, not CONFIRMED', [check(untimedQb, 'A8_AVAILABILITY').result, untimedQb.status], ['NOT_CHECKED', 'DOWNGRADED']);
+  const old = AU.auditCandidate(nfl, evidence({ availability: [{ team: 'Houston Texans', player: 'A WR', role: 'WR', status: 'Questionable', observed_at: T(6 * 24 * 60) }], availability_as_of: T(6 * 24 * 60), starters_now: null }), { now: NOW });
+  eq('M3: a six-day-old report: WARN (past the 72-hour limit), DOWNGRADED', [check(old, 'A8_AVAILABILITY').result, old.status], ['WARN', 'DOWNGRADED']);
+  chk('M3: …saying how old', /144 hours old/.test(check(old, 'A8_AVAILABILITY').detail), check(old, 'A8_AVAILABILITY').detail);
+  /* L6 the kickoff guard */
+  const late = AU.auditCandidate(candidate({ kickoff: new Date(NOW + 60000).toISOString(), quote: Object.assign({}, candidate().quote, { captured_at: new Date(NOW - 30000).toISOString() }) }), evidence({ fresh: freshRow({ last_seen_at: new Date(NOW - 30000).toISOString() }) }), { now: NOW });
+  eq('L6: kickoff a minute away: A1 fails, never CONFIRMED', [check(late, 'A1_GAME_STATUS').result, late.status === 'CONFIRMED'], ['FAIL', false]);
+  /* L7 a corrected MODEL candidate is relabelled as the market fair it now carries */
+  const model = candidate({ fair: { method: 'MODEL_BLEND', probability: 0.5, validation: { tier: 'LEAN', model_version: 'v1' } }, edge: { ev_per_unit: 0.1 }, starters: null, model_case: { gap_points: 2 }, quote: Object.assign({}, candidate().quote, { captured_at: T(200) }) });
+  const fx2 = AU.applyCorrections(model, { correctable: [{ check: 'A2_QUOTE_FRESH', field: 'quote', to: { captured_at: T(1), odds_decimal: 2.2, book: 'fanduel', fair_probability: 0.4655 }, why: 'stale' }] }, NOW);
+  eq('L7: the re-read market fair is not shown as the model\'s', [fx2.candidate.fair.method, fx2.candidate.fair.validation, fx2.candidate.fair.probability, fx2.candidate.model_case], ['SHARP_REREAD', null, 0.4655, null]);
+  /* L8 A5 measured against the floor */
+  const thin = AU.auditCandidate(candidate(), evidence({ fresh: freshRow({ pin_dec: 2.1, pin_opp_dec: 1.7632 }) }), { now: NOW });
+  const mult = thin.recomputed.evaluations.find((x) => x.method === 'SHARP_MULTIPLICATIVE');
+  chk('L8: (setup) the multiplicative EV is positive but under the 0.5% floor', mult && mult.ev_per_dollar > 0 && mult.ev_per_dollar < 0.005, mult);
+  eq('L8: …so the edge is method-dependent: WARN', check(thin, 'A5_METHOD_ROBUST').result, 'WARN');
 }
 
 /* ═══ 12. ASYNC GATHER AND RANKING BY INDEPENDENT EV ════════════════════ */

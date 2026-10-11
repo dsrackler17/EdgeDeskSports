@@ -53,8 +53,12 @@
     off_market_pp: 0.04,          /* best book's implied probability vs the median book's */
     sharp_move_pp: 0.02,          /* the sharp fair moving against the selection since the candidate */
     model_gap_pp: 0.08,           /* model vs market probability: needs a written explanation */
-    model_gap_points: 7           /* the research kernel's MODEL DISAGREEMENT, in points */
+    model_gap_points: 7,          /* EDINTEL disagreement_points_hard (read from it when loaded): EXTREME, refused */
+    min_books_confirm: 2,         /* books that must clear the floor for A7 to pass */
+    availability_stale_h: 72      /* EDINTEL AVAIL_STALE_H: an availability build older than this is stale */
   };
+  /* the decision layer's own numbers where it has them, so the auditor never disagrees with it */
+  function intelConfig() { var I = root.EDINTEL; try { return I ? (I.CONFIG || (typeof I.config === 'function' ? I.config() : null)) : null; } catch (_) { return null; } }
 
   function F() {
     if (root.EDFAIR) return root.EDFAIR;
@@ -98,8 +102,10 @@
 
   /* The corrected inputs a fresh read supplies: its price, its time, its book and its fair. */
   function freshQuote(fresh) {
-    return { captured_at: iso(fresh.last_seen_at), odds_decimal: num(fresh.best_dec), book: fresh.best_book || null,
-      fair_probability: num(fresh.sharp_fair) != null && num(fresh.sharp_fair) > 0 && num(fresh.sharp_fair) < 1 ? num(fresh.sharp_fair) : null };
+    var sf = num(fresh.sharp_fair), fair = sf != null && sf > 0 && sf < 1 ? sf : null;
+    /* no stored sharp fair: the sharp book's own two sides, de-vigged, are still a fresh fair */
+    if (fair == null) { var pin = num(fresh.pin_dec), opp = num(fresh.pin_opp_dec); if (pin != null && opp != null && pin > 1 && opp > 1) { var nv = F().noVig([{ decimal: String(pin) }, { decimal: String(opp) }], 'multiplicative'); if (nv.ok) fair = Number(nv.probabilities[0]); } }
+    return { captured_at: iso(fresh.last_seen_at), odds_decimal: num(fresh.best_dec), book: fresh.best_book || null, fair_probability: fair };
   }
   /* Which side of a market a selection is, from names alone. */
   function sideMatches(sel, other) { return sameTeam(sel, other) || (/^over/i.test(str(sel)) && /^over/i.test(str(other))) || (/^under/i.test(str(sel)) && /^under/i.test(str(other))); }
@@ -115,7 +121,8 @@
     var dec = num(fresh && fresh.best_dec != null ? fresh.best_dec : c.quote && c.quote.odds_decimal);
     var out = { offered_decimal: dec, fairs: [], evaluations: [] };
     if (dec == null || dec <= 1) return out;
-    var storedFair = num(fresh && fresh.sharp_fair != null ? fresh.sharp_fair : c.fair && c.fair.probability);
+    /* only the FRESH read's fair: falling back to the candidate's own copy would be the generator agreeing with itself */
+    var storedFair = fresh ? num(fresh.sharp_fair) : null;
     if (storedFair != null && storedFair > 0 && storedFair < 1) out.fairs.push({ method: 'CAPTURE_SHIN', probability: storedFair, source: 'signals.sharp_fair (capture, Shin de-vig)' });
     var pin = num(fresh && fresh.pin_dec), pinOpp = num(fresh && fresh.pin_opp_dec);
     if (pin != null && pinOpp != null && pin > 1 && pinOpp > 1) {
@@ -157,8 +164,12 @@
 
     /* A1 game status */
     var kick = toMs(c.kickoff);
+    var icfg = intelConfig();
+    var minKick = icfg && num(icfg.min_minutes_to_kickoff) != null ? num(icfg.min_minutes_to_kickoff) : 2;
     if (kick != null && kick <= now) checks.push(res('A1_GAME_STATUS', 'FAIL', 'kickoff ' + iso(kick) + ' has passed; a pregame price cannot be audited', { severity: 'INTEGRITY' }));
     else if (kick == null) checks.push(res('A1_GAME_STATUS', 'WARN', 'no start time on file'));
+    /* the decision layer's kickoff guard: inside it a pregame price is not reliably available */
+    else if ((kick - now) / 60000 < minKick) checks.push(res('A1_GAME_STATUS', 'FAIL', 'kickoff ' + iso(kick) + ' is under ' + minKick + ' minutes away; a pregame price is not reliably available', { severity: 'MARKET' }));
     else checks.push(res('A1_GAME_STATUS', 'PASS', 'starts ' + iso(kick)));
 
     /* A2 freshness at audit time (the candidate's own capture time) */
@@ -206,8 +217,8 @@
     else checks.push(res('A4_INDEPENDENT_EV', 'PASS', 'recomputed ' + pct(ref.ev_per_dollar, 2) + ' per $1 on the fresh read (' + ref.method + ', exact)' + (arith != null ? '; the candidate\'s own arithmetic reproduces' : ''), { recomputed_ev: ref.ev_per_dollar }));
     if (shin && mult) {
       var minEv = Math.min(shin.ev_per_dollar, mult.ev_per_dollar);
-      if (minEv <= TOL.method_floor) checks.push(res('A5_METHOD_ROBUST', 'WARN', 'the edge depends on the de-vig method: ' + pct(shin.ev_per_dollar, 2) + ' (Shin) vs ' + pct(mult.ev_per_dollar, 2) + ' (multiplicative)'));
-      else checks.push(res('A5_METHOD_ROBUST', 'PASS', 'positive under both: ' + pct(shin.ev_per_dollar, 2) + ' (Shin) and ' + pct(mult.ev_per_dollar, 2) + ' (multiplicative)'));
+      if (minEv < Math.max(TOL.method_floor, floor)) checks.push(res('A5_METHOD_ROBUST', 'WARN', 'the edge depends on the de-vig method: ' + pct(shin.ev_per_dollar, 2) + ' (Shin) vs ' + pct(mult.ev_per_dollar, 2) + ' (multiplicative), against the ' + pct(floor, 2) + ' floor'));
+      else checks.push(res('A5_METHOD_ROBUST', 'PASS', 'clears the ' + pct(floor, 2) + ' floor under both: ' + pct(shin.ev_per_dollar, 2) + ' (Shin) and ' + pct(mult.ev_per_dollar, 2) + ' (multiplicative)'));
     } else checks.push(res('A5_METHOD_ROBUST', 'NOT_CHECKED', 'only one fair reference on the fresh read (the sharp book\'s two sides are needed for a second method)'));
 
     /* A6 sharp vs consensus */
@@ -229,23 +240,32 @@
       var offPp = med && best ? (1 / med - 1 / best) : null;
       if (decs.length < 2) checks.push(res('A7_CONFIRMATION', 'WARN', 'only ' + decs.length + ' book quote on file'));
       else if (beating <= 1 && offPp != null && offPp >= TOL.off_market_pp) checks.push(res('A7_CONFIRMATION', 'WARN', 'one off-market book: the best price implies ' + pct(1 / best) + ' against a median book at ' + pct(1 / med) + '; a lone outlier is often a stale or erroneous quote'));
+      else if (beating < TOL.min_books_confirm) checks.push(res('A7_CONFIRMATION', 'WARN', 'only ' + beating + ' of ' + decs.length + ' books clear the floor against the sharp fair; ' + TOL.min_books_confirm + ' are needed to confirm the price'));
       else checks.push(res('A7_CONFIRMATION', 'PASS', beating + ' of ' + decs.length + ' books clear the floor against the sharp fair'));
     } else checks.push(res('A7_CONFIRMATION', 'NOT_CHECKED', 'no per-book quotes were read'));
 
     /* A8 availability news after the quote */
     var roles = A() ? A().keyRoles(c.sport) : [];
+    var BAD_STATUS = /^(out|doubtful|scratched|ir|inactive|suspended|not starting)/i;
+    var isKey = function (x) { return x.key === true || roles.indexOf(str(x.role).toUpperCase()) >= 0; };
     if (Array.isArray(e.availability)) {
       var cap = toMs(capAt);
-      var hits = e.availability.filter(function (x) {
-        var t = toMs(x.observed_at);
-        if (t == null || cap == null || t <= cap) return false;
-        return sameTeam(x.team, c.home) || sameTeam(x.team, c.away);
-      });
-      var bad = hits.filter(function (x) { return /^(out|doubtful|scratched|ir|inactive|suspended|not starting)/i.test(str(x.status)); });
-      var keyBad = bad.filter(function (x) { return x.key === true || roles.indexOf(str(x.role).toUpperCase()) >= 0; });
+      var mine = e.availability.filter(function (x) { return sameTeam(x.team, c.home) || sameTeam(x.team, c.away); });
+      var hits = mine.filter(function (x) { var t = toMs(x.observed_at); return t != null && cap != null && t > cap; });
+      var bad = hits.filter(function (x) { return BAD_STATUS.test(str(x.status)); });
+      var keyBad = bad.filter(isKey);
+      /* a key player ruled out with no time on the report cannot be placed before or after the quote */
+      var untimed = mine.filter(function (x) { return toMs(x.observed_at) == null && BAD_STATUS.test(str(x.status)) && isKey(x); });
+      var asOf = toMs(e.availability_as_of);
+      mine.forEach(function (x) { var t = toMs(x.observed_at); if (t != null && (asOf == null || t > asOf)) asOf = t; });
+      var ageH = asOf != null ? (now - asOf) / 3600000 : null;
       if (keyBad.length) checks.push(res('A8_AVAILABILITY', 'FAIL', 'news after the quote: ' + keyBad.map(function (x) { return x.player + ' (' + x.team + ', ' + (x.role || '?') + ') ' + x.status + ' at ' + iso(x.observed_at) + (x.source ? ' — ' + x.source : ''); }).join('; ') + '. The price predates it.', { severity: 'NEWS', invalidates: true }));
+      else if (untimed.length) checks.push(res('A8_AVAILABILITY', 'NOT_CHECKED', untimed.map(function (x) { return x.player + ' (' + x.team + ', ' + (x.role || '?') + ') ' + x.status; }).join('; ') + ' carries no report time, so it cannot be placed before or after the quote'));
+      else if (!e.availability.length && e.availability_complete !== true) checks.push(res('A8_AVAILABILITY', 'NOT_CHECKED', e.availability_why || 'no availability records were read for either team'));
+      else if (ageH == null) checks.push(res('A8_AVAILABILITY', 'WARN', 'the availability report carries no time, so it may predate news'));
+      else if (ageH > TOL.availability_stale_h) checks.push(res('A8_AVAILABILITY', 'WARN', 'the newest availability report is ' + Math.round(ageH) + ' hours old, past the ' + TOL.availability_stale_h + '-hour limit'));
       else if (bad.length) checks.push(res('A8_AVAILABILITY', 'WARN', bad.length + ' non-key availability change' + (bad.length === 1 ? '' : 's') + ' after the quote: ' + bad.slice(0, 3).map(function (x) { return x.player + ' ' + x.status; }).join('; ')));
-      else checks.push(res('A8_AVAILABILITY', 'PASS', e.availability.length + ' availability record' + (e.availability.length === 1 ? '' : 's') + ' read; none after the quote changes a key role'));
+      else checks.push(res('A8_AVAILABILITY', 'PASS', mine.length + ' availability record' + (mine.length === 1 ? '' : 's') + ' read (report ' + Math.round(ageH) + 'h old); none after the quote changes a key role'));
     } else checks.push(res('A8_AVAILABILITY', 'NOT_CHECKED', e.availability_why || 'no availability source is wired for ' + str(c.sport_label || c.sport)));
 
     /* A9 starter: the one priced vs the one now listed */
@@ -296,7 +316,9 @@
     var gapPts = mc ? (num(mc.gap_points) != null ? num(mc.gap_points) : (num(mc.model_line) != null && num(c.line) != null && str(c.market) === 'spreads' ? Math.round((num(c.line) - num(mc.model_line)) * 10) / 10 : null)) : null;
     var modelP = mc ? num(mc.cover_at_market || mc.probability) : null;
     var gapPp = modelP != null && sharpP != null ? Math.abs(modelP - sharpP) : null;
-    if ((gapPts != null && Math.abs(gapPts) >= TOL.model_gap_points) || (gapPp != null && gapPp >= TOL.model_gap_pp)) {
+    var hardPts = icfg && num(icfg.disagreement_points_hard) != null ? num(icfg.disagreement_points_hard) : TOL.model_gap_points;
+    if (gapPts != null && Math.abs(gapPts) >= hardPts) checks.push(res('A14_MODEL_DISAGREEMENT', 'FAIL', 'the model is ' + Math.abs(gapPts) + ' points from the market, at or past the ' + hardPts + '-point EXTREME limit: the decision layer treats a gap this large as a suspected data fault, whatever the explanation', { severity: 'INTEGRITY' }));
+    else if ((gapPp != null && gapPp >= TOL.model_gap_pp)) {
       var expl = c.explanation || (mc && mc.explanation) || null;
       if (expl && (Array.isArray(expl) ? expl.length : str(expl).length > 20)) checks.push(res('A14_MODEL_DISAGREEMENT', 'WARN', 'the model is ' + (gapPts != null ? Math.abs(gapPts) + ' points' : pct(gapPp) ) + ' from the market; the stated explanation: ' + (Array.isArray(expl) ? expl.slice(0, 3).join('; ') : str(expl)).slice(0, 240)));
       else checks.push(res('A14_MODEL_DISAGREEMENT', 'FAIL', 'the model is ' + (gapPts != null ? Math.abs(gapPts) + ' points' : pct(gapPp)) + ' from the market and no driver explains the difference: an unexplained disagreement is a data question, not an edge', { severity: 'INTEGRITY' }));
@@ -331,6 +353,11 @@
       checks: checks, correctable: correctable.map(function (x) { return { check: x.id, field: x.correctable.field, to: x.correctable.to, why: x.detail }; }),
       recomputed: { offered_decimal: rc.offered_decimal, fairs: rc.fairs, evaluations: rc.evaluations.map(function (x) { return { method: x.method, fair: x.fair, ev_per_dollar: x.ev_per_dollar, max_entry: x.max_entry }; }), consensus: rc.consensus != null ? rc.consensus : null },
       independent_ev: ref ? ref.ev_per_dollar : null,
+      /* the probability behind independent_ev: what the host prices the verdict on */
+      independent_fair: ref ? ref.fair : null,
+      independent_fair_method: ref ? ref.method : null,
+      independent_fair_observed_at: ref && fresh ? iso(fresh.last_seen_at) : null,
+      independent_price_decimal: ref ? rc.offered_decimal : null,
       max_entry_american: ref ? ref.max_entry : null,
       counts: { pass: checks.filter(function (x) { return x.result === 'PASS'; }).length, warn: warns.length, fail: fails.length, not_checked: checks.filter(function (x) { return x.result === 'NOT_CHECKED'; }).length },
       audited_at: iso(now)
@@ -342,14 +369,21 @@
     var Fx = F();
     var out = JSON.parse(JSON.stringify(c));
     var applied = [];
+    var held = [];
     (audit.correctable || []).forEach(function (k) {
       if (k.field === 'quote' && k.to) {
-        var before = { odds_decimal: out.quote.odds_decimal, captured_at: out.quote.captured_at, book: out.quote.book, fair_probability: out.fair ? out.fair.probability : null };
+        /* the fair is re-read with the price: a corrected price is never priced against a stale fair.
+           A fresher read with no fair is not a correction — the candidate is left as it was (NEEDS_RECHECK). */
+        if (k.to.fair_probability == null || !out.fair) { held.push({ check: k.check, why: 'the fresher read carries no fair probability, so the corrected price cannot be re-priced' }); return; }
+        var before = { odds_decimal: out.quote.odds_decimal, captured_at: out.quote.captured_at, book: out.quote.book, fair_probability: out.fair ? out.fair.probability : null, fair_method: out.fair ? out.fair.method : null };
         out.quote.odds_decimal = k.to.odds_decimal != null ? k.to.odds_decimal : out.quote.odds_decimal;
         out.quote.captured_at = k.to.captured_at || out.quote.captured_at;
         if (k.to.book) out.quote.book = k.to.book;
-        /* the fair is re-read with the price: a corrected price is never priced against a stale fair */
-        if (k.to.fair_probability != null && out.fair) { out.fair.probability = k.to.fair_probability; out.fair.reread = true; }
+        /* the re-read fair is the MARKET's (capture's sharp no-vig), whatever the candidate's was: relabel it,
+           so a market number is never shown as a model's */
+        out.fair.probability = k.to.fair_probability; out.fair.reread = true;
+        out.fair.method = 'SHARP_REREAD'; out.fair.label = 'sharp no-vig, re-read at audit time'; out.fair.validation = null;
+        if (out.model_case) out.model_case = null;
         try { out.quote.odds_american = out.quote.odds_decimal ? Fx.wholeAmerican(Fx.decimalToAmerican(String(out.quote.odds_decimal))) : out.quote.odds_american; } catch (_) { /* keep */ }
         applied.push({ check: k.check, field: 'quote', from: before, to: k.to, why: k.why });
       }
@@ -361,7 +395,7 @@
       if (r.ok) { out.edge = Object.assign({}, out.edge, { ev_per_unit: Number(r.net_ev_per_dollar), probability_edge_pp: Number(r.probability_edge) * 100, recalculated_by: 'EDFAIR ' + Fx.CALC_VERSION, break_even: Number(r.break_even_probability) }); out.threshold = Object.assign({}, out.threshold, { price_limit_american: r.maximum_entry_price }); }
     }
     out.corrected = (out.corrected || []).concat(applied);
-    return { candidate: out, applied: applied };
+    return { candidate: out, applied: applied, held: held };
   }
 
   /**
@@ -397,6 +431,11 @@
           log(round, c.id, 'VERDICT', audit.status + ': ' + audit.reason);
           if (audit.correctable.length && audit.status === 'NEEDS_RECHECK' && round < maxRounds && !audit.checks.some(function (x) { return x.result === 'FAIL' && !x.correctable && x.severity !== 'VALUE'; })) {
             var fx = applyCorrections(c, audit, now);
+            if (!fx.applied.length) {
+              (fx.held || []).forEach(function (h) { log(round, c.id, 'HOLD', h.check + ': ' + h.why + '; withheld'); });
+              audit.correction_held = true;
+              return { candidate: c, audit: audit, rounds: round, history: history };
+            }
             fx.applied.forEach(function (a) { log(round, c.id, 'CORRECT', a.check + ': ' + a.why); });
             log(round, c.id, 'RECALCULATE', 'EV at the corrected price: ' + (fx.candidate.edge && fx.candidate.edge.ev_per_unit != null ? pct(fx.candidate.edge.ev_per_unit, 2) + ' per $1' : 'not computable'));
             c = fx.candidate;

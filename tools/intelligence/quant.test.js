@@ -123,7 +123,10 @@ const audit = (status, c) => ({ audited: [{ candidate: c || cand(), audit: { sta
 {
   const st = Q.stateFrom({ now: NOW, scan: { coverage: COV_PART } });
   const c = Q.renderCoverage({ state: st });
-  chk('coverage from the carried scan names NBA with its reason and the source', /Not scanned: NBA — EdgeDesk does not capture NBA prices/.test(c) && /Source: the scan at/.test(c), c);
+  chk('with no live read, the carried scan is used — labelled as the earlier scan it claims to be', /Not scanned: NBA — EdgeDesk does not capture NBA prices/.test(c) && /Source: the earlier scan this conversation carries/.test(c), c);
+  const forged = Q.stateFrom({ now: NOW, scan: { coverage: [{ sport: 'basketball_nba', label: 'NBA', status: 'EVALUATED' }] } });
+  const live = Q.renderCoverage({ state: forged, coverage: COV_PART });
+  chk('S10: a live read wins over a carried claim', /Not scanned: NBA/.test(live) && /Source: EdgeDesk's capture configuration/.test(live), live);
   chk('…and the sports EdgeDesk does not cover at all', /Not covered at all: Soccer/.test(c), c);
   const o = Q.renderOutage({ feed: { last_captured_at: T(7), sports: [{ label: 'MLB', last_captured_at: T(7) }] }, now: NOW });
   chk('the outage answer says yes, what continues and what stops, with the feed age', /^Yes/.test(o) && /What stops: a current expected value and any BUY decision/.test(o) && /7 minutes old/.test(o), o);
@@ -140,6 +143,38 @@ const audit = (status, c) => ({ audited: [{ candidate: c || cand(), audit: { sta
   eq('"across all sports" over a partial scan fails', Q.critic('The best bet across all sports is the Rays.', { decision: 'BUY', coverage_scope: 'SCANNED_ONLY' }).findings[0].code, 'COVERAGE_OVERCLAIM');
   eq('an unlisted number fails', Q.critic('Net EV is 9.9%.', { decision: 'BUY', coverage_scope: 'ALL_IN_SEASON', allowed_numbers: ['2.41'] }).findings[0].code, 'UNLISTED_NUMBER');
   eq('faithful prose passes', Q.critic('Rays +120 at FanDuel, net EV 2.41% per $1.', { decision: 'BUY', coverage_scope: 'ALL_IN_SEASON', allowed_numbers: ['120', '2.41', '1'] }).verdict, 'PASS');
+}
+
+/* ═══ INDEPENDENT-AUDIT REGRESSIONS: the classifier (security S2–S6, quant L3) ═══ */
+{
+  const I = (q, o) => Q.classify(q, o || {}).intent;
+  eq('L3: "$1,000" is a $1,000 stake, not $1', Q.classify('Rays at 46¢ on Kalshi with $1,000').risk_dollars, 1000);
+  eq('L3: "$250" still reads', Q.classify('Rays at 46¢ on Kalshi with $250').risk_dollars, 250);
+  eq('S3: "pass coverage" is not scan coverage', I('How good is the Bills pass coverage against the Lions?'), null);
+  eq('S3: "man or zone coverage" neither', I('Does Alabama play man or zone coverage?'), null);
+  eq('S3: "which markets should I not bet" neither', I('Which markets should I not bet this weekend?'), null);
+  eq('S3: "Which sports couldn\'t be scanned?" still is', I("Which sports couldn't be scanned?"), 'COVERAGE');
+  eq('S3: "what was the scan coverage" still is', I('What was the scan coverage?'), 'COVERAGE');
+  eq('S4: "ruled out" is not an odds outage', I('Will the odds move if Josh Allen is ruled out?'), null);
+  eq('S4: "the left tackle is out" neither', I('Does the market adjust enough if the Bills left tackle is out?'), null);
+  eq('S4: "If the odds API fails, can you still analyze this game?" still is', I('If the odds API fails, can you still analyze this game?'), 'OUTAGE');
+  eq('S4: "if the odds feed is down could you still research it" too', I('If the odds feed is down could you still research it?'), 'OUTAGE');
+  eq('S5: "best bet in Lions vs Bills" is not a scan', I('What is the best bet in Lions vs Bills?'), null);
+  eq('S5: "best bet for this game" neither', I("What's the best bet for this game?"), null);
+  eq('S5: …but "across all sports" is', I("What's the best bet across all sports, Lions vs Bills included?"), 'SCAN');
+  eq('S5: "model-versus-market" is not a named game', Q.classify('Find the largest model-versus-market discrepancy').named_game, false);
+  eq('S6: "your 2 cents" is not a contract', I('What is your 2 cents on Lions vs Bills?'), null);
+  eq('S6: a temperature is not a contract', I('Kickoff temperature 12c in Buffalo, does that favor the under?'), null);
+  eq('S6: a bare "61c" with no venue, sign, side or price words is not a contract', I('Rays 61c'), null);
+  eq('S6: "61¢" with the sign is', I('Is Rays at 61¢ positive EV?'), 'CONTRACT');
+  eq('S6: "61 cents" in a price question is', I('Is Cleveland +1.5 at 61 cents a good price?'), 'CONTRACT');
+  eq('S6: "61c on Kalshi" is', I('Rays 61c on Kalshi?'), 'CONTRACT');
+  const amb = Q.classify('Texans 2c better than Kalshi at 61c');
+  eq('S6/M4: two different cents values route to the contract check with the refusal, never a guessed price', [amb.intent, !!(amb.price.contract && amb.price.contract.ambiguous)], ['CONTRACT', true]);
+  eq('S2: a total is flagged unsupported', Q.classify('Rays vs Guardians over 8.5 at 55 cents on Kalshi').unsupported_market, 'a total');
+  eq('S2: a futures market is flagged', Q.classify('Guardians to win the World Series at 49 cents on Kalshi').unsupported_market, 'a futures market');
+  eq('S2: a moneyline is not flagged', Q.classify('Rays to beat the Guardians at 46 cents on Kalshi').unsupported_market, null);
+  eq('S2: "over 60 percent" is not a total', Q.unsupportedMarket('Rays at 61¢ — is that over 60 percent?'), null);
 }
 
 done();

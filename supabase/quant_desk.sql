@@ -86,6 +86,7 @@ alter table public.market_execution_costs enable row level security;
 drop policy if exists market_execution_costs_read on public.market_execution_costs;
 create policy market_execution_costs_read on public.market_execution_costs
   for select to authenticated using (true);
+revoke all on public.market_execution_costs from authenticated;
 grant select on public.market_execution_costs to authenticated;
 do $anon$ begin
   if exists (select 1 from pg_roles where rolname = 'anon') then revoke all on public.market_execution_costs from anon; end if;
@@ -96,7 +97,7 @@ end $anon$;
 -- ---------------------------------------------------------------------------
 create table if not exists public.opportunity_audits (
   id                 bigint generated always as identity primary key,
-  audit_id           text not null unique,
+  audit_id           text not null,
   user_id            uuid default auth.uid(),
   created_at         timestamptz not null default now(),
   audited_at         timestamptz not null,
@@ -137,7 +138,7 @@ create index if not exists opportunity_audits_status_idx on public.opportunity_a
 -- ---------------------------------------------------------------------------
 create table if not exists public.fair_price_estimates (
   id                           bigint generated always as identity primary key,
-  estimate_id                  text not null unique,
+  estimate_id                  text not null,
   user_id                      uuid default auth.uid(),
   created_at                   timestamptz not null default now(),
   evaluated_at                 timestamptz not null,
@@ -227,6 +228,7 @@ create index if not exists model_backtests_lookup_idx on public.model_backtests 
 alter table public.model_backtests enable row level security;
 drop policy if exists model_backtests_read on public.model_backtests;
 create policy model_backtests_read on public.model_backtests for select to authenticated using (true);
+revoke all on public.model_backtests from authenticated;
 grant select on public.model_backtests to authenticated;
 do $anon$ begin
   if exists (select 1 from pg_roles where rolname = 'anon') then revoke all on public.model_backtests from anon; end if;
@@ -286,6 +288,8 @@ drop policy if exists opportunity_audits_insert_own on public.opportunity_audits
 create policy opportunity_audits_insert_own on public.opportunity_audits for insert to authenticated with check (user_id = auth.uid());
 drop policy if exists opportunity_audits_select_own on public.opportunity_audits;
 create policy opportunity_audits_select_own on public.opportunity_audits for select to authenticated using (user_id = auth.uid());
+-- revoke first: Supabase's default privileges grant ALL, and TRUNCATE bypasses the row triggers
+revoke all on public.opportunity_audits from authenticated;
 grant select, insert on public.opportunity_audits to authenticated;
 grant usage, select on sequence public.opportunity_audits_id_seq to authenticated;
 
@@ -294,6 +298,7 @@ drop policy if exists fair_price_estimates_insert_own on public.fair_price_estim
 create policy fair_price_estimates_insert_own on public.fair_price_estimates for insert to authenticated with check (user_id = auth.uid());
 drop policy if exists fair_price_estimates_select_own on public.fair_price_estimates;
 create policy fair_price_estimates_select_own on public.fair_price_estimates for select to authenticated using (user_id = auth.uid());
+revoke all on public.fair_price_estimates from authenticated;
 grant select, insert on public.fair_price_estimates to authenticated;
 grant usage, select on sequence public.fair_price_estimates_id_seq to authenticated;
 do $anon$ begin
@@ -302,6 +307,25 @@ do $anon$ begin
     revoke all on public.fair_price_estimates from anon;
   end if;
 end $anon$;
+
+-- Keys are unique PER USER. A global key let one user's identical row silently
+-- swallow another's (ON CONFLICT DO NOTHING), and let anyone pre-insert a
+-- predictable id to block someone else's write. An earlier apply of this file
+-- created a global unique on the id alone: replaced here (a constraint, no data).
+do $keys$ begin
+  if exists (select 1 from pg_constraint where conname = 'opportunity_audits_audit_id_key' and conrelid = 'public.opportunity_audits'::regclass) then
+    alter table public.opportunity_audits drop constraint opportunity_audits_audit_id_key;
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'opportunity_audits_user_audit_key' and conrelid = 'public.opportunity_audits'::regclass) then
+    alter table public.opportunity_audits add constraint opportunity_audits_user_audit_key unique (user_id, audit_id);
+  end if;
+  if exists (select 1 from pg_constraint where conname = 'fair_price_estimates_estimate_id_key' and conrelid = 'public.fair_price_estimates'::regclass) then
+    alter table public.fair_price_estimates drop constraint fair_price_estimates_estimate_id_key;
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'fair_price_estimates_user_estimate_key' and conrelid = 'public.fair_price_estimates'::regclass) then
+    alter table public.fair_price_estimates add constraint fair_price_estimates_user_estimate_key unique (user_id, estimate_id);
+  end if;
+end $keys$;
 
 -- ---------------------------------------------------------------------------
 -- 7. THE GRADE — audited candidates beside the close of the signal they priced
@@ -336,5 +360,9 @@ union all select 'model_backtests table', case when to_regclass('public.model_ba
 union all select 'write-once triggers', case when (select count(*) from pg_trigger where tgname in ('opportunity_audits_immutable_trg','fair_price_estimates_immutable_trg')) = 2 then 'ok' else 'CHECK THIS' end
 union all select 'no-delete triggers', case when (select count(*) from pg_trigger where tgname in ('opportunity_audits_no_delete_trg','fair_price_estimates_no_delete_trg')) = 2 then 'ok' else 'CHECK THIS' end
 union all select 'row level security', case when (select count(*) from pg_class where oid in ('public.market_execution_costs'::regclass, 'public.opportunity_audits'::regclass, 'public.fair_price_estimates'::regclass, 'public.model_backtests'::regclass) and relrowsecurity) = 4 then 'ok' else 'CHECK THIS' end
+union all select 'per-user ledger keys', case when (select count(*) from pg_constraint where conname in ('opportunity_audits_user_audit_key','fair_price_estimates_user_estimate_key')) = 2 and (select count(*) from pg_constraint where conname in ('opportunity_audits_audit_id_key','fair_price_estimates_estimate_id_key')) = 0 then 'ok' else 'CHECK THIS' end
+union all select 'ledgers not writable beyond insert', case when not exists (select 1 from information_schema.role_table_grants where grantee = 'authenticated' and table_schema = 'public'
+    and ((table_name in ('opportunity_audits','fair_price_estimates') and privilege_type not in ('SELECT','INSERT'))
+      or (table_name in ('market_execution_costs','model_backtests') and privilege_type <> 'SELECT'))) then 'ok' else 'CHECK THIS' end
 union all select 'retention function', case when to_regprocedure('public.quant_desk_prune(int)') is not null then 'ok' else 'CHECK THIS' end
 union all select 'audit grades view (needs public.signals)', case when to_regclass('public.opportunity_audit_grades') is not null then 'ok' when to_regclass('public.signals') is null then 'ok (signals absent: view skipped)' else 'CHECK THIS' end;

@@ -157,4 +157,34 @@ function synth(n, srcOf, closeNoise, over) {
   } else chk('the committed report exists (run tools/intelligence/calibration_report.js)', false, f);
 }
 
+/* ═══ INDEPENDENT-AUDIT REGRESSIONS (quant audit M7, L9) ═══════════════ */
+{
+  const base = Date.parse('2025-09-01T00:00:00Z');
+  const mk = (i, withClose) => ({ id: 'm' + i, predicted_at: new Date(base + i * 3600000).toISOString(), event_start: new Date(base + i * 3600000 + 7200000).toISOString(), prob: 0.5, outcome: i % 2, american: -110, close_prob: withClose ? 0.8 : null });
+  const rows = []; for (let i = 0; i < 600; i++) rows.push(mk(i, i < 3));
+  const rep = C.evaluate(rows);
+  eq('M7: 600 rows with only 3 closes is not CALIBRATED (the market comparison needs 500 closes)', rep.overall.calibration_status, 'INSUFFICIENT_SAMPLE');
+  chk('M7: …and says how many closes there were', /only 3 of 600/.test(rep.overall.calibration_why), rep.overall.calibration_why);
+  /* pushes count in the ROI denominator */
+  const t0 = '2025-09-01T00:00:00Z', k0 = '2025-09-01T03:00:00Z';
+  const pr = C.evaluate([{ id: 'w', predicted_at: t0, event_start: k0, prob: 0.6, outcome: 1, decimal: 2 }].concat([1, 2, 3].map((i) => ({ id: 'p' + i, predicted_at: t0, event_start: k0, prob: 0.6, outcome: 'push', decimal: 2 }))));
+  eq('L9: 1 win at evens plus 3 pushes: ROI is 1/4 = 0.25, not 1.0', [pr.overall.staking.roi_after_fees, pr.overall.staking.bets, pr.overall.staking.pushes], [0.25, 4, 3]);
+  eq('L9: …and the pushes are not scored for calibration', pr.overall.n, 1);
+  /* walk-forward trains only on settled rows */
+  const wf = C.walkForward([
+    { id: 'a', predicted_at: '2025-09-01T00:00:00Z', event_start: '2025-09-01T01:00:00Z', prob: 0.5, outcome: 1 },
+    { id: 'b', predicted_at: '2025-09-01T10:00:00Z', event_start: '2025-09-01T11:30:00Z', prob: 0.5, outcome: 0 },
+    { id: 'c', predicted_at: '2025-09-01T13:00:00Z', event_start: '2025-09-01T14:00:00Z', prob: 0.5, outcome: 1 }
+  ], { cutoffs: ['2025-09-01T12:00:00Z'], fit: (train) => { const ids = train.map((x) => x.id); return () => (ids.includes('b') ? 0.99 : 0.5); } });
+  eq('L9: a game that started 30 minutes before the cutoff (outcome unknown) is not trained on', wf.folds[0].train_n, 1);
+  const wf2 = C.walkForward([
+    { id: 'a', predicted_at: '2025-09-01T00:00:00Z', event_start: '2025-09-01T01:00:00Z', settled_at: '2025-09-01T04:00:00Z', prob: 0.5, outcome: 1 },
+    { id: 'b', predicted_at: '2025-09-01T10:00:00Z', event_start: '2025-09-01T10:30:00Z', settled_at: '2025-09-01T11:45:00Z', prob: 0.5, outcome: 0 },
+    { id: 'c', predicted_at: '2025-09-01T13:00:00Z', event_start: '2025-09-01T14:00:00Z', prob: 0.5, outcome: 1 }
+  ], { cutoffs: ['2025-09-01T12:00:00Z'] });
+  eq('L9: …a row settled before the cutoff is', wf2.folds[0].train_n, 2);
+  const wf3 = C.walkForward([{ id: 'x', predicted_at: '2025-09-01T00:00:00Z', prob: 0.5, outcome: 1 }, { id: 'y', predicted_at: '2025-09-02T00:00:00Z', prob: 0.5, outcome: 1 }], { cutoffs: ['2025-09-01T12:00:00Z'] });
+  chk('L9: …and a row with no start or settle time is never trained on', wf3.folds[0].skipped, wf3.folds[0]);
+}
+
 done();
