@@ -169,6 +169,36 @@ const OK_BOARD = signals(40, 144);
     s = await D.doctor(OPTS);
     eq('a key that may not read signals reports UNKNOWN rather than guessing',
       stateOf(s, 'the board is being captured'), 'UNKNOWN');
+
+    /* A BOARD NOBODY IS ALLOWED TO BUY. 2026-10-10 the month's credits were
+       spent and paid retrieval stopped on purpose until the reset; the board
+       aged by decision and this check failed four times a day for it. The
+       gateway's public feed state is what tells the two apart. */
+    const feed = (state) => ['/rest/v1/rpc/odds_feed_status', { status: 200, body: JSON.stringify({ state, paid_refresh: state !== 'paused',
+      message: state === 'paused' ? 'Sportsbook price refresh is paused.' : 'Sportsbook prices refresh on an event-aware schedule.' }) }];
+    net([...base, signals(1135, 4.6), feed('paused')]);
+    s = await D.doctor(OPTS);
+    eq('a stale board while paid retrieval is paused is PAUSED', stateOf(s, 'the board is being captured'), 'PAUSED');
+    chk('and it says why, from the feed state', /paid odds retrieval is paused/.test(detailOf(s, 'the board is being captured')),
+      detailOf(s, 'the board is being captured'));
+    chk('and a recorded pause is not a failure of the run', s.verdict !== 'ACTION NEEDED' && D.exitCode(s, {}) === 0, s.verdict);
+    chk('but it is never silent: the run carries it as a warning',
+      D.annotations(s).some((l) => /^::warning::the board is being captured — PAUSED/.test(l)), D.annotations(s));
+    net([...base, ['/rest/v1/signals', { status: 200, body: '[]' }], feed('paused')]);
+    eq('an empty board while paid retrieval is paused is PAUSED too',
+      stateOf(await D.doctor(OPTS), 'the board is being captured'), 'PAUSED');
+    net([...base, signals(1135, 4.6), feed('live')]);
+    eq('a stale board while refresh is live is still STALE', stateOf(await D.doctor(OPTS), 'the board is being captured'), 'STALE');
+    net([...base, signals(1135, 4.6), feed('degraded')]);
+    eq('and so it is while refresh is merely degraded', stateOf(await D.doctor(OPTS), 'the board is being captured'), 'STALE');
+    net([...base, signals(1135, 4.6)]);
+    s = await D.doctor(OPTS);
+    eq('a feed state that cannot be read assumes nothing: still STALE', stateOf(s, 'the board is being captured'), 'STALE');
+    chk('and the fix says where the pause has to be recorded',
+      /odds_api_gateway\.sql/.test((s.checks.find((c) => c.name === 'the board is being captured') || {}).fix || ''),
+      (s.checks.find((c) => c.name === 'the board is being captured') || {}).fix);
+    net([...base, signals(40, 144), feed('paused')]);
+    eq('a current board is CURRENT whatever the feed state', stateOf(await D.doctor(OPTS), 'the board is being captured'), 'CURRENT');
   }
 
   /* --- IS THE PACKET LEDGER THERE, AND IS THE DEPLOYMENT WRITING TO IT? --

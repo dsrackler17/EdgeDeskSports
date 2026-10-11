@@ -51,7 +51,10 @@ function chk(name, cond, detail) {
 function section(t) { console.log('\n' + t); }
 
 const MON = Date.parse('2026-10-05T13:30:00Z'), WED = Date.parse('2026-10-07T13:30:00Z'), FRI = Date.parse('2026-10-09T13:30:00Z');
-const art = ART.load();
+/* the research as committed for CFB Week 6 and NFL Week 5 (ART.frozen()), the
+   week these Monday-to-Friday slots fall in: the live artifacts roll to the
+   next week every weekend. Every job run below reads it too */
+const art = ART.frozen();
 const TL = ART.teamLists(art);
 const snapAt = (t) => CE.research.fromArtifacts(art, { now: t });
 /* the committed record as it stood before the week of t was graded: the live
@@ -194,20 +197,20 @@ function tempStore() {
   section('J job without a database');
   const logs = [];
   const st1 = tempStore();
-  const dry = await JOB.run({ now: WED, db: null, ifDue: true, saveFeature: st1.save, loadFeatures: st1.load, log: (l) => logs.push(l) });
+  const dry = await JOB.run({ art, now: WED, db: null, ifDue: true, saveFeature: st1.save, loadFeatures: st1.load, log: (l) => logs.push(l) });
   chk('J no database: a dry run that writes nothing', dry.mode === 'dry_run' && dry.results[0].status === 'dry_run' && dry.results[0].would_be === 'published' && st1.files().length === 0, dry);
   chk('J … and the console names the slot, never the headline', logs.join('\n').indexOf(bWed.article.title) < 0 && /feature-2026-10-07-storylines/.test(logs.join('\n')));
   const st2 = tempStore();
-  const a1 = await JOB.run({ now: WED, db: null, localAuto: true, ifDue: true, saveFeature: st2.save, loadFeatures: st2.load, log: quiet });
+  const a1 = await JOB.run({ art, now: WED, db: null, localAuto: true, ifDue: true, saveFeature: st2.save, loadFeatures: st2.load, log: quiet });
   chk('J a local rehearsal in auto mode publishes the slot, all twelve gates passing', a1.published.length === 1 && st2.files().length === 1 && st2.load()[0].status === 'published' && st2.load()[0].gates.every((g) => g.ok), a1.results);
-  const a2 = await JOB.run({ now: WED, db: null, localAuto: true, ifDue: true, saveFeature: st2.save, loadFeatures: st2.load, log: quiet });
+  const a2 = await JOB.run({ art, now: WED, db: null, localAuto: true, ifDue: true, saveFeature: st2.save, loadFeatures: st2.load, log: quiet });
   chk('J the same slot is never published twice', a2.published.length === 0 && a2.results[0].status === 'published' && /already/.test(a2.results[0].reason), a2.results);
   const st3 = tempStore();
-  const early = await JOB.run({ now: Date.parse('2026-10-09T10:30:00Z'), db: null, localAuto: true, ifDue: true, saveFeature: st3.save, loadFeatures: st3.load, log: quiet });
+  const early = await JOB.run({ art, now: Date.parse('2026-10-09T10:30:00Z'), db: null, localAuto: true, ifDue: true, saveFeature: st3.save, loadFeatures: st3.load, log: quiet });
   chk('J before the publish hour: SCHEDULED, nothing written yet', early.results[0].status === 'scheduled' && st3.files().length === 0, early.results);
-  const tooEarly = await JOB.run({ now: Date.parse('2026-10-09T08:00:00Z'), db: null, localAuto: true, ifDue: true, saveFeature: st3.save, loadFeatures: st3.load, log: quiet });
+  const tooEarly = await JOB.run({ art, now: Date.parse('2026-10-09T08:00:00Z'), db: null, localAuto: true, ifDue: true, saveFeature: st3.save, loadFeatures: st3.load, log: quiet });
   chk('J --if-due: more than two hours early, nothing runs', tooEarly.results.length === 0);
-  const off = await JOB.run({ now: Date.parse('2026-10-08T15:00:00Z'), db: null, localAuto: true, ifDue: true, saveFeature: st3.save, loadFeatures: st3.load, log: quiet });
+  const off = await JOB.run({ art, now: Date.parse('2026-10-08T15:00:00Z'), db: null, localAuto: true, ifDue: true, saveFeature: st3.save, loadFeatures: st3.load, log: quiet });
   chk('J Thursday: no slot, nothing runs', off.results.length === 0 && off.slot === null);
 
   /* ── D database ─────────────────────────────────────────────────────── */
@@ -234,7 +237,7 @@ function tempStore() {
     };
     const client = PGR.client({ url: SB, key: SERVICE }, fakeFetch, { retries: 0 });
     const S = tempStore();
-    const go = (t, extra) => JOB.run(Object.assign({ now: t, db: client, ifDue: true, saveFeature: S.save, loadFeatures: S.load, log: quiet }, extra || {}));
+    const go = (t, extra) => JOB.run(Object.assign({ art, now: t, db: client, ifDue: true, saveFeature: S.save, loadFeatures: S.load, log: quiet }, extra || {}));
     const row = (id) => JSON.parse(one(`select coalesce((select to_jsonb(f) - 'article' from content_engine.first_party f where id = ${lit(id)}), 'null');`));
 
     chk('D the default mode is a dry run', one(`select fp_mode from content_engine.settings where id = 1;`) === 'dry_run');

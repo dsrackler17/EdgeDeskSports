@@ -155,7 +155,43 @@ To abandon a staged import without touching anything live:
 select mlbhist.abandon_offense_import('<import_id>', 'why');
 ```
 
+The refresh does this itself for every import that fails, so staging should
+only ever hold the import a run is working on.
+
 There is **no way to force a promote past the gate**, and that is deliberate.
+
+### `57014 canceling statement due to statement timeout` at "promoting…"
+
+Not a refusal: PostgREST cancelled the gate before it answered, so it rolled
+back and the previous dataset is still live. Every scheduled run from
+2026-10-06 ended this way. The grain check joined staging to an aggregate of
+staging, and when staging's statistics described an earlier import (or an
+empty table) the planner chose a nested loop that grew with the square of the
+archive — 47 s at 2026's volume against about 1 s once rewritten as one
+grouped pass. A run that died that way also left its ~40,000 staged rows
+behind, which kept the statistics wrong the next night.
+
+The fix is `supabase/fix_slow_promote_mlb.sql`. On a database installed before
+it, apply it once (it is idempotent) and check that every report row reads `ok`:
+
+```bash
+psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/fix_slow_promote_mlb.sql
+```
+
+or paste `supabase/parts/fix_slow_promote_mlb.part1-of-3.sql` … `part3-of-3.sql`
+in order into the SQL editor. It replaces the gate (still one transaction) and
+clears staging that belongs to offensive imports that never promoted and were
+opened more than six hours ago. A fresh install needs nothing extra:
+`mlb_offense_history.sql` and `fix_promote_deletes_mlb.sql` carry the same gate.
+
+To see whether dead staging is building up again:
+
+```sql
+select s.import_id, r.status, r.started_at, count(*) as staged_seasons
+  from mlbhist.stg_batter_seasons s
+  left join mlbhist.import_runs r using (import_id)
+ group by 1, 2, 3 order by 3;
+```
 
 ---
 
@@ -232,10 +268,10 @@ never converted into a probability.
 ```bash
 npm run mlb:off:dataset        # the committed dataset, re-derived from its own numbers
 npm run mlb:off:sql            # the schema, the gates and the grants, on a real PostgreSQL
-npm run mlb:off:e2e            # both shipped importers over both datasets, end to end
+npm run mlb:off:e2e            # both shipped importers over both datasets, end to end; the gate under a statement timeout
 npm run mlb:off:ai             # routing, retrieval, the eleven tools, the critic
 npm run mlb:off:features:test  # the as-of property, proved by corrupting the future
-npm run mlb:off:refresh:test   # provisional flags, staging isolation, failure preservation
+npm run mlb:off:refresh:test   # provisional flags, staging isolation, failure preservation, abandon on failure
 npm run mlb:ui                 # both archives on the research surface, in Chromium
 ```
 

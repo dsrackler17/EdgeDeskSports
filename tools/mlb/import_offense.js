@@ -248,10 +248,43 @@ function prepareRows(ds) {
 
 /* ---- the import --------------------------------------------------------- */
 
+/* A FAILED IMPORT NAMES ITSELF. Whatever throws once the run is chosen — a
+   staging write, the gate's refusal, the gate cancelled by PostgREST's
+   statement timeout — leaves carrying this import's id, so the caller can
+   abandon exactly this import's staged rows (abandonImport, below). Without it
+   the callers' cleanup had nothing to key on: the main() below abandoned
+   'unknown', refresh_offense.js abandoned nothing, and from 2026-10-06 every
+   cancelled gate left ~40,000 staged rows behind — which is what kept
+   staging's statistics describing imports that could never promote
+   (supabase/fix_slow_promote_mlb.sql). */
 async function runImport(db, ds, verdict, o) {
   o = o || {};
-  const log = o.log || console.log;
   const importId = o.importId || makeImportId(ds.coverage);
+  try {
+    return await importAs(db, ds, verdict, Object.assign({}, o, { importId }));
+  } catch (e) {
+    if (e && typeof e === 'object' && !e.import_id) e.import_id = importId;
+    throw e;
+  }
+}
+
+/* A FAILED IMPORT CLEARS ITS OWN STAGING. mlbhist.abandon_offense_import
+   deletes exactly this import's staged rows and marks its ledger row failed
+   with the reason; it never touches a live table or another import's rows.
+   Best effort: nothing live was touched either way, and the failure itself is
+   what the caller must report. Returns whether the abandon ran. */
+async function abandonImport(db, err) {
+  if (!db || !err || !err.import_id) return false;
+  try {
+    await db.rpc(SCHEMA, 'abandon_offense_import',
+      { p_import_id: err.import_id, p_reason: String(err.message).slice(0, 400) });
+    return true;
+  } catch (_) { return false; }
+}
+
+async function importAs(db, ds, verdict, o) {
+  const log = o.log || console.log;
+  const importId = o.importId;
   const ledger = o.ledger || null;
   const rows = o.rows || prepareRows(ds);
 
@@ -448,10 +481,7 @@ async function main() {
     console.log(`\nPASS | offense import | promoted ${result.import_id}`);
     console.log('  snapshot ' + path.relative(ROOT, snap));
   } catch (e) {
-    try {
-      await db.rpc(SCHEMA, 'abandon_offense_import',
-        { p_import_id: e.import_id || 'unknown', p_reason: String(e.message).slice(0, 400) });
-    } catch (_) { /* the abandon is best effort; nothing live was touched either way */ }
+    await abandonImport(db, e);
     try {
       await P.writeMeta(db, SCHEMA, {
         import_offense_last_run: new Date().toISOString(),
@@ -465,7 +495,7 @@ async function main() {
   }
 }
 
-module.exports = { runImport, prepareRows, writeSnapshot, invalidateCaches, makeImportId,
+module.exports = { runImport, abandonImport, prepareRows, writeSnapshot, invalidateCaches, makeImportId,
   TABLES, EXPECTED_KEYS, SNAPSHOT_DIR };
 
 if (require.main === module) {

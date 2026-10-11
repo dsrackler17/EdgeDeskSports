@@ -280,7 +280,7 @@ async function weekly(o) {
 /* ── the example article ────────────────────────────────────────────────── */
 async function example(o) {
   const publisher = CE.PUBLISHER_TEMPLATES[o.publisherSlug || 'stadium-rant'] || null;
-  const d = await discoverAll({ now: o.now, publisher, network: false });
+  const d = await discoverAll({ art: o.art, now: o.now, publisher, network: false });
   const opp = d.opps.find((x) => x.league === (o.league || 'cfb') && x.kind === (o.kind || 'weekly_preview'));
   if (!opp) throw new Error('no ' + (o.league || 'cfb') + ' ' + (o.kind || 'weekly_preview') + ' opportunity in the current research');
   const format = o.format || opp.formats[0];

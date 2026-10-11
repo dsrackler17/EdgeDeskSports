@@ -3,6 +3,9 @@
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 -- This last part prints the report: every row should read ok.
 
+revoke all on function mlbhist.abandon_offense_import(text, text) from public, anon, authenticated;
+grant execute on function mlbhist.abandon_offense_import(text, text) to service_role;
+
 -- ---------------------------------------------------------------------------
 -- What the shell shows about this pipeline. A view rather than a table so it
 -- cannot drift from the ledger it describes.

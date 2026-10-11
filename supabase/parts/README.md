@@ -26,24 +26,28 @@ Then, on a database that already has the three above, the amendments:
    `fix_promote_deletes_cbb.part1-of-*.sql` — Supabase loads the `safeupdate`
    guard for the roles PostgREST connects as, which refuses a `DELETE` with no
    `WHERE`; every promote cleared its live table with a bare one
+6. `fix_slow_promote_mlb.part1-of-*.sql` … the last part — the offense gate's
+   grain check, one grouped pass instead of a join a stale staging estimate
+   made quadratic (57014 statement timeout through PostgREST), and the dead
+   staging that kept the estimate stale
 
 Independent of all of the above, the CFB Live Model Lab:
 
-6. `cfb_lab.part1-of-*.sql` … the last part (then `cfb_lab_cron.sql`, unsplit,
+7. `cfb_lab.part1-of-*.sql` … the last part (then `cfb_lab_cron.sql`, unsplit,
    if the hourly poke is wanted)
-7. `cfb_weekly.part1-of-*.sql` … the last part (the CFB weekly learning and
+8. `cfb_weekly.part1-of-*.sql` … the last part (the CFB weekly learning and
    rating refresh engine: run table, state tables and its pg_cron dispatch;
    independent of `cfb_lab`)
 
 Independent of all of the above, the CFB + NFL player-prop factory:
 
-8. `props_factory.part1-of-*.sql` … the last part, then `expose_schemas.sql`
+9. `props_factory.part1-of-*.sql` … the last part, then `expose_schemas.sql`
    (unsplit) so PostgREST serves the `props` schema
 
 Independent of all of the above, the Portfolio (the reader's own bets and
 prediction-market positions; `docs/portfolio-architecture.md`):
 
-9. `portfolio.part1-of-*.sql` … the last part. Every report row
+10. `portfolio.part1-of-*.sql` … the last part. Every report row
    should read `ok`. Do **not** add `portfolio_private` to the exposed schemas:
    it holds connector credentials and is meant to stay unreachable. Prefer the
    *Deploy Portfolio schema* workflow, which applies the whole file in one
@@ -72,6 +76,7 @@ These are generated. After editing any of the three source files, rebuild with:
     npm run sql:split -- supabase/mlb_offense_history.sql supabase/parts 18000
     npm run sql:split -- supabase/college_baseball.sql   supabase/parts 18000
     npm run sql:split -- supabase/fix_promote_deletes_mlb.sql supabase/parts 18000
+    npm run sql:split -- supabase/fix_slow_promote_mlb.sql supabase/parts 18000
     npm run sql:split -- supabase/fix_promote_deletes_cbb.sql supabase/parts 18000
     npm run sql:split -- supabase/cfb_lab.sql            supabase/parts 18000
     npm run sql:split -- supabase/cfb_weekly.sql         supabase/parts 18000

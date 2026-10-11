@@ -91,7 +91,10 @@ const realFetch = S.fetchText;
     const A = await R.run({ write: true, out: tmp, now: tA });
     const nflFile = path.join(tmp, 'quotes', 'nfl_' + A.season + '.jsonl'), cfbFile = path.join(tmp, 'quotes', 'cfb_' + A.season + '.jsonl');
     const nflRows = Q.read(nflFile), cfbRows = Q.read(cfbFile);
-    const nflAhead = Object.values(A.ledgers.nfl.games).filter((e) => Date.parse(e.kickoff) > Date.parse(tA)).length;
+    /* "ahead" is the ledger's own quote window (quoteWanted: kickoff inside
+       QUOTE_DAYS), not every game on the slate: once the NFL slate reaches a
+       Thursday game 12+ days out, that game is correctly not read yet */
+    const nflAhead = Object.values(A.ledgers.nfl.games).filter((e) => R.quoteWanted(e, Date.parse(tA))).length;
     chk('run A: ESPN\'s NFL scoreboard was read for the games ahead', espnNflServed > 0 && nflAhead > 0, [espnNflServed, nflAhead]);
     chk('run A: every NFL game ahead has a priced spread, total and moneyline row, keyed by its nflverse id', nflRows.length === 3 * nflAhead
       && nflRows.every((r) => /^\d{4}_\d{2}_/.test(r.game_id) && r.observed_at === tA && Date.parse(r.observed_at) < Date.parse(r.kickoff_ts)), [nflRows.length, nflAhead]);

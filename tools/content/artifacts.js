@@ -9,9 +9,15 @@
 
    The admin page reads the same files over HTTPS from the site, which is
    served from this repository (admin/content/content.js, loadArtifacts).
+
+   frozen() is the same research as committed for CFB Week 6 and NFL Week 5
+   (fixtures/research_2026_w6.json.gz, written by fixtures/freeze_research.js):
+   the suites that assert what that week said read it, so they do not move
+   when the hourly artifacts do.
    =========================================================================== */
 const fs = require('fs');
 const path = require('path');
+const zlib = require('zlib');
 
 const ROOT = path.join(__dirname, '..', '..');
 const CE = require(path.join(ROOT, 'lib', 'content_engine.js'));
@@ -22,12 +28,11 @@ function readJson(rel) {
   try { return JSON.parse(fs.readFileSync(f, 'utf8')); } catch (e) { return null; }
 }
 
-/* every captured-market snapshot for the season (NFL quotes live there) */
-function marketSnapshots(season) {
-  const dir = path.join(ROOT, 'articles', 'data', 'market');
-  if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir).filter((f) => new RegExp('^' + season + '-week-\\d+\\.json$').test(f))
-    .map((f) => readJson(path.join('articles', 'data', 'market', f))).filter(Boolean);
+/* every captured-market snapshot for the season (NFL quotes live there),
+   from the file names a directory listing gives */
+function marketSnapshots(season, names, read) {
+  return names.filter((f) => new RegExp('^' + season + '-week-\\d+\\.json$').test(f))
+    .map((f) => read(path.posix.join('articles', 'data', 'market', f))).filter(Boolean);
 }
 
 /* opts.now: the moment the evidence packets are judged at (a test pins it).
@@ -35,28 +40,47 @@ function marketSnapshots(season) {
    evidence.js); the browser reads the committed football/evidence/packets.json. */
 function load(opts) {
   opts = opts || {};
-  const A = CE.ARTIFACTS;
-  const nflSlate = readJson(A.nfl_slate);
-  const season = (nflSlate && nflSlate.season) || 2026;
   let evidence = null;
   if (opts.evidence !== false) {
     try { evidence = require(path.join(ROOT, 'tools', 'content', 'evidence.js')).build({ now: typeof opts.now === 'number' ? opts.now : Date.now() }); }
-    catch (e) { evidence = readJson(A.evidence); }
+    catch (e) { evidence = readJson(CE.ARTIFACTS.evidence); }
   }
+  const dir = path.join(ROOT, 'articles', 'data', 'market');
+  return assemble(readJson, fs.existsSync(dir) ? fs.readdirSync(dir) : [], evidence);
+}
+
+/* the frozen week: { files: { repository path: its JSON }, at, commit, … }
+   (fixtures/freeze_research.js) */
+const FROZEN = path.join(__dirname, 'fixtures', 'research_2026_w6.json.gz');
+function frozenFiles() { return JSON.parse(zlib.gunzipSync(fs.readFileSync(FROZEN)).toString('utf8')); }
+/* the same shape as load(), from the frozen week; a fresh copy on every call.
+   It carries no matchup packets: those move with the week, and Five Games to
+   Watch is tested from its own fixture (games_to_watch.test.js) */
+function frozen() {
+  const fx = frozenFiles();
+  const read = (rel) => (fx.files[rel] === undefined ? null : fx.files[rel]);
+  const names = Object.keys(fx.files).filter((k) => path.posix.dirname(k) === 'articles/data/market').map((k) => path.posix.basename(k));
+  return assemble(read, names, read(CE.ARTIFACTS.evidence));
+}
+
+function assemble(read, marketNames, evidence) {
+  const A = CE.ARTIFACTS;
+  const nflSlate = read(A.nfl_slate);
+  const season = (nflSlate && nflSlate.season) || 2026;
   return {
     evidence,
-    cfbGames: readJson(A.cfb_games),
-    cfbBrief: readJson(A.cfb_brief),
-    rankings: readJson(A.rankings),
+    cfbGames: read(A.cfb_games),
+    cfbBrief: read(A.cfb_brief),
+    rankings: read(A.rankings),
     nflSlate,
-    nflInjuries: readJson(A.nfl_injuries),
-    marketSnapshots: marketSnapshots(season),
-    published: readJson(A.published),
-    performance: readJson(A.performance),
-    forecasts: readJson(A.forecasts),
-    records: { cfb: readJson(A.record.replace('{league}', 'cfb').replace('{season}', season)), nfl: readJson(A.record.replace('{league}', 'nfl').replace('{season}', season)) },
+    nflInjuries: read(A.nfl_injuries),
+    marketSnapshots: marketSnapshots(season, marketNames, read),
+    published: read(A.published),
+    performance: read(A.performance),
+    forecasts: read(A.forecasts),
+    records: { cfb: read(A.record.replace('{league}', 'cfb').replace('{season}', season)), nfl: read(A.record.replace('{league}', 'nfl').replace('{season}', season)) },
     /* the editorial matchup packets (tools/content/build_packets.js) */
-    packets: readJson(A.packets)
+    packets: read(A.packets)
   };
 }
 
@@ -70,4 +94,4 @@ function teamLists(art) {
   return { cfb: [...cfb].filter(Boolean), nfl: [...nfl].filter(Boolean) };
 }
 
-module.exports = { load, teamLists, readJson, ROOT };
+module.exports = { load, frozen, frozenFiles, FROZEN, teamLists, readJson, ROOT };

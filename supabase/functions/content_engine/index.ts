@@ -6158,7 +6158,7 @@
     return format === 'publisher_custom' ? f[0] : format;
   }
   /* formats about ONE game: the gate holds them to the single-game standard */
-  var SINGLE_GAME = { matchup_analysis: true, edgedesk_analysis: true, market_discrepancy: true, trending_story: true, matchup_deep_dive: true };
+  var SINGLE_GAME = { matchup_analysis: true, edgedesk_analysis: true, market_discrepancy: true, trending_story: true, matchup_deep_dive: true, game_deep_dive: true };
   /* formats that list their games one line each: the evidence gate reads each line */
   var LISTING = { upset_watch: true };
   /* formats written only from the verified matchup packets (football/content/
@@ -6897,7 +6897,11 @@
          ' EdgeDesk leans ' + oneDp(p.gap.points) + ' points further toward ' + p.gap.toward + '.',
          ' The gap: ' + oneDp(p.gap.points) + ' points, with EdgeDesk closer to ' + p.gap.toward + '.'][(idx || 0) % 3]
       : ' EdgeDesk’s number is essentially the same.';
-    if (m.status === 'current') return 'The betting line: ' + p.display.market + '.' + gapTxt + ' A gap is a question for research, not a reason to bet.';
+    /* the caveat varies with the game's place in the list: a slate with three
+       current prices otherwise repeats one sentence three times, and the
+       evidence gate's no_repetition check fails the article */
+    if (m.status === 'current') return 'The betting line: ' + p.display.market + '.' + gapTxt + [' A gap is a question for research, not a reason to bet.',
+      ' Treat a difference like this as something to research, not a reason to bet.', ' That difference is a research question, not a reason to bet.'][(idx || 0) % 3];
     if (m.status === 'stale') return 'Historical line: ' + p.display.market + '.' + gapTxt;
     return 'For reference, the ' + p.display.market + ' had ' + (favOf(p.home, p.away, m.home_line).favorite || 'neither team') + ' favored. It is a reference, not a sportsbook price.' + gapTxt;
   }
@@ -7078,6 +7082,15 @@
     return (shown || o.research.games || []).filter(function (p) { return p.discrepancy; })
       .sort(function (a, b) { return (rank[a.discrepancy.review] - rank[b.discrepancy.review]) || (b.discrepancy.points - a.discrepancy.points); }).slice(0, max || 3);
   }
+  /* the terminal's divergence note differs from game to game only in its
+     size, so a list of gaps says it in the game's own words after the first:
+     three flagged games would otherwise repeat one sentence three times */
+  function divergenceText(t, idx) {
+    var m = /\(([\d.]+) pts\)/.exec(t);
+    if (!m || !(idx % 3)) return t;
+    return idx % 3 === 1 ? 'EdgeDesk’s current rating and its pricing state diverge by ' + m[1] + ' points on this game, a large divergence.'
+      : 'Here the current rating and the pricing state disagree by ' + m[1] + ' points, a large rating-state divergence.';
+  }
   /* One gap, explained from EdgeDesk's own inputs — never a story invented to
      fit the number. What the inputs cannot explain is said to be unexplained. */
   function discrepancyText(p, idx, opts) {
@@ -7100,10 +7113,15 @@
         ? 'Holding everything else at EdgeDesk’s values, the market’s consensus implies ' + mi.implied_team + ' is ' + oneDp(mi.implied) + ' points better on a neutral field, where EdgeDesk has ' + mi.edgedesk_team + ' ' + oneDp(mi.edgedesk) + ' points better: the disagreement is about how strong the two teams are.'
         : 'The disagreement sits in team strength: on a neutral field EdgeDesk has ' + mi.edgedesk_team + ' ' + oneDp(mi.edgedesk) + ' points better, while the market’s consensus implies ' + mi.implied_team + ' ' + oneDp(mi.implied) + ' points better, everything else held at EdgeDesk’s values.');
     }
-    d.facts.forEach(function (f) { out.push(f.text); });
-    if (d.unexplained_pct == null) out.push('EdgeDesk has no breakdown of this gap, so it can’t say what explains it.');
-    else if (d.status === 'EXPLAINED') out.push('How the closing market has historically weighed parts of EdgeDesk’s number accounts for most of a gap like this (' + d.explained_pct + '%)' + (d.parts.length ? ', chiefly ' + sentenceList(d.parts.slice(0, 2).map(function (x) { return x.label; })) : '') + '.');
-    else out.push('How the closing market has historically weighed parts of EdgeDesk’s number accounts for about ' + d.explained_pct + '% of a gap like this' + (d.parts.length ? ' (' + sentenceList(d.parts.slice(0, 2).map(function (x) { return x.label; })) + ')' : '') + '; the other ' + d.unexplained_pct + '% is not explained by anything EdgeDesk measures.');
+    d.facts.forEach(function (f) { out.push(f.key === 'rating_divergence' ? divergenceText(f.text, idx) : f.text); });
+    /* every gap says these in the same words but for its numbers, so they are
+       worded by the game's place in the list, or a slate of gaps repeats them */
+    var how = ['How the closing market has historically weighed parts of EdgeDesk’s number', 'The closing market’s historical weighting of the parts of EdgeDesk’s number',
+      'Weighting each part of EdgeDesk’s number as the closing market historically has'][idx % 3];
+    if (d.unexplained_pct == null) out.push(['EdgeDesk has no breakdown of this gap, so it can’t say what explains it.', 'There is no breakdown of this gap in EdgeDesk’s data, so what explains it is unknown.',
+      'Without a breakdown of this gap, EdgeDesk can’t say what explains it.'][idx % 3]);
+    else if (d.status === 'EXPLAINED') out.push(how + ' accounts for most of a gap like this (' + d.explained_pct + '%)' + (d.parts.length ? ', chiefly ' + sentenceList(d.parts.slice(0, 2).map(function (x) { return x.label; })) : '') + '.');
+    else out.push(how + ' accounts for about ' + d.explained_pct + '% of a gap like this' + (d.parts.length ? ' (' + sentenceList(d.parts.slice(0, 2).map(function (x) { return x.label; })) + ')' : '') + '; the other ' + d.unexplained_pct + '% is not explained by anything EdgeDesk measures.');
     return out.join(' ') + tail;
   }
   function discrepancySection(o, shown, max, opts) {
@@ -7745,7 +7763,7 @@
       /* the football behind the number, and against it, from the game's evidence packet */
       var foot = gapFootball(p, i);
       return '### ' + (i + 1) + '. ' + gameHeading(p) + '\n\n' + para(why.length ? 'Why ' + p.away + (p.neutral_site ? ' vs. ' : ' at ') + p.home + ' matters: ' + sentenceList(why.slice(0, 3)) + '.' : null,
-        fanLine(p), scoreLine(p), i === 0 ? driverLine(p) : null, i === 0 ? matchupLine(p) : null, marketLine(p), qbLine(p)) + (foot ? '\n\n' + foot : '');
+        fanLine(p), scoreLine(p), i === 0 ? driverLine(p) : null, i === 0 ? matchupLine(p) : null, marketLine(p, i), qbLine(p)) + (foot ? '\n\n' + foot : '');
     }).join('\n\n');
     s.how_to_read = howToRead(o);
     s.limits = limitsSection(o);
@@ -7759,10 +7777,15 @@
     s.the_matchup = para(p.away + ' ' + (p.neutral_site ? 'and' : 'travels to') + ' ' + p.home + (p.venue ? ' (' + p.venue + ')' : '') + '.',
       p.league === 'cfb' && (isNum(p.home_rank) || isNum(p.away_rank)) ? 'In EdgeDesk’s power ratings, ' + [isNum(p.away_rank) ? p.away + ' is No. ' + p.away_rank : null, isNum(p.home_rank) ? p.home + ' is No. ' + p.home_rank : null].filter(Boolean).join(' and ') + '.' : null,
       matchupLine(p));
+    /* the football from the game's evidence packet, as the matchup deep dive
+       prints it, and the case each way with what EdgeDesk cannot explain: a
+       one-game article is held to the single-game evidence standard */
+    var EV = ddEvidence(p);
+    if (EV.matchup) s.the_matchup += '\n\n' + EV.matchup;
     s.numbers = para(fanLine(p), scoreLine(p), confLine(p), marketLine(p));
-    s.why_they_differ = para(driverLine(p) || 'EdgeDesk’s projection is built from team ratings, home field and matchup data.');
+    s.why_they_differ = para(driverLine(p) || 'EdgeDesk’s projection is built from team ratings, home field and matchup data.', p.evidence ? gapFootball(p, 0, { qb: false }) : null);
     var risks = (p.risks || []).slice(0, 2);
-    s.what_could_change = para(qbLine(p), p.league === 'nfl' ? injuryLine(p) : null, risks.length ? 'EdgeDesk’s research also flags: ' + risks.join(' ') : null) || 'No reported development is on file that would move this number.';
+    s.what_could_change = para(qbLine(p), EV.personnel || (p.league === 'nfl' ? injuryLine(p) : null), risks.length ? 'EdgeDesk’s research also flags: ' + risks.join(' ') : null) || 'No reported development is on file that would move this number.';
     s.how_to_read = howToRead(o);
     s.limits = limitsSection(o);
     s.conclusion = para('The takeaway: ' + (p.display.fair ? 'EdgeDesk has ' + p.display.fair + '. ' : '') + 'That is an estimate with real uncertainty, not a pick, and it moves if the news or the line does.');
@@ -8738,6 +8761,22 @@
         var av = m.availability && m.availability[s]; if (!av || !av.official) return;
         (av.classified || []).forEach(function (c) { if (!c) return; (byTeam[c.team] = byTeam[c.team] || []).push(c); if (c.player) (byTeam[c.player] = byTeam[c.player] || []).push(c); });
       }); });
+      /* the NFL's official injury report, player by player, as the evidence
+         packet prints it ("three Seattle Seahawks players as out or
+         doubtful"): a sourced report like the conference's, so the copy it
+         writes is not charged as unsupported uncertainty */
+      featured.forEach(function (p) {
+        var F0 = fe(); if (!F0 || !p.evidence) return;
+        (p.evidence.claims || []).forEach(function (c) {
+          if (c.topic !== 'injury' || c.verification !== 'OFFICIAL_REPORT' || !c.team || !c.values || !Array.isArray(c.values.players)) return;
+          var so = F0.sourceOf(p.evidence, c) || {};
+          c.values.players.forEach(function (r) {
+            if (!r || typeof r !== 'object' || !r.name) return;
+            var k = AVAIL.classify(AVAIL.fromInjuryReport(c.team, { name: r.name, status: r.status, injury: r.injury, report_date: c.observed_at || so.observed_at || null }, so.label || 'the official injury report'), { kickoff: p.kickoff, now: now });
+            (byTeam[c.team] = byTeam[c.team] || []).push(k); (byTeam[r.name] = byTeam[r.name] || []).push(k);
+          });
+        });
+      });
       var qbIssues = AVAIL.guardProse(body, byTeam);
       ig('qb_claims_sourced', 'EDIT.QB_UNCERTAINTY', qbIssues.length ? 'fail' : 'pass', 'Quarterback and injury uncertainty only from a sourced report',
         qbIssues.length ? qbIssues.slice(0, 3).map(function (q) { return q.reason + ': “' + q.sentence.slice(0, 120) + '”'; }).join(' · ') : null);
@@ -8766,6 +8805,18 @@
     ig('kickoff_claims', 'EDIT.KICKOFF', tbaBad.length ? 'fail' : 'pass', 'An unannounced kickoff is never given a time', tbaBad.length ? uniq(tbaBad).join(', ') + ': the schedule has not set a time' : null);
     /* no spread that contradicts the snapshot */
     var lineBad = [];
+    /* "West Virginia by 0.3" is West Virginia's number, never Virginia's: a
+       team read as the tail of a longer team name (the featured games' and the
+       league's, as teamsMentioned reads them, longest first) is that team, so
+       a slate with both (or Kentucky and Western Kentucky, Texas and North
+       Texas) does not charge one team with the other's line */
+    var spreadTeams = teamNames.concat(known);
+    function insideLonger(team, at) {
+      return spreadTeams.some(function (n) {
+        var pre = n.length - team.length;
+        return pre > 0 && at >= pre && n.slice(pre) === team && /[^A-Za-z]/.test(n.charAt(pre - 1)) && body.slice(at - pre, at + team.length) === n;
+      });
+    }
     featured.forEach(function (p) {
       var ok = {};
       function allow(team, line) { if (team && isNum(line)) (ok[team] = ok[team] || {})[r1(line).toFixed(1)] = 1; }
@@ -8794,6 +8845,7 @@
       [p.home, p.away].forEach(function (team) {
         var re = new RegExp('(^|[^A-Za-z])' + team.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' ([+\\-−])(\\d+(?:\\.\\d)?)(?![\\d.])', 'g'), m;
         while ((m = re.exec(body))) {
+          if (insideLonger(team, m.index + m[1].length)) continue;
           var v = (m[2] === '+' ? 1 : -1) * parseFloat(m[3]);
           if (ok[team] && ok[team][r1(v).toFixed(1)]) continue;
           if (m[2] === '+' && termOk[team] && termOk[team][r1(v).toFixed(1)]) continue;
@@ -8802,6 +8854,7 @@
         }
         var re2 = new RegExp('(^|[^A-Za-z])' + team.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ' by (\\d+(?:\\.\\d)?)\\b', 'g'), m2;
         while ((m2 = re2.exec(body))) {
+          if (insideLonger(team, m2.index + m2[1].length)) continue;
           var v2 = parseFloat(m2[2]);
           var mm = p.model && p.model.favorite === team ? r1(p.model.margin) : null;
           var km = p.market && isNum(p.market.home_line) ? (team === p.home ? -r1(p.market.home_line) : r1(p.market.home_line)) : null;

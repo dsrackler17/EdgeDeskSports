@@ -341,6 +341,10 @@ async function database() {
   const PG = require(path.join(ROOT, 'tools', 'personal', '_pg.js'));
   const db = PG.start('gtwsql');
   if (db.skip) { console.log((process.env.CONTENT_PG_REQUIRED ? 'FAIL | ' : 'NOTE | ') + db.skip + ' — skipped'); if (process.env.CONTENT_PG_REQUIRED) { fail++; failures.push('D PostgreSQL required'); } return; }
+  /* the database's clock is the fixture's Thursday too (_clock.js): the job
+     drafts only topics whose first kickoff is still ahead, and these kicked
+     off on October 10 */
+  require(path.join(__dirname, '_clock.js')).database(db, NOW);
   const { sqlVal } = require(path.join(ROOT, 'tools', 'growth', '_rpc_shim.js'));
   const PGR = require(path.join(ROOT, 'tools', 'lib', 'pgrest.js'));
   const RUN = require(path.join(__dirname, 'run.js'));

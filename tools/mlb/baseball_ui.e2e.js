@@ -170,6 +170,15 @@ if (!conn) { console.log('SKIP | baseball research surface | no reachable Postgr
             current_period_end: new Date(Date.now() + 30 * 864e5).toISOString(),
             cancel_at_period_end: false, stripe_customer_id: 'cus_e2e' }]) });
       }
+      /* A RETURNING READER: the personal-research onboarding is already done.
+         Served '[]', the account reads as brand new and lib/edgedesk_personal_ui.js
+         opens its six-step modal (#edmOnb) after two quiet seconds, over whatever
+         this suite clicks next on a runner slow enough for them to pass first
+         (the same answer tools/portfolio/portfolio_ui.e2e.js gives). */
+      if (rel === 'user_preferences') {
+        return route.fulfill({ status: 200, contentType: 'application/json',
+          body: JSON.stringify([{ user_id: 'e2e-reader', onboarding_status: 'completed', leagues: [], books: [], interests: [] }]) });
+      }
       /* THE MLB CARD. The games board reads the public schema, not mlbhist, so
          those tables are served here. The two starters are real pitchers whose
          records are in the LOCAL ARCHIVE this test imported — which is the
