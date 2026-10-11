@@ -125,6 +125,26 @@ through `supabase/functions/odds_gateway` and its control plane
 [`docs/market-resilience/README.md`](docs/market-resilience/README.md).
 Tests: `npm run resilience:test`.
 
+## The linemaker — fair lines in every market, with the record behind them
+
+Research → Other → **Lines** shows EdgeDesk's own fair sheet for every NFL
+and CFB game on the slate: spread, moneyline, total, both team totals and
+the alternate lines around each, with push probabilities. The sheets come
+from the existing engines (`lib/edgedesk_fairline.js`,
+`tools/football/build_fair_lines.js` → `football/linemaker/fair_lines.json`)
+and never from a sportsbook. The market is shown beside the sheet as a
+reference only. Every market carries its status, CALIBRATED or PROVISIONAL,
+and the reasons, from a slate-blind replay on seasons the method never saw
+(`football/validation/linemaker_{nfl,cfb}.json`). The price check says VALUE
+only when the probability at the market's own number is backed by a record.
+Published sheets go to an append-only pregame ledger and are graded after
+the games (`football/linemaker/grades.json`). The desk answers team-total and
+alternate-line questions from the same sheet, knows the game on your screen,
+runs under a shared daily Lite/Pro allowance, and saves research to your
+account. See [`docs/linemaker/DESIGN.md`](docs/linemaker/DESIGN.md).
+Tests: `npm run linemaker:test`, `npm run linemaker:e2e`,
+`npm run intel:route`, `npm run intel:sql`.
+
 ## EdgeDesk Intelligence — the research desk
 
 The chat panel in `app.html` is served by `supabase/functions/edgedesk_ai`.
