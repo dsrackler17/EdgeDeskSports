@@ -36587,6 +36587,63 @@ export async function subscriptionGate(
   };
 }
 
+/* ── THE SHARED ALLOWANCE AND THE ROUTE (supabase/ai_usage.sql) ─────────
+   The per-isolate limiter above stays: it is free and it stops a burst. This
+   is the shared half. Every question claims one LITE unit under the reader's
+   own token before any work; a question that reaches the full research
+   pipeline (any depth but QUICK) also claims a PRO unit. A spent PRO
+   allowance answers the question the LITE way:
+     LITE  no live investigation providers, no quote refresh, no tool loop,
+           a smaller answer, EDGEDESK_AI_LITE_MODEL when one is configured;
+     PRO   the full pipeline, unchanged.
+   A spent LITE allowance is a 429 with the reset time. A claim that cannot
+   be made (the file is not applied, the database is unreachable) is answered
+   UNMETERED and logged, the same rule subscriptionGate follows: an outage
+   must not lock out paying readers, and the per-isolate limit still holds.
+   Every claim is settled once afterwards with the model's token counts. */
+const AI_USAGE = (Deno.env.get("EDGEDESK_AI_USAGE") ?? "1") !== "0";
+const LITE_MODEL = Deno.env.get("EDGEDESK_AI_LITE_MODEL") ?? "";
+const LITE_MAX_TOKENS = 1600;
+export function routeTier(depth: string): "LITE" | "PRO" { return depth === "QUICK" ? "LITE" : "PRO"; }
+export async function usageClaim(auth: string, route: "LITE" | "PRO", questionChars: number, fetchImpl: typeof fetch = fetch): Promise<any> {
+  if (!AI_USAGE) return { ok: true, route, status: "UNMETERED", metered: false, why: "EDGEDESK_AI_USAGE=0" };
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { ok: true, route, status: "UNMETERED", metered: false, why: "no database configured" };
+  try {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 4000);
+    const r = await fetchImpl(`${SUPABASE_URL}/rest/v1/rpc/ai_usage_claim`, { method: "POST", signal: ctl.signal,
+      headers: { apikey: SUPABASE_ANON_KEY, authorization: auth, "content-type": "application/json" },
+      body: JSON.stringify({ p_route: route, p_question_chars: Math.max(0, Math.min(100000, questionChars | 0)) }) });
+    clearTimeout(t);
+    if (r.status === 404) return { ok: true, route, status: "UNMETERED", metered: false, why: "supabase/ai_usage.sql is not applied" };
+    if (!r.ok) { const why = `the allowance answered ${r.status}`; try { console.warn("edgedesk_ai usage claim", why); } catch { /* no console */ } return { ok: true, route, status: "UNMETERED", metered: false, why }; }
+    const j = await r.json();
+    if (!j || typeof j.ok !== "boolean") return { ok: true, route, status: "UNMETERED", metered: false, why: "the allowance answered without a verdict" };
+    return Object.assign({ metered: j.status !== "UNMETERED" }, j);
+  } catch (e) {
+    const why = "the allowance could not be reached: " + String((e as Error)?.message ?? e).slice(0, 120);
+    try { console.warn("edgedesk_ai usage claim", why); } catch { /* no console */ }
+    return { ok: true, route, status: "UNMETERED", metered: false, why };
+  }
+}
+export async function usageSettle(auth: string, claim: any, outcome: string, usage: any, ms: number, model: string | null, fetchImpl: typeof fetch = fetch): Promise<boolean> {
+  if (!claim || !claim.event_id || !SUPABASE_URL || !SUPABASE_ANON_KEY) return false;
+  try {
+    const ctl = new AbortController(); const t = setTimeout(() => ctl.abort(), 3000);
+    const r = await fetchImpl(`${SUPABASE_URL}/rest/v1/rpc/ai_usage_settle`, { method: "POST", signal: ctl.signal,
+      headers: { apikey: SUPABASE_ANON_KEY, authorization: auth, "content-type": "application/json" },
+      body: JSON.stringify({ p_event_id: claim.event_id, p_outcome: outcome, p_model: model, p_tokens_in: usage?.input_tokens ?? null, p_tokens_out: usage?.output_tokens ?? null, p_ms: Math.max(0, Math.round(ms)) }) });
+    clearTimeout(t);
+    return r.ok;
+  } catch { return false; }
+}
+/** what the reader is told about the route their question took */
+export function routeNote(turn: any): any {
+  const c = turn.tier === "PRO" ? turn.pro : (turn.pro && turn.pro.status === "DOWNGRADED" ? turn.pro : turn.lite);
+  return { tier: turn.tier, why: turn.why, status: c ? c.status : null, metered: !!(c && c.metered),
+    used: c && c.used != null ? c.used : null, limit: c && c.limit != null ? c.limit : null,
+    note: turn.tier === "LITE" ? "Answered from EdgeDesk's cached research and committed artifacts: no outside lookup ran for this question." : "Full research: the live investigation providers ran under their own budgets." };
+}
+
 /* Where the published static artifacts live. The FBS board's own slate is a
    build output committed to the site, not a table, so the research engine
    reads it the same way a browser does. Overridable so a preview deployment
@@ -39054,7 +39111,9 @@ async function sweepBoard(o: {
     let refresh: any = null;
     const targets = refreshTargets(si.index, now);
     if (targets.length) {
-      refresh = await refreshQuotes(sport, now, dal.fetchImpl());
+      refresh = (dal as any).lite
+        ? { attempted: false, state: "LITE_ROUTE", dependency: "a LITE question never asks capture for fresh quotes; a stale price is reported as stale" }
+        : await refreshQuotes(sport, now, dal.fetchImpl());
       refresh.targeted = targets.length;
       if (refresh.state === "REFRESHED") {
         try { si = await dal.getSlateIndex(sport, sport === ((o.boardScope as any).sport ?? null) ? o.boardScope : {}); refresh.reread = true; } catch { refresh.reread = false; }
@@ -41266,25 +41325,56 @@ export function boardCritic(answer: string, board: any, knownGames: any[] | null
 /* THE MODEL CALL — one function, with and without the tool loop            */
 /* ======================================================================== */
 
-interface ModelCall { ok: boolean; status: number; data: any; detail: string | null; tool_trace: any[]; rounds: number }
+interface ModelCall { ok: boolean; status: number; data: any; detail: string | null; tool_trace: any[]; rounds: number; timed_out?: boolean }
 
-async function callModel(o: { system: string; messages: any[]; max_tokens: number; packet?: any | null; mlbHistory?: any | null; mlbOffense?: any | null }): Promise<ModelCall> {
+/* THE MODEL CALL HAS A CLOCK (2026-10-11). Before this, `fetch` to the
+   writing model carried no AbortController: an upstream that accepted the
+   connection and never answered held the reader's request open until the
+   platform killed the isolate, and the research already paid for on this turn
+   was lost with it. Now each round trip has MODEL_TIMEOUT_MS and the whole
+   tool loop MODEL_DEADLINE_MS. A timeout is an ordinary narration failure:
+   ok:false, status 504, timed_out:true, and every caller already answers that
+   with the deterministic research intact and `retryable: true`. A network
+   error is the same with status 502, instead of an exception. */
+const MODEL_TIMEOUT_MS = envInt("EDGEDESK_AI_TIMEOUT_MS", 45000, 1000, 120000);
+const MODEL_DEADLINE_MS = envInt("EDGEDESK_AI_DEADLINE_MS", 100000, 2000, 150000);
+export function modelClock(): { timeout_ms: number; deadline_ms: number } { return { timeout_ms: MODEL_TIMEOUT_MS, deadline_ms: MODEL_DEADLINE_MS }; }
+
+export async function callModel(o: { system: string; messages: any[]; max_tokens: number; packet?: any | null; mlbHistory?: any | null; mlbOffense?: any | null; model?: string; noTools?: boolean }): Promise<ModelCall> {
   const headers = { "content-type": "application/json", "x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" };
+  const started = Date.now();
   /* The MLB historical tools need no packet — they read a database keyed on a
      pitcher, not on a game — so a turn that carries the archive service can
      run the loop even when there is no matchup to build a packet from. */
-  const useTools = TOOL_LOOP && !!EDRESEARCH && (!!o.packet || !!o.mlbHistory || !!o.mlbOffense);
+  const useTools = TOOL_LOOP && !o.noTools && !!EDRESEARCH && (!!o.packet || !!o.mlbHistory || !!o.mlbOffense);
   const tools = useTools ? EDRESEARCH.toolDefinitions(TOOL_ALLOWLIST) : null;
   const budget = { max: TOOL_BUDGET, used: 0 };
   const trace: any[] = [];
   let messages = o.messages.slice();
   let rounds = 0;
   for (;;) {
-    const body: any = { model: MODEL, max_tokens: o.max_tokens, system: o.system, messages };
+    const body: any = { model: o.model || MODEL, max_tokens: o.max_tokens, system: o.system, messages };
     if (tools && tools.length) body.tools = tools;
-    const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers, body: JSON.stringify(body) });
-    if (!r.ok) return { ok: false, status: r.status, data: null, detail: await r.text().catch(() => ""), tool_trace: trace, rounds };
-    const data = await r.json();
+    const left = MODEL_DEADLINE_MS - (Date.now() - started);
+    if (left <= 0) {
+      trace.push({ note: "deadline reached before round " + (rounds + 1) });
+      return { ok: false, status: 504, data: null, detail: `the model call ran past its ${MODEL_DEADLINE_MS} ms deadline after ${rounds} round(s)`, tool_trace: trace, rounds, timed_out: true };
+    }
+    const wait = Math.min(MODEL_TIMEOUT_MS, left);
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), wait);
+    let r: Response, data: any;
+    try {
+      r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST", headers, body: JSON.stringify(body), signal: ctrl.signal });
+      if (!r.ok) { const detail = await r.text().catch(() => ""); clearTimeout(timer); return { ok: false, status: r.status, data: null, detail, tool_trace: trace, rounds }; }
+      data = await r.json();
+    } catch (e) {
+      clearTimeout(timer);
+      const aborted = ctrl.signal.aborted;
+      return { ok: false, status: aborted ? 504 : 502, data: null, tool_trace: trace, rounds, timed_out: aborted,
+        detail: aborted ? `the writing model did not answer within ${wait} ms` : `the writing model could not be reached: ${String((e as Error)?.message ?? e).slice(0, 160)}` };
+    }
+    clearTimeout(timer);
     rounds++;
     const uses = (data?.content ?? []).filter((b: any) => b?.type === "tool_use");
     if (!useTools || data?.stop_reason !== "tool_use" || !uses.length || rounds > TOOL_LOOP_MAX_ROUNDS) {
@@ -43219,6 +43309,11 @@ export async function handle(req: Request): Promise<Response> {
       ok: true,
       build: BUILD,
       model: MODEL,
+      /* the clock on every model call: per round trip and for the whole tool loop */
+      model_clock: modelClock(),
+      /* the shared allowance and the route (supabase/ai_usage.sql) */
+      ai_usage: { enabled: AI_USAGE, lite_model: LITE_MODEL || null, lite_max_tokens: LITE_MAX_TOKENS, pro_depths: ["STANDARD", "DEEP", "SLATE", "FULL"], lite_depths: ["QUICK"],
+        migration: "supabase/ai_usage.sql", note: "Every question claims one LITE unit; a question past QUICK depth also claims a PRO unit, and a spent PRO allowance is answered the LITE way. Unreachable allowance = UNMETERED (the per-isolate limit still holds)." },
       research_enabled: RESEARCH_ENABLED,
       /* The first thing to check when the desk stops recommending: whether it
          was told to. An explicit boolean, not a threshold to be interpreted. */
@@ -43381,10 +43476,33 @@ export async function handle(req: Request): Promise<Response> {
 
   const history = Array.isArray(body?.history) ? body.history.slice(-8) : [];
 
+  /* THE SHARED ALLOWANCE (supabase/ai_usage.sql): one LITE unit per question,
+     claimed before any work. `rjson` answers every exit below: it tells the
+     reader which route the question took and settles the claim once. */
+  const turnT0 = Date.now();
+  const qChars = String(body?.question ?? "").length;
+  const turn: any = { tier: "LITE", why: "answered from EdgeDesk's own research", lite: null, pro: null, usage: null, model: null };
+  if (!dry) {
+    turn.lite = await usageClaim(auth, "LITE", qChars);
+    if (!turn.lite.ok) return json({ error: "daily limit reached", note: turn.lite.reason, route: routeNote(turn) }, 429);
+  }
+  const rjson = async (payload: any, status = 200, outcome?: string): Promise<Response> => {
+    try { if (payload && typeof payload === "object" && !Array.isArray(payload) && !payload.route) payload.route = routeNote(turn); } catch { /* keep the body */ }
+    const out = outcome ?? (status >= 500 ? (payload?.narration?.timed_out ? "timed_out" : "narration_failed") : "answered");
+    const ms = Date.now() - turnT0;
+    const settle = Promise.all([
+      usageSettle(auth, turn.lite, turn.tier === "LITE" ? out : "answered", turn.tier === "LITE" ? turn.usage : null, ms, turn.tier === "LITE" ? turn.model : null),
+      turn.pro && turn.pro.route === "PRO" ? usageSettle(auth, turn.pro, out, turn.usage, ms, turn.model) : Promise.resolve(false),
+    ]).catch(() => [false, false]);
+    const rt = (globalThis as any).EdgeRuntime;
+    if (rt?.waitUntil) rt.waitUntil(settle); else await settle;
+    return json(payload, status);
+  };
+
   /* --- the reader's own research: watchlist, alerts, journal, CLV, the
      research-priority list. Deterministic, under the caller's token. ---- */
   if (!dry) {
-    try { const mt = await mineTurn({ body, auth }); if (mt) return json(mt); }
+    try { const mt = await mineTurn({ body, auth }); if (mt) return await rjson(mt, 200, "deterministic"); }
     catch (e) { try { console.error("edgedesk_ai mine turn threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
   }
 
@@ -43393,7 +43511,7 @@ export async function handle(req: Request): Promise<Response> {
      before the desk, retrieval and the model. */
   {
     const rb = retiredSportTurn({ question: String(body?.question ?? ""), sportKey: body?.packet?.game?.sport_key ?? body?.packet?.sport_key ?? null, stage: "question" });
-    if (rb) return json(rb);
+    if (rb) return await rjson(rb, 200, "deterministic");
   }
 
   /* --- player props: answered from the committed Player Props boards, for a
@@ -43402,11 +43520,11 @@ export async function handle(req: Request): Promise<Response> {
   /* --- the connected research desk: one game's GAME and PLAYER PROP
      signals, and the reader's own Card (games and props, one exposure) --- */
   if (!dry) {
-    try { const ot = await opportunityTurn({ body, auth }); if (ot) return json(ot); }
+    try { const ot = await opportunityTurn({ body, auth }); if (ot) return await rjson(ot, 200, "deterministic"); }
     catch (e) { try { console.error("edgedesk_ai opportunity turn threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
   }
   if (!dry) {
-    try { const pt = await propsTurn({ body, auth }); if (pt) return json(pt); }
+    try { const pt = await propsTurn({ body, auth }); if (pt) return await rjson(pt, 200, "deterministic"); }
     catch (e) { try { console.error("edgedesk_ai props turn threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
   }
 
@@ -43415,9 +43533,9 @@ export async function handle(req: Request): Promise<Response> {
      does not answer returns null here and runs the full pipeline below. */
   if (!dry && body?.desk === true) {
     /* a non-QB personnel question on one game: the measured injury impact, deterministic, moving no number */
-    try { const p = await personnelTurn({ body, auth }); if (p) return json(p); }
+    try { const p = await personnelTurn({ body, auth }); if (p) return await rjson(p, 200, "deterministic"); }
     catch (e) { try { console.error("edgedesk_ai personnel turn threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
-    try { const d = await deskTurn({ body, auth }); if (d) return json(d); }
+    try { const d = await deskTurn({ body, auth }); if (d) return await rjson(d, 200, "deterministic"); }
     catch (e) { try { console.error("edgedesk_ai desk turn threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
   }
 
@@ -43452,6 +43570,17 @@ export async function handle(req: Request): Promise<Response> {
   const state = deriveState(history, plan, body?.packet, prevState, String(body?.question ?? ""));
   const presentationMode = presentationModeOf(body, plan);
 
+  /* --- the route ---------------------------------------------------------
+     A QUICK question (a price, a follow-up on the game already on screen) is
+     answered the LITE way and spends no PRO unit. Anything deeper claims one;
+     a spent PRO allowance answers it the LITE way and says so. */
+  if (routeTier(plan.depth) === "PRO") {
+    turn.pro = dry ? { ok: true, route: "PRO", status: "UNMETERED", metered: false } : await usageClaim(auth, "PRO", qChars);
+    if (turn.pro.ok && turn.pro.route === "PRO") { turn.tier = "PRO"; turn.why = "full research at " + plan.depth + " depth"; }
+    else { turn.tier = "LITE"; turn.why = turn.pro.reason || "the full-research allowance is spent"; }
+  } else { turn.tier = "LITE"; turn.why = "a quick question is answered from EdgeDesk's cached research"; }
+  const liteTurn = turn.tier === "LITE";
+
   /* --- research --------------------------------------------------------- */
   let research: ResearchOut | null = null;
   let dal: Dal | null = null;
@@ -43462,6 +43591,8 @@ export async function handle(req: Request): Promise<Response> {
         supabaseUrl: SUPABASE_URL, apikey: SUPABASE_ANON_KEY,
         authorization: auth, budget: plan.budget, mlbFallback: MLB_FALLBACK,
       });
+      /* a LITE question never asks capture for fresh quotes */
+      (dal as any).lite = liteTurn;
       research = await runResearch(plan, state, body?.packet, dal, String(body?.question ?? ""), String(body?.mode ?? ""),
         { board: { timezone: clientTz, state: carriedBoard, follow_up: boardFollow } });
     } catch (e) {
@@ -43480,7 +43611,7 @@ export async function handle(req: Request): Promise<Response> {
   {
     const resolved = (research as any)?.focus?.sport_key ?? (research as any)?.context?.sport ?? (research as any)?.state?.sport ?? null;
     const rb = retiredSportTurn({ question: String(body?.question ?? ""), sportKey: resolved, stage: "retrieval" });
-    if (rb) return json(rb);
+    if (rb) return await rjson(rb, 200, "deterministic");
   }
 
   /* --- the deterministic presentation, BEFORE the model ------------------
@@ -43541,7 +43672,9 @@ export async function handle(req: Request): Promise<Response> {
     try {
       followUp = EDANALYST.followUp({ question: String(body?.question ?? ""), state: carriedState && carriedState.game_id === String(research.context.game_id ?? "") ? carriedState : null });
       try { identity = await dal.getIdentity({ sport: research.context.sport, home_id: research.context.home_id, away_id: research.context.away_id, season: research.context.season ?? null }); } catch (e) { identity = { home: null, away: null, errors: [String((e as Error)?.message ?? e).slice(0, 120)] }; }
-      if (INVESTIGATE) {
+      if (INVESTIGATE && liteTurn) {
+        investigation = { schema: "edgedesk_investigation_v1", enabled: false, plan: [], log: [], outcomes: {}, budget: null, providers_tried: {}, conflicts: [], applied: [], note: "LITE route: no outside provider was asked; the answer reads EdgeDesk's committed artifacts and stored rows. " + turn.why };
+      } else if (INVESTIGATE) {
         investigation = await investigate({ packet: rpacket, research, dal, identity });
         if (investigation?.applied?.length) { try { const rebuilt = turnResearchPacket(research); if (rebuilt) { rpacket = rebuilt; (research as any).research_packet = rpacket; } } catch { /* keep the first packet */ } }
       } else investigation = { schema: "edgedesk_investigation_v1", enabled: false, plan: [], log: [], outcomes: {}, budget: null, providers_tried: {}, conflicts: [], applied: [], note: "EDGEDESK_INVESTIGATE=0: the loop is switched off; nothing was checked beyond the artifacts." };
@@ -43823,7 +43956,7 @@ export async function handle(req: Request): Promise<Response> {
      spending a token or depending on the answer to reveal a retrieval bug. */
   if (dry) {
     const content = buildUserContent(body, research, evidenceMax(), presentation);
-    return json({
+    return await rjson({
       dry: true,
       research_error: researchError,
       /* The whole packet, in the order the analyst reads it, so exactly what
@@ -43998,10 +44131,13 @@ export async function handle(req: Request): Promise<Response> {
     : presentationMode === "STANDARD" ? 1200
     : presentationMode === "PUBLISHER" ? 1400
     : (MAX_TOKENS[plan.depth] ?? 1000);
-  const maxTokens = Math.max(baseTokens + (presentation ? 400 : 0), board ? 1800 : 0);
+  const maxTokens0 = Math.max(baseTokens + (presentation ? 400 : 0), board ? 1800 : 0);
+  const maxTokens = liteTurn ? Math.min(maxTokens0, LITE_MAX_TOKENS) : maxTokens0;
+  const turnModel = liteTurn && LITE_MODEL ? LITE_MODEL : MODEL;
+  turn.model = turnModel;
 
   try {
-    const r = await callModel({ system, messages, max_tokens: maxTokens, packet: rpacket, mlbHistory: mlbHistorySvc, mlbOffense: mlbOffenseSvc });
+    const r = await callModel({ system, messages, max_tokens: maxTokens, packet: rpacket, mlbHistory: mlbHistorySvc, mlbOffense: mlbOffenseSvc, model: turnModel, noTools: liteTurn });
 
     if (!r.ok) {
       const detail = r.detail ?? "";
@@ -44015,10 +44151,10 @@ export async function handle(req: Request): Promise<Response> {
          The status stays 502 because the narration genuinely failed; the body
          now carries the research so a client can render the facts and offer a
          retry instead of inventing an opinion. */
-      return json({
+      return await rjson({
         error: `anthropic ${r.status}`, detail, presentation,
         answer: null,
-        narration: { ok: false, reason: `the writing model answered ${r.status}`, retryable: true },
+        narration: { ok: false, reason: r.timed_out ? `the writing model did not answer in time (${detail})` : `the writing model answered ${r.status}`, retryable: true, timed_out: !!r.timed_out },
         matchup_summary: summary,
         research_packet: rpacket, structured: structuredFor(null, null),
         board, board_state: boardState, deterministic_board_answer: board && EDBOARD ? EDBOARD.render(board) : null,
@@ -44030,6 +44166,7 @@ export async function handle(req: Request): Promise<Response> {
       }, 502);
     }
     const data = r.data;
+    turn.usage = data?.usage ?? null;
     let TOOL_TRACE: any[] = r.tool_trace ?? [];
     const textOf = (d: any) => (d?.content ?? [])
       .filter((b: any) => b?.type === "text").map((b: any) => b.text).join("\n").trim();
@@ -44068,7 +44205,7 @@ export async function handle(req: Request): Promise<Response> {
       RETRY_NOTE = { attempted: true, reason: stop === "max_tokens" ? "the first answer ran out of room"
         : "the first call returned no text", evidence_budget: retryBudget,
         first_input_tokens: usage?.input_tokens ?? null, first_max_tokens: maxTokens };
-      const r2 = await callModel({ system, messages: trimmed, max_tokens: Math.max(2000, maxTokens * 2), packet: rpacket, mlbHistory: mlbHistorySvc, mlbOffense: mlbOffenseSvc });
+      const r2 = await callModel({ system, messages: trimmed, max_tokens: Math.max(2000, maxTokens * 2), packet: rpacket, mlbHistory: mlbHistorySvc, mlbOffense: mlbOffenseSvc, model: turnModel, noTools: liteTurn });
       if (r2.ok) { answer = textOf(r2.data); TOOL_TRACE = TOOL_TRACE.concat(r2.tool_trace ?? []); }
       /* Still nothing. Say WHY, with the numbers, instead of two words — and do
          it as a 200 carrying the research, so the caller keeps the deterministic
@@ -44080,7 +44217,7 @@ export async function handle(req: Request): Promise<Response> {
            layer already computed. A reader who asked about a football game
            gets a football answer; what they do not get is a lean nobody
            made. */
-        return json({
+        return await rjson({
           answer: "",
           error: "empty completion",
           why: `the model returned no text (stop_reason ${stop ?? "unknown"}). `
@@ -44238,7 +44375,7 @@ export async function handle(req: Request): Promise<Response> {
     const rt = (globalThis as any).EdgeRuntime;
     if (rt?.waitUntil) rt.waitUntil(remember); else remember.catch(() => {});
 
-    return json({
+    return await rjson({
       answer,
       model: data?.model ?? MODEL,
       cached: false,
@@ -44289,7 +44426,7 @@ export async function handle(req: Request): Promise<Response> {
   } catch (e) {
     /* Same reasoning as the non-200 branch above: the research survives a
        transport failure in the narration call and travels with the error. */
-    return json({
+    return await rjson({
       error: String((e as Error)?.message ?? e), presentation,
       answer: null,
       narration: { ok: false, reason: "the writing model could not be reached", retryable: true },
