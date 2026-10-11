@@ -2,7 +2,7 @@
  "schema": "edgedesk_cfb_reliability_v1",
  "version": "cfb_reliability/2",
  "season": 2026,
- "generated_at": "2026-10-11T13:12:31.077Z",
+ "generated_at": "2026-10-11T14:09:22.388Z",
  "basis": "Reliability is how much EdgeDesk trusts the completeness, freshness, consistency and stability of the information under each projection. It is NOT a probability that the projection is right and not a betting signal; it moves no number. Scored by lib/cfb_reliability.js from the inputs this build priced from.",
  "market": "NOT JOINED IN THIS BUILD — the market items do not apply to these scores; the board re-scores with its live quote",
  "weights": {
@@ -78,7 +78,7 @@
  ],
  "summary": {
   "games": 65,
-  "mean": 85.4,
+  "mean": 85.6,
   "median": 89,
   "percentiles": {
    "p10": 79,
@@ -103,12 +103,12 @@
    {
     "grade": "ADEQUATE",
     "label": "ADEQUATE",
-    "n": 9
+    "n": 10
    },
    {
     "grade": "CAUTION",
     "label": "CAUTION",
-    "n": 1
+    "n": 0
    },
    {
     "grade": "LOW",
@@ -130,13 +130,13 @@
    },
    {
     "n": 7,
-    "mean": 86.1,
+    "mean": 87.6,
     "median": 89,
     "conference": "American"
    },
    {
     "n": 7,
-    "mean": 88.1,
+    "mean": 88.4,
     "median": 89,
     "conference": "Big 12"
    },
@@ -166,13 +166,13 @@
    },
    {
     "n": 7,
-    "mean": 84.7,
+    "mean": 86.1,
     "median": 89,
     "conference": "MAC"
    },
    {
     "n": 5,
-    "mean": 88.4,
+    "mean": 89,
     "median": 89,
     "conference": "Mountain West"
    },
@@ -202,15 +202,15 @@
    },
    {
     "n": 7,
-    "mean": 86.4,
-    "median": 87,
+    "mean": 86.7,
+    "median": 88,
     "conference": "Sun Belt"
    }
   ],
   "fbs_vs_fcs": {
    "fbs_fbs": {
     "n": 62,
-    "mean": 86.7,
+    "mean": 86.9,
     "median": 89
    },
    "fbs_fcs": {
@@ -220,13 +220,13 @@
    }
   },
   "flags": {
-   "capped_by_qb": 42,
+   "capped_by_qb": 45,
    "capped_by_stale": 0,
    "missing_weather": 0,
    "missing_venue_coordinates": 0,
-   "roster_conflicts": 1,
+   "roster_conflicts": 0,
    "unstable_projections": 4,
-   "source_disagreement": 25,
+   "source_disagreement": 24,
    "thin_data": 3,
    "data_fault": 0
   },
@@ -234,19 +234,19 @@
    {
     "key": "team_data",
     "label": "Team data",
-    "mean": 19.1,
+    "mean": 19.2,
     "max": 20
    },
    {
     "key": "roster_availability",
     "label": "Roster/status",
-    "mean": 10.8,
+    "mean": 10.9,
     "max": 20
    },
    {
     "key": "projection_stability",
     "label": "Stability",
-    "mean": 17.9,
+    "mean": 18.1,
     "max": 20
    },
    {
@@ -277,7 +277,7 @@
    "min": 50,
    "max": 77,
    "mode": 77,
-   "mode_n": 50,
+   "mode_n": 51,
    "basis": "input_coverage: applicable contract fields on file / applicable fields, counted, not weighted (the pre-v2 reliability)"
   },
   "bottlenecks": [
@@ -297,13 +297,7 @@
     "key": "qb_identity",
     "label": "Starting QB not confirmed",
     "games": 65,
-    "points": 96.5
-   },
-   {
-    "key": "stability",
-    "label": "Projection dispersion under perturbation",
-    "games": 56,
-    "points": 100.4
+    "points": 94.9
    },
    {
     "key": "transfer_turnover",
@@ -312,22 +306,28 @@
     "points": 24.3
    },
    {
+    "key": "stability",
+    "label": "Projection dispersion under perturbation",
+    "games": 55,
+    "points": 93.5
+   },
+   {
     "key": "rating_sample",
     "label": "In-season rating sample still thin",
-    "games": 51,
-    "points": 26.3
+    "games": 44,
+    "points": 17.1
    },
    {
     "key": "qb_conflict",
     "label": "QB sources disagree",
-    "games": 24,
-    "points": 31.5
+    "games": 23,
+    "points": 29.5
    },
    {
     "key": "favorite_flips",
     "label": "Projection flips favorite under perturbation",
-    "games": 14,
-    "points": 38.9
+    "games": 11,
+    "points": 32.1
    },
    {
     "key": "contract_conflicts",
@@ -369,17 +369,17 @@
     "key": "prior_missing",
     "label": "No prior-season rating",
     "games": 2,
-    "points": 2.3
+    "points": 2
    }
   ]
  },
  "summary_without_evidence": {
   "games": 65,
-  "mean": 84.6,
+  "mean": 84.9,
   "median": 89,
   "percentiles": {
    "p10": 77.8,
-   "p25": 83,
+   "p25": 86,
    "p50": 89,
    "p75": 89,
    "p90": 89
@@ -395,12 +395,12 @@
    {
     "grade": "STRONG",
     "label": "STRONG",
-    "n": 50
+    "n": 52
    },
    {
     "grade": "ADEQUATE",
     "label": "ADEQUATE",
-    "n": 9
+    "n": 7
    },
    {
     "grade": "CAUTION",
@@ -421,19 +421,19 @@
   "by_conference": [
    {
     "n": 9,
-    "mean": 82.3,
+    "mean": 80.1,
     "median": 89,
     "conference": "ACC"
    },
    {
     "n": 7,
-    "mean": 84.7,
+    "mean": 87.3,
     "median": 89,
     "conference": "American"
    },
    {
     "n": 7,
-    "mean": 87,
+    "mean": 88.3,
     "median": 89,
     "conference": "Big 12"
    },
@@ -463,14 +463,14 @@
    },
    {
     "n": 7,
-    "mean": 83.3,
+    "mean": 85.9,
     "median": 89,
     "conference": "MAC"
    },
    {
     "n": 5,
-    "mean": 84.4,
-    "median": 86,
+    "mean": 87,
+    "median": 89,
     "conference": "Mountain West"
    },
    {
@@ -500,14 +500,14 @@
    {
     "n": 7,
     "mean": 86.1,
-    "median": 87,
+    "median": 88,
     "conference": "Sun Belt"
    }
   ],
   "fbs_vs_fcs": {
    "fbs_fbs": {
     "n": 62,
-    "mean": 85.9,
+    "mean": 86.2,
     "median": 89
    },
    "fbs_fcs": {
@@ -517,7 +517,7 @@
    }
   },
   "flags": {
-   "capped_by_qb": 38,
+   "capped_by_qb": 41,
    "capped_by_stale": 0,
    "missing_weather": 0,
    "missing_venue_coordinates": 0,
@@ -531,7 +531,7 @@
    {
     "key": "team_data",
     "label": "Team data",
-    "mean": 19.1,
+    "mean": 19.2,
     "max": 20
    },
    {
@@ -543,7 +543,7 @@
    {
     "key": "projection_stability",
     "label": "Stability",
-    "mean": 17.9,
+    "mean": 18.1,
     "max": 20
    },
    {
@@ -555,7 +555,7 @@
    {
     "key": "source_integrity",
     "label": "Source integrity",
-    "mean": 14.2,
+    "mean": 14.3,
     "max": 15
    },
    {
@@ -574,7 +574,7 @@
    "min": 50,
    "max": 77,
    "mode": 77,
-   "mode_n": 50,
+   "mode_n": 51,
    "basis": "input_coverage: applicable contract fields on file / applicable fields, counted, not weighted (the pre-v2 reliability)"
   },
   "bottlenecks": [
@@ -594,13 +594,7 @@
     "key": "qb_identity",
     "label": "Starting QB not confirmed",
     "games": 65,
-    "points": 98.6
-   },
-   {
-    "key": "stability",
-    "label": "Projection dispersion under perturbation",
-    "games": 56,
-    "points": 100.4
+    "points": 95.6
    },
    {
     "key": "transfer_turnover",
@@ -609,22 +603,28 @@
     "points": 24.3
    },
    {
+    "key": "stability",
+    "label": "Projection dispersion under perturbation",
+    "games": 55,
+    "points": 93.5
+   },
+   {
     "key": "rating_sample",
     "label": "In-season rating sample still thin",
-    "games": 51,
-    "points": 26.3
+    "games": 44,
+    "points": 17.1
    },
    {
     "key": "qb_conflict",
     "label": "QB sources disagree",
     "games": 24,
-    "points": 41.9
+    "points": 41.6
    },
    {
     "key": "favorite_flips",
     "label": "Projection flips favorite under perturbation",
-    "games": 14,
-    "points": 38.9
+    "games": 11,
+    "points": 32.1
    },
    {
     "key": "fcs_rating",
@@ -666,7 +666,7 @@
     "key": "prior_missing",
     "label": "No prior-season rating",
     "games": 2,
-    "points": 2.3
+    "points": 2
    }
   ]
  },
@@ -932,44 +932,44 @@
     "label": "Availability feed",
     "games_affected": 65,
     "current_points_lost": 483.5,
-    "maximum_recoverable_points": 428,
+    "maximum_recoverable_points": 439,
     "games_recoverable": 54,
     "cost": 3,
     "feasible": 0.6,
     "how": "official conference reports cover conference games in the SEC, Big Ten, ACC and Big 12; the rest need a structured injury feed or team releases",
     "recover": "games whose availability read is missing, refused or not comprehensive",
-    "estimated_recoverable_points": 256.8,
-    "enrichment_roi": 85.6,
+    "estimated_recoverable_points": 263.4,
+    "enrichment_roi": 87.8,
     "engineering_priority": 1
-   },
-   {
-    "key": "qb_conflict",
-    "label": "QB conflicts",
-    "games_affected": 24,
-    "current_points_lost": 31.5,
-    "maximum_recoverable_points": 33,
-    "games_recoverable": 6,
-    "cost": 2,
-    "feasible": 0.8,
-    "how": "the source hierarchy resolves a disagreement when the evidence permits; an independent source settles the rest",
-    "recover": "sides whose starter evidence disagrees",
-    "estimated_recoverable_points": 26.4,
-    "enrichment_roi": 13.2,
-    "engineering_priority": 2
    },
    {
     "key": "qb_identity",
     "label": "QB confirmation",
     "games_affected": 65,
-    "current_points_lost": 96.5,
-    "maximum_recoverable_points": 59,
-    "games_recoverable": 20,
+    "current_points_lost": 94.9,
+    "maximum_recoverable_points": 60,
+    "games_recoverable": 17,
     "cost": 3,
     "feasible": 0.5,
     "how": "official announcements, a provider depth chart, or trusted beat reporting above the observed previous start",
     "recover": "starters resolved only from the previous game",
-    "estimated_recoverable_points": 29.5,
-    "enrichment_roi": 9.83,
+    "estimated_recoverable_points": 30,
+    "enrichment_roi": 10,
+    "engineering_priority": 2
+   },
+   {
+    "key": "qb_conflict",
+    "label": "QB conflicts",
+    "games_affected": 23,
+    "current_points_lost": 29.5,
+    "maximum_recoverable_points": 21,
+    "games_recoverable": 5,
+    "cost": 2,
+    "feasible": 0.8,
+    "how": "the source hierarchy resolves a disagreement when the evidence permits; an independent source settles the rest",
+    "recover": "sides whose starter evidence disagrees",
+    "estimated_recoverable_points": 16.8,
+    "enrichment_roi": 8.4,
     "engineering_priority": 3
    },
    {
@@ -1035,8 +1035,8 @@
    {
     "key": "stability",
     "label": "Projection stability",
-    "games_affected": 58,
-    "current_points_lost": 139.3,
+    "games_affected": 56,
+    "current_points_lost": 125.6,
     "maximum_recoverable_points": 0,
     "games_recoverable": 0,
     "cost": 5,
@@ -1050,8 +1050,8 @@
    {
     "key": "rating_sample",
     "label": "In-season rating sample",
-    "games_affected": 51,
-    "current_points_lost": 26.3,
+    "games_affected": 44,
+    "current_points_lost": 17.1,
     "maximum_recoverable_points": 0,
     "games_recoverable": 0,
     "cost": 5,
@@ -1081,8 +1081,8 @@
   ],
   "potential": {
    "games": 65,
-   "mean_score": 85.4,
-   "mean_potential": 96.2,
+   "mean_score": 85.6,
+   "mean_potential": 96.6,
    "basis": "the mean score if every input with a recovery action were resolved; not a probability and not a forecast"
   }
  },
@@ -1926,14 +1926,14 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 89.9,
+    "raw": 90.8,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19.3,
+      "score": 19.7,
       "max": 20
      },
      "roster_availability": {
@@ -1941,7 +1941,7 @@
       "max": 20
      },
      "projection_stability": {
-      "score": 18.1,
+      "score": 18.6,
       "max": 20
      },
      "freshness": {
@@ -1958,13 +1958,13 @@
      }
     },
     "main_deduction": "no source has established whether Georgia or Auburn’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-    "potential": 97,
+    "potential": 98,
     "evidence_used": true,
     "stability": {
-     "sd": 2.05,
-     "p10": 17.5,
-     "p50": 20.5,
-     "p90": 23.5,
+     "sd": 1.91,
+     "p10": 17.11,
+     "p50": 19.85,
+     "p90": 22.6,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
@@ -1985,8 +1985,8 @@
      },
      {
       "component": "projection_stability",
-      "points": 1.9,
-      "reason": "the projected spread moves ±2.05 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.26 pts)",
+      "points": 1.4,
+      "reason": "the projected spread moves ±1.91 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
       "family": "stability",
       "action_key": null
      },
@@ -2026,13 +2026,6 @@
       "action_key": null
      },
      {
-      "component": "team_data",
-      "points": 0.3,
-      "reason": "Georgia: 5 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
-     },
-     {
       "component": "roster_availability",
       "points": 0.3,
       "reason": "extreme transfer turnover (most of last season’s production is gone)",
@@ -2061,7 +2054,7 @@
      }
     ],
     "recoverable_by_family": {
-     "availability": 7
+     "availability": 8
     }
    },
    "reliability_without_evidence": {
@@ -2084,22 +2077,22 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 90,
+    "raw": 90.3,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19.3,
+      "score": 19.7,
       "max": 20
      },
      "roster_availability": {
-      "score": 11.4,
+      "score": 11.2,
       "max": 20
      },
      "projection_stability": {
-      "score": 19.3,
+      "score": 19.4,
       "max": 20
      },
      "freshness": {
@@ -2116,13 +2109,13 @@
      }
     },
     "main_deduction": "no source has established whether LSU or Mississippi State’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-    "potential": 98,
+    "potential": 99,
     "evidence_used": true,
     "stability": {
-     "sd": 1.7,
-     "p10": 10.75,
-     "p50": 13.24,
-     "p90": 15.73,
+     "sd": 1.67,
+     "p10": 8.98,
+     "p50": 11.46,
+     "p90": 13.94,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
@@ -2163,30 +2156,23 @@
       "action_key": "qb_identity:away"
      },
      {
-      "component": "projection_stability",
-      "points": 0.7,
-      "reason": "the projected spread moves ±1.7 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
-      "family": "stability",
-      "action_key": null
-     },
-     {
       "component": "roster_availability",
-      "points": 0.7,
+      "points": 0.9,
       "reason": "Sam Leavitt — expected; measured: a last-game opener in the clear/established cell opened the next game 82.9% of the time (340 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
       "action_key": "qb_identity:home"
      },
      {
-      "component": "team_data",
-      "points": 0.3,
-      "reason": "Mississippi State: 5 of 6 games for a full in-season sample",
-      "family": "rating_sample",
+      "component": "projection_stability",
+      "points": 0.6,
+      "reason": "the projected spread moves ±1.67 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "family": "stability",
       "action_key": null
      },
      {
       "component": "team_data",
       "points": 0.3,
-      "reason": "LSU: 5 of 6 games for a full in-season sample",
+      "reason": "Mississippi State: 5 of 6 games for a full in-season sample",
       "family": "rating_sample",
       "action_key": null
      },
@@ -2213,7 +2199,18 @@
      }
     ],
     "missing": [],
-    "next_actions": [],
+    "next_actions": [
+     {
+      "action": "Confirm Mississippi State’s starting QB (Kamario Taylor)",
+      "key": "qb_identity:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Confirm LSU’s starting QB (Sam Leavitt)",
+      "key": "qb_identity:home",
+      "potential_gain": 1
+     }
+    ],
     "recoverable_by_family": {
      "availability": 8
     }
@@ -2378,14 +2375,14 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 90.3,
+    "raw": 90.9,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19.3,
+      "score": 19.7,
       "max": 20
      },
      "roster_availability": {
@@ -2393,7 +2390,7 @@
       "max": 20
      },
      "projection_stability": {
-      "score": 18.5,
+      "score": 18.7,
       "max": 20
      },
      "freshness": {
@@ -2413,10 +2410,10 @@
     "potential": 98,
     "evidence_used": true,
     "stability": {
-     "sd": 1.92,
-     "p10": 5.48,
-     "p50": 8.32,
-     "p90": 11.16,
+     "sd": 1.86,
+     "p10": 5.15,
+     "p50": 7.74,
+     "p90": 10.33,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
@@ -2437,8 +2434,8 @@
      },
      {
       "component": "projection_stability",
-      "points": 1.5,
-      "reason": "the projected spread moves ±1.92 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.33 pts)",
+      "points": 1.3,
+      "reason": "the projected spread moves ±1.86 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.33 pts)",
       "family": "stability",
       "action_key": null
      },
@@ -2473,13 +2470,6 @@
      {
       "component": "team_data",
       "points": 0.3,
-      "reason": "Kentucky: 5 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
-     },
-     {
-      "component": "team_data",
-      "points": 0.3,
       "reason": "Oklahoma: 5 of 6 games for a full in-season sample",
       "family": "rating_sample",
       "action_key": null
@@ -2500,7 +2490,18 @@
      }
     ],
     "missing": [],
-    "next_actions": [],
+    "next_actions": [
+     {
+      "action": "Confirm Kentucky’s starting QB (Kenny Minchey)",
+      "key": "qb_identity:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Confirm Oklahoma’s starting QB (John Mateer)",
+      "key": "qb_identity:home",
+      "potential_gain": 1
+     }
+    ],
     "recoverable_by_family": {
      "availability": 8
     }
@@ -2525,22 +2526,22 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 89.4,
+    "raw": 89.9,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19.7,
+      "score": 20,
       "max": 20
      },
      "roster_availability": {
-      "score": 11.4,
+      "score": 11.7,
       "max": 20
      },
      "projection_stability": {
-      "score": 19.2,
+      "score": 19.1,
       "max": 20
      },
      "freshness": {
@@ -2557,13 +2558,13 @@
      }
     },
     "main_deduction": "no source has established whether Tennessee or Alabama’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-    "potential": 98,
+    "potential": 99,
     "evidence_used": true,
     "stability": {
-     "sd": 1.72,
-     "p10": -12.01,
-     "p50": -9.47,
-     "p90": -6.94,
+     "sd": 1.76,
+     "p10": -9.28,
+     "p50": -6.6,
+     "p90": -3.91,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
@@ -2597,6 +2598,13 @@
       "action_key": "availability:home"
      },
      {
+      "component": "projection_stability",
+      "points": 0.9,
+      "reason": "the projected spread moves ±1.76 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "family": "stability",
+      "action_key": null
+     },
+     {
       "component": "roster_availability",
       "points": 0.9,
       "reason": "George MacIntyre — expected (George MacIntyre opened the last game with 100% of the dropbacks); measured: a last-game opener in the dominant/first cell opened the next game 76.5% of the time (1873 pairs, football/starters/persistence.json)",
@@ -2611,25 +2619,11 @@
       "action_key": "qb_conflict:home"
      },
      {
-      "component": "projection_stability",
-      "points": 0.8,
-      "reason": "the projected spread moves ±1.72 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
-      "family": "stability",
-      "action_key": null
-     },
-     {
       "component": "roster_availability",
-      "points": 0.7,
+      "points": 0.4,
       "reason": "Keelon Russell — expected; measured: a last-game opener in the clear/established cell opened the next game 82.9% of the time (340 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
       "action_key": "qb_identity:away"
-     },
-     {
-      "component": "team_data",
-      "points": 0.3,
-      "reason": "Alabama: 5 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
      },
      {
       "component": "roster_availability",
@@ -2950,7 +2944,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "The Citadel’s starter record was re-read 37 min ago and describes evidence from an unknown time ago",
+      "reason": "The Citadel’s starter record was re-read 1 min ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -3325,12 +3319,14 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 88.8,
-    "capped_by": [],
+    "raw": 89.8,
+    "capped_by": [
+     "QB_STATUS_UNCONFIRMED"
+    ],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19,
+      "score": 19.3,
       "max": 20
      },
      "roster_availability": {
@@ -3338,7 +3334,7 @@
       "max": 20
      },
      "projection_stability": {
-      "score": 17.3,
+      "score": 18,
       "max": 20
      },
      "freshness": {
@@ -3354,25 +3350,18 @@
       "max": 10
      }
     },
-    "main_deduction": "the projected spread moves ±2.28 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.58 pts)",
-    "potential": 96,
+    "main_deduction": "no source has established whether Texas Tech or Arizona State’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
+    "potential": 97,
     "evidence_used": true,
     "stability": {
-     "sd": 2.28,
-     "p10": 19.33,
-     "p50": 22.47,
-     "p90": 25.6,
+     "sd": 2.07,
+     "p10": 17.86,
+     "p50": 20.78,
+     "p90": 23.7,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
     "penalties": [
-     {
-      "component": "projection_stability",
-      "points": 2.7,
-      "reason": "the projected spread moves ±2.28 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.58 pts)",
-      "family": "stability",
-      "action_key": null
-     },
      {
       "component": "roster_availability",
       "points": 2.3,
@@ -3386,6 +3375,13 @@
       "reason": "Big 12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Texas Tech’s absences cannot be assessed: no current availability read for this game",
       "family": "availability",
       "action_key": "availability:home"
+     },
+     {
+      "component": "projection_stability",
+      "points": 2,
+      "reason": "the projected spread moves ±2.07 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.27 pts)",
+      "family": "stability",
+      "action_key": null
      },
      {
       "component": "roster_availability",
@@ -3402,13 +3398,6 @@
       "action_key": "availability:home"
      },
      {
-      "component": "team_data",
-      "points": 0.7,
-      "reason": "Arizona State: 4 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
-     },
-     {
       "component": "roster_availability",
       "points": 0.4,
       "reason": "Cutter Boley — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
@@ -3421,6 +3410,13 @@
       "reason": "Will Hammond — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
       "action_key": "qb_identity:home"
+     },
+     {
+      "component": "team_data",
+      "points": 0.3,
+      "reason": "Arizona State: 5 of 6 games for a full in-season sample",
+      "family": "rating_sample",
+      "action_key": null
      },
      {
       "component": "team_data",
@@ -3441,13 +3437,24 @@
      {
       "id": "QB_STATUS_UNCONFIRMED",
       "cap": 89,
-      "binding": false
+      "binding": true
      }
     ],
     "missing": [],
-    "next_actions": [],
+    "next_actions": [
+     {
+      "action": "Confirm Arizona State’s starting QB (Cutter Boley)",
+      "key": "qb_identity:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Confirm Texas Tech’s starting QB (Will Hammond)",
+      "key": "qb_identity:home",
+      "potential_gain": 1
+     }
+    ],
     "recoverable_by_family": {
-     "availability": 6
+     "availability": 7
     }
    },
    "reliability_without_evidence": {
@@ -3633,22 +3640,22 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 89.5,
+    "raw": 90.4,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19,
+      "score": 19.3,
       "max": 20
      },
      "roster_availability": {
-      "score": 12.2,
+      "score": 12.5,
       "max": 20
      },
      "projection_stability": {
-      "score": 18.3,
+      "score": 18.6,
       "max": 20
      },
      "freshness": {
@@ -3665,13 +3672,13 @@
      }
     },
     "main_deduction": "no source has established whether Kansas State or Kansas’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-    "potential": 97,
+    "potential": 98,
     "evidence_used": true,
     "stability": {
-     "sd": 2,
-     "p10": -0.31,
-     "p50": 2.67,
-     "p90": 5.65,
+     "sd": 1.91,
+     "p10": -0.38,
+     "p50": 2.56,
+     "p90": 5.5,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
@@ -3692,8 +3699,8 @@
      },
      {
       "component": "projection_stability",
-      "points": 1.7,
-      "reason": "the projected spread moves ±2 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "points": 1.4,
+      "reason": "the projected spread moves ±1.91 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
       "family": "stability",
       "action_key": null
      },
@@ -3713,17 +3720,10 @@
      },
      {
       "component": "roster_availability",
-      "points": 0.7,
+      "points": 0.4,
       "reason": "Isaiah Marshall — expected; measured: a last-game opener in the clear/established cell opened the next game 82.9% of the time (340 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
       "action_key": "qb_identity:away"
-     },
-     {
-      "component": "team_data",
-      "points": 0.7,
-      "reason": "Kansas: 4 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
      },
      {
       "component": "roster_availability",
@@ -3731,6 +3731,13 @@
       "reason": "Avery Johnson — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
       "action_key": "qb_identity:home"
+     },
+     {
+      "component": "team_data",
+      "points": 0.3,
+      "reason": "Kansas: 5 of 6 games for a full in-season sample",
+      "family": "rating_sample",
+      "action_key": null
      },
      {
       "component": "team_data",
@@ -3755,15 +3762,9 @@
      }
     ],
     "missing": [],
-    "next_actions": [
-     {
-      "action": "Confirm Kansas’s starting QB (Isaiah Marshall)",
-      "key": "qb_identity:away",
-      "potential_gain": 1
-     }
-    ],
+    "next_actions": [],
     "recoverable_by_family": {
-     "availability": 7
+     "availability": 8
     }
    },
    "reliability_without_evidence": {
@@ -4084,31 +4085,31 @@
    "game_id": "401856833",
    "home": "Colorado",
    "away": "Utah",
-   "kickoff": "2026-10-17T04:00:00.000Z",
+   "kickoff": "2026-10-18T02:15:00.000Z",
    "home_conference": "Big 12",
    "away_conference": "Big 12",
    "matchup_type": "conference",
    "legacy_input_coverage": 0.769,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 87,
+    "score": 89,
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 86.6,
+    "raw": 88.6,
     "capped_by": [],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19,
+      "score": 19.3,
       "max": 20
      },
      "roster_availability": {
-      "score": 11.8,
+      "score": 11.9,
       "max": 20
      },
      "projection_stability": {
-      "score": 17.7,
+      "score": 18.3,
       "max": 20
      },
      "freshness": {
@@ -4116,7 +4117,7 @@
       "max": 15
      },
      "source_integrity": {
-      "score": 13.1,
+      "score": 14.1,
       "max": 15
      },
      "environment": {
@@ -4124,25 +4125,18 @@
       "max": 10
      }
     },
-    "main_deduction": "the projected spread moves ±2.16 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.48 pts)",
+    "main_deduction": "Big 12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Utah’s absences cannot be assessed: no current availability read for this game",
     "potential": 97,
     "evidence_used": true,
     "stability": {
-     "sd": 2.16,
-     "p10": -25.44,
-     "p50": -22.49,
+     "sd": 1.98,
+     "p10": -25.11,
+     "p50": -22.33,
      "p90": -19.55,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
     "penalties": [
-     {
-      "component": "projection_stability",
-      "points": 2.3,
-      "reason": "the projected spread moves ±2.16 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.48 pts)",
-      "family": "stability",
-      "action_key": null
-     },
      {
       "component": "roster_availability",
       "points": 2.3,
@@ -4158,11 +4152,11 @@
       "action_key": "availability:home"
      },
      {
-      "component": "source_integrity",
-      "points": 1,
-      "reason": "the efficiency history could not resolve the same athlete",
-      "family": "qb_conflict",
-      "action_key": "qb_conflict:away"
+      "component": "projection_stability",
+      "points": 1.7,
+      "reason": "the projected spread moves ±1.98 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "family": "stability",
+      "action_key": null
      },
      {
       "component": "roster_availability",
@@ -4193,18 +4187,18 @@
       "action_key": "qb_conflict:home"
      },
      {
-      "component": "team_data",
-      "points": 0.7,
-      "reason": "Utah: 4 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
-     },
-     {
       "component": "roster_availability",
-      "points": 0.5,
+      "points": 0.4,
       "reason": "Devon Dampier — uncertain; no calibrated rate exists for this evidence class",
       "family": "qb_identity",
       "action_key": "qb_identity:away"
+     },
+     {
+      "component": "team_data",
+      "points": 0.3,
+      "reason": "Utah: 5 of 6 games for a full in-season sample",
+      "family": "rating_sample",
+      "action_key": null
      },
      {
       "component": "team_data",
@@ -4229,42 +4223,14 @@
      }
     ],
     "missing": [],
-    "next_actions": [
-     {
-      "action": "Re-read availability inside the filing window (Utah)",
-      "key": "availability:away",
-      "potential_gain": 2
-     },
-     {
-      "action": "Re-read availability inside the filing window (Colorado)",
-      "key": "availability:home",
-      "potential_gain": 2
-     },
-     {
-      "action": "Resolve Utah’s starter conflict",
-      "key": "qb_conflict:away",
-      "potential_gain": 1
-     },
-     {
-      "action": "Resolve Colorado’s starter conflict",
-      "key": "qb_conflict:home",
-      "potential_gain": 1
-     },
-     {
-      "action": "Confirm Colorado’s starting QB (Isaac Wilson)",
-      "key": "qb_identity:home",
-      "potential_gain": 1
-     }
-    ],
+    "next_actions": [],
     "recoverable_by_family": {
-     "availability": 6,
-     "qb_conflict": 2,
-     "qb_identity": 1
+     "availability": 6
     }
    },
    "reliability_without_evidence": {
-    "score": 79,
-    "grade": "ADEQUATE"
+    "score": 88,
+    "grade": "STRONG"
    }
   },
   "401858261": {
@@ -4398,7 +4364,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "Charleston Southern’s starter record was re-read 37 min ago and describes evidence from an unknown time ago",
+      "reason": "Charleston Southern’s starter record was re-read 1 min ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -4617,7 +4583,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "Elon’s starter record was re-read 37 min ago and describes evidence from an unknown time ago",
+      "reason": "Elon’s starter record was re-read 1 min ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -4995,21 +4961,21 @@
    "home_conference": "ACC",
    "away_conference": "ACC",
    "matchup_type": "conference",
-   "legacy_input_coverage": 0.76,
+   "legacy_input_coverage": 0.72,
    "reliability": {
     "contract": "cfb_reliability/2",
     "score": 89,
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 89.4,
+    "raw": 89.2,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19.3,
+      "score": 19.7,
       "max": 20
      },
      "roster_availability": {
@@ -5017,7 +4983,7 @@
       "max": 20
      },
      "projection_stability": {
-      "score": 19.1,
+      "score": 19.5,
       "max": 20
      },
      "freshness": {
@@ -5025,7 +4991,7 @@
       "max": 15
      },
      "source_integrity": {
-      "score": 14.1,
+      "score": 13.1,
       "max": 15
      },
      "environment": {
@@ -5034,13 +5000,13 @@
      }
     },
     "main_deduction": "no source has established whether Syracuse or Louisville’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-    "potential": 98,
+    "potential": 99,
     "evidence_used": true,
     "stability": {
-     "sd": 1.76,
-     "p10": -11.14,
-     "p50": -8.52,
-     "p90": -5.9,
+     "sd": 1.65,
+     "p10": -9.76,
+     "p50": -7.41,
+     "p90": -5.05,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
@@ -5060,6 +5026,13 @@
       "action_key": "availability:home"
      },
      {
+      "component": "source_integrity",
+      "points": 1.9,
+      "reason": "resolved by the source hierarchy: Amari Odom opened the last game with 97% of the dropbacks; the efficiency history could not resolve the same athlete",
+      "family": "qb_conflict",
+      "action_key": "qb_conflict:home"
+     },
+     {
       "component": "roster_availability",
       "points": 1,
       "reason": "Louisville’s availability report is not due yet — nobody is assumed fit",
@@ -5074,13 +5047,6 @@
       "action_key": "availability:home"
      },
      {
-      "component": "projection_stability",
-      "points": 0.9,
-      "reason": "the projected spread moves ±1.76 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
-      "family": "stability",
-      "action_key": null
-     },
-     {
       "component": "roster_availability",
       "points": 0.9,
       "reason": "Amari Odom — expected (Amari Odom opened the last game with 97% of the dropbacks); measured: a last-game opener in the dominant/first cell opened the next game 76.5% of the time (1873 pairs, football/starters/persistence.json)",
@@ -5088,17 +5054,10 @@
       "action_key": "qb_identity:home"
      },
      {
-      "component": "source_integrity",
-      "points": 0.9,
-      "reason": "resolved by the source hierarchy: Amari Odom opened the last game with 97% of the dropbacks",
-      "family": "qb_conflict",
-      "action_key": "qb_conflict:home"
-     },
-     {
-      "component": "team_data",
-      "points": 0.7,
-      "reason": "Syracuse: 4 of 6 games for a full in-season sample",
-      "family": "rating_sample",
+      "component": "projection_stability",
+      "points": 0.5,
+      "reason": "the projected spread moves ±1.65 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "family": "stability",
       "action_key": null
      },
      {
@@ -5107,6 +5066,13 @@
       "reason": "Lincoln Kienholz — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
       "action_key": "qb_identity:away"
+     },
+     {
+      "component": "team_data",
+      "points": 0.3,
+      "reason": "Syracuse: 5 of 6 games for a full in-season sample",
+      "family": "rating_sample",
+      "action_key": null
      },
      {
       "component": "roster_availability",
@@ -5128,7 +5094,7 @@
      {
       "action": "Resolve Syracuse’s starter conflict",
       "key": "qb_conflict:home",
-      "potential_gain": 1
+      "potential_gain": 2
      },
      {
       "action": "Confirm Syracuse’s starting QB (Amari Odom)",
@@ -5141,8 +5107,8 @@
     }
    },
    "reliability_without_evidence": {
-    "score": 89,
-    "grade": "STRONG"
+    "score": 69,
+    "grade": "CAUTION"
    }
   },
   "401858266": {
@@ -5472,14 +5438,14 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 89.6,
+    "raw": 90.3,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19.3,
+      "score": 19.7,
       "max": 20
      },
      "roster_availability": {
@@ -5487,7 +5453,7 @@
       "max": 20
      },
      "projection_stability": {
-      "score": 17.8,
+      "score": 18.1,
       "max": 20
      },
      "freshness": {
@@ -5504,13 +5470,13 @@
      }
     },
     "main_deduction": "no source has established whether SMU or Virginia’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-    "potential": 97,
+    "potential": 98,
     "evidence_used": true,
     "stability": {
-     "sd": 2.12,
-     "p10": 3.15,
-     "p50": 6.18,
-     "p90": 9.22,
+     "sd": 2.03,
+     "p10": 6.25,
+     "p50": 9.24,
+     "p90": 12.23,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
@@ -5531,8 +5497,8 @@
      },
      {
       "component": "projection_stability",
-      "points": 2.2,
-      "reason": "the projected spread moves ±2.12 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.36 pts)",
+      "points": 1.9,
+      "reason": "the projected spread moves ±2.03 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.36 pts)",
       "family": "stability",
       "action_key": null
      },
@@ -5567,13 +5533,6 @@
      {
       "component": "team_data",
       "points": 0.3,
-      "reason": "Virginia: 5 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
-     },
-     {
-      "component": "team_data",
-      "points": 0.3,
       "reason": "SMU: 5 of 6 games for a full in-season sample",
       "family": "rating_sample",
       "action_key": null
@@ -5594,20 +5553,9 @@
      }
     ],
     "missing": [],
-    "next_actions": [
-     {
-      "action": "Confirm Virginia’s starting QB (Beau Pribula)",
-      "key": "qb_identity:away",
-      "potential_gain": 1
-     },
-     {
-      "action": "Confirm SMU’s starting QB (Kevin Jennings)",
-      "key": "qb_identity:home",
-      "potential_gain": 1
-     }
-    ],
+    "next_actions": [],
     "recoverable_by_family": {
-     "availability": 7
+     "availability": 8
     }
    },
    "reliability_without_evidence": {
@@ -5619,7 +5567,7 @@
    "game_id": "401858269",
    "home": "California",
    "away": "Wake Forest",
-   "kickoff": "2026-10-17T04:00:00.000Z",
+   "kickoff": "2026-10-18T02:30:00.000Z",
    "home_conference": "ACC",
    "away_conference": "ACC",
    "matchup_type": "conference",
@@ -6120,7 +6068,7 @@
    "game_id": "401858490",
    "home": "Michigan",
    "away": "Penn State",
-   "kickoff": "2026-10-17T04:00:00.000Z",
+   "kickoff": "2026-10-17T19:30:00.000Z",
    "home_conference": "Big Ten",
    "away_conference": "Big Ten",
    "matchup_type": "conference",
@@ -6131,14 +6079,14 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 89.5,
+    "raw": 89.8,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19.3,
+      "score": 19.7,
       "max": 20
      },
      "roster_availability": {
@@ -6146,7 +6094,7 @@
       "max": 20
      },
      "projection_stability": {
-      "score": 17.7,
+      "score": 17.6,
       "max": 20
      },
      "freshness": {
@@ -6166,18 +6114,18 @@
     "potential": 97,
     "evidence_used": true,
     "stability": {
-     "sd": 2.16,
-     "p10": 0.58,
-     "p50": 3.61,
-     "p90": 6.64,
+     "sd": 2.19,
+     "p10": 3.74,
+     "p50": 6.8,
+     "p90": 9.86,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
     "penalties": [
      {
       "component": "projection_stability",
-      "points": 2.3,
-      "reason": "the projected spread moves ±2.16 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.38 pts)",
+      "points": 2.4,
+      "reason": "the projected spread moves ±2.19 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.43 pts)",
       "family": "stability",
       "action_key": null
      },
@@ -6226,13 +6174,6 @@
      {
       "component": "team_data",
       "points": 0.3,
-      "reason": "Penn State: 5 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
-     },
-     {
-      "component": "team_data",
-      "points": 0.3,
       "reason": "Michigan: 5 of 6 games for a full in-season sample",
       "family": "rating_sample",
       "action_key": null
@@ -6253,7 +6194,18 @@
      }
     ],
     "missing": [],
-    "next_actions": [],
+    "next_actions": [
+     {
+      "action": "Confirm Penn State’s starting QB (Rocco Becht)",
+      "key": "qb_identity:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Confirm Michigan’s starting QB (Bryce Underwood)",
+      "key": "qb_identity:home",
+      "potential_gain": 1
+     }
+    ],
     "recoverable_by_family": {
      "availability": 7
     }
@@ -6621,14 +6573,14 @@
     "grade": "ADEQUATE",
     "grade_label": "ADEQUATE",
     "tier": "ADEQUATE",
-    "raw": 80.1,
+    "raw": 86.8,
     "capped_by": [
      "QB_CONTESTED"
     ],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19.7,
+      "score": 20,
       "max": 20
      },
      "roster_availability": {
@@ -6636,7 +6588,7 @@
       "max": 20
      },
      "projection_stability": {
-      "score": 11.9,
+      "score": 18.3,
       "max": 20
      },
      "freshness": {
@@ -6653,24 +6605,17 @@
      }
     },
     "main_deduction": "the quarterback job is contested for Washington",
-    "potential": 92,
+    "potential": 98,
     "evidence_used": true,
     "stability": {
-     "sd": 2.1,
-     "p10": -2.62,
-     "p50": 0.31,
-     "p90": 3.23,
-     "favorite_flip_rate": 0.25,
-     "tier": "MODERATE"
+     "sd": 1.98,
+     "p10": 2.1,
+     "p50": 4.69,
+     "p90": 7.28,
+     "favorite_flip_rate": 0,
+     "tier": "STABLE"
     },
     "penalties": [
-     {
-      "component": "projection_stability",
-      "points": 6,
-      "reason": "the projection flips favorite in 25% of sensitivity runs",
-      "family": "favorite_flips",
-      "action_key": null
-     },
      {
       "component": "roster_availability",
       "points": 3.6,
@@ -6694,8 +6639,8 @@
      },
      {
       "component": "projection_stability",
-      "points": 2.1,
-      "reason": "the projected spread moves ±2.1 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.54 pts)",
+      "points": 1.7,
+      "reason": "the projected spread moves ±1.98 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.54 pts)",
       "family": "stability",
       "action_key": null
      },
@@ -6726,13 +6671,6 @@
       "reason": "Ryan Browne — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
       "action_key": "qb_identity:home"
-     },
-     {
-      "component": "team_data",
-      "points": 0.3,
-      "reason": "Purdue: 5 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
      }
     ],
     "gates": [
@@ -6752,26 +6690,11 @@
      {
       "action": "Confirm Washington’s starting QB (Demond Williams Jr.)",
       "key": "qb_identity:away",
-      "potential_gain": 5
-     },
-     {
-      "action": "Re-read availability inside the filing window (Washington)",
-      "key": "availability:away",
-      "potential_gain": 3
-     },
-     {
-      "action": "Re-read availability inside the filing window (Purdue)",
-      "key": "availability:home",
-      "potential_gain": 3
-     },
-     {
-      "action": "Resolve Washington’s starter conflict",
-      "key": "qb_conflict:away",
-      "potential_gain": 1
+      "potential_gain": 10
      }
     ],
     "recoverable_by_family": {
-     "qb_identity": 5
+     "qb_identity": 10
     }
    },
    "reliability_without_evidence": {
@@ -6940,22 +6863,22 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 90.3,
+    "raw": 90.5,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19.7,
+      "score": 20,
       "max": 20
      },
      "roster_availability": {
-      "score": 12.5,
+      "score": 12.2,
       "max": 20
      },
      "projection_stability": {
-      "score": 19,
+      "score": 19.2,
       "max": 20
      },
      "freshness": {
@@ -6975,10 +6898,10 @@
     "potential": 99,
     "evidence_used": true,
     "stability": {
-     "sd": 1.79,
-     "p10": 11.79,
-     "p50": 14.14,
-     "p90": 16.49,
+     "sd": 1.74,
+     "p10": 15.51,
+     "p50": 17.93,
+     "p90": 20.35,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
@@ -6996,13 +6919,6 @@
       "reason": "Pac-12 Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Oregon State’s absences cannot be assessed: no current availability read for this game",
       "family": "availability",
       "action_key": "availability:home"
-     },
-     {
-      "component": "projection_stability",
-      "points": 1,
-      "reason": "the projected spread moves ±1.79 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.3 pts)",
-      "family": "stability",
-      "action_key": null
      },
      {
       "component": "roster_availability",
@@ -7026,25 +6942,25 @@
       "action_key": "qb_conflict:home"
      },
      {
-      "component": "roster_availability",
-      "points": 0.4,
-      "reason": "Caden Pinnick — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
-      "family": "qb_identity",
-      "action_key": "qb_identity:away"
+      "component": "projection_stability",
+      "points": 0.8,
+      "reason": "the projected spread moves ±1.74 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.3 pts)",
+      "family": "stability",
+      "action_key": null
      },
      {
       "component": "roster_availability",
-      "points": 0.4,
+      "points": 0.7,
       "reason": "Braden Atkinson — expected (Braden Atkinson opened the last game with 100% of the dropbacks); measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
       "action_key": "qb_identity:home"
      },
      {
-      "component": "team_data",
-      "points": 0.3,
-      "reason": "Oregon State: 5 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
+      "component": "roster_availability",
+      "points": 0.4,
+      "reason": "Caden Pinnick — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
+      "family": "qb_identity",
+      "action_key": "qb_identity:away"
      },
      {
       "component": "roster_availability",
@@ -7066,6 +6982,11 @@
      {
       "action": "Resolve Oregon State’s starter conflict",
       "key": "qb_conflict:home",
+      "potential_gain": 1
+     },
+     {
+      "action": "Confirm Oregon State’s starting QB (Braden Atkinson)",
+      "key": "qb_identity:home",
       "potential_gain": 1
      }
     ],
@@ -7093,14 +7014,14 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 90.9,
+    "raw": 91.8,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19.3,
+      "score": 20,
       "max": 20
      },
      "roster_availability": {
@@ -7108,7 +7029,7 @@
       "max": 20
      },
      "projection_stability": {
-      "score": 18.8,
+      "score": 19,
       "max": 20
      },
      "freshness": {
@@ -7125,13 +7046,13 @@
      }
     },
     "main_deduction": "no source has established whether San Diego State or Fresno State’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-    "potential": 98,
+    "potential": 99,
     "evidence_used": true,
     "stability": {
-     "sd": 1.84,
-     "p10": -8.78,
-     "p50": -6.06,
-     "p90": -3.34,
+     "sd": 1.79,
+     "p10": -12.08,
+     "p50": -9.4,
+     "p90": -6.72,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
@@ -7152,8 +7073,8 @@
      },
      {
       "component": "projection_stability",
-      "points": 1.2,
-      "reason": "the projected spread moves ±1.84 pts (1 SD) across 64 perturbation scenarios (largest source: home team rating, ±1.25 pts)",
+      "points": 1,
+      "reason": "the projected spread moves ±1.79 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
       "family": "stability",
       "action_key": null
      },
@@ -7184,20 +7105,6 @@
       "reason": "Jayden Denegal — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
       "action_key": "qb_identity:home"
-     },
-     {
-      "component": "team_data",
-      "points": 0.3,
-      "reason": "Fresno State: 5 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
-     },
-     {
-      "component": "team_data",
-      "points": 0.3,
-      "reason": "San Diego State: 5 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
      }
     ],
     "gates": [
@@ -7221,7 +7128,7 @@
      }
     ],
     "recoverable_by_family": {
-     "availability": 8
+     "availability": 9
     }
    },
    "reliability_without_evidence": {
@@ -7278,7 +7185,7 @@
     "evidence_used": true,
     "stability": {
      "sd": 1.81,
-     "p10": 17.68,
+     "p10": 17.67,
      "p50": 20.27,
      "p90": 22.86,
      "favorite_flip_rate": 0,
@@ -7389,14 +7296,14 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 90,
+    "raw": 90.4,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19.3,
+      "score": 19.7,
       "max": 20
      },
      "roster_availability": {
@@ -7421,13 +7328,13 @@
      }
     },
     "main_deduction": "no source has established whether UAB or East Carolina’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-    "potential": 98,
+    "potential": 99,
     "evidence_used": true,
     "stability": {
-     "sd": 1.64,
-     "p10": -7.03,
-     "p50": -4.72,
-     "p90": -2.42,
+     "sd": 1.63,
+     "p10": -9.77,
+     "p50": -7.5,
+     "p90": -5.22,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
@@ -7470,7 +7377,7 @@
      {
       "component": "projection_stability",
       "points": 0.5,
-      "reason": "the projected spread moves ±1.64 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "reason": "the projected spread moves ±1.63 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
       "family": "stability",
       "action_key": null
      },
@@ -7485,13 +7392,6 @@
       "component": "team_data",
       "points": 0.3,
       "reason": "East Carolina: 5 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
-     },
-     {
-      "component": "team_data",
-      "points": 0.3,
-      "reason": "UAB: 5 of 6 games for a full in-season sample",
       "family": "rating_sample",
       "action_key": null
      },
@@ -7549,14 +7449,14 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 90.2,
+    "raw": 91,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19.3,
+      "score": 19.7,
       "max": 20
      },
      "roster_availability": {
@@ -7564,7 +7464,7 @@
       "max": 20
      },
      "projection_stability": {
-      "score": 18.9,
+      "score": 19.3,
       "max": 20
      },
      "freshness": {
@@ -7581,13 +7481,13 @@
      }
     },
     "main_deduction": "no source has established whether Tulane or Memphis’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-    "potential": 98,
+    "potential": 99,
     "evidence_used": true,
     "stability": {
-     "sd": 1.82,
-     "p10": -6.1,
-     "p50": -3.42,
-     "p90": -0.74,
+     "sd": 1.71,
+     "p10": -7.18,
+     "p50": -4.93,
+     "p90": -2.69,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
@@ -7607,13 +7507,6 @@
       "action_key": "availability:home"
      },
      {
-      "component": "projection_stability",
-      "points": 1.1,
-      "reason": "the projected spread moves ±1.82 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
-      "family": "stability",
-      "action_key": null
-     },
-     {
       "component": "roster_availability",
       "points": 1,
       "reason": "Memphis’s availability report is not due yet — nobody is assumed fit",
@@ -7628,6 +7521,13 @@
       "action_key": "availability:home"
      },
      {
+      "component": "projection_stability",
+      "points": 0.7,
+      "reason": "the projected spread moves ±1.71 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "family": "stability",
+      "action_key": null
+     },
+     {
       "component": "roster_availability",
       "points": 0.7,
       "reason": "Marcus Stokes — expected; measured: a last-game opener in the clear/established cell opened the next game 82.9% of the time (340 pairs, football/starters/persistence.json)",
@@ -7640,13 +7540,6 @@
       "reason": "Kadin Semonza — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
       "action_key": "qb_identity:home"
-     },
-     {
-      "component": "team_data",
-      "points": 0.3,
-      "reason": "Memphis: 5 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
      },
      {
       "component": "team_data",
@@ -7680,7 +7573,7 @@
     "missing": [],
     "next_actions": [],
     "recoverable_by_family": {
-     "availability": 8
+     "availability": 9
     }
    },
    "reliability_without_evidence": {
@@ -7856,7 +7749,7 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 89.8,
+    "raw": 90.3,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
@@ -7867,7 +7760,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 11.2,
+      "score": 11.7,
       "max": 20
      },
      "projection_stability": {
@@ -7915,13 +7808,6 @@
      },
      {
       "component": "roster_availability",
-      "points": 1.4,
-      "reason": "Conner Harrell — expected (Conner Harrell opened the last game with 84% of the dropbacks); measured: a last-game opener in the clear/first cell opened the next game 64.5% of the time (490 pairs, football/starters/persistence.json)",
-      "family": "qb_identity",
-      "action_key": "qb_identity:away"
-     },
-     {
-      "component": "roster_availability",
       "points": 1,
       "reason": "Charlotte’s availability report is not due yet — nobody is assumed fit",
       "family": "qb_status",
@@ -7933,6 +7819,13 @@
       "reason": "Temple’s availability report is not due yet — nobody is assumed fit",
       "family": "qb_status",
       "action_key": "availability:home"
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.9,
+      "reason": "Conner Harrell — expected (Conner Harrell opened the last game with 84% of the dropbacks); measured: a last-game opener in the clear/first cell opened the next game 64.5% of the time (490 pairs, football/starters/persistence.json)",
+      "family": "qb_identity",
+      "action_key": "qb_identity:away"
      },
      {
       "component": "source_integrity",
@@ -7980,23 +7873,18 @@
     "missing": [],
     "next_actions": [
      {
-      "action": "Confirm Charlotte’s starting QB (Conner Harrell)",
-      "key": "qb_identity:away",
-      "potential_gain": 2
-     },
-     {
       "action": "Resolve Charlotte’s starter conflict",
       "key": "qb_conflict:away",
       "potential_gain": 1
      },
      {
-      "action": "Confirm Temple’s starting QB (Ajani Sheppard)",
-      "key": "qb_identity:home",
+      "action": "Confirm Charlotte’s starting QB (Conner Harrell)",
+      "key": "qb_identity:away",
       "potential_gain": 1
      }
     ],
     "recoverable_by_family": {
-     "availability": 7
+     "availability": 8
     }
    },
    "reliability_without_evidence": {
@@ -8302,16 +8190,16 @@
    "home_conference": "American",
    "away_conference": "MAC",
    "matchup_type": "non_conference",
-   "legacy_input_coverage": 0.731,
+   "legacy_input_coverage": 0.769,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 69,
-    "grade": "CAUTION",
-    "grade_label": "CAUTION",
+    "score": 79,
+    "grade": "ADEQUATE",
+    "grade_label": "ADEQUATE",
     "tier": "ADEQUATE",
-    "raw": 82.8,
+    "raw": 83.8,
     "capped_by": [
-     "ROSTER_CONFLICT"
+     "QB_CONFLICTED"
     ],
     "gate_label": null,
     "components": {
@@ -8332,7 +8220,7 @@
       "max": 15
      },
      "source_integrity": {
-      "score": 10.9,
+      "score": 11.9,
       "max": 15
      },
      "environment": {
@@ -8340,7 +8228,7 @@
       "max": 10
      }
     },
-    "main_deduction": "unresolved roster conflict: starter sources and the athlete identity disagree for South Florida",
+    "main_deduction": "QB sources conflict and the evidence hierarchy cannot settle it for South Florida (UNRESOLVED: Luke Kromenhoek vs Michael Van Buren Jr)",
     "potential": 98,
     "evidence_used": true,
     "stability": {
@@ -8360,13 +8248,6 @@
       "action_key": "qb_identity:home"
      },
      {
-      "component": "source_integrity",
-      "points": 2.7,
-      "reason": "UNRESOLVED: UNRESOLVED: Luke Kromenhoek vs Michael Van Buren Jr; the efficiency history could not resolve the same athlete",
-      "family": "qb_conflict",
-      "action_key": "qb_conflict:home"
-     },
-     {
       "component": "roster_availability",
       "points": 2.5,
       "reason": "no conference report is required for this fixture, and no other source covers it; the impact of South Florida’s absences cannot be assessed: no current availability read for this game",
@@ -8379,6 +8260,13 @@
       "reason": "Mid-American Conference’s report for this game is not due yet — nobody is assumed fit; the impact of Kent State’s absences cannot be assessed: no current availability read for this game",
       "family": "availability",
       "action_key": "availability:away"
+     },
+     {
+      "component": "source_integrity",
+      "points": 1.7,
+      "reason": "UNRESOLVED: UNRESOLVED: Luke Kromenhoek vs Michael Van Buren Jr",
+      "family": "qb_conflict",
+      "action_key": "qb_conflict:home"
      },
      {
       "component": "roster_availability",
@@ -8432,11 +8320,6 @@
      {
       "id": "QB_CONFLICTED",
       "cap": 79,
-      "binding": false
-     },
-     {
-      "id": "ROSTER_CONFLICT",
-      "cap": 69,
       "binding": true
      }
     ],
@@ -8445,7 +8328,7 @@
      {
       "action": "Resolve South Florida’s starter conflict",
       "key": "qb_conflict:home",
-      "potential_gain": 17
+      "potential_gain": 7
      },
      {
       "action": "Re-read availability inside the filing window (Kent State)",
@@ -8469,12 +8352,12 @@
      }
     ],
     "recoverable_by_family": {
-     "qb_conflict": 17
+     "qb_conflict": 7
     }
    },
    "reliability_without_evidence": {
-    "score": 69,
-    "grade": "CAUTION"
+    "score": 87,
+    "grade": "STRONG"
    }
   },
   "401864520": {
@@ -8492,18 +8375,18 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 89.4,
+    "raw": 90.3,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 18,
+      "score": 18.7,
       "max": 20
      },
      "roster_availability": {
-      "score": 12.4,
+      "score": 11.6,
       "max": 20
      },
      "projection_stability": {
@@ -8515,7 +8398,7 @@
       "max": 15
      },
      "source_integrity": {
-      "score": 14,
+      "score": 15,
       "max": 15
      },
      "environment": {
@@ -8524,15 +8407,15 @@
      }
     },
     "main_deduction": "no source has established whether North Dakota State or Nevada’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-    "potential": 98,
+    "potential": 99,
     "evidence_used": true,
     "stability": {
-     "sd": 1.51,
-     "p10": 15.02,
-     "p50": 17.08,
-     "p90": 19.14,
+     "sd": 1.3,
+     "p10": 12.36,
+     "p50": 14.07,
+     "p90": 15.78,
      "favorite_flip_rate": 0,
-     "tier": "STABLE"
+     "tier": "VERY_STABLE"
     },
     "penalties": [
      {
@@ -8550,20 +8433,6 @@
       "action_key": "availability:home"
      },
      {
-      "component": "team_data",
-      "points": 1.3,
-      "reason": "North Dakota State: no prior-season rating to carry; 5 of 6 games for a full in-season sample",
-      "family": "prior_missing",
-      "action_key": null
-     },
-     {
-      "component": "source_integrity",
-      "points": 1,
-      "reason": "the efficiency history could not resolve the same athlete",
-      "family": "qb_conflict",
-      "action_key": "qb_conflict:away"
-     },
-     {
       "component": "roster_availability",
       "points": 1,
       "reason": "Nevada’s availability report is not due yet — nobody is assumed fit",
@@ -8579,24 +8448,31 @@
      },
      {
       "component": "team_data",
-      "points": 0.7,
-      "reason": "Nevada: 4 of 6 games for a full in-season sample",
-      "family": "rating_sample",
+      "points": 1,
+      "reason": "North Dakota State: no prior-season rating to carry",
+      "family": "prior_missing",
       "action_key": null
      },
      {
       "component": "roster_availability",
-      "points": 0.5,
+      "points": 0.9,
+      "reason": "Nathan Hayes — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
+      "family": "qb_identity",
+      "action_key": "qb_identity:home"
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.7,
       "reason": "Carter Jones — uncertain; no calibrated rate exists for this evidence class",
       "family": "qb_identity",
       "action_key": "qb_identity:away"
      },
      {
-      "component": "roster_availability",
-      "points": 0.4,
-      "reason": "Nathan Hayes — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
-      "family": "qb_identity",
-      "action_key": "qb_identity:home"
+      "component": "team_data",
+      "points": 0.3,
+      "reason": "Nevada: 5 of 6 games for a full in-season sample",
+      "family": "rating_sample",
+      "action_key": null
      },
      {
       "component": "roster_availability",
@@ -8616,18 +8492,23 @@
     "missing": [],
     "next_actions": [
      {
-      "action": "Resolve Nevada’s starter conflict",
-      "key": "qb_conflict:away",
+      "action": "Confirm Nevada’s starting QB (Carter Jones)",
+      "key": "qb_identity:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Confirm North Dakota State’s starting QB (Nathan Hayes)",
+      "key": "qb_identity:home",
       "potential_gain": 1
      }
     ],
     "recoverable_by_family": {
-     "availability": 7
+     "availability": 8
     }
    },
    "reliability_without_evidence": {
-    "score": 79,
-    "grade": "ADEQUATE"
+    "score": 89,
+    "grade": "STRONG"
    }
   },
   "401864521": {
@@ -8645,14 +8526,14 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 90.1,
+    "raw": 90.3,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19.3,
+      "score": 19.7,
       "max": 20
      },
      "roster_availability": {
@@ -8660,7 +8541,7 @@
       "max": 20
      },
      "projection_stability": {
-      "score": 19.5,
+      "score": 19.3,
       "max": 20
      },
      "freshness": {
@@ -8680,10 +8561,10 @@
     "potential": 99,
     "evidence_used": true,
     "stability": {
-     "sd": 1.65,
-     "p10": -17.64,
-     "p50": -15.25,
-     "p90": -12.86,
+     "sd": 1.71,
+     "p10": -21.6,
+     "p50": -19.21,
+     "p90": -16.82,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
@@ -8732,8 +8613,8 @@
      },
      {
       "component": "projection_stability",
-      "points": 0.5,
-      "reason": "the projected spread moves ±1.65 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "points": 0.7,
+      "reason": "the projected spread moves ±1.71 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
       "family": "stability",
       "action_key": null
      },
@@ -8748,13 +8629,6 @@
       "component": "team_data",
       "points": 0.3,
       "reason": "New Mexico: 5 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
-     },
-     {
-      "component": "team_data",
-      "points": 0.3,
-      "reason": "Hawai'i: 5 of 6 games for a full in-season sample",
       "family": "rating_sample",
       "action_key": null
      }
@@ -8803,14 +8677,14 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 90,
+    "raw": 91.8,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19.3,
+      "score": 19.7,
       "max": 20
      },
      "roster_availability": {
@@ -8818,7 +8692,7 @@
       "max": 20
      },
      "projection_stability": {
-      "score": 19.5,
+      "score": 19.9,
       "max": 20
      },
      "freshness": {
@@ -8826,7 +8700,7 @@
       "max": 15
      },
      "source_integrity": {
-      "score": 14,
+      "score": 15,
       "max": 15
      },
      "environment": {
@@ -8835,13 +8709,13 @@
      }
     },
     "main_deduction": "no source has established whether Wyoming or Northern Illinois’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-    "potential": 98,
+    "potential": 99,
     "evidence_used": true,
     "stability": {
-     "sd": 1.64,
-     "p10": 8.11,
-     "p50": 10.36,
-     "p90": 12.61,
+     "sd": 1.52,
+     "p10": 10.07,
+     "p50": 12.18,
+     "p90": 14.3,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
@@ -8861,13 +8735,6 @@
       "action_key": "availability:home"
      },
      {
-      "component": "source_integrity",
-      "points": 1,
-      "reason": "the efficiency history could not resolve the same athlete",
-      "family": "qb_conflict",
-      "action_key": "qb_conflict:away"
-     },
-     {
       "component": "roster_availability",
       "points": 1,
       "reason": "Northern Illinois’s availability report is not due yet — nobody is assumed fit",
@@ -8880,20 +8747,6 @@
       "reason": "Wyoming’s availability report is not due yet — nobody is assumed fit",
       "family": "qb_status",
       "action_key": "availability:home"
-     },
-     {
-      "component": "team_data",
-      "points": 0.7,
-      "reason": "Northern Illinois: 4 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
-     },
-     {
-      "component": "projection_stability",
-      "points": 0.5,
-      "reason": "the projected spread moves ±1.64 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
-      "family": "stability",
-      "action_key": null
      },
      {
       "component": "roster_availability",
@@ -8910,6 +8763,13 @@
       "action_key": "qb_identity:home"
      },
      {
+      "component": "team_data",
+      "points": 0.3,
+      "reason": "Northern Illinois: 5 of 6 games for a full in-season sample",
+      "family": "rating_sample",
+      "action_key": null
+     },
+     {
       "component": "roster_availability",
       "points": 0.3,
       "reason": "player production attributed at confidence 0.48; extreme transfer turnover (most of last season’s production is gone)",
@@ -8921,6 +8781,13 @@
       "points": 0.3,
       "reason": "extreme transfer turnover (most of last season’s production is gone)",
       "family": "transfer_turnover",
+      "action_key": null
+     },
+     {
+      "component": "projection_stability",
+      "points": 0.1,
+      "reason": "the projected spread moves ±1.52 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "family": "stability",
       "action_key": null
      }
     ],
@@ -8934,18 +8801,23 @@
     "missing": [],
     "next_actions": [
      {
-      "action": "Resolve Northern Illinois’s starter conflict",
-      "key": "qb_conflict:away",
+      "action": "Confirm Northern Illinois’s starting QB (Taron Dickens)",
+      "key": "qb_identity:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Confirm Wyoming’s starting QB (Tyler Hughes)",
+      "key": "qb_identity:home",
       "potential_gain": 1
      }
     ],
     "recoverable_by_family": {
-     "availability": 8
+     "availability": 9
     }
    },
    "reliability_without_evidence": {
-    "score": 79,
-    "grade": "ADEQUATE"
+    "score": 89,
+    "grade": "STRONG"
    }
   },
   "401864523": {
@@ -8963,14 +8835,14 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 89.9,
+    "raw": 90.6,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19.7,
+      "score": 20,
       "max": 20
      },
      "roster_availability": {
@@ -8978,7 +8850,7 @@
       "max": 20
      },
      "projection_stability": {
-      "score": 19.6,
+      "score": 20,
       "max": 20
      },
      "freshness": {
@@ -8995,14 +8867,14 @@
      }
     },
     "main_deduction": "no source has established whether UTEP or San José State’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
-    "potential": 99,
+    "potential": 100,
     "evidence_used": true,
     "stability": {
-     "sd": 1.47,
-     "p10": -3.88,
-     "p50": -1.71,
-     "p90": 0.46,
-     "favorite_flip_rate": 0.016,
+     "sd": 1.43,
+     "p10": -6.84,
+     "p50": -4.78,
+     "p90": -2.73,
+     "favorite_flip_rate": 0,
      "tier": "VERY_STABLE"
     },
     "penalties": [
@@ -9042,25 +8914,11 @@
       "action_key": "availability:home"
      },
      {
-      "component": "projection_stability",
-      "points": 0.4,
-      "reason": "the projection flips favorite in 2% of sensitivity runs",
-      "family": "favorite_flips",
-      "action_key": null
-     },
-     {
       "component": "roster_availability",
       "points": 0.4,
       "reason": "Luke Weaver — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
       "action_key": "qb_identity:away"
-     },
-     {
-      "component": "team_data",
-      "points": 0.3,
-      "reason": "UTEP: 5 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
      },
      {
       "component": "roster_availability",
@@ -9089,6 +8947,11 @@
      {
       "action": "Confirm UTEP’s starting QB (EJ Colson Jr.)",
       "key": "qb_identity:home",
+      "potential_gain": 2
+     },
+     {
+      "action": "Confirm San José State’s starting QB (Luke Weaver)",
+      "key": "qb_identity:away",
       "potential_gain": 1
      }
     ],
@@ -9112,16 +8975,18 @@
    "legacy_input_coverage": 0.769,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 86,
+    "score": 89,
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 85.6,
-    "capped_by": [],
+    "raw": 90.7,
+    "capped_by": [
+     "QB_STATUS_UNCONFIRMED"
+    ],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19,
+      "score": 19.7,
       "max": 20
      },
      "roster_availability": {
@@ -9129,7 +8994,7 @@
       "max": 20
      },
      "projection_stability": {
-      "score": 14.4,
+      "score": 19.8,
       "max": 20
      },
      "freshness": {
@@ -9137,7 +9002,7 @@
       "max": 15
      },
      "source_integrity": {
-      "score": 15,
+      "score": 14,
       "max": 15
      },
      "environment": {
@@ -9145,25 +9010,18 @@
       "max": 10
      }
     },
-    "main_deduction": "the projection flips favorite in 17% of sensitivity runs",
-    "potential": 93,
+    "main_deduction": "no source has established whether Air Force or UNLV’s starting QB can play — a known starter nobody has cleared is not VERY STRONG information",
+    "potential": 99,
     "evidence_used": true,
     "stability": {
-     "sd": 1.92,
-     "p10": -1.81,
-     "p50": 0.92,
-     "p90": 3.66,
-     "favorite_flip_rate": 0.172,
-     "tier": "MODERATE"
+     "sd": 1.56,
+     "p10": 1.06,
+     "p50": 3.24,
+     "p90": 5.42,
+     "favorite_flip_rate": 0,
+     "tier": "STABLE"
     },
     "penalties": [
-     {
-      "component": "projection_stability",
-      "points": 4.1,
-      "reason": "the projection flips favorite in 17% of sensitivity runs",
-      "family": "favorite_flips",
-      "action_key": null
-     },
      {
       "component": "roster_availability",
       "points": 2.3,
@@ -9179,11 +9037,11 @@
       "action_key": "availability:home"
      },
      {
-      "component": "projection_stability",
-      "points": 1.5,
-      "reason": "the projected spread moves ±1.92 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
-      "family": "stability",
-      "action_key": null
+      "component": "source_integrity",
+      "points": 1,
+      "reason": "the efficiency history could not resolve the same athlete",
+      "family": "qb_conflict",
+      "action_key": "qb_conflict:home"
      },
      {
       "component": "roster_availability",
@@ -9207,13 +9065,6 @@
       "action_key": "qb_identity:home"
      },
      {
-      "component": "team_data",
-      "points": 0.7,
-      "reason": "Air Force: 4 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
-     },
-     {
       "component": "roster_availability",
       "points": 0.4,
       "reason": "Jackson Arnold — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
@@ -9223,7 +9074,7 @@
      {
       "component": "team_data",
       "points": 0.3,
-      "reason": "UNLV: 5 of 6 games for a full in-season sample",
+      "reason": "Air Force: 5 of 6 games for a full in-season sample",
       "family": "rating_sample",
       "action_key": null
      },
@@ -9233,36 +9084,47 @@
       "reason": "extreme transfer turnover (most of last season’s production is gone)",
       "family": "transfer_turnover",
       "action_key": null
+     },
+     {
+      "component": "projection_stability",
+      "points": 0.2,
+      "reason": "the projected spread moves ±1.56 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "family": "stability",
+      "action_key": null
      }
     ],
     "gates": [
      {
       "id": "QB_STATUS_UNCONFIRMED",
       "cap": 89,
-      "binding": false
+      "binding": true
      }
     ],
     "missing": [],
     "next_actions": [
      {
-      "action": "Re-read availability inside the filing window (UNLV)",
-      "key": "availability:away",
-      "potential_gain": 3
+      "action": "Resolve Air Force’s starter conflict",
+      "key": "qb_conflict:home",
+      "potential_gain": 1
      },
      {
-      "action": "Re-read availability inside the filing window (Air Force)",
-      "key": "availability:home",
-      "potential_gain": 3
+      "action": "Confirm UNLV’s starting QB (Jackson Arnold)",
+      "key": "qb_identity:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Confirm Air Force’s starting QB (Liam Szarka)",
+      "key": "qb_identity:home",
+      "potential_gain": 1
      }
     ],
     "recoverable_by_family": {
-     "availability": 6,
-     "qb_identity": 1
+     "availability": 8
     }
    },
    "reliability_without_evidence": {
-    "score": 86,
-    "grade": "STRONG"
+    "score": 79,
+    "grade": "ADEQUATE"
    }
   },
   "401866441": {
@@ -9987,7 +9849,7 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 90.6,
+    "raw": 90.9,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
@@ -9998,7 +9860,7 @@
       "max": 20
      },
      "roster_availability": {
-      "score": 11.8,
+      "score": 12.1,
       "max": 20
      },
      "projection_stability": {
@@ -10067,17 +9929,17 @@
      },
      {
       "component": "roster_availability",
-      "points": 0.7,
-      "reason": "Brayden Roggow — expected; measured: a last-game opener in the clear/established cell opened the next game 82.9% of the time (340 pairs, football/starters/persistence.json)",
-      "family": "qb_identity",
-      "action_key": "qb_identity:away"
-     },
-     {
-      "component": "roster_availability",
       "points": 0.5,
       "reason": "Caleb Heavner — expected (Caleb Heavner opened the last game with 95% of the dropbacks); measured: a last-game opener in the dominant/second cell opened the next game 86.8% of the time (1264 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
       "action_key": "qb_identity:home"
+     },
+     {
+      "component": "roster_availability",
+      "points": 0.4,
+      "reason": "Brayden Roggow — expected; measured: a last-game opener in the clear/established cell opened the next game 82.9% of the time (340 pairs, football/starters/persistence.json)",
+      "family": "qb_identity",
+      "action_key": "qb_identity:away"
      },
      {
       "component": "projection_stability",
@@ -10146,16 +10008,16 @@
    "legacy_input_coverage": 0.769,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 86,
+    "score": 88,
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 86,
+    "raw": 87.7,
     "capped_by": [],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19.3,
+      "score": 19.7,
       "max": 20
      },
      "roster_availability": {
@@ -10163,7 +10025,7 @@
       "max": 20
      },
      "projection_stability": {
-      "score": 18.3,
+      "score": 19.6,
       "max": 20
      },
      "freshness": {
@@ -10180,14 +10042,14 @@
      }
     },
     "main_deduction": "every source that covers App State failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of App State’s absences cannot be assessed: no current availability read for this game",
-    "potential": 97,
+    "potential": 99,
     "evidence_used": true,
     "stability": {
-     "sd": 1.66,
-     "p10": -0.79,
-     "p50": 1.67,
-     "p90": 4.13,
-     "favorite_flip_rate": 0.047,
+     "sd": 1.61,
+     "p10": 0.33,
+     "p50": 2.64,
+     "p90": 4.95,
+     "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
     "penalties": [
@@ -10220,13 +10082,6 @@
       "action_key": "availability:home"
      },
      {
-      "component": "projection_stability",
-      "points": 1.1,
-      "reason": "the projection flips favorite in 5% of sensitivity runs",
-      "family": "favorite_flips",
-      "action_key": null
-     },
-     {
       "component": "roster_availability",
       "points": 0.7,
       "reason": "Malachi Singleton — expected; measured: a last-game opener in the clear/established cell opened the next game 82.9% of the time (340 pairs, football/starters/persistence.json)",
@@ -10235,8 +10090,8 @@
      },
      {
       "component": "projection_stability",
-      "points": 0.6,
-      "reason": "the projected spread moves ±1.66 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "points": 0.4,
+      "reason": "the projected spread moves ±1.61 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
       "family": "stability",
       "action_key": null
      },
@@ -10251,13 +10106,6 @@
       "component": "team_data",
       "points": 0.3,
       "reason": "App State: 5 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
-     },
-     {
-      "component": "team_data",
-      "points": 0.3,
-      "reason": "Coastal Carolina: 5 of 6 games for a full in-season sample",
       "family": "rating_sample",
       "action_key": null
      },
@@ -10293,16 +10141,11 @@
      {
       "action": "Restore an injury/availability source for App State",
       "key": "availability:away",
-      "potential_gain": 3
+      "potential_gain": 1
      },
      {
       "action": "Restore an injury/availability source for Coastal Carolina",
       "key": "availability:home",
-      "potential_gain": 3
-     },
-     {
-      "action": "Confirm App State’s starting QB (Malachi Singleton)",
-      "key": "qb_identity:away",
       "potential_gain": 1
      }
     ],
@@ -10312,7 +10155,7 @@
     }
    },
    "reliability_without_evidence": {
-    "score": 86,
+    "score": 88,
     "grade": "STRONG"
    }
   },
@@ -10489,16 +10332,16 @@
    "legacy_input_coverage": 0.769,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 83,
+    "score": 84,
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 82.9,
+    "raw": 83.8,
     "capped_by": [],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19.7,
+      "score": 20,
       "max": 20
      },
      "roster_availability": {
@@ -10506,7 +10349,7 @@
       "max": 20
      },
      "projection_stability": {
-      "score": 14.6,
+      "score": 15.2,
       "max": 20
      },
      "freshness": {
@@ -10522,22 +10365,22 @@
       "max": 10
      }
     },
-    "main_deduction": "the projection flips favorite in 17% of sensitivity runs",
-    "potential": 94,
+    "main_deduction": "the projection flips favorite in 16% of sensitivity runs",
+    "potential": 95,
     "evidence_used": true,
     "stability": {
-     "sd": 1.86,
-     "p10": -3.88,
-     "p50": -1.05,
-     "p90": 1.78,
-     "favorite_flip_rate": 0.172,
+     "sd": 1.8,
+     "p10": -3.84,
+     "p50": -1.22,
+     "p90": 1.4,
+     "favorite_flip_rate": 0.156,
      "tier": "MODERATE"
     },
     "penalties": [
      {
       "component": "projection_stability",
-      "points": 4.1,
-      "reason": "the projection flips favorite in 17% of sensitivity runs",
+      "points": 3.7,
+      "reason": "the projection flips favorite in 16% of sensitivity runs",
       "family": "favorite_flips",
       "action_key": null
      },
@@ -10571,8 +10414,8 @@
      },
      {
       "component": "projection_stability",
-      "points": 1.3,
-      "reason": "the projected spread moves ±1.86 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "points": 1.1,
+      "reason": "the projected spread moves ±1.8 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
       "family": "stability",
       "action_key": null
      },
@@ -10589,13 +10432,6 @@
       "reason": "Max Johnson — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
       "action_key": "qb_identity:away"
-     },
-     {
-      "component": "team_data",
-      "points": 0.3,
-      "reason": "Georgia Southern: 5 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
      },
      {
       "component": "roster_availability",
@@ -10643,7 +10479,7 @@
     }
    },
    "reliability_without_evidence": {
-    "score": 83,
+    "score": 84,
     "grade": "STRONG"
    }
   },
@@ -10658,24 +10494,24 @@
    "legacy_input_coverage": 0.769,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 87,
+    "score": 88,
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 86.8,
+    "raw": 87.7,
     "capped_by": [],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19.3,
+      "score": 19.7,
       "max": 20
      },
      "roster_availability": {
-      "score": 7.9,
+      "score": 8.3,
       "max": 20
      },
      "projection_stability": {
-      "score": 19.6,
+      "score": 19.7,
       "max": 20
      },
      "freshness": {
@@ -10692,13 +10528,13 @@
      }
     },
     "main_deduction": "every source that covers Georgia State failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Georgia State’s absences cannot be assessed: no current availability read for this game",
-    "potential": 98,
+    "potential": 99,
     "evidence_used": true,
     "stability": {
-     "sd": 1.62,
-     "p10": 13.24,
-     "p50": 15.4,
-     "p90": 17.55,
+     "sd": 1.59,
+     "p10": 10.82,
+     "p50": 12.97,
+     "p90": 15.13,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
@@ -10733,22 +10569,22 @@
      },
      {
       "component": "roster_availability",
-      "points": 0.9,
-      "reason": "Camden Coleman — expected; measured: a last-game opener in the dominant/first cell opened the next game 76.5% of the time (1873 pairs, football/starters/persistence.json)",
-      "family": "qb_identity",
-      "action_key": "qb_identity:home"
-     },
-     {
-      "component": "roster_availability",
       "points": 0.7,
       "reason": "Cameran Brown — expected; measured: a last-game opener in the clear/established cell opened the next game 82.9% of the time (340 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
       "action_key": "qb_identity:away"
      },
      {
+      "component": "roster_availability",
+      "points": 0.5,
+      "reason": "Camden Coleman — expected; measured: a last-game opener in the dominant/first cell opened the next game 76.5% of the time (1873 pairs, football/starters/persistence.json)",
+      "family": "qb_identity",
+      "action_key": "qb_identity:home"
+     },
+     {
       "component": "projection_stability",
-      "points": 0.4,
-      "reason": "the projected spread moves ±1.62 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "points": 0.3,
+      "reason": "the projected spread moves ±1.59 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
       "family": "stability",
       "action_key": null
      },
@@ -10756,13 +10592,6 @@
       "component": "team_data",
       "points": 0.3,
       "reason": "Georgia State: 5 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
-     },
-     {
-      "component": "team_data",
-      "points": 0.3,
-      "reason": "James Madison: 5 of 6 games for a full in-season sample",
       "family": "rating_sample",
       "action_key": null
      },
@@ -10798,21 +10627,11 @@
      {
       "action": "Restore an injury/availability source for Georgia State",
       "key": "availability:away",
-      "potential_gain": 2
+      "potential_gain": 1
      },
      {
       "action": "Restore an injury/availability source for James Madison",
       "key": "availability:home",
-      "potential_gain": 2
-     },
-     {
-      "action": "Confirm Georgia State’s starting QB (Cameran Brown)",
-      "key": "qb_identity:away",
-      "potential_gain": 1
-     },
-     {
-      "action": "Confirm James Madison’s starting QB (Camden Coleman)",
-      "key": "qb_identity:home",
       "potential_gain": 1
      }
     ],
@@ -10822,7 +10641,7 @@
     }
    },
    "reliability_without_evidence": {
-    "score": 87,
+    "score": 88,
     "grade": "STRONG"
    }
   },
@@ -10837,16 +10656,16 @@
    "legacy_input_coverage": 0.769,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 88,
+    "score": 89,
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 88.2,
+    "raw": 88.7,
     "capped_by": [],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19.3,
+      "score": 19.7,
       "max": 20
      },
      "roster_availability": {
@@ -10854,7 +10673,7 @@
       "max": 20
      },
      "projection_stability": {
-      "score": 19.9,
+      "score": 20,
       "max": 20
      },
      "freshness": {
@@ -10871,15 +10690,15 @@
      }
     },
     "main_deduction": "every source that covers Troy failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Troy’s absences cannot be assessed: no current availability read for this game",
-    "potential": 99,
+    "potential": 100,
     "evidence_used": true,
     "stability": {
-     "sd": 1.52,
-     "p10": 2.58,
-     "p50": 4.6,
-     "p90": 6.62,
+     "sd": 1.5,
+     "p10": 1.6,
+     "p50": 3.56,
+     "p90": 5.52,
      "favorite_flip_rate": 0,
-     "tier": "STABLE"
+     "tier": "VERY_STABLE"
     },
     "penalties": [
      {
@@ -10932,24 +10751,10 @@
       "action_key": null
      },
      {
-      "component": "team_data",
-      "points": 0.3,
-      "reason": "Louisiana: 5 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
-     },
-     {
       "component": "roster_availability",
       "points": 0.3,
       "reason": "extreme transfer turnover (most of last season’s production is gone)",
       "family": "transfer_turnover",
-      "action_key": null
-     },
-     {
-      "component": "projection_stability",
-      "points": 0.1,
-      "reason": "the projected spread moves ±1.52 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
-      "family": "stability",
       "action_key": null
      }
     ],
@@ -10966,35 +10771,13 @@
      "qb_availability:away",
      "availability:away"
     ],
-    "next_actions": [
-     {
-      "action": "Restore an injury/availability source for Troy",
-      "key": "availability:away",
-      "potential_gain": 1
-     },
-     {
-      "action": "Restore an injury/availability source for Louisiana",
-      "key": "availability:home",
-      "potential_gain": 1
-     },
-     {
-      "action": "Confirm Troy’s starting QB (Goose Crowder)",
-      "key": "qb_identity:away",
-      "potential_gain": 1
-     },
-     {
-      "action": "Confirm Louisiana’s starting QB (Lunch Winfield)",
-      "key": "qb_identity:home",
-      "potential_gain": 1
-     }
-    ],
+    "next_actions": [],
     "recoverable_by_family": {
-     "availability": 10,
-     "qb_identity": 1
+     "availability": 10
     }
    },
    "reliability_without_evidence": {
-    "score": 88,
+    "score": 89,
     "grade": "STRONG"
    }
   },
@@ -12162,16 +11945,16 @@
    "legacy_input_coverage": 0.769,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 87,
+    "score": 88,
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 86.9,
+    "raw": 87.8,
     "capped_by": [],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19,
+      "score": 19.3,
       "max": 20
      },
      "roster_availability": {
@@ -12179,7 +11962,7 @@
       "max": 20
      },
      "projection_stability": {
-      "score": 19,
+      "score": 19.6,
       "max": 20
      },
      "freshness": {
@@ -12196,13 +11979,13 @@
      }
     },
     "main_deduction": "every source that covers Louisiana Tech failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of Louisiana Tech’s absences cannot be assessed: no current availability read for this game",
-    "potential": 98,
+    "potential": 99,
     "evidence_used": true,
     "stability": {
-     "sd": 1.8,
-     "p10": -15.57,
-     "p50": -13,
-     "p90": -10.43,
+     "sd": 1.61,
+     "p10": -15.41,
+     "p50": -13.07,
+     "p90": -10.73,
      "favorite_flip_rate": 0,
      "tier": "STABLE"
     },
@@ -12236,20 +12019,6 @@
       "action_key": "availability:home"
      },
      {
-      "component": "projection_stability",
-      "points": 1,
-      "reason": "the projected spread moves ±1.8 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
-      "family": "stability",
-      "action_key": null
-     },
-     {
-      "component": "team_data",
-      "points": 0.7,
-      "reason": "Louisiana Tech: 4 of 6 games for a full in-season sample",
-      "family": "rating_sample",
-      "action_key": null
-     },
-     {
       "component": "roster_availability",
       "points": 0.5,
       "reason": "Trey Kukuk — expected; measured: a last-game opener in the dominant/second cell opened the next game 86.8% of the time (1264 pairs, football/starters/persistence.json)",
@@ -12262,6 +12031,20 @@
       "reason": "Aidan Armenta — expected; measured: a last-game opener in the dominant/second cell opened the next game 86.8% of the time (1264 pairs, football/starters/persistence.json)",
       "family": "qb_identity",
       "action_key": "qb_identity:home"
+     },
+     {
+      "component": "projection_stability",
+      "points": 0.4,
+      "reason": "the projected spread moves ±1.61 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "family": "stability",
+      "action_key": null
+     },
+     {
+      "component": "team_data",
+      "points": 0.3,
+      "reason": "Louisiana Tech: 5 of 6 games for a full in-season sample",
+      "family": "rating_sample",
+      "action_key": null
      },
      {
       "component": "team_data",
@@ -12288,21 +12071,11 @@
      {
       "action": "Restore an injury/availability source for Louisiana Tech",
       "key": "availability:away",
-      "potential_gain": 2
+      "potential_gain": 1
      },
      {
       "action": "Restore an injury/availability source for UL Monroe",
       "key": "availability:home",
-      "potential_gain": 2
-     },
-     {
-      "action": "Confirm Louisiana Tech’s starting QB (Trey Kukuk)",
-      "key": "qb_identity:away",
-      "potential_gain": 1
-     },
-     {
-      "action": "Confirm UL Monroe’s starting QB (Aidan Armenta)",
-      "key": "qb_identity:home",
       "potential_gain": 1
      }
     ],
@@ -12312,7 +12085,7 @@
     }
    },
    "reliability_without_evidence": {
-    "score": 87,
+    "score": 86,
     "grade": "STRONG"
    }
   },
@@ -12327,24 +12100,24 @@
    "legacy_input_coverage": 0.769,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 86,
+    "score": 82,
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 85.7,
+    "raw": 81.8,
     "capped_by": [],
     "gate_label": null,
     "components": {
      "team_data": {
-      "score": 19.7,
+      "score": 20,
       "max": 20
      },
      "roster_availability": {
-      "score": 8.2,
+      "score": 9.1,
       "max": 20
      },
      "projection_stability": {
-      "score": 19.6,
+      "score": 14.5,
       "max": 20
      },
      "freshness": {
@@ -12360,18 +12133,25 @@
       "max": 10
      }
     },
-    "main_deduction": "every source that covers South Alabama failed or held nothing current: conference_reports report due but not read, espn_core_injuries historical rows only, espn_depth_chart auth failure, espn_participation auth failure — a failure, not a healthy roster; the impact of South Alabama’s absences cannot be assessed: no current availability read for this game",
-    "potential": 99,
+    "main_deduction": "the projection flips favorite in 22% of sensitivity runs",
+    "potential": 95,
     "evidence_used": true,
     "stability": {
-     "sd": 1.61,
-     "p10": 0.49,
-     "p50": 2.88,
-     "p90": 5.27,
-     "favorite_flip_rate": 0,
-     "tier": "STABLE"
+     "sd": 1.58,
+     "p10": -2.71,
+     "p50": -0.34,
+     "p90": 2.03,
+     "favorite_flip_rate": 0.219,
+     "tier": "MODERATE"
     },
     "penalties": [
+     {
+      "component": "projection_stability",
+      "points": 5.2,
+      "reason": "the projection flips favorite in 22% of sensitivity runs",
+      "family": "favorite_flips",
+      "action_key": null
+     },
      {
       "component": "roster_availability",
       "points": 3,
@@ -12401,13 +12181,6 @@
       "action_key": "availability:home"
      },
      {
-      "component": "roster_availability",
-      "points": 1.4,
-      "reason": "Zion Turner — expected (Zion Turner opened the last game with 85% of the dropbacks); measured: a last-game opener in the clear/first cell opened the next game 64.5% of the time (490 pairs, football/starters/persistence.json)",
-      "family": "qb_identity",
-      "action_key": "qb_identity:home"
-     },
-     {
       "component": "source_integrity",
       "points": 0.9,
       "reason": "resolved by the source hierarchy: Jared Hollins opened the last game with 100% of the dropbacks",
@@ -12422,11 +12195,11 @@
       "action_key": "qb_conflict:home"
      },
      {
-      "component": "projection_stability",
-      "points": 0.4,
-      "reason": "the projected spread moves ±1.61 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
-      "family": "stability",
-      "action_key": null
+      "component": "roster_availability",
+      "points": 0.5,
+      "reason": "Zion Turner — expected (Zion Turner opened the last game with 85% of the dropbacks); measured: a last-game opener in the clear/first cell opened the next game 64.5% of the time (490 pairs, football/starters/persistence.json)",
+      "family": "qb_identity",
+      "action_key": "qb_identity:home"
      },
      {
       "component": "roster_availability",
@@ -12436,10 +12209,10 @@
       "action_key": "qb_identity:away"
      },
      {
-      "component": "team_data",
+      "component": "projection_stability",
       "points": 0.3,
-      "reason": "Marshall: 5 of 6 games for a full in-season sample",
-      "family": "rating_sample",
+      "reason": "the projected spread moves ±1.58 pts (1 SD) across 64 perturbation scenarios (largest source: home-field estimate, ±1.22 pts)",
+      "family": "stability",
       "action_key": null
      }
     ],
@@ -12460,12 +12233,12 @@
      {
       "action": "Restore an injury/availability source for South Alabama",
       "key": "availability:away",
-      "potential_gain": 3
+      "potential_gain": 5
      },
      {
       "action": "Restore an injury/availability source for Marshall",
       "key": "availability:home",
-      "potential_gain": 3
+      "potential_gain": 5
      },
      {
       "action": "Resolve South Alabama’s starter conflict",
@@ -12476,21 +12249,16 @@
       "action": "Resolve Marshall’s starter conflict",
       "key": "qb_conflict:home",
       "potential_gain": 1
-     },
-     {
-      "action": "Confirm Marshall’s starting QB (Zion Turner)",
-      "key": "qb_identity:home",
-      "potential_gain": 1
      }
     ],
     "recoverable_by_family": {
      "availability": 10,
      "qb_conflict": 2,
-     "qb_identity": 2
+     "qb_identity": 1
     }
    },
    "reliability_without_evidence": {
-    "score": 84,
+    "score": 80,
     "grade": "STRONG"
    }
   }

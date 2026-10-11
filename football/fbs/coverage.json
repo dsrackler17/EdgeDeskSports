@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-11T13:12:31.077Z",
+ "generated_at": "2026-10-11T14:09:22.388Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -136,9 +136,9 @@
    "sunbelt": 7,
    "pac12": 3,
    "bigten": 7,
+   "sec": 8,
    "big12": 7,
    "acc": 9,
-   "sec": 8,
    "mac": 7,
    "mwc": 5,
    "independents": 1
@@ -147,7 +147,7 @@
  },
  "ok": true,
  "lookahead_days": 10,
- "absorbed_games": 432,
+ "absorbed_games": 448,
  "engine": {
   "model_version": "edgedesk_cfb_p4_v1.0.0",
   "trained_through": 2025,
@@ -169,8 +169,25 @@
    "artifact_team_game_rows": 1545,
    "games_absorbed_with_stats": 432,
    "team_rows_absorbed": 745,
-   "final_games_without_play_stats": 0,
-   "missing_game_ids": [],
+   "final_games_without_play_stats": 16,
+   "missing_game_ids": [
+    "401860902",
+    "401856715",
+    "401862798",
+    "401864517",
+    "401864518",
+    "401869943",
+    "401856712",
+    "401858258",
+    "401858485",
+    "401864516",
+    "401869949",
+    "401869965",
+    "401856827",
+    "401858486",
+    "401856808",
+    "401860901"
+   ],
    "measured_features": [
     "success_rate",
     "early_down_success",
@@ -217,9 +234,9 @@
   "schema": "edgedesk_cfb_engine_efficiency_v1",
   "season": 2026,
   "games_in_artifact": 780,
-  "completed_games_replayed": 432,
+  "completed_games_replayed": 448,
   "completed_games_with_both_team_efficiency": 313,
-  "missing_count": 119,
+  "missing_count": 135,
   "problem": null
  },
  "checks": [
@@ -365,13 +382,13 @@
       "to": "Pac-12"
      },
      {
-      "team": "Texas State",
-      "from": "Sun Belt",
+      "team": "Boise State",
+      "from": "Mountain West",
       "to": "Pac-12"
      },
      {
-      "team": "Boise State",
-      "from": "Mountain West",
+      "team": "Texas State",
+      "from": "Sun Belt",
       "to": "Pac-12"
      },
      {
@@ -415,11 +432,11 @@
  "warnings": [
   {
    "name": "completed games waiting on play-level efficiency",
-   "count": 119,
+   "count": 135,
    "detail": [
     {
-     "game_id": "401864425",
-     "game": "West Georgia @ Kennesaw State",
+     "game_id": "401856767",
+     "game": "Bethune-Cookman @ UCF",
      "home": true,
      "away": false
     },
@@ -430,26 +447,26 @@
      "away": false
     },
     {
+     "game_id": "401864425",
+     "game": "West Georgia @ Kennesaw State",
+     "home": true,
+     "away": false
+    },
+    {
      "game_id": "401866409",
      "game": "UAlbany @ Buffalo",
      "home": true,
      "away": false
     },
     {
-     "game_id": "401856767",
-     "game": "Bethune-Cookman @ UCF",
+     "game_id": "401856663",
+     "game": "Arkansas-Pine Bluff @ Missouri",
      "home": true,
      "away": false
     },
     {
      "game_id": "401858422",
      "game": "Eastern Illinois @ Minnesota",
-     "home": true,
-     "away": false
-    },
-    {
-     "game_id": "401856663",
-     "game": "Arkansas-Pine Bluff @ Missouri",
      "home": true,
      "away": false
     },
@@ -497,13 +514,13 @@
     "to": "Pac-12"
    },
    {
-    "team": "Texas State",
-    "from": "Sun Belt",
+    "team": "Boise State",
+    "from": "Mountain West",
     "to": "Pac-12"
    },
    {
-    "team": "Boise State",
-    "from": "Mountain West",
+    "team": "Texas State",
+    "from": "Sun Belt",
     "to": "Pac-12"
    },
    {
