@@ -592,6 +592,13 @@ jobs:
       - name: The Desk answers the question at desktop and mobile widths
         run: node tools/intelligence/desk_ui.e2e.js
 
+      # The quant desk in a real browser, rendering the REAL handler's answers
+      # (quant_host.test.js dumps them): the server's verdict chip, the brief's
+      # fields, the evidence sections, the carried state, and an MLB matchup
+      # or contract price reaching the server instead of the football card.
+      - name: The quant desk renders the audited answer at desktop and mobile widths
+        run: node tools/intelligence/quant_ui.e2e.js
+
       - name: Settle matching, and the captured closes it goes back for
         run: node tools/collective/settle_finals.test.js
 

@@ -266,6 +266,42 @@ const LIBS = [
     start: '/*__EDSTAKE_START__*/', end: '/*__EDSTAKE_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* The fair-odds engine (lib/edgedesk_fairodds.js): typed units, exact
+     decimals, venue fee schedules, contract and wager EV, the maximum entry
+     price and the cross-venue comparison. ORDER MATTERS: EDAUDIT and EDQUANT
+     read EDFAIR (and EDADAPT) when they run. Server-side copy of a lib file
+     Node requires directly. */
+  {
+    name: 'EDFAIR',
+    src: path.join(ROOT, 'lib', 'edgedesk_fairodds.js'),
+    start: '/*__EDFAIR_START__*/', end: '/*__EDFAIR_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  /* The sport adapters (lib/edgedesk_sport_adapters.js): capture status,
+     model capability and tier, settlement rules and key roles per sport. */
+  {
+    name: 'EDADAPT',
+    src: path.join(ROOT, 'lib', 'edgedesk_sport_adapters.js'),
+    start: '/*__EDADAPT_START__*/', end: '/*__EDADAPT_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  /* The adversarial auditor: a second, separate verification of the top
+     candidates on a fresh read, with the bounded correction loop. */
+  {
+    name: 'EDAUDIT',
+    src: path.join(FN, '_audit.js'),
+    start: '/*__EDAUDIT_START__*/', end: '/*__EDAUDIT_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  /* The quant desk: routing for the scan, contract and price checks,
+     coverage, outage and explain-EV questions, and their deterministic
+     answers. */
+  {
+    name: 'EDQUANT',
+    src: path.join(FN, '_quant.js'),
+    start: '/*__EDQUANT_START__*/', end: '/*__EDQUANT_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
   /* The MLB historical query layer. ORDER MATTERS, for the same reason the
      FBS resolver above does: its host is _mlbhist.js, which is itself the
      source EDMLBHIST is copied FROM, so this must land before EDMLBHIST is

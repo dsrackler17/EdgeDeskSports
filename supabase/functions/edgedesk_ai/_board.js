@@ -223,6 +223,7 @@
     var kind, from, to, label, windowSource = 'the words in the question';
     var todayMidnight = localMidnight(now, Z, 0), tomorrowMidnight = localMidnight(now, Z, 1);
     if (/\btonight\b/i.test(q)) { kind = 'tonight'; from = now; to = localMidnight(now, Z, 1) + 6 * 3600000; label = 'tonight (' + localDate(now, Z) + ', through 6:00 tomorrow morning in ' + Z + ')'; }
+    else if (/\b(?:next|in the next|within(?: the next)?) (\d{1,3}) ?(?:hours?|hrs?|h)\b/i.test(q)) { var nh = Math.max(1, Math.min(168, +(/\b(?:next|in the next|within(?: the next)?) (\d{1,3}) ?(?:hours?|hrs?|h)\b/i.exec(q)[1]))); kind = 'next_hours'; from = now; to = now + nh * 3600000; label = 'the next ' + nh + ' hours (from now, ' + Z + ')'; }
     else if (/\btomorrow\b/i.test(q)) { kind = 'tomorrow'; from = tomorrowMidnight; to = localMidnight(now, Z, 2); label = 'tomorrow (' + localDate(tomorrowMidnight, Z) + ' in ' + Z + ')'; }
     else if (/\bthis weekend\b|\bweekend\b/i.test(q)) {
       var wd = WEEKDAY[localParts(now, Z).weekday] || 0; var toFri = (5 - wd + 7) % 7; var friStart = wd >= 5 || wd === 0 ? todayMidnight : localMidnight(now, Z, toFri);

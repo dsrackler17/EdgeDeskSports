@@ -154,6 +154,9 @@ section('one card, two leagues');
   const jets = resolve('Jets vs Bills');
   eq('an explicit NFL pair resolves as a pair', jets.state, 'RESOLVED');
   eq('and stays in the NFL', jets.sport, E.NFL_SPORT);
+  /* security audit S11: the pair's known_teams is the most any card knows */
+  const kcBuf = resolve('Chiefs vs Bills');
+  chk('two NFL clubs not playing each other: NOT_ON_CARD, with both names known (not handed to another sport)', kcBuf.state === 'NOT_ON_CARD' && kcBuf.known_teams === 2, [kcBuf.state, kcBuf.known_teams]);
   chk('a bare "Washington" is the college programme, not the NFL club',
     ['RESOLVED', 'AMBIGUOUS', 'NOT_ON_CARD'].indexOf(resolve('Washington matchup').state) >= 0
     && resolve('Washington matchup').sport !== E.NFL_SPORT, resolve('Washington matchup'));

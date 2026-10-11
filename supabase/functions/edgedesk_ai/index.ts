@@ -16530,6 +16530,9 @@ const EDPRES: any = (globalThis as any).EDPRES;
     if (explicit.length === 2) {
       return Object.assign({}, none, {
         state: 'NOT_ON_CARD', named: explicit, sport: null,
+        /* how many of the names THIS card knows: 0 means neither side is a team
+           here, so the question may belong to another sport entirely */
+        known_teams: named.length,
         source: SOURCE,
         note: '"' + explicit[0] + '" and "' + explicit[1] + '" were named as a matchup, and no scheduled game '
           + 'with BOTH of those sides is on any card EdgeDesk publishes (' + rows.length
@@ -16585,7 +16588,7 @@ const EDPRES: any = (globalThis as any).EDPRES;
     var pair = matchupPair(question);
     if (pair.length === 2) {
       return Object.assign({}, none, {
-        state: 'NOT_ON_CARD', named: pair, sport: null,
+        state: 'NOT_ON_CARD', named: pair, sport: null, known_teams: named.length,
         source: SOURCE,
         note: '"' + pair[0] + '" and "' + pair[1] + '" were named as a matchup, and no scheduled game with '
           + 'BOTH of those sides is on any card EdgeDesk publishes (' + rows.length
@@ -16727,9 +16730,15 @@ const EDPRES: any = (globalThis as any).EDPRES;
     /* 5 — the subject the conversation is already on. */
     var held = pick(function (r) { return r.how === 'carried'; });
     if (held) return held;
-    /* An explicit "A vs B" neither card carries. */
-    var pair = pick(function (r) { return r.state === 'NOT_ON_CARD'; });
-    if (pair) return pair;
+    /* An explicit "A vs B" neither card carries. How many of the names are
+       teams is the most ANY card knows: "Chiefs vs Bills" (both NFL, not
+       playing each other) is not a non-football pair because the college card
+       answered first. */
+    var pairs = runs.filter(function (x) { return x.r.state === 'NOT_ON_CARD'; });
+    if (pairs.length) {
+      var kt = Math.max.apply(null, pairs.map(function (x) { return x.r.known_teams || 0; }));
+      return kt !== (pairs[0].r.known_teams || 0) ? Object.assign({}, pairs[0].r, { known_teams: kt }) : pairs[0].r;
+    }
     /* 6 — somebody else was named, on EVERY card. One league not knowing a
        name proves nothing; all of them not knowing it is the finding. */
     var changed = runs.filter(function (x) { return x.r.state === 'SUBJECT_CHANGED'; });
@@ -21982,6 +21991,7 @@ try { if (EDPRICE && EDRESEARCH) EDPRICE.registerTools(); } catch { /* additive 
     var kind, from, to, label, windowSource = 'the words in the question';
     var todayMidnight = localMidnight(now, Z, 0), tomorrowMidnight = localMidnight(now, Z, 1);
     if (/\btonight\b/i.test(q)) { kind = 'tonight'; from = now; to = localMidnight(now, Z, 1) + 6 * 3600000; label = 'tonight (' + localDate(now, Z) + ', through 6:00 tomorrow morning in ' + Z + ')'; }
+    else if (/\b(?:next|in the next|within(?: the next)?) (\d{1,3}) ?(?:hours?|hrs?|h)\b/i.test(q)) { var nh = Math.max(1, Math.min(168, +(/\b(?:next|in the next|within(?: the next)?) (\d{1,3}) ?(?:hours?|hrs?|h)\b/i.exec(q)[1]))); kind = 'next_hours'; from = now; to = now + nh * 3600000; label = 'the next ' + nh + ' hours (from now, ' + Z + ')'; }
     else if (/\btomorrow\b/i.test(q)) { kind = 'tomorrow'; from = tomorrowMidnight; to = localMidnight(now, Z, 2); label = 'tomorrow (' + localDate(tomorrowMidnight, Z) + ' in ' + Z + ')'; }
     else if (/\bthis weekend\b|\bweekend\b/i.test(q)) {
       var wd = WEEKDAY[localParts(now, Z).weekday] || 0; var toFri = (5 - wd + 7) % 7; var friStart = wd >= 5 || wd === 0 ? todayMidnight : localMidnight(now, Z, toFri);
@@ -33588,6 +33598,2134 @@ const EDMINE: any = (globalThis as any).EDMINE;
 const EDSTAKE: any = (globalThis as any).EDSTAKE;
 try { if (EDSTAKE && EDRESEARCH) EDSTAKE.registerTools(); } catch { /* additive */ }
 
+/* The fair-odds engine, the sport adapters, the adversarial auditor and the
+   quant desk (see their canonical files). ORDER MATTERS: EDAUDIT and EDQUANT
+   read EDFAIR and EDADAPT. */
+/*__EDFAIR_START__*/
+/* ===========================================================================
+   EdgeDesk FAIR-ODDS ENGINE — one deterministic price check for a sportsbook
+   wager and a prediction-market contract, in exact decimal arithmetic.
+
+   ONE FILE, EVERY HOST. This exact block is inlined into
+     - supabase/functions/edgedesk_ai/index.ts
+   by tools/presentation/inline.js; presentation_sync.test.js fails when the
+   copy drifts. Edit THIS file, then `node tools/presentation/inline.js`.
+   Node requires it directly (tools/intelligence/fairodds.test.js).
+
+   WHAT IT ANSWERS
+     "Is Rays at 61¢ positive EV?", "Is Cleveland -150 a good price?", "Find
+     me a better price than this Kalshi contract", "What's the most I can pay
+     for this?", "Why is this contract negative EV?" — for ONE outcome at ONE
+     executable price, against ONE named fair probability.
+
+   THE RULES
+     - It computes no probability of its own. The fair probability is handed
+       in with its source (a sharp no-vig, a consensus no-vig, a validated
+       model, a research model, the reader's own number), and the source
+       decides what the result may be called. A research-tier model never
+       produces a verdict stronger than WATCH.
+     - Money is exact. Prices, fees, payouts and expected values are decimals
+       held as a BigInt and a scale (the convention lib/edgedesk_portfolio.js
+       uses for the reader's ledger). Probabilities are carried to 12 places.
+       Nothing is a binary float until it is printed.
+     - Units are typed. A probability is in [0, 1]; a contract price is in
+       dollars per $1 of payout; cents, percents and American odds are
+       converted at the door and a value that looks like the wrong unit (61
+       passed as a probability, 0.61 passed as cents, -50 passed as American
+       odds) is refused with a UNIT error, never guessed.
+     - Fees belong to a venue. Each venue carries its own fee model, rounding
+       rule, source and verification status. No venue's formula is applied to
+       another. A schedule that has not been verified caps the verdict below
+       VERIFIED EDGE; a schedule that is unknown leaves net EV null and says
+       how much fee the price could absorb.
+     - The thresholds are EDINTEL's own (ev_floor, candidate_ev), read at run
+       time when the decision layer is loaded, so the desk and this engine
+       cannot disagree about the same price.
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory(root);
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDFAIR = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
+  'use strict';
+
+  var VERSION = 'edgedesk_fairodds_v1';
+  var CALC_VERSION = 'fairodds_calc_1.0.0';
+  var PSCALE = 12; /* probability and odds-ratio places */
+
+  /* ================================================================ */
+  /* 1. EXACT DECIMALS — {n: BigInt, s: scale}, value n / 10^s         */
+  /* ================================================================ */
+  var B0 = BigInt(0), B1 = BigInt(1), B2 = BigInt(2), B10 = BigInt(10);
+  var NUM_RE = /^([+-])?(\d*)(?:\.(\d*))?(?:[eE]([+-]?\d+))?$/;
+  function pow10(k) { var r = B1; for (var i = 0; i < k; i++) r *= B10; return r; }
+  function trim(d) { while (d.s > 0 && d.n % B10 === B0) { d.n /= B10; d.s--; } return d; }
+  function D(x) {
+    if (x == null) return null;
+    if (typeof x === 'object' && typeof x.n === 'bigint') return x;
+    if (typeof x === 'object' && x.unit && x.d) return x.d;
+    if (typeof x === 'number' && !isFinite(x)) return null;
+    if (typeof x === 'bigint') return { n: x, s: 0 };
+    /* a binary float is read through its shortest round-trip string, so 0.61 is 0.61 */
+    var s = String(x).trim();
+    if (s === '') return null;
+    var m = NUM_RE.exec(s);
+    if (!m || ((m[2] || '') === '' && (m[3] || '') === '')) return null;
+    var frac = m[3] || '', exp = m[4] ? parseInt(m[4], 10) : 0;
+    if (Math.abs(exp) > 60) return null;
+    var n = BigInt(((m[2] || '') + frac) || '0'), scale = frac.length - exp;
+    if (scale < 0) { n = n * pow10(-scale); scale = 0; }
+    if (m[1] === '-') n = -n;
+    return trim({ n: n, s: scale });
+  }
+  function up(d, s) { return d.s === s ? d.n : d.n * pow10(s - d.s); }
+  function add(a, b) { var s = Math.max(a.s, b.s); return trim({ n: up(a, s) + up(b, s), s: s }); }
+  function sub(a, b) { var s = Math.max(a.s, b.s); return trim({ n: up(a, s) - up(b, s), s: s }); }
+  function mul(a, b) { return trim({ n: a.n * b.n, s: a.s + b.s }); }
+  function neg(a) { return { n: -a.n, s: a.s }; }
+  function cmp(a, b) { var s = Math.max(a.s, b.s), x = up(a, s), y = up(b, s); return x < y ? -1 : x > y ? 1 : 0; }
+  function sgn(a) { return a.n > B0 ? 1 : a.n < B0 ? -1 : 0; }
+  function isZero(a) { return a.n === B0; }
+  function maxD(a, b) { return cmp(a, b) >= 0 ? a : b; }
+  function minD(a, b) { return cmp(a, b) <= 0 ? a : b; }
+  /* a / b at `scale` places, rounded half away from zero */
+  function div(a, b, scale) {
+    if (b.n === B0) return null;
+    var k = scale == null ? PSCALE : scale;
+    var nu = a.n * pow10(b.s + k), de = b.n * pow10(a.s);
+    var q = nu / de, r = nu - q * de;
+    var ar = r < B0 ? -r : r, ad = de < B0 ? -de : de;
+    if (B2 * ar >= ad) q += ((nu < B0) !== (de < B0)) ? -B1 : B1;
+    return trim({ n: q, s: k });
+  }
+  /* round toward +infinity / -infinity at k places (fee rounding is directional) */
+  function ceilTo(a, k) {
+    if (a.s <= k) return a;
+    var f = pow10(a.s - k), q = a.n / f, r = a.n - q * f;
+    if (r > B0) q += B1;
+    return trim({ n: q, s: k });
+  }
+  function floorTo(a, k) {
+    if (a.s <= k) return a;
+    var f = pow10(a.s - k), q = a.n / f, r = a.n - q * f;
+    if (r < B0) q -= B1;
+    return trim({ n: q, s: k });
+  }
+  function roundTo(a, k) { return div(a, ONE, k); }
+  function S(d) {
+    if (d == null) return null;
+    var negv = d.n < B0, t = (negv ? -d.n : d.n).toString();
+    if (d.s > 0) { while (t.length <= d.s) t = '0' + t; t = t.slice(0, t.length - d.s) + '.' + t.slice(t.length - d.s); }
+    return (negv && d.n !== B0 ? '-' : '') + t;
+  }
+  function N(d) { return d == null ? null : Number(S(d)); }
+  function fixed(d, k) {
+    if (d == null) return null;
+    var t = S(roundTo(d, k)), i = t.indexOf('.');
+    if (k === 0) return t;
+    if (i < 0) return t + '.' + new Array(k + 1).join('0');
+    return t + new Array(k - (t.length - i - 1) + 1).join('0');
+  }
+  var ZERO = { n: B0, s: 0 }, ONE = { n: B1, s: 0 }, HUNDRED = { n: BigInt(100), s: 0 };
+
+  /* ================================================================ */
+  /* 2. TYPED UNITS — converted at the door, refused when ambiguous    */
+  /* ================================================================ */
+  function unitError(code, message) { var e = new Error(message); e.code = code; e.unit_error = true; return e; }
+  function tag(unit, d) { return { unit: unit, d: d, value: S(d) }; }
+  function isTag(x, unit) { return !!(x && typeof x === 'object' && x.unit === unit && x.d); }
+  var T = {
+    /** A probability in [0, 1]. 61 is refused (that is a percent); so is -0.1. */
+    probability: function (v, label) {
+      if (isTag(v, 'probability')) return v;
+      if (isTag(v, 'percent')) return tag('probability', div(v.d, HUNDRED, PSCALE));
+      var d = D(v), name = label || 'probability';
+      if (d == null) throw unitError('NOT_A_NUMBER', name + ' is not a number: ' + String(v));
+      if (sgn(d) < 0 || cmp(d, ONE) > 0) throw unitError('PROBABILITY_RANGE', name + ' must be between 0 and 1; ' + S(d) + (cmp(d, ONE) > 0 && cmp(d, HUNDRED) <= 0 ? ' looks like a percent (pass it as a percent, e.g. T.percent(' + S(d) + '))' : ' is out of range'));
+      return tag('probability', d);
+    },
+    percent: function (v, label) {
+      if (isTag(v, 'percent')) return v;
+      var d = D(v), name = label || 'percent';
+      if (d == null) throw unitError('NOT_A_NUMBER', name + ' is not a number: ' + String(v));
+      if (sgn(d) < 0 || cmp(d, HUNDRED) > 0) throw unitError('PERCENT_RANGE', name + ' must be between 0 and 100: ' + S(d));
+      return tag('percent', d);
+    },
+    /** A binary contract price in DOLLARS per $1 of payout, strictly between 0 and 1. */
+    contractPrice: function (v, label) {
+      if (isTag(v, 'contract_price')) return v;
+      if (isTag(v, 'cents')) return tag('contract_price', div(v.d, HUNDRED, 6));
+      var d = D(v), name = label || 'contract price';
+      if (d == null) throw unitError('NOT_A_NUMBER', name + ' is not a number: ' + String(v));
+      if (sgn(d) <= 0 || cmp(d, ONE) >= 0) throw unitError('CONTRACT_PRICE_RANGE', name + ' must be in dollars, strictly between $0 and $1; ' + S(d) + (cmp(d, ONE) >= 0 && cmp(d, HUNDRED) < 0 ? ' looks like cents (pass it as cents, e.g. T.cents(' + S(d) + '))' : ' is out of range'));
+      return tag('contract_price', d);
+    },
+    /** A contract price in cents, strictly between 0 and 100. 0.61 is refused: that is dollars. */
+    cents: function (v, label, opts) {
+      if (isTag(v, 'cents')) return v;
+      if (isTag(v, 'contract_price')) return tag('cents', mul(v.d, HUNDRED));
+      var d = D(v), name = label || 'price in cents';
+      if (d == null) throw unitError('NOT_A_NUMBER', name + ' is not a number: ' + String(v));
+      if (sgn(d) <= 0 || cmp(d, HUNDRED) >= 0) throw unitError('CENTS_RANGE', name + ' must be strictly between 0 and 100 cents: ' + S(d));
+      if (cmp(d, ONE) < 0 && !(opts && opts.allow_subcent)) throw unitError('CENTS_LOOKS_LIKE_DOLLARS', name + ' ' + S(d) + ' is under one cent; if it is a dollar price pass it as T.contractPrice(' + S(d) + ')');
+      return tag('cents', d);
+    },
+    /** American odds: |odds| >= 100. -50 and +50 are not American prices. */
+    american: function (v, label) {
+      if (isTag(v, 'american')) return v;
+      var d = D(typeof v === 'string' ? v.replace(/^\+/, '') : v), name = label || 'American odds';
+      if (d == null) throw unitError('NOT_A_NUMBER', name + ' is not a number: ' + String(v));
+      var a = d.n < B0 ? neg(d) : d;
+      if (cmp(a, HUNDRED) < 0) throw unitError('AMERICAN_RANGE', name + ' must be +100 or longer, or -100 or shorter; ' + S(d) + ' is not an American price' + (sgn(d) > 0 && cmp(d, D('1')) > 0 && cmp(d, D('100')) < 0 && d.s > 0 ? ' (it may be decimal odds)' : ''));
+      return tag('american', d);
+    },
+    /** Decimal (European) odds, strictly above 1. */
+    decimalOdds: function (v, label) {
+      if (isTag(v, 'decimal_odds')) return v;
+      var d = D(v), name = label || 'decimal odds';
+      if (d == null) throw unitError('NOT_A_NUMBER', name + ' is not a number: ' + String(v));
+      if (cmp(d, ONE) <= 0) throw unitError('DECIMAL_RANGE', name + ' must be above 1.0: ' + S(d));
+      if (cmp(d, D('100')) >= 0 && d.s === 0) throw unitError('DECIMAL_LOOKS_AMERICAN', name + ' ' + S(d) + ' looks like an American price; pass it as T.american(' + S(d) + ')');
+      return tag('decimal_odds', d);
+    },
+    dollars: function (v, label) {
+      if (isTag(v, 'dollars')) return v;
+      var d = D(v), name = label || 'dollar amount';
+      if (d == null) throw unitError('NOT_A_NUMBER', name + ' is not a number: ' + String(v));
+      return tag('dollars', d);
+    }
+  };
+
+  /* ================================================================ */
+  /* 3. ODDS ARITHMETIC — exact where the price is exact               */
+  /* ================================================================ */
+  /** American → decimal. +150 → 2.5 exactly; -110 → 1.909090909091 (12 places). */
+  function americanToDecimal(am) {
+    var a = T.american(am).d;
+    return sgn(a) > 0 ? add(ONE, div(a, HUNDRED, PSCALE)) : add(ONE, div(HUNDRED, neg(a), PSCALE));
+  }
+  /** Decimal → American, unrounded (an exact price prints as an exact price). */
+  function decimalToAmerican(dec) { return americanOfDecimal(T.decimalOdds(dec).d); }
+  /* the same conversion on a computed Decimal (1 ÷ 0.01 = 100 is decimal odds here, not an American price) */
+  function americanOfDecimal(d) {
+    return cmp(d, D('2')) >= 0 ? mul(sub(d, ONE), HUNDRED) : neg(div(HUNDRED, sub(d, ONE), PSCALE));
+  }
+  /** Probability → fair decimal odds (1/p), null at 0. */
+  function probToDecimal(p) { var d = T.probability(p).d; return isZero(d) ? null : div(ONE, d, PSCALE); }
+  function probToAmerican(p) {
+    var d = T.probability(p).d;
+    if (isZero(d) || cmp(d, ONE) === 0) return null;
+    return americanOfDecimal(div(ONE, d, PSCALE));
+  }
+  function impliedFromDecimal(dec) { return div(ONE, T.decimalOdds(dec).d, PSCALE); }
+  /** Whole-number American price for display, rounded to the nearest point. */
+  function wholeAmerican(d) { if (d == null) return null; var r = roundTo(d, 0); return N(r) === -100 ? 100 : N(r); }
+
+  /* ------------------------------------------------- no-vig, n outcomes */
+  /**
+   * Fair probabilities from n mutually exclusive, exhaustive prices of ONE
+   * market at ONE book. Every outcome must be priced: a single side carries an
+   * unknown margin and is refused. Methods: multiplicative (the board's
+   * default, lib/research_core.js odds.devig2), additive, power.
+   * prices: [{american} | {decimal}] → { probabilities:[string], overround, method }
+   */
+  function noVig(prices, method) {
+    if (!Array.isArray(prices) || prices.length < 2) return { ok: false, code: 'ONE_SIDED', why: 'A no-vig probability needs every outcome of the market priced at the same book; a single price carries an unknown margin.' };
+    var imp = [];
+    for (var i = 0; i < prices.length; i++) {
+      var p = prices[i] || {};
+      var dec = p.decimal != null ? T.decimalOdds(p.decimal).d : p.american != null ? americanToDecimal(p.american) : p.contract_price != null ? div(ONE, T.contractPrice(p.contract_price).d, PSCALE) : null;
+      if (dec == null) return { ok: false, code: 'MISSING_PRICE', why: 'outcome ' + (i + 1) + ' has no price' };
+      imp.push(div(ONE, dec, PSCALE));
+    }
+    var total = imp.reduce(add, ZERO);
+    var over = sub(total, ONE);
+    var m = method || 'multiplicative', out;
+    if (m === 'multiplicative') out = imp.map(function (x) { return div(x, total, PSCALE); });
+    else if (m === 'additive') {
+      var share = div(over, D(String(imp.length)), PSCALE);
+      out = imp.map(function (x) { return sub(x, share); });
+      if (out.some(function (x) { return sgn(x) <= 0; })) return { ok: false, code: 'ADDITIVE_NEGATIVE', why: 'the additive method pushes a long shot below zero at this margin; use multiplicative or power' };
+    } else if (m === 'power') {
+      /* find k with sum(imp_i^k) = 1 by bisection; probabilities, not money, so a float search is acceptable */
+      var f = imp.map(N), lo = 0.5, hi = 3, k = 1;
+      for (var it = 0; it < 200; it++) { k = (lo + hi) / 2; var s = 0; for (var j = 0; j < f.length; j++) s += Math.pow(f[j], k); if (s > 1) lo = k; else hi = k; }
+      out = f.map(function (x) { return D(Math.pow(x, k).toFixed(PSCALE)); });
+      var fs = out.reduce(add, ZERO); out = out.map(function (x) { return div(x, fs, PSCALE); });
+    } else return { ok: false, code: 'UNKNOWN_METHOD', why: 'no-vig method ' + m + ' is not implemented' };
+    return { ok: true, method: m, probabilities: out.map(S), overround: S(roundTo(over, 6)), implied: imp.map(S) };
+  }
+
+  /* ================================================================ */
+  /* 4. VENUES AND FEES                                                */
+  /* ================================================================ */
+  /*
+   * Every venue is one of three payout models:
+   *   SPORTSBOOK   fixed-odds wager; the margin is inside the price; no
+   *                explicit fee. Risk S at decimal D returns S·D on a win.
+   *   BINARY_CONTRACT  pays $1 per contract on YES (or NO); costs the price
+   *                plus the venue's trading fee; an exchange, so fills walk
+   *                the order book.
+   *   EXCHANGE_COMMISSION  back/lay exchange charging commission on net
+   *                winnings (no venue is registered with a rate yet).
+   *
+   * verification:
+   *   VERIFIED     structural (a sportsbook has no explicit fee) or checked
+   *                against the venue's own published schedule on `verified_on`
+   *   UNVERIFIED   the formula is from secondary sources; it is used, and the
+   *                verdict is capped at POTENTIAL EDGE
+   *   UNKNOWN      no usable parameters; net EV is not computed
+   * An operator-verified row (market_execution_costs) or a per-request
+   * override replaces the built-in schedule and says so.
+   */
+  var VENUES = {
+    sportsbook: {
+      key: 'sportsbook', label: 'Sportsbook', model: 'SPORTSBOOK',
+      fee: { kind: 'NONE', verification: 'VERIFIED', basis: 'A fixed-odds sportsbook charges no explicit fee; its margin is inside the price and is measured by the no-vig comparison.' },
+      settlement: 'House rules per book (e.g. MLB "listed pitchers" vs "action"; a postponed game is usually void). Check the book\'s rules for the market.'
+    },
+    kalshi: {
+      key: 'kalshi', label: 'Kalshi', model: 'BINARY_CONTRACT', tick: '0.01',
+      fee: {
+        kind: 'KALSHI_QUADRATIC',
+        taker_coefficient: '0.07', maker_coefficient: '0.0175',
+        formula: 'fee = round_up_to_cent(coefficient × contracts × price × (1 − price)) per order',
+        rounding: 'CEIL_CENT_PER_ORDER',
+        maker_fee_applies: 'only on markets Kalshi flags for maker fees; otherwise makers pay nothing',
+        verification: 'UNVERIFIED',
+        verified_on: null,
+        basis: 'Formula as summarised by secondary sources (2026); kalshi.com and docs.kalshi.com were not reachable from the build environment on 2026-10-11, so the coefficient and the fill-level rounding were not checked against Kalshi\'s own schedule. Some categories may carry a different coefficient.',
+        source_url: 'https://kalshi.com/docs/kalshi-fee-schedule.pdf'
+      },
+      settlement: 'Each contract settles on the market\'s own rules text (source of truth, overtime treatment, postponement window). Read the rules before comparing with a sportsbook market.'
+    },
+    polymarket: {
+      key: 'polymarket', label: 'Polymarket', model: 'BINARY_CONTRACT', tick: '0.01',
+      fee: {
+        kind: 'POLYMARKET_PARAMETRIC',
+        formula: 'fee = contracts × price × rate × (price × (1 − price))^exponent, taker side, rate and exponent set per market category',
+        rounding: 'UNSPECIFIED',
+        categories: { sports: { rate: null, exponent: null } },
+        verification: 'UNKNOWN',
+        verified_on: null,
+        basis: 'Secondary sources disagree on the formula and on the sports rate in 2026 (and Polymarket US may differ from the global venue); docs.polymarket.com was not reachable from the build environment. No parameters are assumed.',
+        source_url: 'https://docs.polymarket.com/trading/fees'
+      },
+      settlement: 'Settles on the market\'s resolution source as written in its rules.'
+    },
+    /* A back/lay exchange or peer-to-peer venue quoting fixed odds: commission on
+       net winnings, at a rate no venue here has had verified. */
+    exchange: {
+      key: 'exchange', label: 'an exchange', model: 'EXCHANGE_COMMISSION',
+      fee: { kind: 'COMMISSION_ON_NET_WINNINGS', rate: null, verification: 'UNKNOWN', verified_on: null, basis: 'an exchange charges commission on net winnings; no rate is on file for this venue, so net EV is not computed' },
+      settlement: 'Settles on the exchange\'s own market rules.'
+    },
+    /* A contract price quoted with no venue named: no fee model is assumed. */
+    unspecified: {
+      key: 'unspecified', label: 'an unnamed exchange', model: 'BINARY_CONTRACT', tick: '0.01',
+      fee: { kind: 'UNKNOWN', formula: null, rounding: null, verification: 'UNKNOWN', verified_on: null, basis: 'no venue was named, so no venue\'s fee schedule is applied' },
+      settlement: 'Unknown: the venue was not named.'
+    }
+  };
+  /* Fixed-odds books by their odds-feed keys (the us and eu regions capture reads).
+     A key not on this list is NOT assumed to be a sportsbook: an exchange's
+     commission would otherwise be priced as zero. */
+  var SPORTSBOOK_KEYS = ['draftkings', 'fanduel', 'betmgm', 'caesars', 'pinnacle', 'circa', 'circasports', 'betrivers', 'bet365', 'espnbet', 'fanatics', 'bovada', 'bodog', 'pointsbet', 'hardrockbet', 'betonlineag', 'lowvig', 'mybookieag', 'williamhill_us', 'williamhill', 'wynnbet', 'superbook', 'unibet_us', 'unibet_eu', 'betus', 'ballybet', 'betanysports', 'betparx', 'fliff', 'rebet', 'windcreek', 'onexbet', 'sport888', 'betclic', 'betsson', 'coolbet', 'everygame', 'gtbets', 'marathonbet', 'nordicbet', 'suprabets', 'livescorebet_eu', 'tipico_de', 'winamax_de', 'winamax_fr', 'betfair_sb_uk', 'betvictor', 'skybet', 'paddypower', 'ladbrokes_uk', 'coral', 'boylesports', 'casumo', 'leovegas', 'virginbet', 'grosvenor', 'betway', 'livescorebet', 'sportsbet', 'tab', 'neds', 'ladbrokes_au', 'unibet', 'pointsbetau', 'betr_au', 'playup', 'topsport', 'bluebet', 'betright'];
+  /* Back/lay exchanges and peer-to-peer venues: they charge commission, so they are never a zero-fee book. */
+  var EXCHANGE_RX = /^(betfair_ex|matchbook|novig|prophetx|betopenly|sporttrade|smarkets|betdaq)/;
+  function venueOf(key) {
+    var k = String(key || '').toLowerCase().replace(/[^a-z0-9_]/g, '');
+    if (VENUES[k]) return VENUES[k];
+    if (EXCHANGE_RX.test(k)) return Object.assign({}, VENUES.exchange, { key: k, label: String(key) });
+    if (SPORTSBOOK_KEYS.indexOf(k) >= 0) return Object.assign({}, VENUES.sportsbook, { key: k, label: String(key) });
+    return null;
+  }
+  /**
+   * The fee on one order. price: contract price in dollars (Decimal);
+   * contracts: integer; role: 'taker'|'maker'; o.market_maker_fees: bool;
+   * o.override: { per_contract_dollars | total_dollars | coefficient | rate, exponent, source, verified }
+   * → { status, total, per_contract, formula, rounding, basis }
+   */
+  function contractFee(venue, price, contracts, role, o) {
+    o = o || {};
+    var C = D(String(contracts));
+    var ov = o.override || null;
+    if (ov) {
+      var st = ov.verified ? 'VERIFIED' : 'OVERRIDE';
+      if (ov.per_contract_dollars != null) { var pc = T.dollars(ov.per_contract_dollars).d; return { status: st, total: mul(pc, C), per_contract: pc, formula: 'per-contract fee supplied: $' + S(pc), rounding: 'AS_SUPPLIED', basis: ov.source || 'supplied with the request' }; }
+      if (ov.total_dollars != null) { var tt = T.dollars(ov.total_dollars).d; return { status: st, total: tt, per_contract: div(tt, C, 6), formula: 'order fee supplied: $' + S(tt), rounding: 'AS_SUPPLIED', basis: ov.source || 'supplied with the request' }; }
+      if (ov.coefficient != null && venue.fee.kind === 'KALSHI_QUADRATIC') {
+        var raw0 = mul(mul(mul(D(String(ov.coefficient)), C), price), sub(ONE, price));
+        var tot0 = ceilTo(raw0, 2);
+        return { status: st, total: tot0, per_contract: div(tot0, C, 6), raw: S(raw0), formula: 'round_up_to_cent(' + ov.coefficient + ' × ' + contracts + ' × ' + S(price) + ' × ' + S(sub(ONE, price)) + ')', rounding: 'CEIL_CENT_PER_ORDER', basis: ov.source || 'operator coefficient' };
+      }
+      if (ov.rate != null && ov.exponent != null && venue.fee.kind === 'POLYMARKET_PARAMETRIC') {
+        var pq = mul(price, sub(ONE, price)), e = Number(ov.exponent);
+        var powv = D(Math.pow(N(pq), e).toFixed(PSCALE));
+        var raw1 = mul(mul(mul(C, price), D(String(ov.rate))), powv);
+        return { status: st, total: roundTo(raw1, 6), per_contract: div(raw1, C, 6), raw: S(raw1), formula: contracts + ' × ' + S(price) + ' × ' + ov.rate + ' × (' + S(pq) + ')^' + ov.exponent, rounding: 'UNROUNDED_6DP', basis: ov.source || 'operator parameters' };
+      }
+    }
+    var f = venue.fee;
+    if (f.kind === 'NONE') return { status: 'VERIFIED', total: ZERO, per_contract: ZERO, formula: 'no explicit fee', rounding: 'NONE', basis: f.basis };
+    if (f.kind === 'KALSHI_QUADRATIC') {
+      if (role === 'maker' && !o.market_maker_fees) return { status: f.verification, total: ZERO, per_contract: ZERO, formula: 'maker order on a market without maker fees', rounding: f.rounding, basis: f.basis };
+      var coef = D(role === 'maker' ? f.maker_coefficient : f.taker_coefficient);
+      var raw = mul(mul(mul(coef, C), price), sub(ONE, price));
+      var tot = ceilTo(raw, 2);
+      return { status: f.verification, total: tot, per_contract: div(tot, C, 6), raw: S(raw), formula: 'round_up_to_cent(' + S(coef) + ' × ' + contracts + ' × ' + S(price) + ' × ' + S(sub(ONE, price)) + ') = ' + S(tot), rounding: f.rounding, basis: f.basis };
+    }
+    if (f.kind === 'POLYMARKET_PARAMETRIC') {
+      var cat = f.categories[o.category || 'sports'] || {};
+      if (cat.rate == null || cat.exponent == null) return { status: 'UNKNOWN', total: null, per_contract: null, formula: f.formula, rounding: f.rounding, basis: f.basis };
+    }
+    return { status: 'UNKNOWN', total: null, per_contract: null, formula: f.formula || null, rounding: f.rounding || null, basis: f.basis || 'no fee model' };
+  }
+
+  /* ================================================================ */
+  /* 5. THRESHOLDS — EDINTEL's, read at run time                       */
+  /* ================================================================ */
+  var DEFAULTS = {
+    ev_floor: '0.005',      /* EDINTEL CONFIG.ev_floor: the playable bound */
+    candidate_ev: '0.02',   /* EDINTEL CONFIG.candidate_ev: an edge, not a lean */
+    sane_ev: '0.20',        /* past this the price is a data question first (capture's LEARN_EDGE_MAX for h2h) */
+    min_books_confirm: 2,   /* independent quotes needed for MARKET confirmation */
+    quote_ttl_min: 90       /* EDINTEL quote_ttl_min default, before the kickoff ladder */
+  };
+  function thresholds(over) {
+    var t = Object.assign({}, DEFAULTS);
+    var I = root.EDINTEL;
+    var cfg = I && (I.CONFIG || (typeof I.config === 'function' ? I.config() : null));
+    if (cfg) {
+      if (cfg.ev_floor != null) t.ev_floor = String(cfg.ev_floor);
+      if (cfg.candidate_ev != null) t.candidate_ev = String(cfg.candidate_ev);
+      /* the operator's kill switch: with decisions off nothing is called an edge */
+      if (cfg.decisions_enabled === false) t.decisions_enabled = 'false';
+      t.source = 'EDINTEL.CONFIG';
+    } else t.source = 'EDFAIR defaults (EDINTEL not loaded)';
+    if (over) Object.keys(over).forEach(function (k) { if (over[k] != null) t[k] = String(over[k]); });
+    return t;
+  }
+
+  /* ================================================================ */
+  /* 6. FAIR SOURCES — what a fair probability is allowed to be called */
+  /* ================================================================ */
+  /*
+   * kind:
+   *   SHARP_NO_VIG      both sides of one market at a sharp book, de-vigged
+   *   CONSENSUS_NO_VIG  the median no-vig across books
+   *   MODEL             an EdgeDesk model; its tier decides (VALIDATED / LEAN /
+   *                     PROBABILITY may price; RESEARCH may not)
+   *   USER              the reader's own number: arithmetic only
+   * A market-derived fair is a reference, not an independent model: it can
+   * show a book is out of line with the market, not that the market is wrong.
+   */
+  var FAIR_KINDS = {
+    SHARP_NO_VIG: { independent: false, may_price: true, calibration: 'MARKET_DERIVED', note: 'market-derived: shows this price is out of line with the sharp market, not that the market is wrong; its record is the CLV ledger' },
+    CONSENSUS_NO_VIG: { independent: false, may_price: true, calibration: 'MARKET_DERIVED', note: 'market-derived consensus of several books; weaker than a sharp reference' },
+    MODEL: { independent: true, may_price: null, calibration: null, note: 'an EdgeDesk model; the validation tier decides whether it may price' },
+    USER: { independent: false, may_price: false, calibration: 'NOT_CALIBRATED', note: 'the reader\'s own probability: the arithmetic is exact, the input is theirs' }
+  };
+  var PRICING_TIERS = { VALIDATED: true, LEAN: true, PROBABILITY: true, RESEARCH: false };
+  function fairSourceOf(src) {
+    src = src || {};
+    var kind = FAIR_KINDS[src.kind] ? src.kind : null;
+    if (!kind) return { kind: null, may_price: false, calibration_status: 'UNAVAILABLE', note: 'no fair probability source named', independent: false };
+    var base = FAIR_KINDS[kind];
+    var tier = src.tier || null;
+    var may = base.may_price;
+    var cal = base.calibration;
+    if (kind === 'MODEL') { may = !!PRICING_TIERS[tier]; cal = tier === 'VALIDATED' ? 'CALIBRATED' : tier === 'LEAN' || tier === 'PROBABILITY' ? 'PARTIALLY_CALIBRATED' : 'UNCALIBRATED'; }
+    return { kind: kind, label: src.label || null, tier: tier, model_version: src.model_version || null, observed_at: src.observed_at || null, may_price: may, independent: base.independent, calibration_status: cal, calibration_basis: src.calibration_basis || null, note: base.note + (kind === 'MODEL' && !may ? ' (tier ' + (tier || 'unknown') + ': research only, no expected value is quoted as an edge)' : '') };
+  }
+
+  /* ================================================================ */
+  /* 7. FRESHNESS, LIQUIDITY, UNCERTAINTY                              */
+  /* ================================================================ */
+  function toMs(v) { if (v == null || v === '') return null; if (typeof v === 'number') return isFinite(v) ? v : null; var t = Date.parse(String(v)); return isFinite(t) ? t : null; }
+  /**
+   * The same bands as EDINTEL.quoteState, the decision layer's ladder: LIVE
+   * under half the limit, AGING to the limit, STALE at it. With a market or a
+   * kickoff (ctx) and EDINTEL loaded, its quoteState decides outright —
+   * including the kickoff guard, which makes a quote STALE (not actionable).
+   */
+  function freshness(observedAt, now, ttlMin, label, ctx) {
+    var t = toMs(observedAt), n = toMs(now) != null ? toMs(now) : Date.now(), ttl = Number(ttlMin) || DEFAULTS.quote_ttl_min;
+    var what = label || 'observation';
+    if (t == null) return { status: 'UNKNOWN', age_min: null, ttl_min: ttl, why: what + ' time not recorded; never actionable' };
+    var age = Math.round((n - t) / 60000);
+    if (age < -2) return { status: 'UNKNOWN', age_min: age, ttl_min: ttl, why: what + ' is timestamped in the future' };
+    var I = root.EDINTEL;
+    if (ctx && (ctx.market || ctx.kickoff) && I && typeof I.quoteState === 'function') {
+      var q = I.quoteState({ captured_at: t, market: ctx.market, kickoff: ctx.kickoff, now: n });
+      var st0 = q.status === 'CURRENT' ? 'LIVE' : q.status === 'AGING' ? 'AGING' : q.status === 'UNKNOWN' ? 'UNKNOWN' : 'STALE';
+      if (!q.actionable && st0 !== 'UNKNOWN') st0 = 'STALE';
+      return { status: st0, age_min: age, ttl_min: q.limit_min, basis: 'EDINTEL.quoteState', why: what + ' is ' + age + ' min old against a ' + q.limit_min + ' min limit' + (q.kickoff_block ? '; ' + q.kickoff_block : '') };
+    }
+    var st = age < ttl / 2 ? 'LIVE' : age < ttl ? 'AGING' : 'STALE';
+    return { status: st, age_min: age, ttl_min: ttl, basis: 'half-limit ladder', why: what + ' is ' + age + ' min old against a ' + ttl + ' min limit' };
+  }
+  /** Walk an ask ladder for `contracts`: [[price_dollars, size], ...] best first → { vwap, filled, short } */
+  function walkBook(asks, contracts) {
+    if (!Array.isArray(asks) || !asks.length) return null;
+    var need = D(String(contracts)), got = ZERO, cost = ZERO;
+    for (var i = 0; i < asks.length && cmp(got, need) < 0; i++) {
+      var px = T.contractPrice(asks[i][0], 'order book price').d, sz = D(String(asks[i][1]));
+      if (sz == null || sgn(sz) <= 0) continue;
+      var take = minD(sz, sub(need, got));
+      cost = add(cost, mul(px, take)); got = add(got, take);
+    }
+    if (isZero(got)) return { vwap: null, filled: '0', short: S(need) };
+    return { vwap: div(cost, got, 6), filled: S(got), short: S(sub(need, got)), best: T.contractPrice(asks[0][0]).d };
+  }
+
+  /* ================================================================ */
+  /* 8. THE EVALUATIONS                                                */
+  /* ================================================================ */
+  function errResult(e, kind) {
+    return { ok: false, schema: VERSION, kind: kind, error: { code: e && e.code ? e.code : 'ERROR', message: e && e.message ? e.message : String(e), unit_error: !!(e && e.unit_error) }, classification: 'UNVERIFIED_DATA', decision: 'PASS' };
+  }
+  function pctStr(d, k) { return d == null ? null : fixed(mul(d, HUNDRED), k == null ? 2 : k) + '%'; }
+
+  /**
+   * One binary contract at one price.
+   * o.venue ('kalshi' | 'polymarket' | a key VENUES carries)
+   * o.side 'YES' | 'NO'
+   * o.price_cents | o.price (dollars)          the executable ask for that side
+   * o.opposite_price_cents | o.opposite_price  the other side's ask, for the market's no-vig
+   * o.contracts (default 1) | o.stake_dollars   the size (stake buys whole contracts at the all-in cost)
+   * o.role 'taker' (default) | 'maker'; o.market_maker_fees bool; o.category
+   * o.fee_override  see contractFee
+   * o.orderbook { asks: [[price_dollars, size], ...] } for this side (slippage)
+   * o.slippage_cents  an explicit estimate when no book is supplied
+   * o.fair_probability   of THIS SIDE winning (probability units)
+   * o.fair_probability_yes  of YES (the side's fair is derived)
+   * o.fair_source { kind, label, tier, model_version, observed_at }
+   * o.fair_interval { low, high }   probability bounds for this side, if the source has them
+   * o.quote_observed_at, o.now, o.ttl_min
+   * o.settlement { verified: bool, terms, mismatch }   from the sport adapter / comparison
+   * o.audit { status }   from EDAUDIT, when it has run
+   * o.thresholds   overrides
+   */
+  function evaluateContract(o) {
+    o = o || {};
+    try {
+      var venue = venueOf(o.venue);
+      if (!venue) throw unitError('UNKNOWN_VENUE', 'venue ' + String(o.venue) + ' has no fee model; EdgeDesk will not apply another venue\'s fees to it');
+      if (venue.model !== 'BINARY_CONTRACT') throw unitError('WRONG_MODEL', venue.label + ' is a ' + venue.model + ', not a binary contract venue');
+      var side = String(o.side || 'YES').toUpperCase();
+      if (side !== 'YES' && side !== 'NO') throw unitError('BAD_SIDE', 'side must be YES or NO');
+      var price = o.price_cents != null ? T.contractPrice(T.cents(o.price_cents, 'price')).d : T.contractPrice(o.price, 'price').d;
+      var tick = D(venue.tick || '0.01');
+      var th = thresholds(o.thresholds);
+      var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+
+      /* size */
+      var contracts = o.contracts != null ? Number(o.contracts) : null;
+      if (contracts != null && (!(contracts >= 1) || Math.floor(contracts) !== contracts)) throw unitError('BAD_CONTRACTS', 'contracts must be a whole number of at least 1');
+
+      /* fair probability for this side */
+      var fair = null;
+      if (o.fair_probability != null) fair = T.probability(o.fair_probability, 'fair probability').d;
+      else if (o.fair_probability_yes != null) { var fy = T.probability(o.fair_probability_yes, 'fair probability (YES)').d; fair = side === 'YES' ? fy : sub(ONE, fy); }
+      var src = fairSourceOf(o.fair_source);
+
+      /* slippage: the order book when supplied, else an explicit estimate, else unknown (0, flagged) */
+      var slip = ZERO, slipBasis = 'no order book or slippage estimate was supplied; assumed zero and flagged', liquidity = { status: 'UNKNOWN', depth_at_best: null, filled: null, note: 'No order-book depth on file: a large order may fill worse than the quoted price.' };
+      var stakeContracts = null;
+      if (contracts == null && o.stake_dollars != null) {
+        /* the largest whole number of contracts whose all-in cost fits the stake, fees included */
+        var stake = T.dollars(o.stake_dollars, 'stake').d;
+        var slipEst = o.slippage_cents != null ? T.contractPrice(T.cents(o.slippage_cents, 'slippage', { allow_subcent: true })).d : ZERO;
+        var guess = Math.floor(N(div(stake, price, 6)));
+        while (guess >= 1) {
+          /* sized at what the order would actually pay: the walked book, or the quote plus the slippage estimate */
+          var wb = o.orderbook && Array.isArray(o.orderbook.asks) ? walkBook(o.orderbook.asks, guess) : null;
+          var px0 = wb && wb.vwap ? maxD(price, wb.vwap) : add(price, slipEst);
+          var fg = contractFee(venue, px0, guess, o.role || 'taker', { market_maker_fees: o.market_maker_fees, category: o.category, override: o.fee_override });
+          var allIn = add(mul(px0, D(String(guess))), fg.total || ZERO);
+          if (cmp(allIn, stake) <= 0) break;
+          guess--;
+        }
+        stakeContracts = guess;
+        contracts = guess >= 1 ? guess : null;
+        if (contracts == null) throw unitError('STAKE_TOO_SMALL', 'a stake of $' + S(stake) + ' does not buy one contract at $' + S(price) + ' plus fees');
+      }
+      if (contracts == null) contracts = 1;
+      var book = o.orderbook && Array.isArray(o.orderbook.asks) ? walkBook(o.orderbook.asks, contracts) : null;
+      if (book && book.vwap) {
+        slip = maxD(ZERO, sub(book.vwap, price));
+        slipBasis = 'walked the supplied order book for ' + contracts + ' contract' + (contracts === 1 ? '' : 's') + ': average fill $' + S(book.vwap) + ' against the $' + S(price) + ' quote';
+        liquidity = { status: D(book.short) && sgn(D(book.short)) > 0 ? 'INSUFFICIENT' : 'ADEQUATE', depth_at_best: o.orderbook.asks[0] ? String(o.orderbook.asks[0][1]) : null, filled: book.filled, short: book.short, note: sgn(D(book.short)) > 0 ? 'The book on file cannot fill ' + contracts + ' contracts; ' + book.short + ' would rest unfilled.' : 'The book on file fills the order.' };
+      } else if (book && !book.vwap) {
+        liquidity = { status: 'INSUFFICIENT', depth_at_best: '0', filled: '0', short: book.short, note: 'The book on file has no resting size: none of the ' + contracts + ' contracts would fill at any price shown.' };
+      } else if (o.slippage_cents != null) {
+        slip = T.contractPrice(T.cents(o.slippage_cents, 'slippage', { allow_subcent: true })).d;
+        slipBasis = 'explicit slippage estimate supplied: ' + S(mul(slip, HUNDRED)) + '¢ per contract';
+        liquidity.status = 'ESTIMATED';
+      }
+      var execPrice = add(price, slip);
+
+      /* fees on this order */
+      var fee = contractFee(venue, execPrice, contracts, o.role || 'taker', { market_maker_fees: o.market_maker_fees, category: o.category, override: o.fee_override });
+      var feePer = fee.per_contract;
+      var cost = feePer != null ? add(execPrice, feePer) : null; /* all-in cost per contract */
+
+      /* market view */
+      var marketP = price;
+      var noVigP = null, overround = null;
+      var opp = o.opposite_price_cents != null ? T.contractPrice(T.cents(o.opposite_price_cents, 'opposite price')).d : o.opposite_price != null ? T.contractPrice(o.opposite_price, 'opposite price').d : null;
+      if (opp) { var tot = add(price, opp); overround = sub(tot, ONE); noVigP = div(price, tot, PSCALE); }
+
+      /* the arithmetic */
+      var be = cost; /* a $1-payout contract breaks even at its all-in cost */
+      var grossEv = fair != null ? sub(fair, price) : null;
+      var netEv = fair != null && cost != null ? sub(fair, cost) : null;
+      var netRoi = netEv != null ? div(netEv, cost, 8) : null;
+      var edge = fair != null && be != null ? sub(fair, be) : null;
+      var feeHeadroom = fair != null ? sub(fair, execPrice) : null; /* the most fee per contract the price could absorb and break even */
+
+      /* the highest tick price still clearing the playable floor and the edge bar, fees and slippage included */
+      function bestPriceFor(minRoi) {
+        if (fair == null) return null;
+        var best = null;
+        for (var px = tick; cmp(px, ONE) < 0; px = add(px, tick)) {
+          var ep = add(px, slip);
+          if (cmp(ep, ONE) >= 0) break;
+          var fx = contractFee(venue, ep, contracts, o.role || 'taker', { market_maker_fees: o.market_maker_fees, category: o.category, override: o.fee_override });
+          if (fx.per_contract == null) return null;
+          var c = add(ep, fx.per_contract);
+          var roi = div(sub(fair, c), c, 8);
+          if (cmp(roi, D(minRoi)) >= 0) best = px; else if (best != null) break;
+        }
+        return best;
+      }
+      var maxEntry = bestPriceFor(th.ev_floor);
+      var maxEdgeEntry = bestPriceFor(th.candidate_ev);
+      var breakEvenEntry = bestPriceFor('0');
+
+      /* uncertainty */
+      var unc = { status: 'NOT_QUANTIFIED', note: src.kind === 'SHARP_NO_VIG' || src.kind === 'CONSENSUS_NO_VIG' ? 'A de-vigged market price carries no confidence interval; its error is largest on heavy favourites and long shots.' : 'The fair source supplied no interval.' };
+      if (o.fair_interval && o.fair_interval.low != null && cost != null) {
+        var lo = T.probability(o.fair_interval.low, 'fair interval low').d, hi = o.fair_interval.high != null ? T.probability(o.fair_interval.high, 'fair interval high').d : null;
+        unc = { status: 'QUANTIFIED', low: S(lo), high: hi ? S(hi) : null, net_ev_at_low: S(roundTo(sub(lo, cost), 6)), net_ev_at_high: hi ? S(roundTo(sub(hi, cost), 6)) : null, positive_at_low: sgn(sub(lo, cost)) > 0 };
+      }
+      var fctx = o.market || o.kickoff ? { market: o.market, kickoff: o.kickoff } : null;
+      var fresh = freshness(o.quote_observed_at, now, o.ttl_min, 'the contract quote', fctx);
+      /* the fair's own limit (a model output lives longer than a quote): not the quote ladder */
+      var fairFresh = src.observed_at ? freshness(src.observed_at, now, o.fair_ttl_min || o.ttl_min, 'the fair reference') : { status: 'UNKNOWN', age_min: null, why: 'the fair reference carries no observation time' };
+
+      var res = {
+        ok: true, schema: VERSION, calc_version: CALC_VERSION, kind: 'CONTRACT',
+        venue: { key: venue.key, label: venue.label, model: venue.model },
+        side: side, contracts: contracts, stake_contracts: stakeContracts, role: o.role || 'taker',
+        market_probability: S(marketP),
+        no_vig_market_probability: noVigP ? S(noVigP) : null,
+        market_overround: overround ? S(overround) : null,
+        independent_fair_probability: fair != null && src.independent ? S(fair) : null,
+        fair_probability: fair != null ? S(fair) : null,
+        fair_source: src,
+        fair_american_odds: fair != null && sgn(fair) > 0 && cmp(fair, ONE) < 0 ? wholeAmerican(probToAmerican(fair)) : null,
+        fair_decimal_odds: fair != null && sgn(fair) > 0 ? fixed(probToDecimal(fair), 4) : null,
+        entry_price: S(price),
+        entry_price_cents: S(mul(price, HUNDRED)),
+        execution_price: S(execPrice),
+        break_even_probability: be != null ? S(roundTo(be, 6)) : null,
+        gross_expected_value: grossEv != null ? S(grossEv) : null,
+        net_expected_value: netEv != null ? S(roundTo(netEv, 6)) : null,
+        net_ev_per_dollar: netRoi != null ? S(netRoi) : null,
+        net_expected_profit: netEv != null ? S(roundTo(mul(netEv, D(String(contracts))), 4)) : null,
+        probability_edge: edge != null ? S(roundTo(edge, 6)) : null,
+        expected_fees: { status: fee.status, per_contract: feePer != null ? S(feePer) : null, total: fee.total != null ? S(fee.total) : null, formula: fee.formula, rounding: fee.rounding, basis: fee.basis },
+        fee_headroom: feeHeadroom != null ? S(feeHeadroom) : null,
+        estimated_slippage: { per_contract: S(slip), basis: slipBasis },
+        maximum_entry_price: maxEntry ? S(maxEntry) : null,
+        maximum_entry_price_cents: maxEntry ? S(mul(maxEntry, HUNDRED)) : null,
+        maximum_edge_entry_price: maxEdgeEntry ? S(maxEdgeEntry) : null,
+        break_even_entry_price: breakEvenEntry ? S(breakEvenEntry) : null,
+        all_in_cost: cost ? S(cost) : null,
+        model_uncertainty: unc,
+        data_freshness: { quote: fresh, fair: fairFresh },
+        market_liquidity: liquidity,
+        calibration_status: src.calibration_status,
+        settlement: o.settlement || { verified: false, terms: venue.settlement },
+        thresholds: th
+      };
+      return classify(res, o);
+    } catch (e) { return errResult(e, 'CONTRACT'); }
+  }
+
+  /**
+   * One sportsbook wager at one price.
+   * o.book, o.american | o.decimal, o.other_side_american (same market, same book, for the no-vig)
+   * o.fair_probability (this side wins), o.push_probability, o.fair_source, o.fair_interval
+   * o.stake_dollars, o.quote_observed_at, o.now, o.ttl_min
+   * o.confirmation { books, families, pass }   independent quotes agreeing
+   */
+  function evaluateWager(o) {
+    o = o || {};
+    try {
+      var venue = venueOf(o.book || 'sportsbook');
+      /* a book key EdgeDesk does not know is not assumed to be fee-free: it may be an exchange */
+      if (!venue) venue = Object.assign({}, VENUES.sportsbook, { key: String(o.book).toLowerCase(), label: String(o.book), unknown: true });
+      if (venue.model !== 'SPORTSBOOK' && venue.model !== 'EXCHANGE_COMMISSION') throw unitError('WRONG_MODEL', venue.label + ' is not a sportsbook');
+      /* commission (an exchange) or an unknown venue: gross EV only, net EV is not computed */
+      var feeUnknown = venue.model === 'EXCHANGE_COMMISSION' || venue.unknown === true;
+      var dec = o.decimal != null ? T.decimalOdds(o.decimal).d : americanToDecimal(o.american);
+      var am = o.american != null ? T.american(o.american).d : decimalToAmerican(dec);
+      var th = thresholds(o.thresholds);
+      var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+      var fair = o.fair_probability != null ? T.probability(o.fair_probability, 'fair probability').d : null;
+      var push = o.push_probability != null ? T.probability(o.push_probability, 'push probability').d : ZERO;
+      if (fair != null && cmp(add(fair, push), ONE) > 0) throw unitError('PROBABILITY_SUM', 'win probability plus push probability exceeds 1');
+      var src = fairSourceOf(o.fair_source);
+      var lose = fair != null ? sub(sub(ONE, fair), push) : null;
+      var marketP = div(ONE, dec, PSCALE);
+      var noVigP = null, overround = null;
+      if (o.other_side_american != null) { var nv = noVig([{ decimal: S(dec) }, { american: o.other_side_american }]); if (nv.ok) { noVigP = D(nv.probabilities[0]); overround = D(nv.overround); } }
+      var be = div(sub(ONE, push), dec, PSCALE); /* pushes refunded */
+      /* per $1 risked: p(D − 1) − (1 − p − push) */
+      var ev = fair != null ? sub(mul(fair, sub(dec, ONE)), lose) : null;
+      var edge = fair != null ? sub(fair, be) : null;
+      /* worst price still clearing a floor: D ≥ (1 − push + floor) / p, rounded to the conservative whole American price */
+      function minPrice(floor) {
+        if (fair == null || isZero(fair)) return null;
+        if (feeUnknown) return null;
+        var dmin = div(add(sub(ONE, push), D(floor)), fair, PSCALE);
+        if (cmp(dmin, ONE) <= 0) return null;
+        var amMin = americanOfDecimal(dmin);
+        var r = ceilTo(amMin, 0);
+        /* -100 and +100 are the same even-money price; anything from -100 up is printed +100 */
+        if (sgn(r) < 0 && cmp(r, D('-100')) >= 0) r = D('100');
+        if (sgn(r) > 0 && cmp(r, HUNDRED) < 0) r = HUNDRED;
+        return N(r);
+      }
+      var stake = o.stake_dollars != null ? T.dollars(o.stake_dollars, 'stake').d : null;
+      var unc = { status: 'NOT_QUANTIFIED', note: src.kind === 'SHARP_NO_VIG' || src.kind === 'CONSENSUS_NO_VIG' ? 'A de-vigged market price carries no confidence interval; its error is largest on heavy favourites and long shots.' : 'The fair source supplied no interval.' };
+      if (o.fair_interval && o.fair_interval.low != null) {
+        var lo = T.probability(o.fair_interval.low).d, evLo = sub(mul(lo, sub(dec, ONE)), sub(sub(ONE, lo), push));
+        unc = { status: 'QUANTIFIED', low: S(lo), high: o.fair_interval.high != null ? S(T.probability(o.fair_interval.high).d) : null, net_ev_at_low: S(roundTo(evLo, 6)), positive_at_low: sgn(evLo) > 0 };
+      }
+      var conf = o.confirmation || null;
+      /* the commission an exchange could charge on net winnings and still break even */
+      var commHeadroom = feeUnknown && fair != null && sgn(fair) > 0 ? sub(ONE, div(lose, mul(fair, sub(dec, ONE)), PSCALE)) : null;
+      var wctx = o.market || o.kickoff ? { market: o.market, kickoff: o.kickoff } : null;
+      var res = {
+        ok: true, schema: VERSION, calc_version: CALC_VERSION, kind: 'WAGER',
+        venue: { key: venue.key, label: venue.label, model: venue.model },
+        market_probability: S(marketP),
+        no_vig_market_probability: noVigP ? S(noVigP) : null,
+        market_overround: overround ? S(overround) : null,
+        independent_fair_probability: fair != null && src.independent ? S(fair) : null,
+        fair_probability: fair != null ? S(fair) : null,
+        push_probability: S(push),
+        fair_source: src,
+        fair_american_odds: fair != null && sgn(fair) > 0 && cmp(fair, ONE) < 0 ? wholeAmerican(probToAmerican(div(fair, sub(ONE, push), PSCALE))) : null,
+        fair_decimal_odds: fair != null && sgn(fair) > 0 ? fixed(div(sub(ONE, push), fair, PSCALE), 4) : null,
+        entry_price: wholeAmerican(am), entry_decimal: fixed(dec, 4),
+        execution_price: wholeAmerican(am),
+        break_even_probability: S(roundTo(be, 6)),
+        gross_expected_value: ev != null ? S(roundTo(ev, 6)) : null,
+        net_expected_value: ev != null && !feeUnknown ? S(roundTo(ev, 6)) : null,
+        net_ev_per_dollar: ev != null && !feeUnknown ? S(roundTo(ev, 8)) : null,
+        net_expected_profit: ev != null && stake && !feeUnknown ? S(roundTo(mul(ev, stake), 4)) : null,
+        probability_edge: edge != null && !feeUnknown ? S(roundTo(edge, 6)) : null,
+        expected_fees: feeUnknown
+          ? { status: 'UNKNOWN', per_contract: null, total: null, formula: null, rounding: null, basis: venue.unknown ? venue.label + ' is not on EdgeDesk\'s list of fixed-odds books; it may be an exchange that charges commission, so no fee is assumed' : venue.label + ' charges commission on net winnings and no rate is on file' }
+          : { status: 'VERIFIED', per_contract: '0', total: '0', formula: 'no explicit fee', rounding: 'NONE', basis: VENUES.sportsbook.fee.basis },
+        commission_headroom: commHeadroom != null ? S(roundTo(commHeadroom, 6)) : null,
+        estimated_slippage: { per_contract: '0', basis: 'a fixed-odds quote fills at the quoted price up to the book\'s limit' },
+        maximum_entry_price: minPrice(th.ev_floor),
+        maximum_edge_entry_price: minPrice(th.candidate_ev),
+        break_even_entry_price: minPrice('0'),
+        all_in_cost: feeUnknown ? null : S(roundTo(div(ONE, dec, PSCALE), 6)),
+        model_uncertainty: unc,
+        data_freshness: { quote: freshness(o.quote_observed_at, now, o.ttl_min, 'the sportsbook quote', wctx), fair: src.observed_at ? freshness(src.observed_at, now, o.fair_ttl_min || o.ttl_min, 'the fair reference') : { status: 'UNKNOWN', age_min: null, why: 'the fair reference carries no observation time' } },
+        market_liquidity: conf ? { status: conf.pass ? 'CONFIRMED' : 'SINGLE_SOURCE', books: conf.books != null ? conf.books : null, note: conf.why || null } : { status: 'UNKNOWN', books: null, note: 'No count of independent books quoting this price.' },
+        calibration_status: src.calibration_status,
+        settlement: o.settlement || { verified: true, terms: VENUES.sportsbook.settlement },
+        thresholds: th
+      };
+      return classify(res, o);
+    } catch (e) { return errResult(e, 'WAGER'); }
+  }
+
+  /* ================================================================ */
+  /* 9. CLASSIFICATION — VERIFIED EDGE / POTENTIAL EDGE / WATCH / PASS  */
+  /*                     / UNVERIFIED DATA, with every reason          */
+  /* ================================================================ */
+  var LABELS = { VERIFIED_EDGE: 'VERIFIED EDGE', POTENTIAL_EDGE: 'POTENTIAL EDGE', WATCH: 'WATCH', PASS: 'PASS', UNVERIFIED_DATA: 'UNVERIFIED DATA' };
+  var DECISION = { VERIFIED_EDGE: 'BUY', POTENTIAL_EDGE: 'WATCH', WATCH: 'WATCH', PASS: 'PASS', UNVERIFIED_DATA: 'PASS' };
+  function classify(r, o) {
+    var why = [], caps = [];
+    var th = r.thresholds;
+    var roi = r.net_ev_per_dollar != null ? D(r.net_ev_per_dollar) : null;
+    var cls;
+    if (r.fair_probability == null) { cls = 'UNVERIFIED_DATA'; why.push('No fair probability is on file for this outcome, so its value cannot be evaluated; the price alone implies ' + pctStr(D(r.market_probability)) + '.'); }
+    else if (r.data_freshness.quote.status === 'STALE' || r.data_freshness.quote.status === 'UNKNOWN') { cls = 'UNVERIFIED_DATA'; why.push('The quote is ' + r.data_freshness.quote.status.toLowerCase() + ' (' + r.data_freshness.quote.why + '); re-check the price before any verdict.'); }
+    else if (roi == null && r.gross_expected_value != null && sgn(D(r.gross_expected_value)) <= 0) { cls = 'PASS'; why.push('Before any fee the price is already ' + (sgn(D(r.gross_expected_value)) < 0 ? 'worse than' : 'exactly at') + ' the fair probability (' + (r.kind === 'CONTRACT' ? fixed(mul(D(r.gross_expected_value), HUNDRED), 2) + '¢ a contract' : pctStr(D(r.gross_expected_value)) + ' per $1') + '); fees can only make it worse.'); }
+    else if (roi == null && r.kind === 'WAGER') {
+      cls = 'WATCH';
+      why.push('The fee for ' + r.venue.label + ' is ' + r.expected_fees.status.toLowerCase() + ' (' + r.expected_fees.basis + '), so net EV is not computed. Before any commission the EV is ' + pctStr(D(r.gross_expected_value)) + ' per $1' + (r.commission_headroom != null ? '; it breaks even at a commission of ' + pctStr(D(r.commission_headroom)) + ' of net winnings' : '') + '.');
+    }
+    else if (roi == null) {
+      cls = 'WATCH';
+      why.push('The fee schedule for ' + r.venue.label + ' is ' + r.expected_fees.status.toLowerCase() + ', so net EV is not computed. Before fees the edge is ' + pctStr(D(r.gross_expected_value)) + ' of $1; the price can absorb up to ' + (r.fee_headroom != null ? fixed(mul(D(r.fee_headroom), HUNDRED), 2) + '¢' : 'no') + ' of fees and slippage per contract and still break even.');
+    }
+    else if (sgn(roi) <= 0) { cls = 'PASS'; why.push('Net expected value is ' + pctStr(roi) + ' per dollar after ' + (r.kind === 'CONTRACT' ? 'fees and slippage' : 'the margin in the price') + ': the price is worse than the fair probability supports.'); }
+    else if (cmp(roi, D(th.ev_floor)) < 0) { cls = 'PASS'; why.push('Net expected value ' + pctStr(roi) + ' per dollar is positive but under the ' + pctStr(D(th.ev_floor)) + ' playable floor.'); }
+    else if (cmp(roi, D(th.candidate_ev)) < 0) { cls = 'WATCH'; why.push('Net expected value ' + pctStr(roi) + ' per dollar clears the ' + pctStr(D(th.ev_floor)) + ' floor but not the ' + pctStr(D(th.candidate_ev)) + ' edge bar.'); }
+    else { cls = 'VERIFIED_EDGE'; why.push('Net expected value ' + pctStr(roi) + ' per dollar clears the ' + pctStr(D(th.candidate_ev)) + ' edge bar.'); }
+
+    /* caps — each one can only lower the class; every one that fires is named,
+       `binding` when it is the one that actually lowered the verdict */
+    function cap(to, reason) { var order = ['UNVERIFIED_DATA', 'PASS', 'WATCH', 'POTENTIAL_EDGE', 'VERIFIED_EDGE']; var lowers = order.indexOf(cls) > order.indexOf(to); caps.push({ to: to, reason: reason, binding: lowers }); if (lowers) cls = to; }
+    if (cls === 'VERIFIED_EDGE' || cls === 'POTENTIAL_EDGE' || cls === 'WATCH') {
+      if (th.decisions_enabled === 'false') cap('WATCH', 'decisions are switched off by the operator (EDINTEL decisions_enabled = false): research only');
+      if (!r.fair_source.may_price) cap('WATCH', 'the fair probability comes from ' + (r.fair_source.kind === 'MODEL' ? 'a ' + (r.fair_source.tier || 'unvalidated') + '-tier model' : 'an unpriced source (' + (r.fair_source.kind || 'none') + ')') + ', which may order research but may not be called an edge');
+      if (roi != null && cmp(roi, D(th.sane_ev)) > 0) cap('WATCH', 'net EV ' + pctStr(roi) + ' is past the ' + pctStr(D(th.sane_ev)) + ' sanity ceiling: an outlier is a data check (line, side, settlement) before it is a bet');
+      if (r.expected_fees.status === 'UNVERIFIED' || r.expected_fees.status === 'OVERRIDE') cap('POTENTIAL_EDGE', 'the ' + r.venue.label + ' fee schedule used is ' + r.expected_fees.status.toLowerCase() + ' (' + r.expected_fees.basis + ')');
+      if (r.data_freshness.quote.status === 'AGING') cap('POTENTIAL_EDGE', 'the quote is aging (' + r.data_freshness.quote.why + ')');
+      if (r.data_freshness.fair.status === 'STALE' || r.data_freshness.fair.status === 'UNKNOWN' || r.data_freshness.fair.status === 'AGING') cap('POTENTIAL_EDGE', 'the fair reference is ' + r.data_freshness.fair.status.toLowerCase() + ' (' + r.data_freshness.fair.why + ')');
+      if (r.kind === 'CONTRACT' && r.market_liquidity.status === 'INSUFFICIENT') cap('WATCH', r.market_liquidity.note);
+      if (r.kind === 'CONTRACT' && r.market_liquidity.status === 'UNKNOWN') cap('POTENTIAL_EDGE', 'no order-book depth on file for the contract');
+      if (r.kind === 'CONTRACT' && r.market_liquidity.status === 'ESTIMATED') cap('POTENTIAL_EDGE', 'slippage is an estimate, not a walk of a real order book');
+      if (r.kind === 'WAGER' && r.market_liquidity.status === 'SINGLE_SOURCE') cap('POTENTIAL_EDGE', 'the price stands on one book; no independent quote confirms it');
+      if (r.kind === 'WAGER' && r.market_liquidity.status === 'UNKNOWN') cap('POTENTIAL_EDGE', 'no independent book was checked against this price');
+      if (r.model_uncertainty.status === 'QUANTIFIED' && r.model_uncertainty.positive_at_low === false) cap('POTENTIAL_EDGE', 'at the low end of the fair interval (' + r.model_uncertainty.low + ') the expected value is negative');
+      if (!r.settlement || r.settlement.verified !== true) cap('POTENTIAL_EDGE', 'settlement terms are not verified against the fair reference\'s market' + (r.settlement && r.settlement.mismatch ? ': ' + r.settlement.mismatch : ''));
+      if (r.settlement && r.settlement.mismatch_severity === 'MATERIAL') cap('WATCH', 'settlement differs materially from the fair reference: ' + r.settlement.mismatch);
+      var audit = o && o.audit;
+      if (!audit) cap('POTENTIAL_EDGE', 'the adversarial audit has not run on this price');
+      else if (audit.status === 'REJECTED') cap('PASS', 'the audit rejected it: ' + (audit.reason || 'see the audit trail'));
+      else if (audit.status !== 'CONFIRMED') cap('POTENTIAL_EDGE', 'the audit did not confirm it (' + audit.status + ')');
+    }
+    r.classification = cls;
+    r.label = LABELS[cls];
+    r.decision = DECISION[cls];
+    r.reasons = why;
+    r.caps = caps;
+    /* research confidence: a category from named conditions, never a score */
+    var fails = caps.length + (r.data_freshness.quote.status === 'LIVE' ? 0 : 1) + (r.fair_source.may_price ? 0 : 1) + (r.expected_fees.status === 'VERIFIED' ? 0 : 1);
+    r.research_confidence = { level: cls === 'UNVERIFIED_DATA' ? 'INSUFFICIENT' : fails === 0 ? 'HIGH' : fails <= 2 ? 'MEDIUM' : 'LOW', basis: 'named conditions, not a fitted score: quote ' + r.data_freshness.quote.status + ', fair source ' + (r.fair_source.kind || 'none') + (r.fair_source.tier ? ' (' + r.fair_source.tier + ')' : '') + ', fees ' + r.expected_fees.status + ', ' + caps.length + ' cap' + (caps.length === 1 ? '' : 's') + ' applied' };
+    return r;
+  }
+
+  /* ================================================================ */
+  /* 10. CROSS-VENUE COMPARISON — the same outcome, every price         */
+  /* ================================================================ */
+  /**
+   * The cheapest way to own $1 of one outcome. Each entry is either a
+   * contract ({venue, side, price_cents|price, ...}) or a wager ({book,
+   * american|decimal}); each is evaluated against the SAME fair probability.
+   * Ranked by all-in cost per $1 of payout (lower is better) and, when a fair
+   * is on file, by net EV per dollar. An entry whose settlement does not
+   * match the reference market is ranked but flagged.
+   */
+  function compareVenues(entries, common) {
+    common = common || {};
+    var rows = (entries || []).map(function (e) {
+      var o = Object.assign({}, common, e);
+      var r = (e.venue && venueOf(e.venue) && venueOf(e.venue).model === 'BINARY_CONTRACT') ? evaluateContract(o) : evaluateWager(o);
+      return { input: { venue: e.venue || e.book, side: e.side || null, price_cents: e.price_cents != null ? String(e.price_cents) : null, american: e.american != null ? String(e.american) : null }, result: r };
+    });
+    var ok = rows.filter(function (x) { return x.result.ok && x.result.all_in_cost != null; });
+    ok.sort(function (a, b) { return cmp(D(a.result.all_in_cost), D(b.result.all_in_cost)); });
+    var bad = rows.filter(function (x) { return !(x.result.ok && x.result.all_in_cost != null); });
+    var best = ok[0] || null;
+    return {
+      schema: VERSION + ':compare', ranked: ok.map(function (x, i) { return { rank: i + 1, venue: x.result.venue.label, side: x.result.side || null, entry: x.result.kind === 'CONTRACT' ? x.result.entry_price_cents + '¢' : (x.result.entry_price > 0 ? '+' : '') + x.result.entry_price, all_in_cost: x.result.all_in_cost, all_in_cost_cents: fixed(mul(D(x.result.all_in_cost), HUNDRED), 2), net_ev_per_dollar: x.result.net_ev_per_dollar, label: x.result.label, fees: x.result.expected_fees.status, settlement_verified: !!(x.result.settlement && x.result.settlement.verified), result: x.result }; }),
+      not_priced: bad.map(function (x) { return { venue: x.input.venue, why: x.result.error ? x.result.error.message : 'fee schedule unknown: all-in cost not computable' }; }),
+      best: best ? best.result.venue.label : null,
+      note: 'All-in cost is what it takes to receive $1 if the outcome wins: price plus fees and slippage for a contract, 1 ÷ decimal odds for a wager. The same outcome must settle the same way at both venues before the cheaper price is the better trade.'
+    };
+  }
+
+  /** A sportsbook price as the contract price that costs the same per $1 of payout. -150 → 60¢. */
+  function equivalentCents(american) { return fixed(mul(div(ONE, americanToDecimal(american), PSCALE), HUNDRED), 2); }
+  /** A contract price as the American odds that pay the same, before fees. 61¢ → -156. */
+  function contractToAmerican(priceCents) { var p = T.contractPrice(T.cents(priceCents)).d; return wholeAmerican(probToAmerican(p)); }
+
+  /* ================================================================ */
+  /* 11. PARSING A PRICE FROM A QUESTION                               */
+  /* ================================================================ */
+  /**
+   * "Rays at 61¢", "Cleveland +1.5 at 61 cents", "YES at $0.61", "61c",
+   * "Guardians -150", "at +135 on DraftKings", "Kalshi". Returns what was
+   * said, typed, and never fills in what was not. The team or selection is
+   * left to the host's entity resolver.
+   */
+  var VENUE_WORDS = [['kalshi', /\bkalshi\b/i], ['polymarket', /\bpoly ?market\b/i]];
+  /* "my two cents", a temperature: cents-shaped words that are not a price */
+  var NOT_A_PRICE_RX = /\b(?:my|your|our|their|his|her|the|a|some)\s+(?:two|2)\s*(?:c|cents?)\b/i;
+  var WEATHER_RX = /\b(?:temp(?:erature)?s?|degrees?|celsius|weather|wind|forecast(?:ed)? (?:high|low)|kickoff temp)\b|°/i;
+  function parsePrice(text) {
+    /* a Unicode minus or dash before digits is a minus sign */
+    var q = String(text || '').replace(/[\u2212\u2012\u2013\u2014](?=\d)/g, '-');
+    var out = { venue: null, contract: null, american: null, side: null, said: [] };
+    VENUE_WORDS.forEach(function (v) { if (!out.venue && v[1].test(q)) out.venue = v[0]; });
+    var scan = q.replace(NOT_A_PRICE_RX, ' ');
+    /* every cents-shaped number, bounded on the left so "161c" is not read as 61¢ */
+    var CENTS_RX = /(?<![\d.$])(\d{1,3}(?:\.\d+)?)\s*(¢|c\b|cents?\b)/gi, mm, hits = [];
+    while ((mm = CENTS_RX.exec(scan))) hits.push(mm);
+    /* "12c" next to weather words is a temperature unless a venue or the ¢ sign says otherwise */
+    if (hits.length && !out.venue && WEATHER_RX.test(scan)) hits = hits.filter(function (h) { return h[2] === '¢'; });
+    var m2 = scan.match(/(?<![\d])\$\s?0?\.(\d{1,2})\b(?!\d)/);
+    if (hits.length) {
+      var vals = hits.map(function (h) { return h[1]; }).filter(function (v, i, a) { return a.indexOf(v) === i; });
+      var m = hits[0];
+      if (vals.length > 1) out.contract = { error: 'more than one contract price was quoted (' + vals.map(function (v) { return v + '¢'; }).join(', ') + '); name the one to check', raw: m[0], ambiguous: true };
+      else { try { out.contract = { price_cents: S(T.cents(m[1]).d), raw: m[0], symbol: m[2] === '¢' }; out.said.push('contract price ' + m[1] + '¢'); } catch (e) { out.contract = { error: e.message, raw: m[0] }; } }
+    }
+    else if (m2) { var c = m2[1].length === 1 ? m2[1] + '0' : m2[1]; try { out.contract = { price_cents: S(T.cents(c).d), raw: m2[0], symbol: true }; out.said.push('contract price ' + c + '¢'); } catch (e2) { out.contract = { error: e2.message, raw: m2[0] }; } }
+    /* American odds: a signed 3-4 digit number not part of a spread like +1.5, and not a year */
+    var am = q.match(/(?:^|[\s(@])([+-]\d{3,4})(?!\d|\.\d)/);
+    if (am) { try { out.american = N(T.american(am[1]).d); out.said.push('American odds ' + am[1]); } catch (e3) { /* not a price */ } }
+    /* the side only when a price follows it ("NO at 44¢", "YES is 55c", "buy NO"): never from "yes or no" */
+    var sd = q.match(/\b(yes|no)\b\s*(?:contracts?|shares?|side)?\s*(?:is|costs?|at|@|for|trading at|trades at|priced at)?\s*\$?\s?\d/i) || q.match(/\bbuy(?:ing)?\s+(?:the\s+)?(yes|no)\b/i);
+    if (sd) out.side = sd[1].toUpperCase();
+    if (out.contract && !out.venue) out.venue_note = 'a contract price was quoted without a venue; Kalshi\'s fee model is used only if the reader names Kalshi';
+    return out;
+  }
+
+  /* ================================================================ */
+  /* 12. PLAIN-LANGUAGE ANSWER                                         */
+  /* ================================================================ */
+  function fmtProb(s) { return s == null ? '—' : pctStr(D(s), 1); }
+  function fmtCents(s) { return s == null ? '—' : fixed(mul(D(s), HUNDRED), 2).replace(/\.00$/, '') + '¢'; }
+  function fmtUsd(s) { if (s == null) return '—'; var d = D(s); return (sgn(d) < 0 ? '−$' : '$') + fixed(sgn(d) < 0 ? neg(d) : d, 4).replace(/(\.\d\d)00$/, '$1'); }
+  function fmtAm(n) { return n == null ? '—' : (n > 0 ? '+' : '') + n; }
+  /** The answer in the shape the brief asks for: the verdict first, then the numbers, then why. */
+  function explain(r, ctx) {
+    ctx = ctx || {};
+    if (!r || !r.ok) return { headline: 'EdgeDesk could not price that: ' + (r && r.error ? r.error.message : 'no result') + '.', lines: [], decision: 'PASS' };
+    var isC = r.kind === 'CONTRACT';
+    var what = (ctx.selection || (isC ? r.side : 'this side')) + (isC ? ' at ' + fmtCents(r.entry_price) + ' on ' + r.venue.label : ' at ' + fmtAm(r.entry_price) + (r.venue.label && r.venue.label !== 'Sportsbook' ? ' (' + r.venue.label + ')' : ''));
+    var lines = [];
+    lines.push(['Available price', isC ? fmtCents(r.entry_price) + ' (implies ' + fmtProb(r.market_probability) + ')' : fmtAm(r.entry_price) + ' (implies ' + fmtProb(r.market_probability) + ')']);
+    if (r.no_vig_market_probability) lines.push(['Market no-vig', fmtProb(r.no_vig_market_probability) + ' (margin ' + pctStr(D(r.market_overround)) + ')']);
+    lines.push(['Fair probability', r.fair_probability ? fmtProb(r.fair_probability) + ' — ' + (r.fair_source.label || r.fair_source.kind) + (r.fair_source.independent ? '' : ' (market-derived, not an independent model)') : 'unavailable']);
+    if (r.fair_probability) lines.push(['Fair price', isC ? fmtCents(r.fair_probability) + ' (' + fmtAm(r.fair_american_odds) + ')' : fmtAm(r.fair_american_odds) + ' (' + r.fair_decimal_odds + ')']);
+    if (isC) lines.push(['Fees', r.expected_fees.per_contract != null ? fmtCents(r.expected_fees.per_contract) + ' per contract (' + r.expected_fees.status.toLowerCase() + ': ' + r.expected_fees.formula + ')' : 'unknown — ' + r.expected_fees.basis]);
+    if (isC && r.estimated_slippage && D(r.estimated_slippage.per_contract) && sgn(D(r.estimated_slippage.per_contract)) > 0) lines.push(['Slippage', fmtCents(r.estimated_slippage.per_contract) + ' per contract']);
+    if (!isC && r.expected_fees.status === 'UNKNOWN') lines.push(['Fees', 'unknown — ' + r.expected_fees.basis]);
+    lines.push(['Break-even', r.break_even_probability ? fmtProb(r.break_even_probability) + (!isC && r.expected_fees.status === 'UNKNOWN' ? ' before commission' : '') : 'above ' + fmtProb(r.entry_price) + ' (the price) plus a fee EdgeDesk cannot apply']);
+    lines.push(['Net EV', r.net_ev_per_dollar != null ? pctStr(D(r.net_ev_per_dollar)) + ' per $1' + (isC ? ' (' + fmtCents(r.net_expected_value) + ' per contract)' : '') : 'not computed (fees unknown); gross ' + (r.gross_expected_value ? (isC ? fmtCents(r.gross_expected_value) + ' per contract' : pctStr(D(r.gross_expected_value)) + ' per $1') : '—')]);
+    lines.push(['Maximum entry', r.maximum_entry_price != null ? (isC ? fmtCents(r.maximum_entry_price) : fmtAm(r.maximum_entry_price)) + ' (still clears the ' + pctStr(D(r.thresholds.ev_floor)) + ' floor' + (isC ? ' after fees' : '') + ')' : 'none — no price clears the floor' + (r.fair_probability ? '' : ' without a fair probability')]);
+    lines.push(['Calibration', r.calibration_status]);
+    lines.push(['Decision', r.decision === r.label ? r.decision : r.decision + ' · ' + r.label]);
+    var binding = r.caps.filter(function (c) { return c.binding; });
+    var head = r.label + ': ' + what + '. ' + r.reasons[0] + (binding.length ? ' Capped because ' + binding.map(function (c) { return c.reason; }).join('; ') + '.' : '');
+    return { headline: head, lines: lines, decision: r.decision, label: r.label };
+  }
+
+  return {
+    VERSION: VERSION, CALC_VERSION: CALC_VERSION, VENUES: VENUES, DEFAULTS: DEFAULTS, LABELS: LABELS, FAIR_KINDS: FAIR_KINDS,
+    T: T, D: D, S: S, N: N, fixed: fixed, dec: { add: add, sub: sub, mul: mul, div: div, cmp: cmp, ceilTo: ceilTo, floorTo: floorTo, roundTo: roundTo },
+    americanToDecimal: function (a) { return S(americanToDecimal(a)); },
+    decimalToAmerican: function (d) { return S(decimalToAmerican(d)); },
+    probToAmerican: function (p) { var v = probToAmerican(p); return v == null ? null : S(v); },
+    probToDecimal: function (p) { var v = probToDecimal(p); return v == null ? null : S(v); },
+    impliedFromAmerican: function (a) { return S(div(ONE, americanToDecimal(a), PSCALE)); },
+    impliedFromDecimal: function (d) { return S(impliedFromDecimal(d)); },
+    wholeAmerican: function (d) { return wholeAmerican(D(d)); },
+    noVig: noVig, venueOf: venueOf, contractFee: function (venueKey, priceDollars, contracts, role, o) { var v = venueOf(venueKey); if (!v) return null; var f = contractFee(v, T.contractPrice(priceDollars).d, contracts, role, o); return { status: f.status, total: f.total == null ? null : S(f.total), per_contract: f.per_contract == null ? null : S(f.per_contract), formula: f.formula, rounding: f.rounding, basis: f.basis }; },
+    thresholds: thresholds, fairSourceOf: fairSourceOf, freshness: freshness, walkBook: function (asks, c) { var w = walkBook(asks, c); return w && { vwap: S(w.vwap), filled: w.filled, short: w.short }; },
+    evaluateContract: evaluateContract, evaluateWager: evaluateWager, classify: classify,
+    compareVenues: compareVenues, equivalentCents: equivalentCents, contractToAmerican: contractToAmerican,
+    parsePrice: parsePrice, explain: explain
+  };
+});
+/*__EDFAIR_END__*/
+const EDFAIR: any = (globalThis as any).EDFAIR;
+/*__EDADAPT_START__*/
+/* ===========================================================================
+   EdgeDesk SPORT ADAPTERS — what each sport can and cannot be priced with.
+
+   ONE FILE, EVERY HOST. This exact block is inlined into
+     - supabase/functions/edgedesk_ai/index.ts
+   by tools/presentation/inline.js; presentation_sync.test.js fails when the
+   copy drifts. Edit THIS file, then `node tools/presentation/inline.js`.
+
+   WHY IT EXISTS
+     A football model cannot price a hockey game, and a sport with no captured
+     prices cannot be "scanned". Before this registry the board reported an
+     uncaptured sport as a genuine empty slate and gave every sport the same
+     settlement assumptions. Each entry says, for one sport:
+       - whether EdgeDesk captures its prices by default (capture/index.ts
+         DEFAULT_SPORTS and the odds_api_sports allowlist), so a sport with no
+         prices is NOT_CAPTURED, not NO_GAMES;
+       - whether an independent model exists, where it runs, and its
+         validation tier per market (football/validation/pricing_*.json at
+         build time; the host overrides with EDPRICE.validationFor at run time);
+       - the settlement rule per market, so two contracts on "the same game"
+         are compared only when they settle the same way;
+       - the roles whose availability can invalidate a price (a QB, a starting
+         pitcher, a goalie, a fighter).
+     Nothing here is a probability. A sport without a validated model gets
+     schedule, statistics and market comparison, and its independent fair
+     probability is reported UNAVAILABLE — never filled in.
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory(root);
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDADAPT = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
+  'use strict';
+
+  var VERSION = 'edgedesk_sport_adapters_v1';
+  var TIERS_AS_OF = '2026-09-16'; /* football/validation/pricing_{nfl,cfb}.json generated_at */
+
+  /* Settlement terms per market. `overtime`: does the result include extra
+     time; `void`: what voids it; `ties`: how a tie grades; `notes`: anything a
+     comparison must check. */
+  var ADAPTERS = {
+    americanfootball_nfl: {
+      key: 'americanfootball_nfl', label: 'NFL', family: 'football', season: [8, 2], captured_by_default: true,
+      schedule: 'football/nfl/slate.json (nflverse schedule)',
+      stats: ['EPA per play and success rate (nflverse play-by-play)', 'opponent-adjusted unit records (football/matchup/metrics.json)', 'QB EPA per dropback and CPOE', 'rest, roof, surface, kickoff forecast'],
+      model: { name: 'edgedesk_football NFL engine', runs: 'server (football/nfl/slate.json, priced by EDPRICE)', validation: 'football/validation/pricing_nfl.json', tiers: { spreads: 'LEAN', totals: 'RESEARCH', h2h: 'RESEARCH' } },
+      markets: ['h2h', 'spreads', 'totals'],
+      settlement: {
+        h2h: { overtime: true, ties: 'a tie is graded by house rule (a push on most two-way moneylines)', void: 'postponed past the book\'s window' },
+        spreads: { overtime: true, ties: 'a landed number is a push', void: 'postponed past the book\'s window' },
+        totals: { overtime: true, ties: 'a landed number is a push', void: 'postponed past the book\'s window' }
+      },
+      key_roles: [{ role: 'QB', why: 'the starting quarterback moves an NFL number more than any other player' }],
+      availability_source: 'the official NFL injury report (nflverse), in football/matchup/metrics.json'
+    },
+    americanfootball_ncaaf: {
+      key: 'americanfootball_ncaaf', label: 'college football', family: 'football', season: [8, 1], captured_by_default: true,
+      schedule: 'football/fbs/slate.json and cfb.games',
+      stats: ['opponent-adjusted EPA (football/fbs_epa)', 'SP+ and the EdgeDesk ETSR rating', 'returning production, talent, coaching continuity', 'kickoff forecast'],
+      model: { name: 'edgedesk_cfb_p4 / FBS board engine', runs: 'server (football/fbs/slate.json, priced by EDPRICE)', validation: 'football/validation/pricing_cfb.json', tiers: { spreads: 'RESEARCH', totals: 'RESEARCH', h2h: 'RESEARCH' } },
+      markets: ['h2h', 'spreads', 'totals'],
+      settlement: {
+        h2h: { overtime: true, ties: 'college football cannot end tied', void: 'postponed past the book\'s window' },
+        spreads: { overtime: true, ties: 'a landed number is a push', void: 'postponed past the book\'s window' },
+        totals: { overtime: true, ties: 'a landed number is a push', void: 'postponed past the book\'s window' }
+      },
+      key_roles: [{ role: 'QB', why: 'a college starter change moves the number and is rarely confirmed before kickoff' }],
+      availability_source: 'operator-entered availability (football/availability/manual) — no official CFB feed is reachable'
+    },
+    baseball_mlb: {
+      key: 'baseball_mlb', label: 'MLB', family: 'baseball', season: [3, 11], captured_by_default: true,
+      schedule: 'games (the MLB schedule table) and mlb_game_cards',
+      stats: ['probable starters with handedness (mlb_game_cards)', 'pitcher features: xERA, FIP, K-BB% (pitcher_features)', '2016-2025 pitching and hitting archives', 'park and weather factors'],
+      model: { name: 'edgedesk_baseball_v1.0.0 run model', runs: 'browser only (mlb/engine.js); the desk does not run it', validation: 'none — no MLB closing-line archive (docs/model-card-baseball.md)', tiers: { spreads: 'RESEARCH', totals: 'RESEARCH', h2h: 'RESEARCH' } },
+      markets: ['h2h', 'spreads', 'totals'],
+      settlement: {
+        h2h: { overtime: true, ties: 'baseball cannot end tied (a suspended game follows league rules)', void: 'books grade a moneyline as ACTION or LISTED PITCHERS: a listed-pitcher wager is void if a listed starter does not start', listed_pitchers: true },
+        spreads: { overtime: true, ties: 'run line is a half run: no push', void: 'listed-pitcher rules may apply', listed_pitchers: true },
+        totals: { overtime: true, ties: 'a landed number is a push', void: 'listed-pitcher rules may apply; a shortened game is void below the official-game threshold', listed_pitchers: true }
+      },
+      key_roles: [{ role: 'SP', why: 'the starting pitcher is the largest single input to an MLB price; a scratch reprices the game' }],
+      availability_source: 'mlb_game_cards probable starters (probable, never confirmed)'
+    },
+    basketball_nba: {
+      key: 'basketball_nba', label: 'NBA', family: 'basketball', season: [10, 6], captured_by_default: false,
+      schedule: 'none of its own: the captured signals stand in for the schedule',
+      stats: [],
+      model: null,
+      markets: ['h2h', 'spreads', 'totals'],
+      settlement: {
+        h2h: { overtime: true, ties: 'cannot end tied', void: 'postponed past the book\'s window' },
+        spreads: { overtime: true, ties: 'a landed number is a push', void: 'postponed past the book\'s window' },
+        totals: { overtime: true, ties: 'a landed number is a push', void: 'postponed past the book\'s window' }
+      },
+      key_roles: [{ role: 'STAR', why: 'a rest day or late scratch of a top player moves an NBA number by points' }],
+      availability_source: 'none wired'
+    },
+    basketball_wnba: {
+      key: 'basketball_wnba', label: 'WNBA', family: 'basketball', season: [5, 10], captured_by_default: false,
+      schedule: 'none of its own', stats: [], model: null, markets: ['h2h', 'spreads', 'totals'],
+      settlement: { h2h: { overtime: true, ties: 'cannot end tied' }, spreads: { overtime: true }, totals: { overtime: true } },
+      key_roles: [{ role: 'STAR', why: 'late scratches move the number' }], availability_source: 'none wired'
+    },
+    basketball_ncaab: {
+      key: 'basketball_ncaab', label: 'college basketball', family: 'basketball', season: [11, 4], captured_by_default: false,
+      schedule: 'none of its own', stats: ['college basketball research tables (cbb_* intents)'], model: null, markets: ['h2h', 'spreads', 'totals'],
+      settlement: { h2h: { overtime: true, ties: 'cannot end tied' }, spreads: { overtime: true }, totals: { overtime: true } },
+      key_roles: [], availability_source: 'none wired'
+    },
+    icehockey_nhl: {
+      key: 'icehockey_nhl', label: 'NHL', family: 'hockey', season: [10, 6], captured_by_default: false,
+      schedule: 'none of its own', stats: [], model: null, markets: ['h2h', 'spreads', 'totals'],
+      settlement: {
+        h2h: { overtime: true, ties: 'a two-way moneyline includes overtime and the shootout; a three-way (60-minute) moneyline is a different contract', void: 'postponed past the book\'s window', regulation_variant: true },
+        spreads: { overtime: true, ties: 'puck line includes overtime and shootout' },
+        totals: { overtime: true, ties: 'includes overtime; a shootout adds at most one goal at most books' }
+      },
+      key_roles: [{ role: 'G', why: 'the starting goalie is the largest single input to an NHL price and is often confirmed late' }],
+      availability_source: 'none wired'
+    },
+    mma_mixed_martial_arts: {
+      key: 'mma_mixed_martial_arts', label: 'UFC', family: 'combat', season: [1, 12], captured_by_default: true,
+      schedule: 'the captured signals (the ufc.* schema is not exposed to the desk)',
+      stats: ['fighter records and fight-center data (lib/ufc_research.js)'],
+      model: { name: 'none', runs: 'the one probability shown is the market\'s, de-vigged (lib/ufc_research.js)', validation: 'not applicable', tiers: {} },
+      markets: ['h2h'],
+      settlement: { h2h: { overtime: false, ties: 'a draw or no contest usually voids a two-way fighter moneyline', void: 'a late replacement voids the original bout at most books' } },
+      key_roles: [{ role: 'FIGHTER', why: 'a late replacement is a different fight' }],
+      availability_source: 'the captured signals; no late-replacement feed is wired'
+    }
+  };
+
+  /* What EdgeDesk does not cover, stated rather than silently skipped. */
+  var NOT_COVERED = [
+    { id: 'soccer', label: 'Soccer', key_prefix: 'soccer_', why: 'no schedule source, no captured prices and no model are wired', settlement: { h2h: { overtime: false, ties: 'a three-way market settles on 90 minutes plus stoppage time; a draw is its own outcome' } } },
+    { id: 'tennis', label: 'Tennis', key_prefix: 'tennis_', why: 'retired as a product on 2026-09-27 (lib/edgedesk_sports.js)' },
+    { id: 'golf', label: 'Golf', key_prefix: 'golf_', why: 'no data source or model' }
+  ];
+
+  function str(v) { return v == null ? '' : String(v); }
+  function adapterFor(sportKey) {
+    var k = str(sportKey).toLowerCase();
+    if (ADAPTERS[k]) return ADAPTERS[k];
+    return null;
+  }
+  function notCoveredFor(sportKey) {
+    var k = str(sportKey).toLowerCase();
+    for (var i = 0; i < NOT_COVERED.length; i++) if (k === NOT_COVERED[i].id || k.indexOf(NOT_COVERED[i].key_prefix) === 0) return NOT_COVERED[i];
+    return null;
+  }
+  /** The sports whose prices are captured: an explicit list (EDGEDESK_CAPTURED_SPORTS) wins, else the capture defaults. */
+  function capturedSports(list) {
+    if (Array.isArray(list) && list.length) return list.map(function (x) { return str(x).trim(); }).filter(Boolean);
+    if (typeof list === 'string' && list.trim()) return list.split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+    return Object.keys(ADAPTERS).filter(function (k) { return ADAPTERS[k].captured_by_default; });
+  }
+  function isCaptured(sportKey, list) { return capturedSports(list).indexOf(str(sportKey)) >= 0; }
+
+  /**
+   * What a scan of one sport actually covered. Data wins over configuration:
+   * a sport the registry calls uncaptured that HAS prices was captured.
+   * o: { signals: n, games: n, captured_list, read_error }
+   */
+  function coverageStatus(sportKey, o) {
+    o = o || {};
+    var a = adapterFor(sportKey);
+    if (!a) { var nc = notCoveredFor(sportKey); return { status: 'NOT_SUPPORTED', why: nc ? nc.why : 'no adapter for this sport' }; }
+    if (o.read_error) return { status: 'RETRIEVAL_FAILED', why: str(o.read_error) };
+    var sig = Number(o.signals) || 0, games = Number(o.games) || 0;
+    if (sig > 0) return { status: 'EVALUATED', why: sig + ' captured price row' + (sig === 1 ? '' : 's') + ' across ' + games + ' game' + (games === 1 ? '' : 's') };
+    if (!isCaptured(sportKey, o.captured_list)) return { status: 'NOT_CAPTURED', why: 'EdgeDesk does not capture ' + a.label + ' prices (not in the capture allowlist), so no ' + a.label + ' market was scanned — this is not an empty slate' };
+    if (games > 0) return { status: 'NO_PRICES', why: games + ' scheduled game' + (games === 1 ? '' : 's') + ' and no captured price inside the window' };
+    return { status: 'NO_GAMES', why: 'no scheduled ' + a.label + ' games in the window' };
+  }
+
+  /**
+   * Can this sport's own model price this market? Reads the run-time tier when
+   * the host passes one (EDPRICE.validationFor), else the registry's.
+   * → { independent_model, may_price, tier, name, runs, reason }
+   */
+  function modelCapability(sportKey, market, runtimeTier) {
+    var a = adapterFor(sportKey);
+    var m = str(market).toLowerCase();
+    m = m === 'spread' ? 'spreads' : m === 'total' ? 'totals' : m === 'moneyline' || m === 'ml' ? 'h2h' : m;
+    if (!a) return { independent_model: false, may_price: false, tier: null, name: null, runs: null, reason: 'no adapter for ' + sportKey };
+    if (!a.model || !a.model.tiers || a.model.name === 'none') return { independent_model: false, may_price: false, tier: null, name: null, runs: a.model ? a.model.runs : null, reason: 'no independent ' + a.label + ' model: the independent fair probability is unavailable; only the market\'s own de-vigged price can be compared' };
+    var tier = runtimeTier || a.model.tiers[m] || null;
+    var serverRuns = /^server/.test(a.model.runs || '');
+    var may = serverRuns && (tier === 'VALIDATED' || tier === 'LEAN' || tier === 'PROBABILITY');
+    return {
+      independent_model: true, may_price: may, tier: tier, name: a.model.name, runs: a.model.runs, validation: a.model.validation, tiers_as_of: runtimeTier ? 'run time' : TIERS_AS_OF,
+      reason: !serverRuns ? 'the ' + a.label + ' model runs in the browser only and is not available to the desk'
+        : may ? 'the ' + a.label + ' ' + marketWord(m) + ' model is ' + tier + ': its probability may be used' + (tier === 'LEAN' ? ' as break-even history, not a profit record' : '')
+          : 'the ' + a.label + ' ' + marketWord(m) + ' model is ' + (tier || 'unvalidated') + ': research only, never an edge'
+    };
+  }
+  function marketWord(m) { return m === 'spreads' ? 'spread' : m === 'totals' ? 'total' : m === 'h2h' ? 'moneyline' : m; }
+
+  /**
+   * Do two contracts on one game settle the same way? `a` is the reference
+   * (usually the sportsbook market the fair came from), `b` the one being
+   * priced. Each: { overtime: bool, listed_pitchers: bool, three_way: bool,
+   * terms_verified: bool }. A difference that can change who wins is
+   * MATERIAL; one that only changes when a bet is void is MINOR.
+   */
+  function compareSettlement(sportKey, market, a, b) {
+    var ad = adapterFor(sportKey);
+    var m = str(market).toLowerCase();
+    var base = ad && ad.settlement ? ad.settlement[m] || null : null;
+    a = Object.assign({}, base || {}, a || {});
+    b = b || {};
+    var diffs = [];
+    if (b.terms_verified === false || b.overtime == null) diffs.push({ severity: 'UNVERIFIED', what: 'the contract\'s settlement terms are not on file; read its rules (overtime, postponement, source of truth) before comparing prices' });
+    if (b.overtime != null && a.overtime != null && b.overtime !== a.overtime) diffs.push({ severity: 'MATERIAL', what: (b.overtime ? 'this contract includes overtime' : 'this contract settles on regulation only') + ' while the reference market ' + (a.overtime ? 'includes overtime' : 'is regulation only') + ' — a tie at regulation decides them differently' });
+    if (b.three_way && !a.three_way) diffs.push({ severity: 'MATERIAL', what: 'a three-way contract (draw is its own outcome) against a two-way reference' });
+    if (a.listed_pitchers && b.listed_pitchers === false) diffs.push({ severity: 'MINOR', what: 'the reference may be graded LISTED PITCHERS (void on a starter change) while this contract has ACTION on the result' });
+    var material = diffs.filter(function (d) { return d.severity === 'MATERIAL'; });
+    var unverified = diffs.filter(function (d) { return d.severity === 'UNVERIFIED'; });
+    return {
+      verified: !diffs.length || (!material.length && !unverified.length),
+      mismatch: diffs.length ? diffs.map(function (d) { return d.what; }).join('; ') : null,
+      mismatch_severity: material.length ? 'MATERIAL' : unverified.length ? 'UNVERIFIED' : diffs.length ? 'MINOR' : null,
+      differences: diffs, reference: a
+    };
+  }
+
+  function keyRoles(sportKey) { var a = adapterFor(sportKey); return a ? a.key_roles.map(function (r) { return r.role; }) : []; }
+  function supported() { return Object.keys(ADAPTERS); }
+  function inSeason(sportKey, month) { var a = adapterFor(sportKey); if (!a) return false; var x = a.season[0], y = a.season[1]; return x <= y ? (month >= x && month <= y) : (month >= x || month <= y); }
+
+  /** One line per sport for "what can you scan?": capture, model, tier. */
+  function capabilityTable(o) {
+    o = o || {};
+    var rows = Object.keys(ADAPTERS).map(function (k) {
+      var a = ADAPTERS[k];
+      var tiers = a.model && a.model.tiers ? a.model.tiers : {};
+      return { sport: k, label: a.label, captured: isCaptured(k, o.captured_list), in_season: o.month ? inSeason(k, o.month) : null,
+        independent_model: !!(a.model && a.model.name !== 'none'), model: a.model ? a.model.name : null, model_runs: a.model ? a.model.runs : null,
+        tiers: tiers, key_roles: a.key_roles.map(function (r) { return r.role; }) };
+    });
+    NOT_COVERED.forEach(function (n) { rows.push({ sport: n.id, label: n.label, captured: false, in_season: null, independent_model: false, model: null, model_runs: null, tiers: {}, key_roles: [], not_covered: n.why }); });
+    return rows;
+  }
+
+  return {
+    VERSION: VERSION, TIERS_AS_OF: TIERS_AS_OF, ADAPTERS: ADAPTERS, NOT_COVERED: NOT_COVERED,
+    adapterFor: adapterFor, notCoveredFor: notCoveredFor, capturedSports: capturedSports, isCaptured: isCaptured,
+    coverageStatus: coverageStatus, modelCapability: modelCapability, compareSettlement: compareSettlement,
+    keyRoles: keyRoles, supported: supported, inSeason: inSeason, capabilityTable: capabilityTable
+  };
+});
+/*__EDADAPT_END__*/
+const EDADAPT: any = (globalThis as any).EDADAPT;
+/*__EDAUDIT_START__*/
+/* ===========================================================================
+   EdgeDesk ADVERSARIAL AUDITOR — a second, separate verification of every
+   high-ranked opportunity before it is published.
+
+   ONE FILE, ONE HOST. This exact block is inlined into
+     - supabase/functions/edgedesk_ai/index.ts
+   by tools/presentation/inline.js; presentation_sync.test.js fails when the
+   copy drifts. Edit THIS file, then `node tools/presentation/inline.js`.
+
+   WHY IT IS SEPARATE
+     The board's candidates are produced by the decision layer (EDINTEL) from
+     the capture function's stored fair. Re-reading that same number and
+     calling it "verified" would be the generator agreeing with itself. The
+     auditor therefore:
+       - works from a FRESH READ the host makes at audit time (the signal row
+         again, the per-book quotes, the availability sources), not from the
+         candidate's copy;
+       - recomputes expected value with a DIFFERENT implementation (EDFAIR:
+         exact decimals) and a DIFFERENT de-vig method (multiplicative on the
+         sharp book's two sides, against capture's Shin fair), and asks
+         whether the edge survives both;
+       - can REJECT what the generator recommended, and says why.
+
+   THE LOOP (bounded)
+     AUDIT → (a correctable failure: a stale or moved price that the fresh
+     read supersedes) CORRECT → RECALCULATE → RE-AUDIT, at most `max_rounds`
+     times. Anything still failing ends in an explicit state — REJECTED or
+     NEEDS_RECHECK — never a silent pass. Every step is written to the trail.
+     Missing information is NOT_CHECKED with a reason; it is never filled in.
+
+   STATUSES
+     CONFIRMED      every critical check passed on fresh data
+     DOWNGRADED     nothing failed, but a warning stands or a critical check
+                    could not be run: a POTENTIAL edge at most
+     NEEDS_RECHECK  news or a price arrived after the quote (re-quote first)
+     REJECTED       an integrity failure: the recommendation is withdrawn
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory(root);
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDAUDIT = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
+  'use strict';
+
+  var VERSION = 'edgedesk_audit_v1';
+  var MAX_ROUNDS = 2;
+  var TOL = {
+    ev_disagreement: 0.005,       /* recomputed vs candidate EV per $1, beyond rounding */
+    method_floor: 0.0,            /* the edge must stay positive under the other de-vig method */
+    fair_conflict_pp: 0.03,       /* sharp vs consensus fair, probability points */
+    off_market_pp: 0.04,          /* best book's implied probability vs the median book's */
+    sharp_move_pp: 0.02,          /* the sharp fair moving against the selection since the candidate */
+    model_gap_pp: 0.08,           /* model vs market probability: needs a written explanation */
+    model_gap_points: 7,          /* EDINTEL disagreement_points_hard (read from it when loaded): EXTREME, refused */
+    min_books_confirm: 2,         /* books that must clear the floor for A7 to pass */
+    availability_stale_h: 72      /* EDINTEL AVAIL_STALE_H: an availability build older than this is stale */
+  };
+  /* the decision layer's own numbers where it has them, so the auditor never disagrees with it */
+  function intelConfig() { var I = root.EDINTEL; try { return I ? (I.CONFIG || (typeof I.config === 'function' ? I.config() : null)) : null; } catch (_) { return null; } }
+
+  function F() {
+    if (root.EDFAIR) return root.EDFAIR;
+    if (typeof require === 'function') { try { return require('../../../lib/edgedesk_fairodds.js'); } catch (_) { /* fall through */ } }
+    throw new Error('lib/edgedesk_fairodds.js (EDFAIR) must be loaded before the auditor runs');
+  }
+  function A() {
+    if (root.EDADAPT) return root.EDADAPT;
+    if (typeof require === 'function') { try { return require('../../../lib/edgedesk_sport_adapters.js'); } catch (_) { return null; } }
+    return null;
+  }
+  function num(v) { if (v === null || v === undefined || v === '') return null; var n = Number(v); return isFinite(n) ? n : null; }
+  function str(v) { return v == null ? '' : String(v); }
+  function toMs(v) { if (v == null || v === '') return null; if (typeof v === 'number') return isFinite(v) ? v : null; var t = Date.parse(String(v)); return isFinite(t) ? t : null; }
+  function iso(v) { var t = toMs(v); return t == null ? null : new Date(t).toISOString(); }
+  function pct(x, d) { return x == null ? '—' : (x * 100).toFixed(d == null ? 1 : d) + '%'; }
+  function normName(s) { return str(s).toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+  function sameTeam(a, b) { a = normName(a); b = normName(b); if (!a || !b) return false; return a === b || a.indexOf(b) >= 0 || b.indexOf(a) >= 0; }
+
+  /* The checks, in the order they run. `critical` checks must PASS for a CONFIRMED verdict. */
+  var CHECKS = [
+    { id: 'A1_GAME_STATUS', label: 'Game has not started', critical: true },
+    { id: 'A2_QUOTE_FRESH', label: 'Quote freshness at audit time', critical: true },
+    { id: 'A3_STILL_OFFERED', label: 'Price still offered on a fresh read', critical: true },
+    { id: 'A4_INDEPENDENT_EV', label: 'Independent recomputation of EV (exact arithmetic)', critical: true },
+    { id: 'A5_METHOD_ROBUST', label: 'Edge survives a second de-vig method', critical: false },
+    { id: 'A6_FAIR_CONSISTENCY', label: 'Sharp and consensus references agree', critical: false },
+    { id: 'A7_CONFIRMATION', label: 'Independent books confirm the price', critical: false },
+    { id: 'A8_AVAILABILITY', label: 'No availability news after the quote', critical: true },
+    { id: 'A9_STARTER', label: 'Starter matches the one priced', critical: true },
+    { id: 'A10_SETTLEMENT', label: 'Settlement terms match the fair reference', critical: true },
+    { id: 'A11_FEES', label: 'Fee schedule known for the venue', critical: false },
+    { id: 'A12_LIQUIDITY', label: 'Liquidity for the size', critical: false },
+    { id: 'A13_MOVEMENT', label: 'Sharp market not moving against the selection', critical: false },
+    { id: 'A14_MODEL_DISAGREEMENT', label: 'A large model-vs-market gap is explained', critical: false },
+    { id: 'A15_SANITY', label: 'EV inside the sanity ceiling', critical: true }
+  ];
+  var CHECK_BY_ID = {}; CHECKS.forEach(function (c) { CHECK_BY_ID[c.id] = c; });
+
+  function res(id, result, detail, extra) { var c = CHECK_BY_ID[id]; return Object.assign({ id: id, label: c ? c.label : id, critical: !!(c && c.critical), result: result, detail: detail }, extra || {}); }
+
+  /* The corrected inputs a fresh read supplies: its price, its time, its book and its fair. */
+  function freshQuote(fresh) {
+    var sf = num(fresh.sharp_fair), fair = sf != null && sf > 0 && sf < 1 ? sf : null;
+    /* no stored sharp fair: the sharp book's own two sides, de-vigged, are still a fresh fair */
+    if (fair == null) { var pin = num(fresh.pin_dec), opp = num(fresh.pin_opp_dec); if (pin != null && opp != null && pin > 1 && opp > 1) { var nv = F().noVig([{ decimal: String(pin) }, { decimal: String(opp) }], 'multiplicative'); if (nv.ok) fair = Number(nv.probabilities[0]); } }
+    return { captured_at: iso(fresh.last_seen_at), odds_decimal: num(fresh.best_dec), book: fresh.best_book || null, fair_probability: fair };
+  }
+  /* Which side of a market a selection is, from names alone. */
+  function sideMatches(sel, other) { return sameTeam(sel, other) || (/^over/i.test(str(sel)) && /^over/i.test(str(other))) || (/^under/i.test(str(sel)) && /^under/i.test(str(other))); }
+
+  /**
+   * The independent recomputation. From the FRESH signal row: the offered
+   * decimal price and two fairs — capture's stored sharp fair (Shin) and a
+   * multiplicative de-vig of the sharp book's own two sides — each through
+   * EDFAIR's exact arithmetic.
+   */
+  function recompute(c, fresh, now, ttl) {
+    var Fx = F();
+    var dec = num(fresh && fresh.best_dec != null ? fresh.best_dec : c.quote && c.quote.odds_decimal);
+    var out = { offered_decimal: dec, fairs: [], evaluations: [] };
+    if (dec == null || dec <= 1) return out;
+    /* only the FRESH read's fair: falling back to the candidate's own copy would be the generator agreeing with itself */
+    var storedFair = fresh ? num(fresh.sharp_fair) : null;
+    if (storedFair != null && storedFair > 0 && storedFair < 1) out.fairs.push({ method: 'CAPTURE_SHIN', probability: storedFair, source: 'signals.sharp_fair (capture, Shin de-vig)' });
+    var pin = num(fresh && fresh.pin_dec), pinOpp = num(fresh && fresh.pin_opp_dec);
+    if (pin != null && pinOpp != null && pin > 1 && pinOpp > 1) {
+      var nv = Fx.noVig([{ decimal: String(pin) }, { decimal: String(pinOpp) }], 'multiplicative');
+      if (nv.ok) out.fairs.push({ method: 'SHARP_MULTIPLICATIVE', probability: Number(nv.probabilities[0]), source: 'the sharp book\'s two sides (' + pin + ' / ' + pinOpp + '), multiplicative de-vig, recomputed by the auditor', overround: nv.overround });
+    }
+    var cons = num(fresh && fresh.consensus_fair);
+    if (cons != null && cons > 0 && cons < 1) out.consensus = cons;
+    out.fairs.forEach(function (f) {
+      var r = Fx.evaluateWager({ decimal: String(dec), fair_probability: String(f.probability), push_probability: c.fair && c.fair.push_probability != null ? String(c.fair.push_probability) : null, fair_source: { kind: 'SHARP_NO_VIG', label: f.source, observed_at: fresh && fresh.last_seen_at }, quote_observed_at: fresh && fresh.last_seen_at, now: now, ttl_min: ttl, audit: { status: 'CONFIRMED' }, settlement: { verified: true } });
+      out.evaluations.push({ method: f.method, fair: f.probability, ev_per_dollar: r.ok ? Number(r.net_ev_per_dollar) : null, max_entry: r.ok ? r.maximum_entry_price : null, result: r });
+    });
+    return out;
+  }
+
+  /**
+   * Audit ONE candidate against evidence the host gathered at audit time.
+   * c: an EDBOARD candidate (or the same shape): sport, game_id, kickoff, market,
+   *    side, selection, home, away, quote{book, odds_decimal, odds_american, captured_at},
+   *    fair{method, probability, push_probability, validation}, edge{ev_per_unit},
+   *    outlier, model_case, starters{home, away} (what the priced projection used),
+   *    explanation (drivers, when a model disagrees).
+   * e: { fresh: signal row re-read | null, fresh_error, books: [{book, dec, updated_at}] | null,
+   *      availability: [{team, player, role, status, observed_at, source}] | null,
+   *      starters_now: {home:{name, observed_at, source}, away:{...}} | null,
+   *      settlement: {overtime, ...} (the priced contract's terms, for a contract) | null,
+   *      contract: EDFAIR contract result | null }
+   * o: { now, ttl_min, floor }
+   */
+  function auditCandidate(c, e, o) {
+    o = o || {}; e = e || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var Fx = F();
+    var floor = o.floor != null ? o.floor : Number(Fx.thresholds().ev_floor);
+    var ttl = num(o.ttl_min) || 90;
+    var checks = [];
+    var corrections = [];
+    var fresh = e.fresh || null;
+
+    /* A1 game status */
+    var kick = toMs(c.kickoff);
+    var icfg = intelConfig();
+    var minKick = icfg && num(icfg.min_minutes_to_kickoff) != null ? num(icfg.min_minutes_to_kickoff) : 2;
+    if (kick != null && kick <= now) checks.push(res('A1_GAME_STATUS', 'FAIL', 'kickoff ' + iso(kick) + ' has passed; a pregame price cannot be audited', { severity: 'INTEGRITY' }));
+    else if (kick == null) checks.push(res('A1_GAME_STATUS', 'WARN', 'no start time on file'));
+    /* the decision layer's kickoff guard: inside it a pregame price is not reliably available */
+    else if ((kick - now) / 60000 < minKick) checks.push(res('A1_GAME_STATUS', 'FAIL', 'kickoff ' + iso(kick) + ' is under ' + minKick + ' minutes away; a pregame price is not reliably available', { severity: 'MARKET' }));
+    else checks.push(res('A1_GAME_STATUS', 'PASS', 'starts ' + iso(kick)));
+
+    /* A2 freshness at audit time (the candidate's own capture time) */
+    var capAt = c.quote && c.quote.captured_at;
+    var I = root.EDINTEL;
+    var qs = I && typeof I.quoteState === 'function' && capAt ? I.quoteState({ captured_at: capAt, market: c.market, kickoff: c.kickoff, now: now }) : null;
+    var fr = qs ? { status: qs.status === 'CURRENT' ? 'LIVE' : qs.status, why: qs.why || qs.sentence || (qs.status + ' under the kickoff ladder') } : Fx.freshness(capAt, now, ttl, 'the candidate quote');
+    var freshAt = fresh && fresh.last_seen_at;
+    var freshFr = freshAt ? (I && typeof I.quoteState === 'function' ? (function () { var s = I.quoteState({ captured_at: freshAt, market: c.market, kickoff: c.kickoff, now: now }); return { status: s.status === 'CURRENT' ? 'LIVE' : s.status }; })() : Fx.freshness(freshAt, now, ttl)) : null;
+    if (fr.status === 'LIVE' || fr.status === 'AGING') checks.push(res('A2_QUOTE_FRESH', fr.status === 'LIVE' ? 'PASS' : 'WARN', 'captured ' + iso(capAt) + ' (' + fr.status + ')'));
+    else {
+      var fix = freshFr && (freshFr.status === 'LIVE' || freshFr.status === 'AGING') && (toMs(capAt) == null || toMs(freshAt) > toMs(capAt)) && num(fresh.best_dec) != null;
+      checks.push(res('A2_QUOTE_FRESH', 'FAIL', 'the candidate quote is ' + fr.status + ' (captured ' + (iso(capAt) || 'at an unrecorded time') + ')' + (fix ? '; a fresher read from ' + iso(freshAt) + ' supersedes it' : '; no fresher read is available'), { severity: 'FRESHNESS', correctable: fix ? { field: 'quote', to: freshQuote(fresh) } : null }));
+    }
+
+    /* A3 still offered: the fresh read has the selection, at the same or a better price */
+    if (e.fresh_error) checks.push(res('A3_STILL_OFFERED', 'NOT_CHECKED', 'the fresh read failed: ' + str(e.fresh_error).slice(0, 120)));
+    else if (!fresh) checks.push(res('A3_STILL_OFFERED', 'NOT_CHECKED', 'no fresh read was made for this candidate'));
+    else if (fresh.suspended || fresh.removed) checks.push(res('A3_STILL_OFFERED', 'FAIL', 'the selection is no longer offered (' + (fresh.suspended ? 'suspended' : 'removed') + ')', { severity: 'MARKET' }));
+    else {
+      var was = num(c.quote && c.quote.odds_decimal), now_ = num(fresh.best_dec);
+      if (now_ == null) checks.push(res('A3_STILL_OFFERED', 'FAIL', 'the fresh read carries no price for this selection', { severity: 'MARKET' }));
+      else if (was != null && now_ + 1e-9 < was) checks.push(res('A3_STILL_OFFERED', 'FAIL', 'the price moved from ' + was + ' to ' + now_ + ' (decimal) at ' + (fresh.best_book || 'the best book'), { severity: 'PRICE', correctable: { field: 'quote', to: freshQuote(fresh) } }));
+      else checks.push(res('A3_STILL_OFFERED', 'PASS', 'still offered at ' + now_ + (fresh.best_book ? ' (' + fresh.best_book + ')' : '') + (was != null && now_ > was + 1e-9 ? ', better than the candidate\'s ' + was : '')));
+    }
+
+    /* A4 independent EV, A5 method robustness */
+    var rc = recompute(c, fresh, now, ttl);
+    var primaryEv = num(c.edge && c.edge.ev_per_unit);
+    var shin = rc.evaluations.filter(function (x) { return x.method === 'CAPTURE_SHIN'; })[0] || null;
+    var mult = rc.evaluations.filter(function (x) { return x.method === 'SHARP_MULTIPLICATIVE'; })[0] || null;
+    var priceSame = fresh && num(fresh.best_dec) != null && num(c.quote && c.quote.odds_decimal) != null && Math.abs(num(fresh.best_dec) - num(c.quote.odds_decimal)) < 1e-9;
+    var ref = shin || mult;
+    /* (i) arithmetic: the candidate's own price and fair, recomputed exactly — a pure calculation check */
+    var arith = null;
+    var cDec = num(c.quote && c.quote.odds_decimal), cFair = num(c.fair && c.fair.probability);
+    if (primaryEv != null && cDec != null && cDec > 1 && cFair != null && cFair > 0 && cFair < 1) {
+      var ar = Fx.evaluateWager({ decimal: String(cDec), fair_probability: String(cFair), push_probability: c.fair.push_probability != null ? String(c.fair.push_probability) : null });
+      if (ar.ok) arith = Number(ar.net_ev_per_dollar);
+    }
+    if (arith != null && Math.abs(arith - primaryEv) > TOL.ev_disagreement) checks.push(res('A4_INDEPENDENT_EV', 'FAIL', 'calculation disagreement: the candidate says ' + pct(primaryEv, 2) + ' per $1; the exact recomputation at its own price (' + cDec + ') and fair (' + pct(cFair, 2) + ') says ' + pct(arith, 2), { severity: 'INTEGRITY', recomputed_ev: arith }));
+    /* (ii) value on the fresh read */
+    else if (!ref || ref.ev_per_dollar == null) checks.push(res('A4_INDEPENDENT_EV', arith != null ? 'WARN' : 'NOT_CHECKED', arith != null ? 'the candidate\'s arithmetic reproduces (' + pct(arith, 2) + ' per $1), but no fresh fair was read to re-price it' : 'no fair probability on the fresh read to recompute against', arith != null ? { recomputed_ev: arith } : null));
+    else if (ref.ev_per_dollar < floor) checks.push(res('A4_INDEPENDENT_EV', 'FAIL', 'recomputed on the fresh read the EV is ' + pct(ref.ev_per_dollar, 2) + ' per $1, under the ' + pct(floor, 2) + ' floor' + (primaryEv != null ? ' (the candidate said ' + pct(primaryEv, 2) + ')' : ''), { severity: 'VALUE', recomputed_ev: ref.ev_per_dollar }));
+    else checks.push(res('A4_INDEPENDENT_EV', 'PASS', 'recomputed ' + pct(ref.ev_per_dollar, 2) + ' per $1 on the fresh read (' + ref.method + ', exact)' + (arith != null ? '; the candidate\'s own arithmetic reproduces' : ''), { recomputed_ev: ref.ev_per_dollar }));
+    if (shin && mult) {
+      var minEv = Math.min(shin.ev_per_dollar, mult.ev_per_dollar);
+      if (minEv < Math.max(TOL.method_floor, floor)) checks.push(res('A5_METHOD_ROBUST', 'WARN', 'the edge depends on the de-vig method: ' + pct(shin.ev_per_dollar, 2) + ' (Shin) vs ' + pct(mult.ev_per_dollar, 2) + ' (multiplicative), against the ' + pct(floor, 2) + ' floor'));
+      else checks.push(res('A5_METHOD_ROBUST', 'PASS', 'clears the ' + pct(floor, 2) + ' floor under both: ' + pct(shin.ev_per_dollar, 2) + ' (Shin) and ' + pct(mult.ev_per_dollar, 2) + ' (multiplicative)'));
+    } else checks.push(res('A5_METHOD_ROBUST', 'NOT_CHECKED', 'only one fair reference on the fresh read (the sharp book\'s two sides are needed for a second method)'));
+
+    /* A6 sharp vs consensus */
+    var sharpP = ref ? ref.fair : null;
+    if (sharpP != null && rc.consensus != null) {
+      var dd = rc.consensus - sharpP;
+      var consEv = rc.offered_decimal != null ? rc.consensus * (rc.offered_decimal - 1) - (1 - rc.consensus) : null;
+      if (Math.abs(dd) >= TOL.fair_conflict_pp || (consEv != null && consEv < 0 && ref.ev_per_dollar > 0)) checks.push(res('A6_FAIR_CONSISTENCY', 'WARN', 'contradictory references: sharp ' + pct(sharpP) + ' vs consensus ' + pct(rc.consensus) + (consEv != null ? ' (EV against the consensus ' + pct(consEv, 2) + ')' : '')));
+      else checks.push(res('A6_FAIR_CONSISTENCY', 'PASS', 'sharp ' + pct(sharpP) + ' and consensus ' + pct(rc.consensus) + ' agree'));
+    } else checks.push(res('A6_FAIR_CONSISTENCY', 'NOT_CHECKED', 'no consensus fair on the fresh read'));
+
+    /* A7 independent books */
+    if (Array.isArray(e.books) && e.books.length && sharpP != null) {
+      var decs = e.books.map(function (b) { return num(b.dec); }).filter(function (d) { return d != null && d > 1; });
+      var beating = decs.filter(function (d) { return sharpP * (d - 1) - (1 - sharpP) >= floor; }).length;
+      var sorted = decs.slice().sort(function (a, b) { return a - b; });
+      var med = sorted.length ? sorted[Math.floor(sorted.length / 2)] : null;
+      var best = sorted.length ? sorted[sorted.length - 1] : null;
+      var offPp = med && best ? (1 / med - 1 / best) : null;
+      if (decs.length < 2) checks.push(res('A7_CONFIRMATION', 'WARN', 'only ' + decs.length + ' book quote on file'));
+      else if (beating <= 1 && offPp != null && offPp >= TOL.off_market_pp) checks.push(res('A7_CONFIRMATION', 'WARN', 'one off-market book: the best price implies ' + pct(1 / best) + ' against a median book at ' + pct(1 / med) + '; a lone outlier is often a stale or erroneous quote'));
+      else if (beating < TOL.min_books_confirm) checks.push(res('A7_CONFIRMATION', 'WARN', 'only ' + beating + ' of ' + decs.length + ' books clear the floor against the sharp fair; ' + TOL.min_books_confirm + ' are needed to confirm the price'));
+      else checks.push(res('A7_CONFIRMATION', 'PASS', beating + ' of ' + decs.length + ' books clear the floor against the sharp fair'));
+    } else checks.push(res('A7_CONFIRMATION', 'NOT_CHECKED', 'no per-book quotes were read'));
+
+    /* A8 availability news after the quote */
+    var roles = A() ? A().keyRoles(c.sport) : [];
+    var BAD_STATUS = /^(out|doubtful|scratched|ir|inactive|suspended|not starting)/i;
+    var isKey = function (x) { return x.key === true || roles.indexOf(str(x.role).toUpperCase()) >= 0; };
+    if (Array.isArray(e.availability)) {
+      var cap = toMs(capAt);
+      var mine = e.availability.filter(function (x) { return sameTeam(x.team, c.home) || sameTeam(x.team, c.away); });
+      var hits = mine.filter(function (x) { var t = toMs(x.observed_at); return t != null && cap != null && t > cap; });
+      var bad = hits.filter(function (x) { return BAD_STATUS.test(str(x.status)); });
+      var keyBad = bad.filter(isKey);
+      /* a key player ruled out with no time on the report cannot be placed before or after the quote */
+      var untimed = mine.filter(function (x) { return toMs(x.observed_at) == null && BAD_STATUS.test(str(x.status)) && isKey(x); });
+      var asOf = toMs(e.availability_as_of);
+      mine.forEach(function (x) { var t = toMs(x.observed_at); if (t != null && (asOf == null || t > asOf)) asOf = t; });
+      var ageH = asOf != null ? (now - asOf) / 3600000 : null;
+      if (keyBad.length) checks.push(res('A8_AVAILABILITY', 'FAIL', 'news after the quote: ' + keyBad.map(function (x) { return x.player + ' (' + x.team + ', ' + (x.role || '?') + ') ' + x.status + ' at ' + iso(x.observed_at) + (x.source ? ' — ' + x.source : ''); }).join('; ') + '. The price predates it.', { severity: 'NEWS', invalidates: true }));
+      else if (untimed.length) checks.push(res('A8_AVAILABILITY', 'NOT_CHECKED', untimed.map(function (x) { return x.player + ' (' + x.team + ', ' + (x.role || '?') + ') ' + x.status; }).join('; ') + ' carries no report time, so it cannot be placed before or after the quote'));
+      else if (!e.availability.length && e.availability_complete !== true) checks.push(res('A8_AVAILABILITY', 'NOT_CHECKED', e.availability_why || 'no availability records were read for either team'));
+      else if (ageH == null) checks.push(res('A8_AVAILABILITY', 'WARN', 'the availability report carries no time, so it may predate news'));
+      else if (ageH > TOL.availability_stale_h) checks.push(res('A8_AVAILABILITY', 'WARN', 'the newest availability report is ' + Math.round(ageH) + ' hours old, past the ' + TOL.availability_stale_h + '-hour limit'));
+      else if (bad.length) checks.push(res('A8_AVAILABILITY', 'WARN', bad.length + ' non-key availability change' + (bad.length === 1 ? '' : 's') + ' after the quote: ' + bad.slice(0, 3).map(function (x) { return x.player + ' ' + x.status; }).join('; ')));
+      else checks.push(res('A8_AVAILABILITY', 'PASS', mine.length + ' availability record' + (mine.length === 1 ? '' : 's') + ' read (report ' + Math.round(ageH) + 'h old); none after the quote changes a key role'));
+    } else checks.push(res('A8_AVAILABILITY', 'NOT_CHECKED', e.availability_why || 'no availability source is wired for ' + str(c.sport_label || c.sport)));
+
+    /* A9 starter: the one priced vs the one now listed */
+    var priced = c.starters || null, nowS = e.starters_now || null;
+    if (priced && nowS) {
+      var mism = [];
+      ['home', 'away'].forEach(function (s) {
+        var a = priced[s] && (priced[s].name || priced[s]), b = nowS[s] && nowS[s].name;
+        if (a && b && normName(a) !== normName(b)) mism.push((s === 'home' ? c.home : c.away) + ': priced with ' + a + ', now ' + b + (nowS[s].source ? ' (' + nowS[s].source + (nowS[s].observed_at ? ', ' + iso(nowS[s].observed_at) : '') + ')' : ''));
+      });
+      if (mism.length) checks.push(res('A9_STARTER', 'FAIL', 'incorrect starter: ' + mism.join('; '), { severity: c.fair && c.fair.method === 'MODEL_BLEND' ? 'INTEGRITY' : 'NEWS', invalidates: true }));
+      else checks.push(res('A9_STARTER', 'PASS', 'the starters priced are the starters listed now'));
+    } else if (roles.indexOf('SP') >= 0 || roles.indexOf('G') >= 0 || roles.indexOf('QB') >= 0) checks.push(res('A9_STARTER', 'NOT_CHECKED', !priced ? 'the candidate does not record which starters its price assumed' : 'no current starter source was read'));
+    else checks.push(res('A9_STARTER', 'PASS', 'no starter role applies to ' + str(c.sport_label || c.sport)));
+
+    /* A10 settlement */
+    if (e.settlement && A()) {
+      var cmp = A().compareSettlement(c.sport, c.market, null, e.settlement);
+      if (cmp.mismatch_severity === 'MATERIAL') checks.push(res('A10_SETTLEMENT', 'FAIL', cmp.mismatch, { severity: 'SETTLEMENT' }));
+      else if (cmp.mismatch_severity === 'UNVERIFIED') checks.push(res('A10_SETTLEMENT', 'WARN', cmp.mismatch));
+      else if (cmp.mismatch_severity === 'MINOR') checks.push(res('A10_SETTLEMENT', 'WARN', cmp.mismatch));
+      else checks.push(res('A10_SETTLEMENT', 'PASS', 'the contract settles like the reference market'));
+    } else checks.push(res('A10_SETTLEMENT', 'PASS', 'the price and its fair reference are the same sportsbook market type'));
+
+    /* A11 fees, A12 liquidity (a contract carries its own evaluation) */
+    var ct = e.contract || null;
+    if (ct && ct.ok) {
+      var fs = ct.expected_fees && ct.expected_fees.status;
+      checks.push(res('A11_FEES', fs === 'VERIFIED' ? 'PASS' : fs === 'UNKNOWN' ? 'FAIL' : 'WARN', 'fee schedule ' + str(fs).toLowerCase() + ': ' + str(ct.expected_fees && ct.expected_fees.basis).slice(0, 160), fs === 'UNKNOWN' ? { severity: 'VALUE' } : null));
+      var ls = ct.market_liquidity && ct.market_liquidity.status;
+      checks.push(res('A12_LIQUIDITY', ls === 'ADEQUATE' ? 'PASS' : ls === 'INSUFFICIENT' ? 'FAIL' : 'WARN', str(ct.market_liquidity && ct.market_liquidity.note), ls === 'INSUFFICIENT' ? { severity: 'MARKET' } : null));
+    } else {
+      checks.push(res('A11_FEES', 'PASS', 'a sportsbook price carries no explicit fee'));
+      var nb = fresh ? num(fresh.n_books) : null;
+      checks.push(nb != null ? res('A12_LIQUIDITY', nb >= 2 ? 'PASS' : 'WARN', nb + ' book' + (nb === 1 ? '' : 's') + ' quoting this market') : res('A12_LIQUIDITY', 'NOT_CHECKED', 'no book count on the fresh read'));
+    }
+
+    /* A13 sharp movement since the candidate */
+    var candFair = num(c.fair && c.fair.probability);
+    if (candFair != null && sharpP != null) {
+      var mv = sharpP - candFair;
+      if (mv <= -TOL.sharp_move_pp) checks.push(res('A13_MOVEMENT', 'WARN', 'the sharp fair moved against the selection: ' + pct(candFair) + ' → ' + pct(sharpP)));
+      else checks.push(res('A13_MOVEMENT', 'PASS', 'sharp fair ' + pct(candFair) + ' → ' + pct(sharpP)));
+    } else checks.push(res('A13_MOVEMENT', 'NOT_CHECKED', 'no second sharp reading to compare'));
+
+    /* A14 a large model-vs-market disagreement needs a written explanation */
+    var mc = c.model_case || null;
+    var gapPts = mc ? (num(mc.gap_points) != null ? num(mc.gap_points) : (num(mc.model_line) != null && num(c.line) != null && str(c.market) === 'spreads' ? Math.round((num(c.line) - num(mc.model_line)) * 10) / 10 : null)) : null;
+    var modelP = mc ? num(mc.cover_at_market || mc.probability) : null;
+    var gapPp = modelP != null && sharpP != null ? Math.abs(modelP - sharpP) : null;
+    var hardPts = icfg && num(icfg.disagreement_points_hard) != null ? num(icfg.disagreement_points_hard) : TOL.model_gap_points;
+    if (gapPts != null && Math.abs(gapPts) >= hardPts) checks.push(res('A14_MODEL_DISAGREEMENT', 'FAIL', 'the model is ' + Math.abs(gapPts) + ' points from the market, at or past the ' + hardPts + '-point EXTREME limit: the decision layer treats a gap this large as a suspected data fault, whatever the explanation', { severity: 'INTEGRITY' }));
+    else if ((gapPp != null && gapPp >= TOL.model_gap_pp)) {
+      var expl = c.explanation || (mc && mc.explanation) || null;
+      if (expl && (Array.isArray(expl) ? expl.length : str(expl).length > 20)) checks.push(res('A14_MODEL_DISAGREEMENT', 'WARN', 'the model is ' + (gapPts != null ? Math.abs(gapPts) + ' points' : pct(gapPp) ) + ' from the market; the stated explanation: ' + (Array.isArray(expl) ? expl.slice(0, 3).join('; ') : str(expl)).slice(0, 240)));
+      else checks.push(res('A14_MODEL_DISAGREEMENT', 'FAIL', 'the model is ' + (gapPts != null ? Math.abs(gapPts) + ' points' : pct(gapPp)) + ' from the market and no driver explains the difference: an unexplained disagreement is a data question, not an edge', { severity: 'INTEGRITY' }));
+    } else checks.push(res('A14_MODEL_DISAGREEMENT', mc ? 'PASS' : 'NOT_CHECKED', mc ? 'the model and the market are within the disagreement threshold' : 'no model case on this candidate'));
+
+    /* A15 sanity */
+    var evNow = ref && ref.ev_per_dollar != null ? ref.ev_per_dollar : primaryEv;
+    var sane = str(c.market) === 'h2h' ? 0.20 : 0.10;
+    if (c.outlier || (evNow != null && evNow > sane)) checks.push(res('A15_SANITY', 'FAIL', c.outlier || ('EV ' + pct(evNow, 1) + ' is past the ' + pct(sane, 0) + ' sanity ceiling'), { severity: 'INTEGRITY' }));
+    else checks.push(res('A15_SANITY', 'PASS', evNow != null ? 'EV ' + pct(evNow, 2) + ' is inside the ' + pct(sane, 0) + ' ceiling' : 'no EV to bound'));
+
+    /* the verdict */
+    var fails = checks.filter(function (x) { return x.result === 'FAIL'; });
+    var correctable = fails.filter(function (x) { return x.correctable; });
+    var hard = fails.filter(function (x) { return !x.correctable; });
+    var warns = checks.filter(function (x) { return x.result === 'WARN'; });
+    /* the starter check blocks confirmation only for a MODEL price, whose starter assumption is known;
+       a market price's starter is the market's (capture records none), so its absence is reported, not blocking */
+    var isModel = c.fair && c.fair.method === 'MODEL_BLEND';
+    var unchecked = checks.filter(function (x) { return x.result === 'NOT_CHECKED' && x.critical && !(x.id === 'A9_STARTER' && !isModel); });
+    var status, reason;
+    /* a value failure measured at a price the same audit found superseded is re-judged after the correction */
+    var deferred = correctable.length && hard.length && hard.every(function (x) { return x.severity === 'VALUE'; });
+    if (deferred) { status = 'NEEDS_RECHECK'; reason = correctable[0].detail + ' (value is re-judged at the corrected price)'; }
+    else if (hard.some(function (x) { return x.severity === 'INTEGRITY' || x.severity === 'MARKET' || x.severity === 'VALUE' || x.severity === 'SETTLEMENT'; })) { status = 'REJECTED'; reason = hard.filter(function (x) { return x.severity !== 'NEWS' && x.severity !== 'FRESHNESS'; })[0].detail; }
+    else if (hard.length) { status = 'NEEDS_RECHECK'; reason = hard[0].detail; }
+    else if (correctable.length) { status = 'NEEDS_RECHECK'; reason = correctable[0].detail; }
+    else if (warns.length || unchecked.length) { status = 'DOWNGRADED'; reason = (warns[0] || unchecked[0]).detail; }
+    else { status = 'CONFIRMED'; reason = 'every check passed on a fresh read'; }
+    return {
+      schema: VERSION, candidate_id: c.id || null, status: status, reason: reason,
+      checks: checks, correctable: correctable.map(function (x) { return { check: x.id, field: x.correctable.field, to: x.correctable.to, why: x.detail }; }),
+      recomputed: { offered_decimal: rc.offered_decimal, fairs: rc.fairs, evaluations: rc.evaluations.map(function (x) { return { method: x.method, fair: x.fair, ev_per_dollar: x.ev_per_dollar, max_entry: x.max_entry }; }), consensus: rc.consensus != null ? rc.consensus : null },
+      independent_ev: ref ? ref.ev_per_dollar : null,
+      /* the probability behind independent_ev: what the host prices the verdict on */
+      independent_fair: ref ? ref.fair : null,
+      independent_fair_method: ref ? ref.method : null,
+      independent_fair_observed_at: ref && fresh ? iso(fresh.last_seen_at) : null,
+      independent_price_decimal: ref ? rc.offered_decimal : null,
+      max_entry_american: ref ? ref.max_entry : null,
+      counts: { pass: checks.filter(function (x) { return x.result === 'PASS'; }).length, warn: warns.length, fail: fails.length, not_checked: checks.filter(function (x) { return x.result === 'NOT_CHECKED'; }).length },
+      audited_at: iso(now)
+    };
+  }
+
+  /** Apply the correctable findings to a COPY of the candidate and recompute its edge with EDFAIR. */
+  function applyCorrections(c, audit, now) {
+    var Fx = F();
+    var out = JSON.parse(JSON.stringify(c));
+    var applied = [];
+    var held = [];
+    (audit.correctable || []).forEach(function (k) {
+      if (k.field === 'quote' && k.to) {
+        /* the fair is re-read with the price: a corrected price is never priced against a stale fair.
+           A fresher read with no fair is not a correction — the candidate is left as it was (NEEDS_RECHECK). */
+        if (k.to.fair_probability == null || !out.fair) { held.push({ check: k.check, why: 'the fresher read carries no fair probability, so the corrected price cannot be re-priced' }); return; }
+        var before = { odds_decimal: out.quote.odds_decimal, captured_at: out.quote.captured_at, book: out.quote.book, fair_probability: out.fair ? out.fair.probability : null, fair_method: out.fair ? out.fair.method : null };
+        out.quote.odds_decimal = k.to.odds_decimal != null ? k.to.odds_decimal : out.quote.odds_decimal;
+        out.quote.captured_at = k.to.captured_at || out.quote.captured_at;
+        if (k.to.book) out.quote.book = k.to.book;
+        /* the re-read fair is the MARKET's (capture's sharp no-vig), whatever the candidate's was: relabel it,
+           so a market number is never shown as a model's */
+        out.fair.probability = k.to.fair_probability; out.fair.reread = true;
+        out.fair.method = 'SHARP_REREAD'; out.fair.label = 'sharp no-vig, re-read at audit time'; out.fair.validation = null;
+        if (out.model_case) out.model_case = null;
+        try { out.quote.odds_american = out.quote.odds_decimal ? Fx.wholeAmerican(Fx.decimalToAmerican(String(out.quote.odds_decimal))) : out.quote.odds_american; } catch (_) { /* keep */ }
+        applied.push({ check: k.check, field: 'quote', from: before, to: k.to, why: k.why });
+      }
+    });
+    /* recalculate the edge from the corrected price against the same fair */
+    var fair = num(out.fair && out.fair.probability), dec = num(out.quote && out.quote.odds_decimal);
+    if (fair != null && dec != null && dec > 1) {
+      var r = Fx.evaluateWager({ decimal: String(dec), fair_probability: String(fair), push_probability: out.fair.push_probability != null ? String(out.fair.push_probability) : null, now: now, quote_observed_at: out.quote.captured_at });
+      if (r.ok) { out.edge = Object.assign({}, out.edge, { ev_per_unit: Number(r.net_ev_per_dollar), probability_edge_pp: Number(r.probability_edge) * 100, recalculated_by: 'EDFAIR ' + Fx.CALC_VERSION, break_even: Number(r.break_even_probability) }); out.threshold = Object.assign({}, out.threshold, { price_limit_american: r.maximum_entry_price }); }
+    }
+    out.corrected = (out.corrected || []).concat(applied);
+    return { candidate: out, applied: applied, held: held };
+  }
+
+  /**
+   * The bounded loop over the top candidates.
+   * o.candidates: ranked candidates (best first)
+   * o.gather(candidate, round) → evidence (or a Promise of it). The host
+   *   makes its fresh reads here and may cache them between rounds.
+   * o.top (default 3), o.max_rounds (default 2, at most 3), o.now, o.ttl_min
+   * → { audited:[{candidate, audit, rounds, history}], trail, verified, downgraded, rejected, rechecks }
+   */
+  function run(o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var top = Math.max(0, Math.min(10, num(o.top) != null ? num(o.top) : 3));
+    var maxRounds = Math.max(1, Math.min(3, num(o.max_rounds) || MAX_ROUNDS));
+    var list = (o.candidates || []).slice(0, top);
+    var trail = [];
+    function log(round, id, step, detail) { trail.push({ round: round, candidate_id: id, step: step, detail: detail, at: iso(now) }); }
+    function one(c0) {
+      var c = c0, history = [], round = 0, audit = null;
+      function step() {
+        round++;
+        log(round, c.id, round === 1 ? 'AUDIT' : 'RE-AUDIT', 'checking ' + (c.selection || c.id) + ' at ' + (c.quote && c.quote.odds_american != null ? c.quote.odds_american : c.quote && c.quote.odds_decimal));
+        /* a read that throws is a read that failed: recorded, never a pass */
+        var failed = function (err) { log(round, c.id, 'READ_FAILED', String(err && err.message || err).slice(0, 160)); return { fresh: null, fresh_error: 'the audit read failed: ' + String(err && err.message || err).slice(0, 120), availability: null, starters_now: null }; };
+        var ev;
+        try { ev = o.gather ? o.gather(c, round) : {}; } catch (err) { ev = failed(err); }
+        if (ev && typeof ev.then === 'function') ev = ev.then(null, failed);
+        var finish = function (e) {
+          try { audit = auditCandidate(c, e || {}, { now: now, ttl_min: o.ttl_min }); }
+          catch (err) { audit = { schema: VERSION, candidate_id: c.id, status: 'NEEDS_RECHECK', reason: 'the audit could not run: ' + String(err && err.message || err).slice(0, 160), checks: [], correctable: [], counts: {} }; }
+          history.push({ round: round, status: audit.status, reason: audit.reason });
+          log(round, c.id, 'VERDICT', audit.status + ': ' + audit.reason);
+          if (audit.correctable.length && audit.status === 'NEEDS_RECHECK' && round < maxRounds && !audit.checks.some(function (x) { return x.result === 'FAIL' && !x.correctable && x.severity !== 'VALUE'; })) {
+            var fx = applyCorrections(c, audit, now);
+            if (!fx.applied.length) {
+              (fx.held || []).forEach(function (h) { log(round, c.id, 'HOLD', h.check + ': ' + h.why + '; withheld'); });
+              audit.correction_held = true;
+              return { candidate: c, audit: audit, rounds: round, history: history };
+            }
+            fx.applied.forEach(function (a) { log(round, c.id, 'CORRECT', a.check + ': ' + a.why); });
+            log(round, c.id, 'RECALCULATE', 'EV at the corrected price: ' + (fx.candidate.edge && fx.candidate.edge.ev_per_unit != null ? pct(fx.candidate.edge.ev_per_unit, 2) + ' per $1' : 'not computable'));
+            c = fx.candidate;
+            return step();
+          }
+          if (audit.status === 'NEEDS_RECHECK' && round >= maxRounds && audit.correctable.length) { log(round, c.id, 'EXHAUSTED', 'still failing after ' + round + ' rounds; withheld'); audit.exhausted = true; }
+          return { candidate: c, audit: audit, rounds: round, history: history };
+        };
+        return ev && typeof ev.then === 'function' ? ev.then(finish) : finish(ev);
+      }
+      return step();
+    }
+    function summarise(results) {
+      results.forEach(function (r) { if (r.candidate.corrected && r.candidate.corrected.length && r.audit.status === 'CONFIRMED') log(r.rounds, r.candidate.id, 'PUBLISH', 'published with corrected inputs'); });
+      var by = function (s) { return results.filter(function (r) { return r.audit.status === s; }); };
+      var verified = by('CONFIRMED').filter(function (r) { var ev = num(r.candidate.edge && r.candidate.edge.ev_per_unit); return ev != null && ev > 0; });
+      verified.sort(function (a, b) { return (num(b.audit.independent_ev) || 0) - (num(a.audit.independent_ev) || 0); });
+      return { schema: VERSION, audited: results, trail: trail, verified: verified, downgraded: by('DOWNGRADED'), rechecks: by('NEEDS_RECHECK'), rejected: by('REJECTED'), max_rounds: maxRounds, top: top, checks: CHECKS.map(function (c) { return { id: c.id, label: c.label, critical: c.critical }; }) };
+    }
+    var outs = list.map(one);
+    if (outs.some(function (x) { return x && typeof x.then === 'function'; })) return Promise.all(outs).then(summarise);
+    return summarise(outs);
+  }
+
+  return { VERSION: VERSION, MAX_ROUNDS: MAX_ROUNDS, TOL: TOL, CHECKS: CHECKS, auditCandidate: auditCandidate, applyCorrections: applyCorrections, recompute: recompute, run: run };
+});
+/*__EDAUDIT_END__*/
+const EDAUDIT: any = (globalThis as any).EDAUDIT;
+/*__EDQUANT_START__*/
+/* ===========================================================================
+   EdgeDesk QUANT DESK — the questions the football desk and the board could
+   not answer directly, answered from deterministic services.
+
+   ONE FILE, ONE HOST. This exact block is inlined into
+     - supabase/functions/edgedesk_ai/index.ts
+   by tools/presentation/inline.js; presentation_sync.test.js fails when the
+   copy drifts. Edit THIS file, then `node tools/presentation/inline.js`.
+
+   WHAT IT ROUTES (classify), BEFORE the football desk
+     SCAN          "What's the best bet right now?" with no league named, or
+                   "across all sports": every sport is scanned (the board),
+                   the top candidates are audited (EDAUDIT), and the answer is
+                   the best VERIFIED opportunity — or a plain "nothing clears"
+                   with the closest candidates and why they failed.
+     CONTRACT      "Is Rays at 61¢ positive EV?", "Cleveland +1.5 at 61 cents
+                   on Kalshi", "find me a better price than this Kalshi
+                   contract": a contract price checked against the market's
+                   fair through EDFAIR, fees included, every venue compared.
+     PRICE         "Is Guardians -150 a good price?" (no football team named):
+                   the same check for a sportsbook price.
+     COVERAGE      "Which sports couldn't be scanned?"
+     OUTAGE        "If the odds API fails, can you still analyze this game?"
+     EXPLAIN_EV    "Explain why this contract has negative EV" (a follow-up).
+   Anything else returns null and the existing turns run unchanged.
+
+   THE RULES
+     - It computes no probability. Every number comes from EDFAIR (prices,
+       fees, EV), EDAUDIT (the second check), EDADAPT (what a sport can be
+       priced with) or the captured market the host read.
+     - It never says "best across all sports" unless every in-season sport
+       was actually evaluated. Otherwise: "best among the markets scanned".
+     - PASS is a normal answer. "No verified positive-EV trade currently
+       clears the research and execution thresholds" is printed as such, with
+       the near misses and the specific reason each one failed.
+     - No certainty words, no invented confidence score.
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory(root);
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDQUANT = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
+  'use strict';
+
+  var VERSION = 'edgedesk_quant_v1';
+  var STATE_SCHEMA = 'edgedesk_quant_state_v1';
+  var NO_EDGE = 'No verified positive-EV trade currently clears the research and execution thresholds.';
+
+  function F() { if (root.EDFAIR) return root.EDFAIR; if (typeof require === 'function') { try { return require('../../../lib/edgedesk_fairodds.js'); } catch (_) { /* below */ } } throw new Error('EDFAIR must be loaded'); }
+  function A() { if (root.EDADAPT) return root.EDADAPT; if (typeof require === 'function') { try { return require('../../../lib/edgedesk_sport_adapters.js'); } catch (_) { return null; } } return null; }
+  function num(v) { if (v === null || v === undefined || v === '') return null; var n = Number(v); return isFinite(n) ? n : null; }
+  function str(v) { return v == null ? '' : String(v); }
+  function toMs(v) { if (v == null || v === '') return null; if (typeof v === 'number') return isFinite(v) ? v : null; var t = Date.parse(String(v)); return isFinite(t) ? t : null; }
+  function iso(v) { var t = toMs(v); return t == null ? null : new Date(t).toISOString(); }
+  function pct(x, d) { return x == null ? '—' : (x * 100).toFixed(d == null ? 1 : d) + '%'; }
+  function fmtAm(n) { n = num(n); return n == null ? '—' : (n > 0 ? '+' : '') + Math.round(n); }
+  function cents(x) { x = num(x); return x == null ? '—' : (Math.round(x * 10000) / 100).toFixed(2).replace(/\.00$/, '') + '¢'; }
+  function plural(n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); }
+
+  /* ================================================================ */
+  /* 1. CLASSIFY                                                       */
+  /* ================================================================ */
+  var RX = {
+    league: /\b(nfl|cfb|ncaaf|college football|fbs|pro football|football|mlb|baseball|nba|wnba|basketball|ncaab|college basketball|nhl|hockey|ufc|mma|soccer|tennis|golf)\b/i,
+    football: /\b(nfl|cfb|ncaaf|college football|fbs|pro football|football)\b/i,
+    allSports: /\b(all|every|any|across(?: all)?|multi)[- ]?(sports?|leagues?|markets?)\b|\bacross the board\b|\bcross[- ]sport\b/i,
+    best: /\b(best|top|strongest|biggest|largest|safest)\b.*\b(bet|bets|play|plays|value|edge|edges|opportunit\w*|underdog|dog|favou?rite|moneyline|ev|price|trade|wager)\b|\bpositive[- ]?ev\b|\+ ?ev\b|\bwhat should i (bet|play|take)\b|\bmost likely to (go )?(under|over)\b|\bshould i bet anything\b/i,
+    underdog: /\b(under ?dog|dogs?)\b/i,
+    favorite: /\bfavou?rites?\b/i,
+    /* which SPORTS were scanned: never the football word "coverage" (pass coverage, man or zone) */
+    coverage: /\b(which|what) (sports?|leagues?)\b.*\b(couldn'?t|could not|can'?t|cannot|weren'?t|were not|didn'?t|did not|unable|missing|skipped|scan(ned)?|cover(ed)?|check(ed)?|evaluat(ed|e)|includ(ed|e)|look(ed)? at|support(ed)?)\b|\bcoverage\b.*\b(scan\w*|sports|leagues)\b|\b(scan\w*|sports|leagues)\b.*\bcoverage\b|\bwhat did you (scan|check|cover)\b/i,
+    /* an explicit feed failure: a provider word AND a failure word ("ruled out" is injury news, not an outage) */
+    outage: /\b(odds|price|pricing|market|sportsbook|line)s?\s*(api|feed|provider|service|data source)\b.*\b(fail\w*|down|offline|unavailable|break\w*|broke|outage|stops?|dies|died)\b|\b(api|feed|provider)\b.*\b(fail\w*|down|offline|outage)\b|\bif (the )?(odds|market|book)\w* (api|feed|provider|service) (are|is|goes|go)? ?(down|offline|unavailable)\b|\bwithout (the )?(odds|market|pricing) (api|feed|data)\b/i,
+    /* a named game: "Lions vs Bills", "this game" — a best-bet question about ONE game is not a cross-sport scan */
+    namedGame: /\b(this|that) (game|matchup|match|fight|bout)\b|[a-z.]\s+(?:vs\.?|versus|v\.|@)\s+[a-z]/i,
+    explainEv: /\b(explain|why)\b.*\b(negative|positive|-|\+)? ?ev\b|\bwhy (is|does) (this|that|it) .*\b(bad|negative|lose|losing|pass)\b|\bexplain (this|that) (contract|price|bet)\b/i,
+    contractWords: /\bkalshi\b|\bpoly ?market\b|\bcontracts?\b|\byes\b.*\bat\b|\b\d{1,2}(?:\.\d+)?\s*(?:¢|c\b|cents?\b)|\$\s?0?\.\d{1,2}\b/i,
+    betterPrice: /\bbetter price\b|\bcheaper\b|\bbeat (this|that) price\b|\bfind me a better\b|\bshop (this|that)\b/i,
+    priceCheck: /\b(is|was)\b.*[+-]\d{3,4}\b.*\b(good|fair|worth|value|positive|bet|price|ev)\b|[+-]\d{3,4}\b.*\b(good|fair|worth|value)\b/i,
+    risk: /\$\s?(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d{1,6}(?:\.\d{1,2})?)\b(?!\s*(?:¢|c\b|cents?))/,
+    /* markets the quant desk does not price from a captured moneyline or spread */
+    unsupported: [
+      ['a total', /\b(?:over|under|o|u)\s*\d+(?:\.\d)?\b(?!\s*(?:%|percent|cents?|¢|c\b))|\bo\/u\b|\btotals?\b|\bteam total\b/i],
+      ['a futures market', /\b(world series|super bowl|stanley cup|nba finals|national champion\w*|pennant|make the playoffs|to make the|win totals?|futures?|mvp|cy young|heisman|championship odds)\b|\bto win the (title|championship|division|conference|league|series|cup)\b/i],
+      ['a player prop', /\b(props?|strikeouts?|passing yards|rushing yards|receiving yards|yards|touchdowns?|rebounds|assists|home runs?|receptions?|anytime (?:scorer|td|touchdown))\b/i],
+      ['a partial-game market', /\b(first (?:half|quarter|period|five|5|inning)|1st (?:half|quarter|period|inning)|f5|nrfi|yrfi|second half|2nd half)\b/i]
+    ]
+  };
+  /**
+   * q: the question; o.state: the carried quant state; o.has_board_state: a
+   * board follow-up is in flight (leave it to the board).
+   */
+  /** The kind of market a question asks about when it is not a moneyline or a spread, else null. */
+  function unsupportedMarket(q) {
+    q = str(q);
+    for (var i = 0; i < RX.unsupported.length; i++) if (RX.unsupported[i][1].test(q)) return RX.unsupported[i][0];
+    return null;
+  }
+  function classify(q, o) {
+    q = str(q).trim(); o = o || {};
+    var out = { intent: null, question: q, filter: null, risk_dollars: null, price: null, league_named: RX.league.test(q), football_named: RX.football.test(q), all_sports: RX.allSports.test(q), named_game: RX.namedGame.test(q) };
+    if (!q || q.length > 400) return out;
+    var F_ = F();
+    var price = F_.parsePrice(q);
+    out.price = price;
+    var rm = q.match(RX.risk);
+    if (rm && !/\$\s?0?\.\d/.test(rm[0])) out.risk_dollars = num(rm[1].replace(/,/g, ''));
+    if (RX.underdog.test(q)) out.filter = 'underdog';
+    else if (RX.favorite.test(q)) out.filter = 'favorite';
+    var st = sanitizeState(o.state);
+    if (RX.coverage.test(q)) { out.intent = 'COVERAGE'; return out; }
+    if (RX.outage.test(q) && /\b(can|could|still|will|do|does|able)\b/i.test(q)) { out.intent = 'OUTAGE'; return out; }
+    if (RX.explainEv.test(q) && st && st.contract && !(price.contract && price.contract.price_cents)) { out.intent = 'EXPLAIN_EV'; return out; }
+    /* a cents number is a contract price only with something that says so: a venue, the ¢ sign or
+       "$0.61", "contract", a YES/NO side, or "cents" in a price question — never "12c" or "my 2 cents" */
+    var ct = price.contract;
+    var contractContext = !!ct && (!!price.venue || ct.symbol === true || !!price.side || /\bcontracts?\b/i.test(q)
+      || (/\d\s*cents?\b/i.test(q) && /\b(ev|worth|value|price|buy|fair|edge|good|bet)\b/i.test(q)));
+    if (ct && contractContext && (ct.price_cents || ct.error)) { out.intent = 'CONTRACT'; out.unsupported_market = unsupportedMarket(q); return out; }
+    if (RX.betterPrice.test(q) && (price.venue || (st && st.contract))) { out.intent = 'CONTRACT'; out.better_price = true; return out; }
+    if (price.venue && /\b(price|worth|ev|value|good|bet|buy)\b/i.test(q)) { out.intent = 'CONTRACT'; return out; }
+    if (price.american != null && RX.priceCheck.test(q) && !out.football_named) { out.intent = 'PRICE'; out.unsupported_market = unsupportedMarket(q); return out; }
+    if (o.has_board_state) return out;
+    if (RX.best.test(q) && (out.all_sports || (!out.league_named && !out.named_game))) { out.intent = 'SCAN'; return out; }
+    return out;
+  }
+
+  /* ================================================================ */
+  /* 2. THE SCAN — the board's candidates, audited, ranked, answered    */
+  /* ================================================================ */
+  /** Board opportunities and watchlist as the auditor's candidate list, best first, optionally filtered. */
+  function candidatesFromBoard(board, filter) {
+    var list = [].concat(board && board.opportunities || [], board && board.watchlist || []);
+    if (filter) list = list.filter(function (c) { return matchesFilter(c, filter); });
+    return list.filter(function (c) { return c && c.quote && c.quote.executable; });
+  }
+  /** Underdog: getting a price better than even on a moneyline, or points on a spread. Favorite: the reverse. */
+  function matchesFilter(c, filter) {
+    if (!filter) return true;
+    var am = num(c.quote && c.quote.odds_american), line = num(c.line);
+    var dog = c.market === 'h2h' ? (am != null && am > 100) : c.market === 'spreads' ? (line != null && line > 0) : null;
+    if (dog == null) return false;
+    return filter === 'underdog' ? dog : !dog;
+  }
+  /**
+   * The audited answer.
+   * o.board (EDBOARD.build), o.audit (EDAUDIT.run), o.coverage (refined, per
+   * sport), o.not_covered (EDADAPT.NOT_COVERED), o.risk_dollars, o.filter,
+   * o.now, o.evaluate (fn(candidate, audit) → EDFAIR result)
+   */
+  function scanResult(o) {
+    o = o || {};
+    var cov = o.coverage || [];
+    var inSeasonSports = cov.filter(function (c) { return c.status !== 'OUT_OF_SEASON' && c.status !== 'NOT_SUPPORTED'; });
+    var evaluated = cov.filter(function (c) { return c.status === 'EVALUATED'; });
+    var notScanned = inSeasonSports.filter(function (c) { return c.status !== 'EVALUATED' && c.status !== 'NO_GAMES' && c.status !== 'NO_ELIGIBLE_GAMES'; });
+    var fullCoverage = inSeasonSports.length > 0 && !notScanned.length && evaluated.length > 0;
+    var audited = (o.audit && o.audit.audited) || [];
+    var rows = audited.map(function (r) {
+      var ev = o.evaluate ? o.evaluate(r.candidate, r.audit) : null;
+      /* the board's own verdict is respected: a candidate it withheld is never upgraded here, unless the
+         only thing it failed was freshness and the audit replaced the stale price with a fresh read */
+      var q = r.candidate.qualification || null;
+      var rule = q && q.rules && q.rules[0] ? String(q.rules[0]) : '';
+      var corrected = (r.candidate.corrected || []).some(function (x) { return x.field === 'quote'; });
+      var withheld = q && q.status !== 'QUALIFIED' && !(/^R2_FRESH/.test(rule) && corrected && r.audit.status === 'CONFIRMED') ? rule || q.status : null;
+      return { candidate: r.candidate, audit: r.audit, evaluation: ev, rounds: r.rounds, withheld_by_board: withheld };
+    });
+    /* best verified: CONFIRMED by the audit, classified VERIFIED_EDGE by EDFAIR, and not withheld by the board */
+    var verified = rows.filter(function (r) { return !r.withheld_by_board && r.audit.status === 'CONFIRMED' && r.evaluation && r.evaluation.classification === 'VERIFIED_EDGE'; });
+    verified.sort(function (a, b) { return (num(b.evaluation.net_ev_per_dollar) || 0) - (num(a.evaluation.net_ev_per_dollar) || 0); });
+    var potential = rows.filter(function (r) { return verified.indexOf(r) < 0 && r.evaluation && (r.evaluation.classification === 'POTENTIAL_EDGE' || r.evaluation.classification === 'VERIFIED_EDGE'); });
+    potential.sort(function (a, b) { return (num(b.evaluation.net_ev_per_dollar) || 0) - (num(a.evaluation.net_ev_per_dollar) || 0); });
+    var nearMiss = rows.filter(function (r) { return verified.indexOf(r) < 0 && potential.indexOf(r) < 0; });
+    /* the board's own near misses when nothing was audited: its top non-qualified candidates by edge */
+    var boardNear = [];
+    if (o.board && Array.isArray(o.board.candidates)) {
+      boardNear = o.board.candidates.filter(function (c) { return c.status !== 'QUALIFIED' && (c.ev_per_unit != null || c.edge_pp != null) && (!o.filter || true); })
+        .sort(function (a, b) { return (num(b.ev_per_unit) != null ? num(b.ev_per_unit) : (num(b.edge_pp) || -99) / 100) - (num(a.ev_per_unit) != null ? num(a.ev_per_unit) : (num(a.edge_pp) || -99) / 100); })
+        .slice(0, 3).map(function (c) { return { matchup: c.matchup, sport: c.sport, market: c.market, selection: c.selection, line: c.line, ev_per_unit: c.ev_per_unit, edge_pp: c.edge_pp, status: c.status, why: c.rule || c.decision || null, freshness: c.freshness }; });
+    }
+    var best = verified[0] || null;
+    var scope = fullCoverage ? 'ALL_IN_SEASON' : 'SCANNED_ONLY';
+    return {
+      schema: VERSION + ':scan', built_at: iso(o.now), filter: o.filter || null, risk_dollars: o.risk_dollars || null,
+      decision: best ? 'BUY' : potential.length ? 'WATCH' : 'PASS',
+      best: best, potential: potential.slice(0, 3), near_misses: nearMiss.slice(0, 3), board_near_misses: boardNear,
+      coverage: cov, coverage_scope: scope, evaluated: evaluated.map(function (c) { return c.label; }), not_scanned: notScanned.map(function (c) { return { sport: c.sport, label: c.label, status: c.status, why: c.why || c.sentence || null }; }),
+      not_covered: (o.not_covered || []).map(function (n) { return { label: n.label, why: n.why }; }),
+      counts: { sports_evaluated: evaluated.length, sports_in_season: inSeasonSports.length, events: o.board && o.board.eligibility ? o.board.eligibility.counts.eligible : null, markets_evaluated: o.board ? o.board.candidates_considered : null, audited: rows.length, verified: verified.length, potential: potential.length },
+      window: o.board && o.board.scope ? o.board.scope.window : null, timezone: o.board && o.board.scope ? o.board.scope.timezone : null,
+      audit_trail: o.audit ? o.audit.trail : [], audit_checks: o.audit ? o.audit.checks : []
+    };
+  }
+
+  function lineOf(c) { if (!c) return ''; var l = num(c.line); return c.market === 'totals' ? (l != null ? ' ' + l : '') : c.market === 'spreads' && l != null ? ' ' + (l > 0 ? '+' : '') + l : c.market === 'h2h' ? ' moneyline' : ''; }
+  function marketWord(m) { return m === 'spreads' ? 'spread' : m === 'totals' ? 'total' : m === 'h2h' ? 'moneyline' : str(m); }
+
+  /** The answer, in the order the brief asks for. */
+  function renderScan(s) {
+    var out = [];
+    var scopeWord = s.coverage_scope === 'ALL_IN_SEASON' ? 'across every in-season sport EdgeDesk covers' : 'among the markets EdgeDesk could scan (' + (s.evaluated.join(', ') || 'none') + ')';
+    var filt = s.filter === 'underdog' ? 'UNDERDOG ' : s.filter === 'favorite' ? 'FAVORITE ' : '';
+    if (s.best) {
+      out.push('BEST VERIFIED ' + filt + 'OPPORTUNITY ' + (s.coverage_scope === 'ALL_IN_SEASON' ? '(all in-season sports scanned)' : '(' + scopeWord + ')'));
+      out.push('');
+      opportunityLines(s.best, s, 'BUY').forEach(function (l) { out.push(l); });
+      out.push('');
+      out.push('Why: ' + s.best.evaluation.reasons[0] + ' The audit re-read the price and recomputed it independently: ' + s.best.audit.reason + '.');
+    } else {
+      out.push(NO_EDGE + (s.coverage_scope === 'ALL_IN_SEASON' ? '' : ' (' + scopeWord + ')'));
+      if (s.potential.length) {
+        var p0 = s.potential[0];
+        out.push('');
+        out.push('STRONGEST ' + filt + 'CANDIDATE — POTENTIAL EDGE, NOT VERIFIED');
+        out.push('');
+        opportunityLines(p0, s, 'WATCH').forEach(function (l) { out.push(l); });
+        out.push('Not verified because ' + whyNot(p0) + '.');
+        if (s.potential.length > 1) {
+          out.push('');
+          out.push('Other potential edges:');
+          s.potential.slice(1).forEach(function (p, i) { out.push((i + 2) + '. ' + p.candidate.selection + lineOf(p.candidate) + ' (' + p.candidate.matchup + ') ' + fmtAm(p.candidate.quote.odds_american) + ' at ' + (p.candidate.quote.book || 'a captured book') + ': net EV ' + pct(num(p.evaluation.net_ev_per_dollar), 2) + ' per $1, max entry ' + fmtAm(p.evaluation.maximum_entry_price) + ' — ' + whyNot(p) + '.'); });
+        }
+      }
+      var nm = s.near_misses.length ? s.near_misses : [];
+      if (nm.length) {
+        out.push('');
+        out.push('Near misses the audit stopped:');
+        nm.forEach(function (p, i) { out.push((i + 1) + '. ' + p.candidate.selection + lineOf(p.candidate) + ' (' + p.candidate.matchup + ') ' + fmtAm(p.candidate.quote.odds_american) + ': ' + p.audit.status + ' — ' + p.audit.reason + '.'); });
+      } else if (!s.potential.length && s.board_near_misses.length) {
+        out.push('');
+        out.push('Closest candidates on the board and why they failed:');
+        s.board_near_misses.forEach(function (p, i) { out.push((i + 1) + '. ' + p.selection + (p.line != null ? ' ' + p.line : '') + ' ' + marketWord(p.market) + ' (' + p.matchup + '): ' + (p.ev_per_unit != null ? 'EV ' + pct(num(p.ev_per_unit), 2) + ' per $1' : p.edge_pp != null ? 'edge ' + p.edge_pp + ' pp' : 'no EV') + ' — ' + (p.why || p.status) + '.'); });
+      }
+    }
+    out.push('');
+    out.push(coverageSentence(s));
+    return out.join('\n');
+  }
+  /** The independent model's view beside the price's own fair, or why there is none. */
+  function independentLine(c, e, cap) {
+    var marketFair = fmtAm(e.fair_american_odds) + ' (' + pct(num(e.fair_probability)) + ', ' + (e.fair_source.label || 'sharp no-vig') + ')';
+    if (e.fair_source && e.fair_source.kind === 'MODEL') return (cap && cap.may_price ? '' : 'research only — ') + fmtAm(e.fair_american_odds) + ' (' + pct(num(e.fair_probability)) + ', ' + (e.fair_source.label || 'EdgeDesk model') + ', ' + (e.fair_source.tier || 'unvalidated') + ')';
+    var mc = c.model_case;
+    if (mc && cap && cap.independent_model && (mc.fair_line != null || mc.model_line != null)) {
+      var l = function (v) { v = num(v); return v == null ? '—' : c.market === 'totals' ? String(v) : (v > 0 ? '+' : '') + v; };
+      return 'EdgeDesk\'s ' + (cap.name || 'model') + ' (' + (mc.tier || cap.tier || 'unvalidated') + ') makes ' + c.selection + ' ' + l(mc.fair_line) + ' (projection ' + l(mc.model_line) + ')' + (num(mc.cover_at_market) != null ? ', covering ' + pct(num(mc.cover_at_market)) + ' at ' + l(c.line) : '') + (mc.tier === 'LEAN' ? ' — break-even history, not a profit record' : mc.tier === 'RESEARCH' ? ' — research only, not a betting probability' : '') + '. The price is judged against the market fair: ' + marketFair;
+    }
+    return 'unavailable — ' + (cap ? (cap.independent_model && cap.may_price ? 'no ' + (cap.name || 'model') + ' projection is on file for this game' : cap.reason) : 'no model') + '. Market fair: ' + marketFair;
+  }
+  /** The fields the brief names, for one audited candidate. */
+  function opportunityLines(r, s, decision) {
+    var c = r.candidate, e = r.evaluation, ad = AD_();
+    var cap = ad ? ad.modelCapability(c.sport, c.market) : null;
+    var roles = ad && ad.adapterFor(c.sport) ? ad.adapterFor(c.sport).key_roles : [];
+    var out = [];
+    out.push('Event: ' + c.matchup + (c.kickoff_local ? ' — ' + c.kickoff_local : '') + ' (' + (c.sport_label || c.sport) + ')');
+    out.push('Market: ' + c.selection + lineOf(c));
+    out.push('Venue: ' + (c.quote.book || 'captured book'));
+    out.push('Available price: ' + fmtAm(c.quote.odds_american) + ' (captured ' + (c.quote.captured_at ? ageText(c.quote.captured_at, s.built_at) : 'at an unrecorded time') + '; implies ' + pct(num(e.market_probability)) + ')' + ((c.corrected || []).length ? ' — corrected by the audit from a fresh read' : ''));
+    out.push('Independent fair price: ' + independentLine(c, e, cap));
+    out.push('Estimated net EV: ' + pct(num(e.net_ev_per_dollar), 2) + ' per $1' + (s.risk_dollars ? ' — about $' + (Math.round(num(e.net_ev_per_dollar) * s.risk_dollars * 100) / 100).toFixed(2) + ' expected on $' + s.risk_dollars : ''));
+    out.push('Maximum acceptable entry: ' + fmtAm(e.maximum_entry_price) + ' (the worst price that still clears the ' + pct(num(e.thresholds.ev_floor), 1) + ' floor)');
+    out.push('Model reliability: ' + e.calibration_status + (e.calibration_status === 'MARKET_DERIVED' ? ' — the fair comes from the sharp market, not a model; its record is the closing-line ledger' : ''));
+    out.push('Primary matchup advantage: ' + matchupLine(c));
+    var warn = (r.audit && r.audit.checks || []).filter(function (x) { return x.result === 'WARN'; })[0];
+    /* the decision layer's "not examined on this turn" gap, said plainly: the scan judged a price, not a matchup */
+    var counter = /^Not examined on this turn/.test(String(c.counter || '')) ? 'The matchup itself was not researched on this turn: the case is the price against the sharp market.' : (c.counter || 'not stated');
+    out.push('Biggest risk: ' + (warn ? warn.detail + '.' : counter) + (roles.length ? ' Also: ' + roles[0].why + '.' : ''));
+    out.push('Decision: ' + decision);
+    return out;
+  }
+  function AD_() { return A(); }
+  function ageText(at, now) { var a = toMs(at), n = toMs(now) != null ? toMs(now) : Date.now(); if (a == null) return 'at an unknown time'; var m = Math.round((n - a) / 60000); return m < 1 ? 'just now' : m < 90 ? m + ' min ago' : Math.round(m / 60) + ' h ago'; }
+  function matchupLine(c) {
+    var model = (c.reasons || []).filter(function (r) { return r.kind === 'MODEL'; })[0];
+    if (c.fair && c.fair.method === 'MODEL_BLEND' && model) return model.text;
+    var mc = c.model_case;
+    if (mc && num(mc.cover_at_market) != null && num(mc.break_even) != null) return num(mc.cover_at_market) > num(mc.break_even)
+      ? 'EdgeDesk\'s projection agrees with the side (' + pct(num(mc.cover_at_market)) + ' to cover against ' + pct(num(mc.break_even)) + ' needed, ' + (mc.tier || 'unvalidated') + ' tier); no unit-level matchup claim is made from it'
+      : 'none — EdgeDesk\'s projection does not favour this side (' + pct(num(mc.cover_at_market)) + ' to cover against ' + pct(num(mc.break_even)) + ' needed); the case is the price alone';
+    return 'none claimed — this is a price out of line with the sharp market, not a matchup read';
+  }
+  function whyNot(p) {
+    var auditSaid = p.audit && p.audit.status !== 'CONFIRMED';
+    /* the audit's own reason leads; EDFAIR's "the audit did not confirm it" cap would only repeat it */
+    var binding = (p.evaluation.caps || []).filter(function (x) { return x.binding && !(auditSaid && /^the audit/.test(x.reason)); }).map(function (x) { return x.reason; });
+    if (p.withheld_by_board) binding.unshift('the decision layer withheld it (' + p.withheld_by_board + ')');
+    if (auditSaid) binding.unshift('the audit ' + p.audit.status.toLowerCase().replace(/_/g, ' ') + ' it: ' + p.audit.reason);
+    return binding.slice(0, 2).join('; ') || 'it did not clear every check';
+  }
+  function coverageSentence(s) {
+    var parts = [];
+    if (s.evaluated.length) parts.push('Scanned: ' + s.coverage.filter(function (c) { return c.status === 'EVALUATED'; }).map(function (c) { return c.label + (c.eligible != null ? ' (' + plural(c.eligible, 'game') + ')' : ''); }).join(', '));
+    var empty = s.coverage.filter(function (c) { return c.status === 'NO_GAMES' || c.status === 'NO_ELIGIBLE_GAMES'; });
+    if (empty.length) parts.push('no eligible games: ' + empty.map(function (c) { return c.label; }).join(', '));
+    if (s.not_scanned.length) parts.push('NOT scanned: ' + s.not_scanned.map(function (c) { return c.label + ' (' + statusWord(c.status) + ')'; }).join(', '));
+    var oos = s.coverage.filter(function (c) { return c.status === 'OUT_OF_SEASON'; });
+    if (oos.length) parts.push('out of season: ' + oos.map(function (c) { return c.label; }).join(', '));
+    if (s.not_covered.length) parts.push('not covered by EdgeDesk: ' + s.not_covered.map(function (c) { return c.label; }).join(', '));
+    var c = s.counts;
+    return 'Coverage — ' + parts.join('; ') + '. ' + (c.events != null ? plural(c.events, 'eligible event') + ', ' : '') + (c.markets_evaluated != null ? plural(c.markets_evaluated, 'market') + ' evaluated, ' : '') + plural(c.audited, 'candidate') + ' audited.' + (s.window && s.window.label ? ' Window: ' + s.window.label + '.' : '');
+  }
+  function statusWord(st) { return st === 'NOT_CAPTURED' ? 'prices not captured' : st === 'RETRIEVAL_FAILED' ? 'read failed' : st === 'NO_PRICES' ? 'games but no captured prices' : st === 'NOT_SUPPORTED' ? 'no data source' : str(st).toLowerCase().replace(/_/g, ' '); }
+
+  /* ================================================================ */
+  /* 3. CONTRACT AND PRICE CHECKS                                      */
+  /* ================================================================ */
+  /**
+   * o.evaluation (EDFAIR result for the contract or wager), o.selection,
+   * o.game { matchup, sport, sport_label, kickoff }, o.market_quote { book,
+   * american, captured_at }, o.compare (EDFAIR.compareVenues), o.capability
+   * (EDADAPT.modelCapability), o.context [strings], o.scenario (a second
+   * evaluation, e.g. Kalshi fees when no venue was named), o.venue_named
+   */
+  function renderContract(o) {
+    o = o || {};
+    var F_ = F();
+    var e = o.evaluation;
+    var lines = [];
+    if (!e || !e.ok) {
+      var miss = (o.missing || []).slice();
+      if (e && e.error) miss.unshift(e.error.message);
+      return 'EdgeDesk did not price that' + (o.game ? ' (' + o.game.matchup + ')' : '') + ': ' + (miss.length ? miss.join('; ') : 'no result') + '. No expected value is quoted without a priced market, a known side and a fair probability.';
+    }
+    var x = F_.explain(e, { selection: o.selection });
+    lines.push(x.headline);
+    lines.push('');
+    if (o.game) lines.push('Event: ' + o.game.matchup + (o.game.kickoff_local ? ' — ' + o.game.kickoff_local : '') + ' (' + (o.game.sport_label || o.game.sport) + ')');
+    x.lines.forEach(function (l) { lines.push(l[0] + ': ' + l[1]); });
+    if (o.capability) lines.push('Independent model: ' + (o.capability.may_price ? o.capability.name + ' (' + o.capability.tier + ')' : 'unavailable — ' + o.capability.reason));
+    if (o.scenario && o.scenario.ok) lines.push('If this is Kalshi: taker fee ' + cents(o.scenario.expected_fees.per_contract) + ' (' + o.scenario.expected_fees.status.toLowerCase() + ' schedule) → net EV ' + pct(num(o.scenario.net_ev_per_dollar), 2) + ' per $1, maximum entry ' + cents(o.scenario.maximum_entry_price) + '.');
+    if (o.compare && o.compare.ranked && o.compare.ranked.length > 1) {
+      lines.push('');
+      lines.push('Same outcome, every venue on file (all-in cost per $1 of payout):');
+      o.compare.ranked.slice(0, 5).forEach(function (r) { lines.push(r.rank + '. ' + r.venue + ' ' + r.entry + ' → ' + r.all_in_cost_cents + '¢' + (r.net_ev_per_dollar != null ? ' (net EV ' + pct(num(r.net_ev_per_dollar), 2) + ')' : '') + (r.fees === 'UNVERIFIED' ? ' [fee schedule unverified]' : '')); });
+      if (o.compare.best && o.compare.ranked[0] && o.compare.ranked[0].result.kind !== e.kind) lines.push('A cheaper way to hold the same outcome: ' + o.compare.ranked[0].venue + ' ' + o.compare.ranked[0].entry + ' — check that it settles the same way (overtime, postponement) before switching.');
+      (o.compare.not_priced || []).forEach(function (n) { lines.push('Not priced: ' + n.venue + ' — ' + n.why + '.'); });
+    }
+    if (o.context && o.context.length) { lines.push(''); lines.push('Context (not a probability): ' + o.context.join(' · ')); }
+    if (o.missing && o.missing.length) { lines.push(''); lines.push('Missing: ' + o.missing.join('; ') + '.'); }
+    return lines.join('\n');
+  }
+
+  /** "Why is this contract negative EV?" — the components, in order. */
+  function renderExplain(e, selection) {
+    if (!e || !e.ok) return 'There is no contract price on this conversation to explain. Ask about one, e.g. "Is Rays at 61¢ positive EV on Kalshi?"';
+    var isC = e.kind === 'CONTRACT';
+    var parts = [];
+    var fair = num(e.fair_probability), price = num(e.entry_price), fee = num(e.expected_fees && e.expected_fees.per_contract), slip = num(e.estimated_slippage && e.estimated_slippage.per_contract), be = num(e.break_even_probability);
+    if (isC) {
+      parts.push((selection || e.side) + ' at ' + cents(price) + ' costs ' + cents(price) + (fee != null ? ' plus ' + cents(fee) + ' in fees' : ' plus an unknown fee') + (slip ? ' plus ' + cents(slip) + ' slippage' : '') + ', so it breaks even only if it wins ' + (be != null ? pct(be, 1) : 'an unknown share') + ' of the time.');
+      parts.push(fair != null ? 'EdgeDesk\'s fair probability is ' + pct(fair, 1) + ' (' + (e.fair_source.label || e.fair_source.kind) + ').' : 'There is no fair probability on file for it.');
+      if (fair != null && be != null) parts.push(fair < be ? 'That is ' + pct(be - fair, 1) + ' short of break-even: each contract loses about ' + cents(be - fair) + ' on average (' + pct(num(e.net_ev_per_dollar), 2) + ' per $1).' : 'That is ' + pct(fair - be, 1) + ' above break-even: ' + pct(num(e.net_ev_per_dollar), 2) + ' per $1.');
+      if (fair != null && price != null && fee != null && fair > price && fair < be) parts.push('Before fees it would be positive (' + cents(fair - price) + ' a contract); the fee is what turns it negative.');
+      parts.push(e.maximum_entry_price != null ? 'It becomes playable at ' + cents(e.maximum_entry_price) + ' or less (fees included).' : 'No price clears the floor against this fair.');
+    } else {
+      parts.push((selection || 'This side') + ' at ' + fmtAm(e.entry_price) + ' breaks even at ' + pct(be, 1) + '; the fair is ' + pct(fair, 1) + ' (' + (e.fair_source.label || e.fair_source.kind) + '), so the expected value is ' + pct(num(e.net_ev_per_dollar), 2) + ' per $1.');
+      parts.push(e.maximum_entry_price != null ? 'It becomes playable at ' + fmtAm(e.maximum_entry_price) + ' or better.' : 'No price clears the floor against this fair.');
+    }
+    return parts.join(' ');
+  }
+
+  /* ================================================================ */
+  /* 4. COVERAGE AND OUTAGE                                            */
+  /* ================================================================ */
+  /** "Which sports couldn't be scanned?" — from the last scan when there is one, else from configuration and a live count. */
+  function renderCoverage(o) {
+    o = o || {};
+    var st = sanitizeState(o.state);
+    /* the live read is the fact; a scan carried by the client is used only when that read came back empty,
+       and is labelled as the earlier scan it claims to be */
+    var live = o.coverage && o.coverage.length ? o.coverage : null;
+    var rows = live || (st && st.coverage && st.coverage.length ? st.coverage : []);
+    var source = live ? 'EdgeDesk\'s capture configuration and the price rows on file now' : 'the earlier scan this conversation carries (' + (st && st.built_at || 'time unknown') + '); the live read returned nothing';
+    var lines = [];
+    var bad = rows.filter(function (c) { return c.status !== 'EVALUATED' && c.status !== 'NO_GAMES' && c.status !== 'NO_ELIGIBLE_GAMES' && c.status !== 'OUT_OF_SEASON'; });
+    var ok = rows.filter(function (c) { return c.status === 'EVALUATED'; });
+    if (!rows.length) return 'EdgeDesk has no scan on this conversation and could not read the price rows to build one.';
+    lines.push(bad.length ? 'Not scanned: ' + bad.map(function (c) { return c.label + ' — ' + (c.why || statusWord(c.status)); }).join('; ') + '.' : 'Every in-season sport EdgeDesk supports was scanned.');
+    if (ok.length) lines.push('Scanned: ' + ok.map(function (c) { return c.label; }).join(', ') + '.');
+    var empty = rows.filter(function (c) { return c.status === 'NO_GAMES' || c.status === 'NO_ELIGIBLE_GAMES'; });
+    if (empty.length) lines.push('Read, with no eligible games in the window: ' + empty.map(function (c) { return c.label; }).join(', ') + '.');
+    var oos = rows.filter(function (c) { return c.status === 'OUT_OF_SEASON'; });
+    if (oos.length) lines.push('Out of season: ' + oos.map(function (c) { return c.label; }).join(', ') + '.');
+    var nc = (A() ? A().NOT_COVERED : []);
+    if (nc.length) lines.push('Not covered at all: ' + nc.map(function (n) { return n.label + ' (' + n.why + ')'; }).join('; ') + '.');
+    lines.push('Source: ' + source + '.');
+    return lines.join(' ');
+  }
+  /**
+   * "If the odds API fails, can you still analyze this game?"
+   * o.feed { last_captured_at, sports:[{sport,label,last_captured_at}] } (one read), o.game (carried subject), o.now
+   */
+  function renderOutage(o) {
+    o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var lines = [];
+    lines.push('Yes — the matchup analysis does not depend on the odds feed. What stays available: EdgeDesk\'s own projections and fair lines (football), the matchup and unit comparisons, injuries and projected starters, weather and rest, and the last captured prices, each labelled with its capture time (CACHED or STALE), never as live.');
+    lines.push('What stops: a current expected value and any BUY decision. A stale price is shown as the last price observed, not one you can bet, and the desk switches to research-only for that market until a fresh capture lands.');
+    if (o.feed && o.feed.last_captured_at) {
+      var age = Math.round((now - toMs(o.feed.last_captured_at)) / 60000);
+      lines.push('Right now the newest captured price is ' + (age < 90 ? age + ' minutes' : Math.round(age / 60) + ' hours') + ' old' + (o.feed.sports && o.feed.sports.length ? ' (' + o.feed.sports.map(function (s) { return s.label + ' ' + ageText(s.last_captured_at, now); }).join(', ') + ')' : '') + '.');
+    } else if (o.feed) lines.push('Right now EdgeDesk could not read a captured price at all' + (o.feed.error ? ' (' + o.feed.error + ')' : '') + ', so any answer about value would be research-only.');
+    if (o.game) lines.push('For ' + o.game + ': ask for the matchup breakdown and it will be built from the research layer alone, with the market section marked UNAVAILABLE or CACHED.');
+    lines.push('Odds requests go through one budgeted gateway (a cache, a daily and monthly allowance, a circuit breaker), so a provider failure degrades answers to research-only rather than retrying without limit.');
+    return lines.join(' ');
+  }
+
+  /* ================================================================ */
+  /* 5. STATE — identifiers and EdgeDesk's own numbers only            */
+  /* ================================================================ */
+  function stateFrom(o) {
+    o = o || {};
+    var s = o.scan || null, c = o.contract || null;
+    return {
+      schema: STATE_SCHEMA, built_at: iso(o.now),
+      coverage: s ? s.coverage.map(function (x) { return { sport: x.sport, label: x.label, status: x.status, why: x.why || x.sentence || null, eligible: num(x.eligible) }; }).slice(0, 16) : (o.prev && o.prev.coverage) || [],
+      best: s && s.best ? { id: s.best.candidate.id, sport: s.best.candidate.sport, matchup: s.best.candidate.matchup, selection: s.best.candidate.selection, market: s.best.candidate.market, line: num(s.best.candidate.line), odds_american: num(s.best.candidate.quote.odds_american), book: s.best.candidate.quote.book || null } : null,
+      contract: c ? { venue: c.venue || null, side: c.side || 'YES', price_cents: num(c.price_cents), american: num(c.american), selection: str(c.selection).slice(0, 80), sport: c.sport || null, game_id: c.game_id ? str(c.game_id).slice(0, 60) : null, market: c.market || null, fair_probability: num(c.fair_probability), fair_kind: c.fair_kind || null, fair_label: c.fair_label ? str(c.fair_label).slice(0, 120) : null, fair_observed_at: iso(c.fair_observed_at) } : (o.prev && o.prev.contract) || null
+    };
+  }
+  function sanitizeState(raw) {
+    if (!raw || typeof raw !== 'object' || raw.schema !== STATE_SCHEMA) return null;
+    var STATUSES = ['EVALUATED', 'NO_GAMES', 'NO_ELIGIBLE_GAMES', 'NO_PRICES', 'NOT_CAPTURED', 'RETRIEVAL_FAILED', 'OUT_OF_SEASON', 'NOT_SUPPORTED', 'NOT_EVALUATED'];
+    var cov = Array.isArray(raw.coverage) ? raw.coverage.filter(function (x) { return x && STATUSES.indexOf(x.status) >= 0; }).map(function (x) { return { sport: str(x.sport).slice(0, 40), label: str(x.label).slice(0, 40), status: x.status, why: x.why ? str(x.why).slice(0, 200) : null, eligible: num(x.eligible) }; }).slice(0, 16) : [];
+    var c = raw.contract && typeof raw.contract === 'object' ? raw.contract : null;
+    var pc = c ? num(c.price_cents) : null;
+    var fp = c ? num(c.fair_probability) : null;
+    return {
+      schema: STATE_SCHEMA, built_at: iso(raw.built_at), coverage: cov,
+      best: raw.best && typeof raw.best === 'object' ? { id: str(raw.best.id).slice(0, 160), sport: str(raw.best.sport).slice(0, 40), matchup: str(raw.best.matchup).slice(0, 120), selection: str(raw.best.selection).slice(0, 80), market: str(raw.best.market).slice(0, 12), line: num(raw.best.line), odds_american: num(raw.best.odds_american), book: raw.best.book ? str(raw.best.book).slice(0, 40) : null } : null,
+      contract: c ? { venue: c.venue === 'kalshi' || c.venue === 'polymarket' ? c.venue : null, side: c.side === 'NO' ? 'NO' : 'YES', price_cents: pc != null && pc > 0 && pc < 100 ? pc : null, american: num(c.american), selection: str(c.selection).slice(0, 80), sport: c.sport ? str(c.sport).slice(0, 40) : null, game_id: c.game_id ? str(c.game_id).slice(0, 60) : null, market: c.market ? str(c.market).slice(0, 12) : null,
+        /* the carried fair is re-read by the host before it is used; it is kept only to say what was said */
+        fair_probability: fp != null && fp > 0 && fp < 1 ? fp : null, fair_kind: ['SHARP_NO_VIG', 'CONSENSUS_NO_VIG', 'MODEL', 'USER'].indexOf(c.fair_kind) >= 0 ? c.fair_kind : null, fair_label: c.fair_label ? str(c.fair_label).slice(0, 120) : null, fair_observed_at: iso(c.fair_observed_at) } : null
+    };
+  }
+
+  /* ================================================================ */
+  /* 6. THE CRITIC — for any prose written over these answers          */
+  /* ================================================================ */
+  var CERTAINTY = /\b(guarantee|guaranteed|can'?t (lose|miss)|lock|locks|sure thing|free money|will (win|cover|cash)|no[- ]brainer|easy money|risk[- ]free)\b/i;
+  /** Fail prose that adds certainty, an unlisted number, or calls a non-verified result verified or best across all sports. */
+  function critic(prose, ctx) {
+    ctx = ctx || {};
+    var f = [];
+    var p = str(prose);
+    if (CERTAINTY.test(p)) f.push({ code: 'CERTAINTY', detail: (p.match(CERTAINTY) || [])[0] });
+    if (/\bverified\b/i.test(p) && ctx.decision !== 'BUY') f.push({ code: 'VERIFIED_WITHOUT_AUDIT', detail: 'the prose calls something verified that the audit did not confirm' });
+    if (/\b(across|in) all sports\b|\bbest (bet|play) (anywhere|overall)\b/i.test(p) && ctx.coverage_scope !== 'ALL_IN_SEASON') f.push({ code: 'COVERAGE_OVERCLAIM', detail: 'the prose claims all sports while coverage was partial' });
+    var allowed = ctx.allowed_numbers || [];
+    var nums = p.match(/[+-]?\d+(?:\.\d+)?%?/g) || [];
+    var stray = nums.filter(function (n) { var v = n.replace(/[%+]/g, ''); return !allowed.some(function (a) { return String(a) === v || String(a) === n; }); });
+    if (allowed.length && stray.length) f.push({ code: 'UNLISTED_NUMBER', detail: stray.slice(0, 5).join(', ') });
+    return { verdict: f.length ? 'FAIL' : 'PASS', findings: f };
+  }
+
+  return {
+    VERSION: VERSION, STATE_SCHEMA: STATE_SCHEMA, NO_EDGE: NO_EDGE, RX: RX,
+    classify: classify, unsupportedMarket: unsupportedMarket, candidatesFromBoard: candidatesFromBoard, matchesFilter: matchesFilter,
+    scanResult: scanResult, renderScan: renderScan, coverageSentence: coverageSentence,
+    renderContract: renderContract, renderExplain: renderExplain, renderCoverage: renderCoverage, renderOutage: renderOutage,
+    stateFrom: stateFrom, sanitizeState: sanitizeState, critic: critic
+  };
+});
+/*__EDQUANT_END__*/
+const EDQUANT: any = (globalThis as any).EDQUANT;
+
 /*__EDMLBHIST_START__*/
 /*__EDMLBQ_START__*/
 (function (root, factory) {
@@ -39776,10 +41914,20 @@ export function refreshOutcome(before: any[], after: any[]): any {
   };
 }
 
+/** The quant desk's underdog / favorite filter, applied to a decision row or a pricing row before the board ranks them. */
+export function boardSideFilter(filter: string | null | undefined, market: string, americanOrNull: number | null, line: number | null): boolean {
+  if (!filter) return true;
+  const m = String(market ?? "");
+  const dog = m === "h2h" ? (americanOrNull != null ? americanOrNull > 100 : null) : (m === "spreads" || m === "spread") ? (line != null ? line > 0 : null) : null;
+  if (dog == null) return false;
+  return filter === "underdog" ? dog : !dog;
+}
 async function sweepBoard(o: {
   dal: Dal; plan: Plan; ctx: ResearchContext; question: string; now: number; boardReq: BoardRequest | null;
   boardScope: SlateScopeRequest; primary: { sport: string | null; index: SlateIndexResult } | null;
-}): Promise<{ board: any; decisions: GameDecision[]; ledger_rows: any[]; games: any[] } | null> {
+  /* the quant desk only: "underdog" | "favorite" restricts the candidates before ranking */
+  filter?: string | null;
+}): Promise<{ board: any; decisions: GameDecision[]; ledger_rows: any[]; games: any[]; signal_counts: Record<string, number> } | null> {
   const { dal, ctx, question, now, boardReq } = o;
   /* The host's sport counts only when the READER chose it: the game open on
      screen or the board they are looking at. A sport inferred from an intent
@@ -39791,6 +41939,7 @@ async function sweepBoard(o: {
     supported: BOARD_SPORTS,
   });
   const sports: any[] = [], notRead: any[] = [], allDecisions: GameDecision[] = [], allLedger: any[] = [], games: any[] = [];
+  const signalCounts: Record<string, number> = {};
   /* budget: every sport costs reads; a broad question is allowed more than a single-game one */
   dal.budget = Math.max(dal.budget, 24 + 6 * scope.sports.length);
   const loadedValidation = new Set<string>();
@@ -39823,12 +41972,14 @@ async function sweepBoard(o: {
     const ranked = rankSlate(si.index, { now, sport });
     let decisions: GameDecision[] = [];
     try { decisions = decideSlate(ranked, [], { sport, now }); } catch (e) { si.errors.push("the decision pass threw: " + String((e as Error)?.message ?? e).slice(0, 120)); }
+    if (o.filter) decisions = decisions.filter((d: any) => boardSideFilter(o.filter, String(d.market ?? ""), num(d.price?.offered_american != null ? String(d.price.offered_american).replace("+", "") : null), num(d.handicap)));
     let pricingRows: any[] = [];
     let modelMeta: any = null;
     if (PRICING_ENABLED && EDPRICE && (sport === "americanfootball_nfl" || sport === "americanfootball_ncaaf")) {
       const rel = "football/validation/pricing_" + (sport === "americanfootball_nfl" ? "nfl" : "cfb") + ".json";
       if (!loadedValidation.has(sport)) { try { const pv = await dal.getArtifact(rel, { free: true }); if (pv.json) EDPRICE.loadValidation(sport, pv.json); loadedValidation.add(sport); } catch { /* prices as RESEARCH */ } }
       try { pricingRows = priceBoardGames(sport, si.index, now); } catch (e) { si.errors.push("the pricing pass threw: " + String((e as Error)?.message ?? e).slice(0, 120)); }
+      if (o.filter) pricingRows = pricingRows.filter((r: any) => boardSideFilter(o.filter, r.market === "total" || r.market === "totals" ? "totals" : "spreads", num(r.odds_american), num(r.market_line)));
       const art: any = sport === "americanfootball_nfl" ? (si.path as any).nfl_artifact : (si.path as any).fbs_artifact;
       const genAt = art?.generated_at ?? null;
       const fr = EDRESEARCH && genAt ? EDRESEARCH.freshness({ observed_at: genAt, category: "projection", now }) : null;
@@ -39836,7 +41987,10 @@ async function sweepBoard(o: {
     }
     const ledger = ledgerRowsFor(decisions, { sport, model_version: EDINTEL.validationSnapshot(sport)?.model_version ?? null, engine_version: BUILD, now });
     allDecisions.push(...decisions); allLedger.push(...ledger);
-    si.index.forEach((g) => games.push({ sport, home: g.home_team, away: g.away_team, game_id: g.game_id }));
+    si.index.forEach((g) => games.push({ sport, home: g.home_team, away: g.away_team, game_id: g.game_id,
+      home_id: g.home_id ?? null, away_id: g.away_id ?? null, kickoff: g.kickoff ?? null,
+      home_starter: g.home_starter?.player_name ?? null, away_starter: g.away_starter?.player_name ?? null }));
+    signalCounts[sport] = si.index.reduce((n: number, g: any) => n + ((g.signals ?? []).length), 0);
     sports.push({ sport, games: si.index, state: si.state, source_label: si.source_label, errors: si.errors, decisions, pricing_rows: pricingRows, model_meta: modelMeta, refresh });
   }
   const board = EDBOARD.build({ now, scope, question, sports, sports_not_read: notRead, top: 5 });
@@ -39847,7 +42001,7 @@ async function sweepBoard(o: {
   sports.forEach((s) => s.games.forEach((g: any) => { const dropped = (board.eligibility.dropped as any[]).some((d) => d.sport === s.sport && String(d.game_id) === String(g.game_id)); if (!dropped) eligibleIds.add(s.sport + "|" + g.game_id); }));
   const decisions = allDecisions.filter((d) => eligibleIds.has((d as any).sport_key_for_board ?? "") || sports.some((s) => s.decisions.includes(d) && eligibleIds.has(s.sport + "|" + d.game_id)));
   const ledger_rows = allLedger.filter((r) => kept.has(String(r.sport) + "|" + String(r.game_id)) || eligibleIds.has(String(r.sport) + "|" + String(r.game_id)));
-  return { board, decisions, ledger_rows, games };
+  return { board, decisions, ledger_rows, games, signal_counts: signalCounts };
 }
 
 async function runResearch(
@@ -43941,6 +46095,504 @@ export async function mineTurn(o: { body: any; auth: string; now?: number; fetch
   return { answer, model, mine: out, narration, deterministic_mine_answer: out.text, build: BUILD };
 }
 
+/* ========================================================================
+   THE QUANT DESK (EDQUANT over EDFAIR, EDAUDIT and EDADAPT).
+
+   Runs BEFORE the football desk, for four reasons the audit found:
+     1. "What's the best bet right now?" with no league named was answered
+        by the football-only desk, so a cross-sport question got a CFB/NFL
+        answer. A desk client now gets the board's scan of every sport in
+        season, the top candidates audited on a fresh read, and the best
+        VERIFIED opportunity — or "nothing clears" with the near misses.
+     2. A contract price ("Rays at 61¢", "Kalshi") had no route at all, and
+        the desk's number parser read 41¢ as a spread of 41.
+     3. "Which sports couldn't be scanned?" had no route.
+     4. An uncaptured sport (NBA, NHL) was reported as an empty slate.
+   Deterministic: every number is EDFAIR's, the second check EDAUDIT's, the
+   capabilities EDADAPT's. No model call. EDGEDESK_QUANT=0 turns it off.
+   ======================================================================== */
+const QUANT_ENABLED = (Deno.env.get("EDGEDESK_QUANT") ?? "1") !== "0";
+const SCAN_AUDIT_TOP = envInt("EDGEDESK_AUDIT_TOP", 3, 1, 6);
+const CAPTURED_SPORTS: string[] | null = (() => {
+  const v = (Deno.env.get("EDGEDESK_CAPTURED_SPORTS") ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+  return v.length ? v : null;
+})();
+let LAST_AUDIT_WRITE: any = null;
+/** A stable 64-bit id (two FNV-1a passes) for the write-once ledgers; the database keys it per user. */
+export function quantHash(s: string): string {
+  const f = (t: string) => { let h = 0x811c9dc5; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ("0000000" + h.toString(16)).slice(-8); };
+  return f(s) + f(s.split("").reverse().join(""));
+}
+/** A ledger write's status as it may be shown to any caller: the database's error text (which can quote a row) stays in the log. */
+export function quantWriteView(w: any): any {
+  if (!w) return null;
+  return { ok: !!w.ok, status: w.status ?? null, rows: w.rows ?? null, at: w.at ?? null, error: w.ok ? null : "the write failed (status " + (w.status ?? "?") + "); details are in the function log" };
+}
+
+const QUANT_STOP = new Set(("the a an and or vs versus at on in of to for is are was be it this that these those what whats which who why how "
+  + "me my i you your we our tell analyze analyse explain whether would should could can will do does did if than then with without "
+  + "positive negative ev good bad fair price prices priced worth value bet bets betting buy sell yes no contract contracts kalshi "
+  + "polymarket cents cent tonight today tomorrow game games match moneyline spread total over under line odds advantage "
+  + "better cheaper find shop risk only best right now available sports sport across all every any next hours hour week weekend "
+  + "underdog underdogs dog dogs favorite favorites favourite favourites supported largest biggest strongest safest top play plays "
+  + "edge edges opportunity opportunities discrepancy model market markets wager trade").split(/\s+/));
+/** The words of a question that could be a team: not stopwords, not numbers. */
+export function quantTokens(q: string): string[] {
+  const out: string[] = [];
+  /* letters only: a token goes into a PostgREST or=(…ilike…) filter, where . , ( ) are syntax */
+  for (const w of String(q ?? "").replace(/[^A-Za-z ]/g, " ").split(/\s+/)) {
+    const t = w.toLowerCase();
+    if (t.length < 3 || QUANT_STOP.has(t)) continue;
+    if (!out.includes(t)) out.push(t);
+  }
+  return out.slice(0, 8);
+}
+function teamHasToken(team: string, tok: string): boolean {
+  return (" " + String(team ?? "").toLowerCase().replace(/[^a-z0-9 ]/g, " ") + " ").includes(" " + tok + " ");
+}
+/** Upcoming captured rows for the teams a question names: one read, re-filtered here (the filter is not trusted to the database). */
+async function quantRows(dal: Dal, q: string, now: number): Promise<{ rows: any[]; tokens: string[]; error: string | null }> {
+  const tokens = quantTokens(q);
+  if (!tokens.length) return { rows: [], tokens, error: null };
+  const ors = tokens.flatMap((t) => [`home_team.ilike.*${encodeURIComponent(t)}*`, `away_team.ilike.*${encodeURIComponent(t)}*`]).join(",");
+  const r = await dal.read(
+    `signals?select=sig_key,event_id,sport_key,market,selection,point,best_dec,best_book,sharp_fair,sharp_book_fair,consensus_fair,reference_type,reference_book,`
+    + `pin_dec,pin_opp_dec,n_books,n_books_eff,has_sharp,corrob_n,last_seen_at,commence_time,home_team,away_team`
+    + `&or=(${ors})&commence_time=gte.${new Date(now - 3 * 3600_000).toISOString()}&commence_time=lte.${new Date(now + 10 * 86400_000).toISOString()}&limit=400`, "audit");
+  const rows = (r.rows ?? []).filter((x: any) => tokens.some((t) => teamHasToken(x.home_team, t) || teamHasToken(x.away_team, t)));
+  return { rows, tokens, error: r.error };
+}
+/**
+ * The event and selection a price question is about: the event whose two
+ * teams the question names best; the selection is
+ *   1. the subject of "A to beat B" / "will A beat B" / "A over B", else
+ *   2. the team named nearest BEFORE the price, else
+ *   3. the only team named.
+ * Both teams named with the price attached to neither is ambiguous: no
+ * selection is guessed (ambiguous_side). A signed half-point after the
+ * selection is a spread.
+ */
+export function quantPick(rows: any[], tokens: string[], q: string, priceRaw: string | null): any | null {
+  if (!rows.length) return null;
+  const byEvent = new Map<string, any[]>();
+  for (const r of rows) { const k = String(r.event_id); if (!byEvent.has(k)) byEvent.set(k, []); byEvent.get(k)!.push(r); }
+  let best: any = null;
+  for (const [ev, rs] of byEvent) {
+    const h = rs[0].home_team, a = rs[0].away_team;
+    const hit = tokens.filter((t) => teamHasToken(h, t) || teamHasToken(a, t));
+    const both = tokens.some((t) => teamHasToken(h, t)) && tokens.some((t) => teamHasToken(a, t));
+    const score = hit.length + (both ? 2 : 0) - (Date.parse(rs[0].commence_time ?? "") || 0) / 1e15;
+    if (!best || score > best.score) best = { event_id: ev, rows: rs, home: h, away: a, sport: rs[0].sport_key, kickoff: rs[0].commence_time, score };
+  }
+  if (!best) return null;
+  const ql = q.toLowerCase();
+  const pIdx = priceRaw ? ql.indexOf(priceRaw.toLowerCase()) : -1;
+  /* every mention of either team, in order */
+  const mentions: { pos: number; end: number; team: string }[] = [];
+  for (const t of tokens) {
+    const re = new RegExp("\\b" + t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "g");
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(ql))) {
+      const team = teamHasToken(best.home, t) ? best.home : teamHasToken(best.away, t) ? best.away : null;
+      if (team) mentions.push({ pos: m.index, end: m.index + t.length, team });
+    }
+  }
+  mentions.sort((x, y) => x.pos - y.pos);
+  if (!mentions.length) return null;
+  const named = new Set(mentions.map((m) => m.team));
+  let sel: string | null = null, selPos = -1, how: string | null = null;
+  if (named.size === 2) {
+    for (let i = 0; i < mentions.length - 1 && !sel; i++) {
+      const a = mentions[i], b = mentions.slice(i + 1).find((x) => x.team !== a.team);
+      if (!b) continue;
+      const between = ql.slice(a.end, b.pos);
+      if (/^\s*(?:(?:to|will|would|can|could|should|do|does)\s+)?(?:beat|beats|defeat|defeats|top|tops|over|win (?:against|over|vs\.?|versus)|wins (?:against|over))\s+(?:the\s+)?$/.test(between)) { sel = a.team; selPos = a.pos; how = "subject"; }
+    }
+  }
+  if (!sel && pIdx >= 0) { const before = mentions.filter((m) => m.pos < pIdx); if (before.length) { const m = before[before.length - 1]; sel = m.team; selPos = m.pos; how = "before-price"; } }
+  if (!sel && named.size === 1) { sel = mentions[0].team; selPos = mentions[0].pos; how = "only-team"; }
+  const ev = { event_id: best.event_id, sport: best.sport, home: best.home, away: best.away, kickoff: best.kickoff };
+  if (!sel) return { ...ev, selection: null, ambiguous_side: true, market: null, point: null, row: null, other: null, how: null };
+  /* a signed half or whole point between the selection and the price is a spread: "Cleveland +1.5 at 61 cents" */
+  let point: number | null = null;
+  const seg = ql.slice(Math.max(0, selPos), pIdx > selPos ? pIdx : selPos + 40);
+  const pm = seg.match(/(^|\s)([+-]\d{1,2}(?:\.5)?)(?![\d])/);
+  if (pm) point = Number(pm[2]);
+  const market = point != null ? "spreads" : "h2h";
+  const same = (a: any, b: any) => EDINTEL.normName(a) === EDINTEL.normName(b);
+  const row = best.rows.find((r: any) => r.market === market && same(r.selection, sel) && (point == null || Number(r.point) === point)) ?? null;
+  const other = row ? best.rows.find((r: any) => r.market === market && !same(r.selection, sel) && (point == null || Number(r.point) === -point)) ?? null : null;
+  return { ...ev, selection: sel, ambiguous_side: false, market, point, row, other, how };
+}
+/** The fair a captured row carries, with its kind: the decision layer's own provenance read (EDINTEL.fairMethod). */
+function quantFairOf(row: any): { probability: number | null; kind: string | null; label: string | null; observed_at: string | null; method: string | null } {
+  if (!row) return { probability: null, kind: null, label: null, observed_at: null, method: null };
+  const fm = EDINTEL.fairMethod(row);
+  const p = num(fm?.fair_probability);
+  if (p == null || !(p > 0 && p < 1)) return { probability: null, kind: null, label: fm?.label ?? null, observed_at: row.last_seen_at ?? null, method: fm?.method ?? null };
+  return { probability: p, kind: fm.sharp ? "SHARP_NO_VIG" : "CONSENSUS_NO_VIG", label: fm.label ?? null, observed_at: row.last_seen_at ?? null, method: fm.method ?? null };
+}
+/** Per-book prices behind one captured selection (an uncached read), as compareVenues entries. */
+async function quantBookEntries(dal: Dal, row: any): Promise<any[]> {
+  if (!row?.sig_key) return [];
+  const r = await dal.read(`book_quotes?select=sig_key,book_key,book_title,dec,updated_at,is_fresh&sig_key=eq.${encodeURIComponent(String(row.sig_key))}&limit=40`, "audit");
+  const out = (r.rows ?? []).filter((b: any) => String(b.sig_key ?? row.sig_key) === String(row.sig_key) && num(b.dec) != null && num(b.dec)! > 1 && b.is_fresh !== false)
+    .map((b: any) => ({ book: String(b.book_title ?? b.book_key ?? "book"), decimal: String(num(b.dec)), quote_observed_at: b.updated_at ?? row.last_seen_at ?? null }));
+  if (!out.length && num(row.best_dec) != null && num(row.best_dec)! > 1) out.push({ book: String(row.best_book ?? "best captured book"), decimal: String(num(row.best_dec)), quote_observed_at: row.last_seen_at ?? null });
+  return out.slice(0, 8);
+}
+/** MLB context for one game: probable starters, park and weather, as sentences (never a probability). */
+async function quantMlbContext(dal: Dal, home: string, away: string): Promise<string[]> {
+  try {
+    const card = await dal.getMlbCard();
+    const row = (card.rows ?? []).find((c: any) => mlbClubKey(c.home_team_name) === mlbClubKey(home) && mlbClubKey(c.away_team_name) === mlbClubKey(away));
+    if (!row) return [];
+    const out: string[] = [];
+    if (row.away_pitcher_name || row.home_pitcher_name) out.push(`probable starters ${row.away_pitcher_name ?? "TBD"}${row.away_pitcher_throws ? " (" + row.away_pitcher_throws + ")" : ""} for ${away} vs ${row.home_pitcher_name ?? "TBD"}${row.home_pitcher_throws ? " (" + row.home_pitcher_throws + ")" : ""} for ${home} — probable, not confirmed (mlb_game_cards)`);
+    if (num(row.run_factor) != null || num(row.park_factor) != null) out.push(`park run factor ${num(row.run_factor) ?? num(row.park_factor)}`);
+    if (num(row.temp_f) != null) out.push(`forecast ${num(row.temp_f)}°F${num(row.wind_mph) != null ? ", wind " + num(row.wind_mph) + " mph " + (row.wind_rel ?? row.wind_dir ?? "") : ""}`.trim());
+    return out;
+  } catch { return []; }
+}
+function quantSportLabel(sport: string | null): string { const a = sport && EDADAPT ? EDADAPT.adapterFor(sport) : null; return a ? a.label : String(sport ?? ""); }
+function quantKickLocal(kick: string | null, tz: string | null): string | null {
+  if (!kick || !EDBOARD) return null;
+  try { return new Intl.DateTimeFormat("en-US", { timeZone: tz && EDBOARD.validZone?.(tz) ? tz : BOARD_DEFAULT_TZ, weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(new Date(kick)); } catch { return null; }
+}
+
+/**
+ * An operator-VERIFIED fee schedule for a venue (supabase/quant_desk.sql
+ * market_execution_costs), as an EDFAIR fee override. None on file (or the
+ * table absent) is a normal state: the engine's built-in schedule applies with
+ * its own verification status.
+ */
+async function quantVerifiedFees(dal: Dal, venue: string | null, now: number, role = "taker"): Promise<any | null> {
+  if (!venue || venue === "unspecified") return null;
+  const at = new Date(now).toISOString();
+  const r = await dal.read(`market_execution_costs?select=venue,category,fee_kind,taker_coefficient,maker_coefficient,rate,exponent,per_contract,source_url,verified_at,verified_by,effective_from,effective_to`
+    + `&venue=eq.${encodeURIComponent(venue)}&category=eq.sports&effective_from=lte.${at}&order=effective_from.desc&limit=3`, "audit");
+  const row = (r.rows ?? []).find((x: any) => String(x.venue) === venue && (!x.effective_to || Date.parse(x.effective_to) > now) && Date.parse(x.effective_from) <= now);
+  if (!row) return null;
+  const source = `market_execution_costs: ${row.source_url}, verified by ${row.verified_by} on ${String(row.verified_at).slice(0, 10)}`;
+  if (row.fee_kind === "KALSHI_QUADRATIC") { const c = role === "maker" ? row.maker_coefficient : row.taker_coefficient; return c == null ? null : { coefficient: String(c), verified: true, source }; }
+  if (row.fee_kind === "POLYMARKET_PARAMETRIC" && row.rate != null && row.exponent != null) return { rate: String(row.rate), exponent: Number(row.exponent), verified: true, source };
+  if (row.fee_kind === "PER_CONTRACT" && row.per_contract != null) return { per_contract_dollars: String(row.per_contract), verified: true, source };
+  if (row.fee_kind === "NONE") return { per_contract_dollars: "0", verified: true, source };
+  return null;
+}
+let LAST_ESTIMATE_WRITE: any = null;
+/** One write-once fair_price_estimates row per answered contract or price check, under the caller's token. */
+export function estimateRecord(e: any, o: { venue: string | null; selection: string | null; pick: any; question: string; now: number }): any | null {
+  if (!e?.ok) return null;
+  const minute = new Date(Math.floor(o.now / 60000) * 60000).toISOString();
+  const key = [e.kind, o.venue ?? e.venue?.key, e.side ?? "", o.selection ?? "", o.pick?.event_id ?? "", o.pick?.market ?? "", e.entry_price, e.fair_probability ?? "", minute].join("|");
+  const n = (v: any) => (v == null || v === "" ? null : Number(v));
+  return {
+    estimate_id: "fpe_" + quantHash(key), evaluated_at: new Date(o.now).toISOString(),
+    kind: e.kind, venue: String(o.venue ?? e.venue?.key ?? "sportsbook"), side: e.kind === "CONTRACT" ? e.side : null,
+    sport: o.pick?.sport ?? null, event_id: o.pick?.event_id ?? null, market: o.pick?.market ?? null, selection: o.selection, sig_key: o.pick?.row?.sig_key ?? null,
+    price_cents: e.kind === "CONTRACT" ? n(e.entry_price_cents) : null, american: e.kind === "WAGER" ? n(e.entry_price) : null,
+    market_probability: n(e.market_probability), no_vig_market_probability: n(e.no_vig_market_probability), independent_fair_probability: n(e.independent_fair_probability),
+    fair_probability: n(e.fair_probability), fair_kind: e.fair_source?.kind ?? null, fair_label: e.fair_source?.label ?? null, fair_observed_at: e.fair_source?.observed_at ?? null,
+    fair_american_odds: n(e.fair_american_odds), break_even_probability: n(e.break_even_probability), gross_expected_value: n(e.gross_expected_value),
+    net_expected_value: n(e.net_expected_value), net_ev_per_dollar: n(e.net_ev_per_dollar), expected_fee_per_contract: n(e.expected_fees?.per_contract), fee_status: e.expected_fees?.status ?? null,
+    estimated_slippage: n(e.estimated_slippage?.per_contract), maximum_entry_price: n(e.maximum_entry_price), model_uncertainty: e.model_uncertainty ?? null, data_freshness: e.data_freshness ?? null,
+    research_confidence: e.research_confidence?.level ?? null, market_liquidity: e.market_liquidity?.status ?? null, calibration_status: e.calibration_status ?? null,
+    classification: e.classification, decision: e.decision, caps: e.caps ?? null, calc_version: e.calc_version ?? EDFAIR?.CALC_VERSION ?? "unknown", question: o.question.slice(0, 300),
+  };
+}
+async function publishEstimate(auth: string, row: any | null, fetchImpl?: typeof fetch): Promise<void> {
+  if (!row || !SUPABASE_URL || !SUPABASE_ANON_KEY) return;
+  const f = fetchImpl ?? fetch;
+  try {
+    const r = await f(`${SUPABASE_URL}/rest/v1/fair_price_estimates?on_conflict=user_id,estimate_id`, {
+      method: "POST", headers: { apikey: SUPABASE_ANON_KEY, authorization: auth, "content-type": "application/json", prefer: "resolution=ignore-duplicates,return=minimal" },
+      body: JSON.stringify([row]),
+    });
+    LAST_ESTIMATE_WRITE = { ok: r.ok, status: r.status, at: new Date().toISOString(), error: r.ok ? null : (await r.text()).slice(0, 200) };
+    if (!r.ok) console.warn("fair_price_estimates write failed", r.status, LAST_ESTIMATE_WRITE.error);
+  } catch (e) { LAST_ESTIMATE_WRITE = { ok: false, status: 0, at: new Date().toISOString(), error: String((e as Error)?.message ?? e).slice(0, 200) }; }
+}
+
+/**
+ * The contract / price check. Returns null when the question belongs elsewhere:
+ * a sportsbook price on a football team (the football desk has the matchup
+ * model) or a price with no captured market at all (the full pipeline).
+ */
+async function quantPrice(o: { body: any; auth: string; dal: Dal; now: number; cls: any; carried: any; explain?: boolean }): Promise<any | null> {
+  const { body, dal, now, cls } = o;
+  const q = String(body.question ?? "");
+  const carried = o.carried?.contract ?? null;
+  const isContract = cls.intent === "CONTRACT" || cls.intent === "EXPLAIN_EV" && carried?.price_cents != null;
+  const priceCents = cls.price?.contract?.price_cents != null ? Number(cls.price.contract.price_cents) : carried?.price_cents ?? null;
+  const american = cls.price?.american ?? (o.explain ? carried?.american : null) ?? null;
+  const venue = cls.price?.venue ?? carried?.venue ?? null;
+  /* a follow-up that names no team ("find me a better price than this Kalshi contract", "explain why") is about the carried contract */
+  const lookup = carried?.selection && (o.explain || cls.better_price || !quantTokens(q).length) ? carried.selection + " " + q : q;
+  const found = await quantRows(dal, lookup, now);
+  const pick = quantPick(found.rows, found.tokens, lookup, cls.price?.contract?.raw ?? (american != null ? String(american > 0 ? "+" + american : american) : null));
+  if (cls.intent === "PRICE" && (!pick || /^americanfootball_/.test(String(pick.sport ?? "")))) return null;
+  const unsupported: string | null = cls.unsupported_market ?? null;
+  const priced = !!pick && !pick.ambiguous_side && !unsupported;
+  const fair = quantFairOf(priced ? pick.row : null);
+  const missing: string[] = [];
+  if (cls.price?.contract?.error) missing.push(`the contract price could not be read: ${cls.price.contract.error}`);
+  if (unsupported) missing.push(`the question is about ${unsupported}; this desk prices a game's moneyline or spread from captured markets only, so it is not priced here`);
+  else if (!pick) missing.push(found.tokens.length ? `no captured market was found for "${found.tokens.join(" ")}" in the next ten days${found.error ? " (" + found.error + ")" : ""}` : "no team was named, so no market could be looked up");
+  else if (pick.ambiguous_side) missing.push(`both ${pick.away} and ${pick.home} were named and the price is not attached to either; say which side it is for (e.g. "${String(pick.away).split(" ").pop()} YES at ${priceCents ?? "…"}¢")`);
+  else if (!pick.row) missing.push(`EdgeDesk captures no ${pick.market === "spreads" ? "spread at " + pick.point : "moneyline"} for ${pick.selection}`);
+  else if (fair.probability == null) missing.push(`the captured ${pick.selection} price has no usable fair probability (${fair.method ?? "no fair"})`);
+  const cap = priced && EDADAPT ? EDADAPT.modelCapability(pick.sport, pick.market) : null;
+  const fairSource = fair.probability != null ? { kind: fair.kind, label: fair.label ?? "captured no-vig", observed_at: fair.observed_at } : null;
+  const qs = priced && pick.row ? EDINTEL.quoteState({ captured_at: pick.row.last_seen_at, market: pick.market, kickoff: pick.kickoff, now }) : null;
+  const common: any = { fair_probability: fair.probability, fair_source: fairSource, now, fair_ttl_min: qs?.limit_min ?? 90, ttl_min: qs?.limit_min ?? 90 };
+  let evaluation: any = null, scenario: any = null, compare: any = null;
+  const side: string = cls.price?.side ?? carried?.side ?? "YES";
+  if (isContract && priceCents != null && priced) {
+    /* the captured fair is P(selection wins) = P(YES): a NO contract is priced on its complement */
+    const sideFair = fair.probability == null ? null : side === "NO" ? 1 - fair.probability : fair.probability;
+    const base = { ...common, fair_probability: null, fair_probability_yes: fair.probability, side, price_cents: priceCents, quote_observed_at: new Date(now).toISOString(),
+      settlement: { verified: false, mismatch: "the contract's own rules (overtime, postponement, resolution source) are not on file" } };
+    const feeOver = await quantVerifiedFees(dal, venue ?? "kalshi", now);
+    evaluation = EDFAIR.evaluateContract({ ...base, venue: venue ?? "unspecified", fee_override: venue ? feeOver : null });
+    if (!venue) scenario = EDFAIR.evaluateContract({ ...base, venue: "kalshi", fee_override: feeOver });
+    /* the same OUTCOME at every venue: a NO contract is compared with the books' prices on the other side */
+    const outcomeRow = side === "NO" ? pick.other : pick.row;
+    const books = outcomeRow ? await quantBookEntries(dal, outcomeRow) : [];
+    compare = EDFAIR.compareVenues([{ venue: venue ?? "kalshi", side, price_cents: priceCents, quote_observed_at: new Date(now).toISOString(), settlement: base.settlement, fee_override: feeOver }].concat(books as any[]), { ...common, fair_probability: sideFair });
+  } else if (american != null && priced) {
+    const books = pick.row ? await quantBookEntries(dal, pick.row) : [];
+    const bookNamed = (q.match(/\b(draftkings|fanduel|betmgm|caesars|pinnacle|circa|betrivers|bet365|espnbet|fanatics|bovada)\b/i) ?? [])[1] ?? null;
+    evaluation = EDFAIR.evaluateWager({ ...common, book: bookNamed ?? "sportsbook", american, quote_observed_at: new Date(now).toISOString(), stake_dollars: cls.risk_dollars });
+    compare = books.length ? EDFAIR.compareVenues([{ book: bookNamed ?? "sportsbook", american }].concat(books as any[]), common) : null;
+  }
+  const context = priced && pick.sport === "baseball_mlb" ? await quantMlbContext(dal, pick.home, pick.away) : [];
+  const game = pick ? { matchup: `${pick.away} @ ${pick.home}`, sport: pick.sport, sport_label: quantSportLabel(pick.sport), kickoff: pick.kickoff, kickoff_local: quantKickLocal(pick.kickoff, body.timezone ?? null) } : null;
+  const selection = pick?.selection ? pick.selection + (pick.point != null ? " " + (pick.point > 0 ? "+" : "") + pick.point : "") + (isContract ? " " + side : "") : (carried?.selection ?? null);
+  if (priced && pick.row && fair.probability != null && qs) context.unshift(`fair from ${fair.label ?? "the captured market"}, captured ${Math.round((now - Date.parse(pick.row.last_seen_at)) / 60000)} min ago (${qs.status})`);
+  const answer = o.explain ? EDQUANT.renderExplain(evaluation, selection) : EDQUANT.renderContract({ evaluation, selection, game, compare, capability: cap, context, scenario, missing });
+  const state = EDQUANT.stateFrom({ now, prev: EDQUANT.sanitizeState(o.carried), contract: evaluation?.ok ? {
+    venue, side, price_cents: isContract ? priceCents : null, american: isContract ? null : american,
+    selection, sport: pick?.sport ?? null, game_id: pick?.event_id ?? null, market: pick?.market ?? null,
+    fair_probability: fair.probability, fair_kind: fair.kind, fair_label: fair.label, fair_observed_at: fair.observed_at } : null });
+  if (!o.explain) { try { await publishEstimate(o.auth, estimateRecord(evaluation, { venue: isContract ? (venue ?? "unspecified") : null, selection, pick, question: q, now })); } catch { /* best effort */ } }
+  return { answer, model: null, narration: { ok: true, prose: "DETERMINISTIC", critic: null },
+    contract: { intent: cls.intent, evaluation, scenario, compare: compare ? { ...compare, ranked: compare.ranked.map((r: any) => ({ ...r, result: undefined })) } : null, capability: cap, game, selection, missing, venue_named: !!venue, unsupported_market: unsupported, ambiguous_side: !!pick?.ambiguous_side },
+    quant_state: state, build: BUILD };
+}
+
+/** Which sports have captured prices right now, without a board: one read of the sport column. */
+async function quantLiveCoverage(dal: Dal, now: number): Promise<any[]> {
+  const r = await dal.read(`signals?select=sport_key,event_id&commence_time=gte.${new Date(now).toISOString()}&commence_time=lte.${new Date(now + 7 * 86400_000).toISOString()}&limit=3000`, "audit");
+  const counts: Record<string, { n: number; ev: Set<string> }> = {};
+  for (const x of (r.rows ?? [])) { const k = String(x.sport_key ?? ""); if (!counts[k]) counts[k] = { n: 0, ev: new Set() }; counts[k].n++; counts[k].ev.add(String(x.event_id)); }
+  const month = Number(new Intl.DateTimeFormat("en-US", { timeZone: BOARD_DEFAULT_TZ, month: "numeric" }).format(new Date(now)));
+  return (EDADAPT?.supported() ?? []).map((k: string) => {
+    const a = EDADAPT.adapterFor(k);
+    if (!EDADAPT.inSeason(k, month)) return { sport: k, label: a.label, status: "OUT_OF_SEASON", why: a.label + " is out of season" };
+    const c = EDADAPT.coverageStatus(k, { signals: counts[k]?.n ?? 0, games: counts[k]?.ev.size ?? 0, captured_list: CAPTURED_SPORTS, read_error: r.error });
+    return { sport: k, label: a.label, status: c.status, why: c.why, eligible: counts[k]?.ev.size ?? 0 };
+  });
+}
+
+/** The coverage the board reports, refined by the adapters: an uncaptured sport is NOT_CAPTURED, a priced card is distinguished from a line-only one. */
+export function refineCoverage(c: any, signals: number): any {
+  if (!EDADAPT) return c;
+  if (c.status === "NO_GAMES" || ((c.status === "EVALUATED" || c.status === "NO_ELIGIBLE_GAMES") && !signals)) {
+    const r = EDADAPT.coverageStatus(c.sport, { signals, games: c.scheduled ?? 0, captured_list: CAPTURED_SPORTS });
+    if (r.status === "NOT_CAPTURED" || r.status === "NO_PRICES") return { ...c, status: r.status, why: r.why, board_status: c.status };
+  }
+  return { ...c, why: c.why ?? c.sentence ?? null, prices: signals };
+}
+
+/** The audit's fresh reads for one candidate, and the availability sources that exist for its sport. */
+function quantAuditGather(dal: Dal, games: any[], now: number) {
+  const reads = new Map<string, any>();
+  return async (c: any, _round: number) => {
+    const e: any = { fresh: null, fresh_error: null, books: null, availability: null, starters_now: null };
+    const key = c.sig_key ? String(c.sig_key) : null;
+    if (!key) e.fresh_error = "the candidate carries no captured signal to re-read (a reference line)";
+    else {
+      if (!reads.has(key)) {
+        const s = await dal.read(`signals?select=sig_key,event_id,market,selection,point,best_dec,best_book,sharp_fair,consensus_fair,reference_type,pin_dec,pin_opp_dec,n_books,last_seen_at,commence_time&sig_key=eq.${encodeURIComponent(key)}&limit=1`, "audit");
+        const row = (s.rows ?? []).find((r: any) => String(r.sig_key) === key) ?? null;
+        const b = await dal.read(`book_quotes?select=sig_key,book_key,book_title,dec,updated_at,is_fresh&sig_key=eq.${encodeURIComponent(key)}&limit=40`, "audit");
+        const books = (b.rows ?? []).filter((x: any) => String(x.sig_key ?? key) === key && x.is_fresh !== false).map((x: any) => ({ book: x.book_title ?? x.book_key, dec: num(x.dec), updated_at: x.updated_at ?? null }));
+        reads.set(key, { fresh: row, fresh_error: s.error ?? (row ? null : "the signal is no longer on file"), books: b.error ? null : books });
+      }
+      Object.assign(e, reads.get(key));
+    }
+    const g = games.find((x) => x.sport === c.sport && String(x.game_id) === String(c.game_id)) ?? null;
+    if (c.sport === "americanfootball_nfl") {
+      const m = await dal.getMatchupMetrics();
+      const teams = m.json?.nfl?.teams ?? null;
+      if (teams && g) {
+        const av: any[] = [];
+        const now_: any = {};
+        let resolved = 0, asOf: string | null = null;
+        for (const side of ["home", "away"] as const) {
+          const code = String((side === "home" ? g.home_id : g.away_id) ?? "").toUpperCase();
+          const t = teams[code];
+          if (!t) continue;
+          resolved++;
+          const at = t.injuries?.retrieved_at ?? m.json?.generated_at ?? null;
+          if (at && (!asOf || Date.parse(at) > Date.parse(asOf))) asOf = at;
+          const team = side === "home" ? c.home : c.away;
+          const starter = t.starter?.player_name ?? null;
+          if (starter) now_[side] = { name: starter, source: t.starter?.source ?? "nflverse depth charts", observed_at: t.starter?.published_at ?? null };
+          for (const p of (t.injuries?.players ?? [])) {
+            if (!p.status) continue;
+            const isStarter = starter && EDINTEL.normName(p.name) === EDINTEL.normName(starter);
+            av.push({ team, player: p.name, role: p.position === "QB" ? (isStarter ? "QB" : "QB2") : p.position, key: !!isStarter, status: p.status,
+              observed_at: t.injuries?.retrieved_at ?? m.json?.generated_at ?? null, source: t.injuries?.source ?? "official NFL injury report" });
+          }
+        }
+        if (!resolved) { e.availability = null; e.availability_why = "neither team code on this game resolved in the NFL injury build"; }
+        else {
+          e.availability = av;
+          /* complete only when BOTH teams' reports were read: an empty list then means nobody is listed */
+          e.availability_complete = resolved === 2;
+          e.availability_as_of = asOf;
+          if (resolved < 2) e.availability_why = "only one team's injury report resolved for this game";
+        }
+        if (now_.home || now_.away) e.starters_now = now_;
+      } else e.availability_why = "the NFL injury report could not be read for this game";
+    } else if (c.sport === "baseball_mlb") e.availability_why = "no pitcher-scratch feed is wired: mlb_game_cards lists probable starters with no change history";
+    else if (c.sport === "americanfootball_ncaaf") e.availability_why = "college availability is operator-entered; no official feed is wired into the audit";
+    return e;
+  };
+}
+
+/** One write-once row per audited candidate (supabase/opportunity_audits.sql), under the caller's token. */
+export async function publishAudits(auth: string, rows: any[], fetchImpl?: typeof fetch): Promise<void> {
+  if (!rows.length || !SUPABASE_URL || !SUPABASE_ANON_KEY) return;
+  const f = fetchImpl ?? fetch;
+  try {
+    const r = await f(`${SUPABASE_URL}/rest/v1/opportunity_audits?on_conflict=user_id,audit_id`, {
+      method: "POST", headers: { apikey: SUPABASE_ANON_KEY, authorization: auth, "content-type": "application/json", prefer: "resolution=ignore-duplicates,return=minimal" },
+      body: JSON.stringify(rows),
+    });
+    LAST_AUDIT_WRITE = { ok: r.ok, status: r.status, rows: rows.length, at: new Date().toISOString(), error: r.ok ? null : (await r.text()).slice(0, 200) };
+    if (!r.ok) console.warn("opportunity_audits write failed", r.status, LAST_AUDIT_WRITE.error);
+  } catch (e) { LAST_AUDIT_WRITE = { ok: false, status: 0, rows: rows.length, at: new Date().toISOString(), error: String((e as Error)?.message ?? e).slice(0, 200) }; }
+}
+export function auditRecords(audit: any, scan: any, question: string, now: number): any[] {
+  const day = new Date(now).toISOString().slice(0, 10);
+  return (audit?.audited ?? []).map((r: any) => {
+    const c = r.candidate, a = r.audit;
+    const id = quantHash([c.id, c.quote?.odds_decimal, c.quote?.captured_at, a.status, day].join("|"));
+    const ev = (scan?.best && scan.best.candidate.id === c.id) ? scan.best.evaluation : null;
+    return {
+      audit_id: "aud_" + id, candidate_id: String(c.id).slice(0, 200), sport: c.sport, game_id: String(c.game_id), market: c.market,
+      selection: c.selection, line: num(c.line), book: c.quote?.book ?? null, odds_american: num(c.quote?.odds_american), quote_captured_at: c.quote?.captured_at ?? null,
+      sig_key: c.sig_key ?? null,
+      fair_method: c.fair?.method ?? null, fair_probability: num(c.fair?.probability), model_version: c.fair?.validation?.model_version ?? null,
+      status: a.status, reason: String(a.reason ?? "").slice(0, 500), independent_ev: num(a.independent_ev), rounds: r.rounds ?? 1,
+      checks: a.checks, recomputed: a.recomputed, corrections: c.corrected ?? [], classification: ev?.classification ?? null,
+      calc_version: EDFAIR?.CALC_VERSION ?? null, audit_version: EDAUDIT?.VERSION ?? null, question: question.slice(0, 300), audited_at: a.audited_at ?? new Date(now).toISOString(),
+    };
+  });
+}
+
+/** The scan: every sport (the board), the top candidates audited, the answer. */
+async function quantScan(o: { body: any; auth: string; dal: Dal; now: number; cls: any }): Promise<any | null> {
+  const { body, auth, dal, now, cls } = o;
+  const q = String(body.question ?? "");
+  const tz: string | null = typeof body?.timezone === "string" ? body.timezone.slice(0, 64) : null;
+  const plan: any = { depth: "SLATE", budget: 40, intent: "best_bets", entities: { teams: [] } };
+  const ctx: any = { sport: null, sport_source: null, single_game: false };
+  const sw = await sweepBoard({ dal, plan, ctx, question: q, now, boardReq: { timezone: tz, state: null, follow_up: null }, boardScope: {} as any, primary: null, filter: cls.filter ?? null });
+  if (!sw || !sw.board) return null;
+  const board = sw.board;
+  const coverage = (board.coverage ?? []).map((c: any) => refineCoverage(c, sw.signal_counts?.[c.sport] ?? 0));
+  const cands = EDQUANT.candidatesFromBoard(board, cls.filter ?? null).map((c: any) => {
+    const g = sw.games.find((x: any) => x.sport === c.sport && String(x.game_id) === String(c.game_id));
+    return (g && (g.home_starter || g.away_starter)) ? { ...c, starters: { home: g.home_starter, away: g.away_starter } } : c;
+  });
+  dal.budget = (dal.budget ?? 0) + 2 * SCAN_AUDIT_TOP + 2;
+  const audit = await EDAUDIT.run({ candidates: cands, gather: quantAuditGather(dal, sw.games, now), now, top: SCAN_AUDIT_TOP });
+  const evaluate = (c: any, a: any) => {
+    const qs = EDINTEL.quoteState({ captured_at: c.quote?.captured_at, market: c.market, kickoff: c.kickoff, now });
+    const isModel = c.fair?.method === "MODEL_BLEND";
+    const src = isModel ? { kind: "MODEL", tier: c.fair?.validation?.tier ?? null, label: c.fair?.label ?? "EdgeDesk projection", model_version: c.fair?.validation?.model_version ?? null, observed_at: c.fair?.validation?.model_generated_at ?? null }
+      : { kind: /consensus|median/i.test(String(c.fair?.label ?? "")) ? "CONSENSUS_NO_VIG" : "SHARP_NO_VIG", label: c.fair?.label ?? "sharp no-vig", observed_at: c.quote?.captured_at ?? null };
+    const a7 = (a.checks ?? []).find((x: any) => x.id === "A7_CONFIRMATION");
+    const one = (fairP: any, source: any, fairTtl: number) => EDFAIR.evaluateWager({ book: c.quote?.book ?? "sportsbook", decimal: c.quote?.odds_decimal != null ? String(c.quote.odds_decimal) : null, american: c.quote?.odds_decimal == null ? c.quote?.odds_american : null,
+      fair_probability: fairP, push_probability: c.fair?.push_probability ?? null, fair_source: source,
+      quote_observed_at: c.quote?.captured_at ?? null, market: c.market, kickoff: c.kickoff, now, ttl_min: qs?.limit_min ?? 90, fair_ttl_min: fairTtl,
+      confirmation: a7 && a7.result !== "NOT_CHECKED" ? { pass: a7.result === "PASS", why: a7.detail } : null,
+      audit: { status: a.status, reason: a.reason }, settlement: { verified: true }, stake_dollars: cls.risk_dollars ?? null });
+    const own = one(c.fair?.probability, src, isModel ? 24 * 60 : (qs?.limit_min ?? 90));
+    /* the verdict is priced on the fair the audit just re-read, never only on the candidate's older copy:
+       a market candidate takes the re-read fair; a model candidate takes whichever of the two is LOWER in EV */
+    const af = num(a.independent_fair);
+    if (af == null || !(af > 0 && af < 1)) return own;
+    const audited = one(af, { kind: "SHARP_NO_VIG", label: "sharp no-vig, re-read at audit time", observed_at: a.independent_fair_observed_at ?? c.quote?.captured_at ?? null }, qs?.limit_min ?? 90);
+    if (!audited.ok) return own;
+    if (!isModel || !own.ok) return { ...audited, priced_on: "AUDITED_FAIR" };
+    const evOwn = num(own.net_ev_per_dollar), evAud = num(audited.net_ev_per_dollar);
+    return evAud != null && (evOwn == null || evAud < evOwn) ? { ...audited, priced_on: "AUDITED_FAIR (lower than the model's)" } : { ...own, priced_on: "MODEL (lower than the audited market fair)" };
+  };
+  const scan = EDQUANT.scanResult({ board, audit, coverage, not_covered: EDADAPT?.NOT_COVERED ?? [], risk_dollars: cls.risk_dollars ?? null, filter: cls.filter ?? null, now, evaluate });
+  const answer = EDQUANT.renderScan(scan);
+  try { await publishBoardRecords(auth, EDBOARD.records(board, { question: q })); } catch { /* best effort */ }
+  try { await publishAudits(auth, auditRecords(audit, scan, q, now)); } catch { /* best effort */ }
+  const slim = (r: any) => r ? { candidate: { id: r.candidate.id, sport: r.candidate.sport, sport_label: r.candidate.sport_label, matchup: r.candidate.matchup, kickoff_local: r.candidate.kickoff_local, market: r.candidate.market, selection: r.candidate.selection, line: r.candidate.line, quote: r.candidate.quote, fair: { method: r.candidate.fair?.method, label: r.candidate.fair?.label, probability: r.candidate.fair?.probability }, counter: r.candidate.counter, corrected: r.candidate.corrected ?? [] }, audit: r.audit, evaluation: r.evaluation } : null;
+  return {
+    answer, model: null, narration: { ok: true, prose: "DETERMINISTIC", critic: null },
+    scan: { schema: scan.schema, decision: scan.decision, best: slim(scan.best), potential: scan.potential.map(slim), near_misses: scan.near_misses.map(slim), board_near_misses: scan.board_near_misses,
+      coverage: scan.coverage, coverage_scope: scan.coverage_scope, not_scanned: scan.not_scanned, not_covered: scan.not_covered, counts: scan.counts, window: scan.window, timezone: scan.timezone,
+      filter: scan.filter, risk_dollars: scan.risk_dollars, audit_trail: scan.audit_trail, audit_checks: scan.audit_checks, audit_write: quantWriteView(LAST_AUDIT_WRITE) },
+    board_state: EDBOARD.conversationState(board, null),
+    quant_state: EDQUANT.stateFrom({ scan, now }),
+    build: BUILD,
+  };
+}
+
+export async function quantTurn(o: { body: any; auth: string; now?: number; fetchImpl?: typeof fetch }): Promise<any | null> {
+  if (!QUANT_ENABLED || !EDQUANT || !EDFAIR || !o.body) return null;
+  const q = String(o.body.question ?? "").trim();
+  if (!q || q.length > 400) return null;
+  const now = o.now ?? Date.now();
+  const carried = EDQUANT.sanitizeState(o.body?.research_context?.quant ?? null);
+  const boardFollow = EDBOARD && BOARD_ENABLED ? EDBOARD.followUp({ question: q, state: EDBOARD.sanitizeState(o.body?.research_context?.board) }) : null;
+  const cls = EDQUANT.classify(q, { state: carried, has_board_state: !!boardFollow?.is_follow_up });
+  if (!cls.intent) return null;
+  /* staking questions keep the staking engine (the full pipeline sizes them) */
+  if (cls.intent === "SCAN" && (DESK_STAKING.test(q) || o.body.desk !== true || !BOARD_ENABLED || !EDAUDIT)) return null;
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
+  const dal = new Dal({ supabaseUrl: SUPABASE_URL, apikey: SUPABASE_ANON_KEY, authorization: o.auth, budget: 12, mlbFallback: MLB_FALLBACK, ...(o.fetchImpl ? { fetchImpl: o.fetchImpl } : {}) } as any);
+  /* a LITE, deterministic route: it never asks capture for fresh quotes (no odds-API spend), whatever EDGEDESK_QUOTE_REFRESH says */
+  (dal as any).lite = true;
+  const base = { quant: { intent: cls.intent, version: EDQUANT.VERSION } };
+  if (cls.intent === "SCAN") {
+    /* a best-bet question about ONE game — a game packet, or a team EdgeDesk holds prices for — is that game's
+       question, not a cross-sport scan (unless it says "across all sports") */
+    if (!cls.all_sports) {
+      if (o.body.packet) return null;
+      if (quantTokens(q).length) { const named = await quantRows(dal, q, now); if (named.rows.length) return null; }
+    }
+    const r = await quantScan({ body: o.body, auth: o.auth, dal, now, cls }); return r ? { ...r, ...base } : null;
+  }
+  if (cls.intent === "CONTRACT" || cls.intent === "PRICE") { const r = await quantPrice({ body: o.body, auth: o.auth, dal, now, cls, carried }); return r ? { ...r, ...base } : null; }
+  if (cls.intent === "EXPLAIN_EV") return { ...(await quantPrice({ body: o.body, auth: o.auth, dal, now, cls, carried, explain: true })), ...base };
+  if (cls.intent === "COVERAGE") {
+    /* always re-read: a coverage list carried by the client is a claim, not a fact */
+    const live = await quantLiveCoverage(dal, now);
+    return { answer: EDQUANT.renderCoverage({ state: carried, coverage: live }), model: null, narration: { ok: true, prose: "DETERMINISTIC", critic: null }, coverage: live.length ? live : (carried?.coverage ?? []), quant_state: EDQUANT.stateFrom({ now, prev: carried, scan: null }), ...base, build: BUILD };
+  }
+  if (cls.intent === "OUTAGE") {
+    const r = await dal.read(`signals?select=sport_key,last_seen_at&last_seen_at=gte.${new Date(now - 3 * 86400_000).toISOString()}&order=last_seen_at.desc.nullslast&limit=400`, "audit");
+    const newest: Record<string, string> = {};
+    for (const x of (r.rows ?? [])) { const k = String(x.sport_key ?? ""); if (x.last_seen_at && (!newest[k] || Date.parse(x.last_seen_at) > Date.parse(newest[k]))) newest[k] = x.last_seen_at; }
+    const all = Object.values(newest).sort((a, b) => Date.parse(b) - Date.parse(a));
+    const subj = sanitizeSubject(o.body?.research_context);
+    const feed = r.error ? { last_captured_at: null, error: r.error } : { last_captured_at: all[0] ?? null, sports: Object.entries(newest).map(([k, t]) => ({ sport: k, label: quantSportLabel(k), last_captured_at: t })) };
+    return { answer: EDQUANT.renderOutage({ feed, game: subj ? `${subj.away ?? ""} @ ${subj.home ?? ""}`.trim() : null, now }), model: null, narration: { ok: true, prose: "DETERMINISTIC", critic: null }, feed, quant_state: EDQUANT.stateFrom({ now, prev: carried }), ...base, build: BUILD };
+  }
+  return null;
+}
+
 export async function deskTurn(o: { body: any; auth: string; now?: number; fetchImpl?: typeof fetch }): Promise<any | null> {
   if (!DESK_ENABLED || !EDDESK || !o.body || o.body.desk !== true) return null;
   const q = String(o.body.question ?? "").trim();
@@ -44074,6 +46726,20 @@ export async function handle(req: Request): Promise<Response> {
         quote_refresh: { enabled: QUOTE_REFRESH, secret_configured: !!CAPTURE_SECRET, gap_min: QUOTE_REFRESH_GAP_MS / 60000, timeout_ms: QUOTE_REFRESH_TIMEOUT_MS,
           note: QUOTE_REFRESH ? (CAPTURE_SECRET ? "a stale board asks capture for one pass, then re-reads" : "EDGEDESK_QUOTE_REFRESH=1 but CRON_SECRET is not set on this function, so every refresh is BLOCKED") : "off: a stale quote is reported as stale and never refreshed by the desk" },
         last_write: LAST_BOARD_WRITE,
+      },
+      /* The quant desk: kernel versions, the captured sports, the venues and
+         their fee verification, the thresholds and the last audit write. */
+      quant_kernel: {
+        enabled: QUANT_ENABLED,
+        quant: EDQUANT?.VERSION ?? null, fair_odds: EDFAIR?.VERSION ?? null, calc: EDFAIR?.CALC_VERSION ?? null,
+        audit: EDAUDIT?.VERSION ?? null, adapters: EDADAPT?.VERSION ?? null,
+        audit_top: SCAN_AUDIT_TOP, audit_max_rounds: EDAUDIT?.MAX_ROUNDS ?? null,
+        captured_sports: EDADAPT ? EDADAPT.capturedSports(CAPTURED_SPORTS) : null,
+        captured_sports_source: CAPTURED_SPORTS ? "EDGEDESK_CAPTURED_SPORTS" : "the capture defaults (capture/index.ts DEFAULT_SPORTS)",
+        venues: EDFAIR ? Object.keys(EDFAIR.VENUES).map((k) => ({ venue: k, fee: EDFAIR.VENUES[k].fee.kind, verification: EDFAIR.VENUES[k].fee.verification })) : null,
+        thresholds: EDFAIR ? EDFAIR.thresholds() : null,
+        last_audit_write: quantWriteView(LAST_AUDIT_WRITE), last_estimate_write: quantWriteView(LAST_ESTIMATE_WRITE),
+        note: "The scan runs for desk clients on a best-bet question that names no league; contract, price, coverage, outage and explain-EV questions for every client. It makes no odds-API request: it reads captured prices only.",
       },
       /* Slice 8: the staking kernel, the policy defaults in force, and the
          last audit-trail write. An operator reading this can tell whether a
@@ -44275,6 +46941,15 @@ export async function handle(req: Request): Promise<Response> {
   if (!dry) {
     try { const pt = await propsTurn({ body, auth }); if (pt) return await rjson(pt, 200, "deterministic"); }
     catch (e) { try { console.error("edgedesk_ai props turn threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
+  }
+
+  /* --- the quant desk: the audited cross-sport scan (desk clients), and
+     contract / price checks, coverage, outage and explain-EV for every
+     client. Before the football desk, so a question that names no league is
+     not answered from football alone and "61¢" is never read as a line. */
+  if (!dry) {
+    try { const qt = await quantTurn({ body, auth }); if (qt) return await rjson(qt, 200, "deterministic"); }
+    catch (e) { try { console.error("edgedesk_ai quant turn threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
   }
 
   /* --- the desk: a short, direct answer from typed evidence -------------

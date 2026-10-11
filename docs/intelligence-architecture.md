@@ -811,3 +811,19 @@ rephrase.
 **Verification.** `npm run intel:desk` (kernel + real handler),
 `npm run intel:desk:sql` (live PostgreSQL), `tools/research/odds_parity.test.js`,
 and section 6 of `tools/intelligence/desk_ui.e2e.js` (Chromium).
+
+## 16. The quant desk (the audited cross-sport scan and contract prices)
+
+A best-bet question that names no league, from a desk client, is answered by
+`quantTurn` (index.ts) before the football desk: the board's sweep of every
+sport in season, run LITE (it never asks capture to refresh), coverage refined
+by the sport adapters (NOT_CAPTURED / NO_PRICES), the top three candidates
+audited by EDAUDIT on fresh, uncached reads, each priced by EDFAIR, and
+EDQUANT's deterministic answer. Contract and price checks, "which sports
+couldn't be scanned?", the odds-outage question and "explain why this contract
+has negative EV" are answered for every client. Football-scoped questions,
+staking questions and board follow-ups take the routes above, unchanged. The
+browser sends quant questions to the server before its football resolver, and
+an "A vs B" naming no football team is handed on rather than answered as a
+missing football game. See `docs/quant-desk/DESIGN.md`.
+

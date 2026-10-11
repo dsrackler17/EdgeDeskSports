@@ -23,6 +23,11 @@ on:
     paths:
       - 'supabase/functions/edgedesk_ai/**'
       - 'lib/edgedesk_sports.js'
+      - 'lib/edgedesk_fairodds.js'
+      - 'lib/edgedesk_sport_adapters.js'
+      - 'lib/edgedesk_calibration.js'
+      - 'supabase/quant_desk.sql'
+      - 'football/validation/calibration_props_*.json'
       - 'supabase/recommendation_ledger.sql'
       - 'supabase/research_packets.sql'
       - 'tools/intelligence/**'
@@ -77,6 +82,11 @@ on:
     paths:
       - 'supabase/functions/edgedesk_ai/**'
       - 'lib/edgedesk_sports.js'
+      - 'lib/edgedesk_fairodds.js'
+      - 'lib/edgedesk_sport_adapters.js'
+      - 'lib/edgedesk_calibration.js'
+      - 'supabase/quant_desk.sql'
+      - 'football/validation/calibration_props_*.json'
       - 'supabase/research_packets.sql'
       - 'tools/intelligence/**'
       - '.github/workflows/intelligence-ci.yml'
@@ -151,6 +161,16 @@ jobs:
         run: node tools/intelligence/deploy_doctor.test.js
       - name: Non-QB personnel availability on the desk answers from the measurement and never prices an injury
         run: node tools/intelligence/personnel_desk.test.js
+      - name: The fair-odds engine refuses the wrong unit, applies only a venue's own fees and never calls an unverified schedule an edge
+        run: node tools/intelligence/fairodds.test.js
+      - name: The adversarial auditor re-reads, recomputes independently, rejects the generator and ends its correction loop
+        run: node tools/intelligence/audit.test.js
+      - name: The quant desk routes the acceptance questions and answers them from deterministic services
+        run: node tools/intelligence/quant.test.js
+      - name: The quant desk through the real handler — the audited scan, contract checks, coverage and outage
+        run: node tools/intelligence/quant_host.test.js
+      - name: Calibration is claimed only against the close, profit only with an interval above zero, never with look-ahead
+        run: node tools/intelligence/calibration.test.js
 
   football-artifacts:
     runs-on: ubuntu-latest
@@ -195,3 +215,7 @@ jobs:
         run: node tools/intelligence/research_packets_rls_sql.test.js
       - name: A recorded stake cannot be edited or deleted, a BET cannot be zero units and a PASS cannot carry one
         run: node tools/intelligence/stake_sql.test.js
+      - name: The quant desk ledgers are write-once, reader-owned, unit-checked and chronologically separated
+        run: node tools/intelligence/quant_sql.test.js
+        env:
+          QUANT_SQL_REQUIRED: '1'

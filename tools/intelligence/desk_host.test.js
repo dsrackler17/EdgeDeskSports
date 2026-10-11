@@ -84,8 +84,13 @@ const NOW = Date.now();
     return { status: r.status, j: await r.json() };
   }
 
-  /* ---- 1. the broad question ------------------------------------------ */
-  const r1 = await ask("What's the best market line value today?");
+  /* ---- 1. the broad question ------------------------------------------
+     A question that names NO league is now the quant desk's audited scan of
+     every sport (tools/intelligence/quant_host.test.js); the football desk
+     answers the same question scoped to football. */
+  const broad = await ask("What's the best market line value today?");
+  ok('a question naming no league goes to the audited cross-sport scan, not the football desk', broad.status === 200 && broad.j.quant && broad.j.quant.intent === 'SCAN' && !broad.j.desk, broad.j.quant || Object.keys(broad.j));
+  const r1 = await ask("What's the best football market line value today?");
   const d1 = r1.j.desk;
   ok('desk answers the broad question', r1.status === 200 && d1 && d1.intent === 'BOARD', r1.j.error || (d1 && d1.intent));
   ok('the pick is EdgeDesk’s #1: Houston -3', /^Best value right now: Houston Texans -3/.test(d1.deterministic_answer), d1.deterministic_answer);
@@ -99,13 +104,13 @@ const NOW = Date.now();
   ok('the focus is recorded write-once, pregame', posted.some((p) => p.table === 'desk_prediction_history' && p.body.selection === 'Houston Texans -3' && Date.parse(p.body.captured_at) < Date.parse(p.body.kickoff)), posted.map((p) => p.table));
 
   /* ---- 2. the writer cannot change the pick ---------------------------- */
-  const swap = await ask("What's the best market line value today?", { answer: 'Best value right now: Texas State +2.5 at -110. EdgeDesk makes it North Texas -2.4.' });
+  const swap = await ask("What's the best football market line value today?", { answer: 'Best value right now: Texas State +2.5 at -110. EdgeDesk makes it North Texas -2.4.' });
   ok('a rewrite naming a different pick is rejected', swap.j.desk.narration.prose === 'REJECTED_BY_CRITIC' && /^Best value right now: Houston/.test(swap.j.answer), swap.j.desk.narration);
   const faithful = (req) => req.messages[0].content.replace('Best value right now:', 'The best value on the board right now is');
-  const good = await ask("What's the best market line value today?", { answer: faithful });
+  const good = await ask("What's the best football market line value today?", { answer: faithful });
   ok('a faithful rephrase ships as the model’s prose', good.j.desk.narration.prose === 'MODEL' && /^The best value on the board right now is Houston Texans -3/.test(good.j.answer), good.j.desk.narration);
   ok('the writer was told it may only rephrase', modelCalls.length === 1 && /Do not add any number/.test(modelCalls[0].system));
-  const invented = await ask("What's the best market line value today?", { answer: (req) => req.messages[0].content + ' Houston covers 71% of the time here.' });
+  const invented = await ask("What's the best football market line value today?", { answer: (req) => req.messages[0].content + ' Houston covers 71% of the time here.' });
   ok('an invented number is rejected', invented.j.desk.narration.prose === 'REJECTED_BY_CRITIC' && invented.j.desk.narration.critic.findings.some((f) => f.code === 'NUMBER_NOT_IN_EVIDENCE'), invented.j.desk.narration.critic);
 
   /* ---- 3. follow-ups ride the carried state ---------------------------- */
@@ -127,7 +132,7 @@ const NOW = Date.now();
 
   /* ---- 5. stale prices ------------------------------------------------- */
   const stale = SIGNALS.map((s) => Object.assign({}, s, { last_seen_at: new Date(NOW - 2126 * 60000).toISOString() }));
-  const s1 = await ask("What's the best market line value today?", { signals: stale });
+  const s1 = await ask("What's the best football market line value today?", { signals: stale });
   ok('a stale price is never the current best value', !/^Best value right now/.test(s1.j.answer) && /^Nothing (stands out|to call value)/.test(s1.j.desk.deterministic_answer), s1.j.desk.deterministic_answer);
   ok('nothing stale is recorded', !posted.some((p) => p.table === 'desk_prediction_history'));
 

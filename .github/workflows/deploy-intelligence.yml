@@ -72,6 +72,10 @@ on:
         description: 'Apply supabase/bankroll_and_stakes.sql — the reader''s risk policy and the write-once trail of every position the sizing engine produced (idempotent)'
         type: boolean
         default: false
+      apply_quant_desk:
+        description: 'Apply supabase/quant_desk.sql — verified venue fee schedules, the audit trail, the fair-price checks and the backtest record (idempotent)'
+        type: boolean
+        default: false
       apply_tennis_live_center:
         description: 'Apply supabase/tennis_live_center.sql — the live match centre the record jobs join against (idempotent; already deployed, here so it has an apply path at all)'
         type: boolean
@@ -219,6 +223,16 @@ jobs:
           # server and attacks it. Its last statement is a report, and a row
           # reading CHECK THIS is the thing to read before deploying anything.
           psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/bankroll_and_stakes.sql
+
+      - name: Apply the quant desk ledgers
+        if: ${{ inputs.apply_quant_desk && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Idempotent and additive; quant_sql.test.js applies it twice against a
+          # throwaway server and attacks it. Its last statement is a report, and a
+          # row reading CHECK THIS is the thing to read before deploying anything.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/quant_desk.sql
 
       - name: Apply the tennis live centre contract
         if: ${{ inputs.apply_tennis_live_center && steps.creds.outputs.have_db == 'yes' }}

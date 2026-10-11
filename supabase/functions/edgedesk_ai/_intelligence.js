@@ -3753,6 +3753,9 @@
     if (explicit.length === 2) {
       return Object.assign({}, none, {
         state: 'NOT_ON_CARD', named: explicit, sport: null,
+        /* how many of the names THIS card knows: 0 means neither side is a team
+           here, so the question may belong to another sport entirely */
+        known_teams: named.length,
         source: SOURCE,
         note: '"' + explicit[0] + '" and "' + explicit[1] + '" were named as a matchup, and no scheduled game '
           + 'with BOTH of those sides is on any card EdgeDesk publishes (' + rows.length
@@ -3808,7 +3811,7 @@
     var pair = matchupPair(question);
     if (pair.length === 2) {
       return Object.assign({}, none, {
-        state: 'NOT_ON_CARD', named: pair, sport: null,
+        state: 'NOT_ON_CARD', named: pair, sport: null, known_teams: named.length,
         source: SOURCE,
         note: '"' + pair[0] + '" and "' + pair[1] + '" were named as a matchup, and no scheduled game with '
           + 'BOTH of those sides is on any card EdgeDesk publishes (' + rows.length
@@ -3950,9 +3953,15 @@
     /* 5 — the subject the conversation is already on. */
     var held = pick(function (r) { return r.how === 'carried'; });
     if (held) return held;
-    /* An explicit "A vs B" neither card carries. */
-    var pair = pick(function (r) { return r.state === 'NOT_ON_CARD'; });
-    if (pair) return pair;
+    /* An explicit "A vs B" neither card carries. How many of the names are
+       teams is the most ANY card knows: "Chiefs vs Bills" (both NFL, not
+       playing each other) is not a non-football pair because the college card
+       answered first. */
+    var pairs = runs.filter(function (x) { return x.r.state === 'NOT_ON_CARD'; });
+    if (pairs.length) {
+      var kt = Math.max.apply(null, pairs.map(function (x) { return x.r.known_teams || 0; }));
+      return kt !== (pairs[0].r.known_teams || 0) ? Object.assign({}, pairs[0].r, { known_teams: kt }) : pairs[0].r;
+    }
     /* 6 — somebody else was named, on EVERY card. One league not knowing a
        name proves nothing; all of them not knowing it is the finding. */
     var changed = runs.filter(function (x) { return x.r.state === 'SUBJECT_CHANGED'; });
