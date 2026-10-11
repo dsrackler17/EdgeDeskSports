@@ -200,12 +200,13 @@ function nflGamesCsv() {
     chk('no page errors on the research pages', errors.length === 0, errors);
     await ctx.close();
 
-    /* phone: the section fits */
+    /* phone: the section fits — on the fullest state the data holds (every
+       state but MISSING ends in the summary footer; D is always present) */
     ({ ctx, page, errors } = await open({ width: 390, height: 844 }));
-    const phoneGid = seen.A || seen.B || seen.E;
+    const phoneK = ['A', 'B', 'C', 'E', 'D'].find((k) => seen[k]), phoneGid = seen[phoneK];
     await page.goto(base + '/research/cfb/#/game/' + encodeURIComponent(phoneGid), { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('#s-props [data-pp-gsec] .pp-gfoot', { timeout: 20000 });
-    chk('no horizontal scroll with PLAYER PROP RESEARCH on a phone', await noHScroll(page));
+    chk('no horizontal scroll with PLAYER PROP RESEARCH on a phone (' + phoneK + ' · ' + phoneGid + ')', await noHScroll(page));
     await shot(page, 'research_phone_' + phoneGid, '#s-props');
     await ctx.close();
 
