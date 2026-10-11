@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-11T01:03:26.356Z",
+ "generated_at": "2026-10-11T06:01:49.627Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,27 +119,27 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 81,
+  "total": 67,
   "by_group": {
-   "other": 44,
-   "p4": 38,
+   "p4": 32,
+   "other": 36,
    "independent": 1
   },
   "by_matchup": {
-   "conference": 75,
    "non_conference": 3,
+   "conference": 61,
    "fbs_fcs": 3
   },
   "by_conference": {
-   "pac12": 5,
-   "sec": 10,
-   "american": 8,
-   "mwc": 9,
-   "sunbelt": 10,
-   "acc": 10,
-   "bigten": 9,
-   "big12": 9,
+   "big12": 8,
+   "mwc": 6,
+   "pac12": 4,
    "cusa": 6,
+   "american": 7,
+   "sunbelt": 7,
+   "bigten": 7,
+   "acc": 9,
+   "sec": 8,
    "mac": 7,
    "independents": 1
   },
@@ -165,33 +165,12 @@
   "efficiency_replay": {
    "source_schema": "edgedesk_cfb_engine_efficiency_v1",
    "season": 2026,
-   "artifact_games_with_stats": 738,
-   "artifact_team_game_rows": 1463,
-   "games_absorbed_with_stats": 412,
-   "team_rows_absorbed": 705,
-   "final_games_without_play_stats": 20,
-   "missing_game_ids": [
-    "401856714",
-    "401862797",
-    "401866440",
-    "401856717",
-    "401856718",
-    "401856825",
-    "401858255",
-    "401858257",
-    "401858259",
-    "401858480",
-    "401858484",
-    "401862796",
-    "401862799",
-    "401866435",
-    "401866437",
-    "401866438",
-    "401866439",
-    "401861964",
-    "401856713",
-    "401858483"
-   ],
+   "artifact_games_with_stats": 780,
+   "artifact_team_game_rows": 1545,
+   "games_absorbed_with_stats": 432,
+   "team_rows_absorbed": 745,
+   "final_games_without_play_stats": 0,
+   "missing_game_ids": [],
    "measured_features": [
     "success_rate",
     "early_down_success",
@@ -217,30 +196,30 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 81
+  "PREDICTED": 67
  },
  "weather": {
-  "requested": 77,
-  "answered": 77,
-  "dome": 4,
+  "requested": 64,
+  "answered": 64,
+  "dome": 3,
   "no_venue": 0,
   "failed": 0,
   "carried": 0,
   "carry_dropped": 0,
   "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "77 of 77 outdoor game(s) got a forecast; 4 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "64 of 64 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 81
+  "NO_MARKET": 67
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
   "season": 2026,
-  "games_in_artifact": 738,
+  "games_in_artifact": 780,
   "completed_games_replayed": 432,
-  "completed_games_with_both_team_efficiency": 293,
-  "missing_count": 139,
+  "completed_games_with_both_team_efficiency": 313,
+  "missing_count": 119,
   "problem": null
  },
  "checks": [
@@ -301,12 +280,12 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 43,
-    "total": 81,
+    "non_power_games": 35,
+    "total": 67,
     "example": [
-     "San Diego State @ Oregon State",
-     "UAB @ Memphis",
-     "Nevada @ UTEP"
+     "Boise State @ Fresno State",
+     "Delaware @ Middle Tennessee",
+     "Florida International @ Jacksonville State"
     ]
    }
   },
@@ -321,7 +300,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 75,
+    "conference_games": 61,
     "wrong": 0
    }
   },
@@ -355,8 +334,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 81,
-    "audit_total": 81
+    "slate": 67,
+    "audit_total": 67
    }
   },
   {
@@ -436,7 +415,7 @@
  "warnings": [
   {
    "name": "completed games waiting on play-level efficiency",
-   "count": 139,
+   "count": 119,
    "detail": [
     {
      "game_id": "401864425",

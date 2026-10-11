@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_rankings_health_v1",
- "generated_at": "2026-10-10T23:40:45.744Z",
+ "generated_at": "2026-10-11T06:01:02.348Z",
  "build_version": {
   "schema_version": "1.1.0",
   "versions": {
@@ -14,7 +14,7 @@
    "scheme_matchup": "scheme_matchup_v1",
    "simulation": "simulation_v1"
   },
-  "digest": "2a1c6735502965aa"
+  "digest": "de7ece81b5a53e7a"
  },
  "season": 2026,
  "week": 6,
@@ -129,11 +129,11 @@
   },
   "k_room": {
    "label": "K room",
-   "rated": 136,
-   "ranked": 136,
+   "rated": 138,
+   "ranked": 138,
    "unranked_low_confidence": 0,
-   "no_rating": 2,
-   "coverage": 0.986
+   "no_rating": 0,
+   "coverage": 1
   },
   "qb": {
    "label": "QB room",
@@ -225,11 +225,11 @@
   },
   "availability": {
    "label": "Availability",
-   "rated": 46,
-   "ranked": 46,
+   "rated": 0,
+   "ranked": 0,
    "unranked_low_confidence": 0,
-   "no_rating": 92,
-   "coverage": 0.333
+   "no_rating": 138,
+   "coverage": 0
   }
  },
  "confidence": {
@@ -255,8 +255,8 @@
   {
    "team": "Massachusetts",
    "key": "massachusetts",
-   "games_played": 5,
-   "games_in_the_play_table": 5,
+   "games_played": 6,
+   "games_in_the_play_table": 6,
    "box_only_games": 0,
    "missing": [
     "special_teams"
@@ -266,17 +266,6 @@
   {
    "team": "UConn",
    "key": "uconn",
-   "games_played": 5,
-   "games_in_the_play_table": 5,
-   "box_only_games": 0,
-   "missing": [
-    "special_teams"
-   ],
-   "reason": "special teams: the special-teams contract scored 29% of its weight, below the 34% floor. a team must score at least a third of the weighted special-teams contract before it gets a special-teams RATING at all. Below that the unit is DECLARED MISSING rather than rated off one punt: unlike offence and defence, a special-teams contract can be satisfied by a single component and would otherwise publish \"the punt return rating\" under the label \"special teams\"."
-  },
-  {
-   "team": "UTSA",
-   "key": "utsa",
    "games_played": 6,
    "games_in_the_play_table": 6,
    "box_only_games": 0,
@@ -290,6 +279,17 @@
    "key": "appstate",
    "games_played": 5,
    "games_in_the_play_table": 5,
+   "box_only_games": 0,
+   "missing": [
+    "special_teams"
+   ],
+   "reason": "special teams: the special-teams contract scored 29% of its weight, below the 34% floor. a team must score at least a third of the weighted special-teams contract before it gets a special-teams RATING at all. Below that the unit is DECLARED MISSING rather than rated off one punt: unlike offence and defence, a special-teams contract can be satisfied by a single component and would otherwise publish \"the punt return rating\" under the label \"special teams\"."
+  },
+  {
+   "team": "UTSA",
+   "key": "utsa",
+   "games_played": 6,
+   "games_in_the_play_table": 6,
    "box_only_games": 0,
    "missing": [
     "special_teams"
@@ -331,171 +331,139 @@
   }
  ],
  "ingestion": {
-  "completed_games_in_schedule": 430,
-  "last_completed_kickoff": "2026-10-10T19:45:00.000Z",
-  "team_games_read": 1548,
+  "completed_games_in_schedule": 446,
+  "last_completed_kickoff": "2026-10-11T00:00:00.000Z",
+  "team_games_read": 1624,
   "teams_with_a_performance_rating": 138,
-  "special_teams_team_games_joined": 856,
-  "special_teams_coverage_joined": 809,
+  "special_teams_team_games_joined": 888,
+  "special_teams_coverage_joined": 839,
   "special_teams_box_available": true,
   "opponent_adjustment_converged": true
  },
  "source_freshness": {
-  "completed_games": 430,
-  "latest_completed_kickoff": "2026-10-10T19:45:00.000Z",
-  "completed_games_digest": "9e036229176b09c6",
+  "completed_games": 446,
+  "latest_completed_kickoff": "2026-10-11T00:00:00.000Z",
+  "completed_games_digest": "e3da711bfc8d7b94",
   "finality": {
-   "schedule_final": 412,
-   "confirmed_by_box_alone": 18,
+   "schedule_final": 432,
+   "confirmed_by_box_alone": 14,
    "games": [
     {
-     "game_id": "401856714",
-     "home": "Florida",
-     "away": "South Carolina",
+     "game_id": "401860902",
+     "home": "Oregon State",
+     "away": "San Diego State",
      "week": 6,
-     "start_date": "2026-10-10T16:45:00.000Z",
+     "start_date": "2026-10-10T22:00:00.000Z",
      "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
     },
     {
-     "game_id": "401862797",
-     "home": "East Carolina",
-     "away": "Rice",
+     "game_id": "401864517",
+     "home": "UTEP",
+     "away": "Nevada",
      "week": 6,
-     "start_date": "2026-10-10T17:00:00.000Z",
+     "start_date": "2026-10-10T23:00:00.000Z",
      "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
     },
     {
-     "game_id": "401866440",
-     "home": "Massachusetts",
-     "away": "Miami (OH)",
+     "game_id": "401862798",
+     "home": "Memphis",
+     "away": "UAB",
      "week": 6,
-     "start_date": "2026-10-10T18:00:00.000Z",
+     "start_date": "2026-10-10T23:00:00.000Z",
      "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
     },
     {
-     "game_id": "401858259",
-     "home": "California",
-     "away": "Virginia Tech",
+     "game_id": "401856715",
+     "home": "Kentucky",
+     "away": "LSU",
      "week": 6,
-     "start_date": "2026-10-10T19:30:00.000Z",
+     "start_date": "2026-10-10T23:00:00.000Z",
      "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
     },
     {
-     "game_id": "401862799",
-     "home": "Navy",
-     "away": "Tulsa",
+     "game_id": "401864518",
+     "home": "UNLV",
+     "away": "North Dakota State",
      "week": 6,
-     "start_date": "2026-10-10T19:30:00.000Z",
+     "start_date": "2026-10-10T23:00:00.000Z",
      "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
     },
     {
-     "game_id": "401856825",
-     "home": "Kansas State",
-     "away": "Houston",
+     "game_id": "401869943",
+     "home": "Marshall",
+     "away": "Coastal Carolina",
      "week": 6,
-     "start_date": "2026-10-10T19:30:00.000Z",
+     "start_date": "2026-10-10T23:00:00.000Z",
      "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
     },
     {
-     "game_id": "401856718",
-     "home": "Vanderbilt",
-     "away": "Ole Miss",
+     "game_id": "401858258",
+     "home": "Virginia",
+     "away": "Syracuse",
      "week": 6,
-     "start_date": "2026-10-10T19:30:00.000Z",
+     "start_date": "2026-10-10T23:30:00.000Z",
      "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
     },
     {
-     "game_id": "401856717",
-     "home": "Oklahoma",
-     "away": "Texas",
+     "game_id": "401856712",
+     "home": "Alabama",
+     "away": "Georgia",
      "week": 6,
-     "start_date": "2026-10-10T19:30:00.000Z",
+     "start_date": "2026-10-10T23:30:00.000Z",
      "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
     },
     {
-     "game_id": "401858484",
-     "home": "Oregon",
-     "away": "UCLA",
+     "game_id": "401858485",
+     "home": "Penn State",
+     "away": "USC",
      "week": 6,
-     "start_date": "2026-10-10T19:30:00.000Z",
+     "start_date": "2026-10-10T23:30:00.000Z",
      "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
     },
     {
-     "game_id": "401866438",
-     "home": "Ohio",
-     "away": "Central Michigan",
+     "game_id": "401869949",
+     "home": "Georgia Southern",
+     "away": "James Madison",
      "week": 6,
-     "start_date": "2026-10-10T19:30:00.000Z",
+     "start_date": "2026-10-10T23:30:00.000Z",
      "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
     },
     {
-     "game_id": "401862796",
-     "home": "North Texas",
-     "away": "Charlotte",
+     "game_id": "401869965",
+     "home": "Louisiana Tech",
+     "away": "Louisiana",
      "week": 6,
-     "start_date": "2026-10-10T19:30:00.000Z",
+     "start_date": "2026-10-10T23:30:00.000Z",
      "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
     },
     {
-     "game_id": "401866437",
-     "home": "Toledo",
-     "away": "Buffalo",
+     "game_id": "401864516",
+     "home": "Northern Illinois",
+     "away": "Air Force",
      "week": 6,
-     "start_date": "2026-10-10T19:30:00.000Z",
+     "start_date": "2026-10-10T23:30:00.000Z",
      "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
     },
     {
-     "game_id": "401866439",
-     "home": "Western Michigan",
-     "away": "Kent State",
+     "game_id": "401856827",
+     "home": "Utah",
+     "away": "Kansas",
      "week": 6,
-     "start_date": "2026-10-10T19:30:00.000Z",
+     "start_date": "2026-10-11T00:00:00.000Z",
      "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
     },
     {
-     "game_id": "401858480",
-     "home": "Michigan State",
-     "away": "Illinois",
+     "game_id": "401858486",
+     "home": "Purdue",
+     "away": "Minnesota",
      "week": 6,
-     "start_date": "2026-10-10T19:30:00.000Z",
-     "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
-    },
-    {
-     "game_id": "401858257",
-     "home": "Notre Dame",
-     "away": "Stanford",
-     "week": 6,
-     "start_date": "2026-10-10T19:30:00.000Z",
-     "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
-    },
-    {
-     "game_id": "401858255",
-     "home": "Georgia Tech",
-     "away": "Duke",
-     "week": 6,
-     "start_date": "2026-10-10T19:30:00.000Z",
-     "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
-    },
-    {
-     "game_id": "401866435",
-     "home": "Akron",
-     "away": "Eastern Michigan",
-     "week": 6,
-     "start_date": "2026-10-10T19:30:00.000Z",
-     "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
-    },
-    {
-     "game_id": "401861964",
-     "home": "Temple",
-     "away": "UConn",
-     "week": 6,
-     "start_date": "2026-10-10T19:45:00.000Z",
+     "start_date": "2026-10-11T00:00:00.000Z",
      "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
     }
    ],
    "basis": "a game is FINAL when a feed this pipeline reads says it was played: the schedule feed with a score, or the ESPN box by carrying both teams. Whichever publishes first is believed, and the board says which one it was."
   },
-  "team_games_read": 1548,
+  "team_games_read": 1624,
   "teams_with_a_performance_rating": 138,
   "basis": "the completed games and team-games this build actually read out of the season in progress, and how many teams that was enough to rate. A rebuild that read a stale cache shows the same numbers as the week before it."
  },
@@ -504,13 +472,13 @@
   "season": 2026,
   "reference_season": 2025,
   "per_team_game": {
-   "team_games": 857,
-   "fg_att": 1.39,
-   "xp_att": 3.09,
-   "punts": 4.08,
-   "punts_in20": 1.25,
+   "team_games": 889,
+   "fg_att": 1.41,
+   "xp_att": 3.11,
+   "punts": 4.14,
+   "punts_in20": 1.27,
    "kr": 1.43,
-   "pr": 1.24
+   "pr": 1.26
   },
   "reference_per_team_game": {
    "team_games": 1914,
@@ -522,14 +490,14 @@
    "pr": 1.26
   },
   "ratio_to_reference": {
-   "fg_att": 0.91,
-   "xp_att": 1.02,
-   "punts": 0.99,
-   "punts_in20": 0.95,
+   "fg_att": 0.93,
+   "xp_att": 1.03,
+   "punts": 1,
+   "punts_in20": 0.96,
    "kr": 0.85,
-   "pr": 0.98
+   "pr": 1
   },
-  "mean_ratio": 0.95,
+  "mean_ratio": 0.96,
   "basis": "per-team-game kicking, punting and return volumes in this season’s box artifact against the most recent completed season this build read. A season in progress publishes in pieces — a game lands, then the punter’s line lands — so a ratio below one is the FEED still filling in, not football that did not happen. It moves no rating: it is why some teams have no special-teams number yet."
  },
  "history": {
@@ -548,12 +516,12 @@
    "week_ordinal": 6,
    "week_label": "Week 6",
    "season_type": "regular",
-   "generated_at": "2026-10-10T23:40:45.744Z",
+   "generated_at": "2026-10-11T06:01:02.348Z",
    "team_count": 138,
    "rating_version": "team_rating_v1"
   }
  },
- "last_rankings_build": "2026-10-10T23:40:45.744Z",
+ "last_rankings_build": "2026-10-11T06:01:02.348Z",
  "notes": [
   "Every count here is of FBS teams. A team with no rating in a category is listed by name in genuinely_unavailable with the reason that team was given, so a gap is a lookup rather than an investigation.",
   "A rating exists when the evidence exists. Sample size is carried by CONFIDENCE and by the reliability shrink, never by a null."
