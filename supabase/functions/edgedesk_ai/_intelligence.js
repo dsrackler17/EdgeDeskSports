@@ -3753,6 +3753,9 @@
     if (explicit.length === 2) {
       return Object.assign({}, none, {
         state: 'NOT_ON_CARD', named: explicit, sport: null,
+        /* how many of the names THIS card knows: 0 means neither side is a team
+           here, so the question may belong to another sport entirely */
+        known_teams: named.length,
         source: SOURCE,
         note: '"' + explicit[0] + '" and "' + explicit[1] + '" were named as a matchup, and no scheduled game '
           + 'with BOTH of those sides is on any card EdgeDesk publishes (' + rows.length
@@ -3808,7 +3811,7 @@
     var pair = matchupPair(question);
     if (pair.length === 2) {
       return Object.assign({}, none, {
-        state: 'NOT_ON_CARD', named: pair, sport: null,
+        state: 'NOT_ON_CARD', named: pair, sport: null, known_teams: named.length,
         source: SOURCE,
         note: '"' + pair[0] + '" and "' + pair[1] + '" were named as a matchup, and no scheduled game with '
           + 'BOTH of those sides is on any card EdgeDesk publishes (' + rows.length

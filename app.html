@@ -26011,6 +26011,29 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   border-radius:10px;padding:11px 13px;margin:0 0 10px}
 .dk-read .lab{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--citron)}
 .dk-read p{margin:5px 0 0;font-size:14px;line-height:1.52;color:var(--desk-fg)}
+/* The quant desk: the verdict chip, the brief's fields as a grid, and the
+   evidence tables. One column and a scrolling table on a phone. */
+.qd-chip{display:inline-block;margin-left:7px;padding:1px 8px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.06em;vertical-align:1px;border:1px solid var(--ink-line);text-transform:uppercase}
+.qd-v{background:rgba(216,242,75,.16);color:var(--citron);border-color:rgba(216,242,75,.5)}
+.qd-p{background:rgba(242,177,75,.14);color:var(--warn);border-color:rgba(242,177,75,.45)}
+.qd-w{color:var(--desk-fg)}
+.qd-x{color:var(--desk-dim)}
+.qd-u{color:var(--desk-dim);border-style:dashed}
+.qd-kv{display:grid;grid-template-columns:minmax(120px,max-content) 1fr;gap:3px 12px;margin:8px 0 0;font-size:13px;line-height:1.45}
+.qd-kv dt{color:var(--desk-dim);font-weight:600}
+.qd-kv dd{margin:0;color:var(--desk-fg);overflow-wrap:anywhere}
+.qd-kv dd.qd-dec{font-weight:800;color:var(--citron)}
+.qd-read h4{margin:10px 0 0;font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--desk-dim)}
+.qd-read ol{margin:6px 0 0;padding-left:0;list-style:none;counter-reset:qd;font-size:13px;line-height:1.45;color:var(--desk-fg)}
+.edai-msg.a .qd-read ol li{margin:3px 0;padding-left:20px;counter-increment:qd}
+.edai-msg.a .qd-read ol li:before{content:counter(qd) '.';top:2px;left:0;width:auto;height:auto;border-radius:0;background:none;color:var(--desk-dim);font-weight:700;font-size:12px}
+.qd-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+.qd-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;color:var(--desk-fg)}
+.qd-tbl th,.qd-tbl td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--ink-line);vertical-align:top}
+.qd-tbl th{color:var(--desk-dim);font-weight:700}
+.qd-res{font-weight:800;font-size:10.5px;letter-spacing:.05em}
+.qd-res.PASS{color:var(--citron)}.qd-res.WARN{color:var(--warn)}.qd-res.FAIL{color:var(--neg)}.qd-res.NOT_CHECKED{color:var(--desk-dim)}
+@media (max-width:520px){.qd-kv{grid-template-columns:1fr;gap:0}.qd-kv dt{margin-top:7px}.qd-tbl{font-size:11.5px}}
 .dk-sec{margin:10px 0 0}
 .dk-sec > .h{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--desk-dim);margin-bottom:4px}
 .dk-sec ul{margin:0;padding-left:2px;list-style:none}
@@ -34269,6 +34292,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if (explicit.length === 2) {
       return Object.assign({}, none, {
         state: 'NOT_ON_CARD', named: explicit, sport: null,
+        /* how many of the names THIS card knows: 0 means neither side is a team
+           here, so the question may belong to another sport entirely */
+        known_teams: named.length,
         source: SOURCE,
         note: '"' + explicit[0] + '" and "' + explicit[1] + '" were named as a matchup, and no scheduled game '
           + 'with BOTH of those sides is on any card EdgeDesk publishes (' + rows.length
@@ -34324,7 +34350,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     var pair = matchupPair(question);
     if (pair.length === 2) {
       return Object.assign({}, none, {
-        state: 'NOT_ON_CARD', named: pair, sport: null,
+        state: 'NOT_ON_CARD', named: pair, sport: null, known_teams: named.length,
         source: SOURCE,
         note: '"' + pair[0] + '" and "' + pair[1] + '" were named as a matchup, and no scheduled game with '
           + 'BOTH of those sides is on any card EdgeDesk publishes (' + rows.length
@@ -36301,12 +36327,19 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      It is what makes "Why?", "What if it drops to +2.5?" and "Which would you
      rather have?" land on the right bet. The server re-prices every item. */
   var LAST_DESK=null;
+  /* THE QUANT DESK'S STATE (edgedesk_quant_state_v1): the last scan's
+     coverage and the contract under discussion, as identifiers and EdgeDesk's
+     own numbers, so "which sports couldn't be scanned?" and "explain why this
+     contract has negative EV" land on the right answer. The server re-reads
+     every price; nothing here is believed on the browser's say-so. */
+  var LAST_QUANT=null;
   function clientTimeZone(){ try{ return Intl.DateTimeFormat().resolvedOptions().timeZone||null; }catch(_){ return null; } }
   function carriedContext(){
     var c=LAST_CTX?Object.assign({},LAST_CTX):{};
     if(LAST_BOARD) c.board=LAST_BOARD;
     if(LAST_MLB) c.mlb_pitchers=LAST_MLB;
     if(LAST_DESK) c.desk=LAST_DESK;
+    if(LAST_QUANT) c.quant=LAST_QUANT;
     /* WHAT THE READER IS LOOKING AT (window.edScreenGet). Identifiers only.
        When the conversation carries no game of its own, the game on screen
        becomes the subject, through the same door a carried game uses: the
@@ -36317,7 +36350,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       c.screen={panel:scr.panel||null, sport:scr.sport||null, game_id:scr.game_id||null, market:scr.market||null};
       if(!c.game_id&&scr.game_id&&scr.sport){ c.sport=scr.sport; c.game_id=String(scr.game_id); if(scr.home)c.home=scr.home; if(scr.away)c.away=scr.away; c.from_screen=true; }
     }
-    return (LAST_CTX||LAST_BOARD||LAST_MLB||LAST_DESK||scr)?c:null;
+    return (LAST_CTX||LAST_BOARD||LAST_MLB||LAST_DESK||LAST_QUANT||scr)?c:null;
   }
   /* The last question, so a failed narration can be asked for again without
      the reader retyping it. */
@@ -39798,6 +39831,124 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
   }
   function deskNum(v,sign){ if(v==null||!isFinite(+v)) return '\u2014'; v=+v; return (sign&&v>0?'+':'')+(Math.round(v*10)/10); }
   function deskPct(p){ return p==null||!isFinite(+p)?'\u2014':Math.round(+p*100)+'%'; }
+  /* THE QUANT DESK (edgedesk_quant_v1): the audited cross-sport scan, a
+     contract or price check, coverage, the outage answer and explain-EV.
+     Every number on it is the server's (EDFAIR's arithmetic, EDAUDIT's
+     checks); nothing is computed here, and the verdict chip is the server's
+     own classification, never upgraded by the page. */
+  var QD_LABEL={VERIFIED_EDGE:['Verified edge','v'],POTENTIAL_EDGE:['Potential edge','p'],WATCH:['Watch','w'],PASS:['Pass','x'],UNVERIFIED_DATA:['Unverified data','u']};
+  var QD_KEYS=/^(Event|Market|Venue|Available price|Independent fair price|Estimated net EV|Maximum acceptable entry|Model reliability|Primary matchup advantage|Biggest risk|Decision|Market no-vig|Fair probability|Fair price|Fees|Slippage|Break-even|Net EV|Maximum entry|Calibration|Independent model|Missing|Context \(not a probability\)|Not verified because): (.*)$/;
+  function quantIsAnswer(d){ return !!(d&&d.quant&&/^edgedesk_quant_v/.test(String(d.quant.version||''))&&d.answer); }
+  function qdChip(cls){ var l=QD_LABEL[cls]||[String(cls||'').replace(/_/g,' ').toLowerCase(),'u']; return '<span class="qd-chip qd-'+l[1]+'">'+esc(l[0])+'</span>'; }
+  function qdPct(x,dp){ var n=Number(x); return (x==null||x===''||!isFinite(n))?'—':(n*100).toFixed(dp==null?2:dp)+'%'; }
+  function qdC(x){ var n=Number(x); return (x==null||x===''||!isFinite(n))?'—':(Math.round(n*10000)/100).toFixed(2).replace(/\.00$/,'')+'¢'; }
+  function qdAm(x){ var n=Number(x); return (x==null||x===''||!isFinite(n))?'—':(n>0?'+':'')+Math.round(n); }
+  /* The answer text: the brief's "Field: value" lines as a grid, numbered items as a list, headings as headings, the rest as paragraphs. */
+  function qdLines(ans){
+    var out='', kv='', ol='';
+    function flushKv(){ if(kv){ out+='<dl class="qd-kv">'+kv+'</dl>'; kv=''; } }
+    function flushOl(){ if(ol){ out+='<ol>'+ol+'</ol>'; ol=''; } }
+    String(ans||'').split('\n').forEach(function(line){
+      var t=line.trim(), m;
+      if(!t){ flushKv(); flushOl(); return; }
+      if((m=QD_KEYS.exec(t))){ flushOl(); kv+='<dt>'+esc(m[1])+'</dt><dd'+(m[1]==='Decision'?' class="qd-dec"':'')+'>'+esc(m[2])+'</dd>'; return; }
+      if((m=/^(\d+)\.\s+(.*)$/.exec(t))){ flushKv(); ol+='<li>'+esc(m[2])+'</li>'; return; }
+      flushKv(); flushOl();
+      if(/^[A-Z][A-Z —()'-]{8,}(\(|$)/.test(t)&&t===t.split('(')[0].toUpperCase()+(t.indexOf('(')>=0?t.slice(t.indexOf('(')):'')) out+='<h4>'+esc(t)+'</h4>';
+      else out+='<p>'+esc(t)+'</p>';
+    });
+    flushKv(); flushOl();
+    return out;
+  }
+  function qdEvalHTML(e){
+    if(!e||!e.ok) return '';
+    var isC=e.kind==='CONTRACT', rows=[];
+    function row(k,v){ rows.push('<tr><th>'+esc(k)+'</th><td>'+esc(v)+'</td></tr>'); }
+    row('Entry price', isC?qdC(e.entry_price)+' ('+(e.venue&&e.venue.label||'')+', '+(e.side||'')+')':qdAm(e.entry_price)+' (decimal '+(e.entry_decimal||'—')+')');
+    row('Market probability (the price)', qdPct(e.market_probability,1));
+    if(e.no_vig_market_probability) row('No-vig market probability', qdPct(e.no_vig_market_probability,1)+' (margin '+qdPct(e.market_overround,2)+')');
+    row('Fair probability', e.fair_probability?qdPct(e.fair_probability,2)+' — '+((e.fair_source&&(e.fair_source.label||e.fair_source.kind))||''):'unavailable');
+    row('Independent fair probability', e.independent_fair_probability?qdPct(e.independent_fair_probability,2):'unavailable (the fair is market-derived or absent)');
+    if(e.fair_american_odds!=null) row('Fair odds', qdAm(e.fair_american_odds)+(e.fair_decimal_odds?' / '+e.fair_decimal_odds:''));
+    if(isC) row('Fees', e.expected_fees&&e.expected_fees.per_contract!=null?qdC(e.expected_fees.per_contract)+' per contract — '+String(e.expected_fees.status||'').toLowerCase()+(e.expected_fees.formula?': '+e.expected_fees.formula:''):'unknown — '+(e.expected_fees&&e.expected_fees.basis||''));
+    if(isC) row('Slippage', qdC(e.estimated_slippage&&e.estimated_slippage.per_contract)+' — '+(e.estimated_slippage&&e.estimated_slippage.basis||''));
+    row('Break-even probability', e.break_even_probability?qdPct(e.break_even_probability,2):'—');
+    row('Gross EV', isC?qdC(e.gross_expected_value)+' per contract':qdPct(e.gross_expected_value)+' per $1');
+    row('Net EV', e.net_ev_per_dollar!=null?qdPct(e.net_ev_per_dollar)+' per $1'+(isC?' ('+qdC(e.net_expected_value)+' per contract)':''):'not computed (fees unknown)');
+    row('Probability edge', e.probability_edge!=null?qdPct(e.probability_edge,2):'—');
+    row('Maximum entry (playable floor)', e.maximum_entry_price!=null?(isC?qdC(e.maximum_entry_price):qdAm(e.maximum_entry_price)):'none');
+    if(e.break_even_entry_price!=null) row('Break-even entry', isC?qdC(e.break_even_entry_price):qdAm(e.break_even_entry_price));
+    row('Thresholds', 'floor '+qdPct(e.thresholds&&e.thresholds.ev_floor,1)+', edge bar '+qdPct(e.thresholds&&e.thresholds.candidate_ev,1)+' ('+(e.thresholds&&e.thresholds.source||'')+')');
+    row('Calculation', (e.calc_version||'')+' · exact decimal arithmetic');
+    var caps=(e.caps||[]).map(function(c){ return '<li>'+(c.binding?'<b>Capped at '+esc(String(c.to).replace(/_/g,' ').toLowerCase())+':</b> ':'Also: ')+esc(c.reason)+'</li>'; }).join('');
+    return '<div class="qd-scroll"><table class="qd-tbl">'+rows.join('')+'</table></div>'+(caps?'<div class="dk-sec limits"><div class="h">Why the verdict is not higher</div><ul>'+caps+'</ul></div>':'');
+  }
+  function qdAuditHTML(a, trail){
+    if(!a||!a.checks) return '';
+    var rows=a.checks.map(function(c){ return '<tr><td><span class="qd-res '+esc(c.result)+'">'+esc(String(c.result).replace(/_/g,' '))+'</span></td><td>'+esc(c.label)+(c.critical?' *':'')+'</td><td>'+esc(c.detail)+'</td></tr>'; }).join('');
+    var tr=(trail||[]).filter(function(t){ return !a.candidate_id||t.candidate_id===a.candidate_id; }).map(function(t){ return esc('Round '+t.round+' · '+t.step+': '+t.detail); }).join('<br>');
+    return '<div class="edai-src">Verdict: <b>'+esc(a.status)+'</b> — '+esc(a.reason)+' (a separate check on a fresh read; * = critical)</div><div class="qd-scroll"><table class="qd-tbl"><tr><th>Result</th><th>Check</th><th>Detail</th></tr>'+rows+'</table></div>'+(tr?'<div class="edai-src" style="margin-top:6px">'+tr+'</div>':'');
+  }
+  function qdCoverageHTML(cov){
+    if(!cov||!cov.length) return '';
+    return '<div class="qd-scroll"><table class="qd-tbl"><tr><th>Sport</th><th>Status</th><th>Why</th></tr>'+cov.map(function(c){ return '<tr><td>'+esc(c.label||c.sport)+'</td><td>'+esc(String(c.status||'').replace(/_/g,' ').toLowerCase())+'</td><td>'+esc(c.why||c.sentence||'')+'</td></tr>'; }).join('')+'</table></div>';
+  }
+  function qdCompareHTML(cmp){
+    if(!cmp||!cmp.ranked||!cmp.ranked.length) return '';
+    var rows=cmp.ranked.map(function(r){ return '<tr><td>'+esc(r.rank)+'</td><td>'+esc(r.venue)+'</td><td>'+esc(r.entry)+'</td><td>'+esc(r.all_in_cost_cents)+'¢</td><td>'+esc(r.net_ev_per_dollar!=null?qdPct(r.net_ev_per_dollar):'—')+'</td><td>'+esc(r.fees==='VERIFIED'?'verified':String(r.fees||'').toLowerCase())+'</td></tr>'; }).join('');
+    var np=(cmp.not_priced||[]).map(function(n){ return esc(n.venue+': '+n.why); }).join('<br>');
+    return '<div class="qd-scroll"><table class="qd-tbl"><tr><th>#</th><th>Venue</th><th>Price</th><th>All-in per $1</th><th>Net EV</th><th>Fees</th></tr>'+rows+'</table></div><div class="edai-src">'+esc(cmp.note||'')+(np?'<br>Not priced: '+np:'')+'</div>';
+  }
+  function qdSourceHTML(e, extra){
+    if(!e||!e.ok) return '';
+    var f=e.fair_source||{}, q=e.data_freshness||{};
+    var lis=['Fair: '+(f.label||f.kind||'none')+(f.observed_at?', observed '+f.observed_at:'')+(q.fair&&q.fair.status?' ('+q.fair.status+')':''),
+      'Quote: '+(q.quote&&q.quote.why?q.quote.why:'no capture time')+(q.quote&&q.quote.status?' ('+q.quote.status+')':''),
+      'Liquidity: '+(e.market_liquidity&&e.market_liquidity.status||'unknown')+(e.market_liquidity&&e.market_liquidity.note?' — '+e.market_liquidity.note:''),
+      'Settlement: '+(e.settlement&&e.settlement.verified?'verified against the fair reference':'not verified'+(e.settlement&&e.settlement.mismatch?' — '+e.settlement.mismatch:''))];
+    (extra||[]).forEach(function(x){ if(x) lis.push(x); });
+    return '<div class="dk-sec"><ul>'+lis.map(function(t){ return '<li>'+esc(t)+'</li>'; }).join('')+'</ul></div>';
+  }
+  function qdModelHTML(e, cap){
+    if(!e||!e.ok) return '';
+    var lis=['Calibration status: '+String(e.calibration_status||'').replace(/_/g,' ').toLowerCase(), 'Research confidence: '+(e.research_confidence?String(e.research_confidence.level).toLowerCase()+' — '+e.research_confidence.basis:'—'),
+      'Model uncertainty: '+(e.model_uncertainty?(e.model_uncertainty.status==='QUANTIFIED'?'interval '+qdPct(e.model_uncertainty.low,1)+' to '+qdPct(e.model_uncertainty.high,1)+', net EV at the low end '+e.model_uncertainty.net_ev_at_low:e.model_uncertainty.note):'—')];
+    if(cap) lis.push('Independent model: '+(cap.reason||''));
+    if(e.fair_source&&e.fair_source.note) lis.push('Fair source: '+e.fair_source.note);
+    return '<div class="dk-sec"><ul>'+lis.map(function(t){ return '<li>'+esc(t)+'</li>'; }).join('')+'</ul></div>';
+  }
+  function qdHistoryHTML(e){
+    if(!e||!e.ok) return '';
+    var t=e.calibration_status==='MARKET_DERIVED'?'This fair is the sharp market’s own price, de-vigged. Its track record is the closing-line value ledger (Record → CLV), not a model’s calibration.'
+      :e.calibration_status==='CALIBRATED'?'The model’s probabilities passed a time-separated calibration against the close.'
+      :'No calibration record supports this probability as a betting number. EdgeDesk’s own prop-model probabilities, for example, score worse than the no-vig close on 2026 settled rows (football/validation/calibration_props_2026.json).';
+    return '<div class="edai-src">'+esc(t)+'</div>';
+  }
+  function quantAnswerHTML(d){
+    var intent=d.quant&&d.quant.intent, ans=String(d.answer||''), cls=null, ev=null, au=null, cap=null, trail=null;
+    if(intent==='SCAN'&&d.scan){
+      var b=d.scan.best||(d.scan.potential||[])[0]||null;
+      ev=b&&b.evaluation||null; au=b&&b.audit||null; trail=d.scan.audit_trail||null;
+      cls=d.scan.best?'VERIFIED_EDGE':(ev?ev.classification:'PASS');
+      if(!d.scan.best&&cls==='VERIFIED_EDGE') cls='POTENTIAL_EDGE';
+    } else if(d.contract){ ev=d.contract.evaluation||null; cls=ev&&ev.classification||'UNVERIFIED_DATA'; cap=d.contract.capability||null; }
+    var h='<div class="dk-read qd-read"><div class="lab">The Quant Desk'+(cls?qdChip(cls):'')+'</div>'+qdLines(ans)+'</div>';
+    var more='';
+    function sec(title, body, open){ if(body) more+='<details class="dk-more qd-more"'+(open?' open':'')+'><summary>'+esc(title)+'</summary><div style="margin-top:6px">'+body+'</div></details>'; }
+    sec('EV calculation', qdEvalHTML(ev));
+    if(d.contract) sec('Market comparison', qdCompareHTML(d.contract.compare));
+    sec('Audit results', qdAuditHTML(au, trail));
+    sec('Source verification', qdSourceHTML(ev, d.contract&&d.contract.missing?d.contract.missing.map(function(m){ return 'Missing: '+m; }):null));
+    sec('Model assumptions', qdModelHTML(ev, cap));
+    if(d.scan){
+      var others=[].concat(d.scan.potential||[]).slice(d.scan.best?0:1).concat(d.scan.near_misses||[]);
+      if(others.length) sec('Other candidates audited', others.map(function(o){ return '<div class="dk-sec"><div class="h">'+esc(o.candidate.selection+' — '+o.candidate.matchup)+'</div>'+qdAuditHTML(o.audit, trail)+'</div>'; }).join(''));
+      sec('Coverage', qdCoverageHTML(d.scan.coverage)+'<div class="edai-src">'+esc((d.scan.counts?(d.scan.counts.events!=null?d.scan.counts.events+' eligible events, ':'')+(d.scan.counts.markets_evaluated!=null?d.scan.counts.markets_evaluated+' markets evaluated, ':'')+d.scan.counts.audited+' audited':'')+(d.scan.window&&d.scan.window.label?' · '+d.scan.window.label:''))+'</div>');
+    }
+    if(d.coverage&&!d.scan) sec('Coverage', qdCoverageHTML(d.coverage), true);
+    sec('Historical performance', qdHistoryHTML(ev));
+    return h+more;
+  }
   function deskShortHTML(d){
     var D=d.desk||{}, ans=(d.answer&&String(d.answer).trim())||D.deterministic_answer||'';
     var h='<div class="dk-read"><div class="lab">The Desk\u2019s read</div>'+mdToHtml(ans)+'</div>';
@@ -41017,6 +41168,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         +'</ul>');
       return true;
     }
+    /* AN "A vs B" THAT NAMES NO FOOTBALL TEAM AT ALL ("Rays vs. Guardians") is
+       not a football question the card failed to find: it is another sport's,
+       and the server researches it. Only a pair with a football side is
+       answered here as missing from the football card. */
+    if(res.state==='NOT_ON_CARD' && !res.sport && res.known_teams===0) return letGo();
     if(res.state==='NOT_ON_CARD'){
       push('a','<p>'+esc(res.note||((res.subject||'That team')+' has no game inside the published window'))
         +(res.sport===EDINTEL.CFB_SPORT&&MSLATE.data&&MSLATE.data.lookahead_days
@@ -41841,6 +41997,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
          much EdgeDesk retrieves. */
       /* Slice 7: the board state rides back on its own field. */
       try{ if(d&&d.board_state&&d.board_state.schema==='edgedesk_board_state_v1') LAST_BOARD=d.board_state; }catch(_){}
+      try{ if(d&&d.quant_state&&d.quant_state.schema==='edgedesk_quant_state_v1') LAST_QUANT=d.quant_state; }catch(_){}
       /* The pitcher ids this turn resolved. Only replaced when the server
          actually returns a state; a turn that was not about pitchers leaves
          the previous one in place. */
@@ -41855,6 +42012,14 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         LAST_CTX = (rc&&rc.game_id) ? {sport:rc.sport,game_id:rc.game_id,home:rc.home,away:rc.away,
           home_id:rc.home_id,away_id:rc.away_id,turns:rc.turns||1,
           state:(cs&&cs.game&&String(cs.game.game_id)===String(rc.game_id))?cs:null} : LAST_CTX; }catch(_){}
+      /* THE QUANT DESK, when the server answered from it: the audited scan, a
+         contract or price check, coverage, the outage answer, explain-EV. */
+      if(quantIsAnswer(d)){
+        var ansQ=String(d.answer).trim();
+        HIST.push({role:'user',content:question||mode}); HIST.push({role:'assistant',content:ansQ});
+        LAST_ASK={mode:mode,question:question,x:x,extra:extra};
+        return {html:quantAnswerHTML(d), src:'The Quant Desk · EdgeDesk’s prices, fees and audit — no model wrote this'};
+      }
       /* THE READER'S OWN RESEARCH, when the server answered from it. */
       if(mineIsAnswer(d)){
         var ansM=(d.answer&&String(d.answer).trim())||d.deterministic_mine_answer||'';
@@ -44375,6 +44540,18 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     return false;
   }
   /* A card-wide betting question, in the reader's words. */
+  /* The browser's mirror of the quant desk's own routing (EDQUANT.classify on
+     the server, which decides): a contract price or venue, coverage, the odds
+     outage, and a follow-up on the contract this conversation is about. */
+  function quantAsk(t){
+    var q=String(t||'');
+    if(/\bkalshi\b|\bpoly ?market\b/i.test(q)) return true;
+    if(/\b\d{1,2}(?:\.\d+)?\s*(?:\u00a2|c\b|cents?\b)/i.test(q) || /\$\s?0?\.\d{1,2}\b/.test(q)) return true;
+    if(/\b(which|what) (sports?|leagues?|markets?)\b.*\b(couldn'?t|could not|can'?t|cannot|weren'?t|were not|didn'?t|did not|not|unable|missing|skipped|scan(ned)?|cover(ed)?)\b|\bwhat did you (scan|check|cover)\b/i.test(q)) return true;
+    if(/\b(odds|price|market|pricing)\s*(api|feed|provider|data)?\b.*\b(fail|fails|failed|down|offline|unavailable|outage)\b/i.test(q) && /\b(can|could|still|will|able)\b/i.test(q)) return true;
+    if(LAST_QUANT&&LAST_QUANT.contract&&/\b(explain|why)\b.*\bev\b|\bbetter price\b|\bcheaper\b|\bthis contract\b/i.test(q)) return true;
+    return false;
+  }
   function wantsBoard(t){
     var q=(t||'').toLowerCase().trim();
     if(/\b(best|strongest|top)\s*(bet|bets|play|plays|edge|edges|signal|signals|total|totals|spread|spreads|side|sides|moneyline|dog|underdog|value)\b/.test(q)) return true;
@@ -44993,6 +45170,19 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
           var resF=await askAI('chat',t,null);
           thinking(false);
           if(resF&&!resF.failed){ var dF=push('a',resF.html); if(resF.src&&dF){ var sF=document.createElement('div'); sF.className='edai-src'; sF.textContent=resF.src; dF.appendChild(sF); } return; }
+        }
+        /* A QUANT QUESTION — a contract price ("61¢", "Kalshi"), a price
+           check, which sports were scanned, what happens when the odds feed is
+           down, or a follow-up on the contract under discussion — goes to the
+           server's quant desk before the football resolver, which would read
+           "Cleveland" as the Browns and "Rays vs. Guardians" as a missing
+           football game. */
+        if(quantAsk(t)){
+          thinking(true);
+          LAST_ASK={mode:'chat',question:t,x:null,extra:null};
+          var resQ=await askAI('chat',t,null);
+          thinking(false);
+          if(resQ&&!resQ.failed){ var dQ=push('a',resQ.html); if(resQ.src&&dQ){ var sQ=document.createElement('div'); sQ.className='edai-src'; sQ.textContent=resQ.src; dQ.appendChild(sQ); } return; }
         }
         if(await matchupRoute(t)) return;
         var ctx=buildCtx();

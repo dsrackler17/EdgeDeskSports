@@ -271,6 +271,44 @@ history". See `docs/intelligence-architecture.md` §15 and
 - `npm run intel:test` — the kernel, the evaluation harness, the migrations
 - `npm run intel:stake` · `npm run stake:validate` — the sizing rules, and whether they beat flat staking
 
+## The quant desk — the best verified bet across every sport, contract prices, and an independent audit
+
+"What's the best bet right now?" with no league named is now a scan of **every
+sport EdgeDesk captures** (the board), followed by a **second, independent
+audit** of the strongest candidates on a fresh read, and an answer in one
+shape: event, market, venue, available price, independent fair price (or why
+there is none), net EV, maximum acceptable entry, model reliability, matchup
+advantage, biggest risk, BUY / WATCH / PASS — or *"No verified positive-EV
+trade currently clears the research and execution thresholds"* with the
+strongest candidate and the reason it failed. Coverage is printed with every
+answer: a sport whose prices are not captured (NBA, NHL) is NOT CAPTURED, not
+an empty slate, and "best across all sports" is never said over a partial scan.
+
+- **Contract prices.** "Is Rays at 61¢ positive EV?", "Cleveland +1.5 at 61
+  cents on Kalshi", "find me a better price than this Kalshi contract":
+  `lib/edgedesk_fairodds.js` prices it in exact decimals with typed units and
+  each venue's own fee model (Kalshi UNVERIFIED, Polymarket UNKNOWN until an
+  operator verifies a schedule in `market_execution_costs`), against the
+  captured market's fair, beside every captured book's all-in cost.
+- **The audit** (`supabase/functions/edgedesk_ai/_audit.js`): fifteen checks —
+  freshness, still offered, independent EV in a second implementation and a
+  second de-vig method, contradictory references, an off-market book,
+  availability news after the quote, the starter, settlement, fees,
+  liquidity, sharp movement, unexplained model disagreement — with a bounded
+  correct → recalculate → re-audit loop and a write-once trail.
+- **Honest capability** (`lib/edgedesk_sport_adapters.js`): only the NFL spread
+  model may price (LEAN); CFB is research; the MLB run model is browser-only
+  and unvalidated; NBA/NHL/soccer have no model.
+- **Calibration** (`lib/edgedesk_calibration.js`): Brier, log loss, buckets,
+  CLV, ROI after fees, drawdown and intervals against the no-vig close, with
+  look-ahead rows rejected. On the 2026 settled prop ledgers neither league
+  beats the close (`football/validation/calibration_props_2026.json`).
+
+See [`docs/quant-desk/DESIGN.md`](docs/quant-desk/DESIGN.md) and
+[`docs/quant-desk/INVENTORY.md`](docs/quant-desk/INVENTORY.md).
+Tests: `npm run quant:test`, `npm run quant:sql`, `npm run quant:e2e`;
+`npm run quant:calibrate` rebuilds the calibration report.
+
 ## The bettor decision layer — BET / LEAN / WATCH / PASS / NO DECISION (NFL and CFB)
 
 Research status says whether a matchup deserves investigation; the **bet

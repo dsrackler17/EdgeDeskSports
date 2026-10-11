@@ -1,0 +1,5062 @@
+{
+ "schema": "edgedesk_calibration_report_v1",
+ "calibration_version": "edgedesk_calibration_v1",
+ "season": 2026,
+ "generated_at": "2026-10-11T22:50:32.547Z",
+ "source": "football/props/<league>/2026/{evaluations,results}.jsonl — frozen pregame evaluations joined to their graded results",
+ "baseline": "the no-vig closing probability of the same side at the same line (results.clv.close_novig)",
+ "leagues": {
+  "nfl": {
+   "schema": "edgedesk_calibration_v1",
+   "rows_in": 5935,
+   "scored": 4691,
+   "rejected": 554,
+   "rejected_reasons": {
+    "BAD_PROBABILITY": 554
+   },
+   "rejected_sample": [
+    {
+     "id": "ppe_c1503714",
+     "why": "BAD_PROBABILITY",
+     "detail": "null"
+    },
+    {
+     "id": "ppe_52114f28",
+     "why": "BAD_PROBABILITY",
+     "detail": "null"
+    },
+    {
+     "id": "ppe_1856466b",
+     "why": "BAD_PROBABILITY",
+     "detail": "null"
+    },
+    {
+     "id": "ppe_3f43bee5",
+     "why": "BAD_PROBABILITY",
+     "detail": "null"
+    },
+    {
+     "id": "ppe_0d4e88aa",
+     "why": "BAD_PROBABILITY",
+     "detail": "null"
+    },
+    {
+     "id": "ppe_342d2a88",
+     "why": "BAD_PROBABILITY",
+     "detail": "null"
+    },
+    {
+     "id": "ppe_e3dba4d3",
+     "why": "BAD_PROBABILITY",
+     "detail": "null"
+    },
+    {
+     "id": "ppe_3f4f5890",
+     "why": "BAD_PROBABILITY",
+     "detail": "null"
+    },
+    {
+     "id": "ppe_378f4b41",
+     "why": "BAD_PROBABILITY",
+     "detail": "null"
+    },
+    {
+     "id": "ppe_37f07ca9",
+     "why": "BAD_PROBABILITY",
+     "detail": "null"
+    }
+   ],
+   "excluded_unsettled": 690,
+   "lookahead_violations": 0,
+   "first": "2026-09-29T13:25:10.746Z",
+   "last": "2026-10-10T06:05:12.474Z",
+   "overall": {
+    "n": 4691,
+    "sample_state": "MEANINGFUL",
+    "brier": 0.2599,
+    "log_loss": 0.7212,
+    "versus_close": {
+     "n": 1163,
+     "brier": 0.2602,
+     "baseline_brier": 0.2469,
+     "brier_skill": -0.0537,
+     "log_loss": 0.7158,
+     "baseline_log_loss": 0.6868,
+     "baseline": "no-vig closing probability of the same side"
+    },
+    "buckets": [
+     {
+      "from": 0,
+      "to": 0.1,
+      "n": 4,
+      "mean_predicted": 0.0437,
+      "observed": 0.25,
+      "wilson_low": 0.0456,
+      "wilson_high": 0.6994,
+      "inside_interval": false
+     },
+     {
+      "from": 0.1,
+      "to": 0.2,
+      "n": 32,
+      "mean_predicted": 0.1583,
+      "observed": 0.1875,
+      "wilson_low": 0.0889,
+      "wilson_high": 0.3531,
+      "inside_interval": true
+     },
+     {
+      "from": 0.2,
+      "to": 0.3,
+      "n": 158,
+      "mean_predicted": 0.2683,
+      "observed": 0.3608,
+      "wilson_low": 0.29,
+      "wilson_high": 0.4381,
+      "inside_interval": false
+     },
+     {
+      "from": 0.3,
+      "to": 0.4,
+      "n": 417,
+      "mean_predicted": 0.3503,
+      "observed": 0.3669,
+      "wilson_low": 0.3221,
+      "wilson_high": 0.4142,
+      "inside_interval": true
+     },
+     {
+      "from": 0.4,
+      "to": 0.5,
+      "n": 310,
+      "mean_predicted": 0.4522,
+      "observed": 0.4613,
+      "wilson_low": 0.4066,
+      "wilson_high": 0.5169,
+      "inside_interval": true
+     },
+     {
+      "from": 0.5,
+      "to": 0.6,
+      "n": 1971,
+      "mean_predicted": 0.5627,
+      "observed": 0.4937,
+      "wilson_low": 0.4716,
+      "wilson_high": 0.5157,
+      "inside_interval": false
+     },
+     {
+      "from": 0.6,
+      "to": 0.7,
+      "n": 1395,
+      "mean_predicted": 0.6377,
+      "observed": 0.509,
+      "wilson_low": 0.4827,
+      "wilson_high": 0.5351,
+      "inside_interval": false
+     },
+     {
+      "from": 0.7,
+      "to": 0.8,
+      "n": 325,
+      "mean_predicted": 0.7414,
+      "observed": 0.5262,
+      "wilson_low": 0.4719,
+      "wilson_high": 0.5798,
+      "inside_interval": false
+     },
+     {
+      "from": 0.8,
+      "to": 0.9,
+      "n": 52,
+      "mean_predicted": 0.8437,
+      "observed": 0.4423,
+      "wilson_low": 0.316,
+      "wilson_high": 0.5766,
+      "inside_interval": false
+     },
+     {
+      "from": 0.9,
+      "to": 1,
+      "n": 27,
+      "mean_predicted": 0.9392,
+      "observed": 0.5185,
+      "wilson_low": 0.3399,
+      "wilson_high": 0.6926,
+      "inside_interval": false
+     }
+    ],
+    "clv": {
+     "n": 1163,
+     "mean": -0.0389,
+     "share_positive": 0.1376,
+     "note": "EV of the entry price at the no-vig closing probability"
+    },
+    "staking": {
+     "bets": 3874,
+     "staked": 3874,
+     "profit": -36.595,
+     "roi_after_fees": -0.0094,
+     "roi_ci95": {
+      "low": -0.0429,
+      "high": 0.024
+     },
+     "max_drawdown": 130.804
+    },
+    "calibration_status": "NOT_CALIBRATED",
+    "calibration_why": "Brier 0.2602 is worse than the no-vig close at 0.2469 on the same rows",
+    "profit_claim": "NOT_SUPPORTED",
+    "profit_why": "the 95% ROI interval after fees (-0.0429 to 0.024) includes zero or is negative"
+   },
+   "by": {
+    "market": [
+     {
+      "n": 305,
+      "sample_state": "DEVELOPING",
+      "brier": 0.2368,
+      "log_loss": 0.673,
+      "versus_close": {
+       "n": 86,
+       "brier": 0.221,
+       "baseline_brier": 0.214,
+       "brier_skill": -0.0326,
+       "log_loss": 0.6339,
+       "baseline_log_loss": 0.6179,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0,
+        "to": 0.1,
+        "n": 3,
+        "mean_predicted": 0.0407,
+        "observed": 0.3333,
+        "wilson_low": 0.0615,
+        "wilson_high": 0.7923,
+        "inside_interval": false
+       },
+       {
+        "from": 0.1,
+        "to": 0.2,
+        "n": 32,
+        "mean_predicted": 0.1583,
+        "observed": 0.1875,
+        "wilson_low": 0.0889,
+        "wilson_high": 0.3531,
+        "inside_interval": true
+       },
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 57,
+        "mean_predicted": 0.2443,
+        "observed": 0.2632,
+        "wilson_low": 0.1665,
+        "wilson_high": 0.3898,
+        "inside_interval": true
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 47,
+        "mean_predicted": 0.3569,
+        "observed": 0.2766,
+        "wilson_low": 0.1694,
+        "wilson_high": 0.4176,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 20,
+        "mean_predicted": 0.4449,
+        "observed": 0.5,
+        "wilson_low": 0.2993,
+        "wilson_high": 0.7007,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 41,
+        "mean_predicted": 0.5446,
+        "observed": 0.439,
+        "wilson_low": 0.2989,
+        "wilson_high": 0.5896,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 56,
+        "mean_predicted": 0.6501,
+        "observed": 0.5714,
+        "wilson_low": 0.4414,
+        "wilson_high": 0.6923,
+        "inside_interval": true
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 40,
+        "mean_predicted": 0.742,
+        "observed": 0.5,
+        "wilson_low": 0.352,
+        "wilson_high": 0.648,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 9,
+        "mean_predicted": 0.8249,
+        "observed": 0.4444,
+        "wilson_low": 0.1888,
+        "wilson_high": 0.7333,
+        "inside_interval": false
+       }
+      ],
+      "clv": {
+       "n": 86,
+       "mean": -0.0284,
+       "share_positive": 0.2209,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 145,
+       "staked": 145,
+       "profit": -14.871,
+       "roi_after_fees": -0.1026,
+       "roi_ci95": {
+        "low": -0.2807,
+        "high": 0.0756
+       },
+       "max_drawdown": 24.196
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "305 settled predictions (DEVELOPING); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "145 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "anytime_td"
+     },
+     {
+      "n": 130,
+      "sample_state": "EARLY_SIGNAL",
+      "brier": 0.2665,
+      "log_loss": 0.7277,
+      "versus_close": {
+       "n": 35,
+       "brier": 0.2782,
+       "baseline_brier": 0.2538,
+       "brier_skill": -0.0959,
+       "log_loss": 0.7515,
+       "baseline_log_loss": 0.7008,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 5,
+        "mean_predicted": 0.4878,
+        "observed": 0.4,
+        "wilson_low": 0.1176,
+        "wilson_high": 0.7693,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 63,
+        "mean_predicted": 0.5673,
+        "observed": 0.5238,
+        "wilson_low": 0.4027,
+        "wilson_high": 0.6422,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 56,
+        "mean_predicted": 0.6361,
+        "observed": 0.4643,
+        "wilson_low": 0.3402,
+        "wilson_high": 0.593,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 6,
+        "mean_predicted": 0.7244,
+        "observed": 0.5,
+        "wilson_low": 0.1876,
+        "wilson_high": 0.8124,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 35,
+       "mean": -0.0449,
+       "share_positive": 0.1143,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 115,
+       "staked": 115,
+       "profit": -2.688,
+       "roi_after_fees": -0.0234,
+       "roi_ci95": {
+        "low": -0.1983,
+        "high": 0.1515
+       },
+       "max_drawdown": 7.793
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "130 settled predictions (EARLY_SIGNAL); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "115 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "pass_att"
+     },
+     {
+      "n": 121,
+      "sample_state": "EARLY_SIGNAL",
+      "brier": 0.2568,
+      "log_loss": 0.7078,
+      "versus_close": {
+       "n": 46,
+       "brier": 0.2789,
+       "baseline_brier": 0.2485,
+       "brier_skill": -0.1226,
+       "log_loss": 0.7536,
+       "baseline_log_loss": 0.6901,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 1,
+        "mean_predicted": 0.4966,
+        "observed": 0,
+        "wilson_low": 0,
+        "wilson_high": 0.7935,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 64,
+        "mean_predicted": 0.5596,
+        "observed": 0.5469,
+        "wilson_low": 0.4257,
+        "wilson_high": 0.6627,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 49,
+        "mean_predicted": 0.6343,
+        "observed": 0.5306,
+        "wilson_low": 0.3938,
+        "wilson_high": 0.663,
+        "inside_interval": true
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 7,
+        "mean_predicted": 0.7149,
+        "observed": 0.4286,
+        "wilson_low": 0.1582,
+        "wilson_high": 0.7495,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 46,
+       "mean": -0.0326,
+       "share_positive": 0.2609,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 113,
+       "staked": 113,
+       "profit": -0.138,
+       "roi_after_fees": -0.0012,
+       "roi_ci95": {
+        "low": -0.1786,
+        "high": 0.1762
+       },
+       "max_drawdown": 10.269
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "121 settled predictions (EARLY_SIGNAL); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "113 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "pass_cmp"
+     },
+     {
+      "n": 78,
+      "sample_state": "EARLY_SIGNAL",
+      "brier": 0.2522,
+      "log_loss": 0.6976,
+      "versus_close": {
+       "n": 28,
+       "brier": 0.2531,
+       "baseline_brier": 0.2472,
+       "brier_skill": -0.0238,
+       "log_loss": 0.6992,
+       "baseline_log_loss": 0.6875,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 22,
+        "mean_predicted": 0.4717,
+        "observed": 0.3636,
+        "wilson_low": 0.1973,
+        "wilson_high": 0.5705,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 53,
+        "mean_predicted": 0.5498,
+        "observed": 0.4717,
+        "wilson_low": 0.3438,
+        "wilson_high": 0.6034,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 3,
+        "mean_predicted": 0.6169,
+        "observed": 0.3333,
+        "wilson_low": 0.0615,
+        "wilson_high": 0.7923,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 28,
+       "mean": -0.0239,
+       "share_positive": 0.2143,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 50,
+       "staked": 50,
+       "profit": -4.354,
+       "roi_after_fees": -0.0871,
+       "roi_ci95": {
+        "low": -0.3667,
+        "high": 0.1926
+       },
+       "max_drawdown": 8.824
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "78 settled predictions (EARLY_SIGNAL); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "50 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "pass_ints"
+     },
+     {
+      "n": 113,
+      "sample_state": "EARLY_SIGNAL",
+      "brier": 0.2543,
+      "log_loss": 0.7023,
+      "versus_close": {
+       "n": 24,
+       "brier": 0.2614,
+       "baseline_brier": 0.2501,
+       "brier_skill": -0.0452,
+       "log_loss": 0.7163,
+       "baseline_log_loss": 0.6933,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 6,
+        "mean_predicted": 0.4679,
+        "observed": 0.5,
+        "wilson_low": 0.1876,
+        "wilson_high": 0.8124,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 85,
+        "mean_predicted": 0.5604,
+        "observed": 0.5294,
+        "wilson_low": 0.4243,
+        "wilson_high": 0.6319,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 19,
+        "mean_predicted": 0.6229,
+        "observed": 0.4737,
+        "wilson_low": 0.2733,
+        "wilson_high": 0.6829,
+        "inside_interval": true
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 3,
+        "mean_predicted": 0.7133,
+        "observed": 0.3333,
+        "wilson_low": 0.0615,
+        "wilson_high": 0.7923,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 24,
+       "mean": -0.045,
+       "share_positive": 0.0417,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 92,
+       "staked": 92,
+       "profit": -5.588,
+       "roi_after_fees": -0.0607,
+       "roi_ci95": {
+        "low": -0.2548,
+        "high": 0.1334
+       },
+       "max_drawdown": 14.5
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "113 settled predictions (EARLY_SIGNAL); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "92 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "pass_long"
+     },
+     {
+      "n": 86,
+      "sample_state": "EARLY_SIGNAL",
+      "brier": 0.2548,
+      "log_loss": 0.7043,
+      "versus_close": {
+       "n": 21,
+       "brier": 0.2236,
+       "baseline_brier": 0.2497,
+       "brier_skill": 0.1044,
+       "log_loss": 0.6379,
+       "baseline_log_loss": 0.6925,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 13,
+        "mean_predicted": 0.2769,
+        "observed": 0.3846,
+        "wilson_low": 0.1771,
+        "wilson_high": 0.6448,
+        "inside_interval": true
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 21,
+        "mean_predicted": 0.3477,
+        "observed": 0.4762,
+        "wilson_low": 0.2834,
+        "wilson_high": 0.6763,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 21,
+        "mean_predicted": 0.4553,
+        "observed": 0.4762,
+        "wilson_low": 0.2834,
+        "wilson_high": 0.6763,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 22,
+        "mean_predicted": 0.5346,
+        "observed": 0.5909,
+        "wilson_low": 0.3873,
+        "wilson_high": 0.7674,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 5,
+        "mean_predicted": 0.6146,
+        "observed": 0.6,
+        "wilson_low": 0.2307,
+        "wilson_high": 0.8824,
+        "inside_interval": true
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 4,
+        "mean_predicted": 0.7183,
+        "observed": 0.5,
+        "wilson_low": 0.15,
+        "wilson_high": 0.85,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 21,
+       "mean": -0.0278,
+       "share_positive": 0.2381,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 60,
+       "staked": 60,
+       "profit": 15.217,
+       "roi_after_fees": 0.2536,
+       "roi_ci95": {
+        "low": -0.094,
+        "high": 0.6013
+       },
+       "max_drawdown": 5.8
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "86 settled predictions (EARLY_SIGNAL); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "60 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "pass_tds"
+     },
+     {
+      "n": 192,
+      "sample_state": "EARLY_SIGNAL",
+      "brier": 0.2663,
+      "log_loss": 0.7267,
+      "versus_close": {
+       "n": 17,
+       "brier": 0.3052,
+       "baseline_brier": 0.249,
+       "brier_skill": -0.2257,
+       "log_loss": 0.8086,
+       "baseline_log_loss": 0.6912,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 5,
+        "mean_predicted": 0.283,
+        "observed": 0.4,
+        "wilson_low": 0.1176,
+        "wilson_high": 0.7693,
+        "inside_interval": true
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 35,
+        "mean_predicted": 0.3443,
+        "observed": 0.2571,
+        "wilson_low": 0.1416,
+        "wilson_high": 0.4207,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 10,
+        "mean_predicted": 0.4369,
+        "observed": 0.4,
+        "wilson_low": 0.1682,
+        "wilson_high": 0.6873,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 87,
+        "mean_predicted": 0.5657,
+        "observed": 0.3333,
+        "wilson_low": 0.2432,
+        "wilson_high": 0.4376,
+        "inside_interval": false
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 54,
+        "mean_predicted": 0.6316,
+        "observed": 0.4074,
+        "wilson_low": 0.2868,
+        "wilson_high": 0.5403,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 1,
+        "mean_predicted": 0.7085,
+        "observed": 0,
+        "wilson_low": 0,
+        "wilson_high": 0.7935,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 17,
+       "mean": -0.0474,
+       "share_positive": 0,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 171,
+       "staked": 171,
+       "profit": -54.048,
+       "roi_after_fees": -0.3161,
+       "roi_ci95": {
+        "low": -0.473,
+        "high": -0.1592
+       },
+       "max_drawdown": 61.838
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "192 settled predictions (EARLY_SIGNAL); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "171 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "pass_yds"
+     },
+     {
+      "n": 608,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.2607,
+      "log_loss": 0.716,
+      "versus_close": {
+       "n": 152,
+       "brier": 0.2667,
+       "baseline_brier": 0.2506,
+       "brier_skill": -0.064,
+       "log_loss": 0.7281,
+       "baseline_log_loss": 0.6944,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 1,
+        "mean_predicted": 0.3685,
+        "observed": 1,
+        "wilson_low": 0.2065,
+        "wilson_high": 1,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 10,
+        "mean_predicted": 0.4844,
+        "observed": 0.5,
+        "wilson_low": 0.2366,
+        "wilson_high": 0.7634,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 392,
+        "mean_predicted": 0.5644,
+        "observed": 0.4898,
+        "wilson_low": 0.4406,
+        "wilson_high": 0.5391,
+        "inside_interval": false
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 194,
+        "mean_predicted": 0.6275,
+        "observed": 0.4948,
+        "wilson_low": 0.4253,
+        "wilson_high": 0.5646,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 6,
+        "mean_predicted": 0.7633,
+        "observed": 0.3333,
+        "wilson_low": 0.0968,
+        "wilson_high": 0.7,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 5,
+        "mean_predicted": 0.8741,
+        "observed": 0.6,
+        "wilson_low": 0.2307,
+        "wilson_high": 0.8824,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 152,
+       "mean": -0.057,
+       "share_positive": 0.0263,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 488,
+       "staked": 488,
+       "profit": -24.421,
+       "roi_after_fees": -0.05,
+       "roi_ci95": {
+        "low": -0.1338,
+        "high": 0.0337
+       },
+       "max_drawdown": 41.012
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "Brier 0.2667 is worse than the no-vig close at 0.2506 on the same rows",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "488 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "rec_long"
+     },
+     {
+      "n": 1086,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.259,
+      "log_loss": 0.7141,
+      "versus_close": {
+       "n": 159,
+       "brier": 0.2724,
+       "baseline_brier": 0.2502,
+       "brier_skill": -0.0888,
+       "log_loss": 0.7425,
+       "baseline_log_loss": 0.6935,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 33,
+        "mean_predicted": 0.2811,
+        "observed": 0.3939,
+        "wilson_low": 0.2468,
+        "wilson_high": 0.5632,
+        "inside_interval": true
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 130,
+        "mean_predicted": 0.3477,
+        "observed": 0.3923,
+        "wilson_low": 0.3126,
+        "wilson_high": 0.4782,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 41,
+        "mean_predicted": 0.4375,
+        "observed": 0.4634,
+        "wilson_low": 0.3206,
+        "wilson_high": 0.6125,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 536,
+        "mean_predicted": 0.5686,
+        "observed": 0.5149,
+        "wilson_low": 0.4727,
+        "wilson_high": 0.557,
+        "inside_interval": false
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 314,
+        "mean_predicted": 0.6311,
+        "observed": 0.5064,
+        "wilson_low": 0.4513,
+        "wilson_high": 0.5613,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 22,
+        "mean_predicted": 0.745,
+        "observed": 0.5,
+        "wilson_low": 0.3072,
+        "wilson_high": 0.6928,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 7,
+        "mean_predicted": 0.847,
+        "observed": 0.2857,
+        "wilson_low": 0.0822,
+        "wilson_high": 0.6411,
+        "inside_interval": false
+       },
+       {
+        "from": 0.9,
+        "to": 1,
+        "n": 3,
+        "mean_predicted": 0.919,
+        "observed": 0.6667,
+        "wilson_low": 0.2077,
+        "wilson_high": 0.9385,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 159,
+       "mean": -0.0472,
+       "share_positive": 0.044,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 962,
+       "staked": 962,
+       "profit": 5.23,
+       "roi_after_fees": 0.0054,
+       "roi_ci95": {
+        "low": -0.0636,
+        "high": 0.0744
+       },
+       "max_drawdown": 47.723
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "Brier 0.2724 is worse than the no-vig close at 0.2502 on the same rows",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "the 95% ROI interval after fees (-0.0636 to 0.0744) includes zero or is negative",
+      "key": "rec_yds"
+     },
+     {
+      "n": 720,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.2666,
+      "log_loss": 0.73,
+      "versus_close": {
+       "n": 293,
+       "brier": 0.2691,
+       "baseline_brier": 0.2502,
+       "brier_skill": -0.0755,
+       "log_loss": 0.7356,
+       "baseline_log_loss": 0.6938,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0,
+        "to": 0.1,
+        "n": 1,
+        "mean_predicted": 0.0526,
+        "observed": 0,
+        "wilson_low": 0,
+        "wilson_high": 0.7935,
+        "inside_interval": true
+       },
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 22,
+        "mean_predicted": 0.2826,
+        "observed": 0.4545,
+        "wilson_low": 0.2692,
+        "wilson_high": 0.6534,
+        "inside_interval": true
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 78,
+        "mean_predicted": 0.3543,
+        "observed": 0.3846,
+        "wilson_low": 0.2845,
+        "wilson_high": 0.4956,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 94,
+        "mean_predicted": 0.4534,
+        "observed": 0.5426,
+        "wilson_low": 0.4422,
+        "wilson_high": 0.6396,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 186,
+        "mean_predicted": 0.5556,
+        "observed": 0.5,
+        "wilson_low": 0.4289,
+        "wilson_high": 0.5711,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 258,
+        "mean_predicted": 0.6464,
+        "observed": 0.4922,
+        "wilson_low": 0.4318,
+        "wilson_high": 0.5529,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 71,
+        "mean_predicted": 0.7356,
+        "observed": 0.507,
+        "wilson_low": 0.3934,
+        "wilson_high": 0.6199,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 9,
+        "mean_predicted": 0.8209,
+        "observed": 0.3333,
+        "wilson_low": 0.1206,
+        "wilson_high": 0.6458,
+        "inside_interval": false
+       },
+       {
+        "from": 0.9,
+        "to": 1,
+        "n": 1,
+        "mean_predicted": 0.9717,
+        "observed": 1,
+        "wilson_low": 0.2065,
+        "wilson_high": 1,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 293,
+       "mean": -0.0248,
+       "share_positive": 0.2628,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 620,
+       "staked": 620,
+       "profit": 7.504,
+       "roi_after_fees": 0.0121,
+       "roi_ci95": {
+        "low": -0.074,
+        "high": 0.0982
+       },
+       "max_drawdown": 21.999
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "Brier 0.2691 is worse than the no-vig close at 0.2502 on the same rows",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "the 95% ROI interval after fees (-0.074 to 0.0982) includes zero or is negative",
+      "key": "receptions"
+     },
+     {
+      "n": 271,
+      "sample_state": "DEVELOPING",
+      "brier": 0.2725,
+      "log_loss": 0.7892,
+      "versus_close": {
+       "n": 115,
+       "brier": 0.2643,
+       "baseline_brier": 0.2437,
+       "brier_skill": -0.0844,
+       "log_loss": 0.7286,
+       "baseline_log_loss": 0.6806,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 11,
+        "mean_predicted": 0.4775,
+        "observed": 0.3636,
+        "wilson_low": 0.1517,
+        "wilson_high": 0.6462,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 113,
+        "mean_predicted": 0.5601,
+        "observed": 0.3717,
+        "wilson_low": 0.2882,
+        "wilson_high": 0.4636,
+        "inside_interval": false
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 101,
+        "mean_predicted": 0.6502,
+        "observed": 0.5446,
+        "wilson_low": 0.4476,
+        "wilson_high": 0.6383,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 30,
+        "mean_predicted": 0.74,
+        "observed": 0.5667,
+        "wilson_low": 0.392,
+        "wilson_high": 0.7262,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 11,
+        "mean_predicted": 0.8529,
+        "observed": 0.4545,
+        "wilson_low": 0.2127,
+        "wilson_high": 0.7199,
+        "inside_interval": false
+       },
+       {
+        "from": 0.9,
+        "to": 1,
+        "n": 5,
+        "mean_predicted": 0.9296,
+        "observed": 0.4,
+        "wilson_low": 0.1176,
+        "wilson_high": 0.7693,
+        "inside_interval": false
+       }
+      ],
+      "clv": {
+       "n": 115,
+       "mean": -0.0386,
+       "share_positive": 0.1304,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 237,
+       "staked": 237,
+       "profit": -25.051,
+       "roi_after_fees": -0.1057,
+       "roi_ci95": {
+        "low": -0.2278,
+        "high": 0.0164
+       },
+       "max_drawdown": 27.838
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "271 settled predictions (DEVELOPING); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "237 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "rush_att"
+     },
+     {
+      "n": 249,
+      "sample_state": "DEVELOPING",
+      "brier": 0.2828,
+      "log_loss": 0.7948,
+      "versus_close": {
+       "n": 82,
+       "brier": 0.2494,
+       "baseline_brier": 0.2491,
+       "brier_skill": -0.0011,
+       "log_loss": 0.6857,
+       "baseline_log_loss": 0.6914,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 4,
+        "mean_predicted": 0.4871,
+        "observed": 0.75,
+        "wilson_low": 0.3006,
+        "wilson_high": 0.9544,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 109,
+        "mean_predicted": 0.5598,
+        "observed": 0.4954,
+        "wilson_low": 0.4033,
+        "wilson_high": 0.5878,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 59,
+        "mean_predicted": 0.638,
+        "observed": 0.5085,
+        "wilson_low": 0.3844,
+        "wilson_high": 0.6316,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 56,
+        "mean_predicted": 0.7457,
+        "observed": 0.5,
+        "wilson_low": 0.3733,
+        "wilson_high": 0.6267,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 4,
+        "mean_predicted": 0.887,
+        "observed": 0.5,
+        "wilson_low": 0.15,
+        "wilson_high": 0.85,
+        "inside_interval": false
+       },
+       {
+        "from": 0.9,
+        "to": 1,
+        "n": 17,
+        "mean_predicted": 0.9402,
+        "observed": 0.5294,
+        "wilson_low": 0.3096,
+        "wilson_high": 0.7383,
+        "inside_interval": false
+       }
+      ],
+      "clv": {
+       "n": 82,
+       "mean": -0.0473,
+       "share_positive": 0.061,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 206,
+       "staked": 206,
+       "profit": -7.881,
+       "roi_after_fees": -0.0383,
+       "roi_ci95": {
+        "low": -0.1675,
+        "high": 0.091
+       },
+       "max_drawdown": 21.216
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "249 settled predictions (DEVELOPING); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "206 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "rush_long"
+     },
+     {
+      "n": 232,
+      "sample_state": "DEVELOPING",
+      "brier": 0.253,
+      "log_loss": 0.7003,
+      "versus_close": {
+       "n": 23,
+       "brier": 0.2551,
+       "baseline_brier": 0.2501,
+       "brier_skill": -0.0198,
+       "log_loss": 0.7017,
+       "baseline_log_loss": 0.6934,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 8,
+        "mean_predicted": 0.2788,
+        "observed": 0.375,
+        "wilson_low": 0.1368,
+        "wilson_high": 0.6943,
+        "inside_interval": true
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 41,
+        "mean_predicted": 0.3433,
+        "observed": 0.3415,
+        "wilson_low": 0.2156,
+        "wilson_high": 0.4945,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 25,
+        "mean_predicted": 0.4343,
+        "observed": 0.28,
+        "wilson_low": 0.1428,
+        "wilson_high": 0.4758,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 75,
+        "mean_predicted": 0.5654,
+        "observed": 0.5467,
+        "wilson_low": 0.4345,
+        "wilson_high": 0.6543,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 62,
+        "mean_predicted": 0.6349,
+        "observed": 0.4032,
+        "wilson_low": 0.2902,
+        "wilson_high": 0.5275,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 18,
+        "mean_predicted": 0.7539,
+        "observed": 0.6111,
+        "wilson_low": 0.3862,
+        "wilson_high": 0.7969,
+        "inside_interval": true
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 3,
+        "mean_predicted": 0.8075,
+        "observed": 0.6667,
+        "wilson_low": 0.2077,
+        "wilson_high": 0.9385,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 23,
+       "mean": -0.0517,
+       "share_positive": 0.0435,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 184,
+       "staked": 184,
+       "profit": -10.215,
+       "roi_after_fees": -0.0555,
+       "roi_ci95": {
+        "low": -0.2147,
+        "high": 0.1036
+       },
+       "max_drawdown": 20.504
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "232 settled predictions (DEVELOPING); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "184 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "rush_rec_yds"
+     },
+     {
+      "n": 500,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.2501,
+      "log_loss": 0.7065,
+      "versus_close": {
+       "n": 82,
+       "brier": 0.2243,
+       "baseline_brier": 0.252,
+       "brier_skill": 0.1101,
+       "log_loss": 0.6418,
+       "baseline_log_loss": 0.6972,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 20,
+        "mean_predicted": 0.2863,
+        "observed": 0.45,
+        "wilson_low": 0.2582,
+        "wilson_high": 0.6579,
+        "inside_interval": true
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 64,
+        "mean_predicted": 0.3542,
+        "observed": 0.3906,
+        "wilson_low": 0.2806,
+        "wilson_high": 0.5131,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 40,
+        "mean_predicted": 0.444,
+        "observed": 0.425,
+        "wilson_low": 0.2851,
+        "wilson_high": 0.578,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 145,
+        "mean_predicted": 0.5612,
+        "observed": 0.531,
+        "wilson_low": 0.4501,
+        "wilson_high": 0.6104,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 165,
+        "mean_predicted": 0.644,
+        "observed": 0.6,
+        "wilson_low": 0.5238,
+        "wilson_high": 0.6717,
+        "inside_interval": true
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 61,
+        "mean_predicted": 0.7458,
+        "observed": 0.6066,
+        "wilson_low": 0.4812,
+        "wilson_high": 0.7193,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 4,
+        "mean_predicted": 0.852,
+        "observed": 0.5,
+        "wilson_low": 0.15,
+        "wilson_high": 0.85,
+        "inside_interval": false
+       },
+       {
+        "from": 0.9,
+        "to": 1,
+        "n": 1,
+        "mean_predicted": 0.9995,
+        "observed": 0,
+        "wilson_low": 0,
+        "wilson_high": 0.7935,
+        "inside_interval": false
+       }
+      ],
+      "clv": {
+       "n": 82,
+       "mean": -0.0452,
+       "share_positive": 0.0488,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 431,
+       "staked": 431,
+       "profit": 84.708,
+       "roi_after_fees": 0.1965,
+       "roi_ci95": {
+        "low": 0.0877,
+        "high": 0.3054
+       },
+       "max_drawdown": 15.513
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "1 of 5 well-filled buckets sit outside their 95% interval",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "431 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "rush_yds"
+     }
+    ],
+    "odds_range": [
+     {
+      "n": 493,
+      "sample_state": "DEVELOPING",
+      "brier": 0.2497,
+      "log_loss": 0.6927,
+      "versus_close": {
+       "n": 130,
+       "brier": 0.2566,
+       "baseline_brier": 0.2455,
+       "brier_skill": -0.0453,
+       "log_loss": 0.7068,
+       "baseline_log_loss": 0.6844,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.1,
+        "to": 0.2,
+        "n": 1,
+        "mean_predicted": 0.1021,
+        "observed": 0,
+        "wilson_low": 0,
+        "wilson_high": 0.7935,
+        "inside_interval": true
+       },
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 2,
+        "mean_predicted": 0.256,
+        "observed": 0.5,
+        "wilson_low": 0.0945,
+        "wilson_high": 0.9055,
+        "inside_interval": true
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 80,
+        "mean_predicted": 0.3807,
+        "observed": 0.3625,
+        "wilson_low": 0.2657,
+        "wilson_high": 0.4719,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 216,
+        "mean_predicted": 0.4503,
+        "observed": 0.4815,
+        "wilson_low": 0.4158,
+        "wilson_high": 0.5479,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 145,
+        "mean_predicted": 0.5399,
+        "observed": 0.4069,
+        "wilson_low": 0.3303,
+        "wilson_high": 0.4883,
+        "inside_interval": false
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 46,
+        "mean_predicted": 0.6329,
+        "observed": 0.5435,
+        "wilson_low": 0.4018,
+        "wilson_high": 0.6785,
+        "inside_interval": true
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 3,
+        "mean_predicted": 0.7515,
+        "observed": 0.3333,
+        "wilson_low": 0.0615,
+        "wilson_high": 0.7923,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 130,
+       "mean": 0.013,
+       "share_positive": 0.4154,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 366,
+       "staked": 366,
+       "profit": 33.46,
+       "roi_after_fees": 0.0914,
+       "roi_ci95": {
+        "low": -0.0341,
+        "high": 0.217
+       },
+       "max_drawdown": 15.33
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "493 settled predictions (DEVELOPING); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "366 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "+111 to +199"
+     },
+     {
+      "n": 594,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.2316,
+      "log_loss": 0.658,
+      "versus_close": {
+       "n": 20,
+       "brier": 0.1811,
+       "baseline_brier": 0.1777,
+       "brier_skill": -0.0191,
+       "log_loss": 0.551,
+       "baseline_log_loss": 0.5387,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0,
+        "to": 0.1,
+        "n": 4,
+        "mean_predicted": 0.0437,
+        "observed": 0.25,
+        "wilson_low": 0.0456,
+        "wilson_high": 0.6994,
+        "inside_interval": false
+       },
+       {
+        "from": 0.1,
+        "to": 0.2,
+        "n": 31,
+        "mean_predicted": 0.1601,
+        "observed": 0.1935,
+        "wilson_low": 0.0919,
+        "wilson_high": 0.3628,
+        "inside_interval": true
+       },
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 156,
+        "mean_predicted": 0.2685,
+        "observed": 0.359,
+        "wilson_low": 0.2879,
+        "wilson_high": 0.4368,
+        "inside_interval": false
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 337,
+        "mean_predicted": 0.3431,
+        "observed": 0.368,
+        "wilson_low": 0.3182,
+        "wilson_high": 0.4207,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 54,
+        "mean_predicted": 0.4339,
+        "observed": 0.4259,
+        "wilson_low": 0.3033,
+        "wilson_high": 0.5584,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 12,
+        "mean_predicted": 0.5269,
+        "observed": 0.4167,
+        "wilson_low": 0.1933,
+        "wilson_high": 0.6805,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 20,
+       "mean": 0.0137,
+       "share_positive": 0.5,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 375,
+       "staked": 375,
+       "profit": 67.47,
+       "roi_after_fees": 0.1799,
+       "roi_ci95": {
+        "low": 0.0116,
+        "high": 0.3483
+       },
+       "max_drawdown": 28.29
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "Brier 0.1811 is worse than the no-vig close at 0.1777 on the same rows",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "375 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "+200 or longer"
+     },
+     {
+      "n": 1363,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.2548,
+      "log_loss": 0.7086,
+      "versus_close": {
+       "n": 441,
+       "brier": 0.2582,
+       "baseline_brier": 0.2487,
+       "brier_skill": -0.0379,
+       "log_loss": 0.7115,
+       "baseline_log_loss": 0.6906,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 40,
+        "mean_predicted": 0.487,
+        "observed": 0.4,
+        "wilson_low": 0.2635,
+        "wilson_high": 0.554,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 851,
+        "mean_predicted": 0.5566,
+        "observed": 0.5358,
+        "wilson_low": 0.5022,
+        "wilson_high": 0.5691,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 365,
+        "mean_predicted": 0.6347,
+        "observed": 0.5452,
+        "wilson_low": 0.4939,
+        "wilson_high": 0.5956,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 80,
+        "mean_predicted": 0.7418,
+        "observed": 0.5625,
+        "wilson_low": 0.4534,
+        "wilson_high": 0.6659,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 16,
+        "mean_predicted": 0.8664,
+        "observed": 0.5,
+        "wilson_low": 0.28,
+        "wilson_high": 0.72,
+        "inside_interval": false
+       },
+       {
+        "from": 0.9,
+        "to": 1,
+        "n": 11,
+        "mean_predicted": 0.9409,
+        "observed": 0.5455,
+        "wilson_low": 0.2801,
+        "wilson_high": 0.7873,
+        "inside_interval": false
+       }
+      ],
+      "clv": {
+       "n": 441,
+       "mean": -0.0312,
+       "share_positive": 0.1497,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 1188,
+       "staked": 1188,
+       "profit": 70.866,
+       "roi_after_fees": 0.0597,
+       "roi_ci95": {
+        "low": 0.0043,
+        "high": 0.115
+       },
+       "max_drawdown": 20.946
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "Brier 0.2582 is worse than the no-vig close at 0.2487 on the same rows",
+      "profit_claim": "ALLOWED",
+      "profit_why": "ROI after fees 0.0597 with a 95% interval above zero over 1188 bets",
+      "key": "-110 to +110"
+     },
+     {
+      "n": 2175,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.2718,
+      "log_loss": 0.75,
+      "versus_close": {
+       "n": 546,
+       "brier": 0.2674,
+       "baseline_brier": 0.2506,
+       "brier_skill": -0.0668,
+       "log_loss": 0.7309,
+       "baseline_log_loss": 0.6945,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 963,
+        "mean_predicted": 0.572,
+        "observed": 0.4704,
+        "wilson_low": 0.4391,
+        "wilson_high": 0.502,
+        "inside_interval": false
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 975,
+        "mean_predicted": 0.6386,
+        "observed": 0.4923,
+        "wilson_low": 0.461,
+        "wilson_high": 0.5237,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 196,
+        "mean_predicted": 0.7407,
+        "observed": 0.5153,
+        "wilson_low": 0.4457,
+        "wilson_high": 0.5843,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 26,
+        "mean_predicted": 0.8376,
+        "observed": 0.4231,
+        "wilson_low": 0.2554,
+        "wilson_high": 0.6105,
+        "inside_interval": false
+       },
+       {
+        "from": 0.9,
+        "to": 1,
+        "n": 15,
+        "mean_predicted": 0.9358,
+        "observed": 0.4667,
+        "wilson_low": 0.2481,
+        "wilson_high": 0.6988,
+        "inside_interval": false
+       }
+      ],
+      "clv": {
+       "n": 546,
+       "mean": -0.0578,
+       "share_positive": 0.0549,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 1896,
+       "staked": 1896,
+       "profit": -198.132,
+       "roi_after_fees": -0.1045,
+       "roi_ci95": {
+        "low": -0.1458,
+        "high": -0.0632
+       },
+       "max_drawdown": 209.019
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "Brier 0.2674 is worse than the no-vig close at 0.2506 on the same rows",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "the 95% ROI interval after fees (-0.1458 to -0.0632) includes zero or is negative",
+      "key": "-199 to -111"
+     },
+     {
+      "n": 66,
+      "sample_state": "EARLY_SIGNAL",
+      "brier": 0.3018,
+      "log_loss": 0.8172,
+      "versus_close": {
+       "n": 26,
+       "brier": 0.2225,
+       "baseline_brier": 0.1989,
+       "brier_skill": -0.1183,
+       "log_loss": 0.642,
+       "baseline_log_loss": 0.5875,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 9,
+        "mean_predicted": 0.6861,
+        "observed": 0.6667,
+        "wilson_low": 0.3542,
+        "wilson_high": 0.8794,
+        "inside_interval": true
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 46,
+        "mean_predicted": 0.7435,
+        "observed": 0.5217,
+        "wilson_low": 0.3814,
+        "wilson_high": 0.6588,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 10,
+        "mean_predicted": 0.8231,
+        "observed": 0.4,
+        "wilson_low": 0.1682,
+        "wilson_high": 0.6873,
+        "inside_interval": false
+       },
+       {
+        "from": 0.9,
+        "to": 1,
+        "n": 1,
+        "mean_predicted": 0.9717,
+        "observed": 1,
+        "wilson_low": 0.2065,
+        "wilson_high": 1,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 26,
+       "mean": -0.0738,
+       "share_positive": 0,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 49,
+       "staked": 49,
+       "profit": -10.259,
+       "roi_after_fees": -0.2094,
+       "roi_ci95": {
+        "low": -0.4116,
+        "high": -0.0071
+       },
+       "max_drawdown": 12.591
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "66 settled predictions (EARLY_SIGNAL); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "49 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "-200 or shorter"
+     }
+    ],
+    "group.decision": [
+     {
+      "n": 374,
+      "sample_state": "DEVELOPING",
+      "brier": 0.2609,
+      "log_loss": 0.717,
+      "versus_close": {
+       "n": 164,
+       "brier": 0.2648,
+       "baseline_brier": 0.2439,
+       "brier_skill": -0.0859,
+       "log_loss": 0.7261,
+       "baseline_log_loss": 0.6808,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 130,
+        "mean_predicted": 0.5697,
+        "observed": 0.4308,
+        "wilson_low": 0.3488,
+        "wilson_high": 0.5167,
+        "inside_interval": false
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 204,
+        "mean_predicted": 0.6461,
+        "observed": 0.5343,
+        "wilson_low": 0.4659,
+        "wilson_high": 0.6015,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 38,
+        "mean_predicted": 0.7279,
+        "observed": 0.6316,
+        "wilson_low": 0.4728,
+        "wilson_high": 0.7662,
+        "inside_interval": true
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 2,
+        "mean_predicted": 0.8714,
+        "observed": 0.5,
+        "wilson_low": 0.0945,
+        "wilson_high": 0.9055,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 164,
+       "mean": -0.0301,
+       "share_positive": 0.189,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 374,
+       "staked": 374,
+       "profit": -6.124,
+       "roi_after_fees": -0.0164,
+       "roi_ci95": {
+        "low": -0.1151,
+        "high": 0.0824
+       },
+       "max_drawdown": 25.799
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "374 settled predictions (DEVELOPING); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "374 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "BET"
+     },
+     {
+      "n": 3500,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.2592,
+      "log_loss": 0.7158,
+      "versus_close": {
+       "n": 999,
+       "brier": 0.2594,
+       "baseline_brier": 0.2474,
+       "brier_skill": -0.0485,
+       "log_loss": 0.7141,
+       "baseline_log_loss": 0.6878,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 69,
+        "mean_predicted": 0.285,
+        "observed": 0.3478,
+        "wilson_low": 0.2462,
+        "wilson_high": 0.4655,
+        "inside_interval": true
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 302,
+        "mean_predicted": 0.3494,
+        "observed": 0.3113,
+        "wilson_low": 0.2617,
+        "wilson_high": 0.3656,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 187,
+        "mean_predicted": 0.4479,
+        "observed": 0.4866,
+        "wilson_low": 0.416,
+        "wilson_high": 0.5578,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 1554,
+        "mean_predicted": 0.5663,
+        "observed": 0.5064,
+        "wilson_low": 0.4816,
+        "wilson_high": 0.5312,
+        "inside_interval": false
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 1069,
+        "mean_predicted": 0.6354,
+        "observed": 0.5023,
+        "wilson_low": 0.4724,
+        "wilson_high": 0.5322,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 252,
+        "mean_predicted": 0.7437,
+        "observed": 0.5238,
+        "wilson_low": 0.4623,
+        "wilson_high": 0.5847,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 44,
+        "mean_predicted": 0.842,
+        "observed": 0.4773,
+        "wilson_low": 0.3375,
+        "wilson_high": 0.6206,
+        "inside_interval": false
+       },
+       {
+        "from": 0.9,
+        "to": 1,
+        "n": 23,
+        "mean_predicted": 0.9323,
+        "observed": 0.6087,
+        "wilson_low": 0.4079,
+        "wilson_high": 0.7784,
+        "inside_interval": false
+       }
+      ],
+      "clv": {
+       "n": 999,
+       "mean": -0.0404,
+       "share_positive": 0.1291,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 3500,
+       "staked": 3500,
+       "profit": -30.471,
+       "roi_after_fees": -0.0087,
+       "roi_ci95": {
+        "low": -0.0442,
+        "high": 0.0268
+       },
+       "max_drawdown": 116.65
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "Brier 0.2594 is worse than the no-vig close at 0.2474 on the same rows",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "the 95% ROI interval after fees (-0.0442 to 0.0268) includes zero or is negative",
+      "key": "LEAN"
+     },
+     {
+      "n": 259,
+      "sample_state": "DEVELOPING",
+      "brier": 0.2375,
+      "log_loss": 0.6715,
+      "versus_close": {
+       "n": 0,
+       "brier": null,
+       "baseline_brier": null,
+       "brier_skill": null,
+       "log_loss": null,
+       "baseline_log_loss": null,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0,
+        "to": 0.1,
+        "n": 4,
+        "mean_predicted": 0.0437,
+        "observed": 0.25,
+        "wilson_low": 0.0456,
+        "wilson_high": 0.6994,
+        "inside_interval": false
+       },
+       {
+        "from": 0.1,
+        "to": 0.2,
+        "n": 32,
+        "mean_predicted": 0.1583,
+        "observed": 0.1875,
+        "wilson_low": 0.0889,
+        "wilson_high": 0.3531,
+        "inside_interval": true
+       },
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 53,
+        "mean_predicted": 0.2393,
+        "observed": 0.3208,
+        "wilson_low": 0.2109,
+        "wilson_high": 0.4548,
+        "inside_interval": true
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 26,
+        "mean_predicted": 0.3479,
+        "observed": 0.4615,
+        "wilson_low": 0.2876,
+        "wilson_high": 0.6454,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 45,
+        "mean_predicted": 0.4724,
+        "observed": 0.4222,
+        "wilson_low": 0.2897,
+        "wilson_high": 0.567,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 85,
+        "mean_predicted": 0.5292,
+        "observed": 0.4,
+        "wilson_low": 0.3024,
+        "wilson_high": 0.5063,
+        "inside_interval": false
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 11,
+        "mean_predicted": 0.6444,
+        "observed": 0.4545,
+        "wilson_low": 0.2127,
+        "wilson_high": 0.7199,
+        "inside_interval": true
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 3,
+        "mean_predicted": 0.7347,
+        "observed": 0.3333,
+        "wilson_low": 0.0615,
+        "wilson_high": 0.7923,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 0,
+       "mean": null,
+       "share_positive": null,
+       "note": "no closing probability on these rows"
+      },
+      "staking": {
+       "bets": 0,
+       "staked": 0,
+       "profit": 0,
+       "roi_after_fees": null,
+       "roi_ci95": {
+        "low": null,
+        "high": null
+       },
+       "max_drawdown": 0
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "259 settled predictions (DEVELOPING); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "0 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "PASS"
+     },
+     {
+      "n": 558,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.274,
+      "log_loss": 0.7815,
+      "versus_close": {
+       "n": 0,
+       "brier": null,
+       "baseline_brier": null,
+       "brier_skill": null,
+       "log_loss": null,
+       "baseline_log_loss": null,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 36,
+        "mean_predicted": 0.279,
+        "observed": 0.4444,
+        "wilson_low": 0.2954,
+        "wilson_high": 0.6042,
+        "inside_interval": false
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 89,
+        "mean_predicted": 0.3539,
+        "observed": 0.5281,
+        "wilson_low": 0.4254,
+        "wilson_high": 0.6285,
+        "inside_interval": false
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 78,
+        "mean_predicted": 0.4506,
+        "observed": 0.4231,
+        "wilson_low": 0.3196,
+        "wilson_high": 0.5338,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 202,
+        "mean_predicted": 0.545,
+        "observed": 0.4752,
+        "wilson_low": 0.4075,
+        "wilson_high": 0.5439,
+        "inside_interval": false
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 111,
+        "mean_predicted": 0.6434,
+        "observed": 0.5315,
+        "wilson_low": 0.4392,
+        "wilson_high": 0.6217,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 32,
+        "mean_predicted": 0.7405,
+        "observed": 0.4375,
+        "wilson_low": 0.2817,
+        "wilson_high": 0.6067,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 6,
+        "mean_predicted": 0.8469,
+        "observed": 0.1667,
+        "wilson_low": 0.0301,
+        "wilson_high": 0.5635,
+        "inside_interval": false
+       },
+       {
+        "from": 0.9,
+        "to": 1,
+        "n": 4,
+        "mean_predicted": 0.9791,
+        "observed": 0,
+        "wilson_low": 0,
+        "wilson_high": 0.4899,
+        "inside_interval": false
+       }
+      ],
+      "clv": {
+       "n": 0,
+       "mean": null,
+       "share_positive": null,
+       "note": "no closing probability on these rows"
+      },
+      "staking": {
+       "bets": 0,
+       "staked": 0,
+       "profit": 0,
+       "roi_after_fees": null,
+       "roi_ci95": {
+        "low": null,
+        "high": null
+       },
+       "max_drawdown": 0
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "no closing baseline on these rows, so the source cannot be compared with the market",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "0 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "WATCH"
+     }
+    ],
+    "group.probability_source": [
+     {
+      "n": 4624,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.2598,
+      "log_loss": 0.721,
+      "versus_close": {
+       "n": 1163,
+       "brier": 0.2602,
+       "baseline_brier": 0.2469,
+       "brier_skill": -0.0537,
+       "log_loss": 0.7158,
+       "baseline_log_loss": 0.6868,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0,
+        "to": 0.1,
+        "n": 4,
+        "mean_predicted": 0.0437,
+        "observed": 0.25,
+        "wilson_low": 0.0456,
+        "wilson_high": 0.6994,
+        "inside_interval": false
+       },
+       {
+        "from": 0.1,
+        "to": 0.2,
+        "n": 32,
+        "mean_predicted": 0.1583,
+        "observed": 0.1875,
+        "wilson_low": 0.0889,
+        "wilson_high": 0.3531,
+        "inside_interval": true
+       },
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 154,
+        "mean_predicted": 0.2679,
+        "observed": 0.3506,
+        "wilson_low": 0.2798,
+        "wilson_high": 0.4288,
+        "inside_interval": false
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 412,
+        "mean_predicted": 0.3502,
+        "observed": 0.3689,
+        "wilson_low": 0.3238,
+        "wilson_high": 0.4165,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 304,
+        "mean_predicted": 0.4522,
+        "observed": 0.4638,
+        "wilson_low": 0.4086,
+        "wilson_high": 0.52,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 1944,
+        "mean_predicted": 0.5628,
+        "observed": 0.4923,
+        "wilson_low": 0.4701,
+        "wilson_high": 0.5145,
+        "inside_interval": false
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 1375,
+        "mean_predicted": 0.6376,
+        "observed": 0.5069,
+        "wilson_low": 0.4805,
+        "wilson_high": 0.5333,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 321,
+        "mean_predicted": 0.7414,
+        "observed": 0.5296,
+        "wilson_low": 0.475,
+        "wilson_high": 0.5835,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 52,
+        "mean_predicted": 0.8437,
+        "observed": 0.4423,
+        "wilson_low": 0.316,
+        "wilson_high": 0.5766,
+        "inside_interval": false
+       },
+       {
+        "from": 0.9,
+        "to": 1,
+        "n": 26,
+        "mean_predicted": 0.9391,
+        "observed": 0.5385,
+        "wilson_low": 0.3546,
+        "wilson_high": 0.7124,
+        "inside_interval": false
+       }
+      ],
+      "clv": {
+       "n": 1163,
+       "mean": -0.0389,
+       "share_positive": 0.1376,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 3835,
+       "staked": 3835,
+       "profit": -46.416,
+       "roi_after_fees": -0.0121,
+       "roi_ci95": {
+        "low": -0.0457,
+        "high": 0.0214
+       },
+       "max_drawdown": 140.625
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "Brier 0.2602 is worse than the no-vig close at 0.2469 on the same rows",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "the 95% ROI interval after fees (-0.0457 to 0.0214) includes zero or is negative",
+      "key": "model_estimated"
+     },
+     {
+      "n": 67,
+      "sample_state": "EARLY_SIGNAL",
+      "brier": 0.2641,
+      "log_loss": 0.7393,
+      "versus_close": {
+       "n": 0,
+       "brier": null,
+       "baseline_brier": null,
+       "brier_skill": null,
+       "log_loss": null,
+       "baseline_log_loss": null,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 4,
+        "mean_predicted": 0.2827,
+        "observed": 0.75,
+        "wilson_low": 0.3006,
+        "wilson_high": 0.9544,
+        "inside_interval": false
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 5,
+        "mean_predicted": 0.3586,
+        "observed": 0.2,
+        "wilson_low": 0.0362,
+        "wilson_high": 0.6245,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 6,
+        "mean_predicted": 0.4481,
+        "observed": 0.3333,
+        "wilson_low": 0.0968,
+        "wilson_high": 0.7,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 27,
+        "mean_predicted": 0.556,
+        "observed": 0.5926,
+        "wilson_low": 0.4073,
+        "wilson_high": 0.7549,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 20,
+        "mean_predicted": 0.6446,
+        "observed": 0.65,
+        "wilson_low": 0.4329,
+        "wilson_high": 0.8188,
+        "inside_interval": true
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 4,
+        "mean_predicted": 0.7473,
+        "observed": 0.25,
+        "wilson_low": 0.0456,
+        "wilson_high": 0.6994,
+        "inside_interval": false
+       },
+       {
+        "from": 0.9,
+        "to": 1,
+        "n": 1,
+        "mean_predicted": 0.9438,
+        "observed": 0,
+        "wilson_low": 0,
+        "wilson_high": 0.7935,
+        "inside_interval": false
+       }
+      ],
+      "clv": {
+       "n": 0,
+       "mean": null,
+       "share_positive": null,
+       "note": "no closing probability on these rows"
+      },
+      "staking": {
+       "bets": 39,
+       "staked": 39,
+       "profit": 9.821,
+       "roi_after_fees": 0.2518,
+       "roi_ci95": {
+        "low": -0.1369,
+        "high": 0.6405
+       },
+       "max_drawdown": 5
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "67 settled predictions (EARLY_SIGNAL); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "39 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "partially_calibrated"
+     }
+    ]
+   }
+  },
+  "cfb": {
+   "schema": "edgedesk_calibration_v1",
+   "rows_in": 6974,
+   "scored": 5529,
+   "rejected": 954,
+   "rejected_reasons": {
+    "BAD_PROBABILITY": 954
+   },
+   "rejected_sample": [
+    {
+     "id": "ppe_2ee8484b",
+     "why": "BAD_PROBABILITY",
+     "detail": "null"
+    },
+    {
+     "id": "ppe_497c7a34",
+     "why": "BAD_PROBABILITY",
+     "detail": "null"
+    },
+    {
+     "id": "ppe_97e36e38",
+     "why": "BAD_PROBABILITY",
+     "detail": "null"
+    },
+    {
+     "id": "ppe_65f9d6a3",
+     "why": "BAD_PROBABILITY",
+     "detail": "null"
+    },
+    {
+     "id": "ppe_bc86e967",
+     "why": "BAD_PROBABILITY",
+     "detail": "null"
+    },
+    {
+     "id": "ppe_3f3ae363",
+     "why": "BAD_PROBABILITY",
+     "detail": "null"
+    },
+    {
+     "id": "ppe_7f0f75c5",
+     "why": "BAD_PROBABILITY",
+     "detail": "null"
+    },
+    {
+     "id": "ppe_d5d8896a",
+     "why": "BAD_PROBABILITY",
+     "detail": "null"
+    },
+    {
+     "id": "ppe_4a199091",
+     "why": "BAD_PROBABILITY",
+     "detail": "null"
+    },
+    {
+     "id": "ppe_cdb1bd41",
+     "why": "BAD_PROBABILITY",
+     "detail": "null"
+    }
+   ],
+   "excluded_unsettled": 491,
+   "lookahead_violations": 0,
+   "first": "2026-09-29T13:25:30.261Z",
+   "last": "2026-10-10T14:21:08.400Z",
+   "overall": {
+    "n": 5529,
+    "sample_state": "MEANINGFUL",
+    "brier": 0.2503,
+    "log_loss": 0.6966,
+    "versus_close": {
+     "n": 779,
+     "brier": 0.2537,
+     "baseline_brier": 0.2467,
+     "brier_skill": -0.0283,
+     "log_loss": 0.7019,
+     "baseline_log_loss": 0.6865,
+     "baseline": "no-vig closing probability of the same side"
+    },
+    "buckets": [
+     {
+      "from": 0,
+      "to": 0.1,
+      "n": 37,
+      "mean_predicted": 0.0755,
+      "observed": 0.2703,
+      "wilson_low": 0.154,
+      "wilson_high": 0.4298,
+      "inside_interval": false
+     },
+     {
+      "from": 0.1,
+      "to": 0.2,
+      "n": 376,
+      "mean_predicted": 0.1594,
+      "observed": 0.2128,
+      "wilson_low": 0.1744,
+      "wilson_high": 0.2569,
+      "inside_interval": false
+     },
+     {
+      "from": 0.2,
+      "to": 0.3,
+      "n": 494,
+      "mean_predicted": 0.2504,
+      "observed": 0.33,
+      "wilson_low": 0.2899,
+      "wilson_high": 0.3726,
+      "inside_interval": false
+     },
+     {
+      "from": 0.3,
+      "to": 0.4,
+      "n": 470,
+      "mean_predicted": 0.3464,
+      "observed": 0.3213,
+      "wilson_low": 0.2807,
+      "wilson_high": 0.3648,
+      "inside_interval": true
+     },
+     {
+      "from": 0.4,
+      "to": 0.5,
+      "n": 336,
+      "mean_predicted": 0.4504,
+      "observed": 0.4673,
+      "wilson_low": 0.4146,
+      "wilson_high": 0.5207,
+      "inside_interval": true
+     },
+     {
+      "from": 0.5,
+      "to": 0.6,
+      "n": 1617,
+      "mean_predicted": 0.5663,
+      "observed": 0.5028,
+      "wilson_low": 0.4784,
+      "wilson_high": 0.5271,
+      "inside_interval": false
+     },
+     {
+      "from": 0.6,
+      "to": 0.7,
+      "n": 1655,
+      "mean_predicted": 0.6384,
+      "observed": 0.5233,
+      "wilson_low": 0.4992,
+      "wilson_high": 0.5472,
+      "inside_interval": false
+     },
+     {
+      "from": 0.7,
+      "to": 0.8,
+      "n": 492,
+      "mean_predicted": 0.7375,
+      "observed": 0.498,
+      "wilson_low": 0.454,
+      "wilson_high": 0.542,
+      "inside_interval": false
+     },
+     {
+      "from": 0.8,
+      "to": 0.9,
+      "n": 52,
+      "mean_predicted": 0.8347,
+      "observed": 0.5385,
+      "wilson_low": 0.405,
+      "wilson_high": 0.6666,
+      "inside_interval": false
+     }
+    ],
+    "clv": {
+     "n": 779,
+     "mean": -0.0492,
+     "share_positive": 0.0988,
+     "note": "EV of the entry price at the no-vig closing probability"
+    },
+    "staking": {
+     "bets": 3321,
+     "staked": 3321,
+     "profit": -46.634,
+     "roi_after_fees": -0.014,
+     "roi_ci95": {
+      "low": -0.0485,
+      "high": 0.0204
+     },
+     "max_drawdown": 104.152
+    },
+    "calibration_status": "NOT_CALIBRATED",
+    "calibration_why": "Brier 0.2537 is worse than the no-vig close at 0.2467 on the same rows",
+    "profit_claim": "NOT_SUPPORTED",
+    "profit_why": "the 95% ROI interval after fees (-0.0485 to 0.0204) includes zero or is negative"
+   },
+   "by": {
+    "market": [
+     {
+      "n": 1336,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.2075,
+      "log_loss": 0.6089,
+      "versus_close": {
+       "n": 0,
+       "brier": null,
+       "baseline_brier": null,
+       "brier_skill": null,
+       "log_loss": null,
+       "baseline_log_loss": null,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0,
+        "to": 0.1,
+        "n": 37,
+        "mean_predicted": 0.0755,
+        "observed": 0.2703,
+        "wilson_low": 0.154,
+        "wilson_high": 0.4298,
+        "inside_interval": false
+       },
+       {
+        "from": 0.1,
+        "to": 0.2,
+        "n": 376,
+        "mean_predicted": 0.1594,
+        "observed": 0.2128,
+        "wilson_low": 0.1744,
+        "wilson_high": 0.2569,
+        "inside_interval": false
+       },
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 437,
+        "mean_predicted": 0.247,
+        "observed": 0.3135,
+        "wilson_low": 0.2718,
+        "wilson_high": 0.3585,
+        "inside_interval": false
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 264,
+        "mean_predicted": 0.3444,
+        "observed": 0.2841,
+        "wilson_low": 0.2331,
+        "wilson_high": 0.3413,
+        "inside_interval": false
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 133,
+        "mean_predicted": 0.4412,
+        "observed": 0.4135,
+        "wilson_low": 0.3334,
+        "wilson_high": 0.4985,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 69,
+        "mean_predicted": 0.5498,
+        "observed": 0.4638,
+        "wilson_low": 0.3511,
+        "wilson_high": 0.5802,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 18,
+        "mean_predicted": 0.637,
+        "observed": 0.5556,
+        "wilson_low": 0.3372,
+        "wilson_high": 0.7544,
+        "inside_interval": true
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 2,
+        "mean_predicted": 0.7255,
+        "observed": 1,
+        "wilson_low": 0.3424,
+        "wilson_high": 1,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 0,
+       "mean": null,
+       "share_positive": null,
+       "note": "no closing probability on these rows"
+      },
+      "staking": {
+       "bets": 108,
+       "staked": 108,
+       "profit": -5.156,
+       "roi_after_fees": -0.0477,
+       "roi_ci95": {
+        "low": -0.3108,
+        "high": 0.2153
+       },
+       "max_drawdown": 18.044
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "no closing baseline on these rows, so the source cannot be compared with the market",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "108 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "anytime_td"
+     },
+     {
+      "n": 190,
+      "sample_state": "EARLY_SIGNAL",
+      "brier": 0.2593,
+      "log_loss": 0.714,
+      "versus_close": {
+       "n": 45,
+       "brier": 0.2562,
+       "baseline_brier": 0.2432,
+       "brier_skill": -0.0536,
+       "log_loss": 0.7056,
+       "baseline_log_loss": 0.6795,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 4,
+        "mean_predicted": 0.4879,
+        "observed": 1,
+        "wilson_low": 0.5101,
+        "wilson_high": 1,
+        "inside_interval": false
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 106,
+        "mean_predicted": 0.5612,
+        "observed": 0.4528,
+        "wilson_low": 0.3614,
+        "wilson_high": 0.5476,
+        "inside_interval": false
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 71,
+        "mean_predicted": 0.6327,
+        "observed": 0.5634,
+        "wilson_low": 0.4477,
+        "wilson_high": 0.6725,
+        "inside_interval": true
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 7,
+        "mean_predicted": 0.7382,
+        "observed": 0.4286,
+        "wilson_low": 0.1582,
+        "wilson_high": 0.7495,
+        "inside_interval": true
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 2,
+        "mean_predicted": 0.8532,
+        "observed": 0.5,
+        "wilson_low": 0.0945,
+        "wilson_high": 0.9055,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 45,
+       "mean": -0.0578,
+       "share_positive": 0.1111,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 123,
+       "staked": 123,
+       "profit": -4.147,
+       "roi_after_fees": -0.0337,
+       "roi_ci95": {
+        "low": -0.1986,
+        "high": 0.1312
+       },
+       "max_drawdown": 9.431
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "190 settled predictions (EARLY_SIGNAL); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "123 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "pass_att"
+     },
+     {
+      "n": 164,
+      "sample_state": "EARLY_SIGNAL",
+      "brier": 0.2645,
+      "log_loss": 0.7264,
+      "versus_close": {
+       "n": 42,
+       "brier": 0.2584,
+       "baseline_brier": 0.2468,
+       "brier_skill": -0.0468,
+       "log_loss": 0.71,
+       "baseline_log_loss": 0.6868,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 1,
+        "mean_predicted": 0.4883,
+        "observed": 1,
+        "wilson_low": 0.2065,
+        "wilson_high": 1,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 79,
+        "mean_predicted": 0.5614,
+        "observed": 0.481,
+        "wilson_low": 0.3743,
+        "wilson_high": 0.5895,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 71,
+        "mean_predicted": 0.6344,
+        "observed": 0.5915,
+        "wilson_low": 0.4754,
+        "wilson_high": 0.6983,
+        "inside_interval": true
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 12,
+        "mean_predicted": 0.7386,
+        "observed": 0.3333,
+        "wilson_low": 0.1381,
+        "wilson_high": 0.6094,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 1,
+        "mean_predicted": 0.8463,
+        "observed": 0,
+        "wilson_low": 0,
+        "wilson_high": 0.7935,
+        "inside_interval": false
+       }
+      ],
+      "clv": {
+       "n": 42,
+       "mean": -0.0731,
+       "share_positive": 0.0714,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 98,
+       "staked": 98,
+       "profit": -9.428,
+       "roi_after_fees": -0.0962,
+       "roi_ci95": {
+        "low": -0.2802,
+        "high": 0.0878
+       },
+       "max_drawdown": 16.123
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "164 settled predictions (EARLY_SIGNAL); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "98 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "pass_cmp"
+     },
+     {
+      "n": 258,
+      "sample_state": "DEVELOPING",
+      "brier": 0.2565,
+      "log_loss": 0.7077,
+      "versus_close": {
+       "n": 68,
+       "brier": 0.2425,
+       "baseline_brier": 0.2306,
+       "brier_skill": -0.0517,
+       "log_loss": 0.6774,
+       "baseline_log_loss": 0.6534,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 7,
+        "mean_predicted": 0.267,
+        "observed": 0.4286,
+        "wilson_low": 0.1582,
+        "wilson_high": 0.7495,
+        "inside_interval": true
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 63,
+        "mean_predicted": 0.3476,
+        "observed": 0.3333,
+        "wilson_low": 0.2295,
+        "wilson_high": 0.4563,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 48,
+        "mean_predicted": 0.4497,
+        "observed": 0.4792,
+        "wilson_low": 0.3447,
+        "wilson_high": 0.6167,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 66,
+        "mean_predicted": 0.551,
+        "observed": 0.4091,
+        "wilson_low": 0.2987,
+        "wilson_high": 0.5295,
+        "inside_interval": false
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 40,
+        "mean_predicted": 0.639,
+        "observed": 0.5,
+        "wilson_low": 0.352,
+        "wilson_high": 0.648,
+        "inside_interval": true
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 32,
+        "mean_predicted": 0.7316,
+        "observed": 0.4688,
+        "wilson_low": 0.3087,
+        "wilson_high": 0.6355,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 2,
+        "mean_predicted": 0.8043,
+        "observed": 0.5,
+        "wilson_low": 0.0945,
+        "wilson_high": 0.9055,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 68,
+       "mean": -0.0124,
+       "share_positive": 0.2941,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 170,
+       "staked": 170,
+       "profit": -18.1,
+       "roi_after_fees": -0.1065,
+       "roi_ci95": {
+        "low": -0.2818,
+        "high": 0.0688
+       },
+       "max_drawdown": 23.285
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "258 settled predictions (DEVELOPING); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "170 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "pass_tds"
+     },
+     {
+      "n": 437,
+      "sample_state": "DEVELOPING",
+      "brier": 0.2502,
+      "log_loss": 0.6948,
+      "versus_close": {
+       "n": 35,
+       "brier": 0.2717,
+       "baseline_brier": 0.251,
+       "brier_skill": -0.0826,
+       "log_loss": 0.7398,
+       "baseline_log_loss": 0.6951,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 14,
+        "mean_predicted": 0.2875,
+        "observed": 0.1429,
+        "wilson_low": 0.0401,
+        "wilson_high": 0.3994,
+        "inside_interval": true
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 43,
+        "mean_predicted": 0.3561,
+        "observed": 0.2558,
+        "wilson_low": 0.1493,
+        "wilson_high": 0.4024,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 39,
+        "mean_predicted": 0.4543,
+        "observed": 0.4103,
+        "wilson_low": 0.2708,
+        "wilson_high": 0.5658,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 140,
+        "mean_predicted": 0.567,
+        "observed": 0.5571,
+        "wilson_low": 0.4744,
+        "wilson_high": 0.6368,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 164,
+        "mean_predicted": 0.6392,
+        "observed": 0.5061,
+        "wilson_low": 0.4303,
+        "wilson_high": 0.5816,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 34,
+        "mean_predicted": 0.7404,
+        "observed": 0.5,
+        "wilson_low": 0.3407,
+        "wilson_high": 0.6593,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 3,
+        "mean_predicted": 0.8565,
+        "observed": 0.6667,
+        "wilson_low": 0.2077,
+        "wilson_high": 0.9385,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 35,
+       "mean": -0.0506,
+       "share_positive": 0.0286,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 358,
+       "staked": 358,
+       "profit": -1.836,
+       "roi_after_fees": -0.0051,
+       "roi_ci95": {
+        "low": -0.1192,
+        "high": 0.1089
+       },
+       "max_drawdown": 20.413
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "437 settled predictions (DEVELOPING); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "358 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "pass_yds"
+     },
+     {
+      "n": 1468,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.2612,
+      "log_loss": 0.717,
+      "versus_close": {
+       "n": 232,
+       "brier": 0.2587,
+       "baseline_brier": 0.2492,
+       "brier_skill": -0.0383,
+       "log_loss": 0.7121,
+       "baseline_log_loss": 0.6915,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 23,
+        "mean_predicted": 0.2786,
+        "observed": 0.6087,
+        "wilson_low": 0.4079,
+        "wilson_high": 0.7784,
+        "inside_interval": false
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 68,
+        "mean_predicted": 0.342,
+        "observed": 0.4706,
+        "wilson_low": 0.3567,
+        "wilson_high": 0.5876,
+        "inside_interval": false
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 36,
+        "mean_predicted": 0.4483,
+        "observed": 0.5556,
+        "wilson_low": 0.3958,
+        "wilson_high": 0.7046,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 636,
+        "mean_predicted": 0.5701,
+        "observed": 0.489,
+        "wilson_low": 0.4503,
+        "wilson_high": 0.5278,
+        "inside_interval": false
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 631,
+        "mean_predicted": 0.6339,
+        "observed": 0.5198,
+        "wilson_low": 0.4808,
+        "wilson_high": 0.5586,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 68,
+        "mean_predicted": 0.7288,
+        "observed": 0.5882,
+        "wilson_low": 0.4696,
+        "wilson_high": 0.6974,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 6,
+        "mean_predicted": 0.8484,
+        "observed": 0.6667,
+        "wilson_low": 0.3,
+        "wilson_high": 0.9032,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 232,
+       "mean": -0.0577,
+       "share_positive": 0.0086,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 1201,
+       "staked": 1201,
+       "profit": 5.308,
+       "roi_after_fees": 0.0044,
+       "roi_ci95": {
+        "low": -0.0527,
+        "high": 0.0615
+       },
+       "max_drawdown": 42.049
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "Brier 0.2587 is worse than the no-vig close at 0.2492 on the same rows",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "the 95% ROI interval after fees (-0.0527 to 0.0615) includes zero or is negative",
+      "key": "rec_yds"
+     },
+     {
+      "n": 640,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.2657,
+      "log_loss": 0.7285,
+      "versus_close": {
+       "n": 216,
+       "brier": 0.2433,
+       "baseline_brier": 0.247,
+       "brier_skill": 0.0152,
+       "log_loss": 0.6796,
+       "baseline_log_loss": 0.6872,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 13,
+        "mean_predicted": 0.2672,
+        "observed": 0.5385,
+        "wilson_low": 0.2914,
+        "wilson_high": 0.7679,
+        "inside_interval": false
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 30,
+        "mean_predicted": 0.3583,
+        "observed": 0.4,
+        "wilson_low": 0.2459,
+        "wilson_high": 0.5768,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 68,
+        "mean_predicted": 0.4641,
+        "observed": 0.5147,
+        "wilson_low": 0.3983,
+        "wilson_high": 0.6295,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 148,
+        "mean_predicted": 0.5577,
+        "observed": 0.5135,
+        "wilson_low": 0.4337,
+        "wilson_high": 0.5927,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 249,
+        "mean_predicted": 0.6497,
+        "observed": 0.5141,
+        "wilson_low": 0.4522,
+        "wilson_high": 0.5754,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 128,
+        "mean_predicted": 0.7337,
+        "observed": 0.5469,
+        "wilson_low": 0.4605,
+        "wilson_high": 0.6305,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 4,
+        "mean_predicted": 0.8541,
+        "observed": 0.75,
+        "wilson_low": 0.3006,
+        "wilson_high": 0.9544,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 216,
+       "mean": -0.0407,
+       "share_positive": 0.1991,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 478,
+       "staked": 478,
+       "profit": -16.88,
+       "roi_after_fees": -0.0353,
+       "roi_ci95": {
+        "low": -0.1223,
+        "high": 0.0517
+       },
+       "max_drawdown": 27.941
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "2 of 5 well-filled buckets sit outside their 95% interval",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "478 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "receptions"
+     },
+     {
+      "n": 222,
+      "sample_state": "DEVELOPING",
+      "brier": 0.2787,
+      "log_loss": 0.7588,
+      "versus_close": {
+       "n": 16,
+       "brier": 0.2288,
+       "baseline_brier": 0.25,
+       "brier_skill": 0.0847,
+       "log_loss": 0.6505,
+       "baseline_log_loss": 0.6931,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 111,
+        "mean_predicted": 0.5698,
+        "observed": 0.5586,
+        "wilson_low": 0.4658,
+        "wilson_high": 0.6474,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 68,
+        "mean_predicted": 0.6348,
+        "observed": 0.4706,
+        "wilson_low": 0.3567,
+        "wilson_high": 0.5876,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 35,
+        "mean_predicted": 0.739,
+        "observed": 0.4,
+        "wilson_low": 0.2555,
+        "wilson_high": 0.5643,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 8,
+        "mean_predicted": 0.8278,
+        "observed": 0.375,
+        "wilson_low": 0.1368,
+        "wilson_high": 0.6943,
+        "inside_interval": false
+       }
+      ],
+      "clv": {
+       "n": 16,
+       "mean": -0.0615,
+       "share_positive": 0,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 125,
+       "staked": 125,
+       "profit": 7.772,
+       "roi_after_fees": 0.0622,
+       "roi_ci95": {
+        "low": -0.1009,
+        "high": 0.2252
+       },
+       "max_drawdown": 13.486
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "222 settled predictions (DEVELOPING); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "125 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "rush_rec_yds"
+     },
+     {
+      "n": 814,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.2744,
+      "log_loss": 0.7489,
+      "versus_close": {
+       "n": 125,
+       "brier": 0.2642,
+       "baseline_brier": 0.2501,
+       "brier_skill": -0.0564,
+       "log_loss": 0.7267,
+       "baseline_log_loss": 0.6934,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 2,
+        "mean_predicted": 0.3325,
+        "observed": 0,
+        "wilson_low": 0,
+        "wilson_high": 0.6576,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 7,
+        "mean_predicted": 0.4583,
+        "observed": 0.4286,
+        "wilson_low": 0.1582,
+        "wilson_high": 0.7495,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 262,
+        "mean_predicted": 0.5715,
+        "observed": 0.5382,
+        "wilson_low": 0.4777,
+        "wilson_high": 0.5975,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 343,
+        "mean_predicted": 0.641,
+        "observed": 0.5335,
+        "wilson_low": 0.4807,
+        "wilson_high": 0.5857,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 174,
+        "mean_predicted": 0.744,
+        "observed": 0.4598,
+        "wilson_low": 0.3874,
+        "wilson_high": 0.5339,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 26,
+        "mean_predicted": 0.8286,
+        "observed": 0.5385,
+        "wilson_low": 0.3546,
+        "wilson_high": 0.7124,
+        "inside_interval": false
+       }
+      ],
+      "clv": {
+       "n": 125,
+       "mean": -0.0548,
+       "share_positive": 0.024,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 660,
+       "staked": 660,
+       "profit": -4.166,
+       "roi_after_fees": -0.0063,
+       "roi_ci95": {
+        "low": -0.0771,
+        "high": 0.0644
+       },
+       "max_drawdown": 37.684
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "Brier 0.2642 is worse than the no-vig close at 0.2501 on the same rows",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "the 95% ROI interval after fees (-0.0771 to 0.0644) includes zero or is negative",
+      "key": "rush_yds"
+     }
+    ],
+    "odds_range": [
+     {
+      "n": 718,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.237,
+      "log_loss": 0.6695,
+      "versus_close": {
+       "n": 57,
+       "brier": 0.2426,
+       "baseline_brier": 0.2483,
+       "brier_skill": 0.0232,
+       "log_loss": 0.6777,
+       "baseline_log_loss": 0.6896,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.1,
+        "to": 0.2,
+        "n": 58,
+        "mean_predicted": 0.1618,
+        "observed": 0.2931,
+        "wilson_low": 0.1918,
+        "wilson_high": 0.4201,
+        "inside_interval": false
+       },
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 170,
+        "mean_predicted": 0.2514,
+        "observed": 0.3235,
+        "wilson_low": 0.2578,
+        "wilson_high": 0.3971,
+        "inside_interval": false
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 159,
+        "mean_predicted": 0.3496,
+        "observed": 0.3333,
+        "wilson_low": 0.2648,
+        "wilson_high": 0.4098,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 182,
+        "mean_predicted": 0.4514,
+        "observed": 0.4725,
+        "wilson_low": 0.4013,
+        "wilson_high": 0.5449,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 105,
+        "mean_predicted": 0.5412,
+        "observed": 0.4381,
+        "wilson_low": 0.347,
+        "wilson_high": 0.5335,
+        "inside_interval": false
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 36,
+        "mean_predicted": 0.6352,
+        "observed": 0.6111,
+        "wilson_low": 0.4486,
+        "wilson_high": 0.7522,
+        "inside_interval": true
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 6,
+        "mean_predicted": 0.7327,
+        "observed": 0.1667,
+        "wilson_low": 0.0301,
+        "wilson_high": 0.5635,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 2,
+        "mean_predicted": 0.8409,
+        "observed": 0.5,
+        "wilson_low": 0.0945,
+        "wilson_high": 0.9055,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 57,
+       "mean": -0.005,
+       "share_positive": 0.3509,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 241,
+       "staked": 241,
+       "profit": 27.38,
+       "roi_after_fees": 0.1136,
+       "roi_ci95": {
+        "low": -0.0388,
+        "high": 0.266
+       },
+       "max_drawdown": 10
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "3 of 6 well-filled buckets sit outside their 95% interval",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "241 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "+111 to +199"
+     },
+     {
+      "n": 939,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.2004,
+      "log_loss": 0.594,
+      "versus_close": {
+       "n": 2,
+       "brier": 0.1468,
+       "baseline_brier": 0.1255,
+       "brier_skill": -0.1699,
+       "log_loss": 0.4831,
+       "baseline_log_loss": 0.4371,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0,
+        "to": 0.1,
+        "n": 37,
+        "mean_predicted": 0.0755,
+        "observed": 0.2703,
+        "wilson_low": 0.154,
+        "wilson_high": 0.4298,
+        "inside_interval": false
+       },
+       {
+        "from": 0.1,
+        "to": 0.2,
+        "n": 316,
+        "mean_predicted": 0.159,
+        "observed": 0.1994,
+        "wilson_low": 0.159,
+        "wilson_high": 0.2469,
+        "inside_interval": false
+       },
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 289,
+        "mean_predicted": 0.2487,
+        "observed": 0.3218,
+        "wilson_low": 0.2706,
+        "wilson_high": 0.3777,
+        "inside_interval": false
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 234,
+        "mean_predicted": 0.3423,
+        "observed": 0.3034,
+        "wilson_low": 0.2481,
+        "wilson_high": 0.3651,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 52,
+        "mean_predicted": 0.439,
+        "observed": 0.3846,
+        "wilson_low": 0.2647,
+        "wilson_high": 0.5204,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 9,
+        "mean_predicted": 0.5566,
+        "observed": 0.3333,
+        "wilson_low": 0.1206,
+        "wilson_high": 0.6458,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 1,
+        "mean_predicted": 0.6682,
+        "observed": 0,
+        "wilson_low": 0,
+        "wilson_high": 0.7935,
+        "inside_interval": true
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 1,
+        "mean_predicted": 0.7934,
+        "observed": 1,
+        "wilson_low": 0.2065,
+        "wilson_high": 1,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 2,
+       "mean": 0.0857,
+       "share_positive": 1,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 229,
+       "staked": 229,
+       "profit": 28.21,
+       "roi_after_fees": 0.1232,
+       "roi_ci95": {
+        "low": -0.0893,
+        "high": 0.3357
+       },
+       "max_drawdown": 18.27
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "Brier 0.1468 is worse than the no-vig close at 0.1255 on the same rows",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "229 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "+200 or longer"
+     },
+     {
+      "n": 856,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.2614,
+      "log_loss": 0.7175,
+      "versus_close": {
+       "n": 190,
+       "brier": 0.2603,
+       "baseline_brier": 0.2479,
+       "brier_skill": -0.0501,
+       "log_loss": 0.714,
+       "baseline_log_loss": 0.689,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.1,
+        "to": 0.2,
+        "n": 2,
+        "mean_predicted": 0.1578,
+        "observed": 0,
+        "wilson_low": 0,
+        "wilson_high": 0.6576,
+        "inside_interval": true
+       },
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 18,
+        "mean_predicted": 0.2554,
+        "observed": 0.3889,
+        "wilson_low": 0.2031,
+        "wilson_high": 0.6138,
+        "inside_interval": true
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 34,
+        "mean_predicted": 0.3479,
+        "observed": 0.2647,
+        "wilson_low": 0.146,
+        "wilson_high": 0.4312,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 40,
+        "mean_predicted": 0.4691,
+        "observed": 0.525,
+        "wilson_low": 0.375,
+        "wilson_high": 0.6706,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 434,
+        "mean_predicted": 0.5568,
+        "observed": 0.4608,
+        "wilson_low": 0.4145,
+        "wilson_high": 0.5079,
+        "inside_interval": false
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 272,
+        "mean_predicted": 0.6406,
+        "observed": 0.5147,
+        "wilson_low": 0.4555,
+        "wilson_high": 0.5735,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 49,
+        "mean_predicted": 0.734,
+        "observed": 0.4286,
+        "wilson_low": 0.3002,
+        "wilson_high": 0.5673,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 7,
+        "mean_predicted": 0.8289,
+        "observed": 0.7143,
+        "wilson_low": 0.3589,
+        "wilson_high": 0.9178,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 190,
+       "mean": -0.0341,
+       "share_positive": 0.1737,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 584,
+       "staked": 584,
+       "profit": -38.775,
+       "roi_after_fees": -0.0664,
+       "roi_ci95": {
+        "low": -0.1457,
+        "high": 0.0129
+       },
+       "max_drawdown": 67.765
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "Brier 0.2603 is worse than the no-vig close at 0.2479 on the same rows",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "the 95% ROI interval after fees (-0.1457 to 0.0129) includes zero or is negative",
+      "key": "-110 to +110"
+     },
+     {
+      "n": 2876,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.2655,
+      "log_loss": 0.7278,
+      "versus_close": {
+       "n": 527,
+       "brier": 0.2539,
+       "baseline_brier": 0.2473,
+       "brier_skill": -0.0267,
+       "log_loss": 0.703,
+       "baseline_log_loss": 0.6877,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 15,
+        "mean_predicted": 0.2622,
+        "observed": 0.4667,
+        "wilson_low": 0.2481,
+        "wilson_high": 0.6988,
+        "inside_interval": true
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 38,
+        "mean_predicted": 0.3534,
+        "observed": 0.3684,
+        "wilson_low": 0.2338,
+        "wilson_high": 0.5272,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 47,
+        "mean_predicted": 0.4455,
+        "observed": 0.4681,
+        "wilson_low": 0.3333,
+        "wilson_high": 0.6077,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 1058,
+        "mean_predicted": 0.5729,
+        "observed": 0.5246,
+        "wilson_low": 0.4944,
+        "wilson_high": 0.5545,
+        "inside_interval": false
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 1336,
+        "mean_predicted": 0.6379,
+        "observed": 0.5202,
+        "wilson_low": 0.4934,
+        "wilson_high": 0.5469,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 349,
+        "mean_predicted": 0.7358,
+        "observed": 0.5072,
+        "wilson_low": 0.4549,
+        "wilson_high": 0.5593,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 33,
+        "mean_predicted": 0.8409,
+        "observed": 0.4545,
+        "wilson_low": 0.2984,
+        "wilson_high": 0.6201,
+        "inside_interval": false
+       }
+      ],
+      "clv": {
+       "n": 527,
+       "mean": -0.0599,
+       "share_positive": 0.0417,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 2182,
+       "staked": 2182,
+       "profit": -43.786,
+       "roi_after_fees": -0.0201,
+       "roi_ci95": {
+        "low": -0.0585,
+        "high": 0.0184
+       },
+       "max_drawdown": 80.216
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "Brier 0.2539 is worse than the no-vig close at 0.2473 on the same rows",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "the 95% ROI interval after fees (-0.0585 to 0.0184) includes zero or is negative",
+      "key": "-199 to -111"
+     },
+     {
+      "n": 140,
+      "sample_state": "EARLY_SIGNAL",
+      "brier": 0.2756,
+      "log_loss": 0.7548,
+      "versus_close": {
+       "n": 3,
+       "brier": 0.0844,
+       "baseline_brier": 0.1249,
+       "brier_skill": 0.3238,
+       "log_loss": 0.3432,
+       "baseline_log_loss": 0.436,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 2,
+        "mean_predicted": 0.2779,
+        "observed": 0.5,
+        "wilson_low": 0.0945,
+        "wilson_high": 0.9055,
+        "inside_interval": true
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 5,
+        "mean_predicted": 0.371,
+        "observed": 0.8,
+        "wilson_low": 0.3755,
+        "wilson_high": 0.9638,
+        "inside_interval": false
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 15,
+        "mean_predicted": 0.4429,
+        "observed": 0.5333,
+        "wilson_low": 0.3012,
+        "wilson_high": 0.7519,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 11,
+        "mean_predicted": 0.5463,
+        "observed": 0.8182,
+        "wilson_low": 0.523,
+        "wilson_high": 0.9486,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 10,
+        "mean_predicted": 0.6669,
+        "observed": 0.9,
+        "wilson_low": 0.5958,
+        "wilson_high": 0.9821,
+        "inside_interval": true
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 87,
+        "mean_predicted": 0.7459,
+        "observed": 0.5172,
+        "wilson_low": 0.4138,
+        "wilson_high": 0.6193,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 10,
+        "mean_predicted": 0.817,
+        "observed": 0.7,
+        "wilson_low": 0.3968,
+        "wilson_high": 0.8922,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 3,
+       "mean": -0.0517,
+       "share_positive": 0,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 85,
+       "staked": 85,
+       "profit": -19.663,
+       "roi_after_fees": -0.2313,
+       "roi_ci95": {
+        "low": -0.3829,
+        "high": -0.0798
+       },
+       "max_drawdown": 21.144
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "140 settled predictions (EARLY_SIGNAL); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "85 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "-200 or shorter"
+     }
+    ],
+    "group.decision": [
+     {
+      "n": 3321,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.2578,
+      "log_loss": 0.7107,
+      "versus_close": {
+       "n": 779,
+       "brier": 0.2537,
+       "baseline_brier": 0.2467,
+       "brier_skill": -0.0283,
+       "log_loss": 0.7019,
+       "baseline_log_loss": 0.6865,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 31,
+        "mean_predicted": 0.2889,
+        "observed": 0.3548,
+        "wilson_low": 0.2112,
+        "wilson_high": 0.5305,
+        "inside_interval": true
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 181,
+        "mean_predicted": 0.3485,
+        "observed": 0.3094,
+        "wilson_low": 0.2466,
+        "wilson_high": 0.3801,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 138,
+        "mean_predicted": 0.4525,
+        "observed": 0.4855,
+        "wilson_low": 0.4036,
+        "wilson_high": 0.5682,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 1365,
+        "mean_predicted": 0.5708,
+        "observed": 0.504,
+        "wilson_low": 0.4775,
+        "wilson_high": 0.5305,
+        "inside_interval": false
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 1261,
+        "mean_predicted": 0.6353,
+        "observed": 0.5345,
+        "wilson_low": 0.5069,
+        "wilson_high": 0.5619,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 320,
+        "mean_predicted": 0.736,
+        "observed": 0.5156,
+        "wilson_low": 0.461,
+        "wilson_high": 0.5699,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 25,
+        "mean_predicted": 0.8304,
+        "observed": 0.64,
+        "wilson_low": 0.4452,
+        "wilson_high": 0.7975,
+        "inside_interval": false
+       }
+      ],
+      "clv": {
+       "n": 779,
+       "mean": -0.0492,
+       "share_positive": 0.0988,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 3321,
+       "staked": 3321,
+       "profit": -46.634,
+       "roi_after_fees": -0.014,
+       "roi_ci95": {
+        "low": -0.0485,
+        "high": 0.0204
+       },
+       "max_drawdown": 104.152
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "Brier 0.2537 is worse than the no-vig close at 0.2467 on the same rows",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "the 95% ROI interval after fees (-0.0485 to 0.0204) includes zero or is negative",
+      "key": "LEAN"
+     },
+     {
+      "n": 1326,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.2126,
+      "log_loss": 0.6197,
+      "versus_close": {
+       "n": 0,
+       "brier": null,
+       "baseline_brier": null,
+       "brier_skill": null,
+       "log_loss": null,
+       "baseline_log_loss": null,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0,
+        "to": 0.1,
+        "n": 37,
+        "mean_predicted": 0.0755,
+        "observed": 0.2703,
+        "wilson_low": 0.154,
+        "wilson_high": 0.4298,
+        "inside_interval": false
+       },
+       {
+        "from": 0.1,
+        "to": 0.2,
+        "n": 376,
+        "mean_predicted": 0.1594,
+        "observed": 0.2128,
+        "wilson_low": 0.1744,
+        "wilson_high": 0.2569,
+        "inside_interval": false
+       },
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 434,
+        "mean_predicted": 0.2461,
+        "observed": 0.3249,
+        "wilson_low": 0.2825,
+        "wilson_high": 0.3703,
+        "inside_interval": false
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 215,
+        "mean_predicted": 0.3431,
+        "observed": 0.3209,
+        "wilson_low": 0.2621,
+        "wilson_high": 0.386,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 114,
+        "mean_predicted": 0.4477,
+        "observed": 0.4737,
+        "wilson_low": 0.3844,
+        "wilson_high": 0.5647,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 123,
+        "mean_predicted": 0.5316,
+        "observed": 0.5203,
+        "wilson_low": 0.4328,
+        "wilson_high": 0.6067,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 22,
+        "mean_predicted": 0.628,
+        "observed": 0.5,
+        "wilson_low": 0.3072,
+        "wilson_high": 0.6928,
+        "inside_interval": true
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 5,
+        "mean_predicted": 0.7209,
+        "observed": 0.8,
+        "wilson_low": 0.3755,
+        "wilson_high": 0.9638,
+        "inside_interval": true
+       }
+      ],
+      "clv": {
+       "n": 0,
+       "mean": null,
+       "share_positive": null,
+       "note": "no closing probability on these rows"
+      },
+      "staking": {
+       "bets": 0,
+       "staked": 0,
+       "profit": 0,
+       "roi_after_fees": null,
+       "roi_ci95": {
+        "low": null,
+        "high": null
+       },
+       "max_drawdown": 0
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "no closing baseline on these rows, so the source cannot be compared with the market",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "0 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "PASS"
+     },
+     {
+      "n": 882,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.2791,
+      "log_loss": 0.7591,
+      "versus_close": {
+       "n": 0,
+       "brier": null,
+       "baseline_brier": null,
+       "brier_skill": null,
+       "log_loss": null,
+       "baseline_log_loss": null,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 29,
+        "mean_predicted": 0.2744,
+        "observed": 0.3793,
+        "wilson_low": 0.2269,
+        "wilson_high": 0.56,
+        "inside_interval": true
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 74,
+        "mean_predicted": 0.3509,
+        "observed": 0.3514,
+        "wilson_low": 0.2524,
+        "wilson_high": 0.465,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 84,
+        "mean_predicted": 0.4506,
+        "observed": 0.4286,
+        "wilson_low": 0.3282,
+        "wilson_high": 0.5352,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 129,
+        "mean_predicted": 0.5515,
+        "observed": 0.4729,
+        "wilson_low": 0.3887,
+        "wilson_high": 0.5586,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 372,
+        "mean_predicted": 0.6499,
+        "observed": 0.4866,
+        "wilson_low": 0.4362,
+        "wilson_high": 0.5372,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 167,
+        "mean_predicted": 0.7409,
+        "observed": 0.4551,
+        "wilson_low": 0.3814,
+        "wilson_high": 0.5308,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 27,
+        "mean_predicted": 0.8386,
+        "observed": 0.4444,
+        "wilson_low": 0.2759,
+        "wilson_high": 0.6269,
+        "inside_interval": false
+       }
+      ],
+      "clv": {
+       "n": 0,
+       "mean": null,
+       "share_positive": null,
+       "note": "no closing probability on these rows"
+      },
+      "staking": {
+       "bets": 0,
+       "staked": 0,
+       "profit": 0,
+       "roi_after_fees": null,
+       "roi_ci95": {
+        "low": null,
+        "high": null
+       },
+       "max_drawdown": 0
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "no closing baseline on these rows, so the source cannot be compared with the market",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "0 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "WATCH"
+     }
+    ],
+    "group.probability_source": [
+     {
+      "n": 5409,
+      "sample_state": "MEANINGFUL",
+      "brier": 0.2503,
+      "log_loss": 0.6961,
+      "versus_close": {
+       "n": 775,
+       "brier": 0.2534,
+       "baseline_brier": 0.2467,
+       "brier_skill": -0.0269,
+       "log_loss": 0.7012,
+       "baseline_log_loss": 0.6865,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0,
+        "to": 0.1,
+        "n": 33,
+        "mean_predicted": 0.0755,
+        "observed": 0.2424,
+        "wilson_low": 0.1283,
+        "wilson_high": 0.4102,
+        "inside_interval": false
+       },
+       {
+        "from": 0.1,
+        "to": 0.2,
+        "n": 358,
+        "mean_predicted": 0.1591,
+        "observed": 0.2179,
+        "wilson_low": 0.1782,
+        "wilson_high": 0.2635,
+        "inside_interval": false
+       },
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 477,
+        "mean_predicted": 0.2501,
+        "observed": 0.3312,
+        "wilson_low": 0.2905,
+        "wilson_high": 0.3747,
+        "inside_interval": false
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 455,
+        "mean_predicted": 0.3464,
+        "observed": 0.3187,
+        "wilson_low": 0.2775,
+        "wilson_high": 0.3629,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 328,
+        "mean_predicted": 0.4507,
+        "observed": 0.4726,
+        "wilson_low": 0.4192,
+        "wilson_high": 0.5266,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 1593,
+        "mean_predicted": 0.5663,
+        "observed": 0.5016,
+        "wilson_low": 0.477,
+        "wilson_high": 0.5261,
+        "inside_interval": false
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 1635,
+        "mean_predicted": 0.6383,
+        "observed": 0.5223,
+        "wilson_low": 0.4981,
+        "wilson_high": 0.5465,
+        "inside_interval": false
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 478,
+        "mean_predicted": 0.7373,
+        "observed": 0.5105,
+        "wilson_low": 0.4657,
+        "wilson_high": 0.555,
+        "inside_interval": false
+       },
+       {
+        "from": 0.8,
+        "to": 0.9,
+        "n": 52,
+        "mean_predicted": 0.8347,
+        "observed": 0.5385,
+        "wilson_low": 0.405,
+        "wilson_high": 0.6666,
+        "inside_interval": false
+       }
+      ],
+      "clv": {
+       "n": 775,
+       "mean": -0.0492,
+       "share_positive": 0.0994,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 3282,
+       "staked": 3282,
+       "profit": -39.158,
+       "roi_after_fees": -0.0119,
+       "roi_ci95": {
+        "low": -0.0466,
+        "high": 0.0227
+       },
+       "max_drawdown": 96.675
+      },
+      "calibration_status": "NOT_CALIBRATED",
+      "calibration_why": "Brier 0.2534 is worse than the no-vig close at 0.2467 on the same rows",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "the 95% ROI interval after fees (-0.0466 to 0.0227) includes zero or is negative",
+      "key": "model_estimated"
+     },
+     {
+      "n": 120,
+      "sample_state": "EARLY_SIGNAL",
+      "brier": 0.2546,
+      "log_loss": 0.7196,
+      "versus_close": {
+       "n": 4,
+       "brier": 0.3185,
+       "baseline_brier": 0.2477,
+       "brier_skill": -0.2859,
+       "log_loss": 0.8335,
+       "baseline_log_loss": 0.6886,
+       "baseline": "no-vig closing probability of the same side"
+      },
+      "buckets": [
+       {
+        "from": 0,
+        "to": 0.1,
+        "n": 4,
+        "mean_predicted": 0.075,
+        "observed": 0.5,
+        "wilson_low": 0.15,
+        "wilson_high": 0.85,
+        "inside_interval": false
+       },
+       {
+        "from": 0.1,
+        "to": 0.2,
+        "n": 18,
+        "mean_predicted": 0.1651,
+        "observed": 0.1111,
+        "wilson_low": 0.031,
+        "wilson_high": 0.328,
+        "inside_interval": true
+       },
+       {
+        "from": 0.2,
+        "to": 0.3,
+        "n": 17,
+        "mean_predicted": 0.2582,
+        "observed": 0.2941,
+        "wilson_low": 0.1328,
+        "wilson_high": 0.5313,
+        "inside_interval": true
+       },
+       {
+        "from": 0.3,
+        "to": 0.4,
+        "n": 15,
+        "mean_predicted": 0.3458,
+        "observed": 0.4,
+        "wilson_low": 0.1982,
+        "wilson_high": 0.6425,
+        "inside_interval": true
+       },
+       {
+        "from": 0.4,
+        "to": 0.5,
+        "n": 8,
+        "mean_predicted": 0.4378,
+        "observed": 0.25,
+        "wilson_low": 0.0715,
+        "wilson_high": 0.5907,
+        "inside_interval": true
+       },
+       {
+        "from": 0.5,
+        "to": 0.6,
+        "n": 24,
+        "mean_predicted": 0.5656,
+        "observed": 0.5833,
+        "wilson_low": 0.3883,
+        "wilson_high": 0.7553,
+        "inside_interval": true
+       },
+       {
+        "from": 0.6,
+        "to": 0.7,
+        "n": 20,
+        "mean_predicted": 0.6515,
+        "observed": 0.6,
+        "wilson_low": 0.3866,
+        "wilson_high": 0.7812,
+        "inside_interval": true
+       },
+       {
+        "from": 0.7,
+        "to": 0.8,
+        "n": 14,
+        "mean_predicted": 0.7436,
+        "observed": 0.0714,
+        "wilson_low": 0.0127,
+        "wilson_high": 0.3147,
+        "inside_interval": false
+       }
+      ],
+      "clv": {
+       "n": 4,
+       "mean": -0.0547,
+       "share_positive": 0,
+       "note": "EV of the entry price at the no-vig closing probability"
+      },
+      "staking": {
+       "bets": 39,
+       "staked": 39,
+       "profit": -7.476,
+       "roi_after_fees": -0.1917,
+       "roi_ci95": {
+        "low": -0.5112,
+        "high": 0.1278
+       },
+       "max_drawdown": 14.52
+      },
+      "calibration_status": "INSUFFICIENT_SAMPLE",
+      "calibration_why": "120 settled predictions (EARLY_SIGNAL); calibration needs 500+",
+      "profit_claim": "NOT_SUPPORTED",
+      "profit_why": "39 bets: a profit claim needs 500+ and an interval above zero",
+      "key": "partially_calibrated"
+     }
+    ]
+   }
+  }
+ }
+}
