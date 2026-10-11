@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-11T14:07:41.529Z",
- "board_generated_at": "2026-10-11T14:07:39.515Z",
+ "generated_at": "2026-10-11T15:07:41.641Z",
+ "board_generated_at": "2026-10-11T15:07:38.664Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -16,12 +16,12 @@
  ],
  "games": [
   {
-   "game_id": "401856830",
-   "game": "Kansas @ Kansas State",
-   "kickoff": "2026-10-17T16:00:00.000Z",
+   "game_id": "401856833",
+   "game": "Utah @ Colorado",
+   "kickoff": "2026-10-18T02:15:00.000Z",
    "named": false,
-   "edgedesk": "Kansas State -2.7",
-   "market": "Kansas State -8.5",
+   "edgedesk": "Utah -22.3",
+   "market": "Utah -16.5",
    "books": 1,
    "gap": 5.8,
    "gap_class": "MODERATE",
@@ -100,6 +100,92 @@
    ],
    "consistent": true,
    "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; no abnormal availability fail."
+  },
+  {
+   "game_id": "401862801",
+   "game": "Memphis @ Tulane",
+   "kickoff": "2026-10-16T23:30:00.000Z",
+   "named": false,
+   "edgedesk": "Memphis -4.9",
+   "market": "Memphis -7.0",
+   "books": 1,
+   "gap": 2.1,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "NO_DECISION",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
+   "game_id": "401856828",
+   "game": "Arizona State @ Texas Tech",
+   "kickoff": "2026-10-17T19:30:00.000Z",
+   "named": false,
+   "edgedesk": "Texas Tech -20.8",
+   "market": "Texas Tech -12.5",
+   "books": 1,
+   "gap": 8.3,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "MARKET_FAULT",
+   "research_label": "MARKET FAULT",
+   "decision_status": "NO_DECISION",
+   "gate_status": "MARKET_FAULT",
+   "root_cause": "THIN_MARKET",
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-17T19:30:00.000Z"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Jones AT&T Stadium), declared by the schedule feed"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "FAIL",
+     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+    },
+    {
+     "requirement": "current team states",
+     "result": "PASS",
+     "detail": "PASS: fewest current-season games behind a rating: 5 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 1.7 rating pts"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "PASS",
+     "detail": "PASS: Texas Tech: Will Hammond (previous game) · PASS: Arizona State: Cutter Boley (previous game)"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "PASS",
+     "detail": "PASS: Texas Tech: availability sources checked, nothing filed · PASS: Arizona State: availability sources checked, nothing filed"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "PASS",
+     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "PASS",
+     "detail": "PASS: 2 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 2.6 pts on EdgeDesk’s side"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "FAIL",
+     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 6.2 — the extreme is not supported by how margins of this size have actually finished"
+    }
+   ],
+   "consistent": true,
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
   },
   {
    "game_id": "401860923",

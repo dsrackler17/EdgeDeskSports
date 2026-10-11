@@ -2,15 +2,15 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-10-11T14:07:39.515Z",
+ "as_of": "2026-10-11T15:07:38.664Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "15136b08ad3b5f8b",
+ "inputs_key": "70211cfbafd10943",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "rows": 2147,
+   "rows": 2172,
    "mode": "LIVE",
-   "sha1": "4cbd937e319e"
+   "sha1": "c75dbd540c7c"
   },
   {
    "file": "football/cfb_terminal/decisions/2026/evaluations.jsonl",
@@ -37,7 +37,7 @@
   {
    "file": "record/football/summary.json",
    "mode": "LIVE (model record)",
-   "sha1": "13a974b9d773"
+   "sha1": "d9e43371972b"
   },
   {
    "file": "football/params.js",
@@ -99,7 +99,7 @@
     "recalibration": "NOT_ALLOWED",
     "note": "A product maturity label, not a scientific verdict."
    },
-   "note": "2147 decision snapshots issued before kickoff; 147 settled"
+   "note": "2172 decision snapshots issued before kickoff; 147 settled"
   },
   {
    "key": "LIVE_CLV",
@@ -133,10 +133,10 @@
   }
  ],
  "live_decisions": {
-  "issued_snapshots": 2147,
+  "issued_snapshots": 2172,
   "issued_by_decision": {
-   "NO_DECISION": 1033,
-   "PASS": 1030,
+   "NO_DECISION": 1046,
+   "PASS": 1042,
    "WATCH": 84
   },
   "graded_rows": 150,
@@ -15905,7 +15905,7 @@
   "source": "record/football/summary.json",
   "mode": "LIVE",
   "level": "model (the published fair line), not bettor decisions",
-  "generated_at": "2026-10-10T23:42:57.617Z",
+  "generated_at": "2026-10-11T14:10:06.189Z",
   "sports": {
    "nfl": {
     "versions": [
@@ -15961,50 +15961,50 @@
     "versions": [
      "edgedesk_cfb_p4_v1.0.0"
     ],
-    "graded": 332,
+    "graded": 348,
     "ats": {
-     "n": 332,
-     "w": 156,
-     "l": 173,
+     "n": 348,
+     "w": 164,
+     "l": 181,
      "p": 3,
-     "pct": 47.4,
+     "pct": 47.5,
      "sample": {
       "key": "MODERATE_EVIDENCE",
       "label": "Developing evidence",
-      "n": 332,
-      "text": "n=332 · Developing evidence",
+      "n": 348,
+      "text": "n=348 · Developing evidence",
       "recalibration": "PROPOSAL_ONLY",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "clv_spread_entry": {
-     "n": 172,
-     "avg": 0.17,
-     "beat": 67,
+     "n": 188,
+     "avg": 0.25,
+     "beat": 76,
      "flat": 32,
-     "lost": 73,
-     "beat_pct": 39,
+     "lost": 80,
+     "beat_pct": 40.4,
      "sample": {
       "key": "EARLY_SIGNAL",
       "label": "Early signal",
-      "n": 172,
-      "text": "n=172 · Early signal",
+      "n": 188,
+      "text": "n=188 · Early signal",
       "recalibration": "NOT_ALLOWED",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "error": {
-     "n": 332,
-     "model_mae": 12.92,
-     "close_mae": 11.32,
-     "model_closer_pct": 40.1,
-     "total_n": 262,
-     "model_total_mae": 12.64,
-     "close_total_mae": 12.15
+     "n": 348,
+     "model_mae": 12.86,
+     "close_mae": 11.27,
+     "model_closer_pct": 39.7,
+     "total_n": 278,
+     "model_total_mae": 12.59,
+     "close_total_mae": 12.14
     },
     "brier": {
-     "n": 247,
-     "model": 0.1508
+     "n": 263,
+     "model": 0.1535
     }
    }
   }
