@@ -2,21 +2,13 @@
  "alerts": [
   {
    "evidence": {
-    "game_id": 401858257
-   },
-   "kind": "disagreement",
-   "level": "info",
-   "message": "Stanford @ Notre Dame: C 43.3 vs D 35.6 (beyond the backtest 99th percentile 7.5)"
-  },
-  {
-   "evidence": {
-    "noise_q99": 0.196,
-    "psi": 0.257,
+    "noise_q99": 0.325,
+    "psi": 0.333,
     "reference_weeks": "week6"
    },
    "kind": "feature_drift",
    "level": "info",
-   "message": "sigma differs from the 2024-25 reference at week6 (PSI 0.26; sampling noise alone reaches 0.20)"
+   "message": "pred_total differs from the 2024-25 reference at week6 (PSI 0.33; sampling noise alone reaches 0.32)"
   }
  ],
  "bet_enabled": false,
@@ -63,62 +55,62 @@
    "week": 5
   },
   {
-   "ats_at_close": 0.667,
-   "ats_at_freeze_line": 0.5,
-   "bias": -3.992,
-   "brier": 0.1705,
-   "clv_mean": -0.125,
+   "ats_at_close": 0.61,
+   "ats_at_freeze_line": 0.561,
+   "bias": 0.114,
+   "brier": 0.2177,
+   "clv_mean": 0.119,
    "disagreement_c_d_mean": 1.482,
-   "final": 12,
+   "final": 42,
    "frozen_games": 58,
    "largest_misses": [
     {
-     "abs_error": 23.5,
-     "final": 24.0,
-     "game": "Florida State @ Louisville",
-     "v2": 0.5
+     "abs_error": 35.7,
+     "final": -15.0,
+     "game": "Buffalo @ Toledo",
+     "v2": 20.7
     },
     {
-     "abs_error": 20.6,
-     "final": 21.0,
-     "game": "Missouri State @ Western Kentucky",
-     "v2": 0.4
+     "abs_error": 31.2,
+     "final": -35.0,
+     "game": "Ole Miss @ Vanderbilt",
+     "v2": -3.8
     },
     {
-     "abs_error": 17.4,
-     "final": -17.0,
-     "game": "Iowa @ Washington",
-     "v2": 0.4
+     "abs_error": 27.5,
+     "final": -19.0,
+     "game": "South Carolina @ Florida",
+     "v2": 8.5
     }
    ],
-   "mae": 10.654,
-   "mae_candidate_001_same_games": 10.721,
-   "mae_close": 10.667,
-   "mae_line_at_freeze": 9.5,
-   "mae_v1_same_games": 10.824,
-   "mae_v2_same_close_games": 10.654,
-   "mae_v2_same_line_at_freeze_games": 9.039,
-   "mae_v2_vs_candidate_001_games": 10.654,
-   "mae_v2_vs_v1_games": 10.654,
-   "rmse": 12.804,
+   "mae": 11.976,
+   "mae_candidate_001_same_games": 12.09,
+   "mae_close": 11.994,
+   "mae_line_at_freeze": 13.3,
+   "mae_v1_same_games": 12.203,
+   "mae_v2_same_close_games": 11.976,
+   "mae_v2_same_line_at_freeze_games": 12.219,
+   "mae_v2_vs_candidate_001_games": 11.976,
+   "mae_v2_vs_v1_games": 11.976,
+   "rmse": 14.768,
    "week": 6
   }
  ],
  "current_json_age_hours": 0.0,
  "feature_drift_psi": {
-  "ens_pred": 0.063,
-  "ens_pred_noise_q99": 0.196,
-  "ens_sd": 0.173,
-  "ens_sd_noise_q99": 0.196,
-  "pred_total": 0.142,
-  "pred_total_noise_q99": 0.196,
+  "ens_pred": 0.051,
+  "ens_pred_noise_q99": 0.325,
+  "ens_sd": 0.127,
+  "ens_sd_noise_q99": 0.325,
+  "pred_total": 0.333,
+  "pred_total_noise_q99": 0.325,
   "reference_weeks": "week6",
-  "sigma": 0.257,
-  "sigma_noise_q99": 0.196
+  "sigma": 0.244,
+  "sigma_noise_q99": 0.325
  },
- "generated_at": "2026-10-10T16:00:26Z",
+ "generated_at": "2026-10-11T10:08:22Z",
  "learning": {
-  "bias": -1.7211323529411768,
+  "bias": -0.6567448979591836,
   "by_model_version": {
    "edgedesk_cfb_v2.0.0": {
     "bias": -0.448646511627907,
@@ -131,31 +123,32 @@
     }
    },
    "edgedesk_cfb_v2.1.0": {
-    "bias": -1.7211323529411768,
+    "bias": -0.6567448979591836,
     "fcs_not_priced_games": 3,
-    "games_scored": 68,
-    "mae": 13.070985294117648,
-    "major_miss_share": 0.16176470588235295,
+    "games_scored": 98,
+    "mae": 12.897622448979593,
+    "major_miss_share": 0.15306122448979592,
     "sources": {
-     "FROZEN": 68
+     "FROZEN": 98
     }
    }
   },
   "expected_major_miss_share_if_calibrated": 0.134,
-  "games_scored": 68,
-  "mae": 13.070985294117648,
-  "major_miss_share": 0.16176470588235295,
+  "games_scored": 98,
+  "mae": 12.897622448979593,
+  "major_miss_share": 0.15306122448979592,
   "miss_classes": {
    "explosive_variance": 2,
    "garbage_time": 2,
-   "market_news_unavailable": 1,
-   "ordinary_variance": 4,
-   "qb_injury_miss": 1,
+   "market_news_unavailable": 2,
+   "ordinary_variance": 5,
+   "qb_injury_miss": 2,
+   "special_teams": 1,
    "turnover_variance": 1
   },
   "model_version": "edgedesk_cfb_v2.1.0",
   "sources": {
-   "FROZEN": 68
+   "FROZEN": 98
   }
  },
  "model_version": "edgedesk_cfb_v2.1.0",
@@ -1837,8 +1830,8 @@
  "scope": "FROZEN shadow projections only (replays excluded); priced games (FBS-vs-FBS) unless noted",
  "season": 2026,
  "season_to_date": {
-  "final": 68,
+  "final": 98,
   "frozen_games": 114,
-  "mae": 13.071
+  "mae": 12.898
  }
 }

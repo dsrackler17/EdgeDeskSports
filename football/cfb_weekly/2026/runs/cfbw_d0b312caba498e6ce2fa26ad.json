@@ -1,0 +1,903 @@
+{
+ "completed_at": "2026-10-11T10:08:23.913Z",
+ "data_version": "4753d617556fdeb79314d7ad",
+ "drive_status": "OK",
+ "errors": [],
+ "errors_count": 0,
+ "feature_version": "cfb_v2_fv2",
+ "games_expected": 58,
+ "games_final": 42,
+ "games_processed": 432,
+ "gate": {
+  "checks": [
+   {
+    "check": "pipeline completed (every critical stage OK or WARN)",
+    "critical": true,
+    "detail": [],
+    "ok": true
+   },
+   {
+    "check": "critical data sources present",
+    "critical": true,
+    "detail": [],
+    "ok": true
+   },
+   {
+    "check": "data errors within bound (5% of finals)",
+    "critical": true,
+    "detail": 0.0,
+    "ok": true
+   },
+   {
+    "check": "opponent adjustment converged (every metric)",
+    "critical": true,
+    "detail": [],
+    "ok": true
+   },
+   {
+    "check": "no leakage test failure",
+    "critical": true,
+    "detail": null,
+    "ok": true
+   },
+   {
+    "check": "model artifacts loaded and verified against MANIFEST.json",
+    "critical": true,
+    "detail": null,
+    "ok": true
+   },
+   {
+    "check": "sanity checks pass",
+    "critical": true,
+    "detail": [],
+    "ok": true
+   },
+   {
+    "check": "games withheld by game-level checks within bound (5% of the week)",
+    "critical": true,
+    "detail": {
+     "share": 0.0,
+     "withheld": []
+    },
+    "ok": true
+   },
+   {
+    "check": "no team projected in two games of the week",
+    "critical": true,
+    "detail": [],
+    "ok": true
+   },
+   {
+    "check": "no team both home and away in one game",
+    "critical": true,
+    "detail": null,
+    "ok": true
+   },
+   {
+    "check": "no duplicate games",
+    "critical": true,
+    "detail": 0,
+    "ok": true
+   },
+   {
+    "action": "WITHHOLD_GAME",
+    "check": "win probabilities strictly inside (0, 1); home + away = 1 by construction",
+    "critical": true,
+    "detail": [],
+    "games": [],
+    "ok": true
+   },
+   {
+    "action": "WITHHOLD_GAME",
+    "check": "no NaN or infinite spreads, sigmas or totals; sigma positive",
+    "critical": true,
+    "detail": [],
+    "games": [],
+    "ok": true
+   },
+   {
+    "action": "WITHHOLD_GAME",
+    "check": "plausible totals (10-120) and margins (|margin| <= 75)",
+    "critical": true,
+    "detail": [],
+    "games": [],
+    "ok": true
+   },
+   {
+    "action": "WITHHOLD_TOTAL",
+    "check": "implied team points >= 0 (margin within the total)",
+    "critical": false,
+    "detail": [],
+    "games": [],
+    "ok": true
+   },
+   {
+    "check": "no invalid team ids",
+    "critical": true,
+    "detail": [],
+    "ok": true
+   },
+   {
+    "check": "no post-kickoff data (feature_ts < kickoff for every game)",
+    "critical": true,
+    "detail": null,
+    "ok": true
+   },
+   {
+    "check": "every feature snapshot is as of the freeze instant T",
+    "critical": true,
+    "detail": null,
+    "ok": true
+   },
+   {
+    "check": "no market inputs in the pure model (checked against the artifact columns)",
+    "critical": true,
+    "detail": null,
+    "ok": true
+   },
+   {
+    "action": "WITHHOLD_GAME",
+    "check": "model inputs pass the input contract (cfb_input_contract_1)",
+    "critical": true,
+    "detail": [],
+    "games": [],
+    "ok": true
+   }
+  ],
+  "failed": [],
+  "pass": true,
+  "warnings": [],
+  "withheld_games": [],
+  "withheld_totals": []
+ },
+ "market_status": "OK",
+ "metrics": {},
+ "mode": "weekly",
+ "model_lab_status": "OK",
+ "model_version": "edgedesk_cfb_v2.1.0",
+ "opponent_adjustment_status": "OK",
+ "pbp_status": "OK",
+ "player_status": "WARN",
+ "plays_expected": null,
+ "plays_processed": 74598,
+ "projection_status": "OK",
+ "published": true,
+ "run_id": "cfbw_d0b312caba498e6ce2fa26ad",
+ "run_key": "3af2a3236b028d5d750d8573",
+ "score_ingestion_status": "WARN",
+ "season": 2026,
+ "source_week": 6,
+ "stages": [
+  {
+   "counts": {
+    "T": "2026-10-13T12:00:00.000Z",
+    "games_final": 432,
+    "games_season": 888,
+    "source_week": 6,
+    "stage1_seasons_rebuilt": 18,
+    "target_week": 7
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:06:41.582Z",
+   "ms": 50463,
+   "needs": [],
+   "stage": "INGEST_FINAL_SCORES",
+   "started_at": "2026-10-11T10:05:51.119Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "finality_disagreements": 6,
+    "lab_disagreements": 0,
+    "not_final_after_grace": 14,
+    "source_week_final": 42,
+    "source_week_games": 58,
+    "stage2_final_violations": 0
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:06:45.174Z",
+   "ms": 3592,
+   "needs": [
+    "INGEST_FINAL_SCORES"
+   ],
+   "stage": "VERIFY_COMPLETED_GAMES",
+   "started_at": "2026-10-11T10:06:41.582Z",
+   "status": "WARN",
+   "warnings": [
+    "game 401860902 has no confirmed final (overdue)",
+    "game 401856715 has no confirmed final (overdue)",
+    "game 401862798 has no confirmed final (overdue)",
+    "game 401864517 has no confirmed final (overdue)",
+    "game 401864518 has no confirmed final (overdue)",
+    "game 401869943 has no confirmed final (overdue)",
+    "game 401856712 has no confirmed final (overdue)",
+    "game 401858258 has no confirmed final (overdue)",
+    "game 401858485 has no confirmed final (overdue)",
+    "game 401864516 has no confirmed final (overdue)",
+    "game 401869949 has no confirmed final (overdue)",
+    "game 401869965 has no confirmed final (overdue)",
+    "game 401856827 has no confirmed final (overdue)",
+    "game 401858486 has no confirmed final (overdue)",
+    "game 401860902: schedule, provider status and PBP disagree on finality; held out",
+    "game 401862798: schedule, provider status and PBP disagree on finality; held out",
+    "game 401864517: schedule, provider status and PBP disagree on finality; held out",
+    "game 401864518: schedule, provider status and PBP disagree on finality; held out",
+    "game 401869943: schedule, provider status and PBP disagree on finality; held out",
+    "game 401864516: schedule, provider status and PBP disagree on finality; held out"
+   ]
+  },
+  {
+   "counts": {
+    "final_partial_data": 14,
+    "final_validated": 418,
+    "in_progress": 16,
+    "mean_completeness": 0.9865,
+    "plays_processed": 74598,
+    "scheduled": 440
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:06:45.179Z",
+   "ms": 4,
+   "needs": [
+    "VERIFY_COMPLETED_GAMES"
+   ],
+   "stage": "VALIDATE_PBP",
+   "started_at": "2026-10-11T10:06:45.175Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "team_games": 864
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:06:45.837Z",
+   "ms": 658,
+   "needs": [
+    "VALIDATE_PBP"
+   ],
+   "stage": "GAME_PERFORMANCE",
+   "started_at": "2026-10-11T10:06:45.179Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "teams": 235
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:06:46.056Z",
+   "ms": 218,
+   "needs": [
+    "GAME_PERFORMANCE"
+   ],
+   "stage": "DRIVE_METRICS",
+   "started_at": "2026-10-11T10:06:45.837Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {},
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:07:14.925Z",
+   "ms": 28869,
+   "needs": [
+    "VALIDATE_PBP"
+   ],
+   "stage": "OPPONENT_ADJUSTMENT",
+   "started_at": "2026-10-11T10:06:46.056Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "expected_starters": 235,
+    "qb_events": 148,
+    "qbs": 412
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:07:30.983Z",
+   "ms": 16057,
+   "needs": [
+    "OPPONENT_ADJUSTMENT"
+   ],
+   "stage": "PLAYER_QB_METRICS",
+   "started_at": "2026-10-11T10:07:14.925Z",
+   "status": "WARN",
+   "warnings": [
+    "ambiguous starter: team 25 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 38 (starter probability 0.16 < 0.60; rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 98 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 113 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 166 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 183 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 193 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 195 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 221 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 264 (starter probability 0.37 < 0.60)",
+    "ambiguous starter: team 295 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 2050 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 2115 (starter probability 0.29 < 0.60)",
+    "ambiguous starter: team 2382 (starter probability 0.29 < 0.60)",
+    "ambiguous starter: team 2429 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 2448 (starter probability 0.29 < 0.60)",
+    "ambiguous starter: team 2483 (starter probability 0.16 < 0.60; rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 2633 (rotation with 2 different starters in the last 3 games)",
+    "ambiguous starter: team 2643 (starter probability 0.29 < 0.60)",
+    "ambiguous starter: team 2698 (starter probability 0.34 < 0.60)",
+    "ambiguous starter: team 2747 (starter probability 0.29 < 0.60)",
+    "ambiguous starter: team 2815 (starter probability 0.34 < 0.60)"
+   ]
+  },
+  {
+   "counts": {
+    "teams": 124,
+    "teams_with_report": 20
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:07:31.083Z",
+   "ms": 99,
+   "needs": [
+    "INGEST_FINAL_SCORES"
+   ],
+   "stage": "AVAILABILITY_STATE",
+   "started_at": "2026-10-11T10:07:30.983Z",
+   "status": "WARN",
+   "warnings": [
+    "official availability reports for only 20 of 124 teams: UNKNOWN is not healthy"
+   ]
+  },
+  {
+   "counts": {
+    "converged": true,
+    "metrics": 28,
+    "movement_flags": 0,
+    "teams": 238
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:07:57.101Z",
+   "ms": 26018,
+   "needs": [
+    "OPPONENT_ADJUSTMENT",
+    "PLAYER_QB_METRICS"
+   ],
+   "stage": "TEAM_POSTERIORS",
+   "started_at": "2026-10-11T10:07:31.083Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "teams_recent": 238
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:07:57.101Z",
+   "ms": 0,
+   "needs": [
+    "TEAM_POSTERIORS"
+   ],
+   "stage": "RECENT_FORM",
+   "started_at": "2026-10-11T10:07:57.101Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "contract_withheld": 0,
+    "feature_columns": 60,
+    "feature_flags": 0,
+    "feature_monitor": "OK",
+    "input_contract": "cfb_input_contract_1",
+    "target_games": 62
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:08:10.862Z",
+   "ms": 13760,
+   "needs": [
+    "TEAM_POSTERIORS"
+   ],
+   "stage": "UPCOMING_FEATURES",
+   "started_at": "2026-10-11T10:07:57.102Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {},
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:08:12.415Z",
+   "ms": 1553,
+   "needs": [
+    "UPCOMING_FEATURES"
+   ],
+   "stage": "LEAKAGE_TESTS",
+   "started_at": "2026-10-11T10:08:10.862Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "games": 62,
+    "mean_abs_margin": 9.581,
+    "withheld_by_input_contract": 0
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:08:12.518Z",
+   "ms": 102,
+   "needs": [
+    "UPCOMING_FEATURES",
+    "LEAKAGE_TESTS"
+   ],
+   "stage": "PURE_SUBMODELS",
+   "started_at": "2026-10-11T10:08:12.415Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "directional_agreement": 0.9355,
+    "mean_ens_sd": 1.078
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:08:12.518Z",
+   "ms": 0,
+   "needs": [
+    "PURE_SUBMODELS"
+   ],
+   "stage": "ENSEMBLE",
+   "started_at": "2026-10-11T10:08:12.518Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "win_calibration_method": "raw"
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:08:12.519Z",
+   "ms": 0,
+   "needs": [
+    "ENSEMBLE"
+   ],
+   "stage": "CALIBRATION",
+   "started_at": "2026-10-11T10:08:12.519Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "mean_expected_error": 12.801,
+    "mean_sigma": 16.044
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:08:12.519Z",
+   "ms": 0,
+   "needs": [
+    "CALIBRATION"
+   ],
+   "stage": "UNCERTAINTY",
+   "started_at": "2026-10-11T10:08:12.519Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "changed": 62,
+    "flags": 0,
+    "modes": {
+     "DEGRADED_AVAILABILITY": 61,
+     "DEGRADED_MARKET": 0,
+     "DEGRADED_PBP": 1,
+     "FALLBACK": 0,
+     "FULL": 0
+    },
+    "new_projections": 62
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:08:13.048Z",
+   "ms": 528,
+   "needs": [
+    "UNCERTAINTY"
+   ],
+   "stage": "PROJECTION_RECORDS",
+   "started_at": "2026-10-11T10:08:12.519Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "checks": 20,
+    "failed": 0,
+    "withheld_games": 0,
+    "withheld_totals": 0
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:08:13.064Z",
+   "ms": 15,
+   "needs": [
+    "PROJECTION_RECORDS"
+   ],
+   "stage": "RELEASE_GATE",
+   "started_at": "2026-10-11T10:08:13.048Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "already_frozen": 0,
+    "frozen_new": 0,
+    "published_rows": 888,
+    "refused_overwrites": 0,
+    "upcoming": 65,
+    "withheld_games": 0,
+    "withheld_totals": 0
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:08:15.891Z",
+   "ms": 2827,
+   "needs": [
+    "RELEASE_GATE"
+   ],
+   "stage": "FREEZE_EARLY",
+   "started_at": "2026-10-11T10:08:13.064Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "features": 62,
+    "game_performance": {
+     "corrected": 0,
+     "unchanged": 804,
+     "written": 60
+    },
+    "game_validation": {
+     "corrected": 3679,
+     "unchanged": 0,
+     "written": 0
+    },
+    "projection_changes": 62,
+    "projections": 62,
+    "qb_events": 35,
+    "qb_week_state": {
+     "corrected": 407,
+     "unchanged": 0,
+     "written": 5
+    },
+    "team_week_state": {
+     "corrected": 238,
+     "unchanged": 0,
+     "written": 0
+    },
+    "unit_week_state": {
+     "corrected": 992,
+     "unchanged": 0,
+     "written": 0
+    }
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:08:20.243Z",
+   "ms": 4351,
+   "needs": [
+    "FREEZE_EARLY"
+   ],
+   "stage": "WRITE_STATE",
+   "started_at": "2026-10-11T10:08:15.891Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "reason": "matchup style ratings for 2026 (python3 -m v2.matchup.style); matchup style finals (python3 -m v2.matchup.style); stage-7 backtest predictions (the similar-matchup history)"
+   },
+   "error": "matchup style ratings for 2026 (python3 -m v2.matchup.style); matchup style finals (python3 -m v2.matchup.style); stage-7 backtest predictions (the similar-matchup history)",
+   "error_class": null,
+   "finished_at": "2026-10-11T10:08:20.259Z",
+   "ms": 15,
+   "needs": [
+    "WRITE_STATE"
+   ],
+   "stage": "MATCHUP_SHADOW",
+   "started_at": "2026-10-11T10:08:20.243Z",
+   "status": "SKIPPED",
+   "warnings": []
+  },
+  {
+   "counts": {},
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:08:20.991Z",
+   "ms": 732,
+   "needs": [
+    "FREEZE_EARLY"
+   ],
+   "stage": "MARKET_COMPARISON",
+   "started_at": "2026-10-11T10:08:20.259Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "graded": 174,
+    "misses": 94,
+    "misses_added": 74,
+    "week": 6
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:08:22.237Z",
+   "ms": 1245,
+   "needs": [
+    "INGEST_FINAL_SCORES",
+    "GAME_PERFORMANCE",
+    "PLAYER_QB_METRICS"
+   ],
+   "stage": "GRADE_PREVIOUS",
+   "started_at": "2026-10-11T10:08:20.991Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "items": 0
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:08:22.270Z",
+   "ms": 32,
+   "needs": [
+    "GRADE_PREVIOUS"
+   ],
+   "stage": "RESEARCH",
+   "started_at": "2026-10-11T10:08:22.237Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "awaiting_import": 3,
+    "frozen_games": 117,
+    "imported_by_lab": 114
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:08:22.458Z",
+   "ms": 188,
+   "needs": [
+    "FREEZE_EARLY"
+   ],
+   "stage": "MODEL_LAB",
+   "started_at": "2026-10-11T10:08:22.270Z",
+   "status": "OK",
+   "warnings": []
+  },
+  {
+   "counts": {
+    "report": "reports/week_07"
+   },
+   "error": null,
+   "error_class": null,
+   "finished_at": "2026-10-11T10:08:23.912Z",
+   "ms": 1454,
+   "needs": [
+    "INGEST_FINAL_SCORES"
+   ],
+   "stage": "HEALTH_REPORT",
+   "started_at": "2026-10-11T10:08:22.458Z",
+   "status": "OK",
+   "warnings": []
+  }
+ ],
+ "started_at": "2026-10-11T10:05:51.066Z",
+ "status": "PUBLISHED",
+ "target_week": 7,
+ "team_rating_status": "OK",
+ "versions": {
+  "data_version": "4753d617556fdeb79314d7ad",
+  "history_version": "7df2def62d26b0e14360ca67",
+  "injury_version": "38f9afa158ca32646d235f4c",
+  "market_version": "f1238675eb621a15f725d432",
+  "pbp_version": "3dc5ad18aa0d057a83331634",
+  "qb_status_version": "15c591b1b82e04d3d951d984",
+  "retprod_version": "f48db019c56a8bf0656bbd0c",
+  "roster_version": "13a220a21de248f1c2457a10",
+  "schedule_version": "016274b11e4dbe6631f593e5",
+  "talent_version": "d6a2e9e202bcad019d214a54",
+  "weather_version": "c9a298e65108f117ca0f736d"
+ },
+ "warnings": [
+  {
+   "message": "game 401860902 has no confirmed final (overdue)",
+   "stage": "VERIFY_COMPLETED_GAMES"
+  },
+  {
+   "message": "game 401856715 has no confirmed final (overdue)",
+   "stage": "VERIFY_COMPLETED_GAMES"
+  },
+  {
+   "message": "game 401862798 has no confirmed final (overdue)",
+   "stage": "VERIFY_COMPLETED_GAMES"
+  },
+  {
+   "message": "game 401864517 has no confirmed final (overdue)",
+   "stage": "VERIFY_COMPLETED_GAMES"
+  },
+  {
+   "message": "game 401864518 has no confirmed final (overdue)",
+   "stage": "VERIFY_COMPLETED_GAMES"
+  },
+  {
+   "message": "game 401869943 has no confirmed final (overdue)",
+   "stage": "VERIFY_COMPLETED_GAMES"
+  },
+  {
+   "message": "game 401856712 has no confirmed final (overdue)",
+   "stage": "VERIFY_COMPLETED_GAMES"
+  },
+  {
+   "message": "game 401858258 has no confirmed final (overdue)",
+   "stage": "VERIFY_COMPLETED_GAMES"
+  },
+  {
+   "message": "game 401858485 has no confirmed final (overdue)",
+   "stage": "VERIFY_COMPLETED_GAMES"
+  },
+  {
+   "message": "game 401864516 has no confirmed final (overdue)",
+   "stage": "VERIFY_COMPLETED_GAMES"
+  },
+  {
+   "message": "game 401869949 has no confirmed final (overdue)",
+   "stage": "VERIFY_COMPLETED_GAMES"
+  },
+  {
+   "message": "game 401869965 has no confirmed final (overdue)",
+   "stage": "VERIFY_COMPLETED_GAMES"
+  },
+  {
+   "message": "game 401856827 has no confirmed final (overdue)",
+   "stage": "VERIFY_COMPLETED_GAMES"
+  },
+  {
+   "message": "game 401858486 has no confirmed final (overdue)",
+   "stage": "VERIFY_COMPLETED_GAMES"
+  },
+  {
+   "message": "game 401860902: schedule, provider status and PBP disagree on finality; held out",
+   "stage": "VERIFY_COMPLETED_GAMES"
+  },
+  {
+   "message": "game 401862798: schedule, provider status and PBP disagree on finality; held out",
+   "stage": "VERIFY_COMPLETED_GAMES"
+  },
+  {
+   "message": "game 401864517: schedule, provider status and PBP disagree on finality; held out",
+   "stage": "VERIFY_COMPLETED_GAMES"
+  },
+  {
+   "message": "game 401864518: schedule, provider status and PBP disagree on finality; held out",
+   "stage": "VERIFY_COMPLETED_GAMES"
+  },
+  {
+   "message": "game 401869943: schedule, provider status and PBP disagree on finality; held out",
+   "stage": "VERIFY_COMPLETED_GAMES"
+  },
+  {
+   "message": "game 401864516: schedule, provider status and PBP disagree on finality; held out",
+   "stage": "VERIFY_COMPLETED_GAMES"
+  },
+  {
+   "message": "ambiguous starter: team 25 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 38 (starter probability 0.16 < 0.60; rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 98 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 113 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 166 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 183 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 193 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 195 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 221 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 264 (starter probability 0.37 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 295 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2050 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2115 (starter probability 0.29 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2382 (starter probability 0.29 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2429 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2448 (starter probability 0.29 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2483 (starter probability 0.16 < 0.60; rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2633 (rotation with 2 different starters in the last 3 games)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2643 (starter probability 0.29 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2698 (starter probability 0.34 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2747 (starter probability 0.29 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "ambiguous starter: team 2815 (starter probability 0.34 < 0.60)",
+   "stage": "PLAYER_QB_METRICS"
+  },
+  {
+   "message": "official availability reports for only 20 of 124 teams: UNKNOWN is not healthy",
+   "stage": "AVAILABILITY_STATE"
+  }
+ ],
+ "warnings_count": 43
+}
