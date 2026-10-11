@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-11T00:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-10. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1844,100 +1844,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-10. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "ev9v3w1hsdaxq",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": false,
-    "question": "Can Minnesota’s pass rush get to Ryan Browne?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Minnesota, and its own breakdown accounts for about 0.0 of the 2.2 points, but not the full gap. It is a research question, not a bet.",
-    "gap": {
-      "points": 2.2,
-      "toward": "Minnesota",
-      "other": "Purdue"
-    },
-    "supporting": [
-      "When Purdue has the ball (pass protection against the pass rush): Purdue’s offense has allowed a sack on 5.7% of its dropbacks, and Minnesota’s defense sacks the quarterback on 10.5% of opponent dropbacks (FBS average 5.6%).",
-      "When Purdue has the ball (big plays on the ground): Purdue’s offense turns 2.8% of its runs into explosive gains, and Minnesota’s defense gives up explosive gains on 3.0% of opponent runs (FBS average 6.6%).",
-      "When Minnesota has the ball (pass protection against the pass rush): Minnesota’s offense has allowed a sack on 1.8% of its dropbacks, and Purdue’s defense sacks the quarterback on 5.0% of opponent dropbacks (FBS average 5.6%).",
-      "In his last two games (Notre Dame and Illinois), Browne averaged 6.7 yards per attempt, against 10.5 in his three games before that."
-    ],
-    "contradicting": [
-      "When Minnesota has the ball (big plays on the ground): Minnesota’s offense turns 4.1% of its runs into explosive gains, and Purdue’s defense gives up explosive gains on 9.1% of opponent runs (FBS average 6.6%).",
-      "Ryan Browne has completed 111 of 157 passes (70.7%) for 1,437 yards, 9.2 yards per attempt, 8 touchdowns and 1 interception in five games for Purdue, and has been sacked on 10 of 167 dropbacks.",
-      "EdgeDesk’s position-group ratings put Purdue’s offense No. 16 nationally and Minnesota’s No. 89.",
-      "EdgeDesk’s position-group ratings put Purdue’s offensive line No. 74 nationally and Minnesota’s No. 123."
-    ],
-    "quarterbacks": [
-      "Ryan Browne has completed 111 of 157 passes (70.7%) for 1,437 yards, 9.2 yards per attempt, 8 touchdowns and 1 interception in five games for Purdue, and has been sacked on 10 of 167 dropbacks.",
-      "Evans Chuba has completed 11 of 14 passes (78.6%) for 96 yards, 6.9 yards per attempt, 1 touchdown and no interceptions in two games for Purdue, and has been sacked on 3 of 17 dropbacks.",
-      "Drake Lindsey has completed 106 of 157 passes (67.5%) for 1,102 yards, 7.0 yards per attempt, 9 touchdowns and 4 interceptions in five games for Minnesota, and has been sacked on 2 of 159 dropbacks.",
-      "Ryan Browne does not appear on Purdue’s update 2 availability report.",
-      "Minnesota’s update 2 Big Ten availability report (published Oct. 9) lists quarterback Michael Merdinger as out.",
-      "Drake Lindsey does not appear on Minnesota’s update 2 availability report."
-    ],
-    "availability": [
-      "Minnesota’s availability report lists eight players as out, including offensive linemen Brett Carroll, Jaden Ball and Ashton Beers."
-    ],
-    "script": {
-      "model": [
-        "Minnesota’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 10.5% of opponent dropbacks, against an offense that has allowed a sack on 5.7% of its dropbacks.",
-        "Minnesota’s offense has to hold its own on long runs against a defense that gives up explosive gains on 9.1% of opponent runs.",
-        "Minnesota’s offense has to hold its own on the ground against a defense that allows 6.0 yards per carry.",
-        "Minnesota’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 1.8% of its dropbacks, and Purdue’s defense sacks the quarterback on 5.0% of opponent dropbacks."
-      ],
-      "market": [
-        "Purdue’s defense has to come out ahead on long runs: it gives up explosive gains on 9.1% of opponent runs, against an offense that turns 4.1% of its runs into explosive gains.",
-        "Purdue’s defense has to come out ahead on the ground: it allows 6.0 yards per carry, against an offense that averages 3.8 yards per carry.",
-        "Purdue’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 5.7% of its dropbacks, and Minnesota’s defense sacks the quarterback on 10.5% of opponent dropbacks."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Minnesota.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Minnesota) and sack rate (Minnesota); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-10T19:21:49.975Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-10T02:15:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-10T19:21:18.442Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "Big Ten Conference availability report (Update 2)",
-        "url": "https://app.hdintelligence.com/?source=B10&sport=Football&conf=B10&type=report",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-10T00:00:00.000Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-10T21:34:09.542Z"
+    "at": "2026-10-11T05:36:47.218Z"
   }
 }
