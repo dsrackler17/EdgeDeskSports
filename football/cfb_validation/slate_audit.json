@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-11T00:07:39.788Z",
- "board_generated_at": "2026-10-11T00:07:37.612Z",
+ "generated_at": "2026-10-11T01:07:39.029Z",
+ "board_generated_at": "2026-10-11T01:07:37.361Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -20,10 +20,10 @@
    "game": "Notre Dame @ BYU",
    "kickoff": "2026-10-17T23:30:00.000Z",
    "named": false,
-   "edgedesk": "Notre Dame -4.9",
+   "edgedesk": "Notre Dame -3.0",
    "market": "Notre Dame -12.5",
    "books": 1,
-   "gap": 7.6,
+   "gap": 9.5,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -50,7 +50,7 @@
     {
      "requirement": "current team states",
      "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 5 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 2.3 rating pts"
+     "detail": "PASS: fewest current-season games behind a rating: 5 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 2.5 rating pts"
     },
     {
      "requirement": "resolved QB",
@@ -74,12 +74,12 @@
     },
     {
      "requirement": "football-only calibration preserves the major gap",
-     "result": "FAIL",
-     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 6.4 — the extreme is not supported by how margins of this size have actually finished"
+     "result": "PASS",
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 8.2"
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; no abnormal availability fail; football-only calibration preserves the major gap fail."
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; no abnormal availability fail."
   },
   {
    "game_id": "401860901",
@@ -153,9 +153,9 @@
    "kickoff": "2026-10-11T02:30:00.000Z",
    "named": false,
    "edgedesk": "Arizona State -11.9",
-   "market": "Arizona State -20.5",
+   "market": "Arizona State -21.0",
    "books": 1,
-   "gap": 8.6,
+   "gap": 9.1,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -207,7 +207,7 @@
     {
      "requirement": "football-only calibration preserves the major gap",
      "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 10.3"
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 10.8"
     }
    ],
    "consistent": true,
@@ -280,16 +280,148 @@
    "verdict": "STALE MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
   },
   {
-   "game_id": "401856721",
-   "game": "Missouri @ Ole Miss",
-   "kickoff": "2026-10-17T19:30:00.000Z",
+   "game_id": "401858492",
+   "game": "Nebraska @ Oregon",
+   "kickoff": "2026-10-17T04:00:00.000Z",
    "named": false,
-   "edgedesk": "Missouri -0.7",
-   "market": "Ole Miss -6.5",
+   "edgedesk": "Oregon -5.4",
+   "market": "Oregon -12.5",
    "books": 0,
-   "gap": 7.2,
+   "gap": 7.1,
    "gap_class": "MAJOR",
-   "favorite_flip": true,
+   "favorite_flip": false,
+   "research_status": "NO_MARKET",
+   "research_label": "STALE MARKET",
+   "decision_status": "NO_DECISION",
+   "gate_status": "NOT RUN",
+   "root_cause": null,
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "current team states",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    }
+   ],
+   "consistent": true,
+   "verdict": "STALE MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
+  },
+  {
+   "game_id": "401856724",
+   "game": "Florida @ Texas",
+   "kickoff": "2026-10-17T16:00:00.000Z",
+   "named": false,
+   "edgedesk": "Texas -18.0",
+   "market": "Texas -8.5",
+   "books": 0,
+   "gap": 9.5,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "NO_MARKET",
+   "research_label": "STALE MARKET",
+   "decision_status": "NO_DECISION",
+   "gate_status": "NOT RUN",
+   "root_cause": null,
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "current team states",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    }
+   ],
+   "consistent": true,
+   "verdict": "STALE MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
+  },
+  {
+   "game_id": "401856831",
+   "game": "Oklahoma State @ Houston",
+   "kickoff": "2026-10-17T23:30:00.000Z",
+   "named": false,
+   "edgedesk": "Houston -11.2",
+   "market": "Houston -3.5",
+   "books": 0,
+   "gap": 7.7,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
    "research_status": "NO_MARKET",
    "research_label": "STALE MARKET",
    "decision_status": "NO_DECISION",
