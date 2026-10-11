@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-11T02:09:52.406Z",
- "board_generated_at": "2026-10-11T02:09:50.111Z",
+ "generated_at": "2026-10-11T03:07:38.492Z",
+ "board_generated_at": "2026-10-11T03:07:37.106Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -15,204 +15,6 @@
   "football-only calibration preserves the major gap"
  ],
  "games": [
-  {
-   "game_id": "401856809",
-   "game": "Notre Dame @ BYU",
-   "kickoff": "2026-10-17T23:30:00.000Z",
-   "named": false,
-   "edgedesk": "Notre Dame -3.0",
-   "market": "Notre Dame -12.5",
-   "books": 1,
-   "gap": 9.5,
-   "gap_class": "MAJOR",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
-   "requirements": [
-    {
-     "requirement": "correct game",
-     "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-17T23:30:00.000Z"
-    },
-    {
-     "requirement": "correct home/away",
-     "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (LaVell Edwards Stadium), declared by the schedule feed"
-    },
-    {
-     "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
-    },
-    {
-     "requirement": "current team states",
-     "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 5 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 2.5 rating pts"
-    },
-    {
-     "requirement": "resolved QB",
-     "result": "PASS",
-     "detail": "PASS: BYU: Bear Bachmeier (previous game) · PASS: Notre Dame: CJ Carr (previous game)"
-    },
-    {
-     "requirement": "no abnormal availability",
-     "result": "FAIL",
-     "detail": "FAIL: Notre Dame: availability feed fetch failed — abnormal missing data"
-    },
-    {
-     "requirement": "component adjustments within historical bounds",
-     "result": "PASS",
-     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
-    },
-    {
-     "requirement": "submodel support",
-     "result": "PASS",
-     "detail": "PASS: 2 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 3.4 pts on EdgeDesk’s side"
-    },
-    {
-     "requirement": "football-only calibration preserves the major gap",
-     "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 8.2"
-    }
-   ],
-   "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; no abnormal availability fail."
-  },
-  {
-   "game_id": "401860901",
-   "game": "Boise State @ Fresno State",
-   "kickoff": "2026-10-11T02:30:00.000Z",
-   "named": false,
-   "edgedesk": "Fresno State -0.1",
-   "market": "Boise State -8.5",
-   "books": 1,
-   "gap": 8.6,
-   "gap_class": "MAJOR",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
-   "requirements": [
-    {
-     "requirement": "correct game",
-     "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-11T02:30:00.000Z"
-    },
-    {
-     "requirement": "correct home/away",
-     "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Valley Children's Stadium), declared by the schedule feed"
-    },
-    {
-     "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
-    },
-    {
-     "requirement": "current team states",
-     "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 5 (at least 4 required at this size) · PASS: long-term state and current-season form differ by 2.1 rating pts"
-    },
-    {
-     "requirement": "resolved QB",
-     "result": "FAIL",
-     "detail": "FAIL: Boise State: starter unresolved (competition) — must be resolved or scenario-weighted at this size"
-    },
-    {
-     "requirement": "no abnormal availability",
-     "result": "PASS",
-     "detail": "PASS: Fresno State: availability sources checked, nothing filed · PASS: Boise State: availability sources checked, nothing filed"
-    },
-    {
-     "requirement": "component adjustments within historical bounds",
-     "result": "PASS",
-     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
-    },
-    {
-     "requirement": "submodel support",
-     "result": "FAIL",
-     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · FAIL: the independent ensemble is 1.4 pts on EdgeDesk’s side (at least 3 on EdgeDesk’s side required) · FAIL: favorite flip: the independent ensemble does not favour EdgeDesk’s team"
-    },
-    {
-     "requirement": "football-only calibration preserves the major gap",
-     "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7.2"
-    }
-   ],
-   "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; resolved QB fail; submodel support fail."
-  },
-  {
-   "game_id": "401856808",
-   "game": "Hawai'i @ Arizona State",
-   "kickoff": "2026-10-11T02:30:00.000Z",
-   "named": false,
-   "edgedesk": "Arizona State -11.9",
-   "market": "Arizona State -21.0",
-   "books": 1,
-   "gap": 9.1,
-   "gap_class": "MAJOR",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
-   "requirements": [
-    {
-     "requirement": "correct game",
-     "result": "PASS",
-     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-11T02:30:00.000Z"
-    },
-    {
-     "requirement": "correct home/away",
-     "result": "PASS",
-     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Mountain America Stadium), declared by the schedule feed"
-    },
-    {
-     "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
-    },
-    {
-     "requirement": "current team states",
-     "result": "PASS",
-     "detail": "PASS: fewest current-season games behind a rating: 4 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 4.1 rating pts"
-    },
-    {
-     "requirement": "resolved QB",
-     "result": "PASS",
-     "detail": "PASS: Arizona State: Cutter Boley (previous game) · PASS: Hawai'i: Micah Alejado (previous game)"
-    },
-    {
-     "requirement": "no abnormal availability",
-     "result": "PASS",
-     "detail": "PASS: Arizona State: availability sources checked, nothing filed · PASS: Hawai'i: availability sources checked, nothing filed"
-    },
-    {
-     "requirement": "component adjustments within historical bounds",
-     "result": "PASS",
-     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
-    },
-    {
-     "requirement": "submodel support",
-     "result": "FAIL",
-     "detail": "FAIL: 1 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required)"
-    },
-    {
-     "requirement": "football-only calibration preserves the major gap",
-     "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 10.8"
-    }
-   ],
-   "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; submodel support fail."
-  },
   {
    "game_id": "401860923",
    "game": "Colorado State @ Texas State",
@@ -352,6 +154,72 @@
    "named": false,
    "edgedesk": "Texas -18.0",
    "market": "Texas -8.5",
+   "books": 0,
+   "gap": 9.5,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "NO_MARKET",
+   "research_label": "STALE MARKET",
+   "decision_status": "NO_DECISION",
+   "gate_status": "NOT RUN",
+   "root_cause": null,
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "current team states",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    }
+   ],
+   "consistent": true,
+   "verdict": "STALE MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
+  },
+  {
+   "game_id": "401856809",
+   "game": "Notre Dame @ BYU",
+   "kickoff": "2026-10-17T23:30:00.000Z",
+   "named": false,
+   "edgedesk": "Notre Dame -3.0",
+   "market": "Notre Dame -12.5",
    "books": 0,
    "gap": 9.5,
    "gap_class": "MAJOR",
