@@ -56,6 +56,18 @@ as pre-existing, not repaired here.
 | G8 | **No probability calibration of the derived markets against outcomes**, and no immutable ledger of a published fair-line sheet | 10 | — |
 | G9 | `no_bypass.test.js` does not cover `app.html`'s `oddsFetch`, which can reach the deployed-only `odds` function with caller-chosen markets. Nothing in the app invokes it today | 8 | odds audit §5 |
 
+### G1, the sweep that followed
+
+Every `create view` in `supabase/*.sql` and `supabase/migrations/*.sql` that
+runs with its owner's rights over a table carrying `user_id` was checked:
+
+| view | state |
+|---|---|
+| `research_packet_grades`, `research_packet_pricing` | **leaked, fixed here** |
+| `billing_diagnostics`, `billing_open_alerts`, `referral_invoice_payments`, `referral_invoice_owners`, `referral_signups`, `stripe_events_unresolved` | revoked from `anon, authenticated`; service role only. Not a leak |
+| `recommendation_record` | a model-level aggregate (counts, win rate, ROI, CLV, Brier by mode, sport, market and decision) with no per-reader row. Kept as designed |
+| `research_packet_calibration` | aggregates the grades view, so it now scopes to the reader (service role: everything) |
+
 ## 4. Risks found and left as they are (owner decisions or outside the repository)
 
 - **Deployed-only functions** (`odds`, `run_slate`, `wta_odds`, `cfb_close`, …) are not in the repository and cannot be audited from here. `odds_gateway` still falls back to `ODDS_API_KEY`, so a deployed-only function holding that key can spend credits. The only check is the `untracked_provider_usage` alert, which fires after the fact.
