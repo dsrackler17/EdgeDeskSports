@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-12T03:07:35.000Z",
+ "generated_at": "2026-10-12T04:07:27.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,9 +46,9 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 967,
-    "latest_snapshot_at": "2026-10-12T00:07:29.000Z",
-    "upcoming_games": 65,
+    "snapshots": 968,
+    "latest_snapshot_at": "2026-10-12T04:07:27.000Z",
+    "upcoming_games": 66,
     "avg_confidence_upcoming": 74.5
    },
    {
@@ -71,15 +71,15 @@
    }
   ],
   "data_quality": {
-   "games": 65,
+   "games": 66,
    "counts": {
     "GREEN": 4,
-    "YELLOW": 61,
+    "YELLOW": 62,
     "RED": 0
    },
    "by_check": {
     "odds_freshness": {
-     "YELLOW": 61,
+     "YELLOW": 62,
      "RED": 0
     },
     "pbp_freshness": {
@@ -895,11 +895,24 @@
      ],
      "kickoff": "2026-10-20T23:30:00.000Z",
      "matchup": "South Alabama @ Marshall"
+    },
+    {
+     "game_id": "401871070",
+     "status": "YELLOW",
+     "issues": [
+      {
+       "check": "odds_freshness",
+       "status": "YELLOW",
+       "detail": "no market quote captured yet"
+      }
+     ],
+     "kickoff": "2026-10-22T00:00:00.000Z",
+     "matchup": "New Mexico State @ Sam Houston"
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-12T03:07:35.000Z",
-    "quotes_total": 13795,
+    "last_quote_at": "2026-10-12T04:07:27.000Z",
+    "quotes_total": 13808,
     "last_result_at": "2026-10-11T07:07:14.000Z"
    }
   },
@@ -933,9 +946,9 @@
    }
   ],
   "ledger": {
-   "predictions": 3931,
-   "live_predictions": 3421,
-   "quotes": 13795,
+   "predictions": 3932,
+   "live_predictions": 3422,
+   "quotes": 13808,
    "lines": 2709,
    "results": 399,
    "evaluations": 3716,
