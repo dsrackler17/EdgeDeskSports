@@ -333,5 +333,48 @@ const NFLV = 'https://github.com/nflverse/nflverse-data/releases/download/injuri
     for (let i = 0; i < 1200; i++) await L2.call({ provider: 'open_meteo', key: 'k' + i, topic: 'weather' }, async () => i);
     chk('the usage log is bounded in a long-lived instance', L2.report().log.length <= 60 && L2.report().by_provider.open_meteo.calls <= 1000, L2.report().by_provider.open_meteo);
   }
+  /* ═══ what a stale price may be called (seen on production, 12 Oct 2026) ═══
+     A 55-hour-old quote was printed as "Verified market price" with a green +1.66% EV beside it; research freshness
+     said "newest 0 min ago" from a re-read time on a day-old report; a total was signed (+54.5) and said to "cover". */
+  {
+    require(path.join(ROOT, 'lib', 'edgedesk_intel_ui.js'));
+    const UI = globalThis.EDINTELUI;
+    const staleQ = A.price({ market_type: 'totals', model: { available: false }, market: { decimal: 1.98, book: 'DraftKings', captured_at: T(3333), sharp_fair: 0.513 }, now: NOW, ttl_min: 45 });
+    const freshQ = A.price({ market_type: 'totals', model: { available: false }, market: { decimal: 1.98, book: 'DraftKings', captured_at: T(4), sharp_fair: 0.513 }, now: NOW, ttl_min: 45 });
+    chk('fixture: the stale quote is STALE and still evaluated, the fresh one is current', staleQ.evaluation.ok && staleQ.evaluation.data_freshness.quote.status === 'STALE' && staleQ.evaluation.net_ev_per_dollar != null && freshQ.evaluation.data_freshness.quote.status !== 'STALE', [staleQ.evaluation.data_freshness, freshQ.evaluation.data_freshness]);
+    const findings = [
+      { id: 'f_00000001', claim: 'Ed Oliver (DE) Out', topic: 'availability', reliability: 'OFFICIAL', verified: true, published_at: T(1958), retrieved_at: T(0), source_url: NFLV },
+      { id: 'f_00000002', claim: 'Quentin Lake (S) Questionable', topic: 'availability', reliability: 'OFFICIAL', verified: true, published_at: null, retrieved_at: T(0), source_url: NFLV }
+    ];
+    const asRow = (q) => ({ quant: q, candidate: { matchup: 'Buffalo Bills @ Los Angeles Rams', sport_label: 'NFL', market_label: 'Under 54.5', book: 'DraftKings' }, event: { sport: 'americanfootball_nfl' },
+      classification: { final_status: 'PASS', label: 'UNVERIFIED', reasons: ['The quote is stale.'] }, confidence: { model_reliability: { label: 'market-derived reference' } }, research: { findings } });
+    const tStale = A.renderCandidate(asRow(staleQ)), tFresh = A.renderCandidate(asRow(freshQ));
+    chk('STALE: the text does not call a stale quote a verified price', /Verified market price: none current — last captured [+-]\d+/.test(tStale) && !/Verified market price: [+-]\d/.test(tStale), /Verified market price: [^\n]+/.exec(tStale)[0]);
+    chk('STALE: …its EV is said to be on the stale capture, not a current edge', /Estimated net EV: -?\d+\.\d+% per \$1 on the stale capture — unavailable as a current edge/.test(tStale), /Estimated net EV: [^\n]+/.exec(tStale)[0]);
+    chk('FRESH: a current quote keeps the plain wording', /Verified market price: [+-]\d+ \(implies/.test(tFresh) && !/stale capture/.test(tFresh), [/Verified market price: [^\n]+/.exec(tFresh)[0], /Estimated net EV: [^\n]+/.exec(tFresh)[0]]);
+    chk('STALE: the critic still holds the price and the EV to the text', A.critic('PASS. ' + tStale.split('\n').filter((l) => /Estimated net EV|Verified market price|Maximum acceptable price|Break-even probability|Independent fair probability|Final status/.test(l)).join(' '), tStale, null).findings.every((f) => f.code !== 'DROPPED_OR_CHANGED'));
+    chk('freshness is the newest PUBLICATION time, and an undated finding is said to be undated', new RegExp('Research freshness: 2 findings, newest published ' + T(1958).slice(0, 16).replace('T', ' ') + ' UTC; 1 with no publication time').test(tStale), /Research freshness: [^\n]+/.exec(tStale)[0]);
+    /* the card the subscriber sees */
+    const cardRow = (q) => ({ candidate: { selection: 'Under', market: 'totals', line: 54.5, matchup: 'Buffalo Bills @ Los Angeles Rams', sport: 'americanfootball_nfl', game_id: 'g1', quote: { book: 'DraftKings' } },
+      evaluation: q.evaluation, research: { findings, fair_probability: 0.513, fair_kind: 'SHARP_NO_VIG', model_view: { probability: 0.469, tier: 'RESEARCH' } }, classification: { classification: 'UNVERIFIED', final_status: 'PASS', reasons: ['The quote is stale.'] }, audit: {} });
+    const kvOf = (html) => { const o = {}; html.replace(/<dt>([^<]+)<\/dt><dd>([\s\S]*?)<\/dd><\/div>/g, (m, k, v) => { if (!(k in o)) o[k] = v.replace(/<[^>]+>/g, '').replace(/&#39;/g, "'").replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim(); }); return o; };
+    const cS = UI.candidateCardHTML(cardRow(staleQ), []), kS = kvOf(cS), kF = kvOf(UI.candidateCardHTML(cardRow(freshQ), []));
+    chk('CARD STALE: the price field says none is current and gives the capture\'s age and limit', /^none current — last captured [+-]\d+ at DraftKings, 3333 min old against a \d+ min limit/.test(kS['Verified market price'] || ''), kS['Verified market price']);
+    chk('CARD STALE: the EV is unavailable, not a green number', /^unavailable — no current price/.test(kS['Estimated net EV'] || '') && !/ia-pos/.test(cS.split('Estimated net EV')[1].split('</dd>')[0]), kS['Estimated net EV']);
+    chk('CARD STALE: the calculations section says its figures are not current', /Computed on the last captured price, which is stale/.test(cS));
+    chk('CARD FRESH: a current price and its EV read as before', /^[+-]\d+ at DraftKings/.test(kF['Verified market price'] || '') && /^-?\d+\.\d+% per \$1/.test(kF['Estimated net EV'] || ''), [kF['Verified market price'], kF['Estimated net EV']]);
+    chk('CARD: freshness is by publication time, not the re-read', /^2 findings, newest published (\d+ h|\d+ days) ago; 1 with no publication time$/.test(kS['Research freshness'] || '') && !/0 min ago/.test(kS['Research freshness'] || ''), kS['Research freshness']);
+    chk('CARD: a total\'s projection names its side, not "covers"', /^under 46\.9%/.test(kS['Model projection'] || ''), kS['Model projection']);
+    /* the disagreement line on a total carries no sign; a spread keeps its sign */
+    const dT = DIS.diagnose({ market_type: 'totals', model: { available: true, tier: 'RESEARCH', line: 54.5, line_kind: 'BLEND' }, market: { line: 54.5, stale: true } });
+    const dS = DIS.diagnose({ market_type: 'spreads', model: { available: true, tier: 'RESEARCH', line: -3.5, line_kind: 'BLEND' }, market: { line: -2.5, stale: true } });
+    chk('a total\'s pricing line is printed without a sign', /pricing line \(54\.5, .*the market \(54\.5\)/.test(dT.explanation) && !/\+54\.5/.test(dT.explanation), dT.explanation);
+    chk('…a spread keeps its sign', /pricing line \(-3\.5, .*the market \(-2\.5\)/.test(dS.explanation), dS.explanation);
+    const Q = require(path.join(FN, '_quant.js'));
+    const mlT = Q.matchupLine({ market: 'totals', selection: 'Under', model_case: { cover_at_market: 0.469, break_even: 0.508, tier: 'RESEARCH' } });
+    const mlS = Q.matchupLine({ market: 'spreads', selection: 'Buffalo Bills', model_case: { cover_at_market: 0.56, break_even: 0.524, tier: 'LEAN' } });
+    chk('the matchup line on a total names the side and says whose break-even it is', /46\.9% for the under against 50\.8% needed at the price its pricing check used/.test(mlT) && !/cover/.test(mlT), mlT);
+    chk('…a spread still covers', /56\.0% to cover against 52\.4% needed/.test(mlS), mlS);
+  }
   await done();
 })().catch((e) => { console.error(e); process.exit(1); });

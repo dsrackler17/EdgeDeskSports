@@ -281,7 +281,7 @@
     if (others.length) {
       out.push('');
       out.push('Other candidates investigated:');
-      others.slice(0, 4).forEach(function (p, i) { out.push((i + 1) + '. ' + p.candidate.selection + lineOf(p.candidate) + ' (' + p.candidate.matchup + ') ' + fmtAm(p.candidate.quote.odds_american) + ' — ' + (p.classification ? p.classification.label + ': ' + (p.classification.reasons[0] || '') : p.audit.status + ': ' + p.audit.reason) + '.'); });
+      others.slice(0, 4).forEach(function (p, i) { out.push((i + 1) + '. ' + p.candidate.selection + lineOf(p.candidate) + ' (' + p.candidate.matchup + ') ' + fmtAm(p.candidate.quote.odds_american) + ' — ' + str(p.classification ? p.classification.label + ': ' + (p.classification.reasons[0] || '') : p.audit.status + ': ' + p.audit.reason).replace(/\.\s*$/, '') + '.'); });
     } else if (!s.best && !s.potential.length && s.board_near_misses.length) {
       out.push('');
       out.push('Closest candidates on the board and why they failed:');
@@ -505,9 +505,13 @@
     var model = (c.reasons || []).filter(function (r) { return r.kind === 'MODEL'; })[0];
     if (c.fair && c.fair.method === 'MODEL_BLEND' && model) return model.text;
     var mc = c.model_case;
+    /* a spread covers, a total lands on its side, a moneyline wins; and the break-even here is the one the pricing
+       kernel used for its own price, which can differ from the candidate's quote: say so, so 50.8% beside a 50.5%
+       break-even does not read as an arithmetic slip */
+    var what = c.market === 'totals' ? 'for the ' + (str(c.selection).toLowerCase() || 'side') : c.market === 'h2h' ? 'to win' : 'to cover';
     if (mc && num(mc.cover_at_market) != null && num(mc.break_even) != null) return num(mc.cover_at_market) > num(mc.break_even)
-      ? 'EdgeDesk\'s projection agrees with the side (' + pct(num(mc.cover_at_market)) + ' to cover against ' + pct(num(mc.break_even)) + ' needed, ' + (mc.tier || 'unvalidated') + ' tier); no unit-level matchup claim is made from it'
-      : 'none — EdgeDesk\'s projection does not favour this side (' + pct(num(mc.cover_at_market)) + ' to cover against ' + pct(num(mc.break_even)) + ' needed); the case is the price alone';
+      ? 'EdgeDesk\'s projection agrees with the side (' + pct(num(mc.cover_at_market)) + ' ' + what + ' against ' + pct(num(mc.break_even)) + ' needed at the price its pricing check used, ' + (mc.tier || 'unvalidated') + ' tier); no unit-level matchup claim is made from it'
+      : 'none — EdgeDesk\'s projection does not favour this side (' + pct(num(mc.cover_at_market)) + ' ' + what + ' against ' + pct(num(mc.break_even)) + ' needed at the price its pricing check used); the case is the price alone';
     return 'none claimed — this is a price out of line with the sharp market, not a matchup read';
   }
   function whyNot(p) {
@@ -528,7 +532,7 @@
     if (oos.length) parts.push('out of season: ' + oos.map(function (c) { return c.label; }).join(', '));
     if (s.not_covered.length) parts.push('not covered by EdgeDesk: ' + s.not_covered.map(function (c) { return c.label; }).join(', '));
     var c = s.counts;
-    return 'Coverage — ' + parts.join('; ') + '. ' + (c.events != null ? plural(c.events, 'eligible event') + ', ' : '') + (c.markets_evaluated != null ? plural(c.markets_evaluated, 'market') + ' evaluated, ' : '') + plural(c.audited, 'candidate') + ' audited.' + (s.window && s.window.label ? ' Window: ' + s.window.label + '.' : '');
+    return 'Coverage — ' + parts.join('; ') + '. ' + (c.events != null ? plural(c.events, 'event') + ' in the window, ' : '') + (c.markets_evaluated != null ? plural(c.markets_evaluated, 'market') + ' evaluated, ' : '') + plural(c.audited, 'candidate') + ' audited.' + (s.window && s.window.label ? ' Window: ' + s.window.label + '.' : '');
   }
   function statusWord(st) { return st === 'NOT_CAPTURED' ? 'prices not captured' : st === 'RETRIEVAL_FAILED' ? 'read failed' : st === 'NO_PRICES' ? 'games but no captured prices' : st === 'NOT_SUPPORTED' ? 'no data source' : str(st).toLowerCase().replace(/_/g, ' '); }
 

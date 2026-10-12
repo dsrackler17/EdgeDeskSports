@@ -35549,7 +35549,7 @@ const EDAUDIT: any = (globalThis as any).EDAUDIT;
     if (others.length) {
       out.push('');
       out.push('Other candidates investigated:');
-      others.slice(0, 4).forEach(function (p, i) { out.push((i + 1) + '. ' + p.candidate.selection + lineOf(p.candidate) + ' (' + p.candidate.matchup + ') ' + fmtAm(p.candidate.quote.odds_american) + ' — ' + (p.classification ? p.classification.label + ': ' + (p.classification.reasons[0] || '') : p.audit.status + ': ' + p.audit.reason) + '.'); });
+      others.slice(0, 4).forEach(function (p, i) { out.push((i + 1) + '. ' + p.candidate.selection + lineOf(p.candidate) + ' (' + p.candidate.matchup + ') ' + fmtAm(p.candidate.quote.odds_american) + ' — ' + str(p.classification ? p.classification.label + ': ' + (p.classification.reasons[0] || '') : p.audit.status + ': ' + p.audit.reason).replace(/\.\s*$/, '') + '.'); });
     } else if (!s.best && !s.potential.length && s.board_near_misses.length) {
       out.push('');
       out.push('Closest candidates on the board and why they failed:');
@@ -35773,9 +35773,13 @@ const EDAUDIT: any = (globalThis as any).EDAUDIT;
     var model = (c.reasons || []).filter(function (r) { return r.kind === 'MODEL'; })[0];
     if (c.fair && c.fair.method === 'MODEL_BLEND' && model) return model.text;
     var mc = c.model_case;
+    /* a spread covers, a total lands on its side, a moneyline wins; and the break-even here is the one the pricing
+       kernel used for its own price, which can differ from the candidate's quote: say so, so 50.8% beside a 50.5%
+       break-even does not read as an arithmetic slip */
+    var what = c.market === 'totals' ? 'for the ' + (str(c.selection).toLowerCase() || 'side') : c.market === 'h2h' ? 'to win' : 'to cover';
     if (mc && num(mc.cover_at_market) != null && num(mc.break_even) != null) return num(mc.cover_at_market) > num(mc.break_even)
-      ? 'EdgeDesk\'s projection agrees with the side (' + pct(num(mc.cover_at_market)) + ' to cover against ' + pct(num(mc.break_even)) + ' needed, ' + (mc.tier || 'unvalidated') + ' tier); no unit-level matchup claim is made from it'
-      : 'none — EdgeDesk\'s projection does not favour this side (' + pct(num(mc.cover_at_market)) + ' to cover against ' + pct(num(mc.break_even)) + ' needed); the case is the price alone';
+      ? 'EdgeDesk\'s projection agrees with the side (' + pct(num(mc.cover_at_market)) + ' ' + what + ' against ' + pct(num(mc.break_even)) + ' needed at the price its pricing check used, ' + (mc.tier || 'unvalidated') + ' tier); no unit-level matchup claim is made from it'
+      : 'none — EdgeDesk\'s projection does not favour this side (' + pct(num(mc.cover_at_market)) + ' ' + what + ' against ' + pct(num(mc.break_even)) + ' needed at the price its pricing check used); the case is the price alone';
     return 'none claimed — this is a price out of line with the sharp market, not a matchup read';
   }
   function whyNot(p) {
@@ -35796,7 +35800,7 @@ const EDAUDIT: any = (globalThis as any).EDAUDIT;
     if (oos.length) parts.push('out of season: ' + oos.map(function (c) { return c.label; }).join(', '));
     if (s.not_covered.length) parts.push('not covered by EdgeDesk: ' + s.not_covered.map(function (c) { return c.label; }).join(', '));
     var c = s.counts;
-    return 'Coverage — ' + parts.join('; ') + '. ' + (c.events != null ? plural(c.events, 'eligible event') + ', ' : '') + (c.markets_evaluated != null ? plural(c.markets_evaluated, 'market') + ' evaluated, ' : '') + plural(c.audited, 'candidate') + ' audited.' + (s.window && s.window.label ? ' Window: ' + s.window.label + '.' : '');
+    return 'Coverage — ' + parts.join('; ') + '. ' + (c.events != null ? plural(c.events, 'event') + ' in the window, ' : '') + (c.markets_evaluated != null ? plural(c.markets_evaluated, 'market') + ' evaluated, ' : '') + plural(c.audited, 'candidate') + ' audited.' + (s.window && s.window.label ? ' Window: ' + s.window.label + '.' : '');
   }
   function statusWord(st) { return st === 'NOT_CAPTURED' ? 'prices not captured' : st === 'RETRIEVAL_FAILED' ? 'read failed' : st === 'NO_PRICES' ? 'games but no captured prices' : st === 'NOT_SUPPORTED' ? 'no data source' : str(st).toLowerCase().replace(/_/g, ' '); }
 
@@ -36390,7 +36394,8 @@ const EDGRAPH: any = (globalThis as any).EDGRAPH;
     var gapText = gapPts != null ? Math.abs(gapPts) + ' points' : gapPp != null ? Math.round(Math.abs(gapPp) * 1000) / 10 + ' probability points' : 'an unmeasured amount';
     /* a candidate is judged on the PRICING line (the projection blended toward the market), not the raw projection a
        game view prints beside it: name the line, so "differ by 0.6" and "differ by 2.7" never read as one claim */
-    var sgn = function (x) { x = r1(num(x)); return (x > 0 ? '+' : '') + x; };
+    /* a total is a number of points, not a handicap: it carries no sign */
+    var sgn = function (x) { x = r1(num(x)); return str(o.market_type) === 'totals' ? String(x) : (x > 0 ? '+' : '') + x; };
     var subj = m.line_kind === 'BLEND' && gapPts != null ? 'EdgeDesk\'s pricing line (' + sgn(m.line) + ', its projection blended toward the market) and the market (' + sgn(k.line) + ')' : 'EdgeDesk and the market';
     var explanation = verdict === 'NO_MODEL' ? 'EdgeDesk has no independent model for this market, so there is no model-versus-market disagreement to explain: the comparison is this price against the sharp no-vig market, and nothing more.'
       : verdict === 'DATA_FAULT' ? subj + ' differ by ' + gapText + ', but the first explanation is ' + LABEL.DATA_QUALITY + ': ' + causes.DATA_QUALITY.evidence[0] + '.'
@@ -37117,8 +37122,10 @@ const EDBUDGET: any = (globalThis as any).EDBUDGET;
   function freshnessText(r) {
     var fs = (r && r.findings) || [];
     if (!fs.length) return 'no research findings on file';
-    var newest = fs.map(function (f) { return toMs(f.published_at || f.retrieved_at); }).filter(function (t) { return t != null; }).sort().slice(-1)[0];
-    return fs.length + ' finding' + (fs.length === 1 ? '' : 's') + ', newest ' + (newest ? new Date(newest).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' : 'undated') + ((r.stale || []).length ? '; ' + r.stale.length + ' stale' : '');
+    /* by publication time only: a feed re-read now can carry yesterday's report */
+    var pub = fs.map(function (f) { return toMs(f.published_at); }).filter(function (t) { return t != null; }).sort(function (a, b) { return a - b; });
+    var undated = fs.length - pub.length;
+    return fs.length + ' finding' + (fs.length === 1 ? '' : 's') + ', newest published ' + (pub.length ? new Date(pub[pub.length - 1]).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' : 'never (no publication times)') + (undated && pub.length ? '; ' + undated + ' with no publication time' : '') + ((r.stale || []).length ? '; ' + r.stale.length + ' stale' : '');
   }
   /**
    * The candidate block in the brief's shape.
@@ -37134,13 +37141,18 @@ const EDBUDGET: any = (globalThis as any).EDBUDGET;
     lines.push('Sport: ' + (c.sport_label || c.sport || '—'));
     lines.push('Market: ' + (c.market_label || c.selection || '—'));
     lines.push('Venue: ' + (c.book || (ev.venue && ev.venue.label) || '—'));
-    lines.push('Verified market price: ' + (ev.ok ? (isC ? (Math.round(Number(ev.entry_price) * 10000) / 100) + '¢' : fmtAm(ev.entry_price)) + ' (implies ' + pct(Number(ev.market_probability)) + ')' + (ev.data_freshness ? ', quote ' + ev.data_freshness.quote.status.toLowerCase() + (ev.data_freshness.quote.age_min != null ? ' (' + ev.data_freshness.quote.age_min + ' min old)' : '') : '') : 'not verified'));
+    /* a quote past its limit is not a verified price, and the EV on it is not a current edge (EDFAIR's classifier
+       already calls it unverified data); the numbers stay, said for what they are */
+    var fq = ev.data_freshness && ev.data_freshness.quote, stale = ev.ok && (!fq || fq.status === 'STALE' || fq.status === 'UNKNOWN');
+    var shown = ev.ok ? (isC ? (Math.round(Number(ev.entry_price) * 10000) / 100) + '¢' : fmtAm(ev.entry_price)) + ' (implies ' + pct(Number(ev.market_probability)) + ')' : '';
+    lines.push('Verified market price: ' + (!ev.ok ? 'not verified' : stale ? 'none current — last captured ' + shown + (fq ? ', quote ' + fq.status.toLowerCase() + (fq.age_min != null ? ' (' + fq.age_min + ' min old)' : '') : '')
+      : shown + (fq ? ', quote ' + fq.status.toLowerCase() + (fq.age_min != null ? ' (' + fq.age_min + ' min old)' : '') : '')));
     var mv = q.model_view;
     lines.push('Independent fair probability: ' + (q.independent_fair_probability != null ? pct(q.independent_fair_probability) + ' — EdgeDesk model, ' + (q.model_tier === 'VALIDATED' ? 'validated' : (q.model_tier || 'unvalidated') + ' tier (experimental, not validated)') + (q.interval ? ', interval ' + pct(q.interval.low) + '–' + pct(q.interval.high) : '')
       : mv ? pct(mv.probability) + ' — EdgeDesk model, ' + (mv.tier || 'unvalidated') + ' tier, a cross-check only' + (ev.break_even_probability && mv.probability < Number(ev.break_even_probability) ? ' (it does NOT clear break-even)' : '') + '. The price is judged against the sharp no-vig fair' + (q.market_no_vig_probability != null ? ': ' + pct(q.market_no_vig_probability) : '')
         : 'unavailable — ' + (q.insufficient || 'no independent model') + (q.market_no_vig_probability != null ? '. Market no-vig: ' + pct(q.market_no_vig_probability) : '')));
     lines.push('Break-even probability: ' + (ev.break_even_probability ? pct(Number(ev.break_even_probability)) : '—'));
-    lines.push('Estimated net EV: ' + (ev.net_ev_per_dollar != null ? pct(Number(ev.net_ev_per_dollar), 2) + ' per $1' : 'not computed (' + (ev.expected_fees ? ev.expected_fees.status.toLowerCase() + ' fees' : 'no evaluation') + ')'));
+    lines.push('Estimated net EV: ' + (ev.net_ev_per_dollar != null ? pct(Number(ev.net_ev_per_dollar), 2) + ' per $1' + (stale ? ' on the stale capture — unavailable as a current edge' : '') : 'not computed (' + (ev.expected_fees ? ev.expected_fees.status.toLowerCase() + ' fees' : 'no evaluation') + ')'));
     lines.push('Maximum acceptable price: ' + (ev.maximum_entry_price != null ? (isC ? (Math.round(Number(ev.maximum_entry_price) * 10000) / 100) + '¢' : fmtAm(ev.maximum_entry_price)) : 'none — no price clears the floor'));
     lines.push('Model reliability: ' + x.confidence.model_reliability.label);
     lines.push('Research freshness: ' + freshnessText(x.research));
@@ -44473,7 +44485,7 @@ function mlbStartersFromResearch(research: ResearchOut | null): { label: string;
    build identifier in the response there is no way to tell those apart, and
    this function shipped for months with no way to answer "which version is
    answering?". That is what this constant exists to end. */
-export const BUILD = "edgedesk_ai-2026-10-12-r24-chain-findings";
+export const BUILD = "edgedesk_ai-2026-10-12-r25-stale-price-labels";
 
 /* THE DECISION LAYER'S OWN SWITCH, set by the deployment rather than by code.
    `EDGEDESK_DECISIONS_ENABLED=0` stops EdgeDesk producing recommendations
