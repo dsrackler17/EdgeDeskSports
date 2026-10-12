@@ -2,7 +2,7 @@
  "schema": "edgedesk_cfb_reliability_v1",
  "version": "cfb_reliability/2",
  "season": 2026,
- "generated_at": "2026-10-12T15:50:40.707Z",
+ "generated_at": "2026-10-12T16:49:19.170Z",
  "basis": "Reliability is how much EdgeDesk trusts the completeness, freshness, consistency and stability of the information under each projection. It is NOT a probability that the projection is right and not a betting signal; it moves no number. Scored by lib/cfb_reliability.js from the inputs this build priced from.",
  "market": "NOT JOINED IN THIS BUILD — the market items do not apply to these scores; the board re-scores with its live quote",
  "weights": {
@@ -154,7 +154,7 @@
    },
    {
     "n": 7,
-    "mean": 81.6,
+    "mean": 81.4,
     "median": 79,
     "conference": "Conference USA"
    },
@@ -332,8 +332,8 @@
    {
     "key": "starters",
     "label": "Starter evidence stale",
-    "games": 6,
-    "points": 4.3
+    "games": 11,
+    "points": 8.9
    },
    {
     "key": "fcs_rating",
@@ -395,12 +395,12 @@
    {
     "grade": "STRONG",
     "label": "STRONG",
-    "n": 52
+    "n": 51
    },
    {
     "grade": "ADEQUATE",
     "label": "ADEQUATE",
-    "n": 8
+    "n": 9
    },
    {
     "grade": "CAUTION",
@@ -451,8 +451,8 @@
    },
    {
     "n": 7,
-    "mean": 80.6,
-    "median": 80,
+    "mean": 80.4,
+    "median": 79,
     "conference": "Conference USA"
    },
    {
@@ -507,7 +507,7 @@
   "fbs_vs_fcs": {
    "fbs_fbs": {
     "n": 63,
-    "mean": 86.2,
+    "mean": 86.1,
     "median": 89
    },
    "fbs_fcs": {
@@ -629,8 +629,8 @@
    {
     "key": "starters",
     "label": "Starter evidence stale",
-    "games": 6,
-    "points": 4.3
+    "games": 11,
+    "points": 8.9
    },
    {
     "key": "fcs_rating",
@@ -932,14 +932,14 @@
     "label": "Availability feed",
     "games_affected": 66,
     "current_points_lost": 493.5,
-    "maximum_recoverable_points": 440,
+    "maximum_recoverable_points": 436,
     "games_recoverable": 55,
     "cost": 3,
     "feasible": 0.6,
     "how": "official conference reports cover conference games in the SEC, Big Ten, ACC and Big 12; the rest need a structured injury feed or team releases",
     "recover": "games whose availability read is missing, refused or not comprehensive",
-    "estimated_recoverable_points": 264,
-    "enrichment_roi": 88,
+    "estimated_recoverable_points": 261.6,
+    "enrichment_roi": 87.2,
     "engineering_priority": 1
    },
    {
@@ -947,15 +947,30 @@
     "label": "QB confirmation",
     "games_affected": 66,
     "current_points_lost": 96.7,
-    "maximum_recoverable_points": 73,
+    "maximum_recoverable_points": 74,
     "games_recoverable": 19,
     "cost": 3,
     "feasible": 0.5,
     "how": "official announcements, a provider depth chart, or trusted beat reporting above the observed previous start",
     "recover": "starters resolved only from the previous game",
-    "estimated_recoverable_points": 36.5,
-    "enrichment_roi": 12.17,
+    "estimated_recoverable_points": 37,
+    "enrichment_roi": 12.33,
     "engineering_priority": 2
+   },
+   {
+    "key": "qb_conflict",
+    "label": "QB conflicts",
+    "games_affected": 23,
+    "current_points_lost": 28.7,
+    "maximum_recoverable_points": 13,
+    "games_recoverable": 4,
+    "cost": 2,
+    "feasible": 0.8,
+    "how": "the source hierarchy resolves a disagreement when the evidence permits; an independent source settles the rest",
+    "recover": "sides whose starter evidence disagrees",
+    "estimated_recoverable_points": 10.4,
+    "enrichment_roi": 5.2,
+    "engineering_priority": 3
    },
    {
     "key": "fcs_rating",
@@ -970,36 +985,21 @@
     "recover": "FCS opponents priced from the shared floor",
     "estimated_recoverable_points": 14.5,
     "enrichment_roi": 4.83,
-    "engineering_priority": 3
-   },
-   {
-    "key": "qb_conflict",
-    "label": "QB conflicts",
-    "games_affected": 23,
-    "current_points_lost": 28.7,
-    "maximum_recoverable_points": 12,
-    "games_recoverable": 4,
-    "cost": 2,
-    "feasible": 0.8,
-    "how": "the source hierarchy resolves a disagreement when the evidence permits; an independent source settles the rest",
-    "recover": "sides whose starter evidence disagrees",
-    "estimated_recoverable_points": 9.6,
-    "enrichment_roi": 4.8,
     "engineering_priority": 4
    },
    {
     "key": "starters",
     "label": "Starter evidence staleness",
-    "games_affected": 6,
-    "current_points_lost": 4.3,
-    "maximum_recoverable_points": 1,
-    "games_recoverable": 1,
+    "games_affected": 11,
+    "current_points_lost": 8.9,
+    "maximum_recoverable_points": 2,
+    "games_recoverable": 2,
     "cost": 1,
     "feasible": 0.9,
     "how": "the starter job re-reads on the refresh windows",
     "recover": "stale starter records",
-    "estimated_recoverable_points": 0.9,
-    "enrichment_roi": 0.9,
+    "estimated_recoverable_points": 1.8,
+    "enrichment_roi": 1.8,
     "engineering_priority": 5
    },
    {
@@ -2054,7 +2054,7 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 90.3,
+    "raw": 89.7,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
@@ -2073,7 +2073,7 @@
       "max": 20
      },
      "freshness": {
-      "score": 15,
+      "score": 14.4,
       "max": 15
      },
      "source_integrity": {
@@ -2147,6 +2147,13 @@
       "action_key": null
      },
      {
+      "component": "freshness",
+      "points": 0.6,
+      "reason": "Mississippi State’s starter record was re-read 1 min ago and describes evidence from 9 days ago",
+      "family": "starters",
+      "action_key": "starters:away"
+     },
+     {
       "component": "team_data",
       "points": 0.3,
       "reason": "Mississippi State: 5 of 6 games for a full in-season sample",
@@ -2186,10 +2193,15 @@
       "action": "Confirm LSU’s starting QB (Sam Leavitt)",
       "key": "qb_identity:home",
       "potential_gain": 1
+     },
+     {
+      "action": "Re-read Mississippi State’s starter evidence",
+      "key": "starters:away",
+      "potential_gain": 1
      }
     ],
     "recoverable_by_family": {
-     "availability": 8
+     "availability": 7
     }
    },
    "reliability_without_evidence": {
@@ -2921,7 +2933,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "The Citadel’s starter record was re-read 12.1h ago and describes evidence from an unknown time ago",
+      "reason": "The Citadel’s starter record was re-read 1 min ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -4341,7 +4353,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "Charleston Southern’s starter record was re-read 12.1h ago and describes evidence from an unknown time ago",
+      "reason": "Charleston Southern’s starter record was re-read 1 min ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -4560,7 +4572,7 @@
      {
       "component": "freshness",
       "points": 0.7,
-      "reason": "Elon’s starter record was re-read 12.1h ago and describes evidence from an unknown time ago",
+      "reason": "Elon’s starter record was re-read 1 min ago and describes evidence from an unknown time ago",
       "family": "starters",
       "action_key": "starters:away"
      },
@@ -5268,7 +5280,7 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 91,
+    "raw": 90.4,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
@@ -5287,7 +5299,7 @@
       "max": 20
      },
      "freshness": {
-      "score": 14.4,
+      "score": 13.8,
       "max": 15
      },
      "source_integrity": {
@@ -5342,9 +5354,16 @@
      {
       "component": "freshness",
       "points": 0.6,
-      "reason": "Pittsburgh’s starter record was re-read 12.1h ago and describes evidence from 9.7 days ago",
+      "reason": "Pittsburgh’s starter record was re-read 1 min ago and describes evidence from 9.7 days ago",
       "family": "starters",
       "action_key": "starters:away"
+     },
+     {
+      "component": "freshness",
+      "points": 0.6,
+      "reason": "Boston College’s starter record was re-read 1 min ago and describes evidence from 9 days ago",
+      "family": "starters",
+      "action_key": "starters:home"
      },
      {
       "component": "projection_stability",
@@ -5397,9 +5416,20 @@
      }
     ],
     "missing": [],
-    "next_actions": [],
+    "next_actions": [
+     {
+      "action": "Re-read Pittsburgh’s starter evidence",
+      "key": "starters:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Re-read Boston College’s starter evidence",
+      "key": "starters:home",
+      "potential_gain": 1
+     }
+    ],
     "recoverable_by_family": {
-     "availability": 9
+     "availability": 8
     }
    },
    "reliability_without_evidence": {
@@ -5422,7 +5452,7 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 90.3,
+    "raw": 89.7,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
@@ -5441,7 +5471,7 @@
       "max": 20
      },
      "freshness": {
-      "score": 15,
+      "score": 14.4,
       "max": 15
      },
      "source_integrity": {
@@ -5501,6 +5531,13 @@
       "action_key": "availability:home"
      },
      {
+      "component": "freshness",
+      "points": 0.6,
+      "reason": "SMU’s starter record was re-read 1 min ago and describes evidence from 9 days ago",
+      "family": "starters",
+      "action_key": "starters:home"
+     },
+     {
       "component": "roster_availability",
       "points": 0.4,
       "reason": "Beau Pribula — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
@@ -5537,9 +5574,25 @@
      }
     ],
     "missing": [],
-    "next_actions": [],
+    "next_actions": [
+     {
+      "action": "Confirm Virginia’s starting QB (Beau Pribula)",
+      "key": "qb_identity:away",
+      "potential_gain": 1
+     },
+     {
+      "action": "Confirm SMU’s starting QB (Kevin Jennings)",
+      "key": "qb_identity:home",
+      "potential_gain": 1
+     },
+     {
+      "action": "Re-read SMU’s starter evidence",
+      "key": "starters:home",
+      "potential_gain": 1
+     }
+    ],
     "recoverable_by_family": {
-     "availability": 8
+     "availability": 7
     }
    },
    "reliability_without_evidence": {
@@ -6063,7 +6116,7 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 89.8,
+    "raw": 89.2,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
@@ -6082,7 +6135,7 @@
       "max": 20
      },
      "freshness": {
-      "score": 15,
+      "score": 14.4,
       "max": 15
      },
      "source_integrity": {
@@ -6142,6 +6195,13 @@
       "action_key": "availability:home"
      },
      {
+      "component": "freshness",
+      "points": 0.6,
+      "reason": "Michigan’s starter record was re-read 1 min ago and describes evidence from 9 days ago",
+      "family": "starters",
+      "action_key": "starters:home"
+     },
+     {
       "component": "roster_availability",
       "points": 0.4,
       "reason": "Rocco Becht — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
@@ -6178,18 +6238,7 @@
      }
     ],
     "missing": [],
-    "next_actions": [
-     {
-      "action": "Confirm Penn State’s starting QB (Rocco Becht)",
-      "key": "qb_identity:away",
-      "potential_gain": 1
-     },
-     {
-      "action": "Confirm Michigan’s starting QB (Bryce Underwood)",
-      "key": "qb_identity:home",
-      "potential_gain": 1
-     }
-    ],
+    "next_actions": [],
     "recoverable_by_family": {
      "availability": 7
     }
@@ -6361,7 +6410,7 @@
    "game_id": "401858492",
    "home": "Oregon",
    "away": "Nebraska",
-   "kickoff": "2026-10-17T04:00:00.000Z",
+   "kickoff": "2026-10-18T03:00:00.000Z",
    "home_conference": "Big Ten",
    "away_conference": "Big Ten",
    "matchup_type": "conference",
@@ -6690,7 +6739,7 @@
    "game_id": "401858494",
    "home": "UCLA",
    "away": "Wisconsin",
-   "kickoff": "2026-10-17T04:00:00.000Z",
+   "kickoff": "2026-10-17T23:30:00.000Z",
    "home_conference": "Big Ten",
    "away_conference": "Big Ten",
    "matchup_type": "conference",
@@ -6701,7 +6750,7 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 91.5,
+    "raw": 90.9,
     "capped_by": [
      "QB_STATUS_UNCONFIRMED"
     ],
@@ -6720,7 +6769,7 @@
       "max": 20
      },
      "freshness": {
-      "score": 15,
+      "score": 14.4,
       "max": 15
      },
      "source_integrity": {
@@ -6780,6 +6829,13 @@
       "action_key": "qb_identity:home"
      },
      {
+      "component": "freshness",
+      "points": 0.6,
+      "reason": "Wisconsin’s starter record was re-read 1 min ago and describes evidence from 9 days ago",
+      "family": "starters",
+      "action_key": "starters:away"
+     },
+     {
       "component": "roster_availability",
       "points": 0.4,
       "reason": "Colton Joseph — expected; measured: a last-game opener in the dominant/established cell opened the next game 90.7% of the time (1787 pairs, football/starters/persistence.json)",
@@ -6818,13 +6874,23 @@
     "missing": [],
     "next_actions": [
      {
+      "action": "Confirm Wisconsin’s starting QB (Colton Joseph)",
+      "key": "qb_identity:away",
+      "potential_gain": 1
+     },
+     {
       "action": "Confirm UCLA’s starting QB (Nico Iamaleava)",
       "key": "qb_identity:home",
+      "potential_gain": 1
+     },
+     {
+      "action": "Re-read Wisconsin’s starter evidence",
+      "key": "starters:away",
       "potential_gain": 1
      }
     ],
     "recoverable_by_family": {
-     "availability": 9
+     "availability": 8
     }
    },
    "reliability_without_evidence": {
@@ -11148,7 +11214,7 @@
     "grade": "STRONG",
     "grade_label": "STRONG",
     "tier": "STRONG",
-    "raw": 86.3,
+    "raw": 85.5,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -11165,7 +11231,7 @@
       "max": 20
      },
      "freshness": {
-      "score": 15,
+      "score": 14.2,
       "max": 15
      },
      "source_integrity": {
@@ -11223,6 +11289,13 @@
       "reason": "the schedule lists Pitbull Stadium but Florida International’s venue table says FIU Stadium (an unflagged neutral site?)",
       "family": "venue",
       "action_key": "venue"
+     },
+     {
+      "component": "freshness",
+      "points": 0.8,
+      "reason": "Middle Tennessee’s starter record was re-read 1 min ago and describes evidence from 9 days ago",
+      "family": "starters",
+      "action_key": "starters:away"
      },
      {
       "component": "roster_availability",
@@ -11301,23 +11374,13 @@
      {
       "action": "Confirm the site of this game",
       "key": "venue",
-      "potential_gain": 2
-     },
-     {
-      "action": "Confirm Middle Tennessee’s starting QB (Roman Gagliano)",
-      "key": "qb_identity:away",
-      "potential_gain": 1
-     },
-     {
-      "action": "Confirm Florida International’s starting QB (JJ Kohl)",
-      "key": "qb_identity:home",
       "potential_gain": 1
      }
     ],
     "recoverable_by_family": {
-     "availability": 10,
+     "availability": 9,
      "qb_identity": 1,
-     "venue": 2
+     "venue": 1
     }
    },
    "reliability_without_evidence": {
@@ -11336,11 +11399,11 @@
    "legacy_input_coverage": 0.769,
    "reliability": {
     "contract": "cfb_reliability/2",
-    "score": 78,
+    "score": 77,
     "grade": "ADEQUATE",
     "grade_label": "ADEQUATE",
     "tier": "ADEQUATE",
-    "raw": 77.7,
+    "raw": 76.9,
     "capped_by": [],
     "gate_label": null,
     "components": {
@@ -11357,7 +11420,7 @@
       "max": 20
      },
      "freshness": {
-      "score": 14.3,
+      "score": 13.5,
       "max": 15
      },
      "source_integrity": {
@@ -11440,9 +11503,16 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Delaware’s starter record was re-read 12.1h ago and describes evidence from 9.7 days ago",
+      "reason": "Delaware’s starter record was re-read 1 min ago and describes evidence from 9.7 days ago",
       "family": "starters",
       "action_key": "starters:away"
+     },
+     {
+      "component": "freshness",
+      "points": 0.8,
+      "reason": "Middle Tennessee’s starter record was re-read 1 min ago and describes evidence from 9 days ago",
+      "family": "starters",
+      "action_key": "starters:home"
      },
      {
       "component": "projection_stability",
@@ -11502,12 +11572,22 @@
      {
       "action": "Restore an injury/availability source for Delaware",
       "key": "availability:away",
-      "potential_gain": 1
+      "potential_gain": 2
      },
      {
       "action": "Restore an injury/availability source for Middle Tennessee",
       "key": "availability:home",
-      "potential_gain": 1
+      "potential_gain": 2
+     },
+     {
+      "action": "Resolve Delaware’s starter conflict",
+      "key": "qb_conflict:away",
+      "potential_gain": 2
+     },
+     {
+      "action": "Confirm Delaware’s starting QB (EJ Archield Jr.)",
+      "key": "qb_identity:away",
+      "potential_gain": 2
      },
      {
       "action": "Resolve conflicting sources",
@@ -11515,26 +11595,22 @@
       "potential_gain": 1
      },
      {
-      "action": "Resolve Delaware’s starter conflict",
-      "key": "qb_conflict:away",
-      "potential_gain": 1
-     },
-     {
-      "action": "Confirm Delaware’s starting QB (EJ Archield Jr.)",
-      "key": "qb_identity:away",
+      "action": "Re-read Delaware’s starter evidence",
+      "key": "starters:away",
       "potential_gain": 1
      }
     ],
     "recoverable_by_family": {
-     "availability": 1,
+     "availability": 2,
      "contract_conflicts": 1,
-     "qb_conflict": 1,
-     "qb_identity": 1
+     "qb_conflict": 2,
+     "qb_identity": 2,
+     "starters": 1
     }
    },
    "reliability_without_evidence": {
-    "score": 80,
-    "grade": "STRONG"
+    "score": 79,
+    "grade": "ADEQUATE"
    }
   },
   "401871068": {
@@ -11863,7 +11939,7 @@
      {
       "component": "freshness",
       "points": 0.8,
-      "reason": "Delaware’s starter record was re-read 12.1h ago and describes evidence from 9.7 days ago",
+      "reason": "Delaware’s starter record was re-read 1 min ago and describes evidence from 9.7 days ago",
       "family": "starters",
       "action_key": "starters:home"
      },
