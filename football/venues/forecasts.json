@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_forecast_store_v1",
  "why": "the last forecast EdgeDesk actually observed for each game, so a build that cannot reach the provider carries it forward at its real observation time instead of publishing a refusal. Only observed forecasts are written here; a carried one is never re-committed as a fresh one.",
- "generated_at": "2026-10-11T23:51:55.506Z",
+ "generated_at": "2026-10-12T03:47:04.101Z",
  "source": "open-meteo forecast (keyless), joined on the trained venue coordinates",
  "by_game": {
   "401856719": {
@@ -104,7 +104,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T19:30:00.000Z"
+   "kickoff": "2026-10-17T19:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856720": {
    "temp_f": 63.9,
@@ -206,7 +208,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T16:00:00.000Z"
+   "kickoff": "2026-10-17T16:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856721": {
    "temp_f": 65,
@@ -308,7 +312,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T19:30:00.000Z"
+   "kickoff": "2026-10-17T19:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856722": {
    "temp_f": 54.8,
@@ -410,7 +416,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-17T23:30:00.000Z"
+   "kickoff": "2026-10-17T23:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856723": {
    "temp_f": 60.2,
@@ -512,7 +520,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T19:30:00.000Z"
+   "kickoff": "2026-10-17T19:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856724": {
    "temp_f": 61.4,
@@ -614,7 +624,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T16:00:00.000Z"
+   "kickoff": "2026-10-17T16:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856725": {
    "temp_f": 61.2,
@@ -716,7 +728,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T17:00:00.000Z"
+   "kickoff": "2026-10-17T17:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856726": {
    "temp_f": 56.6,
@@ -818,7 +832,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-17T23:00:00.000Z"
+   "kickoff": "2026-10-17T23:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856809": {
    "temp_f": 69.1,
@@ -920,7 +936,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-17T23:30:00.000Z"
+   "kickoff": "2026-10-17T23:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856828": {
    "temp_f": 55.9,
@@ -1022,7 +1040,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T19:30:00.000Z"
+   "kickoff": "2026-10-17T19:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856829": {
    "temp_f": 38.8,
@@ -1124,7 +1144,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T16:00:00.000Z"
+   "kickoff": "2026-10-17T16:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856830": {
    "temp_f": 48.9,
@@ -1226,7 +1248,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T16:00:00.000Z"
+   "kickoff": "2026-10-17T16:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856831": {
    "temp_f": 71.8,
@@ -1328,7 +1352,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-17T23:30:00.000Z"
+   "kickoff": "2026-10-17T23:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856832": {
    "temp_f": 63.1,
@@ -1430,7 +1456,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-17T23:00:00.000Z"
+   "kickoff": "2026-10-17T23:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401856833": {
    "temp_f": 56,
@@ -1532,7 +1560,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-18T02:15:00.000Z"
+   "kickoff": "2026-10-18T02:15:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858261": {
    "temp_f": 63.7,
@@ -1634,7 +1664,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T16:00:00.000Z"
+   "kickoff": "2026-10-17T16:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858262": {
    "temp_f": 88.4,
@@ -1736,7 +1768,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-17T23:30:00.000Z"
+   "kickoff": "2026-10-17T23:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858263": {
    "temp_f": 77.8,
@@ -1838,7 +1872,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-17T23:00:00.000Z"
+   "kickoff": "2026-10-17T23:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858264": {
    "temp_f": 49.4,
@@ -1940,7 +1976,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T19:30:00.000Z"
+   "kickoff": "2026-10-17T19:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858265": {
    "dome": true,
@@ -1950,7 +1988,7 @@
    "roof": true,
    "hours": [],
    "source": "trained venue table — indoor venue, no request made",
-   "as_of": "2026-10-11T23:51:53.265Z",
+   "as_of": "2026-10-12T03:46:48.404Z",
    "kickoff": "2026-10-17T23:30:00.000Z"
   },
   "401858266": {
@@ -2053,7 +2091,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T19:30:00.000Z"
+   "kickoff": "2026-10-17T19:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858267": {
    "temp_f": 46.9,
@@ -2155,7 +2195,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T16:00:00.000Z"
+   "kickoff": "2026-10-17T16:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858268": {
    "temp_f": 56.1,
@@ -2257,7 +2299,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T16:00:00.000Z"
+   "kickoff": "2026-10-17T16:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858269": {
    "temp_f": 76.3,
@@ -2359,7 +2403,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-18T02:30:00.000Z"
+   "kickoff": "2026-10-18T02:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858488": {
    "temp_f": 46.9,
@@ -2461,7 +2507,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T16:00:00.000Z"
+   "kickoff": "2026-10-17T16:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858489": {
    "temp_f": 51.5,
@@ -2563,7 +2611,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T16:30:00.000Z"
+   "kickoff": "2026-10-17T16:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858490": {
    "temp_f": 45.2,
@@ -2665,7 +2715,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T19:30:00.000Z"
+   "kickoff": "2026-10-17T19:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858491": {
    "temp_f": 40.5,
@@ -2767,7 +2819,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T16:00:00.000Z"
+   "kickoff": "2026-10-17T16:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858492": {
    "temp_f": 58.6,
@@ -2869,7 +2923,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-17T04:00:00.000Z"
+   "kickoff": "2026-10-17T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858493": {
    "temp_f": 45.8,
@@ -2971,7 +3027,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-17T00:00:00.000Z"
+   "kickoff": "2026-10-17T00:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401858494": {
    "temp_f": 82.7,
@@ -3073,7 +3131,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-17T04:00:00.000Z"
+   "kickoff": "2026-10-17T04:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401860903": {
    "temp_f": 70.5,
@@ -3175,7 +3235,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T22:00:00.000Z"
+   "kickoff": "2026-10-17T22:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401860904": {
    "temp_f": 86.6,
@@ -3277,7 +3339,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-18T02:30:00.000Z"
+   "kickoff": "2026-10-18T02:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401860923": {
    "temp_f": 79.7,
@@ -3379,7 +3443,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-16T00:00:00.000Z"
+   "kickoff": "2026-10-16T00:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (HTTP 429); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401862800": {
    "temp_f": 79.9,
@@ -3481,7 +3547,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-15T23:30:00.000Z"
+   "kickoff": "2026-10-15T23:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (HTTP 429); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401862801": {
    "temp_f": 87.3,
@@ -3583,7 +3651,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-16T23:30:00.000Z"
+   "kickoff": "2026-10-16T23:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (HTTP 429); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401862802": {
    "temp_f": 45.4,
@@ -3685,7 +3755,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T16:00:00.000Z"
+   "kickoff": "2026-10-17T16:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401862803": {
    "temp_f": 50.2,
@@ -3787,7 +3859,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T17:00:00.000Z"
+   "kickoff": "2026-10-17T17:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401862804": {
    "dome": true,
@@ -3797,7 +3871,7 @@
    "roof": true,
    "hours": [],
    "source": "trained venue table — indoor venue, no request made",
-   "as_of": "2026-10-11T23:51:53.265Z",
+   "as_of": "2026-10-12T03:46:48.404Z",
    "kickoff": "2026-10-18T00:00:00.000Z"
   },
   "401862805": {
@@ -3900,7 +3974,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T20:30:00.000Z"
+   "kickoff": "2026-10-17T20:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401862806": {
    "temp_f": 75,
@@ -4002,7 +4078,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-17T23:00:00.000Z"
+   "kickoff": "2026-10-17T23:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401864520": {
    "dome": true,
@@ -4012,7 +4090,7 @@
    "roof": true,
    "hours": [],
    "source": "trained venue table — indoor venue, no request made",
-   "as_of": "2026-10-11T23:51:53.265Z",
+   "as_of": "2026-10-12T03:46:48.404Z",
    "kickoff": "2026-10-17T23:00:00.000Z"
   },
   "401864521": {
@@ -4115,7 +4193,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-18T02:30:00.000Z"
+   "kickoff": "2026-10-18T02:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401864522": {
    "temp_f": 64.2,
@@ -4217,7 +4297,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T19:30:00.000Z"
+   "kickoff": "2026-10-17T19:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401864523": {
    "temp_f": 57.2,
@@ -4319,7 +4401,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-18T01:00:00.000Z"
+   "kickoff": "2026-10-18T01:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401864524": {
    "temp_f": 70.8,
@@ -4421,7 +4505,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T19:30:00.000Z"
+   "kickoff": "2026-10-17T19:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401866441": {
    "temp_f": 40.6,
@@ -4523,7 +4609,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T16:00:00.000Z"
+   "kickoff": "2026-10-17T16:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401866442": {
    "temp_f": 39.6,
@@ -4625,7 +4713,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T17:00:00.000Z"
+   "kickoff": "2026-10-17T17:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401866443": {
    "temp_f": 43.4,
@@ -4727,7 +4817,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T17:30:00.000Z"
+   "kickoff": "2026-10-17T17:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401866444": {
    "temp_f": 45.1,
@@ -4829,7 +4921,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T19:30:00.000Z"
+   "kickoff": "2026-10-17T19:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401866445": {
    "temp_f": 83.6,
@@ -4931,7 +5025,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-18T02:00:00.000Z"
+   "kickoff": "2026-10-18T02:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401866478": {
    "temp_f": 47.8,
@@ -5033,7 +5129,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T19:30:00.000Z"
+   "kickoff": "2026-10-17T19:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401869844": {
    "temp_f": 75.2,
@@ -5135,7 +5233,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-17T00:00:00.000Z"
+   "kickoff": "2026-10-17T00:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401869934": {
    "temp_f": 64.3,
@@ -5237,7 +5337,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-17T23:00:00.000Z"
+   "kickoff": "2026-10-17T23:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401869950": {
    "temp_f": 79.3,
@@ -5339,7 +5441,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-15T23:30:00.000Z"
+   "kickoff": "2026-10-15T23:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (HTTP 429); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401869957": {
    "temp_f": 45,
@@ -5441,7 +5545,9 @@
      "is_day": 1
     }
    ],
-   "kickoff": "2026-10-17T16:00:00.000Z"
+   "kickoff": "2026-10-17T16:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401869966": {
    "temp_f": 71.7,
@@ -5543,7 +5649,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-17T21:00:00.000Z"
+   "kickoff": "2026-10-17T21:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401871053": {
    "temp_f": 72,
@@ -5645,7 +5753,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-14T00:00:00.000Z"
+   "kickoff": "2026-10-14T00:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (HTTP 429); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401871054": {
    "temp_f": 71.2,
@@ -5747,7 +5857,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-14T23:30:00.000Z"
+   "kickoff": "2026-10-14T23:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (HTTP 429); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401871055": {
    "temp_f": 81.6,
@@ -5849,7 +5961,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-20T23:00:00.000Z"
+   "kickoff": "2026-10-20T23:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401871067": {
    "temp_f": 75.8,
@@ -5951,7 +6065,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-13T23:00:00.000Z"
+   "kickoff": "2026-10-13T23:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (HTTP 429); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401871068": {
    "temp_f": 80.8,
@@ -6053,7 +6169,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-15T00:00:00.000Z"
+   "kickoff": "2026-10-15T00:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (HTTP 429); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401871069": {
    "temp_f": 61.2,
@@ -6155,7 +6273,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-20T23:00:00.000Z"
+   "kickoff": "2026-10-20T23:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401871091": {
    "temp_f": 62,
@@ -6257,7 +6377,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-18T00:00:00.000Z"
+   "kickoff": "2026-10-18T00:00:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   },
   "401871092": {
    "temp_f": 61.8,
@@ -6359,7 +6481,9 @@
      "is_day": 0
     }
    ],
-   "kickoff": "2026-10-20T23:30:00.000Z"
+   "kickoff": "2026-10-20T23:30:00.000Z",
+   "carried": true,
+   "carried_reason": "this build could not reach api.open-meteo.com (host circuit open: HTTP 429 x3); the last forecast EdgeDesk actually observed is carried forward with its own observation time"
   }
  }
 }
