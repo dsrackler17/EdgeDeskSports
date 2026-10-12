@@ -4020,7 +4020,7 @@ window.mcRefresh=function(){
 <!-- BET HISTORY: loss patterns over the reader's own tickets (EDBETS), after the importer it groups leg rows with -->
 <script src="/lib/edgedesk_bet_history.js?v=20261012bh1"></script>
 <script src="/lib/edgedesk_readiness.js?v=20261012ia2"></script>
-<script src="/lib/edgedesk_intel_ui.js?v=20261012ia8"></script>
+<script src="/lib/edgedesk_intel_ui.js?v=20261012ia9"></script>
 <script src="/lib/edgedesk_portfolio_connectors.js?v=20261005pf3"></script>
 <script src="/lib/edgedesk_portfolio_connect_core.js?v=20261005pf3"></script>
 <script src="/lib/edgedesk_portfolio_process.js?v=20261005pf3"></script>
@@ -40046,7 +40046,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     if(d.scan){
       var others=fold?[]:[].concat(d.scan.potential||[]).slice(d.scan.best?0:1).concat(d.scan.near_misses||[]);
       if(others.length) sec('Other candidates audited', others.map(function(o){ return '<div class="dk-sec"><div class="h">'+esc(o.candidate.selection+' — '+o.candidate.matchup)+'</div>'+qdAuditHTML(o.audit, trail)+'</div>'; }).join(''));
-      sec('Coverage', qdCoverageHTML(d.scan.coverage)+'<div class="edai-src">'+esc((d.scan.counts?(d.scan.counts.events!=null?d.scan.counts.events+' eligible events, ':'')+(d.scan.counts.markets_evaluated!=null?d.scan.counts.markets_evaluated+' markets evaluated, ':'')+d.scan.counts.audited+' audited':'')+(d.scan.window&&d.scan.window.label?' · '+d.scan.window.label:''))+'</div>');
+      sec('Coverage', qdCoverageHTML(d.scan.coverage)+'<div class="edai-src">'+esc((d.scan.counts?(d.scan.counts.events!=null?d.scan.counts.events+' events in the window, ':'')+(d.scan.counts.markets_evaluated!=null?d.scan.counts.markets_evaluated+' markets evaluated, ':'')+d.scan.counts.audited+' audited':'')+(d.scan.window&&d.scan.window.label?' · '+d.scan.window.label:''))+'</div>');
     }
     if(d.research_slate){
       var inv=fold?[]:(d.research_slate.investigated||[]).slice(1);

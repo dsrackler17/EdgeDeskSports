@@ -530,8 +530,10 @@
   function freshnessText(r) {
     var fs = (r && r.findings) || [];
     if (!fs.length) return 'no research findings on file';
-    var newest = fs.map(function (f) { return toMs(f.published_at || f.retrieved_at); }).filter(function (t) { return t != null; }).sort().slice(-1)[0];
-    return fs.length + ' finding' + (fs.length === 1 ? '' : 's') + ', newest ' + (newest ? new Date(newest).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' : 'undated') + ((r.stale || []).length ? '; ' + r.stale.length + ' stale' : '');
+    /* by publication time only: a feed re-read now can carry yesterday's report */
+    var pub = fs.map(function (f) { return toMs(f.published_at); }).filter(function (t) { return t != null; }).sort(function (a, b) { return a - b; });
+    var undated = fs.length - pub.length;
+    return fs.length + ' finding' + (fs.length === 1 ? '' : 's') + ', newest published ' + (pub.length ? new Date(pub[pub.length - 1]).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' : 'never (no publication times)') + (undated && pub.length ? '; ' + undated + ' with no publication time' : '') + ((r.stale || []).length ? '; ' + r.stale.length + ' stale' : '');
   }
   /**
    * The candidate block in the brief's shape.
@@ -547,13 +549,18 @@
     lines.push('Sport: ' + (c.sport_label || c.sport || '—'));
     lines.push('Market: ' + (c.market_label || c.selection || '—'));
     lines.push('Venue: ' + (c.book || (ev.venue && ev.venue.label) || '—'));
-    lines.push('Verified market price: ' + (ev.ok ? (isC ? (Math.round(Number(ev.entry_price) * 10000) / 100) + '¢' : fmtAm(ev.entry_price)) + ' (implies ' + pct(Number(ev.market_probability)) + ')' + (ev.data_freshness ? ', quote ' + ev.data_freshness.quote.status.toLowerCase() + (ev.data_freshness.quote.age_min != null ? ' (' + ev.data_freshness.quote.age_min + ' min old)' : '') : '') : 'not verified'));
+    /* a quote past its limit is not a verified price, and the EV on it is not a current edge (EDFAIR's classifier
+       already calls it unverified data); the numbers stay, said for what they are */
+    var fq = ev.data_freshness && ev.data_freshness.quote, stale = ev.ok && (!fq || fq.status === 'STALE' || fq.status === 'UNKNOWN');
+    var shown = ev.ok ? (isC ? (Math.round(Number(ev.entry_price) * 10000) / 100) + '¢' : fmtAm(ev.entry_price)) + ' (implies ' + pct(Number(ev.market_probability)) + ')' : '';
+    lines.push('Verified market price: ' + (!ev.ok ? 'not verified' : stale ? 'none current — last captured ' + shown + (fq ? ', quote ' + fq.status.toLowerCase() + (fq.age_min != null ? ' (' + fq.age_min + ' min old)' : '') : '')
+      : shown + (fq ? ', quote ' + fq.status.toLowerCase() + (fq.age_min != null ? ' (' + fq.age_min + ' min old)' : '') : '')));
     var mv = q.model_view;
     lines.push('Independent fair probability: ' + (q.independent_fair_probability != null ? pct(q.independent_fair_probability) + ' — EdgeDesk model, ' + (q.model_tier === 'VALIDATED' ? 'validated' : (q.model_tier || 'unvalidated') + ' tier (experimental, not validated)') + (q.interval ? ', interval ' + pct(q.interval.low) + '–' + pct(q.interval.high) : '')
       : mv ? pct(mv.probability) + ' — EdgeDesk model, ' + (mv.tier || 'unvalidated') + ' tier, a cross-check only' + (ev.break_even_probability && mv.probability < Number(ev.break_even_probability) ? ' (it does NOT clear break-even)' : '') + '. The price is judged against the sharp no-vig fair' + (q.market_no_vig_probability != null ? ': ' + pct(q.market_no_vig_probability) : '')
         : 'unavailable — ' + (q.insufficient || 'no independent model') + (q.market_no_vig_probability != null ? '. Market no-vig: ' + pct(q.market_no_vig_probability) : '')));
     lines.push('Break-even probability: ' + (ev.break_even_probability ? pct(Number(ev.break_even_probability)) : '—'));
-    lines.push('Estimated net EV: ' + (ev.net_ev_per_dollar != null ? pct(Number(ev.net_ev_per_dollar), 2) + ' per $1' : 'not computed (' + (ev.expected_fees ? ev.expected_fees.status.toLowerCase() + ' fees' : 'no evaluation') + ')'));
+    lines.push('Estimated net EV: ' + (ev.net_ev_per_dollar != null ? pct(Number(ev.net_ev_per_dollar), 2) + ' per $1' + (stale ? ' on the stale capture — unavailable as a current edge' : '') : 'not computed (' + (ev.expected_fees ? ev.expected_fees.status.toLowerCase() + ' fees' : 'no evaluation') + ')'));
     lines.push('Maximum acceptable price: ' + (ev.maximum_entry_price != null ? (isC ? (Math.round(Number(ev.maximum_entry_price) * 10000) / 100) + '¢' : fmtAm(ev.maximum_entry_price)) : 'none — no price clears the floor'));
     lines.push('Model reliability: ' + x.confidence.model_reliability.label);
     lines.push('Research freshness: ' + freshnessText(x.research));

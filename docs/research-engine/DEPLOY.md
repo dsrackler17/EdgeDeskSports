@@ -1,16 +1,9 @@
 # Research engine — deployment and rollback
 
-**Status (12 Oct 2026, evening).**
-- PR #553 and PR #554 are merged. Production serves `edgedesk_ai-2026-10-12-r23-research-engine` (deploy doctor: CURRENT).
-- Deploy intelligence run #19 applied `research_packets.sql` and `quant_desk.sql`.
-- `research_intel.sql` stopped on run #19 at its first index: `column "event_ref" does not exist`.
-  - Cause: production already holds an older desk table named `research_findings`, written by `rememberSession()` in `edgedesk_ai`, with other columns. The Phase 2 findings table had the same name. `create table if not exists` skipped it, and the index on the new columns failed.
-  - The only statement that changed anything was the one before the index: it replaced the older table's comment. The older table's columns and rows are untouched.
-  - `research_engine.sql` did not run. It needs `research_intel.sql` first.
-- This follow-up (build `r24-chain-findings`) fixes it:
-  - the findings table is renamed `research_chain_findings`, in the migration and in the one function write that uses it;
-  - both migrations open with a preflight that refuses, before writing anything, when a table or view under a name they own has other columns or is the wrong kind;
-  - `research_intel.sql` puts a true description back on the older table, only where the comment is still the one run #19 left.
+**Status (12 Oct 2026, late evening).**
+- PRs #553, #554 and #555 are merged. Deploy intelligence run #20 (from `main`) deployed `edgedesk_ai-2026-10-12-r24-chain-findings` and applied `research_packets.sql`, `research_intel.sql` and `research_engine.sql`, every report row `ok`. The deploy doctor reads DEPLOYED and CURRENT; its only open item is the paused odds capture.
+- Run #19, before it, had stopped in `research_intel.sql` on an older desk table named `research_findings` (`rememberSession()` in `edgedesk_ai`). PR #555 renamed the findings table `research_chain_findings`, added a preflight to both migrations that refuses before writing anything when a name they own is taken, and put a true description back on the older table.
+- The follow-up after that (build `r25-stale-price-labels`) changes no table. It corrects what a research answer calls a price older than its limit: the first production answers showed a 55-hour-old quote as the "Verified market price" with a green EV beside it. See §3 for what a correct answer shows.
 
 Every step below needs the owner's explicit go-ahead.
 
@@ -20,8 +13,8 @@ This document assumes nothing about production. Each step says how to check wher
 
 | Part | How it reaches production | When |
 |---|---|---|
-| **Site:** `app.html`, `lib/edgedesk_intel_ui.js`, `lib/edgedesk_intel.css` and the other `lib/*` files | GitHub Pages serves the repository | **At merge to `main`.** Asset URLs carry `?v=20261012ia8`, so browsers fetch the new files. |
-| **Edge function** `edgedesk_ai`, build `edgedesk_ai-2026-10-12-r24-chain-findings` | `Deploy intelligence` workflow (`deploy_function`) | **Within about 6 h of merge, automatically.** The Intelligence doctor (`intelligence-doctor.yml`, 4× a day) deploys `edgedesk_ai` whenever production serves a build other than `main`'s. **Merging is therefore the decision to deploy the function.** |
+| **Site:** `app.html`, `lib/edgedesk_intel_ui.js`, `lib/edgedesk_intel.css` and the other `lib/*` files | GitHub Pages serves the repository | **At merge to `main`.** The research script loads as `edgedesk_intel_ui.js?v=20261012ia9`, so browsers fetch the new file. |
+| **Edge function** `edgedesk_ai`, build `edgedesk_ai-2026-10-12-r25-stale-price-labels` | `Deploy intelligence` workflow (`deploy_function`) | **Within about 6 h of merge, automatically.** The Intelligence doctor (`intelligence-doctor.yml`, 4× a day) deploys `edgedesk_ai` whenever production serves a build other than `main`'s. **Merging is therefore the decision to deploy the function.** |
 | **Migration** `supabase/research_engine.sql` | `Deploy intelligence` workflow, `apply_research_engine` (needs the `SB_DB_URL` secret), or `psql` by hand | **Only when a person runs it.** The doctor never applies a migration. |
 | **Migration** `supabase/research_intel.sql` (prerequisite, Phase 2) | the same workflow, `apply_research_intel` | only if it is not applied already (§2, step 1) |
 
@@ -85,9 +78,10 @@ Either order works now that r23 is live: until the tables exist, r23 and r24 bot
 
 | Check | Expected |
 |---|---|
-| `?probe=1` | `build` is `edgedesk_ai-2026-10-12-r24-chain-findings` |
+| `?probe=1` | `build` is `edgedesk_ai-2026-10-12-r25-stale-price-labels` |
 | `node tools/intelligence/deploy_doctor.js` (with `SB_URL`, `SB_ANON`) | no `STALE` for `edgedesk_ai` |
 | Ask, signed in: "What's the best bet this weekend across all sports?" | a plan, then streamed steps, then a result with `quant_verification.verdict = VERIFIED` |
+| While odds capture is paused, the same answer's candidate card | "Verified market price: none current — last captured … min old against a … min limit"; "Estimated net EV: unavailable — no current price"; research freshness by publication time ("newest published … ago"), never "0 min ago" from a re-read |
 | Ask: "Is <a starting QB this week> playing Sunday?" | an **Availability** card naming each source and its time; no model call (the answer's source line says no model wrote it) |
 | Ask: "Best Premier League bet this weekend?" | "Soccer is not covered …", no pick |
 | Ask: "When do <team> play <team>?" | the kickoff from the card |
@@ -123,7 +117,7 @@ Set or unset these as function secrets (Supabase dashboard → Edge Functions �
 1. Pages serves the previous site;
 2. the doctor redeploys the previous function build within about 6 h. To do it at once, run `Deploy intelligence` (`deploy_function`) from `main`.
 
-Check `?probe=1` shows the previous build (`edgedesk_ai-2026-10-12-r23-research-engine`, or whatever `main` carries).
+Check `?probe=1` shows the previous build (`edgedesk_ai-2026-10-12-r24-chain-findings`, or whatever `main` carries).
 
 Do not redeploy an old build by hand while `main` still carries a newer one: the doctor would put it back within hours.
 
