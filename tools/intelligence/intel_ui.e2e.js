@@ -532,6 +532,29 @@ function siteHandler(req, res) {
       await page.evaluate(() => { delete window.__edIntelTimeoutMs; });
       chk(T + 'a timeout ends the run with the steps that finished and a retry', to.state === 'timeout' && /stopped waiting after 1 seconds/.test(to.fail), to);
 
+      /* ── P4b. A PLAYER'S STATUS, AND WHAT EDGEDESK DOES NOT MEASURE (tools/research/benchmark findings) ── */
+      await page.evaluate(() => window.EDAI.close());
+      await page.fill('#iaQ', 'Is Josh Allen playing Sunday?');
+      await page.press('#iaQ', 'Enter');
+      await page.waitForFunction(() => document.querySelectorAll('#edaiLog .ia-av').length >= 1, null, { timeout: 20000 }).catch(() => {});
+      const avc = await page.evaluate(() => {
+        const c = [...document.querySelectorAll('#edaiLog .ia-av')].pop(); if (!c) return null;
+        const read = c.closest('#edaiLog > *') ? c.closest('#edaiLog > *').querySelector('.qd-read') : null;
+        return { head: c.querySelector('.ia-res-h').textContent, chip: (c.querySelector('p > [class^="ia-c-"]') || {}).textContent || '', rows: [...c.querySelectorAll('tr')].slice(1).map((r) => r.textContent), links: [...c.querySelectorAll('a[href^="https://"]')].map((a) => a.href),
+          btn: !!c.querySelector('[data-ia-askgame]'), conflict: (c.querySelector('p') || {}).textContent || '', repeated: c.querySelectorAll('.ia-ev-x').length, lab: read ? (read.querySelector('.lab') || {}).textContent || '' : '', text: read ? read.innerText : '' };
+      });
+      chk(T + 'P4b · "Is Josh Allen playing Sunday?" draws a status card: the sources disagree, each source with its link and time, and a way into the game', avc && /Availability — Josh Allen/.test(avc.head) && /sources disagree/.test(avc.chip) && avc.rows.length >= 3 && avc.links.some((u) => /espn\.com/.test(u)) && avc.btn && /OUT per nflverse vs ACTIVE per ESPN/.test(avc.conflict) && avc.repeated === 0, avc);
+      chk(T + 'P4b · the answer is labelled Availability and states the status once; the source list lives in the card, not repeated above it', avc && /^Availability/.test(avc.lab) && /does not pick one/.test(avc.text) && !/What each source says/.test(avc.text), avc && [avc.lab, avc.text.slice(0, 300)]);
+      await page.evaluate(() => { const c = [...document.querySelectorAll('#edaiLog .ia-av')].pop(); if (c) c.scrollIntoView({ block: 'start' }); });
+      await shot(page, '05d-availability-' + vp.tag);
+      await page.fill('#iaQ', 'Best Premier League bet this weekend?');
+      await page.press('#iaQ', 'Enter');
+      await page.waitForFunction(() => document.querySelectorAll('#edaiLog .ia-un').length >= 1, null, { timeout: 20000 }).catch(() => {});
+      const unc = await page.evaluate(() => { const c = [...document.querySelectorAll('#edaiLog .ia-un')].pop(); if (!c) return null; const m = c.closest('#edaiLog > *'); return { head: c.querySelector('.ia-res-h').textContent, text: m ? m.innerText : '', cards: m ? m.querySelectorAll('.ia-card').length : -1 }; });
+      chk(T + 'P4b · a soccer question says soccer is not covered and draws no pick, no card', unc && /Not covered/.test(unc.head) && /Soccer is not covered/.test(unc.text) && !/Buffalo Bills/.test(unc.text) && unc.cards === 0, unc);
+      await shot(page, '05e-unsupported-' + vp.tag);
+      if (vp.tag === 'phone') { const g = await noSideScroll(page); chk('phone: the status card and its table do not push the page sideways', g.sw <= g.iw + 1, g); }
+
       /* phone layout: the conversation's input is above the bottom nav, nothing sideways */
       if (vp.tag === 'phone') {
         await page.evaluate(() => window.EDAI.open());

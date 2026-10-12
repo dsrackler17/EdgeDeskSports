@@ -25443,14 +25443,16 @@ const EDSPORTS: any = (globalThis as any).EDSPORTS;
   function detectSports(q) { var out = []; SPORT_RX.forEach(function (s) { if (s[1].test(q)) out.push(s[0]); }); return out; }
   function detectMarket(q) {
     if (/\b(ml|moneyline|money line|straight up|to win outright|outright)\b/i.test(q)) return 'moneyline';
-    if (/\b(total|totals|over|under|o\/u)\b/i.test(q)) return 'total';
+    /* "over"/"under" name the total only as a bet ("Over 49.5", "the over"), not in "an edge over a coin flip" or "Bills over Lions" */
+    if (/\b(total|totals|o\/u)\b/i.test(q) || /\b(over|under)\s*\d/i.test(q) || /\b(the|an?) (over|under)\b(?!\s+(a|an|the|my|our|his|her|their)\b)/i.test(q) || /^\s*(over|under)\b/i.test(q) || /\b(over|under)\s*\??\s*$/i.test(q)) return 'total';
     if (/\b(spread|spreads|ats|points)\b/i.test(q)) return 'spread';
     return null;
   }
   /** Numbers in the text: lines (|x| < 60) and American prices (|x| >= 100). */
   function parseNumbers(q) {
     var out = { lines: [], prices: [], pk: /\b(pk|pick ?'?em|pick)\b/i.test(q) };
-    var re = /(^|[\s(@,:])([+-]?\d{1,3}(?:\.5|\.0)?)(?=$|[\s),?.!]|\b)/g, m;
+    /* a percentage or a contract price ("53%", "49¢") is not a line or a price */
+    var re = /(^|[\s(@,:])([+-]?\d{1,3}(?:\.5|\.0)?)(?![\d%¢])(?=$|[\s),?.!]|\b)/g, m;
     while ((m = re.exec(q))) {
       var raw = m[2], n = num(raw); if (n == null) continue;
       if (Math.abs(n) >= 100) out.prices.push({ value: n, signed: /^[+-]/.test(raw), at: m.index });
@@ -26008,12 +26010,20 @@ const EDSPORTS: any = (globalThis as any).EDSPORTS;
     if (out.intent !== 'DEEP' && /^\s*#+\s|THE CASE FOR EACH SIDE|WHAT THE MARKET SAYS/im.test(p)) issues.push({ code: 'TEMPLATE', severity: 'FAIL', detail: 'section headings in a short answer' });
     var kv = /\b(yes|no)\b/i.exec(str(out.text).slice(0, 12)), pv = /\b(yes|no)\b/i.exec(p.slice(0, 40));
     if (kv && pv && kv[1].toLowerCase() !== pv[1].toLowerCase()) issues.push({ code: 'VERDICT_FLIPPED', severity: 'FAIL', detail: 'the kernel said ' + kv[1] + ', the prose said ' + pv[1] });
-    /* the headline facts survive: every number in EdgeDesk's first sentence appears in the rewrite */
-    var first = str(out.text).split(/(?<=[.!?])\s+/)[0] || '';
+    /* the headline facts survive: every number and every team in EdgeDesk's headline appears in the rewrite. The
+       headline is the first sentence — and the one after it when the first is only a verdict ("No."), or a rewrite
+       that drops the side, the price and the reason would pass with nothing to check. */
+    var sents = str(out.text).split(/(?<=[.!?])\s+/);
+    var first = sents[0] || '';
+    var namesTeam = (ctx.teams || []).some(function (t) { var n = normName(t); return n.length >= 3 && (' ' + normName(first) + ' ').indexOf(' ' + n + ' ') >= 0; });
+    if (sents[1] && (first.replace(/[^A-Za-z0-9]/g, '').length < 12 || (!/\d/.test(first) && !namesTeam))) first = first + ' ' + sents[1];
     var keyNums = (first.match(/[+-]?\d+(?:\.\d+)?/g) || []).map(function (x) { return Math.abs(num(x)); });
     var proseNums = (p.match(/[+-]?\d+(?:\.\d+)?/g) || []).map(function (x) { return Math.abs(num(x)); });
     var dropped = keyNums.filter(function (k) { return !proseNums.some(function (x) { return Math.abs(x - k) < 0.051; }); });
-    if (dropped.length) issues.push({ code: 'KEY_FACT_DROPPED', severity: 'FAIL', detail: dropped.join(', ') });
+    var headTeams = uniq((ctx.teams || []).filter(function (t) { var n = normName(t); return n.length >= 3 && (' ' + normName(first) + ' ').indexOf(' ' + n + ' ') >= 0; }));
+    /* a rewrite may shorten a club to its nickname ("the Bills") */
+    var droppedTeams = headTeams.filter(function (t) { var w = ' ' + normName(p) + ' ', n = normName(t), nick = n.split(' ').pop(); return w.indexOf(' ' + n + ' ') < 0 && !(nick && nick.length >= 3 && w.indexOf(' ' + nick + ' ') >= 0); });
+    if (dropped.length || droppedTeams.length) issues.push({ code: 'KEY_FACT_DROPPED', severity: 'FAIL', detail: dropped.concat(droppedTeams).join(', ') });
     if (/^Nothing stands out/.test(str(out.text)) && !/\bnothing\b|\bno (bet|value|play)\b|\bpass\b/i.test(p)) issues.push({ code: 'PASS_TURNED_INTO_PICK', severity: 'FAIL' });
     /* a team on the board that EdgeDesk's answer did not name may not appear: the writer cannot change the pick */
     var said = ' ' + normName(out.text) + ' ', wrote = ' ' + normName(p) + ' ';
@@ -39720,6 +39730,12 @@ const EDREADY: any = (globalThis as any).EDREADY;
     ['SEA', 'Seattle Mariners', ['mariners']], ['STL', 'St. Louis Cardinals', []], ['TB', 'Tampa Bay Rays', ['rays']], ['TEX', 'Texas Rangers', ['rangers']],
     ['TOR', 'Toronto Blue Jays', ['blue jays', 'jays']], ['WSH', 'Washington Nationals', ['nationals', 'nats']]
   ];
+  /** A club's full name from its code ("KC" → "Kansas City Chiefs"), or null. */
+  function teamByCode(sport, code) {
+    var list = sport === 'baseball_mlb' ? MLB : NFL, c = str(code).toUpperCase();
+    for (var i = 0; i < list.length; i++) if (list[i][0] === c) return list[i][1];
+    return null;
+  }
   function rx(w) { return new RegExp('(^|[^a-z0-9])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=$|[^a-z0-9])', 'i'); }
   function teamsIn(q, list, sport) {
     var lq = str(q).toLowerCase(), out = [];
@@ -39792,7 +39808,9 @@ const EDREADY: any = (globalThis as any).EDREADY;
     BETS: { c: 'STANDARD', path: 'ENGINE', d: ['your_bets'], k: ['history_summary'] },
     SCAN: { c: 'INVESTIGATION', path: 'ENGINE_RESEARCH', d: ['schedule', 'market', 'projections', 'injuries', 'validation'], k: ['implied_probability', 'devig', 'fair_odds', 'expected_value', 'max_price', 'spread_discrepancy', 'market_freshness', 'sensitivity'] },
     RESEARCH_SLATE: { c: 'INVESTIGATION', path: 'ENGINE_RESEARCH', d: ['schedule', 'market', 'projections', 'injuries', 'team_ratings', 'validation'], k: ['spread_discrepancy', 'total_discrepancy', 'implied_probability', 'devig', 'fair_odds', 'expected_value', 'max_price', 'market_freshness', 'sensitivity'] },
-    GAME_RESEARCH: { c: 'INVESTIGATION', path: 'ENGINE_RESEARCH', d: ['schedule', 'market', 'projections', 'injuries', 'team_ratings', 'weather', 'validation'], k: ['spread_discrepancy', 'total_discrepancy', 'implied_probability', 'devig', 'fair_odds', 'expected_value', 'max_price', 'market_freshness', 'sensitivity'] }
+    GAME_RESEARCH: { c: 'INVESTIGATION', path: 'ENGINE_RESEARCH', d: ['schedule', 'market', 'projections', 'injuries', 'team_ratings', 'weather', 'validation'], k: ['spread_discrepancy', 'total_discrepancy', 'implied_probability', 'devig', 'fair_odds', 'expected_value', 'max_price', 'market_freshness', 'sensitivity'] },
+    /* "is X playing?" / "who starts for Y?": one player's (or one club's starter's) status from the sources EdgeDesk reads */
+    AVAILABILITY: { c: 'STANDARD', path: 'ENGINE_RESEARCH', d: ['schedule', 'injuries', 'desk_notes'], k: ['source_freshness', 'source_conflicts'] }
   };
   /* dataset -> what it is, where it lives, how fresh it must be */
   var DATASETS = {
@@ -39809,14 +39827,16 @@ const EDREADY: any = (globalThis as any).EDREADY;
     venue_fees: { label: 'venue fee schedules', source: 'lib/edgedesk_fairodds.js VENUES', freshness: 'versioned with the code' },
     your_bets: { label: 'your recorded bets', source: 'supabase:portfolio_positions (your rows only)', freshness: 'as recorded' },
     calibration_history: { label: 'graded predictions', source: 'supabase:research_runs + research_run_outcomes', freshness: 'graded after each event' },
-    external_reporting: { label: 'current reporting from official and credible sources', source: 'search provider', freshness: 'minutes; each finding carries its publication time' }
+    external_reporting: { label: 'current reporting from official and credible sources', source: 'search provider', freshness: 'minutes; each finding carries its publication time' },
+    desk_notes: { label: 'the desk\'s notebook (reports a person recorded, each with a source and a time)', source: 'football/notes/current.json', freshness: 'each note carries its publication time and an expiry' }
   };
   var CALC = {
     implied_probability: 'implied probability from the price', devig: 'vig removal (two-sided no-vig)', fair_odds: 'fair odds from the fair probability',
     expected_value: 'expected value per $1, fees included', max_price: 'maximum acceptable price', spread_discrepancy: 'model spread minus market spread',
     total_discrepancy: 'model total minus market total', market_freshness: 'quote age against the freshness rule', sensitivity: 'EV with the fair one point lower',
     unit_mismatch: 'offense rating plus opposing defense rating', fee_schedule: 'each venue\'s own fee rule', history_summary: 'your results by bet type',
-    calibration: 'Brier score, log loss and closing-line value over graded predictions'
+    calibration: 'Brier score, log loss and closing-line value over graded predictions',
+    source_freshness: 'each report\'s age against the limit for its topic and the time to kickoff', source_conflicts: 'sources that disagree about one player, resolved by tier and recency or left unresolved'
   };
   /* estimates per step (labelled estimates; the ledger records the actual) */
   var EST = {
@@ -39889,6 +39909,7 @@ const EDREADY: any = (globalThis as any).EDREADY;
     else if (route === 'MATCHUP_EDGE') { s.push(step(id(), 'RETRIEVE_STATS', 'Read unit efficiency ratings')); }
     else if (route === 'CALIBRATION') { s.push(step(id(), 'RETRIEVE_STATS', 'Read graded predictions and the validation build')); s.push(step(id(), 'CALCULATE', 'Brier score, log loss and closing-line value')); }
     else if (route === 'VENUE_COMPARE' || route === 'CONTRACT' || route === 'PRICE' || route === 'EXPLAIN_EV') { s.push(step(id(), 'COMPARE_PRICES', 'Read the captured market for the selection')); s.push(step(id(), 'CALCULATE', 'Price it: implied, no-vig fair, fees, EV')); }
+    else if (route === 'AVAILABILITY') { s.push(step(id(), 'FIND_EVENTS', 'Find ' + (ent.players.length ? ent.players[0].name + '\'s' : 'the club\'s') + ' next game')); s.push(step(id(), 'RETRIEVE_STATS', 'Read the injury report, the depth chart and the desk\'s notes, with their times')); s.push(step(id(), 'VERIFY_INJURIES', 'Cross-check the sources and flag any disagreement')); }
     else if (route === 'READINESS') { s.push(step(id(), 'FIND_EVENTS', 'Find the games in the window')); s.push(step(id(), 'COMPARE_PRICES', 'Check which games have a verified market')); }
     else if (path !== 'UNSUPPORTED') {
       s.push(step(id(), 'FIND_EVENTS', 'Find ' + (ent.event.kind === 'GAME' ? 'the game' : 'the games in the window')));
@@ -39960,7 +39981,7 @@ const EDREADY: any = (globalThis as any).EDREADY;
     });
   }
 
-  return { VERSION: VERSION, plan: plan, entities: entities, reconcile: reconcile, DATASETS: DATASETS, CALC: CALC, SEARCH: SEARCH, ROUTES: ROUTES };
+  return { VERSION: VERSION, plan: plan, entities: entities, teamByCode: teamByCode, reconcile: reconcile, DATASETS: DATASETS, CALC: CALC, SEARCH: SEARCH, ROUTES: ROUTES };
 });
 /*__EDORCH_END__*/
 const EDORCH: any = (globalThis as any).EDORCH;
@@ -44452,7 +44473,7 @@ function mlbStartersFromResearch(research: ResearchOut | null): { label: string;
    build identifier in the response there is no way to tell those apart, and
    this function shipped for months with no way to answer "which version is
    answering?". That is what this constant exists to end. */
-export const BUILD = "edgedesk_ai-2026-10-10-r22-props-cadence";
+export const BUILD = "edgedesk_ai-2026-10-12-r23-research-engine";
 
 /* THE DECISION LAYER'S OWN SWITCH, set by the deployment rather than by code.
    `EDGEDESK_DECISIONS_ENABLED=0` stops EdgeDesk producing recommendations
@@ -47201,7 +47222,7 @@ async function sweepBoard(o: {
   boardScope: SlateScopeRequest; primary: { sport: string | null; index: SlateIndexResult } | null;
   /* the quant desk only: "underdog" | "favorite" restricts the candidates before ranking */
   filter?: string | null;
-}): Promise<{ board: any; decisions: GameDecision[]; ledger_rows: any[]; games: any[]; signal_counts: Record<string, number>; slates: any[] } | null> {
+}): Promise<{ board: any; decisions: GameDecision[]; ledger_rows: any[]; games: any[]; signal_counts: Record<string, number>; signal_errors: Record<string, string>; slates: any[] } | null> {
   const { dal, ctx, question, now, boardReq } = o;
   /* The host's sport counts only when the READER chose it: the game open on
      screen or the board they are looking at. A sport inferred from an intent
@@ -47214,6 +47235,8 @@ async function sweepBoard(o: {
   });
   const sports: any[] = [], notRead: any[] = [], allDecisions: GameDecision[] = [], allLedger: any[] = [], games: any[] = [];
   const signalCounts: Record<string, number> = {};
+  /* a sport whose captured prices could not be READ is not a sport with no prices: the coverage line says which */
+  const signalErrors: Record<string, string> = {};
   /* budget: every sport costs reads; a broad question is allowed more than a single-game one */
   dal.budget = Math.max(dal.budget, 24 + 6 * scope.sports.length);
   const loadedValidation = new Set<string>();
@@ -47265,6 +47288,7 @@ async function sweepBoard(o: {
       home_id: g.home_id ?? null, away_id: g.away_id ?? null, kickoff: g.kickoff ?? null,
       home_starter: g.home_starter?.player_name ?? null, away_starter: g.away_starter?.player_name ?? null, scenarios: (g as any).scenarios ?? null }));
     signalCounts[sport] = si.index.reduce((n: number, g: any) => n + ((g.signals ?? []).length), 0);
+    { const se = (si.errors ?? []).find((x: string) => /^signals could not be read/.test(String(x))); if (se) signalErrors[sport] = String(se).slice(0, 200); }
     sports.push({ sport, games: si.index, state: si.state, source_label: si.source_label, errors: si.errors, decisions, pricing_rows: pricingRows, model_meta: modelMeta, refresh });
   }
   const board = EDBOARD.build({ now, scope, question, sports, sports_not_read: notRead, top: 5 });
@@ -47275,7 +47299,7 @@ async function sweepBoard(o: {
   sports.forEach((s) => s.games.forEach((g: any) => { const dropped = (board.eligibility.dropped as any[]).some((d) => d.sport === s.sport && String(d.game_id) === String(g.game_id)); if (!dropped) eligibleIds.add(s.sport + "|" + g.game_id); }));
   const decisions = allDecisions.filter((d) => eligibleIds.has((d as any).sport_key_for_board ?? "") || sports.some((s) => s.decisions.includes(d) && eligibleIds.has(s.sport + "|" + d.game_id)));
   const ledger_rows = allLedger.filter((r) => kept.has(String(r.sport) + "|" + String(r.game_id)) || eligibleIds.has(String(r.sport) + "|" + String(r.game_id)));
-  return { board, decisions, ledger_rows, games, signal_counts: signalCounts, slates: sports.map((s) => ({ sport: s.sport, games: s.games, model_meta: s.model_meta, state: s.state })) };
+  return { board, decisions, ledger_rows, games, signal_counts: signalCounts, signal_errors: signalErrors, slates: sports.map((s) => ({ sport: s.sport, games: s.games, model_meta: s.model_meta, state: s.state })) };
 }
 
 async function runResearch(
@@ -50925,6 +50949,9 @@ const DESK_ENABLED = (Deno.env.get("EDGEDESK_DESK") ?? "1") !== "0";
 const DESK_NARRATE = (Deno.env.get("EDGEDESK_DESK_NARRATE") ?? "1") !== "0";
 const DESK_OTHER_SPORTS = /\b(mlb|baseball|pitchers?|innings?|nba|wnba|basketball|nhl|hockey|ufc|mma|fighters?|tennis|wta|atp|golf|soccer)\b/i;
 const DESK_STAKING = /\b(units?|bankroll|kelly|stake|staking|how much (should|do) i (bet|put)|parlay|sizing|size it)\b/i;
+/* a schedule question, and the words that make it a price question after all */
+const DESK_SCHEDULE = /^\s*(when|what time|what day)\b|\bkick ?offs?\b|\b(start time|game time)\b/i;
+const DESK_SCHEDULE_PRICE = /\b(worth|bet|bets|betting|value|spread|ml|moneyline|money line|odds|price|edge|line|total|over|under|lay|take|cover)\b/i;
 const DESK_BETTING_WORDS = /\b(worth|like|bet|bets|betting|value|play|take|lay|spread|ml|moneyline|money line|dog|underdog|favou?rite|over|under|total|line|price|edge|safer|safest|risk|why|compare|rather|deep|pass)\b/i;
 let LAST_DESK_WRITE: any = null;
 
@@ -51672,8 +51699,10 @@ async function quantLiveCoverage(dal: Dal, now: number): Promise<any[]> {
 }
 
 /** The coverage the board reports, refined by the adapters: an uncaptured sport is NOT_CAPTURED, a priced card is distinguished from a line-only one. */
-export function refineCoverage(c: any, signals: number): any {
+export function refineCoverage(c: any, signals: number, readError?: string | null): any {
   if (!EDADAPT) return c;
+  /* the price read failed: say so, never "no captured prices" */
+  if (readError && !signals && c.status !== "OUT_OF_SEASON" && c.status !== "NOT_SUPPORTED") return { ...c, status: "RETRIEVAL_FAILED", why: "the captured prices could not be read: " + readError, board_status: c.status, prices: 0 };
   if (c.status === "NO_GAMES" || ((c.status === "EVALUATED" || c.status === "NO_ELIGIBLE_GAMES") && !signals)) {
     const r = EDADAPT.coverageStatus(c.sport, { signals, games: c.scheduled ?? 0, captured_list: CAPTURED_SPORTS });
     if (r.status === "NOT_CAPTURED" || r.status === "NO_PRICES") return { ...c, status: r.status, why: r.why, board_status: c.status };
@@ -51969,8 +51998,9 @@ async function researchRawFor(o: { dal: Dal; c: any; e: any; game: any; now: num
         add("mlb_cards");
         /* the probable starters EdgeDesk's MLB card carries: what its numbers assume */
         pricedStarters = { home: row.home_pitcher_name ?? null, away: row.away_pitcher_name ?? null };
+        /* read from EdgeDesk's card (mlb_game_cards); the link is MLB's own probable-pitcher listing for that date, where the reader can check the claim */
         const url = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${encodeURIComponent(String(row.game_date ?? ""))}&hydrate=probablePitcher`;
-        for (const [team, name] of [[c.home, row.home_pitcher_name], [c.away, row.away_pitcher_name]]) if (name) raw.push({ url, title: "MLB probable pitchers", publisher: "mlb.com", kind: "OFFICIAL", retrieved_at: row.updated_at ?? row.fetched_at ?? nowIso, topic: "starter", team, player: name, role: "SP", key: true, status: "PROBABLE", text: `${name} is the probable starter for ${team} (probable, not confirmed)` });
+        for (const [team, name] of [[c.home, row.home_pitcher_name], [c.away, row.away_pitcher_name]]) if (name) raw.push({ url, title: "MLB probable pitchers (via EdgeDesk's MLB card)", publisher: "mlb.com", kind: "OFFICIAL", retrieved_at: row.updated_at ?? row.fetched_at ?? nowIso, topic: "starter", team, player: name, role: "SP", key: true, status: "PROBABLE", text: `${name} is the probable starter for ${team} (probable, not confirmed)` });
       } else unavailable.push("no MLB card row for this game");
     } catch { unavailable.push("the MLB card could not be read"); }
   }
@@ -52423,7 +52453,7 @@ async function quantScan(o: { body: any; auth: string; dal: Dal; now: number; cl
   const sw = await sweepBoard({ dal, plan, ctx, question: q, now, boardReq: { timezone: tz, state: null, follow_up: null }, boardScope: {} as any, primary: null, filter: cls.filter ?? null });
   if (!sw || !sw.board) { P({ stage: "FIND_EVENTS", status: "failed", detail: "the board could not be read" }); return null; }
   const board = sw.board;
-  const coverage = (board.coverage ?? []).map((c: any) => refineCoverage(c, sw.signal_counts?.[c.sport] ?? 0));
+  const coverage = (board.coverage ?? []).map((c: any) => refineCoverage(c, sw.signal_counts?.[c.sport] ?? 0, sw.signal_errors?.[c.sport] ?? null));
   P({ stage: "FIND_EVENTS", status: "done", detail: `${board.eligibility?.counts?.eligible ?? 0} eligible events, ${board.candidates_considered ?? 0} markets evaluated (${board.scope?.window?.label ?? "window"})`,
     partial: { coverage: coverage.map((c: any) => ({ sport: c.sport, label: c.label, status: c.status, why: c.why ?? null })) } });
   const cands = EDQUANT.candidatesFromBoard(board, cls.filter ?? null).map((c: any) => {
@@ -52556,7 +52586,7 @@ async function quantResearchSlate(o: { body: any; auth: string; dal: Dal; now: n
   const lvl = EDBUDGET.selectLevel({ intent: "RESEARCH_SLATE", question: q, candidates: 1, data_available: true, paid_authorized: RESEARCH_PAID_OK });
   RESEARCH_LEDGER?.newTurn();
   const user = jwtSub(auth);
-  const coverage = (board.coverage ?? []).map((c: any) => refineCoverage(c, sw.signal_counts?.[c.sport] ?? 0)).filter((c: any) => inScope(c.sport));
+  const coverage = (board.coverage ?? []).map((c: any) => refineCoverage(c, sw.signal_counts?.[c.sport] ?? 0, sw.signal_errors?.[c.sport] ?? null)).filter((c: any) => inScope(c.sport));
   /* L1: every pregame game in scope and inside the question's window */
   const games: any[] = [];
   const dropped = (board.eligibility?.dropped ?? []) as any[];
@@ -52942,13 +52972,32 @@ export async function deskTurn(o: { body: any; auth: string; now?: number; fetch
   const now = o.now ?? Date.now();
   const st = EDDESK.sanitizeState(o.body?.research_context?.desk ?? null);
   const pre = EDDESK.classify(q, st, []);
-  if (!pre.intent && !DESK_BETTING_WORDS.test(q) && !/[+-]\d/.test(q)) return null;
+  if (!pre.intent && !DESK_BETTING_WORDS.test(q) && !/[+-]\d/.test(q) && !DESK_SCHEDULE.test(q)) return null;
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
   const inSeason = (k: string) => !EDBOARD || EDBOARD.inSeason(k, now, BOARD_DEFAULT_TZ);
   const sports = (pre.sports.length ? pre.sports : ["americanfootball_ncaaf", "americanfootball_nfl"]).filter(inSeason);
   if (!sports.length) return null;
   const dal = new Dal({ supabaseUrl: SUPABASE_URL, apikey: SUPABASE_ANON_KEY, authorization: o.auth, budget: 40, mlbFallback: MLB_FALLBACK });
   const { evidence, coverage } = await deskEvidence(dal, sports, now);
+  /* a schedule question ("When do the Lions play the Bills?") is answered with the kickoff on EdgeDesk's card, not a price verdict */
+  if (DESK_SCHEDULE.test(q) && !DESK_SCHEDULE_PRICE.test(q) && !/[+-]\d/.test(q)) {
+    const hits = EDDESK.resolveTeams(q, evidence);
+    const E = hits.length ? hits[0].E : null;
+    if (E && (hits.length === 1 || hits.every((h: any) => h.E === E)) && E.identity?.kickoff) {
+      const tz = typeof o.body?.timezone === "string" && o.body.timezone ? o.body.timezone.slice(0, 64) : BOARD_DEFAULT_TZ;
+      let when = String(E.identity.kickoff);
+      try { when = new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(new Date(E.identity.kickoff)); } catch { /* the ISO time stands */ }
+      const matchup = `${E.identity.away} @ ${E.identity.home}`;
+      const text = `${matchup} kicks off ${when}. Source: EdgeDesk's ${E.sport === "americanfootball_nfl" ? "NFL" : "college football"} card. For the model, the market and the injury reports, ask "Research this game" from the game.`;
+      return {
+        answer: text, model: null, narration: { ok: true, prose: "DETERMINISTIC", critic: null },
+        desk: { schema: EDDESK.ANSWER_SCHEMA, version: EDDESK.VERSION, intent: "SCHEDULE", focus: { sport: E.sport, game_id: E.identity.game_id, home: E.identity.home, away: E.identity.away, kickoff: E.identity.kickoff }, coverage, deterministic_answer: text },
+        desk_state: null, deterministic_desk_answer: text,
+        research: { research_context: { sport: E.sport, game_id: E.identity.game_id, home: E.identity.home, away: E.identity.away, turns: 1 } },
+        build: BUILD,
+      };
+    }
+  }
   const cls = EDDESK.classify(q, st, evidence);
   if (!cls.intent) return null;
   /* a follow-up whose game is no longer on the card falls through rather than guessing */
@@ -52995,6 +53044,212 @@ export async function deskTurn(o: { body: any; auth: string; now?: number; fetch
 }
 
 /* ========================================================================
+   AVAILABILITY — "Is Josh Allen playing Sunday?", "Who starts at QB for the
+   Bills?", "Who is pitching for the Rays on Saturday?". One player's status
+   (or one club's starter) from the sources EdgeDesk actually reads — the NFL
+   injury report and depth charts (metrics build), MLB's probable starters
+   (EdgeDesk's card), the desk's notebook — through the same game research
+   the game view runs, so the records, their freshness and any conflict are
+   the game card's own. Model-free. It never picks a side in a conflict, never
+   reads "no report found" as healthy, and gives a player EdgeDesk holds
+   nothing on no status at all.
+   ======================================================================== */
+/* operator switches (default on): EDGEDESK_AVAILABILITY=0 and EDGEDESK_OUT_OF_SCOPE=0 send these questions back to the routes that answered them before */
+const AVAILABILITY_ENABLED = (Deno.env.get("EDGEDESK_AVAILABILITY") ?? "1") !== "0";
+const OUT_OF_SCOPE_ENABLED = (Deno.env.get("EDGEDESK_OUT_OF_SCOPE") ?? "1") !== "0";
+const AVAIL_STATUS = /\b(is|are|will|does|has|did)\b[^?]{0,60}\b(play|playing|plays|active|out|available|suit(?:ing)? up|dress(?:ing|ed)?|healthy|injur\w*|questionable|doubtful|ruled|start|starting|starts|go)\b|\b(injury|health|availability) (status|report|update|news)\b|\bstatus (of|for)\b/i;
+const AVAIL_STARTER = /\b(who(?:'s| is| will)?|which (?:pitcher|quarterback|qb))\b[^?]{0,40}\b(start\w*|pitch\w*|on the mound|under cent(?:er|re)|at qb|qb|quarterback)\b|\bprobable (?:starter|pitcher)s?\b|\bstarting (?:pitcher|qb|quarterback)\b/i;
+const AVAIL_PRICE = /\b(bet|bets|betting|spread|line|odds|price|value|wager|ev|parlay|stake|units?|worth|edge|cover|moneyline|total|lean|pick)\b/i;
+const AVAIL_RELIABILITY = ["OFFICIAL", "OFFICIAL_REPORT", "CREDIBLE_JOURNALISM", "STATISTICAL_DATA", "AGGREGATOR", "UNVERIFIED"];
+function availRx(name: string): RegExp { return new RegExp("(^|[^a-z0-9])" + String(name).toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?=$|[^a-z0-9])", "i"); }
+function availStatusText(st: string | null): string {
+  const s = String(st ?? "").toUpperCase();
+  return s === "OUT" ? "out" : s === "DOUBTFUL" ? "doubtful" : s === "QUESTIONABLE" ? "questionable" : s === "ACTIVE" ? "expected to play" : s === "STARTING" ? "listed to start" : s === "PROBABLE" ? "the probable starter (not confirmed)"
+    : s === "IR" || s === "RESERVE" ? "on injured reserve" : s ? s.toLowerCase().replace(/_/g, " ") : "no status given";
+}
+function availWhen(iso: string | null, tz: string): string {
+  if (!iso) return "time not given";
+  try { return new Intl.DateTimeFormat("en-US", { timeZone: tz, weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(new Date(iso)); } catch { return String(iso); }
+}
+function availPoss(name: string | null): string { const n = String(name ?? ""); return /s$/i.test(n) ? n + "'" : n + "'s"; }
+function availFresh(f: any): string {
+  if (!f || !f.status) return "freshness unknown";
+  const h = (m: any) => { const n = Number(m); return !isFinite(n) ? "?" : n < 90 ? Math.round(n) + " min" : Math.round(n / 60) + " h"; };
+  return f.status === "FRESH" ? "fresh" : f.status === "AGING" ? `aging (${h(f.age_min)} old; limit ${h(f.ttl_min)})` : f.status === "STALE" ? `STALE (${h(f.age_min)} old; limit ${h(f.ttl_min)})` : String(f.status).toLowerCase();
+}
+export async function availabilityTurn(o: { body: any; auth: string; now?: number }): Promise<any | null> {
+  if (!AVAILABILITY_ENABLED || !AGENT_RESEARCH_ENABLED || !EDAGENTS || !EDORCH || !BOARD_ENABLED || !EDAUDIT || !o.body || o.body.desk !== true) return null;
+  const q = String(o.body.question ?? "").trim();
+  if (!q || q.length > 300 || AVAIL_PRICE.test(q) || DESK_STAKING.test(q)) return null;
+  const askStatus = AVAIL_STATUS.test(q), askStarter = AVAIL_STARTER.test(q);
+  if (!askStatus && !askStarter) return null;
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
+  const now = o.now ?? Date.now();
+  const tz = typeof o.body?.timezone === "string" && o.body.timezone ? o.body.timezone.slice(0, 64) : BOARD_DEFAULT_TZ;
+  const NFL = "americanfootball_nfl", MLB = "baseball_mlb";
+  const dal = new Dal({ supabaseUrl: SUPABASE_URL, apikey: SUPABASE_ANON_KEY, authorization: o.auth, budget: 40, mlbFallback: MLB_FALLBACK });
+  (dal as any).lite = true;
+  const ent = EDORCH.entities(q, {});
+  const nflTeam = (ent.teams ?? []).filter((t: any) => t.sport === NFL);
+  const mlbTeam = (ent.teams ?? []).filter((t: any) => t.sport === MLB);
+  /* 1. who: a named NFL player in the injury build, the depth chart or the desk's notes; else a club's starter */
+  const mj = (await dal.getMatchupMetrics()).json;
+  const teams: any = mj?.nfl?.teams ?? {};
+  const known: any[] = [];
+  for (const code of Object.keys(teams)) {
+    const t = teams[code];
+    if (t?.starter?.player_name) known.push({ name: String(t.starter.player_name), code, position: t.starter.position ?? "QB", via: "depth chart" });
+    for (const p of (t?.injuries?.players ?? [])) if (p?.name) known.push({ name: String(p.name), code, position: p.position ?? null, via: "injury report" });
+  }
+  try {
+    const nr = await dal.getArtifact("football/notes/current.json", { free: true });
+    for (const n of (Array.isArray(nr.json?.notes) ? nr.json.notes : [])) if (n && n.sport === NFL && n.player && n.team && (!n.expires_at || Date.parse(n.expires_at) > now)) known.push({ name: String(n.player), code: String(n.team).toUpperCase(), position: n.role ?? null, via: "desk notes" });
+  } catch { /* the notebook is optional */ }
+  /* the longest name the question contains; two players with that name on different clubs: the club the question names,
+     else the listed starter — and the answer says who else carries the name */
+  const hits = known.filter((k) => availRx(k.name).test(q)).sort((a, b) => b.name.length - a.name.length);
+  const same0 = hits.filter((k) => hits.length && EDINTEL.normName(k.name) === EDINTEL.normName(hits[0].name));
+  const clubs = Array.from(new Set(same0.map((k) => k.code)));
+  const hit = clubs.length <= 1 ? (same0[0] ?? null)
+    : (same0.find((k) => nflTeam.some((t: any) => t.code === k.code)) ?? same0.find((k) => k.via === "depth chart") ?? same0[0]);
+  const namesakes = hit ? clubs.filter((c) => c !== hit.code).map((c) => EDORCH.teamByCode ? (EDORCH.teamByCode(NFL, c) ?? c) : c) : [];
+  let sport: string, player: string | null = null, code: string | null = null, clubName: string | null = null, unknownName: string | null = null, position: string | null = null, kind: string;
+  if (hit) { sport = NFL; player = hit.name; code = hit.code; position = hit.position; kind = "PLAYER"; }
+  else if (nflTeam.length === 1 && (askStarter || askStatus)) {
+    sport = NFL; code = nflTeam[0].code; clubName = nflTeam[0].name; kind = "STARTER";
+    player = teams[code]?.starter?.player_name ?? null; position = teams[code]?.starter?.position ?? "QB";
+    /* a person the question names that EdgeDesk holds nothing on: said, never given a status */
+    const caps = (q.match(/\b[A-Z][a-zA-Z'.-]+(?:\s+[A-Z][a-zA-Z'.-]+)+/g) ?? []).map((x) => x.replace(/^(Is|Will|Does|Has|Did|Who|What|When|Are)\s+/, "")).filter((x) => /\s/.test(x) && !availRx(nflTeam[0].name).test(x) && !/\b(Sunday|Monday|Thursday|Saturday|Friday|NFL|QB)\b/.test(x));
+    if (askStatus && !askStarter && caps.length) unknownName = caps[0];
+    else if (askStatus && !askStarter) return null;
+  } else if (mlbTeam.length === 1 && askStarter) { sport = MLB; clubName = mlbTeam[0].name; kind = "MLB_STARTER"; }
+  else return null;
+  /* 2. the game: the club's next kickoff on EdgeDesk's card */
+  let game: { game_id: string; matchup: string; kickoff: string | null; home: string; away: string; home_line_engine?: any; scenarios?: any } | null = null;
+  if (sport === NFL) {
+    const sl = await dal.getNflSlateArtifact();
+    const g = (sl.games ?? []).filter((x: any) => (x.home_code === code || x.away_code === code) && x.kickoff && Date.parse(x.kickoff) >= now - 3 * 3600_000 && Date.parse(x.kickoff) <= now + 9 * 86400_000)
+      .sort((a: any, b: any) => Date.parse(a.kickoff) - Date.parse(b.kickoff))[0];
+    if (g) { game = { game_id: String(g.game_id), matchup: `${g.away_team} @ ${g.home_team}`, kickoff: g.kickoff, home: g.home_team, away: g.away_team, scenarios: g.scenarios ?? null }; clubName = clubName ?? (g.home_code === code ? g.home_team : g.away_team); }
+  } else {
+    /* the club's next game this week (a day in the question narrows nothing here: the earliest game after now is the one asked about) */
+    const scr = await quantResearchSlate({ body: { ...o.body, question: "MLB games this week" }, auth: o.auth, dal, now, cls: { intent: "READINESS", sport: MLB, filter: null }, screen_only: true });
+    const g = (scr?.research_slate?.games ?? []).filter((x: any) => EDINTEL.normName(x.home) === EDINTEL.normName(clubName) || EDINTEL.normName(x.away) === EDINTEL.normName(clubName))
+      .sort((a: any, b: any) => Date.parse(a.kickoff ?? "") - Date.parse(b.kickoff ?? ""))[0];
+    if (g) game = { game_id: String(g.game_id), matchup: g.matchup, kickoff: g.kickoff, home: g.home, away: g.away };
+  }
+  if (!clubName && code) clubName = (EDORCH.teamByCode ? EDORCH.teamByCode(NFL, code) : null) ?? code;
+  /* 3. the research: the game view's own records, freshness and conflicts */
+  const ran: any[] = [];
+  let G: any = null, researched: any[] = [];
+  if (game) {
+    const r = await quantResearchSlate({ body: { ...o.body, question: q }, auth: o.auth, dal, now, cls: { intent: "GAME_RESEARCH", sport, filter: null }, only_game: { sport, game_id: game.game_id }, progress: (ev: any) => ran.push({ type: "progress", ...ev }) });
+    G = r?.game_research?.game ?? null;
+    /* the game's ledger, and the ledgers of the candidates the audit took on this game (an MLB starter lives there) */
+    const seen = new Set<string>();
+    researched = [G?.evidence?.records ?? [], ...((r?.game_research?.investigated ?? []).map((x: any) => x?.evidence?.records ?? []))].flat().filter((x: any) => { const k = String(x?.id ?? JSON.stringify(x?.subject) + x?.claim); if (seen.has(k)) return false; seen.add(k); return true; });
+  }
+  let records: any[] = researched;
+  /* no game on the card (or the game was not researched): what the injury build itself holds, cited the same way */
+  if (sport === NFL && code && !records.some((r) => player && EDINTEL.normName(String(r.subject?.player ?? "")) === EDINTEL.normName(player))) {
+    const t = teams[code] ?? {};
+    const season = String(mj?.season ?? new Date(now).getUTCFullYear());
+    const ip = player ? (t.injuries?.players ?? []).find((p: any) => EDINTEL.normName(String(p.name)) === EDINTEL.normName(player)) : null;
+    if (ip) records = records.concat([{ source: { title: "NFL injury report (nflverse)", publisher: "nflverse", url: `${NFLVERSE_RELEASES}/injuries/injuries_${season}.csv`, reliability: "OFFICIAL" }, subject: { player, team: clubName, topic: "availability" }, claim: `${player} (${clubName}${ip.position ? ", " + ip.position : ""}) ${ip.status ?? "listed"}${ip.injury ? " — " + ip.injury : ""}${ip.practice ? "; " + ip.practice : ""}`, status: ip.status ? String(ip.status).toUpperCase() : null, published_at: t.injuries?.published ?? null, retrieved_at: t.injuries?.retrieved_at ?? null, freshness: null }]);
+    if (player && t.starter?.player_name && EDINTEL.normName(String(t.starter.player_name)) === EDINTEL.normName(player)) records = records.concat([{ source: { title: "NFL depth charts (nflverse)", publisher: "nflverse", url: `${NFLVERSE_RELEASES}/depth_charts/depth_charts_${season}.csv`, reliability: "STATISTICAL_DATA" }, subject: { player, team: clubName, topic: "starter" }, claim: `${player} is listed as the starter (${t.starter.source ?? "depth chart"})`, status: "STARTING", published_at: t.starter.published_at ?? null, retrieved_at: t.starter.retrieved_at ?? null, freshness: null }]);
+  }
+  const same = (a: any, b: any) => !!a && !!b && EDINTEL.normName(String(a)) === EDINTEL.normName(String(b));
+  const rank = (r: any) => { const i = AVAIL_RELIABILITY.indexOf(String(r?.source?.reliability ?? "")); return i < 0 ? 99 : i; };
+  const byTime = (a: any, b: any) => Date.parse(b.published_at ?? b.retrieved_at ?? "") - Date.parse(a.published_at ?? a.retrieved_at ?? "");
+  if (kind === "MLB_STARTER" && game && !records.some((r) => r.subject?.topic === "starter" && EDINTEL.normName(String(r.subject?.team ?? "")) === EDINTEL.normName(String(clubName)))) {
+    try {
+      const card = await dal.getMlbCard();
+      const row = (card.rows ?? []).find((x: any) => mlbClubKey(x.home_team_name) === mlbClubKey(game!.home) && mlbClubKey(x.away_team_name) === mlbClubKey(game!.away));
+      const nm = row ? (mlbClubKey(row.home_team_name) === mlbClubKey(clubName) ? row.home_pitcher_name : row.away_pitcher_name) : null;
+      if (row && nm) records = records.concat([{ source: { title: "MLB probable pitchers (via EdgeDesk's MLB card)", publisher: "mlb.com", url: `https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${encodeURIComponent(String(row.game_date ?? ""))}&hydrate=probablePitcher`, reliability: "OFFICIAL" }, subject: { player: nm, team: clubName, topic: "starter" }, claim: `${nm} is the probable starter for ${clubName} (probable, not confirmed)`, status: "PROBABLE", published_at: null, retrieved_at: row.updated_at ?? null, freshness: null }]);
+    } catch { /* the card is optional here */ }
+    try {
+      const nr = await dal.getArtifact("football/notes/current.json", { free: true });
+      for (const n of (Array.isArray(nr.json?.notes) ? nr.json.notes : [])) {
+        if (!n || n.sport !== MLB || !/pitcher|starter/.test(String(n.kind ?? "")) || (n.expires_at && Date.parse(n.expires_at) <= now) || !n.url) continue;
+        if (noteTeam(n, { home: game.home, away: game.away }, null) !== (EDINTEL.normName(game.home) === EDINTEL.normName(String(clubName)) ? game.home : game.away)) continue;
+        records = records.concat([{ source: { title: n.source ?? null, publisher: n.source ?? null, url: n.url, reliability: n.source_kind === "OFFICIAL" ? "OFFICIAL" : "CREDIBLE_JOURNALISM" }, subject: { player: n.player ?? nameInText(n.text), team: clubName, topic: "starter" }, claim: String(n.text ?? "").replace(/^FIXTURE:\s*/, ""), status: n.status ?? null, published_at: n.published_at ?? null, retrieved_at: n.recorded_at ?? null, freshness: null }]);
+      }
+    } catch { /* the notebook is optional */ }
+  }
+  /* MLB: the starter records for the club; a different name in a newer report is a change, said as such */
+  let mine: any[], status: { code: string; text: string };
+  const conflicts: any[] = [];
+  if (kind === "MLB_STARTER") {
+    mine = records.filter((r) => r.subject?.topic === "starter" && same(r.subject?.team, clubName)).sort(byTime);
+    const names = Array.from(new Set(mine.map((r) => String(r.subject?.player ?? "")).filter(Boolean)));
+    player = mine[0]?.subject?.player ?? null;
+    if (!mine.length) status = { code: "NO_REPORT", text: game ? `EdgeDesk holds no probable-starter report for ${clubName} in this game.` : `EdgeDesk has no ${clubName} game on its card in the window, so it holds no starter for it.` };
+    else if (names.length > 1) {
+      const card = mine.find((r) => /EdgeDesk's MLB card/.test(String(r.source?.title ?? "")));
+      status = { code: "CHANGED", text: `The sources name different starters for ${clubName}: ${mine.map((r) => `${r.subject.player} per ${r.source.title ?? r.source.publisher} (${availWhen(r.published_at ?? r.retrieved_at, tz)})`).join("; ")}. The newest report names ${mine[0].subject.player}${card && !same(card.subject.player, mine[0].subject.player) ? `; EdgeDesk's MLB card, which its numbers assume, still lists ${card.subject.player}` : ""}.` };
+      conflicts.push({ subject: clubName + " starter", detail: status.text, resolved: false });
+    } else status = { code: String(mine[0].status ?? "PROBABLE").toUpperCase(), text: `${mine[0].subject.player} is ${availStatusText(mine[0].status)} for ${clubName}, per ${mine[0].source.title ?? mine[0].source.publisher}.` };
+  } else {
+    mine = player ? records.filter((r) => same(r.subject?.player, player)).sort((a, b) => rank(a) - rank(b) || byTime(a, b)) : [];
+    /* the game's conflicts (researchSlim keeps the list; gameOut's "conflicts" is a count), else each record's own */
+    const gc: any[] = Array.isArray(G?.research?.conflicts) ? G.research.conflicts : [];
+    for (const c of gc) if (player && same(c.subject, player)) conflicts.push(c);
+    if (!conflicts.length) for (const r of mine) for (const c of (Array.isArray(r.conflicts) ? r.conflicts : [])) if (!conflicts.some((x) => x.detail === c.detail)) conflicts.push({ subject: player, detail: c.detail, resolved: c.resolved === true, unresolved: c.resolved !== true, why_unresolved: c.why_unresolved ?? null });
+    const open = conflicts.filter((c) => c.resolved === false || c.unresolved === true);
+    const avail = mine.filter((r) => r.subject?.topic === "availability");
+    const starter = mine.filter((r) => r.subject?.topic === "starter");
+    const team = clubName ?? "";
+    if (!player) status = { code: "NO_REPORT", text: `EdgeDesk's depth chart lists no starter for ${team}.` };
+    else if (open.length) status = { code: "CONFLICTING", text: `The sources disagree about ${player}, and EdgeDesk does not pick one: ${open.map((c) => c.detail + (c.why_unresolved ? ` (unresolved: ${c.why_unresolved})` : "")).join("; ")}.` };
+    else if (avail.length) { const b = avail[0]; status = { code: String(b.status ?? "LISTED").toUpperCase(), text: `${player} is ${availStatusText(b.status)}, per ${b.source.title ?? b.source.publisher}${conflicts.length ? ` (a disagreement between sources was resolved: ${conflicts[0].detail})` : ""}.` }; }
+    else if (starter.length) status = { code: "LISTED_STARTER", text: `${player} is not on ${availPoss(team)} injury report, and the depth chart lists ${player} as the starter. A listing is not a confirmation of playing, and no report found is not the same as healthy.` };
+    else if (game && !records.length) status = { code: "NOT_RESEARCHED", text: `EdgeDesk did not research ${game.matchup} (it has no projection or market line to compare), so it read no report on ${player} for this answer.` };
+    else status = { code: "NO_REPORT", text: `EdgeDesk's sources hold no report on ${player}${game ? ` for ${game.matchup}` : ""}. No report found is not the same as healthy, and EdgeDesk will not guess a status.` };
+  }
+  /* 4. what it means for the price: the engine's own re-run without the club's starting quarterback, when the slate carries one */
+  let scenario: any = null;
+  if (sport === NFL && game?.scenarios && player && code && same(teams[code]?.starter?.player_name, player) && status.code !== "ACTIVE") {
+    const side = same(clubName, game.home) ? "home" : "away";
+    const sc = game.scenarios[side + "_qb_out"];
+    if (sc && num(sc.home_line) != null) scenario = { side, home_line: num(sc.home_line), base_home_line: num(G?.model_line), delta_home_line: num(sc.delta_home_line), basis: sc.basis ?? null, source: sc.source ?? "football/nfl/slate.json" };
+  }
+  const line = (x: number | null) => x == null ? "?" : (x > 0 ? "+" : "") + (Math.round(x * 10) / 10);
+  const head = kind === "MLB_STARTER" ? `STARTING PITCHER — ${clubName}` : `AVAILABILITY — ${player ?? clubName}${position ? ` (${clubName}, ${position})` : clubName ? ` (${clubName})` : ""}`;
+  const L: string[] = [];
+  L.push(head + (game ? ` · next game: ${game.matchup}, ${availWhen(game.kickoff, tz)}` : ""));
+  L.push("");
+  if (unknownName) L.push(`EdgeDesk holds no report on ${unknownName}: not on the injury report, not on the depth chart, not in the desk's notes. It will not guess a status. What it holds for ${clubName}:`);
+  if (namesakes.length) L.push(`Another player with this name is on ${namesakes.join(" and ")}; this answer is about ${availPoss(clubName)} ${player}. Name the club to ask about the other.`);
+  L.push((status.code === "CONFLICTING" || status.code === "CHANGED" ? "Status: CONFLICTING — " : "Status: ") + status.text);
+  const srcs: { title: string; url: string }[] = [];
+  const cite = (r: any) => { const u = r?.source?.url; if (!u) return ""; let i = srcs.findIndex((x) => x.url === u); if (i < 0) { srcs.push({ title: r.source.title ?? r.source.publisher ?? u, url: u }); i = srcs.length - 1; } return ` [${i + 1}]`; };
+  if (mine.length) {
+    L.push("");
+    L.push("What each source says:");
+    /* the claim states the status in the source's words; the plain-English status is added only where it does not */
+    mine.slice(0, 6).forEach((r, i) => L.push(`${i + 1}. ${r.source.title ?? r.source.publisher} — ${r.claim}${r.status && !new RegExp("\\b" + String(r.status).replace(/_/g, " ") + "\\b", "i").test(String(r.claim ?? "")) && !/listed as the starter/.test(String(r.claim ?? "")) ? ` (${availStatusText(r.status)})` : ""} · published ${availWhen(r.published_at ?? r.retrieved_at, tz)}${r.freshness ? " · " + availFresh(r.freshness) : ""}${r.type === "HYPOTHESIS" || /SPECULATION/.test(String(r.source?.reliability ?? "")) ? " · speculation, not counted toward the status" : ""}${cite(r)}`));
+  }
+  if (scenario) {
+    L.push("");
+    L.push(`If ${player} does not play: EdgeDesk's engine, re-run without ${availPoss(clubName)} starting quarterback, prices ${game!.home} at ${line(scenario.home_line)}${scenario.base_home_line != null ? ` instead of ${line(scenario.base_home_line)}` : ""}. That is the engine's own re-run (${scenario.source}), not a market price.`);
+  }
+  L.push("");
+  L.push(game ? `For the model, the market and the audit on this game, ask "Research this game" from the game view.` : `EdgeDesk has no ${clubName ?? "club"} game on its card in the next 9 days.`);
+  if (srcs.length) { L.push(""); L.push("Sources:"); srcs.forEach((x, i) => L.push(`[${i + 1}] ${x.title} — ${x.url}`)); }
+  const plan = researchPlanFor(o.body, "AVAILABILITY", { known_players: player ? [{ name: player, team: code, position }] : [] });
+  return {
+    answer: L.join("\n"), model: null, narration: { ok: true, prose: "DETERMINISTIC", critic: null },
+    quant: { intent: "AVAILABILITY", version: EDQUANT?.VERSION ?? null },
+    availability: { schema: "edgedesk_availability_v1", sport, kind, player, team: clubName, position, unknown_name: unknownName, game: game ? { game_id: game.game_id, matchup: game.matchup, kickoff: game.kickoff } : null,
+      status, records: mine.slice(0, 8), conflicts, scenario, sources: srcs, namesakes },
+    research: game ? { research_context: { sport, game_id: game.game_id, home: game.home, away: game.away, turns: 1 } } : null,
+    ...(plan ? { research_plan: plan, research_plan_actual: EDORCH.reconcile(plan, ran) } : {}),
+    build: BUILD,
+  };
+}
+
+/* ========================================================================
    THE SUPPORT BOUNDARY — a retired sport (EDSPORTS, lib/edgedesk_sports.js).
 
    Tennis is not a product EdgeDesk offers today. A question asking for
@@ -53023,6 +53278,59 @@ export function retiredSportTurn(o: { question?: string | null; sportKey?: strin
       sport: b.entry.id, label: b.entry.label, stage: o.stage ?? "question", reason: b.reason,
       coverage: EDSPORTS.RESEARCH_COVERAGE.map((c: any) => c.label),
     },
+    build: BUILD,
+  };
+}
+
+/* ========================================================================
+   OUT OF SCOPE — what the research plan (EDORCH) marks UNSUPPORTED, answered
+   before any route, desk or model: a sport EdgeDesk neither models nor
+   prices, an outcome no one can know (a season's champion), and a demand for
+   a guarantee. One plain answer naming what EdgeDesk CAN measure instead; no
+   model call, no research bought. Narrow on purpose:
+     - a question an engine route answers (a contract price, coverage, a game
+       open on screen) is never intercepted; a scan or slate question only when
+       it names an unsupported sport and no covered one ("Best Premier League
+       bet this weekend?" is not answered with an NFL pick);
+     - "who will win" with a game or team named goes on to the desk, which
+       reports the model's probability for that game;
+     - "across all sports" is a scan, whatever else it names.
+   ======================================================================== */
+const OOS_CERTAINTY = /\b(guarantee\w*|sure thing|can'?t lose|cannot lose|lock of the (day|week|night)|100% (sure|certain|lock|locks|guaranteed|win|winner))\b/i;
+const OOS_FUTURES = /\b(super bowl|world series|nba finals|stanley cup|championship|national title|mvp|heisman|pennant|playoffs?|division title|win totals?)\b/i;
+export function outOfScopeTurn(body: any): any | null {
+  if (!OUT_OF_SCOPE_ENABLED || !EDORCH || !body) return null;
+  const q = String(body.question ?? "").trim();
+  if (!q || q.length > 400) return null;
+  const route = quantRouteOf(body);
+  if (route && route !== "SCAN" && route !== "RESEARCH_SLATE") return null;
+  if (EDQUANT && EDQUANT.classify(q).all_sports) return null;
+  const plan = researchPlanFor(body, null);
+  if (!plan || plan.path !== "UNSUPPORTED") return null;
+  const c = plan.classification ?? {};
+  const unsupported: string[] = Array.isArray(c.unsupported_sports) ? c.unsupported_sports : [];
+  const named = (c.teams ?? []).length > 0 || (c.event && (c.event.kind === "GAME" || c.event.kind === "MATCHUP" || c.event.kind === "TEAM"));
+  const kind = unsupported.length && !c.sport ? "SPORT" : OOS_CERTAINTY.test(q) ? "CERTAINTY" : !named && !route ? "OUTCOME" : null;
+  if (!kind) return null;
+  /* a scan or slate route is only overridden for a sport it cannot cover */
+  if (route && kind !== "SPORT") return null;
+  const covered = EDSPORTS ? EDSPORTS.RESEARCH_COVERAGE.map((x: any) => x.label) : ["Football", "UFC", "Baseball"];
+  const list = (a: string[]) => a.length <= 1 ? a.join("") : a.slice(0, -1).join(", ") + " and " + a[a.length - 1];
+  const ask = "Name a game (for example \"Research Lions at Bills\") or ask \"What's the best bet this weekend across all sports?\"";
+  let answer: string;
+  const cap = (x: string) => x ? x.charAt(0).toUpperCase() + x.slice(1) : x;
+  if (kind === "SPORT") answer = `${cap(list(unsupported))} ${unsupported.length === 1 ? "is" : "are"} not covered: EdgeDesk has no model and captures no prices for ${unsupported.length === 1 ? "it" : "them"}, so there is nothing it can research or price there, and it will not answer from general knowledge. EdgeDesk's research covers ${list(covered)}. ${ask}`;
+  else if (kind === "CERTAINTY") {
+    const team = (c.teams ?? [])[0]?.name ?? null;
+    answer = "No bet can be promised to win, and EdgeDesk never calls one a lock: every number it reports is a probability or a price, with the model's measured record beside it. "
+      + (team ? `For ${team}, EdgeDesk can say whether a specific price is worth taking: ask, for example, "Is ${team} -2.5 a good bet?".` : `What it can do is say whether a specific price clears its research and execution thresholds. ${ask}`);
+  } else answer = (OOS_FUTURES.test(q) ? "EdgeDesk prices individual games; it does not model season-long outcomes such as a championship, so it has no number for this. " : "")
+    + "No one can know an outcome before it happens, and EdgeDesk does not predict winners as certainties. What it measures instead: each game's model probability and line, the market's price, and whether a price clears its research and execution thresholds. " + ask;
+  return {
+    answer, model: null, narration: { ok: true, prose: "DETERMINISTIC", critic: null },
+    quant: { intent: "UNSUPPORTED", version: EDQUANT?.VERSION ?? null },
+    unsupported: { kind, sports: unsupported, why: (plan.why ?? []).slice(0, 3), coverage: covered },
+    research_plan: plan,
     build: BUILD,
   };
 }
@@ -53263,6 +53571,12 @@ export async function handle(req: Request): Promise<Response> {
     const rb = retiredSportTurn({ question: String(body?.question ?? ""), sportKey: body?.packet?.game?.sport_key ?? body?.packet?.sport_key ?? null, stage: "question" });
     if (rb) return await rjson(rb, 200, "deterministic");
   }
+  /* --- out of scope (the research plan's UNSUPPORTED): an uncovered sport, an unknowable outcome, a guarantee.
+     After the retired-sport boundary, before the desks, the research routes and the model. */
+  if (body?.desk === true) {
+    try { const oos = outOfScopeTurn(body); if (oos) return await rjson(oos, 200, "deterministic"); }
+    catch (e) { try { console.error("edgedesk_ai out-of-scope check threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
+  }
 
   /* --- player props: answered from the committed Player Props boards, for a
      desk client and a chat client alike; anything that is not a player-prop
@@ -53348,6 +53662,9 @@ export async function handle(req: Request): Promise<Response> {
     /* a non-QB personnel question on one game: the measured injury impact, deterministic, moving no number */
     try { const p = await personnelTurn({ body, auth }); if (p) return await rjson(p, 200, "deterministic"); }
     catch (e) { try { console.error("edgedesk_ai personnel turn threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
+    /* "is X playing?" / "who starts for Y?": the status from the sources EdgeDesk reads, model-free */
+    try { const a = await availabilityTurn({ body, auth }); if (a) return await rjson(a, 200, "deterministic"); }
+    catch (e) { try { console.error("edgedesk_ai availability turn threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
     try { const d = await deskTurn({ body, auth }); if (d) return await rjson(d, 200, "deterministic"); }
     catch (e) { try { console.error("edgedesk_ai desk turn threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
   }

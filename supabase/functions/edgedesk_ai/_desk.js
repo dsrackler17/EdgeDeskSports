@@ -769,14 +769,16 @@
   function detectSports(q) { var out = []; SPORT_RX.forEach(function (s) { if (s[1].test(q)) out.push(s[0]); }); return out; }
   function detectMarket(q) {
     if (/\b(ml|moneyline|money line|straight up|to win outright|outright)\b/i.test(q)) return 'moneyline';
-    if (/\b(total|totals|over|under|o\/u)\b/i.test(q)) return 'total';
+    /* "over"/"under" name the total only as a bet ("Over 49.5", "the over"), not in "an edge over a coin flip" or "Bills over Lions" */
+    if (/\b(total|totals|o\/u)\b/i.test(q) || /\b(over|under)\s*\d/i.test(q) || /\b(the|an?) (over|under)\b(?!\s+(a|an|the|my|our|his|her|their)\b)/i.test(q) || /^\s*(over|under)\b/i.test(q) || /\b(over|under)\s*\??\s*$/i.test(q)) return 'total';
     if (/\b(spread|spreads|ats|points)\b/i.test(q)) return 'spread';
     return null;
   }
   /** Numbers in the text: lines (|x| < 60) and American prices (|x| >= 100). */
   function parseNumbers(q) {
     var out = { lines: [], prices: [], pk: /\b(pk|pick ?'?em|pick)\b/i.test(q) };
-    var re = /(^|[\s(@,:])([+-]?\d{1,3}(?:\.5|\.0)?)(?=$|[\s),?.!]|\b)/g, m;
+    /* a percentage or a contract price ("53%", "49¢") is not a line or a price */
+    var re = /(^|[\s(@,:])([+-]?\d{1,3}(?:\.5|\.0)?)(?![\d%¢])(?=$|[\s),?.!]|\b)/g, m;
     while ((m = re.exec(q))) {
       var raw = m[2], n = num(raw); if (n == null) continue;
       if (Math.abs(n) >= 100) out.prices.push({ value: n, signed: /^[+-]/.test(raw), at: m.index });
@@ -1334,12 +1336,20 @@
     if (out.intent !== 'DEEP' && /^\s*#+\s|THE CASE FOR EACH SIDE|WHAT THE MARKET SAYS/im.test(p)) issues.push({ code: 'TEMPLATE', severity: 'FAIL', detail: 'section headings in a short answer' });
     var kv = /\b(yes|no)\b/i.exec(str(out.text).slice(0, 12)), pv = /\b(yes|no)\b/i.exec(p.slice(0, 40));
     if (kv && pv && kv[1].toLowerCase() !== pv[1].toLowerCase()) issues.push({ code: 'VERDICT_FLIPPED', severity: 'FAIL', detail: 'the kernel said ' + kv[1] + ', the prose said ' + pv[1] });
-    /* the headline facts survive: every number in EdgeDesk's first sentence appears in the rewrite */
-    var first = str(out.text).split(/(?<=[.!?])\s+/)[0] || '';
+    /* the headline facts survive: every number and every team in EdgeDesk's headline appears in the rewrite. The
+       headline is the first sentence — and the one after it when the first is only a verdict ("No."), or a rewrite
+       that drops the side, the price and the reason would pass with nothing to check. */
+    var sents = str(out.text).split(/(?<=[.!?])\s+/);
+    var first = sents[0] || '';
+    var namesTeam = (ctx.teams || []).some(function (t) { var n = normName(t); return n.length >= 3 && (' ' + normName(first) + ' ').indexOf(' ' + n + ' ') >= 0; });
+    if (sents[1] && (first.replace(/[^A-Za-z0-9]/g, '').length < 12 || (!/\d/.test(first) && !namesTeam))) first = first + ' ' + sents[1];
     var keyNums = (first.match(/[+-]?\d+(?:\.\d+)?/g) || []).map(function (x) { return Math.abs(num(x)); });
     var proseNums = (p.match(/[+-]?\d+(?:\.\d+)?/g) || []).map(function (x) { return Math.abs(num(x)); });
     var dropped = keyNums.filter(function (k) { return !proseNums.some(function (x) { return Math.abs(x - k) < 0.051; }); });
-    if (dropped.length) issues.push({ code: 'KEY_FACT_DROPPED', severity: 'FAIL', detail: dropped.join(', ') });
+    var headTeams = uniq((ctx.teams || []).filter(function (t) { var n = normName(t); return n.length >= 3 && (' ' + normName(first) + ' ').indexOf(' ' + n + ' ') >= 0; }));
+    /* a rewrite may shorten a club to its nickname ("the Bills") */
+    var droppedTeams = headTeams.filter(function (t) { var w = ' ' + normName(p) + ' ', n = normName(t), nick = n.split(' ').pop(); return w.indexOf(' ' + n + ' ') < 0 && !(nick && nick.length >= 3 && w.indexOf(' ' + nick + ' ') >= 0); });
+    if (dropped.length || droppedTeams.length) issues.push({ code: 'KEY_FACT_DROPPED', severity: 'FAIL', detail: dropped.concat(droppedTeams).join(', ') });
     if (/^Nothing stands out/.test(str(out.text)) && !/\bnothing\b|\bno (bet|value|play)\b|\bpass\b/i.test(p)) issues.push({ code: 'PASS_TURNED_INTO_PICK', severity: 'FAIL' });
     /* a team on the board that EdgeDesk's answer did not name may not appear: the writer cannot change the pick */
     var said = ' ' + normName(out.text) + ' ', wrote = ' ' + normName(p) + ' ';

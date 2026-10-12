@@ -737,6 +737,55 @@ function consistent(tag, answer, row) {
   ok('STREAM: cancelling stops the run: no result was sent and no research memory was written', !stc.events.some((e) => e.type === 'result') && !posted.some((p) => p.table === 'research_findings' || p.table === 'research_runs'), [stc.events.map((e) => e.type), posted.map((p) => p.table)]);
   const stp = await streamAsk('Is Guardians at 49¢ on Kalshi a good price?');
   ok('STREAM: a question the research routes do not stream comes back as plain JSON (the client reads both)', /json/.test(stp.ct) && !/ndjson/.test(stp.ct) && stp.json && stp.json.quant && stp.json.quant.intent === 'CONTRACT', [stp.ct, stp.json && stp.json.quant]);
+
+  /* ═══ PHASE 4 — WHAT THE BENCHMARK FOUND (tools/research/benchmark): a player's status, what EdgeDesk does not
+     measure, a schedule question, a price read that failed. Each model-free, through the full handler. ═══ */
+  {
+    const S2M = metricsWith({ BUF: { players: [{ name: 'Josh Allen', position: 'QB', status: 'Out', injury: 'Shoulder', practice: 'Did Not Participate In Practice' }], retrieved_at: ISO(-30 * H) } });
+    const S2N = notes([{ sport: 'americanfootball_nfl', team: 'BUF', kind: 'availability', player: 'Josh Allen', status: 'ACTIVE', key: true, text: 'Josh Allen was a full participant in Saturday practice and will play Sunday', source: 'ESPN', url: 'https://www.espn.com/nfl/story/_/id/fixture-allen-practice', published_at: ISO(-2 * H), recorded_at: ISO(-90), source_kind: 'NEWS' }]);
+    const av = await streamAsk('Is Josh Allen playing Sunday?', { metrics: S2M, notes: S2N, dump: 'b_availability' });
+    const aj = av.json || {}, aa = aj.availability || {};
+    ok('AVAILABILITY: "Is Josh Allen playing Sunday?" is answered from the sources EdgeDesk reads, through the handler, with no model call', aj.quant && aj.quant.intent === 'AVAILABILITY' && modelCalls === 0 && aa.player === 'Josh Allen' && aa.team === 'Buffalo Bills' && aa.game && aa.game.game_id === 'nfl-fx-det-buf', [aj.quant, modelCalls, aa.player, aa.game]);
+    ok('AVAILABILITY: the official OUT and the credible ACTIVE are a conflict it names and does not settle', aa.status && aa.status.code === 'CONFLICTING' && /OUT per nflverse vs ACTIVE per ESPN/.test(aj.answer) && /does not pick one/.test(aj.answer) && (aa.conflicts || []).length >= 1, [aa.status, (aj.answer || '').split('\n').slice(0, 3)]);
+    ok('AVAILABILITY: each source in its own words, with its time and freshness, and a numbered link that was read', aa.records.some((r) => /espn\.com/.test(r.source.url)) && aa.records.some((r) => /injuries_2026\.csv/.test(r.source.url)) && /What each source says:/.test(aj.answer) && /\[1\] .+ — https:\/\//.test(aj.answer), aa.records.map((r) => r.source.url));
+    ok('AVAILABILITY: the engine\'s own QB-out re-run is shown as a model re-run, never a market price', aa.scenario && aa.scenario.side === 'home' && /re-run without Buffalo Bills' starting quarterback/.test(aj.answer) && /not a market price/.test(aj.answer), [aa.scenario, (aj.answer || '').match(/If .*$/m)]);
+    ok('AVAILABILITY: it carries its plan (route AVAILABILITY) and what actually ran', aj.research_plan && aj.research_plan.classification.route === 'AVAILABILITY' && aj.research_plan.path === 'ENGINE_RESEARCH' && aj.research_plan.steps.some((x) => x.stage === 'VERIFY_INJURIES') && Array.isArray(aj.research_plan_actual), aj.research_plan && [aj.research_plan.classification.route, aj.research_plan.steps.map((x) => x.stage)]);
+    const ar = await streamAsk('Is Anthony Richardson starting for the Colts?', {});
+    const arj = ar.json || {};
+    ok('AVAILABILITY: a player EdgeDesk holds nothing on is said to be unknown and given no status; the club\'s listed starter is shown instead', arj.availability && arj.availability.unknown_name === 'Anthony Richardson' && /holds no report on Anthony Richardson/.test(arj.answer) && !/Anthony Richardson (is|will be) (out|active|starting|playing)/i.test(arj.answer) && /Daniel Jones/.test(arj.answer) && modelCalls === 0, (arj.answer || '').split('\n').slice(0, 4));
+    const az = await streamAsk('Is Zebulon Quarterbackson playing Sunday?', {});
+    ok('AVAILABILITY: a name on no list and no club named is not given an availability card', !(az.json && az.json.availability), az.json && az.json.quant);
+    const un = await streamAsk('Best Premier League bet this weekend?', { dump: 'b_unsupported' });
+    const uj = un.json || {};
+    ok('UNSUPPORTED: a soccer question is not answered with an NFL pick: it says soccer is not covered, and calls no model', uj.quant && uj.quant.intent === 'UNSUPPORTED' && uj.unsupported.kind === 'SPORT' && /Soccer is not covered/.test(uj.answer) && !/Buffalo Bills/.test(uj.answer) && modelCalls === 0, [uj.quant, uj.answer]);
+    const uf = await streamAsk('Who will win the Super Bowl in 2031?', {});
+    ok('UNSUPPORTED: a season-long outcome is not modelled and not guessed', uf.json && uf.json.quant.intent === 'UNSUPPORTED' && uf.json.unsupported.kind === 'OUTCOME' && /does not model season-long outcomes/.test(uf.json.answer) && modelCalls === 0, uf.json && uf.json.answer);
+    const ug = await streamAsk('Can you guarantee the Bills cover -2.5?', {});
+    ok('UNSUPPORTED: a demand for a guarantee is answered without one, pointing to the price question it can answer', ug.json && ug.json.unsupported && ug.json.unsupported.kind === 'CERTAINTY' && /Is Buffalo Bills -2\.5 a good bet\?/.test(ug.json.answer) && !/\bguaranteed\b/i.test(ug.json.answer), ug.json && ug.json.answer);
+    const uw = await streamAsk('Who will win Lions at Bills?', {});
+    ok('UNSUPPORTED: "who will win" about a named game is not intercepted (the desk reports that game\'s probability)', !(uw.json && uw.json.unsupported), uw.json && (uw.json.quant || Object.keys(uw.json).slice(0, 6)));
+    const ua = await streamAsk("What's the best bet this weekend across all sports, NBA included?", {});
+    const uaP = ua.events.length ? (ua.events.find((e) => e.type === 'result') || {}).payload : ua.json;
+    ok('UNSUPPORTED: "across all sports" stays a scan whatever else it names', uaP && uaP.quant && uaP.quant.intent === 'SCAN', uaP && uaP.quant);
+    const sc = await streamAsk('When do the Lions play the Bills?', {});
+    ok('SCHEDULE: "When do the Lions play the Bills?" is answered with the kickoff on the card, not a price verdict, with no model call', sc.json && sc.json.desk && sc.json.desk.intent === 'SCHEDULE' && /^Detroit Lions @ Buffalo Bills kicks off /.test(sc.json.answer) && !/paying more|value/i.test(sc.json.answer) && modelCalls === 0, sc.json && sc.json.answer);
+    /* two players with one name: the club the question names, else the listed starter — and the answer says who else has it */
+    const NS = metricsWith({ JAX: { players: [{ name: 'Josh Allen', position: 'LB', status: 'Questionable', injury: 'Ankle', practice: 'Limited Participation In Practice' }] } });
+    const ns1 = await streamAsk('Is Josh Allen playing Sunday?', { metrics: NS });
+    ok('AVAILABILITY: a name two clubs carry goes to the listed starter, and the answer names the other club', ns1.json && ns1.json.availability && ns1.json.availability.team === 'Buffalo Bills' && /Another player with this name is on Jacksonville Jaguars/.test(ns1.json.answer), ns1.json && [ns1.json.availability && ns1.json.availability.team, (ns1.json.answer || '').split('\n').slice(0, 4)]);
+    const ns2 = await streamAsk('Is Josh Allen from the Jaguars playing this week?', { metrics: NS });
+    ok('AVAILABILITY: naming the club picks that club\'s player', ns2.json && ns2.json.availability && ns2.json.availability.team === 'Jacksonville Jaguars' && /Another player with this name is on Buffalo Bills/.test(ns2.json.answer), ns2.json && [ns2.json.availability && ns2.json.availability.team, (ns2.json.answer || '').split('\n').slice(0, 4)]);
+    /* the operator's switches: both routes off, the questions go back to the routes that answered them before */
+    ENV.EDGEDESK_AVAILABILITY = '0'; ENV.EDGEDESK_OUT_OF_SCOPE = '0';
+    const mOff = await import(pathToFileURL(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', 'index.ts')).href + '?flags=off');
+    delete ENV.EDGEDESK_AVAILABILITY; delete ENV.EDGEDESK_OUT_OF_SCOPE;
+    route = routerFor({});
+    const offA = await mOff.availabilityTurn({ body: { question: 'Is Josh Allen playing Sunday?', desk: true }, auth: 'Bearer ' + USER_JWT, now: NOW });
+    const offU = mOff.outOfScopeTurn({ question: 'Best Premier League bet this weekend?', desk: true });
+    ok('SWITCHES: EDGEDESK_AVAILABILITY=0 and EDGEDESK_OUT_OF_SCOPE=0 turn both routes off without a code change', offA === null && offU === null && !!m.outOfScopeTurn({ question: 'Best Premier League bet this weekend?', desk: true }), [offA && offA.quant, offU && offU.quant]);
+    const rf = await ask("What's the best bet this weekend across all sports?", { fail: (u) => /\/rest\/v1\/signals\?/.test(u) });
+    ok('COVERAGE: when the captured prices cannot be read, the coverage says the read failed — never "no captured prices"', rf && /NFL \(read failed\)/.test(rf.answer) && !/NFL \(games but no captured prices\)/.test(rf.answer), rf && (rf.answer || '').split('\n').filter((l) => /Coverage/.test(l)));
+  }
   Date.now = realNow;
 
   if (DUMP) fs.writeFileSync(process.env.RESEARCH_DUMP, JSON.stringify(DUMP));
