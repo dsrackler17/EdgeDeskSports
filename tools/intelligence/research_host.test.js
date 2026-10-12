@@ -560,6 +560,13 @@ function consistent(tag, answer, row) {
   const st = await streamAsk("What's the best bet this weekend across all sports?", { dump: 'h_scan_weekend' });
   const stages = st.events.filter((e) => e.type === 'progress');
   ok('STREAM: the handler streams NDJSON: accepted first, a result last', /ndjson/.test(st.ct) && st.events[0] && st.events[0].type === 'accepted' && st.events[st.events.length - 1].type === 'result', st.events.map((e) => e.type));
+  /* PHASE 4: the plan arrives before any work, and the result carries planned vs actual */
+  const planEv = st.events[1];
+  ok('PLAN: the second event is the plan (before any progress), with its path, datasets, calculations and estimate', planEv && planEv.type === 'plan' && planEv.plan && planEv.plan.path === 'ENGINE_RESEARCH' && planEv.plan.datasets.length >= 3 && planEv.plan.calculations.length >= 3 && planEv.plan.estimate && planEv.plan.estimate.usd === 0 && st.events.findIndex((e) => e.type === 'progress') > 1, planEv && [planEv.type, planEv.plan && planEv.plan.path]);
+  ok('PLAN: every planned stage is a stage the stream reports (no invented step names)', planEv && planEv.plan.steps.every((x) => ['FIND_EVENTS', 'COMPARE_PRICES', 'RETRIEVE_STATS', 'VERIFY_INJURIES', 'CALCULATE', 'AUDIT', 'CHALLENGE', 'EXPLAIN', 'SEARCH', 'LOOKUP', 'READ_HISTORY', 'ANALYZE_HISTORY', 'MODEL_DESK'].includes(x.stage)), planEv && planEv.plan.steps.map((x) => x.stage));
+  const resP = st.events[st.events.length - 1].payload;
+  const act = resP && resP.research_plan_actual;
+  ok('PLAN: the result carries planned vs actual, and every stage the stream reported is marked as it ran', act && act.length === planEv.plan.steps.length && act.filter((x) => x.actual !== 'not_run').every((x) => stages.some((e) => e.stage === x.stage && e.status === x.actual)), act);
   const order = ['FIND_EVENTS', 'COMPARE_PRICES', 'RETRIEVE_STATS', 'VERIFY_INJURIES', 'CALCULATE', 'AUDIT', 'EXPLAIN'];
   const firstDone = order.map((k) => stages.findIndex((e) => e.stage === k && (e.status === 'done' || e.status === 'skipped')));
   ok('STREAM: every research step reports, in the order the work actually happens, each with a real detail', firstDone.every((x) => x >= 0) && firstDone.every((x, i) => i === 0 || x > firstDone[i - 1]) && stages.every((e) => e.label && typeof e.detail === 'string' && e.detail.length > 3 && typeof e.t_ms === 'number'), stages.map((e) => e.stage + ':' + e.status + ':' + (e.detail || '').slice(0, 40)));
