@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-12T00:07:44.237Z",
- "board_generated_at": "2026-10-12T00:07:39.612Z",
+ "generated_at": "2026-10-12T01:07:45.929Z",
+ "board_generated_at": "2026-10-12T01:07:41.410Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -16,16 +16,16 @@
  ],
  "games": [
   {
-   "game_id": "401858488",
-   "game": "Ohio State @ Indiana",
-   "kickoff": "2026-10-17T16:00:00.000Z",
+   "game_id": "401856831",
+   "game": "Oklahoma State @ Houston",
+   "kickoff": "2026-10-17T23:30:00.000Z",
    "named": false,
-   "edgedesk": "Indiana -2.5",
-   "market": "Ohio State -3.5",
+   "edgedesk": "Houston -10.9",
+   "market": "Houston -4.5",
    "books": 1,
-   "gap": 6,
+   "gap": 6.4,
    "gap_class": "MODERATE",
-   "favorite_flip": true,
+   "favorite_flip": false,
    "research_status": "INVESTIGATE",
    "research_label": "INVESTIGATE",
    "decision_status": "PASS",
@@ -36,16 +36,16 @@
    "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
-   "game_id": "401860923",
-   "game": "Colorado State @ Texas State",
-   "kickoff": "2026-10-16T00:00:00.000Z",
+   "game_id": "401858488",
+   "game": "Ohio State @ Indiana",
+   "kickoff": "2026-10-17T16:00:00.000Z",
    "named": false,
-   "edgedesk": "Texas State -20.3",
-   "market": "Texas State -13.5",
+   "edgedesk": "Indiana -2.5",
+   "market": "Ohio State -3.5",
    "books": 1,
-   "gap": 6.8,
+   "gap": 6,
    "gap_class": "MODERATE",
-   "favorite_flip": false,
+   "favorite_flip": true,
    "research_status": "INVESTIGATE",
    "research_label": "INVESTIGATE",
    "decision_status": "PASS",
@@ -162,6 +162,26 @@
    "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
   },
   {
+   "game_id": "401862801",
+   "game": "Memphis @ Tulane",
+   "kickoff": "2026-10-16T23:30:00.000Z",
+   "named": false,
+   "edgedesk": "Memphis -4.8",
+   "market": "Memphis -7.0",
+   "books": 1,
+   "gap": 2.2,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
    "game_id": "401858494",
    "game": "Wisconsin @ UCLA",
    "kickoff": "2026-10-17T04:00:00.000Z",
@@ -248,24 +268,136 @@
    "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; no abnormal availability fail; submodel support fail; football-only calibration preserves the major gap fail."
   },
   {
-   "game_id": "401864522",
-   "game": "Northern Illinois @ Wyoming",
-   "kickoff": "2026-10-17T19:30:00.000Z",
+   "game_id": "401856833",
+   "game": "Utah @ Colorado",
+   "kickoff": "2026-10-18T02:15:00.000Z",
    "named": false,
-   "edgedesk": "Wyoming -11.6",
-   "market": "Wyoming -7.5",
+   "edgedesk": "Utah -23.0",
+   "market": "Utah -15.5",
    "books": 1,
-   "gap": 4.1,
-   "gap_class": "MODERATE",
+   "gap": 7.5,
+   "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
    "research_label": "INVESTIGATE",
    "decision_status": "PASS",
-   "gate_status": "NOT REQUIRED (under 7 pts)",
-   "root_cause": null,
-   "requirements": null,
+   "gate_status": "MARKET_FAULT",
+   "root_cause": "THIN_MARKET",
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-18T02:15:00.000Z"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Folsom Field), declared by the schedule feed"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "FAIL",
+     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+    },
+    {
+     "requirement": "current team states",
+     "result": "PASS",
+     "detail": "PASS: fewest current-season games behind a rating: 5 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 2.2 rating pts"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "PASS",
+     "detail": "PASS: Colorado: Isaac Wilson (previous game) · PASS: Utah: Devon Dampier (previous game)"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "PASS",
+     "detail": "PASS: Colorado: availability sources checked, nothing filed · PASS: Utah: availability sources checked, nothing filed"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "PASS",
+     "detail": "WARN: the matchup term alone (-4.5 pts) lifts the gap over 7: without it the gap is 3 — historically informative, flagged for scrutiny"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "FAIL",
+     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · FAIL: the independent ensemble is 0.4 pts on the market’s side"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "PASS",
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 8"
+    }
+   ],
    "consistent": true,
-   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; submodel support fail."
+  },
+  {
+   "game_id": "401860923",
+   "game": "Colorado State @ Texas State",
+   "kickoff": "2026-10-16T00:00:00.000Z",
+   "named": false,
+   "edgedesk": "Texas State -20.3",
+   "market": "Texas State -12.5",
+   "books": 0,
+   "gap": 7.8,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "NO_MARKET",
+   "research_label": "STALE MARKET",
+   "decision_status": "NO_DECISION",
+   "gate_status": "NOT RUN",
+   "root_cause": null,
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "current team states",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "NOT RUN",
+     "detail": "no check of this kind ran for this game"
+    }
+   ],
+   "consistent": true,
+   "verdict": "STALE MARKET is correct: correct game not run; correct home/away not run; fresh multi-book consensus not run; current team states not run; resolved QB not run; no abnormal availability not run; component adjustments within historical bounds not run; submodel support not run; football-only calibration preserves the major gap not run."
   }
  ],
  "inconsistent": [],
