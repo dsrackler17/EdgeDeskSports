@@ -35,6 +35,7 @@ on:
       - 'lib/edgedesk_orchestrator.js'
       - 'lib/edgedesk_evidence.js'
       - 'lib/edgedesk_quant_verify.js'
+      - 'lib/edgedesk_challenge.js'
       - 'supabase/research_intel.sql'
       - 'supabase/quant_desk.sql'
       - 'football/validation/calibration_props_*.json'
@@ -104,6 +105,7 @@ on:
       - 'lib/edgedesk_orchestrator.js'
       - 'lib/edgedesk_evidence.js'
       - 'lib/edgedesk_quant_verify.js'
+      - 'lib/edgedesk_challenge.js'
       - 'supabase/research_intel.sql'
       - 'supabase/quant_desk.sql'
       - 'football/validation/calibration_props_*.json'
@@ -201,6 +203,8 @@ jobs:
         run: node tools/intelligence/evidence.test.js
       - name: The calculation ledger — versioned implied / no-vig / fair / EV / break-even / max price / line gap / calibration records, recomputed independently; the number verifier
         run: node tools/intelligence/quant_verify.test.js
+      - name: The challenge pass — the eight questions against the evidence and calculation ledgers; it only lowers, never raises; confidence is a category
+        run: node tools/intelligence/challenge.test.js
 
   football-artifacts:
     runs-on: ubuntu-latest

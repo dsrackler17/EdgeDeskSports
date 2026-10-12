@@ -55,17 +55,18 @@ ok('screen neutralises: markup escaped, control and zero-width characters remove
 ok('screen caps the length', E.screen('x'.repeat(2000), 100).text.length === 100);
 
 /* ---------------- freshness ---------------- */
-const f1 = E.freshness(hAgo(2), 'availability', NOW);
-ok('freshness: a 2-hour-old availability report, no game soon → FRESH (6 h window)', f1.status === 'FRESH' && f1.age_min === 120 && f1.ttl_min === 360, f1);
-const f2 = E.freshness(hAgo(2), 'availability', NOW, KICK);
-ok('freshness: the same report inside a day of kickoff → AGING (90 min window)', f2.status === 'AGING' && f2.ttl_min === 90 && /inside a day/.test(f2.basis), f2);
-const f3 = E.freshness(hAgo(5), 'availability', NOW, KICK);
-ok('freshness: 5 hours old inside a day → STALE', f3.status === 'STALE', f3);
+const f1 = E.freshness(hAgo(30), 'availability', NOW);
+ok('freshness: a 30-hour-old availability report, no game soon → FRESH (the researcher\'s 72 h window)', f1.status === 'FRESH' && f1.age_min === 1800 && f1.ttl_min === 72 * 60, f1);
+const f2 = E.freshness(hAgo(30), 'availability', NOW, KICK);
+ok('freshness: the same report inside a day of kickoff → AGING (24 h window)', f2.status === 'AGING' && f2.ttl_min === 24 * 60 && /inside a day/.test(f2.basis), f2);
+const f3 = E.freshness(hAgo(80), 'availability', NOW, KICK);
+ok('freshness: 80 hours old inside a day → STALE', f3.status === 'STALE', f3);
+ok('freshness: a starter listing tightens to 12 h inside a day; an MLB lineup to 4 h', E.freshness(hAgo(13), 'starter', NOW, KICK).status === 'AGING' && E.freshness(hAgo(5), 'lineup', NOW, KICK).status === 'AGING' && E.freshness(hAgo(13), 'starter', NOW).status === 'FRESH');
 ok('freshness: a statistic a few days old is still FRESH', E.freshness(hAgo(72), 'statistic', NOW).status === 'FRESH');
 ok('freshness: a market price 2 hours old is AGING; 4 hours is STALE', E.freshness(hAgo(2), 'market', NOW).status === 'AGING' && E.freshness(hAgo(4), 'market', NOW).status === 'STALE');
 ok('freshness: no timestamp → UNKNOWN (never assumed fresh)', E.freshness(null, 'availability', NOW).status === 'UNKNOWN');
 ok('freshness: an unknown topic uses "other"', E.freshness(hAgo(1), 'astrology', NOW).topic === 'other');
-ok('freshness: a game already started is not "inside a day" (no tightening after kickoff)', E.freshness(hAgo(2), 'availability', NOW, NOW - 3600000).ttl_min === 360);
+ok('freshness: a game already started is not "inside a day" (no tightening after kickoff)', E.freshness(hAgo(2), 'availability', NOW, NOW - 3600000).ttl_min === 72 * 60);
 
 /* ---------------- records from real researcher findings (_agents.js normalize) ---------------- */
 const ctxN = { event_ref: 'nfl-fx-det-buf' };
@@ -79,7 +80,7 @@ ok('fixtures: the researcher normalised every finding (none refused)', [off, sta
 const c0 = { now: NOW, kickoff: KICK, sport: 'americanfootball_nfl', game_id: 'nfl-fx-det-buf' };
 const rOff = E.fromFinding(off, c0);
 ok('fromFinding: a club injury report → CONFIRMED_FACT, VERIFIED, with its URL, tier, times and subject', rOff.type === 'CONFIRMED_FACT' && rOff.verification === 'VERIFIED' && rOff.source.url === off.source_url && rOff.source.tier === 'OFFICIAL' && rOff.retrieved_at === off.retrieved_at && rOff.published_at === off.published_at && rOff.subject.player === 'Khalil Shakir' && rOff.subject.game_id === 'nfl-fx-det-buf' && rOff.event_at === new Date(KICK).toISOString(), rOff);
-ok('fromFinding: freshness uses the publication time and tightens near kickoff', rOff.freshness.age_min === 90 && rOff.freshness.ttl_min === 90 && rOff.freshness.status === 'FRESH', rOff.freshness);
+ok('fromFinding: freshness uses the publication time and tightens near kickoff', rOff.freshness.age_min === 90 && rOff.freshness.ttl_min === 24 * 60 && rOff.freshness.status === 'FRESH', rOff.freshness);
 const rStat = E.fromFinding(stat, c0);
 ok('fromFinding: a statistical site → STATISTIC, VERIFIED', rStat.type === 'STATISTIC' && rStat.verification === 'VERIFIED', rStat);
 const rRep = E.fromFinding(rep, c0);
