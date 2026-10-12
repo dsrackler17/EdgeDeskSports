@@ -17,6 +17,9 @@ on:
       - 'index.html'
       - 'lib/edgedesk_quote_ev.js'
       - 'lib/edgedesk_canon.js'
+      - 'lib/edgedesk_intel_ui.js'
+      - 'lib/edgedesk_intel.css'
+      - 'lib/edgedesk_readiness.js'
       - 'football/cfb_ev/policy/**'
       - 'collective/index.html'
       - 'collective/embed.js'
@@ -123,6 +126,9 @@ on:
       - 'index.html'
       - 'lib/edgedesk_quote_ev.js'
       - 'lib/edgedesk_canon.js'
+      - 'lib/edgedesk_intel_ui.js'
+      - 'lib/edgedesk_intel.css'
+      - 'lib/edgedesk_readiness.js'
       - 'football/cfb_ev/policy/**'
       - 'collective/index.html'
       - 'collective/embed.js'
@@ -598,6 +604,15 @@ jobs:
       # or contract price reaching the server instead of the football card.
       - name: The quant desk renders the audited answer at desktop and mobile widths
         run: node tools/intelligence/quant_ui.e2e.js
+
+      # Ask EdgeDesk AI on the Research screen (Phase 3): the ten subscriber flows
+      # at 390 px and 1280 px, replaying the REAL handler's NDJSON streams
+      # (research_host.test.js dumps them) — the activity, the candidate cards and
+      # their figures against the engine's JSON, readiness and "Why not ready?",
+      # the game view and its follow-ups, the Card and Process, and the failure
+      # paths (HTTP error and retry, provider failure, error event, cancel, timeout).
+      - name: Ask EdgeDesk AI works end to end at phone and desktop widths
+        run: node tools/intelligence/intel_ui.e2e.js
 
       - name: Settle matching, and the captured closes it goes back for
         run: node tools/collective/settle_finals.test.js

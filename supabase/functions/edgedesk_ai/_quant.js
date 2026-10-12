@@ -304,6 +304,7 @@
     out.push((o.sport_label || 'The slate') + (o.window ? ' — ' + o.window : '') + ': ' + plural((o.games || []).length, 'game') + ' investigated, ' + plural((o.investigated || []).length, 'candidate') + ' taken through research and the adversarial audit, ' + (survivors.length ? plural(survivors.length, 'survivor') : 'none survived') + '.');
     if (o.readiness) out.push(readinessLine(o.readiness));
     out.push('');
+    if (o.no_game) { out.push('No game is open, so this lists the largest model-versus-market disagreements on the card. Open a game on the Research screen and ask there for that one spread.'); out.push(''); }
     if (survivors.length) out.push('Survived the audit: ' + survivors.map(function (r) { return r.candidate.selection + lineOf(r.candidate) + ' (' + r.candidate.matchup + ')'; }).join('; ') + '.');
     else out.push(NO_EDGE);
     var gaps = (o.games || []).filter(function (g) { return g.gap_points != null; }).sort(function (a, b) { return Math.abs(b.gap_points) - Math.abs(a.gap_points); });
@@ -343,6 +344,7 @@
     var out = [], games = o.games || [];
     out.push('WHAT ' + (o.sport_label ? o.sport_label.toUpperCase() + ' ' : '') + 'GAMES ARE READY FOR' + (o.window ? ' — ' + o.window : ''));
     out.push('');
+    if (o.no_game) { out.push('No game is open, so this covers every game on the card. Open a game on the Research screen and ask there for that one game\'s missing requirements.'); out.push(''); }
     if (!games.length) { out.push('No pregame games are on EdgeDesk\'s card for this window, so there is nothing to assess.'); return out.join('\n'); }
     out.push(readinessLine(o.readiness));
     out.push('');
@@ -354,7 +356,8 @@
     out.push('Why each game is not fully ready:');
     notReady.slice(0, 12).forEach(function (g, i) {
       var why = (g.why_not || []).filter(function (w) { return !/^Actionable signal/.test(w) || (g.readiness.states.MARKET.ok && g.readiness.states.MODEL.ok); });
-      out.push((i + 1) + '. ' + g.matchup + ' — ' + g.readiness.headline + (why.length ? ' Missing: ' + why.join(' ') : ''));
+      /* the headline's bracketed reason is the first "Missing" line, so it is printed once */
+      out.push((i + 1) + '. ' + g.matchup + ' — ' + (why.length ? g.readiness.headline.replace(/\s*\(.*\)$/, '') + '. Missing: ' + why.join(' ') : g.readiness.headline));
     });
     if (notReady.length > 12) out.push('…and ' + plural(notReady.length - 12, 'more game') + ' with the same kinds of gaps.');
     if (o.coverage_sentence) { out.push(''); out.push(o.coverage_sentence); }

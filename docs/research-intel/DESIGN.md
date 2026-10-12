@@ -209,3 +209,106 @@ All money is exact decimal.
 1. Apply `supabase/research_intel.sql`: `deploy-intelligence.yml`, input `apply_research_intel`. Read the closing report for `CHECK THIS`.
 2. Deploy the edge function: `deploy_function`. With the migration absent, research still runs; only the memory writes fail, and the response reports them.
 3. Leave `EDGEDESK_RESEARCH_PAID_OK` and `EDGEDESK_RESEARCH_NARRATE` off unless a person decides otherwise.
+
+---
+
+# Phase 3 — the intelligence engine on the website
+
+Phase 2 built the engine. Phase 3 puts it on the Research screen a subscriber already uses. The dark theme, teal accent, gold highlight, typography and the Research / Card / Portfolio / Process / More navigation are unchanged, and no tab was added.
+
+## 14. Why every game read "not ready"
+
+Every NFL game on the card has a PREDICTED projection. The board, however, joins markets from **captured** prices, and paid odds retrieval has been paused since the 10 October credit exhaustion (it resumes 1 November). So:
+
+- every game read NO MARKET;
+- the board's single "research ready" counter showed 0;
+- yet the research itself (projection, ratings, injuries, starters) was available for every game.
+
+The fix is a clearer model, not lower thresholds. `lib/edgedesk_readiness.js` (EDREADY) gives each game five separate states, each with the exact reason when it is not met.
+
+| State | Met when |
+|---|---|
+| Games available | the game is scheduled and has not started |
+| Research available | a projection or efficiency data is on file |
+| Market verified | a current captured price from a book; a reference line (no book, odds or capture time) never counts |
+| Model ready | a PREDICTED projection with no data fault (LIMITED is not ready) |
+| Actionable signal | on the board: its own research gate (the canonical count); in an answer: the adversarial audit's verdict |
+
+`whyNot()` lists every unmet requirement, most basic first. The board's existing "Research ready" counter is exactly *model ready ∧ market verified*, and the panel says so. A browser test checks that the two counts are equal.
+
+## 15. Where things are on the site
+
+| Place | What it shows |
+|---|---|
+| Research → **Ask EdgeDesk AI** (top of every Research tab) | Input, the six example questions, recent questions (this browser only, per user), and the game "this game / this spread" refers to |
+| Research → Football → **What can EdgeDesk research right now?** | The five counts from the board's own rows, then every game with its state dots, "Why not ready?", **Game research** and **Ask EdgeDesk AI** |
+| **Game research** (a sheet over Research) | Teams, kickoff in the reader's zone, readiness, model and market spread and total (as betting lines), the disagreement, offensive and defensive EPA ratings, matchup advantages, player availability, recent games, weather and venue, sources with timestamps, three follow-up questions, and **Research with EdgeDesk AI** |
+| The Desk (the existing panel) | The streamed research activity, then the answer, then each researched candidate as a card |
+| **Card** | Below the Card's own decisions: every candidate EdgeDesk AI audited this session, with its status, the price checked, the net EV and the fair it used |
+| **Process** | "How EdgeDesk researches": the method, model validation tiers, research verification, the audit and what "verified candidate" requires, the five states, limits and cost |
+| Portfolio | Unchanged; the Phase 2 betting-history analysis stays there |
+
+## 16. The request, and the activity it streams
+
+The page sends this to the existing edge function, under the reader's own session token:
+
+```
+{ question, desk: true, stream: true, research_context: { game: { sport, game_id } }, intent_hint }
+```
+
+Research questions come back as NDJSON:
+
+- an `accepted` line;
+- one `progress` line per real step as it happens, never on a timer;
+- then a `result`, an `error` or a `fallback`.
+
+| Stage | Label |
+|---|---|
+| FIND_EVENTS | Finding relevant events |
+| COMPARE_PRICES | Comparing market prices |
+| RETRIEVE_STATS | Retrieving statistics |
+| VERIFY_INJURIES | Verifying injuries and lineups |
+| CALCULATE | Calculating probabilities |
+| AUDIT | Running the adversarial audit |
+| EXPLAIN | Preparing the explanation |
+
+Partial results also stream before the answer: the games found, and the first audit verdicts. Every non-research question still gets plain JSON. Settled behaviour:
+
+- **Cancel** aborts the request, and the server stops at its next step.
+- A **60-second limit** aborts too.
+- **Errors**: 429 is the daily allowance, 401 is signed out, 402/403 is the subscription (a link to manage it; nothing is charged), and 5xx is the service. Each keeps the finished steps on screen and offers **Try again**.
+- **A provider fails mid-research** (for example the live injury feed): the step and the answer both say what failed and what was used instead.
+- The game travels as `research_context.game`, never as team names in the text, so a follow-up from a game view needs no retyping and cannot be diverted to another route.
+
+## 17. What every number on the cards is
+
+A card's figures are the server payload's, never recomputed by the page:
+
+- price, book and age;
+- fair probability and its kind;
+- break-even, net EV and maximum price;
+- model reliability;
+- the disagreement explanation, matchup advantage, counterargument and invalidators;
+- the audit verdict.
+
+Note: the board's model spread is computed live in the browser, while EdgeDesk AI researches the nightly build. When the two differ by half a point or more, the game view shows both, named. A candidate's "why the model disagrees" names the line it used (the pricing line, i.e. the projection blended toward the market), so it is not read as the game's raw projection gap.
+
+The Card's own decisions price on EdgeDesk's NFL pricing blend, while an audited candidate may price on the sharp no-vig fair. The research block therefore names the fair beside every EV.
+
+## 18. Server changes made for the website
+
+- **New routes**:
+  - `READINESS` (five states per game; nothing bought or audited);
+  - `GAME_RESEARCH` (one game, from its context);
+  - `MATCHUP_EDGE` (offense rating plus the opposing defense rating; scoped to the open game when asked "in this game");
+  - `VENUE_COMPARE` (what is on file per venue; no price invented, no fee rule borrowed).
+- **Window**: a readiness or slate question that names no day reads the next seven days (the football card's window), not "today". "This game / this spread" with no game open says so and covers the card.
+- **Streaming**: the Research screen's own words (research, researched, verified, audited…) no longer count as team names, so "What's the best researched opportunity tonight?" streams.
+
+## 19. Tests
+
+| Suite | What it proves |
+|---|---|
+| `tools/intelligence/research_host.test.js` (Phase 3 part) | Every example question reaches its route through the full handler. It also covers: the stream's order, partial results, cancel, plain JSON for the rest, the game-scoped mismatch, and dumps the streams the browser suite replays |
+| `tools/intelligence/intel_ui.e2e.js` | Chromium at 390×844 and 1280×900, browser clock pinned to the handler's, replaying the real handler's streams. Covers the ten flows, the figures against the engine's JSON, readiness against the canonical counter, the game view, Card and Process, and every failure path |
+| `tools/intelligence/quant_ui.e2e.js` | The Phase 2 answers, now as cards, still carry every Phase 2 field |

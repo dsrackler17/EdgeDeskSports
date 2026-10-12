@@ -488,7 +488,7 @@ function consistent(tag, answer, row) {
     const body = { mode: 'chat', question, history: [], research_context: o.carried || null, timezone: 'America/New_York', desk: true, stream: true, intent_hint: o.qhint || undefined };
     const r = await m.handle(new Request('https://fn.test/edgedesk_ai', { method: 'POST', headers: { authorization: 'Bearer ' + USER_JWT, 'content-type': 'application/json' }, body: JSON.stringify(body), signal: ctl.signal }));
     const ct = r.headers.get('content-type') || '';
-    if (!/ndjson/.test(ct)) return { ct, json: await r.json(), events: [] };
+    if (!/ndjson/.test(ct)) { const json = await r.json(); if (DUMP && o.dump) DUMP[o.dump] = { question, carried: o.carried || null, qhint: o.qhint || null, json }; return { ct, json, events: [] }; }
     const rd = r.body.getReader(), dec = new TextDecoder(); let buf = '', events = [];
     for (;;) {
       const { value, done } = await rd.read(); if (done) break;
@@ -496,10 +496,68 @@ function consistent(tag, answer, row) {
       let i; while ((i = buf.indexOf('\n')) >= 0) { const line = buf.slice(0, i); buf = buf.slice(i + 1); if (line.trim()) events.push(JSON.parse(line)); }
       if (o.cancelAfter && events.filter((e) => e.type === 'progress').length >= o.cancelAfter) { await rd.cancel(); break; }
     }
+    if (DUMP && o.dump) DUMP[o.dump] = { question, carried: o.carried || null, qhint: o.qhint || null, events };
     return { ct, events };
   }
-  /* the plain handler uses the real clock, so the stream scenario's fixture is the real-clock one */
-  const st = await streamAsk("What's the best bet this week across all sports?");
+  /* the handler reads Date.now(): pinned to the scenario clock for these checks, so they mean the same on any day */
+  const realNow = Date.now, T0 = realNow();
+  Date.now = () => NOW + (realNow() - T0);
+  /* every example question through the REAL handler (mine, opportunity, lines and props run first): each reaches its research route */
+  for (const [qx, want] of EX.concat([['Analyze every NFL game this weekend.', 'RESEARCH_SLATE']])) {
+    const hx = await streamAsk(qx, { dump: 'h_' + want.toLowerCase() });
+    const payload = hx.events.length ? (hx.events.find((e) => e.type === 'result') || {}).payload : hx.json;
+    ok('HANDLER: "' + qx + '" reaches ' + want + ' through the full handler', payload && payload.quant && payload.quant.intent === want, payload ? (payload.quant || Object.keys(payload).slice(0, 8)) : hx.events.map((e) => e.type));
+  }
+  /* the website's game view and its follow-ups, streamed through the handler (the browser suite replays these) */
+  const hg = await streamAsk('Research this game', { carried: GCTX, qhint: 'GAME_RESEARCH', dump: 'h_game_research' });
+  const hgp = (hg.events.find((e) => e.type === 'result') || {}).payload;
+  ok('HANDLER: the game view\'s "Research with EdgeDesk AI" streams one game\'s research', hgp && hgp.quant && hgp.quant.intent === 'GAME_RESEARCH' && hgp.game_research && hgp.game_research.game && hgp.game_research.game.game_id === 'nfl-fx-det-buf', hgp && hgp.quant);
+  const hd = await streamAsk('Why does EdgeDesk disagree with this spread?', { carried: GCTX, dump: 'h_disagree_game' });
+  const hdp = (hd.events.find((e) => e.type === 'result') || {}).payload;
+  ok('HANDLER: "Why does EdgeDesk disagree with this spread?" asked from a game streams that game\'s research', hdp && hdp.quant && hdp.quant.intent === 'GAME_RESEARCH', hdp && hdp.quant);
+  const hh = await streamAsk("Explain why this game isn't research ready.", { carried: { game: { sport: 'americanfootball_nfl', game_id: 'nfl-fx-ind-hou' } }, signals: MLB_SIGNALS.concat([BILLS, LIONS]), dump: 'h_game_hou' });
+  const hhp = (hh.events.find((e) => e.type === 'result') || {}).payload;
+  ok('HANDLER: "why isn\'t this game ready" from Colts @ Texans names the missing market through the handler', hhp && hhp.quant && hhp.quant.intent === 'GAME_RESEARCH' && /Market verified — needs/.test(hhp.answer || ''), hhp && [hhp.quant, (hhp.answer || '').slice(0, 300)]);
+  const hr = await streamAsk("Explain why games aren't research ready this weekend", { signals: MLB_SIGNALS.concat([BILLS, LIONS]), dump: 'h_readiness_board' });
+  const hrp = (hr.events.find((e) => e.type === 'result') || {}).payload;
+  ok('HANDLER: the readiness board streams through the handler', hrp && hrp.quant && hrp.quant.intent === 'READINESS' && hrp.readiness_board, hrp && hrp.quant);
+  /* the game sheet's mismatch chip: that game's two unit pairings, recomputed here from the same ratings */
+  const hm = await streamAsk('What are the biggest offensive mismatches in this game?', { carried: GCTX, dump: 'h_mismatch_game' });
+  const hmp = (hm.events.find((e) => e.type === 'result') || {}).payload;
+  const hmr = hmp && hmp.matchup_edges && hmp.matchup_edges.rows;
+  const offDet = Object.values(T).find((t) => t.team === 'Detroit Lions'), offBuf = Object.values(T).find((t) => t.team === 'Buffalo Bills');
+  ok('HANDLER: "the biggest offensive mismatches in this game" from a game view measures that game only, both pairings, the same sums',
+    hmp && hmp.quant && hmp.quant.intent === 'MATCHUP_EDGE' && hmr && hmr.length === 2 && hmr.every((r) => r.game_id === 'nfl-fx-det-buf')
+      && hmr.some((r) => r.offense === 'Buffalo Bills' && r.edge === Math.round((offBuf.ratings.off_epa_play + offDet.ratings.def_epa_play) * 1000) / 1000)
+      && /BIGGEST OFFENSIVE MISMATCHES — NFL, Detroit Lions @ Buffalo Bills/.test(hmp.answer), hmp && [hmp.quant, hmr, (hmp.answer || '').slice(0, 200)]);
+  /* THE BROWSER SUITE'S ANSWERS (tools/intelligence/intel_ui.e2e.js), one consistent card: the Lions @ Bills spread is
+     priced (FanDuel), Colts @ Texans has no captured price — the same signals the browser's own board is given */
+  if (DUMP) {
+    const BSIG = MLB_SIGNALS.concat([BILLS, LIONS]);
+    const HOU_CTX = { game: { sport: 'americanfootball_nfl', game_id: 'nfl-fx-ind-hou' } };
+    const B = [
+      ['b_tonight', "What's the best researched opportunity tonight?", {}],
+      ['b_slate', 'Analyze every NFL game this weekend.', {}],
+      ['b_disagree', 'Why does EdgeDesk disagree with this spread?', {}],
+      ['b_matchup', 'Which matchup has the biggest offensive advantage?', {}],
+      ['b_venue', 'Compare DraftKings Predictions and Kalshi prices.', {}],
+      ['b_readiness', "Explain why this game isn't research ready.", {}],
+      ['b_scan_weekend', "What's the best bet this weekend across all sports?", {}],
+      ['b_game_buf', 'Research this game: model, market, injuries, the disagreement and the audit.', { carried: GCTX, qhint: 'GAME_RESEARCH' }],
+      ['b_disagree_buf', 'Why does EdgeDesk disagree with this spread?', { carried: GCTX }],
+      ['b_why_buf', "Explain why this game isn't research ready.", { carried: GCTX }],
+      ['b_mismatch_buf', 'What are the biggest offensive mismatches in this game?', { carried: GCTX }],
+      ['b_game_hou', 'Research this game: model, market, injuries, the disagreement and the audit.', { carried: HOU_CTX, qhint: 'GAME_RESEARCH' }],
+      ['b_readiness_week', "Explain why games aren't research ready this week", {}],
+      ['b_why_hou', "Explain why this game isn't research ready.", { carried: HOU_CTX }],
+      ['b_disagree_hou', 'Why does EdgeDesk disagree with this spread?', { carried: HOU_CTX }],
+      ['b_mismatch_hou', 'What are the biggest offensive mismatches in this game?', { carried: HOU_CTX }],
+    ];
+    /* a provider failure mid-research: the live injury feed is down; the browser shows what remained available */
+    B.push(['b_game_buf_feedfail', 'Research this game: model, market, injuries, the disagreement and the audit.', { carried: GCTX, qhint: 'GAME_RESEARCH', fail: failLive }]);
+    for (const [k, q, o] of B) { m.resetResearchLedger(); await streamAsk(q, Object.assign({ signals: BSIG, dump: k }, o)); }
+  }
+  const st = await streamAsk("What's the best bet this weekend across all sports?", { dump: 'h_scan_weekend' });
   const stages = st.events.filter((e) => e.type === 'progress');
   ok('STREAM: the handler streams NDJSON: accepted first, a result last', /ndjson/.test(st.ct) && st.events[0] && st.events[0].type === 'accepted' && st.events[st.events.length - 1].type === 'result', st.events.map((e) => e.type));
   const order = ['FIND_EVENTS', 'COMPARE_PRICES', 'RETRIEVE_STATS', 'VERIFY_INJURIES', 'CALCULATE', 'AUDIT', 'EXPLAIN'];
@@ -513,6 +571,7 @@ function consistent(tag, answer, row) {
   ok('STREAM: cancelling stops the run: no result was sent and no research memory was written', !stc.events.some((e) => e.type === 'result') && !posted.some((p) => p.table === 'research_findings'), [stc.events.map((e) => e.type), posted.map((p) => p.table)]);
   const stp = await streamAsk('Is Guardians at 49¢ on Kalshi a good price?');
   ok('STREAM: a question the research routes do not stream comes back as plain JSON (the client reads both)', /json/.test(stp.ct) && !/ndjson/.test(stp.ct) && stp.json && stp.json.quant && stp.json.quant.intent === 'CONTRACT', [stp.ct, stp.json && stp.json.quant]);
+  Date.now = realNow;
 
   if (DUMP) fs.writeFileSync(process.env.RESEARCH_DUMP, JSON.stringify(DUMP));
   console.log((fail ? 'FAILED ' : 'ALL GREEN ') + pass + ' passed, ' + fail + ' failed');

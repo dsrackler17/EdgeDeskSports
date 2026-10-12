@@ -35562,6 +35562,7 @@ const EDAUDIT: any = (globalThis as any).EDAUDIT;
     out.push((o.sport_label || 'The slate') + (o.window ? ' — ' + o.window : '') + ': ' + plural((o.games || []).length, 'game') + ' investigated, ' + plural((o.investigated || []).length, 'candidate') + ' taken through research and the adversarial audit, ' + (survivors.length ? plural(survivors.length, 'survivor') : 'none survived') + '.');
     if (o.readiness) out.push(readinessLine(o.readiness));
     out.push('');
+    if (o.no_game) { out.push('No game is open, so this lists the largest model-versus-market disagreements on the card. Open a game on the Research screen and ask there for that one spread.'); out.push(''); }
     if (survivors.length) out.push('Survived the audit: ' + survivors.map(function (r) { return r.candidate.selection + lineOf(r.candidate) + ' (' + r.candidate.matchup + ')'; }).join('; ') + '.');
     else out.push(NO_EDGE);
     var gaps = (o.games || []).filter(function (g) { return g.gap_points != null; }).sort(function (a, b) { return Math.abs(b.gap_points) - Math.abs(a.gap_points); });
@@ -35601,6 +35602,7 @@ const EDAUDIT: any = (globalThis as any).EDAUDIT;
     var out = [], games = o.games || [];
     out.push('WHAT ' + (o.sport_label ? o.sport_label.toUpperCase() + ' ' : '') + 'GAMES ARE READY FOR' + (o.window ? ' — ' + o.window : ''));
     out.push('');
+    if (o.no_game) { out.push('No game is open, so this covers every game on the card. Open a game on the Research screen and ask there for that one game\'s missing requirements.'); out.push(''); }
     if (!games.length) { out.push('No pregame games are on EdgeDesk\'s card for this window, so there is nothing to assess.'); return out.join('\n'); }
     out.push(readinessLine(o.readiness));
     out.push('');
@@ -35612,7 +35614,8 @@ const EDAUDIT: any = (globalThis as any).EDAUDIT;
     out.push('Why each game is not fully ready:');
     notReady.slice(0, 12).forEach(function (g, i) {
       var why = (g.why_not || []).filter(function (w) { return !/^Actionable signal/.test(w) || (g.readiness.states.MARKET.ok && g.readiness.states.MODEL.ok); });
-      out.push((i + 1) + '. ' + g.matchup + ' — ' + g.readiness.headline + (why.length ? ' Missing: ' + why.join(' ') : ''));
+      /* the headline's bracketed reason is the first "Missing" line, so it is printed once */
+      out.push((i + 1) + '. ' + g.matchup + ' — ' + (why.length ? g.readiness.headline.replace(/\s*\(.*\)$/, '') + '. Missing: ' + why.join(' ') : g.readiness.headline));
     });
     if (notReady.length > 12) out.push('…and ' + plural(notReady.length - 12, 'more game') + ' with the same kinds of gaps.');
     if (o.coverage_sentence) { out.push(''); out.push(o.coverage_sentence); }
@@ -36375,11 +36378,15 @@ const EDGRAPH: any = (globalThis as any).EDGRAPH;
         : causes.POTENTIAL_MISPRICING.assessment === 'POSSIBLE' ? 'POTENTIAL_MISPRICING' : 'INVESTIGATE';
     var primary = ranked[0] && ranked[0].assessment !== 'RULED_OUT' && ranked[0].assessment !== 'NOT_ASSESSED' ? ranked[0].cause : null;
     var gapText = gapPts != null ? Math.abs(gapPts) + ' points' : gapPp != null ? Math.round(Math.abs(gapPp) * 1000) / 10 + ' probability points' : 'an unmeasured amount';
+    /* a candidate is judged on the PRICING line (the projection blended toward the market), not the raw projection a
+       game view prints beside it: name the line, so "differ by 0.6" and "differ by 2.7" never read as one claim */
+    var sgn = function (x) { x = r1(num(x)); return (x > 0 ? '+' : '') + x; };
+    var subj = m.line_kind === 'BLEND' && gapPts != null ? 'EdgeDesk\'s pricing line (' + sgn(m.line) + ', its projection blended toward the market) and the market (' + sgn(k.line) + ')' : 'EdgeDesk and the market';
     var explanation = verdict === 'NO_MODEL' ? 'EdgeDesk has no independent model for this market, so there is no model-versus-market disagreement to explain: the comparison is this price against the sharp no-vig market, and nothing more.'
-      : verdict === 'DATA_FAULT' ? 'EdgeDesk and the market differ by ' + gapText + ', but the first explanation is ' + LABEL.DATA_QUALITY + ': ' + causes.DATA_QUALITY.evidence[0] + '.'
-      : verdict === 'EXPLAINED' ? 'EdgeDesk and the market differ by ' + gapText + '; the likeliest reason is ' + LABEL[primary] + ': ' + causes[primary].evidence[0] + '. That explains the gap; it is not evidence of value.'
-        : verdict === 'POTENTIAL_MISPRICING' ? 'EdgeDesk and the market differ by ' + gapText + ' and nothing checked explains it, so a mispricing is possible — not proven.'
-          : 'EdgeDesk and the market differ by ' + gapText + '; the cause is not established (' + ranked.filter(function (c) { return c.assessment === 'NOT_ASSESSED'; }).map(function (c) { return c.label; }).slice(0, 3).join(', ') + ' not assessed). It is a question for research.';
+      : verdict === 'DATA_FAULT' ? subj + ' differ by ' + gapText + ', but the first explanation is ' + LABEL.DATA_QUALITY + ': ' + causes.DATA_QUALITY.evidence[0] + '.'
+      : verdict === 'EXPLAINED' ? subj + ' differ by ' + gapText + '; the likeliest reason is ' + LABEL[primary] + ': ' + causes[primary].evidence[0] + '. That explains the gap; it is not evidence of value.'
+        : verdict === 'POTENTIAL_MISPRICING' ? subj + ' differ by ' + gapText + ' and nothing checked explains it, so a mispricing is possible — not proven.'
+          : subj + ' differ by ' + gapText + '; the cause is not established (' + ranked.filter(function (c) { return c.assessment === 'NOT_ASSESSED'; }).map(function (c) { return c.label; }).slice(0, 3).join(', ') + ' not assessed). It is a question for research.';
     return { schema: VERSION, gap: { points: gapPts, probability_pp: gapPp }, size: size, causes: ranked, primary: primary, verdict: verdict, is_edge_evidence: verdict === 'POTENTIAL_MISPRICING', explanation: explanation };
   }
 
@@ -50025,7 +50032,9 @@ const QUANT_STOP = new Set(("the a an and or vs versus at on in of to for is are
   + "polymarket cents cent tonight today tomorrow game games match moneyline spread total over under line odds advantage "
   + "better cheaper find shop risk only best right now available sports sport across all every any next hours hour week weekend "
   + "underdog underdogs dog dogs favorite favorites favourite favourites supported largest biggest strongest safest top play plays "
-  + "edge edges opportunity opportunities discrepancy model market markets wager trade").split(/\s+/));
+  + "edge edges opportunity opportunities discrepancy model market markets wager trade "
+  /* the Research screen's own words: never a team name, so they never make a question look like a named game */
+  + "research researched researching verified investigated investigate audited").split(/\s+/));
 /** The words of a question that could be a team: not stopwords, not numbers. */
 export function quantTokens(q: string): string[] {
   const out: string[] = [];
@@ -50581,7 +50590,7 @@ async function researchChain(o: { dal: Dal; r: any; e: any; game: any; now: numb
   /* prices: the model is the fair only where the board priced on it (a validated blend); otherwise it is a cross-check */
   const cap = EDADAPT ? EDADAPT.modelCapability(c.sport, c.market) : null;
   const model = { available: !!(isModel || mc), prices: isModel, unavailable_why: cap && !(isModel || mc) ? cap.reason : null, tier, probability: isModel ? num(c.fair?.probability) : num(mc?.cover_at_market), model_version: (isModel ? c.fair?.validation?.model_version : mc?.model_version) ?? null,
-    as_of: c.fair?.validation?.model_generated_at ?? null, line: num(mc?.fair_line), label: c.fair?.label ?? "EdgeDesk model",
+    as_of: c.fair?.validation?.model_generated_at ?? null, line: num(mc?.fair_line), line_kind: mc?.fair_line != null ? "BLEND" : null, label: c.fair?.label ?? "EdgeDesk model",
     inputs: { starters: c.starters ? { home: c.starters.home ?? null, away: c.starters.away ?? null } : (gathered.priced_starters ?? null) } };
   const sharp = num(a?.independent_fair) ?? (isModel ? null : num(c.fair?.probability));
   const qs = EDINTEL.quoteState({ captured_at: c.quote?.captured_at, market: c.market, kickoff: c.kickoff, now });
@@ -50709,7 +50718,12 @@ function stageEmitter(p?: Progress | null): Progress {
 /** One scan row for the response: the candidate, its audit, its evaluation and (when researched) its investigation. */
 function quantRowSlim(r: any): any {
   return r ? { candidate: { id: r.candidate.id, sport: r.candidate.sport, sport_label: r.candidate.sport_label, game_id: r.candidate.game_id != null ? String(r.candidate.game_id) : null, home: r.candidate.home ?? null, away: r.candidate.away ?? null, kickoff: r.candidate.kickoff ?? null, matchup: r.candidate.matchup, kickoff_local: r.candidate.kickoff_local, market: r.candidate.market, selection: r.candidate.selection, line: r.candidate.line, quote: r.candidate.quote, fair: { method: r.candidate.fair?.method, label: r.candidate.fair?.label, probability: r.candidate.fair?.probability }, counter: r.candidate.counter, corrected: r.candidate.corrected ?? [] }, audit: r.audit, evaluation: r.evaluation,
-    classification: r.classification ?? null, research: r.research ? researchSlim(r.research) : null } : null;
+    classification: r.classification ?? null, research: r.research ? researchSlim(r.research) : null,
+    /* the card's words, written by the same functions the answer text uses — the page never composes them */
+    advantage: EDQUANT?.matchupLine ? EDQUANT.matchupLine(r.candidate) : null,
+    counterargument: r.research && EDAGENTS ? EDAGENTS.counterArgument(r.research) : null,
+    invalidators: r.research && EDAGENTS ? EDAGENTS.invalidators(Object.assign({}, r.research, { event: { sport: r.candidate.sport } })) : [],
+    withheld_by_board: r.withheld_by_board ?? null } : null;
 }
 /** Every audited candidate through the five-role chain, at the level the question earns. Null when the chain is off. */
 async function researchAudited(o: { dal: Dal; audit: any; games: any[]; evidence: Map<string, any>; now: number; question: string; auth: string; stake: number | null; intent: string; level?: string | null; progress?: Progress | null }): Promise<{ investigations: Record<string, any>; pairs: { inv: any; c: any }[]; summary: any; sources_text: string; level: any } | null> {
@@ -51013,9 +51027,9 @@ async function quantResearchSlate(o: { body: any; auth: string; dal: Dal; now: n
     readiness: g.readiness, why_not: EDREADY && g.readiness ? EDREADY.whyNot(g.readiness) : [] });
   const sportLabel = sport ? quantSportLabel(sport) : "Every in-season sport";
   const det = only ? EDQUANT.renderGameResearch({ game: games[0] ? gameOut(games[0]) : null, sport_label: sportLabel, investigated, why_not: games[0] && EDREADY && games[0].readiness ? EDREADY.whyNot(games[0].readiness) : [], research_summary: summary, sources_text: researchSourcesText(allInvs) })
-    : o.screen_only ? EDQUANT.renderReadiness({ games: games.map(gameOut), readiness, sport_label: sport ? sportLabel : null, window: board.scope?.window?.label ?? null, coverage_sentence: covSentence })
+    : o.screen_only ? EDQUANT.renderReadiness({ games: games.map(gameOut), readiness, sport_label: sport ? sportLabel : null, window: board.scope?.window?.label ?? null, coverage_sentence: covSentence, no_game: /\bthis (game|matchup|spread)\b/i.test(q) })
     : EDQUANT.renderResearchSlate({ sport_label: sportLabel, window: board.scope?.window?.label ?? null, games, investigated,
-      coverage_sentence: covSentence, research_summary: summary, sources_text: researchSourcesText(allInvs), not_investigated: notInvestigated, readiness });
+      coverage_sentence: covSentence, research_summary: summary, sources_text: researchSourcesText(allInvs), not_investigated: notInvestigated, readiness, no_game: /\bthis (game|matchup|spread)\b/i.test(q) });
   const nar = o.screen_only ? { answer: det, model: null, narration: { ok: true, prose: "DETERMINISTIC", critic: null }, deterministic_answer: null } : await narrateResearch(det, allInvs.map((x: any) => x.research?.graph).filter(Boolean), user, lvl.budget, auth);
   const answer = nar.answer;
   P({ stage: "EXPLAIN", status: "done", detail: nar.narration.prose === "MODEL" ? "rephrased under the critic" : "deterministic answer" });
@@ -51045,8 +51059,12 @@ async function quantMatchupEdges(o: { body: any; dal: Dal; now: number; cls: any
   const P = stageEmitter(o.progress);
   const det = { model: null, narration: { ok: true, prose: "DETERMINISTIC", critic: null }, build: BUILD };
   const unit = o.cls.unit ?? "offense";
-  if (o.cls.sport && o.cls.sport !== "americanfootball_nfl") {
-    return { answer: EDQUANT.renderMatchupEdges({ rows: [], unit, sport_label: quantSportLabel(o.cls.sport), missing: "EdgeDesk's " + quantSportLabel(o.cls.sport) + " build publishes quarterback EPA and each game's projection, not unit-against-unit efficiency ratings, so no mismatch is measured here. Open a game for its research packet." }), ...det, matchup_edges: { rows: [], sport: o.cls.sport } };
+  /* asked from a game view ("…in this game"): that game's two pairings, whatever the window */
+  const gctx = quantGameContext(o.body);
+  const onlyGame = gctx && /\b(this|that) (game|matchup)\b/i.test(String(o.body?.question ?? "")) ? gctx : null;
+  const sportAsked = o.cls.sport ?? onlyGame?.sport ?? null;
+  if (sportAsked && sportAsked !== "americanfootball_nfl") {
+    return { answer: EDQUANT.renderMatchupEdges({ rows: [], unit, sport_label: quantSportLabel(sportAsked), missing: "EdgeDesk's " + quantSportLabel(sportAsked) + " build publishes quarterback EPA and each game's projection, not unit-against-unit efficiency ratings, so no mismatch is measured here. Open a game for its research packet." }), ...det, matchup_edges: { rows: [], sport: sportAsked } };
   }
   P({ stage: "RETRIEVE_STATS", status: "running", detail: "EdgeDesk's NFL team ratings (football/nfl/slate.json)" });
   const art = await o.dal.getArtifact("football/nfl/slate.json", { free: true });
@@ -51059,7 +51077,8 @@ async function quantMatchupEdges(o: { body: any; dal: Dal; now: number; cls: any
   const [ka, kb, sign] = KEYS[unit] ?? KEYS.offense;
   const rows: any[] = [];
   for (const g of j.games) {
-    const ko = Date.parse(g.kickoff ?? ""); if (!isFinite(ko) || ko <= o.now || ko < from || ko > to) continue;
+    if (onlyGame && String(g.game_id) !== onlyGame.game_id) continue;
+    const ko = Date.parse(g.kickoff ?? ""); if (!isFinite(ko) || ko <= o.now || (!onlyGame && (ko < from || ko > to))) continue;
     const H = j.teams[g.home_code], A = j.teams[g.away_code]; if (!H?.ratings || !A?.ratings) continue;
     for (const [me, op] of [[A, H], [H, A]] as const) {
       const a = num(me.ratings[ka]), b = num(op.ratings[kb]); if (a == null || b == null) continue;
@@ -51069,11 +51088,13 @@ async function quantMatchupEdges(o: { body: any; dal: Dal; now: number; cls: any
     }
   }
   rows.sort((x, y) => y.edge - x.edge);
-  P({ stage: "RETRIEVE_STATS", status: "done", detail: `${rows.length / 2 | 0} games in ${scope?.window?.label ?? "the next 7 days"}` });
+  const windowLabel = onlyGame ? (rows[0] ? rows[0].matchup : "the game you opened") : (scope?.window?.label ?? null);
+  P({ stage: "RETRIEVE_STATS", status: "done", detail: onlyGame ? (rows.length ? `both unit pairings for ${rows[0].matchup}` : "the game is not on the NFL card with team ratings") : `${rows.length / 2 | 0} games in ${scope?.window?.label ?? "the next 7 days"}` });
   P({ stage: "EXPLAIN", status: "done", detail: "deterministic answer" });
   const label = unit === "pass" ? "passing EPA per dropback" : unit === "rush" ? "rushing EPA per carry" : "EPA per play";
-  return { answer: EDQUANT.renderMatchupEdges({ rows, unit, sport_label: "NFL", window: scope?.window?.label ?? null, metric_label: label, source: "EdgeDesk NFL slate team ratings (nflverse play-by-play)", generated_at: j.generated_at ?? null }),
-    ...det, matchup_edges: { sport: "americanfootball_nfl", unit, metric: [ka, kb], window: scope?.window ?? null, generated_at: j.generated_at ?? null, rows: rows.slice(0, 10) } };
+  return { answer: EDQUANT.renderMatchupEdges({ rows, unit, sport_label: "NFL", window: windowLabel, metric_label: label, source: "EdgeDesk NFL slate team ratings (nflverse play-by-play)", generated_at: j.generated_at ?? null,
+      missing: onlyGame && !rows.length ? "That game is not on EdgeDesk's NFL card with team ratings (it may have started), so no mismatch is measured." : undefined }),
+    ...det, matchup_edges: { sport: "americanfootball_nfl", unit, metric: [ka, kb], window: onlyGame ? { kind: "game", label: windowLabel, game_id: onlyGame.game_id } : (scope?.window ?? null), generated_at: j.generated_at ?? null, rows: rows.slice(0, 10) } };
 }
 /** "Compare DraftKings Predictions and Kalshi prices": what is on file for each venue, never an invented price. */
 async function quantVenueCompare(o: { body: any; dal: Dal; now: number; cls: any }): Promise<any> {
@@ -51096,6 +51117,12 @@ export function quantGameContext(body: any): { sport: string | null; game_id: st
   if (!id) return null;
   const sp = typeof g.sport === "string" && /^(americanfootball_nfl|americanfootball_ncaaf|baseball_mlb|mma_mixed_martial_arts)$/.test(g.sport) ? g.sport : null;
   return { sport: sp, game_id: id };
+}
+/** Readiness and slate research are about the card, not the clock: a question that names no day reads the next
+ *  seven days (the football card's window), never "today" — on a Monday that would be an empty, misleading answer. */
+function cardWindow(body: any): any {
+  const q = String(body?.question ?? "");
+  return /\b(tonight|today|tomorrow|weekend|week|upcoming|daily|next \d{1,3} ?(hours?|hrs?|h|days?))\b/i.test(q) ? body : { ...body, question: q + " this week" };
 }
 /** Which quant route a question takes, without doing any work (the streaming decision reads it). */
 export function quantRouteOf(body: any): string | null {
@@ -51141,7 +51168,7 @@ export async function quantTurn(o: { body: any; auth: string; now?: number; fetc
   if (cls.intent === "RESEARCH_SLATE") {
     /* a deep, multi-game investigation: the desk's surface only, and never a staking question */
     if (DESK_STAKING.test(q) || o.body.desk !== true || !BOARD_ENABLED || !EDAUDIT) return null;
-    const r = await quantResearchSlate({ body: o.body, auth: o.auth, dal, now, cls, progress: o.progress }); return r ? { ...r, ...base } : null;
+    const r = await quantResearchSlate({ body: cardWindow(o.body), auth: o.auth, dal, now, cls, progress: o.progress }); return r ? { ...r, ...base } : null;
   }
   if (cls.intent === "GAME_RESEARCH") {
     /* one game, from the game view: readiness, model and market, the disagreement, the findings, its candidates audited */
@@ -51153,7 +51180,7 @@ export async function quantTurn(o: { body: any; auth: string; now?: number; fetc
   if (cls.intent === "READINESS") {
     /* the board's own data, five states per game and what is missing: no research is bought for it */
     if (!BOARD_ENABLED) return null;
-    const r = await quantResearchSlate({ body: o.body, auth: o.auth, dal, now, cls, progress: o.progress, screen_only: true });
+    const r = await quantResearchSlate({ body: cardWindow(o.body), auth: o.auth, dal, now, cls, progress: o.progress, screen_only: true });
     return r ? { ...r, readiness_board: r.research_slate, ...base } : null;
   }
   if (cls.intent === "MATCHUP_EDGE") return { ...(await quantMatchupEdges({ body: o.body, dal, now, cls, progress: o.progress })), ...base };

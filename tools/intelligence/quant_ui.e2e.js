@@ -9,14 +9,16 @@
    with those responses and checks what is on the screen:
      - the verdict chip is the server's classification (Verified edge only on a
        BUY; Potential edge, Pass otherwise), never upgraded by the page
-     - the brief's fields render as a grid, the evidence as expandable
-       sections (EV calculation, market comparison, audit results, source
-       verification, model assumptions, coverage, historical performance)
+     - a researched candidate renders as a card (lib/edgedesk_intel_ui.js) with
+       every field the Phase 2 answer prints, its evidence in four expandable
+       sections (matchup research, model calculations, market comparison, audit
+       findings), the answer's own sections (confidence, coverage, research
+       level and cost, historical performance) below it
      - the browser carries the quant state back, so "which sports couldn't be
        scanned?" lands on the scan it follows
      - an MLB "A vs B" question and a contract price reach the server instead
        of being answered as a missing football game
-     - at 390 px the page does not scroll sideways and the grid is one column
+     - at 390 px the page does not scroll sideways and the card is one column
 
    Run: node tools/intelligence/quant_ui.e2e.js   (--shots writes PNGs to .desk-shots/)
    =========================================================================== */
@@ -122,7 +124,14 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       const sections = [...box.querySelectorAll('details.qd-more > summary')].map((s) => s.textContent.trim());
       return { text: card.innerText, chip: chip ? chip.textContent.trim() : null, kvCols: kv ? getComputedStyle(kv).gridTemplateColumns.split(' ').length : 0,
         keys: kv ? [...kv.querySelectorAll('dt')].map((d) => d.textContent.trim()) : [], sections, auditRows: box.querySelectorAll('details.qd-more .qd-tbl tr').length,
-        src: ([...box.querySelectorAll(':scope > .edai-src')].pop() || {}).textContent || '', html: box.innerHTML.length };
+        src: ([...box.querySelectorAll(':scope > .edai-src')].pop() || {}).textContent || '', html: box.innerHTML.length,
+        /* Phase 3: a researched candidate renders as a card (lib/edgedesk_intel_ui.js); its text block is folded into it */
+        card: (() => { const c = [...box.querySelectorAll('.ia-card')][0]; if (!c) return null; const kv = {}; c.querySelectorAll('.ia-kv-r').forEach((r) => { const k = r.querySelector('dt').textContent; if (!(k in kv)) kv[k] = r.querySelector('dd').innerText.replace(/\s+/g, ' ').trim(); });
+          const aud = [...c.querySelectorAll('details.ia-more')].find((d) => /Audit findings/.test(d.querySelector('summary').textContent)); const tbls = aud ? aud.querySelectorAll('table') : [];
+          return { title: c.querySelector('.ia-card-t').textContent, sub: c.querySelector('.ia-card-s').textContent, chip: (c.querySelector('.ia-card-hd .ia-chipcls') || {}).textContent, kv, keys: Object.keys(kv),
+            more: [...c.querySelectorAll('details.ia-more > summary')].map((x) => x.textContent), auditRows: tbls.length ? tbls[tbls.length - 1].querySelectorAll('tr').length : 0, checkRows: tbls.length > 1 ? tbls[0].querySelectorAll('tr').length : 0,
+            kvCols: getComputedStyle(c.querySelector('.ia-kv')).gridTemplateColumns.split(' ').length, fits: c.scrollWidth <= c.clientWidth + 1 }; })(),
+        results: [...box.querySelectorAll('.ia-results details.ia-more')].map((d) => ({ s: d.querySelector('summary').textContent, open: d.open, games: d.querySelectorAll('.ia-g').length })) };
     });
   }
 
@@ -147,18 +156,20 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       const w = await lastAnswer(page);
       chk(vp.tag + ': the cross-sport question reached the server', a1.reached_server && SENT[0] && SENT[0].desk === true);
       chk(vp.tag + ': the verdict chip is the auditor\'s final status: Verified candidate', w && /verified candidate/i.test(w.chip || ''), w && w.chip);
-      chk(vp.tag + ': the Phase-2 fields render as a grid', w && ['Event', 'Sport', 'Market', 'Venue', 'Verified market price', 'Independent fair probability', 'Break-even probability', 'Estimated net EV', 'Maximum acceptable price', 'Model reliability', 'Research freshness', 'Why the model disagrees with the market', 'Primary matchup advantage', 'Strongest counterargument', 'What would invalidate the opportunity', 'Final status'].every((k) => w.keys.includes(k)), w && w.keys);
-      chk(vp.tag + ': the final status reads VERIFIED CANDIDATE, Buffalo Bills -2.5', w && /Final status\s*VERIFIED CANDIDATE/.test(w.text) && /Buffalo Bills -2\.5/.test(w.text), w && w.text.slice(0, 600));
-      chk(vp.tag + ': the evidence sections are there to expand', w && ['EV calculation', 'Professional checks', 'Why the model and the market differ', 'Research findings', 'Confidence — four separate measures', 'Audit results', 'Source verification', 'Model assumptions', 'Coverage', 'Research level and cost', 'Historical performance'].every((k) => w.sections.includes(k)), w && w.sections);
+      const wc = w && w.card;
+      chk(vp.tag + ': the Phase-2 fields are all on the card (event, sport, market and venue in its header and price)', wc && /Detroit Lions @ Buffalo Bills/.test(wc.sub) && /NFL/.test(wc.sub) && wc.title === 'Buffalo Bills -2.5' && /at FanDuel/.test(wc.kv['Verified market price'] || '')
+        && ['Verified market price', 'Fair probability', 'Break-even probability', 'Estimated net EV', 'Model reliability', 'Research freshness', 'Why the model disagrees with the market', 'Primary matchup advantage', 'Strongest counterargument', 'What would invalidate the opportunity', 'Audit status'].every((k) => wc.keys.includes(k)) && /max price -112/.test(wc.kv['Estimated net EV'] || ''), wc && [wc.title, wc.sub, wc.keys]);
+      chk(vp.tag + ': the final status reads VERIFIED CANDIDATE, Buffalo Bills -2.5', wc && wc.chip === 'Verified candidate' && /final status VERIFIED CANDIDATE/.test(wc.kv['Audit status'] || '') && wc.title === 'Buffalo Bills -2.5', wc && [wc.chip, wc.kv['Audit status']]);
+      chk(vp.tag + ': the evidence is there to expand: the card\'s four sections and the answer\'s own', wc && ['Matchup research', 'Model calculations', 'Market comparison', 'Audit findings'].every((k) => wc.more.includes(k)) && ['Confidence — four separate measures', 'Coverage', 'Research level and cost', 'Historical performance'].every((k) => w.sections.includes(k)), w && [wc && wc.more, w.sections]);
       const links = await page.evaluate(() => { const r = [...document.querySelectorAll('#edaiLog .qd-read')].pop(); return r ? [...r.querySelectorAll('a')].map((a) => ({ href: a.getAttribute('href'), rel: a.getAttribute('rel') })) : []; });
       chk(vp.tag + ': the numbered sources are https links that open safely', links.length >= 2 && links.every((l) => /^https:\/\//.test(l.href) && /noopener/.test(l.rel || '')), links);
-      chk(vp.tag + ': the audit table lists the fifteen checks', w && w.auditRows >= 16, w && w.auditRows);
+      chk(vp.tag + ': the audit findings list the seven professional checks and the fifteen audit checks', wc && wc.checkRows >= 8 && wc.auditRows >= 16, wc && [wc.checkRows, wc.auditRows]);
       chk(vp.tag + ': the source line says no model wrote it', w && /no model wrote this/.test(w.src), w && w.src);
       if (vp.tag === 'phone') {
         const geom = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth, panelW: document.getElementById('edaiPanel').getBoundingClientRect().width }));
         chk('phone: the page does not scroll sideways', geom.sw <= geom.iw + 1, geom);
-        chk('phone: the field grid is one column', w && w.kvCols === 1, w && w.kvCols);
-      } else chk('desktop: the field grid is two columns', w && w.kvCols === 2, w && w.kvCols);
+        chk('phone: the card\'s fields are one column', wc && wc.kvCols === 1, wc && wc.kvCols);
+      } else chk('desktop: the card fits the panel, nothing cut off sideways', wc && wc.fits, wc && wc.fits);
       if (SHOTS) { fs.mkdirSync(SHOT_DIR, { recursive: true }); await page.screenshot({ path: path.join(SHOT_DIR, 'quant-scan-' + vp.tag + '.png'), fullPage: false }); }
 
       /* 2. the follow-up carries the quant state */
@@ -172,7 +183,7 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       await ask(page, R.scan_24h.question, 3);
       const s24 = await lastAnswer(page);
       chk(vp.tag + ': no verified trade: the chip says Watchlist, not Verified', s24 && /watchlist/i.test(s24.chip || '') && !/verified/i.test(s24.chip || '') && /No verified positive-EV trade/.test(s24.text), s24 && [s24.chip, s24.text.slice(0, 160)]);
-      chk(vp.tag + ': …and the final status reads WATCHLIST', s24 && /Final status\s*WATCHLIST/.test(s24.text));
+      chk(vp.tag + ': …and the final status reads WATCHLIST', s24 && s24.card && /final status WATCHLIST/.test(s24.card.kv['Audit status'] || ''), s24 && s24.card && s24.card.kv['Audit status']);
 
       /* 4. the contract: an MLB "A vs B" with a price reaches the server and passes */
       const a4 = await ask(page, R.contract_rays.question, 4);
@@ -199,9 +210,9 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       await ask(page, R2.research_slate.question, 6);
       const sl = await lastAnswer(page);
       chk(vp.tag + ': the slate investigation renders with the auditor\'s chip (Verified candidate)', sl && /verified candidate/i.test(sl.chip || '') && /Survived the audit: Buffalo Bills -2\.5/.test(sl.text), sl && [sl.chip, sl.text.slice(0, 200)]);
-      chk(vp.tag + ': …with the model-versus-market table for every game, and the candidate checks to expand', sl && ['Model versus market, every game', 'Professional checks', 'Why the model and the market differ', 'Research findings', 'Other candidates investigated', 'Research level and cost'].every((k) => sl.sections.includes(k)), sl && sl.sections);
-      const slRows = await page.evaluate(() => { const d = [...document.querySelectorAll('details.qd-more')].filter((x) => /Model versus market, every game/.test(x.textContent)).pop(); return d ? { open: d.open, rows: d.querySelectorAll('tr').length } : null; });
-      chk(vp.tag + ': the discrepancy table is open and lists the games', slRows && slRows.open && slRows.rows >= 4, slRows);
+      chk(vp.tag + ': …with every game\'s model, market and readiness, and the candidate\'s checks to expand', sl && sl.card && ['Matchup research', 'Model calculations', 'Market comparison', 'Audit findings'].every((k) => sl.card.more.includes(k)) && sl.results.some((r) => /^Every game — model, market, readiness/.test(r.s)) && ['Research level and cost'].every((k) => sl.sections.includes(k)), sl && [sl.card && sl.card.more, sl.results, sl.sections]);
+      const slRows = sl && sl.results.find((r) => /^Every game — model, market, readiness/.test(r.s));
+      chk(vp.tag + ': the every-game table is open and lists the games', slRows && slRows.open && slRows.games >= 4, slRows);
       /* 8. the betting-history answer: no verdict chip, the reader's own figures, past only */
       await ask(page, R2.bets.question, 7);
       const bt = await lastAnswer(page);
