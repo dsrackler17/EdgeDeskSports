@@ -1,6 +1,6 @@
 # Research engine — benchmark, cost and performance report
 
-**Branch `claude/research-intel` (draft PR #553). Nothing here is merged or deployed.**
+**Branch `claude/research-intel`, the follow-up to PR #553. #553 (stages 0–4) is merged; this work (stages 5–10) is not merged or deployed.**
 
 Every figure below comes from the benchmark in `tools/research/benchmark/`. It drives the real edge function (`handle(Request)`: bearer, rate limit, subscription gate, usage allowance, routing) against fixture networks, with **recorded responses only**.
 

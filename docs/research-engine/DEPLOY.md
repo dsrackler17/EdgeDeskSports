@@ -1,6 +1,8 @@
 # Research engine — deployment and rollback
 
-**Status: nothing in this branch is merged or deployed.** Every step below needs the owner's explicit go-ahead.
+**Status.** PR #553, merged on 12 Oct 2026, put stages 0–4 on `main`: the orchestrator, the evidence ledger, the calculation ledger and the challenge pass. Its edge function still carries the build string `edgedesk_ai-2026-10-10-r22-props-cadence`, the same as the build before it. So `?probe=1` and the deploy doctor cannot tell whether that code is running; check the function's last deploy time in the Supabase dashboard.
+
+Stages 5–10 (this follow-up PR) are not merged or deployed. They bump the build to `r23-research-engine`. Every step below needs the owner's explicit go-ahead.
 
 This document assumes nothing about production. Each step says how to check where production stands first, and works whether or not earlier phases (`supabase/research_intel.sql`, PR #551) were applied.
 
@@ -55,7 +57,7 @@ Run `Deploy intelligence` with only `apply_research_engine` ticked. It:
 
 Read the report rows at the end.
 
-### 4. Merge PR #553 (the owner's decision)
+### 4. Merge this PR (the follow-up to #553; the owner's decision)
 
 The site ships at once. Within about 6 h the doctor deploys the function.
 

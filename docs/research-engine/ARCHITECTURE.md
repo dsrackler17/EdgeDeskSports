@@ -188,7 +188,7 @@ Every adapter is off by default and needs all of:
 | 7 | Safeguards (dollar budget, concurrency, structured logs) + the odds recovery proposal and calculator | ✓ |
 | 8 | Research-terminal UI: plan, sources, verification, contradictions, assumptions, confidence vs probability, why (not) actionable | ✓ |
 | 9 | Benchmark of ≥ 100 questions through the real handler, metrics, cost and performance report (`tools/research/benchmark/`, `REPORT.md`); the defects it found fixed | ✓ |
-| 10 | Deployment and rollback instructions, risks, regression, PR | — |
+| 10 | Deployment and rollback instructions (`DEPLOY.md`), risks (`RISKS.md`), full regression, PR | ✓ |
 
 ## 7. What this does not do
 
