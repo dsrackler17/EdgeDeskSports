@@ -33,13 +33,47 @@ Prices are from the providers' published pages where those could be reached from
 3. **Low-cost adapter: Perplexity Search API**, for raw result lists. Snippets are external reports, parsed deterministically. Use it when cost matters more than reading the page. The schema must be confirmed with a live key before relying on it (`tools/research/providers_live.js`).
 4. **Do not add** a provider whose terms cannot be confirmed for commercial use (MLB Stats API). **Fix the existing open-meteo licence** before scaling.
 
-All adapters stay off until the operator sets all three of:
+All adapters stay off until the operator sets every one of:
 
-- the secret (`ANTHROPIC_API_KEY` already exists for narration; `PERPLEXITY_API_KEY` for search);
+- the secret (`ANTHROPIC_API_KEY` already exists for narration; `EDGEDESK_PERPLEXITY_API_KEY` for Perplexity);
+- `EDGEDESK_SEARCH_PROVIDERS` naming the provider (`claude_web_search`, `perplexity_search`, or both, comma-separated);
 - `EDGEDESK_RESEARCH_PAID_OK=1`;
-- the provider's `research_provider_quota.enabled = true`.
+- the provider's `research_provider_quota.enabled = true` (the row is added disabled by `supabase/research_engine.sql`); every real call claims this persistent quota (`research_usage_claim`) first and settles it after;
+- **Perplexity only:** `EDGEDESK_PERPLEXITY_SCHEMA_VERIFIED=1`, set only after `tools/research/providers_live.js perplexity` reports `schema check PASS` with a live key.
+
+Search runs only on deep (L3) research turns. It goes through the research ledger, which supplies:
+
+- per-provider daily, monthly and per-subscriber quotas;
+- a circuit breaker after three consecutive failures;
+- one search per game, shared by every candidate on it (cache and single flight);
+- a timeout.
 
 The dollar budget (`research_budget_policy`) caps the worst case regardless.
+
+## 2a. How a search result becomes evidence (`lib/edgedesk_providers.js`)
+
+- **Only the source's own words become a finding**, each with the URL it came from.
+  - Claude: each citation's `cited_text` (≤ 150 characters quoted from the page). The model's sentence is kept beside it as `model_summary` and is never the claim.
+  - A sentence with no citation is the model's own and is discarded.
+  - A citation is **refused** when:
+    - its URL is not among the search results actually returned;
+    - its domain is not on the allowed list;
+    - it carries no quote.
+  - A model sentence that claims more than its quote (a status or a name the quote lacks) is flagged `summary_beyond_quote`.
+- **Perplexity snippets are capped at an external report** (`CREDIBLE_JOURNALISM`), even from an official domain, because whether a snippet is the page's own wording is not verified. Claude citations are classed by their domain like any source.
+- Names are matched only against players the run's own feeds already list; nothing is guessed.
+- A page with no publication date is **undated**: its freshness is `UNKNOWN`, never "fresh because it was retrieved just now".
+- Every quote passes the evidence layer's prompt-injection screen. A flagged quote becomes an unverified hypothesis.
+- **A single credible report of a key absence is never priced on.** It becomes a `REPORTED_ABSENCE_UNCONFIRMED` gap that holds the verdict at RESEARCH REQUIRED until an official report confirms or denies it. The challenge pass calls it critical when it concerns the priced starting quarterback.
+- Search errors are reported with their documented code: `too_many_requests`, `max_uses_exceeded`, `request_too_large`, … A request that is too large may mean the domain list is too long.
+- On `stop_reason: refusal` the provider is reported as declined.
+- On `pause_turn` the turn is resumed **once**, sending the paused assistant turn back unchanged; both calls are costed.
+- In every failure case the research continues on EdgeDesk's own sources.
+- The actual cost is read from each response's `usage`:
+  - tokens at list price;
+  - plus $0.01 per search;
+  - reported per row and in the research summary;
+  - counted once per search (a cached reuse costs nothing).
 
 ## 3. Estimated cost per research request
 
@@ -79,9 +113,10 @@ Change those rows to change the ceiling.
 
 | Item | Status |
 |---|---|
-| Claude web search request/response shape | **verified** against the official documentation |
+| Claude web search request/response shape | **verified** against the official documentation (re-read 2026-10-12: `web_search_20260209`, `allowed_callers: ["direct"]` for direct calls, `allowed_domains`, `max_uses`, the result/citation/error shapes, `pause_turn`) |
 | Claude pricing | **verified** against the official pricing page |
-| Perplexity Search API schema | **unverified**: the official docs could not be reached from the build environment; adapter fixtures are built from the publicly described shape and labelled so |
+| Perplexity Search API schema | **unverified**. The official docs are blocked by the build environment's egress proxy (HTTP 403, 2026-10-12). Third-party descriptions disagree on the result limit and the domain-filter field. The adapter parses only `results[].title/url/snippet/date`, and the edge function refuses to call it until `EDGEDESK_PERPLEXITY_SCHEMA_VERIFIED=1` |
+| Test fixtures (`tools/research/fixtures/*.json`) | **constructed** from the documented shapes and labelled so in each file; none is a recorded live response |
 | Perplexity, Brave, Exa, Tavily, The Odds API prices | from official pages where quoted by search, otherwise secondary sources (marked in §1) |
 | Live provider calls | **none were made.** CI uses fixtures. `tools/research/providers_live.js` runs real calls only with keys and `EDGEDESK_LIVE_PROVIDERS=1`, and has not been run. |
 

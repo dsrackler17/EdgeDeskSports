@@ -36,6 +36,8 @@ on:
       - 'lib/edgedesk_evidence.js'
       - 'lib/edgedesk_quant_verify.js'
       - 'lib/edgedesk_challenge.js'
+      - 'lib/edgedesk_providers.js'
+      - 'tools/research/**'
       - 'supabase/research_intel.sql'
       - 'supabase/quant_desk.sql'
       - 'football/validation/calibration_props_*.json'
@@ -106,6 +108,8 @@ on:
       - 'lib/edgedesk_evidence.js'
       - 'lib/edgedesk_quant_verify.js'
       - 'lib/edgedesk_challenge.js'
+      - 'lib/edgedesk_providers.js'
+      - 'tools/research/**'
       - 'supabase/research_intel.sql'
       - 'supabase/quant_desk.sql'
       - 'football/validation/calibration_props_*.json'
@@ -205,6 +209,8 @@ jobs:
         run: node tools/intelligence/quant_verify.test.js
       - name: The challenge pass — the eight questions against the evidence and calculation ledgers; it only lowers, never raises; confidence is a category
         run: node tools/intelligence/challenge.test.js
+      - name: The research providers — request builders and parsers over constructed fixtures (no live call); only cited source words become evidence
+        run: node tools/intelligence/providers.test.js
 
   football-artifacts:
     runs-on: ubuntu-latest

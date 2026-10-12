@@ -377,6 +377,13 @@ const LIBS = [
     start: '/*__EDCHALLENGE_START__*/', end: '/*__EDCHALLENGE_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* Phase 4, external research: request builders and parsers (no network; the edge function sends) */
+  {
+    name: 'EDPROVIDERS',
+    src: path.join(ROOT, 'lib', 'edgedesk_providers.js'),
+    start: '/*__EDPROVIDERS_START__*/', end: '/*__EDPROVIDERS_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
   {
     name: 'EDBETS',
     src: path.join(ROOT, 'lib', 'edgedesk_bet_history.js'),

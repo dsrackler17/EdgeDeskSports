@@ -1,0 +1,12 @@
+{
+  "_label": "CONSTRUCTED: a paused server-tool turn (stop_reason pause_turn, documented); the paused assistant message is sent back unchanged to resume. NOT a recorded live response.",
+  "response": {
+    "id": "msg_fixture_pause", "type": "message", "role": "assistant", "model": "claude-opus-5-5",
+    "content": [
+      { "type": "text", "text": "Searching." },
+      { "type": "server_tool_use", "id": "srvtoolu_fx_p", "name": "web_search", "input": { "query": "Bills injury report" } }
+    ],
+    "stop_reason": "pause_turn",
+    "usage": { "input_tokens": 2100, "output_tokens": 30, "server_tool_use": { "web_search_requests": 1 } }
+  }
+}

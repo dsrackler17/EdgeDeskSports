@@ -137,7 +137,10 @@
     raw = raw || {}; ctx = ctx || {};
     var why = !raw.url || !/^https?:\/\//i.test(str(raw.url)) ? 'no source URL' : toMs(raw.retrieved_at) == null ? 'no retrieval time' : (!raw.text && !raw.status) ? 'no claim' : str(raw.kind).toUpperCase() === 'EDGEDESK_AI' ? 'an EdgeDesk-written conclusion is not evidence' : null;
     if (why) return { refused: true, why: why, raw: { url: raw.url || null, text: raw.text ? str(raw.text).slice(0, 120) : null } };
-    var src = sourceClass(raw), cls = claimClass(src, raw.text);
+    var src = sourceClass(raw);
+    /* a provider's extract whose wording is not verified verbatim (a search snippet) is never more than a report, whatever the domain */
+    if (raw.cap_class === 'CREDIBLE_JOURNALISM' && TIER[src] < TIER.CREDIBLE_JOURNALISM) src = 'CREDIBLE_JOURNALISM';
+    var cls = claimClass(src, raw.text);
     var st = statusOf(raw);
     var f = {
       id: 'f_' + hash([raw.url, raw.retrieved_at, raw.team, raw.player, raw.topic, raw.text, st].join('|')),
@@ -145,7 +148,9 @@
       event_ref: raw.event_ref || ctx.event_ref || null, team: raw.team || null, player: raw.player || null, role: raw.role ? str(raw.role).toUpperCase() : null, key: raw.key === true,
       topic: raw.topic || (raw.player ? 'availability' : 'other'), claim: str(raw.text || (raw.player ? raw.player + ' ' + str(raw.status) : '')).slice(0, 400), status: st, value: raw.value != null ? raw.value : null,
       source_class: src, reliability: cls, speculative: cls === 'SPECULATION' || cls === 'OPINION',
-      verified: false, verification: null, conflicts: []
+      verified: false, verification: null, conflicts: [],
+      /* an external search result: which provider, and the model's own sentence beside the source's words (never the claim) */
+      provider: raw.provider || null, search: raw.search === true, model_summary: raw.model_summary ? str(raw.model_summary).slice(0, 300) : null, summary_beyond_quote: raw.summary_beyond_quote === true
     };
     if (!f.speculative && (src === 'OFFICIAL' || src === 'STATISTICAL_DATA')) { f.verified = true; f.verification = src === 'OFFICIAL' ? 'OFFICIAL_SOURCE' : 'STATISTICAL_SOURCE'; }
     else f.verification = f.speculative ? 'NOT_CONFIRMED (' + cls.toLowerCase() + ')' : 'SINGLE_SOURCE';
@@ -206,6 +211,9 @@
       var isKey = f.key || roles.indexOf(str(f.role)) >= 0 || (priced && same(priced, f.player));
       var applied = (model.absences_applied || []).some(function (n) { return same(n, f.player); });
       if ((f.status === 'OUT' || f.status === 'DOUBTFUL') && isKey && !applied && f.verified) out.push({ kind: 'ABSENCE_NOT_IN_MODEL', side: side, player: f.player, finding: f.id, detail: f.player + ' (' + (f.team || '') + (f.role ? ', ' + f.role : '') + ') is ' + f.status.toLowerCase() + ' per ' + (f.publisher || 'the report') + '; the model\'s number does not account for the absence' });
+      /* one credible source (a newsroom, a search result) reporting a key absence the model does not carry: never priced on —
+         a single unconfirmed report is not a fact — but it blocks a verified verdict until an official report confirms or denies it */
+      if ((f.status === 'OUT' || f.status === 'DOUBTFUL') && isKey && !applied && !f.verified && f.reliability === 'CREDIBLE_JOURNALISM') out.push({ kind: 'REPORTED_ABSENCE_UNCONFIRMED', side: side, player: f.player, role: f.role || null, priced_starter: !!(priced && same(priced, f.player)), finding: f.id, detail: f.player + ' (' + (f.team || '') + (f.role ? ', ' + f.role : '') + ') is reported ' + f.status.toLowerCase() + ' by ' + (f.publisher || 'one source') + ' — a single credible source, not confirmed by an official report; EdgeDesk\'s number assumes he plays' });
     });
     return out;
   }
@@ -445,6 +453,7 @@
     else if (s.verdict === 'REJECTED') { cls = 'REJECTED'; reasons.push('the strategist rejected it: ' + s.reason); }
     else if (num(ev.net_ev_per_dollar) != null && num(ev.net_ev_per_dollar) <= 0) { cls = 'REJECTED'; reasons.push('net EV is ' + pct(num(ev.net_ev_per_dollar), 2) + ' per $1'); }
     else if ((r.unresolved || []).length) { cls = 'RESEARCH_REQUIRED'; reasons.push('sources disagree and nothing settles it: ' + r.unresolved[0].detail); }
+    else if ((r.gaps || []).some(function (g) { return g.kind === 'REPORTED_ABSENCE_UNCONFIRMED'; })) { cls = 'RESEARCH_REQUIRED'; reasons.push((r.gaps || []).filter(function (g) { return g.kind === 'REPORTED_ABSENCE_UNCONFIRMED'; })[0].detail + ' — confirm it before acting on the price'); }
     else if (a.status === 'NEEDS_RECHECK') { cls = 'RESEARCH_REQUIRED'; reasons.push(a.reason); }
     else if ((r.gaps || []).length && !(q.adjustments || []).length) { cls = 'RESEARCH_REQUIRED'; reasons.push(r.gaps[0].detail + ' — and no model scenario quantifies it'); }
     else if ((a.checks || []).some(function (c) { return c.id === 'A8_AVAILABILITY' && c.result === 'NOT_CHECKED'; }) && (r.findings || []).filter(function (f) { return f.topic === 'availability'; }).length === 0) { cls = 'RESEARCH_REQUIRED'; reasons.push('availability was not checked: ' + ((a.checks || []).filter(function (c) { return c.id === 'A8_AVAILABILITY'; })[0] || {}).detail); }
@@ -482,7 +491,8 @@
       trail.push({ round: round, step: 'AUDIT', detail: C.label + ': ' + C.reasons[0] });
       out = { research: R, quant: Q, disagreement: D, sensitivity: S, strategist: ST, classification: C };
       /* a material, QUANTIFIABLE finding the price does not yet carry: re-price and re-audit */
-      var fresh = R.gaps.filter(function (g) { return !adjustments.some(function (x) { return x.finding_id === g.finding; }); });
+      /* only a CONFIRMED gap re-prices (an unconfirmed report is never priced on) */
+      var fresh = R.gaps.filter(function (g) { return (g.kind === 'ABSENCE_NOT_IN_MODEL' || g.kind === 'STARTER_MISMATCH') && !adjustments.some(function (x) { return x.finding_id === g.finding; }); });
       var next = [];
       fresh.forEach(function (g) {
         var rule = g.kind === 'ABSENCE_NOT_IN_MODEL' ? 'QB_OUT' : 'STARTER_CHANGE';

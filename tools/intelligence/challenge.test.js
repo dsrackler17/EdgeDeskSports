@@ -123,6 +123,24 @@ ok('Q4: a required availability check that did not happen is UNKNOWN, naming the
 const c4d = run({ R: research(baseFindings(), { gaps: [{ kind: 'STARTER_MISMATCH', side: 'home', player: 'Mitchell Trubisky', detail: 'Buffalo Bills: EdgeDesk\'s numbers assume Josh Allen, nflverse lists Mitchell Trubisky' }] }) }).ch;
 ok('Q4: a starter mismatch is CRITICAL (settleable) → RESEARCH REQUIRED', qv(c4d, 'Q4_KEY_PLAYERS').severity === 'CRITICAL' && c4d.classification.after === 'RESEARCH_REQUIRED', qv(c4d, 'Q4_KEY_PLAYERS'));
 
+/* one credible report of a key absence: the researcher flags it unconfirmed, never prices on it, and the challenge calls it critical */
+const EVT = { id: 'g1', sport: 'americanfootball_nfl', home: HOME, away: AWAY, kickoff: KICK };
+const espnOut = { url: 'https://www.espn.com/nfl/story/_/id/allen-out', retrieved_at: ago(1), published_at: ago(1), team: HOME, player: 'Josh Allen', role: 'QB', topic: 'availability', text: 'Bills quarterback Josh Allen has been ruled out for Sunday.' };
+const Ru = A.research({ event: EVT, raw: [espnOut], model: { starters: { home: 'Josh Allen', away: 'Jared Goff' } }, required: [], now: NOW });
+const gu = Ru.gaps.find((g) => g.kind === 'REPORTED_ABSENCE_UNCONFIRMED');
+ok('researcher: one credible report that the priced quarterback is out → an UNCONFIRMED gap (not a verified absence)', gu && gu.player === 'Josh Allen' && gu.priced_starter === true && !Ru.gaps.some((g) => g.kind === 'ABSENCE_NOT_IN_MODEL') && /not confirmed by an official report/.test(gu.detail), Ru.gaps);
+const Rv = A.research({ event: EVT, raw: [Object.assign({}, espnOut, { url: BILLS_IR })], model: { starters: { home: 'Josh Allen', away: 'Jared Goff' } }, required: [], now: NOW });
+ok('researcher: the same report from the club\'s official page is a verified ABSENCE_NOT_IN_MODEL instead', Rv.gaps.some((g) => g.kind === 'ABSENCE_NOT_IN_MODEL') && !Rv.gaps.some((g) => g.kind === 'REPORTED_ABSENCE_UNCONFIRMED'), Rv.gaps);
+const Rs = A.research({ event: EVT, raw: [Object.assign({}, espnOut, { text: 'Josh Allen could miss Sunday, per sources.' })], model: { starters: { home: 'Josh Allen', away: 'Jared Goff' } }, required: [], now: NOW });
+ok('researcher: speculation ("could miss, per sources") is not even an unconfirmed gap', Rs.gaps.length === 0, Rs.gaps);
+const invU = A.investigate({ candidate: { market: 'spreads', selection: HOME }, event: EVT, raw: [espnOut], model: { available: true, prices: false, tier: null, probability: null, inputs: { starters: { home: 'Josh Allen', away: 'Jared Goff' } } },
+  market: { american: -105, captured_at: ago(0.1), sharp_fair: 0.535, kickoff: KICK }, market_view: { line: -2.5 }, audit: { status: 'CONFIRMED', reason: 'ok', checks: [] }, scenario_deltas: { home_qb_out: -6.5 }, sd_points: 13.4, now: NOW, ttl_min: 90, conservative: true });
+ok('investigate: the unconfirmed report is never priced on (no QB-out adjustment, though a scenario delta is on file)', invU.quant.adjustments.length === 0 && invU.research.gaps.some((g) => g.kind === 'REPORTED_ABSENCE_UNCONFIRMED'), [invU.quant.adjustments, invU.research.gaps.map((g) => g.kind)]);
+const clsU = A.classify({ audit: { status: 'CONFIRMED', checks: [] }, quant: { evaluation: Object.assign({}, evalOf(), { classification: 'VERIFIED_EDGE' }), adjustments: [] }, strategist: { verdict: 'SUPPORTED' }, research: { unresolved: [], gaps: Ru.gaps, findings: [] }, sensitivity: { robust: true } });
+ok('classify: an otherwise verified candidate with an unconfirmed key absence is RESEARCH REQUIRED, told to confirm it', clsU.classification === 'RESEARCH_REQUIRED' && /confirm it before acting/.test(clsU.reasons[0]), clsU);
+const cU = run({ R: research(baseFindings(), { gaps: Ru.gaps }) }).ch;
+ok('Q4: an unconfirmed report about the priced quarterback is CRITICAL, settleable by research → RESEARCH REQUIRED', qv(cU, 'Q4_KEY_PLAYERS').status === 'UNRESOLVED' && qv(cU, 'Q4_KEY_PLAYERS').severity === 'CRITICAL' && cU.classification.after === 'RESEARCH_REQUIRED', qv(cU, 'Q4_KEY_PLAYERS'));
+
 /* ---------------- Q7: missing data as the cause ---------------- */
 const c7 = run({ candidate: { outlier: 'the projection disagrees with the market by 12 points, at or past the 7-point disagreement threshold' } }).ch;
 ok('Q7: an outlier gap is a suspected data fault, CRITICAL → PASS', qv(c7, 'Q7_MISSING_DATA').severity === 'CRITICAL' && /data fault/.test(qv(c7, 'Q7_MISSING_DATA').answer) && c7.outcome === 'PASS', qv(c7, 'Q7_MISSING_DATA'));
