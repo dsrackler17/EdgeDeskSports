@@ -291,7 +291,7 @@ file ──(browser: parse, detect, map, normalize, issues)──▶ portfolio_i
 
 - **The file is parsed locally:** RFC 4180, comma / semicolon / tab / pipe delimiters, a BOM, quoted newlines. Up to 5 MB and 5,000 rows.
 - **The format is detected** and columns are proposed by header aliases; the reader can re-map any column.
-- **Adapters, not assumptions.** `generic_sportsbook_v1` reads one row per bet. `generic_prediction_market_v1` reads one row per buy or sell; rows for the same market and side become one position with several fills. A book-specific importer is another adapter, and the core does not change.
+- **Adapters, not assumptions.** `generic_sportsbook_v1` reads one row per bet. `leg_rows_sportsbook_v1` reads bet-tracker exports with one row per parlay leg and groups them into one wager per ticket before normalizing (§16). `generic_prediction_market_v1` reads one row per buy or sell; rows for the same market and side become one position with several fills. A book-specific importer is another adapter, and the core does not change.
 - **Refused, never guessed:**
   - a decimal comma (`12,50`);
   - a date that only reads day-first under month-first;
@@ -468,6 +468,9 @@ The full account is in [`platform-connections.md`](platform-connections.md). In 
 |---|---|
 | `npm run portfolio:test` | **Calc (106):** decimals, every sportsbook result and price shape, parlays, YES/NO wins and losses, fees, multiple buys, partial and full sells, voids, scalar settlements, aggregation, periods, time zones and DST, validation, fingerprints. **Import (65):** CSV parsing, every cell reader, both adapters, cents detection, refusals, the connector contract, backoff, error classes, log redaction. **UI (66):** every tab rendered, filters, forms → rows, escaping, honest labels, copy guard, CSV export safety, `app.html` wiring. |
 | `npm run portfolio:sql` (167) | The migration applied twice; deadlock-free re-run under a concurrent save; hand-checked SQL money for both instruments; **parity with the JS engine on 30 hand cases + 280 seeded random positions**; SQL ≡ JS fingerprint material and rounding; duplicates (same bet across zones and spellings, occurrences, platform ids); RLS as B and anon; synced rows read-only; attribution ownership; the whole import pipeline (classify counts, review, forced duplicates, partial failure, batched and idempotent commit, fill grouping, re-import); account deletion cascades. |
+| `node tools/portfolio/bet_history.test.js` (108, in `portfolio:test`) | EDBETS (§16): the leg-row fixture to the cent, singles vs parlays, every breakdown, days, alt lines, CLV, data quality; parity with `EDPortfolio.parlay()` and between the CSV and stored-positions paths; 200 generated ticket sets (totals = Σ tickets = an independent `derive()` oracle; splitting parlays into duplicated, shuffled leg rows changes nothing); the answer's numbers and its language guard; the Analytics section rendered and escaped. |
+| `node tools/portfolio/bet_history_sql.test.js` (19, in `portfolio:sql`) | The leg-row fixture through the real classify / commit: one position per ticket (legs jsonb, stake once), review rows held, EDBETS over RLS-read rows = EDBETS over the CSV, isolation, re-import adds nothing. |
+| `node tools/portfolio/bet_history.e2e.js` (31, in `portfolio:e2e`) | A leg-row import through the page, then "What cost you money" in Analytics at 1280 px and 390 px: figures match EDBETS over the stored rows, no chasing language, no sideways scroll. |
 | `npm run portfolio:e2e` (39) | The page in Chromium against the real migration: empty book, form previews, record bet and contract, totals and split, open card, duplicate caught, edit, delete, CSV import with counts and confirmation, accounts never "Connected", analytics, isolation, no localStorage money, 390 px with no sideways scroll. |
 | `node tools/app/navigation.test.js` | The five destinations (Portfolio is one), More and deep links still hold; `tools/app/navigation.e2e.js` drives them in a browser. |
 
@@ -497,3 +500,38 @@ The Kalshi and Polymarket connectors are built. Switching one on is an operator 
 6. Run the one `update` it prints.
 
 The steps in full: [`platform-connections.md` § Switching a connector on](platform-connections.md#switching-a-connector-on--the-only-way).
+
+## 16. Bet-history intelligence: leg rows, EDBETS and "What cost you money"
+
+The question it answers, privately, from the reader's own history: *"Why did I lose money on my recent bets, and were my singles or parlays more profitable?"*
+
+### The leg-row adapter (`leg_rows_sportsbook_v1`, `lib/edgedesk_portfolio_import.js`)
+
+Bet trackers (Juice Reel style) export **one row per leg**, with the ticket's id, stake, price, status and payout repeated on every leg row. Summing those rows counts a 3-leg parlay's stake three times. The adapter groups rows **before** `normalizeWager`:
+
+- **Key:** the ticket id (aliases: bet / ticket / wager / slip id, reference, …); one id is split only when its rows name two different books (a leg row that leaves the book blank stays with its ticket). A row with no id is its own single and carries `NO_TICKET_ID` (warning → review).
+- **Ticket-level fields are never summed.** Stake, price, payout, profit, status, fees, bonus flag, dates, bet type, platform and leg count are compared across the ticket's rows; the first row that states one is used. Rows that **disagree** carry `TICKET_FIELDS_DIFFER` with the field names (warning → review); nothing is guessed.
+- **Duplicates:** the same leg (by a leg-number column, else event · market · selection · line · leg price) listed twice under one ticket is counted once — `DUPLICATE_ROW_MERGED` (identical) or `DUPLICATE_LEG_DIFFERS` (warning).
+- **The wager:** one `PARLAY` / `SAME_GAME_PARLAY` row with a `legs` array (≤ 30: selection, event, market, type, line, price, result), the ticket's stake once, `market_name` "Parlay (3 legs)". With no ticket price, the price is the legs' product by `EDPortfolio.parlay()` (pushed / voided legs drop out) — `ODDS_FROM_LEGS`; with no ticket status, the legs decide it — `STATUS_FROM_LEGS`. Teasers and round robins are parlay-family (`bet_type` kept). A single carries its closing price (`closing_odds_american`) for analysis.
+- **Also flagged:** `LEG_COUNT_MISMATCH`, `LEG_STATUS_DISAGREES`, `BET_TYPE_DISAGREES`; the file-level report says how many leg rows were joined, merged and flagged.
+- **Detection:** `detect(headers, records)` now sees the parsed rows. The adapter wins only on a leg column (`Leg`, `Legs`, `Leg Odds`, `Leg Result`, …) or a ticket id repeated on rows with different legs **and** the same stake. Every one-row-per-bet file stays with `generic_sportsbook_v1`, whose behaviour is unchanged.
+- **No SQL change.** `portfolio_import_commit` already stores `legs`; the server classifies one staged row per ticket, and a re-import is all duplicates.
+
+### EDBETS (`lib/edgedesk_bet_history.js`, `window.EDBETS`)
+
+| Function | In → out |
+|---|---|
+| `fromCSV(text, opts)` | a tracker CSV → `{ source:'csv', tickets, report, fileIssues, map, clvColumn }`, via the leg-row adapter (parsed in the browser) |
+| `fromPositions(rows, opts)` | the reader's `portfolio_positions` rows as PostgREST returns them (numerics as text, `legs` jsonb, `position_type`, `status`, `stake`, `profit_loss` / `realized_profit_loss`, `cost_basis`) → the same shape; prediction markets and repeated ids set apart |
+| `analyze(input, opts)` | either source (or a CSV string / rows array); `opts`: `tz`, `from` / `to` (ms, by settled day), `smallSample` (30), `lossDayShare` ('0.25') → analytics: `counts`, `totals`, `singles`, `parlays`, `comparison`, `bySport`, `byMarketType`, `byBetType`, `byOddsRange` (≤ −200 · −199…−110 · −109…+100 · +101…+200 · +201…+500 · > +500), `byStakeSize`, `days` (worst day, days ≥ the stated share of losing-day losses), `altLines`, `clv`, `dataQuality`, `worstSegments`, `tickets`, `definitions` |
+| `answer(analytics, opts)` | → `{ question, text, paragraphs, parts, drivers, caveats, language }`: the loss and its base, singles vs parlays with the verdict and its strength, the three biggest loss drivers, the worst day, what the juice did, caveats, and "These figures describe your past results only; they do not predict future results." |
+| `checkLanguage(text)` | the guard: no chasing ("win it back", "recover"), no stake-raising, no forecast of profit |
+
+**Rules.** Money is exact (`EDPortfolio.dec`, `derive()`'s rules; cents in, cents out; ratios to six places). Settled (won / lost / push / re-priced) and cashed-out tickets are in P&L, risked and ROI — a cash-out at what the book paid, outside the win rate. Pending tickets are open exposure only; voids are left out; a ticket whose rows disagree on money or result, or whose P&L cannot be computed, is excluded and listed. Every group carries its `n`; under 30 is "small sample". Alt lines = alt spreads / totals priced −200 or shorter, or any market named "alt" / "alternate"; their losses are also shown as a share of the money lost on losing tickets, with the break-even win rate their prices need. Closing-line value is computed for singles when the source has closing prices, and is otherwise said to be not verifiable. Timestamps are checked (missing / unreadable placed date, settled before placed, future dates, pending with a settled date, settled without one); a ticket counts on the local day it settled (its placed day when that is missing or earlier).
+
+### The dashboard (Analytics → "What cost you money")
+
+`lib/edgedesk_portfolio_ui.js` `lossPatterns(S)` runs EDBETS over the positions already on the page (every open one and the most recent 1,000 settled; the page now also selects `legs`), cut to the Analytics period and platform chips. It shows the headline, a singles-vs-parlays table (tickets, legs, risked, P&L, ROI, W-L-P, win rate), the six worst segments across sport / market type / price / stake size / day with `n` and the small-sample tag, the worst days and their shares, the alt-line effect, data quality, the answer in words, and the caveat line with the scope. `.pfo-lp-*` classes on the page's tokens; tested at 390 px with no sideways scroll. `app.html` loads `edgedesk_bet_history.js` after the importer and before the page (`?v=20261012bh1`).
+
+**Limits.** The dashboard reads the page's capped rows (it says so when capped); a server-side rollup can replace that input without changing EDBETS. Parlay CLV needs a per-leg closing price and is not computed. Leg-row export layouts are matched by header aliases, not verified against a named tracker's real file.
+

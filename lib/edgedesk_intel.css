@@ -1,0 +1,182 @@
+/* EdgeDesk INTELLIGENCE UI — the Ask EdgeDesk AI entry, research activity, result cards,
+   readiness and the game research view. The app's own tokens (dark surfaces, the teal
+   accent, the gold highlight); inside The Desk the panel's own palette is used where it is set. */
+.ia-ask,.ia-readiness,.ia-act,.ia-card,.ia-results,.ia-fail,.ia-cardres,.ia-method,.ig-sheet,.edai-msg .ia-dim{
+  --ia-fg:var(--desk-fg,var(--text,#f1ebdf)); --ia-dim:var(--desk-dim,var(--dim,#aa9c87)); --ia-faint:var(--desk-faint,var(--faint,#958a7a));
+  --ia-surf:var(--ink-2,var(--surface,#191510)); --ia-surf2:var(--ink-3,var(--surface2,#221c15)); --ia-line:var(--ink-line,var(--border,#332a1b));
+  --ia-acc:var(--accent,#2fa79a); --ia-on-acc:var(--on-accent,#042320); --ia-gold:var(--gold,#e3b84d); --ia-pos:var(--pos,#76bd3e); --ia-neg:var(--neg,#e26044); --ia-warn:var(--warn,#d99a2b);
+  color:var(--ia-fg)
+}
+.ia-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ia-dim{color:var(--ia-dim)}
+.ia-pos{color:var(--ia-pos)} .ia-neg{color:var(--ia-neg)}
+
+/* ---------- 1. Ask EdgeDesk AI ---------- */
+.ia-ask{margin:0 0 14px;padding:14px;border:1px solid color-mix(in srgb,var(--ia-acc) 45%,var(--ia-line));border-radius:var(--rad,14px);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--ia-acc) 12%,var(--ia-surf)) 0%,var(--ia-surf) 100%)}
+.ia-ask-hd{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px}
+.ia-badge{flex:0 0 34px;height:34px;border-radius:10px;display:grid;place-items:center;background:var(--ia-acc);color:var(--ia-on-acc)}
+.ia-badge svg{width:18px;height:18px;fill:currentColor}
+.ia-ask h2{margin:0;font-size:17px;font-weight:800;letter-spacing:.01em}
+.ia-sub{margin:2px 0 0;font-size:12.5px;line-height:1.45;color:var(--ia-dim)}
+.ia-form{display:flex;gap:8px;align-items:flex-end}
+.ia-form textarea{flex:1;min-width:0;min-height:46px;max-height:140px;resize:none;padding:12px 12px;font:inherit;font-size:16px;line-height:1.35;color:var(--ia-fg);
+  background:var(--bg,#100e0a);border:1px solid var(--ia-line);border-radius:12px;outline:none}
+.ia-form textarea:focus{border-color:var(--ia-acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--ia-acc) 30%,transparent)}
+.ia-go{flex:0 0 auto;min-height:46px;min-width:64px;padding:0 16px;border:0;border-radius:12px;background:var(--ia-gold);color:#1d1503;font-weight:800;font-size:15px;cursor:pointer}
+.ia-go:focus-visible,.ia-btn:focus-visible,.ia-chip:focus-visible{outline:2px solid var(--ia-gold);outline-offset:2px}
+.ia-err{margin:8px 0 0;font-size:13px;color:var(--ia-neg)}
+.ia-ctx{margin:8px 0 0;font-size:12.5px;color:var(--ia-dim)}
+.ia-ctx b{color:var(--ia-fg)}
+.ia-x{margin-left:6px;background:none;border:1px solid var(--ia-line);color:var(--ia-dim);border-radius:999px;padding:2px 8px;font-size:12px;cursor:pointer;min-height:28px}
+.ia-ex,.ia-recent{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.ia-ask [hidden],.ia-readiness [hidden]{display:none!important}
+.ia-recent .k{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ia-faint);align-self:center;margin-right:2px}
+.ia-chip{min-height:36px;padding:7px 11px;border-radius:999px;border:1px solid var(--ia-line);background:var(--ia-surf2);color:var(--ia-fg);font:inherit;font-size:12.5px;line-height:1.25;text-align:left;cursor:pointer;max-width:100%}
+.ia-chip:hover{border-color:var(--ia-acc)}
+.ia-chip-r{color:var(--ia-dim)}
+/* phone: the examples and recent questions are one swipeable row each, so the card stays a header, an input and
+   two rows, and the board is still in the first screenful; the row scrolls inside itself, never the page */
+@media(max-width:560px){
+  .ia-ask .ia-ex,.ia-ask .ia-recent{flex-wrap:nowrap;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+    padding-bottom:2px;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent)}
+  .ia-ask .ia-ex::-webkit-scrollbar,.ia-ask .ia-recent::-webkit-scrollbar{display:none}
+  .ia-ask .ia-chip{flex:0 0 auto;white-space:nowrap;scroll-snap-align:start;max-width:none}
+  .ia-ask .ia-recent .k{flex:0 0 auto}
+}
+/* inside The Desk's messages: its own list dot (".edai-msg.a li:before") would double every numbered and step list */
+.edai-msg.a .ia-steps li:before,.edai-msg.a .ia-src li:before,.edai-msg.a .ia-why-d li:before,.edai-msg.a .ia-glist>li:before,.edai-msg.a .ia-part li:before{content:none}
+.edai-msg.a .ia-steps li,.edai-msg.a .ia-glist>li{padding-left:0}
+.edai-msg.a .ia-src li,.edai-msg.a .ia-why-d li{padding-left:2px}
+.edai-msg.a .ia-src,.edai-msg.a .ia-why-d ol{list-style:decimal;padding-left:20px}
+
+/* ---------- buttons ---------- */
+.ia-btn{min-height:40px;padding:8px 14px;border-radius:10px;border:1px solid var(--ia-line);background:var(--ia-surf2);color:var(--ia-fg);font:inherit;font-size:13.5px;font-weight:650;cursor:pointer}
+.ia-btn:hover{border-color:var(--ia-acc)}
+.ia-btn-s{min-height:36px;padding:6px 11px;font-size:12.5px}
+.ia-btn-p{background:var(--ia-acc);color:var(--ia-on-acc);border-color:var(--ia-acc)}
+
+/* ---------- 2. research activity ---------- */
+.ia-act{margin:4px 0 10px;padding:10px 12px;border:1px solid var(--ia-line);border-radius:12px;background:var(--ia-surf)}
+.ia-act-hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ia-act-t{font-size:13.5px}
+.ia-act-q{flex:1 1 100%;order:3;font-size:12px;color:var(--ia-dim);overflow-wrap:anywhere}
+.ia-act-hd .ia-btn{margin-left:auto}
+.ia-spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--ia-line);border-top-color:var(--ia-acc);animation:iaSpin .9s linear infinite}
+@keyframes iaSpin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.ia-spin{animation:none;border-top-color:var(--ia-gold)}}
+.ia-steps{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:6px}
+.ia-step{display:grid;grid-template-columns:14px minmax(0,auto) 1fr;gap:4px 8px;align-items:start;font-size:12.5px;line-height:1.35}
+.ia-step-l{font-weight:650}
+.ia-step-d{color:var(--ia-dim);grid-column:2 / -1;overflow-wrap:anywhere}
+@media(min-width:621px){.ia-step-d{grid-column:auto}}
+.ia-dot{width:10px;height:10px;border-radius:50%;margin-top:3px;background:var(--ia-line)}
+.ia-step[data-status="running"] .ia-dot{background:var(--ia-gold);box-shadow:0 0 0 3px color-mix(in srgb,var(--ia-gold) 30%,transparent)}
+.ia-step[data-status="done"] .ia-dot{background:var(--ia-acc)}
+.ia-step[data-status="skipped"] .ia-dot{background:var(--ia-faint)}
+.ia-step[data-status="failed"] .ia-dot,.ia-step[data-status="cancelled"] .ia-dot{background:var(--ia-neg)}
+.ia-act-fold summary{cursor:pointer;font-size:12.5px;color:var(--ia-dim);min-height:32px;display:flex;align-items:center}
+.ia-act[data-state="cancelled"],.ia-act[data-state="timeout"],.ia-act[data-state="error"]{border-color:color-mix(in srgb,var(--ia-neg) 50%,var(--ia-line))}
+.ia-partial .ia-part{margin-top:10px}
+.ia-part-h,.ia-res-h{font-size:11.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--ia-faint);margin-bottom:6px}
+.ia-fail{margin:6px 0;padding:10px 12px;border-radius:12px;border:1px solid color-mix(in srgb,var(--ia-neg) 45%,var(--ia-line));background:color-mix(in srgb,var(--ia-neg) 8%,var(--ia-surf))}
+.ia-fail p{margin:0 0 6px;font-size:13px;line-height:1.45}
+.ia-fail-b{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ---------- tables ---------- */
+.ia-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+.ia-tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.ia-tbl th,.ia-tbl td{padding:6px 8px;border-bottom:1px solid var(--ia-line);text-align:left;vertical-align:top}
+.ia-tbl th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ia-faint);font-weight:700}
+.ia-r-PASS{color:var(--ia-pos)} .ia-r-FAIL{color:var(--ia-neg)} .ia-r-WARN{color:var(--ia-warn)}
+.ia-ul{margin:4px 0;padding-left:18px;font-size:12.5px;line-height:1.45}
+.ia-src{margin:2px 0;padding-left:18px;font-size:12px;line-height:1.45}
+.ia-src a{color:var(--ia-acc);overflow-wrap:anywhere}
+
+/* ---------- 3. result cards ---------- */
+.ia-results{margin-top:10px;display:flex;flex-direction:column;gap:10px}
+.ia-cards{display:flex;flex-direction:column;gap:10px}
+.ia-card{border:1px solid var(--ia-line);border-radius:14px;background:var(--ia-surf);padding:12px;border-left:4px solid var(--ia-line)}
+.ia-card-v{border-left-color:var(--ia-acc)} .ia-card-w{border-left-color:var(--ia-gold)} .ia-card-p{border-left-color:var(--ia-warn)} .ia-card-x{border-left-color:var(--ia-neg)}
+.ia-card-hd{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:8px}
+.ia-card-t{font-size:15px;font-weight:800}
+.ia-card-s{font-size:12px;color:var(--ia-dim);margin-top:2px}
+.ia-chipcls{flex:0 0 auto;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:4px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.ia-c-v{color:var(--ia-acc)} .ia-c-w{color:var(--ia-gold)} .ia-c-p{color:var(--ia-warn)} .ia-c-x{color:var(--ia-neg)} .ia-c-u{color:var(--ia-dim)}
+.ia-kv{margin:0;display:grid;grid-template-columns:1fr;gap:6px}
+.ia-kv-r{display:grid;grid-template-columns:1fr;gap:1px}
+.ia-kv dt{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ia-faint)}
+.ia-kv dd{margin:0;font-size:13.5px;line-height:1.45;overflow-wrap:anywhere}
+@media(min-width:760px){.ia-kv-r{grid-template-columns:200px 1fr;gap:10px}}
+.ia-why{font-size:12px;color:var(--ia-dim);margin-top:2px}
+.ia-more{border-top:1px solid var(--ia-line);margin-top:8px}
+.ia-more>summary{cursor:pointer;min-height:40px;display:flex;align-items:center;font-size:13px;font-weight:650;color:var(--ia-acc)}
+.ia-more-b{padding:2px 0 8px}
+.ia-card-a{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.ia-res{padding:10px 12px;border:1px solid var(--ia-line);border-radius:12px;background:var(--ia-surf)}
+.ia-res p{margin:6px 0;font-size:13px;line-height:1.45}
+
+/* ---------- 4. readiness ---------- */
+.ia-readiness{margin:12px 0}
+.ia-rd-hd{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.ia-rd-hd h3{margin:0;font-size:15px}
+.ia-ready{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:10px 0}
+@media(max-width:480px){.ia-ready{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.ia-rk{padding:8px 6px;border:1px solid var(--ia-line);border-radius:10px;background:var(--ia-surf2);text-align:center;min-width:0}
+.ia-rk b{display:block;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+.ia-rk span{display:block;font-size:10.5px;line-height:1.2;color:var(--ia-dim);overflow-wrap:anywhere}
+.ia-rk-market b{color:var(--ia-gold)} .ia-rk-actionable b{color:var(--ia-acc)}
+.ia-rd-lead{margin:4px 0 6px;font-size:13px;line-height:1.5}
+.ia-rd-def{font-size:11.5px;line-height:1.5;margin:0 0 8px}
+.ia-sport{border-top:1px solid var(--ia-line)}
+.ia-sport>summary{cursor:pointer;min-height:44px;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;font-size:13px}
+.ia-glist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.ia-g{padding:10px;border:1px solid var(--ia-line);border-radius:12px;background:var(--ia-surf)}
+.ia-g-t{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:13.5px}
+.ia-g-h{font-size:12.5px;line-height:1.45;color:var(--ia-dim);margin-top:6px}
+.ia-aud{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:6px;font-size:12px;line-height:1.4}
+.ia-rd-aud{margin:4px 0 8px;font-size:12.5px;color:var(--ia-fg)}
+.ia-g-a{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.ia-dots{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.ia-sd{font-size:10.5px;font-weight:700;padding:3px 7px;border-radius:999px;border:1px solid var(--ia-line);color:var(--ia-faint)}
+.ia-sd.ok{color:var(--ia-acc);border-color:color-mix(in srgb,var(--ia-acc) 55%,var(--ia-line));background:color-mix(in srgb,var(--ia-acc) 10%,transparent)}
+.ia-sd.no{color:var(--ia-dim);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--ia-neg) 70%,transparent)}
+.ia-why-d{margin-top:6px}
+.ia-why-d summary{cursor:pointer;min-height:36px;display:flex;align-items:center;font-size:12.5px;font-weight:700;color:var(--ia-gold)}
+.ia-why-d ol{margin:2px 0 4px;padding-left:18px;font-size:12.5px;line-height:1.5}
+
+/* ---------- 5. the game research view ---------- */
+.ig-sheet{position:fixed;inset:0;z-index:40}
+.ig-sheet[hidden]{display:none}
+.ig-scrim{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+.ig-panel{position:absolute;top:0;right:0;bottom:0;width:min(620px,100%);display:flex;flex-direction:column;background:var(--bg,#100e0a);border-left:1px solid var(--ia-line);box-shadow:-14px 0 40px rgba(0,0,0,.5)}
+.ig-hd{display:flex;align-items:center;gap:10px;padding:10px 14px;padding-top:calc(10px + env(safe-area-inset-top));border-bottom:1px solid var(--ia-line);background:var(--ia-surf)}
+.ig-hd h2{margin:0;font-size:15px;font-weight:800;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ig-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 14px 18px}
+.ig-ft{padding:10px 14px;padding-bottom:calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--ia-line);background:var(--ia-surf)}
+.ig-ai{width:100%;min-height:48px;font-size:15px;font-weight:800;background:var(--ia-gold);color:#1d1503;border-color:var(--ia-gold)}
+.ig-top{margin-bottom:10px}
+.ig-teams{font-size:18px;font-weight:800}
+.ig-sec{margin:0 0 12px;padding:10px 12px;border:1px solid var(--ia-line);border-radius:12px;background:var(--ia-surf)}
+.ig-sec h3{margin:0 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--ia-faint)}
+.ig-sec p{margin:6px 0;font-size:13px;line-height:1.45}
+.ig-av{margin-bottom:8px}
+.ig-av b{font-size:13.5px}
+html.ig-open{overflow:hidden}
+@media(max-width:620px){.ig-panel{border-left:none}}
+
+/* the Research header's AI button says what it does (no unlabelled sparkle) */
+#rsAskBtn.rs-ask{width:auto;min-width:44px;padding:0 10px;display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px}
+#rsAskBtn .rs-ask-l{white-space:nowrap}
+
+/* ---------- the Card's research block and Process's methodology ---------- */
+.ia-cardres{margin:14px 0;padding:14px;border:1px solid var(--ia-line);border-radius:var(--rad,14px);background:var(--ia-surf)}
+.ia-cr-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.ia-cr-hd h3{margin:0;font-size:15px}
+.ia-kv-c{grid-template-columns:repeat(4,minmax(0,1fr));gap:4px 10px;margin:6px 0 2px}
+@media(max-width:760px){.ia-kv-c{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.ia-kv-c{grid-template-columns:minmax(0,1fr)}}
+.ia-method{margin:14px 0;padding:14px}
+.ia-method h3{margin:0 0 4px;font-size:15px}
+.ia-meth-a{margin:10px 0 0}
+.ia-cardres p,.ia-method p{font-size:13px;line-height:1.5;margin:4px 0 8px}

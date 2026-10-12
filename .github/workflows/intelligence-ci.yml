@@ -26,6 +26,13 @@ on:
       - 'lib/edgedesk_fairodds.js'
       - 'lib/edgedesk_sport_adapters.js'
       - 'lib/edgedesk_calibration.js'
+      - 'lib/edgedesk_evidence_graph.js'
+      - 'lib/edgedesk_disagreement.js'
+      - 'lib/edgedesk_research_budget.js'
+      - 'lib/edgedesk_bet_history.js'
+      - 'lib/edgedesk_portfolio.js'
+      - 'lib/edgedesk_portfolio_import.js'
+      - 'supabase/research_intel.sql'
       - 'supabase/quant_desk.sql'
       - 'football/validation/calibration_props_*.json'
       - 'supabase/recommendation_ledger.sql'
@@ -85,6 +92,13 @@ on:
       - 'lib/edgedesk_fairodds.js'
       - 'lib/edgedesk_sport_adapters.js'
       - 'lib/edgedesk_calibration.js'
+      - 'lib/edgedesk_evidence_graph.js'
+      - 'lib/edgedesk_disagreement.js'
+      - 'lib/edgedesk_research_budget.js'
+      - 'lib/edgedesk_bet_history.js'
+      - 'lib/edgedesk_portfolio.js'
+      - 'lib/edgedesk_portfolio_import.js'
+      - 'supabase/research_intel.sql'
       - 'supabase/quant_desk.sql'
       - 'football/validation/calibration_props_*.json'
       - 'supabase/research_packets.sql'
@@ -171,6 +185,10 @@ jobs:
         run: node tools/intelligence/quant_host.test.js
       - name: Calibration is claimed only against the close, profit only with an interval above zero, never with look-ahead
         run: node tools/intelligence/calibration.test.js
+      - name: The research agents — evidence graph, disagreement causes, research budget, researcher, oddsmaker, strategist, auditor, communicator critic
+        run: node tools/intelligence/research_agents.test.js
+      - name: The research system through the real handler — the twelve scenarios, the slate investigation, betting history and the narration critic
+        run: node tools/intelligence/research_host.test.js
 
   football-artifacts:
     runs-on: ubuntu-latest
@@ -219,3 +237,7 @@ jobs:
         run: node tools/intelligence/quant_sql.test.js
         env:
           QUANT_SQL_REQUIRED: '1'
+      - name: Research findings and pregame snapshots are write-once, reader-owned and never postdate kickoff; research quotas are claimed atomically
+        run: node tools/intelligence/research_intel_sql.test.js
+        env:
+          RESEARCH_SQL_REQUIRED: '1'

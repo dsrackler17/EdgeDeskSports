@@ -203,6 +203,77 @@ chk('the same event on two platforms is two positions (each row keeps its own pl
   return two.platformHow === 'MIXED' && two.rows.map((r) => r.normalized.platform).join() === 'draftkings,fanduel';
 })());
 
+/* ═══ LEG ROWS: one row per parlay leg (bet trackers, Juice Reel style) ═══ */
+const fs = require('fs');
+const LEGS = fs.readFileSync(path.join(__dirname, 'fixtures', 'juice_reel_style.csv'), 'utf8');
+const NOW = Date.parse('2026-10-12T12:00:00Z');
+const lr = I.stage(LEGS, { timezone: 'UTC', now: NOW });
+const tk = (id) => lr.rows.find((r) => r.ticket.id === id);
+eq('a file with a leg column is detected as leg rows', [lr.adapter, lr.platformType], ['leg_rows_sportsbook_v1', 'SPORTSBOOK']);
+eq('22 rows become 14 staged tickets (8 rows joined or merged), with the grouping report', [lr.rows.length, lr.mergedRows, lr.tickets],
+  [14, 8, { rowsRead: 22, tickets: 14, multiLegTickets: 5, legRowsJoined: 7, duplicateRows: 1, duplicateRowsExact: 1, noTicketId: 1, conflictedTickets: 1 }]);
+let w1 = tk('T1001').normalized;
+eq('T1001: one PARLAY wager with 3 legs; the stake, price, status and payout are the ticket\'s, once',
+  [w1.position_type, w1.legs.length, w1.stake, w1.odds_american, w1.status, w1.reported_payout, w1.market_name, w1.selection, w1.external_position_id, tk('T1001').legRows],
+  ['PARLAY', 3, '50', 507, 'LOST', '0', 'Parlay (3 legs)', 'Chiefs + Bills -3.5 + Over 47.5', 'T1001', [2, 3]]);
+eq('…each leg keeps its own event, market, type and price', w1.legs.map((l) => [l.event_name, l.market_name, l.position_type, l.odds_american]),
+  [['Chiefs @ Bengals', 'Moneyline', 'MONEYLINE', -150], ['Bills @ Dolphins', 'Spread', 'SPREAD', -110], ['Lions @ Bears', 'Total', 'TOTAL', -110]]);
+chk('…and the joined ticket says so, without the first leg\'s own line or type notes', codes(tk('T1001')).includes('info:LEGS_GROUPED') && !codes(tk('T1001')).some((c) => /LINE_FROM_SELECTION|TYPE_INFERRED/.test(c)), codes(tk('T1001')));
+w1 = tk('T1002').normalized;
+eq('T1002: a same-game parlay with no ticket price is priced by its legs (EDPortfolio.parlay)', [w1.position_type, w1.event_name, w1.odds_decimal, w1.odds_american, codes(tk('T1002')).includes('info:ODDS_FROM_LEGS')],
+  ['SAME_GAME_PARLAY', 'Eagles @ Cowboys', E.parlay([{ odds_american: -110 }, { odds_american: 150 }]).odds_decimal, undefined, true]);
+eq('…and the database will store $75.45 for it', E.derive(w1).profit_loss, '75.45');
+eq('T1003, exported twice: one ticket, the repeat merged and reported', [lr.rows.filter((r) => r.ticket.id === 'T1003').length, tk('T1003').legRows, tk('T1003').normalized.legs, codes(tk('T1003')).includes('info:DUPLICATE_ROW_MERGED')], [1, [7], undefined, true]);
+eq('a single carries its closing price for later analysis, and no legs array', [tk('T1009').normalized.closing_odds_american, tk('T1009').normalized.legs, tk('T1009').normalized.position_type], [-240, undefined, 'SPREAD']);
+const noId = lr.rows.find((r) => !r.ticket.id);
+eq('a row with no ticket id is its own single, flagged for review', [noId.normalized.position_type, noId.normalized.stake, codes(noId).includes('warning:NO_TICKET_ID')], ['MONEYLINE', '25', true]);
+const tf = tk('T1011');
+eq('T1011, whose rows say $30 and $35: flagged with the field, the first row kept for the reader to check', [tf.ticket.conflicts, codes(tf).includes('warning:TICKET_FIELDS_DIFFER'), tf.issues.find((x) => x.code === 'TICKET_FIELDS_DIFFER').fields, tf.normalized.stake], [['stake'], true, ['stake'], '30']);
+chk('T1012, placed after it settled, is flagged (the settled time dropped)', codes(tk('T1012')).includes('warning:SETTLED_BEFORE_PLACED') && tk('T1012').normalized.settled_at === tk('T1012').normalized.placed_at);
+eq('the file says what was joined, merged and flagged', lr.fileIssues.map((x) => x.code).filter((c) => /LEG|DUPLICATE|TICKET/.test(c)), ['LEG_ROWS_JOINED', 'DUPLICATE_ROWS_MERGED', 'NO_TICKET_ID_ROWS', 'TICKET_FIELDS_DIFFER']);
+eq('local counts: 14 tickets, 11 ready, 3 to review, none invalid', I.localCounts(lr.rows), { total: 14, ok: 11, review: 3, invalid: 0 });
+chk('every staged ticket carries the cells of its first row (no synthetic columns)', lr.rows.every((r) => r.raw && !Object.keys(r.raw).some((k) => /^__/.test(k))));
+/* (the estimate's own convention: a void is settled at $0, its stake in "staked") */
+eq('the estimate before import counts each ticket once', (() => { const e = I.estimate(lr.rows.filter((r) => !r.issues.some((x) => x.level !== 'info'))); return [e.rows, e.settled, e.pnl, e.staked, e.open, e.exposure]; })(),
+  [11, 10, '-113.55', '565', 1, '60']);
+/* detection: the generic one-row-per-bet reading is unchanged */
+eq('the one-row-per-bet files above are still read by the generic adapter', [I.stage(SB, {}).adapter, I.stage(BOOK, {}).adapter, I.stage(SB, {}).mergedRows], ['generic_sportsbook_v1', 'generic_sportsbook_v1', 0]);
+eq('…including one where a bet id repeats on a duplicate row, or on a parlay leg with no stake', I.detect(BOOK.split('\n')[0].split(','), I.parseCSV(BOOK).rows.slice(1).map((r) => {
+  const o = {}; BOOK.split('\n')[0].split(',').forEach((h, k) => { o[h] = r[k]; }); return o; })).adapter.key, 'generic_sportsbook_v1');
+const repeated = 'Ticket,Placed,Book,Event,Selection,Odds,Stake,Status\nR1,2026-09-07 13:00,DK,A @ B,A,+260,10,Won\nR1,2026-09-07 13:00,DK,C @ D,C,+260,10,Won\nR2,2026-09-08 13:00,DK,E @ F,E,-110,11,Lost\n';
+eq('no leg column, but a ticket id repeated on different legs with the stake repeated: leg rows', [I.stage(repeated, { timezone: 'UTC' }).adapter, I.stage(repeated, { timezone: 'UTC' }).rows.length], ['leg_rows_sportsbook_v1', 2]);
+eq('the reader can still choose the generic reading', I.stage(repeated, { adapter: 'generic_sportsbook_v1', timezone: 'UTC' }).adapter, 'generic_sportsbook_v1');
+/* leg numbers, leg results, leg counts */
+const LN = ['Bet ID,Leg,Legs,Placed,Book,Sport,Bet Type,Event,Selection,Leg Odds,Leg Result,Stake,Status',
+  'L1,1,3,2026-09-07 13:00,DK,NFL,Parlay,A @ B,A,-110,Won,10,',
+  'L1,2,3,2026-09-07 13:00,DK,NBA,Parlay,C @ D,C,+120,Won,10,',
+  'L1,2,3,2026-09-07 13:00,DK,NBA,Parlay,C @ D,C,+120,Won,10,',
+  'L1,3,3,2026-09-07 13:00,DK,NFL,Parlay,E @ F,E,-105,Push,10,',
+  'L2,1,3,2026-09-08 13:00,DK,NFL,Parlay,G @ H,G,-110,Lost,20,Won',
+  'L2,2,3,2026-09-08 13:00,DK,NFL,Parlay,I @ J,I,-110,Won,20,Won',
+  'L3,1,,2026-09-09 13:00,DK,NFL,Straight,K @ L,K,-110,,15,Lost',
+  'L3,2,,2026-09-09 13:00,DK,NFL,Straight,M @ N,M,-110,,15,Lost',
+  'L4,1,,2026-09-10 13:00,DK,NFL,Teaser,O @ P,O +8.5,-120,,12,Lost',
+  'L4,2,,2026-09-10 13:00,DK,NFL,Teaser,Q @ R,Q +7.5,-120,,12,Lost'].join('\n');
+const ln = I.stage(LN, { timezone: 'UTC', now: NOW }), lt = (id) => ln.rows.find((r) => r.ticket.id === id);
+eq('a leg-number column decides what a duplicate is; leg results decide a ticket with no status', [lt('L1').normalized.legs.length, lt('L1').normalized.status, codes(lt('L1')).includes('info:STATUS_FROM_LEGS'), codes(lt('L1')).includes('info:DUPLICATE_ROW_MERGED')],
+  [3, 'WON', true, true]);
+eq('…its price is the legs\' with the pushed leg dropped (the book re-prices without it), and legs on two sports make it multi-sport', [lt('L1').normalized.odds_decimal, lt('L1').normalized.sport, lt('L1').normalized.legs.map((l) => l.result)],
+  [E.parlay([{ odds_american: -110, result: 'WON' }, { odds_american: 120, result: 'WON' }, { odds_american: -105, result: 'PUSH' }]).odds_decimal, 'MULTI', ['WON', 'WON', 'PUSH']]);
+eq('…so $10 wins what EDPortfolio.parlay() says: −110 × +120 = 4.2, +$32.00', E.derive(lt('L1').normalized).profit_loss, '32');
+chk('a ticket the book graded WON with a lost leg is flagged', codes(lt('L2')).includes('warning:LEG_STATUS_DISAGREES') && lt('L2').normalized.status === 'WON');
+chk('"Straight" with two different legs under one id is flagged, and read as the parlay the rows show', codes(lt('L3')).includes('warning:BET_TYPE_DISAGREES') && lt('L3').normalized.position_type === 'PARLAY');
+eq('a teaser is a parlay-family ticket, and says so', [lt('L4').normalized.position_type, lt('L4').normalized.bet_type, lt('L4').normalized.market_name], ['PARLAY', 'TEASER', 'Teaser (2 legs)']);
+const LC = 'Bet ID,Legs,Placed,Book,Event,Selection,Leg Odds,Odds,Stake,Status\nC1,3,2026-09-07 13:00,DK,A @ B,A,-110,+260,10,Lost\nC1,3,2026-09-07 13:00,DK,C @ D,C,+120,+260,10,Lost\n';
+chk('a leg count that disagrees with the rows found is flagged', codes(I.stage(LC, { timezone: 'UTC' }).rows[0]).includes('warning:LEG_COUNT_MISMATCH'));
+const SINGLES = 'Bet ID,Placed,Book,Event,Selection,Leg Odds,Stake,Status,Payout\nX1,2026-09-07 13:00,DK,A @ B,A,-110,10,Won,19.09\n';
+eq('a single whose price is only in the leg column is priced from it', [I.stage(SINGLES, { timezone: 'UTC' }).rows[0].normalized.odds_american, I.stage(SINGLES, { timezone: 'UTC' }).rows[0].issues.filter((x) => x.level === 'error').length], [-110, 0]);
+eq('a leg row that leaves the book blank stays with its ticket', I.stage('Bet ID,Placed,Book,Event,Selection,Leg Odds,Odds,Stake,Status\n8,2026-09-07 13:00,,A @ B,A,-110,+260,10,Lost\n8,2026-09-07 13:00,DK,C @ D,C,+120,+260,10,Lost\n8,,,E @ F,E,+100,,,\n', { timezone: 'UTC' }).rows.map((r) => [r.ticket.rows, r.normalized.legs.length, r.normalized.platform]),
+  [[[1, 2, 3], 3, 'draftkings']]);
+eq('the same ticket id on two books is two tickets', I.stage('Bet ID,Placed,Book,Event,Selection,Leg Odds,Odds,Stake,Status\n9,2026-09-07 13:00,DK,A @ B,A,-110,+260,10,Lost\n9,2026-09-07 13:00,FanDuel,C @ D,C,+120,+260,10,Lost\n', { timezone: 'UTC' }).rows.length, 2);
+eq('the connector contract still normalizes one record through the leg adapter', C.get('csv').normalize({ 'Date': '2026-09-07 13:00', 'Book': 'DK', 'Event': 'A @ B', 'Selection': 'A', 'Odds': '-110', 'Stake': '10' },
+  { adapter: 'leg_rows_sportsbook_v1', map: { placed_at: 'Date', platform: 'Book', event_name: 'Event', selection: 'Selection', odds: 'Odds', stake: 'Stake' }, timezone: 'UTC' }).record.platform, 'draftkings');
+
 failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 500) : '')));
 console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'portfolio import — ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail === 0 ? 0 : 1);

@@ -35307,6 +35307,7 @@ const EDAUDIT: any = (globalThis as any).EDAUDIT;
   var NO_EDGE = 'No verified positive-EV trade currently clears the research and execution thresholds.';
 
   function F() { if (root.EDFAIR) return root.EDFAIR; if (typeof require === 'function') { try { return require('../../../lib/edgedesk_fairodds.js'); } catch (_) { /* below */ } } throw new Error('EDFAIR must be loaded'); }
+  function AG() { if (root.EDAGENTS) return root.EDAGENTS; if (typeof require === 'function') { try { return require('./_agents.js'); } catch (_) { return null; } } return null; }
   function A() { if (root.EDADAPT) return root.EDADAPT; if (typeof require === 'function') { try { return require('../../../lib/edgedesk_sport_adapters.js'); } catch (_) { return null; } } return null; }
   function num(v) { if (v === null || v === undefined || v === '') return null; var n = Number(v); return isFinite(n) ? n : null; }
   function str(v) { return v == null ? '' : String(v); }
@@ -35338,6 +35339,19 @@ const EDAUDIT: any = (globalThis as any).EDAUDIT;
     betterPrice: /\bbetter price\b|\bcheaper\b|\bbeat (this|that) price\b|\bfind me a better\b|\bshop (this|that)\b/i,
     priceCheck: /\b(is|was)\b.*[+-]\d{3,4}\b.*\b(good|fair|worth|value|positive|bet|price|ev)\b|[+-]\d{3,4}\b.*\b(good|fair|worth|value)\b/i,
     risk: /\$\s?(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d{1,6}(?:\.\d{1,2})?)\b(?!\s*(?:¢|c\b|cents?))/,
+    /* the reader's own bet history: "why did I lose money on my bets", "were my parlays profitable" */
+    betsSubject: /\b(my|i|i'?ve|me)\b[^?]{0,80}\b(bets?|wagers?|parlays?|singles?|tickets?|betting|bet history|picks)\b|\bmy (roi|p ?& ?l|profit|losses|record)\b/i,
+    betsAnalysis: /\b(lost|lose|losing|losses|won|winning|win rate|profit\w*|roi|p ?& ?l|record|history|perform\w*|results?|how (am|did|have) i|where did|why did)\b/i,
+    /* a research-and-audit request over a slate: "research every NFL game ... which survive an adversarial audit" */
+    researchSlate: /\b(research|investigate|analy[sz]e|go through)\b[^?]{0,60}\b(every|all|each)\b[^?]{0,40}\bgames?\b|\b(largest|biggest|widest)\b[^?]{0,30}\b(verified\s+)?(model[- ]?(versus|vs\.?)[- ]?market|discrepanc\w*|disagreements?)\b|\bsurviv\w* (an |the )?(adversarial )?audit\b/i,
+    /* why a game (or the board) is or is not ready: "explain why this game isn't research ready" */
+    readiness: /\b(research[- ]ready|readiness|(isn'?t|is not|aren'?t|are not|not) (yet )?(research[- ])?ready|why\b[^?]{0,50}\b(not|n'?t)\b[^?]{0,20}\bready)\b/i,
+    /* "which matchup has the biggest offensive advantage?" — unit against unit, from the efficiency ratings */
+    matchupEdge: /\b(biggest|largest|best|strongest|most|greatest)\b[^?]{0,40}\b(offensive|defensive|passing|rushing|pass|rush|offense|defense)\b[^?]{0,30}\b(advantage|edge|mismatch)\w*\b|\b(offensive|defensive|unit) mismatch\w*\b/i,
+    /* two venues named in one comparison: "compare DraftKings Predictions and Kalshi prices" */
+    compareWords: /\bcompare\b|\bcomparison\b|\bversus\b|\bvs\.?\b|\bagainst\b|\bwhich (venue|exchange|book|site) is (cheaper|better)\b/i,
+    venues: [['kalshi', /\bkalshi\b/i], ['polymarket', /\bpoly ?market\b/i], ['draftkings_predictions', /\b(draftkings|dk) predictions?\b/i], ['fanduel_predicts', /\bfanduel predicts?\b/i],
+      ['robinhood', /\brobinhood\b/i], ['crypto_com', /\bcrypto\.com\b/i], ['novig', /\bnovig\b/i], ['prophetx', /\bprophet ?x\b/i], ['sportsbook', /\b(sportsbooks?|draftkings(?! predictions?)|fanduel(?! predicts?)|betmgm|caesars)\b/i]],
     /* markets the quant desk does not price from a captured moneyline or spread */
     unsupported: [
       ['a total', /\b(?:over|under|o|u)\s*\d+(?:\.\d)?\b(?!\s*(?:%|percent|cents?|¢|c\b))|\bo\/u\b|\btotals?\b|\bteam total\b/i],
@@ -35350,6 +35364,15 @@ const EDAUDIT: any = (globalThis as any).EDAUDIT;
    * q: the question; o.state: the carried quant state; o.has_board_state: a
    * board follow-up is in flight (leave it to the board).
    */
+  /** The league a question names, as an odds-feed key, or null. */
+  function sportOf(q) {
+    q = str(q);
+    if (/\b(nfl|pro football)\b/i.test(q)) return 'americanfootball_nfl';
+    if (/\b(cfb|ncaaf|college football|fbs)\b/i.test(q)) return 'americanfootball_ncaaf';
+    if (/\b(mlb|baseball)\b/i.test(q)) return 'baseball_mlb';
+    if (/\b(ufc|mma)\b/i.test(q)) return 'mma_mixed_martial_arts';
+    return null;
+  }
   /** The kind of market a question asks about when it is not a moneyline or a spread, else null. */
   function unsupportedMarket(q) {
     q = str(q);
@@ -35369,6 +35392,12 @@ const EDAUDIT: any = (globalThis as any).EDAUDIT;
     else if (RX.favorite.test(q)) out.filter = 'favorite';
     var st = sanitizeState(o.state);
     if (RX.coverage.test(q)) { out.intent = 'COVERAGE'; return out; }
+    if (RX.readiness.test(q)) { out.intent = 'READINESS'; out.sport = sportOf(q); return out; }
+    if (RX.matchupEdge.test(q)) { out.intent = 'MATCHUP_EDGE'; out.sport = sportOf(q); out.unit = /\bpass(ing)?\b/i.test(q) ? 'pass' : /\brush(ing)?\b/i.test(q) ? 'rush' : /\bdefens/i.test(q) ? 'defense' : 'offense'; return out; }
+    var vn = RX.venues.filter(function (v) { return v[1].test(q); }).map(function (v) { return v[0]; });
+    if (vn.length >= 2 && RX.compareWords.test(q) && !(price.contract && price.contract.price_cents) && price.american == null) { out.intent = 'VENUE_COMPARE'; out.venues = vn; return out; }
+    if (RX.betsSubject.test(q) && RX.betsAnalysis.test(q) && !/\b(should|how (much|many)|units?)\b[^?]{0,30}\bbet\b/i.test(q)) { out.intent = 'BETS'; return out; }
+    if (RX.researchSlate.test(q)) { out.intent = 'RESEARCH_SLATE'; out.sport = sportOf(q); return out; }
     if (RX.outage.test(q) && /\b(can|could|still|will|do|does|able)\b/i.test(q)) { out.intent = 'OUTAGE'; return out; }
     if (RX.explainEv.test(q) && st && st.contract && !(price.contract && price.contract.price_cents)) { out.intent = 'EXPLAIN_EV'; return out; }
     /* a cents number is a contract price only with something that says so: a venue, the ¢ sign or
@@ -35416,21 +35445,35 @@ const EDAUDIT: any = (globalThis as any).EDAUDIT;
     var notScanned = inSeasonSports.filter(function (c) { return c.status !== 'EVALUATED' && c.status !== 'NO_GAMES' && c.status !== 'NO_ELIGIBLE_GAMES'; });
     var fullCoverage = inSeasonSports.length > 0 && !notScanned.length && evaluated.length > 0;
     var audited = (o.audit && o.audit.audited) || [];
+    var inv = o.investigations || null;
     var rows = audited.map(function (r) {
       var ev = o.evaluate ? o.evaluate(r.candidate, r.audit) : null;
+      var x = inv ? inv[r.candidate.id] || null : null;
+      /* the research chain's evaluation is the one published (it priced the audited fair, after any recalculation) */
+      if (x && x.quant && x.quant.evaluation && x.quant.evaluation.ok) ev = x.quant.evaluation;
       /* the board's own verdict is respected: a candidate it withheld is never upgraded here, unless the
          only thing it failed was freshness and the audit replaced the stale price with a fresh read */
       var q = r.candidate.qualification || null;
       var rule = q && q.rules && q.rules[0] ? String(q.rules[0]) : '';
       var corrected = (r.candidate.corrected || []).some(function (x) { return x.field === 'quote'; });
       var withheld = q && q.status !== 'QUALIFIED' && !(/^R2_FRESH/.test(rule) && corrected && r.audit.status === 'CONFIRMED') ? rule || q.status : null;
-      return { candidate: r.candidate, audit: r.audit, evaluation: ev, rounds: r.rounds, withheld_by_board: withheld };
+      return { candidate: r.candidate, audit: r.audit, evaluation: ev, rounds: r.rounds, withheld_by_board: withheld, research: x, classification: x ? x.classification : null };
     });
-    /* best verified: CONFIRMED by the audit, classified VERIFIED_EDGE by EDFAIR, and not withheld by the board */
-    var verified = rows.filter(function (r) { return !r.withheld_by_board && r.audit.status === 'CONFIRMED' && r.evaluation && r.evaluation.classification === 'VERIFIED_EDGE'; });
-    verified.sort(function (a, b) { return (num(b.evaluation.net_ev_per_dollar) || 0) - (num(a.evaluation.net_ev_per_dollar) || 0); });
-    var potential = rows.filter(function (r) { return verified.indexOf(r) < 0 && r.evaluation && (r.evaluation.classification === 'POTENTIAL_EDGE' || r.evaluation.classification === 'VERIFIED_EDGE'); });
-    potential.sort(function (a, b) { return (num(b.evaluation.net_ev_per_dollar) || 0) - (num(a.evaluation.net_ev_per_dollar) || 0); });
+    var RANK = { VERIFIED_CANDIDATE: 0, WATCHLIST: 1, RESEARCH_REQUIRED: 2, REJECTED: 3, UNVERIFIED: 4 };
+    /* ranked by defensible evidence, not payout: the audit class first, then the cushion to break-even, then EV */
+    var byEvidence = function (a, b) {
+      var ca = a.classification ? RANK[a.classification.classification] : 9, cb = b.classification ? RANK[b.classification.classification] : 9;
+      if (ca !== cb) return ca - cb;
+      var sa = a.research && a.research.sensitivity && a.research.sensitivity.cushion_pp, sb = b.research && b.research.sensitivity && b.research.sensitivity.cushion_pp;
+      if (sa != null && sb != null && sa !== sb) return sb - sa;
+      return (num(b.evaluation && b.evaluation.net_ev_per_dollar) || 0) - (num(a.evaluation && a.evaluation.net_ev_per_dollar) || 0);
+    };
+    /* best verified: with the research chain, only a VERIFIED CANDIDATE (audit CONFIRMED, every professional
+       check passed, robust to a one-point error); without it, CONFIRMED and VERIFIED_EDGE. Never one the board withheld. */
+    var verified = rows.filter(function (r) { return !r.withheld_by_board && (inv ? (r.classification && r.classification.classification === 'VERIFIED_CANDIDATE') : (r.audit.status === 'CONFIRMED' && r.evaluation && r.evaluation.classification === 'VERIFIED_EDGE')); });
+    verified.sort(byEvidence);
+    var potential = rows.filter(function (r) { return verified.indexOf(r) < 0 && (inv ? (r.classification && (r.classification.classification === 'WATCHLIST' || r.classification.classification === 'RESEARCH_REQUIRED') && r.evaluation && num(r.evaluation.net_ev_per_dollar) != null && num(r.evaluation.net_ev_per_dollar) > 0) : (r.evaluation && (r.evaluation.classification === 'POTENTIAL_EDGE' || r.evaluation.classification === 'VERIFIED_EDGE'))); });
+    potential.sort(byEvidence);
     var nearMiss = rows.filter(function (r) { return verified.indexOf(r) < 0 && potential.indexOf(r) < 0; });
     /* the board's own near misses when nothing was audited: its top non-qualified candidates by edge */
     var boardNear = [];
@@ -35444,7 +35487,8 @@ const EDAUDIT: any = (globalThis as any).EDAUDIT;
     return {
       schema: VERSION + ':scan', built_at: iso(o.now), filter: o.filter || null, risk_dollars: o.risk_dollars || null,
       decision: best ? 'BUY' : potential.length ? 'WATCH' : 'PASS',
-      best: best, potential: potential.slice(0, 3), near_misses: nearMiss.slice(0, 3), board_near_misses: boardNear,
+      final_status: best ? 'VERIFIED CANDIDATE' : potential.length ? 'WATCHLIST' : 'PASS', researched: !!inv,
+      best: best, verified_rest: verified.slice(1, 3), potential: potential.slice(0, 3), near_misses: nearMiss.slice(0, 3), board_near_misses: boardNear,
       coverage: cov, coverage_scope: scope, evaluated: evaluated.map(function (c) { return c.label; }), not_scanned: notScanned.map(function (c) { return { sport: c.sport, label: c.label, status: c.status, why: c.why || c.sentence || null }; }),
       not_covered: (o.not_covered || []).map(function (n) { return { label: n.label, why: n.why }; }),
       counts: { sports_evaluated: evaluated.length, sports_in_season: inSeasonSports.length, events: o.board && o.board.eligibility ? o.board.eligibility.counts.eligible : null, markets_evaluated: o.board ? o.board.candidates_considered : null, audited: rows.length, verified: verified.length, potential: potential.length },
@@ -35456,8 +35500,191 @@ const EDAUDIT: any = (globalThis as any).EDAUDIT;
   function lineOf(c) { if (!c) return ''; var l = num(c.line); return c.market === 'totals' ? (l != null ? ' ' + l : '') : c.market === 'spreads' && l != null ? ' ' + (l > 0 ? '+' : '') + l : c.market === 'h2h' ? ' moneyline' : ''; }
   function marketWord(m) { return m === 'spreads' ? 'spread' : m === 'totals' ? 'total' : m === 'h2h' ? 'moneyline' : str(m); }
 
+  /** One candidate block from the research chain, in the brief's shape. */
+  function researchBlock(r, s, heading) {
+    var c = r.candidate, x = Object.assign({}, r.research);
+    var warn = (r.audit && r.audit.checks || []).filter(function (k) { return k.result === 'WARN' || k.result === 'FAIL'; })[0];
+    x.candidate = { matchup: c.matchup, sport: c.sport, sport_label: c.sport_label, market_label: c.selection + lineOf(c), book: c.quote && c.quote.book, kickoff_local: c.kickoff_local };
+    x.event = { id: c.game_id, sport: c.sport, home: c.home, away: c.away, kickoff: c.kickoff };
+    x.advantage = matchupLine(c);
+    var ag = AG();
+    var counter = ag ? ag.counterArgument(x) : null;
+    if (warn && !/^Not examined/.test(warn.detail)) counter = (counter ? counter + '; ' : '') + 'the audit flagged: ' + warn.detail;
+    x.counter = counter;
+    return ag.renderCandidate(x, heading);
+  }
+  function researchTail(s) {
+    var out = [];
+    var rs = (s.research_summary || null);
+    if (rs) out.push('Research: ' + rs.level + ' (' + rs.level_label + ') — ' + rs.findings + ' finding' + (rs.findings === 1 ? '' : 's') + ' from ' + rs.sources + ' source' + (rs.sources === 1 ? '' : 's') + ', ' + rs.conflicts + ' conflict' + (rs.conflicts === 1 ? '' : 's') + (rs.unavailable.length ? '; unavailable: ' + rs.unavailable.join('; ') : '') + '; cost estimate $' + (rs.cost_estimate_usd || 0).toFixed(3) + '.');
+    if (s.sources_text) out.push(s.sources_text);
+    return out;
+  }
+  /** The research answer: the best VERIFIED CANDIDATE, or "nothing qualifies" with the strongest candidate and why. */
+  function renderResearchScan(s) {
+    var out = [];
+    var scopeWord = s.coverage_scope === 'ALL_IN_SEASON' ? 'across every in-season sport EdgeDesk covers' : 'among the markets EdgeDesk could scan (' + (s.evaluated.join(', ') || 'none') + ')';
+    var filt = s.filter === 'underdog' ? 'UNDERDOG ' : s.filter === 'favorite' ? 'FAVORITE ' : '';
+    if (s.best) {
+      out.push(researchBlock(s.best, s, 'BEST VERIFIED RESEARCH ' + filt + 'CANDIDATE ' + (s.coverage_scope === 'ALL_IN_SEASON' ? '(all in-season sports scanned)' : '(' + scopeWord + ')')));
+    } else {
+      out.push(NO_EDGE + (s.coverage_scope === 'ALL_IN_SEASON' ? '' : ' (' + scopeWord + ')'));
+      if (s.potential.length) {
+        var p0 = s.potential[0];
+        out.push('');
+        out.push(researchBlock(p0, s, 'STRONGEST ' + filt + 'CANDIDATE — ' + p0.classification.label + ', NOT VERIFIED'));
+      }
+    }
+    var others = [].concat(s.best ? s.verified_rest || [] : s.potential.slice(1), s.near_misses).filter(Boolean);
+    if (others.length) {
+      out.push('');
+      out.push('Other candidates investigated:');
+      others.slice(0, 4).forEach(function (p, i) { out.push((i + 1) + '. ' + p.candidate.selection + lineOf(p.candidate) + ' (' + p.candidate.matchup + ') ' + fmtAm(p.candidate.quote.odds_american) + ' — ' + (p.classification ? p.classification.label + ': ' + (p.classification.reasons[0] || '') : p.audit.status + ': ' + p.audit.reason) + '.'); });
+    } else if (!s.best && !s.potential.length && s.board_near_misses.length) {
+      out.push('');
+      out.push('Closest candidates on the board and why they failed:');
+      s.board_near_misses.forEach(function (p, i) { out.push((i + 1) + '. ' + p.selection + (p.line != null ? ' ' + p.line : '') + ' ' + marketWord(p.market) + ' (' + p.matchup + '): ' + (p.ev_per_unit != null ? 'EV ' + pct(num(p.ev_per_unit), 2) + ' per $1' : p.edge_pp != null ? 'edge ' + p.edge_pp + ' pp' : 'no EV') + ' — ' + (p.why || p.status) + '.'); });
+    }
+    out.push('');
+    out.push(coverageSentence(s));
+    researchTail(s).forEach(function (l) { out.push(l); });
+    return out.join('\n');
+  }
+  /**
+   * "Research every NFL game this weekend … which survive an adversarial audit?"
+   * o: { sport_label, window, games: [{matchup, kickoff_local, model_line, market_line, gap_points, freshness, model_tier, status}],
+   *      investigated: [rows like scanResult rows], coverage_sentence, research_summary, sources_text, not_investigated }
+   */
+  function renderResearchSlate(o) {
+    o = o || {};
+    var out = [];
+    var survivors = (o.investigated || []).filter(function (r) { return r.classification && r.classification.classification === 'VERIFIED_CANDIDATE' && !r.withheld_by_board; });
+    out.push((o.sport_label || 'The slate') + (o.window ? ' — ' + o.window : '') + ': ' + plural((o.games || []).length, 'game') + ' investigated, ' + plural((o.investigated || []).length, 'candidate') + ' taken through research and the adversarial audit, ' + (survivors.length ? plural(survivors.length, 'survivor') : 'none survived') + '.');
+    if (o.readiness) out.push(readinessLine(o.readiness));
+    out.push('');
+    if (o.no_game) { out.push('No game is open, so this lists the largest model-versus-market disagreements on the card. Open a game on the Research screen and ask there for that one spread.'); out.push(''); }
+    if (survivors.length) out.push('Survived the audit: ' + survivors.map(function (r) { return r.candidate.selection + lineOf(r.candidate) + ' (' + r.candidate.matchup + ')'; }).join('; ') + '.');
+    else out.push(NO_EDGE);
+    var gaps = (o.games || []).filter(function (g) { return g.gap_points != null; }).sort(function (a, b) { return Math.abs(b.gap_points) - Math.abs(a.gap_points); });
+    if (gaps.length) {
+      out.push('');
+      out.push('Largest model-versus-market discrepancies (EdgeDesk\'s line against the captured market, home side):');
+      gaps.slice(0, 6).forEach(function (g, i) { out.push((i + 1) + '. ' + g.matchup + ': model ' + signedLine(g.model_line) + ', market ' + signedLine(g.market_line) + ' — gap ' + Math.abs(g.gap_points) + ' points (' + (g.model_tier || 'unvalidated') + ' model; ' + (g.freshness || 'price age unknown') + ')' + (g.diagnosis ? '. ' + g.diagnosis : '')); });
+    }
+    (o.investigated || []).forEach(function (r, i) {
+      out.push('');
+      out.push(researchBlock(r, o, 'CANDIDATE ' + (i + 1) + ' — ' + (r.classification ? r.classification.label : r.audit.status)));
+    });
+    if ((o.not_investigated || []).length) { out.push(''); out.push('Not taken to the audit: ' + o.not_investigated.slice(0, 6).join('; ') + '.'); }
+    out.push('');
+    if (o.coverage_sentence) out.push(o.coverage_sentence);
+    researchTail(o).forEach(function (l) { out.push(l); });
+    return out.join('\n');
+  }
+  function signedLine(v) { v = num(v); return v == null ? '—' : (v > 0 ? '+' : '') + v; }
+  /* ================================================================ */
+  /* READINESS, ONE GAME, UNIT MISMATCHES, VENUES                      */
+  /* ================================================================ */
+  var READY_WORD = { AVAILABLE: 'available', RESEARCH: 'research available', MARKET: 'market verified', MODEL: 'model ready', ACTIONABLE: 'actionable signal' };
+  /** "Readiness: 7 available · 7 research available · 2 market verified · 7 model ready · 1 actionable signal." */
+  function readinessLine(r) {
+    if (!r || !r.counts) return '';
+    var c = r.counts, ks = ['AVAILABLE', 'RESEARCH', 'MARKET', 'MODEL', 'ACTIONABLE'];
+    var line = 'Readiness: ' + ks.map(function (k) { return c[k] + ' ' + READY_WORD[k]; }).join(' · ') + ' (of ' + c.total + ').';
+    var tm = r.top_reason && r.top_reason.MARKET;
+    if (tm && c.MARKET < c.total) line += ' Market not verified on ' + plural(c.total - c.MARKET, 'game') + '; most common reason: ' + tm.reason + '.';
+    return line;
+  }
+  function stateWord(st) { return st ? (st.ok ? 'yes' : 'no') : '—'; }
+  /** "Explain why games aren't research ready": the five counts, then every game's missing requirements. */
+  function renderReadiness(o) {
+    o = o || {};
+    var out = [], games = o.games || [];
+    out.push('WHAT ' + (o.sport_label ? o.sport_label.toUpperCase() + ' ' : '') + 'GAMES ARE READY FOR' + (o.window ? ' — ' + o.window : ''));
+    out.push('');
+    if (o.no_game) { out.push('No game is open, so this covers every game on the card. Open a game on the Research screen and ask there for that one game\'s missing requirements.'); out.push(''); }
+    if (!games.length) { out.push('No pregame games are on EdgeDesk\'s card for this window, so there is nothing to assess.'); return out.join('\n'); }
+    out.push(readinessLine(o.readiness));
+    out.push('');
+    out.push('A game stays researchable with no market and no signal: "not ready to price" is not "not ready to research".');
+    out.push('');
+    var notReady = games.filter(function (g) { return g.readiness && g.readiness.level !== 'ACTIONABLE'; });
+    var ready = games.filter(function (g) { return g.readiness && g.readiness.level === 'ACTIONABLE'; });
+    if (ready.length) { out.push('Actionable: ' + ready.map(function (g) { return g.matchup; }).join('; ') + '.'); out.push(''); }
+    out.push('Why each game is not fully ready:');
+    notReady.slice(0, 12).forEach(function (g, i) {
+      var why = (g.why_not || []).filter(function (w) { return !/^Actionable signal/.test(w) || (g.readiness.states.MARKET.ok && g.readiness.states.MODEL.ok); });
+      /* the headline's bracketed reason is the first "Missing" line, so it is printed once */
+      out.push((i + 1) + '. ' + g.matchup + ' — ' + (why.length ? g.readiness.headline.replace(/\s*\(.*\)$/, '') + '. Missing: ' + why.join(' ') : g.readiness.headline));
+    });
+    if (notReady.length > 12) out.push('…and ' + plural(notReady.length - 12, 'more game') + ' with the same kinds of gaps.');
+    if (o.coverage_sentence) { out.push(''); out.push(o.coverage_sentence); }
+    return out.join('\n');
+  }
+  /** One game: readiness, the numbers, the disagreement, the findings, its candidates, the sources. */
+  function renderGameResearch(o) {
+    o = o || {};
+    var g = o.game, out = [];
+    if (!g) return 'That game is not on EdgeDesk\'s card right now (it may have started, or it is outside the sports EdgeDesk covers), so it cannot be researched here.';
+    var rd = g.readiness, S = rd ? rd.states : {};
+    out.push('GAME RESEARCH — ' + g.matchup + (g.kickoff_local ? ', ' + g.kickoff_local : ''));
+    out.push('');
+    out.push('Event: ' + g.matchup + (g.kickoff_local ? ' — ' + g.kickoff_local : ''));
+    out.push('Sport: ' + (o.sport_label || g.sport));
+    out.push('Readiness: available ' + stateWord(S.AVAILABLE) + ' · research ' + stateWord(S.RESEARCH) + ' · market verified ' + stateWord(S.MARKET) + ' · model ready ' + stateWord(S.MODEL) + ' · actionable ' + stateWord(S.ACTIONABLE));
+    out.push('Model projection: ' + (g.model_line != null ? g.home + ' ' + signedLine(g.model_line) + (g.model_total != null ? ', total ' + g.model_total : '') + ' (' + (g.model_tier || 'unvalidated') + ' model)' : 'none on file'));
+    out.push('Market: ' + (g.market_line != null ? g.home + ' ' + signedLine(g.market_line) + (g.market_total != null ? ', total ' + g.market_total : '') + ' (' + g.freshness + ')' : 'no market number on file'));
+    out.push('Model disagreement: ' + (g.gap_points != null ? Math.abs(g.gap_points) + ' points' + (g.disagreement ? '. ' + g.disagreement.explanation : '') : 'not measurable without both numbers'));
+    var f = (g.research && g.research.findings) || [];
+    var key = f.filter(function (x) { return (x.topic === 'availability' || x.topic === 'starter') && (x.status === 'OUT' || x.status === 'DOUBTFUL' || x.status === 'QUESTIONABLE' || x.topic === 'starter'); }).slice(0, 6);
+    out.push('Key injuries or lineup changes: ' + (key.length ? key.map(function (x) { return x.claim + ' (' + String(x.reliability || '').toLowerCase().replace(/_/g, ' ') + (x.verified ? ', verified' : '') + ')'; }).join('; ') : f.length ? 'none listed as out, doubtful or questionable among ' + plural(f.length, 'finding') : 'no availability source was read for this game'));
+    var cf = (g.research && g.research.conflicts) || [];
+    if (cf.length) out.push('Conflicting reports: ' + cf.map(function (c) { return c.detail + (c.unresolved ? ' (unresolved)' : ' (resolved by ' + (c.resolution && c.resolution.by || 'source tier') + ')'); }).join('; '));
+    if (rd && rd.missing && rd.missing.length) {
+      out.push('');
+      out.push('Why not ready:');
+      (o.why_not || []).forEach(function (w, i) { out.push((i + 1) + '. ' + w); });
+    }
+    (o.investigated || []).forEach(function (r, i) { out.push(''); out.push(researchBlock(r, o, 'CANDIDATE ' + (i + 1) + ' — ' + (r.classification ? r.classification.label : r.audit.status))); });
+    if (!(o.investigated || []).length) { out.push(''); out.push(S.MARKET && S.MARKET.ok ? 'No price on this game cleared the board\'s screen, so nothing reached the adversarial audit.' : 'No price check or audit ran: there is no current market price to check.'); }
+    out.push('');
+    researchTail(o).forEach(function (l) { out.push(l); });
+    return out.join('\n');
+  }
+  /** "Which matchup has the biggest offensive advantage?" o: { rows: [{matchup, offense, defense, edge, off, def, off_rank, def_rank}], unit, sport_label, source, generated_at, window, missing } */
+  function renderMatchupEdges(o) {
+    o = o || {};
+    var out = [], unit = o.unit === 'pass' ? 'passing' : o.unit === 'rush' ? 'rushing' : o.unit === 'defense' ? 'defensive' : 'offensive';
+    out.push('BIGGEST ' + unit.toUpperCase() + ' MISMATCHES' + (o.sport_label ? ' — ' + o.sport_label : '') + (o.window ? ', ' + o.window : ''));
+    out.push('');
+    if (!(o.rows || []).length) { out.push(o.missing || 'No unit efficiency ratings are on file for these games, so no mismatch can be measured.'); return out.join('\n'); }
+    out.push('Measured from EdgeDesk\'s NFL team ratings: one side\'s ' + (o.metric_label || 'EPA per play') + ' rating plus the opposing unit\'s, the same offense-against-defense pairing the projection engine uses. A unit mismatch is matchup context, not a probability and not a bet.');
+    out.push('');
+    o.rows.slice(0, 6).forEach(function (r, i) {
+      out.push((i + 1) + '. ' + r.offense + ' ' + (o.unit === 'defense' ? 'defense' : 'offense') + ' vs ' + r.defense + ' ' + (o.unit === 'defense' ? 'offense' : 'defense') + ' (' + r.matchup + '): ' + (r.edge >= 0 ? '+' : '') + r.edge.toFixed(3) + ' EPA/play — ' + r.offense + ' ' + (r.off_rank ? r.off_rank + ' of ' + r.of : '') + ' on its side, ' + r.defense + ' ' + (r.def_rank ? r.def_rank + ' of ' + r.of : '') + ' on the other.');
+    });
+    out.push('');
+    out.push('Source: ' + (o.source || 'EdgeDesk NFL slate ratings') + (o.generated_at ? ', built ' + String(o.generated_at).slice(0, 16).replace('T', ' ') + ' UTC' : '') + '.' + (o.missing ? ' ' + o.missing : ''));
+    return out.join('\n');
+  }
+  /** "Compare DraftKings Predictions and Kalshi prices": what EdgeDesk holds for each venue, and what it needs. o: { venues: [{key, label, fee, verification, captured, note}] } */
+  function renderVenueCompare(o) {
+    o = o || {};
+    var out = [];
+    out.push('COMPARING ' + (o.venues || []).map(function (v) { return v.label.toUpperCase(); }).join(' AND '));
+    out.push('');
+    (o.venues || []).forEach(function (v) {
+      out.push(v.label + ': ' + (v.captured ? 'EdgeDesk captures its prices' : 'EdgeDesk does not capture its live prices') + '; fees: ' + v.fee + ' (' + String(v.verification || 'unknown').toLowerCase() + ').' + (v.note ? ' ' + v.note : ''));
+    });
+    out.push('');
+    var none = (o.venues || []).filter(function (v) { return !v.captured; });
+    if (none.length) out.push('No live price from ' + none.map(function (v) { return v.label; }).join(' or ') + ' is on file, so no comparison can be computed and none is invented. Give the two prices for the same outcome — e.g. "Rays YES 46¢ on Kalshi vs 47¢ on DraftKings Predictions" — and EdgeDesk will compare their all-in cost after each venue\'s own fee rule, and say where a fee schedule is not verified.');
+    return out.join('\n');
+  }
+
   /** The answer, in the order the brief asks for. */
   function renderScan(s) {
+    if (s.researched && AG()) return renderResearchScan(s);
     var out = [];
     var scopeWord = s.coverage_scope === 'ALL_IN_SEASON' ? 'across every in-season sport EdgeDesk covers' : 'among the markets EdgeDesk could scan (' + (s.evaluated.join(', ') || 'none') + ')';
     var filt = s.filter === 'underdog' ? 'UNDERDOG ' : s.filter === 'favorite' ? 'FAVORITE ' : '';
@@ -35717,14 +35944,3684 @@ const EDAUDIT: any = (globalThis as any).EDAUDIT;
 
   return {
     VERSION: VERSION, STATE_SCHEMA: STATE_SCHEMA, NO_EDGE: NO_EDGE, RX: RX,
-    classify: classify, unsupportedMarket: unsupportedMarket, candidatesFromBoard: candidatesFromBoard, matchesFilter: matchesFilter,
-    scanResult: scanResult, renderScan: renderScan, coverageSentence: coverageSentence,
+    classify: classify, unsupportedMarket: unsupportedMarket, sportOf: sportOf, candidatesFromBoard: candidatesFromBoard, matchesFilter: matchesFilter,
+    scanResult: scanResult, renderScan: renderScan, renderResearchScan: renderResearchScan, renderResearchSlate: renderResearchSlate, renderReadiness: renderReadiness, renderGameResearch: renderGameResearch, renderMatchupEdges: renderMatchupEdges, renderVenueCompare: renderVenueCompare, readinessLine: readinessLine, coverageSentence: coverageSentence, lineOf: lineOf, matchupLine: matchupLine,
     renderContract: renderContract, renderExplain: renderExplain, renderCoverage: renderCoverage, renderOutage: renderOutage,
     stateFrom: stateFrom, sanitizeState: sanitizeState, critic: critic
   };
 });
 /*__EDQUANT_END__*/
 const EDQUANT: any = (globalThis as any).EDQUANT;
+
+/*__EDGRAPH_START__*/
+/* ===========================================================================
+   EdgeDesk EVIDENCE GRAPH — every claim in an answer, traced to what
+   supports it.
+
+   ONE FILE, TWO HOSTS. Node requires this file directly; the exact block
+   between the markers is inlined into supabase/functions/edgedesk_ai/index.ts
+   by tools/presentation/inline.js (presentation_sync.test.js fails on drift).
+
+   THE CHAIN
+     EVENT → TEAM → PLAYER → SOURCE → CLAIM (a statistic or a reported fact)
+           → MODEL INPUT → PROJECTION → MARKET → AUDIT
+   A node is typed; an edge is one of a closed set of relations:
+     about          claim → event | team | player
+     supported_by   claim → source
+     contradicts    claim ↔ claim (same subject and topic, incompatible values)
+     corroborates   claim ↔ claim (same subject, topic and value, independent sources)
+     affects        claim → model input (the finding bears on an input; `changed` says
+                    whether it moved the input, and `in_model` whether the model has it)
+     feeds          model input → projection
+     priced_by      projection → market (the comparison)
+     audited_by     projection | market → audit
+
+   WHAT IT ANSWERS
+     supporting / contradicting sources for a claim; the claims a required
+     topic is MISSING; STALE claims by topic age; the model inputs a finding
+     affects and whether it changed the conclusion; the numbers and URLs an
+     answer may contain (allowedNumbers / sourceUrls); and, for any answer
+     text, which citations do not support their sentence and which numbers
+     or links appear nowhere in the graph (verifyCitations, trace).
+
+   THE RULES
+     - A source needs a URL and a retrieval time; without them it is refused,
+       and a claim needs a source. Nothing is cited that is not in the graph.
+     - A conclusion EdgeDesk itself wrote (an AI narrative, a model's prose)
+       is not a source: kind EDGEDESK_AI is refused as evidence, so a repeated
+       AI conclusion can never corroborate itself.
+     - Two claims corroborate only when their sources are independent
+       (different publishers); syndicated copies are one source.
+     - Nothing here produces a probability.
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory(root);
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDGRAPH = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
+  'use strict';
+
+  var VERSION = 'edgedesk_evidence_graph_v1';
+  var NODE_TYPES = ['EVENT', 'TEAM', 'PLAYER', 'SOURCE', 'CLAIM', 'MODEL_INPUT', 'PROJECTION', 'MARKET', 'AUDIT'];
+  var RELATIONS = ['about', 'supported_by', 'contradicts', 'corroborates', 'affects', 'feeds', 'priced_by', 'audited_by'];
+  /* source reliability, strongest first */
+  var RELIABILITY = ['OFFICIAL', 'STATISTICAL_DATA', 'CREDIBLE_JOURNALISM', 'UNKNOWN', 'SPECULATION', 'OPINION'];
+  /* how long a claim on a topic stays current, minutes (near a game, availability moves fastest) */
+  var TOPIC_TTL_MIN = { availability: 360, starter: 360, lineup: 240, weather: 180, market: 90, statistic: 7 * 1440, scheme: 14 * 1440, coaching: 14 * 1440, travel: 3 * 1440, venue: 30 * 1440, other: 1440 };
+  var CERTAINTY = /\b(guarantee[sd]?|can'?t (lose|miss)|locks?|lock of|sure thing|free money|will (win|cover|cash)|no[- ]brainer|easy money|risk[- ]free|certain(ly)? (to )?(win|cover))\b/i;
+
+  function str(v) { return v == null ? '' : String(v); }
+  function num(v) { if (v === null || v === undefined || v === '') return null; var n = Number(v); return isFinite(n) ? n : null; }
+  function toMs(v) { if (v == null || v === '') return null; if (typeof v === 'number') return isFinite(v) ? v : null; var t = Date.parse(String(v)); return isFinite(t) ? t : null; }
+  function iso(v) { var t = toMs(v); return t == null ? null : new Date(t).toISOString(); }
+  function norm(s) { return str(s).toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+  function hash(s) { var h = 0x811c9dc5; s = str(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
+  function domainOf(url) { var m = /^https?:\/\/([^/?#]+)/i.exec(str(url)); return m ? m[1].toLowerCase().replace(/^www\./, '') : null; }
+  /* the publisher a URL belongs to, for independence: espn.com and www.espn.com are one; a subdomain of a site is that site */
+  function publisherOf(url, publisher) {
+    if (publisher) return norm(publisher);
+    var d = domainOf(url); if (!d) return null;
+    var parts = d.split('.'); return parts.length > 2 ? parts.slice(-2).join('.') : d;
+  }
+
+  function create(o) {
+    o = o || {};
+    var nodes = {}, edges = [], order = [];
+    var g = { schema: VERSION, nodes: nodes, edges: edges, refused: [] };
+    function put(type, id, data) {
+      if (NODE_TYPES.indexOf(type) < 0) throw new Error('unknown node type ' + type);
+      if (!nodes[id]) { nodes[id] = Object.assign({ id: id, type: type }, data || {}); order.push(id); }
+      else Object.assign(nodes[id], data || {});
+      return id;
+    }
+    function link(from, rel, to, data) {
+      if (RELATIONS.indexOf(rel) < 0) throw new Error('unknown relation ' + rel);
+      if (!nodes[from] || !nodes[to]) throw new Error('link to a missing node: ' + from + ' ' + rel + ' ' + to);
+      if (edges.some(function (e) { return e.from === from && e.rel === rel && e.to === to; })) return;
+      edges.push(Object.assign({ from: from, rel: rel, to: to }, data || {}));
+    }
+    function out(id, rel) { return edges.filter(function (e) { return e.from === id && (!rel || e.rel === rel); }); }
+    function into(id, rel) { return edges.filter(function (e) { return e.to === id && (!rel || e.rel === rel); }); }
+    function ofType(t) { return order.map(function (id) { return nodes[id]; }).filter(function (n) { return n.type === t; }); }
+
+    /* ---- the event and its teams ---- */
+    var ev = o.event || {};
+    var eventId = put('EVENT', 'event:' + (ev.id || hash([ev.home, ev.away, ev.kickoff].join('|'))), { sport: ev.sport || null, home: ev.home || null, away: ev.away || null, kickoff: iso(ev.kickoff), label: ev.away && ev.home ? ev.away + ' @ ' + ev.home : (ev.label || null) });
+    function team(name) { if (!name) return null; var id = put('TEAM', 'team:' + norm(name), { name: name }); link(id, 'about', eventId); return id; }
+    var homeId = team(ev.home), awayId = team(ev.away);
+    function player(name, teamName) { if (!name) return null; var id = put('PLAYER', 'player:' + norm(name), { name: name, team: teamName || null }); var t = team(teamName); if (t) link(id, 'about', t); return id; }
+
+    /**
+     * A source. url and retrieved_at are required; kind EDGEDESK_AI is not evidence.
+     * s: { url, title, publisher, published_at, retrieved_at, reliability, kind }
+     */
+    g.addSource = function (s) {
+      s = s || {};
+      if (!s.url || !/^https?:\/\//i.test(str(s.url))) { g.refused.push({ what: 'source', why: 'no source URL', title: s.title || null }); return null; }
+      if (toMs(s.retrieved_at) == null) { g.refused.push({ what: 'source', why: 'no retrieval time', url: s.url }); return null; }
+      if (str(s.kind).toUpperCase() === 'EDGEDESK_AI') { g.refused.push({ what: 'source', why: 'an EdgeDesk-written conclusion is not evidence', url: s.url }); return null; }
+      var rel = RELIABILITY.indexOf(str(s.reliability).toUpperCase()) >= 0 ? str(s.reliability).toUpperCase() : 'UNKNOWN';
+      return put('SOURCE', 'source:' + hash(str(s.url) + '|' + iso(s.retrieved_at)), { url: str(s.url), title: s.title || null, publisher: publisherOf(s.url, s.publisher), domain: domainOf(s.url), published_at: iso(s.published_at), retrieved_at: iso(s.retrieved_at), reliability: rel, kind: s.kind || null });
+    };
+    /**
+     * A claim: a reported fact or a statistic, about a team or player, from a source.
+     * c: { topic, text, team, player, value, status, source_id, speculative, as_of }
+     */
+    g.addClaim = function (c) {
+      c = c || {};
+      if (!c.source_id || !nodes[c.source_id]) { g.refused.push({ what: 'claim', why: 'a claim needs a source in the graph', text: c.text || null }); return null; }
+      var src = nodes[c.source_id];
+      var id = put('CLAIM', 'claim:' + hash([c.source_id, c.topic, c.team, c.player, c.text].join('|')), {
+        topic: c.topic || 'other', text: str(c.text), team: c.team || null, player: c.player || null, value: c.value != null ? c.value : null,
+        status: c.status || null, speculative: !!c.speculative || src.reliability === 'SPECULATION' || src.reliability === 'OPINION',
+        as_of: iso(c.as_of || src.published_at || src.retrieved_at), source_id: c.source_id, reliability: src.reliability });
+      link(id, 'supported_by', c.source_id);
+      var subj = c.player ? player(c.player, c.team) : (c.team ? team(c.team) : null);
+      link(id, 'about', subj || eventId);
+      return id;
+    };
+    g.contradict = function (a, b, why) { if (nodes[a] && nodes[b] && a !== b) { link(a, 'contradicts', b, { why: why || null }); link(b, 'contradicts', a, { why: why || null }); } };
+    g.corroborate = function (a, b) {
+      if (!nodes[a] || !nodes[b] || a === b) return false;
+      var pa = nodes[nodes[a].source_id].publisher, pb = nodes[nodes[b].source_id].publisher;
+      if (!pa || !pb || pa === pb) return false;            /* the same publisher is one source */
+      link(a, 'corroborates', b); link(b, 'corroborates', a); return true;
+    };
+    /** m: { key, label, value, as_of, model_version } */
+    g.addModelInput = function (m) { m = m || {}; return put('MODEL_INPUT', 'input:' + norm(m.key || m.label), { key: m.key || null, label: m.label || m.key || null, value: m.value != null ? m.value : null, as_of: iso(m.as_of), model_version: m.model_version || null }); };
+    /** claim → input; e: { in_model, changed, delta, note } */
+    g.affects = function (claimId, inputId, e) { if (nodes[claimId] && nodes[inputId]) link(claimId, 'affects', inputId, { in_model: !!(e && e.in_model), changed: !!(e && e.changed), delta: e && e.delta != null ? e.delta : null, note: (e && e.note) || null }); };
+    /** p: { model_version, tier, fair_line, fair_probability, interval, as_of, kind } */
+    g.addProjection = function (p) {
+      p = p || {};
+      var id = put('PROJECTION', 'projection:' + hash([p.model_version, p.fair_line, p.fair_probability, p.kind].join('|')), { model_version: p.model_version || null, tier: p.tier || null, kind: p.kind || null, fair_line: num(p.fair_line), fair_probability: num(p.fair_probability), interval: p.interval || null, as_of: iso(p.as_of) });
+      ofType('MODEL_INPUT').forEach(function (m) { link(m.id, 'feeds', id); });
+      return id;
+    };
+    /** q: { book, american, decimal, line, captured_at, no_vig_probability, venue } */
+    g.addMarket = function (q, projectionId) {
+      q = q || {};
+      var id = put('MARKET', 'market:' + hash([q.book, q.american, q.decimal, q.line, q.captured_at].join('|')), { book: q.book || null, venue: q.venue || null, american: num(q.american), decimal: num(q.decimal), line: num(q.line), captured_at: iso(q.captured_at), no_vig_probability: num(q.no_vig_probability) });
+      if (projectionId && nodes[projectionId]) link(projectionId, 'priced_by', id);
+      return id;
+    };
+    /** a: { status, classification, checks } */
+    g.addAudit = function (a, targets) {
+      a = a || {};
+      var id = put('AUDIT', 'audit:' + hash([a.status, a.classification, (a.checks || []).length, a.at].join('|')), { status: a.status || null, classification: a.classification || null, reason: a.reason || null, checks: (a.checks || []).map(function (c) { return { id: c.id, result: c.result }; }) });
+      (targets || []).forEach(function (t) { if (nodes[t]) link(t, 'audited_by', id); });
+      return id;
+    };
+
+    /* ---- queries ---- */
+    g.node = function (id) { return nodes[id] || null; };
+    g.claims = function (filter) { return ofType('CLAIM').filter(function (c) { return !filter || Object.keys(filter).every(function (k) { return c[k] === filter[k]; }); }); };
+    g.sources = function () { return ofType('SOURCE'); };
+    g.supporting = function (claimId) { return out(claimId, 'supported_by').map(function (e) { return nodes[e.to]; }).concat(out(claimId, 'corroborates').map(function (e) { return nodes[nodes[e.to].source_id]; })); };
+    g.contradicting = function (claimId) { return out(claimId, 'contradicts').map(function (e) { return nodes[e.to]; }); };
+    g.contradictions = function () {
+      var seen = {}, outp = [];
+      edges.filter(function (e) { return e.rel === 'contradicts'; }).forEach(function (e) { var k = [e.from, e.to].sort().join('|'); if (seen[k]) return; seen[k] = 1; outp.push({ a: nodes[e.from], b: nodes[e.to], why: e.why }); });
+      return outp;
+    };
+    /** topics required per side ({topic, team?}) that no claim covers */
+    g.missing = function (required) {
+      return (required || []).filter(function (r) {
+        return !g.claims().some(function (c) { return c.topic === r.topic && (!r.team || norm(c.team) === norm(r.team)); });
+      }).map(function (r) { return { topic: r.topic, team: r.team || null, why: r.why || 'no claim on file' }; });
+    };
+    g.stale = function (now, ttl) {
+      var n = toMs(now) != null ? toMs(now) : Date.now();
+      return g.claims().filter(function (c) { var t = toMs(c.as_of); var lim = (ttl && ttl[c.topic]) || TOPIC_TTL_MIN[c.topic] || TOPIC_TTL_MIN.other; return t == null || (n - t) / 60000 > lim; })
+        .map(function (c) { return { claim: c.id, topic: c.topic, text: c.text, as_of: c.as_of, age_min: toMs(c.as_of) == null ? null : Math.round((n - toMs(c.as_of)) / 60000) }; });
+    };
+    g.affected = function (claimId) { return out(claimId, 'affects').map(function (e) { return { input: nodes[e.to], in_model: e.in_model, changed: e.changed, delta: e.delta, note: e.note }; }); };
+    /** findings that bear on an input the model does not carry, or that moved it */
+    g.notInModel = function () { return edges.filter(function (e) { return e.rel === 'affects' && !e.in_model; }).map(function (e) { return { claim: nodes[e.from], input: nodes[e.to], note: e.note }; }); };
+    g.changedConclusion = function () { return edges.filter(function (e) { return e.rel === 'affects' && e.changed; }).map(function (e) { return { claim: nodes[e.from], input: nodes[e.to], delta: e.delta }; }); };
+    g.sourceUrls = function () { return ofType('SOURCE').map(function (s) { return s.url; }); };
+    /** every number the graph holds (claim values, projection, market): what an answer may print */
+    g.allowedNumbers = function (extra) {
+      var set = {};
+      function addN(x) { var n = num(x); if (n == null) return; [n, Math.abs(n), Math.round(n * 10) / 10, Math.round(n * 100) / 100, Math.round(n)].forEach(function (v) { set[String(v)] = 1; }); }
+      function addText(t) { (str(t).match(/[+-]?\d+(?:\.\d+)?/g) || []).forEach(addN); }
+      ofType('CLAIM').forEach(function (c) { addText(c.text); if (typeof c.value === 'number') addN(c.value); });
+      ofType('PROJECTION').forEach(function (p) { addN(p.fair_line); if (p.fair_probability != null) { addN(p.fair_probability * 100); addN(p.fair_probability); } });
+      ofType('MARKET').forEach(function (m) { addN(m.american); addN(m.decimal); addN(m.line); if (m.no_vig_probability != null) addN(m.no_vig_probability * 100); });
+      (extra || []).forEach(addN);
+      return set;
+    };
+    /** the cited list, in a stable order: [n] → source */
+    g.citationList = function () { return ofType('SOURCE').map(function (s, i) { return { n: i + 1, id: s.id, url: s.url, title: s.title, publisher: s.publisher, published_at: s.published_at, retrieved_at: s.retrieved_at, reliability: s.reliability }; }); };
+    g.toJSON = function () { return { schema: VERSION, nodes: order.map(function (id) { return nodes[id]; }), edges: edges.slice(), refused: g.refused.slice(), counts: NODE_TYPES.reduce(function (a, t) { a[t] = ofType(t).length; return a; }, {}) }; };
+    g.eventId = eventId; g.homeId = homeId; g.awayId = awayId;
+    return g;
+  }
+
+  /* ---- answer checks ---- */
+  function sentences(text) { return str(text).split(/\n+|(?<=[.!?])\s+(?=[A-Z0-9“"(\[])/).map(function (s) { return s.trim(); }).filter(Boolean); }
+  /**
+   * Every [n] citation in the text must name a source whose claims share a subject
+   * or a value with the sentence that carries it.
+   */
+  function verifyCitations(text, g) {
+    var list = g.citationList(), outp = [];
+    sentences(text).forEach(function (s) {
+      var re = /\[(\d{1,3})\]/g, m;
+      while ((m = re.exec(s))) {
+        var n = Number(m[1]), c = list[n - 1];
+        if (!c) { outp.push({ sentence: s, n: n, ok: false, why: 'cites [' + n + '], which is not in the source list' }); continue; }
+        var claims = g.claims().filter(function (x) { return x.source_id === c.id; });
+        var sn = norm(s.replace(/\[\d+\]/g, ''));
+        var hit = claims.some(function (x) {
+          var subj = [x.player, x.team].filter(Boolean).map(norm).some(function (w) { return w && (sn.indexOf(w) >= 0 || w.split(' ').some(function (p) { return p.length > 3 && sn.indexOf(p) >= 0; })); });
+          var val = (str(x.text).match(/\d+(?:\.\d+)?/g) || []).some(function (v) { return new RegExp('(^|[^0-9.])' + v.replace('.', '\\.') + '(?![0-9])').test(s); });
+          return subj || val;
+        });
+        outp.push({ sentence: s, n: n, source: c.url, ok: hit, why: hit ? null : 'the cited source carries no claim about what this sentence says' });
+      }
+    });
+    return { ok: outp.every(function (x) { return x.ok; }), citations: outp };
+  }
+  /**
+   * Does an answer print anything the graph cannot back? Numbers outside
+   * allowed (graph numbers plus `extra`), URLs not among the sources,
+   * certainty words. Years, counts below 10 and list markers are ignored.
+   */
+  function trace(text, g, extra) {
+    var allowed = g.allowedNumbers(extra), urls = g.sourceUrls();
+    var t = str(text);
+    var noUrls = t.replace(/https?:\/\/\S+/g, ' ');
+    var nums = (noUrls.replace(/\[\d{1,3}\]/g, ' ').replace(/\b(19|20)\d{2}-\d{2}-\d{2}T[\d:.]+Z?\b/g, ' ').match(/[+-]?\d+(?:\.\d+)?/g) || []);
+    var untraced = nums.filter(function (x) {
+      var n = Number(x); if (!isFinite(n)) return false;
+      if (Math.abs(n) < 10 && Math.round(n) === n) return false;          /* small counts and list numbers */
+      if (n >= 1900 && n <= 2100 && Math.round(n) === n) return false;     /* years */
+      return !(allowed[String(n)] || allowed[String(Math.abs(n))]);
+    });
+    var linkHits = t.match(/https?:\/\/[^\s)\]]+/g) || [];
+    var unknownUrls = linkHits.filter(function (u) { return urls.indexOf(u.replace(/[.,;]+$/, '')) < 0; });
+    var cert = CERTAINTY.test(t) ? (t.match(CERTAINTY) || [])[0] : null;
+    var cites = verifyCitations(t, g);
+    return { ok: !untraced.length && !unknownUrls.length && !cert && cites.ok, untraced_numbers: untraced, unknown_urls: unknownUrls, certainty: cert, unsupported_citations: cites.citations.filter(function (c) { return !c.ok; }) };
+  }
+
+  return { VERSION: VERSION, NODE_TYPES: NODE_TYPES, RELATIONS: RELATIONS, RELIABILITY: RELIABILITY, TOPIC_TTL_MIN: TOPIC_TTL_MIN, CERTAINTY: CERTAINTY,
+    create: create, verifyCitations: verifyCitations, trace: trace, publisherOf: publisherOf, domainOf: domainOf, sentences: sentences };
+});
+/*__EDGRAPH_END__*/
+const EDGRAPH: any = (globalThis as any).EDGRAPH;
+
+/*__EDDISAGREE_START__*/
+/* ===========================================================================
+   EdgeDesk MODEL DISAGREEMENT ENGINE — why EdgeDesk and the market differ.
+
+   ONE FILE, TWO HOSTS (Node requires it; tools/presentation/inline.js copies
+   the block into supabase/functions/edgedesk_ai/index.ts).
+
+   A large gap between EdgeDesk's number and the no-vig market is a reason to
+   investigate, never proof of value. For every disagreement this engine
+   assesses each candidate cause from the evidence it is handed and says
+   which ones are LIKELY, POSSIBLE, RULED_OUT or NOT_ASSESSED:
+
+     DATA_QUALITY          a stale or faulted quote, a failed verification, a
+                           cross-model outlier, a gap at the EXTREME size
+     INJURY_INFORMATION    a key player's status the model does not carry
+     LINEUP_ASSUMPTIONS    the starter the model priced is not the one listed
+     STATISTICAL_METHODOLOGY  an unvalidated model, or a known mechanical
+                           piece of it (home field, prior weight) that the
+                           market prices differently
+     RECENT_WEIGHTING      recent form differs from the season the model weighs
+     VENUE_WEATHER         a weather hazard (totals most of all)
+     MARKET_MOVEMENT       the market moved away from the model since it was set
+     MODEL_UNCERTAINTY     the gap is inside the model's own uncertainty
+     POTENTIAL_MISPRICING  only when the model is validated for the market,
+                           data quality is ruled out, availability and lineups
+                           were checked, nothing else is LIKELY and the audit
+                           did not reject it — and even then it is POSSIBLE,
+                           not proof
+
+   It never assumes EdgeDesk is right. It produces no probability.
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory(root);
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDDISAGREE = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
+  'use strict';
+
+  var VERSION = 'edgedesk_disagreement_v1';
+  var CAUSES = ['DATA_QUALITY', 'INJURY_INFORMATION', 'LINEUP_ASSUMPTIONS', 'STATISTICAL_METHODOLOGY', 'RECENT_WEIGHTING', 'VENUE_WEATHER', 'MARKET_MOVEMENT', 'MODEL_UNCERTAINTY', 'POTENTIAL_MISPRICING'];
+  var LABEL = { DATA_QUALITY: 'a data-quality problem', INJURY_INFORMATION: 'injury information the model does not carry', LINEUP_ASSUMPTIONS: 'a lineup or starter assumption',
+    STATISTICAL_METHODOLOGY: 'the model\'s methodology', RECENT_WEIGHTING: 'how recent form is weighted', VENUE_WEATHER: 'venue or weather', MARKET_MOVEMENT: 'market movement since the model was set',
+    MODEL_UNCERTAINTY: 'the model\'s own uncertainty', POTENTIAL_MISPRICING: 'a potential mispricing' };
+  var BAD_STATUS = /^(out|doubtful|ir|inactive|suspended|scratched|not starting)/i;
+
+  function num(v) { if (v === null || v === undefined || v === '') return null; var n = Number(v); return isFinite(n) ? n : null; }
+  function str(v) { return v == null ? '' : String(v); }
+  function r1(x) { return Math.round(x * 10) / 10; }
+  function thresholds() {
+    var I = root.EDINTEL, c = null; try { c = I ? (I.CONFIG || (typeof I.config === 'function' ? I.config() : null)) : null; } catch (_) { c = null; }
+    return { large_points: c && num(c.disagreement_points) != null ? num(c.disagreement_points) : 3, extreme_points: c && num(c.disagreement_points_hard) != null ? num(c.disagreement_points_hard) : 7, large_pp: 0.04, extreme_pp: 0.10 };
+  }
+
+  /**
+   * o.model   { available, tier ('VALIDATED'|'LEAN'|'PROBABILITY'|'RESEARCH'|null), line, probability,
+   *             line_uncertainty_points, interval: {low, high}, model_version, as_of,
+   *             starters: {home, away}, mechanical: {explained_points, parts:[{key, label, points}]} }
+   * o.market  { line, probability (no-vig, the selection), open_line, open_probability, captured_at, stale }
+   * o.others  [{ name, line, probability, validated }]
+   * o.claims  researcher claims: { topic, team, player, role, key, status, reliability, speculative, in_model }
+   * o.gaps    researcher model gaps: [{ kind: 'STARTER_MISMATCH'|'ABSENCE_NOT_IN_MODEL', ... }]
+   * o.conflicts unresolved researcher conflicts
+   * o.quality { flags: [], faults: [] }   o.weather { hazard, dome, text }   o.form { recent_vs_season_points }
+   * o.audit   { status }                  o.market_type 'spreads'|'h2h'|'totals'
+   */
+  function diagnose(o) {
+    o = o || {};
+    var T = thresholds();
+    var m = o.model || {}, k = o.market || {};
+    var gapPts = num(m.line) != null && num(k.line) != null ? r1(num(k.line) - num(m.line)) : null;      /* + = the market gives the selection more points than the model says it needs */
+    var gapPp = num(m.probability) != null && num(k.probability) != null ? Math.round((num(m.probability) - num(k.probability)) * 1000) / 1000 : null;
+    var size = 'UNKNOWN';
+    if (gapPts != null) size = Math.abs(gapPts) >= T.extreme_points ? 'EXTREME' : Math.abs(gapPts) >= T.large_points ? 'LARGE' : 'ORDINARY';
+    else if (gapPp != null) size = Math.abs(gapPp) >= T.extreme_pp ? 'EXTREME' : Math.abs(gapPp) >= T.large_pp ? 'LARGE' : 'ORDINARY';
+    var causes = {};
+    function set(c, a, ev) { causes[c] = { cause: c, label: LABEL[c], assessment: a, evidence: (ev || []).filter(Boolean) }; }
+    var claims = o.claims || [], gaps = o.gaps || [], q = o.quality || {};
+
+    /* DATA_QUALITY */
+    var dq = [].concat(q.flags || [], q.faults || []).map(str).filter(Boolean);
+    if (k.stale) dq.push('the market quote is stale');
+    if (size === 'EXTREME') dq.push('a gap of ' + (gapPts != null ? Math.abs(gapPts) + ' points' : Math.round(Math.abs(gapPp) * 100) + ' probability points') + ' is at the EXTREME size the decision layer treats as a suspected data fault');
+    set('DATA_QUALITY', dq.length ? 'LIKELY' : (q.checked === false ? 'NOT_ASSESSED' : 'RULED_OUT'), dq.length ? dq : ['no stale quote, fault or outlier flag on file']);
+
+    /* INJURY_INFORMATION */
+    var avail = claims.filter(function (c) { return c.topic === 'availability'; });
+    var absentNotIn = gaps.filter(function (g) { return g.kind === 'ABSENCE_NOT_IN_MODEL'; });
+    var availConf = (o.conflicts || []).filter(function (c) { return c.topic === 'availability'; });
+    if (absentNotIn.length) set('INJURY_INFORMATION', 'LIKELY', absentNotIn.map(function (g) { return g.detail; }));
+    else if (availConf.length) set('INJURY_INFORMATION', 'POSSIBLE', availConf.map(function (c) { return 'sources disagree on ' + c.subject + ': ' + c.detail; }));
+    else if (avail.length) {
+      var keyBad = avail.filter(function (c) { return c.key && BAD_STATUS.test(str(c.status)); });
+      set('INJURY_INFORMATION', keyBad.length ? 'POSSIBLE' : 'RULED_OUT', keyBad.length ? keyBad.map(function (c) { return c.player + ' ' + c.status + ' (' + (c.in_model ? 'in the model' : 'model treatment unknown') + ')'; }) : [avail.length + ' availability record' + (avail.length === 1 ? '' : 's') + ' read; no key player\'s status is outside the model']);
+    } else set('INJURY_INFORMATION', 'NOT_ASSESSED', ['no availability source was read for this game']);
+
+    /* LINEUP_ASSUMPTIONS */
+    var mism = gaps.filter(function (g) { return g.kind === 'STARTER_MISMATCH'; });
+    var startClaims = claims.filter(function (c) { return c.topic === 'starter'; });
+    if (mism.length) set('LINEUP_ASSUMPTIONS', 'LIKELY', mism.map(function (g) { return g.detail; }));
+    else if (startClaims.length && m.starters) set('LINEUP_ASSUMPTIONS', 'RULED_OUT', ['the starters the model priced are the ones listed']);
+    else set('LINEUP_ASSUMPTIONS', 'NOT_ASSESSED', [m.starters ? 'no current starter source was read' : 'the model does not record which starters it assumed']);
+
+    /* STATISTICAL_METHODOLOGY */
+    var tier = str(m.tier).toUpperCase();
+    var validated = tier === 'VALIDATED';
+    var mech = m.mechanical && (m.mechanical.parts || []).slice().sort(function (a, b) { return Math.abs(num(b.points) || 0) - Math.abs(num(a.points) || 0); })[0];
+    var mechShare = m.mechanical && num(m.mechanical.explained_points) != null && gapPts ? Math.abs(num(m.mechanical.explained_points)) / Math.abs(gapPts) : null;
+    if (!m.available) set('STATISTICAL_METHODOLOGY', 'NOT_ASSESSED', ['no independent model for this market']);
+    else if (mech && mechShare != null && mechShare >= 0.5) set('STATISTICAL_METHODOLOGY', 'LIKELY', ['most of the gap traces to ' + (mech.label || mech.key) + ' (' + r1(num(mech.points)) + ' points), a modelling choice the market weighs differently']);
+    else if (!validated && (size === 'LARGE' || size === 'EXTREME')) set('STATISTICAL_METHODOLOGY', tier === 'LEAN' ? 'POSSIBLE' : 'LIKELY', ['the model is ' + (tier || 'unvalidated') + ' for this market' + (tier === 'LEAN' ? ' (break-even history, not a calibrated probability)' : ' — research only, not calibrated')]);
+    else set('STATISTICAL_METHODOLOGY', validated ? 'RULED_OUT' : 'POSSIBLE', [validated ? 'the model is validated for this market' : 'the model is ' + (tier || 'unvalidated') + ' for this market']);
+
+    /* RECENT_WEIGHTING */
+    var f = o.form && num(o.form.recent_vs_season_points);
+    if (f == null) set('RECENT_WEIGHTING', 'NOT_ASSESSED', ['no recent-versus-season comparison on file']);
+    else set('RECENT_WEIGHTING', Math.abs(f) >= 3 ? 'POSSIBLE' : 'RULED_OUT', ['recent form differs from the season by ' + r1(f) + ' points per game']);
+
+    /* VENUE_WEATHER */
+    var w = o.weather || null;
+    if (!w) set('VENUE_WEATHER', 'NOT_ASSESSED', ['no forecast on file']);
+    else if (w.dome) set('VENUE_WEATHER', 'RULED_OUT', ['indoor venue']);
+    else if (w.hazard) set('VENUE_WEATHER', str(o.market_type) === 'totals' ? 'LIKELY' : 'POSSIBLE', [str(w.text) || 'a weather hazard at kickoff']);
+    else set('VENUE_WEATHER', 'RULED_OUT', [str(w.text) || 'no weather hazard at kickoff']);
+
+    /* MARKET_MOVEMENT: did the market move since the open, and which way relative to the model? */
+    var moved = num(k.open_line) != null && num(k.line) != null ? r1(num(k.line) - num(k.open_line)) : (num(k.open_probability) != null && num(k.probability) != null ? Math.round((num(k.probability) - num(k.open_probability)) * 1000) / 1000 : null);
+    var unit = num(k.open_line) != null ? 'points' : 'pp';
+    if (moved == null) set('MARKET_MOVEMENT', 'NOT_ASSESSED', ['no opening price on file']);
+    else {
+      var big = unit === 'points' ? Math.abs(moved) >= 1 : Math.abs(moved) >= 0.02;
+      /* away from the model: the gap grew because the market moved, i.e. the market is pricing something new */
+      var away = unit === 'points' ? (gapPts != null && moved !== 0 && Math.sign(moved) === Math.sign(gapPts)) : (gapPp != null && moved !== 0 && Math.sign(moved) === -Math.sign(gapPp));
+      var mv = (unit === 'points' ? (moved > 0 ? '+' : '') + moved + ' points' : (moved > 0 ? '+' : '') + Math.round(moved * 1000) / 10 + ' pp') + ' since the open';
+      set('MARKET_MOVEMENT', big ? (away ? 'LIKELY' : 'POSSIBLE') : 'RULED_OUT', [big ? 'the market moved ' + mv + (away ? ', away from the model: it may be pricing information the model does not have' : ', toward the model') : 'the market barely moved (' + mv + ')']);
+    }
+
+    /* MODEL_UNCERTAINTY */
+    var lu = num(m.line_uncertainty_points);
+    if (gapPts != null && lu != null) set('MODEL_UNCERTAINTY', Math.abs(gapPts) <= lu ? 'LIKELY' : 'RULED_OUT', ['the gap (' + Math.abs(gapPts) + ' points) is ' + (Math.abs(gapPts) <= lu ? 'inside' : 'outside') + ' the model\'s ±' + lu + '-point uncertainty']);
+    else if (m.interval && num(m.interval.low) != null && num(k.probability) != null) {
+      var inside = num(k.probability) >= num(m.interval.low) && num(k.probability) <= num(m.interval.high);
+      set('MODEL_UNCERTAINTY', inside ? 'LIKELY' : 'RULED_OUT', ['the market\'s ' + Math.round(num(k.probability) * 1000) / 10 + '% is ' + (inside ? 'inside' : 'outside') + ' the model\'s interval']);
+    } else set('MODEL_UNCERTAINTY', 'NOT_ASSESSED', ['the model publishes no uncertainty for this number']);
+
+    /* POTENTIAL_MISPRICING — the last explanation, and only a possibility */
+    var otherLikely = CAUSES.filter(function (c) { return c !== 'POTENTIAL_MISPRICING' && causes[c] && causes[c].assessment === 'LIKELY'; });
+    var checked = causes.INJURY_INFORMATION.assessment !== 'NOT_ASSESSED' && causes.DATA_QUALITY.assessment === 'RULED_OUT';
+    var auditOk = !o.audit || o.audit.status === 'CONFIRMED';
+    var othersAgree = (o.others || []).filter(function (x) { return x.validated; });
+    if (!m.available) set('POTENTIAL_MISPRICING', 'NOT_ASSESSED', ['with no independent model there is no disagreement to call a mispricing']);
+    else if (k.executable === false) set('POTENTIAL_MISPRICING', 'RULED_OUT', ['the market number is a reference line with no book, odds or capture time: there is no price to be mispriced']);
+    else if (otherLikely.length) set('POTENTIAL_MISPRICING', 'RULED_OUT', ['explained first by ' + otherLikely.map(function (c) { return LABEL[c]; }).join(', ')]);
+    else if (!(validated || tier === 'LEAN')) set('POTENTIAL_MISPRICING', 'RULED_OUT', ['the model is not validated for this market, so its disagreement is research, not evidence of value']);
+    else if (!checked) set('POTENTIAL_MISPRICING', 'NOT_ASSESSED', ['availability or data quality was not checked, so the alternatives are not ruled out']);
+    else if (!auditOk) set('POTENTIAL_MISPRICING', 'RULED_OUT', ['the adversarial audit did not confirm the price (' + o.audit.status + ')']);
+    else set('POTENTIAL_MISPRICING', 'POSSIBLE', ['the model is ' + (validated ? 'validated' : 'LEAN (break-even history)') + ' for this market, the data checks out and nothing else explains the gap' + (othersAgree.length ? '; ' + othersAgree.length + ' other validated model' + (othersAgree.length === 1 ? '' : 's') + ' on file' : '')]);
+
+    var list = CAUSES.map(function (c) { return causes[c]; });
+    var order = { LIKELY: 0, POSSIBLE: 1, NOT_ASSESSED: 2, RULED_OUT: 3 };
+    var ranked = list.slice().sort(function (a, b) { return order[a.assessment] - order[b.assessment] || CAUSES.indexOf(a.cause) - CAUSES.indexOf(b.cause); });
+    var verdict = causes.DATA_QUALITY.assessment === 'LIKELY' ? 'DATA_FAULT'
+      : !m.available ? 'NO_MODEL'
+      : otherLikely.length ? 'EXPLAINED'
+        : causes.POTENTIAL_MISPRICING.assessment === 'POSSIBLE' ? 'POTENTIAL_MISPRICING' : 'INVESTIGATE';
+    var primary = ranked[0] && ranked[0].assessment !== 'RULED_OUT' && ranked[0].assessment !== 'NOT_ASSESSED' ? ranked[0].cause : null;
+    var gapText = gapPts != null ? Math.abs(gapPts) + ' points' : gapPp != null ? Math.round(Math.abs(gapPp) * 1000) / 10 + ' probability points' : 'an unmeasured amount';
+    /* a candidate is judged on the PRICING line (the projection blended toward the market), not the raw projection a
+       game view prints beside it: name the line, so "differ by 0.6" and "differ by 2.7" never read as one claim */
+    var sgn = function (x) { x = r1(num(x)); return (x > 0 ? '+' : '') + x; };
+    var subj = m.line_kind === 'BLEND' && gapPts != null ? 'EdgeDesk\'s pricing line (' + sgn(m.line) + ', its projection blended toward the market) and the market (' + sgn(k.line) + ')' : 'EdgeDesk and the market';
+    var explanation = verdict === 'NO_MODEL' ? 'EdgeDesk has no independent model for this market, so there is no model-versus-market disagreement to explain: the comparison is this price against the sharp no-vig market, and nothing more.'
+      : verdict === 'DATA_FAULT' ? subj + ' differ by ' + gapText + ', but the first explanation is ' + LABEL.DATA_QUALITY + ': ' + causes.DATA_QUALITY.evidence[0] + '.'
+      : verdict === 'EXPLAINED' ? subj + ' differ by ' + gapText + '; the likeliest reason is ' + LABEL[primary] + ': ' + causes[primary].evidence[0] + '. That explains the gap; it is not evidence of value.'
+        : verdict === 'POTENTIAL_MISPRICING' ? subj + ' differ by ' + gapText + ' and nothing checked explains it, so a mispricing is possible — not proven.'
+          : subj + ' differ by ' + gapText + '; the cause is not established (' + ranked.filter(function (c) { return c.assessment === 'NOT_ASSESSED'; }).map(function (c) { return c.label; }).slice(0, 3).join(', ') + ' not assessed). It is a question for research.';
+    return { schema: VERSION, gap: { points: gapPts, probability_pp: gapPp }, size: size, causes: ranked, primary: primary, verdict: verdict, is_edge_evidence: verdict === 'POTENTIAL_MISPRICING', explanation: explanation };
+  }
+
+  return { VERSION: VERSION, CAUSES: CAUSES, LABEL: LABEL, diagnose: diagnose };
+});
+/*__EDDISAGREE_END__*/
+const EDDISAGREE: any = (globalThis as any).EDDISAGREE;
+
+/*__EDBUDGET_START__*/
+/* ===========================================================================
+   EdgeDesk RESEARCH BUDGET — research on demand, at a cost that is known
+   before it is spent.
+
+   ONE FILE, TWO HOSTS (Node requires it; tools/presentation/inline.js copies
+   the block into supabase/functions/edgedesk_ai/index.ts).
+
+   THREE LEVELS
+     L1 FAST SCREEN   schedules, existing projections, cached quotes, data
+                      checks. No external request, no model call.
+     L2 TARGETED      the few most interesting discrepancies: availability,
+                      lineups, matchups, contradictory evidence — from free and
+                      official sources first, under a request budget.
+     L3 DEEP          the candidates that survive: research, quantitative
+                      re-check, sensitivity, the adversarial audit. Paid search
+                      only when a provider is configured AND the operator
+                      authorised paid research (EDGEDESK_RESEARCH_PAID_OK=1).
+   selectLevel() picks the lowest level that can answer the question, from
+   the question, what is on file, the potential value and the expected cost.
+
+   SAFEGUARDS (state is per isolate unless a persistent ledger is wired by the
+   host: supabase/research_intel.sql research_usage_claim())
+     - per-provider daily and monthly quotas, and a per-user daily cap;
+     - a depth budget per level (requests, paid calls, wall time, tokens);
+     - single flight: an identical request already running is joined, not
+       bought twice; a recently answered one is served from cache;
+     - conditional refresh by topic (availability near kickoff refreshes
+       faster than a season statistic);
+     - a circuit breaker per provider (consecutive failures open it with
+       back-off); an open breaker falls back to cached data;
+     - a usage log with a cost estimate for every call, cached or not.
+   Nothing here makes a request: the host passes the function that does.
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory(root);
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDBUDGET = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
+  'use strict';
+
+  var VERSION = 'edgedesk_research_budget_v1';
+  var LEVELS = {
+    L1: { level: 'L1', label: 'fast screen', requests: 0, paid_calls: 0, ms: 0, tokens: 0, candidates: 0, games: Infinity, ai_calls: 0 },
+    L2: { level: 'L2', label: 'targeted research', requests: 4, paid_calls: 0, ms: 2500, tokens: 0, candidates: 0, games: 5, ai_calls: 0 },
+    L3: { level: 'L3', label: 'deep adversarial investigation', requests: 8, paid_calls: 2, ms: 6000, tokens: 1500, candidates: 3, games: 5, ai_calls: 1 }
+  };
+  /* Provider registry: cost per call in USD (an ESTIMATE, labelled so), quotas, freshness. Paid
+     providers are listed so the cost of switching them on is visible; none is on by default. */
+  var PROVIDERS = {
+    signals:            { label: 'EdgeDesk captured prices', cost_usd: 0, paid: false, daily: Infinity, monthly: Infinity, per_user_daily: Infinity },
+    nflverse_injuries:  { label: 'nflverse injury report (official, keyless)', cost_usd: 0, paid: false, daily: 500, monthly: 10000, per_user_daily: 60 },
+    nfl_metrics:        { label: 'EdgeDesk NFL metrics build (injuries, depth charts)', cost_usd: 0, paid: false, daily: Infinity, monthly: Infinity, per_user_daily: Infinity },
+    mlb_cards:          { label: 'EdgeDesk MLB game cards (probable starters)', cost_usd: 0, paid: false, daily: Infinity, monthly: Infinity, per_user_daily: Infinity },
+    desk_notes:         { label: 'EdgeDesk desk notes (recorded by a person, with a source)', cost_usd: 0, paid: false, daily: Infinity, monthly: Infinity, per_user_daily: Infinity },
+    open_meteo:         { label: 'open-meteo forecast (keyless)', cost_usd: 0, paid: false, daily: 2000, monthly: 40000, per_user_daily: 100 },
+    brave_search:       { label: 'Brave Search API (web)', cost_usd: 0.005, cost_basis: 'estimate; check the Brave plan in use', paid: true, daily: 200, monthly: 2000, per_user_daily: 10 },
+    perplexity_sonar:   { label: 'Perplexity Sonar API (search-grounded answers)', cost_usd: 0.008, cost_basis: 'estimate from secondary sources (Oct 2026): ~$1/M tokens plus $5–12 per 1,000 requests by search context; the official rate card was not reachable', paid: true, daily: 100, monthly: 1000, per_user_daily: 5 },
+    anthropic_narration:{ label: 'Claude narration (optional prose over verified numbers)', cost_usd: 0.004, cost_basis: 'estimate per ~1,500-token turn', paid: true, daily: 2000, monthly: 30000, per_user_daily: 60 }
+  };
+  /* minutes a cached answer stays fresh, by topic; availability tightens near kickoff */
+  var TOPIC_TTL_MIN = { availability: 60, starter: 60, lineup: 45, weather: 120, market: 15, statistic: 720, scheme: 1440, coaching: 1440, venue: 10080, news: 30, other: 240 };
+
+  function num(v) { if (v === null || v === undefined || v === '') return null; var n = Number(v); return isFinite(n) ? n : null; }
+  function str(v) { return v == null ? '' : String(v); }
+  function dayKey(ms) { return new Date(ms).toISOString().slice(0, 10); }
+  function monthKey(ms) { return new Date(ms).toISOString().slice(0, 7); }
+
+  /** The research level a question needs. o: { intent, question, candidates, data_available, potential_value, paid_authorized } */
+  function selectLevel(o) {
+    o = o || {};
+    var q = str(o.question).toLowerCase();
+    var deep = /\b(research|investigat\w*|deep|adversarial|audit|dig into|why does (the )?model|matchup advantage|explain the disagreement)\b/.test(q);
+    var screen = /\b(slate|list|which games|schedule|what('s| is) on|coverage|couldn'?t be scanned)\b/.test(q) && !deep;
+    var why = [], lvl;
+    if (o.intent === 'COVERAGE' || o.intent === 'OUTAGE' || o.intent === 'BETS') { lvl = 'L1'; why.push('the answer is on file; no research changes it'); }
+    else if (!o.data_available) { lvl = 'L1'; why.push('no priced market is on file, so research could not produce an opportunity'); }
+    else if (screen) { lvl = 'L1'; why.push('a screening question'); }
+    else if (deep || o.intent === 'RESEARCH_SLATE') { lvl = 'L3'; why.push('the question asks for an investigation and an audit'); }
+    else if ((num(o.candidates) || 0) === 0) { lvl = 'L1'; why.push('nothing on the board clears the screen, so deeper research has nothing to test'); }
+    else if (o.intent === 'SCAN') { lvl = 'L3'; why.push('a best-bet answer is published only after the top candidates survive research and the audit'); }
+    else { lvl = 'L2'; why.push('a targeted check of the leading discrepancies'); }
+    var b = Object.assign({}, LEVELS[lvl]);
+    if (lvl === 'L3' && !o.paid_authorized) { b.paid_calls = 0; why.push('paid research is not authorised, so L3 uses free and official sources only'); }
+    return { level: lvl, budget: b, why: why };
+  }
+
+  /** A ledger: quotas, single flight, cache, breaker, usage. o: { now, providers, paid_authorized, configured } */
+  function ledger(o) {
+    o = o || {};
+    var clock = typeof o.now === 'function' ? o.now : function () { return num(o.now) != null ? num(o.now) : Date.now(); };
+    var reg = Object.assign({}, PROVIDERS, o.providers || {});
+    var counts = {}, flights = {}, cache = {}, breakers = {}, usage = [];
+    var turn = { requests: 0, paid_calls: 0, tokens: 0, started: clock() }, turnStart = 0;
+    function count(p, key) { var c = counts[p] = counts[p] || {}; return c[key] || 0; }
+    function bump(p, key) { var c = counts[p] = counts[p] || {}; c[key] = (c[key] || 0) + 1; }
+    function breaker(p) { return breakers[p] = breakers[p] || { failures: 0, open_until: 0, opened: 0 }; }
+    /* the log is bounded: a long-lived instance keeps the newest entries, never an unbounded history */
+    function log(e) { usage.push(Object.assign({ at: new Date(clock()).toISOString() }, e)); if (usage.length > 1000) { usage.splice(0, 500); turnStart = Math.max(0, turnStart - 500); } }
+
+    /** May this call be made now? → { ok, why } */
+    function allow(p, user, budget) {
+      var P = reg[p];
+      if (!P) return { ok: false, why: 'unknown provider ' + p };
+      if (P.paid && !o.paid_authorized) return { ok: false, why: P.label + ' is a paid provider and paid research is not authorised (EDGEDESK_RESEARCH_PAID_OK)' };
+      if (o.configured && o.configured[p] === false) return { ok: false, why: P.label + ' is not configured' };
+      var b = breaker(p), t = clock();
+      if (b.open_until > t) return { ok: false, why: P.label + ' circuit breaker is open for ' + Math.ceil((b.open_until - t) / 1000) + 's after ' + b.failures + ' consecutive failures' };
+      var d = dayKey(t), mo = monthKey(t);
+      if (count(p, 'd:' + d) >= P.daily) return { ok: false, why: P.label + ' daily quota (' + P.daily + ') is spent' };
+      if (count(p, 'm:' + mo) >= P.monthly) return { ok: false, why: P.label + ' monthly quota (' + P.monthly + ') is spent' };
+      if (user && count(p, 'u:' + user + ':' + d) >= P.per_user_daily) return { ok: false, why: 'your daily research allowance for ' + P.label + ' (' + P.per_user_daily + ') is spent' };
+      if (budget) {
+        if (turn.requests >= budget.requests) return { ok: false, why: 'the ' + budget.level + ' request budget (' + budget.requests + ') is spent' };
+        if (P.paid && turn.paid_calls >= budget.paid_calls) return { ok: false, why: 'the ' + budget.level + ' paid-call budget (' + budget.paid_calls + ') is spent' };
+        if (budget.ms && clock() - turn.started > budget.ms) return { ok: false, why: 'the ' + budget.level + ' time budget (' + budget.ms + ' ms) is spent' };
+      }
+      return { ok: true, why: null };
+    }
+    function fresh(key, topic) {
+      var h = cache[key]; if (!h) return null;
+      var ttl = (TOPIC_TTL_MIN[topic] || TOPIC_TTL_MIN.other) * 60000;
+      return clock() - h.at <= ttl ? h : null;
+    }
+    /**
+     * Run fn() under every safeguard. o2: { provider, key, topic, user, budget, timeout_ms }
+     * → Promise<{ ok, value, cached, joined, why, stale }>. A refused or failed call falls back
+     * to the last cached value (labelled stale) when there is one.
+     */
+    function call(o2, fn) {
+      var p = o2.provider, key = p + '|' + str(o2.key), P = reg[p] || { label: p, cost_usd: 0 };
+      var hit = fresh(key, o2.topic);
+      if (hit) { log({ provider: p, key: o2.key, outcome: 'CACHE', cached: true, cost_usd: 0 }); return Promise.resolve({ ok: true, value: hit.value, cached: true, joined: false, why: null, stale: false, retrieved_at: new Date(hit.at).toISOString() }); }
+      if (flights[key]) { log({ provider: p, key: o2.key, outcome: 'JOINED', cached: false, cost_usd: 0 }); return flights[key].then(function (r) { return Object.assign({}, r, { joined: true }); }); }
+      var a = allow(p, o2.user, o2.budget);
+      if (!a.ok) {
+        var old = cache[key];
+        log({ provider: p, key: o2.key, outcome: 'DENIED', why: a.why, cached: !!old, cost_usd: 0 });
+        return Promise.resolve({ ok: !!old, value: old ? old.value : null, cached: !!old, joined: false, why: a.why, stale: !!old, retrieved_at: old ? new Date(old.at).toISOString() : null });
+      }
+      var t = clock(), d = dayKey(t), mo = monthKey(t);
+      bump(p, 'd:' + d); bump(p, 'm:' + mo); if (o2.user) bump(p, 'u:' + o2.user + ':' + d);
+      turn.requests++; if (P.paid) turn.paid_calls++;
+      var timeout = num(o2.timeout_ms) || 4000;
+      var run = new Promise(function (resolve) {
+        var done = false, timer = setTimeout(function () { if (!done) { done = true; resolve({ ok: false, error: 'timed out after ' + timeout + ' ms' }); } }, timeout);
+        Promise.resolve().then(fn).then(function (v) { if (!done) { done = true; clearTimeout(timer); resolve({ ok: true, value: v }); } }, function (e) { if (!done) { done = true; clearTimeout(timer); resolve({ ok: false, error: str(e && e.message || e).slice(0, 160) }); } });
+      }).then(function (r) {
+        delete flights[key];
+        var b = breaker(p);
+        if (r.ok) { b.failures = 0; cache[key] = { at: clock(), value: r.value }; log({ provider: p, key: o2.key, outcome: 'OK', cached: false, cost_usd: P.cost_usd || 0, paid: !!P.paid }); return { ok: true, value: r.value, cached: false, joined: false, why: null, stale: false, retrieved_at: new Date(clock()).toISOString() }; }
+        b.failures++;
+        if (b.failures >= 3) { var back = Math.min(30 * 60000, 60000 * Math.pow(2, b.failures - 3)); b.open_until = clock() + back; b.opened++; }
+        var old2 = cache[key];
+        log({ provider: p, key: o2.key, outcome: 'ERROR', why: r.error, cached: !!old2, cost_usd: P.cost_usd || 0, paid: !!P.paid });
+        return { ok: !!old2, value: old2 ? old2.value : null, cached: !!old2, joined: false, why: r.error, stale: !!old2, retrieved_at: old2 ? new Date(old2.at).toISOString() : null };
+      });
+      flights[key] = run;
+      return run;
+    }
+    function spendTokens(n, budget) { if (budget && turn.tokens + n > budget.tokens) return false; turn.tokens += n; return true; }
+    /* o.turn: only this turn's calls (the ledger outlives a turn; its cache and breakers are shared, its cost line is not) */
+    function report(o) {
+      var rows = o && o.turn ? usage.slice(turnStart) : usage;
+      var cost = rows.reduce(function (s, e) { return s + (e.cost_usd || 0); }, 0);
+      var by = {}; rows.forEach(function (e) { var k = e.provider; by[k] = by[k] || { calls: 0, cached: 0, denied: 0, errors: 0, joined: 0, cost_usd: 0 }; if (e.outcome === 'OK') by[k].calls++; if (e.outcome === 'CACHE') by[k].cached++; if (e.outcome === 'DENIED') by[k].denied++; if (e.outcome === 'ERROR') by[k].errors++; if (e.outcome === 'JOINED') by[k].joined++; by[k].cost_usd += e.cost_usd || 0; });
+      return { schema: VERSION, turn: { requests: turn.requests, paid_calls: turn.paid_calls, tokens: turn.tokens }, by_provider: by, cost_estimate_usd: Math.round(cost * 10000) / 10000, cost_basis: 'per-call estimates in PROVIDERS; free providers cost nothing', scope: o && o.turn ? 'turn' : 'ledger', log: rows.slice(-60) };
+    }
+    function newTurn() { turn = { requests: 0, paid_calls: 0, tokens: 0, started: clock() }; turnStart = usage.length; }
+    return { allow: allow, call: call, spendTokens: spendTokens, report: report, newTurn: newTurn, breaker: breaker, cache: cache, registry: reg };
+  }
+
+  return { VERSION: VERSION, LEVELS: LEVELS, PROVIDERS: PROVIDERS, TOPIC_TTL_MIN: TOPIC_TTL_MIN, selectLevel: selectLevel, ledger: ledger };
+});
+/*__EDBUDGET_END__*/
+const EDBUDGET: any = (globalThis as any).EDBUDGET;
+
+/*__EDAGENTS_START__*/
+/* ===========================================================================
+   EdgeDesk RESEARCH AGENTS — five roles, each with its own inputs, each able
+   to stop the others.
+
+   ONE FILE, ONE HOST. This exact block is inlined into
+     - supabase/functions/edgedesk_ai/index.ts
+   by tools/presentation/inline.js; presentation_sync.test.js fails when the
+   copy drifts. Edit THIS file, then `node tools/presentation/inline.js`.
+
+   THE ROLES (deterministic code; a language model writes none of the numbers)
+     A  RESEARCHER    normalises every finding to one shape (source URL,
+                      published and retrieved times, event and player, the
+                      claim, the source's reliability class, conflicts),
+                      separates official reporting, statistical data,
+                      credible journalism, speculation and opinion, finds the
+                      contradictions and the facts the model does not carry.
+                      A speculative report is never CONFIRMED.
+     B  ODDSMAKER     prices with EDFAIR from EdgeDesk's own models: the fair
+                      probability, its uncertainty, the no-vig market, the
+                      fee-adjusted EV and the maximum price. A research
+                      finding can move a probability ONLY through a
+                      registered adjustment rule that carries the model's own
+                      scenario delta (e.g. the engine's re-run with the
+                      starting quarterback out). A probability supplied by
+                      prose ("78%") is refused, always.
+     C  STRATEGIST    the professional checks: is the edge real or an
+                      artifact, already priced, calibrated, alive after fees,
+                      large against its uncertainty, the same with the team
+                      names hidden, an independent signal or a narrative? It
+                      may reject what looks attractive.
+     D  AUDITOR       EDAUDIT's fifteen checks on a fresh read, plus the
+                      research re-check, the missing-information check, the
+                      sensitivity of EV to the fair probability and the
+                      strongest counter-argument → VERIFIED CANDIDATE,
+                      RESEARCH REQUIRED, WATCHLIST, REJECTED or UNVERIFIED.
+                      A material error reruns the chain (bounded).
+     E  COMMUNICATOR  the answer, written from the verified result. Optional
+                      prose passes a critic that refuses any number, link or
+                      certainty word the result does not carry.
+
+   Methodological inspirations for C, not claims to anyone's private methods:
+   Billy Walters (information, independent numbers against the price,
+   timing), Haralabos Voulgaris (sport-specific models, systematic market
+   inefficiencies), Tony Bloom (scalable data, continuous model testing),
+   Ed Thorp (a mathematical basis for the edge, variance, risk of ruin; a
+   likely winner is not the same as a positive expectation).
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory(root);
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDAGENTS = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
+  'use strict';
+
+  var VERSION = 'edgedesk_agents_v1';
+  function req(name, path) {
+    if (root[name]) return root[name];
+    if (typeof require === 'function') { try { return require(path); } catch (_) { /* below */ } }
+    return null;
+  }
+  function F() { var f = req('EDFAIR', '../../../lib/edgedesk_fairodds.js'); if (!f) throw new Error('EDFAIR must be loaded'); return f; }
+  function G() { return req('EDGRAPH', '../../../lib/edgedesk_evidence_graph.js'); }
+  function DIS() { return req('EDDISAGREE', '../../../lib/edgedesk_disagreement.js'); }
+  function AD() { return req('EDADAPT', '../../../lib/edgedesk_sport_adapters.js'); }
+  function num(v) { if (v === null || v === undefined || v === '') return null; var n = Number(v); return isFinite(n) ? n : null; }
+  function str(v) { return v == null ? '' : String(v); }
+  function toMs(v) { if (v == null || v === '') return null; if (typeof v === 'number') return isFinite(v) ? v : null; var t = Date.parse(String(v)); return isFinite(t) ? t : null; }
+  function iso(v) { var t = toMs(v); return t == null ? null : new Date(t).toISOString(); }
+  function norm(s) { return str(s).toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim(); }
+  function same(a, b) { a = norm(a); b = norm(b); return !!a && !!b && (a === b || a.indexOf(b) >= 0 || b.indexOf(a) >= 0); }
+  function pct(x, d) { return x == null ? '—' : (x * 100).toFixed(d == null ? 1 : d) + '%'; }
+  function fmtAm(n) { n = num(n); return n == null ? '—' : (n > 0 ? '+' : '') + Math.round(n); }
+  function hash(s) { var h = 0x811c9dc5; s = str(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
+
+  /* normal distribution: CDF (Abramowitz–Stegun 7.1.26, |err| < 1.5e-7) and its inverse (Acklam) */
+  function phi(z) { var t = 1 / (1 + 0.3275911 * Math.abs(z) / Math.SQRT2), y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-z * z / 2); return z >= 0 ? (1 + y) / 2 : (1 - y) / 2; }
+  function phiInv(p) {
+    if (!(p > 0 && p < 1)) return null;
+    var a = [-39.69683028665376, 220.9460984245205, -275.9285104469687, 138.357751867269, -30.66479806614716, 2.506628277459239], b = [-54.47609879822406, 161.5858368580409, -155.6989798598866, 66.80131188771972, -13.28068155288572],
+      c = [-0.007784894002430293, -0.3223964580411365, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783], d = [0.007784695709041462, 0.3224671290700398, 2.445134137142996, 3.754408661907416];
+    var q, r, pl = 0.02425;
+    if (p < pl) { q = Math.sqrt(-2 * Math.log(p)); return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1); }
+    if (p > 1 - pl) { q = Math.sqrt(-2 * Math.log(1 - p)); return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1); }
+    q = p - 0.5; r = q * q; return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+  }
+
+  /* ======================================================================
+     A. THE RESEARCHER
+     ====================================================================== */
+  var OFFICIAL_DOMAINS = /(^|\.)(nfl\.com|mlb\.com|nba\.com|nhl\.com|ncaa\.(com|org)|ufc\.com|statsapi\.mlb\.com|operations\.nfl\.com)$/;
+  var STAT_DOMAINS = /(^|\.)(github\.com|nflverse\.com|collegefootballdata\.com|pro-football-reference\.com|sports-reference\.com|baseball-reference\.com|fangraphs\.com|baseballsavant\.mlb\.com|open-meteo\.com|api\.open-meteo\.com)$/;
+  var CREDIBLE_DOMAINS = /(^|\.)(espn\.com|theathletic\.com|nytimes\.com|apnews\.com|reuters\.com|si\.com|cbssports\.com|nbcsports\.com|foxsports\.com|usatoday\.com|yahoo\.com|profootballtalk\.com|washingtonpost\.com|latimes\.com|bostonglobe\.com|chicagotribune\.com|theringer\.com|on3\.com|247sports\.com|rivals\.com)$/;
+  var SPECULATION_RX = /\b(reportedly|rumou?r(ed|s)?|sources? (say|said|tell|told|indicate)|per sources|is expected to|expected to (start|play|miss|return)|could (start|play|miss|return)|might (start|play|miss)|likely (to )?(start|play|miss|out)|trending (toward|towards)|projected to|anticipated|it is believed|speculat\w+|unconfirmed|in line to)\b/i;
+  var OPINION_RX = /\b(i think|i believe|in my opinion|we think|should win|will win|best bet|lock|pick:|my pick|prediction:|fade|hammer|smash|value play|can'?t lose)\b/i;
+  var STATUS_RX = [[/\b(ruled out|is out|out for|will miss|won'?t play|will not play|inactive|placed on (ir|injured reserve)|suspended|scratched)\b|\bout\b/i, 'OUT'], [/\bdoubtful\b/i, 'DOUBTFUL'], [/\bquestionable|game[- ]time decision\b/i, 'QUESTIONABLE'], [/\bprobable\b/i, 'PROBABLE'], [/\b(will start|named (the )?starter|confirmed (as|to start)|gets the start|starting)\b/i, 'STARTING'], [/\b(full participant|cleared|active|available|will play|no injury designation)\b/i, 'ACTIVE']];
+  var TIER = { OFFICIAL: 0, STATISTICAL_DATA: 1, CREDIBLE_JOURNALISM: 2, UNKNOWN: 3, SPECULATION: 4, OPINION: 5 };
+
+  function domainOf(url) { var m = /^https?:\/\/([^/?#]+)/i.exec(str(url)); return m ? m[1].toLowerCase().replace(/^www\./, '') : null; }
+  /** The source's own class, from what it is (kind) and where it lives (domain). */
+  function sourceClass(s) {
+    var k = str(s.kind || s.source_kind).toUpperCase(), d = domainOf(s.url) || '';
+    if (/OFFICIAL/.test(k) || OFFICIAL_DOMAINS.test(d)) return 'OFFICIAL';
+    if (/STAT|PROVIDER_API|MODEL_INPUT|DATA/.test(k) || STAT_DOMAINS.test(d)) return 'STATISTICAL_DATA';
+    if (/JOURNAL|MEDIA|NEWS/.test(k) || CREDIBLE_DOMAINS.test(d)) return 'CREDIBLE_JOURNALISM';
+    if (/OPINION|SOCIAL|FORUM|BLOG/.test(k)) return 'OPINION';
+    return 'UNKNOWN';
+  }
+  /** The claim's class: the source's class, unless the words make it speculation or opinion. */
+  function claimClass(source, text) {
+    if (OPINION_RX.test(str(text))) return 'OPINION';
+    if (SPECULATION_RX.test(str(text))) return 'SPECULATION';
+    return source;
+  }
+  function statusOf(x) {
+    if (x.status) { var s = str(x.status).toUpperCase(); if (/^OUT|IR|INACTIVE|SUSPEND|SCRATCH/.test(s)) return 'OUT'; if (/DOUBT/.test(s)) return 'DOUBTFUL'; if (/QUESTION|GTD/.test(s)) return 'QUESTIONABLE'; if (/PROBABLE/.test(s)) return 'PROBABLE'; if (/START/.test(s)) return 'STARTING'; if (/ACTIVE|AVAILABLE|FULL|CLEAR/.test(s)) return 'ACTIVE'; return s; }
+    for (var i = 0; i < STATUS_RX.length; i++) if (STATUS_RX[i][0].test(str(x.text))) return STATUS_RX[i][1];
+    return null;
+  }
+  /**
+   * One raw finding → the researcher's shape, or refused.
+   * raw: { url, title, publisher, published_at, retrieved_at, kind, topic, team, player, role, key, status, text, value, event_ref }
+   */
+  function normalize(raw, ctx) {
+    raw = raw || {}; ctx = ctx || {};
+    var why = !raw.url || !/^https?:\/\//i.test(str(raw.url)) ? 'no source URL' : toMs(raw.retrieved_at) == null ? 'no retrieval time' : (!raw.text && !raw.status) ? 'no claim' : str(raw.kind).toUpperCase() === 'EDGEDESK_AI' ? 'an EdgeDesk-written conclusion is not evidence' : null;
+    if (why) return { refused: true, why: why, raw: { url: raw.url || null, text: raw.text ? str(raw.text).slice(0, 120) : null } };
+    var src = sourceClass(raw), cls = claimClass(src, raw.text);
+    var st = statusOf(raw);
+    var f = {
+      id: 'f_' + hash([raw.url, raw.retrieved_at, raw.team, raw.player, raw.topic, raw.text, st].join('|')),
+      source_url: str(raw.url), source_title: raw.title || null, publisher: raw.publisher || domainOf(raw.url), published_at: iso(raw.published_at), retrieved_at: iso(raw.retrieved_at),
+      event_ref: raw.event_ref || ctx.event_ref || null, team: raw.team || null, player: raw.player || null, role: raw.role ? str(raw.role).toUpperCase() : null, key: raw.key === true,
+      topic: raw.topic || (raw.player ? 'availability' : 'other'), claim: str(raw.text || (raw.player ? raw.player + ' ' + str(raw.status) : '')).slice(0, 400), status: st, value: raw.value != null ? raw.value : null,
+      source_class: src, reliability: cls, speculative: cls === 'SPECULATION' || cls === 'OPINION',
+      verified: false, verification: null, conflicts: []
+    };
+    if (!f.speculative && (src === 'OFFICIAL' || src === 'STATISTICAL_DATA')) { f.verified = true; f.verification = src === 'OFFICIAL' ? 'OFFICIAL_SOURCE' : 'STATISTICAL_SOURCE'; }
+    else f.verification = f.speculative ? 'NOT_CONFIRMED (' + cls.toLowerCase() + ')' : 'SINGLE_SOURCE';
+    return f;
+  }
+  var INCOMPATIBLE = { OUT: ['ACTIVE', 'STARTING', 'PROBABLE'], DOUBTFUL: ['ACTIVE', 'STARTING'], STARTING: ['OUT', 'DOUBTFUL'], ACTIVE: ['OUT', 'DOUBTFUL'], PROBABLE: ['OUT'] };
+  /** Same player and topic, incompatible statuses. Resolved by source tier, then by a clearly later report; otherwise UNRESOLVED. */
+  function conflicts(findings) {
+    var out = [], seen = {};
+    findings.forEach(function (a, i) {
+      findings.slice(i + 1).forEach(function (b) {
+        if (!a.player || !same(a.player, b.player) || a.topic !== b.topic || !a.status || !b.status) return;
+        if ((INCOMPATIBLE[a.status] || []).indexOf(b.status) < 0) return;
+        var k = [a.id, b.id].sort().join('|'); if (seen[k]) return; seen[k] = 1;
+        var ta = TIER[a.reliability], tb = TIER[b.reliability], ma = toMs(a.published_at || a.retrieved_at), mb = toMs(b.published_at || b.retrieved_at);
+        var winner = null, by = null, hold = null;
+        if (ta !== tb && Math.min(ta, tb) <= TIER.CREDIBLE_JOURNALISM) {
+          var hi = ta < tb ? a : b, lo = hi === a ? b : a, mh = hi === a ? ma : mb, ml = hi === a ? mb : ma;
+          /* the more reliable source wins — unless the less reliable report is clearly NEWER (≥ 6 h): the official
+             report may simply predate the news, so nothing settles it until a source of the same standing confirms */
+          if (lo.reliability === 'CREDIBLE_JOURNALISM' && mh != null && ml != null && ml - mh >= 6 * 3600000) hold = 'a ' + lo.reliability.toLowerCase().replace(/_/g, ' ') + ' report ' + Math.round((ml - mh) / 3600000) + ' hours newer than the ' + hi.reliability.toLowerCase().replace(/_/g, ' ') + ' one';
+          else { winner = hi; by = 'source tier (' + winner.reliability.toLowerCase().replace(/_/g, ' ') + ')'; }
+        }
+        else if (ma != null && mb != null && Math.abs(ma - mb) >= 6 * 3600000 && Math.min(ta, tb) <= TIER.CREDIBLE_JOURNALISM) { winner = ma > mb ? a : b; by = 'a report ' + Math.round(Math.abs(ma - mb) / 3600000) + ' hours later'; }
+        var c = { subject: a.player, team: a.team || b.team, topic: a.topic, findings: [a.id, b.id], statuses: [a.status, b.status], sources: [a.source_url, b.source_url],
+          detail: a.player + ': ' + a.status + ' per ' + (a.publisher || a.source_url) + ' vs ' + b.status + ' per ' + (b.publisher || b.source_url),
+          resolved: !!winner, resolution: winner ? { status: winner.status, by: by, finding: winner.id } : null, unresolved: !winner, why_unresolved: winner ? null : (hold || 'sources of the same standing, reported close together') };
+        a.conflicts.push(c.detail); b.conflicts.push(c.detail);
+        out.push(c);
+      });
+    });
+    return out;
+  }
+  /** Two non-speculative findings with the same subject, topic and status from different publishers corroborate each other. */
+  function corroborate(findings) {
+    findings.forEach(function (a, i) {
+      findings.slice(i + 1).forEach(function (b) {
+        if (a.speculative || b.speculative || !a.status || a.status !== b.status || a.topic !== b.topic || !same(a.player || a.team, b.player || b.team)) return;
+        if (!a.publisher || !b.publisher || norm(a.publisher) === norm(b.publisher)) return;
+        if (!a.verified) { a.verified = true; a.verification = 'CORROBORATED (' + b.publisher + ')'; }
+        if (!b.verified) { b.verified = true; b.verification = 'CORROBORATED (' + a.publisher + ')'; }
+      });
+    });
+  }
+  /**
+   * What the findings say that the model does not carry.
+   * model: { starters: {home: name, away: name}, absences_applied: [names], home, away }
+   */
+  function modelGaps(findings, model, keyRoles) {
+    model = model || {}; var out = [];
+    var roles = keyRoles || [];
+    var starters = model.starters || {};
+    findings.forEach(function (f) {
+      if (f.speculative || !f.player) return;
+      var side = same(f.team, model.home) ? 'home' : same(f.team, model.away) ? 'away' : null;
+      var priced = side ? (starters[side] && (starters[side].name || starters[side])) : null;
+      if (f.topic === 'starter' && f.status === 'STARTING' && priced && !same(priced, f.player) && f.verified) out.push({ kind: 'STARTER_MISMATCH', side: side, player: f.player, finding: f.id, detail: (f.team || side) + ': EdgeDesk\'s numbers assume ' + priced + ', ' + (f.publisher || 'a source') + ' lists ' + f.player + ' as the starter' });
+      var isKey = f.key || roles.indexOf(str(f.role)) >= 0 || (priced && same(priced, f.player));
+      var applied = (model.absences_applied || []).some(function (n) { return same(n, f.player); });
+      if ((f.status === 'OUT' || f.status === 'DOUBTFUL') && isKey && !applied && f.verified) out.push({ kind: 'ABSENCE_NOT_IN_MODEL', side: side, player: f.player, finding: f.id, detail: f.player + ' (' + (f.team || '') + (f.role ? ', ' + f.role : '') + ') is ' + f.status.toLowerCase() + ' per ' + (f.publisher || 'the report') + '; the model\'s number does not account for the absence' });
+    });
+    return out;
+  }
+  /**
+   * The researcher's turn for one event.
+   * o: { event: {id, sport, home, away, kickoff}, raw: [raw findings], model, required: [{topic, team}], now }
+   */
+  function research(o) {
+    o = o || {};
+    var ev = o.event || {};
+    var refused = [], findings = [];
+    (o.raw || []).forEach(function (r) { var f = normalize(r, { event_ref: ev.id }); if (f.refused) refused.push(f); else if (!findings.some(function (x) { return x.id === f.id; })) findings.push(f); });
+    corroborate(findings);
+    var conf = conflicts(findings);
+    var roles = AD() && ev.sport ? AD().keyRoles(ev.sport) : [];
+    var gaps = modelGaps(findings, Object.assign({ home: ev.home, away: ev.away }, o.model || {}), roles);
+    /* the graph */
+    var Gr = G(), g = null;
+    if (Gr) {
+      g = Gr.create({ event: ev });
+      var byF = {};
+      findings.forEach(function (f) {
+        var sid = g.addSource({ url: f.source_url, title: f.source_title, publisher: f.publisher, published_at: f.published_at, retrieved_at: f.retrieved_at, reliability: f.reliability === 'SPECULATION' || f.reliability === 'OPINION' ? f.reliability : f.source_class, kind: f.source_class });
+        if (sid) byF[f.id] = g.addClaim({ topic: f.topic, text: f.claim, team: f.team, player: f.player, value: f.value, status: f.status, source_id: sid, speculative: f.speculative, as_of: f.published_at || f.retrieved_at });
+      });
+      conf.forEach(function (c) { if (byF[c.findings[0]] && byF[c.findings[1]]) g.contradict(byF[c.findings[0]], byF[c.findings[1]], c.detail); });
+      var m = o.model || {};
+      ['home', 'away'].forEach(function (s) {
+        var st = m.starters && m.starters[s]; if (!st) return;
+        var mid = g.addModelInput({ key: 'starter_' + s, label: (s === 'home' ? ev.home : ev.away) + ' starter (as priced)', value: st.name || st, model_version: m.model_version || null });
+        findings.filter(function (f) { return (f.topic === 'starter' || f.topic === 'availability') && same(f.team, s === 'home' ? ev.home : ev.away) && byF[f.id]; }).forEach(function (f) {
+          var gap = gaps.filter(function (x) { return x.finding === f.id; })[0];
+          g.affects(byF[f.id], mid, { in_model: !gap, changed: false, note: gap ? gap.detail : 'consistent with the input' });
+        });
+      });
+    }
+    var required = o.required || [];
+    var missing = required.filter(function (r) { return !findings.some(function (f) { return f.topic === r.topic && (!r.team || same(f.team, r.team)); }); });
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var TTL = { availability: 72 * 60, starter: 24 * 60, weather: 12 * 60 };
+    var stale = findings.filter(function (f) { var t = toMs(f.published_at || f.retrieved_at); var lim = TTL[f.topic]; return lim && t != null && (now - t) / 60000 > lim; }).map(function (f) { return { finding: f.id, topic: f.topic, claim: f.claim, as_of: f.published_at || f.retrieved_at }; });
+    return { schema: VERSION + ':research', event: ev, findings: findings, refused: refused, conflicts: conf, unresolved: conf.filter(function (c) { return c.unresolved; }), gaps: gaps, missing: missing, stale: stale, graph: g,
+      coverage: { findings: findings.length, refused: refused.length, by_class: findings.reduce(function (a, f) { a[f.reliability] = (a[f.reliability] || 0) + 1; return a; }, {}), topics: findings.map(function (f) { return f.topic; }).filter(function (t, i, a) { return a.indexOf(t) === i; }) } };
+  }
+
+  /* ======================================================================
+     B. THE ODDSMAKER
+     ====================================================================== */
+  /* The only ways a finding may move a number. Each needs the MODEL'S OWN delta for that
+     scenario (an engine re-run, e.g. EDANALYST scenarios / the slate build's qb_out rows). */
+  var ADJUSTMENT_RULES = {
+    QB_OUT: { label: 'starting quarterback out', gap: 'ABSENCE_NOT_IN_MODEL', role: 'QB', delta_field: 'scenario_delta_points', markets: ['spreads', 'h2h'] },
+    STARTER_CHANGE: { label: 'a different starter than the one priced', gap: 'STARTER_MISMATCH', delta_field: 'scenario_delta_points', markets: ['spreads', 'h2h', 'totals'] }
+  };
+  function checkAdjustment(a) {
+    if (!a || typeof a !== 'object') return 'not an adjustment';
+    if ('probability' in a || 'fair_probability' in a || 'win_probability' in a) return 'a probability cannot be supplied to the oddsmaker; only a registered rule carrying the model\'s own delta can move a number';
+    var R = ADJUSTMENT_RULES[a.rule]; if (!R) return 'unregistered adjustment rule "' + str(a.rule) + '"';
+    if (!a.finding_id) return 'an adjustment needs the research finding it rests on';
+    if (num(a[R.delta_field]) == null) return 'no model scenario delta for ' + R.label + ': the model has not been re-run for it, so the number cannot move';
+    if (!num(a.sd_points)) return 'no model error distribution (sd) to convert the delta into a probability';
+    if (typeof a[R.delta_field] === 'string') return 'the delta must be the model\'s number, not text';
+    return null;
+  }
+  function noVig2(dec, otherDec) {
+    var Fx = F(); if (num(dec) == null || num(otherDec) == null) return null;
+    var nv = Fx.noVig([{ decimal: String(dec) }, { decimal: String(otherDec) }], 'multiplicative'); return nv.ok ? Number(nv.probabilities[0]) : null;
+  }
+  /**
+   * Price one candidate.
+   * o: { sport, market, selection, line,
+   *      model: { available, tier, probability (this selection), model_version, as_of, interval: {low, high}, sd_points, label },
+   *      market: { decimal | american, book, captured_at, other_decimal, sharp_fair (no-vig, this selection), kickoff },
+   *      venue ('sportsbook' | 'kalshi' | ...), contract: { price_cents, side }, adjustments: [...],
+   *      audit, confirmation, settlement, stake_dollars, now, ttl_min }
+   */
+  function price(o) {
+    o = o || {};
+    var Fx = F(), m = o.model || {}, k = o.market || {};
+    var refusedAdj = [], applied = [];
+    var tier = str(m.tier).toUpperCase();
+    /* m.prices === false: the host's board prices this market on the sharp market and carries the model as context;
+       the oddsmaker follows that policy (a model is never swapped in for the fair the board chose) */
+    var ctxOnly = m.prices === false;
+    var mayPrice = !ctxOnly && !!m.available && num(m.probability) != null && (tier === 'VALIDATED' || tier === 'LEAN' || tier === 'PROBABILITY');
+    var marketFair = num(k.sharp_fair) != null ? num(k.sharp_fair) : noVig2(k.decimal, k.other_decimal);
+    var base = mayPrice ? num(m.probability) : marketFair;
+    var kind = mayPrice ? 'MODEL' : (marketFair != null ? 'SHARP_NO_VIG' : null);
+    var p = base;
+    (o.adjustments || []).forEach(function (a) {
+      var why = checkAdjustment(a);
+      if (why) { refusedAdj.push({ rule: a && a.rule || null, why: why }); return; }
+      if (!mayPrice) { refusedAdj.push({ rule: a.rule, why: 'the fair probability is the market\'s, not a model\'s: a model scenario cannot adjust it' }); return; }
+      var R = ADJUSTMENT_RULES[a.rule], z = phiInv(p);
+      var dz = num(a[R.delta_field]) / num(a.sd_points);
+      var np = phi(z + dz);
+      applied.push({ rule: a.rule, label: R.label, finding_id: a.finding_id, delta_points: num(a[R.delta_field]), sd_points: num(a.sd_points), from: Math.round(p * 1e6) / 1e6, to: Math.round(np * 1e6) / 1e6, basis: 'the model\'s own ' + R.label + ' scenario (' + (a.basis || 'engine re-run') + '), through its normal error distribution' });
+      p = np;
+    });
+    var src = kind === 'MODEL' ? { kind: 'MODEL', tier: tier, label: m.label || 'EdgeDesk model', model_version: m.model_version || null, observed_at: m.as_of || null }
+      : kind ? { kind: 'SHARP_NO_VIG', label: 'sharp no-vig market', observed_at: k.captured_at || null } : null;
+    var interval = m.interval && num(m.interval.low) != null && num(m.interval.high) != null && kind === 'MODEL' ? { low: num(m.interval.low), high: num(m.interval.high) } : null;
+    /* the model's own probability when it is not the price: a cross-check the strategist reads, never a number EV is computed on */
+    var view = !mayPrice && m.available && num(m.probability) != null ? { probability: num(m.probability), tier: tier || null, label: m.label || 'EdgeDesk model', used_to_price: false,
+      why: ctxOnly ? 'the board prices this market on the sharp market; the model is a cross-check' : 'the model is ' + (tier || 'unvalidated') + ' for this market, so it may order research, not price it' } : null;
+    var common = { fair_probability: p != null ? String(Math.round(p * 1e6) / 1e6) : null, fair_source: src, fair_interval: interval, quote_observed_at: k.captured_at || null, market: o.market_type || o.market || null, kickoff: k.kickoff || null,
+      now: o.now, ttl_min: o.ttl_min, fair_ttl_min: kind === 'MODEL' ? 24 * 60 : o.ttl_min, audit: o.audit || null, settlement: o.settlement || { verified: true }, confirmation: o.confirmation || null, stake_dollars: o.stake_dollars || null };
+    var ev;
+    if (o.contract && o.contract.price_cents != null) ev = Fx.evaluateContract(Object.assign({}, common, { venue: o.venue || 'unspecified', side: o.contract.side || 'YES', price_cents: o.contract.price_cents, fair_probability: o.contract.side === 'NO' && p != null ? String(Math.round((1 - p) * 1e6) / 1e6) : common.fair_probability }));
+    else ev = Fx.evaluateWager(Object.assign({}, common, { book: k.book || 'sportsbook', decimal: k.decimal != null ? String(k.decimal) : null, american: k.decimal == null ? k.american : null }));
+    /* o.conservative: a model price is published only when it is not the more generous of the two fairs —
+       when the sharp market's fair gives the LOWER EV, the price is judged on it and the model becomes the cross-check */
+    var pricedOn = null;
+    if (o.conservative && kind === 'MODEL' && marketFair != null && ev && ev.ok && ev.net_ev_per_dollar != null && !(o.contract && o.contract.price_cents != null)) {
+      var evM = Fx.evaluateWager(Object.assign({}, common, { fair_probability: String(Math.round(marketFair * 1e6) / 1e6), fair_source: { kind: 'SHARP_NO_VIG', label: 'sharp no-vig market', observed_at: k.captured_at || null }, fair_interval: null, fair_ttl_min: o.ttl_min,
+        book: k.book || 'sportsbook', decimal: k.decimal != null ? String(k.decimal) : null, american: k.decimal == null ? k.american : null }));
+      if (evM.ok && evM.net_ev_per_dollar != null && Number(evM.net_ev_per_dollar) < Number(ev.net_ev_per_dollar)) {
+        view = { probability: p, tier: tier || null, label: m.label || 'EdgeDesk model', used_to_price: false, why: 'the sharp market\'s fair gives the lower EV, so the price is judged on it' };
+        ev = evM; p = marketFair; kind = 'SHARP_NO_VIG'; interval = null; pricedOn = 'SHARP_NO_VIG (lower EV than the model)';
+      }
+    }
+    return {
+      schema: VERSION + ':price', fair_probability: p, fair_kind: kind, model_tier: tier || null,
+      independent_fair_probability: kind === 'MODEL' ? p : null,
+      market_no_vig_probability: marketFair, interval: interval,
+      insufficient: kind === 'MODEL' ? null : (view && (ctxOnly || pricedOn) ? 'the price is judged against the sharp no-vig market; EdgeDesk\'s model is a cross-check here, not the price' : m.available ? 'the model is ' + (tier || 'unvalidated') + ' for this market: it may order research, not price it' : (m.unavailable_why ? str(m.unavailable_why) : 'no independent model for this market') + '; the fair is the sharp market\'s'),
+      priced_on: pricedOn || kind,
+      model_view: view, adjustments: applied, adjustments_refused: refusedAdj, evaluation: ev,
+      price_input: o.contract && o.contract.price_cents != null ? { price_cents: o.contract.price_cents, side: o.contract.side || 'YES', venue: o.venue || 'unspecified' } : { decimal: k.decimal != null ? String(k.decimal) : null, american: k.decimal == null ? k.american : null }
+    };
+  }
+  /** EV at nearby fair probabilities: does the edge survive being a point or two wrong? */
+  function sensitivity(quant, o) {
+    o = o || {};
+    var Fx = F(), ev = quant && quant.evaluation, p = quant && quant.fair_probability;
+    if (!ev || !ev.ok || p == null) return { available: false, rows: [], robust: false, note: 'no priced evaluation to perturb' };
+    var steps = o.steps || [-0.03, -0.02, -0.01, 0, 0.01, 0.02];
+    var rows = steps.map(function (d) {
+      var q = Math.min(0.999, Math.max(0.001, p + d)), r;
+      var pi = quant.price_input || {};
+      if (ev.kind === 'CONTRACT') r = Fx.evaluateContract({ venue: ev.venue.key, side: ev.side, price: ev.entry_price, fair_probability: String(Math.round(q * 1e6) / 1e6), contracts: ev.contracts, fee_override: o.fee_override || null });
+      else r = Fx.evaluateWager({ decimal: pi.decimal != null ? pi.decimal : (pi.american == null ? ev.entry_decimal : null), american: pi.decimal == null && pi.american != null ? pi.american : null, fair_probability: String(Math.round(q * 1e6) / 1e6), push_probability: ev.push_probability !== '0' ? ev.push_probability : null });
+      return { shift_pp: Math.round(d * 1000) / 10, fair: Math.round(q * 10000) / 10000, net_ev_per_dollar: r.ok && r.net_ev_per_dollar != null ? Number(r.net_ev_per_dollar) : null };
+    });
+    var be = num(ev.break_even_probability);
+    var cushion = be != null ? Math.round((p - be) * 10000) / 100 : null;
+    var at1 = rows.filter(function (r) { return r.shift_pp === -1; })[0];
+    return { available: true, rows: rows, break_even: be, cushion_pp: cushion, robust: !!(at1 && at1.net_ev_per_dollar != null && at1.net_ev_per_dollar > 0), note: cushion == null ? 'break-even unknown (fees)' : 'the fair can be ' + Math.abs(cushion) + ' probability points ' + (cushion >= 0 ? 'lower' : 'higher') + ' before EV ' + (cushion >= 0 ? 'turns negative' : 'turns positive') };
+  }
+
+  /* ======================================================================
+     C. THE STRATEGIST
+     ====================================================================== */
+  /**
+   * o: { candidate, quant (price()), research (research()), disagreement (EDDISAGREE), audit (EDAUDIT result), sensitivity }
+   */
+  function strategist(o) {
+    o = o || {};
+    var q = o.quant || {}, ev = q.evaluation || {}, a = o.audit || {}, d = o.disagreement || null, r = o.research || {}, sens = o.sensitivity || null;
+    var checks = [];
+    function add(id, question, result, detail, principle) { checks.push({ id: id, question: question, result: result, detail: detail, principle: principle }); }
+    /* 1 real or an artifact */
+    var art = [];
+    (a.checks || []).forEach(function (c) { if ((c.id === 'A15_SANITY' || c.id === 'A14_MODEL_DISAGREEMENT') && c.result === 'FAIL') art.push(c.detail); if (c.id === 'A7_CONFIRMATION' && c.result === 'WARN' && /off-market/.test(str(c.detail))) art.push(c.detail); });
+    if (d && d.verdict === 'DATA_FAULT') art.push(d.explanation);
+    if (ev.data_freshness && (ev.data_freshness.quote.status === 'STALE' || ev.data_freshness.quote.status === 'UNKNOWN')) art.push('the quote is ' + ev.data_freshness.quote.status.toLowerCase());
+    add('ARTIFACT', 'Is the apparent edge real or a data artifact?', art.length ? 'FAIL' : 'PASS', art.length ? art.join('; ') : 'no sanity, outlier, staleness or data-fault flag', 'Thorp: an edge needs a mathematical basis, not a glitch');
+    /* 2 already priced */
+    var quoteAt = toMs(o.candidate && o.candidate.quote && o.candidate.quote.captured_at);
+    var support = (r.findings || []).filter(function (f) { return !f.speculative && (f.topic === 'availability' || f.topic === 'starter'); });
+    var before = quoteAt != null ? support.filter(function (f) { var t = toMs(f.published_at); return t != null && t < quoteAt; }) : [];
+    var moved = d && d.causes ? d.causes.filter(function (c) { return c.cause === 'MARKET_MOVEMENT'; })[0] : null;
+    /* verified news about a key player or the starter that arrived AFTER the quote was captured: the price may not carry it */
+    var after = quoteAt != null ? support.filter(function (f) { var t = toMs(f.published_at || f.retrieved_at); return f.verified && f.key && t != null && t > quoteAt && (f.topic === 'starter' || f.status === 'OUT' || f.status === 'DOUBTFUL'); }) : [];
+    if (after.length) add('PRICED_IN', 'Is the market already accounting for the information?', 'WARN', after[0].claim + ' (' + (after[0].publisher || 'a source') + ') was reported after the quote was captured: the price may not reflect it — re-read the price before acting', 'Walters: timing');
+    else if (moved && moved.assessment === 'LIKELY') add('PRICED_IN', 'Is the market already accounting for the information?', 'WARN', moved.evidence[0], 'Walters: line movement says what the market knows');
+    else if (before.length) add('PRICED_IN', 'Is the market already accounting for the information?', 'PASS', before.length + ' report' + (before.length === 1 ? '' : 's') + ' predate the quote, so the price had the chance to absorb them; the edge does not rest on them', 'Walters: timing');
+    else add('PRICED_IN', 'Is the market already accounting for the information?', 'PASS', 'no information newer than the quote moves the number', 'Walters: timing');
+    /* 3 calibrated */
+    var cal = ev.calibration_status || null;
+    var tierWord = q.fair_kind === 'MODEL' ? (q.model_tier || 'unvalidated') : 'market-derived';
+    if (q.fair_kind === 'MODEL' && q.model_tier !== 'VALIDATED') add('CALIBRATED', 'Is the model properly calibrated for this sport and market?', 'WARN', 'the model is ' + tierWord + ' for this market (' + (cal || 'not calibrated') + '): its probability is experimental', 'Voulgaris / Bloom: a sport-specific model, tested before it is trusted');
+    else if (q.fair_kind === 'MODEL') add('CALIBRATED', 'Is the model properly calibrated for this sport and market?', 'PASS', 'validated for this market', 'Bloom: continuous testing');
+    else if (q.fair_kind) add('CALIBRATED', 'Is the model properly calibrated for this sport and market?', 'PASS', 'the reference is the sharp market\'s de-vigged price, the benchmark EdgeDesk\'s closing-line record measures against: this shows a book out of line with it, not the market wrong', 'Voulgaris: know which reference is calibrated');
+    else add('CALIBRATED', 'Is the model properly calibrated for this sport and market?', 'FAIL', 'no fair probability at all', 'Thorp');
+    /* 4 after fees */
+    var roi = num(ev.net_ev_per_dollar), floor = num(ev.thresholds && ev.thresholds.ev_floor) || 0.005;
+    add('AFTER_FEES', 'Does the opportunity remain attractive after fees?', roi == null ? 'FAIL' : roi >= floor ? 'PASS' : 'FAIL', roi == null ? 'net EV not computable (' + (ev.expected_fees ? ev.expected_fees.status.toLowerCase() + ' fees' : 'no evaluation') + ')' : 'net EV ' + pct(roi, 2) + ' per $1 against the ' + pct(floor, 2) + ' floor', 'Thorp: expectation after costs');
+    /* 5 edge vs uncertainty */
+    if (!sens || !sens.available) add('EDGE_VS_UNCERTAINTY', 'Is the edge large relative to model uncertainty?', 'UNKNOWN', 'no sensitivity could be computed', 'Thorp: variance and risk of ruin');
+    else if (q.interval && ev.model_uncertainty && ev.model_uncertainty.positive_at_low === false) add('EDGE_VS_UNCERTAINTY', 'Is the edge large relative to model uncertainty?', 'FAIL', 'at the low end of the model\'s interval (' + pct(q.interval.low) + ') the EV is negative', 'Thorp');
+    else add('EDGE_VS_UNCERTAINTY', 'Is the edge large relative to model uncertainty?', sens.robust ? 'PASS' : 'WARN', sens.note + (sens.robust ? '' : ': one probability point wrong erases it'), 'Thorp: a likely winner is not a positive expectation');
+    /* 6 blind test */
+    var blind = blindTest(o);
+    add('BLIND', 'Would this still qualify with the team names hidden?', blind.same ? 'PASS' : 'FAIL', blind.same ? 'the classification is computed from prices and probabilities only; no team name enters it' : blind.why, 'Walters: popular narratives are not value');
+    /* 7 independent signal or narrative */
+    var narrativeOnly = q.fair_kind == null || (q.fair_kind !== 'MODEL' && !(ev.fair_probability != null && q.market_no_vig_probability != null));
+    var spec = (r.findings || []).filter(function (f) { return f.speculative; }).length;
+    var a7 = (a.checks || []).filter(function (c) { return c.id === 'A7_CONFIRMATION'; })[0];
+    var mv = q.model_view || null, be7 = num(ev.break_even_probability);
+    var mvText = mv ? 'EdgeDesk\'s ' + (mv.tier || 'unvalidated') + '-tier model makes it ' + pct(mv.probability) : '';
+    if (narrativeOnly) add('INDEPENDENT_SIGNAL', 'Is this an independently validated signal or a compelling narrative?', 'FAIL', 'no independent probability supports it', 'Bloom');
+    else if (mv && be7 != null && mv.probability < be7) add('INDEPENDENT_SIGNAL', 'Is this an independently validated signal or a compelling narrative?', 'WARN', mvText + ', below the ' + pct(be7) + ' break-even: the market comparison and EdgeDesk\'s own model disagree', 'Bloom: data over stories');
+    else if (q.fair_kind === 'MODEL' && q.model_tier === 'VALIDATED') add('INDEPENDENT_SIGNAL', 'Is this an independently validated signal or a compelling narrative?', 'PASS', 'a validated model\'s probability', 'Bloom');
+    else if (q.fair_kind === 'SHARP_NO_VIG' && a7 && a7.result === 'PASS') add('INDEPENDENT_SIGNAL', 'Is this an independently validated signal or a compelling narrative?', 'PASS', 'the price beats the sharp market\'s no-vig fair and independent books confirm it (' + a7.detail + ')' + (mv ? '; ' + mvText + ', which agrees' : ''), 'Bloom: data over stories');
+    else add('INDEPENDENT_SIGNAL', 'Is this an independently validated signal or a compelling narrative?', 'WARN', (q.fair_kind === 'MODEL' ? 'a ' + q.model_tier + '-tier model\'s probability (not yet validated)' : 'a price comparison against the sharp market, not an independent model') + (spec ? '; ' + spec + ' speculative report' + (spec === 1 ? '' : 's') + ' were set aside' : ''), 'Bloom: data over stories');
+    var fails = checks.filter(function (c) { return c.result === 'FAIL'; }), warns = checks.filter(function (c) { return c.result === 'WARN' || c.result === 'UNKNOWN'; });
+    var verdict = fails.length ? 'REJECTED' : warns.length ? 'CAUTION' : 'SUPPORTED';
+    return { schema: VERSION + ':strategist', verdict: verdict, checks: checks, reason: fails.length ? fails[0].detail : warns.length ? warns[0].detail : 'every professional check passes' };
+  }
+  /** Recompute the classification from the numbers alone (no names) and compare. */
+  function blindTest(o) {
+    var ev = o.quant && o.quant.evaluation;
+    if (!ev || !ev.ok) return { same: true, why: null };
+    var Fx = F();
+    var r = ev.kind === 'CONTRACT' ? Fx.evaluateContract({ venue: ev.venue.key, side: ev.side, price: ev.entry_price, fair_probability: ev.fair_probability, fair_source: ev.fair_source, quote_observed_at: ev.data_freshness.quote.age_min != null ? new Date(Date.now() - ev.data_freshness.quote.age_min * 60000).toISOString() : null, audit: (o.audit && o.audit.status) ? { status: o.audit.status } : null, settlement: ev.settlement })
+      : Fx.evaluateWager({ decimal: ev.entry_decimal, fair_probability: ev.fair_probability, push_probability: ev.push_probability, fair_source: { kind: ev.fair_source.kind, tier: ev.fair_source.tier, observed_at: ev.fair_source.observed_at, label: 'anonymous' }, quote_observed_at: ev.data_freshness.quote.age_min != null ? new Date(Date.now() - ev.data_freshness.quote.age_min * 60000).toISOString() : null, ttl_min: ev.data_freshness.quote.ttl_min, confirmation: ev.market_liquidity && ev.market_liquidity.status !== 'UNKNOWN' ? { pass: ev.market_liquidity.status === 'CONFIRMED' } : null, audit: (o.audit && o.audit.status) ? { status: o.audit.status } : null, settlement: ev.settlement });
+    return { same: r.ok && r.net_ev_per_dollar === ev.net_ev_per_dollar, why: r.ok ? 'the numbers alone give ' + r.net_ev_per_dollar + ', not ' + ev.net_ev_per_dollar : 'the numbers alone do not evaluate' };
+  }
+
+  /* ======================================================================
+     D. THE AUDITOR'S CLASSIFICATION
+     ====================================================================== */
+  var CLASSES = ['VERIFIED_CANDIDATE', 'RESEARCH_REQUIRED', 'WATCHLIST', 'REJECTED', 'UNVERIFIED'];
+  var CLASS_LABEL = { VERIFIED_CANDIDATE: 'VERIFIED CANDIDATE', RESEARCH_REQUIRED: 'RESEARCH REQUIRED', WATCHLIST: 'WATCHLIST', REJECTED: 'REJECTED', UNVERIFIED: 'UNVERIFIED' };
+  var FINAL_STATUS = { VERIFIED_CANDIDATE: 'VERIFIED CANDIDATE', RESEARCH_REQUIRED: 'WATCHLIST', WATCHLIST: 'WATCHLIST', REJECTED: 'PASS', UNVERIFIED: 'PASS' };
+  /**
+   * o: { audit (EDAUDIT), quant, strategist, research, sensitivity, disagreement }
+   */
+  function classify(o) {
+    o = o || {};
+    var a = o.audit || {}, q = o.quant || {}, ev = q.evaluation || {}, s = o.strategist || {}, r = o.research || {}, sens = o.sensitivity || {};
+    var reasons = [];
+    var cls;
+    if (!ev.ok || ev.classification === 'UNVERIFIED_DATA') { cls = 'UNVERIFIED'; reasons.push(ev.reasons ? ev.reasons[0] : 'no priced evaluation'); }
+    else if (a.status === 'REJECTED') { cls = 'REJECTED'; reasons.push('the audit rejected it: ' + a.reason); }
+    else if (s.verdict === 'REJECTED') { cls = 'REJECTED'; reasons.push('the strategist rejected it: ' + s.reason); }
+    else if (num(ev.net_ev_per_dollar) != null && num(ev.net_ev_per_dollar) <= 0) { cls = 'REJECTED'; reasons.push('net EV is ' + pct(num(ev.net_ev_per_dollar), 2) + ' per $1'); }
+    else if ((r.unresolved || []).length) { cls = 'RESEARCH_REQUIRED'; reasons.push('sources disagree and nothing settles it: ' + r.unresolved[0].detail); }
+    else if (a.status === 'NEEDS_RECHECK') { cls = 'RESEARCH_REQUIRED'; reasons.push(a.reason); }
+    else if ((r.gaps || []).length && !(q.adjustments || []).length) { cls = 'RESEARCH_REQUIRED'; reasons.push(r.gaps[0].detail + ' — and no model scenario quantifies it'); }
+    else if ((a.checks || []).some(function (c) { return c.id === 'A8_AVAILABILITY' && c.result === 'NOT_CHECKED'; }) && (r.findings || []).filter(function (f) { return f.topic === 'availability'; }).length === 0) { cls = 'RESEARCH_REQUIRED'; reasons.push('availability was not checked: ' + ((a.checks || []).filter(function (c) { return c.id === 'A8_AVAILABILITY'; })[0] || {}).detail); }
+    else if (a.status === 'CONFIRMED' && s.verdict === 'SUPPORTED' && ev.classification === 'VERIFIED_EDGE' && sens.robust) { cls = 'VERIFIED_CANDIDATE'; reasons.push('confirmed on a fresh read, every professional check passed, and the edge survives a one-point error in the fair'); }
+    else {
+      cls = 'WATCHLIST';
+      if (ev.classification !== 'VERIFIED_EDGE') reasons.push(ev.label + ': ' + (ev.caps && ev.caps.filter(function (c) { return c.binding; }).map(function (c) { return c.reason; })[0] || ev.reasons[0]));
+      if (a.status && a.status !== 'CONFIRMED') reasons.push('audit ' + a.status + ': ' + a.reason);
+      if (s.verdict === 'CAUTION') reasons.push('strategist: ' + s.reason);
+      if (sens.available && !sens.robust) reasons.push('fragile: ' + sens.note);
+    }
+    return { classification: cls, label: CLASS_LABEL[cls], final_status: FINAL_STATUS[cls], reasons: reasons.filter(Boolean) };
+  }
+
+  /**
+   * The bounded chain for one candidate: research → price → disagreement → strategist →
+   * audit classification; a quantifiable material finding re-prices and reruns (≤ max_rounds).
+   * o: { candidate, event, raw (findings), model, market, venue, contract, audit, scenario_deltas:{home_qb_out, away_qb_out}, sd_points, others, quality, weather, now, ttl_min, max_rounds }
+   */
+  function investigate(o) {
+    o = o || {};
+    var maxRounds = Math.max(1, Math.min(3, num(o.max_rounds) || 2));
+    var trail = [], adjustments = [];
+    var R = research({ event: o.event, raw: o.raw, model: o.model && o.model.inputs, required: o.required, now: o.now });
+    trail.push({ round: 1, step: 'RESEARCH', detail: R.findings.length + ' findings (' + Object.keys(R.coverage.by_class).map(function (k) { return R.coverage.by_class[k] + ' ' + k.toLowerCase(); }).join(', ') + '), ' + R.conflicts.length + ' conflicts, ' + R.gaps.length + ' model gaps' });
+    var round = 0, out = null;
+    while (round < maxRounds) {
+      round++;
+      var Q = price({ market_type: o.candidate && o.candidate.market, model: o.model, market: o.market, venue: o.venue, contract: o.contract, adjustments: adjustments, audit: o.audit ? { status: o.audit.status, reason: o.audit.reason } : null, confirmation: o.confirmation, settlement: o.settlement, now: o.now, ttl_min: o.ttl_min, stake_dollars: o.stake_dollars, conservative: !!o.conservative });
+      trail.push({ round: round, step: 'PRICE', detail: Q.evaluation.ok ? 'fair ' + pct(Q.fair_probability) + ' (' + (Q.fair_kind || 'none') + '), net EV ' + (Q.evaluation.net_ev_per_dollar != null ? pct(Number(Q.evaluation.net_ev_per_dollar), 2) : 'n/a') + (Q.adjustments.length ? ', after ' + Q.adjustments.map(function (x) { return x.rule; }).join(', ') : '') : 'not priced: ' + (Q.evaluation.error ? Q.evaluation.error.message : '') });
+      var D = DIS() ? DIS().diagnose({ model: Object.assign({}, o.model, { probability: Q.fair_kind === 'MODEL' ? Q.fair_probability : null }), market: Object.assign({ probability: Q.market_no_vig_probability }, o.market_view || {}), others: o.others, claims: R.findings, gaps: R.gaps, conflicts: R.unresolved, quality: o.quality, weather: o.weather, audit: o.audit, market_type: o.candidate && o.candidate.market }) : null;
+      var S = sensitivity(Q);
+      var ST = strategist({ candidate: o.candidate, quant: Q, research: R, disagreement: D, audit: o.audit, sensitivity: S });
+      var C = classify({ audit: o.audit, quant: Q, strategist: ST, research: R, sensitivity: S, disagreement: D });
+      trail.push({ round: round, step: 'AUDIT', detail: C.label + ': ' + C.reasons[0] });
+      out = { research: R, quant: Q, disagreement: D, sensitivity: S, strategist: ST, classification: C };
+      /* a material, QUANTIFIABLE finding the price does not yet carry: re-price and re-audit */
+      var fresh = R.gaps.filter(function (g) { return !adjustments.some(function (x) { return x.finding_id === g.finding; }); });
+      var next = [];
+      fresh.forEach(function (g) {
+        var rule = g.kind === 'ABSENCE_NOT_IN_MODEL' ? 'QB_OUT' : 'STARTER_CHANGE';
+        var delta = o.scenario_deltas ? num(o.scenario_deltas[g.side + '_' + (rule === 'QB_OUT' ? 'qb_out' : 'starter_change')]) : null;
+        if (delta != null && num(o.sd_points)) next.push({ rule: rule, finding_id: g.finding, scenario_delta_points: delta, sd_points: num(o.sd_points), basis: 'scenario ' + g.side + '_' + (rule === 'QB_OUT' ? 'qb_out' : 'starter_change') });
+      });
+      if (!next.length) break;
+      adjustments = adjustments.concat(next);
+      trail.push({ round: round, step: 'RECALCULATE', detail: next.map(function (x) { return x.rule + ' (' + x.scenario_delta_points + ' pts from the model\'s scenario)'; }).join('; ') });
+    }
+    if (round >= maxRounds && out && out.research.gaps.some(function (g) { return !adjustments.some(function (x) { return x.finding_id === g.finding; }); }) && adjustments.length) trail.push({ round: round, step: 'EXHAUSTED', detail: 'stopped after ' + round + ' rounds' });
+    out.trail = trail; out.rounds = round;
+    out.confidence = confidenceProfile(out);
+    return out;
+  }
+
+  /* ======================================================================
+     CONFIDENCE — four separate things, never one percentage
+     ====================================================================== */
+  function confidenceProfile(x) {
+    var q = x.quant || {}, ev = q.evaluation || {}, r = x.research || {};
+    var outcome = q.fair_probability != null ? { probability: q.fair_probability, interval: q.interval || null, basis: q.fair_kind === 'MODEL' ? 'EdgeDesk model (' + (q.model_tier || 'unvalidated') + ')' + (q.model_tier === 'VALIDATED' ? '' : ' — experimental, not validated for this market') : 'the sharp market\'s de-vigged price (market-derived)' } : { probability: null, interval: null, basis: 'no fair probability' };
+    var nV = (r.findings || []).filter(function (f) { return f.verified; }).length, nS = (r.findings || []).filter(function (f) { return f.speculative; }).length;
+    var rc = !(r.findings || []).length ? 'NONE' : (r.unresolved || []).length ? 'CONFLICTED' : (r.missing || []).length || (r.stale || []).length ? 'PARTIAL' : nV >= 2 ? 'GOOD' : 'THIN';
+    var research_ = { level: rc, basis: nV + ' verified finding' + (nV === 1 ? '' : 's') + ', ' + nS + ' speculative set aside, ' + (r.unresolved || []).length + ' unresolved conflict' + ((r.unresolved || []).length === 1 ? '' : 's') + ', ' + (r.missing || []).length + ' required topic' + ((r.missing || []).length === 1 ? '' : 's') + ' missing, ' + (r.stale || []).length + ' stale' };
+    var model = { status: ev.calibration_status || (q.fair_kind === 'MODEL' ? 'UNCALIBRATED' : 'MARKET_DERIVED'), tier: q.model_tier || null, label: q.fair_kind === 'MODEL' ? (q.model_tier === 'VALIDATED' ? 'validated' : q.model_tier === 'LEAN' ? 'partially validated (break-even history, not a profit record)' : 'experimental — not validated') : q.model_view ? 'market-derived reference (the sharp market\'s de-vigged price); EdgeDesk\'s ' + (q.model_view.tier || 'unvalidated') + '-tier model is a cross-check, not the price' : 'no independent model; market-derived reference' };
+    var fr = ev.data_freshness && ev.data_freshness.quote;
+    var exec = { quote: fr ? fr.status : 'UNKNOWN', age_min: fr ? fr.age_min : null, liquidity: ev.market_liquidity ? ev.market_liquidity.status : 'UNKNOWN', fees: ev.expected_fees ? ev.expected_fees.status : 'UNKNOWN' };
+    return { outcome_probability: outcome, research_confidence: research_, model_reliability: model, execution_confidence: exec, note: 'Four separate measures. A high probability of winning is not a positive expected value, and none of these is combined into a single confidence number.' };
+  }
+
+  /* ======================================================================
+     E. THE COMMUNICATOR
+     ====================================================================== */
+  function freshnessText(r) {
+    var fs = (r && r.findings) || [];
+    if (!fs.length) return 'no research findings on file';
+    var newest = fs.map(function (f) { return toMs(f.published_at || f.retrieved_at); }).filter(function (t) { return t != null; }).sort().slice(-1)[0];
+    return fs.length + ' finding' + (fs.length === 1 ? '' : 's') + ', newest ' + (newest ? new Date(newest).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' : 'undated') + ((r.stale || []).length ? '; ' + r.stale.length + ' stale' : '');
+  }
+  /**
+   * The candidate block in the brief's shape.
+   * x: investigate() output + { candidate: {matchup, sport_label, market_label, selection, book, kickoff_local}, advantage, counter, invalidators }
+   */
+  function renderCandidate(x, heading) {
+    var q = x.quant || {}, ev = q.evaluation || {}, c = x.candidate || {}, cl = x.classification || {}, d = x.disagreement;
+    var isC = ev.kind === 'CONTRACT';
+    var lines = [];
+    lines.push(heading || 'BEST VERIFIED RESEARCH CANDIDATE');
+    lines.push('');
+    lines.push('Event: ' + (c.matchup || '—') + (c.kickoff_local ? ' — ' + c.kickoff_local : ''));
+    lines.push('Sport: ' + (c.sport_label || c.sport || '—'));
+    lines.push('Market: ' + (c.market_label || c.selection || '—'));
+    lines.push('Venue: ' + (c.book || (ev.venue && ev.venue.label) || '—'));
+    lines.push('Verified market price: ' + (ev.ok ? (isC ? (Math.round(Number(ev.entry_price) * 10000) / 100) + '¢' : fmtAm(ev.entry_price)) + ' (implies ' + pct(Number(ev.market_probability)) + ')' + (ev.data_freshness ? ', quote ' + ev.data_freshness.quote.status.toLowerCase() + (ev.data_freshness.quote.age_min != null ? ' (' + ev.data_freshness.quote.age_min + ' min old)' : '') : '') : 'not verified'));
+    var mv = q.model_view;
+    lines.push('Independent fair probability: ' + (q.independent_fair_probability != null ? pct(q.independent_fair_probability) + ' — EdgeDesk model, ' + (q.model_tier === 'VALIDATED' ? 'validated' : (q.model_tier || 'unvalidated') + ' tier (experimental, not validated)') + (q.interval ? ', interval ' + pct(q.interval.low) + '–' + pct(q.interval.high) : '')
+      : mv ? pct(mv.probability) + ' — EdgeDesk model, ' + (mv.tier || 'unvalidated') + ' tier, a cross-check only' + (ev.break_even_probability && mv.probability < Number(ev.break_even_probability) ? ' (it does NOT clear break-even)' : '') + '. The price is judged against the sharp no-vig fair' + (q.market_no_vig_probability != null ? ': ' + pct(q.market_no_vig_probability) : '')
+        : 'unavailable — ' + (q.insufficient || 'no independent model') + (q.market_no_vig_probability != null ? '. Market no-vig: ' + pct(q.market_no_vig_probability) : '')));
+    lines.push('Break-even probability: ' + (ev.break_even_probability ? pct(Number(ev.break_even_probability)) : '—'));
+    lines.push('Estimated net EV: ' + (ev.net_ev_per_dollar != null ? pct(Number(ev.net_ev_per_dollar), 2) + ' per $1' : 'not computed (' + (ev.expected_fees ? ev.expected_fees.status.toLowerCase() + ' fees' : 'no evaluation') + ')'));
+    lines.push('Maximum acceptable price: ' + (ev.maximum_entry_price != null ? (isC ? (Math.round(Number(ev.maximum_entry_price) * 10000) / 100) + '¢' : fmtAm(ev.maximum_entry_price)) : 'none — no price clears the floor'));
+    lines.push('Model reliability: ' + x.confidence.model_reliability.label);
+    lines.push('Research freshness: ' + freshnessText(x.research));
+    lines.push('Why the model disagrees with the market: ' + (d ? d.explanation : 'no disagreement was measured'));
+    lines.push('Primary matchup advantage: ' + (x.advantage || 'none claimed — no measured matchup edge is on file for this market'));
+    lines.push('Strongest counterargument: ' + (x.counter || counterArgument(x)));
+    lines.push('What would invalidate the opportunity: ' + (x.invalidators || invalidators(x)).join('; '));
+    lines.push('Final status: ' + cl.final_status + (cl.label !== cl.final_status ? ' (audit: ' + cl.label + ')' : ''));
+    if (cl.reasons && cl.reasons.length) lines.push('Why: ' + cl.reasons[0]);
+    return lines.join('\n');
+  }
+  function counterArgument(x) {
+    var d = x.disagreement, s = x.sensitivity, q = x.quant || {};
+    var c = d && d.causes ? d.causes.filter(function (k) { return k.assessment === 'LIKELY' || k.assessment === 'POSSIBLE'; }).filter(function (k) { return k.cause !== 'POTENTIAL_MISPRICING'; })[0] : null;
+    if (c) return 'the gap may be ' + c.label + ': ' + c.evidence[0];
+    if (q.fair_kind !== 'MODEL') return 'the sharp market itself may be wrong or stale; this compares one book with it, nothing more';
+    if (s && s.available && !s.robust) return s.note;
+    return 'the model\'s ' + (q.model_tier || 'unvalidated') + ' record is break-even at best; one game is variance';
+  }
+  function invalidators(x) {
+    var out = [], ev = (x.quant && x.quant.evaluation) || {};
+    if (ev.maximum_entry_price != null) out.push('a price worse than ' + (ev.kind === 'CONTRACT' ? (Math.round(Number(ev.maximum_entry_price) * 10000) / 100) + '¢' : fmtAm(ev.maximum_entry_price)));
+    var roles = (x.event && x.event.sport && AD()) ? AD().keyRoles(x.event.sport) : [];
+    if (roles.length) out.push('a change in ' + roles.slice(0, 2).join(' or ') + ' availability after the quote');
+    if (x.sensitivity && x.sensitivity.cushion_pp != null) out.push('the fair probability being ' + Math.abs(x.sensitivity.cushion_pp) + ' points lower');
+    out.push('the sharp market moving against it before kickoff');
+    return out;
+  }
+  function renderSources(g) {
+    if (!g) return '';
+    var list = g.citationList();
+    if (!list.length) return 'Sources: none on file for this answer.';
+    return 'Sources:\n' + list.slice(0, 12).map(function (s) { return '[' + s.n + '] ' + (s.title || g.node(s.id).domain || s.url) + ' — ' + s.url + ' (' + s.reliability.toLowerCase().replace(/_/g, ' ') + (s.published_at ? ', published ' + s.published_at.slice(0, 16).replace('T', ' ') + ' UTC' : '') + ', retrieved ' + s.retrieved_at.slice(0, 16).replace('T', ' ') + ' UTC)'; }).join('\n');
+  }
+  var NARRATION_CONTRACT = 'You rewrite a sports-research result for an intelligent reader. Use ONLY the facts and numbers in the result. Do not add, round differently, or change any number; copy every number exactly as written. Do not add links or sources. Do not call anything a lock, guaranteed, certain or a sure thing. Explain what the matchup looks like, why the model projects what it does, what the market implies, where the disagreement comes from, which assumptions could be wrong and what would change the conclusion. Keep the final status exactly as given.';
+  /**
+   * Prose over a verified result passes only if every number in it is one the result
+   * printed, every number the result printed for the decision is unchanged, no link
+   * or certainty word is added, and the final status is the same.
+   */
+  function critic(prose, deterministic, g) {
+    var f = [];
+    var p = str(prose), d = str(deterministic);
+    var allowed = {};
+    (d.match(/[+-]?\d+(?:\.\d+)?/g) || []).forEach(function (n) { allowed[String(Number(n))] = 1; allowed[String(Math.abs(Number(n)))] = 1; });
+    (p.match(/[+-]?\d+(?:\.\d+)?/g) || []).forEach(function (n) { var v = Number(n); if (Math.abs(v) < 10 && Math.round(v) === v) return; if (v >= 1900 && v <= 2100) return; if (!allowed[String(v)] && !allowed[String(Math.abs(v))]) f.push({ code: 'UNLISTED_NUMBER', detail: n }); });
+    ['Estimated net EV', 'Verified market price', 'Maximum acceptable price', 'Break-even probability', 'Independent fair probability'].forEach(function (k) {
+      var m = new RegExp(k + ': ([^\\n]+)').exec(d); if (!m) return;
+      var first = (m[1].match(/[+-]?\d+(?:\.\d+)?/) || [])[0];
+      if (first && p.indexOf(first) < 0) f.push({ code: 'DROPPED_OR_CHANGED', detail: k + ' ' + first });
+    });
+    var st = /Final status: ([A-Z ]+)/.exec(d), sp = /\b(VERIFIED CANDIDATE|WATCHLIST|PASS)\b/.exec(p);
+    if (st && (!sp || sp[1] !== st[1].trim())) f.push({ code: 'STATUS_CHANGED', detail: (sp ? sp[1] : 'missing') + ' vs ' + st[1].trim() });
+    var Gr = G();
+    if (Gr && Gr.CERTAINTY.test(p)) f.push({ code: 'CERTAINTY', detail: (p.match(Gr.CERTAINTY) || [])[0] });
+    /* a person, or a status claim, the result never mentioned: the communicator may not report news */
+    var dl = d.toLowerCase();
+    var names = p.match(/\b[A-Z][a-z]+(?:[-'][A-Za-z]+)?(?:\s+(?:[A-Z]\.|[A-Z][a-z]+(?:[-'][A-Za-z]+)?)){1,2}\b/g) || [];
+    var STOP = /^(The|This|That|These|Those|It|In|On|At|For|And|But|If|When|What|Why|How|EdgeDesk|Final|Estimated|Maximum|Break|Independent|Model|Research|Primary|Strongest|Verified|Sources?|Coverage|Market|Sport|Event|Venue)\b/;
+    names.forEach(function (n) { var t = n.replace(STOP, '').trim(); if (t.split(/\s+/).length < 2) return; if (dl.indexOf(t.toLowerCase()) < 0) f.push({ code: 'UNKNOWN_NAME', detail: t }); });
+    var STATUS_WORDS = /\b(ruled out|is out|will miss|doubtful|questionable|injur(?:ed|y)|scratched|inactive|suspended|placed on (?:ir|injured reserve)|day-to-day|game-time decision)\b/gi;
+    (p.match(STATUS_WORDS) || []).forEach(function (w) { if (dl.indexOf(w.toLowerCase()) < 0) f.push({ code: 'NEW_STATUS_CLAIM', detail: w }); });
+    var links = p.match(/https?:\/\/[^\s)\]]+/g) || [];
+    var urls = g ? g.sourceUrls() : [];
+    links.forEach(function (u) { if (urls.indexOf(u.replace(/[.,;]+$/, '')) < 0 && d.indexOf(u) < 0) f.push({ code: 'UNKNOWN_LINK', detail: u }); });
+    return { verdict: f.length ? 'FAIL' : 'PASS', findings: f };
+  }
+
+  return { VERSION: VERSION, ADJUSTMENT_RULES: ADJUSTMENT_RULES, CLASSES: CLASSES, CLASS_LABEL: CLASS_LABEL, FINAL_STATUS: FINAL_STATUS, NARRATION_CONTRACT: NARRATION_CONTRACT,
+    phi: phi, phiInv: phiInv, sourceClass: sourceClass, claimClass: claimClass, normalize: normalize, conflicts: conflicts, corroborate: corroborate, modelGaps: modelGaps, research: research,
+    checkAdjustment: checkAdjustment, price: price, sensitivity: sensitivity, strategist: strategist, blindTest: blindTest, classify: classify, investigate: investigate,
+    confidenceProfile: confidenceProfile, renderCandidate: renderCandidate, renderSources: renderSources, counterArgument: counterArgument, invalidators: invalidators, freshnessText: freshnessText, critic: critic };
+});
+/*__EDAGENTS_END__*/
+const EDAGENTS: any = (globalThis as any).EDAGENTS;
+/*__EDPORTFOLIO_START__*/
+/* ===========================================================================
+   EDGEDESK PORTFOLIO — the calculation engine.
+   docs/portfolio-architecture.md
+
+   One question: across every sportsbook and every prediction market a reader
+   uses, are they up or down, and by how much? This file is the arithmetic and
+   the vocabulary, and only that. It never fetches, never stores and never
+   reads a clock unless one is passed in.
+
+   EXACT MONEY, NO FLOATING POINT
+     Every amount is an exact decimal held as a BigInt and a scale. Inputs are
+     strings (PostgREST is asked for numeric::text) or numbers; outputs are
+     canonical strings ("90.91", "-61", "0.61"). The one division rule —
+     divRound(), half away from zero, computed by integer division — is the
+     same algorithm as public.portfolio_div_round() in supabase/portfolio.sql,
+     and tools/portfolio/portfolio_sql.test.js holds derive() here and the
+     database trigger in parity, figure for figure.
+
+   TWO INSTRUMENTS, TWO SETS OF RULES
+     wager      (platform_type SPORTSBOOK) stake × price, settled by status:
+                WON pays stake + profit, LOST pays 0, PUSH and VOID return the
+                stake, CASHED_OUT and SETTLED pay what the book reported.
+                Profit is never payout: $100 at -110 that wins pays $190.91
+                and PROFITS $90.91.
+     contract   (platform_type PREDICTION_MARKET) a quantity of contracts that
+                pay $1 each if the side held resolves true. Rebuilt from its
+                fills with the average-cost method; partial sells realize P&L
+                as they happen; fees are an expense when charged. Never run
+                through an odds formula.
+
+   WHAT COUNTS WHERE (stated once, used everywhere)
+     total P&L      the sum of profit_loss over SETTLED positions. An open
+                    position's partial exits show on that position (realized
+                    so far) and join the total when it closes.
+     ROI            settled P&L / settled capital (stake or contract cost).
+     capital        stake or contract cost of every position placed.
+     open exposure  what is still at risk at cost: an open wager's stake, an
+                    open contract position's remaining cost basis.
+     win rate       wins / (wins + losses); pushes, voids and cash-outs are
+                    not in the denominator.
+     average odds   the stake-weighted mean DECIMAL price, printed as American
+                    (lib/edgedesk_pnl.js uses the same convention).
+
+   Browser: window.EDPortfolio.   Node: require('./edgedesk_portfolio.js').
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory(root);
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  root.EDPortfolio = api;
+}(typeof self !== 'undefined' ? self : (typeof globalThis !== 'undefined' ? globalThis : this), function (root) {
+  'use strict';
+
+  var VERSION = 'portfolio_calc_v1';
+
+  /* ═══ 1. EXACT DECIMALS ═══════════════════════════════════════════════ */
+  var B0 = BigInt(0), B1 = BigInt(1), B2 = BigInt(2), B10 = BigInt(10);
+  var NUM_RE = /^([+-])?(\d*)(?:\.(\d*))?(?:[eE]([+-]?\d+))?$/;
+  function pow10(k) { var r = B1; for (var i = 0; i < k; i++) r *= B10; return r; }
+  function trim(d) {
+    while (d.s > 0 && d.n % B10 === B0) { d.n /= B10; d.s--; }
+    return d;
+  }
+  /* any number-like input → {n, s} (value n / 10^s), or null */
+  function P(x) {
+    if (x == null) return null;
+    if (typeof x === 'object' && typeof x.n === 'bigint') return x;
+    if (typeof x === 'number' && !isFinite(x)) return null;
+    if (typeof x === 'bigint') return { n: x, s: 0 };
+    var s = String(x).trim();
+    if (s === '') return null;
+    var m = NUM_RE.exec(s);
+    if (!m || ((m[2] || '') === '' && (m[3] || '') === '')) return null;
+    var frac = m[3] || '', exp = m[4] ? parseInt(m[4], 10) : 0;
+    if (Math.abs(exp) > 400) return null;
+    var n = BigInt(((m[2] || '') + frac) || '0'), scale = frac.length - exp;
+    if (scale < 0) { n = n * pow10(-scale); scale = 0; }
+    if (m[1] === '-') n = -n;
+    return trim({ n: n, s: scale });
+  }
+  function up(d, s) { return d.s === s ? d.n : d.n * pow10(s - d.s); }
+  function add(a, b) { var s = Math.max(a.s, b.s); return trim({ n: up(a, s) + up(b, s), s: s }); }
+  function sub(a, b) { var s = Math.max(a.s, b.s); return trim({ n: up(a, s) - up(b, s), s: s }); }
+  function mul(a, b) { return trim({ n: a.n * b.n, s: a.s + b.s }); }
+  function neg(a) { return { n: -a.n, s: a.s }; }
+  function cmp(a, b) { var s = Math.max(a.s, b.s), x = up(a, s), y = up(b, s); return x < y ? -1 : x > y ? 1 : 0; }
+  function sgn(a) { return a.n > B0 ? 1 : a.n < B0 ? -1 : 0; }
+  function abs(a) { return a.n < B0 ? neg(a) : a; }
+  /* a / b, rounded half away from zero at `scale` decimals, exactly */
+  function divRound(a, b, scale) {
+    if (b.n === B0) return null;
+    var num = a.n * pow10(b.s + scale), den = b.n * pow10(a.s);
+    var q = num / den, r = num - q * den;
+    var ar = r < B0 ? -r : r, ad = den < B0 ? -den : den;
+    if (B2 * ar >= ad) q += ((num < B0) !== (den < B0)) ? -B1 : B1;
+    return trim({ n: q, s: scale });
+  }
+  function S(d) {
+    if (d == null) return null;
+    var neg_ = d.n < B0, t = (neg_ ? -d.n : d.n).toString();
+    if (d.s > 0) {
+      while (t.length <= d.s) t = '0' + t;
+      t = t.slice(0, t.length - d.s) + '.' + t.slice(t.length - d.s);
+    }
+    return (neg_ && d.n !== B0 ? '-' : '') + t;
+  }
+  function fixed(d, k) {
+    var r = divRound(d, { n: B1, s: 0 }, k), t = S(r), i = t.indexOf('.');
+    if (k === 0) return t;
+    if (i < 0) return t + '.' + new Array(k + 1).join('0');
+    return t + new Array(k - (t.length - i - 1) + 1).join('0');
+  }
+  var ZERO = { n: B0, s: 0 }, ONE = { n: B1, s: 0 }, HUNDRED = { n: BigInt(100), s: 0 };
+  function sum(list) { var t = ZERO; for (var i = 0; i < list.length; i++) if (list[i]) t = add(t, list[i]); return t; }
+
+  /* the public face of the decimal kit: strings in, strings out */
+  var dec = {
+    valid: function (x) { return P(x) != null; },
+    add: function (a, b) { return S(add(P(a), P(b))); },
+    sub: function (a, b) { return S(sub(P(a), P(b))); },
+    mul: function (a, b) { return S(mul(P(a), P(b))); },
+    divRound: function (a, b, k) { return S(divRound(P(a), P(b), k)); },
+    round: function (a, k) { return S(divRound(P(a), ONE, k)); },
+    cmp: function (a, b) { return cmp(P(a), P(b)); },
+    sign: function (a) { return sgn(P(a)); },
+    fixed: function (a, k) { return fixed(P(a), k); },
+    str: function (a) { return S(P(a)); },
+    sum: function (list) { return S(sum((list || []).map(P))); }
+  };
+
+  /* ═══ 2. VOCABULARY ═══════════════════════════════════════════════════ */
+  var PLATFORM_TYPES = ['SPORTSBOOK', 'PREDICTION_MARKET'];
+  var POSITION_TYPES = ['MONEYLINE', 'SPREAD', 'TOTAL', 'PLAYER_PROP', 'PARLAY', 'SAME_GAME_PARLAY', 'FUTURE',
+    'EVENT_CONTRACT', 'PREDICTION_MARKET', 'OTHER'];
+  var POSITION_TYPE_LABEL = { MONEYLINE: 'Moneyline', SPREAD: 'Spread', TOTAL: 'Total', PLAYER_PROP: 'Player prop',
+    PARLAY: 'Parlay', SAME_GAME_PARLAY: 'Same-game parlay', FUTURE: 'Future', EVENT_CONTRACT: 'Event contract',
+    PREDICTION_MARKET: 'Prediction market', OTHER: 'Other' };
+  var WAGER_STATUSES = ['OPEN', 'WON', 'LOST', 'PUSH', 'VOID', 'CASHED_OUT', 'SETTLED'];
+  var CONTRACT_STATUSES = ['OPEN', 'SETTLED', 'VOID'];
+  var RESULTS = ['WIN', 'LOSS', 'PUSH', 'VOID', 'CASHOUT'];
+  var SOURCES = ['MANUAL', 'CSV', 'SYNC', 'EDGEDESK'];
+  var CONNECTION_TYPES = ['MANUAL', 'CSV', 'API', 'OAUTH', 'AGGREGATOR'];
+  var ACCOUNT_STATUSES = ['CONNECTED', 'IMPORT_ONLY', 'MANUAL', 'SYNCING', 'ACTION_REQUIRED', 'DISCONNECTED', 'ERROR'];
+  var TRANSACTION_TYPES = ['BET', 'BUY', 'SELL', 'FILL', 'CASHOUT', 'SETTLEMENT', 'VOID', 'REFUND', 'DEPOSIT', 'WITHDRAWAL', 'FEE', 'ADJUSTMENT'];
+  var STAKE_TYPES = ['CASH', 'BONUS'];
+  var EDGE_SOURCES = ['EDGEDESK', 'SELF', 'OTHER'];
+  var EDGE_REF_TYPES = ['stake_recommendation', 'research_journal', 'card_opportunity', 'user_bet'];
+  /* an account's status, in words. "Connected" is only ever printed for a
+     real API / OAuth / aggregator connection: the database refuses it on a
+     manual or CSV account, and this map never invents it either. */
+  var ACCOUNT_STATUS_LABEL = { CONNECTED: 'Connected', IMPORT_ONLY: 'CSV import', MANUAL: 'Manual tracking',
+    SYNCING: 'Syncing', ACTION_REQUIRED: 'Action required', DISCONNECTED: 'Disconnected', ERROR: 'Error' };
+
+  /* The platforms a reader can pick. Sportsbook keys are EdgeDesk's existing
+     book keys (lib/edgedesk_personal.js BOOKS, the odds capture's BOOK_TIER),
+     so a position can later be joined to the prices EdgeDesk captured.
+     autoSync is the truth today: nothing syncs automatically yet.
+     docs/platform-support.md is the long form of this table. */
+  var PLATFORMS = [
+    { key: 'draftkings', label: 'DraftKings', type: 'SPORTSBOOK' },
+    { key: 'fanduel', label: 'FanDuel', type: 'SPORTSBOOK' },
+    { key: 'betmgm', label: 'BetMGM', type: 'SPORTSBOOK' },
+    { key: 'williamhill_us', label: 'Caesars', type: 'SPORTSBOOK' },
+    { key: 'bet365', label: 'bet365', type: 'SPORTSBOOK' },
+    { key: 'betrivers', label: 'BetRivers', type: 'SPORTSBOOK' },
+    { key: 'espnbet', label: 'theScore Bet (ESPN BET)', type: 'SPORTSBOOK' },
+    { key: 'fanatics', label: 'Fanatics', type: 'SPORTSBOOK' },
+    { key: 'hardrockbet', label: 'Hard Rock Bet', type: 'SPORTSBOOK' },
+    { key: 'circasports', label: 'Circa Sports', type: 'SPORTSBOOK' },
+    { key: 'superbook', label: 'SuperBook', type: 'SPORTSBOOK' },
+    { key: 'pinnacle', label: 'Pinnacle', type: 'SPORTSBOOK' },
+    { key: 'novig', label: 'Novig', type: 'SPORTSBOOK' },
+    { key: 'prophetx', label: 'ProphetX', type: 'SPORTSBOOK' },
+    { key: 'kalshi', label: 'Kalshi', type: 'PREDICTION_MARKET' },
+    { key: 'polymarket', label: 'Polymarket', type: 'PREDICTION_MARKET' },
+    { key: 'draftkings_predictions', label: 'DraftKings Predictions', type: 'PREDICTION_MARKET' },
+    { key: 'fanduel_predicts', label: 'FanDuel Predicts', type: 'PREDICTION_MARKET' }
+  ].map(function (p) { p.methods = ['MANUAL', 'CSV']; p.autoSync = false; return p; });
+  var PLATFORM_BY_KEY = {};
+  PLATFORMS.forEach(function (p) { PLATFORM_BY_KEY[p.key] = p; });
+  var PLATFORM_KEY_RE = /^[a-z0-9][a-z0-9_]{1,47}$/;
+  /* "Other" platforms: a stable key from the reader's own label */
+  function customPlatformKey(label) {
+    var slug = String(label == null ? '' : label).normalize('NFKD').replace(/[^\x20-\x7e]/g, '').toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40);
+    return slug ? 'custom_' + slug : null;
+  }
+  function platformLabel(key, fallback) {
+    var p = PLATFORM_BY_KEY[key];
+    return p ? p.label : (fallback || String(key || '').replace(/^custom_/, '').replace(/_/g, ' '));
+  }
+  /* free text from a CSV ("DK", "Caesars Sportsbook", "kalshi.com") → a key */
+  var PLATFORM_ALIASES = [
+    [/^(dk|draft ?kings?)( sportsbook)?$/, 'draftkings'], [/^(fd|fan ?duel)( sportsbook)?$/, 'fanduel'],
+    [/^(mgm|bet ?mgm)$/, 'betmgm'], [/^(czr|caesars|caesars sportsbook|william ?hill)$/, 'williamhill_us'],
+    [/^bet ?365$/, 'bet365'], [/^bet ?rivers$/, 'betrivers'], [/^(espn ?bet|the ?score ?bet|thescore)$/, 'espnbet'],
+    [/^fanatics( sportsbook)?$/, 'fanatics'], [/^hard ?rock( bet)?$/, 'hardrockbet'], [/^circa( sports)?$/, 'circasports'],
+    [/^(super ?book|westgate)$/, 'superbook'], [/^pinnacle$/, 'pinnacle'], [/^novig$/, 'novig'], [/^prophet ?x$/, 'prophetx'],
+    [/^kalshi(\.com)?$/, 'kalshi'], [/^poly ?market(\.com)?$/, 'polymarket'],
+    [/^(dk|draft ?kings?) ?predictions?$/, 'draftkings_predictions'], [/^(fd|fan ?duel) ?predicts?$/, 'fanduel_predicts']
+  ];
+  function resolvePlatform(text) {
+    var t = String(text == null ? '' : text).trim().toLowerCase().replace(/\s+/g, ' ');
+    if (!t) return null;
+    if (PLATFORM_BY_KEY[t]) return PLATFORM_BY_KEY[t].key;
+    for (var i = 0; i < PLATFORM_ALIASES.length; i++) if (PLATFORM_ALIASES[i][0].test(t)) return PLATFORM_ALIASES[i][1];
+    for (var j = 0; j < PLATFORMS.length; j++) if (PLATFORMS[j].label.toLowerCase() === t) return PLATFORMS[j].key;
+    return null;
+  }
+
+  /* ═══ 3. A WAGER ══════════════════════════════════════════════════════ */
+  function intAmerican(x) {
+    var d = P(x);
+    if (!d || d.s !== 0) return null;
+    var v = Number(d.n);
+    return (v <= -100 || v >= 100) && Math.abs(v) <= 1000000 ? v : null;
+  }
+  function americanToDecimalD(a) {
+    if (a == null) return null;
+    return a >= 100 ? add(ONE, divRound(P(a), HUNDRED, 6)) : add(ONE, divRound(HUNDRED, P(Math.abs(a)), 6));
+  }
+  function americanToDecimal(a) { return S(americanToDecimalD(intAmerican(a))); }
+  /* for display only: the American price nearest a decimal one */
+  function decimalToAmerican(x) {
+    var d = P(x);
+    if (!d || cmp(d, ONE) <= 0) return null;
+    var e = sub(d, ONE);
+    var v = cmp(d, P(2)) >= 0 ? divRound(mul(e, HUNDRED), ONE, 0) : neg(divRound(HUNDRED, e, 0));
+    return Number(S(v));
+  }
+  function wagerProfitD(stake, american, decimal) {
+    if (!stake) return null;
+    if (american != null && american >= 100) return divRound(mul(stake, P(american)), HUNDRED, 2);
+    if (american != null && american <= -100) return divRound(mul(stake, HUNDRED), P(Math.abs(american)), 2);
+    if (decimal && cmp(decimal, ONE) > 0) return divRound(mul(stake, sub(decimal, ONE)), ONE, 2);
+    return null;
+  }
+  /* profit on a winning wager, to the cent */
+  function wagerProfit(stake, american, decimal) {
+    return S(wagerProfitD(P(stake), intAmerican(american), P(decimal)));
+  }
+  /* A parlay from its legs: the price is the product of the legs' decimal
+     prices, a pushed or voided leg drops out (the book re-prices without it),
+     one lost leg loses the ticket. Decimal rounded to 6 places, as the
+     database stores a decimal price. */
+  function parlay(legs) {
+    var price = ONE, live = 0, settled = 0, lost = false, open = false;
+    (legs || []).forEach(function (l) {
+      var r = String(l.result || 'OPEN').toUpperCase();
+      var d = l.odds_american != null && l.odds_american !== '' ? americanToDecimalD(intAmerican(l.odds_american)) : P(l.odds_decimal);
+      if (r === 'LOST') { lost = true; settled++; return; }
+      if (r === 'PUSH' || r === 'VOID') { settled++; return; }
+      if (!d || cmp(d, ONE) <= 0) { price = null; return; }
+      if (price) price = mul(price, d);
+      live++;
+      if (r === 'WON') settled++; else open = true;
+    });
+    if (!legs || !legs.length || price === null) return null;
+    var status = lost ? 'LOST' : open ? 'OPEN' : live === 0 ? 'PUSH' : 'WON';
+    var decimal = live ? divRound(price, ONE, 6) : null;
+    return { status: status, odds_decimal: S(decimal), odds_american: decimal ? decimalToAmerican(decimal) : null, legs_live: live, legs_settled: settled };
+  }
+
+  /* ═══ 4. derive() — the database trigger, in JavaScript ═══════════════ */
+  var DERIVED = ['odds_decimal', 'potential_profit', 'potential_payout', 'cost_basis', 'open_cost_basis', 'gross_payout',
+    'profit_loss', 'realized_profit_loss', 'unrealized_profit_loss', 'current_value', 'contracts', 'contracts_bought',
+    'contracts_sold', 'average_entry_price', 'average_exit_price', 'sell_proceeds', 'fees', 'status', 'result'];
+  function isBuy(t) { var ty = String(t.transaction_type || '').toUpperCase(); return ty === 'BUY' || (ty === 'FILL' && String(t.side || '').toUpperCase() === 'BUY'); }
+  function isSell(t) { var ty = String(t.transaction_type || '').toUpperCase(); return ty === 'SELL' || (ty === 'FILL' && String(t.side || '').toUpperCase() === 'SELL'); }
+  function signResult(pl) { var g = sgn(pl); return g > 0 ? 'WIN' : g < 0 ? 'LOSS' : 'PUSH'; }
+  function upperTrim(x) { return x == null ? null : (String(x).trim().toUpperCase() || null); }
+
+  /* p: the position's inputs; fills: its transactions (contract positions).
+     Returns every derived column as the database would store it. */
+  function derive(p, fills) {
+    var o = {}, type = upperTrim(p.platform_type), status = upperTrim(p.status) || 'OPEN', fees = P(p.fees) || ZERO;
+    DERIVED.forEach(function (k) { o[k] = null; });
+    if (type === 'SPORTSBOOK') {
+      var stake = P(p.stake), am = intAmerican(p.odds_american);
+      var dc = am != null ? americanToDecimalD(am) : P(p.odds_decimal), rp = P(p.reported_payout);
+      var pp = wagerProfitD(stake, am, dc);
+      /* a bonus bet risks no cash and pays only its winnings */
+      var bonus = upperTrim(p.stake_type) === 'BONUS', basis = bonus ? (stake ? ZERO : null) : stake;
+      o.odds_decimal = S(dc); o.potential_profit = S(pp);
+      o.potential_payout = stake && pp ? S(bonus ? pp : add(stake, pp)) : null;
+      o.cost_basis = S(basis); o.fees = S(fees); o.status = status;
+      if (status === 'OPEN') { o.open_cost_basis = S(basis); return o; }
+      var gross = status === 'WON' ? (rp || (stake && pp ? (bonus ? pp : add(stake, pp)) : null))
+        : status === 'LOST' ? (rp || ZERO)
+        : (status === 'PUSH' || status === 'VOID') ? (rp || basis) : rp;
+      if (!gross || !stake) return o;
+      var pl = sub(sub(gross, basis), fees);
+      o.gross_payout = S(gross); o.profit_loss = S(pl); o.realized_profit_loss = S(pl); o.open_cost_basis = '0';
+      o.result = { WON: 'WIN', LOST: 'LOSS', PUSH: 'PUSH', VOID: 'VOID', CASHED_OUT: 'CASHOUT' }[status] || signResult(pl);
+      return o;
+    }
+    /* a contract position, rebuilt from its fills */
+    var b = ZERO, bc = ZERO, s = ZERO, sp = ZERO, f = ZERO;
+    (fills || []).forEach(function (t) {
+      var q = P(t.quantity), pr = P(t.price);
+      if (isBuy(t) && q && pr) { b = add(b, q); bc = add(bc, mul(q, pr)); }
+      if (isSell(t) && q && pr) { s = add(s, q); sp = add(sp, mul(q, pr)); }
+      f = add(f, P(t.fee) || ZERO);
+    });
+    var held = sub(b, s), hasBuys = sgn(b) > 0;
+    var openCost = hasBuys ? divRound(mul(held, bc), b, 6) : ZERO;
+    var resolution = p.resolution == null || String(p.resolution).trim() === '' ? null : String(p.resolution).trim();
+    o.contracts_bought = S(b); o.contracts_sold = S(s); o.contracts = S(held);
+    o.sell_proceeds = S(sp); o.fees = S(f); o.cost_basis = S(bc);
+    o.average_entry_price = hasBuys ? S(divRound(bc, b, 6)) : null;
+    o.average_exit_price = sgn(s) > 0 ? S(divRound(sp, s, 6)) : null;
+    o.status = resolution && resolution.toUpperCase() === 'VOID' ? 'VOID'
+      : resolution ? 'SETTLED' : (hasBuys && sgn(held) <= 0) ? 'SETTLED' : 'OPEN';
+    if (o.status === 'OPEN') {
+      var cp = P(p.current_price);
+      o.open_cost_basis = S(openCost);
+      o.realized_profit_loss = S(sub(sub(sp, sub(bc, openCost)), f));
+      if (cp) { var cv = mul(held, cp); o.current_value = S(cv); o.unrealized_profit_loss = S(sub(cv, openCost)); }
+      o.potential_payout = S(held); o.potential_profit = S(sub(held, openCost));
+      return o;
+    }
+    /* the price each held contract settles at: the stated one, else $1 when
+       the resolution names the side held and $0 when it names another; an
+       exit with no resolution has nothing left to settle */
+    var settle = P(p.settlement_price);
+    if (!settle && o.status !== 'VOID' && resolution) {
+      settle = resolution.toUpperCase() === String(p.side == null ? '' : p.side).trim().toUpperCase() ? ONE : ZERO;
+    }
+    var settleAmt = P(p.reported_payout) || (sgn(held) <= 0 ? ZERO : settle ? mul(held, settle) : openCost);
+    var grossC = add(sp, settleAmt), plC = sub(sub(grossC, bc), f);
+    o.gross_payout = S(grossC); o.profit_loss = S(plC); o.realized_profit_loss = S(plC); o.open_cost_basis = '0';
+    o.result = o.status === 'VOID' ? 'VOID' : signResult(plC);
+    return o;
+  }
+
+  /* ═══ 5. VALIDATION — one rule set for forms, imports and connectors ══ */
+  function issue(level, code, message) { return { level: level, code: code, message: message }; }
+  function validateWager(n) {
+    var out = [];
+    if (!n.platform || !PLATFORM_KEY_RE.test(n.platform)) out.push(issue('error', 'BAD_PLATFORM', 'Choose the sportsbook.'));
+    if (!clean(n.event_name)) out.push(issue('error', 'MISSING_EVENT_NAME', 'Name the event.'));
+    if (!clean(n.market_name)) out.push(issue('error', 'MISSING_MARKET_NAME', 'Name the market.'));
+    if (!clean(n.selection)) out.push(issue('error', 'MISSING_SELECTION', 'Name the selection.'));
+    var st = P(n.stake);
+    if (!st || sgn(st) <= 0 || st.s > 2) out.push(issue('error', 'BAD_STAKE', 'The stake must be a positive amount in dollars and cents.'));
+    var am = n.odds_american != null && n.odds_american !== '' ? intAmerican(n.odds_american) : null;
+    if (n.odds_american != null && n.odds_american !== '' && am == null) out.push(issue('error', 'BAD_ODDS', 'American odds are -100 or lower, or +100 or higher.'));
+    var dc = P(n.odds_decimal);
+    if (am == null && (!dc || cmp(dc, ONE) <= 0)) out.push(issue('error', 'BAD_ODDS', 'Enter the odds.'));
+    if (!validTime(n.placed_at)) out.push(issue('error', 'BAD_PLACED_AT', 'Enter when the bet was placed.'));
+    var status = upperTrim(n.status) || 'OPEN';
+    if (WAGER_STATUSES.indexOf(status) < 0) out.push(issue('error', 'BAD_STATUS', 'Unknown status.'));
+    if ((status === 'CASHED_OUT' || status === 'SETTLED') && !P(n.reported_payout)) out.push(issue('error', 'PAYOUT_NEEDED', 'Enter the amount the book paid.'));
+    if (n.reported_payout != null && n.reported_payout !== '' && (!P(n.reported_payout) || sgn(P(n.reported_payout)) < 0)) out.push(issue('error', 'BAD_PAYOUT', 'The payout must be zero or more.'));
+    if (n.fees != null && n.fees !== '' && (!P(n.fees) || sgn(P(n.fees)) < 0)) out.push(issue('error', 'BAD_FEES', 'Fees must be zero or more.'));
+    if (validTime(n.placed_at) && Date.parse(n.placed_at) > Date.now() + 86400000) out.push(issue('error', 'FUTURE_PLACED_AT', 'A bet cannot be placed in the future.'));
+    if (n.settled_at && validTime(n.settled_at) && validTime(n.placed_at) && Date.parse(n.settled_at) < Date.parse(n.placed_at)) out.push(issue('error', 'SETTLED_BEFORE_PLACED', 'It cannot settle before it was placed.'));
+    return out;
+  }
+  function validateFill(n) {
+    var out = [];
+    if (!n.platform || !PLATFORM_KEY_RE.test(n.platform)) out.push(issue('error', 'BAD_PLATFORM', 'Choose the platform.'));
+    if (!clean(n.event_name)) out.push(issue('error', 'MISSING_EVENT_NAME', 'Name the event or question.'));
+    if (!clean(n.market_name)) out.push(issue('error', 'MISSING_MARKET_NAME', 'Name the market.'));
+    if (!clean(n.side)) out.push(issue('error', 'MISSING_SIDE', 'Choose the side held (YES / NO, or the outcome).'));
+    var a = upperTrim(n.action);
+    if (a !== 'BUY' && a !== 'SELL') out.push(issue('error', 'BAD_ACTION', 'A trade is a BUY or a SELL.'));
+    var q = P(n.quantity);
+    if (!q || sgn(q) <= 0 || q.s > 6) out.push(issue('error', 'BAD_QUANTITY', 'Contracts must be a positive number.'));
+    var pr = P(n.price);
+    if (!pr || sgn(pr) < 0 || cmp(pr, ONE) > 0 || pr.s > 6) out.push(issue('error', 'BAD_PRICE', 'A contract price is between $0.00 and $1.00.'));
+    if (n.fee != null && n.fee !== '' && (!P(n.fee) || sgn(P(n.fee)) < 0)) out.push(issue('error', 'BAD_FEES', 'Fees must be zero or more.'));
+    if (!validTime(n.executed_at)) out.push(issue('error', 'BAD_EXECUTED_AT', 'Enter when the trade happened.'));
+    else if (Date.parse(n.executed_at) > Date.now() + 86400000) out.push(issue('error', 'FUTURE_EXECUTED_AT', 'A trade cannot happen in the future.'));
+    ['current_price', 'settlement_price'].forEach(function (k) {
+      if (n[k] != null && n[k] !== '') { var v = P(n[k]); if (!v || sgn(v) < 0 || cmp(v, ONE) > 0) out.push(issue('error', 'BAD_' + k.toUpperCase(), 'Prices are between $0.00 and $1.00.')); }
+    });
+    return out;
+  }
+  function clean(x) { return x != null && String(x).trim() !== ''; }
+  function validTime(x) { return x != null && x !== '' && isFinite(Date.parse(x)); }
+
+  /* ═══ 6. AGGREGATION ══════════════════════════════════════════════════ */
+  function isSettled(p) { return upperTrim(p.status) !== 'OPEN'; }
+  function ms(x) { var t = Date.parse(x); return isFinite(t) ? t : null; }
+  function inRange(t, from, to) { return t != null && (from == null || t >= from) && (to == null || t < to); }
+  function emptyStats() {
+    return { pnl: ZERO, settledCapital: ZERO, capital: ZERO, openExposure: ZERO, unrealized: ZERO, openRealized: ZERO,
+      fees: ZERO, settled: 0, open: 0, openMarked: 0, positions: 0,
+      record: { won: 0, lost: 0, push: 0, void: 0, cashout: 0 } };
+  }
+  function addTo(st, p, from, to) {
+    var settled = isSettled(p), tSettled = ms(p.settled_at), tPlaced = ms(p.placed_at);
+    if (inRange(tPlaced, from, to)) { st.positions++; st.capital = add(st.capital, P(p.cost_basis) || ZERO); }
+    if (settled) {
+      if (!inRange(tSettled, from, to)) return;
+      var pl = P(p.profit_loss);
+      st.settled++;
+      if (pl) st.pnl = add(st.pnl, pl);
+      st.settledCapital = add(st.settledCapital, P(p.cost_basis) || ZERO);
+      st.fees = add(st.fees, P(p.fees) || ZERO);
+      var r = upperTrim(p.result);
+      if (r === 'WIN') st.record.won++; else if (r === 'LOSS') st.record.lost++; else if (r === 'PUSH') st.record.push++;
+      else if (r === 'VOID') st.record.void++; else if (r === 'CASHOUT') st.record.cashout++;
+    } else {
+      st.open++;
+      st.openExposure = add(st.openExposure, P(p.open_cost_basis) || ZERO);
+      st.openRealized = add(st.openRealized, P(p.realized_profit_loss) || ZERO);
+      var u = P(p.unrealized_profit_loss);
+      if (u) { st.unrealized = add(st.unrealized, u); st.openMarked++; }
+    }
+  }
+  function finish(st) {
+    var w = st.record.won, l = st.record.lost;
+    return {
+      pnl: S(st.pnl), settledCapital: S(st.settledCapital), capital: S(st.capital),
+      roi: sgn(st.settledCapital) > 0 ? S(divRound(st.pnl, st.settledCapital, 6)) : null,
+      openExposure: S(st.openExposure), unrealized: st.openMarked ? S(st.unrealized) : null, openRealized: S(st.openRealized),
+      fees: S(st.fees), settled: st.settled, open: st.open, openMarked: st.openMarked, positions: st.positions,
+      record: st.record, winRate: (w + l) > 0 ? S(divRound(P(w), P(w + l), 6)) : null
+    };
+  }
+  function group(list, keyFn, labelFn, from, to) {
+    var by = {}, order = [];
+    list.forEach(function (p) {
+      var k = keyFn(p);
+      if (!by[k]) { by[k] = emptyStats(); by[k].key = k; by[k].label = labelFn(p, k); order.push(k); }
+      addTo(by[k], p, from, to);
+    });
+    return order.map(function (k) { var f = finish(by[k]); f.key = k; f.label = by[k].label; return f; })
+      .filter(function (g) { return g.settled > 0 || g.open > 0 || g.positions > 0; })
+      .sort(function (a, b) { return cmp(P(b.pnl), P(a.pnl)) || a.label.localeCompare(b.label); });
+  }
+  function extremes(groups) {
+    var ranked = groups.filter(function (g) { return g.settled > 0; });
+    if (ranked.length < 2) return { best: null, worst: null };
+    return { best: ranked[0], worst: ranked[ranked.length - 1] };
+  }
+  /* The whole book. opts.from / opts.to (ms) bound settled figures by
+     settled_at and capital by placed_at; open figures are always now. */
+  function summarize(positions, opts) {
+    opts = opts || {};
+    var list = positions || [], from = opts.from == null ? null : opts.from, to = opts.to == null ? null : opts.to;
+    var all = emptyStats();
+    list.forEach(function (p) { addTo(all, p, from, to); });
+    var out = finish(all);
+    var wagers = list.filter(function (p) { return upperTrim(p.platform_type) === 'SPORTSBOOK'; });
+    var contracts = list.filter(function (p) { return upperTrim(p.platform_type) === 'PREDICTION_MARKET'; });
+    var placed = function (p) { return inRange(ms(p.placed_at), from, to); };
+    /* average stake and the stake-weighted mean decimal price, as American */
+    var wp = wagers.filter(placed), stakes = ZERO, weighted = ZERO;
+    wp.forEach(function (p) {
+      var s = P(p.stake), d = P(p.odds_decimal);
+      if (s) { stakes = add(stakes, s); if (d) weighted = add(weighted, mul(s, d)); }
+    });
+    out.averageStake = wp.length ? S(divRound(stakes, P(wp.length), 2)) : null;
+    var meanDec = sgn(stakes) > 0 && sgn(weighted) > 0 ? divRound(weighted, stakes, 6) : null;
+    out.averageOddsDecimal = S(meanDec);
+    out.averageOddsAmerican = meanDec ? decimalToAmerican(meanDec) : null;
+    var cp = contracts.filter(placed), qty = ZERO, cost = ZERO;
+    cp.forEach(function (p) { qty = add(qty, P(p.contracts_bought) || ZERO); cost = add(cost, P(p.cost_basis) || ZERO); });
+    out.averageEntryPrice = sgn(qty) > 0 ? S(divRound(cost, qty, 6)) : null;
+    out.byType = {
+      SPORTSBOOK: (function () { var s = emptyStats(); wagers.forEach(function (p) { addTo(s, p, from, to); }); return finish(s); }()),
+      PREDICTION_MARKET: (function () { var s = emptyStats(); contracts.forEach(function (p) { addTo(s, p, from, to); }); return finish(s); }())
+    };
+    out.byPlatform = group(list, function (p) { return p.platform; }, function (p, k) { return p.platform_label || platformLabel(k); }, from, to);
+    out.bySport = group(list, function (p) { return p.sport ? String(p.sport).toUpperCase() : 'UNSPECIFIED'; },
+      function (p, k) { return k === 'UNSPECIFIED' ? 'No sport recorded' : k; }, from, to);
+    out.byPositionType = group(list, function (p) { return upperTrim(p.position_type) || 'OTHER'; },
+      function (p, k) { return POSITION_TYPE_LABEL[k] || k; }, from, to);
+    out.bySource = group(list, function (p) { return upperTrim(p.edge_source) || 'UNSPECIFIED'; },
+      function (p, k) { return { EDGEDESK: 'EdgeDesk research', SELF: 'My own read', OTHER: 'Other source', UNSPECIFIED: 'Not recorded' }[k] || k; }, from, to);
+    out.platform = extremes(out.byPlatform);
+    out.sport = extremes(out.bySport.filter(function (g) { return g.key !== 'UNSPECIFIED'; }));
+    out.marketType = extremes(out.byPositionType);
+    out.series = series(list, { from: from, to: to, tz: opts.tz });
+    return out;
+  }
+  /* cumulative settled P&L, one point per local settlement day */
+  function series(positions, opts) {
+    opts = opts || {};
+    var by = {}, keys = [];
+    (positions || []).forEach(function (p) {
+      if (!isSettled(p)) return;
+      var t = ms(p.settled_at), pl = P(p.profit_loss);
+      if (t == null || !pl || !inRange(t, opts.from, opts.to)) return;
+      var day = localDate(t, opts.tz);
+      if (!by[day]) { by[day] = ZERO; keys.push(day); }
+      by[day] = add(by[day], pl);
+    });
+    keys.sort();
+    var run = ZERO;
+    return keys.map(function (k) { run = add(run, by[k]); return { date: k, pnl: S(by[k]), cumulative: S(run) }; });
+  }
+
+  /* ═══ 7. TIME ═════════════════════════════════════════════════════════ */
+  function tzOffset(t, tz) {
+    var parts = {}, f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit',
+      day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    f.formatToParts(new Date(t)).forEach(function (x) { parts[x.type] = x.value; });
+    var asUtc = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour % 24, +parts.minute, +parts.second);
+    return asUtc - Math.floor(t / 1000) * 1000;
+  }
+  function validTz(tz) { try { new Intl.DateTimeFormat('en-US', { timeZone: tz }); return true; } catch (_) { return false; } }
+  /* a wall-clock time in an IANA zone → epoch ms (DST-aware; a time that
+     does not exist in the zone resolves forward, as most libraries do) */
+  function zonedToUtc(y, mo, d, h, mi, s, tz) {
+    var guess = Date.UTC(y, mo - 1, d, h || 0, mi || 0, s || 0);
+    if (!tz || tz === 'UTC') return guess;
+    var off = tzOffset(guess, tz), t = guess - off, off2 = tzOffset(t, tz);
+    return off2 === off ? t : guess - off2;
+  }
+  function localDate(t, tz) {
+    try {
+      return new Intl.DateTimeFormat('en-CA', { timeZone: tz || 'UTC', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(t));
+    } catch (_) { return new Date(t).toISOString().slice(0, 10); }
+  }
+  /* '7D' | '30D' | 'YTD' | 'ALL' → {from, to} in epoch ms */
+  function periodRange(key, now, tz) {
+    now = now == null ? Date.now() : now;
+    if (key === '7D') return { from: now - 7 * 86400000, to: null };
+    if (key === '30D') return { from: now - 30 * 86400000, to: null };
+    if (key === 'YTD') { var y = +localDate(now, tz).slice(0, 4); return { from: zonedToUtc(y, 1, 1, 0, 0, 0, tz), to: null }; }
+    return { from: null, to: null };
+  }
+
+  /* ═══ 8. FINGERPRINTS — the material the database hashes ═════════════ */
+  /* the same steps as public.portfolio_norm_text(), in the same order */
+  function normText(x) {
+    return String(x == null ? '' : x).normalize('NFKD')
+      .replace(/[A-Z]/g, function (c) { return c.toLowerCase(); }).replace(/[\t\n\v\f\r]/g, ' ')
+      .replace(/['`]/g, '').replace(/[^ -~]/g, '').replace(/[^a-z0-9+.@ -]/g, ' ')
+      .replace(/\s+(at|vs|v)\.?\s+/g, ' @ ').replace(/\s*@\s*/g, ' @ ').replace(/\s+/g, ' ').trim();
+  }
+  function numText(x) { var d = P(x); return d ? S(d) : ''; }
+  function minuteUtc(x) { var t = ms(x); return t == null ? '' : new Date(t).toISOString().slice(0, 16); }
+  function plat(x) { return String(x == null ? '' : x).trim().toLowerCase(); }
+  /* a selection and its line as one token (public.portfolio_selection_token) */
+  function selectionToken(selection, line) {
+    var sel = normText(selection).replace(/\+/g, ''), l = numText(line);
+    return l !== '' && sel.slice(-l.length) !== l ? (sel + ' ' + l).trim() : sel;
+  }
+  function wagerMaterial(n) {
+    var am = n.odds_american != null && n.odds_american !== '' ? intAmerican(n.odds_american) : null;
+    var price = am != null ? 'a' + am : (P(n.odds_decimal) ? 'd' + numText(n.odds_decimal) : '');
+    return ['pf1', 'wager', plat(n.platform), normText(n.event_name), normText(n.market_name), selectionToken(n.selection, n.line),
+      price, numText(n.stake), minuteUtc(n.placed_at)].join('|');
+  }
+  function contractMaterial(n) {
+    return ['pf1', 'contract', plat(n.platform), normText(n.event_name), normText(n.market_name), normText(n.side), minuteUtc(n.placed_at)].join('|');
+  }
+  function fillMaterial(n) {
+    return ['pf1', 'fill', plat(n.platform), normText(n.event_name), normText(n.market_name), normText(n.side),
+      String(n.action == null ? '' : n.action).trim().toUpperCase(), numText(n.quantity), numText(n.price), minuteUtc(n.executed_at)].join('|');
+  }
+  function contractKey(n) { return [plat(n.platform), normText(n.event_name), normText(n.market_name), normText(n.side)].join('|'); }
+
+  /* ═══ 9. WORDS AND NUMBERS ON THE PAGE ════════════════════════════════ */
+  var MINUS = '−';
+  function group3(intStr) { return intStr.replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+  /* $1,284.22 · +$1,284.22 with {sign:true} · −$482.13 */
+  function money(x, opts) {
+    var d = P(x);
+    if (!d) return '—';
+    var t = fixed(abs(d), (opts && opts.dp != null) ? opts.dp : 2), i = t.indexOf('.');
+    var body = '$' + group3(i < 0 ? t : t.slice(0, i)) + (i < 0 ? '' : t.slice(i));
+    var g = sgn(divRound(d, ONE, (opts && opts.dp != null) ? opts.dp : 2));
+    return (g < 0 ? MINUS : (opts && opts.sign && g > 0 ? '+' : '')) + body;
+  }
+  /* a ratio ("0.074") as a percentage: +7.4% */
+  function pct(x, dp, opts) {
+    var d = P(x), k = dp == null ? 1 : dp;
+    if (!d) return '\u2014';
+    var v = divRound(mul(d, HUNDRED), ONE, k), g = sgn(v);
+    return (g < 0 ? MINUS : (!(opts && opts.plain) && g > 0 ? '+' : '')) + fixed(abs(v), k) + '%';
+  }
+  function americanText(a) { var v = intAmerican(a); return v == null ? '—' : (v > 0 ? '+' + v : MINUS + Math.abs(v)); }
+  /* a contract price: $0.61 (sub-cent prices keep their digits: $0.555) */
+  function priceText(x) {
+    var d = P(x);
+    if (!d) return '—';
+    var t = d.s <= 2 ? fixed(d, 2) : S(divRound(d, ONE, 4));
+    return '$' + t;
+  }
+  function qtyText(x) {
+    var d = P(x);
+    if (!d) return '\u2014';
+    var t = S(d), i = t.indexOf('.');
+    return group3(i < 0 ? t : t.slice(0, i)) + (i < 0 ? '' : t.slice(i));
+  }
+  function tone(x) { var d = P(x); return !d ? 'flat' : sgn(d) > 0 ? 'up' : sgn(d) < 0 ? 'down' : 'flat'; }
+  function recordText(r) { return r.won + '-' + r.lost + '-' + r.push; }
+
+  return {
+    VERSION: VERSION, dec: dec,
+    PLATFORM_TYPES: PLATFORM_TYPES, POSITION_TYPES: POSITION_TYPES, POSITION_TYPE_LABEL: POSITION_TYPE_LABEL,
+    WAGER_STATUSES: WAGER_STATUSES, CONTRACT_STATUSES: CONTRACT_STATUSES, RESULTS: RESULTS, SOURCES: SOURCES,
+    CONNECTION_TYPES: CONNECTION_TYPES, ACCOUNT_STATUSES: ACCOUNT_STATUSES, ACCOUNT_STATUS_LABEL: ACCOUNT_STATUS_LABEL,
+    TRANSACTION_TYPES: TRANSACTION_TYPES, STAKE_TYPES: STAKE_TYPES, EDGE_SOURCES: EDGE_SOURCES, EDGE_REF_TYPES: EDGE_REF_TYPES,
+    PLATFORMS: PLATFORMS, PLATFORM_KEY_RE: PLATFORM_KEY_RE, customPlatformKey: customPlatformKey,
+    platformLabel: platformLabel, resolvePlatform: resolvePlatform, platform: function (k) { return PLATFORM_BY_KEY[k] || null; },
+    intAmerican: intAmerican, americanToDecimal: americanToDecimal, decimalToAmerican: decimalToAmerican,
+    wagerProfit: wagerProfit, parlay: parlay, derive: derive, DERIVED: DERIVED,
+    validateWager: validateWager, validateFill: validateFill,
+    summarize: summarize, series: series, periodRange: periodRange, localDate: localDate,
+    zonedToUtc: zonedToUtc, validTz: validTz,
+    normText: normText, numText: numText, minuteUtc: minuteUtc,
+    selectionToken: selectionToken, wagerMaterial: wagerMaterial, contractMaterial: contractMaterial, fillMaterial: fillMaterial, contractKey: contractKey,
+    money: money, pct: pct, americanText: americanText, priceText: priceText, qtyText: qtyText, tone: tone, recordText: recordText
+  };
+}));
+/*__EDPORTFOLIO_END__*/
+/*__EDPORTIMPORT_START__*/
+/* ===========================================================================
+   EDGEDESK PORTFOLIO — the import engine.
+   docs/portfolio-architecture.md § Imports
+
+   A CSV becomes staged rows, and nothing more. This file parses the file in
+   the reader's own browser (the file itself is never uploaded), proposes a
+   column mapping, and normalizes each row into the one shape every source
+   writes — with its problems listed beside it. It inserts nothing: the rows
+   are staged in portfolio_import_rows, the DATABASE classifies them (new,
+   duplicate, needs review, invalid) and the reader confirms before
+   portfolio_import_commit() writes a single position.
+
+   ADAPTERS, NOT ASSUMPTIONS
+     generic_sportsbook_v1          one row per wager
+     generic_prediction_market_v1   one row per trade (a buy or a sell);
+                                    rows for the same market and side become
+                                    one position with several fills
+   A platform-specific importer (a DraftKings or Kalshi export) is another
+   adapter with its own aliases and detect() — the core never changes.
+
+   NEVER GUESSED
+     - a decimal comma ("12,50") is refused, not read as 1250 or 12.5;
+     - a date that only works one way round (13/02/2026 under month-first) is
+       refused with the reason, and the reader chooses the order;
+     - a time with no zone is read in the zone the reader picked, and a time
+       with a zone is read in that zone — "same instant, same position";
+     - a contract price column of whole numbers 1-99 is read as cents only
+       when EVERY price in it is, and the file says so.
+
+   Browser: window.EDPortfolioImport.   Node: require('./edgedesk_portfolio_import.js').
+   =========================================================================== */
+(function (root, factory) {
+  var E = root.EDPortfolio || (typeof require === 'function' ? require('./edgedesk_portfolio.js') : null);
+  var api = factory(E);
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  root.EDPortfolioImport = api;
+}(typeof self !== 'undefined' ? self : (typeof globalThis !== 'undefined' ? globalThis : this), function (E) {
+  'use strict';
+
+  var MAX_ROWS = 5000;
+  var MAX_BYTES = 5 * 1024 * 1024;
+  var MAX_CELL = 500;
+
+  /* ═══ 1. CSV ══════════════════════════════════════════════════════════ */
+  function detectDelimiter(text) {
+    var line = '', q = false;
+    for (var i = 0; i < text.length && i < 20000; i++) {
+      var c = text[i];
+      if (c === '"') q = !q;
+      if (!q && (c === '\n' || c === '\r')) break;
+      if (!q) line += c;
+    }
+    var best = ',', n = 0;
+    [',', ';', '\t', '|'].forEach(function (d) { var k = line.split(d).length - 1; if (k > n) { n = k; best = d; } });
+    return best;
+  }
+  /* RFC 4180: quoted fields, doubled quotes, CRLF / LF / CR, newlines inside quotes */
+  function parseCSV(text, delimiter) {
+    text = String(text == null ? '' : text).replace(/^﻿/, '');
+    var d = delimiter || detectDelimiter(text), rows = [], row = [], cell = '', q = false, i = 0;
+    while (i < text.length) {
+      var c = text[i];
+      if (q) {
+        if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i += 2; continue; } q = false; i++; continue; }
+        cell += c; i++; continue;
+      }
+      if (c === '"' && cell === '') { q = true; i++; continue; }
+      if (c === d) { row.push(cell); cell = ''; i++; continue; }
+      if (c === '\r' || c === '\n') {
+        row.push(cell); rows.push(row); row = []; cell = '';
+        if (c === '\r' && text[i + 1] === '\n') i++;
+        i++; continue;
+      }
+      cell += c; i++;
+    }
+    if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+    return { delimiter: d, rows: rows.filter(function (r) { return r.some(function (x) { return String(x).trim() !== ''; }); }) };
+  }
+  function headerToken(h) { return String(h == null ? '' : h).toLowerCase().replace(/[^a-z0-9]/g, ''); }
+
+  /* ═══ 2. CELL READERS ═════════════════════════════════════════════════ */
+  function cellText(x) { var t = String(x == null ? '' : x).trim(); return t === '' ? null : t; }
+  /* dollars: "$1,234.56" "(12.00)" "-12" "USD 12" → "1234.56"; "12,50" → AMBIGUOUS */
+  function readMoney(x) {
+    var t = cellText(x);
+    if (t == null) return { value: null };
+    var negative = /^\(.*\)$/.test(t) || /^-/.test(t.replace(/^[\s$]+/, ''));
+    t = t.replace(/^\(|\)$/g, '').replace(/usd|\$|\s/gi, '').replace(/^[-+]/, '');
+    if (/^\d+,\d{1,2}$/.test(t)) return { error: 'AMBIGUOUS_DECIMAL' };
+    if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(t)) t = t.replace(/,/g, '');
+    if (!/^\d*\.?\d+$/.test(t)) return { error: 'BAD_NUMBER' };
+    return { value: E.dec.str((negative ? '-' : '') + t) };
+  }
+  function readNumber(x) {
+    var t = cellText(x);
+    if (t == null) return { value: null };
+    t = t.replace(/,/g, '');
+    if (!/^[+-]?\d*\.?\d+$/.test(t)) return { error: 'BAD_NUMBER' };
+    return { value: E.dec.str(t) };
+  }
+  /* odds: "+150" "-110" "150" "EVEN" → American; "1.91" "2" → decimal; "5/2" → decimal 3.5 */
+  function readOdds(x, forceDecimal) {
+    var t = cellText(x);
+    if (t == null) return { value: null };
+    t = t.replace(/\s/g, '');
+    if (/^(even|evens|ev|pk)$/i.test(t)) return { american: 100 };
+    var fr = /^(\d+)\/(\d+)$/.exec(t);
+    if (fr && +fr[2] > 0) return { decimal: E.dec.add('1', E.dec.divRound(fr[1], fr[2], 6)) };
+    if (!/^[+-]?\d*\.?\d+$/.test(t)) return { error: 'BAD_ODDS' };
+    if (forceDecimal) return E.dec.cmp(t, '1') > 0 ? { decimal: E.dec.str(t) } : { error: 'BAD_ODDS' };
+    var signed = /^[+-]/.test(t), isInt = /^[+-]?\d+$/.test(t), v = Number(t);
+    if (signed || (isInt && Math.abs(v) >= 100)) {
+      var a = E.intAmerican(t.replace(/^\+/, ''));
+      return a == null ? { error: 'BAD_ODDS' } : { american: a };
+    }
+    return E.dec.cmp(t, '1') > 0 ? { decimal: E.dec.str(t) } : { error: 'BAD_ODDS' };
+  }
+  /* a contract price: "0.61" "$0.61" "61¢" "61c"; cents=true reads "61" as $0.61 */
+  function readPrice(x, cents) {
+    var t = cellText(x);
+    if (t == null) return { value: null };
+    var c = /(¢|c)$/i.test(t);
+    t = t.replace(/[$¢\s]|c$/gi, '');
+    if (!/^\d*\.?\d+$/.test(t)) return { error: 'BAD_PRICE' };
+    var v = (c || cents) ? E.dec.divRound(t, '100', 6) : E.dec.str(t);
+    if (E.dec.cmp(v, '0') < 0 || E.dec.cmp(v, '1') > 0) return { error: 'BAD_PRICE' };
+    return { value: v };
+  }
+  var MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, sept: 9, oct: 10, nov: 11, dec: 12 };
+  function hour12(h, ap) { h = +h; if (!ap) return h; ap = ap.toUpperCase(); if (ap === 'PM' && h < 12) return h + 12; if (ap === 'AM' && h === 12) return 0; return h; }
+  function okParts(y, mo, d, h, mi, s) {
+    if (!(mo >= 1 && mo <= 12 && d >= 1 && d <= 31 && h >= 0 && h <= 23 && mi >= 0 && mi <= 59 && s >= 0 && s <= 59)) return false;
+    var probe = new Date(Date.UTC(y, mo - 1, d));
+    return probe.getUTCMonth() === mo - 1 && probe.getUTCDate() === d;
+  }
+  /* → { value: ISO-8601 UTC } or { error } (+ dateOnly when no time was given) */
+  function readDate(x, tz, order) {
+    var t = cellText(x), m;
+    if (t == null) return { value: null };
+    tz = tz || 'UTC';
+    /* an explicit zone: read exactly */
+    if (/^\d{4}-\d{2}-\d{2}[T ]\d{1,2}:\d{2}(:\d{2}(\.\d+)?)?\s*(Z|[+-]\d{2}:?\d{2})$/i.test(t)) {
+      var z = Date.parse(t.replace(' ', 'T').replace(/([+-]\d{2})(\d{2})$/, '$1:$2'));
+      return isFinite(z) ? { value: new Date(z).toISOString() } : { error: 'BAD_DATE' };
+    }
+    var y, mo, d, h = 0, mi = 0, s = 0, dateOnly = false;
+    if ((m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T ](\d{1,2}):(\d{2})(?::(\d{2}))?(?:\.\d+)?\s*(AM|PM)?)?$/i.exec(t))) {
+      y = +m[1]; mo = +m[2]; d = +m[3];
+      if (m[4] != null) { h = hour12(m[4], m[7]); mi = +m[5]; s = +(m[6] || 0); } else dateOnly = true;
+    } else if ((m = /^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2}|\d{4})(?:[ ,T]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?)?$/i.exec(t))) {
+      var a = +m[1], b = +m[2];
+      if (order === 'DMY') { d = a; mo = b; } else { mo = a; d = b; }
+      y = m[3].length === 2 ? 2000 + +m[3] : +m[3];
+      if (m[4] != null) { h = hour12(m[4], m[7]); mi = +m[5]; s = +(m[6] || 0); } else dateOnly = true;
+      if (!okParts(y, mo, d, h, mi, s)) return { error: order === 'DMY' ? 'BAD_DATE' : 'BAD_DATE_ORDER' };
+    } else if ((m = /^([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})(?:[ ,]+(?:at\s+)?(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?)?$/i.exec(t))) {
+      mo = MONTHS[m[1].toLowerCase().slice(0, 4)] || MONTHS[m[1].toLowerCase().slice(0, 3)]; d = +m[2]; y = +m[3];
+      if (m[4] != null) { h = hour12(m[4], m[7]); mi = +m[5]; s = +(m[6] || 0); } else dateOnly = true;
+    } else return { error: 'BAD_DATE' };
+    if (!okParts(y, mo, d, h, mi, s)) return { error: 'BAD_DATE' };
+    if (dateOnly) h = 12;    /* a date with no time: midday, so no zone moves it to another day */
+    return { value: new Date(E.zonedToUtc(y, mo, d, h, mi, s, tz)).toISOString(), dateOnly: dateOnly };
+  }
+  var WAGER_STATUS_WORDS = [
+    [/^(w|win|won|winner|winning|paid|cashed)$/, 'WON'], [/^(l|loss|lost|lose|loser|losing)$/, 'LOST'],
+    [/^(p|push|pushed|tie|draw)$/, 'PUSH'],
+    [/^(void|voided|cancel+ed|cancel+ation|refund(ed)?|no ?action|rejected|returned)$/, 'VOID'],
+    [/^(cash ?out|cashed ?out|cashout|early ?payout)$/, 'CASHED_OUT'],
+    [/^(open|pending|unsettled|active|in ?play|live|placed|accepted|running)$/, 'OPEN'],
+    [/^(settled|graded|closed)$/, 'SETTLED']
+  ];
+  function readStatus(x) {
+    var t = cellText(x);
+    if (t == null) return { value: 'OPEN', defaulted: true };
+    t = t.toLowerCase().replace(/[^a-z ]/g, '').trim();
+    for (var i = 0; i < WAGER_STATUS_WORDS.length; i++) if (WAGER_STATUS_WORDS[i][0].test(t)) return { value: WAGER_STATUS_WORDS[i][1] };
+    return { error: 'BAD_STATUS' };
+  }
+  function readSide(x) {
+    var t = cellText(x);
+    if (t == null) return null;
+    if (/^(y|yes|long)$/i.test(t)) return 'YES';
+    if (/^(n|no|short)$/i.test(t)) return 'NO';
+    return t;
+  }
+  function readAction(x) {
+    var t = cellText(x);
+    if (t == null) return { value: 'BUY', defaulted: true };
+    if (/^(b|buy|bought|open|opened|purchase|long)$/i.test(t)) return { value: 'BUY' };
+    if (/^(s|sell|sold|close|closed|exit)$/i.test(t)) return { value: 'SELL' };
+    return { error: 'BAD_ACTION' };
+  }
+  var TYPE_RULES = [
+    [/same[ -]?game|\bsgp\b/, 'SAME_GAME_PARLAY'], [/parlay|accumulator|\bmulti\b|teaser|round robin/, 'PARLAY'],
+    [/future|outright|champion|to win the (super bowl|title|championship|pennant|world series|cup)|\bmvp\b|award|division winner|win total/, 'FUTURE'],
+    [/player|passing|rushing|receiving|rebounds|assists|strikeouts|anytime|scorer|\bprop\b|props/, 'PLAYER_PROP'],
+    [/spread|handicap|run ?line|puck ?line|\bats\b/, 'SPREAD'],
+    [/total|over|under|\bo\/u\b/, 'TOTAL'],
+    [/moneyline|money line|\bml\b|h2h|match winner|to win/, 'MONEYLINE']
+  ];
+  function inferType(text) {
+    var t = String(text || '').toLowerCase();
+    for (var i = 0; i < TYPE_RULES.length; i++) if (TYPE_RULES[i][0].test(t)) return TYPE_RULES[i][1];
+    return 'OTHER';
+  }
+  /* a bonus (free) bet: stated in its own column, or named in the status or
+     bet type — never assumed from a stake that merely looks small */
+  function readStakeType(x, alsoText) {
+    var t = cellText(x);
+    if (t != null) {
+      if (/^(y|yes|true|1|bonus|free|free ?bet|bonus ?bet|site ?credit|bet ?credit|promo|token)$/i.test(t)) return 'BONUS';
+      if (/^(n|no|false|0|cash|real|standard|none)$/i.test(t)) return 'CASH';
+    }
+    if (/\b(free ?bet|bonus ?bet|bet ?credit|site ?credit|no[- ]sweat)\b/i.test(String(alsoText || ''))) return 'BONUS';
+    return t == null ? null : 'UNKNOWN';
+  }
+  function readPositionType(x) {
+    var t = cellText(x);
+    if (t == null) return null;
+    var u = t.toUpperCase().replace(/[^A-Z]+/g, '_').replace(/^_|_$/g, '');
+    if (E.POSITION_TYPES.indexOf(u) >= 0) return u;
+    return inferType(t);
+  }
+
+  /* ═══ 3. ADAPTERS ═════════════════════════════════════════════════════ */
+  /* field order is assignment priority: an earlier field claims a header first */
+  var SPORTSBOOK_FIELDS = [
+    { key: 'placed_at', label: 'Placed (date/time)', required: true, aliases: ['placedat', 'dateplaced', 'placed', 'placeddate', 'betdate', 'wagerdate', 'betplaced', 'date', 'datetime', 'time', 'timestamp', 'created', 'createdat'] },
+    { key: 'settled_at', label: 'Settled (date/time)', aliases: ['settledat', 'settled', 'settleddate', 'datesettled', 'gradeddate', 'resultdate'] },
+    { key: 'event_start_at', label: 'Event start', aliases: ['eventstart', 'eventdate', 'gamedate', 'starttime', 'kickoff', 'gametime'] },
+    { key: 'platform', label: 'Sportsbook', aliases: ['platform', 'sportsbook', 'book', 'bookmaker', 'operator', 'site'] },
+    { key: 'sport', label: 'Sport', aliases: ['sport'] },
+    { key: 'league', label: 'League', aliases: ['league', 'competition'] },
+    { key: 'external_id', label: 'Bet ID', aliases: ['betid', 'wagerid', 'ticketid', 'ticket', 'ticketnumber', 'betnumber', 'betslipid', 'reference', 'receipt', 'id'] },
+    { key: 'status', label: 'Status / result', aliases: ['status', 'result', 'betstatus', 'wagerstatus', 'grade', 'settlement', 'outcome'] },
+    { key: 'odds_decimal', label: 'Decimal odds', aliases: ['decimalodds', 'oddsdecimal', 'decimalprice', 'decimal'] },
+    { key: 'odds', label: 'Odds', required: true, aliases: ['americanodds', 'oddsamerican', 'usodds', 'americanprice', 'odds', 'price'] },
+    { key: 'stake', label: 'Stake', required: true, aliases: ['stake', 'risk', 'risked', 'wager', 'wageramount', 'betamount', 'stakeamount', 'amount'] },
+    { key: 'payout', label: 'Payout (amount returned)', aliases: ['payout', 'totalpayout', 'return', 'returned', 'totalreturn', 'amountreturned', 'paid', 'winnings', 'cashoutamount'] },
+    { key: 'profit', label: 'Profit', aliases: ['profit', 'netprofit', 'profitloss', 'pl', 'pnl', 'net', 'netwin'] },
+    { key: 'fees', label: 'Fees', aliases: ['fees', 'fee', 'commission'] },
+    { key: 'stake_type', label: 'Bonus / free bet', aliases: ['staketype', 'freebet', 'bonusbet', 'bonus', 'promo', 'promotion', 'betcredit', 'sitecredit', 'tokentype', 'boost'] },
+    { key: 'line', label: 'Line', aliases: ['line', 'handicap', 'spread', 'points', 'number'] },
+    { key: 'position_type', label: 'Bet type', aliases: ['positiontype', 'bettype', 'wagertype', 'markettype'] },
+    { key: 'market_name', label: 'Market', aliases: ['market', 'marketname', 'category', 'type'] },
+    { key: 'event_name', label: 'Event', required: true, aliases: ['event', 'eventname', 'game', 'matchup', 'match', 'fixture', 'teams', 'description'] },
+    { key: 'selection', label: 'Selection', required: true, aliases: ['selection', 'selectionname', 'pick', 'bet', 'betdescription', 'team', 'side'] },
+    { key: 'notes', label: 'Notes', aliases: ['notes', 'note', 'comments', 'comment', 'memo'] }
+  ];
+  var PREDICTION_FIELDS = [
+    { key: 'executed_at', label: 'Traded (date/time)', required: true, aliases: ['executedat', 'executed', 'filledat', 'filled', 'tradedate', 'tradetime', 'date', 'datetime', 'time', 'timestamp', 'created', 'createdat'] },
+    { key: 'settled_at', label: 'Resolved (date/time)', aliases: ['settledat', 'settled', 'resolvedat', 'resolutiondate'] },
+    { key: 'platform', label: 'Platform', aliases: ['platform', 'exchange', 'venue', 'site'] },
+    { key: 'sport', label: 'Sport', aliases: ['sport'] },
+    { key: 'league', label: 'League', aliases: ['league'] },
+    { key: 'external_id', label: 'Trade ID', aliases: ['tradeid', 'fillid', 'transactionid', 'executionid', 'txid', 'txhash', 'id'] },
+    { key: 'action', label: 'Buy / sell', aliases: ['action', 'buysell', 'direction', 'tradetype', 'type'] },
+    { key: 'side', label: 'Side (YES / NO / outcome)', required: true, aliases: ['side', 'outcome', 'position', 'yesno', 'contractside'] },
+    { key: 'quantity', label: 'Contracts', required: true, aliases: ['contracts', 'shares', 'quantity', 'qty', 'size', 'count'] },
+    { key: 'price', label: 'Price per contract', required: true, aliases: ['price', 'fillprice', 'avgprice', 'averageprice', 'entryprice', 'pricepershare', 'pricepercontract'] },
+    { key: 'fee', label: 'Fee', aliases: ['fee', 'fees', 'tradingfee', 'commission'] },
+    { key: 'resolution', label: 'Resolved as', aliases: ['resolution', 'resolvedas', 'settledas', 'result', 'winner', 'settlement'] },
+    { key: 'settlement_price', label: 'Settlement price', aliases: ['settlementprice', 'resolutionprice', 'settlevalue'] },
+    { key: 'current_price', label: 'Current price (your mark)', aliases: ['currentprice', 'lastprice', 'markprice', 'mark', 'marketprice'] },
+    { key: 'position_type', label: 'Market type', aliases: ['positiontype', 'markettype'] },
+    { key: 'market_name', label: 'Market', aliases: ['market', 'marketname', 'markettitle', 'contract', 'contractname', 'ticker', 'marketticker'] },
+    { key: 'event_name', label: 'Event / question', required: true, aliases: ['event', 'eventname', 'eventtitle', 'question', 'title'] },
+    { key: 'notes', label: 'Notes', aliases: ['notes', 'note', 'comment', 'memo'] }
+  ];
+  function proposeMap(fields, headers) {
+    var tokens = headers.map(headerToken), used = {}, map = {};
+    fields.forEach(function (f) {
+      for (var a = 0; a < f.aliases.length; a++) {
+        var i = tokens.indexOf(f.aliases[a]);
+        if (i >= 0 && !used[i]) { map[f.key] = headers[i]; used[i] = true; return; }
+      }
+    });
+    return map;
+  }
+  function scoreMap(fields, map, bonus) {
+    var s = 0;
+    fields.forEach(function (f) { if (map[f.key]) s += f.required ? 3 : 1; });
+    return s + (bonus || 0);
+  }
+  function cell(record, map, key) { return map[key] ? record[map[key]] : null; }
+
+  function normalizeWager(record, map, ctx) {
+    var issues = [], n = { kind: 'wager', platform_type: 'SPORTSBOOK' };
+    function err(code, msg) { issues.push({ level: 'error', code: code, message: msg }); }
+    function warn(code, msg) { issues.push({ level: 'warning', code: code, message: msg }); }
+    function info(code, msg) { issues.push({ level: 'info', code: code, message: msg }); }
+    platformInto(n, cell(record, map, 'platform'), ctx, err);
+    var pd = readDate(cell(record, map, 'placed_at'), ctx.timezone, ctx.dateOrder);
+    if (pd.error || !pd.value) err(pd.error === 'BAD_DATE_ORDER' ? 'BAD_DATE_ORDER' : 'BAD_PLACED_AT', pd.error === 'BAD_DATE_ORDER' ? 'This date only reads day-first. Switch the date order.' : 'The placed date could not be read.');
+    else { n.placed_at = pd.value; if (pd.dateOnly) info('DATE_ONLY', 'No time given; recorded at midday.'); }
+    var sd = readDate(cell(record, map, 'settled_at'), ctx.timezone, ctx.dateOrder);
+    if (sd.error) warn('BAD_SETTLED_AT', 'The settled date could not be read; it will be recorded at import time.');
+    else if (sd.value) n.settled_at = sd.value;
+    var ed = readDate(cell(record, map, 'event_start_at'), ctx.timezone, ctx.dateOrder);
+    if (ed.value) n.event_start_at = ed.value;
+    n.sport = shortText(cell(record, map, 'sport'), 30, true);
+    n.league = shortText(cell(record, map, 'league'), 30, true);
+    n.event_name = shortText(cell(record, map, 'event_name'), 200);
+    n.selection = shortText(cell(record, map, 'selection'), 200);
+    var typed = readPositionType(cell(record, map, 'position_type'));
+    var market = shortText(cell(record, map, 'market_name'), 200);
+    n.position_type = typed || inferType([market, n.selection].join(' '));
+    if (!typed && n.position_type !== 'OTHER') info('TYPE_INFERRED', 'Bet type read from the market text.');
+    n.market_name = market || E.POSITION_TYPE_LABEL[n.position_type];
+    if (!n.event_name) err('MISSING_EVENT_NAME', 'No event.');
+    if (!n.selection) err('MISSING_SELECTION', 'No selection.');
+    var ln = readNumber(cell(record, map, 'line'));
+    if (ln.error) warn('BAD_LINE', 'The line could not be read and was left blank.');
+    else if (ln.value != null) n.line = ln.value;
+    else if (n.selection && /^(SPREAD|TOTAL|PLAYER_PROP)$/.test(n.position_type)) {
+      var lm = /(?:^|\s)([+-]?\d{1,3}(?:\.\d+)?)\s*$/.exec(n.selection);
+      if (lm && Math.abs(Number(lm[1])) < 100) { n.line = E.dec.str(lm[1]); info('LINE_FROM_SELECTION', 'Line read from the selection.'); }
+    }
+    var od = readOdds(cell(record, map, 'odds'), false), oc = readOdds(cell(record, map, 'odds_decimal'), true);
+    if (od.american != null) n.odds_american = od.american;
+    else if (od.decimal) n.odds_decimal = od.decimal;
+    if (oc.decimal) { if (n.odds_american == null) n.odds_decimal = oc.decimal; }
+    /* "50" reads as decimal 50.00 — a real longshot price, or a typo for an
+       American price that does not exist; a person decides which */
+    if (od.decimal && /^\d+$/.test(String(cellText(cell(record, map, 'odds')) || '')) && +od.decimal >= 21) {
+      warn('ODDS_AMBIGUOUS', 'Odds of ' + od.decimal + ' were read as decimal (' + E.americanText(E.decimalToAmerican(od.decimal)) + '). Check that is right.');
+    }
+    if (od.error || (oc.error && n.odds_american == null && !n.odds_decimal)) err('BAD_ODDS', 'The odds could not be read.');
+    else if (n.odds_american == null && !n.odds_decimal) err('BAD_ODDS', 'No odds.');
+    var st = readMoney(cell(record, map, 'stake'));
+    if (st.error === 'AMBIGUOUS_DECIMAL') err('AMBIGUOUS_DECIMAL', 'The stake uses a decimal comma; EdgeDesk will not guess which.');
+    else if (st.error || !st.value || E.dec.sign(st.value) <= 0) err('BAD_STAKE', 'The stake must be a positive amount.');
+    else if (E.dec.cmp(E.dec.round(st.value, 2), st.value) !== 0) err('BAD_STAKE', 'The stake has fractions of a cent.');
+    else n.stake = st.value;
+    var ss = readStatus(cell(record, map, 'status'));
+    if (ss.error) { warn('UNKNOWN_STATUS', 'Status "' + String(cell(record, map, 'status')).slice(0, 40) + '" is not one EdgeDesk knows; recorded as open.'); n.status = 'OPEN'; }
+    else n.status = ss.value;
+    var pay = readMoney(cell(record, map, 'payout')), prof = readMoney(cell(record, map, 'profit'));
+    if (pay.error) warn('BAD_PAYOUT', 'The payout could not be read.');
+    if (pay.value != null && n.status !== 'OPEN') n.reported_payout = pay.value;
+    if (n.reported_payout == null && prof.value != null && n.stake && n.status !== 'OPEN') {
+      n.reported_payout = E.dec.add(n.stake, prof.value);
+      info('PAYOUT_FROM_PROFIT', 'Payout taken as stake plus the reported profit.');
+    }
+    if (n.reported_payout != null && E.dec.sign(n.reported_payout) < 0) { err('BAD_PAYOUT', 'A payout cannot be negative.'); delete n.reported_payout; }
+    var fe = readMoney(cell(record, map, 'fees'));
+    if (fe.error) warn('BAD_FEES', 'Fees could not be read; recorded as 0.');
+    else if (fe.value != null) n.fees = fe.value;
+    var sk = readStakeType(cell(record, map, 'stake_type'), [cell(record, map, 'status'), cell(record, map, 'position_type'), market].join(' '));
+    if (sk === 'BONUS') { n.stake_type = 'BONUS'; info('BONUS_BET', 'A bonus (free) bet: it risks no cash and only its winnings count.'); }
+    else if (sk === 'UNKNOWN') warn('UNKNOWN_STAKE_TYPE', 'The bonus / free-bet column says "' + String(cell(record, map, 'stake_type')).slice(0, 30) + '"; recorded as cash.');
+    if ((n.status === 'CASHED_OUT' || n.status === 'SETTLED') && n.reported_payout == null) err('PAYOUT_NEEDED', 'A cash-out or settled bet needs the amount paid.');
+    /* the book's own number wins, but a disagreement with the price is worth a look */
+    if (n.stake && (n.odds_american != null || n.odds_decimal) && n.reported_payout != null) {
+      var win = E.wagerProfit(n.stake, n.odds_american, n.odds_decimal), bonus = n.stake_type === 'BONUS';
+      var expect = n.status === 'WON' ? (bonus ? win : E.dec.add(n.stake, win))
+        : n.status === 'LOST' ? '0' : (n.status === 'PUSH' || n.status === 'VOID') ? (bonus ? '0' : n.stake) : null;
+      if (expect != null && E.dec.cmp(E.dec.sub(expect, n.reported_payout).replace(/^-/, ''), '0.01') > 0) {
+        warn('PAYOUT_MISMATCH', 'The payout (' + E.money(n.reported_payout) + ') differs from what the odds pay (' + E.money(expect) + ').');
+      }
+    }
+    var ext = cellText(cell(record, map, 'external_id'));
+    if (ext) n.external_position_id = ext.slice(0, 200);
+    n.notes = shortText(cell(record, map, 'notes'), 2000);
+    if (n.placed_at && Date.parse(n.placed_at) > (ctx.now || Date.now()) + 86400000) err('FUTURE_PLACED_AT', 'Placed in the future.');
+    if (n.settled_at && n.placed_at && Date.parse(n.settled_at) < Date.parse(n.placed_at)) { warn('SETTLED_BEFORE_PLACED', 'Settled before it was placed; the settled time was dropped.'); delete n.settled_at; }
+    if (n.status === 'OPEN') delete n.settled_at;
+    /* a settled bet with no settled time: the placed time, never "today" —
+       otherwise a year of imported history would all land in the last 7 days */
+    else if (!n.settled_at && n.placed_at) { n.settled_at = n.placed_at; info('SETTLED_AT_PLACED', 'No settled time in the file; recorded at the placed time.'); }
+    return { normalized: compact(n), issues: issues };
+  }
+
+  function normalizeFill(record, map, ctx) {
+    var issues = [], n = { kind: 'fill', platform_type: 'PREDICTION_MARKET' };
+    function err(code, msg) { issues.push({ level: 'error', code: code, message: msg }); }
+    function warn(code, msg) { issues.push({ level: 'warning', code: code, message: msg }); }
+    function info(code, msg) { issues.push({ level: 'info', code: code, message: msg }); }
+    platformInto(n, cell(record, map, 'platform'), ctx, err);
+    var xd = readDate(cell(record, map, 'executed_at'), ctx.timezone, ctx.dateOrder);
+    if (xd.error || !xd.value) err(xd.error === 'BAD_DATE_ORDER' ? 'BAD_DATE_ORDER' : 'BAD_EXECUTED_AT', xd.error === 'BAD_DATE_ORDER' ? 'This date only reads day-first. Switch the date order.' : 'The trade date could not be read.');
+    else { n.executed_at = xd.value; if (xd.dateOnly) info('DATE_ONLY', 'No time given; recorded at midday.'); }
+    var sd = readDate(cell(record, map, 'settled_at'), ctx.timezone, ctx.dateOrder);
+    if (sd.value) n.settled_at = sd.value;
+    n.sport = shortText(cell(record, map, 'sport'), 30, true);
+    n.league = shortText(cell(record, map, 'league'), 30, true);
+    n.event_name = shortText(cell(record, map, 'event_name'), 200);
+    n.market_name = shortText(cell(record, map, 'market_name'), 200);
+    if (!n.event_name && n.market_name) n.event_name = n.market_name;
+    if (!n.market_name && n.event_name) { n.market_name = n.event_name; info('MARKET_FROM_EVENT', 'Market taken from the event.'); }
+    if (!n.event_name) err('MISSING_EVENT_NAME', 'No event or question.');
+    n.side = readSide(cell(record, map, 'side'));
+    if (!n.side) err('MISSING_SIDE', 'No side (YES / NO or the outcome).');
+    else n.selection = n.side;
+    n.position_type = readPositionType(cell(record, map, 'position_type')) || 'EVENT_CONTRACT';
+    var ac = readAction(cell(record, map, 'action'));
+    if (ac.error) err('BAD_ACTION', 'A trade is a buy or a sell.');
+    else n.action = ac.value;
+    var q = readNumber(cell(record, map, 'quantity'));
+    if (q.error || !q.value || E.dec.sign(q.value) <= 0) err('BAD_QUANTITY', 'Contracts must be a positive number.');
+    else if (E.dec.cmp(E.dec.round(q.value, 6), q.value) !== 0) err('BAD_QUANTITY', 'Contracts carry at most six decimals.');
+    else n.quantity = q.value;
+    var pr = readPrice(cell(record, map, 'price'), ctx.priceCents);
+    if (pr.error || pr.value == null) err('BAD_PRICE', 'A contract price is between $0.00 and $1.00.');
+    else n.price = pr.value;
+    var fe = readMoney(cell(record, map, 'fee'));
+    if (fe.error) warn('BAD_FEES', 'The fee could not be read; recorded as 0.');
+    else if (fe.value != null) { if (E.dec.sign(fe.value) < 0) err('BAD_FEES', 'A fee cannot be negative.'); else n.fee = fe.value; }
+    var res = cellText(cell(record, map, 'resolution'));
+    if (res) {
+      var rs = readSide(res);
+      n.resolution = /^(void|voided|cancel+ed|refund(ed)?)$/i.test(res) ? 'VOID' : rs;
+    }
+    ['settlement_price', 'current_price'].forEach(function (k) {
+      var v = readPrice(cell(record, map, k), ctx.priceCents);
+      if (v.error) warn('BAD_' + k.toUpperCase(), 'The ' + k.replace('_', ' ') + ' could not be read.');
+      else if (v.value != null) n[k] = v.value;
+    });
+    if (n.resolution && !n.settled_at && n.executed_at) { n.settled_at = n.executed_at; info('SETTLED_AT_TRADE', 'No resolution time in the file; recorded at this trade\u2019s time.'); }
+    var ext = cellText(cell(record, map, 'external_id'));
+    if (ext) n.external_transaction_id = ext.slice(0, 200);
+    n.notes = shortText(cell(record, map, 'notes'), 1000);
+    if (n.executed_at && Date.parse(n.executed_at) > (ctx.now || Date.now()) + 86400000) err('FUTURE_EXECUTED_AT', 'Traded in the future.');
+    return { normalized: compact(n), issues: issues };
+  }
+
+  function platformInto(n, text, ctx, err) {
+    var t = cellText(text), key = t ? E.resolvePlatform(t) : null;
+    if (t && !key) { key = E.customPlatformKey(t); n.platform_label = t.slice(0, 60); }
+    if (!t) { key = ctx.platform || null; n.platform_label = ctx.platformLabel || null; }
+    if (!key || !E.PLATFORM_KEY_RE.test(key)) { err('BAD_PLATFORM', 'No platform: map a platform column or choose one for the whole file.'); return; }
+    n.platform = key;
+    n.platform_label = n.platform_label || E.platformLabel(key);
+  }
+  function shortText(x, max, upper) {
+    var t = cellText(x);
+    if (t == null) return null;
+    t = t.replace(/\s+/g, ' ').slice(0, max);
+    return upper && t.length <= 6 ? t.toUpperCase() : t;
+  }
+  function compact(o) { var r = {}; Object.keys(o).forEach(function (k) { if (o[k] != null && o[k] !== '') r[k] = o[k]; }); return r; }
+
+  /* ═══ 3b. LEG ROWS: one row per parlay leg, the ticket repeated ═══════
+     Bet trackers (Juice Reel style) export ONE ROW PER LEG: the ticket's id,
+     stake, price, status and payout are repeated on every leg row. Summing
+     those rows would count a 3-leg parlay's stake three times, so the rows
+     are grouped by the ticket id FIRST — before normalizeWager — into one
+     wager with its legs. Rules:
+       - the ticket id (bet / ticket / wager id) is the grouping key (split
+         only when one id's rows name two different books); a row with no id
+         is its own single (NO_TICKET_ID);
+       - a ticket-level amount is never summed across its rows: the first
+         row that states it is used, and rows that DISAGREE on one are
+         flagged (TICKET_FIELDS_DIFFER) instead of guessed;
+       - the same leg listed twice under one ticket is counted once and
+         reported (DUPLICATE_ROW_MERGED, or DUPLICATE_LEG_DIFFERS when the
+         copies are not identical);
+       - with no ticket price, the price is the legs' product
+         (EDPortfolio.parlay); with no ticket status, the legs decide it. */
+  function sbAliases(key) { return SPORTSBOOK_FIELDS.filter(function (f) { return f.key === key; })[0].aliases; }
+  var LEG_ROW_FIELDS = [
+    { key: 'external_id', label: 'Ticket / bet ID', required: true, aliases: ['ticketid', 'betid', 'wagerid', 'ticket', 'ticketnumber', 'ticketno', 'betnumber', 'betno', 'betslipid', 'slipid', 'betslip', 'parlayid', 'reference', 'receipt', 'confirmation', 'confirmationnumber', 'id'] },
+    { key: 'leg_number', label: 'Leg number', aliases: ['legnumber', 'legno', 'legnum', 'leg', 'legindex', 'legid', 'legseq', 'legsequence', 'legposition', 'selectionnumber'] },
+    { key: 'leg_count', label: 'Legs on the ticket', aliases: ['legs', 'legcount', 'numlegs', 'numberoflegs', 'totallegs', 'nlegs'] },
+    { key: 'placed_at', label: 'Placed (date/time)', required: true, aliases: sbAliases('placed_at') },
+    { key: 'settled_at', label: 'Settled (date/time)', aliases: sbAliases('settled_at') },
+    { key: 'event_start_at', label: 'Event start', aliases: sbAliases('event_start_at') },
+    { key: 'platform', label: 'Sportsbook', aliases: sbAliases('platform') },
+    { key: 'sport', label: 'Sport', aliases: ['sport'] },
+    { key: 'league', label: 'League', aliases: ['league', 'competition'] },
+    { key: 'bet_type', label: 'Bet type (single / parlay)', aliases: ['bettype', 'wagertype', 'tickettype', 'betkind', 'betstyle', 'straightparlay'] },
+    { key: 'status', label: 'Ticket status / result', aliases: ['status', 'result', 'betstatus', 'wagerstatus', 'ticketstatus', 'betresult', 'grade', 'settlement', 'outcome'] },
+    { key: 'leg_status', label: 'Leg result', aliases: ['legstatus', 'legresult', 'legoutcome', 'leggrade', 'selectionresult', 'selectionstatus'] },
+    { key: 'odds_decimal', label: 'Ticket decimal odds', aliases: ['decimalodds', 'oddsdecimal', 'decimalprice', 'decimal', 'ticketdecimalodds'] },
+    { key: 'odds', label: 'Ticket odds', aliases: ['ticketodds', 'totalodds', 'parlayodds', 'betodds', 'americanodds', 'oddsamerican', 'usodds', 'americanprice', 'odds', 'price'] },
+    { key: 'leg_odds', label: 'Leg odds', aliases: ['legodds', 'legprice', 'legamericanodds', 'selectionodds', 'legdecimalodds'] },
+    { key: 'closing_odds', label: 'Closing odds', aliases: ['closingodds', 'closingline', 'closingprice', 'close', 'closeodds', 'closingamericanodds', 'clvodds'] },
+    { key: 'stake', label: 'Stake', required: true, aliases: ['stake', 'risk', 'risked', 'wager', 'wageramount', 'betamount', 'stakeamount', 'amount', 'towager', 'riskamount'] },
+    { key: 'payout', label: 'Payout (amount returned)', aliases: sbAliases('payout').concat(['payoutamount']) },
+    { key: 'profit', label: 'Profit', aliases: sbAliases('profit').concat(['netresult']) },
+    { key: 'fees', label: 'Fees', aliases: ['fees', 'fee', 'commission'] },
+    { key: 'stake_type', label: 'Bonus / free bet', aliases: sbAliases('stake_type') },
+    { key: 'line', label: 'Line', aliases: ['line', 'handicap', 'spread', 'points', 'number', 'legline'] },
+    { key: 'position_type', label: 'Market type (of the leg)', aliases: ['markettype', 'positiontype', 'legtype', 'legmarkettype'] },
+    { key: 'market_name', label: 'Market', aliases: ['market', 'marketname', 'legmarket', 'category', 'type'] },
+    { key: 'event_name', label: 'Event', required: true, aliases: ['event', 'eventname', 'game', 'matchup', 'match', 'fixture', 'teams', 'legevent', 'eventdescription', 'description'] },
+    { key: 'selection', label: 'Selection', required: true, aliases: ['selection', 'selectionname', 'pick', 'bet', 'betdescription', 'team', 'side', 'legselection', 'legdescription'] },
+    { key: 'notes', label: 'Notes', aliases: ['notes', 'note', 'comments', 'comment', 'memo'] }
+  ];
+  /* ticket-level fields: compared across a ticket's rows, never summed.
+     MONEY ones decide the ticket's figures, so a disagreement there makes the
+     ticket unusable for P&L until the reader says which row is right. */
+  var TICKET_FIELDS = ['stake', 'odds', 'odds_decimal', 'payout', 'profit', 'status', 'fees', 'stake_type', 'placed_at', 'settled_at', 'bet_type', 'platform', 'leg_count'];
+  var TICKET_MONEY_FIELDS = ['stake', 'odds', 'odds_decimal', 'payout', 'profit', 'status', 'fees', 'stake_type'];
+  var PARLAY_WORDS = /parlay|accumulator|\bacca\b|\bmulti\b|same[ -]?game|\bsgp\b|bet ?builder|teaser|round ?robin/;
+  function ticketValue(k, x, ctx) {
+    var t = cellText(x);
+    if (t == null) return null;
+    if (k === 'stake' || k === 'payout' || k === 'profit' || k === 'fees') { var m = readMoney(t); return m.value != null ? 'm' + m.value : 'x' + t; }
+    if (k === 'odds' || k === 'odds_decimal') { var o = readOdds(t, k === 'odds_decimal'); return o.american != null ? 'a' + o.american : o.decimal ? 'd' + o.decimal : 'x' + t; }
+    if (k === 'status') { var s = readStatus(t); return s.value || 'x' + t.toLowerCase(); }
+    if (k === 'placed_at' || k === 'settled_at') { var d = readDate(t, ctx.timezone, ctx.dateOrder); return d.value || 'x' + t; }
+    if (k === 'platform') return E.resolvePlatform(t) || E.customPlatformKey(t) || t.toLowerCase();
+    return t.toLowerCase().replace(/\s+/g, ' ');
+  }
+  function legOdds(x) { var o = readOdds(x, false); return o.american != null ? { odds_american: o.american } : o.decimal ? { odds_decimal: o.decimal } : {}; }
+  function legKey(rec, map) {
+    var ln = cellText(cell(rec, map, 'leg_number'));
+    if (ln) return '#' + ln.toLowerCase();
+    var lo = legOdds(cell(rec, map, 'leg_odds'));
+    return [E.normText(cell(rec, map, 'event_name')), E.normText(cell(rec, map, 'market_name')), E.normText(cell(rec, map, 'selection')),
+      E.numText(readNumber(cell(rec, map, 'line')).value), lo.odds_american != null ? 'a' + lo.odds_american : lo.odds_decimal ? 'd' + lo.odds_decimal : ''].join('|');
+  }
+  function sameCells(a, b) {
+    var ka = Object.keys(a), kb = Object.keys(b);
+    if (ka.length !== kb.length) return false;
+    for (var i = 0; i < ka.length; i++) if (String(a[ka[i]] == null ? '' : a[ka[i]]).trim() !== String(b[ka[i]] == null ? '' : b[ka[i]]).trim()) return false;
+    return true;
+  }
+  /* records → tickets, on the raw cells. Each ticket: { id, rows: [indexes],
+     legs: [indexes of distinct legs], duplicates: [{ index, of, exact }],
+     conflicts: [field keys], merged: one record with every ticket-level cell
+     filled from the first row that states it }. Pure; reads no clock. */
+  function groupTickets(records, map, ctx) {
+    ctx = ctx || {};
+    /* by id first; one id is split only when its rows name two different
+       books (a row that leaves the book blank stays with the row before it) */
+    var tickets = [], byId = {};
+    records.forEach(function (rec, i) {
+      var id = cellText(cell(rec, map, 'external_id'));
+      if (!id) { tickets.push({ id: null, rows: [i] }); return; }
+      if (!byId[id]) { byId[id] = { id: id.slice(0, 200), rows: [] }; tickets.push(byId[id]); }
+      byId[id].rows.push(i);
+    });
+    tickets = [].concat.apply([], tickets.map(function (t) {
+      if (!t.id) return [t];
+      var subs = [], byBook = {}, last = null;
+      var fresh = function () { var g = { id: t.id, rows: [], book: null }; subs.push(g); return g; };
+      t.rows.forEach(function (i) {
+        var pt = cellText(cell(records[i], map, 'platform')), k = pt ? (E.resolvePlatform(pt) || E.customPlatformKey(pt) || pt.toLowerCase()) : null, g;
+        if (k) {
+          g = byBook[k] || (last && !last.book ? last : null) || fresh();
+          g.book = k; byBook[k] = g;
+        } else g = last || fresh();
+        g.rows.push(i); last = g;
+      });
+      subs.forEach(function (g) { delete g.book; });
+      return subs;
+    }));
+    tickets.forEach(function (t) {
+      var seen = {};
+      t.legs = []; t.duplicates = []; t.conflicts = [];
+      t.rows.forEach(function (i) {
+        var k = legKey(records[i], map);
+        if (seen[k] == null) { seen[k] = i; t.legs.push(i); return; }
+        t.duplicates.push({ index: i, of: seen[k], exact: sameCells(records[i], records[seen[k]]) });
+      });
+      var merged = Object.assign({}, records[t.rows[0]]);
+      TICKET_FIELDS.forEach(function (f) {
+        if (!map[f]) return;
+        var vals = {}, first = null;
+        t.rows.forEach(function (i) {
+          var raw = records[i][map[f]], v = ticketValue(f, raw, ctx);
+          if (v == null) return;
+          vals[v] = 1;
+          if (first == null) first = raw;
+        });
+        if (Object.keys(vals).length > 1) t.conflicts.push(f);
+        if (first != null) merged[map[f]] = first;
+      });
+      t.merged = merged;
+    });
+    return tickets;
+  }
+  function betTypeOf(text, legs, oneEvent) {
+    var t = String(text || '').toLowerCase();
+    if (/same[ -]?game|\bsgp\b|bet ?builder/.test(t)) return 'SAME_GAME_PARLAY';
+    if (/teaser/.test(t)) return 'TEASER';
+    if (/round ?robin/.test(t)) return 'ROUND_ROBIN';
+    if (PARLAY_WORDS.test(t)) return 'PARLAY';
+    if (legs > 1) return oneEvent ? 'SAME_GAME_PARLAY' : 'PARLAY';
+    return 'SINGLE';
+  }
+  var BET_TYPE_NAME = { PARLAY: 'Parlay', SAME_GAME_PARLAY: 'Same-game parlay', TEASER: 'Teaser', ROUND_ROBIN: 'Round robin' };
+  /* a ticket's result from its legs' (EDPortfolio.parlay's rule, no prices
+     needed): one lost leg loses it, an open leg keeps it open, pushed and
+     voided legs drop out, and a ticket of nothing but those is a push */
+  function legsStatus(legs) {
+    var rs = legs.map(function (l) { return String(l.result || 'OPEN').toUpperCase(); });
+    if (rs.indexOf('LOST') >= 0) return 'LOST';
+    if (rs.some(function (r) { return r !== 'WON' && r !== 'PUSH' && r !== 'VOID'; })) return 'OPEN';
+    return rs.indexOf('WON') >= 0 ? 'WON' : 'PUSH';
+  }
+  /* the leg-row adapter's grouping step: records → one staged row per ticket */
+  function groupLegRecords(records, map, ctx) {
+    var tickets = groupTickets(records, map, ctx), rows = [], fileIssues = [];
+    var joined = 0, multi = 0, dupExact = 0, dupDiffer = 0, noId = 0, conflicted = 0;
+    tickets.forEach(function (t) {
+      var issues = [], m2 = Object.assign({}, map), merged = Object.assign({}, t.merged);
+      var legs = t.legs.map(function (i) {
+        var rec = records[i], lo = legOdds(cell(rec, map, 'leg_odds')), ls = readStatus(cell(rec, map, 'leg_status'));
+        var market = shortText(cell(rec, map, 'market_name'), 200), sel = shortText(cell(rec, map, 'selection'), 200);
+        var leg = { leg_number: cellText(cell(rec, map, 'leg_number')), selection: sel, event_name: shortText(cell(rec, map, 'event_name'), 200), market_name: market,
+          position_type: readPositionType(cell(rec, map, 'position_type')) || inferType([market, sel].join(' ')),
+          line: readNumber(cell(rec, map, 'line')).value || null, odds_american: lo.odds_american != null ? lo.odds_american : null, odds_decimal: lo.odds_decimal || null,
+          result: map.leg_status && !ls.error && !ls.defaulted ? ls.value : null, sport: shortText(cell(rec, map, 'sport'), 30, true), league: shortText(cell(rec, map, 'league'), 30, true) };
+        var co = legOdds(cell(rec, map, 'closing_odds'));
+        if (co.odds_american != null) leg.closing_odds_american = co.odds_american; else if (co.odds_decimal) leg.closing_odds_decimal = co.odds_decimal;
+        return compact(leg);
+      });
+      var events = {}; legs.forEach(function (l) { if (l.event_name) events[E.normText(l.event_name)] = l.event_name; });
+      var oneEvent = Object.keys(events).length <= 1;
+      var btText = cellText(cell(merged, map, 'bet_type'));
+      var bt = betTypeOf(btText, legs.length, oneEvent), parlayFamily = bt !== 'SINGLE';
+      var noTicketPrice = !cellText(cell(merged, map, 'odds')) && !cellText(cell(merged, map, 'odds_decimal'));
+      /* the legs that price the ticket: a pushed or voided leg drops out (the book re-prices without it) */
+      var pricing = legs.filter(function (l) { return l.result !== 'PUSH' && l.result !== 'VOID'; });
+      if (noTicketPrice && legs.length > 1 && pricing.length && pricing.every(function (l) { return l.odds_american != null || l.odds_decimal; })) {
+        /* a parlay with no ticket price: the legs' product, by the engine's own rule */
+        var pxAll = E.parlay(pricing.map(function (l) { return { odds_american: l.odds_american, odds_decimal: l.odds_decimal, result: 'OPEN' }; }));
+        if (pxAll && pxAll.odds_decimal) {
+          merged.__ticket_odds = pxAll.odds_decimal; m2.odds_decimal = '__ticket_odds'; m2.odds = null;
+          issues.push({ level: 'info', code: 'ODDS_FROM_LEGS', message: 'No ticket price in the file; the price is the product of the ' + pricing.length + ' legs’ prices ('
+            + E.americanText(pxAll.odds_american) + ')' + (pricing.length < legs.length ? ', without the ' + (legs.length - pricing.length) + ' pushed or voided' : '') + '.' });
+        }
+      } else if (noTicketPrice && legs.length === 1 && (legs[0].odds_american != null || legs[0].odds_decimal)) {
+        /* a single's price may sit in the leg column */
+        if (legs[0].odds_american != null) { merged.__ticket_odds = String(legs[0].odds_american); m2.odds = '__ticket_odds'; m2.odds_decimal = null; }
+        else { merged.__ticket_odds = legs[0].odds_decimal; m2.odds_decimal = '__ticket_odds'; m2.odds = null; }
+      }
+      /* no ticket status: the legs decide it, when every leg has a result */
+      var legsGraded = legs.length > 1 && legs.every(function (l) { return l.result; }), fromLegs = legsGraded ? legsStatus(legs) : null;
+      if (!cellText(cell(merged, map, 'status')) && fromLegs) {
+        merged.__ticket_status = fromLegs; m2.status = '__ticket_status';
+        issues.push({ level: 'info', code: 'STATUS_FROM_LEGS', message: 'No ticket status in the file; read from the legs’ results (' + fromLegs.toLowerCase() + ').' });
+      }
+      if (legs.length > 1 && btText && /^(single|straight|straight bet|singles?)$/i.test(btText)) {
+        issues.push({ level: 'warning', code: 'BET_TYPE_DISAGREES', message: 'The bet type reads "' + btText.slice(0, 30) + '" but ' + legs.length + ' different legs share this ticket id.' });
+      }
+      var out = normalizeWager(merged, m2, ctx), n = out.normalized;
+      issues = out.issues.concat(issues);
+      if (!t.id) {
+        noId++;
+        issues.push({ level: 'warning', code: 'NO_TICKET_ID', message: 'This row has no ticket id, so it is read as its own single bet.' });
+      }
+      if (t.conflicts.length) {
+        conflicted++;
+        issues.push({ level: 'warning', code: 'TICKET_FIELDS_DIFFER', fields: t.conflicts.slice(),
+          message: 'The rows of ticket ' + t.id + ' disagree on ' + t.conflicts.map(function (f) { return f.replace('_', ' '); }).join(', ') + '; EdgeDesk will not guess which is right.' });
+      }
+      t.duplicates.forEach(function (d) {
+        if (d.exact) dupExact++; else dupDiffer++;
+        issues.push(d.exact ? { level: 'info', code: 'DUPLICATE_ROW_MERGED', message: 'Row ' + (d.index + 1) + ' repeats row ' + (d.of + 1) + ' exactly and was counted once.' }
+          : { level: 'warning', code: 'DUPLICATE_LEG_DIFFERS', message: 'Row ' + (d.index + 1) + ' lists the same leg as row ' + (d.of + 1) + ' with different details; the first was kept.' });
+      });
+      var lc = cellText(cell(merged, map, 'leg_count'));
+      if (lc && /^\d+$/.test(lc) && +lc !== legs.length && (+lc > 1 || legs.length > 1)) {
+        issues.push({ level: 'warning', code: 'LEG_COUNT_MISMATCH', message: 'The file says ' + lc + ' legs; ' + legs.length + ' leg row' + (legs.length === 1 ? ' was' : 's were') + ' found.' });
+      }
+      if (parlayFamily) {
+        if (legs.length > 1) {
+          multi++; joined += t.rows.length - 1;
+          /* the first leg's own line and type notes say nothing about the ticket */
+          issues = issues.filter(function (x) { return x.code !== 'LINE_FROM_SELECTION' && x.code !== 'TYPE_INFERRED'; });
+          n.legs =legs.slice(0, 30).map(function (l) { var c = Object.assign({}, l); delete c.sport; delete c.league; return c; });
+          if (legs.length > 30) issues.push({ level: 'warning', code: 'TOO_MANY_LEGS', message: 'Only the first 30 legs are kept.' });
+          n.event_name = oneEvent ? (legs[0].event_name || n.event_name) : ('Parlay: ' + Object.keys(events).slice(0, 3).map(function (k) { return events[k]; }).join(' · ')).slice(0, 200);
+          n.selection = legs.map(function (l) { return l.selection; }).filter(Boolean).join(' + ').slice(0, 200) || n.selection;
+          n.market_name = BET_TYPE_NAME[bt] + ' (' + legs.length + ' legs)';
+          delete n.line;
+          var sports = {}; legs.forEach(function (l) { if (l.sport) sports[l.sport] = 1; });
+          if (Object.keys(sports).length > 1) n.sport = 'MULTI';
+          issues.push({ level: 'info', code: 'LEGS_GROUPED', message: t.rows.length + ' rows share ticket ' + t.id + ' and were read as one ' + BET_TYPE_NAME[bt].toLowerCase() + ' with ' + legs.length + ' legs; its stake is counted once.' });
+          /* the book's grading wins, but a ticket that disagrees with its own legs is worth a look */
+          if (fromLegs && (n.status === 'WON' || n.status === 'LOST') && fromLegs !== 'OPEN' && fromLegs !== n.status) {
+            issues.push({ level: 'warning', code: 'LEG_STATUS_DISAGREES', message: 'The ticket reads ' + n.status.toLowerCase() + ' but its legs read ' + fromLegs.toLowerCase() + '.' });
+          }
+        } else if (!/parlay/i.test(n.market_name || '')) {
+          n.market_name = (BET_TYPE_NAME[bt] + (n.market_name ? ': ' + n.market_name : '')).slice(0, 200);
+        }
+        n.position_type = bt === 'SAME_GAME_PARLAY' ? 'SAME_GAME_PARLAY' : 'PARLAY';
+        if (bt === 'TEASER' || bt === 'ROUND_ROBIN') n.bet_type = bt;
+      } else if (legs.length === 1) {
+        if (legs[0].closing_odds_american != null) n.closing_odds_american = legs[0].closing_odds_american;
+        else if (legs[0].closing_odds_decimal) n.closing_odds_decimal = legs[0].closing_odds_decimal;
+      }
+      rows.push({ row_number: t.rows[0] + 1, raw: records[t.rows[0]], normalized: n, issues: issues,
+        legRows: t.rows.slice(1).map(function (i) { return i + 1; }), merged: merged,
+        ticket: { id: t.id, rows: t.rows.map(function (i) { return i + 1; }), legs: legs.length, duplicates: t.duplicates.length, conflicts: t.conflicts.slice(), betType: bt } });
+    });
+    if (multi) fileIssues.push({ level: 'info', code: 'LEG_ROWS_JOINED', message: joined + ' leg row' + (joined === 1 ? '' : 's') + ' were joined into ' + multi + ' multi-leg ticket' + (multi === 1 ? '' : 's') + '; each ticket’s stake is counted once.' });
+    if (dupExact || dupDiffer) fileIssues.push({ level: dupDiffer ? 'warning' : 'info', code: 'DUPLICATE_ROWS_MERGED', message: (dupExact + dupDiffer) + ' row' + (dupExact + dupDiffer === 1 ? '' : 's') + ' repeated a leg already listed for the same ticket and ' + (dupExact + dupDiffer === 1 ? 'was' : 'were') + ' counted once' + (dupDiffer ? ' (' + dupDiffer + ' with different details: check them)' : '') + '.' });
+    if (noId) fileIssues.push({ level: 'warning', code: 'NO_TICKET_ID_ROWS', message: noId + ' row' + (noId === 1 ? ' has' : 's have') + ' no ticket id; each is read as its own single bet.' });
+    if (conflicted) fileIssues.push({ level: 'warning', code: 'TICKET_FIELDS_DIFFER', message: conflicted + ' ticket' + (conflicted === 1 ? '' : 's') + ' list different stakes, prices, results or dates on different rows; ' + (conflicted === 1 ? 'it needs' : 'they need') + ' review.' });
+    return { rows: rows, fileIssues: fileIssues, report: { rowsRead: records.length, tickets: tickets.length, multiLegTickets: multi, legRowsJoined: joined, duplicateRows: dupExact + dupDiffer, duplicateRowsExact: dupExact, noTicketId: noId, conflictedTickets: conflicted } };
+  }
+  /* does a file look like leg rows? a leg column, or a ticket id repeated on
+     rows that list different legs AND repeat the same stake (the shape that
+     double-counts when summed). One row per bet never does. */
+  function looksLikeLegRows(headers, records) {
+    var map = proposeMap(LEG_ROW_FIELDS, headers);
+    if (map.leg_number || map.leg_odds || map.leg_status || map.leg_count) return true;
+    if (!records || !map.external_id || !map.stake) return false;
+    var groups = {};
+    records.forEach(function (r) { var id = cellText(r[map.external_id]); if (id) (groups[id] = groups[id] || []).push(r); });
+    return Object.keys(groups).some(function (id) {
+      var g = groups[id];
+      if (g.length < 2) return false;
+      var legsSeen = {}, stakes = {};
+      g.forEach(function (r) { legsSeen[legKey(r, map)] = 1; var s = cellText(r[map.stake]); if (s) stakes[s] = (stakes[s] || 0) + 1; });
+      return Object.keys(legsSeen).length > 1 && Object.keys(stakes).some(function (s) { return stakes[s] > 1; });
+    });
+  }
+
+  var ADAPTERS = {
+    generic_sportsbook_v1: {
+      key: 'generic_sportsbook_v1', label: 'Sportsbook bets — one row per bet', platformType: 'SPORTSBOOK', fields: SPORTSBOOK_FIELDS,
+      detect: function (headers) {
+        var map = proposeMap(SPORTSBOOK_FIELDS, headers), t = headers.map(headerToken).join(' ');
+        return scoreMap(SPORTSBOOK_FIELDS, map, (/odds|stake|risk|wager/.test(t) ? 3 : 0) - (/contracts|shares|yes|no\b/.test(t) ? 3 : 0));
+      },
+      normalize: normalizeWager
+    },
+    /* one row per LEG, the ticket repeated on each (bet trackers such as
+       Juice Reel): rows are grouped by ticket id before normalizing, so a
+       3-leg parlay is ONE wager with 3 legs and its stake counted once.
+       Chosen automatically only when the file shows it: a leg column, or a
+       ticket id repeated on rows with different legs and the same stake —
+       otherwise the generic reading above wins, unchanged. */
+    leg_rows_sportsbook_v1: {
+      key: 'leg_rows_sportsbook_v1', label: 'Sportsbook bets — one row per parlay leg (bet trackers)', platformType: 'SPORTSBOOK', fields: LEG_ROW_FIELDS,
+      detect: function (headers, records) {
+        var map = proposeMap(SPORTSBOOK_FIELDS, headers), t = headers.map(headerToken).join(' ');
+        var base = scoreMap(SPORTSBOOK_FIELDS, map, (/odds|stake|risk|wager/.test(t) ? 3 : 0) - (/contracts|shares|yes|no\b/.test(t) ? 3 : 0));
+        return base + (looksLikeLegRows(headers, records) ? 4 : -1);
+      },
+      group: groupLegRecords,
+      normalize: normalizeWager
+    },
+    generic_prediction_market_v1: {
+      key: 'generic_prediction_market_v1', label: 'Prediction-market trades — one row per buy or sell', platformType: 'PREDICTION_MARKET', fields: PREDICTION_FIELDS,
+      detect: function (headers) {
+        var map = proposeMap(PREDICTION_FIELDS, headers), t = headers.map(headerToken).join(' ');
+        return scoreMap(PREDICTION_FIELDS, map, (/contracts|shares|question|resolution/.test(t) ? 3 : 0) - (/odds|stake|risk/.test(t) ? 3 : 0));
+      },
+      normalize: normalizeFill
+    }
+  };
+  /* headers (and, when given, the parsed records) → the best adapter; a tie
+     goes to the one registered first */
+  function detect(headers, records) {
+    var best = null, bestScore = -1e9;
+    Object.keys(ADAPTERS).forEach(function (k) {
+      var sc = ADAPTERS[k].detect(headers, records);
+      if (sc > bestScore) { bestScore = sc; best = ADAPTERS[k]; }
+    });
+    return { adapter: best, score: bestScore };
+  }
+  /* contract prices given as whole cents (Kalshi style) — only when EVERY price is */
+  function pricesLookLikeCents(rows, column) {
+    if (!column) return false;
+    var seen = 0;
+    for (var i = 0; i < rows.length; i++) {
+      var v = cellText(rows[i][column]);
+      if (v == null) continue;
+      if (!/^\d{1,2}$/.test(v) || +v < 1) return false;
+      seen++;
+    }
+    return seen > 0;
+  }
+
+  /* ═══ 4. PLATFORM PROFILES ══════════════════════════════════════════════
+     A profile names a platform and how a file can be recognised as theirs:
+     the file's name, or a platform column in it. It does NOT assert a column
+     layout: EdgeDesk has not checked any sportsbook's export against a real
+     file yet (verified: false), so every column is mapped by the generic
+     aliases and shown for review, and a layout the reader has imported
+     before is remembered (headerSignature) instead of guessed. */
+  var PROFILES = [
+    { key: 'draftkings', platform: 'draftkings', adapter: 'generic_sportsbook_v1', verified: false, fileName: /draft ?kings|\bdk[_ -]/i },
+    { key: 'fanduel', platform: 'fanduel', adapter: 'generic_sportsbook_v1', verified: false, fileName: /fan ?duel|\bfd[_ -]/i },
+    { key: 'betmgm', platform: 'betmgm', adapter: 'generic_sportsbook_v1', verified: false, fileName: /bet ?mgm|\bmgm\b/i },
+    { key: 'caesars', platform: 'williamhill_us', adapter: 'generic_sportsbook_v1', verified: false, fileName: /caesars|william ?hill/i },
+    { key: 'bet365', platform: 'bet365', adapter: 'generic_sportsbook_v1', verified: false, fileName: /bet ?365/i },
+    /* secondary sportsbooks: the same generic reading, recognised by name */
+    { key: 'betrivers', platform: 'betrivers', adapter: 'generic_sportsbook_v1', verified: false, secondary: true, fileName: /bet ?rivers/i },
+    { key: 'fanatics', platform: 'fanatics', adapter: 'generic_sportsbook_v1', verified: false, secondary: true, fileName: /fanatics/i },
+    { key: 'espnbet', platform: 'espnbet', adapter: 'generic_sportsbook_v1', verified: false, secondary: true, fileName: /espn ?bet|the ?score ?bet/i },
+    { key: 'kalshi_csv', platform: 'kalshi', adapter: 'generic_prediction_market_v1', verified: false, fileName: /kalshi/i },
+    { key: 'polymarket_csv', platform: 'polymarket', adapter: 'generic_prediction_market_v1', verified: false, fileName: /polymarket/i }
+  ];
+  function profileFor(platform) { return PROFILES.filter(function (p) { return p.platform === platform; })[0] || null; }
+  /* the columns of a file, as a stable signature: normalized header names,
+     sorted — never a cell of data */
+  function headerSignature(headers) {
+    var seen = {}, out = [];
+    (headers || []).forEach(function (h) { var t = headerToken(h); if (t && !seen[t]) { seen[t] = 1; out.push(t); } });
+    return out.sort().join('|').slice(0, 2000);
+  }
+  /* which platform a file is from, and how EdgeDesk knows: the reader's
+     choice, a platform column every row agrees on, or the file's name — in
+     that order. Anything less certain asks the reader. */
+  function detectPlatform(headers, records, map, fileName, chosen) {
+    if (chosen) return { platform: chosen, how: 'CHOSEN' };
+    if (map && map.platform) {
+      var keys = {};
+      (records || []).forEach(function (r) { var t = cellText(r[map.platform]); if (t) keys[E.resolvePlatform(t) || E.customPlatformKey(t)] = 1; });
+      var k = Object.keys(keys);
+      if (k.length === 1) return { platform: k[0], how: 'COLUMN' };
+      if (k.length > 1) return { platform: null, how: 'MIXED', platforms: k };
+    }
+    var byName = PROFILES.filter(function (p) { return p.fileName.test(String(fileName || '')); });
+    if (byName.length === 1) return { platform: byName[0].platform, how: 'FILE_NAME' };
+    return { platform: null, how: 'ASK' };
+  }
+  /* A parlay exported one leg per row under one bet id becomes one position
+     with its legs: the price, stake, status and payout are the bet's (the
+     first row that states them); every leg's selection is kept. */
+  function groupLegs(rows) {
+    var groups = {}, merged = {};
+    rows.forEach(function (r) {
+      var n = r.normalized, id = n && n.kind === 'wager' && n.external_position_id ? n.platform + '|' + n.external_position_id : null;
+      if (id) (groups[id] = groups[id] || []).push(r);
+    });
+    Object.keys(groups).forEach(function (id) {
+      var g = groups[id];
+      if (g.length < 2) return;
+      /* the same bet listed twice is a duplicate (the server says so), not a parlay */
+      var distinct = {}; g.forEach(function (r) { distinct[(r.normalized.selection || '') + '|' + (r.normalized.event_name || '')] = 1; });
+      if (Object.keys(distinct).length < 2) return;
+      var head = g[0], n = Object.assign({}, head.normalized);
+      var legs = g.map(function (r) { return { selection: r.normalized.selection || null, event_name: r.normalized.event_name || null,
+        market_name: r.normalized.market_name || null, line: r.normalized.line || null, odds_american: r.normalized.odds_american || null }; }).slice(0, 30);
+      var events = {}; legs.forEach(function (l) { if (l.event_name) events[l.event_name] = 1; });
+      var oneEvent = Object.keys(events).length === 1;
+      n.legs = legs;
+      n.position_type = oneEvent ? 'SAME_GAME_PARLAY' : 'PARLAY';
+      n.market_name = (oneEvent ? 'Same-game parlay' : 'Parlay') + ' (' + legs.length + ' legs)';
+      n.event_name = oneEvent ? Object.keys(events)[0] : ('Parlay: ' + Object.keys(events).slice(0, 3).join(' · ')).slice(0, 200);
+      n.selection = legs.map(function (l) { return l.selection; }).filter(Boolean).join(' + ').slice(0, 200);
+      delete n.line;
+      ['stake', 'odds_american', 'odds_decimal', 'reported_payout', 'status', 'settled_at', 'stake_type'].forEach(function (k) {
+        if (n[k] == null) { var w = g.filter(function (r) { return r.normalized[k] != null; })[0]; if (w) n[k] = w.normalized[k]; }
+      });
+      var issues = head.issues.slice();
+      var stakes = {}; g.forEach(function (r) { if (r.normalized.stake) stakes[r.normalized.stake] = 1; });
+      if (Object.keys(stakes).length > 1) issues.push({ level: 'warning', code: 'LEG_STAKES_DIFFER', message: 'The legs of this bet list different stakes; the first was used.' });
+      issues.push({ level: 'info', code: 'LEGS_GROUPED', message: legs.length + ' rows share this bet id and were read as one parlay.' });
+      head.normalized = n; head.issues = issues; head.legRows = g.slice(1).map(function (r) { return r.row_number; });
+      g.slice(1).forEach(function (r) { merged[r.row_number] = head.row_number; });
+    });
+    return rows.filter(function (r) { return !merged[r.row_number]; });
+  }
+  /* the span of a file's activity, as months ("Aug 2024 – Oct 2026") */
+  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function dateRange(rows) {
+    var lo = null, hi = null;
+    (rows || []).forEach(function (r) {
+      var n = r.normalized || r, t = Date.parse(n.placed_at || n.executed_at || '');
+      if (!isFinite(t)) return;
+      if (lo == null || t < lo) lo = t; if (hi == null || t > hi) hi = t;
+    });
+    if (lo == null) return null;
+    var f = function (t) { var d = new Date(t); return MON[d.getUTCMonth()] + ' ' + d.getUTCFullYear(); };
+    return { from: new Date(lo).toISOString(), to: new Date(hi).toISOString(), text: f(lo) === f(hi) ? f(lo) : f(lo) + ' – ' + f(hi) };
+  }
+  /* THE TOTALS CHECK: where the file states each bet's profit (or payout),
+     its own total over the won / lost / pushed / voided bets is compared with
+     what the stated odds and stakes pay (cash-outs have no independent check
+     and are left out); a difference is shown, never silently reconciled */
+  function totalsCheck(records, rows, map) {
+    if (!map || (!map.profit && !map.payout)) return null;
+    var stated = '0', computed = '0', n = 0;
+    rows.forEach(function (r, i) {
+      var nz = r.normalized;
+      if (!nz || nz.kind !== 'wager' || !nz.stake || nz.status === 'OPEN' || r.issues.some(function (x) { return x.level === 'error'; })) return;
+      if (['WON', 'LOST', 'PUSH', 'VOID'].indexOf(nz.status) < 0) return;
+      var rec = records[i] || r.raw || {}, d = E.derive(Object.assign({}, nz, { reported_payout: null }));
+      if (d.profit_loss == null) return;
+      var v = null;
+      if (map.profit) { var pr = readMoney(rec[map.profit]); if (pr.value != null) v = pr.value; }
+      if (v == null && map.payout) { var py = readMoney(rec[map.payout]); if (py.value != null) v = E.dec.sub(py.value, nz.stake_type === 'BONUS' ? '0' : nz.stake); }
+      if (v == null) return;
+      stated = E.dec.add(stated, v); computed = E.dec.add(computed, d.profit_loss); n++;
+    });
+    if (!n) return null;
+    var diff = E.dec.sub(computed, stated), off = E.dec.cmp(diff.replace(/^-/, ''), '0.01') > 0;
+    return { rows: n, stated: stated, computed: computed, difference: diff, agrees: !off };
+  }
+  /* What the rows about to be imported come to, by the same arithmetic the
+     database runs — an estimate until they are stored and derived there. */
+  function estimate(rows) {
+    var out = { rows: 0, settled: 0, open: 0, pnl: '0', staked: '0', exposure: '0', bonus: 0 };
+    (rows || []).forEach(function (r) {
+      var n = r.normalized || r;
+      if (!n || n.kind !== 'wager' || !n.stake) return;
+      out.rows++;
+      if (n.stake_type === 'BONUS') out.bonus++;
+      var d = E.derive(n);
+      if (d.profit_loss != null) { out.settled++; out.pnl = E.dec.add(out.pnl, d.profit_loss); out.staked = E.dec.add(out.staked, d.cost_basis || '0'); }
+      else if (d.status === 'OPEN') { out.open++; out.exposure = E.dec.add(out.exposure, d.open_cost_basis || '0'); }
+    });
+    out.roi = E.dec.sign(out.staked) > 0 ? E.dec.divRound(out.pnl, out.staked, 6) : null;
+    return out;
+  }
+
+  /* text → staged rows. opts: adapter (key), map, platform, platformLabel,
+     timezone, dateOrder ('MDY' | 'DMY'), now, fileName */
+  function stage(text, opts) {
+    opts = opts || {};
+    var fileIssues = [];
+    if (String(text || '').length > MAX_BYTES) return { fileIssues: [{ level: 'error', code: 'FILE_TOO_LARGE', message: 'Files up to 5 MB.' }], rows: [] };
+    var parsed = parseCSV(text);
+    if (parsed.rows.length < 2) return { fileIssues: [{ level: 'error', code: 'NO_ROWS', message: 'The file has a header row and no data.' }], rows: [], delimiter: parsed.delimiter, headers: parsed.rows[0] || [] };
+    var headers = parsed.rows[0].map(function (h, i) { var t = String(h).trim() || ('Column ' + (i + 1)); return t.slice(0, 80); });
+    var seen = {};
+    headers = headers.map(function (h) { var k = h; var j = 2; while (seen[k]) k = h + ' (' + (j++) + ')'; seen[k] = true; return k; });
+    var tz = opts.timezone && E.validTz(opts.timezone) ? opts.timezone : 'UTC';
+    if (opts.timezone && tz !== opts.timezone) fileIssues.push({ level: 'warning', code: 'BAD_TIMEZONE', message: 'Unknown time zone; times read as UTC.' });
+    var body = parsed.rows.slice(1);
+    if (body.length > MAX_ROWS) {
+      fileIssues.push({ level: 'error', code: 'TOO_MANY_ROWS', message: 'One import holds at most ' + MAX_ROWS + ' rows; split the file.' });
+      body = body.slice(0, MAX_ROWS);
+    }
+    var records = body.map(function (r) {
+      var o = {};
+      headers.forEach(function (h, i) { var v = r[i] == null ? '' : String(r[i]); o[h] = v.length > MAX_CELL ? v.slice(0, MAX_CELL) : v; });
+      return o;
+    });
+    /* the records are read before the format is chosen, so an adapter can
+       recognise a shape (leg rows) that the header names alone do not show */
+    var found = detect(headers, records);
+    var adapter = (opts.adapter && ADAPTERS[opts.adapter]) || found.adapter;
+    var map = opts.map || proposeMap(adapter.fields, headers);
+    var cents = adapter.platformType === 'PREDICTION_MARKET' && pricesLookLikeCents(records, map.price);
+    if (cents) fileIssues.push({ level: 'info', code: 'PRICES_IN_CENTS', message: 'Every price is a whole number from 1 to 99, so prices are read as cents.' });
+    adapter.fields.forEach(function (f) {
+      if (f.required && !map[f.key] && !(f.key === 'platform' && opts.platform)) fileIssues.push({ level: 'warning', code: 'UNMAPPED_' + f.key.toUpperCase(), message: f.label + ' is not mapped to a column.' });
+    });
+    if (!map.platform && !opts.platform) fileIssues.push({ level: 'warning', code: 'NO_PLATFORM', message: 'Choose the platform these rows came from, or map a platform column.' });
+    var plat = detectPlatform(headers, records, map, opts.fileName, opts.platform);
+    if (plat.how === 'MIXED') fileIssues.push({ level: 'info', code: 'MANY_PLATFORMS', message: 'The file names ' + plat.platforms.length + ' platforms; each row keeps its own.' });
+    var ctx = { timezone: tz, dateOrder: opts.dateOrder === 'DMY' ? 'DMY' : 'MDY', platform: opts.platform || (plat.how === 'FILE_NAME' ? plat.platform : undefined),
+      platformLabel: opts.platformLabel || (plat.how === 'FILE_NAME' ? E.platformLabel(plat.platform) : undefined), priceCents: cents, now: opts.now };
+    var rows, staged, totals, grouping = null;
+    if (adapter.group) {
+      /* leg rows: grouped into tickets BEFORE normalizing, one staged row each */
+      grouping = adapter.group(records, map, ctx);
+      rows = staged = grouping.rows;
+      grouping.fileIssues.forEach(function (x) { fileIssues.push(x); });
+      totals = totalsCheck(staged.map(function (r) { return r.merged || r.raw; }), staged, map);
+    } else {
+      rows = records.map(function (rec, i) {
+        var out = adapter.normalize(rec, map, ctx);
+        return { row_number: i + 1, raw: rec, normalized: out.normalized, issues: out.issues };
+      });
+      staged = adapter.platformType === 'SPORTSBOOK' ? groupLegs(rows) : rows;
+      totals = adapter.platformType === 'SPORTSBOOK' ? totalsCheck(records, rows, map) : null;
+    }
+    if (totals) {
+      fileIssues.push(totals.agrees
+        ? { level: 'info', code: 'TOTALS_AGREE', message: 'Totals check: the file\u2019s own results over ' + totals.rows + ' settled bets (' + E.money(totals.stated, { sign: true }) + ') match what their odds and stakes pay.' }
+        : { level: 'warning', code: 'TOTALS_DIFFER', message: 'Totals check: the file\u2019s own results over ' + totals.rows + ' settled bets come to ' + E.money(totals.stated, { sign: true })
+          + '; their odds and stakes pay ' + E.money(totals.computed, { sign: true }) + ' (EdgeDesk calculates). The rows marked "payout differs" explain the gap; the book\u2019s own figures are what get stored.' });
+    }
+    var profile = plat.platform ? profileFor(plat.platform) : null;
+    if (profile && profile.verified === false && plat.how !== 'MIXED') {
+      fileIssues.push({ level: 'info', code: 'PROFILE_UNVERIFIED', message: 'EdgeDesk has not yet checked this format against a real ' + E.platformLabel(plat.platform)
+        + ' export. Check the columns below before importing.' });
+    }
+    return { adapter: adapter.key, adapterLabel: adapter.label, platformType: adapter.platformType, detectedScore: found.score,
+      headers: headers, map: map, delimiter: parsed.delimiter, timezone: tz, dateOrder: ctx.dateOrder, priceCents: cents,
+      rows: staged, mergedRows: records.length - staged.length, tickets: grouping ? grouping.report : null, fileIssues: fileIssues, signature: headerSignature(headers), range: dateRange(staged), totals: totals,
+      platform: plat.platform, platformHow: plat.how, profile: profile ? { key: profile.key, verified: profile.verified } : null };
+  }
+  /* what the browser can say before the server classifies: errors are
+     INVALID, warnings NEED REVIEW; duplicates are the server's call */
+  function localCounts(rows) {
+    var c = { total: rows.length, ok: 0, review: 0, invalid: 0 };
+    rows.forEach(function (r) {
+      var lv = r.issues.map(function (x) { return x.level; });
+      if (lv.indexOf('error') >= 0) c.invalid++; else if (lv.indexOf('warning') >= 0) c.review++; else c.ok++;
+    });
+    return c;
+  }
+
+  return {
+    MAX_ROWS: MAX_ROWS, MAX_BYTES: MAX_BYTES, ADAPTERS: ADAPTERS,
+    parseCSV: parseCSV, detectDelimiter: detectDelimiter, headerToken: headerToken, detect: detect, proposeMap: proposeMap,
+    readMoney: readMoney, readNumber: readNumber, readOdds: readOdds, readPrice: readPrice, readDate: readDate,
+    readStatus: readStatus, readSide: readSide, readAction: readAction, inferType: inferType,
+    normalizeWager: normalizeWager, normalizeFill: normalizeFill, stage: stage, localCounts: localCounts,
+    PROFILES: PROFILES, profileFor: profileFor, headerSignature: headerSignature, detectPlatform: detectPlatform, groupLegs: groupLegs,
+    LEG_ROW_FIELDS: LEG_ROW_FIELDS, TICKET_MONEY_FIELDS: TICKET_MONEY_FIELDS, groupTickets: groupTickets, groupLegRecords: groupLegRecords, looksLikeLegRows: looksLikeLegRows, legsStatus: legsStatus,
+    estimate: estimate, readStakeType: readStakeType, dateRange: dateRange, totalsCheck: totalsCheck
+  };
+}));
+/*__EDPORTIMPORT_END__*/
+/*__EDBETS_START__*/
+/* ===========================================================================
+   EDGEDESK BET HISTORY — private performance intelligence over a reader's
+   own sportsbook tickets.
+   docs/portfolio-architecture.md § Bet-history intelligence
+
+   One question: "Why did I lose money on my recent bets, and were my singles
+   or parlays more profitable?" — answered from the reader's own history,
+   exactly, with every figure's sample size beside it.
+
+   TWO INPUTS, ONE ANALYSIS
+     fromCSV(text)          a bet-tracker export (Juice Reel style). Rows are
+                            grouped into TICKETS by the ticket id with the
+                            Portfolio importer's leg-row adapter
+                            (EDPortfolioImport, leg_rows_sportsbook_v1): a
+                            3-leg parlay exported as 3 rows is ONE ticket with
+                            3 legs, and its stake is counted once. The CSV is
+                            parsed here, in the reader's browser.
+     fromPositions(rows)    the reader's stored portfolio_positions rows (read
+                            under row level security), legs jsonb included.
+
+   EXACT MONEY
+     Every amount is an exact decimal string, computed with EDPortfolio's
+     BigInt decimals and its derive() rules (the database trigger's rules) —
+     never a binary float. Money is reported to the cent ("-183.55"); ratios
+     (ROI, win rate, shares) to six places, rounded half away from zero.
+
+   WHAT COUNTS
+     settled     WON / LOST / PUSH (and a book's re-priced SETTLED): in P&L,
+                 risked and ROI.
+     cashed out  in P&L, risked and ROI at what the book actually paid;
+                 kept apart from the win rate.
+     open        not in P&L; reported as open exposure (stake at risk).
+     void        left out of everything (the stake came back).
+     excluded    a ticket whose own rows disagree on its stake, price or
+                 result, or whose P&L cannot be computed: listed, never guessed.
+     ROI = net P&L / risked (settled + cashed out). Win rate = wins / (wins +
+     losses). Groups under 30 counted tickets are labelled "small sample".
+
+   WHAT IT NEVER SAYS
+     answer() describes the past only. It never implies past results predict
+     future profit and never suggests betting more to get money back;
+     checkLanguage() is the guard the tests run on every answer.
+
+   Browser: window.EDBETS.   Node: require('./edgedesk_bet_history.js').
+   =========================================================================== */
+(function (root, factory) {
+  var req = typeof require === 'function' ? require : null;
+  var E = root.EDPortfolio || (req ? req('./edgedesk_portfolio.js') : null);
+  var I = root.EDPortfolioImport || (req ? req('./edgedesk_portfolio_import.js') : null);
+  var api = factory(E, I);
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  root.EDBETS = api;
+}(typeof self !== 'undefined' ? self : (typeof globalThis !== 'undefined' ? globalThis : this), function (E, I) {
+  'use strict';
+
+  var VERSION = 'bet_history_v1';
+  var D = E.dec;
+  var SMALL_SAMPLE = 30;
+  var DAY_SHARE = '0.25';
+  var QUESTION = 'Why did I lose money on my recent bets, and were my singles or parlays more profitable?';
+
+  /* ═══ 1. VOCABULARY ═══════════════════════════════════════════════════ */
+  /* price bands, by the ticket's American price (exact decimal bounds when
+     only a decimal price exists: -200 ⇔ 1.5, -110 ⇔ 21/11, +100 ⇔ 2,
+     +200 ⇔ 3, +500 ⇔ 6) */
+  var ODDS_RANGES = [
+    { key: 'LE_M200', label: '≤ −200' },
+    { key: 'M199_M110', label: '−199 to −110' },
+    { key: 'M109_P100', label: '−109 to +100' },
+    { key: 'P101_P200', label: '+101 to +200' },
+    { key: 'P201_P500', label: '+201 to +500' },
+    { key: 'GT_P500', label: '> +500' },
+    { key: 'NO_PRICE', label: 'No price recorded' }
+  ];
+  /* stake bands, in dollars: [from, to) */
+  var STAKE_BANDS = [
+    { key: 'S0', from: '0', to: '10', label: 'Under $10' },
+    { key: 'S10', from: '10', to: '25', label: '$10–$24.99' },
+    { key: 'S25', from: '25', to: '50', label: '$25–$49.99' },
+    { key: 'S50', from: '50', to: '100', label: '$50–$99.99' },
+    { key: 'S100', from: '100', to: '250', label: '$100–$249.99' },
+    { key: 'S250', from: '250', to: '500', label: '$250–$499.99' },
+    { key: 'S500', from: '500', to: null, label: '$500 and over' }
+  ];
+  var BET_TYPE_LABEL = { SINGLE: 'Single', PARLAY: 'Parlay', SAME_GAME_PARLAY: 'Same-game parlay', TEASER: 'Teaser', ROUND_ROBIN: 'Round robin' };
+  /* the ticket-level fields whose disagreement makes a ticket's P&L unknowable (the importer's list) */
+  var MONEY_CONFLICTS = I.TICKET_MONEY_FIELDS;
+  /* what each data-quality code means, in words */
+  var ISSUE_LABEL = {
+    NO_TICKET_ID: 'Rows with no ticket id, counted as singles', TICKET_FIELDS_DIFFER: 'Tickets whose rows disagree on stake, price, result or dates',
+    DUPLICATE_ROW_MERGED: 'Duplicate rows counted once', DUPLICATE_LEG_DIFFERS: 'A leg listed twice with different details',
+    LEG_COUNT_MISMATCH: 'Leg count differs from the leg rows', LEG_STATUS_DISAGREES: 'Ticket result differs from its legs', BET_TYPE_DISAGREES: 'Bet type differs from the legs',
+    ODDS_FROM_LEGS: 'Parlay priced from its legs (no ticket price)', STATUS_FROM_LEGS: 'Ticket result read from its legs',
+    SETTLED_BEFORE_PLACED: 'Settled before it was placed', PAYOUT_MISMATCH: 'Payout differs from what the price pays', UNKNOWN_STATUS: 'Unknown status (read as pending)',
+    PNL_UNKNOWN: 'No price or payout to compute P&L', NO_STAKE: 'No usable stake', BAD_ODDS: 'Odds unreadable', BAD_STAKE: 'Stake unreadable',
+    AMBIGUOUS_DECIMAL: 'Decimal comma in an amount', BAD_PLACED_AT: 'Placed date unreadable', PAYOUT_NEEDED: 'Cash-out with no amount paid',
+    BAD_PLATFORM: 'No sportsbook named', FUTURE_PLACED_AT: 'Placed in the future', MISSING_EVENT_NAME: 'No event', MISSING_SELECTION: 'No selection'
+  };
+
+  function up(x) { return x == null ? null : (String(x).trim().toUpperCase() || null); }
+  function txt(x) { return x == null ? null : (String(x).trim() || null); }
+  function num(x) { return x == null || x === '' || !D.valid(x) ? null : D.str(x); }
+  function cents(x) { return D.fixed(x == null ? '0' : x, 2); }
+  function ratio(a, b) { return D.sign(b) > 0 ? D.divRound(a, b, 6) : null; }
+  function ms(x) { var t = Date.parse(x); return x && isFinite(t) ? t : null; }
+  function absS(x) { return D.sign(x) < 0 ? D.sub('0', x) : D.str(x); }
+  /* the local day of an instant: EDPortfolio.localDate's format, with one
+     formatter per zone (building one per ticket is what made big books slow) */
+  var DAY_FMT = {};
+  function localDay(t, tz) {
+    var k = tz || 'UTC', f = DAY_FMT[k];
+    if (f === undefined) {
+      try { f = new Intl.DateTimeFormat('en-CA', { timeZone: k, year: 'numeric', month: '2-digit', day: '2-digit' }); } catch (_) { f = null; }
+      DAY_FMT[k] = f;
+    }
+    return f ? f.format(new Date(t)) : E.localDate(t, k);
+  }
+
+  /* a price as an exact fraction (num / den = decimal odds) */
+  function priceFraction(american, decimal) {
+    var a = E.intAmerican(american);
+    if (a != null) return a >= 100 ? { n: String(a + 100), d: '100' } : { n: String(Math.abs(a) + 100), d: String(Math.abs(a)) };
+    var dc = num(decimal);
+    return dc && D.cmp(dc, '1') > 0 ? { n: dc, d: '1' } : null;
+  }
+  function oddsRangeKey(american, decimal) {
+    var a = E.intAmerican(american);
+    if (a != null) {
+      if (a <= -200) return 'LE_M200';
+      if (a <= -110) return 'M199_M110';
+      if (a <= 100) return 'M109_P100';
+      if (a <= 200) return 'P101_P200';
+      if (a <= 500) return 'P201_P500';
+      return 'GT_P500';
+    }
+    var d = num(decimal);
+    if (!d || D.cmp(d, '1') <= 0) return 'NO_PRICE';
+    if (D.cmp(d, '1.5') <= 0) return 'LE_M200';
+    if (D.cmp(D.mul(d, '11'), '21') <= 0) return 'M199_M110';
+    if (D.cmp(d, '2') <= 0) return 'M109_P100';
+    if (D.cmp(d, '3') <= 0) return 'P101_P200';
+    if (D.cmp(d, '6') <= 0) return 'P201_P500';
+    return 'GT_P500';
+  }
+  function stakeBandKey(stake) {
+    var s = num(stake);
+    if (!s) return null;
+    for (var i = 0; i < STAKE_BANDS.length; i++) {
+      var b = STAKE_BANDS[i];
+      if (D.cmp(s, b.from) >= 0 && (b.to == null || D.cmp(s, b.to) < 0)) return b.key;
+    }
+    return null;
+  }
+  /* the win rate a price needs to break even: 1 / decimal, exactly */
+  function breakEven(american, decimal) {
+    var f = priceFraction(american, decimal);
+    return f ? D.divRound(f.d, f.n, 6) : null;
+  }
+  function heavyJuice(american, decimal) {
+    var a = E.intAmerican(american);
+    if (a != null) return a <= -200;
+    var d = num(decimal);
+    return !!d && D.cmp(d, '1') > 0 && D.cmp(d, '1.5') <= 0;
+  }
+  /* a heavily juiced alternate line: an alt spread / total priced -200 or
+     shorter, or any market the book itself calls "alt" / "alternate" */
+  var ALT_WORD = /\balt(ernate)?\b/i;
+  function isAltLine(marketType, marketText, american, decimal) {
+    var mt = up(marketType);
+    return ALT_WORD.test(String(marketText || '')) || ((mt === 'SPREAD' || mt === 'TOTAL') && heavyJuice(american, decimal));
+  }
+
+  /* ═══ 2. TICKETS ══════════════════════════════════════════════════════ */
+  function legFrom(l) {
+    l = l || {};
+    var market = txt(l.market_name || l.market), sel = txt(l.selection);
+    var mt = up(l.position_type || l.market_type) || I.inferType([market, sel].join(' '));
+    if (E.POSITION_TYPES.indexOf(mt) < 0) mt = I.inferType(mt);
+    var am = E.intAmerican(l.odds_american), dc = am == null ? num(l.odds_decimal) : null;
+    return { selection: sel, event: txt(l.event_name || l.event), market: market, marketType: mt, line: num(l.line),
+      oddsAmerican: am, oddsDecimal: dc, result: up(l.result || l.status), sport: txt(l.sport),
+      alt: isAltLine(mt, market, am, dc) };
+  }
+  function parseLegs(x) {
+    if (Array.isArray(x)) return x;
+    if (typeof x === 'string' && x.trim()) { try { var v = JSON.parse(x); return Array.isArray(v) ? v : null; } catch (_) { return null; } }
+    return null;
+  }
+  function betTypeOf(w, legs) {
+    var t = String([w.bet_type, w.market_name].join(' ')).toLowerCase(), pt = up(w.position_type);
+    if (up(w.bet_type) === 'TEASER' || /teaser/.test(t)) return 'TEASER';
+    if (up(w.bet_type) === 'ROUND_ROBIN' || /round ?robin/.test(t)) return 'ROUND_ROBIN';
+    if (pt === 'SAME_GAME_PARLAY') return 'SAME_GAME_PARLAY';
+    if (pt === 'PARLAY') return 'PARLAY';
+    if (legs.length > 1) return 'PARLAY';
+    return 'SINGLE';
+  }
+  var DATE_MESSAGES = {
+    MISSING_PLACED_AT: 'No placed date.', BAD_PLACED_AT: 'The placed date could not be read.',
+    SETTLED_BEFORE_PLACED: 'Settled before it was placed (or placed after it settled).', FUTURE_DATE: 'Dated in the future.',
+    MISSING_SETTLED_AT: 'Settled, with no settled date; dated by when it was placed.', OPEN_WITH_SETTLED_AT: 'Pending, yet it has a settled date.'
+  };
+  /* the timestamp checks, on what the source actually said */
+  function dateIssues(placedRaw, settledRaw, placed, settled, open, now, readable) {
+    var out = [], tp = ms(placed), ts = ms(settled), soon = (now == null ? Date.now() : now) + 86400000;
+    if (txt(placedRaw) == null) out.push('MISSING_PLACED_AT');
+    else if (tp == null || readable === false) out.push('BAD_PLACED_AT');
+    if (tp != null && ts != null && ts < tp) out.push('SETTLED_BEFORE_PLACED');
+    if ((tp != null && tp > soon) || (ts != null && ts > soon)) out.push('FUTURE_DATE');
+    if (!open && txt(settledRaw) == null) out.push('MISSING_SETTLED_AT');
+    if (open && txt(settledRaw) != null) out.push('OPEN_WITH_SETTLED_AT');
+    return out;
+  }
+  /* one wager-shaped record (an import-normalized wager or a stored
+     position) → a ticket. meta: { source, ref, rows, issues, conflicts,
+     storedPnl, storedRisk, placedRaw, settledRaw, settledForDay, now } */
+  function ticketFrom(w, meta) {
+    meta = meta || {};
+    var legs = (parseLegs(w.legs) || []).map(legFrom);
+    var betType = betTypeOf(w, legs), kind = betType === 'SINGLE' ? 'SINGLE' : 'PARLAY';
+    var status = up(w.status) || 'OPEN';
+    var am = E.intAmerican(w.odds_american), dc = am == null ? num(w.odds_decimal) : null;
+    var stake = num(w.stake);
+    var d = E.derive({ platform_type: 'SPORTSBOOK', stake: stake, odds_american: am, odds_decimal: dc, status: status,
+      reported_payout: num(w.reported_payout), fees: num(w.fees), stake_type: w.stake_type });
+    var pnl = num(meta.storedPnl) != null ? num(meta.storedPnl) : d.profit_loss;
+    var risked = num(meta.storedRisk) != null ? num(meta.storedRisk) : d.cost_basis;
+    var state = status === 'OPEN' ? 'OPEN' : status === 'VOID' ? 'VOID' : status === 'CASHED_OUT' ? 'CASHED_OUT' : 'SETTLED';
+    var issues = (meta.issues || []).map(function (x) { return { level: x.level, code: x.code, message: x.message }; });
+    var excluded = null;
+    var conflicts = (meta.conflicts || []).filter(function (f) { return MONEY_CONFLICTS.indexOf(f) >= 0; });
+    if (conflicts.length) excluded = 'TICKET_FIELDS_DIFFER';
+    else if (!stake || D.sign(stake) <= 0) excluded = 'NO_STAKE';
+    else if ((state === 'SETTLED' || state === 'CASHED_OUT') && pnl == null) excluded = 'PNL_UNKNOWN';
+    if (excluded && excluded !== 'TICKET_FIELDS_DIFFER') issues.push({ level: 'error', code: excluded, message: excluded === 'NO_STAKE' ? 'No usable stake.' : 'Its profit or loss cannot be computed from the file (no price or payout).' });
+    var marketType = kind === 'PARLAY' ? betType : (up(w.position_type) || 'OTHER');
+    if (kind === 'SINGLE' && E.POSITION_TYPES.indexOf(marketType) < 0) marketType = 'OTHER';
+    if (kind === 'SINGLE' && (marketType === 'PARLAY' || marketType === 'SAME_GAME_PARLAY')) marketType = 'OTHER';
+    var sports = {};
+    legs.forEach(function (l) { if (l.sport) sports[l.sport.toUpperCase()] = 1; });
+    var sport = txt(w.sport) ? String(w.sport).trim().toUpperCase() : (Object.keys(sports).length === 1 ? Object.keys(sports)[0] : null);
+    if (Object.keys(sports).length > 1) sport = 'MULTI';
+    var placed = txt(w.placed_at), settled = state === 'OPEN' ? null : txt(meta.settledForDay !== undefined ? meta.settledForDay : w.settled_at);
+    var dates = dateIssues(meta.placedRaw !== undefined ? meta.placedRaw : w.placed_at, meta.settledRaw !== undefined ? meta.settledRaw : w.settled_at,
+      meta.placedParsed !== undefined ? meta.placedParsed : w.placed_at, meta.settledParsed !== undefined ? meta.settledParsed : w.settled_at,
+      state === 'OPEN', meta.now, meta.placedReadable);
+    var closeAm = E.intAmerican(w.closing_odds_american), closeDc = closeAm == null ? num(w.closing_odds_decimal) : null;
+    var t = {
+      ref: meta.ref != null ? String(meta.ref) : (w.external_position_id || w.id || null), source: meta.source || null, positionId: w.id || null,
+      rows: meta.rows || null, kind: kind, betType: betType, status: status,
+      state: excluded ? 'EXCLUDED' : state, excludedReason: excluded,
+      result: excluded || state === 'OPEN' || state === 'VOID' ? null : (d.result || (pnl != null ? (D.sign(pnl) > 0 ? 'WIN' : D.sign(pnl) < 0 ? 'LOSS' : 'PUSH') : null)),
+      platform: txt(w.platform), platformLabel: txt(w.platform_label), sport: sport, league: txt(w.league),
+      marketType: marketType, market: txt(w.market_name), event: txt(w.event_name), selection: txt(w.selection),
+      stake: stake, risked: risked == null ? stake : risked, pnl: excluded || state === 'OPEN' || state === 'VOID' ? null : pnl,
+      payout: num(w.reported_payout), oddsAmerican: am, oddsDecimal: dc != null ? dc : d.odds_decimal,
+      closingAmerican: closeAm, closingDecimal: closeDc,
+      placedAt: placed, settledAt: settled, dayAt: settled || placed,
+      legs: legs, legCount: legs.length ? legs.length : (kind === 'SINGLE' ? 1 : null),
+      alt: kind === 'SINGLE' && isAltLine(marketType, [w.market_name, w.bet_type].join(' '), am, dc),
+      altLegs: kind === 'PARLAY' ? legs.filter(function (l) { return l.alt; }).length : 0,
+      dateIssues: dates, issues: issues
+    };
+    t.counted = t.state === 'SETTLED' || t.state === 'CASHED_OUT';
+    return t;
+  }
+
+  /* ═══ 3. SOURCES ══════════════════════════════════════════════════════ */
+  /* a bet-tracker CSV → tickets, grouped by ticket id (the importer's
+     leg-row adapter). opts: timezone, dateOrder ('MDY' | 'DMY'), now, map,
+     platform, fileName */
+  function fromCSV(text, opts) {
+    opts = opts || {};
+    var st = I.stage(text, { adapter: 'leg_rows_sportsbook_v1', map: opts.map, platform: opts.platform, platformLabel: opts.platformLabel,
+      timezone: opts.timezone || opts.tz, dateOrder: opts.dateOrder, now: opts.now, fileName: opts.fileName });
+    var map = st.map || {}, tz = st.timezone || 'UTC', order = st.dateOrder || 'MDY';
+    var tickets = (st.rows || []).map(function (r) {
+      var rec = r.merged || r.raw || {}, n = r.normalized || {};
+      var placedRaw = map.placed_at ? rec[map.placed_at] : null, settledRaw = map.settled_at ? rec[map.settled_at] : null;
+      var pd = I.readDate(placedRaw, tz, order), sd = I.readDate(settledRaw, tz, order);
+      return ticketFrom(n, { source: 'csv', ref: r.ticket && r.ticket.id ? r.ticket.id : 'row ' + r.row_number, rows: r.ticket ? r.ticket.rows : [r.row_number],
+        issues: r.issues, conflicts: r.ticket ? r.ticket.conflicts : [], placedRaw: placedRaw, settledRaw: settledRaw,
+        placedParsed: pd.value || null, settledParsed: sd.value || null, placedReadable: !pd.error, now: opts.now });
+    });
+    var rep = st.tickets || { rowsRead: (st.rows || []).length, tickets: tickets.length, multiLegTickets: 0, legRowsJoined: 0, duplicateRows: 0, duplicateRowsExact: 0, noTicketId: 0, conflictedTickets: 0 };
+    return { source: 'csv', tickets: tickets, report: rep, fileIssues: st.fileIssues || [], map: map, headers: st.headers || [], timezone: tz,
+      clvColumn: !!map.closing_odds, totals: st.totals || null };
+  }
+  /* the reader's stored portfolio_positions rows → tickets. Prediction-market
+     positions are not sportsbook tickets and are counted apart; a row listed
+     twice (by id) is counted once. */
+  function fromPositions(rows, opts) {
+    opts = opts || {};
+    var seen = {}, tickets = [], report = { positions: (rows || []).length, duplicateIds: 0, predictionMarket: 0, legsUnknown: 0 };
+    (rows || []).forEach(function (p) {
+      if (!p) return;
+      if (up(p.platform_type) === 'PREDICTION_MARKET') { report.predictionMarket++; return; }
+      if (p.id != null) { if (seen[p.id]) { report.duplicateIds++; return; } seen[p.id] = 1; }
+      var stored = p.profit_loss != null ? p.profit_loss : p.realized_profit_loss;
+      var t = ticketFrom(p, { source: 'positions', ref: p.external_position_id || p.id, storedPnl: up(p.status) === 'OPEN' ? null : stored,
+        storedRisk: p.cost_basis, now: opts.now });
+      if (t.kind === 'PARLAY' && !t.legs.length) report.legsUnknown++;
+      tickets.push(t);
+    });
+    return { source: 'positions', tickets: tickets, report: report, fileIssues: [],
+      clvColumn: tickets.some(function (t) { return t.closingAmerican != null || t.closingDecimal; }) };
+  }
+  function sourceOf(input, opts) {
+    if (typeof input === 'string') return fromCSV(input, opts);
+    if (Array.isArray(input)) {
+      /* tickets already built, or stored position rows */
+      if (input.length && input[0] && input[0].kind && input[0].state) return { source: 'tickets', tickets: input, report: {}, fileIssues: [], clvColumn: input.some(function (t) { return t.closingAmerican != null || t.closingDecimal; }) };
+      return fromPositions(input, opts);
+    }
+    return input && input.tickets ? input : { source: 'empty', tickets: [], report: {}, fileIssues: [], clvColumn: false };
+  }
+
+  /* ═══ 4. GROUPS ═══════════════════════════════════════════════════════ */
+  function newGroup(key, label) {
+    return { key: key, label: label, n: 0, risked: '0', pnl: '0', wins: 0, losses: 0, pushes: 0, cashouts: 0, legs: 0, legsUnknown: 0,
+      open: 0, openExposure: '0', void: 0, excluded: 0, tickets: [] };
+  }
+  function put(g, t) {
+    if (t.counted) {
+      g.n++; g.risked = D.add(g.risked, t.risked || '0'); g.pnl = D.add(g.pnl, t.pnl || '0');
+      if (t.result === 'WIN') g.wins++; else if (t.result === 'LOSS') g.losses++; else if (t.result === 'PUSH') g.pushes++; else if (t.result === 'CASHOUT') g.cashouts++;
+      if (t.legCount != null) g.legs += t.legCount; else g.legsUnknown++;
+      if (t.ref != null) g.tickets.push(t.ref);
+    } else if (t.state === 'OPEN') { g.open++; g.openExposure = D.add(g.openExposure, t.risked || t.stake || '0'); }
+    else if (t.state === 'VOID') g.void++;
+    else if (t.state === 'EXCLUDED') g.excluded++;
+  }
+  function finish(g, small) {
+    var wl = g.wins + g.losses;
+    return { key: g.key, label: g.label, n: g.n, risked: cents(g.risked), pnl: cents(g.pnl), roi: ratio(g.pnl, g.risked),
+      wins: g.wins, losses: g.losses, pushes: g.pushes, cashouts: g.cashouts, winRate: wl ? D.divRound(String(g.wins), String(wl), 6) : null,
+      legs: g.legs, legsUnknown: g.legsUnknown, open: g.open, openExposure: cents(g.openExposure), void: g.void, excluded: g.excluded,
+      small: g.n < small, sample: g.n < small ? 'small sample' : null, tickets: g.tickets };
+  }
+  /* counted tickets grouped by keyFn → finished groups, worst P&L first */
+  function groupBy(tickets, keyFn, labelFn, small, order) {
+    var by = {}, keys = [];
+    tickets.forEach(function (t) {
+      if (!t.counted) return;
+      var k = keyFn(t);
+      if (k == null) return;
+      if (!by[k]) { by[k] = newGroup(k, labelFn(k, t)); keys.push(k); }
+      put(by[k], t);
+    });
+    var out = keys.map(function (k) { return finish(by[k], small); });
+    if (order) return out.sort(function (a, b) { return order.indexOf(a.key) - order.indexOf(b.key); });
+    return out.sort(function (a, b) { return D.cmp(a.pnl, b.pnl) || b.n - a.n || String(a.label).localeCompare(String(b.label)); });
+  }
+  var ODDS_LABEL = {}, STAKE_LABEL = {};
+  ODDS_RANGES.forEach(function (r) { ODDS_LABEL[r.key] = r.label; });
+  STAKE_BANDS.forEach(function (b) { STAKE_LABEL[b.key] = b.label; });
+
+  /* ═══ 5. analyze() ════════════════════════════════════════════════════
+     input: fromCSV(...) / fromPositions(...) output, a CSV string, or an
+     array of stored position rows. opts: tz (local days), from / to (epoch
+     ms: settled tickets by the day they settled; open tickets are always
+     now), now, smallSample (30), lossDayShare ('0.25'). */
+  function analyze(input, opts) {
+    opts = opts || {};
+    var src = sourceOf(input, opts);
+    var tz = opts.tz || opts.timezone || src.timezone || 'UTC', small = opts.smallSample || SMALL_SAMPLE;
+    var share = num(opts.lossDayShare) || DAY_SHARE;
+    var from = opts.from == null ? null : opts.from, to = opts.to == null ? null : opts.to;
+    var all = src.tickets || [];
+    var tickets = all.filter(function (t) {
+      if (t.state === 'OPEN' || (from == null && to == null)) return true;
+      var at = ms(t.dayAt);
+      return at != null && (from == null || at >= from) && (to == null || at < to);
+    });
+    var counted = tickets.filter(function (t) { return t.counted; });
+
+    /* totals */
+    var tot = newGroup('ALL', 'All tickets');
+    tickets.forEach(function (t) { put(tot, t); });
+    var totals = finish(tot, small);
+    var voidStake = tickets.filter(function (t) { return t.state === 'VOID'; }).reduce(function (s, t) { return D.add(s, t.stake || '0'); }, '0');
+    totals.voidStake = cents(voidStake);
+    var counts = { tickets: tickets.length, legs: 0, legsUnknown: 0, singles: 0, parlays: 0, settled: 0, cashedOut: 0, open: 0, void: 0, excluded: 0, counted: counted.length };
+    tickets.forEach(function (t) {
+      if (t.legCount != null) counts.legs += t.legCount; else counts.legsUnknown++;
+      if (t.kind === 'SINGLE') counts.singles++; else counts.parlays++;
+      if (t.state === 'SETTLED') counts.settled++; else if (t.state === 'CASHED_OUT') counts.cashedOut++; else if (t.state === 'OPEN') counts.open++;
+      else if (t.state === 'VOID') counts.void++; else counts.excluded++;
+    });
+
+    /* singles vs parlays (every state, so open and void show beside them) */
+    var kinds = { SINGLE: newGroup('SINGLE', 'Singles'), PARLAY: newGroup('PARLAY', 'Parlays') };
+    tickets.forEach(function (t) { put(kinds[t.kind], t); });
+    var singles = finish(kinds.SINGLE, small), parlays = finish(kinds.PARLAY, small);
+    var comparison = compare(singles, parlays, small);
+
+    /* the dimensions */
+    var bySport = groupBy(counted, function (t) { return t.sport || 'UNSPECIFIED'; }, function (k) { return k === 'UNSPECIFIED' ? 'No sport recorded' : k === 'MULTI' ? 'Multi-sport parlays' : k; }, small);
+    var byMarketType = groupBy(counted, function (t) { return t.marketType; }, function (k) { return BET_TYPE_LABEL[k] && k !== 'SINGLE' ? BET_TYPE_LABEL[k] : (E.POSITION_TYPE_LABEL[k] || k); }, small);
+    var byBetType = groupBy(counted, function (t) { return t.betType; }, function (k) { return BET_TYPE_LABEL[k] || k; }, small);
+    var byOddsRange = groupBy(counted, function (t) { return oddsRangeKey(t.oddsAmerican, t.oddsDecimal); }, function (k) { return ODDS_LABEL[k]; }, small, ODDS_RANGES.map(function (r) { return r.key; }));
+    var byStakeSize = groupBy(counted, function (t) { return stakeBandKey(t.stake); }, function (k) { return STAKE_LABEL[k]; }, small, STAKE_BANDS.map(function (b) { return b.key; }));
+
+    /* days: the local day each ticket settled (its placed day when the
+       settled date is missing or comes before it) */
+    var dayGroups = groupBy(counted, function (t) { var at = ms(t.dayAt); return at == null ? null : localDay(at, tz); }, function (k) { return k; }, small);
+    var undated = counted.filter(function (t) { return ms(t.dayAt) == null; }).length;
+    var losing = dayGroups.filter(function (g) { return D.sign(g.pnl) < 0; });
+    var totalLosses = losing.reduce(function (s, g) { return D.add(s, absS(g.pnl)); }, '0');
+    losing.forEach(function (g) { g.share = ratio(absS(g.pnl), totalLosses); });
+    var days = {
+      list: dayGroups.slice().sort(function (a, b) { return a.key < b.key ? -1 : a.key > b.key ? 1 : 0; }).map(function (g) { return { date: g.key, n: g.n, risked: g.risked, pnl: g.pnl, share: g.share || null }; }),
+      count: dayGroups.length, losingDays: losing.length, totalLosses: cents(totalLosses), threshold: share, undated: undated,
+      disproportionate: losing.filter(function (g) { return D.cmp(g.share, share) >= 0; }).map(function (g) { return { date: g.key, n: g.n, pnl: g.pnl, risked: g.risked, share: g.share, small: g.small }; }),
+      worst: losing.length ? { date: losing[0].key, n: losing[0].n, pnl: losing[0].pnl, risked: losing[0].risked, share: losing[0].share } : null
+    };
+
+    /* heavily juiced alternate lines */
+    var altS = newGroup('ALT_SINGLES', 'Alt-line singles'), altP = newGroup('ALT_PARLAYS', 'Parlays with alt-line legs'), altA = newGroup('ALT_ALL', 'Heavily juiced alternate lines');
+    var altLegs = 0, altLegBe = [], altSingleBe = [], grossLoss = '0', altLoss = '0';
+    counted.forEach(function (t) {
+      if (D.sign(t.pnl) < 0) grossLoss = D.add(grossLoss, absS(t.pnl));
+      var touches = (t.kind === 'SINGLE' && t.alt) || (t.kind === 'PARLAY' && t.altLegs > 0);
+      if (!touches) return;
+      put(altA, t);
+      if (t.kind === 'SINGLE') { put(altS, t); var be = breakEven(t.oddsAmerican, t.oddsDecimal); if (be) altSingleBe.push(be); }
+      else {
+        put(altP, t); altLegs += t.altLegs;
+        t.legs.forEach(function (l) { if (l.alt) { var b = breakEven(l.oddsAmerican, l.oddsDecimal); if (b) altLegBe.push(b); } });
+      }
+      if (D.sign(t.pnl) < 0) altLoss = D.add(altLoss, absS(t.pnl));
+    });
+    var mean = function (list) { return list.length ? D.divRound(D.sum(list), String(list.length), 6) : null; };
+    var altLines = { singles: finish(altS, small), parlays: finish(altP, small), combined: finish(altA, small), legs: altLegs,
+      singlesBreakEven: mean(altSingleBe), legsBreakEven: mean(altLegBe), losses: cents(altLoss), grossLosses: cents(grossLoss),
+      shareOfLosses: ratio(altLoss, grossLoss), rule: 'Alt spreads and totals priced −200 or shorter, or any market named "alt" / "alternate".' };
+
+    /* closing-line value: singles only, when the source has closing prices */
+    var clv = closing(tickets, src.clvColumn, small);
+
+    /* data quality */
+    var issueCount = {}, issueTickets = {};
+    var timestamps = { missingPlaced: 0, badPlaced: 0, settledBeforePlaced: 0, futureDates: 0, missingSettled: 0, openWithSettled: 0, tickets: {} };
+    var DATE_KEY = { MISSING_PLACED_AT: 'missingPlaced', BAD_PLACED_AT: 'badPlaced', SETTLED_BEFORE_PLACED: 'settledBeforePlaced', FUTURE_DATE: 'futureDates', MISSING_SETTLED_AT: 'missingSettled', OPEN_WITH_SETTLED_AT: 'openWithSettled' };
+    tickets.forEach(function (t) {
+      t.dateIssues.forEach(function (c) { timestamps[DATE_KEY[c]]++; (timestamps.tickets[c] = timestamps.tickets[c] || []).push(t.ref); });
+      var seen = {};
+      t.issues.forEach(function (x) {
+        if (x.level === 'info' && ['DUPLICATE_ROW_MERGED', 'ODDS_FROM_LEGS', 'STATUS_FROM_LEGS'].indexOf(x.code) < 0) return;
+        if (seen[x.code]) { if (x.code === 'DUPLICATE_ROW_MERGED') issueCount[x.code]++; return; }
+        seen[x.code] = 1; issueCount[x.code] = (issueCount[x.code] || 0) + 1; (issueTickets[x.code] = issueTickets[x.code] || []).push(t.ref);
+      });
+    });
+    var LEVEL = {}; tickets.forEach(function (t) { t.issues.forEach(function (x) { if (!LEVEL[x.code] || x.level === 'error') LEVEL[x.code] = x.level; }); });
+    var dataQuality = {
+      issues: Object.keys(issueCount).sort().map(function (c) { return { code: c, level: LEVEL[c] || 'info', n: issueCount[c], tickets: issueTickets[c] }; }),
+      excluded: tickets.filter(function (t) { return t.state === 'EXCLUDED'; }).map(function (t) { return { ref: t.ref, reason: t.excludedReason, rows: t.rows }; }),
+      timestamps: timestamps,
+      dedupe: dedupeReport(src),
+      fileIssues: (src.fileIssues || []).map(function (x) { return { level: x.level, code: x.code, message: x.message }; })
+    };
+
+    /* the worst segments across every dimension */
+    var segments = [];
+    [['sport', 'Sport', bySport], ['market', 'Market type', byMarketType], ['odds', 'Price range', byOddsRange], ['stake', 'Stake size', byStakeSize], ['day', 'Day', dayGroups]]
+      .forEach(function (d) {
+        d[2].forEach(function (g) { if (g.n > 0 && D.sign(g.pnl) < 0) segments.push({ dimension: d[0], dimensionLabel: d[1], key: g.key, label: g.label, n: g.n, risked: g.risked, pnl: g.pnl, roi: g.roi, small: g.small, sample: g.sample, share: g.share || null }); });
+      });
+    segments.sort(function (a, b) { return D.cmp(a.pnl, b.pnl) || b.n - a.n || (a.dimension + a.label).localeCompare(b.dimension + b.label); });
+
+    return {
+      version: VERSION, question: QUESTION, source: src.source, tz: tz, from: from, to: to, smallSample: small,
+      counts: counts, totals: totals, singles: singles, parlays: parlays, comparison: comparison,
+      bySport: bySport, byMarketType: byMarketType, byBetType: byBetType, byOddsRange: byOddsRange, byStakeSize: byStakeSize,
+      days: days, altLines: altLines, clv: clv, dataQuality: dataQuality, worstSegments: segments,
+      tickets: tickets.map(ticketSummary),
+      definitions: {
+        risked: 'The stake of every settled and cashed-out ticket (a bonus bet risks no cash). Pending and void tickets are not included.',
+        pnl: 'Net realized profit or loss: what settled and cashed-out tickets returned, less their stakes. Payout is not profit.',
+        roi: 'Net P&L divided by the amount risked.',
+        winRate: 'Wins divided by wins plus losses; pushes and cash-outs are left out.',
+        openExposure: 'The stakes of pending tickets: at risk, not yet won or lost.',
+        days: 'A ticket counts on the local day it settled (its placed day when the settled date is missing or earlier than the placed date). A day’s share is its loss over the losses of all losing days.',
+        sample: 'Any group of fewer than ' + small + ' counted tickets is marked "small sample".'
+      }
+    };
+  }
+  function compare(s, p, small) {
+    var out = { better: null, basis: 'roi', bothSmall: s.small && p.small, roiGap: null, note: null };
+    if (!s.n && !p.n) { out.note = 'No settled singles or parlays.'; return out; }
+    if (!p.n) { out.note = 'No settled parlays to compare.'; return out; }
+    if (!s.n) { out.note = 'No settled singles to compare.'; return out; }
+    if (s.roi == null || p.roi == null) return out;
+    var c = D.cmp(s.roi, p.roi);
+    out.better = c > 0 ? 'singles' : c < 0 ? 'parlays' : 'even';
+    out.roiGap = D.sub(s.roi, p.roi);
+    out.pnlGap = cents(D.sub(s.pnl, p.pnl));
+    return out;
+  }
+  function closing(tickets, column, small) {
+    if (!column) return { available: false, n: 0, note: 'The history has no closing prices, so closing-line value (CLV) is not verifiable.' };
+    var list = [];
+    tickets.forEach(function (t) {
+      if (t.kind !== 'SINGLE' || t.state === 'VOID' || t.state === 'EXCLUDED') return;
+      var a = priceFraction(t.oddsAmerican, t.oddsDecimal), c = priceFraction(t.closingAmerican, t.closingDecimal);
+      if (!a || !c) return;
+      /* (taken / closing) − 1, exactly: (aN × cD) / (aD × cN) − 1 */
+      var v = D.sub(D.divRound(D.mul(a.n, c.d), D.mul(a.d, c.n), 6), '1');
+      list.push({ ref: t.ref, clv: v });
+    });
+    if (!list.length) return { available: true, n: 0, note: 'Closing prices are present, but none line up with a single ticket’s price.' };
+    var beat = list.filter(function (x) { return D.sign(x.clv) > 0; }).length, worse = list.filter(function (x) { return D.sign(x.clv) < 0; }).length;
+    return { available: true, n: list.length, beat: beat, matched: list.length - beat - worse, worse: worse,
+      average: D.divRound(D.sum(list.map(function (x) { return x.clv; })), String(list.length), 6),
+      small: list.length < small, sample: list.length < small ? 'small sample' : null, tickets: list,
+      note: 'Singles only: a parlay’s closing price is not in the file as one number.' };
+  }
+  function dedupeReport(src) {
+    var r = src.report || {};
+    if (src.source === 'csv') return { rowsRead: r.rowsRead || 0, tickets: r.tickets || 0, legRowsJoined: r.legRowsJoined || 0, multiLegTickets: r.multiLegTickets || 0,
+      duplicateRows: r.duplicateRows || 0, duplicateRowsExact: r.duplicateRowsExact || 0, noTicketId: r.noTicketId || 0, conflictedTickets: r.conflictedTickets || 0 };
+    if (src.source === 'positions') return { positions: r.positions || 0, duplicateIds: r.duplicateIds || 0, predictionMarket: r.predictionMarket || 0, legsUnknown: r.legsUnknown || 0 };
+    return {};
+  }
+  function ticketSummary(t) {
+    return { ref: t.ref, kind: t.kind, betType: t.betType, state: t.state, status: t.status, result: t.result, sport: t.sport, marketType: t.marketType,
+      event: t.event, selection: t.selection, stake: t.stake == null ? null : cents(t.stake), risked: t.risked == null ? null : cents(t.risked),
+      pnl: t.pnl == null ? null : cents(t.pnl), oddsAmerican: t.oddsAmerican, oddsDecimal: t.oddsDecimal, legs: t.legCount, altLegs: t.altLegs, alt: t.alt,
+      placedAt: t.placedAt, settledAt: t.settledAt, rows: t.rows, excludedReason: t.excludedReason, dateIssues: t.dateIssues };
+  }
+
+  /* ═══ 6. THE ANSWER, IN WORDS ═════════════════════════════════════════
+     Deterministic: the same analytics give the same text. Every number in
+     it comes from the analytics; nothing is predicted, nothing is urged. */
+  var LANGUAGE_RULES = [
+    { code: 'CHASING', re: /\bwin (it |them |that |this |those |your money )?back\b/i },
+    { code: 'CHASING', re: /\brecover(s|ed|ing|y)?\b/i },
+    { code: 'CHASING', re: /\brecoup/i },
+    { code: 'CHASING', re: /\bchas(e|es|ed|ing)\b/i },
+    { code: 'CHASING', re: /\bmake (it|that|this|them|the money) back\b/i },
+    { code: 'CHASING', re: /\bmake up (for )?(the |your |those |these )?loss/i },
+    { code: 'CHASING', re: /\b(get|getting|got) (back )?(to )?even\b/i },
+    { code: 'CHASING', re: /\bdouble (up|down)\b/i },
+    { code: 'CHASING', re: /\bmartingale\b/i },
+    { code: 'STAKE_UP', re: /\b(raise|raising|increase|increasing|up|upping|boost|boosting|bump|bumping|press|pressing)\s+(your |the |my )?(stakes?|bet sizes?|units?|wagers?|bets?|bankroll)\b/i },
+    { code: 'STAKE_UP', re: /\bbet (more|bigger|larger|heavier)\b/i },
+    { code: 'STAKE_UP', re: /\b(bigger|larger|higher|heavier) (bets|stakes|wagers|units)\b/i },
+    { code: 'PREDICTIVE', re: /\b(due|bound) (for|to)\b/i },
+    { code: 'PREDICTIVE', re: /\bbounce back\b/i },
+    { code: 'PREDICTIVE', re: /\bturn (it|things) around\b/i },
+    { code: 'PREDICTIVE', re: /\bguarantee/i },
+    { code: 'PREDICTIVE', re: /\bsure (thing|bet|win)\b/i },
+    { code: 'PREDICTIVE', re: /\bhot streak\b/i },
+    { code: 'PREDICTIVE', re: /\b(will|should|going to|expect(ed)? to|likely to)\s+(be\s+)?(win|profit|profitable|make money|pay off|come good)/i },
+    { code: 'PREDICTIVE', re: /\bfuture (profits?|winnings|wins)\b/i }
+  ];
+  /* the guard: no chasing, no "bet more", no prediction of profit */
+  function checkLanguage(text) {
+    var hits = [];
+    LANGUAGE_RULES.forEach(function (r) { var m = r.re.exec(String(text || '')); if (m) hits.push({ code: r.code, text: m[0] }); });
+    return { ok: hits.length === 0, hits: hits };
+  }
+  function m(x, sign) { return E.money(x, sign ? { sign: true } : null); }
+  function pctOf(x) { return x == null ? '—' : E.pct(x, 1); }
+  function plainPct(x) { return x == null ? '—' : E.pct(x, 1, { plain: true }); }
+  function nTickets(n) { return n + ' ticket' + (n === 1 ? '' : 's'); }
+  function smallTag(g) { return g.small ? ' (small sample)' : ''; }
+  function kindLine(name, g, isParlay) {
+    if (!g.n) return name + ': no settled tickets.';
+    return name + ': ' + m(g.pnl, true) + ' on ' + nTickets(g.n) + (isParlay && g.legs ? ' with ' + g.legs + ' legs' : '') + ' \u2014 risked ' + m(g.risked) + ', ROI ' + pctOf(g.roi)
+      + (g.winRate != null ? ', won ' + g.wins + ' and lost ' + g.losses + ' (win rate ' + plainPct(g.winRate) + ')' : '') + (g.small ? '; small sample' : '') + '.';
+  }
+  var DIM_WORD = { sport: function (s) { return s.key === 'MULTI' ? 'Multi-sport parlays' : s.key === 'UNSPECIFIED' ? 'Bets with no sport recorded' : s.label + ' bets'; },
+    market: function (s) { return /parlay|teaser|robin/i.test(s.label) ? s.label + 's' : s.label + ' bets'; },
+    odds: function (s) { return s.key === 'NO_PRICE' ? 'Bets with no price recorded' : 'Bets priced ' + s.label; }, stake: function (s) { return 'Stakes of ' + s.label; } };
+  /* analytics → { question, text, paragraphs, drivers, caveats } */
+  function answer(a, opts) {
+    opts = opts || {};
+    var maxDrivers = opts.drivers || 3, paras = [], caveats = [], drivers = [], parts = {};
+    var t = a.totals, c = a.counts;
+    /* 1. the headline */
+    var head;
+    if (!t.n) head = 'There are no settled or cashed-out tickets in this history, so there is no realized result to explain yet.';
+    else if (D.sign(t.pnl) < 0) head = 'You lost ' + m(absS(t.pnl)) + ' on ' + nTickets(t.n) + ' that settled or were cashed out (risked ' + m(t.risked) + ', ROI ' + pctOf(t.roi) + ').';
+    else if (D.sign(t.pnl) > 0) head = 'Overall you did not lose money: ' + m(t.pnl, true) + ' on ' + nTickets(t.n) + ' that settled or were cashed out (risked ' + m(t.risked) + ', ROI ' + pctOf(t.roi) + '). The losses below came from parts of it.';
+    else head = 'You finished even: ' + m(t.pnl, true) + ' on ' + nTickets(t.n) + ' (risked ' + m(t.risked) + ').';
+    if (c.open) head += ' ' + c.open + ' pending ticket' + (c.open === 1 ? '' : 's') + ' (' + m(t.openExposure) + ' at risk) ' + (c.open === 1 ? 'is' : 'are') + ' not counted until ' + (c.open === 1 ? 'it settles' : 'they settle') + '.';
+    if (c.void) head += ' ' + c.void + ' voided ticket' + (c.void === 1 ? ' is' : 's are') + ' left out.';
+    paras.push(head); parts.headline = head;
+    /* 2. singles or parlays */
+    var cmp = a.comparison, s = a.singles, p = a.parlays, verdict;
+    if (cmp.better === 'parlays') verdict = 'Parlays were more profitable per dollar risked than singles (ROI ' + pctOf(p.roi) + ' against ' + pctOf(s.roi) + ').';
+    else if (cmp.better === 'singles') verdict = 'Singles were more profitable per dollar risked than parlays (ROI ' + pctOf(s.roi) + ' against ' + pctOf(p.roi) + ').';
+    else if (cmp.better === 'even') verdict = 'Singles and parlays returned the same per dollar risked (ROI ' + pctOf(s.roi) + ').';
+    else verdict = cmp.note || '';
+    var weak = s.n && p.n && (s.small || p.small) ? (s.small && p.small ? 'Both samples are' : (s.small ? 'The singles sample is' : 'The parlay sample is')) + ' under ' + a.smallSample + ' tickets, so this comparison is weak evidence either way.' : '';
+    parts.singles = kindLine('Singles', s, false); parts.parlays = kindLine('Parlays', p, true); parts.verdict = [verdict, weak].filter(Boolean).join(' ');
+    paras.push('Singles or parlays? ' + parts.singles + ' ' + parts.parlays + (parts.verdict ? ' ' + parts.verdict : ''));
+    /* 3. the biggest loss drivers: the worst group of each dimension, and the alt lines */
+    var cands = [];
+    ['sport', 'market', 'odds', 'stake'].forEach(function (dim) {
+      var w = a.worstSegments.filter(function (x) { return x.dimension === dim; })[0];
+      if (w) cands.push({ dimension: dim, label: DIM_WORD[dim](w), key: w.key, n: w.n, pnl: w.pnl, risked: w.risked, roi: w.roi, small: w.small });
+    });
+    var alt = a.altLines;
+    if (alt.combined.n && D.sign(alt.combined.pnl) < 0) cands.push({ dimension: 'alt', label: 'Heavily juiced alternate lines', key: 'ALT', n: alt.combined.n, pnl: alt.combined.pnl, risked: alt.combined.risked, roi: alt.combined.roi, small: alt.combined.small, share: alt.shareOfLosses });
+    cands.sort(function (x, y) { return D.cmp(x.pnl, y.pnl) || y.n - x.n || x.label.localeCompare(y.label); });
+    drivers = cands.slice(0, maxDrivers);
+    if (drivers.length) {
+      parts.drivers = 'The biggest loss drivers: ' + drivers.map(function (d, i) {
+        return '(' + (i + 1) + ') ' + d.label + ': ' + m(d.pnl, true) + ' on ' + nTickets(d.n) + ' (risked ' + m(d.risked) + ', ROI ' + pctOf(d.roi) + ')'
+          + (d.share != null ? ', ' + plainPct(d.share) + ' of the money lost on losing tickets' : '') + (d.small ? ', small sample' : '');
+      }).join('; ') + '.';
+      paras.push(parts.drivers);
+    } else if (t.n) { parts.drivers = 'No group of tickets lost money on balance.'; paras.push(parts.drivers); }
+    /* 4. the days */
+    var dy = a.days;
+    if (dy.worst) {
+      var dline = 'Worst day: ' + dy.worst.date + ', ' + m(dy.worst.pnl, true) + ' on ' + nTickets(dy.worst.n) + ' — ' + plainPct(dy.worst.share) + ' of the ' + m(dy.totalLosses) + ' lost across ' + dy.losingDays + ' losing day' + (dy.losingDays === 1 ? '' : 's') + '.';
+      var others = dy.disproportionate.filter(function (x) { return x.date !== dy.worst.date; });
+      if (others.length) dline += ' Also at or above ' + plainPct(dy.threshold) + ' of those losses: ' + others.map(function (x) { return x.date + ' (' + m(x.pnl, true) + ', ' + plainPct(x.share) + ')'; }).join(', ') + '.';
+      paras.push(dline); parts.days = dline;
+    }
+    /* 5. what the juice did */
+    if (alt.combined.n) {
+      var al = 'Alternate lines: ';
+      var bits = [];
+      if (alt.singles.n) bits.push(nTickets(alt.singles.n).replace('ticket', 'single') + ' ' + m(alt.singles.pnl, true) + ', won ' + alt.singles.wins + ' of ' + (alt.singles.wins + alt.singles.losses)
+        + (alt.singlesBreakEven ? '; at those prices a single needs to win ' + plainPct(alt.singlesBreakEven) + ' of the time just to break even' : ''));
+      if (alt.parlays.n) bits.push(nTickets(alt.parlays.n).replace('ticket', 'parlay') + ' carrying ' + alt.legs + ' alt leg' + (alt.legs === 1 ? '' : 's') + ' ' + m(alt.parlays.pnl, true)
+        + (alt.legsBreakEven ? '; each such leg needs to win about ' + plainPct(alt.legsBreakEven) + ' of the time and adds little to the price' : ''));
+      parts.alt = al + bits.join('; ') + '.';
+      paras.push(parts.alt);
+    }
+    /* 6. caveats */
+    var dq = a.dataQuality, dd = dq.dedupe || {}, ts = dq.timestamps;
+    if (dq.excluded.length) caveats.push(nTickets(dq.excluded.length) + ' left out because ' + (dq.excluded.length === 1 ? 'its' : 'their') + ' rows disagree on the stake, price or result, or the P&L cannot be computed (' + dq.excluded.map(function (x) { return x.ref || 'no id'; }).join(', ') + ').');
+    if (dd.noTicketId) caveats.push(dd.noTicketId + ' row' + (dd.noTicketId === 1 ? '' : 's') + ' had no ticket id and ' + (dd.noTicketId === 1 ? 'was' : 'were') + ' counted as ' + (dd.noTicketId === 1 ? 'a single' : 'singles') + '.');
+    if (dd.duplicateRows) caveats.push(dd.duplicateRows + ' duplicate row' + (dd.duplicateRows === 1 ? '' : 's') + ' (the same leg of the same ticket) counted once.');
+    if (dd.legRowsJoined) caveats.push(dd.legRowsJoined + ' leg row' + (dd.legRowsJoined === 1 ? '' : 's') + ' joined to ' + (dd.multiLegTickets === 1 ? 'its ticket' : 'their tickets') + ', so no parlay stake was counted twice.');
+    if (dd.legsUnknown) caveats.push(dd.legsUnknown + ' parlay' + (dd.legsUnknown === 1 ? ' has' : 's have') + ' no leg detail stored, so ' + (dd.legsUnknown === 1 ? 'its' : 'their') + ' legs are not counted.');
+    var tsBits = [];
+    if (ts.settledBeforePlaced) tsBits.push(ts.settledBeforePlaced + ' settled before ' + (ts.settledBeforePlaced === 1 ? 'it was' : 'they were') + ' placed');
+    if (ts.missingPlaced) tsBits.push(ts.missingPlaced + ' with no placed date');
+    if (ts.badPlaced) tsBits.push(ts.badPlaced + ' with an unreadable placed date');
+    if (ts.futureDates) tsBits.push(ts.futureDates + ' dated in the future');
+    if (ts.openWithSettled) tsBits.push(ts.openWithSettled + ' pending with a settled date');
+    if (tsBits.length) caveats.push('Timestamps to check: ' + tsBits.join('; ') + '. Those tickets are dated by when they were placed where possible.');
+    if (!a.clv.available) caveats.push(a.clv.note);
+    else if (a.clv.n) caveats.push('Closing-line value on ' + nTickets(a.clv.n).replace('ticket', 'single') + ': beat the close on ' + a.clv.beat + ', average ' + pctOf(a.clv.average) + (a.clv.small ? ' (small sample)' : '') + '. Price versus the close is a measure of the prices you took, not of results.');
+    var smallGroups = t.n < a.smallSample;
+    if (smallGroups) caveats.push('All of this rests on ' + nTickets(t.n) + ', under ' + a.smallSample + ': a small sample, where luck alone moves results a lot.');
+    else caveats.push('Groups under ' + a.smallSample + ' tickets are marked small samples; luck alone moves them a lot.');
+    if (opts.scope) caveats.push(String(opts.scope));
+    paras.push('Caveats: ' + caveats.join(' '));
+    parts.closing = 'These figures describe your past results only; they do not predict future results.';
+    paras.push(parts.closing);
+    var text = paras.join('\n\n');
+    return { question: QUESTION, text: text, paragraphs: paras, parts: parts, drivers: drivers, caveats: caveats, language: checkLanguage(text) };
+  }
+
+  return {
+    VERSION: VERSION, QUESTION: QUESTION, SMALL_SAMPLE: SMALL_SAMPLE, ODDS_RANGES: ODDS_RANGES, STAKE_BANDS: STAKE_BANDS, BET_TYPE_LABEL: BET_TYPE_LABEL, ISSUE_LABEL: ISSUE_LABEL,
+    fromCSV: fromCSV, fromPositions: fromPositions, ticketFrom: ticketFrom, analyze: analyze, answer: answer, checkLanguage: checkLanguage,
+    oddsRangeKey: oddsRangeKey, stakeBandKey: stakeBandKey, breakEven: breakEven, isAltLine: isAltLine, LANGUAGE_RULES: LANGUAGE_RULES
+  };
+}));
+/*__EDBETS_END__*/
+const EDBETS: any = (globalThis as any).EDBETS;
+/*__EDREADY_START__*/
+/* ===========================================================================
+   EdgeDesk READINESS — what a game is ready for, and exactly what is missing.
+
+   One game, five separate states. Each is answered from data the caller
+   actually holds; none is inferred from another, and no threshold is lowered
+   to make a board look busier:
+
+     AVAILABLE    a scheduled, pregame game EdgeDesk lists, so it can be researched
+     RESEARCH     enough football information for a useful matchup analysis
+                  (an EdgeDesk projection, or the team efficiency build)
+     MARKET       a CURRENT, executable captured price (a book, odds and a capture
+                  time inside the freshness limit). A consensus or reference line
+                  is a number, not a price, and never counts
+     MODEL        a valid independent projection (PREDICTED, data quality not a
+                  fault); its pricing tier is reported, not upgraded
+     ACTIONABLE   a candidate that passed the full quantitative check and the
+                  adversarial audit (VERIFIED CANDIDATE), or the board's own
+                  research gates when no audit has run yet — labelled as such
+
+   A game stays researchable with no market and no signal: "not ready to bet"
+   is not "not ready to research". whyNot() lists every requirement that is
+   not met, in plain words, with the fact behind it (an age, a status, a count).
+
+   Browser: window.EDREADY.   Node: require('./edgedesk_readiness.js').
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDREADY = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  var VERSION = 'edgedesk_readiness_v1';
+  var STATES = ['AVAILABLE', 'RESEARCH', 'MARKET', 'MODEL', 'ACTIONABLE'];
+  var LABEL = { AVAILABLE: 'Games available', RESEARCH: 'Research available', MARKET: 'Market verified', MODEL: 'Model ready', ACTIONABLE: 'Actionable signal' };
+  var MEANS = {
+    AVAILABLE: 'Scheduled, pregame games EdgeDesk lists. Every one of them can be researched.',
+    RESEARCH: 'Games with enough information for a useful matchup analysis: an EdgeDesk projection or the team efficiency build.',
+    MARKET: 'Games with a current, executable captured price: a book, odds and a capture time inside the freshness limit. A consensus or reference line is a number, not a price.',
+    MODEL: 'Games with a valid independent EdgeDesk projection (PREDICTED, no data fault). Its validation tier is shown as it is.',
+    ACTIONABLE: 'Candidates that passed the full quantitative check and the adversarial audit. Research, not a bet.'
+  };
+
+  function num(v) { if (v === null || v === undefined || v === '') return null; var n = Number(v); return isFinite(n) ? n : null; }
+  function str(v) { return v == null ? '' : String(v); }
+  function toMs(v) { if (v == null || v === '') return null; if (typeof v === 'number') return isFinite(v) ? v : null; var t = Date.parse(String(v)); return isFinite(t) ? t : null; }
+  function ageText(min) {
+    if (min == null) return null;
+    min = Math.max(0, Math.round(min));
+    return min < 90 ? min + ' min' : min < 48 * 60 ? Math.round(min / 60) + ' h' : Math.round(min / 1440) + ' days';
+  }
+
+  /**
+   * g: {
+   *   sport, game_id, home, away, kickoff, status ('SCHEDULED'|'LIVE'|'FINAL'|'POSTPONED'|...),
+   *   model:  { status ('PREDICTED'|...), home_line, total, tier ('VALIDATED'|'LEAN'|'RESEARCH'|null), data_quality ('OK'|'LIMITED'|'FAULT'|null), note },
+   *           LIMITED = projected, but below the confidence / reliability floor for researching a gap
+   *   market: { kind ('PRICE'|'LINE_ONLY'|null), status ('LIVE'|'CURRENT'|'AGING'|'STALE'|'FAULT'|'UNKNOWN'|null), actionable (bool),
+   *             captured_at, limit_min, book, line, odds_american, source, note },
+   *   metrics: (bool) the team efficiency build covers both teams,
+   *   audit:  { classification ('VERIFIED_CANDIDATE'|'RESEARCH_REQUIRED'|'WATCHLIST'|'REJECTED'|'UNVERIFIED'), reason } | null,
+   *   gate:   { status, actionable (bool), why } | null      the board's own research gate, when no audit ran
+   * }
+   * → { states: {AVAILABLE:{ok,why}, ...}, level, missing:[{state, requirement, detail}], headline }
+   */
+  function assess(g, o) {
+    g = g || {}; o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var S = {}, missing = [];
+    function set(k, ok, why, req) { S[k] = { ok: !!ok, why: why }; if (!ok && req) missing.push({ state: k, requirement: req, detail: why }); }
+
+    /* AVAILABLE */
+    var ko = toMs(g.kickoff), st = str(g.status).toUpperCase();
+    if (/FINAL|COMPLETE|CANCEL|POSTPON/.test(st)) set('AVAILABLE', false, 'the game is ' + st.toLowerCase().replace(/_/g, ' '), 'a scheduled game');
+    else if (ko != null && ko <= now) set('AVAILABLE', false, 'the game has started; EdgeDesk researches pregame only', 'a game that has not started');
+    else if (ko == null) set('AVAILABLE', true, 'listed, with no kickoff time on file');
+    else set('AVAILABLE', true, 'scheduled');
+
+    /* MODEL */
+    var m = g.model || {}, ms = str(m.status).toUpperCase(), dq = str(m.data_quality).toUpperCase();
+    var hasLine = num(m.home_line) != null;
+    var tierNote = m.tier ? ' (' + str(m.tier).toUpperCase() + ' tier' + (str(m.tier).toUpperCase() === 'VALIDATED' ? '' : ': it may order research, not price a bet on its own') + ')' : '';
+    if (ms === 'PREDICTED' && hasLine && dq === 'LIMITED') set('MODEL', false, 'EdgeDesk projects the game, but its confidence or reliability is below the research floor' + (m.note ? ' (' + m.note + ')' : ''), 'a projection with enough confidence to research the gap');
+    else if (ms === 'PREDICTED' && hasLine && dq !== 'FAULT') set('MODEL', true, 'EdgeDesk projects the game' + tierNote);
+    else if (dq === 'FAULT') set('MODEL', false, 'EdgeDesk\'s projection has a data fault' + (m.note ? ': ' + m.note : '') + ', so its number is not used', 'a projection without a data fault');
+    else if (ms && ms !== 'PREDICTED') set('MODEL', false, 'the projection status is ' + ms.toLowerCase().replace(/_/g, ' ') + (m.note ? ' (' + m.note + ')' : ''), 'a PREDICTED projection');
+    else set('MODEL', false, 'no EdgeDesk projection is on file for this game', 'an EdgeDesk projection');
+
+    /* RESEARCH: a projection, or the efficiency build, is enough to analyse the matchup */
+    if (S.MODEL.ok || (ms === 'PREDICTED' && dq !== 'FAULT')) set('RESEARCH', true, 'EdgeDesk\'s projection' + (g.metrics ? ' and the team efficiency build' : '') + ' cover the matchup');
+    else if (g.metrics) set('RESEARCH', true, 'the team efficiency build covers both teams (no projection)');
+    else set('RESEARCH', false, 'neither an EdgeDesk projection nor team efficiency data is on file', 'a projection or team efficiency data');
+
+    /* MARKET: a current, executable price */
+    var k = g.market || {}, kind = str(k.kind).toUpperCase(), ks = str(k.status).toUpperCase();
+    var age = toMs(k.captured_at) != null ? (now - toMs(k.captured_at)) / 60000 : null;
+    if (kind === 'PRICE' && k.actionable) set('MARKET', true, (k.book ? k.book + ' ' : '') + (k.odds_american != null ? (k.odds_american > 0 ? '+' : '') + Math.round(k.odds_american) + ' ' : '') + 'captured ' + (ageText(age) || '?') + ' ago' + (k.limit_min ? ' (limit ' + k.limit_min + ' min)' : ''));
+    else if (kind === 'PRICE' && (ks === 'STALE' || ks === 'AGING')) set('MARKET', false, 'the newest captured price is ' + (ageText(age) || 'of unknown age') + ' old' + (k.limit_min ? ', past the ' + k.limit_min + '-minute limit' : '') + ' — a stale price is not verified', 'a current captured price');
+    else if (kind === 'PRICE' && ks === 'FAULT') set('MARKET', false, 'the captured quotes contradict each other' + (k.note ? ': ' + k.note : ''), 'captured quotes that agree');
+    else if (kind === 'PRICE' && ks === 'UNKNOWN') set('MARKET', false, 'the captured price carries no capture time, so its age cannot be verified', 'a captured price with a capture time');
+    else if (kind === 'PRICE') set('MARKET', false, 'the captured price is not executable now' + (ks ? ' (' + ks.toLowerCase() + ')' : ''), 'a current captured price');
+    else if (kind === 'LINE_ONLY') set('MARKET', false, 'only a reference line' + (k.source ? ' (' + k.source.replace(/\s*\(.*$/, '') + ')' : '') + ' is on file: a number with no book, odds or capture time, not a price', 'a captured price from a book');
+    else set('MARKET', false, 'no captured price is on file for this game', 'a captured price from a book');
+
+    /* ACTIONABLE: the audit's verdict when one ran, else the board's own gate — never inferred */
+    var au = g.audit || null, gate = g.gate || null;
+    if (au && au.classification) {
+      var vc = au.classification === 'VERIFIED_CANDIDATE';
+      set('ACTIONABLE', vc, vc ? 'a candidate passed the quantitative check and the adversarial audit' : 'the audit classed the best candidate ' + au.classification.toLowerCase().replace(/_/g, ' ') + (au.reason ? ': ' + au.reason : ''), 'a candidate that survives the adversarial audit');
+    } else if (!S.MARKET.ok) set('ACTIONABLE', false, 'no signal can be verified without a current market price', 'a current market price, then the audit');
+    else if (!S.MODEL.ok) set('ACTIONABLE', false, 'no independent projection to compare with the price', 'an independent projection, then the audit');
+    else if (gate && gate.actionable) set('ACTIONABLE', true, 'cleared the board\'s research gates' + (gate.status ? ' (' + str(gate.status).toLowerCase().replace(/_/g, ' ') + ')' : '') + '; the full audit runs when you ask EdgeDesk AI');
+    else set('ACTIONABLE', false, gate && gate.why ? gate.why : 'no model–market disagreement cleared the research gates', 'a disagreement that clears the gates and the audit');
+
+    var level = !S.AVAILABLE.ok ? 'UNAVAILABLE' : S.ACTIONABLE.ok ? 'ACTIONABLE' : (S.MARKET.ok && S.MODEL.ok) ? 'MARKET_AND_MODEL' : S.RESEARCH.ok ? 'RESEARCH' : 'SCHEDULED';
+    var headline = level === 'UNAVAILABLE' ? 'Not available: ' + S.AVAILABLE.why
+      : level === 'ACTIONABLE' ? 'Actionable: ' + S.ACTIONABLE.why
+        : level === 'MARKET_AND_MODEL' ? 'Model and market ready; no actionable signal (' + S.ACTIONABLE.why + ')'
+          : level === 'RESEARCH' ? 'Researchable; not ready for a price check (' + (S.MARKET.ok ? S.MODEL.why : S.MARKET.why) + ')'
+            : 'Scheduled; ' + S.RESEARCH.why;
+    return { schema: VERSION, game_id: g.game_id != null ? String(g.game_id) : null, sport: g.sport || null, states: S, level: level, missing: missing, headline: headline };
+  }
+
+  /** The "Why not ready?" lines: every unmet requirement, most basic first. */
+  function whyNot(a) {
+    if (!a || !a.missing) return [];
+    var order = { AVAILABLE: 0, RESEARCH: 1, MODEL: 2, MARKET: 3, ACTIONABLE: 4 };
+    return a.missing.slice().sort(function (x, y) { return order[x.state] - order[y.state]; }).map(function (x) { return LABEL[x.state] + ' — needs ' + x.requirement + ': ' + x.detail + '.'; });
+  }
+
+  /** Counts across games, one per state, plus the most common reason each state is missing. */
+  function summarize(list) {
+    var c = { total: 0 }, reasons = {};
+    STATES.forEach(function (k) { c[k] = 0; reasons[k] = {}; });
+    (list || []).forEach(function (a) {
+      if (!a || !a.states) return;
+      c.total++;
+      STATES.forEach(function (k) {
+        if (a.states[k] && a.states[k].ok) c[k]++;
+        else if (a.states[k]) { var r = reasonKey(a.states[k].why); reasons[k][r] = (reasons[k][r] || 0) + 1; }
+      });
+    });
+    var top = {};
+    STATES.forEach(function (k) {
+      var best = null; Object.keys(reasons[k]).forEach(function (r) { if (!best || reasons[k][r] > reasons[k][best]) best = r; });
+      top[k] = best ? { reason: best, games: reasons[k][best] } : null;
+    });
+    return { counts: c, top_reason: top };
+  }
+  /* a reason without its numbers, so "41 h old" and "39 h old" count as one cause */
+  function reasonKey(why) {
+    return str(why).replace(/\b\d+(?:\.\d+)?\s*(?:min|h|days|-minute)\b/g, '#').replace(/[+-]?\d+(?:\.\d+)?/g, '#').replace(/\s*\([^)]*#[^)]*\)/g, '').trim();
+  }
+
+  return { VERSION: VERSION, STATES: STATES, LABEL: LABEL, MEANS: MEANS, assess: assess, whyNot: whyNot, summarize: summarize, reasonKey: reasonKey };
+});
+/*__EDREADY_END__*/
+const EDREADY: any = (globalThis as any).EDREADY;
 
 /*__EDMLBHIST_START__*/
 /*__EDMLBQ_START__*/
@@ -41927,7 +45824,7 @@ async function sweepBoard(o: {
   boardScope: SlateScopeRequest; primary: { sport: string | null; index: SlateIndexResult } | null;
   /* the quant desk only: "underdog" | "favorite" restricts the candidates before ranking */
   filter?: string | null;
-}): Promise<{ board: any; decisions: GameDecision[]; ledger_rows: any[]; games: any[]; signal_counts: Record<string, number> } | null> {
+}): Promise<{ board: any; decisions: GameDecision[]; ledger_rows: any[]; games: any[]; signal_counts: Record<string, number>; slates: any[] } | null> {
   const { dal, ctx, question, now, boardReq } = o;
   /* The host's sport counts only when the READER chose it: the game open on
      screen or the board they are looking at. A sport inferred from an intent
@@ -41989,7 +45886,7 @@ async function sweepBoard(o: {
     allDecisions.push(...decisions); allLedger.push(...ledger);
     si.index.forEach((g) => games.push({ sport, home: g.home_team, away: g.away_team, game_id: g.game_id,
       home_id: g.home_id ?? null, away_id: g.away_id ?? null, kickoff: g.kickoff ?? null,
-      home_starter: g.home_starter?.player_name ?? null, away_starter: g.away_starter?.player_name ?? null }));
+      home_starter: g.home_starter?.player_name ?? null, away_starter: g.away_starter?.player_name ?? null, scenarios: (g as any).scenarios ?? null }));
     signalCounts[sport] = si.index.reduce((n: number, g: any) => n + ((g.signals ?? []).length), 0);
     sports.push({ sport, games: si.index, state: si.state, source_label: si.source_label, errors: si.errors, decisions, pricing_rows: pricingRows, model_meta: modelMeta, refresh });
   }
@@ -42001,7 +45898,7 @@ async function sweepBoard(o: {
   sports.forEach((s) => s.games.forEach((g: any) => { const dropped = (board.eligibility.dropped as any[]).some((d) => d.sport === s.sport && String(d.game_id) === String(g.game_id)); if (!dropped) eligibleIds.add(s.sport + "|" + g.game_id); }));
   const decisions = allDecisions.filter((d) => eligibleIds.has((d as any).sport_key_for_board ?? "") || sports.some((s) => s.decisions.includes(d) && eligibleIds.has(s.sport + "|" + d.game_id)));
   const ledger_rows = allLedger.filter((r) => kept.has(String(r.sport) + "|" + String(r.game_id)) || eligibleIds.has(String(r.sport) + "|" + String(r.game_id)));
-  return { board, decisions, ledger_rows, games, signal_counts: signalCounts };
+  return { board, decisions, ledger_rows, games, signal_counts: signalCounts, slates: sports.map((s) => ({ sport: s.sport, games: s.games, model_meta: s.model_meta, state: s.state })) };
 }
 
 async function runResearch(
@@ -46135,7 +50032,9 @@ const QUANT_STOP = new Set(("the a an and or vs versus at on in of to for is are
   + "polymarket cents cent tonight today tomorrow game games match moneyline spread total over under line odds advantage "
   + "better cheaper find shop risk only best right now available sports sport across all every any next hours hour week weekend "
   + "underdog underdogs dog dogs favorite favorites favourite favourites supported largest biggest strongest safest top play plays "
-  + "edge edges opportunity opportunities discrepancy model market markets wager trade").split(/\s+/));
+  + "edge edges opportunity opportunities discrepancy model market markets wager trade "
+  /* the Research screen's own words: never a team name, so they never make a question look like a named game */
+  + "research researched researching verified investigated investigate audited").split(/\s+/));
 /** The words of a question that could be a team: not stopwords, not numbers. */
 export function quantTokens(q: string): string[] {
   const out: string[] = [];
@@ -46447,6 +50346,7 @@ function quantAuditGather(dal: Dal, games: any[], now: number) {
               observed_at: t.injuries?.retrieved_at ?? m.json?.generated_at ?? null, source: t.injuries?.source ?? "official NFL injury report" });
           }
         }
+        e.metrics_generated_at = m.json?.generated_at ?? null;
         if (!resolved) { e.availability = null; e.availability_why = "neither team code on this game resolved in the NFL injury build"; }
         else {
           e.availability = av;
@@ -46494,24 +50394,292 @@ export function auditRecords(audit: any, scan: any, question: string, now: numbe
   });
 }
 
-/** The scan: every sport (the board), the top candidates audited, the answer. */
-async function quantScan(o: { body: any; auth: string; dal: Dal; now: number; cls: any }): Promise<any | null> {
-  const { body, auth, dal, now, cls } = o;
-  const q = String(body.question ?? "");
-  const tz: string | null = typeof body?.timezone === "string" ? body.timezone.slice(0, 64) : null;
-  const plan: any = { depth: "SLATE", budget: 40, intent: "best_bets", entities: { teams: [] } };
-  const ctx: any = { sport: null, sport_source: null, single_game: false };
-  const sw = await sweepBoard({ dal, plan, ctx, question: q, now, boardReq: { timezone: tz, state: null, follow_up: null }, boardScope: {} as any, primary: null, filter: cls.filter ?? null });
-  if (!sw || !sw.board) return null;
-  const board = sw.board;
-  const coverage = (board.coverage ?? []).map((c: any) => refineCoverage(c, sw.signal_counts?.[c.sport] ?? 0));
-  const cands = EDQUANT.candidatesFromBoard(board, cls.filter ?? null).map((c: any) => {
-    const g = sw.games.find((x: any) => x.sport === c.sport && String(x.game_id) === String(c.game_id));
-    return (g && (g.home_starter || g.away_starter)) ? { ...c, starters: { home: g.home_starter, away: g.away_starter } } : c;
+/* ========================================================================
+   THE RESEARCH SYSTEM (Phase 2): EDAGENTS over EDGRAPH, EDDISAGREE and
+   EDBUDGET, on top of the quant desk's board, auditor and fair-odds engine.
+
+   For every candidate the audit checked: the RESEARCHER gathers sourced
+   findings (the injury report and depth charts the audit read, MLB's
+   probable starters, the desk's notebook, the live nflverse feed at L3, a
+   paid search only when configured AND authorised), the ODDSMAKER prices it
+   (a finding moves a number only through the engine's own scenario re-run),
+   the disagreement engine explains model versus market, the STRATEGIST and
+   the AUDITOR classify it, and the COMMUNICATOR writes the answer from the
+   verified result. Deterministic; no model writes a number.
+   Research is on demand (EDBUDGET.selectLevel), every external call goes
+   through one ledger (quotas, single flight, cache, breaker, cost), and a
+   failed provider degrades to the data already on file — never to nothing.
+   EDGEDESK_RESEARCH=0 turns the chain off (the quant desk answers as before).
+   ======================================================================== */
+const AGENT_RESEARCH_ENABLED = (Deno.env.get("EDGEDESK_RESEARCH") ?? "1") !== "0";
+const RESEARCH_PAID_OK = (Deno.env.get("EDGEDESK_RESEARCH_PAID_OK") ?? "0") === "1";
+const RESEARCH_LIVE = (Deno.env.get("EDGEDESK_RESEARCH_LIVE") ?? "1") !== "0";
+const PERPLEXITY_API_KEY = Deno.env.get("EDGEDESK_PERPLEXITY_API_KEY") ?? "";
+const RESEARCH_NARRATE = (Deno.env.get("EDGEDESK_RESEARCH_NARRATE") ?? "0") === "1";
+const newResearchLedger = () => EDBUDGET ? EDBUDGET.ledger({ paid_authorized: RESEARCH_PAID_OK, configured: { brave_search: !!SEARCH_API_KEY, perplexity_sonar: !!PERPLEXITY_API_KEY, anthropic_narration: !!ANTHROPIC_API_KEY } }) : null;
+let RESEARCH_LEDGER: any = newResearchLedger();
+let LAST_RESEARCH_WRITE: any = null;
+/** Tests: a fresh ledger (quotas, cache, breakers) between scenarios. */
+export function resetResearchLedger(): void { RESEARCH_LEDGER = newResearchLedger(); LAST_RESEARCH_WRITE = null; }
+/** Tests: the ledger's turn report. */
+export function researchLedgerReport(): any { return RESEARCH_LEDGER ? RESEARCH_LEDGER.report() : null; }
+
+/**
+ * THE COMMUNICATOR, optionally a model. The deterministic answer is the communicator's own text; a model may
+ * rephrase the candidate part of it only when EDGEDESK_RESEARCH_NARRATE=1 AND paid research is authorised (the
+ * call is a paid provider in the ledger, with its quota and token budget). The critic rejects prose that adds,
+ * drops or changes a number, adds a link or a certainty word, or changes the final status — and then the
+ * deterministic answer is served. The research line and the numbered sources are always appended verbatim.
+ */
+/** The persistent quota (supabase/research_intel.sql): a paid call is made only after the database grants a claim. */
+async function researchUsageClaim(auth: string, provider: string): Promise<{ ok: boolean; why: string | null; claim_id: number | null }> {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { ok: false, why: "no database to claim research quota against", claim_id: null };
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/research_usage_claim`, { method: "POST", headers: { apikey: SUPABASE_ANON_KEY, authorization: auth, "content-type": "application/json" }, body: JSON.stringify({ p_provider: provider }) });
+    if (!r.ok) return { ok: false, why: "the research quota could not be claimed (HTTP " + r.status + "; is supabase/research_intel.sql applied?)", claim_id: null };
+    const j: any = await r.json().catch(() => null);
+    return j && j.ok === true ? { ok: true, why: null, claim_id: num(j.claim_id) } : { ok: false, why: String(j?.why ?? "the research quota refused the call").slice(0, 200), claim_id: null };
+  } catch (e) { return { ok: false, why: "the research quota could not be reached", claim_id: null }; }
+}
+async function researchUsageSettle(auth: string, claimId: number | null, state: string, ms: number): Promise<void> {
+  if (claimId == null || !SUPABASE_URL || !SUPABASE_ANON_KEY) return;
+  try { await fetch(`${SUPABASE_URL}/rest/v1/rpc/research_usage_settle`, { method: "POST", headers: { apikey: SUPABASE_ANON_KEY, authorization: auth, "content-type": "application/json" }, body: JSON.stringify({ p_claim_id: claimId, p_state: state, p_latency_ms: Math.round(ms) }) }); } catch { /* best effort */ }
+}
+async function narrateResearch(answer: string, graphs: any[], user: string | null, budget: any, auth: string): Promise<{ answer: string; narration: any; model: string | null; deterministic_answer: string | null }> {
+  const det = { answer, narration: { ok: true, prose: "DETERMINISTIC", critic: null }, model: null, deterministic_answer: null };
+  if (!RESEARCH_NARRATE || !ANTHROPIC_API_KEY || !EDAGENTS || !RESEARCH_LEDGER) return det;
+  const cut = answer.indexOf("\nResearch: ");
+  const head = cut > 0 ? answer.slice(0, cut) : answer, tail = cut > 0 ? answer.slice(cut) : "";
+  const r = await RESEARCH_LEDGER.call({ provider: "anthropic_narration", key: quantHash(head), topic: "other", user, budget, timeout_ms: 15000 }, async () => {
+    /* the database's quota is authoritative: no granted claim, no paid call */
+    const claim = await researchUsageClaim(auth, "anthropic_narration");
+    if (!claim.ok) return { denied: claim.why };
+    const t0 = Date.now();
+    const mc = await callModel({ system: EDAGENTS.NARRATION_CONTRACT, messages: [{ role: "user", content: head }], max_tokens: Math.min(1200, Math.max(300, Number(budget?.tokens) || 900)) });
+    await researchUsageSettle(auth, claim.claim_id, mc.ok ? "OK" : "ERROR", Date.now() - t0);
+    if (!mc.ok) throw new Error("model call failed (" + mc.status + ")");
+    return { prose: (mc.data?.content ?? []).filter((b: any) => b?.type === "text").map((b: any) => b.text).join("").trim() };
   });
-  dal.budget = (dal.budget ?? 0) + 2 * SCAN_AUDIT_TOP + 2;
-  const audit = await EDAUDIT.run({ candidates: cands, gather: quantAuditGather(dal, sw.games, now), now, top: SCAN_AUDIT_TOP });
-  const evaluate = (c: any, a: any) => {
+  const u = RESEARCH_LEDGER.report({ turn: true }).by_provider?.anthropic_narration ?? null;
+  const metered = { provider: "anthropic_narration", calls: u ? u.calls : 0, cached: u ? u.cached : 0, cost_estimate_usd: u ? Math.round(u.cost_usd * 10000) / 10000 : 0, cost_basis: "per-call estimate (EDBUDGET.PROVIDERS)" };
+  if (r.ok && r.value?.denied) return { ...det, narration: { ok: false, prose: "DETERMINISTIC", critic: null, metered: { ...metered, calls: 0, cost_estimate_usd: 0 }, error: String(r.value.denied).slice(0, 200) } };
+  if (!r.ok || !r.value?.prose) return { ...det, narration: { ok: false, prose: "DETERMINISTIC", critic: null, metered, error: String(r.why ?? "no prose").slice(0, 200) } };
+  const g = { sourceUrls: () => graphs.flatMap((x: any) => x ? x.sourceUrls() : []) };
+  const crit = EDAGENTS.critic(r.value.prose, head, g);
+  if (crit.verdict !== "PASS") return { ...det, narration: { ok: false, prose: "REJECTED_BY_CRITIC", critic: crit, metered } };
+  return { answer: r.value.prose + tail, narration: { ok: true, prose: "MODEL", critic: crit, metered }, model: MODEL, deterministic_answer: answer };
+}
+
+function researchSeason(kick: string | null, sport: string): number {
+  const t = kick ? new Date(kick) : new Date(); const y = t.getUTCFullYear();
+  return sport.startsWith("americanfootball") && t.getUTCMonth() < 6 ? y - 1 : y;
+}
+/** The caller's user id from the JWT, for the soft per-user research cap (the database ledger is authoritative). */
+function jwtSub(auth: string): string | null {
+  try { const p = String(auth ?? "").replace(/^Bearer\s+/i, "").split(".")[1]; if (!p) return null; const j = JSON.parse(atob(p.replace(/-/g, "+").replace(/_/g, "/"))); return typeof j.sub === "string" ? j.sub.slice(0, 64) : null; } catch { return null; }
+}
+function noteTeam(n: any, c: any, game: any): string | null {
+  const code = String(n.team ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const squash = (x: any) => String(x ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (code && (code === squash(game?.home_id) || code === squash(c.home) || squash(c.home).startsWith(code))) return c.home;
+  if (code && (code === squash(game?.away_id) || code === squash(c.away) || squash(c.away).startsWith(code))) return c.away;
+  return null;
+}
+/** The first person's name a note states ("Brad Jackson named the starter…"). */
+function nameInText(t: string): string | null {
+  const m = /^(?:FIXTURE:\s*)?([A-Z][A-Za-z.'-]+(?:\s+[A-Z][A-Za-z.'-]+){1,2})\b/.exec(String(t ?? ""));
+  return m ? m[1] : null;
+}
+/** What the researcher reads for one candidate, in its raw finding shape. */
+async function researchRawFor(o: { dal: Dal; c: any; e: any; game: any; now: number; level: string; budget: any; user: string | null }): Promise<{ raw: any[]; unavailable: string[]; providers: string[]; priced_starters: any | null }> {
+  const { dal, c, e, game, now } = o;
+  const raw: any[] = [], unavailable: string[] = [], providers: string[] = [];
+  let pricedStarters: any = null;
+  const season = researchSeason(c.kickoff ?? game?.kickoff ?? null, String(c.sport ?? ""));
+  const nowIso = new Date(now).toISOString();
+  const add = (p: string) => { if (!providers.includes(p)) providers.push(p); };
+  /* 1. the NFL injury report the audit read (the metrics build mirrors the league's report via nflverse) */
+  if (Array.isArray(e?.availability)) {
+    add("nfl_metrics");
+    const url = `${NFLVERSE_RELEASES}/injuries/injuries_${season}.csv`;
+    const retrieved = e.availability_as_of ?? e.metrics_generated_at ?? null;
+    for (const x of e.availability) raw.push({ url, title: "NFL injury report (nflverse)", publisher: "nflverse", kind: "OFFICIAL_REPORT", published_at: x.observed_at ?? null, retrieved_at: retrieved ?? x.observed_at ?? null, topic: "availability", team: x.team, player: x.player, role: x.role, key: !!x.key, status: x.status, text: `${x.player} (${x.team}${x.role ? ", " + x.role : ""}) ${x.status}` });
+    if (e.availability_complete) for (const t of [c.home, c.away]) if (t && !e.availability.some((x: any) => EDINTEL.normName(x.team) === EDINTEL.normName(t))) raw.push({ url, title: "NFL injury report (nflverse)", publisher: "nflverse", kind: "OFFICIAL_REPORT", retrieved_at: retrieved, topic: "availability", team: t, text: `${t}: nobody listed on the injury report` });
+  } else if (e?.availability_why) unavailable.push(String(e.availability_why));
+  /* 2. the starters the depth chart lists now */
+  if (e?.starters_now) {
+    add("nfl_metrics");
+    for (const side of ["home", "away"]) {
+      const st = e.starters_now[side]; if (!st?.name) continue;
+      raw.push({ url: `${NFLVERSE_RELEASES}/depth_charts/depth_charts_${season}.csv`, title: "NFL depth charts (nflverse)", publisher: "nflverse", kind: "STATISTICAL_DATA", published_at: st.observed_at ?? null, retrieved_at: e.metrics_generated_at ?? st.observed_at ?? null, topic: "starter", team: side === "home" ? c.home : c.away, player: st.name, role: "QB", key: true, status: "STARTING", text: `${st.name} is listed as the starter (${st.source ?? "depth chart"})` });
+    }
+  }
+  /* 3. MLB's probable starters, through EdgeDesk's card */
+  if (c.sport === "baseball_mlb") {
+    try {
+      const card = await dal.getMlbCard();
+      const row = (card.rows ?? []).find((x: any) => mlbClubKey(x.home_team_name) === mlbClubKey(c.home) && mlbClubKey(x.away_team_name) === mlbClubKey(c.away));
+      if (row) {
+        add("mlb_cards");
+        /* the probable starters EdgeDesk's MLB card carries: what its numbers assume */
+        pricedStarters = { home: row.home_pitcher_name ?? null, away: row.away_pitcher_name ?? null };
+        const url = `https://statsapi.mlb.com/api/v1/schedule?sportId=1&date=${encodeURIComponent(String(row.game_date ?? ""))}&hydrate=probablePitcher`;
+        for (const [team, name] of [[c.home, row.home_pitcher_name], [c.away, row.away_pitcher_name]]) if (name) raw.push({ url, title: "MLB probable pitchers", publisher: "mlb.com", kind: "OFFICIAL", retrieved_at: row.updated_at ?? row.fetched_at ?? nowIso, topic: "starter", team, player: name, role: "SP", key: true, status: "PROBABLE", text: `${name} is the probable starter for ${team} (probable, not confirmed)` });
+      } else unavailable.push("no MLB card row for this game");
+    } catch { unavailable.push("the MLB card could not be read"); }
+  }
+  /* 4. the desk's notebook: what a person recorded, with a source and a time */
+  try {
+    const r = await dal.getArtifact("football/notes/current.json", { free: true });
+    const notes: any[] = Array.isArray(r.json?.notes) ? r.json.notes : [];
+    if (r.json) add("desk_notes");
+    for (const n of notes) {
+      if (!n || (n.sport && n.sport !== c.sport) || (n.expires_at && Date.parse(n.expires_at) <= now)) continue;
+      if (n.game_id && String(n.game_id) !== String(c.game_id)) continue;
+      const team = noteTeam(n, c, game); if (!team) continue;
+      const k = String(n.kind ?? "");
+      const topic = /qb|starter|pitcher/.test(k) ? "starter" : /availability|personnel|injur|replacement/.test(k) ? "availability" : k === "weather" ? "weather" : k === "current_price" ? "market" : "other";
+      raw.push({ url: n.url, title: n.source ?? null, publisher: n.source ?? null, kind: n.source_kind ?? null, published_at: n.published_at ?? null, retrieved_at: n.recorded_at ?? null, topic, team, player: n.player ?? nameInText(n.text), role: topic === "starter" ? (c.sport === "baseball_mlb" ? "SP" : "QB") : (n.role ?? null), key: topic === "starter" || n.key === true, status: n.status ?? null, text: String(n.text ?? "").replace(/^FIXTURE:\s*/, "") });
+    }
+  } catch { unavailable.push("the desk notebook could not be read"); }
+  /* 5. the live league injury feed, at L3, through the research ledger */
+  if (o.level === "L3" && c.sport === "americanfootball_nfl" && RESEARCH_LIVE && RESEARCH_LEDGER && game) {
+    const codes = [String(game.home_id ?? "").toUpperCase(), String(game.away_id ?? "").toUpperCase()];
+    const r = await RESEARCH_LEDGER.call({ provider: "nflverse_injuries", key: String(season), topic: "availability", user: o.user, budget: o.budget, timeout_ms: 2500 }, async () => {
+      const resp = await dal.fetchImpl()(`${NFLVERSE_RELEASES}/injuries/injuries_${season}.csv`, { headers: { accept: "text/csv" } });
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      return investCsvRows(await resp.text());
+    });
+    if (r.ok && Array.isArray(r.value)) {
+      add("nflverse_injuries");
+      let maxWeek = 0; r.value.forEach((x: any) => { const w = Number(x.week); if (w > maxWeek) maxWeek = w; });
+      for (const x of r.value) {
+        if (Number(x.week) !== maxWeek || !codes.includes(String(x.team ?? "").toUpperCase()) || !x.report_status) continue;
+        const team = String(x.team).toUpperCase() === codes[0] ? c.home : c.away;
+        raw.push({ url: `${NFLVERSE_RELEASES}/injuries/injuries_${season}.csv`, title: "NFL injury report (nflverse, live)", publisher: "nflverse", kind: "OFFICIAL_REPORT", published_at: x.date_modified || null, retrieved_at: r.retrieved_at, topic: "availability", team, player: x.full_name, role: x.position, key: String(x.position ?? "").toUpperCase() === "QB", status: x.report_status, text: `${x.full_name} (${team}, ${x.position}) ${x.report_status}${x.report_primary_injury ? " — " + x.report_primary_injury : ""}` });
+      }
+      if (r.stale) unavailable.push("the live nflverse feed failed (" + r.why + "); its last cached copy was used");
+    } else unavailable.push("the live nflverse injury feed: " + (r.why ?? "no data") + "; the committed report was used");
+  }
+  /* 6. a paid web search: only when configured, authorised by the operator, and claimed against the shared ledger */
+  if (o.level === "L3" && SEARCH_API_KEY && RESEARCH_PAID_OK && RESEARCH_LEDGER) {
+    unavailable.push("paid web search is configured and authorised but not wired into the scan yet; the investigation layer uses it for single-game research");
+  } else if (o.level === "L3" && !SEARCH_API_KEY && !PERPLEXITY_API_KEY) {
+    unavailable.push("no search-grounded research provider is configured (EDGEDESK_SEARCH_API_KEY / EDGEDESK_PERPLEXITY_API_KEY), and paid research is not authorised");
+  }
+  return { raw, unavailable, providers, priced_starters: pricedStarters };
+}
+function researchQualityFlags(c: any, a: any): string[] {
+  const out: string[] = [];
+  (a?.checks ?? []).forEach((x: any) => {
+    if ((x.id === "A15_SANITY" || x.id === "A14_MODEL_DISAGREEMENT") && x.result === "FAIL") out.push(x.detail);
+    if (x.id === "A7_CONFIRMATION" && x.result === "WARN" && /off-market/.test(String(x.detail))) out.push(x.detail);
+    if (x.id === "A6_FAIR_CONSISTENCY" && x.result === "WARN") out.push(x.detail);
+  });
+  if (c?.outlier) out.push(String(c.outlier));
+  return out;
+}
+/** The five-role chain for one audited candidate. */
+async function researchChain(o: { dal: Dal; r: any; e: any; game: any; now: number; level: string; budget: any; user: string | null; stake?: number | null }): Promise<any> {
+  const { r, game, now } = o;
+  const c = r.candidate, a = r.audit;
+  const gathered = await researchRawFor({ dal: o.dal, c, e: o.e, game, now, level: o.level, budget: o.budget, user: o.user });
+  const isModel = c.fair?.method === "MODEL_BLEND";
+  const mc = c.model_case ?? null;
+  const tier = isModel ? (c.fair?.validation?.tier ?? null) : (mc?.tier ?? null);
+  /* prices: the model is the fair only where the board priced on it (a validated blend); otherwise it is a cross-check */
+  const cap = EDADAPT ? EDADAPT.modelCapability(c.sport, c.market) : null;
+  const model = { available: !!(isModel || mc), prices: isModel, unavailable_why: cap && !(isModel || mc) ? cap.reason : null, tier, probability: isModel ? num(c.fair?.probability) : num(mc?.cover_at_market), model_version: (isModel ? c.fair?.validation?.model_version : mc?.model_version) ?? null,
+    as_of: c.fair?.validation?.model_generated_at ?? null, line: num(mc?.fair_line), line_kind: mc?.fair_line != null ? "BLEND" : null, label: c.fair?.label ?? "EdgeDesk model",
+    inputs: { starters: c.starters ? { home: c.starters.home ?? null, away: c.starters.away ?? null } : (gathered.priced_starters ?? null) } };
+  const sharp = num(a?.independent_fair) ?? (isModel ? null : num(c.fair?.probability));
+  const qs = EDINTEL.quoteState({ captured_at: c.quote?.captured_at, market: c.market, kickoff: c.kickoff, now });
+  const a7 = (a?.checks ?? []).find((x: any) => x.id === "A7_CONFIRMATION");
+  const sc = game?.scenarios ?? null;
+  const selSide = c.side === "home" || c.side === "away" ? c.side : (EDINTEL.normName(c.selection) === EDINTEL.normName(c.home) ? "home" : "away");
+  const deltas: any = {};
+  for (const side of ["home", "away"]) { const d = num(sc?.[side + "_qb_out"]?.delta_home_line); if (d != null && (c.market === "spreads" || c.market === "h2h")) deltas[side + "_qb_out"] = selSide === "home" ? -d : d; }
+  const sd = (c.market === "spreads" || c.market === "h2h") && EDPRICE && String(c.sport).startsWith("americanfootball") ? num(EDPRICE.sigmaFor(c.sport, "spread", EDPRICE.validationFor(c.sport, "spread"))?.sigma) : null;
+  const required = c.sport === "americanfootball_nfl" ? [{ topic: "availability", team: c.home }, { topic: "availability", team: c.away }] : c.sport === "baseball_mlb" ? [{ topic: "starter", team: c.home }, { topic: "starter", team: c.away }] : [];
+  const inv = EDAGENTS.investigate({
+    candidate: c, event: { id: String(c.game_id), sport: c.sport, home: c.home, away: c.away, kickoff: c.kickoff }, raw: gathered.raw, model, required,
+    market: { decimal: c.quote?.odds_decimal ?? null, american: c.quote?.odds_american ?? null, book: c.quote?.book ?? null, captured_at: c.quote?.captured_at ?? null, sharp_fair: sharp, kickoff: c.kickoff ?? null },
+    market_view: { line: num(c.line) }, audit: a ? { status: a.status, reason: a.reason, checks: a.checks } : null,
+    confirmation: a7 && a7.result !== "NOT_CHECKED" ? { pass: a7.result === "PASS", why: a7.detail } : null, settlement: { verified: true },
+    scenario_deltas: deltas, sd_points: sd, quality: { flags: researchQualityFlags(c, a), checked: true }, now, ttl_min: qs?.limit_min ?? 90, stake_dollars: o.stake ?? null,
+    /* the scan's rule: a model price is never the more generous of the model and the audited market fair */
+    conservative: true,
+  });
+  inv.unavailable = gathered.unavailable; inv.providers = gathered.providers;
+  return inv;
+}
+/** One summary of a turn's research: level, findings, sources, conflicts, what was unavailable, the cost. */
+function researchSummaryOf(invs: any[], lvl: any): any {
+  const urls = new Set<string>(); let findings = 0, conflicts = 0; const unavailable: string[] = [];
+  invs.forEach((x) => { (x.research?.findings ?? []).forEach((f: any) => { urls.add(f.source_url); findings++; }); conflicts += (x.research?.conflicts ?? []).length; (x.unavailable ?? []).forEach((u: string) => { if (!unavailable.includes(u)) unavailable.push(u); }); });
+  const rep = RESEARCH_LEDGER ? RESEARCH_LEDGER.report({ turn: true }) : null;
+  return { level: lvl.level, level_label: lvl.budget?.label ?? lvl.level, why: lvl.why ?? [], findings, sources: urls.size, conflicts, unavailable: unavailable.slice(0, 6), cost_estimate_usd: rep ? rep.cost_estimate_usd : 0, usage: rep ? rep.by_provider : null };
+}
+/** The numbered source list across every candidate's graph (deduplicated by URL). */
+function researchSourcesText(invs: any[]): string {
+  /* one line per URL; a feed whose rows were published or read at different times shows the range, never one time for all */
+  const seen = new Map<string, any>();
+  invs.forEach((x) => { const g = x.research?.graph; if (!g) return; g.citationList().forEach((s: any) => {
+    const e = seen.get(s.url) ?? Object.assign({}, s, { domain: g.node(s.id)?.domain ?? null, pub: [] as string[], ret: [] as string[] });
+    if (s.published_at) e.pub.push(String(s.published_at)); if (s.retrieved_at) e.ret.push(String(s.retrieved_at));
+    seen.set(s.url, e);
+  }); });
+  const t = (v: string) => v.slice(0, 16).replace("T", " ");
+  const span = (vs: string[]) => { const u = [...new Set(vs.map(t))].sort(); return !u.length ? null : u.length === 1 ? u[0] + " UTC" : u[0] + " to " + u[u.length - 1] + " UTC"; };
+  const list = [...seen.values()].slice(0, 12);
+  if (!list.length) return "Sources: none on file for this answer.";
+  return "Sources:\n" + list.map((s, i) => { const p = span(s.pub), r = span(s.ret); return `[${i + 1}] ${s.title || s.domain || s.url} — ${s.url} (${String(s.reliability).toLowerCase().replace(/_/g, " ")}${p ? ", published " + p : ""}${r ? ", retrieved " + r : ""})`; }).join("\n");
+}
+/** A slim, JSON-safe view of one investigation for the response. */
+function researchSlim(x: any): any {
+  if (!x) return null;
+  return { classification: x.classification, strategist: x.strategist ? { verdict: x.strategist.verdict, checks: x.strategist.checks } : null,
+    disagreement: x.disagreement ? { verdict: x.disagreement.verdict, gap: x.disagreement.gap, size: x.disagreement.size, primary: x.disagreement.primary, explanation: x.disagreement.explanation, causes: x.disagreement.causes } : null,
+    sensitivity: x.sensitivity, confidence: x.confidence, trail: x.trail, rounds: x.rounds, adjustments: x.quant?.adjustments ?? [], adjustments_refused: x.quant?.adjustments_refused ?? [],
+    fair_probability: x.quant?.fair_probability ?? null, fair_kind: x.quant?.fair_kind ?? null, independent_fair_probability: x.quant?.independent_fair_probability ?? null, model_view: x.quant?.model_view ?? null, market_no_vig_probability: x.quant?.market_no_vig_probability ?? null,
+    findings: (x.research?.findings ?? []).slice(0, 20).map((f: any) => ({ id: f.id, source_url: f.source_url, publisher: f.publisher, published_at: f.published_at, retrieved_at: f.retrieved_at, event_ref: f.event_ref, team: f.team, player: f.player, topic: f.topic, claim: f.claim, status: f.status, reliability: f.reliability, verified: f.verified, verification: f.verification, conflicts: f.conflicts })),
+    conflicts: x.research?.conflicts ?? [], gaps: x.research?.gaps ?? [], missing: x.research?.missing ?? [], stale: x.research?.stale ?? [], refused: (x.research?.refused ?? []).length,
+    graph: x.research?.graph ? x.research.graph.toJSON().counts : null, unavailable: x.unavailable ?? [], providers: x.providers ?? [] };
+}
+/** Write-once research memory and prediction snapshots, under the caller's token (supabase/research_intel.sql). */
+async function publishResearch(auth: string, invs: { inv: any; c: any }[], o: { question: string; now: number; level: string }, fetchImpl?: typeof fetch): Promise<void> {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY || !invs.length) return;
+  const f = fetchImpl ?? fetch;
+  const findings: any[] = [], snaps: any[] = [];
+  for (const { inv, c } of invs) {
+    for (const x of (inv.research?.findings ?? [])) findings.push({ finding_id: x.id, provider: x.source_class === "OFFICIAL" || x.source_class === "STATISTICAL_DATA" ? "edgedesk_sources" : "desk_notes", sport: c.sport, event_ref: String(c.game_id), team: x.team, player: x.player, topic: x.topic, claim: x.claim.slice(0, 400), status: x.status,
+      source_url: x.source_url, source_title: x.source_title, publisher: x.publisher, published_at: x.published_at, retrieved_at: x.retrieved_at, reliability: x.reliability, verified: x.verified && !x.speculative, speculative: x.speculative, verification: x.verification, conflicts: x.conflicts, cost_class: "free" });
+    const ev = inv.quant?.evaluation;
+    /* a prediction snapshot is a priced call: research on a game with no priced candidate is memory, not a prediction */
+    if (inv.quant && c.kickoff && Date.parse(c.kickoff) > o.now) snaps.push({ snapshot_id: "ps_" + quantHash([c.id, c.quote?.odds_decimal, c.quote?.captured_at, inv.classification?.classification, new Date(o.now).toISOString().slice(0, 13)].join("|")),
+      sport: c.sport, event_id: String(c.game_id), event_start: c.kickoff, market: c.market === "h2h" || c.market === "spreads" || c.market === "totals" ? c.market : "h2h", selection: String(c.selection), line: num(c.line), sig_key: c.sig_key ?? null, book: c.quote?.book ?? null,
+      odds_american: num(c.quote?.odds_american) != null && Math.abs(num(c.quote?.odds_american)!) >= 100 ? Math.round(num(c.quote.odds_american)!) : null, odds_decimal: num(c.quote?.odds_decimal), quote_captured_at: c.quote?.captured_at ?? null,
+      fair_probability: inv.quant?.fair_probability ?? null, fair_kind: inv.quant?.fair_kind ?? null, model_version: c.fair?.validation?.model_version ?? null, model_tier: inv.quant?.model_tier ?? null,
+      net_ev_per_dollar: ev && ev.net_ev_per_dollar != null ? Number(ev.net_ev_per_dollar) : null, classification: inv.classification?.classification ?? "UNVERIFIED", reasons: inv.classification?.reasons ?? [],
+      finding_ids: (inv.research?.findings ?? []).map((x: any) => x.id), disagreement: inv.disagreement ? { verdict: inv.disagreement.verdict, primary: inv.disagreement.primary, gap: inv.disagreement.gap } : null,
+      research_level: o.level, calc_version: EDFAIR?.CALC_VERSION ?? null, agents_version: EDAGENTS?.VERSION ?? null, question: o.question.slice(0, 300) });
+  }
+  const post = async (table: string, conflict: string, rows: any[]) => {
+    if (!rows.length) return { table, ok: true, status: null, rows: 0 };
+    try {
+      const r = await f(`${SUPABASE_URL}/rest/v1/${table}?on_conflict=${conflict}`, { method: "POST", headers: { apikey: SUPABASE_ANON_KEY, authorization: auth, "content-type": "application/json", prefer: "resolution=ignore-duplicates,return=minimal" }, body: JSON.stringify(rows) });
+      if (!r.ok) console.warn(table + " write failed", r.status, (await r.text().catch(() => "")).slice(0, 200));
+      return { table, ok: r.ok, status: r.status, rows: rows.length };
+    } catch (e) { return { table, ok: false, status: 0, rows: rows.length }; }
+  };
+  const w1 = await post("research_findings", "user_id,finding_id", findings);
+  const w2 = await post("prediction_snapshots", "user_id,snapshot_id", snaps);
+  LAST_RESEARCH_WRITE = { at: new Date().toISOString(), findings: quantWriteView(w1), snapshots: quantWriteView(w2) };
+}
+
+/** The scan's price check for one audited candidate: the candidate's own fair and the fair the audit re-read, the lower EV published. */
+function quantEvaluator(now: number, stake: number | null) {
+  return (c: any, a: any) => {
     const qs = EDINTEL.quoteState({ captured_at: c.quote?.captured_at, market: c.market, kickoff: c.kickoff, now });
     const isModel = c.fair?.method === "MODEL_BLEND";
     const src = isModel ? { kind: "MODEL", tier: c.fair?.validation?.tier ?? null, label: c.fair?.label ?? "EdgeDesk projection", model_version: c.fair?.validation?.model_version ?? null, observed_at: c.fair?.validation?.model_generated_at ?? null }
@@ -46521,7 +50689,7 @@ async function quantScan(o: { body: any; auth: string; dal: Dal; now: number; cl
       fair_probability: fairP, push_probability: c.fair?.push_probability ?? null, fair_source: source,
       quote_observed_at: c.quote?.captured_at ?? null, market: c.market, kickoff: c.kickoff, now, ttl_min: qs?.limit_min ?? 90, fair_ttl_min: fairTtl,
       confirmation: a7 && a7.result !== "NOT_CHECKED" ? { pass: a7.result === "PASS", why: a7.detail } : null,
-      audit: { status: a.status, reason: a.reason }, settlement: { verified: true }, stake_dollars: cls.risk_dollars ?? null });
+      audit: { status: a.status, reason: a.reason }, settlement: { verified: true }, stake_dollars: stake });
     const own = one(c.fair?.probability, src, isModel ? 24 * 60 : (qs?.limit_min ?? 90));
     /* the verdict is priced on the fair the audit just re-read, never only on the candidate's older copy:
        a market candidate takes the re-read fair; a model candidate takes whichever of the two is LOWER in EV */
@@ -46533,23 +50701,443 @@ async function quantScan(o: { body: any; auth: string; dal: Dal; now: number; cl
     const evOwn = num(own.net_ev_per_dollar), evAud = num(audited.net_ev_per_dollar);
     return evAud != null && (evOwn == null || evAud < evOwn) ? { ...audited, priced_on: "AUDITED_FAIR (lower than the model's)" } : { ...own, priced_on: "MODEL (lower than the audited market fair)" };
   };
-  const scan = EDQUANT.scanResult({ board, audit, coverage, not_covered: EDADAPT?.NOT_COVERED ?? [], risk_dollars: cls.risk_dollars ?? null, filter: cls.filter ?? null, now, evaluate });
-  const answer = EDQUANT.renderScan(scan);
+}
+/* THE RESEARCH ACTIVITY a client can show: each event is emitted where the work actually happens (never on a
+   timer). status: running | done | skipped | failed; detail is the real count or reason; partial carries results
+   that are already final (the board's games, the first audit verdicts) so a client can show them early. */
+const STAGE_LABEL: Record<string, string> = {
+  FIND_EVENTS: "Finding relevant events", RETRIEVE_STATS: "Retrieving statistics", VERIFY_INJURIES: "Verifying injuries and lineups",
+  COMPARE_PRICES: "Comparing market prices", CALCULATE: "Calculating probabilities", AUDIT: "Running the adversarial audit", EXPLAIN: "Preparing the explanation",
+  READ_HISTORY: "Reading your recorded bets", ANALYZE_HISTORY: "Analysing your results",
+};
+type Progress = (ev: { stage: string; status: string; detail?: string; partial?: any }) => void;
+function stageEmitter(p?: Progress | null): Progress {
+  return (ev) => { if (p) p({ ...ev, label: STAGE_LABEL[ev.stage] ?? ev.stage } as any); };
+}
+
+/** One scan row for the response: the candidate, its audit, its evaluation and (when researched) its investigation. */
+function quantRowSlim(r: any): any {
+  return r ? { candidate: { id: r.candidate.id, sport: r.candidate.sport, sport_label: r.candidate.sport_label, game_id: r.candidate.game_id != null ? String(r.candidate.game_id) : null, home: r.candidate.home ?? null, away: r.candidate.away ?? null, kickoff: r.candidate.kickoff ?? null, matchup: r.candidate.matchup, kickoff_local: r.candidate.kickoff_local, market: r.candidate.market, selection: r.candidate.selection, line: r.candidate.line, quote: r.candidate.quote, fair: { method: r.candidate.fair?.method, label: r.candidate.fair?.label, probability: r.candidate.fair?.probability }, counter: r.candidate.counter, corrected: r.candidate.corrected ?? [] }, audit: r.audit, evaluation: r.evaluation,
+    classification: r.classification ?? null, research: r.research ? researchSlim(r.research) : null,
+    /* the card's words, written by the same functions the answer text uses — the page never composes them */
+    advantage: EDQUANT?.matchupLine ? EDQUANT.matchupLine(r.candidate) : null,
+    counterargument: r.research && EDAGENTS ? EDAGENTS.counterArgument(r.research) : null,
+    invalidators: r.research && EDAGENTS ? EDAGENTS.invalidators(Object.assign({}, r.research, { event: { sport: r.candidate.sport } })) : [],
+    withheld_by_board: r.withheld_by_board ?? null } : null;
+}
+/** Every audited candidate through the five-role chain, at the level the question earns. Null when the chain is off. */
+async function researchAudited(o: { dal: Dal; audit: any; games: any[]; evidence: Map<string, any>; now: number; question: string; auth: string; stake: number | null; intent: string; level?: string | null; progress?: Progress | null }): Promise<{ investigations: Record<string, any>; pairs: { inv: any; c: any }[]; summary: any; sources_text: string; level: any } | null> {
+  if (!AGENT_RESEARCH_ENABLED || !EDAGENTS || !EDGRAPH || !EDBUDGET) return null;
+  const audited: any[] = o.audit?.audited ?? [];
+  const lvl = o.level && EDBUDGET.LEVELS[o.level] ? { level: o.level, budget: Object.assign({}, EDBUDGET.LEVELS[o.level], RESEARCH_PAID_OK ? {} : { paid_calls: 0 }), why: ["set by the route" + (RESEARCH_PAID_OK ? "" : "; paid research is not authorised, so only free and official sources are read")] }
+    : EDBUDGET.selectLevel({ intent: o.intent, question: o.question, candidates: audited.length, data_available: true, paid_authorized: RESEARCH_PAID_OK });
+  RESEARCH_LEDGER?.newTurn();
+  const P = stageEmitter(o.progress);
+  const user = jwtSub(o.auth);
+  const investigations: Record<string, any> = {}, pairs: { inv: any; c: any }[] = [];
+  const failed: string[] = [];
+  if (!audited.length) { P({ stage: "RETRIEVE_STATS", status: "skipped", detail: "no candidate cleared the board, so there was nothing to research" }); P({ stage: "VERIFY_INJURIES", status: "skipped", detail: "no candidate to verify" }); P({ stage: "CALCULATE", status: "skipped", detail: "no candidate to price" }); }
+  let i = 0;
+  for (const r of audited) {
+    const c = r.candidate;
+    i++;
+    P({ stage: "RETRIEVE_STATS", status: "running", detail: `${c.selection} (${c.matchup}): ${i} of ${audited.length} — injury report, starters, probables, desk notes (${lvl.level})` });
+    const game = o.games.find((g: any) => g.sport === c.sport && String(g.game_id) === String(c.game_id)) ?? null;
+    try {
+      const inv = await researchChain({ dal: o.dal, r, e: o.evidence.get(String(c.id)) ?? {}, game, now: o.now, level: lvl.level, budget: lvl.budget, user, stake: o.stake });
+      investigations[c.id] = inv; pairs.push({ inv, c });
+    } catch (e) {
+      /* a failed investigation never takes the basic analysis with it: the candidate keeps its audit and its price */
+      failed.push(String(c.selection));
+      console.warn("research chain failed", String((e as Error)?.message ?? e).slice(0, 160));
+    }
+  }
+  const invs = pairs.map((p) => p.inv);
+  if (audited.length) {
+    const nf = invs.reduce((n, x) => n + (x.research?.findings ?? []).length, 0), srcs = new Set<string>(); invs.forEach((x) => (x.research?.findings ?? []).forEach((f: any) => srcs.add(f.source_url)));
+    const unav = [...new Set(invs.flatMap((x) => x.unavailable ?? []))];
+    P({ stage: "RETRIEVE_STATS", status: failed.length === audited.length ? "failed" : "done", detail: `${nf} finding${nf === 1 ? "" : "s"} from ${srcs.size} source${srcs.size === 1 ? "" : "s"}` + (unav.length ? `; unavailable: ${unav.slice(0, 2).join("; ")}` : "") + (failed.length ? `; research failed for ${failed.join(", ")} (its price and audit are kept)` : "") });
+    const av = invs.reduce((n, x) => n + (x.research?.findings ?? []).filter((f: any) => f.topic === "availability" || f.topic === "starter").length, 0);
+    const cf = invs.reduce((n, x) => n + (x.research?.conflicts ?? []).length, 0), un = invs.reduce((n, x) => n + (x.research?.unresolved ?? []).length, 0);
+    const gp = invs.reduce((n, x) => n + (x.research?.gaps ?? []).length, 0);
+    P({ stage: "VERIFY_INJURIES", status: "done", detail: `${av} availability and starter record${av === 1 ? "" : "s"}; ${cf} conflict${cf === 1 ? "" : "s"} (${un} unresolved); ${gp} not in the model` });
+    const adj = invs.reduce((n, x) => n + (x.quant?.adjustments ?? []).length, 0), refused = invs.reduce((n, x) => n + (x.quant?.adjustments_refused ?? []).length, 0);
+    P({ stage: "CALCULATE", status: "done", detail: `${invs.length} candidate${invs.length === 1 ? "" : "s"} priced on the board's fair` + (adj ? `; ${adj} model scenario adjustment${adj === 1 ? "" : "s"}` : "") + (refused ? `; ${refused} refused` : "") });
+    const cls: Record<string, number> = {}; invs.forEach((x) => { const k = x.classification?.label ?? "UNVERIFIED"; cls[k] = (cls[k] ?? 0) + 1; });
+    P({ stage: "AUDIT", status: "done", detail: Object.entries(cls).map(([k, v]) => `${v} ${k.toLowerCase()}`).join(", ") });
+  }
+  return { investigations, pairs, summary: researchSummaryOf(invs, lvl), sources_text: researchSourcesText(invs), level: lvl };
+}
+
+/** The scan: every sport (the board), the top candidates audited, the answer. */
+async function quantScan(o: { body: any; auth: string; dal: Dal; now: number; cls: any; progress?: Progress | null }): Promise<any | null> {
+  const { body, auth, dal, now, cls } = o;
+  const P = stageEmitter(o.progress);
+  P({ stage: "FIND_EVENTS", status: "running", detail: "every in-season sport EdgeDesk covers, from its captured prices and projections" });
+  const q = String(body.question ?? "");
+  const tz: string | null = typeof body?.timezone === "string" ? body.timezone.slice(0, 64) : null;
+  const plan: any = { depth: "SLATE", budget: 40, intent: "best_bets", entities: { teams: [] } };
+  const ctx: any = { sport: null, sport_source: null, single_game: false };
+  const sw = await sweepBoard({ dal, plan, ctx, question: q, now, boardReq: { timezone: tz, state: null, follow_up: null }, boardScope: {} as any, primary: null, filter: cls.filter ?? null });
+  if (!sw || !sw.board) { P({ stage: "FIND_EVENTS", status: "failed", detail: "the board could not be read" }); return null; }
+  const board = sw.board;
+  const coverage = (board.coverage ?? []).map((c: any) => refineCoverage(c, sw.signal_counts?.[c.sport] ?? 0));
+  P({ stage: "FIND_EVENTS", status: "done", detail: `${board.eligibility?.counts?.eligible ?? 0} eligible events, ${board.candidates_considered ?? 0} markets evaluated (${board.scope?.window?.label ?? "window"})`,
+    partial: { coverage: coverage.map((c: any) => ({ sport: c.sport, label: c.label, status: c.status, why: c.why ?? null })) } });
+  const cands = EDQUANT.candidatesFromBoard(board, cls.filter ?? null).map((c: any) => {
+    const g = sw.games.find((x: any) => x.sport === c.sport && String(x.game_id) === String(c.game_id));
+    return (g && (g.home_starter || g.away_starter)) ? { ...c, starters: { home: g.home_starter, away: g.away_starter } } : c;
+  });
+  dal.budget = (dal.budget ?? 0) + 2 * SCAN_AUDIT_TOP + 2;
+  /* the evidence each audit gathered is kept, so the researcher reads the same report the auditor did */
+  const evStore = new Map<string, any>();
+  const g0 = quantAuditGather(dal, sw.games, now);
+  P({ stage: "COMPARE_PRICES", status: cands.length ? "running" : "skipped", detail: cands.length ? `${cands.length} candidate${cands.length === 1 ? "" : "s"} with an executable price; re-reading the top ${Math.min(SCAN_AUDIT_TOP, cands.length)} at every book` : "nothing on the board has an executable price that clears the screen" });
+  const audit = await EDAUDIT.run({ candidates: cands, gather: async (c: any, round: number) => { const e = await g0(c, round); evStore.set(String(c.id), e); return e; }, now, top: SCAN_AUDIT_TOP });
+  if (cands.length) P({ stage: "COMPARE_PRICES", status: "done", detail: `${(audit.audited ?? []).length} re-read on a fresh price and per-book quotes`,
+    partial: { audit: (audit.audited ?? []).map((r: any) => ({ selection: r.candidate.selection, matchup: r.candidate.matchup, line: r.candidate.line, market: r.candidate.market, status: r.audit.status, reason: r.audit.reason })) } });
+  const evaluate = quantEvaluator(now, cls.risk_dollars ?? null);
+  /* the research chain, on every audited candidate: researcher → oddsmaker → strategist → auditor */
+  const rs = await researchAudited({ dal, audit, games: sw.games, evidence: evStore, now, question: q, auth, stake: cls.risk_dollars ?? null, intent: "SCAN", progress: o.progress });
+  if (!rs) P({ stage: "AUDIT", status: "done", detail: `${(audit.audited ?? []).length} audited (the research chain is switched off)` });
+  const scan = EDQUANT.scanResult({ board, audit, coverage, not_covered: EDADAPT?.NOT_COVERED ?? [], risk_dollars: cls.risk_dollars ?? null, filter: cls.filter ?? null, now, evaluate, investigations: rs ? rs.investigations : null });
+  if (rs) { scan.research_summary = rs.summary; scan.sources_text = rs.sources_text; }
+  P({ stage: "EXPLAIN", status: "running", detail: "writing the answer from the verified result" });
+  const det = EDQUANT.renderScan(scan);
+  const nar = rs && (scan.best || scan.potential.length) ? await narrateResearch(det, rs.pairs.map((p) => p.inv.research?.graph).filter(Boolean), jwtSub(auth), rs.level.budget, auth) : null;
+  const answer = nar ? nar.answer : det;
+  P({ stage: "EXPLAIN", status: "done", detail: nar && nar.narration.prose === "MODEL" ? "rephrased under the critic" : "deterministic answer" + (nar && nar.narration.prose === "REJECTED_BY_CRITIC" ? " (the model's rephrasing was rejected by the critic)" : "") });
   try { await publishBoardRecords(auth, EDBOARD.records(board, { question: q })); } catch { /* best effort */ }
   try { await publishAudits(auth, auditRecords(audit, scan, q, now)); } catch { /* best effort */ }
-  const slim = (r: any) => r ? { candidate: { id: r.candidate.id, sport: r.candidate.sport, sport_label: r.candidate.sport_label, matchup: r.candidate.matchup, kickoff_local: r.candidate.kickoff_local, market: r.candidate.market, selection: r.candidate.selection, line: r.candidate.line, quote: r.candidate.quote, fair: { method: r.candidate.fair?.method, label: r.candidate.fair?.label, probability: r.candidate.fair?.probability }, counter: r.candidate.counter, corrected: r.candidate.corrected ?? [] }, audit: r.audit, evaluation: r.evaluation } : null;
+  if (rs) { try { await publishResearch(auth, rs.pairs, { question: q, now, level: rs.summary.level }, dal.fetchImpl()); } catch { /* best effort */ } }
   return {
-    answer, model: null, narration: { ok: true, prose: "DETERMINISTIC", critic: null },
-    scan: { schema: scan.schema, decision: scan.decision, best: slim(scan.best), potential: scan.potential.map(slim), near_misses: scan.near_misses.map(slim), board_near_misses: scan.board_near_misses,
+    answer, model: nar?.model ?? null, narration: nar ? nar.narration : { ok: true, prose: "DETERMINISTIC", critic: null }, ...(nar?.deterministic_answer ? { deterministic_answer: nar.deterministic_answer } : {}),
+    scan: { schema: scan.schema, decision: scan.decision, final_status: scan.final_status, researched: scan.researched, best: quantRowSlim(scan.best), verified_rest: (scan.verified_rest ?? []).map(quantRowSlim), potential: scan.potential.map(quantRowSlim), near_misses: scan.near_misses.map(quantRowSlim), board_near_misses: scan.board_near_misses,
       coverage: scan.coverage, coverage_scope: scan.coverage_scope, not_scanned: scan.not_scanned, not_covered: scan.not_covered, counts: scan.counts, window: scan.window, timezone: scan.timezone,
-      filter: scan.filter, risk_dollars: scan.risk_dollars, audit_trail: scan.audit_trail, audit_checks: scan.audit_checks, audit_write: quantWriteView(LAST_AUDIT_WRITE) },
+      filter: scan.filter, risk_dollars: scan.risk_dollars, audit_trail: scan.audit_trail, audit_checks: scan.audit_checks, audit_write: quantWriteView(LAST_AUDIT_WRITE),
+      research_summary: scan.research_summary ?? null, research_write: rs ? LAST_RESEARCH_WRITE : null },
     board_state: EDBOARD.conversationState(board, null),
     quant_state: EDQUANT.stateFrom({ scan, now }),
     build: BUILD,
   };
 }
 
-export async function quantTurn(o: { body: any; auth: string; now?: number; fetchImpl?: typeof fetch }): Promise<any | null> {
+/* ========================================================================
+   BETTING PERFORMANCE — "Why did I lose money on my recent bets, and were my
+   singles or parlays more profitable?"
+   The caller's OWN recorded positions (portfolio_positions, row-level security
+   under the caller's token — never another account's), analysed by EDBETS:
+   one ticket per parlay however many leg rows it was imported from, exact
+   decimal money, breakdowns by sport, market, price and stake, the worst days,
+   the juiced alternate lines. Nothing is written, nothing is cached (the read
+   category is uncached), nothing is sent to a model, and the answer describes
+   the past only — it never suggests staking more to recover a loss.
+   ======================================================================== */
+const BETS_NUMS = ["line", "odds_decimal", "stake", "reported_payout", "fees", "current_price", "settlement_price", "contracts", "contracts_bought", "contracts_sold", "average_entry_price", "average_exit_price",
+  "sell_proceeds", "cost_basis", "open_cost_basis", "potential_profit", "potential_payout", "current_value", "gross_payout", "realized_profit_loss", "unrealized_profit_loss", "profit_loss", "model_probability"];
+const BETS_SELECT = ["id", "platform", "platform_label", "platform_type", "position_type", "sport", "league", "event_name", "event_id", "event_start_at", "market_name", "selection", "side", "odds_american",
+  "resolution", "status", "result", "placed_at", "settled_at", "source", "external_position_id", "legs"].concat(BETS_NUMS.map((c) => c + "::text")).join(",");
+const BETS_PAGE = 1000;
+async function quantBets(o: { body: any; dal: Dal; now: number; progress?: Progress | null }): Promise<any> {
+  const P = stageEmitter(o.progress);
+  const tz = typeof o.body?.timezone === "string" && o.body.timezone ? o.body.timezone.slice(0, 64) : BOARD_DEFAULT_TZ;
+  const det = { model: null, narration: { ok: true, prose: "DETERMINISTIC", critic: null }, build: BUILD };
+  if (!EDBETS) return { answer: "Betting-history analysis is not available on this deployment, so nothing about your bets was computed.", ...det, bets: { available: false, why: "EDBETS not loaded" } };
+  P({ stage: "READ_HISTORY", status: "running", detail: "your own recorded positions (only your rows are readable)" });
+  const settled = await o.dal.read(`portfolio_positions?select=${BETS_SELECT}&status=neq.OPEN&order=settled_at.desc.nullslast,id.asc&limit=${BETS_PAGE}`, "bets");
+  const open = await o.dal.read(`portfolio_positions?select=${BETS_SELECT}&status=eq.OPEN&order=placed_at.desc,id.asc&limit=${BETS_PAGE}`, "bets");
+  P({ stage: "READ_HISTORY", status: settled.error ? "failed" : "done", detail: settled.error ? "your positions could not be read" : `${(settled.rows ?? []).length} settled and ${(open.rows ?? []).length} open position${(open.rows ?? []).length === 1 ? "" : "s"}` });
+  if (settled.error) return { answer: "EdgeDesk could not read your recorded bets right now (" + String(settled.error).slice(0, 120) + "). Nothing was assumed and nothing was computed.", ...det, bets: { available: false, why: String(settled.error).slice(0, 200) } };
+  const rows = [...(settled.rows ?? []), ...(open.error ? [] : (open.rows ?? []))];
+  if (!rows.length) return { answer: "You have no bets recorded in your EdgeDesk portfolio yet, so there is nothing to explain. Import a sportsbook export (Portfolio → Import, CSV) or add your wagers, and this question will be answered from them.", ...det, bets: { available: true, tickets: 0 } };
+  const src = EDBETS.fromPositions(rows, { now: o.now });
+  const a = EDBETS.analyze(src, { tz, now: o.now });
+  P({ stage: "ANALYZE_HISTORY", status: "done", detail: `${a.counts?.tickets ?? 0} tickets (${a.counts?.singles ?? 0} singles, ${a.counts?.parlays ?? 0} parlays), one per parlay however many legs` });
+  const ans = EDBETS.answer(a);
+  P({ stage: "EXPLAIN", status: "done", detail: "deterministic answer" });
+  const capped = (settled.rows ?? []).length >= BETS_PAGE;
+  const notes: string[] = [];
+  if (capped) notes.push(`Read: your latest ${BETS_PAGE} settled positions; older ones are not in this answer.`);
+  if (open.error) notes.push("Your open positions could not be read, so pending exposure is not shown.");
+  const text = ans.text + (notes.length ? "\n\n" + notes.join(" ") : "");
+  const lang = EDBETS.checkLanguage(text);
+  /* the summary only: per-ticket lists stay on the reader's own Portfolio page */
+  const strip = (g: any): any => Array.isArray(g) ? g.map(strip) : g && typeof g === "object" ? Object.fromEntries(Object.entries(g).filter(([k]) => k !== "tickets").map(([k, v]) => [k, strip(v)])) : g;
+  return {
+    answer: lang.ok ? text : ans.paragraphs.slice(0, 2).join("\n\n") + "\n\nThese figures describe your past results only; they do not predict future results.",
+    ...det,
+    bets: { available: true, schema: EDBETS.VERSION ?? "bet_history_v1", source: "portfolio_positions (your rows only)", positions_read: rows.length, capped, counts: a.counts, totals: strip(a.totals), singles: strip(a.singles), parlays: strip(a.parlays), comparison: a.comparison,
+      by_sport: strip(a.bySport), by_market_type: strip(a.byMarketType), by_odds_range: strip(a.byOddsRange), by_stake_size: strip(a.byStakeSize), days: strip(a.days), alt_lines: strip(a.altLines), clv: strip(a.clv),
+      data_quality: { issues: a.dataQuality?.issues ?? [], excluded: (a.dataQuality?.excluded ?? []).length, dedupe: a.dataQuality?.dedupe ?? null }, drivers: strip(ans.drivers), caveats: ans.caveats, language: lang, definitions: a.definitions },
+  };
+}
+
+function kickoffLocal(iso: string | null, tz: string | null): string | null {
+  const t = iso ? Date.parse(iso) : NaN; if (!isFinite(t)) return null;
+  try { return new Intl.DateTimeFormat("en-US", { timeZone: tz || BOARD_DEFAULT_TZ, weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(new Date(t)); } catch { return new Date(t).toISOString().slice(0, 16).replace("T", " ") + " UTC"; }
+}
+function minutesAgoText(at: string | null, now: number): string {
+  const t = at ? Date.parse(at) : NaN; if (!isFinite(t)) return "capture time unknown";
+  const m = Math.max(0, Math.round((now - t) / 60000));
+  return m < 90 ? `captured ${m} min ago` : m < 48 * 60 ? `captured ${Math.round(m / 60)} h ago` : `captured ${Math.round(m / 1440)} days ago`;
+}
+/**
+ * "Research every NFL game this weekend, identify the largest model-versus-market discrepancies,
+ * investigate them and tell me which survive an adversarial audit."
+ *   L1 every pregame game in scope: EdgeDesk's line against the captured market number (home side).
+ *   L2 the largest gaps: the researcher reads the injury report, depth charts, probables and the
+ *      desk's notes, and the disagreement engine attributes the gap to a cause.
+ *   L3 the board's priced candidates in scope: audited, then the full chain (oddsmaker, strategist,
+ *      auditor). Only a VERIFIED CANDIDATE "survives".
+ * A gap is never an edge by itself: a game with no executable price, or a model that is not validated,
+ * is reported as a discrepancy and nothing more.
+ */
+async function quantResearchSlate(o: { body: any; auth: string; dal: Dal; now: number; cls: any; progress?: Progress | null; only_game?: { sport: string | null; game_id: string } | null; screen_only?: boolean }): Promise<any | null> {
+  const { body, auth, dal, now, cls } = o;
+  if (!AGENT_RESEARCH_ENABLED || !EDAGENTS || !EDGRAPH || !EDBUDGET || !EDDISAGREE) return null;
+  const P = stageEmitter(o.progress);
+  P({ stage: "FIND_EVENTS", status: "running", detail: cls.sport ? quantSportLabel(cls.sport) + " games in the window" : "every in-season sport" });
+  const q = String(body.question ?? "");
+  const tz: string | null = typeof body?.timezone === "string" ? body.timezone.slice(0, 64) : null;
+  const plan: any = { depth: "SLATE", budget: 40, intent: "best_bets", entities: { teams: [] } };
+  const ctx: any = { sport: null, sport_source: null, single_game: false };
+  const only = o.only_game ?? null;
+  /* one game: the window must reach its kickoff whatever the question says */
+  const sw = await sweepBoard({ dal, plan, ctx, question: only ? q + " this week" : q, now, boardReq: { timezone: tz, state: null, follow_up: null }, boardScope: {} as any, primary: null, filter: cls.filter ?? null });
+  if (!sw || !sw.board) { P({ stage: "FIND_EVENTS", status: "failed", detail: "the board could not be read" }); return null; }
+  const board = sw.board;
+  const sport: string | null = (only?.sport ?? cls.sport) ?? null;
+  const inScope = (k: string) => !sport || k === sport;
+  const isOnly = (sp: string, id: any) => !only || (String(id) === String(only.game_id) && (!only.sport || sp === only.sport));
+  const lvl = EDBUDGET.selectLevel({ intent: "RESEARCH_SLATE", question: q, candidates: 1, data_available: true, paid_authorized: RESEARCH_PAID_OK });
+  RESEARCH_LEDGER?.newTurn();
+  const user = jwtSub(auth);
+  const coverage = (board.coverage ?? []).map((c: any) => refineCoverage(c, sw.signal_counts?.[c.sport] ?? 0)).filter((c: any) => inScope(c.sport));
+  /* L1: every pregame game in scope and inside the question's window */
+  const games: any[] = [];
+  const dropped = (board.eligibility?.dropped ?? []) as any[];
+  /* the NFL efficiency build, once: a game whose two teams it covers is researchable even with no projection */
+  let nflTeams: any = null;
+  if (EDREADY && (sw.slates ?? []).some((x: any) => x.sport === "americanfootball_nfl" && inScope(x.sport))) { try { nflTeams = (await dal.getMatchupMetrics()).json?.nfl?.teams ?? null; } catch { nflTeams = null; } }
+  for (const sl of (sw.slates ?? []).filter((x: any) => inScope(x.sport))) {
+    const v = EDPRICE ? EDPRICE.validationFor(sl.sport, "spread") : null;
+    for (const g of (sl.games ?? [])) {
+      if (!isOnly(sl.sport, g.game_id)) continue;
+      if (g.kickoff && Date.parse(g.kickoff) <= now && !only) continue;
+      if (!only && dropped.some((d) => d.sport === sl.sport && String(d.game_id) === String(g.game_id))) continue;
+      const sq = boardSpreadQuote(g, now);
+      const mhl = num(g.model_home_line), khl = sq ? num(sq.market_home_line) : null;
+      const qs = sq && sq.executable ? EDINTEL.quoteState({ captured_at: sq.observed_at, market: "spreads", kickoff: g.kickoff, now }) : null;
+      const metricsCover = sl.sport === "americanfootball_nfl" && !!nflTeams && !!nflTeams[String(g.home_id ?? "").toUpperCase()] && !!nflTeams[String(g.away_id ?? "").toUpperCase()];
+      games.push({ sport: sl.sport, game_id: String(g.game_id), home: g.home_team, away: g.away_team, home_id: g.home_id ?? null, away_id: g.away_id ?? null, kickoff: g.kickoff ?? null, matchup: `${g.away_team} @ ${g.home_team}`,
+        model_line: mhl, market_line: khl, gap_points: mhl != null && khl != null ? Math.round((mhl - khl) * 10) / 10 : null,
+        model_total: num((g as any).model_total), market_total: (() => { const tq = boardTotalQuote(g, now); return tq ? num(tq.total) : null; })(),
+        freshness: !sq ? "no market number on file" : sq.executable ? `${sq.book ?? "a book"}, ${String(sq.freshness ?? "").toLowerCase().replace(/_/g, " ")}, ${minutesAgoText(sq.observed_at, now)}` : "a reference line, not an executable price",
+        executable: !!sq?.executable, actionable: !!sq?.actionable, model_tier: mhl != null ? (v?.tier ?? "RESEARCH") : null,
+        model_version: (sl.model_meta?.version ?? null), model_generated_at: sl.model_meta?.generated_at ?? null, diagnosis: null, research: null, disagreement: null,
+        ready_in: { status: (g as any).status ?? null, model: { status: g.model_status ?? null, home_line: mhl, total: num((g as any).model_total), tier: mhl != null ? (v?.tier ?? "RESEARCH") : null, data_quality: (g as any).data_quality?.status ?? null },
+          market: sq ? { kind: sq.executable ? "PRICE" : "LINE_ONLY", status: sq.executable ? (qs?.status ?? sq.freshness ?? null) : "LINE_ONLY", actionable: !!sq.actionable, captured_at: sq.observed_at ?? null, limit_min: qs?.limit_min ?? null, book: sq.book ?? null, odds_american: num(sq.odds_american), source: sq.source ?? null } : null,
+          metrics: metricsCover } });
+    }
+  }
+  P({ stage: "FIND_EVENTS", status: "done", detail: only ? (games.length ? games[0].matchup : "the game is not on EdgeDesk's card") : `${games.length} pregame game${games.length === 1 ? "" : "s"} in ${board.scope?.window?.label ?? "the window"}`,
+    partial: { games: games.map((g) => ({ matchup: g.matchup, kickoff: g.kickoff, model_line: g.model_line, market_line: g.market_line, gap_points: g.gap_points, executable: g.executable })) } });
+  /* L2: the largest gaps, researched and diagnosed (bounded by the level's game budget) */
+  const g0 = quantAuditGather(dal, sw.games, now);
+  const l2 = EDBUDGET.LEVELS.L2;
+  const ranked = games.filter((g) => g.gap_points != null).sort((a, b) => Math.abs(b.gap_points) - Math.abs(a.gap_points));
+  /* screen only (readiness): no research is bought, no audit runs — the board's own data answers */
+  const l2games = o.screen_only ? [] : ranked.slice(0, Math.min(Number(l2.games) || 5, 6));
+  const l2invs: any[] = [], l2pairs: { inv: any; c: any }[] = [];
+  let l2i = 0;
+  for (const g of l2games) {
+    l2i++;
+    P({ stage: "RETRIEVE_STATS", status: "running", detail: `${g.matchup}: ${l2i} of ${l2games.length} largest gaps — injury report, starters, desk notes` });
+    const pseudo = { id: "slate:" + g.sport + ":" + g.game_id, sport: g.sport, game_id: g.game_id, home: g.home, away: g.away, kickoff: g.kickoff };
+    const sg = sw.games.find((x: any) => x.sport === g.sport && String(x.game_id) === String(g.game_id)) ?? null;
+    try {
+      const e = await g0(pseudo, 1);
+      const gathered = await researchRawFor({ dal, c: pseudo, e, game: sg, now, level: "L2", budget: l2, user });
+      const required = g.sport === "americanfootball_nfl" ? [{ topic: "availability", team: g.home }, { topic: "availability", team: g.away }] : g.sport === "baseball_mlb" ? [{ topic: "starter", team: g.home }, { topic: "starter", team: g.away }] : [];
+      const starters = sg && (sg.home_starter || sg.away_starter) ? { home: sg.home_starter, away: sg.away_starter } : null;
+      const R = EDAGENTS.research({ event: { id: g.game_id, sport: g.sport, home: g.home, away: g.away, kickoff: g.kickoff }, raw: gathered.raw, model: { starters, model_version: g.model_version }, required, now });
+      /* line_uncertainty_points stays null: the validation records the model's error against RESULTS (and the
+         outcome sigma), not the uncertainty of its line against the close — so that cause is NOT_ASSESSED, never
+         "explained" by an outcome spread of ±13 points */
+      const D = EDDISAGREE.diagnose({ model: { available: true, tier: g.model_tier, line: g.model_line, line_uncertainty_points: null, model_version: g.model_version },
+        market: { line: g.market_line, stale: g.executable && !g.actionable, executable: g.executable }, claims: R.findings, gaps: R.gaps, conflicts: R.unresolved,
+        quality: { flags: [], checked: true }, market_type: "spreads" });
+      g.research = R; g.disagreement = D;
+      g.diagnosis = D.explanation;
+      const inv = { research: R, unavailable: gathered.unavailable, providers: gathered.providers, disagreement: D };
+      l2invs.push(inv); l2pairs.push({ inv, c: pseudo });
+    } catch (err) {
+      g.diagnosis = "research could not be completed for this game (" + String((err as Error)?.message ?? err).slice(0, 80) + "); the discrepancy is reported without attribution";
+    }
+  }
+  if (l2games.length) {
+    const nf = l2invs.reduce((n, x) => n + (x.research?.findings ?? []).length, 0), cf = l2invs.reduce((n, x) => n + (x.research?.conflicts ?? []).length, 0);
+    P({ stage: "RETRIEVE_STATS", status: "done", detail: `${nf} finding${nf === 1 ? "" : "s"} on the ${l2games.length} largest gap${l2games.length === 1 ? "" : "s"}` });
+    P({ stage: "VERIFY_INJURIES", status: "done", detail: `${cf} conflict${cf === 1 ? "" : "s"} between sources; ${l2games.filter((g) => g.disagreement).length} gap${l2games.length === 1 ? "" : "s"} attributed to a cause` });
+  }
+  /* L3: the board's priced candidates in scope, audited, then the full chain */
+  const cands = EDQUANT.candidatesFromBoard(board, cls.filter ?? null).filter((c: any) => inScope(c.sport) && isOnly(c.sport, c.game_id)).map((c: any) => {
+    const g = sw.games.find((x: any) => x.sport === c.sport && String(x.game_id) === String(c.game_id));
+    return (g && (g.home_starter || g.away_starter)) ? { ...c, starters: { home: g.home_starter, away: g.away_starter } } : c;
+  });
+  dal.budget = (dal.budget ?? 0) + 2 * SCAN_AUDIT_TOP + 2;
+  const evStore = new Map<string, any>();
+  const auditCands = o.screen_only ? [] : cands;
+  P({ stage: "COMPARE_PRICES", status: auditCands.length ? "running" : "skipped", detail: o.screen_only ? `${cands.length} priced candidate${cands.length === 1 ? "" : "s"} on the board (no audit for a readiness question)` : cands.length ? `${cands.length} priced candidate${cands.length === 1 ? "" : "s"}; re-reading the top ${Math.min(SCAN_AUDIT_TOP, cands.length)} at every book` : "no executable price in scope clears the board's screen" });
+  const audit = await EDAUDIT.run({ candidates: auditCands, gather: async (c: any, round: number) => { const e = await g0(c, round); evStore.set(String(c.id), e); return e; }, now, top: SCAN_AUDIT_TOP });
+  if (auditCands.length) P({ stage: "COMPARE_PRICES", status: "done", detail: `${(audit.audited ?? []).length} re-read on a fresh price`, partial: { audit: (audit.audited ?? []).map((r: any) => ({ selection: r.candidate.selection, matchup: r.candidate.matchup, line: r.candidate.line, market: r.candidate.market, status: r.audit.status, reason: r.audit.reason })) } });
+  /* stages the L2 pass already completed are not reported "skipped" by the L3 pass */
+  const l3progress: Progress | null = o.progress ? (ev: any) => { if (ev.status === "skipped" && l2games.length && (ev.stage === "RETRIEVE_STATS" || ev.stage === "VERIFY_INJURIES")) return; o.progress!(ev); } : null;
+  const rs = o.screen_only ? null : await researchAudited({ dal, audit, games: sw.games, evidence: evStore, now, question: q, auth, stake: cls.risk_dollars ?? null, intent: "RESEARCH_SLATE", level: lvl.level, progress: l3progress });
+  if (!(audit.audited ?? []).length) { P({ stage: "CALCULATE", status: "skipped", detail: "no priced candidate to calculate" }); P({ stage: "AUDIT", status: "skipped", detail: "no priced candidate to audit" }); }
+  const scan = EDQUANT.scanResult({ board, audit, coverage, not_covered: EDADAPT?.NOT_COVERED ?? [], risk_dollars: cls.risk_dollars ?? null, filter: cls.filter ?? null, now, evaluate: quantEvaluator(now, cls.risk_dollars ?? null), investigations: rs ? rs.investigations : null });
+  const investigated = [scan.best, ...(scan.verified_rest ?? []), ...scan.potential, ...scan.near_misses].filter(Boolean);
+  /* readiness, per game: five separate states from the data above, and every requirement that is missing */
+  const RANKC: Record<string, number> = { VERIFIED_CANDIDATE: 0, WATCHLIST: 1, RESEARCH_REQUIRED: 2, REJECTED: 3, UNVERIFIED: 4 };
+  for (const g of games) {
+    const rows = investigated.filter((r: any) => r.candidate.sport === g.sport && String(r.candidate.game_id) === g.game_id && r.classification).sort((a: any, b: any) => RANKC[a.classification.classification] - RANKC[b.classification.classification]);
+    const top = rows[0] ?? null;
+    g.readiness = EDREADY ? EDREADY.assess({ sport: g.sport, game_id: g.game_id, kickoff: g.kickoff, status: g.ready_in.status, model: g.ready_in.model, market: g.ready_in.market, metrics: g.ready_in.metrics,
+      audit: top ? { classification: top.classification.classification, reason: (top.classification.reasons ?? [])[0] ?? null } : null,
+      gate: top ? null : (() => {
+        const bc = cands.find((c: any) => c.sport === g.sport && String(c.game_id) === g.game_id);
+        if (o.screen_only && bc) return { actionable: bc.qualification?.status === "QUALIFIED", status: bc.qualification?.status ?? null, why: bc.qualification?.status === "QUALIFIED" ? null : "the board's best price on this game did not qualify" + (bc.qualification?.rules?.[0] ? " (" + bc.qualification.rules[0] + ")" : "") };
+        return { actionable: false, why: g.executable ? "no price on this game cleared the board's screen, so nothing reached the audit" : null };
+      })() }, { now }) : null;
+    g.kickoff_local = kickoffLocal(g.kickoff, tz);
+  }
+  const readiness = EDREADY ? EDREADY.summarize(games.map((g) => g.readiness)) : null;
+  const allInvs = (rs ? rs.pairs.map((p) => p.inv) : []).concat(l2invs);
+  const summary = researchSummaryOf(allInvs, lvl);
+  const notInvestigated: string[] = [];
+  games.filter((g) => g.gap_points == null).forEach((g) => notInvestigated.push(`${g.matchup}: ${g.model_line == null ? "no EdgeDesk projection on file" : "no market number on file"}`));
+  ranked.slice(l2games.length).forEach((g) => notInvestigated.push(`${g.matchup}: a ${Math.abs(g.gap_points)}-point gap, below the ${l2games.length} largest researched this turn`));
+  const covSentence = coverage.length ? coverage.map((c: any) => `${c.label}: ${String(c.status).toLowerCase().replace(/_/g, " ")}${c.why ? " (" + String(c.why).replace(/\.$/, "") + ")" : ""}.`).join(" ") : (sport ? quantSportLabel(sport) + " is not on the board right now." : "");
+  P({ stage: "EXPLAIN", status: "running", detail: "writing the answer from the verified result" });
+  const gameOut = (g: any) => ({ sport: g.sport, game_id: g.game_id, matchup: g.matchup, home: g.home, away: g.away, kickoff: g.kickoff, kickoff_local: g.kickoff_local, model_line: g.model_line, market_line: g.market_line, gap_points: g.gap_points,
+    model_total: g.model_total, market_total: g.market_total, freshness: g.freshness, executable: g.executable, model_tier: g.model_tier, model_generated_at: g.model_generated_at,
+    disagreement: g.disagreement ? { verdict: g.disagreement.verdict, primary: g.disagreement.primary, size: g.disagreement.size, explanation: g.disagreement.explanation, is_edge_evidence: g.disagreement.is_edge_evidence, causes: g.disagreement.causes } : null,
+    findings: g.research ? g.research.findings.length : null, conflicts: g.research ? g.research.conflicts.length : null,
+    research: g.research ? researchSlim({ research: g.research, disagreement: g.disagreement, unavailable: [] }) : null,
+    readiness: g.readiness, why_not: EDREADY && g.readiness ? EDREADY.whyNot(g.readiness) : [] });
+  const sportLabel = sport ? quantSportLabel(sport) : "Every in-season sport";
+  const det = only ? EDQUANT.renderGameResearch({ game: games[0] ? gameOut(games[0]) : null, sport_label: sportLabel, investigated, why_not: games[0] && EDREADY && games[0].readiness ? EDREADY.whyNot(games[0].readiness) : [], research_summary: summary, sources_text: researchSourcesText(allInvs) })
+    : o.screen_only ? EDQUANT.renderReadiness({ games: games.map(gameOut), readiness, sport_label: sport ? sportLabel : null, window: board.scope?.window?.label ?? null, coverage_sentence: covSentence, no_game: /\bthis (game|matchup|spread)\b/i.test(q) })
+    : EDQUANT.renderResearchSlate({ sport_label: sportLabel, window: board.scope?.window?.label ?? null, games, investigated,
+      coverage_sentence: covSentence, research_summary: summary, sources_text: researchSourcesText(allInvs), not_investigated: notInvestigated, readiness, no_game: /\bthis (game|matchup|spread)\b/i.test(q) });
+  const nar = o.screen_only ? { answer: det, model: null, narration: { ok: true, prose: "DETERMINISTIC", critic: null }, deterministic_answer: null } : await narrateResearch(det, allInvs.map((x: any) => x.research?.graph).filter(Boolean), user, lvl.budget, auth);
+  const answer = nar.answer;
+  P({ stage: "EXPLAIN", status: "done", detail: nar.narration.prose === "MODEL" ? "rephrased under the critic" : "deterministic answer" });
+  if (!o.screen_only) {
+    try { await publishAudits(auth, auditRecords(audit, scan, q, now)); } catch { /* best effort */ }
+    try { await publishResearch(auth, (rs ? rs.pairs : []).concat(l2pairs), { question: q, now, level: lvl.level }, dal.fetchImpl()); } catch { /* best effort */ }
+  }
+  const out: any = {
+    answer, model: nar.model, narration: nar.narration, ...(nar.deterministic_answer ? { deterministic_answer: nar.deterministic_answer } : {}),
+    research_slate: {
+      schema: (EDAGENTS.VERSION ?? "edagents") + ":slate", sport, window: board.scope?.window ?? null, level: lvl,
+      games: games.map(gameOut),
+      readiness, mode: only ? "GAME" : o.screen_only ? "READINESS" : "SLATE",
+      investigated: investigated.map(quantRowSlim), survivors: investigated.filter((r: any) => r.classification?.classification === "VERIFIED_CANDIDATE" && !r.withheld_by_board).length,
+      final_status: scan.final_status, research_summary: summary, coverage, not_investigated: notInvestigated, research_write: LAST_RESEARCH_WRITE,
+    },
+    quant_state: EDQUANT.stateFrom({ scan, now }),
+    build: BUILD,
+  };
+  /* one game: the same research, under the key a game view reads */
+  if (only) { out.game_research = { ...out.research_slate, game: out.research_slate.games[0] ?? null }; delete out.research_slate; }
+  return out;
+}
+
+/** "Which matchup has the biggest offensive advantage?" — unit against unit, from the NFL slate's team ratings. */
+async function quantMatchupEdges(o: { body: any; dal: Dal; now: number; cls: any; progress?: Progress | null }): Promise<any> {
+  const P = stageEmitter(o.progress);
+  const det = { model: null, narration: { ok: true, prose: "DETERMINISTIC", critic: null }, build: BUILD };
+  const unit = o.cls.unit ?? "offense";
+  /* asked from a game view ("…in this game"): that game's two pairings, whatever the window */
+  const gctx = quantGameContext(o.body);
+  const onlyGame = gctx && /\b(this|that) (game|matchup)\b/i.test(String(o.body?.question ?? "")) ? gctx : null;
+  const sportAsked = o.cls.sport ?? onlyGame?.sport ?? null;
+  if (sportAsked && sportAsked !== "americanfootball_nfl") {
+    return { answer: EDQUANT.renderMatchupEdges({ rows: [], unit, sport_label: quantSportLabel(sportAsked), missing: "EdgeDesk's " + quantSportLabel(sportAsked) + " build publishes quarterback EPA and each game's projection, not unit-against-unit efficiency ratings, so no mismatch is measured here. Open a game for its research packet." }), ...det, matchup_edges: { rows: [], sport: sportAsked } };
+  }
+  P({ stage: "RETRIEVE_STATS", status: "running", detail: "EdgeDesk's NFL team ratings (football/nfl/slate.json)" });
+  const art = await o.dal.getArtifact("football/nfl/slate.json", { free: true });
+  const j: any = art.json;
+  if (!j || !j.teams || !Array.isArray(j.games)) { P({ stage: "RETRIEVE_STATS", status: "failed", detail: "the NFL slate could not be read" }); return { answer: EDQUANT.renderMatchupEdges({ rows: [], unit, sport_label: "NFL", missing: "The NFL slate could not be read, so no mismatch can be measured right now." }), ...det, matchup_edges: { rows: [] } }; }
+  const tz = typeof o.body?.timezone === "string" ? o.body.timezone.slice(0, 64) : null;
+  const scope = EDBOARD ? EDBOARD.resolveScope({ question: String(o.body.question ?? ""), now: o.now, timezone: tz, default_timezone: BOARD_DEFAULT_TZ, sport: "americanfootball_nfl", sport_source: "question", state: null, follow_up: null, supported: BOARD_SPORTS }) : null;
+  const from = scope?.window?.from ? Date.parse(scope.window.from) : o.now, to = scope?.window?.to ? Date.parse(scope.window.to) : o.now + 7 * 86400000;
+  const KEYS: Record<string, [string, string, number]> = { offense: ["off_epa_play", "def_epa_play", 1], pass: ["pass_epa_db", "def_pass_epa_db", 1], rush: ["rush_epa_att", "def_rush_epa_att", 1], defense: ["def_epa_play", "off_epa_play", -1] };
+  const [ka, kb, sign] = KEYS[unit] ?? KEYS.offense;
+  const rows: any[] = [];
+  for (const g of j.games) {
+    if (onlyGame && String(g.game_id) !== onlyGame.game_id) continue;
+    const ko = Date.parse(g.kickoff ?? ""); if (!isFinite(ko) || ko <= o.now || (!onlyGame && (ko < from || ko > to))) continue;
+    const H = j.teams[g.home_code], A = j.teams[g.away_code]; if (!H?.ratings || !A?.ratings) continue;
+    for (const [me, op] of [[A, H], [H, A]] as const) {
+      const a = num(me.ratings[ka]), b = num(op.ratings[kb]); if (a == null || b == null) continue;
+      const edge = sign * (a + b);
+      rows.push({ matchup: `${A.team} @ ${H.team}`, game_id: String(g.game_id), kickoff: g.kickoff, offense: me.team, defense: op.team, edge: Math.round(edge * 1000) / 1000,
+        off_rank: me.ranks?.[ka]?.rank ?? null, def_rank: op.ranks?.[kb]?.rank ?? null, of: me.ranks?.[ka]?.of ?? 32 });
+    }
+  }
+  rows.sort((x, y) => y.edge - x.edge);
+  const windowLabel = onlyGame ? (rows[0] ? rows[0].matchup : "the game you opened") : (scope?.window?.label ?? null);
+  P({ stage: "RETRIEVE_STATS", status: "done", detail: onlyGame ? (rows.length ? `both unit pairings for ${rows[0].matchup}` : "the game is not on the NFL card with team ratings") : `${rows.length / 2 | 0} games in ${scope?.window?.label ?? "the next 7 days"}` });
+  P({ stage: "EXPLAIN", status: "done", detail: "deterministic answer" });
+  const label = unit === "pass" ? "passing EPA per dropback" : unit === "rush" ? "rushing EPA per carry" : "EPA per play";
+  return { answer: EDQUANT.renderMatchupEdges({ rows, unit, sport_label: "NFL", window: windowLabel, metric_label: label, source: "EdgeDesk NFL slate team ratings (nflverse play-by-play)", generated_at: j.generated_at ?? null,
+      missing: onlyGame && !rows.length ? "That game is not on EdgeDesk's NFL card with team ratings (it may have started), so no mismatch is measured." : undefined }),
+    ...det, matchup_edges: { sport: "americanfootball_nfl", unit, metric: [ka, kb], window: onlyGame ? { kind: "game", label: windowLabel, game_id: onlyGame.game_id } : (scope?.window ?? null), generated_at: j.generated_at ?? null, rows: rows.slice(0, 10) } };
+}
+/** "Compare DraftKings Predictions and Kalshi prices": what is on file for each venue, never an invented price. */
+async function quantVenueCompare(o: { body: any; dal: Dal; now: number; cls: any }): Promise<any> {
+  const LABEL: Record<string, string> = { kalshi: "Kalshi", polymarket: "Polymarket", draftkings_predictions: "DraftKings Predictions", fanduel_predicts: "FanDuel Predicts", robinhood: "Robinhood prediction markets", crypto_com: "Crypto.com", novig: "Novig", prophetx: "ProphetX", sportsbook: "Sportsbooks (DraftKings, FanDuel, BetMGM, Caesars)" };
+  const reg: any = EDFAIR?.VENUES ?? {};
+  const venues = (o.cls.venues ?? []).map((k: string) => {
+    const v = reg[k] ?? null;
+    if (k === "sportsbook") return { key: k, label: LABEL[k], captured: true, fee: "none: the price is the cost", verification: "VERIFIED", note: "EdgeDesk captures sportsbook moneylines and spreads with a capture time; totals and props are not priced by the quant desk." };
+    if (v) return { key: k, label: v.label ?? LABEL[k] ?? k, captured: false, fee: v.fee?.formula ? v.fee.formula : String(v.fee?.kind ?? "unknown").toLowerCase().replace(/_/g, " "), verification: v.fee?.verification ?? "UNKNOWN", note: v.fee?.basis ?? null, source_url: v.fee?.source_url ?? null };
+    return { key: k, label: LABEL[k] ?? k, captured: false, fee: "not on file", verification: "UNKNOWN", note: "No fee schedule for this venue is on file, so its all-in cost cannot be computed; it is never assumed to match another venue's." };
+  });
+  return { answer: EDQUANT.renderVenueCompare({ venues }), model: null, narration: { ok: true, prose: "DETERMINISTIC", critic: null }, venue_compare: { venues }, build: BUILD };
+}
+
+/** The game a research view is about (the new game view sends it): an odds-feed sport key and the board's game id. */
+export function quantGameContext(body: any): { sport: string | null; game_id: string } | null {
+  const g = body?.research_context?.game;
+  if (!g || typeof g !== "object") return null;
+  const id = typeof g.game_id === "string" && /^[A-Za-z0-9_.:-]{1,40}$/.test(g.game_id) ? g.game_id : null;
+  if (!id) return null;
+  const sp = typeof g.sport === "string" && /^(americanfootball_nfl|americanfootball_ncaaf|baseball_mlb|mma_mixed_martial_arts)$/.test(g.sport) ? g.sport : null;
+  return { sport: sp, game_id: id };
+}
+/** Readiness and slate research are about the card, not the clock: a question that names no day reads the next
+ *  seven days (the football card's window), never "today" — on a Monday that would be an empty, misleading answer. */
+function cardWindow(body: any): any {
+  const q = String(body?.question ?? "");
+  return /\b(tonight|today|tomorrow|weekend|week|upcoming|daily|next \d{1,3} ?(hours?|hrs?|h|days?))\b/i.test(q) ? body : { ...body, question: q + " this week" };
+}
+/** Which quant route a question takes, without doing any work (the streaming decision reads it). */
+export function quantRouteOf(body: any): string | null {
+  if (!QUANT_ENABLED || !EDQUANT || !body) return null;
+  const q = String(body.question ?? "").trim();
+  if (!q || q.length > 400) return null;
+  const carried = EDQUANT.sanitizeState(body?.research_context?.quant ?? null);
+  const boardFollow = EDBOARD && BOARD_ENABLED ? EDBOARD.followUp({ question: q, state: EDBOARD.sanitizeState(body?.research_context?.board) }) : null;
+  const cls = EDQUANT.classify(q, { state: carried, has_board_state: !!boardFollow?.is_follow_up });
+  const gctx = quantGameContext(body);
+  if (gctx && body.desk === true && AGENT_RESEARCH_ENABLED && (body.intent_hint === "GAME_RESEARCH" || cls.intent === "READINESS" || /\b(disagree\w*|differ\w*)\b/i.test(q))) return "GAME_RESEARCH";
+  if (!cls.intent && /\b(edgedesk|model|you)\b[^?]{0,40}\b(disagree\w*|differ\w*)\b/i.test(q) && body.desk === true) return "RESEARCH_SLATE";
+  return cls.intent ?? null;
+}
+export async function quantTurn(o: { body: any; auth: string; now?: number; fetchImpl?: typeof fetch; progress?: Progress | null }): Promise<any | null> {
   if (!QUANT_ENABLED || !EDQUANT || !EDFAIR || !o.body) return null;
   const q = String(o.body.question ?? "").trim();
   if (!q || q.length > 400) return null;
@@ -46557,6 +51145,8 @@ export async function quantTurn(o: { body: any; auth: string; now?: number; fetc
   const carried = EDQUANT.sanitizeState(o.body?.research_context?.quant ?? null);
   const boardFollow = EDBOARD && BOARD_ENABLED ? EDBOARD.followUp({ question: q, state: EDBOARD.sanitizeState(o.body?.research_context?.board) }) : null;
   const cls = EDQUANT.classify(q, { state: carried, has_board_state: !!boardFollow?.is_follow_up });
+  const route = quantRouteOf(o.body);
+  if (route === "GAME_RESEARCH" || (route === "RESEARCH_SLATE" && !cls.intent)) cls.intent = route;
   if (!cls.intent) return null;
   /* staking questions keep the staking engine (the full pipeline sizes them) */
   if (cls.intent === "SCAN" && (DESK_STAKING.test(q) || o.body.desk !== true || !BOARD_ENABLED || !EDAUDIT)) return null;
@@ -46572,8 +51162,29 @@ export async function quantTurn(o: { body: any; auth: string; now?: number; fetc
       if (o.body.packet) return null;
       if (quantTokens(q).length) { const named = await quantRows(dal, q, now); if (named.rows.length) return null; }
     }
-    const r = await quantScan({ body: o.body, auth: o.auth, dal, now, cls }); return r ? { ...r, ...base } : null;
+    const r = await quantScan({ body: o.body, auth: o.auth, dal, now, cls, progress: o.progress }); return r ? { ...r, ...base } : null;
   }
+  if (cls.intent === "BETS") { const r = await quantBets({ body: o.body, dal, now, progress: o.progress }); return { ...r, ...base }; }
+  if (cls.intent === "RESEARCH_SLATE") {
+    /* a deep, multi-game investigation: the desk's surface only, and never a staking question */
+    if (DESK_STAKING.test(q) || o.body.desk !== true || !BOARD_ENABLED || !EDAUDIT) return null;
+    const r = await quantResearchSlate({ body: cardWindow(o.body), auth: o.auth, dal, now, cls, progress: o.progress }); return r ? { ...r, ...base } : null;
+  }
+  if (cls.intent === "GAME_RESEARCH") {
+    /* one game, from the game view: readiness, model and market, the disagreement, the findings, its candidates audited */
+    if (!BOARD_ENABLED || !EDAUDIT) return null;
+    const gctx = quantGameContext(o.body)!;
+    const r = await quantResearchSlate({ body: o.body, auth: o.auth, dal, now, cls: { ...cls, sport: gctx.sport }, progress: o.progress, only_game: gctx });
+    return r ? { ...r, ...base } : null;
+  }
+  if (cls.intent === "READINESS") {
+    /* the board's own data, five states per game and what is missing: no research is bought for it */
+    if (!BOARD_ENABLED) return null;
+    const r = await quantResearchSlate({ body: cardWindow(o.body), auth: o.auth, dal, now, cls, progress: o.progress, screen_only: true });
+    return r ? { ...r, readiness_board: r.research_slate, ...base } : null;
+  }
+  if (cls.intent === "MATCHUP_EDGE") return { ...(await quantMatchupEdges({ body: o.body, dal, now, cls, progress: o.progress })), ...base };
+  if (cls.intent === "VENUE_COMPARE") return { ...(await quantVenueCompare({ body: o.body, dal, now, cls })), ...base };
   if (cls.intent === "CONTRACT" || cls.intent === "PRICE") { const r = await quantPrice({ body: o.body, auth: o.auth, dal, now, cls, carried }); return r ? { ...r, ...base } : null; }
   if (cls.intent === "EXPLAIN_EV") return { ...(await quantPrice({ body: o.body, auth: o.auth, dal, now, cls, carried, explain: true })), ...base };
   if (cls.intent === "COVERAGE") {
@@ -46941,6 +51552,51 @@ export async function handle(req: Request): Promise<Response> {
   if (!dry) {
     try { const pt = await propsTurn({ body, auth }); if (pt) return await rjson(pt, 200, "deterministic"); }
     catch (e) { try { console.error("edgedesk_ai props turn threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
+  }
+
+  /* --- THE RESEARCH ACTIVITY, STREAMED. A client that asks for it (stream: true) on a question the
+     research routes answer gets newline-delimited JSON: an "accepted" line, one "progress" line per
+     real step as it happens (never on a timer), then the "result" (the same payload as below) or an
+     "error". The usage claim is settled exactly once, as for every other exit. Cancelling the request
+     stops the run at the next step. A route that might hand the question on (a named game) is not
+     streamed, so a question is never claimed twice. */
+  if (!dry && body?.stream === true && body?.desk === true) {
+    const route = quantRouteOf(body);
+    const tokens = quantTokens(String(body.question ?? ""));
+    const staking = DESK_STAKING.test(String(body.question ?? ""));
+    const streamable = (route === "RESEARCH_SLATE" && !staking) || route === "GAME_RESEARCH" || route === "READINESS" || route === "BETS" || route === "MATCHUP_EDGE"
+      || (route === "SCAN" && !staking && !body.packet && (EDQUANT.classify(String(body.question ?? "")).all_sports || !tokens.length));
+    if (streamable) {
+      const enc = new TextEncoder();
+      let cancelled = false;
+      const stream = new ReadableStream<Uint8Array>({
+        async start(ctl) {
+          const send = (o: any) => { if (cancelled) return; try { ctl.enqueue(enc.encode(JSON.stringify(o) + "\n")); } catch { cancelled = true; } };
+          const t0 = Date.now();
+          send({ type: "accepted", route, build: BUILD, at: new Date().toISOString() });
+          let payload: any = null, outcome = "deterministic", failure: string | null = null;
+          try {
+            payload = await quantTurn({ body, auth, progress: (ev) => { if (cancelled) throw new Error("cancelled by the reader"); send({ type: "progress", ...ev, t_ms: Date.now() - t0 }); } });
+          } catch (e) {
+            failure = String((e as Error)?.message ?? e).slice(0, 200);
+            outcome = cancelled ? "cancelled" : "narration_failed";
+            try { console.error("edgedesk_ai research stream threw", failure); } catch { /* no console */ }
+          }
+          if (payload) {
+            try { payload.route = routeNote(turn); if (screenCtx && !payload.screen) payload.screen = Object.assign({ subject_from_screen: subjectFromScreen }, screenCtx); } catch { /* keep the body */ }
+            send({ type: "result", payload: { build: BUILD, ...payload } });
+          } else if (!failure) send({ type: "fallback", why: "this question is answered by the full research route; ask it again without the activity view" });
+          else send({ type: "error", error: cancelled ? "cancelled" : "the research run failed", detail: failure });
+          const ms = Date.now() - turnT0;
+          const settle = usageSettle(auth, turn.lite, payload ? outcome : (failure ? outcome : "answered"), null, ms, null).catch(() => false);
+          const rt = (globalThis as any).EdgeRuntime;
+          if (rt?.waitUntil) rt.waitUntil(settle); else await settle;
+          try { ctl.close(); } catch { /* already closed */ }
+        },
+        cancel() { cancelled = true; },
+      });
+      return new Response(stream, { status: 200, headers: { ...CORS, "content-type": "application/x-ndjson; charset=utf-8", "cache-control": "no-store", "x-edgedesk-build": BUILD } });
+    }
   }
 
   /* --- the quant desk: the audited cross-sport scan (desk clients), and

@@ -302,6 +302,61 @@ const LIBS = [
     start: '/*__EDQUANT_START__*/', end: '/*__EDQUANT_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* Phase 2, the research system. ORDER MATTERS: EDAGENTS reads EDGRAPH,
+     EDDISAGREE, EDFAIR and EDADAPT when it runs. The evidence graph, the
+     model disagreement engine and the research budget are lib files Node
+     requires directly; the agent roles live beside the auditor. */
+  {
+    name: 'EDGRAPH',
+    src: path.join(ROOT, 'lib', 'edgedesk_evidence_graph.js'),
+    start: '/*__EDGRAPH_START__*/', end: '/*__EDGRAPH_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  {
+    name: 'EDDISAGREE',
+    src: path.join(ROOT, 'lib', 'edgedesk_disagreement.js'),
+    start: '/*__EDDISAGREE_START__*/', end: '/*__EDDISAGREE_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  {
+    name: 'EDBUDGET',
+    src: path.join(ROOT, 'lib', 'edgedesk_research_budget.js'),
+    start: '/*__EDBUDGET_START__*/', end: '/*__EDBUDGET_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  {
+    name: 'EDAGENTS',
+    src: path.join(FN, '_agents.js'),
+    start: '/*__EDAGENTS_START__*/', end: '/*__EDAGENTS_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  /* The bet-history answer ("why did I lose money … singles or parlays?"). ORDER MATTERS: EDBETS reads
+     EDPortfolio's exact decimals and the importer's vocabulary (ticket money fields, market-type inference)
+     AT LOAD, so both are inlined first. The desk itself reads the caller's stored positions (fromPositions). */
+  {
+    name: 'EDPORTFOLIO',
+    src: path.join(ROOT, 'lib', 'edgedesk_portfolio.js'),
+    start: '/*__EDPORTFOLIO_START__*/', end: '/*__EDPORTFOLIO_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  {
+    name: 'EDPORTIMPORT',
+    src: path.join(ROOT, 'lib', 'edgedesk_portfolio_import.js'),
+    start: '/*__EDPORTIMPORT_START__*/', end: '/*__EDPORTIMPORT_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  {
+    name: 'EDREADY',
+    src: path.join(ROOT, 'lib', 'edgedesk_readiness.js'),
+    start: '/*__EDREADY_START__*/', end: '/*__EDREADY_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  {
+    name: 'EDBETS',
+    src: path.join(ROOT, 'lib', 'edgedesk_bet_history.js'),
+    start: '/*__EDBETS_START__*/', end: '/*__EDBETS_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
   /* The MLB historical query layer. ORDER MATTERS, for the same reason the
      FBS resolver above does: its host is _mlbhist.js, which is itself the
      source EDMLBHIST is copied FROM, so this must land before EDMLBHIST is

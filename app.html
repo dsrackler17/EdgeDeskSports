@@ -2918,7 +2918,8 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_first_run.css?v=20260930a">
 <link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261003y">
 <link rel="stylesheet" href="/lib/edgedesk_workspace.css?v=20261004b">
-<link rel="stylesheet" href="/lib/edgedesk_portfolio.css?v=20261005dr1">
+<link rel="stylesheet" href="/lib/edgedesk_portfolio.css?v=20261012bh1">
+<link rel="stylesheet" href="/lib/edgedesk_intel.css?v=20261012ia2">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3168,6 +3169,9 @@ body.focus .dk-focusnote{display:block}
       <summary><b>Tracked from EdgeDesk</b><span>prices you tracked from an edge and Card bets, graded against the closing line</span></summary>
       <div id="processHost"><div class="empty">Loading&hellip;</div></div>
     </details>
+    <!-- HOW EDGEDESK RESEARCHES (lib/edgedesk_intel_ui.js): the method, model validation and research verification,
+         below the coach and what was tracked, which stay this seat's first purpose -->
+    <div id="iaMethodHost"></div>
   </section>
 
   <!-- SETUP — the one-time start for a new account: welcome, bring your
@@ -3187,7 +3191,10 @@ body.focus .dk-focusnote{display:block}
   <!-- EDGEDESK CARD — the current actionable betting state (lib/edgedesk_decision_ui.js).
        The Research Board answers "what games deserve attention?"; this page answers
        "what does the current price justify?": BET / LEAN / WATCH / PASS / NO DECISION. -->
-  <section id="v-card" class="view hide"><div id="eddCardHost"></div></section>
+  <section id="v-card" class="view hide"><div id="eddCardHost"></div>
+    <!-- RESEARCHED BY EDGEDESK AI (lib/edgedesk_intel_ui.js): the candidates EdgeDesk AI audited this session and
+         how each fared. Its own host, below the Card, so the Card's decisions are untouched. -->
+    <div id="iaCardHost"></div></section>
 
 
 
@@ -3202,8 +3209,11 @@ body.focus .dk-focusnote{display:block}
     <div class="rs-hd"><div class="rs-hd-t"><h2>EdgeDesk Research <span class="rs-exp">Experimental</span></h2></div>
       <button class="rs-tool ic" id="rsSearchBtn" onclick="rsToggleSearch()" title="Search research" aria-label="Search research"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></button>
       <button class="rs-tool ic" id="rsSavedBtn" onclick="rsToggleSaved()" title="Saved research" aria-label="Saved research"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
-      <button class="rs-tool ic rs-ask" id="rsAskBtn" onclick="edAsk()" title="Ask EdgeDesk" aria-label="Ask EdgeDesk about the research"><svg viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/></svg></button>
+      <button class="rs-tool ic rs-ask" id="rsAskBtn" onclick="edAsk()" title="Ask EdgeDesk AI" aria-label="Ask EdgeDesk AI about the research"><svg viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/></svg><span class="rs-ask-l">Ask AI</span></button>
       <p class="rs-sub">Model, market, roster and uncertainty in one place.</p></div>
+    <!-- ASK EDGEDESK AI (lib/edgedesk_intel_ui.js): the research engine's front door, on every Research tab.
+         Static, so the board re-rendering never clears what the reader is typing. -->
+    <div id="iaAskHost"></div>
     <div id="rsSearchWrap" class="rs-srch hide" style="margin-bottom:12px"></div>
     <div id="rsDrawer" class="fb-drawer" style="display:none" onclick="if(event.target===this)rsTkDrawerClose()"><div class="fb-drawer-card" id="rsDrawerCard"></div></div>
     <div id="rsSavedWrap" class="hide" style="margin-bottom:12px"></div>
@@ -4006,14 +4016,18 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_saved_research.js?v=20261011lm1"></script>
 <!-- PORTFOLIO: engine → importer → connector contract → page, in that order -->
 <script src="/lib/edgedesk_portfolio.js?v=20261005pf3"></script>
-<script src="/lib/edgedesk_portfolio_import.js?v=20261005pf3"></script>
+<script src="/lib/edgedesk_portfolio_import.js?v=20261012bh1"></script>
+<!-- BET HISTORY: loss patterns over the reader's own tickets (EDBETS), after the importer it groups leg rows with -->
+<script src="/lib/edgedesk_bet_history.js?v=20261012bh1"></script>
+<script src="/lib/edgedesk_readiness.js?v=20261012ia2"></script>
+<script src="/lib/edgedesk_intel_ui.js?v=20261012ia2"></script>
 <script src="/lib/edgedesk_portfolio_connectors.js?v=20261005pf3"></script>
 <script src="/lib/edgedesk_portfolio_connect_core.js?v=20261005pf3"></script>
 <script src="/lib/edgedesk_portfolio_process.js?v=20261005pf3"></script>
 <!-- THE DECISION RECORD: context quality, edge capture, process memory and Card → Record Position (supabase/portfolio_decision.sql) -->
 <script src="/lib/edgedesk_decision_record.js?v=20261005dr1"></script>
 <script src="/lib/edgedesk_portfolio_journal_ui.js?v=20261005dr1"></script>
-<script src="/lib/edgedesk_portfolio_ui.js?v=20261005dr1"></script>
+<script src="/lib/edgedesk_portfolio_ui.js?v=20261012bh1"></script>
 <!-- THE BASEBALL RUN MODEL. Constants first, engine second, the same order
      and the same dual-target shape football/params.js + football/engine.js
      use. Both are plain scripts with no dependency on the page: the engine
@@ -39842,25 +39856,40 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      Every number on it is the server's (EDFAIR's arithmetic, EDAUDIT's
      checks); nothing is computed here, and the verdict chip is the server's
      own classification, never upgraded by the page. */
-  var QD_LABEL={VERIFIED_EDGE:['Verified edge','v'],POTENTIAL_EDGE:['Potential edge','p'],WATCH:['Watch','w'],PASS:['Pass','x'],UNVERIFIED_DATA:['Unverified data','u']};
-  var QD_KEYS=/^(Event|Market|Venue|Available price|Independent fair price|Estimated net EV|Maximum acceptable entry|Model reliability|Primary matchup advantage|Biggest risk|Decision|Market no-vig|Fair probability|Fair price|Fees|Slippage|Break-even|Net EV|Maximum entry|Calibration|Independent model|Missing|Context \(not a probability\)|Not verified because): (.*)$/;
+  var QD_LABEL={VERIFIED_EDGE:['Verified edge','v'],POTENTIAL_EDGE:['Potential edge','p'],WATCH:['Watch','w'],PASS:['Pass','x'],UNVERIFIED_DATA:['Unverified data','u'],
+    VERIFIED_CANDIDATE:['Verified candidate','v'],WATCHLIST:['Watchlist','w'],RESEARCH_REQUIRED:['Research required','p'],REJECTED:['Rejected','x'],UNVERIFIED:['Unverified','u']};
+  var QD_KEYS=/^(Event|Sport|Market|Venue|Available price|Verified market price|Independent fair price|Independent fair probability|Break-even probability|Estimated net EV|Maximum acceptable entry|Maximum acceptable price|Model reliability|Research freshness|Why the model disagrees with the market|Primary matchup advantage|Strongest counterargument|What would invalidate the opportunity|Biggest risk|Decision|Final status|Market no-vig|Fair probability|Fair price|Fees|Slippage|Break-even|Net EV|Maximum entry|Calibration|Independent model|Missing|Context \(not a probability\)|Not verified because): (.*)$/;
+  /* the server's final status (VERIFIED CANDIDATE / WATCHLIST / PASS) as a chip key */
+  function qdStatusKey(fs){ fs=String(fs||''); return fs==='VERIFIED CANDIDATE'?'VERIFIED_CANDIDATE':fs==='WATCHLIST'?'WATCHLIST':fs==='PASS'?'PASS':null; }
+  /* one numbered source line: "[n] title — https://… (reliability, published …, retrieved …)"; only an https URL becomes a link */
+  function qdSourceLi(t){ var m=/^(.*?)(https:\/\/[^\s()]+)(.*)$/.exec(t); return m?'<li>'+esc(m[1])+'<a href="'+esc(m[2])+'" target="_blank" rel="noopener noreferrer">'+esc(m[2].length>72?m[2].slice(0,72)+'…':m[2])+'</a>'+esc(m[3])+'</li>':'<li>'+esc(t)+'</li>'; }
   function quantIsAnswer(d){ return !!(d&&d.quant&&/^edgedesk_quant_v/.test(String(d.quant.version||''))&&d.answer); }
   function qdChip(cls){ var l=QD_LABEL[cls]||[String(cls||'').replace(/_/g,' ').toLowerCase(),'u']; return '<span class="qd-chip qd-'+l[1]+'">'+esc(l[0])+'</span>'; }
   function qdPct(x,dp){ var n=Number(x); return (x==null||x===''||!isFinite(n))?'—':(n*100).toFixed(dp==null?2:dp)+'%'; }
   function qdC(x){ var n=Number(x); return (x==null||x===''||!isFinite(n))?'—':(Math.round(n*10000)/100).toFixed(2).replace(/\.00$/,'')+'¢'; }
   function qdAm(x){ var n=Number(x); return (x==null||x===''||!isFinite(n))?'—':(n>0?'+':'')+Math.round(n); }
   /* The answer text: the brief's "Field: value" lines as a grid, numbered items as a list, headings as headings, the rest as paragraphs. */
-  function qdLines(ans){
-    var out='', kv='', ol='';
+  /* o.fold: the per-candidate field blocks are left out because each candidate is shown as an interactive card
+     (EDINTELUI.resultHTML) carrying the same fields from the same JSON; the headline, the other candidates,
+     coverage, the research line and the sources stay. */
+  var QD_CAND_HEAD=/^(BEST VERIFIED RESEARCH|STRONGEST [A-Z ]*CANDIDATE|CANDIDATE \d+ \u2014)/;
+  function qdLines(ans, o){
+    o=o||{};
+    var out='', kv='', ol='', skip=false;
     function flushKv(){ if(kv){ out+='<dl class="qd-kv">'+kv+'</dl>'; kv=''; } }
     function flushOl(){ if(ol){ out+='<ol>'+ol+'</ol>'; ol=''; } }
     String(ans||'').split('\n').forEach(function(line){
       var t=line.trim(), m;
+      if(o.fold){
+        if(QD_CAND_HEAD.test(t)){ skip=true; if(/^(BEST|STRONGEST)/.test(t)){ flushKv(); flushOl(); out+='<h4>'+esc(t)+'</h4><p class="ia-dim">The candidate'+(/^BEST/.test(t)?'':'s')+' below '+(/^BEST/.test(t)?'is':'are')+' shown as cards: tap a section to see the matchup research, the calculation, the market and the audit.</p>'; } return; }
+        if(skip){ if(/^Why: /.test(t)){ skip=false; } return; }
+      }
       if(!t){ flushKv(); flushOl(); return; }
-      if((m=QD_KEYS.exec(t))){ flushOl(); kv+='<dt>'+esc(m[1])+'</dt><dd'+(m[1]==='Decision'?' class="qd-dec"':'')+'>'+esc(m[2])+'</dd>'; return; }
+      if((m=QD_KEYS.exec(t))){ flushOl(); kv+='<dt>'+esc(m[1])+'</dt><dd'+(m[1]==='Decision'||m[1]==='Final status'?' class="qd-dec"':'')+'>'+esc(m[2])+'</dd>'; return; }
       if((m=/^(\d+)\.\s+(.*)$/.exec(t))){ flushKv(); ol+='<li>'+esc(m[2])+'</li>'; return; }
+      if((m=/^\[(\d+)\]\s+(.*)$/.exec(t))){ flushKv(); ol+=qdSourceLi(m[2]); return; }
       flushKv(); flushOl();
-      if(/^[A-Z][A-Z —()'-]{8,}(\(|$)/.test(t)&&t===t.split('(')[0].toUpperCase()+(t.indexOf('(')>=0?t.slice(t.indexOf('(')):'')) out+='<h4>'+esc(t)+'</h4>';
+      if(/^[A-Z][A-Z0-9 —(),'-]{8,}(\(|$)/.test(t)&&t===t.split('(')[0].toUpperCase()+(t.indexOf('(')>=0?t.slice(t.indexOf('(')):'')) out+='<h4>'+esc(t)+'</h4>';
       else out+='<p>'+esc(t)+'</p>';
     });
     flushKv(); flushOl();
@@ -39930,28 +39959,100 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       :'No calibration record supports this probability as a betting number. EdgeDesk’s own prop-model probabilities, for example, score worse than the no-vig close on 2026 settled rows (football/validation/calibration_props_2026.json).';
     return '<div class="edai-src">'+esc(t)+'</div>';
   }
+  /* THE RESEARCH CHAIN's record for one candidate (researcher → oddsmaker → strategist → auditor). Display only. */
+  function qdStrategistHTML(r){
+    if(!r||!r.strategist||!r.strategist.checks) return '';
+    var rows=r.strategist.checks.map(function(c){ return '<tr><td><span class="qd-res '+esc(c.result)+'">'+esc(String(c.result).replace(/_/g,' '))+'</span></td><td>'+esc(c.question)+'</td><td>'+esc(c.detail)+'</td></tr>'; }).join('');
+    return '<div class="edai-src">Strategist: <b>'+esc(r.strategist.verdict)+'</b> · auditor: <b>'+esc(r.classification&&r.classification.label||'—')+'</b>'+(r.classification&&r.classification.reasons&&r.classification.reasons[0]?' — '+esc(r.classification.reasons[0]):'')+'</div><div class="qd-scroll"><table class="qd-tbl"><tr><th>Result</th><th>Question</th><th>Detail</th></tr>'+rows+'</table></div>';
+  }
+  function qdDisagreeHTML(dg){
+    if(!dg||!dg.causes) return '';
+    var rows=dg.causes.map(function(c){ return '<tr><td>'+esc(String(c.assessment).replace(/_/g,' ').toLowerCase())+'</td><td>'+esc(c.label)+'</td><td>'+esc((c.evidence||[])[0]||'')+'</td></tr>'; }).join('');
+    return '<div class="edai-src">'+esc(dg.explanation||'')+'</div><div class="qd-scroll"><table class="qd-tbl"><tr><th>Assessment</th><th>Cause</th><th>Evidence</th></tr>'+rows+'</table></div>';
+  }
+  function qdFindingsHTML(r){
+    var fs=(r&&r.findings)||[]; if(!fs.length) return '';
+    var rows=fs.slice(0,20).map(function(f){ return '<tr><td>'+esc(f.claim)+'</td><td>'+esc(String(f.reliability||'').replace(/_/g,' ').toLowerCase())+(f.verified?' · verified':'')+(f.conflicts&&f.conflicts.length?' · conflicts':'')+'</td><td>'+esc(f.publisher||'')+'</td><td>'+esc(f.published_at?String(f.published_at).slice(0,16).replace('T',' '):'—')+'</td><td>'+esc(String(f.retrieved_at||'').slice(0,16).replace('T',' '))+'</td></tr>'; }).join('');
+    var notes=[].concat((r.conflicts||[]).map(function(c){ return 'Conflict: '+c.detail+(c.unresolved?' (unresolved)':' (resolved: '+(c.resolution||'')+')'); }),(r.gaps||[]).map(function(g){ return 'Not in the model: '+g.detail; }),(r.unavailable||[]).map(function(u){ return 'Unavailable: '+u; }));
+    return '<div class="qd-scroll"><table class="qd-tbl"><tr><th>Finding</th><th>Reliability</th><th>Publisher</th><th>Published (UTC)</th><th>Retrieved (UTC)</th></tr>'+rows+'</table></div>'+(notes.length?'<div class="dk-sec"><ul>'+notes.map(function(t){ return '<li>'+esc(t)+'</li>'; }).join('')+'</ul></div>':'');
+  }
+  function qdConfidenceHTML(r){
+    var c=r&&r.confidence; if(!c) return '';
+    var o=c.outcome_probability||{}, m=c.model_reliability||{}, rc=c.research_confidence||{}, x=c.execution_confidence||{};
+    var lis=['Outcome probability: '+(o.probability!=null?qdPct(o.probability,1):'—')+' — '+(o.basis||''),'Research confidence: '+String(rc.level||'').toLowerCase()+' — '+(rc.basis||''),'Model reliability: '+(m.label||'')+' ('+String(m.status||'').replace(/_/g,' ').toLowerCase()+')','Execution confidence: quote '+String(x.quote||'').toLowerCase()+(x.age_min!=null?' ('+x.age_min+' min)':'')+', liquidity '+String(x.liquidity||'').toLowerCase()+', fees '+String(x.fees||'').toLowerCase()];
+    return '<div class="dk-sec"><ul>'+lis.map(function(t){ return '<li>'+esc(t)+'</li>'; }).join('')+'</ul></div><div class="edai-src">'+esc(c.note||'')+'</div>';
+  }
+  function qdResearchCostHTML(rs){
+    if(!rs) return '';
+    var u=rs.usage?Object.keys(rs.usage).map(function(k){ var v=rs.usage[k]; return k+': '+(v.calls||0)+' call'+(v.calls===1?'':'s')+(v.cached?', '+v.cached+' cached':'')+(v.joined?', '+v.joined+' shared':'')+(v.denied?', '+v.denied+' denied':'')+(v.errors?', '+v.errors+' failed':''); }).join(' · '):'';
+    return '<div class="edai-src">Level '+esc(rs.level)+' ('+esc(rs.level_label||'')+') — '+esc((rs.why||[]).join('; '))+'. '+esc(rs.findings)+' findings from '+esc(rs.sources)+' sources; estimated cost $'+esc((Number(rs.cost_estimate_usd)||0).toFixed(3))+(u?'. '+esc(u):'')+'</div>';
+  }
+  function qdSlateHTML(sl){
+    var gs=(sl&&sl.games)||[]; if(!gs.length) return '';
+    var rows=gs.slice().sort(function(a,b){ return Math.abs(b.gap_points||0)-Math.abs(a.gap_points||0); }).map(function(g){ return '<tr><td>'+esc(g.matchup)+'</td><td>'+esc(deskNum(g.model_line,true))+'</td><td>'+esc(deskNum(g.market_line,true))+'</td><td>'+esc(g.gap_points!=null?deskNum(Math.abs(g.gap_points)):'—')+'</td><td>'+esc(g.disagreement?String(g.disagreement.verdict).replace(/_/g,' ').toLowerCase():'—')+'</td><td>'+esc(g.freshness||'')+'</td></tr>'; }).join('');
+    return '<div class="qd-scroll"><table class="qd-tbl"><tr><th>Game</th><th>Model (home)</th><th>Market (home)</th><th>Gap</th><th>Diagnosis</th><th>Price</th></tr>'+rows+'</table></div>';
+  }
+  /* BETTING HISTORY (EDBETS over the reader's own positions): the summary tables. Display only; every figure is the server's. */
+  function qdBetsHTML(b){
+    if(!b||!b.available||!b.totals) return '';
+    function m(x){ var n=Number(x); return (x==null||!isFinite(n))?'—':(n<0?'−$':'$')+Math.abs(n).toFixed(2); }
+    function row(g){ return '<tr><td>'+esc(g.label||g.key||'')+'</td><td>'+esc(g.n)+'</td><td>'+esc(m(g.risked))+'</td><td>'+esc(m(g.pnl))+'</td><td>'+esc(g.roi!=null?qdPct(g.roi,1):'—')+'</td><td>'+esc(g.small?'small sample':'')+'</td></tr>'; }
+    var head='<tr><th>Group</th><th>Tickets</th><th>Risked</th><th>P&amp;L</th><th>ROI</th><th></th></tr>';
+    var kinds=[Object.assign({label:'Singles'},b.singles||{}),Object.assign({label:'Parlays'},b.parlays||{})];
+    var h='<div class="qd-scroll"><table class="qd-tbl">'+head+kinds.map(row).join('')+'</table></div>';
+    if(b.by_sport&&b.by_sport.length) h+='<div class="dk-sec"><div class="h">By sport</div><div class="qd-scroll"><table class="qd-tbl">'+head+b.by_sport.map(row).join('')+'</table></div></div>';
+    if(b.by_odds_range&&b.by_odds_range.length) h+='<div class="dk-sec"><div class="h">By price</div><div class="qd-scroll"><table class="qd-tbl">'+head+b.by_odds_range.filter(function(g){ return g.n; }).map(row).join('')+'</table></div></div>';
+    h+='<div class="edai-src">From your own recorded positions only ('+esc(b.positions_read)+' read'+(b.capped?', the latest 1,000 settled':'')+'). Past results only; they do not predict future results.</div>';
+    return h;
+  }
   function quantAnswerHTML(d){
-    var intent=d.quant&&d.quant.intent, ans=String(d.answer||''), cls=null, ev=null, au=null, cap=null, trail=null;
+    var intent=d.quant&&d.quant.intent, ans=String(d.answer||''), cls=null, ev=null, au=null, cap=null, trail=null, rsrc=null;
     if(intent==='SCAN'&&d.scan){
       var b=d.scan.best||(d.scan.potential||[])[0]||null;
-      ev=b&&b.evaluation||null; au=b&&b.audit||null; trail=d.scan.audit_trail||null;
+      ev=b&&b.evaluation||null; au=b&&b.audit||null; trail=d.scan.audit_trail||null; rsrc=b&&b.research||null;
       cls=d.scan.best?'VERIFIED_EDGE':(ev?ev.classification:'PASS');
       if(!d.scan.best&&cls==='VERIFIED_EDGE') cls='POTENTIAL_EDGE';
+      /* researched: the chip is the auditor's final status, never upgraded here */
+      if(d.scan.researched) cls=qdStatusKey(d.scan.final_status)||cls;
+    } else if(intent==='RESEARCH_SLATE'&&d.research_slate){
+      var rb=(d.research_slate.investigated||[])[0]||null;
+      ev=rb&&rb.evaluation||null; au=rb&&rb.audit||null; rsrc=rb&&rb.research||null;
+      cls=d.research_slate.survivors>0?'VERIFIED_CANDIDATE':qdStatusKey(d.research_slate.final_status)||'PASS';
+    } else if(intent==='GAME_RESEARCH'&&d.game_research){
+      var gb=(d.game_research.investigated||[])[0]||null;
+      ev=gb&&gb.evaluation||null; au=gb&&gb.audit||null; rsrc=gb&&gb.research||null;
+      cls=d.game_research.game?(d.game_research.survivors>0?'VERIFIED_CANDIDATE':qdStatusKey(d.game_research.final_status)||null):null;
     } else if(d.contract){ ev=d.contract.evaluation||null; cls=ev&&ev.classification||'UNVERIFIED_DATA'; cap=d.contract.capability||null; }
-    var h='<div class="dk-read qd-read"><div class="lab">The Quant Desk'+(cls?qdChip(cls):'')+'</div>'+qdLines(ans)+'</div>';
+    /* Phase 3: every researched candidate as an interactive card, the readiness table, the game's evidence */
+    var cards=(window.EDINTELUI&&typeof EDINTELUI.resultHTML==='function')?EDINTELUI.resultHTML(d):'';
+    var fold=cards.indexOf('ia-card')>=0;
+    var lab=intent==='GAME_RESEARCH'?'Game research':intent==='READINESS'?'Research readiness':intent==='MATCHUP_EDGE'?'Matchup mismatches':intent==='VENUE_COMPARE'?'Venue comparison':intent==='BETS'?'Your betting history':(intent==='RESEARCH_SLATE'||(d.scan&&d.scan.researched))?'EdgeDesk research':'The Quant Desk';
+    var h='<div class="dk-read qd-read"><div class="lab">'+esc(lab)+(cls?qdChip(cls):'')+'</div>'+qdLines(ans,{fold:fold})+'</div>'+cards;
     var more='';
     function sec(title, body, open){ if(body) more+='<details class="dk-more qd-more"'+(open?' open':'')+'><summary>'+esc(title)+'</summary><div style="margin-top:6px">'+body+'</div></details>'; }
-    sec('EV calculation', qdEvalHTML(ev));
-    if(d.contract) sec('Market comparison', qdCompareHTML(d.contract.compare));
-    sec('Audit results', qdAuditHTML(au, trail));
-    sec('Source verification', qdSourceHTML(ev, d.contract&&d.contract.missing?d.contract.missing.map(function(m){ return 'Missing: '+m; }):null));
-    sec('Model assumptions', qdModelHTML(ev, cap));
+    if(d.research_slate&&!cards) sec('Model versus market, every game', qdSlateHTML(d.research_slate), true);
+    if(d.bets) sec('Singles, parlays and where the money went', qdBetsHTML(d.bets), true);
+    /* with cards, each candidate's calculation, checks, findings and audit live in its own card */
+    if(!fold){
+      sec('EV calculation', qdEvalHTML(ev));
+      if(rsrc){ sec('Professional checks', qdStrategistHTML(rsrc)); sec('Why the model and the market differ', qdDisagreeHTML(rsrc.disagreement)); sec('Research findings', qdFindingsHTML(rsrc)); sec('Confidence — four separate measures', qdConfidenceHTML(rsrc)); }
+      if(d.contract) sec('Market comparison', qdCompareHTML(d.contract.compare));
+      sec('Audit results', qdAuditHTML(au, trail));
+      sec('Source verification', qdSourceHTML(ev, d.contract&&d.contract.missing?d.contract.missing.map(function(m){ return 'Missing: '+m; }):null));
+      sec('Model assumptions', qdModelHTML(ev, cap));
+    } else if(rsrc) sec('Confidence — four separate measures', qdConfidenceHTML(rsrc));
     if(d.scan){
-      var others=[].concat(d.scan.potential||[]).slice(d.scan.best?0:1).concat(d.scan.near_misses||[]);
+      var others=fold?[]:[].concat(d.scan.potential||[]).slice(d.scan.best?0:1).concat(d.scan.near_misses||[]);
       if(others.length) sec('Other candidates audited', others.map(function(o){ return '<div class="dk-sec"><div class="h">'+esc(o.candidate.selection+' — '+o.candidate.matchup)+'</div>'+qdAuditHTML(o.audit, trail)+'</div>'; }).join(''));
       sec('Coverage', qdCoverageHTML(d.scan.coverage)+'<div class="edai-src">'+esc((d.scan.counts?(d.scan.counts.events!=null?d.scan.counts.events+' eligible events, ':'')+(d.scan.counts.markets_evaluated!=null?d.scan.counts.markets_evaluated+' markets evaluated, ':'')+d.scan.counts.audited+' audited':'')+(d.scan.window&&d.scan.window.label?' · '+d.scan.window.label:''))+'</div>');
     }
-    if(d.coverage&&!d.scan) sec('Coverage', qdCoverageHTML(d.coverage), true);
+    if(d.research_slate){
+      var inv=fold?[]:(d.research_slate.investigated||[]).slice(1);
+      if(inv.length) sec('Other candidates investigated', inv.map(function(o){ return '<div class="dk-sec"><div class="h">'+esc(o.candidate.selection+' — '+o.candidate.matchup)+'</div>'+qdStrategistHTML(o.research)+qdAuditHTML(o.audit, null)+'</div>'; }).join(''));
+      sec('Coverage', qdCoverageHTML(d.research_slate.coverage));
+    }
+    if(d.coverage&&!d.scan&&!d.research_slate) sec('Coverage', qdCoverageHTML(d.coverage), true);
+    sec('Research level and cost', qdResearchCostHTML((d.scan&&d.scan.research_summary)||(d.research_slate&&d.research_slate.research_summary)||(d.game_research&&d.game_research.research_summary)||null));
     sec('Historical performance', qdHistoryHTML(ev));
     return h+more;
   }
@@ -41991,6 +42092,50 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       /* THE ERROR WAS ALWAYS IN THE BODY: callFn carries the function's own
          message through, so a 502 is a named report, not an opaque code. */
       var d=await callFn(mode, question, x, extra, packet, compareArr);
+      var rendered=renderAnswer(d, mode, question, x, extra);
+      if(rendered) return rendered;
+      throw new Error('empty');
+    }catch(err){
+      /* The reason was being thrown away. This block hardcoded "deploy
+         edgedesk_ai" regardless of what actually failed — a deployed, healthy
+         function that returned 500, a 401 from a stale token, an oversized
+         payload and a genuinely absent function all printed the same sentence.
+         That single discarded string cost several rounds of diagnosis. Say what
+         happened. */
+      var why=(err&&err.message)?String(err.message):'unknown error';
+      try{ console.error('EdgeDesk AI call failed:', err, {mode:mode, packet_kb:(function(){ try{ return Math.round(JSON.stringify(packet||{}).length/1024); }catch(_){ return null; } })()}); }catch(_){}
+      var hint = /^fn 4/.test(why) ? ' — the function answered '+why.slice(3)+', so it is reachable and rejecting the request (auth or payload)'
+        : /^fn 5/.test(why) ? ' — the function answered '+why.slice(3)+', so it ran and threw; check its logs'
+        : /^fn 413/.test(why) ? ' — payload too large'
+        : (why==='empty') ? ' — the function replied 200 with no answer field'
+        : ' — the request never completed (network, CORS or timeout)';
+      // deterministic fallback — still a real, grounded answer
+      if(extra && extra.board) return {html:boardFallbackHTML(extra.board, question),
+        src:'deterministic board · AI call failed: '+why+hint};
+      /* THE OPEN SIGNAL IS ONLY AN ANSWER TO A QUESTION ABOUT IT.
+         This branch rendered narrative(x) — the local write-up of whatever
+         row the reader had open — for ANY failed question. Asked about Texas
+         State with a Padres row open, the panel answered about the Padres and
+         called it the deterministic engine. A question that names another
+         game, or that names a matchup this row is not, gets the honest
+         "could not research it" instead of a confident answer to a question
+         nobody asked. */
+      if(x && askedAboutOpenSignal(question, x, mode)){
+        var lm=(mode==='chat')?routeLocal(question):(mode==='why'?'analyze':mode);
+        return {html:narrative(x, lm), src:'deterministic engine · AI call failed: '+why+hint}; }
+      LAST_ASK={mode:mode,question:question,x:x,extra:extra};
+      var local=localFactCardHTML(question);
+      if(local) return {html:local, src:'EdgeDesk board · research service unreachable'};
+      return {html:'<p>EdgeDesk could not reach its research service, so it has not researched that question. '
+        +'This is a service fault, not a finding about the game.</p>'
+        +'<p><button class="edai-qa" onclick="EDAI.retryLast()">Try again</button> '
+        +'Or open a specific signal and hit <b>Analyze</b> — the decision engine runs locally and doesn\u2019t need it.</p>',
+        src:'AI call failed: '+why+hint, failed:true};
+    }
+  }
+  /* ONE RESPONSE, RENDERED: the same rendering for a turn the panel asked for and for a streamed research
+     turn (intelTurn), so a streamed answer carries state and looks exactly like any other. null = nothing to show. */
+  function renderAnswer(d, mode, question, x, extra){
       /* THE SUBJECT THE SERVER RESOLVED, CARRIED BACK ON THE NEXT TURN.
          Identifiers only, and the server re-looks them up against the
          published card before using them, so this is a reminder of what was
@@ -42095,44 +42240,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       var fb=factualFallbackHTML(d, question);
       if(fb){ LAST_ASK={mode:mode,question:question,x:x,extra:extra};
         return {html:fb+traceHTMLFor(d.research), src:'EdgeDesk research · written analysis unavailable'}; }
-      throw new Error('empty');
-    }catch(err){
-      /* The reason was being thrown away. This block hardcoded "deploy
-         edgedesk_ai" regardless of what actually failed — a deployed, healthy
-         function that returned 500, a 401 from a stale token, an oversized
-         payload and a genuinely absent function all printed the same sentence.
-         That single discarded string cost several rounds of diagnosis. Say what
-         happened. */
-      var why=(err&&err.message)?String(err.message):'unknown error';
-      try{ console.error('EdgeDesk AI call failed:', err, {mode:mode, packet_kb:(function(){ try{ return Math.round(JSON.stringify(packet||{}).length/1024); }catch(_){ return null; } })()}); }catch(_){}
-      var hint = /^fn 4/.test(why) ? ' — the function answered '+why.slice(3)+', so it is reachable and rejecting the request (auth or payload)'
-        : /^fn 5/.test(why) ? ' — the function answered '+why.slice(3)+', so it ran and threw; check its logs'
-        : /^fn 413/.test(why) ? ' — payload too large'
-        : (why==='empty') ? ' — the function replied 200 with no answer field'
-        : ' — the request never completed (network, CORS or timeout)';
-      // deterministic fallback — still a real, grounded answer
-      if(extra && extra.board) return {html:boardFallbackHTML(extra.board, question),
-        src:'deterministic board · AI call failed: '+why+hint};
-      /* THE OPEN SIGNAL IS ONLY AN ANSWER TO A QUESTION ABOUT IT.
-         This branch rendered narrative(x) — the local write-up of whatever
-         row the reader had open — for ANY failed question. Asked about Texas
-         State with a Padres row open, the panel answered about the Padres and
-         called it the deterministic engine. A question that names another
-         game, or that names a matchup this row is not, gets the honest
-         "could not research it" instead of a confident answer to a question
-         nobody asked. */
-      if(x && askedAboutOpenSignal(question, x, mode)){
-        var lm=(mode==='chat')?routeLocal(question):(mode==='why'?'analyze':mode);
-        return {html:narrative(x, lm), src:'deterministic engine · AI call failed: '+why+hint}; }
-      LAST_ASK={mode:mode,question:question,x:x,extra:extra};
-      var local=localFactCardHTML(question);
-      if(local) return {html:local, src:'EdgeDesk board · research service unreachable'};
-      return {html:'<p>EdgeDesk could not reach its research service, so it has not researched that question. '
-        +'This is a service fault, not a finding about the game.</p>'
-        +'<p><button class="edai-qa" onclick="EDAI.retryLast()">Try again</button> '
-        +'Or open a specific signal and hit <b>Analyze</b> — the decision engine runs locally and doesn\u2019t need it.</p>',
-        src:'AI call failed: '+why+hint, failed:true};
-    }
+      return null;
   }
   // very small markdown -> html (bold, bullets, paragraphs). The function returns plain prose.
   function mdToHtml(s){
@@ -44705,6 +44813,96 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     return h + '</div>';
   }
 
+  /* ═══ THE INTELLIGENCE ROUTE (Phase 3) ═══════════════════════════════════
+     A research question — the best researched opportunity, a slate investigation, one game's research, why
+     games are or are not research ready, a unit mismatch, a venue comparison, the reader's own betting history —
+     is asked with stream:true, so the server reports each research step AS IT HAPPENS and the activity block
+     (lib/edgedesk_intel_ui.js) shows exactly that: no timer, no simulated progress. The server decides the route;
+     this only decides to show the activity. Cancel aborts the request and the server stops at its next step; a
+     60-second limit aborts it too. Whatever already arrived — finished steps, the games found, the first audit
+     verdicts — stays on screen, with a retry. One run at a time (BUSY), and the server's own rate limit and
+     daily allowance answer every call. */
+  var INTEL_CTL=null, INTEL_WHY=null, INTEL_LAST=null, INTEL_GAME=null, INTEL_TIMEOUT_MS=60000;
+  function intelAsk(t){
+    var q=String(t||'');
+    if(/\b(how (much|many)|units?|stake|kelly|bet size|sizing)\b/i.test(q)) return false;   /* staking stays with the staking engine */
+    return /\b(research|investigate|analy[sz]e|go through)\b[^?]{0,60}\b(every|all|each)\b[^?]{0,40}\bgames?\b/i.test(q)
+      || /\bsurviv\w* (an |the )?(adversarial )?audit\b/i.test(q)
+      || /\b(largest|biggest|widest)\b[^?]{0,30}\b(model[- ]?(versus|vs\.?)[- ]?market|discrepanc\w*|disagreements?)\b/i.test(q)
+      || (/\b(best|top|strongest)\b[^?]{0,40}\b(opportunit\w*|bets?|plays?|edges?|values?)\b/i.test(q) && !/\s(vs\.?|versus|@)\s/i.test(q))
+      || /\b(research[- ]ready|readiness|(isn'?t|is not|aren'?t|are not|not) (yet )?(research[- ])?ready)\b/i.test(q)
+      || /\b(biggest|largest|best|strongest|most|greatest)\b[^?]{0,40}\b(offensive|defensive|passing|rushing|offense|defense)\b[^?]{0,30}\b(advantage|edge|mismatch)/i.test(q)
+      || (/\b(compare|comparison|versus|vs\.?)\b/i.test(q) && /\b(kalshi|poly ?market|(draftkings|dk) predictions?|fanduel predicts?|novig|prophet ?x)\b/i.test(q) && !/\d\s*(¢|c\b|cents?)/i.test(q))
+      || (/\b(my|i|i'?ve|me)\b[^?]{0,80}\b(bets?|wagers?|parlays?|singles?|tickets?|betting)\b/i.test(q) && /\b(lost|lose|losing|losses|won|profit\w*|roi|record|history|perform\w*|results?|why did|how did)\b/i.test(q))
+      || /\b(edgedesk|model|you)\b[^?]{0,40}\b(disagree\w*|differ\w*)\b/i.test(q);
+  }
+  function intelFail(box, state, msg, note){
+    var UI=window.EDINTELUI;
+    try{ UI.activityEnd(box, state, note||''); }catch(_){}
+    push('a', UI.retryHTML(msg, [{label:'Try again', attr:'data-ia-retry', primary:true}]));
+  }
+  async function intelTurn(q, o){
+    o=o||{}; var UI=window.EDINTELUI;
+    if(!UI) return false;
+    if(o.game) INTEL_GAME=o.game;
+    INTEL_LAST={q:q,o:o};
+    var msg=push('a', UI.activityHTML(q)), box=msg&&msg.querySelector('.ia-act');
+    var ctl=new AbortController(); INTEL_CTL=ctl; INTEL_WHY=null;
+    /* the limit; a browser test may shorten it (window.__edIntelTimeoutMs) to exercise the timeout path */
+    var limitMs=(typeof window.__edIntelTimeoutMs==='number'&&window.__edIntelTimeoutMs>0)?window.__edIntelTimeoutMs:INTEL_TIMEOUT_MS;
+    var timer=setTimeout(function(){ INTEL_WHY='timeout'; try{ ctl.abort(); }catch(_){} }, limitMs);
+    var t0=Date.now(), got=null, status=0;
+    try{
+      var tok=(typeof edToken==='function')? await edToken() : (typeof SB_KEY!=='undefined'?SB_KEY:'');
+      var rc=Object.assign({}, carriedContext()||{});
+      if(o.game) rc.game={sport:o.game.sport, game_id:String(o.game.game_id)};
+      var r=await fetch(AI_FN,{method:'POST', signal:ctl.signal,
+        headers:{'content-type':'application/json', authorization:'Bearer '+tok, apikey:(typeof SB_KEY!=='undefined'?SB_KEY:'')},
+        body:JSON.stringify({mode:'chat', question:q, history:HIST.slice(-6), desk:true, stream:true, timezone:clientTimeZone(),
+          research_context:rc, intent_hint:o.hint||null, card:aiCardPayload(q)})});
+      status=r.status;
+      if(!r.ok){
+        var body=null; try{ body=await r.json(); }catch(_){}
+        var why=body&&(body.note||body.error||body.message)||'';
+        clearTimeout(timer); INTEL_CTL=null;
+        if(status===429) return intelFail(box,'error','You have reached today’s EdgeDesk AI research limit'+(why?' ('+why+')':'')+'. Your Research screen, the Card and every game page still work; the limit resets daily.','daily limit');
+        if(status===401) return intelFail(box,'error','Your sign-in has expired, so the research service refused the request. Reload the page to sign in again.','signed out');
+        if(status===402||status===403){ var cu=(typeof pgCheckoutURL==='function')?pgCheckoutURL():null;
+          try{ UI.activityEnd(box,'error','subscription'); }catch(_){}
+          push('a','<div class="ia-fail" role="alert"><p>EdgeDesk AI research needs an active EdgeDesk subscription'+(why?' ('+esc(why)+')':'')+'. Nothing was researched or charged.</p>'+(cu?'<p class="ia-fail-b"><a class="ia-btn ia-btn-p" href="'+esc(cu)+'">Manage subscription</a></p>':'')+'</div>'); return true; }
+        return intelFail(box,'error','The research service failed (HTTP '+status+(why?': '+String(why).slice(0,120):'')+'). Nothing on your Research screen depends on it; try again in a moment.','service error');
+      }
+      var ct=r.headers.get('content-type')||'';
+      if(/ndjson/.test(ct)) got=await UI.readStream(r, function(ev){ UI.activityApply(box, ev); });
+      else { got={result:await r.json(), events:[], partial:{}}; }
+    }catch(e){
+      clearTimeout(timer); INTEL_CTL=null;
+      if(INTEL_WHY==='cancelled'){ try{ UI.activityEnd(box,'cancelled','you stopped this run'); }catch(_){} push('a','<p class="ia-dim">Stopped. Nothing further was researched for this question.</p>'); return true; }
+      if(INTEL_WHY==='timeout') return intelFail(box,'timeout','EdgeDesk stopped waiting after '+Math.round(limitMs/1000)+' seconds. The steps that finished, and anything they found, are shown above; your Research screen is unaffected.','after '+Math.round(limitMs/1000)+' s');
+      return intelFail(box,'error','The research request did not complete ('+String(e&&e.message||e).slice(0,100)+'). Check your connection and try again; your Research screen is unaffected.','connection');
+    }
+    clearTimeout(timer); INTEL_CTL=null;
+    if(got&&got.fallback&&!got.result){
+      try{ UI.activityEnd(box,'done','handed to the full research route'); }catch(_){}
+      var resF=await askAI('chat',q,null);
+      var dF=push('a',resF.html); if(resF.src&&dF){ var sF=document.createElement('div'); sF.className='edai-src'; sF.textContent=resF.src; dF.appendChild(sF); }
+      return true;
+    }
+    if(!got||!got.result){
+      return intelFail(box,'error','The research run stopped before it finished'+(got&&got.error&&got.error.detail?' ('+String(got.error.detail).slice(0,120)+')':'')+'. The steps that finished are shown above.','stopped');
+    }
+    var d=got.result;
+    try{ UI.activityEnd(box,'done',((Date.now()-t0)/1000).toFixed(1)+' s'); }catch(_){}
+    var rendered=renderAnswer(d,'chat',q,null,null);
+    if(!rendered){ push('a','<p>The research service answered with nothing to show for that question.</p>'); return true; }
+    var dd=push('a',rendered.html);
+    if(rendered.src&&dd){ var sR=document.createElement('div'); sR.className='edai-src'; sR.textContent=rendered.src; dd.appendChild(sR); }
+    /* the game a game-research answer was about stays the subject for the desk's own follow-ups */
+    try{ var gg=d.game_research&&d.game_research.game; if(gg){ LAST_CTX={sport:gg.sport,game_id:gg.game_id,home:gg.home,away:gg.away,turns:1,state:null}; } }catch(_){}
+    /* the board's readiness shows the audit verdicts this answer returned */
+    try{ if(document.getElementById('fbOverview')&&typeof window.fbRenderOverview==='function') window.fbRenderOverview(); }catch(_){}
+    return true;
+  }
   window.EDAI = {
     feedback: recordFeedback,
     /* The reader's own book, so the caps see all of it. */
@@ -44807,6 +45005,22 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         if(out) out.textContent = 'Could not save (' + String((e && e.message) || e) + '). The caps must stay coherent: a single inside a game, a game inside a team, a team inside a day, a day inside a week.';
       }
     },
+    /* Phase 3: the research engine, asked from the Research screen's "Ask EdgeDesk AI", a game view or a result card */
+    intel:async function(q, o){
+      o=o||{};
+      if(BUSY) return {ok:false, why:'busy'};
+      try{ var em=$id('edaiLog')&&$id('edaiLog').querySelector('.edai-empty'); if(em) em.remove(); }catch(_){}
+      push('u', (o.game&&o.game.label&&q.indexOf(o.game.label)<0?'['+o.game.label+'] ':'')+q);
+      window.EDAI.open();
+      BUSY=true; var sb=$id('edaiSend'); if(sb) sb.disabled=true;
+      try{ if(window.EDMine&&window.EDMine.track) window.EDMine.track('ai_research_used'); }catch(_){}
+      try{ await intelTurn(q,o); }
+      catch(e){ push('a','<p>Something went wrong running that research. Try again in a moment.</p>'); }
+      finally{ BUSY=false; var sb2=$id('edaiSend'); if(sb2) sb2.disabled=false; }
+      return {ok:true};
+    },
+    cancelIntel:function(){ if(INTEL_CTL){ INTEL_WHY='cancelled'; try{ INTEL_CTL.abort(); }catch(_){} } },
+    retryIntel:function(){ if(!BUSY && INTEL_LAST) return window.EDAI.intel(INTEL_LAST.q, INTEL_LAST.o); },
     open:function(){ $id('edaiScrim').classList.add('open'); $id('edaiPanel').classList.add('open'); $id('edaiFab').classList.add('hide');
       renderActions(); if(!$id('edaiLog').children.length){ try{ scanSlate(true); }catch(_){ emptyState(); } } },
     close:function(){ $id('edaiScrim').classList.remove('open'); $id('edaiPanel').classList.remove('open'); $id('edaiFab').classList.remove('hide'); },
@@ -45152,6 +45366,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         if(isDailyScan(t)){ await dailyScanCore(); return; }
         // daily-scan follow-ups ("Why #1", "Attack #1", "Compare #1 and #2", ...) reuse the stored scan
         if(dscanFollow(t)) return;
+        /* Phase 3: a research question runs on the research engine with its activity shown (intelTurn) */
+        if(window.EDINTELUI && intelAsk(t)){ await intelTurn(t, INTEL_GAME && /\b(this|that) (game|spread|matchup|line|total)\b/i.test(t) ? {game:INTEL_GAME} : {}); return; }
         /* THE MATCHUP THE READER NAMED COMES FIRST — before the loaded
            signal, before the board, before anything the open tab implies.
            This is the precedence the product needs and did not have: an
@@ -58326,6 +58542,10 @@ function fbGameRows(){
   }
   return rows;
 }
+/* the board's row for one game, for the game research view (lib/edgedesk_intel_ui.js) */
+/* The Desk repaints the readiness panel after an answer carries audit verdicts (the football code is closed over) */
+window.fbRenderOverview=function(){ try{ fbRenderOverview(); }catch(_){} };
+window.fbRowFor=function(sport,gid){ try{ return fbGameRows().filter(function(r){ return r.sport===sport&&r.gid===String(gid); })[0]||null; }catch(_){ return null; } };
 /* ═══ ONE COUNTER HIERARCHY (lib/edgedesk_canon.js COUNTERS) ════════════════
    ALL GAMES → RESEARCH READY → ACTIONABLE RESEARCH SIGNALS, then each sport's
    ready share, then the CFB research statuses — which sum to the CFB total.
@@ -59393,6 +59613,8 @@ function fbOverviewHTML(){
       +(s.warn?(' '+s.warn+' game'+(s.warn===1?'':'s')+' currently carr'+(s.warn===1?'ies':'y')+' a data-quality flag.'):''))
       :'The canonical counters did not load (lib/edgedesk_canon.js).',
     foot:fbCanonCountersHTML(H,s)+fbStartHereHTML()});
+  /* Phase 3: what each game is ready for — five separate states and "Why not ready?" (lib/edgedesk_readiness.js) */
+  try{ if(window.EDINTELUI&&window.EDREADY) html+=EDINTELUI.boardReadinessHTML(rows); }catch(_){}
   /* the EdgeDesk Card: what the current prices say, before the research reading order */
   html+=fbDecBannerHTML();
   /* where to start: the reading order first, the raw signals folded under it */

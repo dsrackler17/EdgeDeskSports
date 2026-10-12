@@ -19,6 +19,7 @@ on:
   pull_request:
     paths:
       - 'lib/edgedesk_portfolio*.js'
+      - 'lib/edgedesk_bet_history.js'
       - 'lib/edgedesk_portfolio.css'
       - 'lib/edgedesk_decision_record.js'
       - 'lib/edgedesk_decision_ui.js'
@@ -46,6 +47,7 @@ on:
     branches: [main]
     paths:
       - 'lib/edgedesk_portfolio*.js'
+      - 'lib/edgedesk_bet_history.js'
       - 'lib/edgedesk_decision_record.js'
       - 'tools/portfolio/**'
       - 'supabase/portfolio.sql'
@@ -73,8 +75,10 @@ jobs:
           node-version: '22'
       - name: The calculation engine (exact money, both instruments, the whole book)
         run: node tools/portfolio/portfolio_calc.test.js
-      - name: The CSV importer and the connector contract
+      - name: The CSV importer (including leg rows) and the connector contract
         run: node tools/portfolio/portfolio_import.test.js
+      - name: Bet-history intelligence (EDBETS) — tickets from leg rows, exact figures, 200 generated sets, the answer and its language guard
+        run: node tools/portfolio/bet_history.test.js
       - name: The Decision Grade and the Process Coach (statistics, evidence levels, banned words)
         run: node tools/portfolio/process.test.js
       - name: The page in Node, and its wiring in app.html
@@ -121,6 +125,10 @@ jobs:
         env:
           PORTFOLIO_SQL_REQUIRED: '1'
         run: node tools/portfolio/decision_sql.test.js
+      - name: Leg rows through the real import pipeline, and EDBETS over RLS-read rows (parity with the CSV)
+        env:
+          PORTFOLIO_SQL_REQUIRED: '1'
+        run: node tools/portfolio/bet_history_sql.test.js
 
   browser:
     runs-on: ubuntu-latest
@@ -138,3 +146,7 @@ jobs:
         env:
           PORTFOLIO_UI_REQUIRED: '1'
         run: node tools/portfolio/portfolio_ui.e2e.js
+      - name: What cost you money, in Chromium — a leg-row import, then Analytics at 1280 px and 390 px
+        env:
+          PORTFOLIO_UI_REQUIRED: '1'
+        run: node tools/portfolio/bet_history.e2e.js

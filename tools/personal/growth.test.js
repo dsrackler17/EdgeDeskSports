@@ -245,7 +245,11 @@ const at = (s) => APP.indexOf(s);
 chk('the card library loads after the personal library and before the UI module', at('/lib/edgedesk_share_card.js') > at('/lib/edgedesk_personal.js') && at('/lib/edgedesk_share_card.js') < at('/lib/edgedesk_personal_ui.js'));
 chk('both game cards carry Compare my number and Share card', /function fbMineActs\([\s\S]{0,900}EDMine\.compareOpen[\s\S]{0,300}EDMine\.shareOpen/.test(APP));
 chk('opening a game records a matchup view', /window\.fbOpenGame=function\(sport,gid\)\{\s*gid=String\(gid\);\s*try\{if\(window\.EDMine&&window\.EDMine\.trackGame\)/.test(APP) && /window\.EDMine\.trackGame\('p4',gid\)/.test(APP));
-chk('a question to the AI desk records AI research used', (APP.match(/window\.EDMine\.track\('ai_research_used'\)/g) || []).length === 2);
+/* three entry points, each recording once: the desk's actions, its typed question (sendText), and Ask EdgeDesk AI on the
+   Research screen / a game view / a result card (EDAI.intel). The research run they share (intelTurn) records nothing
+   itself, so a typed research question is not counted twice. */
+chk('a question to the AI desk records AI research used', (APP.match(/window\.EDMine\.track\('ai_research_used'\)/g) || []).length === 3
+  && !/async function intelTurn\([\s\S]*?EDMine\.track\([\s\S]*?\n  window\.EDAI = \{/.test(APP));
 const edpKinds = ((GROWTH.match(/p_kind not in \(([^)]+)\)/) || [])[1] || '').split(',').map((x) => x.trim().replace(/'/g, ''));
 const sent = [...UI.matchAll(/M\.track\('([a-z_0-9]+)'/g)].map((m) => m[1]).concat([...APP.matchAll(/EDMine\.track\('([a-z_0-9]+)'/g)].map((m) => m[1]), ['matchup_viewed']);
 chk('every trial action the page sends is one the server accepts from a client', sent.length >= 5 && sent.every((k) => edpKinds.indexOf(k) >= 0), { sent, edpKinds });

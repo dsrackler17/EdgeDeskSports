@@ -34,7 +34,7 @@ const PRINT = process.env.QUANT_PRINT === '1';
 const DUMP = process.env.QUANT_DUMP ? {} : null;
 
 /* the authorised quote refresh is switched ON here, with its secret: the quant desk must still never spend odds credits */
-const ENV = { EDGEDESK_AI_NO_SERVE: '1', ANTHROPIC_API_KEY: 'test-key', SUPABASE_URL: 'https://sb.test', SUPABASE_ANON_KEY: 'anon-key', EDGEDESK_SITE_BASE: 'https://site.test', EDGEDESK_QUOTE_REFRESH: '1', CRON_SECRET: 'cron-test' };
+const ENV = { EDGEDESK_AI_NO_SERVE: '1', ANTHROPIC_API_KEY: 'test-key', SUPABASE_URL: 'https://sb.test', SUPABASE_ANON_KEY: 'anon-key', EDGEDESK_SITE_BASE: 'https://site.test', EDGEDESK_QUOTE_REFRESH: '1', CRON_SECRET: 'cron-test', EDGEDESK_RESEARCH: process.env.EDGEDESK_RESEARCH };
 globalThis.Deno = { env: { get: (k) => ENV[k] } };
 
 let route = () => [];
@@ -68,9 +68,15 @@ const etDate = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New
 (async function main() {
   const m = await import(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', 'index.ts'));
   const fx = FX.build(NOW);
-  const START = ISO(180);
+  /* the MLB game starts three hours out — but always before midnight in New York, so the questions answered
+     for "today" (the underdog, "right now") see it whatever hour the suite runs (after 9 pm ET a fixed
+     three hours crossed midnight and those questions found no game) */
+  const etParts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour12: false, hour: '2-digit', minute: '2-digit' }).formatToParts(new Date(NOW));
+  const etMin = (+etParts.find((x) => x.type === 'hour').value % 24) * 60 + (+etParts.find((x) => x.type === 'minute').value);
+  const START_MIN = Math.max(3, Math.min(180, 24 * 60 - etMin - 5));
+  const START = ISO(START_MIN);
   /* ---- the MLB fixture: Rays (away) @ Guardians (home) ------------------ */
-  const MLB_GAME = { game_id: '776655', game_date: etDate(NOW + 180 * 60000), home_team: 'Cleveland Guardians', away_team: 'Tampa Bay Rays', start_time: START, status: 'Scheduled', park_id: 5 };
+  const MLB_GAME = { game_id: '776655', game_date: etDate(NOW + START_MIN * 60000), home_team: 'Cleveland Guardians', away_team: 'Tampa Bay Rays', start_time: START, status: 'Scheduled', park_id: 5 };
   const CARD = { game_date: MLB_GAME.game_date, start_time: START, status: 'Scheduled', away_team_name: 'Tampa Bay Rays', away_pitcher_name: 'Shane Baz', away_pitcher_throws: 'R', home_team_name: 'Cleveland Guardians', home_pitcher_name: 'Tanner Bibee', home_pitcher_throws: 'R', run_factor: 0.97, temp_f: 58, wind_mph: 8, wind_rel: 'in from LF' };
   const base = (o) => fx.signal(Object.assign({ event_id: 'ev-tb-cle', sport_key: 'baseball_mlb', sport_title: 'MLB', home_team: 'Cleveland Guardians', away_team: 'Tampa Bay Rays', commence_time: START,
     first_seen_at: ISO(-300), last_seen_at: ISO(-4), flagged_at: ISO(-20) }, o));
@@ -144,13 +150,16 @@ const etDate = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New
   ok('the MLB card is the only one priced inside 24 hours, and MLB has no pitcher-scratch feed: nothing is called VERIFIED', !sc.best && sc.decision === 'WATCH', sc.decision);
   const pot = (sc.potential || [])[0];
   ok('the strongest candidate is the Rays moneyline at FanDuel +120, a POTENTIAL edge', pot && pot.candidate.selection === 'Tampa Bay Rays' && pot.candidate.market === 'h2h' && pot.candidate.quote.odds_american === 120 && pot.evaluation.classification === 'POTENTIAL_EDGE', pot && [pot.candidate.selection, pot.evaluation.classification]);
+  ok('…and the research chain classes it RESEARCH REQUIRED (availability unchecked), final status WATCHLIST', pot && pot.classification && pot.classification.classification === 'RESEARCH_REQUIRED' && pot.classification.final_status === 'WATCHLIST' && sc.final_status === 'WATCHLIST' && sc.researched === true, pot && pot.classification);
   ok('…the audit downgraded it for exactly that reason', pot && pot.audit.status === 'DOWNGRADED' && /pitcher-scratch feed/.test(pot.audit.reason), pot && pot.audit.reason);
-  ok('the answer says no verified trade clears, then gives every field for the strongest candidate', /^No verified positive-EV trade currently clears the research and execution thresholds/.test(s1.j.answer) && /STRONGEST CANDIDATE — POTENTIAL EDGE, NOT VERIFIED/.test(s1.j.answer) && ['Event:', 'Market:', 'Venue:', 'Available price:', 'Independent fair price:', 'Estimated net EV:', 'Maximum acceptable entry:', 'Model reliability:', 'Primary matchup advantage:', 'Biggest risk:', 'Decision: WATCH'].every((k) => s1.j.answer.indexOf(k) >= 0), s1.j.answer);
-  ok('the independent fair is honestly UNAVAILABLE for MLB (research-tier model, browser only), with the market fair beside it', /Independent fair price: unavailable — the MLB model runs in the browser only/.test(s1.j.answer) && /Market fair: \+115 \(46\.[56]%/.test(s1.j.answer), s1.j.answer.split('\n').find((l) => /Independent/.test(l)));
+  ok('the answer says no verified trade clears, then gives every Phase-2 field for the strongest candidate', /^No verified positive-EV trade currently clears the research and execution thresholds/.test(s1.j.answer) && /STRONGEST CANDIDATE — RESEARCH REQUIRED, NOT VERIFIED/.test(s1.j.answer) && ['Event:', 'Sport:', 'Market:', 'Venue:', 'Verified market price:', 'Independent fair probability:', 'Break-even probability:', 'Estimated net EV:', 'Maximum acceptable price:', 'Model reliability:', 'Research freshness:', 'Why the model disagrees with the market:', 'Primary matchup advantage:', 'Strongest counterargument:', 'What would invalidate the opportunity:', 'Final status: WATCHLIST'].every((k) => s1.j.answer.indexOf(k) >= 0), s1.j.answer);
+  ok('the independent fair is honestly UNAVAILABLE for MLB (research-tier model, browser only), with the market fair beside it', /Independent fair probability: unavailable — the MLB model runs in the browser only/.test(s1.j.answer) && /Market no-vig: 46\.[56]%/.test(s1.j.answer), s1.j.answer.split('\n').find((l) => /Independent/.test(l)));
+  ok('with no independent model, no model-versus-market disagreement is claimed', /Why the model disagrees with the market: EdgeDesk has no independent model for this market/.test(s1.j.answer), s1.j.answer.split('\n').find((l) => /^Why the model/.test(l)));
   ok('net EV is EDFAIR\'s exact number (+2.41% per $1)', /Estimated net EV: 2\.41% per \$1/.test(s1.j.answer), s1.j.answer.split('\n').find((l) => /net EV/.test(l)));
-  ok('the maximum entry is a whole American price that clears the floor (+116)', /Maximum acceptable entry: \+116/.test(s1.j.answer), s1.j.answer.split('\n').find((l) => /Maximum/.test(l)));
+  ok('the maximum entry is a whole American price that clears the floor (+116)', /Maximum acceptable price: \+116/.test(s1.j.answer), s1.j.answer.split('\n').find((l) => /Maximum/.test(l)));
   ok('no matchup advantage is invented for a price discrepancy', /Primary matchup advantage: none claimed/.test(s1.j.answer));
-  ok('the biggest risk names the starting pitcher', /Biggest risk: .*starting pitcher/.test(s1.j.answer), s1.j.answer.split('\n').find((l) => /Biggest risk/.test(l)));
+  ok('what would invalidate it names the starting pitcher', /What would invalidate the opportunity: .*SP availability/.test(s1.j.answer), s1.j.answer.split('\n').find((l) => /invalidate/.test(l)));
+  ok('the research line and a numbered source list close the answer (MLB probables, statsapi URL)', /Research: L3 \(deep adversarial investigation\)/.test(s1.j.answer) && /\[1\] MLB probable pitchers — https:\/\/statsapi\.mlb\.com\//.test(s1.j.answer) && /cost estimate \$0\.000/.test(s1.j.answer), s1.j.answer.split('\n').slice(-4));
   ok('the window is the next 24 hours, not "today until midnight"', sc.window && sc.window.kind === 'next_hours' && /next 24 hours/.test(s1.j.answer), sc.window);
   ok('coverage is printed with counts', /Coverage — Scanned: .*MLB/.test(s1.j.answer) && /NOT scanned: .*NBA \(prices not captured\)/.test(s1.j.answer) && /not covered by EdgeDesk: Soccer/.test(s1.j.answer), s1.j.answer.split('\n').slice(-1)[0]);
   ok('the carried state keeps the coverage for a follow-up', s1.j.quant_state && s1.j.quant_state.schema === 'edgedesk_quant_state_v1' && s1.j.quant_state.coverage.length > 3);
@@ -170,7 +179,11 @@ const etDate = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New
   const wb = w1.j.scan && w1.j.scan.best;
   ok('this week: the best VERIFIED opportunity is Bills -2.5 at FanDuel (1.95)', wb && wb.candidate.selection === 'Buffalo Bills' && wb.candidate.market === 'spreads' && wb.audit.status === 'CONFIRMED' && wb.evaluation.classification === 'VERIFIED_EDGE' && w1.j.scan.decision === 'BUY', wb ? [wb.candidate.selection, wb.audit.status, wb.audit.reason, wb.evaluation.classification, (wb.evaluation.caps || []).filter((c) => c.binding)] : w1.j.scan && w1.j.scan.potential.map((p) => [p.candidate.selection, p.audit.status, p.audit.reason]));
   ok('…every check that can run, ran: the injury report and the starter were checked', wb && wb.audit.checks.find((c) => c.id === 'A8_AVAILABILITY').result === 'PASS' && wb.audit.checks.find((c) => c.id === 'A9_STARTER').result === 'PASS', wb && wb.audit.checks.filter((c) => c.result !== 'PASS').map((c) => c.id + ':' + c.result + ':' + c.detail));
-  ok('…and the answer is BEST VERIFIED OPPORTUNITY with Decision: BUY', /^BEST VERIFIED OPPORTUNITY/.test(w1.j.answer) && /Decision: BUY/.test(w1.j.answer) && /Market: Buffalo Bills -2\.5/.test(w1.j.answer), w1.j.answer);
+  ok('…and the answer is BEST VERIFIED RESEARCH CANDIDATE with Final status: VERIFIED CANDIDATE', /^BEST VERIFIED RESEARCH CANDIDATE/.test(w1.j.answer) && /Final status: VERIFIED CANDIDATE/.test(w1.j.answer) && /Market: Buffalo Bills -2\.5/.test(w1.j.answer) && wb.classification && wb.classification.classification === 'VERIFIED_CANDIDATE', w1.j.answer);
+  ok('…priced exactly as before the research chain: the audited sharp fair (53.2%), +3.74% per $1, max -112', /Estimated net EV: 3\.74% per \$1/.test(w1.j.answer) && /Maximum acceptable price: -112/.test(w1.j.answer) && /The price is judged against the sharp no-vig fair: 53\.2%/.test(w1.j.answer), w1.j.answer.split('\n').filter((l) => /EV|Maximum|Independent/.test(l)));
+  ok('…the LEAN model is a cross-check, never swapped in for the board\'s fair', wb.research && wb.research.fair_kind === 'SHARP_NO_VIG' && wb.research.model_view && wb.research.model_view.tier === 'LEAN' && wb.research.model_view.used_to_price === false && wb.research.independent_fair_probability === null, wb.research && [wb.research.fair_kind, wb.research.model_view]);
+  ok('…the strategist\'s seven questions all ran, and the edge survives a one-point error', wb.research && wb.research.strategist.checks.length === 7 && wb.research.strategist.verdict === 'SUPPORTED' && wb.research.sensitivity.robust === true, wb.research && wb.research.strategist.checks.map((c) => c.id + ':' + c.result));
+  ok('…the NFL injury report and depth charts are cited with URLs and timestamps', /\[1\] NFL injury report \(nflverse\) — https:\/\/github\.com\/nflverse\//.test(w1.j.answer) && /retrieved \d{4}-\d\d-\d\d \d\d:\d\d UTC/.test(w1.j.answer) && (wb.research.findings || []).every((f) => f.source_url && f.retrieved_at), w1.j.answer.split('\n').slice(-4));
   const hou = []
     .concat(w1.j.scan.near_misses || [], w1.j.scan.potential || [])
     .find((p) => p.candidate.selection === 'Houston Texans');

@@ -51,7 +51,9 @@ const intent = (q, o) => Q.classify(q, o).intent;
   eq('OUTAGE: "If the odds API fails, can you still analyze this game?"', intent('If the odds API fails, can you still analyze this game?'), 'OUTAGE');
   const st = Q.stateFrom({ now: Date.now(), contract: { venue: 'kalshi', side: 'YES', price_cents: 61, selection: 'Rays YES', fair_probability: 0.4655, fair_kind: 'SHARP_NO_VIG' } });
   eq('EXPLAIN_EV needs a carried contract', [intent('Explain why this contract has negative EV.'), intent('Explain why this contract has negative EV.', { state: st })], [null, 'EXPLAIN_EV']);
-  eq('matchup questions are not quant questions', [intent('Who has the advantage in Rays vs. Guardians?'), intent('Which NFL game has the biggest offensive mismatch?'), intent('Why does your model disagree with DraftKings?')], [null, null, null]);
+  eq('matchup questions are not price scans', [intent('Who has the advantage in Rays vs. Guardians?'), intent('Why does your model disagree with DraftKings?')], [null, null]);
+  /* Phase 3: a slate-wide unit mismatch is answered from the NFL team ratings (MATCHUP_EDGE), deterministically — never as a price scan */
+  eq('"biggest offensive mismatch / advantage" → MATCHUP_EDGE, not SCAN', [intent('Which NFL game has the biggest offensive mismatch?'), intent('Which matchup has the biggest offensive advantage?')], ['MATCHUP_EDGE', 'MATCHUP_EDGE']);
   eq('"$20" is a risk amount', Q.classify("What's the best bet if I only want to risk $20?").risk_dollars, 20);
   eq('…"$0.61" is a price, not a risk amount', Q.classify('YES at $0.61 on Kalshi?').risk_dollars, null);
   eq('underdog and favorite filters', [Q.classify('best underdog tonight').filter, Q.classify('best favorite tonight').filter, Q.classify('best bet tonight').filter], ['underdog', 'favorite', null]);
