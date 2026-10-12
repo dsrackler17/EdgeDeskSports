@@ -39844,8 +39844,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      Every number on it is the server's (EDFAIR's arithmetic, EDAUDIT's
      checks); nothing is computed here, and the verdict chip is the server's
      own classification, never upgraded by the page. */
-  var QD_LABEL={VERIFIED_EDGE:['Verified edge','v'],POTENTIAL_EDGE:['Potential edge','p'],WATCH:['Watch','w'],PASS:['Pass','x'],UNVERIFIED_DATA:['Unverified data','u']};
-  var QD_KEYS=/^(Event|Market|Venue|Available price|Independent fair price|Estimated net EV|Maximum acceptable entry|Model reliability|Primary matchup advantage|Biggest risk|Decision|Market no-vig|Fair probability|Fair price|Fees|Slippage|Break-even|Net EV|Maximum entry|Calibration|Independent model|Missing|Context \(not a probability\)|Not verified because): (.*)$/;
+  var QD_LABEL={VERIFIED_EDGE:['Verified edge','v'],POTENTIAL_EDGE:['Potential edge','p'],WATCH:['Watch','w'],PASS:['Pass','x'],UNVERIFIED_DATA:['Unverified data','u'],
+    VERIFIED_CANDIDATE:['Verified candidate','v'],WATCHLIST:['Watchlist','w'],RESEARCH_REQUIRED:['Research required','p'],REJECTED:['Rejected','x'],UNVERIFIED:['Unverified','u']};
+  var QD_KEYS=/^(Event|Sport|Market|Venue|Available price|Verified market price|Independent fair price|Independent fair probability|Break-even probability|Estimated net EV|Maximum acceptable entry|Maximum acceptable price|Model reliability|Research freshness|Why the model disagrees with the market|Primary matchup advantage|Strongest counterargument|What would invalidate the opportunity|Biggest risk|Decision|Final status|Market no-vig|Fair probability|Fair price|Fees|Slippage|Break-even|Net EV|Maximum entry|Calibration|Independent model|Missing|Context \(not a probability\)|Not verified because): (.*)$/;
+  /* the server's final status (VERIFIED CANDIDATE / WATCHLIST / PASS) as a chip key */
+  function qdStatusKey(fs){ fs=String(fs||''); return fs==='VERIFIED CANDIDATE'?'VERIFIED_CANDIDATE':fs==='WATCHLIST'?'WATCHLIST':fs==='PASS'?'PASS':null; }
+  /* one numbered source line: "[n] title — https://… (reliability, published …, retrieved …)"; only an https URL becomes a link */
+  function qdSourceLi(t){ var m=/^(.*?)(https:\/\/[^\s()]+)(.*)$/.exec(t); return m?'<li>'+esc(m[1])+'<a href="'+esc(m[2])+'" target="_blank" rel="noopener noreferrer">'+esc(m[2].length>72?m[2].slice(0,72)+'…':m[2])+'</a>'+esc(m[3])+'</li>':'<li>'+esc(t)+'</li>'; }
   function quantIsAnswer(d){ return !!(d&&d.quant&&/^edgedesk_quant_v/.test(String(d.quant.version||''))&&d.answer); }
   function qdChip(cls){ var l=QD_LABEL[cls]||[String(cls||'').replace(/_/g,' ').toLowerCase(),'u']; return '<span class="qd-chip qd-'+l[1]+'">'+esc(l[0])+'</span>'; }
   function qdPct(x,dp){ var n=Number(x); return (x==null||x===''||!isFinite(n))?'—':(n*100).toFixed(dp==null?2:dp)+'%'; }
@@ -39859,10 +39864,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     String(ans||'').split('\n').forEach(function(line){
       var t=line.trim(), m;
       if(!t){ flushKv(); flushOl(); return; }
-      if((m=QD_KEYS.exec(t))){ flushOl(); kv+='<dt>'+esc(m[1])+'</dt><dd'+(m[1]==='Decision'?' class="qd-dec"':'')+'>'+esc(m[2])+'</dd>'; return; }
+      if((m=QD_KEYS.exec(t))){ flushOl(); kv+='<dt>'+esc(m[1])+'</dt><dd'+(m[1]==='Decision'||m[1]==='Final status'?' class="qd-dec"':'')+'>'+esc(m[2])+'</dd>'; return; }
       if((m=/^(\d+)\.\s+(.*)$/.exec(t))){ flushKv(); ol+='<li>'+esc(m[2])+'</li>'; return; }
+      if((m=/^\[(\d+)\]\s+(.*)$/.exec(t))){ flushKv(); ol+=qdSourceLi(m[2]); return; }
       flushKv(); flushOl();
-      if(/^[A-Z][A-Z —()'-]{8,}(\(|$)/.test(t)&&t===t.split('(')[0].toUpperCase()+(t.indexOf('(')>=0?t.slice(t.indexOf('(')):'')) out+='<h4>'+esc(t)+'</h4>';
+      if(/^[A-Z][A-Z0-9 —(),'-]{8,}(\(|$)/.test(t)&&t===t.split('(')[0].toUpperCase()+(t.indexOf('(')>=0?t.slice(t.indexOf('(')):'')) out+='<h4>'+esc(t)+'</h4>';
       else out+='<p>'+esc(t)+'</p>';
     });
     flushKv(); flushOl();
@@ -39932,18 +39938,73 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       :'No calibration record supports this probability as a betting number. EdgeDesk’s own prop-model probabilities, for example, score worse than the no-vig close on 2026 settled rows (football/validation/calibration_props_2026.json).';
     return '<div class="edai-src">'+esc(t)+'</div>';
   }
+  /* THE RESEARCH CHAIN's record for one candidate (researcher → oddsmaker → strategist → auditor). Display only. */
+  function qdStrategistHTML(r){
+    if(!r||!r.strategist||!r.strategist.checks) return '';
+    var rows=r.strategist.checks.map(function(c){ return '<tr><td><span class="qd-res '+esc(c.result)+'">'+esc(String(c.result).replace(/_/g,' '))+'</span></td><td>'+esc(c.question)+'</td><td>'+esc(c.detail)+'</td></tr>'; }).join('');
+    return '<div class="edai-src">Strategist: <b>'+esc(r.strategist.verdict)+'</b> · auditor: <b>'+esc(r.classification&&r.classification.label||'—')+'</b>'+(r.classification&&r.classification.reasons&&r.classification.reasons[0]?' — '+esc(r.classification.reasons[0]):'')+'</div><div class="qd-scroll"><table class="qd-tbl"><tr><th>Result</th><th>Question</th><th>Detail</th></tr>'+rows+'</table></div>';
+  }
+  function qdDisagreeHTML(dg){
+    if(!dg||!dg.causes) return '';
+    var rows=dg.causes.map(function(c){ return '<tr><td>'+esc(String(c.assessment).replace(/_/g,' ').toLowerCase())+'</td><td>'+esc(c.label)+'</td><td>'+esc((c.evidence||[])[0]||'')+'</td></tr>'; }).join('');
+    return '<div class="edai-src">'+esc(dg.explanation||'')+'</div><div class="qd-scroll"><table class="qd-tbl"><tr><th>Assessment</th><th>Cause</th><th>Evidence</th></tr>'+rows+'</table></div>';
+  }
+  function qdFindingsHTML(r){
+    var fs=(r&&r.findings)||[]; if(!fs.length) return '';
+    var rows=fs.slice(0,20).map(function(f){ return '<tr><td>'+esc(f.claim)+'</td><td>'+esc(String(f.reliability||'').replace(/_/g,' ').toLowerCase())+(f.verified?' · verified':'')+(f.conflicts&&f.conflicts.length?' · conflicts':'')+'</td><td>'+esc(f.publisher||'')+'</td><td>'+esc(f.published_at?String(f.published_at).slice(0,16).replace('T',' '):'—')+'</td><td>'+esc(String(f.retrieved_at||'').slice(0,16).replace('T',' '))+'</td></tr>'; }).join('');
+    var notes=[].concat((r.conflicts||[]).map(function(c){ return 'Conflict: '+c.detail+(c.unresolved?' (unresolved)':' (resolved: '+(c.resolution||'')+')'); }),(r.gaps||[]).map(function(g){ return 'Not in the model: '+g.detail; }),(r.unavailable||[]).map(function(u){ return 'Unavailable: '+u; }));
+    return '<div class="qd-scroll"><table class="qd-tbl"><tr><th>Finding</th><th>Reliability</th><th>Publisher</th><th>Published (UTC)</th><th>Retrieved (UTC)</th></tr>'+rows+'</table></div>'+(notes.length?'<div class="dk-sec"><ul>'+notes.map(function(t){ return '<li>'+esc(t)+'</li>'; }).join('')+'</ul></div>':'');
+  }
+  function qdConfidenceHTML(r){
+    var c=r&&r.confidence; if(!c) return '';
+    var o=c.outcome_probability||{}, m=c.model_reliability||{}, rc=c.research_confidence||{}, x=c.execution_confidence||{};
+    var lis=['Outcome probability: '+(o.probability!=null?qdPct(o.probability,1):'—')+' — '+(o.basis||''),'Research confidence: '+String(rc.level||'').toLowerCase()+' — '+(rc.basis||''),'Model reliability: '+(m.label||'')+' ('+String(m.status||'').replace(/_/g,' ').toLowerCase()+')','Execution confidence: quote '+String(x.quote||'').toLowerCase()+(x.age_min!=null?' ('+x.age_min+' min)':'')+', liquidity '+String(x.liquidity||'').toLowerCase()+', fees '+String(x.fees||'').toLowerCase()];
+    return '<div class="dk-sec"><ul>'+lis.map(function(t){ return '<li>'+esc(t)+'</li>'; }).join('')+'</ul></div><div class="edai-src">'+esc(c.note||'')+'</div>';
+  }
+  function qdResearchCostHTML(rs){
+    if(!rs) return '';
+    var u=rs.usage?Object.keys(rs.usage).map(function(k){ var v=rs.usage[k]; return k+': '+(v.calls||0)+' call'+(v.calls===1?'':'s')+(v.cached?', '+v.cached+' cached':'')+(v.joined?', '+v.joined+' shared':'')+(v.denied?', '+v.denied+' denied':'')+(v.errors?', '+v.errors+' failed':''); }).join(' · '):'';
+    return '<div class="edai-src">Level '+esc(rs.level)+' ('+esc(rs.level_label||'')+') — '+esc((rs.why||[]).join('; '))+'. '+esc(rs.findings)+' findings from '+esc(rs.sources)+' sources; estimated cost $'+esc((Number(rs.cost_estimate_usd)||0).toFixed(3))+(u?'. '+esc(u):'')+'</div>';
+  }
+  function qdSlateHTML(sl){
+    var gs=(sl&&sl.games)||[]; if(!gs.length) return '';
+    var rows=gs.slice().sort(function(a,b){ return Math.abs(b.gap_points||0)-Math.abs(a.gap_points||0); }).map(function(g){ return '<tr><td>'+esc(g.matchup)+'</td><td>'+esc(deskNum(g.model_line,true))+'</td><td>'+esc(deskNum(g.market_line,true))+'</td><td>'+esc(g.gap_points!=null?deskNum(Math.abs(g.gap_points)):'—')+'</td><td>'+esc(g.disagreement?String(g.disagreement.verdict).replace(/_/g,' ').toLowerCase():'—')+'</td><td>'+esc(g.freshness||'')+'</td></tr>'; }).join('');
+    return '<div class="qd-scroll"><table class="qd-tbl"><tr><th>Game</th><th>Model (home)</th><th>Market (home)</th><th>Gap</th><th>Diagnosis</th><th>Price</th></tr>'+rows+'</table></div>';
+  }
+  /* BETTING HISTORY (EDBETS over the reader's own positions): the summary tables. Display only; every figure is the server's. */
+  function qdBetsHTML(b){
+    if(!b||!b.available||!b.totals) return '';
+    function m(x){ var n=Number(x); return (x==null||!isFinite(n))?'—':(n<0?'−$':'$')+Math.abs(n).toFixed(2); }
+    function row(g){ return '<tr><td>'+esc(g.label||g.key||'')+'</td><td>'+esc(g.n)+'</td><td>'+esc(m(g.risked))+'</td><td>'+esc(m(g.pnl))+'</td><td>'+esc(g.roi!=null?qdPct(g.roi,1):'—')+'</td><td>'+esc(g.small?'small sample':'')+'</td></tr>'; }
+    var head='<tr><th>Group</th><th>Tickets</th><th>Risked</th><th>P&amp;L</th><th>ROI</th><th></th></tr>';
+    var kinds=[Object.assign({label:'Singles'},b.singles||{}),Object.assign({label:'Parlays'},b.parlays||{})];
+    var h='<div class="qd-scroll"><table class="qd-tbl">'+head+kinds.map(row).join('')+'</table></div>';
+    if(b.by_sport&&b.by_sport.length) h+='<div class="dk-sec"><div class="h">By sport</div><div class="qd-scroll"><table class="qd-tbl">'+head+b.by_sport.map(row).join('')+'</table></div></div>';
+    if(b.by_odds_range&&b.by_odds_range.length) h+='<div class="dk-sec"><div class="h">By price</div><div class="qd-scroll"><table class="qd-tbl">'+head+b.by_odds_range.filter(function(g){ return g.n; }).map(row).join('')+'</table></div></div>';
+    h+='<div class="edai-src">From your own recorded positions only ('+esc(b.positions_read)+' read'+(b.capped?', the latest 1,000 settled':'')+'). Past results only; they do not predict future results.</div>';
+    return h;
+  }
   function quantAnswerHTML(d){
-    var intent=d.quant&&d.quant.intent, ans=String(d.answer||''), cls=null, ev=null, au=null, cap=null, trail=null;
+    var intent=d.quant&&d.quant.intent, ans=String(d.answer||''), cls=null, ev=null, au=null, cap=null, trail=null, rsrc=null;
     if(intent==='SCAN'&&d.scan){
       var b=d.scan.best||(d.scan.potential||[])[0]||null;
-      ev=b&&b.evaluation||null; au=b&&b.audit||null; trail=d.scan.audit_trail||null;
+      ev=b&&b.evaluation||null; au=b&&b.audit||null; trail=d.scan.audit_trail||null; rsrc=b&&b.research||null;
       cls=d.scan.best?'VERIFIED_EDGE':(ev?ev.classification:'PASS');
       if(!d.scan.best&&cls==='VERIFIED_EDGE') cls='POTENTIAL_EDGE';
+      /* researched: the chip is the auditor's final status, never upgraded here */
+      if(d.scan.researched) cls=qdStatusKey(d.scan.final_status)||cls;
+    } else if(intent==='RESEARCH_SLATE'&&d.research_slate){
+      var rb=(d.research_slate.investigated||[])[0]||null;
+      ev=rb&&rb.evaluation||null; au=rb&&rb.audit||null; rsrc=rb&&rb.research||null;
+      cls=d.research_slate.survivors>0?'VERIFIED_CANDIDATE':qdStatusKey(d.research_slate.final_status)||'PASS';
     } else if(d.contract){ ev=d.contract.evaluation||null; cls=ev&&ev.classification||'UNVERIFIED_DATA'; cap=d.contract.capability||null; }
     var h='<div class="dk-read qd-read"><div class="lab">The Quant Desk'+(cls?qdChip(cls):'')+'</div>'+qdLines(ans)+'</div>';
     var more='';
     function sec(title, body, open){ if(body) more+='<details class="dk-more qd-more"'+(open?' open':'')+'><summary>'+esc(title)+'</summary><div style="margin-top:6px">'+body+'</div></details>'; }
+    if(d.research_slate) sec('Model versus market, every game', qdSlateHTML(d.research_slate), true);
+    if(d.bets) sec('Singles, parlays and where the money went', qdBetsHTML(d.bets), true);
     sec('EV calculation', qdEvalHTML(ev));
+    if(rsrc){ sec('Professional checks', qdStrategistHTML(rsrc)); sec('Why the model and the market differ', qdDisagreeHTML(rsrc.disagreement)); sec('Research findings', qdFindingsHTML(rsrc)); sec('Confidence — four separate measures', qdConfidenceHTML(rsrc)); }
     if(d.contract) sec('Market comparison', qdCompareHTML(d.contract.compare));
     sec('Audit results', qdAuditHTML(au, trail));
     sec('Source verification', qdSourceHTML(ev, d.contract&&d.contract.missing?d.contract.missing.map(function(m){ return 'Missing: '+m; }):null));
@@ -39953,7 +40014,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       if(others.length) sec('Other candidates audited', others.map(function(o){ return '<div class="dk-sec"><div class="h">'+esc(o.candidate.selection+' — '+o.candidate.matchup)+'</div>'+qdAuditHTML(o.audit, trail)+'</div>'; }).join(''));
       sec('Coverage', qdCoverageHTML(d.scan.coverage)+'<div class="edai-src">'+esc((d.scan.counts?(d.scan.counts.events!=null?d.scan.counts.events+' eligible events, ':'')+(d.scan.counts.markets_evaluated!=null?d.scan.counts.markets_evaluated+' markets evaluated, ':'')+d.scan.counts.audited+' audited':'')+(d.scan.window&&d.scan.window.label?' · '+d.scan.window.label:''))+'</div>');
     }
-    if(d.coverage&&!d.scan) sec('Coverage', qdCoverageHTML(d.coverage), true);
+    if(d.research_slate){
+      var inv=(d.research_slate.investigated||[]).slice(1);
+      if(inv.length) sec('Other candidates investigated', inv.map(function(o){ return '<div class="dk-sec"><div class="h">'+esc(o.candidate.selection+' — '+o.candidate.matchup)+'</div>'+qdStrategistHTML(o.research)+qdAuditHTML(o.audit, null)+'</div>'; }).join(''));
+      sec('Coverage', qdCoverageHTML(d.research_slate.coverage));
+    }
+    if(d.coverage&&!d.scan&&!d.research_slate) sec('Coverage', qdCoverageHTML(d.coverage), true);
+    sec('Research level and cost', qdResearchCostHTML((d.scan&&d.scan.research_summary)||(d.research_slate&&d.research_slate.research_summary)||null));
     sec('Historical performance', qdHistoryHTML(ev));
     return h+more;
   }

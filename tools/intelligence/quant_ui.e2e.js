@@ -43,6 +43,12 @@ try { cp.execFileSync(process.execPath, [path.join(__dirname, 'quant_host.test.j
 catch (e) { console.log('quant_host.test.js failed, so there is nothing real to render:\n' + String(e.stdout || e.message).slice(-800)); process.exit(1); }
 const R = JSON.parse(fs.readFileSync(DUMP, 'utf8'));
 try { fs.unlinkSync(DUMP); } catch (_) { /* ignore */ }
+/* Phase 2: the slate investigation and the betting-history answer, from the research suite's real responses */
+const DUMP2 = path.join(require('os').tmpdir(), 'edgedesk-research-ui-' + process.pid + '.json');
+try { cp.execFileSync(process.execPath, [path.join(__dirname, 'research_host.test.js')], { env: Object.assign({}, process.env, { RESEARCH_DUMP: DUMP2, RESEARCH_PRINT: '0' }), stdio: 'pipe' }); }
+catch (e) { console.log('research_host.test.js failed, so there is nothing real to render:\n' + String(e.stdout || e.message).slice(-800)); process.exit(1); }
+const R2 = JSON.parse(fs.readFileSync(DUMP2, 'utf8'));
+try { fs.unlinkSync(DUMP2); } catch (_) { /* ignore */ }
 
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon' };
 function siteHandler(req, res) {
@@ -123,6 +129,8 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
   try {
     const byQuestion = (body) => {
       const q = String(body && body.question || '');
+      if (/^Research every available NFL game/.test(q)) return R2.research_slate.response;
+      if (/^Why did I lose money/.test(q)) return R2.bets.response;
       if (/next 24 hours/.test(q)) return R.scan_24h.response;
       if (/this week across all sports/.test(q)) return R.scan_week.response;
       if (/Rays at 61/.test(q)) return R.contract_rays.response;
@@ -138,10 +146,12 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       const a1 = await ask(page, R.scan_week.question, 1);
       const w = await lastAnswer(page);
       chk(vp.tag + ': the cross-sport question reached the server', a1.reached_server && SENT[0] && SENT[0].desk === true);
-      chk(vp.tag + ': the verdict chip is the server\'s: Verified edge', w && /verified edge/i.test(w.chip || ''), w && w.chip);
-      chk(vp.tag + ': the brief\'s fields render as a grid', w && ['Event', 'Market', 'Venue', 'Available price', 'Independent fair price', 'Estimated net EV', 'Maximum acceptable entry', 'Model reliability', 'Primary matchup advantage', 'Biggest risk', 'Decision'].every((k) => w.keys.includes(k)), w && w.keys);
-      chk(vp.tag + ': the decision reads BUY, Buffalo Bills -2.5', w && /Decision\s*BUY/.test(w.text) && /Buffalo Bills -2\.5/.test(w.text), w && w.text.slice(0, 600));
-      chk(vp.tag + ': the evidence sections are there to expand', w && ['EV calculation', 'Audit results', 'Source verification', 'Model assumptions', 'Coverage', 'Historical performance'].every((k) => w.sections.includes(k)), w && w.sections);
+      chk(vp.tag + ': the verdict chip is the auditor\'s final status: Verified candidate', w && /verified candidate/i.test(w.chip || ''), w && w.chip);
+      chk(vp.tag + ': the Phase-2 fields render as a grid', w && ['Event', 'Sport', 'Market', 'Venue', 'Verified market price', 'Independent fair probability', 'Break-even probability', 'Estimated net EV', 'Maximum acceptable price', 'Model reliability', 'Research freshness', 'Why the model disagrees with the market', 'Primary matchup advantage', 'Strongest counterargument', 'What would invalidate the opportunity', 'Final status'].every((k) => w.keys.includes(k)), w && w.keys);
+      chk(vp.tag + ': the final status reads VERIFIED CANDIDATE, Buffalo Bills -2.5', w && /Final status\s*VERIFIED CANDIDATE/.test(w.text) && /Buffalo Bills -2\.5/.test(w.text), w && w.text.slice(0, 600));
+      chk(vp.tag + ': the evidence sections are there to expand', w && ['EV calculation', 'Professional checks', 'Why the model and the market differ', 'Research findings', 'Confidence — four separate measures', 'Audit results', 'Source verification', 'Model assumptions', 'Coverage', 'Research level and cost', 'Historical performance'].every((k) => w.sections.includes(k)), w && w.sections);
+      const links = await page.evaluate(() => { const r = [...document.querySelectorAll('#edaiLog .qd-read')].pop(); return r ? [...r.querySelectorAll('a')].map((a) => ({ href: a.getAttribute('href'), rel: a.getAttribute('rel') })) : []; });
+      chk(vp.tag + ': the numbered sources are https links that open safely', links.length >= 2 && links.every((l) => /^https:\/\//.test(l.href) && /noopener/.test(l.rel || '')), links);
       chk(vp.tag + ': the audit table lists the fifteen checks', w && w.auditRows >= 16, w && w.auditRows);
       chk(vp.tag + ': the source line says no model wrote it', w && /no model wrote this/.test(w.src), w && w.src);
       if (vp.tag === 'phone') {
@@ -161,8 +171,8 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       /* 3. the 24-hour scan: nothing verified */
       await ask(page, R.scan_24h.question, 3);
       const s24 = await lastAnswer(page);
-      chk(vp.tag + ': no verified trade: the chip says Potential edge, not Verified', s24 && /potential edge/i.test(s24.chip || '') && /No verified positive-EV trade/.test(s24.text), s24 && [s24.chip, s24.text.slice(0, 160)]);
-      chk(vp.tag + ': …and the decision reads WATCH', s24 && /Decision\s*WATCH/.test(s24.text));
+      chk(vp.tag + ': no verified trade: the chip says Watchlist, not Verified', s24 && /watchlist/i.test(s24.chip || '') && !/verified/i.test(s24.chip || '') && /No verified positive-EV trade/.test(s24.text), s24 && [s24.chip, s24.text.slice(0, 160)]);
+      chk(vp.tag + ': …and the final status reads WATCHLIST', s24 && /Final status\s*WATCHLIST/.test(s24.text));
 
       /* 4. the contract: an MLB "A vs B" with a price reaches the server and passes */
       const a4 = await ask(page, R.contract_rays.question, 4);
@@ -184,6 +194,21 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       await ask(page, R.contract_ambiguous.question, 5);
       const amb = await lastAnswer(page);
       chk(vp.tag + ': an unattached price renders as Unverified data with the "which side" request, no edge chip', amb && /unverified/i.test(amb.chip || '') && /say which side/.test(amb.text) && !/verified edge|potential edge/i.test(amb.chip || ''), amb && [amb.chip, amb.text.slice(0, 300)]);
+
+      /* 7. the slate investigation: the discrepancy table opens by default, the survivor is the chip */
+      await ask(page, R2.research_slate.question, 6);
+      const sl = await lastAnswer(page);
+      chk(vp.tag + ': the slate investigation renders with the auditor\'s chip (Verified candidate)', sl && /verified candidate/i.test(sl.chip || '') && /Survived the audit: Buffalo Bills -2\.5/.test(sl.text), sl && [sl.chip, sl.text.slice(0, 200)]);
+      chk(vp.tag + ': …with the model-versus-market table for every game, and the candidate checks to expand', sl && ['Model versus market, every game', 'Professional checks', 'Why the model and the market differ', 'Research findings', 'Other candidates investigated', 'Research level and cost'].every((k) => sl.sections.includes(k)), sl && sl.sections);
+      const slRows = await page.evaluate(() => { const d = [...document.querySelectorAll('details.qd-more')].filter((x) => /Model versus market, every game/.test(x.textContent)).pop(); return d ? { open: d.open, rows: d.querySelectorAll('tr').length } : null; });
+      chk(vp.tag + ': the discrepancy table is open and lists the games', slRows && slRows.open && slRows.rows >= 4, slRows);
+      /* 8. the betting-history answer: no verdict chip, the reader's own figures, past only */
+      await ask(page, R2.bets.question, 7);
+      const bt = await lastAnswer(page);
+      chk(vp.tag + ': the betting-history answer renders, with no verdict chip', bt && !bt.chip && /You lost \$183\.55/.test(bt.text) && /Parlays were more profitable/.test(bt.text), bt && [bt.chip, bt.text.slice(0, 200)]);
+      chk(vp.tag + ': …the singles/parlays table is open, and the page says past results only', bt && bt.sections.includes('Singles, parlays and where the money went') && /do not predict future results/.test(await page.evaluate(() => document.getElementById('edaiLog').innerText)), bt && bt.sections);
+      if (SHOTS) await page.screenshot({ path: path.join(SHOT_DIR, 'quant-bets-' + vp.tag + '.png'), fullPage: false });
+      if (vp.tag === 'phone') { const g2 = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth })); chk('phone: still no sideways scroll after the slate and bets answers', g2.sw <= g2.iw + 1, g2); }
 
       chk(vp.tag + ': no page errors', errors.length === 0, errors);
       await ctx.close();

@@ -39,6 +39,7 @@ const JS = [
   'tools/intelligence/stake_host.test.js', 'tools/intelligence/validate_extra_markets.js',
   'football/personnel/desk.js', 'tools/intelligence/personnel_desk.test.js',
   'lib/edgedesk_fairodds.js', 'lib/edgedesk_sport_adapters.js', 'supabase/functions/edgedesk_ai/_audit.js', 'supabase/functions/edgedesk_ai/_quant.js',
+  'lib/edgedesk_evidence_graph.js', 'lib/edgedesk_disagreement.js', 'lib/edgedesk_research_budget.js', 'supabase/functions/edgedesk_ai/_agents.js',
   'tools/intelligence/fairodds.test.js', 'tools/intelligence/audit.test.js',
   'lib/edgedesk_props.js', 'football/props/desk.js', 'tools/props/props_desk.test.js', 'football/props/correlation.js',
 ];
