@@ -40637,15 +40637,21 @@ const EDQVERIFY: any = (globalThis as any).EDQVERIFY;
       out.push(item('Q1_CONTRADICTIONS', 'CLEAR', { answer: findings.length ? 'No unresolved contradiction among ' + findings.length + ' finding' + (findings.length === 1 ? '' : 's') + (settled.length ? '; ' + settled.length + ' conflict' + (settled.length === 1 ? ' was' : 's were') + ' settled (' + settled.map(function (cf) { return cf.resolution && cf.resolution.by; }).filter(Boolean).join('; ') + ')' : '') : 'No research findings to contradict it (see Q7)' }));
     }
 
-    /* Q2 — outdated statistics: a lineup, availability or pricing input past its window (AGING already means past the
-       researcher's own TTL) is unresolved; anything else past its window is noted */
+    /* Q2 — outdated statistics. A lineup, availability or pricing input is unresolved when it is STALE (past three times
+       its window), or AGING inside a day of the game, when a change is most likely and costs most. Far from the game an
+       aging input is noted: a depth chart a day old six days out is not what decides a bet. Anything else is noted. */
     var recs = E ? E.records.filter(function (x) { return x.type !== 'MARKET_QUOTE'; }) : [];
     var old = recs.filter(function (x) { return x.freshness && (x.freshness.status === 'STALE' || x.freshness.status === 'AGING'); });
     var isKeyRec = function (x) { return ['availability', 'starter', 'lineup'].indexOf(x.subject.topic) >= 0 || (x.type === 'MODEL_ESTIMATE' && fairKind === 'MODEL'); };
-    var oldKey = old.filter(isKeyRec), oldOther = old.filter(function (x) { return !isKeyRec(x); });
+    var nearGame = function (x) { return /inside a day of the game/.test(str(x.freshness && x.freshness.basis)); };
+    var oldKey = old.filter(function (x) { return isKeyRec(x) && (x.freshness.status === 'STALE' || nearGame(x)); }), oldOther = old.filter(function (x) { return oldKey.indexOf(x) < 0; });
     if (!recs.length) out.push(item('Q2_OUTDATED_STATISTICS', 'UNKNOWN', { severity: 'IMPORTANT', resolvable: true, answer: 'No dated statistic, report or projection is on file for this game, so freshness cannot be checked' }));
     else if (oldKey.length) out.push(item('Q2_OUTDATED_STATISTICS', 'UNRESOLVED', { severity: 'IMPORTANT', resolvable: true, answer: oldKey.map(function (x) { return x.claim + ' — ' + x.freshness.age_min + ' min old, ' + x.freshness.status.toLowerCase() + ' (' + x.freshness.basis + ')'; }).slice(0, 3).join('; '), refs: oldKey.map(function (x) { return x.id; }) }));
-    else if (oldOther.length) out.push(item('Q2_OUTDATED_STATISTICS', 'CONCERN', { answer: oldOther.length + ' record' + (oldOther.length === 1 ? '' : 's') + ' past ' + (oldOther.length === 1 ? 'its' : 'their') + ' window (' + oldOther.map(function (x) { return x.subject.topic; }).filter(function (t, i, a) { return a.indexOf(t) === i; }).join(', ') + '); none is a lineup, availability or pricing input', refs: oldOther.map(function (x) { return x.id; }) }));
+    else if (oldOther.length) {
+      var keyAging = oldOther.filter(isKeyRec);
+      out.push(item('Q2_OUTDATED_STATISTICS', 'CONCERN', { answer: oldOther.length + ' record' + (oldOther.length === 1 ? '' : 's') + ' past ' + (oldOther.length === 1 ? 'its' : 'their') + ' window (' + oldOther.map(function (x) { return x.subject.topic; }).filter(function (t, i, a) { return a.indexOf(t) === i; }).join(', ') + ')'
+        + (keyAging.length ? '; the lineup or availability ones are aging, not stale, and the game is more than a day away — re-check them before it' : '; none is a lineup, availability or pricing input'), refs: oldOther.map(function (x) { return x.id; }) }));
+    }
     else out.push(item('Q2_OUTDATED_STATISTICS', 'CLEAR', { answer: 'Every dated record is fresh for its topic (' + recs.length + ' checked)' }));
 
     /* Q3 — sample size (of the model that prices it) */
@@ -51848,6 +51854,43 @@ async function researchUsageSettle(auth: string, claimId: number | null, state: 
   if (claimId == null || !SUPABASE_URL || !SUPABASE_ANON_KEY) return;
   try { await fetch(`${SUPABASE_URL}/rest/v1/rpc/research_usage_settle`, { method: "POST", headers: { apikey: SUPABASE_ANON_KEY, authorization: auth, "content-type": "application/json" }, body: JSON.stringify({ p_claim_id: claimId, p_state: state, p_latency_ms: Math.round(ms) }) }); } catch { /* best effort */ }
 }
+/* ── SAFEGUARDS: the dollar budget (supabase/research_engine.sql), paid-call concurrency, structured logs ── */
+/** The dollar door: a paid research call is made only after the database grants its estimate against the per-request,
+    per-subscriber and global daily caps (research_budget_policy). Missing schema or a refusal means no call. */
+async function researchCostClaim(auth: string, provider: string, estimate: number): Promise<{ ok: boolean; why: string | null; claim_id: number | null }> {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { ok: false, why: "no database to claim the research budget against", claim_id: null };
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/research_cost_claim`, { method: "POST", headers: { apikey: SUPABASE_ANON_KEY, authorization: auth, "content-type": "application/json" }, body: JSON.stringify({ p_provider: provider, p_estimate_usd: Math.round(estimate * 1e6) / 1e6 }) });
+    if (!r.ok) return { ok: false, why: "the research budget could not be claimed (HTTP " + r.status + "; is supabase/research_engine.sql applied?)", claim_id: null };
+    const j: any = await r.json().catch(() => null);
+    return j && j.ok === true ? { ok: true, why: null, claim_id: num(j.claim_id) } : { ok: false, why: String(j?.why ?? "the research budget refused the call").slice(0, 200), claim_id: null };
+  } catch { return { ok: false, why: "the research budget could not be reached", claim_id: null }; }
+}
+async function researchCostSettle(auth: string, claimId: number | null, actual: number | null, state: "SETTLED" | "RELEASED"): Promise<void> {
+  if (claimId == null || !SUPABASE_URL || !SUPABASE_ANON_KEY) return;
+  try { await fetch(`${SUPABASE_URL}/rest/v1/rpc/research_cost_settle`, { method: "POST", headers: { apikey: SUPABASE_ANON_KEY, authorization: auth, "content-type": "application/json" }, body: JSON.stringify({ p_claim_id: claimId, p_actual_usd: actual == null ? null : Math.round(actual * 1e6) / 1e6, p_state: state }) }); } catch { /* best effort */ }
+}
+/** Paid search calls in flight in this isolate, at most SEARCH_CONCURRENCY; a caller waits briefly, then is told the service is busy. */
+const SEARCH_CONCURRENCY = envInt("EDGEDESK_SEARCH_CONCURRENCY", 2, 1, 8);
+let SEARCH_ACTIVE = 0;
+const SEARCH_WAITERS: Array<() => void> = [];
+export async function searchSlot(waitMs: number): Promise<(() => void) | null> {
+  const release = () => { SEARCH_ACTIVE = Math.max(0, SEARCH_ACTIVE - 1); const next = SEARCH_WAITERS.shift(); if (next) next(); };
+  if (SEARCH_ACTIVE < SEARCH_CONCURRENCY) { SEARCH_ACTIVE++; return release; }
+  return await new Promise((resolve) => {
+    let done = false;
+    const grant = () => { if (done) return; done = true; clearTimeout(timer); SEARCH_ACTIVE++; resolve(release); };
+    const timer = setTimeout(() => { if (done) return; done = true; const i = SEARCH_WAITERS.indexOf(grant); if (i >= 0) SEARCH_WAITERS.splice(i, 1); resolve(null); }, waitMs);
+    SEARCH_WAITERS.push(grant);
+  });
+}
+export function searchSlotsState(): { active: number; waiting: number; limit: number } { return { active: SEARCH_ACTIVE, waiting: SEARCH_WAITERS.length, limit: SEARCH_CONCURRENCY }; }
+/** One structured log line per research event: no question text, no key, the subscriber as a short hash. */
+export function researchLog(event: string, fields: Record<string, unknown>): void {
+  if (Deno.env.get("EDGEDESK_RESEARCH_LOG") === "0") return;
+  try { console.log(JSON.stringify({ ts: new Date().toISOString(), svc: "edgedesk_ai", build: BUILD, event, ...fields })); } catch { /* logging never breaks a turn */ }
+}
+function userTag(user: string | null): string | null { return user ? "u_" + quantHash(String(user)).slice(0, 10) : null; }
 async function narrateResearch(answer: string, graphs: any[], user: string | null, budget: any, auth: string): Promise<{ answer: string; narration: any; model: string | null; deterministic_answer: string | null }> {
   const det = { answer, narration: { ok: true, prose: "DETERMINISTIC", critic: null }, model: null, deterministic_answer: null };
   if (!RESEARCH_NARRATE || !ANTHROPIC_API_KEY || !EDAGENTS || !RESEARCH_LEDGER) return det;
@@ -51894,7 +51937,7 @@ function nameInText(t: string): string | null {
   return m ? m[1] : null;
 }
 /** What the researcher reads for one candidate, in its raw finding shape. */
-async function researchRawFor(o: { dal: Dal; c: any; e: any; game: any; now: number; level: string; budget: any; user: string | null; question?: string | null; auth?: string | null }): Promise<{ raw: any[]; unavailable: string[]; providers: string[]; priced_starters: any | null; search?: any }> {
+async function researchRawFor(o: { dal: Dal; c: any; e: any; game: any; now: number; level: string; budget: any; user: string | null; question?: string | null; auth?: string | null; turn_cost?: { est_usd: number } | null }): Promise<{ raw: any[]; unavailable: string[]; providers: string[]; priced_starters: any | null; search?: any }> {
   const { dal, c, e, game, now } = o;
   const raw: any[] = [], unavailable: string[] = [], providers: string[] = [];
   let pricedStarters: any = null;
@@ -51965,7 +52008,7 @@ async function researchRawFor(o: { dal: Dal; c: any; e: any; game: any; now: num
     } else unavailable.push("the live nflverse injury feed: " + (r.why ?? "no data") + "; the committed report was used");
   }
   /* 6. external search (EDPROVIDERS): deep research only, server-side, through the research ledger, when a provider can run */
-  const srch = await researchSearchFor({ dal, c, game, now, level: o.level, budget: o.budget, user: o.user, question: o.question ?? null, known: knownPlayersOf(raw), auth: o.auth ?? null });
+  const srch = await researchSearchFor({ dal, c, game, now, level: o.level, budget: o.budget, user: o.user, question: o.question ?? null, known: knownPlayersOf(raw), auth: o.auth ?? null, turn_cost: o.turn_cost ?? null });
   if (srch.raw.length) { add(srch.report.provider); srch.raw.forEach((x: any) => raw.push(x)); }
   if (srch.why) unavailable.push(srch.why);
   return { raw, unavailable, providers, priced_starters: pricedStarters, search: srch.report };
@@ -51988,7 +52031,7 @@ export function searchProviderFor(): { provider: string | null; why: string | nu
   }
   return { provider: null, why: "external search did not run: " + why.join("; ") };
 }
-async function researchSearchFor(o: { dal: Dal; c: any; game: any; now: number; level: string; budget: any; user: string | null; question: string | null; known: any[]; auth: string | null }): Promise<{ raw: any[]; why: string | null; report: any | null }> {
+async function researchSearchFor(o: { dal: Dal; c: any; game: any; now: number; level: string; budget: any; user: string | null; question: string | null; known: any[]; auth: string | null; turn_cost?: { est_usd: number } | null }): Promise<{ raw: any[]; why: string | null; report: any | null }> {
   if (o.level !== "L3") return { raw: [], why: null, report: null };
   if (!EDPROVIDERS || !RESEARCH_LEDGER) return { raw: [], why: "external search did not run: the search adapters are not loaded", report: { provider: null, status: "NOT_RUN" } };
   const pick = searchProviderFor();
@@ -51999,30 +52042,58 @@ async function researchSearchFor(o: { dal: Dal; c: any; game: any; now: number; 
   const parse = (j: any) => prov === "claude_web_search" ? EDPROVIDERS.parseClaudeSearch(j, { now: o.now, event, known_players: o.known, model: RESEARCH_MODEL, request: req }) : EDPROVIDERS.parsePerplexity(j, { now: o.now, event, known_players: o.known });
   const f = o.dal.fetchImpl(), lkey = c.sport + "|" + c.game_id;
   if (!o.auth) return { raw: [], why: "external search did not run: no signed-in subscriber to claim the research quota for", report: { provider: prov, status: "NOT_RUN", why: "no auth" } };
-  const r = await RESEARCH_LEDGER.call({ provider: prov, key: lkey, topic: "news", user: o.user, budget: o.budget, timeout_ms: R.timeout_ms }, async () => {
-    /* the persistent quota (research_provider_quota, across isolates and subscribers) grants the call first; a refusal is not a provider failure */
+  /* the turn's own dollar cap: every search this turn, estimated, stays inside the per-request budget */
+  const tc = o.turn_cost ?? { est_usd: 0 };
+  const cached = RESEARCH_LEDGER.cache && RESEARCH_LEDGER.cache[prov + "|" + lkey];
+  if (!cached && tc.est_usd + req.est_usd > RESEARCH_BUDGET_DEFAULTS.per_request_usd + 1e-9) {
+    const why = "this turn's research budget ($" + RESEARCH_BUDGET_DEFAULTS.per_request_usd.toFixed(2) + ") would be exceeded by another search ($" + req.est_usd.toFixed(3) + ")";
+    researchLog("research_search", { provider: prov, status: "BUDGET_REFUSED", user: userTag(o.user), game: lkey, why });
+    return { raw: [], why: R.label + " did not run: " + why, report: { provider: prov, status: "BUDGET_REFUSED", why, est_usd: req.est_usd, cost_usd: 0 } };
+  }
+  let t0 = Date.now();
+  const r = await RESEARCH_LEDGER.call({ provider: prov, key: lkey, topic: "news", user: o.user, budget: o.budget, timeout_ms: R.timeout_ms + 5000 }, async () => {
+    /* the dollar budget first (research_cost_claim: per request, per subscriber per day, all subscribers per day) */
+    const cost = await researchCostClaim(o.auth!, prov, req.est_usd);
+    if (!cost.ok) return { __refused: "BUDGET_REFUSED", why: cost.why };
+    /* then the persistent call quota (research_provider_quota, across isolates and subscribers); a refusal is not a provider failure */
     const claim = await researchUsageClaim(o.auth!, prov);
-    if (!claim.ok) return { __quota_refused: claim.why };
-    const t0 = Date.now();
-    /* the key is added here, server-side; it never leaves the edge function */
-    const send = async (body: any) => {
-      const resp = await f(req.url, { method: "POST", headers: { ...req.headers, ...(prov === "claude_web_search" ? { "x-api-key": ANTHROPIC_API_KEY } : { authorization: "Bearer " + PERPLEXITY_API_KEY }) }, body: JSON.stringify(body) });
-      const j = await resp.json().catch(() => null);
-      if (!resp.ok) throw new Error("HTTP " + resp.status + (j?.error?.message ? ": " + String(j.error.message).slice(0, 120) : ""));
-      return j;
-    };
-    let parsed = parse(await send(req.body));
-    /* a paused server-tool turn is resumed once, with the paused assistant turn sent back unchanged; never more */
-    if (parsed.status === "PAUSED" && parsed.continuation) { const first = parsed.cost?.usd ?? 0; parsed = parse(await send({ ...req.body, messages: parsed.continuation.messages })); if (parsed.cost) parsed.cost.usd = Math.round((parsed.cost.usd + first) * 1e6) / 1e6; }
-    await researchUsageSettle(o.auth!, claim.claim_id, parsed.status === "ERROR" ? "ERROR" : "OK", Date.now() - t0);
-    if (parsed.status === "ERROR") throw new Error(parsed.errors[0] ?? "the response could not be read");
-    return parsed;
+    if (!claim.ok) { await researchCostSettle(o.auth!, cost.claim_id, null, "RELEASED"); return { __refused: "QUOTA_REFUSED", why: claim.why }; }
+    /* then a slot: at most SEARCH_CONCURRENCY paid searches in flight in this isolate */
+    const release = await searchSlot(4000);
+    if (!release) { await researchCostSettle(o.auth!, cost.claim_id, null, "RELEASED"); await researchUsageSettle(o.auth!, claim.claim_id, "CACHED", 0); return { __refused: "BUSY", why: "every paid-search slot is busy (" + SEARCH_CONCURRENCY + " in flight)" }; }
+    tc.est_usd += req.est_usd;
+    t0 = Date.now();
+    try {
+      /* the key is added here, server-side; it never leaves the edge function */
+      const send = async (body: any) => {
+        const signal = typeof (AbortSignal as any)?.timeout === "function" ? (AbortSignal as any).timeout(R.timeout_ms) : undefined;
+        const resp = await f(req.url, { method: "POST", headers: { ...req.headers, ...(prov === "claude_web_search" ? { "x-api-key": ANTHROPIC_API_KEY } : { authorization: "Bearer " + PERPLEXITY_API_KEY }) }, body: JSON.stringify(body), signal });
+        const j = await resp.json().catch(() => null);
+        if (!resp.ok) throw new Error("HTTP " + resp.status + (j?.error?.message ? ": " + String(j.error.message).slice(0, 120) : ""));
+        return j;
+      };
+      let parsed = parse(await send(req.body));
+      /* a paused server-tool turn is resumed once, with the paused assistant turn sent back unchanged; never more */
+      if (parsed.status === "PAUSED" && parsed.continuation) { const first = parsed.cost?.usd ?? 0; parsed = parse(await send({ ...req.body, messages: parsed.continuation.messages })); if (parsed.cost) parsed.cost.usd = Math.round((parsed.cost.usd + first) * 1e6) / 1e6; }
+      if (parsed.status === "ERROR") throw new Error(parsed.errors[0] ?? "the response could not be read");
+      await researchUsageSettle(o.auth!, claim.claim_id, "OK", Date.now() - t0);
+      await researchCostSettle(o.auth!, cost.claim_id, parsed.cost?.usd ?? req.est_usd, "SETTLED");
+      return parsed;
+    } catch (e) {
+      /* a failed call may still have been billed: settle at the estimate, never at nothing */
+      await researchUsageSettle(o.auth!, claim.claim_id, "ERROR", Date.now() - t0);
+      await researchCostSettle(o.auth!, cost.claim_id, req.est_usd, "SETTLED");
+      throw e;
+    } finally { release(); }
   });
   const label = R.label;
-  if (r.ok && r.value && r.value.__quota_refused) {
+  if (r.ok && r.value && r.value.__refused) {
     try { delete RESEARCH_LEDGER.cache[prov + "|" + lkey]; } catch { /* a refusal is never cached */ }
-    return { raw: [], why: label + " did not run: " + r.value.__quota_refused, report: { provider: prov, status: "QUOTA_REFUSED", why: r.value.__quota_refused, est_usd: req.est_usd, cost_usd: 0 } };
+    researchLog("research_search", { provider: prov, status: r.value.__refused, user: userTag(o.user), game: lkey, why: r.value.why });
+    return { raw: [], why: label + " did not run: " + r.value.why, report: { provider: prov, status: r.value.__refused, why: r.value.why, est_usd: req.est_usd, cost_usd: 0 } };
   }
+  if (r.ok && r.value) researchLog("research_search", { provider: prov, status: r.value.status, user: userTag(o.user), game: lkey, cached: !!r.cached, ms: r.cached ? 0 : Date.now() - t0, cost_usd: r.cached ? 0 : (r.value.cost?.usd ?? null), findings: r.value.findings_raw.length, refused: r.value.refused.length, errors: r.value.errors });
+  else researchLog("research_search", { provider: prov, status: "FAILED", user: userTag(o.user), game: lkey, why: r.why ?? null });
   if (!r.ok || !r.value) return { raw: [], why: label + " failed: " + (r.why ?? "no response") + "; the research continues on EdgeDesk's own sources", report: { provider: prov, status: "FAILED", why: r.why ?? null, est_usd: req.est_usd, cost_usd: null } };
   const p = r.value;
   const report = { provider: prov, status: p.status, cached: !!r.cached, stale: !!r.stale, findings: p.findings_raw.length, results: p.results.length, refused: p.refused, uncited_sentences: p.uncited.length, errors: p.errors,
@@ -52041,10 +52112,10 @@ function researchQualityFlags(c: any, a: any): string[] {
   return out;
 }
 /** The five-role chain for one audited candidate. */
-async function researchChain(o: { dal: Dal; r: any; e: any; game: any; now: number; level: string; budget: any; user: string | null; stake?: number | null; question?: string | null; auth?: string | null }): Promise<any> {
+async function researchChain(o: { dal: Dal; r: any; e: any; game: any; now: number; level: string; budget: any; user: string | null; stake?: number | null; question?: string | null; auth?: string | null; turn_cost?: { est_usd: number } | null }): Promise<any> {
   const { r, game, now } = o;
   const c = r.candidate, a = r.audit;
-  const gathered = await researchRawFor({ dal: o.dal, c, e: o.e, game, now, level: o.level, budget: o.budget, user: o.user, question: o.question ?? null, auth: o.auth ?? null });
+  const gathered = await researchRawFor({ dal: o.dal, c, e: o.e, game, now, level: o.level, budget: o.budget, user: o.user, question: o.question ?? null, auth: o.auth ?? null, turn_cost: o.turn_cost ?? null });
   const isModel = c.fair?.method === "MODEL_BLEND";
   const mc = c.model_case ?? null;
   const tier = isModel ? (c.fair?.validation?.tier ?? null) : (mc?.tier ?? null);
@@ -52258,6 +52329,12 @@ export function calcForGame(g: any, now: number): any {
     return EDQVERIFY.forGame({ market_line: g.market_line }, { quote, model_line: ml, validation: v, now, ttl_min: qs?.limit_min ?? null });
   } catch { return null; }
 }
+/** Dollar figures an answer may quote that are not calculations: the research budget's caps, each search's estimate and cost, the turn's cost. */
+function knownResearchUsd(summary: any, rows: any[]): number[] {
+  const out = [RESEARCH_BUDGET_DEFAULTS.per_request_usd, RESEARCH_BUDGET_DEFAULTS.per_user_daily_usd, RESEARCH_BUDGET_DEFAULTS.global_daily_usd, num(summary?.cost_estimate_usd) ?? 0, num(summary?.search?.cost_usd) ?? 0];
+  (rows ?? []).forEach((r: any) => { if (r?.search) { if (num(r.search.est_usd) != null) out.push(num(r.search.est_usd)!); if (num(r.search.cost_usd) != null) out.push(num(r.search.cost_usd)!); } });
+  return out;
+}
 /** The turn's verification: every ledger's recomputation, and every number in the answer traced to a calculation (or a named known value). */
 export function quantVerificationOf(answer: string, ledgers: any[], extra?: any): any {
   if (!EDQVERIFY) return null;
@@ -52290,6 +52367,7 @@ async function researchAudited(o: { dal: Dal; audit: any; games: any[]; evidence
   const user = jwtSub(o.auth);
   const investigations: Record<string, any> = {}, pairs: { inv: any; c: any }[] = [];
   const failed: string[] = [];
+  const turnCost = { est_usd: 0 }; /* every paid search this turn, estimated: held under the per-request budget */
   if (!audited.length) { P({ stage: "RETRIEVE_STATS", status: "skipped", detail: "no candidate cleared the board, so there was nothing to research" }); P({ stage: "VERIFY_INJURIES", status: "skipped", detail: "no candidate to verify" }); P({ stage: "CALCULATE", status: "skipped", detail: "no candidate to price" }); }
   let i = 0;
   for (const r of audited) {
@@ -52298,7 +52376,7 @@ async function researchAudited(o: { dal: Dal; audit: any; games: any[]; evidence
     P({ stage: "RETRIEVE_STATS", status: "running", detail: `${c.selection} (${c.matchup}): ${i} of ${audited.length} — injury report, starters, probables, desk notes (${lvl.level})` });
     const game = o.games.find((g: any) => g.sport === c.sport && String(g.game_id) === String(c.game_id)) ?? null;
     try {
-      const inv = await researchChain({ dal: o.dal, r, e: o.evidence.get(String(c.id)) ?? {}, game, now: o.now, level: lvl.level, budget: lvl.budget, user, stake: o.stake, question: o.question ?? null, auth: o.auth ?? null });
+      const inv = await researchChain({ dal: o.dal, r, e: o.evidence.get(String(c.id)) ?? {}, game, now: o.now, level: lvl.level, budget: lvl.budget, user, stake: o.stake, question: o.question ?? null, auth: o.auth ?? null, turn_cost: turnCost });
       investigations[c.id] = inv; pairs.push({ inv, c });
     } catch (e) {
       /* a failed investigation never takes the basic analysis with it: the candidate keeps its audit and its price */
@@ -52313,7 +52391,7 @@ async function researchAudited(o: { dal: Dal; audit: any; games: any[]; evidence
     P({ stage: "RETRIEVE_STATS", status: failed.length === audited.length ? "failed" : "done", detail: `${nf} finding${nf === 1 ? "" : "s"} from ${srcs.size} source${srcs.size === 1 ? "" : "s"}` + (unav.length ? `; unavailable: ${unav.slice(0, 2).join("; ")}` : "") + (failed.length ? `; research failed for ${failed.join(", ")} (its price and audit are kept)` : "") });
     if (lvl.level === "L3") {
       /* the external search, reported as it actually went: ran (with what it found and refused), failed, or never ran and why */
-      const sr = invs.map((x) => x.search).filter(Boolean), ran = sr.filter((x: any) => x.status !== "NOT_RUN" && x.status !== "FAILED" && x.status !== "QUOTA_REFUSED");
+      const sr = invs.map((x) => x.search).filter(Boolean), ran = sr.filter((x: any) => !["NOT_RUN", "FAILED", "QUOTA_REFUSED", "BUDGET_REFUSED", "BUSY"].includes(x.status));
       const nF = ran.reduce((n: number, x: any) => n + (x.findings ?? 0), 0), nR = ran.reduce((n: number, x: any) => n + (x.refused?.length ?? 0), 0);
       P({ stage: "SEARCH", status: ran.length ? "done" : sr.some((x: any) => x.status === "FAILED") ? "failed" : "skipped",
         detail: ran.length ? `${nF} cited finding${nF === 1 ? "" : "s"} from ${EDPROVIDERS?.REGISTRY?.[ran[0].provider]?.label ?? ran[0].provider}; ${nR} citation${nR === 1 ? "" : "s"} refused` + (ran.some((x: any) => x.cached) ? " (cached)" : "")
@@ -52374,7 +52452,7 @@ async function quantScan(o: { body: any; auth: string; dal: Dal; now: number; cl
   if (rs) { try { await publishResearch(auth, rs.pairs, { question: q, now, level: rs.summary.level }, dal.fetchImpl()); } catch { /* best effort */ } }
   const slim = { best: quantRowSlim(scan.best, now), verified_rest: (scan.verified_rest ?? []).map((x: any) => quantRowSlim(x, now)), potential: scan.potential.map((x: any) => quantRowSlim(x, now)), near_misses: scan.near_misses.map((x: any) => quantRowSlim(x, now)) };
   return {
-    quant_verification: quantVerificationOf(answer, [slim.best, ...slim.verified_rest, ...slim.potential, ...slim.near_misses].map((r: any) => r?.calc), { usd: [scan.research_summary?.cost_estimate_usd ?? 0] }),
+    quant_verification: quantVerificationOf(answer, [slim.best, ...slim.verified_rest, ...slim.potential, ...slim.near_misses].map((r: any) => r?.calc), { usd: knownResearchUsd(scan.research_summary, [slim.best, ...slim.verified_rest, ...slim.potential, ...slim.near_misses].filter(Boolean)) }),
     answer, model: nar?.model ?? null, narration: nar ? nar.narration : { ok: true, prose: "DETERMINISTIC", critic: null }, ...(nar?.deterministic_answer ? { deterministic_answer: nar.deterministic_answer } : {}),
     scan: { schema: scan.schema, decision: scan.decision, final_status: scan.final_status, researched: scan.researched, best: slim.best, verified_rest: slim.verified_rest, potential: slim.potential, near_misses: slim.near_misses, board_near_misses: scan.board_near_misses,
       coverage: scan.coverage, coverage_scope: scan.coverage_scope, not_scanned: scan.not_scanned, not_covered: scan.not_covered, counts: scan.counts, window: scan.window, timezone: scan.timezone,
@@ -52613,7 +52691,7 @@ async function quantResearchSlate(o: { body: any; auth: string; dal: Dal; now: n
     quant_state: EDQUANT.stateFrom({ scan, now }),
     build: BUILD,
   };
-  out.quant_verification = quantVerificationOf(answer, out.research_slate.investigated.map((r: any) => r?.calc).concat(out.research_slate.games.map((g: any) => g.calc)), { usd: [summary?.cost_estimate_usd ?? 0] });
+  out.quant_verification = quantVerificationOf(answer, out.research_slate.investigated.map((r: any) => r?.calc).concat(out.research_slate.games.map((g: any) => g.calc)), { usd: knownResearchUsd(summary, out.research_slate.investigated) });
   /* one game: the same research, under the key a game view reads */
   if (only) { out.game_research = { ...out.research_slate, game: out.research_slate.games[0] ?? null }; delete out.research_slate; }
   return out;
@@ -52707,7 +52785,17 @@ export async function quantTurn(o0: { body: any; auth: string; now?: number; fet
   const ranEvents: any[] = [];
   const o = { ...o0, progress: ((ev: any) => { ranEvents.push({ type: "progress", ...ev }); if (o0.progress) o0.progress(ev); }) as Progress };
   const started = Date.now();
-  const r0 = await quantTurnInner(o);
+  /* at most RESEARCH_MAX_INFLIGHT turns per subscriber in this isolate: a second tab or a retry storm waits its turn */
+  const uid = jwtSub(o0.auth) ?? "anon";
+  const inflight = RESEARCH_INFLIGHT.get(uid) ?? 0;
+  if (inflight >= RESEARCH_MAX_INFLIGHT) {
+    researchLog("research_turn", { status: "BUSY", user: userTag(uid), in_flight: inflight, limit: RESEARCH_MAX_INFLIGHT });
+    return { answer: `${inflight} research runs are already in progress for your account. This one was not started; ask again when one finishes.`, quant: { intent: "BUSY" }, busy: { in_flight: inflight, limit: RESEARCH_MAX_INFLIGHT }, model: null, narration: { ok: true, prose: "DETERMINISTIC", critic: null }, build: BUILD };
+  }
+  RESEARCH_INFLIGHT.set(uid, inflight + 1);
+  let r0: any = null;
+  try { r0 = await quantTurnInner(o); }
+  finally { const m = (RESEARCH_INFLIGHT.get(uid) ?? 1) - 1; if (m <= 0) RESEARCH_INFLIGHT.delete(uid); else RESEARCH_INFLIGHT.set(uid, m); }
   if (r0 && EDORCH) {
     try {
       const plan = o0.plan ?? researchPlanFor(o0.body, r0?.quant?.intent ?? null);
@@ -52719,10 +52807,22 @@ export async function quantTurn(o0: { body: any; auth: string; now?: number; fet
     try {
       const row = researchRunRow({ body: o0.body, r0, now: o0.now ?? Date.now(), latency_ms: Date.now() - started, user: jwtSub(o0.auth) });
       if (row) r0.research_run = { run_id: row.run_id, write: await publishRun(o0.auth, row, o0.fetchImpl) };
+      const box = r0.scan ?? r0.research_slate ?? r0.game_research ?? null;
+      if (box) {
+        const rows: any[] = r0.scan ? [box.best, ...(box.verified_rest ?? []), ...(box.potential ?? []), ...(box.near_misses ?? [])].filter(Boolean) : (box.investigated ?? []);
+        researchLog("research_turn", { status: "DONE", run_id: r0.research_run?.run_id ?? null, run_written: r0.research_run?.write?.ok ?? null, user: userTag(uid), route: r0.quant?.intent ?? null, path: r0.research_plan?.path ?? null,
+          level: box.research_summary?.level ?? null, ms: Date.now() - started, candidates: rows.length, final_status: box.final_status ?? null,
+          challenge: rows.reduce((a: any, r: any) => { const k = r.challenge?.outcome ?? "NONE"; a[k] = (a[k] ?? 0) + 1; return a; }, {}),
+          verification: r0.quant_verification ? r0.quant_verification.verdict + "/" + (r0.quant_verification.numbers?.verdict ?? "-") : null,
+          search: rows.map((r: any) => r.search?.status).filter(Boolean), cost_usd: box.research_summary?.search?.cost_usd ?? 0, cost_estimate_usd: box.research_summary?.cost_estimate_usd ?? 0 });
+      }
     } catch { /* memory is best effort; the answer stands */ }
   }
   return r0;
 }
+const RESEARCH_MAX_INFLIGHT = envInt("EDGEDESK_RESEARCH_MAX_INFLIGHT", 2, 1, 10);
+const RESEARCH_INFLIGHT = new Map<string, number>();
+export function researchInflightState(): Record<string, number> { return Object.fromEntries(RESEARCH_INFLIGHT); }
 /* ── THE RUN RECORD (research_runs): question, plan vs actual, sources, model and market snapshots, conclusions, cost ── */
 const RUN_FINAL = new Set(["VERIFIED CANDIDATE", "WATCHLIST", "PASS"]);
 export function researchRunRow(o: { body: any; r0: any; now: number; latency_ms: number; user: string | null }): any | null {

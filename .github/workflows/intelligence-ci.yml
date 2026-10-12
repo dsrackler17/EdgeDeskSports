@@ -37,6 +37,7 @@ on:
       - 'lib/edgedesk_quant_verify.js'
       - 'lib/edgedesk_challenge.js'
       - 'lib/edgedesk_providers.js'
+      - 'lib/edgedesk_odds_recovery.js'
       - 'tools/research/**'
       - 'supabase/research_intel.sql'
       - 'supabase/research_engine.sql'
@@ -110,6 +111,7 @@ on:
       - 'lib/edgedesk_quant_verify.js'
       - 'lib/edgedesk_challenge.js'
       - 'lib/edgedesk_providers.js'
+      - 'lib/edgedesk_odds_recovery.js'
       - 'tools/research/**'
       - 'supabase/research_intel.sql'
       - 'supabase/research_engine.sql'
@@ -215,6 +217,8 @@ jobs:
         run: node tools/intelligence/providers.test.js
       - name: Graded research runs through the calibration kernel — Brier, log loss, CLV, no look-ahead, no claim the sample cannot support
         run: node tools/intelligence/evaluate_runs.test.js
+      - name: The market-data recovery planner — credits and verifiable share per schedule on the committed slates; it buys nothing
+        run: node tools/intelligence/odds_recovery.test.js
 
   football-artifacts:
     runs-on: ubuntu-latest

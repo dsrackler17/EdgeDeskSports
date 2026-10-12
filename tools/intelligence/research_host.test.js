@@ -43,7 +43,7 @@ const PRINT = process.env.RESEARCH_PRINT === '1';
 const DUMP = process.env.RESEARCH_DUMP ? {} : null;
 
 const ENV = { EDGEDESK_AI_NO_SERVE: '1', ANTHROPIC_API_KEY: 'test-key', SUPABASE_URL: 'https://sb.test', SUPABASE_ANON_KEY: 'anon-key', EDGEDESK_SITE_BASE: 'https://site.test', EDGEDESK_QUOTE_REFRESH: '1', CRON_SECRET: 'cron-test',
-  EDGEDESK_RESEARCH_NARRATE: '1', EDGEDESK_RESEARCH_PAID_OK: '0' };
+  EDGEDESK_RESEARCH_NARRATE: '1', EDGEDESK_RESEARCH_PAID_OK: '0', EDGEDESK_RESEARCH_LOG: '0' };
 globalThis.Deno = { env: { get: (k) => ENV[k] } };
 
 const NOW = Date.parse('2026-10-12T16:00:00Z');            /* Monday noon in New York */
@@ -53,13 +53,15 @@ const etDate = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New
 
 let route = () => [];
 let modelCalls = 0, modelReply = null;
-let searchCalls = [], searchReply = null;
+let searchCalls = [], searchReply = null, searchDelay = 0;
+let costCalls = [], costReply = null;
 let posted = [], reads = [], rpcCalls = [], quotaReply = null;
 const oddsCalls = [];
 globalThis.fetch = async function (url, init) {
   const u = String(url);
   if (u.indexOf('api.anthropic.com') >= 0 && init && /"web_search"/.test(String(init.body))) {
     searchCalls.push({ body: JSON.parse(init.body), headers: init.headers || {} });
+    if (searchDelay) await new Promise((r) => setTimeout(r, searchDelay));
     const rep = typeof searchReply === 'function' ? searchReply(JSON.parse(init.body), searchCalls.length) : searchReply;
     if (!rep || rep.__status) return { ok: false, status: (rep && rep.__status) || 500, json: async () => ({ type: 'error', error: { type: 'api_error', message: 'fixture failure' } }), text: async () => 'fixture failure' };
     return { ok: true, status: 200, json: async () => rep, text: async () => JSON.stringify(rep) };
@@ -70,6 +72,11 @@ globalThis.fetch = async function (url, init) {
     return { ok: true, status: 200, json: async () => ({ model: 'test', stop_reason: 'end_turn', content: [{ type: 'text', text }] }), text: async () => text };
   }
   if (u.indexOf('the-odds-api.com') >= 0 || u.indexOf('/functions/v1/capture') >= 0) { oddsCalls.push(u); throw new Error('an odds request was made: ' + u); }
+  if (init && init.method === 'POST' && u.indexOf('/rpc/research_cost_') >= 0) {
+    costCalls.push({ fn: u.split('/rpc/')[1], body: JSON.parse(init.body), auth: (init.headers || {}).authorization });
+    const out = /claim/.test(u) ? (costReply || { ok: true, claim_id: 77 }) : { ok: true };
+    return { ok: true, status: 200, text: async () => JSON.stringify(out), json: async () => out };
+  }
   if (init && init.method === 'POST' && u.indexOf('/rpc/research_usage_') >= 0) {
     rpcCalls.push({ fn: u.split('/rpc/')[1], body: JSON.parse(init.body), auth: (init.headers || {}).authorization });
     const out = /claim/.test(u) ? (quotaReply || { ok: true, claim_id: 41 }) : { ok: true };
@@ -181,7 +188,7 @@ function consistent(tag, answer, row) {
     const M = o.mod || m;
     M.clearCache(); M.resetRateLimit(); if (M.clearInvestigationCache) M.clearInvestigationCache(); if (!o.keepLedger) M.resetResearchLedger();
     route = routerFor(o);
-    modelCalls = 0; modelReply = o.modelReply || null; posted = []; reads = []; rpcCalls = []; quotaReply = o.quota || null;
+    modelCalls = 0; modelReply = o.modelReply || null; posted = []; reads = []; rpcCalls = []; quotaReply = o.quota || null; costCalls = []; costReply = o.cost || null;
     const body = { mode: 'chat', question, history: [], research_context: o.carried || null, timezone: 'America/New_York', desk: o.desk === false ? undefined : true, intent_hint: o.qhint || undefined };
     const j = await (o.mod || m).quantTurn({ body, auth: 'Bearer ' + (o.jwt || USER_JWT), now: o.now || NOW });
     if (PRINT) console.log('\n──── Q: ' + question + '\n' + (j ? j.answer : 'null (not a quant route)'));
@@ -477,6 +484,7 @@ function consistent(tag, answer, row) {
     const call = searchCalls[0], bS = s1s && s1s.scan && s1s.scan.best;
     ok('SEARCH ON: one search per game, sent server-side with the key in the header — never in the body', searchCalls.length >= 1 && call.headers['x-api-key'] === 'test-key' && !/test-key/.test(JSON.stringify(call.body)) && call.body.tools[0].type === 'web_search_20260209' && JSON.stringify(call.body.tools[0].allowed_callers) === '["direct"]' && call.body.model === 'claude-opus-5-5', searchCalls.map((c) => c.body.messages[0].content.slice(0, 80)));
     ok('SEARCH ON: each real search first claims the persistent quota (research_usage_claim) for its provider and settles it OK', rpcCalls.filter((x) => x.fn === 'research_usage_claim' && x.body.p_provider === 'claude_web_search').length === searchCalls.length && rpcCalls.filter((x) => x.fn === 'research_usage_settle' && x.body.p_state === 'OK').length >= searchCalls.length, rpcCalls.map((x) => x.fn + ':' + JSON.stringify(x.body)));
+    ok('SEARCH ON: each real search first claims its dollar estimate (research_cost_claim) and settles it with the actual cost read from usage', costCalls.filter((x) => x.fn === 'research_cost_claim' && x.body.p_provider === 'claude_web_search' && Math.abs(x.body.p_estimate_usd - 0.084) < 1e-9).length === searchCalls.length && costCalls.some((x) => x.fn === 'research_cost_settle' && x.body.p_state === 'SETTLED' && Math.abs(x.body.p_actual_usd - 0.0722) < 1e-9), costCalls.map((x) => x.fn + ':' + JSON.stringify(x.body)));
     ok('SEARCH ON: two candidates on the same game share one search (the ledger\'s cache and single flight)', new Set(searchCalls.map((c) => c.body.messages[0].content.split('\n')[0])).size === searchCalls.length, searchCalls.length);
     const sev = bS && bS.evidence, srec = sev ? sev.records.filter((r) => r.search) : [];
     ok('SEARCH ON: cited quotes reached the evidence ledger as the source\'s own words, with the provider named', srec.length >= 3 && srec.every((r) => r.search.provider === 'claude_web_search' && r.source.url) && srec.some((r) => /full participant in Thursday's practice/.test(r.claim)), srec.map((r) => [r.source.url, r.type, r.verification, r.claim.slice(0, 50)]));
@@ -502,6 +510,11 @@ function consistent(tag, answer, row) {
     searchCalls = []; searchReply = SFX;
     const s3q = await ask("What's the best bet this weekend across all sports?", { mod: mS, quota: { ok: false, why: 'claude_web_search is not enabled by the operator' } });
     ok('SEARCH QUOTA: when the database quota refuses, no search request is sent, the refusal is reported (not cached, not a breaker failure), and the scan answers', searchCalls.length === 0 && s3q.scan.best.search.status === 'QUOTA_REFUSED' && /not enabled by the operator/.test(s3q.scan.best.search.why) && s3q.scan.best.classification.classification === 'VERIFIED_CANDIDATE', s3q.scan.best.search);
+    searchCalls = []; searchReply = SFX;
+    const s3b = await ask("What's the best bet this weekend across all sports?", { mod: mS, cost: { ok: false, why: 'your research budget for today ($1.00) would be exceeded' } });
+    ok('SEARCH BUDGET: when the dollar budget refuses, no search is sent and no call quota is claimed; the refusal is reported and the scan answers', searchCalls.length === 0 && !rpcCalls.some((x) => x.fn === 'research_usage_claim') && s3b.scan.best.search.status === 'BUDGET_REFUSED' && /research budget for today/.test(s3b.scan.best.search.why) && s3b.scan.best.classification.classification === 'VERIFIED_CANDIDATE', [searchCalls.length, s3b.scan.best.search]);
+    const s3c = await ask("What's the best bet this weekend across all sports?", { mod: mS, quota: { ok: false, why: 'claude_web_search daily limit (300) reached' } });
+    ok('SEARCH QUOTA after BUDGET: a quota refusal releases the dollar claim it already holds', costCalls.some((x) => x.fn === 'research_cost_settle' && x.body.p_state === 'RELEASED') && s3c.scan.best.search.status === 'QUOTA_REFUSED', costCalls.map((x) => x.fn + ':' + x.body.p_state));
     searchCalls = []; searchReply = SFX_ERR;
     const s4s = await ask("What's the best bet this weekend across all sports?", { mod: mS });
     ok('SEARCH REFUSED: a refusal is reported, adds no evidence, and the scan answers', s4s.scan.best.search.status === 'REFUSED' && !s4s.scan.best.evidence.records.some((r) => r.search), s4s.scan.best.search);
@@ -518,6 +531,45 @@ function consistent(tag, answer, row) {
     const before = searchCalls.length;
     const s6s = await ask("What's the best bet this weekend across all sports?", { mod: mS, keepLedger: true });
     ok('SEARCH BREAKER: after three consecutive failures the breaker opens and no further request is sent', searchCalls.length === before && /circuit breaker is open/.test(s6s.scan.best.search.why || ''), [before, searchCalls.length, s6s.scan.best.search]);
+    /* the per-turn dollar cap: with a $0.10 request budget, the second game's search ($0.084 more) is refused */
+    ENV.EDGEDESK_SEARCH_PROVIDERS = 'claude_web_search'; ENV.EDGEDESK_RESEARCH_PAID_OK = '1'; ENV.EDGEDESK_RESEARCH_BUDGET_REQUEST_USD = '0.10';
+    const mB = await import(pathToFileURL(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', 'index.ts')).href + '?search=claude&budget=0.10');
+    delete ENV.EDGEDESK_SEARCH_PROVIDERS; ENV.EDGEDESK_RESEARCH_PAID_OK = '0'; delete ENV.EDGEDESK_RESEARCH_BUDGET_REQUEST_USD;
+    searchCalls = []; searchReply = SFX;
+    const sb1 = await ask("What's the best bet this weekend across all sports?", { mod: mB });
+    const rowsB = [sb1.scan.best].concat(sb1.scan.verified_rest || [], sb1.scan.potential || [], sb1.scan.near_misses || []).filter(Boolean);
+    ok('TURN BUDGET: one search per turn fits a $0.10 request budget; the next game\'s search is refused before any claim, and says why', searchCalls.length === 1 && rowsB.some((r) => r.search && r.search.status === 'BUDGET_REFUSED' && /this turn's research budget \(\$0\.10\)/.test(r.search.why)) && costCalls.filter((x) => x.fn === 'research_cost_claim').length === 1, [searchCalls.length, rowsB.map((r) => r.search && r.search.status)]);
+    /* the paid-search slots */
+    const sA = await mS.searchSlot(10), sB2 = await mS.searchSlot(10);
+    const sC = await mS.searchSlot(30);
+    ok('SLOTS: at most two paid searches in flight per isolate; a third waits briefly, then is refused', typeof sA === 'function' && typeof sB2 === 'function' && sC === null && mS.searchSlotsState().active === 2, mS.searchSlotsState());
+    const waiting = mS.searchSlot(500); sA();
+    const sD = await waiting;
+    ok('SLOTS: a released slot goes to the next waiter', typeof sD === 'function' && mS.searchSlotsState().active === 2);
+    sB2(); sD();
+    ok('SLOTS: all released', mS.searchSlotsState().active === 0 && mS.searchSlotsState().waiting === 0, mS.searchSlotsState());
+    /* the per-subscriber in-flight limit: with a limit of one, a second concurrent turn from the same subscriber is refused, not queued */
+    ENV.EDGEDESK_SEARCH_PROVIDERS = 'claude_web_search'; ENV.EDGEDESK_RESEARCH_PAID_OK = '1'; ENV.EDGEDESK_RESEARCH_MAX_INFLIGHT = '1';
+    const mI = await import(pathToFileURL(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', 'index.ts')).href + '?inflight=1');
+    delete ENV.EDGEDESK_SEARCH_PROVIDERS; ENV.EDGEDESK_RESEARCH_PAID_OK = '0'; delete ENV.EDGEDESK_RESEARCH_MAX_INFLIGHT;
+    searchCalls = []; searchReply = SFX; searchDelay = 150;
+    mI.clearCache(); mI.resetRateLimit(); mI.clearInvestigationCache(); mI.resetResearchLedger(); route = routerFor({});
+    const qBody = { mode: 'chat', question: "What's the best bet this weekend across all sports?", history: [], timezone: 'America/New_York', desk: true };
+    const p1 = mI.quantTurn({ body: qBody, auth: 'Bearer ' + USER_JWT, now: NOW });
+    await new Promise((r) => setTimeout(r, 20));
+    const busy = await mI.quantTurn({ body: qBody, auth: 'Bearer ' + USER_JWT, now: NOW });
+    const first = await p1;
+    searchDelay = 0;
+    ok('IN FLIGHT: a second concurrent research turn from the same subscriber is refused with a plain answer; the first completes', busy && busy.quant.intent === 'BUSY' && busy.busy.limit === 1 && /already in progress/.test(busy.answer) && first && first.scan && first.scan.best && Object.keys(mI.researchInflightState()).length === 0, [busy && busy.answer, first && !!first.scan, mI.researchInflightState()]);
+    /* structured logs: one JSON line per search and per turn, no question text, no key, the subscriber hashed */
+    const logs = [], origLog = console.log;
+    console.log = (...a) => { const t = a.join(' '); if (/^\{"ts"/.test(t)) logs.push(JSON.parse(t)); else origLog.apply(console, a); };
+    searchCalls = []; searchReply = SFX; ENV.EDGEDESK_RESEARCH_LOG = '1';
+    try { await ask("What's the best bet this weekend across all sports?", { mod: mS }); } finally { console.log = origLog; ENV.EDGEDESK_RESEARCH_LOG = '0'; }
+    const lt = logs.find((x) => x.event === 'research_turn'), ls = logs.find((x) => x.event === 'research_search');
+    ok('LOGS: a research_turn line with run id, route, level, timing, verdicts, search statuses and cost', lt && lt.svc === 'edgedesk_ai' && /^rr_/.test(lt.run_id) && lt.route === 'SCAN' && lt.level === 'L3' && typeof lt.ms === 'number' && lt.verification === 'VERIFIED/PASS' && Array.isArray(lt.search) && typeof lt.cost_usd === 'number' && lt.challenge && typeof lt.challenge === 'object', lt);
+    ok('LOGS: a research_search line with provider, status, cost, findings and refusals', ls && ls.provider === 'claude_web_search' && ls.status === 'OK' && Math.abs(ls.cost_usd - 0.0722) < 1e-9 && ls.findings === 4 && ls.refused === 2, ls);
+    ok('LOGS: no line carries the question, the API key or the raw subscriber id', logs.length >= 2 && logs.every((x) => !/best bet this weekend/.test(JSON.stringify(x)) && !/test-key/.test(JSON.stringify(x)) && !/11111111-1111/.test(JSON.stringify(x))) && /^u_[0-9a-f]{10}$/.test(lt.user), logs.map((x) => x.event + ':' + x.user));
     searchReply = null;
   }
 
