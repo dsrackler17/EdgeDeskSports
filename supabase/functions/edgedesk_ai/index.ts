@@ -52020,7 +52020,7 @@ function knownPlayersOf(raw: any[]): any[] {
   return out;
 }
 /** Which search adapter may run now, or why none can: a key, the operator's switch, a verified schema, paid authorisation, the per-request budget. */
-export function searchProviderFor(): { provider: string | null; why: string | null } {
+export function searchProviderFor(): { provider: string | null; why: string | null; detail?: string | null } {
   const st = researchProvidersState(), why: string[] = [];
   for (const k of ["claude_web_search", "perplexity_search"]) {
     const p: any = (st as any)[k], label = EDPROVIDERS?.REGISTRY?.[k]?.label ?? k;
@@ -52029,13 +52029,15 @@ export function searchProviderFor(): { provider: string | null; why: string | nu
     if (!b) return { provider: k, why: null };
     if (!why.includes(b)) why.push(b);
   }
-  return { provider: null, why: "external search did not run: " + why.join("; ") };
+  /* the subscriber reads the short reason; the operator's detail (which switch, which key) goes to the report and the logs */
+  const configOnly = why.every((w) => /no API key configured|not enabled by the operator|schema has not been verified|paid research is not authorised/.test(w));
+  return { provider: null, why: configOnly ? "external search is off, so this research used EdgeDesk's own feeds and official sources" : "external search did not run: " + why.filter((w) => !/no API key configured|not enabled by the operator/.test(w)).join("; "), detail: why.join("; ") };
 }
 async function researchSearchFor(o: { dal: Dal; c: any; game: any; now: number; level: string; budget: any; user: string | null; question: string | null; known: any[]; auth: string | null; turn_cost?: { est_usd: number } | null }): Promise<{ raw: any[]; why: string | null; report: any | null }> {
   if (o.level !== "L3") return { raw: [], why: null, report: null };
   if (!EDPROVIDERS || !RESEARCH_LEDGER) return { raw: [], why: "external search did not run: the search adapters are not loaded", report: { provider: null, status: "NOT_RUN" } };
   const pick = searchProviderFor();
-  if (!pick.provider) return { raw: [], why: pick.why, report: { provider: null, status: "NOT_RUN", why: pick.why } };
+  if (!pick.provider) return { raw: [], why: pick.why, report: { provider: null, status: "NOT_RUN", why: pick.why, detail: pick.detail ?? null } };
   const prov = pick.provider, R = EDPROVIDERS.REGISTRY[prov], c = o.c;
   const event = { sport_label: quantSportLabel(c.sport), home: c.home ?? null, away: c.away ?? null, kickoff: c.kickoff ?? o.game?.kickoff ?? null, game_id: String(c.game_id) };
   const req = prov === "claude_web_search" ? EDPROVIDERS.claudeSearchRequest({ model: RESEARCH_MODEL, question: o.question, event }) : EDPROVIDERS.perplexityRequest({ event });

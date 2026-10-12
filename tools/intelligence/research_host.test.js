@@ -475,7 +475,7 @@ function consistent(tag, answer, row) {
     /* before switching anything on: the default scan never calls a search provider, and says why */
     searchCalls = [];
     const s0 = await ask("What's the best bet this weekend across all sports?");
-    ok('SEARCH OFF: the default build never calls a search provider, and says why external search did not run', searchCalls.length === 0 && s0.scan.best && s0.scan.best.search && s0.scan.best.search.status === 'NOT_RUN' && /not enabled by the operator/.test(s0.scan.best.search.why), s0 && s0.scan.best && s0.scan.best.search);
+    ok('SEARCH OFF: the default build never calls a search provider; the subscriber reads that search is off, the operator detail stays in the report', searchCalls.length === 0 && s0.scan.best && s0.scan.best.search && s0.scan.best.search.status === 'NOT_RUN' && /^external search is off/.test(s0.scan.best.search.why) && !/EDGEDESK_|API key/.test(s0.scan.best.search.why) && /not enabled by the operator/.test(s0.scan.best.search.detail) && !/EDGEDESK_SEARCH_PROVIDERS|API key/.test(s0.answer), s0 && s0.scan.best && s0.scan.best.search);
     ENV.EDGEDESK_SEARCH_PROVIDERS = 'claude_web_search'; ENV.EDGEDESK_RESEARCH_PAID_OK = '1';
     const mS = await import(pathToFileURL(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', 'index.ts')).href + '?search=claude');
     delete ENV.EDGEDESK_SEARCH_PROVIDERS; ENV.EDGEDESK_RESEARCH_PAID_OK = '0';
