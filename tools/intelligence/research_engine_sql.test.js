@@ -155,6 +155,22 @@ try {
   chk('the service role prunes runs past retention, and only those', /research_runs\s*\|\s*1/.test(pr) && db.service('select count(*) from public.research_runs').trim() === '2', pr);
   chk('retention never goes below 180 days', db.service("select removed from public.research_engine_prune(1) where table_name = 'research_runs'").trim() === '0');
   chk('outcomes are never pruned', db.service('select count(*) from public.research_run_outcomes').trim() === '1');
+
+  /* ═══ 6. ROLLBACK (docs/research-engine/DEPLOY.md §5) ═══════════════════
+     The documented drop block, read from the doc itself so the two cannot drift: it removes every research_engine
+     object and nothing of research_intel.sql, and the migration applies again afterwards. */
+  const deployDoc = fs.readFileSync(path.join(PG.ROOT, 'docs', 'research-engine', 'DEPLOY.md'), 'utf8');
+  const dropBlock = (/```sql\n(begin;\ndrop view if exists public\.research_run_calibration;[\s\S]*?commit;)\n```/.exec(deployDoc) || [])[1];
+  chk('ROLLBACK: DEPLOY.md carries the drop block', !!dropBlock);
+  if (dropBlock) {
+    db.sql(dropBlock);
+    const left = db.service("select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace where n.nspname = 'public' and c.relname in ('research_runs','research_run_outcomes','research_budget_policy','research_cost_ledger','research_run_calibration')").trim();
+    const fns = db.service("select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname in ('research_cost_claim','research_cost_settle','research_cost_committed','research_runs_grade','research_engine_prune','research_engine_immutable','research_engine_no_delete','research_runs_pregame','research_outcome_after_start')").trim();
+    chk('ROLLBACK: every research_engine table, view and function is gone', left === '0' && fns === '0', { left, fns });
+    chk('ROLLBACK: research_intel.sql is untouched (its tables and provider rows remain)', db.service("select count(*) from public.research_provider_quota where provider in ('claude_web_search','perplexity_search')").trim() === '2' && db.service("select to_regclass('public.prediction_snapshots') is not null").trim() === 't');
+    const again = db.applyFile(FILE);
+    chk('ROLLBACK: the migration applies again after the rollback', !!again && db.service("select to_regclass('public.research_runs') is not null").trim() === 't', String(again).slice(-300));
+  }
 } catch (e) {
   fail++; failures.push({ name: 'the suite threw', detail: String(e && (e.sqlMessage || e.message)).slice(0, 600) });
 }
