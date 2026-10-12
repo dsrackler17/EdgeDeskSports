@@ -175,7 +175,7 @@ function consistent(tag, answer, row) {
     M.clearCache(); M.resetRateLimit(); if (M.clearInvestigationCache) M.clearInvestigationCache(); if (!o.keepLedger) M.resetResearchLedger();
     route = routerFor(o);
     modelCalls = 0; modelReply = o.modelReply || null; posted = []; reads = []; rpcCalls = []; quotaReply = o.quota || null;
-    const body = { mode: 'chat', question, history: [], research_context: o.carried || null, timezone: 'America/New_York', desk: o.desk === false ? undefined : true };
+    const body = { mode: 'chat', question, history: [], research_context: o.carried || null, timezone: 'America/New_York', desk: o.desk === false ? undefined : true, intent_hint: o.qhint || undefined };
     const j = await (o.mod || m).quantTurn({ body, auth: 'Bearer ' + (o.jwt || USER_JWT), now: o.now || NOW });
     if (PRINT) console.log('\n──── Q: ' + question + '\n' + (j ? j.answer : 'null (not a quant route)'));
     if (DUMP && o.dump) DUMP[o.dump] = { question, response: j };
@@ -418,6 +418,101 @@ function consistent(tag, answer, row) {
   const off = await ask("What's the best bet this weekend across all sports?", { mod: mOff });
   ok('OFF: with the chain switched off the scan answers in the Phase-1 format, priced the same', off && off.scan.researched === false && /^BEST VERIFIED OPPORTUNITY/.test(off.answer) && /Decision: BUY/.test(off.answer) && off.scan.best && off.scan.best.evaluation.net_ev_per_dollar === best.evaluation.net_ev_per_dollar, off && [off.scan.researched, off.answer.split('\n')[0]]);
   ok('OFF: …and writes no research memory', !posted.some((p) => p.table === 'research_findings' || p.table === 'prediction_snapshots'), posted.map((p) => p.table));
+
+  /* ═══ PHASE 3 — THE ROUTES THE WEBSITE'S AI ENTRY POINT AND GAME VIEW CALL ═══════════ */
+  /* the six example questions on the Research screen each reach a deterministic engine route, never a model */
+  const EX = [
+    ["What's the best researched opportunity tonight?", 'SCAN'],
+    ['Analyze every NFL game this weekend.', 'RESEARCH_SLATE'],
+    ['Which matchup has the biggest offensive advantage?', 'MATCHUP_EDGE'],
+    ['Compare DraftKings Predictions and Kalshi prices.', 'VENUE_COMPARE'],
+    ["Explain why this game isn't research ready.", 'READINESS'],
+  ];
+  for (const [qx, want] of EX) {
+    const jx = await ask(qx, { dump: 'ex_' + want.toLowerCase() });
+    ok('EX: "' + qx + '" → ' + want + ', answered by the engine (no model call)', jx && jx.quant && jx.quant.intent === want && typeof jx.answer === 'string' && jx.answer.length > 40 && modelCalls === 0, jx && [jx.quant, (jx.answer || '').slice(0, 120)]);
+  }
+  const GCTX = { game: { sport: 'americanfootball_nfl', game_id: 'nfl-fx-det-buf' } };
+  const exd = await ask('Why does EdgeDesk disagree with this spread?', { carried: GCTX, dump: 'ex_disagree' });
+  ok('EX: "Why does EdgeDesk disagree with this spread?" from a game → that game\'s research', exd && exd.quant.intent === 'GAME_RESEARCH' && exd.game_research && exd.game_research.game && exd.game_research.game.game_id === 'nfl-fx-det-buf' && /disagreement/i.test(exd.answer), exd && [exd.quant, (exd.answer || '').slice(0, 200)]);
+  const exd0 = await ask('Why does EdgeDesk disagree with this spread?');
+  ok('EX: …and with no game open, the slate\'s largest disagreements, researched', exd0 && exd0.quant.intent === 'RESEARCH_SLATE' && exd0.research_slate, exd0 && exd0.quant);
+
+  /* READINESS: five states per game, from the board's own data; nothing bought, nothing audited */
+  const rdy = await ask("Explain why games aren't research ready this weekend", { signals: MLB_SIGNALS.concat([BILLS, LIONS]), dump: 'readiness' });
+  const rb = rdy && rdy.readiness_board;
+  ok('RDY: the readiness answer counts five separate states', rb && rb.readiness && ['AVAILABLE', 'RESEARCH', 'MARKET', 'MODEL', 'ACTIONABLE'].every((k) => typeof rb.readiness.counts[k] === 'number') && rb.readiness.counts.total === rb.games.length, rb && rb.readiness);
+  const bufG = rb && rb.games.find((g) => g.game_id === 'nfl-fx-det-buf'), houG = rb && rb.games.find((g) => g.game_id === 'nfl-fx-ind-hou');
+  ok('RDY: Lions @ Bills has a current FanDuel price and a projection: market verified and model ready', bufG && bufG.readiness.states.MARKET.ok && bufG.readiness.states.MODEL.ok && bufG.readiness.states.RESEARCH.ok, bufG && bufG.readiness.states);
+  ok('RDY: Colts @ Texans has no captured price here: researchable, model ready, market NOT verified — and says exactly why', houG && houG.readiness.states.RESEARCH.ok && houG.readiness.states.MODEL.ok && !houG.readiness.states.MARKET.ok && houG.why_not.some((w) => /^Market verified — needs/.test(w)), houG && houG.why_not);
+  ok('RDY: a reference line is never counted as a verified market', rb && rb.games.filter((g) => !g.executable && g.market_line != null).every((g) => !g.readiness.states.MARKET.ok), rb && rb.games.map((g) => [g.matchup, g.executable, g.readiness.states.MARKET.ok]));
+  ok('RDY: research available ≥ model ready ≥ market-and-model, and nothing is called actionable without a verified market', rb && rb.games.every((g) => (!g.readiness.states.ACTIONABLE.ok || g.readiness.states.MARKET.ok)) && rb.readiness.counts.RESEARCH >= rb.readiness.counts.MODEL, rb && rb.readiness.counts);
+  ok('RDY: no research was bought and no audit ran for a readiness question', !posted.some((p) => p.table === 'research_findings' || p.table === 'opportunity_audits') && !reads.some((r) => /book_quotes\?/.test(r.url)), posted.map((p) => p.table));
+  ok('RDY: the answer states the counts and each game\'s missing requirements', /Readiness: \d+ available · \d+ research available · \d+ market verified · \d+ model ready · \d+ actionable signal/.test(rdy.answer) && /Why each game is not fully ready/.test(rdy.answer) && /not ready to research/.test(rdy.answer), rdy && rdy.answer.slice(0, 600));
+
+  /* GAME_RESEARCH: the game view's button — one game, readiness, numbers, findings, candidates, sources */
+  const gr = await ask('Research this game', { carried: GCTX, dump: 'game_research', qhint: 'GAME_RESEARCH' });
+  const grg = gr && gr.game_research && gr.game_research.game;
+  ok('GAME: routed to the one-game research, with the game\'s readiness', gr && gr.quant.intent === 'GAME_RESEARCH' && grg && grg.readiness && grg.readiness.states.MARKET.ok && grg.readiness.states.ACTIONABLE.ok, gr && [gr.quant, grg && grg.readiness && grg.readiness.level]);
+  ok('GAME: only that game was investigated (Bills -2.5 survives; no other game leaks in)', gr && gr.game_research.games.length === 1 && gr.game_research.investigated.every((r) => r.candidate.game_id === 'nfl-fx-det-buf') && gr.game_research.survivors === 1, gr && [gr.game_research.games.length, gr.game_research.survivors, gr.game_research.investigated.map((r) => [r.candidate.selection, r.classification && r.classification.classification, r.withheld_by_board])]);
+  ok('GAME: model projection, market, disagreement, findings and sources are all in the answer', /^GAME RESEARCH — Detroit Lions @ Buffalo Bills/.test(gr.answer) && /Model projection: Buffalo Bills -5\.2/.test(gr.answer) && /Market: Buffalo Bills -2\.5/.test(gr.answer) && /Key injuries or lineup changes:/.test(gr.answer) && /^Sources:/m.test(gr.answer) && /CANDIDATE 1 — VERIFIED CANDIDATE/.test(gr.answer), gr && gr.answer.slice(0, 900));
+  const grRow = gr && gr.game_research.investigated[0];
+  ok('GAME: its numbers are the scan\'s numbers to the digit', grRow && best && grRow.evaluation.net_ev_per_dollar === best.evaluation.net_ev_per_dollar, grRow && [grRow.evaluation.net_ev_per_dollar, best && best.evaluation.net_ev_per_dollar]);
+  const grh = await ask("Explain why this game isn't research ready", { carried: { game: { sport: 'americanfootball_nfl', game_id: 'nfl-fx-ind-hou' } }, signals: MLB_SIGNALS.concat([BILLS, LIONS]) });
+  ok('GAME: "why isn\'t this game ready" on Colts @ Texans names the missing market, and still researches it', grh && grh.quant.intent === 'GAME_RESEARCH' && /Why not ready:/.test(grh.answer) && /Market verified — needs/.test(grh.answer) && /Readiness: available yes · research yes · market verified no · model ready yes/.test(grh.answer), grh && grh.answer.slice(0, 700));
+  const grx = await ask('Research this game', { carried: { game: { sport: 'americanfootball_nfl', game_id: 'no-such-game' } }, qhint: 'GAME_RESEARCH' });
+  ok('GAME: a game that is not on the card says so and invents nothing', grx && /not on EdgeDesk's card/.test(grx.answer) && grx.game_research && grx.game_research.game === null, grx && grx.answer);
+
+  /* MATCHUP_EDGE: the ratings sum, recomputed here from the same artifact */
+  const me = await ask('Which matchup has the biggest offensive advantage this weekend?');
+  const mer = me && me.matchup_edges && me.matchup_edges.rows;
+  const T = fx.nfl.teams;
+  const want0 = mer && mer[0] ? (() => { const off = Object.values(T).find((t) => t.team === mer[0].offense), def = Object.values(T).find((t) => t.team === mer[0].defense); return Math.round((off.ratings.off_epa_play + def.ratings.def_epa_play) * 1000) / 1000; })() : null;
+  ok('EDGE: the biggest offensive mismatch is the offense rating plus the opposing defense rating, recomputed', mer && mer.length >= 2 && mer[0].edge === want0 && mer.every((r, i) => i === 0 || r.edge <= mer[i - 1].edge), mer && [mer[0], want0]);
+  ok('EDGE: the answer cites the ratings build and says it is context, not a bet', /BIGGEST OFFENSIVE MISMATCHES/.test(me.answer) && /not a probability and not a bet/.test(me.answer) && /Source: EdgeDesk NFL slate team ratings/.test(me.answer), me && me.answer.slice(0, 400));
+  const mec = await ask('Which college football matchup has the biggest offensive advantage?');
+  ok('EDGE: for college football it says the unit ratings are not published, and measures nothing', mec && /not unit-against-unit efficiency ratings/.test(mec.answer) && (mec.matchup_edges.rows || []).length === 0, mec && mec.answer);
+
+  /* VENUE_COMPARE: what is on file per venue; no price invented, no fee rule borrowed */
+  const vc = await ask('Compare DraftKings Predictions and Kalshi prices.');
+  const vv = vc && vc.venue_compare && vc.venue_compare.venues;
+  ok('VENUE: Kalshi carries its own (unverified) fee rule; DraftKings Predictions has none on file and is not given Kalshi\'s', vv && vv.find((v) => v.key === 'kalshi').verification === 'UNVERIFIED' && vv.find((v) => v.key === 'draftkings_predictions').fee === 'not on file' && vv.find((v) => v.key === 'draftkings_predictions').verification === 'UNKNOWN', vv);
+  ok('VENUE: no live price is claimed for either venue, and the answer asks for the two prices', /does not capture its live prices/.test(vc.answer) && /none is invented/.test(vc.answer) && !/\d+¢ on (Kalshi|DraftKings)/.test(vc.answer.split('e.g.')[0]), vc && vc.answer);
+
+  /* STREAMING through the real handler: accepted → real progress → result, the same numbers as the plain call */
+  async function streamAsk(question, o) {
+    o = o || {};
+    m.clearCache(); m.resetRateLimit(); m.resetResearchLedger();
+    route = routerFor(o); posted = []; reads = []; modelCalls = 0;
+    const ctl = new AbortController();
+    const body = { mode: 'chat', question, history: [], research_context: o.carried || null, timezone: 'America/New_York', desk: true, stream: true, intent_hint: o.qhint || undefined };
+    const r = await m.handle(new Request('https://fn.test/edgedesk_ai', { method: 'POST', headers: { authorization: 'Bearer ' + USER_JWT, 'content-type': 'application/json' }, body: JSON.stringify(body), signal: ctl.signal }));
+    const ct = r.headers.get('content-type') || '';
+    if (!/ndjson/.test(ct)) return { ct, json: await r.json(), events: [] };
+    const rd = r.body.getReader(), dec = new TextDecoder(); let buf = '', events = [];
+    for (;;) {
+      const { value, done } = await rd.read(); if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i; while ((i = buf.indexOf('\n')) >= 0) { const line = buf.slice(0, i); buf = buf.slice(i + 1); if (line.trim()) events.push(JSON.parse(line)); }
+      if (o.cancelAfter && events.filter((e) => e.type === 'progress').length >= o.cancelAfter) { await rd.cancel(); break; }
+    }
+    return { ct, events };
+  }
+  /* the plain handler uses the real clock, so the stream scenario's fixture is the real-clock one */
+  const st = await streamAsk("What's the best bet this week across all sports?");
+  const stages = st.events.filter((e) => e.type === 'progress');
+  ok('STREAM: the handler streams NDJSON: accepted first, a result last', /ndjson/.test(st.ct) && st.events[0] && st.events[0].type === 'accepted' && st.events[st.events.length - 1].type === 'result', st.events.map((e) => e.type));
+  const order = ['FIND_EVENTS', 'COMPARE_PRICES', 'RETRIEVE_STATS', 'VERIFY_INJURIES', 'CALCULATE', 'AUDIT', 'EXPLAIN'];
+  const firstDone = order.map((k) => stages.findIndex((e) => e.stage === k && (e.status === 'done' || e.status === 'skipped')));
+  ok('STREAM: every research step reports, in the order the work actually happens, each with a real detail', firstDone.every((x) => x >= 0) && firstDone.every((x, i) => i === 0 || x > firstDone[i - 1]) && stages.every((e) => e.label && typeof e.detail === 'string' && e.detail.length > 3 && typeof e.t_ms === 'number'), stages.map((e) => e.stage + ':' + e.status + ':' + (e.detail || '').slice(0, 40)));
+  ok('STREAM: partial results arrive before the answer (the coverage, then the first audit verdicts)', stages.some((e) => e.stage === 'FIND_EVENTS' && e.partial && Array.isArray(e.partial.coverage)) && stages.some((e) => e.stage === 'COMPARE_PRICES' && e.partial && Array.isArray(e.partial.audit) && e.partial.audit.length >= 1), stages.filter((e) => e.partial).map((e) => e.stage));
+  const res = st.events[st.events.length - 1].payload;
+  ok('STREAM: the streamed result is the engine\'s payload (route, scan, the same verdict)', res && res.quant && res.quant.intent === 'SCAN' && res.scan && res.route && typeof res.answer === 'string', res && Object.keys(res));
+  const stc = await streamAsk("What's the best bet this week across all sports?", { cancelAfter: 2 });
+  await new Promise((r) => setTimeout(r, 300));
+  ok('STREAM: cancelling stops the run: no result was sent and no research memory was written', !stc.events.some((e) => e.type === 'result') && !posted.some((p) => p.table === 'research_findings'), [stc.events.map((e) => e.type), posted.map((p) => p.table)]);
+  const stp = await streamAsk('Is Guardians at 49¢ on Kalshi a good price?');
+  ok('STREAM: a question the research routes do not stream comes back as plain JSON (the client reads both)', /json/.test(stp.ct) && !/ndjson/.test(stp.ct) && stp.json && stp.json.quant && stp.json.quant.intent === 'CONTRACT', [stp.ct, stp.json && stp.json.quant]);
 
   if (DUMP) fs.writeFileSync(process.env.RESEARCH_DUMP, JSON.stringify(DUMP));
   console.log((fail ? 'FAILED ' : 'ALL GREEN ') + pass + ' passed, ' + fail + ' failed');

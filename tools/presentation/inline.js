@@ -346,6 +346,12 @@ const LIBS = [
     hosts: [path.join(FN, 'index.ts')],
   },
   {
+    name: 'EDREADY',
+    src: path.join(ROOT, 'lib', 'edgedesk_readiness.js'),
+    start: '/*__EDREADY_START__*/', end: '/*__EDREADY_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  {
     name: 'EDBETS',
     src: path.join(ROOT, 'lib', 'edgedesk_bet_history.js'),
     start: '/*__EDBETS_START__*/', end: '/*__EDBETS_END__*/',

@@ -86,6 +86,14 @@
     betsAnalysis: /\b(lost|lose|losing|losses|won|winning|win rate|profit\w*|roi|p ?& ?l|record|history|perform\w*|results?|how (am|did|have) i|where did|why did)\b/i,
     /* a research-and-audit request over a slate: "research every NFL game ... which survive an adversarial audit" */
     researchSlate: /\b(research|investigate|analy[sz]e|go through)\b[^?]{0,60}\b(every|all|each)\b[^?]{0,40}\bgames?\b|\b(largest|biggest|widest)\b[^?]{0,30}\b(verified\s+)?(model[- ]?(versus|vs\.?)[- ]?market|discrepanc\w*|disagreements?)\b|\bsurviv\w* (an |the )?(adversarial )?audit\b/i,
+    /* why a game (or the board) is or is not ready: "explain why this game isn't research ready" */
+    readiness: /\b(research[- ]ready|readiness|(isn'?t|is not|aren'?t|are not|not) (yet )?(research[- ])?ready|why\b[^?]{0,50}\b(not|n'?t)\b[^?]{0,20}\bready)\b/i,
+    /* "which matchup has the biggest offensive advantage?" — unit against unit, from the efficiency ratings */
+    matchupEdge: /\b(biggest|largest|best|strongest|most|greatest)\b[^?]{0,40}\b(offensive|defensive|passing|rushing|pass|rush|offense|defense)\b[^?]{0,30}\b(advantage|edge|mismatch)\w*\b|\b(offensive|defensive|unit) mismatch\w*\b/i,
+    /* two venues named in one comparison: "compare DraftKings Predictions and Kalshi prices" */
+    compareWords: /\bcompare\b|\bcomparison\b|\bversus\b|\bvs\.?\b|\bagainst\b|\bwhich (venue|exchange|book|site) is (cheaper|better)\b/i,
+    venues: [['kalshi', /\bkalshi\b/i], ['polymarket', /\bpoly ?market\b/i], ['draftkings_predictions', /\b(draftkings|dk) predictions?\b/i], ['fanduel_predicts', /\bfanduel predicts?\b/i],
+      ['robinhood', /\brobinhood\b/i], ['crypto_com', /\bcrypto\.com\b/i], ['novig', /\bnovig\b/i], ['prophetx', /\bprophet ?x\b/i], ['sportsbook', /\b(sportsbooks?|draftkings(?! predictions?)|fanduel(?! predicts?)|betmgm|caesars)\b/i]],
     /* markets the quant desk does not price from a captured moneyline or spread */
     unsupported: [
       ['a total', /\b(?:over|under|o|u)\s*\d+(?:\.\d)?\b(?!\s*(?:%|percent|cents?|¢|c\b))|\bo\/u\b|\btotals?\b|\bteam total\b/i],
@@ -126,6 +134,10 @@
     else if (RX.favorite.test(q)) out.filter = 'favorite';
     var st = sanitizeState(o.state);
     if (RX.coverage.test(q)) { out.intent = 'COVERAGE'; return out; }
+    if (RX.readiness.test(q)) { out.intent = 'READINESS'; out.sport = sportOf(q); return out; }
+    if (RX.matchupEdge.test(q)) { out.intent = 'MATCHUP_EDGE'; out.sport = sportOf(q); out.unit = /\bpass(ing)?\b/i.test(q) ? 'pass' : /\brush(ing)?\b/i.test(q) ? 'rush' : /\bdefens/i.test(q) ? 'defense' : 'offense'; return out; }
+    var vn = RX.venues.filter(function (v) { return v[1].test(q); }).map(function (v) { return v[0]; });
+    if (vn.length >= 2 && RX.compareWords.test(q) && !(price.contract && price.contract.price_cents) && price.american == null) { out.intent = 'VENUE_COMPARE'; out.venues = vn; return out; }
     if (RX.betsSubject.test(q) && RX.betsAnalysis.test(q) && !/\b(should|how (much|many)|units?)\b[^?]{0,30}\bbet\b/i.test(q)) { out.intent = 'BETS'; return out; }
     if (RX.researchSlate.test(q)) { out.intent = 'RESEARCH_SLATE'; out.sport = sportOf(q); return out; }
     if (RX.outage.test(q) && /\b(can|could|still|will|do|does|able)\b/i.test(q)) { out.intent = 'OUTAGE'; return out; }
@@ -290,6 +302,7 @@
     var out = [];
     var survivors = (o.investigated || []).filter(function (r) { return r.classification && r.classification.classification === 'VERIFIED_CANDIDATE' && !r.withheld_by_board; });
     out.push((o.sport_label || 'The slate') + (o.window ? ' — ' + o.window : '') + ': ' + plural((o.games || []).length, 'game') + ' investigated, ' + plural((o.investigated || []).length, 'candidate') + ' taken through research and the adversarial audit, ' + (survivors.length ? plural(survivors.length, 'survivor') : 'none survived') + '.');
+    if (o.readiness) out.push(readinessLine(o.readiness));
     out.push('');
     if (survivors.length) out.push('Survived the audit: ' + survivors.map(function (r) { return r.candidate.selection + lineOf(r.candidate) + ' (' + r.candidate.matchup + ')'; }).join('; ') + '.');
     else out.push(NO_EDGE);
@@ -310,6 +323,104 @@
     return out.join('\n');
   }
   function signedLine(v) { v = num(v); return v == null ? '—' : (v > 0 ? '+' : '') + v; }
+  /* ================================================================ */
+  /* READINESS, ONE GAME, UNIT MISMATCHES, VENUES                      */
+  /* ================================================================ */
+  var READY_WORD = { AVAILABLE: 'available', RESEARCH: 'research available', MARKET: 'market verified', MODEL: 'model ready', ACTIONABLE: 'actionable signal' };
+  /** "Readiness: 7 available · 7 research available · 2 market verified · 7 model ready · 1 actionable signal." */
+  function readinessLine(r) {
+    if (!r || !r.counts) return '';
+    var c = r.counts, ks = ['AVAILABLE', 'RESEARCH', 'MARKET', 'MODEL', 'ACTIONABLE'];
+    var line = 'Readiness: ' + ks.map(function (k) { return c[k] + ' ' + READY_WORD[k]; }).join(' · ') + ' (of ' + c.total + ').';
+    var tm = r.top_reason && r.top_reason.MARKET;
+    if (tm && c.MARKET < c.total) line += ' Market not verified on ' + plural(c.total - c.MARKET, 'game') + '; most common reason: ' + tm.reason + '.';
+    return line;
+  }
+  function stateWord(st) { return st ? (st.ok ? 'yes' : 'no') : '—'; }
+  /** "Explain why games aren't research ready": the five counts, then every game's missing requirements. */
+  function renderReadiness(o) {
+    o = o || {};
+    var out = [], games = o.games || [];
+    out.push('WHAT ' + (o.sport_label ? o.sport_label.toUpperCase() + ' ' : '') + 'GAMES ARE READY FOR' + (o.window ? ' — ' + o.window : ''));
+    out.push('');
+    if (!games.length) { out.push('No pregame games are on EdgeDesk\'s card for this window, so there is nothing to assess.'); return out.join('\n'); }
+    out.push(readinessLine(o.readiness));
+    out.push('');
+    out.push('A game stays researchable with no market and no signal: "not ready to price" is not "not ready to research".');
+    out.push('');
+    var notReady = games.filter(function (g) { return g.readiness && g.readiness.level !== 'ACTIONABLE'; });
+    var ready = games.filter(function (g) { return g.readiness && g.readiness.level === 'ACTIONABLE'; });
+    if (ready.length) { out.push('Actionable: ' + ready.map(function (g) { return g.matchup; }).join('; ') + '.'); out.push(''); }
+    out.push('Why each game is not fully ready:');
+    notReady.slice(0, 12).forEach(function (g, i) {
+      var why = (g.why_not || []).filter(function (w) { return !/^Actionable signal/.test(w) || (g.readiness.states.MARKET.ok && g.readiness.states.MODEL.ok); });
+      out.push((i + 1) + '. ' + g.matchup + ' — ' + g.readiness.headline + (why.length ? ' Missing: ' + why.join(' ') : ''));
+    });
+    if (notReady.length > 12) out.push('…and ' + plural(notReady.length - 12, 'more game') + ' with the same kinds of gaps.');
+    if (o.coverage_sentence) { out.push(''); out.push(o.coverage_sentence); }
+    return out.join('\n');
+  }
+  /** One game: readiness, the numbers, the disagreement, the findings, its candidates, the sources. */
+  function renderGameResearch(o) {
+    o = o || {};
+    var g = o.game, out = [];
+    if (!g) return 'That game is not on EdgeDesk\'s card right now (it may have started, or it is outside the sports EdgeDesk covers), so it cannot be researched here.';
+    var rd = g.readiness, S = rd ? rd.states : {};
+    out.push('GAME RESEARCH — ' + g.matchup + (g.kickoff_local ? ', ' + g.kickoff_local : ''));
+    out.push('');
+    out.push('Event: ' + g.matchup + (g.kickoff_local ? ' — ' + g.kickoff_local : ''));
+    out.push('Sport: ' + (o.sport_label || g.sport));
+    out.push('Readiness: available ' + stateWord(S.AVAILABLE) + ' · research ' + stateWord(S.RESEARCH) + ' · market verified ' + stateWord(S.MARKET) + ' · model ready ' + stateWord(S.MODEL) + ' · actionable ' + stateWord(S.ACTIONABLE));
+    out.push('Model projection: ' + (g.model_line != null ? g.home + ' ' + signedLine(g.model_line) + (g.model_total != null ? ', total ' + g.model_total : '') + ' (' + (g.model_tier || 'unvalidated') + ' model)' : 'none on file'));
+    out.push('Market: ' + (g.market_line != null ? g.home + ' ' + signedLine(g.market_line) + (g.market_total != null ? ', total ' + g.market_total : '') + ' (' + g.freshness + ')' : 'no market number on file'));
+    out.push('Model disagreement: ' + (g.gap_points != null ? Math.abs(g.gap_points) + ' points' + (g.disagreement ? '. ' + g.disagreement.explanation : '') : 'not measurable without both numbers'));
+    var f = (g.research && g.research.findings) || [];
+    var key = f.filter(function (x) { return (x.topic === 'availability' || x.topic === 'starter') && (x.status === 'OUT' || x.status === 'DOUBTFUL' || x.status === 'QUESTIONABLE' || x.topic === 'starter'); }).slice(0, 6);
+    out.push('Key injuries or lineup changes: ' + (key.length ? key.map(function (x) { return x.claim + ' (' + String(x.reliability || '').toLowerCase().replace(/_/g, ' ') + (x.verified ? ', verified' : '') + ')'; }).join('; ') : f.length ? 'none listed as out, doubtful or questionable among ' + plural(f.length, 'finding') : 'no availability source was read for this game'));
+    var cf = (g.research && g.research.conflicts) || [];
+    if (cf.length) out.push('Conflicting reports: ' + cf.map(function (c) { return c.detail + (c.unresolved ? ' (unresolved)' : ' (resolved by ' + (c.resolution && c.resolution.by || 'source tier') + ')'); }).join('; '));
+    if (rd && rd.missing && rd.missing.length) {
+      out.push('');
+      out.push('Why not ready:');
+      (o.why_not || []).forEach(function (w, i) { out.push((i + 1) + '. ' + w); });
+    }
+    (o.investigated || []).forEach(function (r, i) { out.push(''); out.push(researchBlock(r, o, 'CANDIDATE ' + (i + 1) + ' — ' + (r.classification ? r.classification.label : r.audit.status))); });
+    if (!(o.investigated || []).length) { out.push(''); out.push(S.MARKET && S.MARKET.ok ? 'No price on this game cleared the board\'s screen, so nothing reached the adversarial audit.' : 'No price check or audit ran: there is no current market price to check.'); }
+    out.push('');
+    researchTail(o).forEach(function (l) { out.push(l); });
+    return out.join('\n');
+  }
+  /** "Which matchup has the biggest offensive advantage?" o: { rows: [{matchup, offense, defense, edge, off, def, off_rank, def_rank}], unit, sport_label, source, generated_at, window, missing } */
+  function renderMatchupEdges(o) {
+    o = o || {};
+    var out = [], unit = o.unit === 'pass' ? 'passing' : o.unit === 'rush' ? 'rushing' : o.unit === 'defense' ? 'defensive' : 'offensive';
+    out.push('BIGGEST ' + unit.toUpperCase() + ' MISMATCHES' + (o.sport_label ? ' — ' + o.sport_label : '') + (o.window ? ', ' + o.window : ''));
+    out.push('');
+    if (!(o.rows || []).length) { out.push(o.missing || 'No unit efficiency ratings are on file for these games, so no mismatch can be measured.'); return out.join('\n'); }
+    out.push('Measured from EdgeDesk\'s NFL team ratings: one side\'s ' + (o.metric_label || 'EPA per play') + ' rating plus the opposing unit\'s, the same offense-against-defense pairing the projection engine uses. A unit mismatch is matchup context, not a probability and not a bet.');
+    out.push('');
+    o.rows.slice(0, 6).forEach(function (r, i) {
+      out.push((i + 1) + '. ' + r.offense + ' ' + (o.unit === 'defense' ? 'defense' : 'offense') + ' vs ' + r.defense + ' ' + (o.unit === 'defense' ? 'offense' : 'defense') + ' (' + r.matchup + '): ' + (r.edge >= 0 ? '+' : '') + r.edge.toFixed(3) + ' EPA/play — ' + r.offense + ' ' + (r.off_rank ? r.off_rank + ' of ' + r.of : '') + ' on its side, ' + r.defense + ' ' + (r.def_rank ? r.def_rank + ' of ' + r.of : '') + ' on the other.');
+    });
+    out.push('');
+    out.push('Source: ' + (o.source || 'EdgeDesk NFL slate ratings') + (o.generated_at ? ', built ' + String(o.generated_at).slice(0, 16).replace('T', ' ') + ' UTC' : '') + '.' + (o.missing ? ' ' + o.missing : ''));
+    return out.join('\n');
+  }
+  /** "Compare DraftKings Predictions and Kalshi prices": what EdgeDesk holds for each venue, and what it needs. o: { venues: [{key, label, fee, verification, captured, note}] } */
+  function renderVenueCompare(o) {
+    o = o || {};
+    var out = [];
+    out.push('COMPARING ' + (o.venues || []).map(function (v) { return v.label.toUpperCase(); }).join(' AND '));
+    out.push('');
+    (o.venues || []).forEach(function (v) {
+      out.push(v.label + ': ' + (v.captured ? 'EdgeDesk captures its prices' : 'EdgeDesk does not capture its live prices') + '; fees: ' + v.fee + ' (' + String(v.verification || 'unknown').toLowerCase() + ').' + (v.note ? ' ' + v.note : ''));
+    });
+    out.push('');
+    var none = (o.venues || []).filter(function (v) { return !v.captured; });
+    if (none.length) out.push('No live price from ' + none.map(function (v) { return v.label; }).join(' or ') + ' is on file, so no comparison can be computed and none is invented. Give the two prices for the same outcome — e.g. "Rays YES 46¢ on Kalshi vs 47¢ on DraftKings Predictions" — and EdgeDesk will compare their all-in cost after each venue\'s own fee rule, and say where a fee schedule is not verified.');
+    return out.join('\n');
+  }
+
   /** The answer, in the order the brief asks for. */
   function renderScan(s) {
     if (s.researched && AG()) return renderResearchScan(s);
@@ -573,7 +684,7 @@
   return {
     VERSION: VERSION, STATE_SCHEMA: STATE_SCHEMA, NO_EDGE: NO_EDGE, RX: RX,
     classify: classify, unsupportedMarket: unsupportedMarket, sportOf: sportOf, candidatesFromBoard: candidatesFromBoard, matchesFilter: matchesFilter,
-    scanResult: scanResult, renderScan: renderScan, renderResearchScan: renderResearchScan, renderResearchSlate: renderResearchSlate, coverageSentence: coverageSentence, lineOf: lineOf, matchupLine: matchupLine,
+    scanResult: scanResult, renderScan: renderScan, renderResearchScan: renderResearchScan, renderResearchSlate: renderResearchSlate, renderReadiness: renderReadiness, renderGameResearch: renderGameResearch, renderMatchupEdges: renderMatchupEdges, renderVenueCompare: renderVenueCompare, readinessLine: readinessLine, coverageSentence: coverageSentence, lineOf: lineOf, matchupLine: matchupLine,
     renderContract: renderContract, renderExplain: renderExplain, renderCoverage: renderCoverage, renderOutage: renderOutage,
     stateFrom: stateFrom, sanitizeState: sanitizeState, critic: critic
   };

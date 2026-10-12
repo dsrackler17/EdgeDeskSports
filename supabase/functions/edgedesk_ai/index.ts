@@ -35344,6 +35344,14 @@ const EDAUDIT: any = (globalThis as any).EDAUDIT;
     betsAnalysis: /\b(lost|lose|losing|losses|won|winning|win rate|profit\w*|roi|p ?& ?l|record|history|perform\w*|results?|how (am|did|have) i|where did|why did)\b/i,
     /* a research-and-audit request over a slate: "research every NFL game ... which survive an adversarial audit" */
     researchSlate: /\b(research|investigate|analy[sz]e|go through)\b[^?]{0,60}\b(every|all|each)\b[^?]{0,40}\bgames?\b|\b(largest|biggest|widest)\b[^?]{0,30}\b(verified\s+)?(model[- ]?(versus|vs\.?)[- ]?market|discrepanc\w*|disagreements?)\b|\bsurviv\w* (an |the )?(adversarial )?audit\b/i,
+    /* why a game (or the board) is or is not ready: "explain why this game isn't research ready" */
+    readiness: /\b(research[- ]ready|readiness|(isn'?t|is not|aren'?t|are not|not) (yet )?(research[- ])?ready|why\b[^?]{0,50}\b(not|n'?t)\b[^?]{0,20}\bready)\b/i,
+    /* "which matchup has the biggest offensive advantage?" — unit against unit, from the efficiency ratings */
+    matchupEdge: /\b(biggest|largest|best|strongest|most|greatest)\b[^?]{0,40}\b(offensive|defensive|passing|rushing|pass|rush|offense|defense)\b[^?]{0,30}\b(advantage|edge|mismatch)\w*\b|\b(offensive|defensive|unit) mismatch\w*\b/i,
+    /* two venues named in one comparison: "compare DraftKings Predictions and Kalshi prices" */
+    compareWords: /\bcompare\b|\bcomparison\b|\bversus\b|\bvs\.?\b|\bagainst\b|\bwhich (venue|exchange|book|site) is (cheaper|better)\b/i,
+    venues: [['kalshi', /\bkalshi\b/i], ['polymarket', /\bpoly ?market\b/i], ['draftkings_predictions', /\b(draftkings|dk) predictions?\b/i], ['fanduel_predicts', /\bfanduel predicts?\b/i],
+      ['robinhood', /\brobinhood\b/i], ['crypto_com', /\bcrypto\.com\b/i], ['novig', /\bnovig\b/i], ['prophetx', /\bprophet ?x\b/i], ['sportsbook', /\b(sportsbooks?|draftkings(?! predictions?)|fanduel(?! predicts?)|betmgm|caesars)\b/i]],
     /* markets the quant desk does not price from a captured moneyline or spread */
     unsupported: [
       ['a total', /\b(?:over|under|o|u)\s*\d+(?:\.\d)?\b(?!\s*(?:%|percent|cents?|¢|c\b))|\bo\/u\b|\btotals?\b|\bteam total\b/i],
@@ -35384,6 +35392,10 @@ const EDAUDIT: any = (globalThis as any).EDAUDIT;
     else if (RX.favorite.test(q)) out.filter = 'favorite';
     var st = sanitizeState(o.state);
     if (RX.coverage.test(q)) { out.intent = 'COVERAGE'; return out; }
+    if (RX.readiness.test(q)) { out.intent = 'READINESS'; out.sport = sportOf(q); return out; }
+    if (RX.matchupEdge.test(q)) { out.intent = 'MATCHUP_EDGE'; out.sport = sportOf(q); out.unit = /\bpass(ing)?\b/i.test(q) ? 'pass' : /\brush(ing)?\b/i.test(q) ? 'rush' : /\bdefens/i.test(q) ? 'defense' : 'offense'; return out; }
+    var vn = RX.venues.filter(function (v) { return v[1].test(q); }).map(function (v) { return v[0]; });
+    if (vn.length >= 2 && RX.compareWords.test(q) && !(price.contract && price.contract.price_cents) && price.american == null) { out.intent = 'VENUE_COMPARE'; out.venues = vn; return out; }
     if (RX.betsSubject.test(q) && RX.betsAnalysis.test(q) && !/\b(should|how (much|many)|units?)\b[^?]{0,30}\bbet\b/i.test(q)) { out.intent = 'BETS'; return out; }
     if (RX.researchSlate.test(q)) { out.intent = 'RESEARCH_SLATE'; out.sport = sportOf(q); return out; }
     if (RX.outage.test(q) && /\b(can|could|still|will|do|does|able)\b/i.test(q)) { out.intent = 'OUTAGE'; return out; }
@@ -35548,6 +35560,7 @@ const EDAUDIT: any = (globalThis as any).EDAUDIT;
     var out = [];
     var survivors = (o.investigated || []).filter(function (r) { return r.classification && r.classification.classification === 'VERIFIED_CANDIDATE' && !r.withheld_by_board; });
     out.push((o.sport_label || 'The slate') + (o.window ? ' — ' + o.window : '') + ': ' + plural((o.games || []).length, 'game') + ' investigated, ' + plural((o.investigated || []).length, 'candidate') + ' taken through research and the adversarial audit, ' + (survivors.length ? plural(survivors.length, 'survivor') : 'none survived') + '.');
+    if (o.readiness) out.push(readinessLine(o.readiness));
     out.push('');
     if (survivors.length) out.push('Survived the audit: ' + survivors.map(function (r) { return r.candidate.selection + lineOf(r.candidate) + ' (' + r.candidate.matchup + ')'; }).join('; ') + '.');
     else out.push(NO_EDGE);
@@ -35568,6 +35581,104 @@ const EDAUDIT: any = (globalThis as any).EDAUDIT;
     return out.join('\n');
   }
   function signedLine(v) { v = num(v); return v == null ? '—' : (v > 0 ? '+' : '') + v; }
+  /* ================================================================ */
+  /* READINESS, ONE GAME, UNIT MISMATCHES, VENUES                      */
+  /* ================================================================ */
+  var READY_WORD = { AVAILABLE: 'available', RESEARCH: 'research available', MARKET: 'market verified', MODEL: 'model ready', ACTIONABLE: 'actionable signal' };
+  /** "Readiness: 7 available · 7 research available · 2 market verified · 7 model ready · 1 actionable signal." */
+  function readinessLine(r) {
+    if (!r || !r.counts) return '';
+    var c = r.counts, ks = ['AVAILABLE', 'RESEARCH', 'MARKET', 'MODEL', 'ACTIONABLE'];
+    var line = 'Readiness: ' + ks.map(function (k) { return c[k] + ' ' + READY_WORD[k]; }).join(' · ') + ' (of ' + c.total + ').';
+    var tm = r.top_reason && r.top_reason.MARKET;
+    if (tm && c.MARKET < c.total) line += ' Market not verified on ' + plural(c.total - c.MARKET, 'game') + '; most common reason: ' + tm.reason + '.';
+    return line;
+  }
+  function stateWord(st) { return st ? (st.ok ? 'yes' : 'no') : '—'; }
+  /** "Explain why games aren't research ready": the five counts, then every game's missing requirements. */
+  function renderReadiness(o) {
+    o = o || {};
+    var out = [], games = o.games || [];
+    out.push('WHAT ' + (o.sport_label ? o.sport_label.toUpperCase() + ' ' : '') + 'GAMES ARE READY FOR' + (o.window ? ' — ' + o.window : ''));
+    out.push('');
+    if (!games.length) { out.push('No pregame games are on EdgeDesk\'s card for this window, so there is nothing to assess.'); return out.join('\n'); }
+    out.push(readinessLine(o.readiness));
+    out.push('');
+    out.push('A game stays researchable with no market and no signal: "not ready to price" is not "not ready to research".');
+    out.push('');
+    var notReady = games.filter(function (g) { return g.readiness && g.readiness.level !== 'ACTIONABLE'; });
+    var ready = games.filter(function (g) { return g.readiness && g.readiness.level === 'ACTIONABLE'; });
+    if (ready.length) { out.push('Actionable: ' + ready.map(function (g) { return g.matchup; }).join('; ') + '.'); out.push(''); }
+    out.push('Why each game is not fully ready:');
+    notReady.slice(0, 12).forEach(function (g, i) {
+      var why = (g.why_not || []).filter(function (w) { return !/^Actionable signal/.test(w) || (g.readiness.states.MARKET.ok && g.readiness.states.MODEL.ok); });
+      out.push((i + 1) + '. ' + g.matchup + ' — ' + g.readiness.headline + (why.length ? ' Missing: ' + why.join(' ') : ''));
+    });
+    if (notReady.length > 12) out.push('…and ' + plural(notReady.length - 12, 'more game') + ' with the same kinds of gaps.');
+    if (o.coverage_sentence) { out.push(''); out.push(o.coverage_sentence); }
+    return out.join('\n');
+  }
+  /** One game: readiness, the numbers, the disagreement, the findings, its candidates, the sources. */
+  function renderGameResearch(o) {
+    o = o || {};
+    var g = o.game, out = [];
+    if (!g) return 'That game is not on EdgeDesk\'s card right now (it may have started, or it is outside the sports EdgeDesk covers), so it cannot be researched here.';
+    var rd = g.readiness, S = rd ? rd.states : {};
+    out.push('GAME RESEARCH — ' + g.matchup + (g.kickoff_local ? ', ' + g.kickoff_local : ''));
+    out.push('');
+    out.push('Event: ' + g.matchup + (g.kickoff_local ? ' — ' + g.kickoff_local : ''));
+    out.push('Sport: ' + (o.sport_label || g.sport));
+    out.push('Readiness: available ' + stateWord(S.AVAILABLE) + ' · research ' + stateWord(S.RESEARCH) + ' · market verified ' + stateWord(S.MARKET) + ' · model ready ' + stateWord(S.MODEL) + ' · actionable ' + stateWord(S.ACTIONABLE));
+    out.push('Model projection: ' + (g.model_line != null ? g.home + ' ' + signedLine(g.model_line) + (g.model_total != null ? ', total ' + g.model_total : '') + ' (' + (g.model_tier || 'unvalidated') + ' model)' : 'none on file'));
+    out.push('Market: ' + (g.market_line != null ? g.home + ' ' + signedLine(g.market_line) + (g.market_total != null ? ', total ' + g.market_total : '') + ' (' + g.freshness + ')' : 'no market number on file'));
+    out.push('Model disagreement: ' + (g.gap_points != null ? Math.abs(g.gap_points) + ' points' + (g.disagreement ? '. ' + g.disagreement.explanation : '') : 'not measurable without both numbers'));
+    var f = (g.research && g.research.findings) || [];
+    var key = f.filter(function (x) { return (x.topic === 'availability' || x.topic === 'starter') && (x.status === 'OUT' || x.status === 'DOUBTFUL' || x.status === 'QUESTIONABLE' || x.topic === 'starter'); }).slice(0, 6);
+    out.push('Key injuries or lineup changes: ' + (key.length ? key.map(function (x) { return x.claim + ' (' + String(x.reliability || '').toLowerCase().replace(/_/g, ' ') + (x.verified ? ', verified' : '') + ')'; }).join('; ') : f.length ? 'none listed as out, doubtful or questionable among ' + plural(f.length, 'finding') : 'no availability source was read for this game'));
+    var cf = (g.research && g.research.conflicts) || [];
+    if (cf.length) out.push('Conflicting reports: ' + cf.map(function (c) { return c.detail + (c.unresolved ? ' (unresolved)' : ' (resolved by ' + (c.resolution && c.resolution.by || 'source tier') + ')'); }).join('; '));
+    if (rd && rd.missing && rd.missing.length) {
+      out.push('');
+      out.push('Why not ready:');
+      (o.why_not || []).forEach(function (w, i) { out.push((i + 1) + '. ' + w); });
+    }
+    (o.investigated || []).forEach(function (r, i) { out.push(''); out.push(researchBlock(r, o, 'CANDIDATE ' + (i + 1) + ' — ' + (r.classification ? r.classification.label : r.audit.status))); });
+    if (!(o.investigated || []).length) { out.push(''); out.push(S.MARKET && S.MARKET.ok ? 'No price on this game cleared the board\'s screen, so nothing reached the adversarial audit.' : 'No price check or audit ran: there is no current market price to check.'); }
+    out.push('');
+    researchTail(o).forEach(function (l) { out.push(l); });
+    return out.join('\n');
+  }
+  /** "Which matchup has the biggest offensive advantage?" o: { rows: [{matchup, offense, defense, edge, off, def, off_rank, def_rank}], unit, sport_label, source, generated_at, window, missing } */
+  function renderMatchupEdges(o) {
+    o = o || {};
+    var out = [], unit = o.unit === 'pass' ? 'passing' : o.unit === 'rush' ? 'rushing' : o.unit === 'defense' ? 'defensive' : 'offensive';
+    out.push('BIGGEST ' + unit.toUpperCase() + ' MISMATCHES' + (o.sport_label ? ' — ' + o.sport_label : '') + (o.window ? ', ' + o.window : ''));
+    out.push('');
+    if (!(o.rows || []).length) { out.push(o.missing || 'No unit efficiency ratings are on file for these games, so no mismatch can be measured.'); return out.join('\n'); }
+    out.push('Measured from EdgeDesk\'s NFL team ratings: one side\'s ' + (o.metric_label || 'EPA per play') + ' rating plus the opposing unit\'s, the same offense-against-defense pairing the projection engine uses. A unit mismatch is matchup context, not a probability and not a bet.');
+    out.push('');
+    o.rows.slice(0, 6).forEach(function (r, i) {
+      out.push((i + 1) + '. ' + r.offense + ' ' + (o.unit === 'defense' ? 'defense' : 'offense') + ' vs ' + r.defense + ' ' + (o.unit === 'defense' ? 'offense' : 'defense') + ' (' + r.matchup + '): ' + (r.edge >= 0 ? '+' : '') + r.edge.toFixed(3) + ' EPA/play — ' + r.offense + ' ' + (r.off_rank ? r.off_rank + ' of ' + r.of : '') + ' on its side, ' + r.defense + ' ' + (r.def_rank ? r.def_rank + ' of ' + r.of : '') + ' on the other.');
+    });
+    out.push('');
+    out.push('Source: ' + (o.source || 'EdgeDesk NFL slate ratings') + (o.generated_at ? ', built ' + String(o.generated_at).slice(0, 16).replace('T', ' ') + ' UTC' : '') + '.' + (o.missing ? ' ' + o.missing : ''));
+    return out.join('\n');
+  }
+  /** "Compare DraftKings Predictions and Kalshi prices": what EdgeDesk holds for each venue, and what it needs. o: { venues: [{key, label, fee, verification, captured, note}] } */
+  function renderVenueCompare(o) {
+    o = o || {};
+    var out = [];
+    out.push('COMPARING ' + (o.venues || []).map(function (v) { return v.label.toUpperCase(); }).join(' AND '));
+    out.push('');
+    (o.venues || []).forEach(function (v) {
+      out.push(v.label + ': ' + (v.captured ? 'EdgeDesk captures its prices' : 'EdgeDesk does not capture its live prices') + '; fees: ' + v.fee + ' (' + String(v.verification || 'unknown').toLowerCase() + ').' + (v.note ? ' ' + v.note : ''));
+    });
+    out.push('');
+    var none = (o.venues || []).filter(function (v) { return !v.captured; });
+    if (none.length) out.push('No live price from ' + none.map(function (v) { return v.label; }).join(' or ') + ' is on file, so no comparison can be computed and none is invented. Give the two prices for the same outcome — e.g. "Rays YES 46¢ on Kalshi vs 47¢ on DraftKings Predictions" — and EdgeDesk will compare their all-in cost after each venue\'s own fee rule, and say where a fee schedule is not verified.');
+    return out.join('\n');
+  }
+
   /** The answer, in the order the brief asks for. */
   function renderScan(s) {
     if (s.researched && AG()) return renderResearchScan(s);
@@ -35831,7 +35942,7 @@ const EDAUDIT: any = (globalThis as any).EDAUDIT;
   return {
     VERSION: VERSION, STATE_SCHEMA: STATE_SCHEMA, NO_EDGE: NO_EDGE, RX: RX,
     classify: classify, unsupportedMarket: unsupportedMarket, sportOf: sportOf, candidatesFromBoard: candidatesFromBoard, matchesFilter: matchesFilter,
-    scanResult: scanResult, renderScan: renderScan, renderResearchScan: renderResearchScan, renderResearchSlate: renderResearchSlate, coverageSentence: coverageSentence, lineOf: lineOf, matchupLine: matchupLine,
+    scanResult: scanResult, renderScan: renderScan, renderResearchScan: renderResearchScan, renderResearchSlate: renderResearchSlate, renderReadiness: renderReadiness, renderGameResearch: renderGameResearch, renderMatchupEdges: renderMatchupEdges, renderVenueCompare: renderVenueCompare, readinessLine: readinessLine, coverageSentence: coverageSentence, lineOf: lineOf, matchupLine: matchupLine,
     renderContract: renderContract, renderExplain: renderExplain, renderCoverage: renderCoverage, renderOutage: renderOutage,
     stateFrom: stateFrom, sanitizeState: sanitizeState, critic: critic
   };
@@ -39345,6 +39456,165 @@ const EDAGENTS: any = (globalThis as any).EDAGENTS;
 }));
 /*__EDBETS_END__*/
 const EDBETS: any = (globalThis as any).EDBETS;
+/*__EDREADY_START__*/
+/* ===========================================================================
+   EdgeDesk READINESS — what a game is ready for, and exactly what is missing.
+
+   One game, five separate states. Each is answered from data the caller
+   actually holds; none is inferred from another, and no threshold is lowered
+   to make a board look busier:
+
+     AVAILABLE    a scheduled, pregame game EdgeDesk lists, so it can be researched
+     RESEARCH     enough football information for a useful matchup analysis
+                  (an EdgeDesk projection, or the team efficiency build)
+     MARKET       a CURRENT, executable captured price (a book, odds and a capture
+                  time inside the freshness limit). A consensus or reference line
+                  is a number, not a price, and never counts
+     MODEL        a valid independent projection (PREDICTED, data quality not a
+                  fault); its pricing tier is reported, not upgraded
+     ACTIONABLE   a candidate that passed the full quantitative check and the
+                  adversarial audit (VERIFIED CANDIDATE), or the board's own
+                  research gates when no audit has run yet — labelled as such
+
+   A game stays researchable with no market and no signal: "not ready to bet"
+   is not "not ready to research". whyNot() lists every requirement that is
+   not met, in plain words, with the fact behind it (an age, a status, a count).
+
+   Browser: window.EDREADY.   Node: require('./edgedesk_readiness.js').
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDREADY = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  var VERSION = 'edgedesk_readiness_v1';
+  var STATES = ['AVAILABLE', 'RESEARCH', 'MARKET', 'MODEL', 'ACTIONABLE'];
+  var LABEL = { AVAILABLE: 'Games available', RESEARCH: 'Research available', MARKET: 'Market verified', MODEL: 'Model ready', ACTIONABLE: 'Actionable signal' };
+  var MEANS = {
+    AVAILABLE: 'Scheduled, pregame games EdgeDesk lists. Every one of them can be researched.',
+    RESEARCH: 'Games with enough information for a useful matchup analysis: an EdgeDesk projection or the team efficiency build.',
+    MARKET: 'Games with a current, executable captured price: a book, odds and a capture time inside the freshness limit. A consensus or reference line is a number, not a price.',
+    MODEL: 'Games with a valid independent EdgeDesk projection (PREDICTED, no data fault). Its validation tier is shown as it is.',
+    ACTIONABLE: 'Candidates that passed the full quantitative check and the adversarial audit. Research, not a bet.'
+  };
+
+  function num(v) { if (v === null || v === undefined || v === '') return null; var n = Number(v); return isFinite(n) ? n : null; }
+  function str(v) { return v == null ? '' : String(v); }
+  function toMs(v) { if (v == null || v === '') return null; if (typeof v === 'number') return isFinite(v) ? v : null; var t = Date.parse(String(v)); return isFinite(t) ? t : null; }
+  function ageText(min) {
+    if (min == null) return null;
+    min = Math.max(0, Math.round(min));
+    return min < 90 ? min + ' min' : min < 48 * 60 ? Math.round(min / 60) + ' h' : Math.round(min / 1440) + ' days';
+  }
+
+  /**
+   * g: {
+   *   sport, game_id, home, away, kickoff, status ('SCHEDULED'|'LIVE'|'FINAL'|'POSTPONED'|...),
+   *   model:  { status ('PREDICTED'|...), home_line, total, tier ('VALIDATED'|'LEAN'|'RESEARCH'|null), data_quality ('OK'|'LIMITED'|'FAULT'|null), note },
+   *           LIMITED = projected, but below the confidence / reliability floor for researching a gap
+   *   market: { kind ('PRICE'|'LINE_ONLY'|null), status ('LIVE'|'CURRENT'|'AGING'|'STALE'|'FAULT'|'UNKNOWN'|null), actionable (bool),
+   *             captured_at, limit_min, book, line, odds_american, source, note },
+   *   metrics: (bool) the team efficiency build covers both teams,
+   *   audit:  { classification ('VERIFIED_CANDIDATE'|'RESEARCH_REQUIRED'|'WATCHLIST'|'REJECTED'|'UNVERIFIED'), reason } | null,
+   *   gate:   { status, actionable (bool), why } | null      the board's own research gate, when no audit ran
+   * }
+   * → { states: {AVAILABLE:{ok,why}, ...}, level, missing:[{state, requirement, detail}], headline }
+   */
+  function assess(g, o) {
+    g = g || {}; o = o || {};
+    var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
+    var S = {}, missing = [];
+    function set(k, ok, why, req) { S[k] = { ok: !!ok, why: why }; if (!ok && req) missing.push({ state: k, requirement: req, detail: why }); }
+
+    /* AVAILABLE */
+    var ko = toMs(g.kickoff), st = str(g.status).toUpperCase();
+    if (/FINAL|COMPLETE|CANCEL|POSTPON/.test(st)) set('AVAILABLE', false, 'the game is ' + st.toLowerCase().replace(/_/g, ' '), 'a scheduled game');
+    else if (ko != null && ko <= now) set('AVAILABLE', false, 'the game has started; EdgeDesk researches pregame only', 'a game that has not started');
+    else if (ko == null) set('AVAILABLE', true, 'listed, with no kickoff time on file');
+    else set('AVAILABLE', true, 'scheduled');
+
+    /* MODEL */
+    var m = g.model || {}, ms = str(m.status).toUpperCase(), dq = str(m.data_quality).toUpperCase();
+    var hasLine = num(m.home_line) != null;
+    var tierNote = m.tier ? ' (' + str(m.tier).toUpperCase() + ' tier' + (str(m.tier).toUpperCase() === 'VALIDATED' ? '' : ': it may order research, not price a bet on its own') + ')' : '';
+    if (ms === 'PREDICTED' && hasLine && dq === 'LIMITED') set('MODEL', false, 'EdgeDesk projects the game, but its confidence or reliability is below the research floor' + (m.note ? ' (' + m.note + ')' : ''), 'a projection with enough confidence to research the gap');
+    else if (ms === 'PREDICTED' && hasLine && dq !== 'FAULT') set('MODEL', true, 'EdgeDesk projects the game' + tierNote);
+    else if (dq === 'FAULT') set('MODEL', false, 'EdgeDesk\'s projection has a data fault' + (m.note ? ': ' + m.note : '') + ', so its number is not used', 'a projection without a data fault');
+    else if (ms && ms !== 'PREDICTED') set('MODEL', false, 'the projection status is ' + ms.toLowerCase().replace(/_/g, ' ') + (m.note ? ' (' + m.note + ')' : ''), 'a PREDICTED projection');
+    else set('MODEL', false, 'no EdgeDesk projection is on file for this game', 'an EdgeDesk projection');
+
+    /* RESEARCH: a projection, or the efficiency build, is enough to analyse the matchup */
+    if (S.MODEL.ok || (ms === 'PREDICTED' && dq !== 'FAULT')) set('RESEARCH', true, 'EdgeDesk\'s projection' + (g.metrics ? ' and the team efficiency build' : '') + ' cover the matchup');
+    else if (g.metrics) set('RESEARCH', true, 'the team efficiency build covers both teams (no projection)');
+    else set('RESEARCH', false, 'neither an EdgeDesk projection nor team efficiency data is on file', 'a projection or team efficiency data');
+
+    /* MARKET: a current, executable price */
+    var k = g.market || {}, kind = str(k.kind).toUpperCase(), ks = str(k.status).toUpperCase();
+    var age = toMs(k.captured_at) != null ? (now - toMs(k.captured_at)) / 60000 : null;
+    if (kind === 'PRICE' && k.actionable) set('MARKET', true, (k.book ? k.book + ' ' : '') + (k.odds_american != null ? (k.odds_american > 0 ? '+' : '') + Math.round(k.odds_american) + ' ' : '') + 'captured ' + (ageText(age) || '?') + ' ago' + (k.limit_min ? ' (limit ' + k.limit_min + ' min)' : ''));
+    else if (kind === 'PRICE' && (ks === 'STALE' || ks === 'AGING')) set('MARKET', false, 'the newest captured price is ' + (ageText(age) || 'of unknown age') + ' old' + (k.limit_min ? ', past the ' + k.limit_min + '-minute limit' : '') + ' — a stale price is not verified', 'a current captured price');
+    else if (kind === 'PRICE' && ks === 'FAULT') set('MARKET', false, 'the captured quotes contradict each other' + (k.note ? ': ' + k.note : ''), 'captured quotes that agree');
+    else if (kind === 'PRICE' && ks === 'UNKNOWN') set('MARKET', false, 'the captured price carries no capture time, so its age cannot be verified', 'a captured price with a capture time');
+    else if (kind === 'PRICE') set('MARKET', false, 'the captured price is not executable now' + (ks ? ' (' + ks.toLowerCase() + ')' : ''), 'a current captured price');
+    else if (kind === 'LINE_ONLY') set('MARKET', false, 'only a reference line' + (k.source ? ' (' + k.source.replace(/\s*\(.*$/, '') + ')' : '') + ' is on file: a number with no book, odds or capture time, not a price', 'a captured price from a book');
+    else set('MARKET', false, 'no captured price is on file for this game', 'a captured price from a book');
+
+    /* ACTIONABLE: the audit's verdict when one ran, else the board's own gate — never inferred */
+    var au = g.audit || null, gate = g.gate || null;
+    if (au && au.classification) {
+      var vc = au.classification === 'VERIFIED_CANDIDATE';
+      set('ACTIONABLE', vc, vc ? 'a candidate passed the quantitative check and the adversarial audit' : 'the audit classed the best candidate ' + au.classification.toLowerCase().replace(/_/g, ' ') + (au.reason ? ': ' + au.reason : ''), 'a candidate that survives the adversarial audit');
+    } else if (!S.MARKET.ok) set('ACTIONABLE', false, 'no signal can be verified without a current market price', 'a current market price, then the audit');
+    else if (!S.MODEL.ok) set('ACTIONABLE', false, 'no independent projection to compare with the price', 'an independent projection, then the audit');
+    else if (gate && gate.actionable) set('ACTIONABLE', true, 'cleared the board\'s research gates' + (gate.status ? ' (' + str(gate.status).toLowerCase().replace(/_/g, ' ') + ')' : '') + '; the full audit runs when you ask EdgeDesk AI');
+    else set('ACTIONABLE', false, gate && gate.why ? gate.why : 'no model–market disagreement cleared the research gates', 'a disagreement that clears the gates and the audit');
+
+    var level = !S.AVAILABLE.ok ? 'UNAVAILABLE' : S.ACTIONABLE.ok ? 'ACTIONABLE' : (S.MARKET.ok && S.MODEL.ok) ? 'MARKET_AND_MODEL' : S.RESEARCH.ok ? 'RESEARCH' : 'SCHEDULED';
+    var headline = level === 'UNAVAILABLE' ? 'Not available: ' + S.AVAILABLE.why
+      : level === 'ACTIONABLE' ? 'Actionable: ' + S.ACTIONABLE.why
+        : level === 'MARKET_AND_MODEL' ? 'Model and market ready; no actionable signal (' + S.ACTIONABLE.why + ')'
+          : level === 'RESEARCH' ? 'Researchable; not ready for a price check (' + (S.MARKET.ok ? S.MODEL.why : S.MARKET.why) + ')'
+            : 'Scheduled; ' + S.RESEARCH.why;
+    return { schema: VERSION, game_id: g.game_id != null ? String(g.game_id) : null, sport: g.sport || null, states: S, level: level, missing: missing, headline: headline };
+  }
+
+  /** The "Why not ready?" lines: every unmet requirement, most basic first. */
+  function whyNot(a) {
+    if (!a || !a.missing) return [];
+    var order = { AVAILABLE: 0, RESEARCH: 1, MODEL: 2, MARKET: 3, ACTIONABLE: 4 };
+    return a.missing.slice().sort(function (x, y) { return order[x.state] - order[y.state]; }).map(function (x) { return LABEL[x.state] + ' — needs ' + x.requirement + ': ' + x.detail + '.'; });
+  }
+
+  /** Counts across games, one per state, plus the most common reason each state is missing. */
+  function summarize(list) {
+    var c = { total: 0 }, reasons = {};
+    STATES.forEach(function (k) { c[k] = 0; reasons[k] = {}; });
+    (list || []).forEach(function (a) {
+      if (!a || !a.states) return;
+      c.total++;
+      STATES.forEach(function (k) {
+        if (a.states[k] && a.states[k].ok) c[k]++;
+        else if (a.states[k]) { var r = reasonKey(a.states[k].why); reasons[k][r] = (reasons[k][r] || 0) + 1; }
+      });
+    });
+    var top = {};
+    STATES.forEach(function (k) {
+      var best = null; Object.keys(reasons[k]).forEach(function (r) { if (!best || reasons[k][r] > reasons[k][best]) best = r; });
+      top[k] = best ? { reason: best, games: reasons[k][best] } : null;
+    });
+    return { counts: c, top_reason: top };
+  }
+  /* a reason without its numbers, so "41 h old" and "39 h old" count as one cause */
+  function reasonKey(why) {
+    return str(why).replace(/\b\d+(?:\.\d+)?\s*(?:min|h|days|-minute)\b/g, '#').replace(/[+-]?\d+(?:\.\d+)?/g, '#').replace(/\s*\([^)]*#[^)]*\)/g, '').trim();
+  }
+
+  return { VERSION: VERSION, STATES: STATES, LABEL: LABEL, MEANS: MEANS, assess: assess, whyNot: whyNot, summarize: summarize, reasonKey: reasonKey };
+});
+/*__EDREADY_END__*/
+const EDREADY: any = (globalThis as any).EDREADY;
 
 /*__EDMLBHIST_START__*/
 /*__EDMLBQ_START__*/
@@ -50423,46 +50693,83 @@ function quantEvaluator(now: number, stake: number | null) {
     return evAud != null && (evOwn == null || evAud < evOwn) ? { ...audited, priced_on: "AUDITED_FAIR (lower than the model's)" } : { ...own, priced_on: "MODEL (lower than the audited market fair)" };
   };
 }
+/* THE RESEARCH ACTIVITY a client can show: each event is emitted where the work actually happens (never on a
+   timer). status: running | done | skipped | failed; detail is the real count or reason; partial carries results
+   that are already final (the board's games, the first audit verdicts) so a client can show them early. */
+const STAGE_LABEL: Record<string, string> = {
+  FIND_EVENTS: "Finding relevant events", RETRIEVE_STATS: "Retrieving statistics", VERIFY_INJURIES: "Verifying injuries and lineups",
+  COMPARE_PRICES: "Comparing market prices", CALCULATE: "Calculating probabilities", AUDIT: "Running the adversarial audit", EXPLAIN: "Preparing the explanation",
+  READ_HISTORY: "Reading your recorded bets", ANALYZE_HISTORY: "Analysing your results",
+};
+type Progress = (ev: { stage: string; status: string; detail?: string; partial?: any }) => void;
+function stageEmitter(p?: Progress | null): Progress {
+  return (ev) => { if (p) p({ ...ev, label: STAGE_LABEL[ev.stage] ?? ev.stage } as any); };
+}
+
 /** One scan row for the response: the candidate, its audit, its evaluation and (when researched) its investigation. */
 function quantRowSlim(r: any): any {
-  return r ? { candidate: { id: r.candidate.id, sport: r.candidate.sport, sport_label: r.candidate.sport_label, matchup: r.candidate.matchup, kickoff_local: r.candidate.kickoff_local, market: r.candidate.market, selection: r.candidate.selection, line: r.candidate.line, quote: r.candidate.quote, fair: { method: r.candidate.fair?.method, label: r.candidate.fair?.label, probability: r.candidate.fair?.probability }, counter: r.candidate.counter, corrected: r.candidate.corrected ?? [] }, audit: r.audit, evaluation: r.evaluation,
+  return r ? { candidate: { id: r.candidate.id, sport: r.candidate.sport, sport_label: r.candidate.sport_label, game_id: r.candidate.game_id != null ? String(r.candidate.game_id) : null, home: r.candidate.home ?? null, away: r.candidate.away ?? null, kickoff: r.candidate.kickoff ?? null, matchup: r.candidate.matchup, kickoff_local: r.candidate.kickoff_local, market: r.candidate.market, selection: r.candidate.selection, line: r.candidate.line, quote: r.candidate.quote, fair: { method: r.candidate.fair?.method, label: r.candidate.fair?.label, probability: r.candidate.fair?.probability }, counter: r.candidate.counter, corrected: r.candidate.corrected ?? [] }, audit: r.audit, evaluation: r.evaluation,
     classification: r.classification ?? null, research: r.research ? researchSlim(r.research) : null } : null;
 }
 /** Every audited candidate through the five-role chain, at the level the question earns. Null when the chain is off. */
-async function researchAudited(o: { dal: Dal; audit: any; games: any[]; evidence: Map<string, any>; now: number; question: string; auth: string; stake: number | null; intent: string; level?: string | null }): Promise<{ investigations: Record<string, any>; pairs: { inv: any; c: any }[]; summary: any; sources_text: string; level: any } | null> {
+async function researchAudited(o: { dal: Dal; audit: any; games: any[]; evidence: Map<string, any>; now: number; question: string; auth: string; stake: number | null; intent: string; level?: string | null; progress?: Progress | null }): Promise<{ investigations: Record<string, any>; pairs: { inv: any; c: any }[]; summary: any; sources_text: string; level: any } | null> {
   if (!AGENT_RESEARCH_ENABLED || !EDAGENTS || !EDGRAPH || !EDBUDGET) return null;
   const audited: any[] = o.audit?.audited ?? [];
   const lvl = o.level && EDBUDGET.LEVELS[o.level] ? { level: o.level, budget: Object.assign({}, EDBUDGET.LEVELS[o.level], RESEARCH_PAID_OK ? {} : { paid_calls: 0 }), why: ["set by the route" + (RESEARCH_PAID_OK ? "" : "; paid research is not authorised, so only free and official sources are read")] }
     : EDBUDGET.selectLevel({ intent: o.intent, question: o.question, candidates: audited.length, data_available: true, paid_authorized: RESEARCH_PAID_OK });
   RESEARCH_LEDGER?.newTurn();
+  const P = stageEmitter(o.progress);
   const user = jwtSub(o.auth);
   const investigations: Record<string, any> = {}, pairs: { inv: any; c: any }[] = [];
+  const failed: string[] = [];
+  if (!audited.length) { P({ stage: "RETRIEVE_STATS", status: "skipped", detail: "no candidate cleared the board, so there was nothing to research" }); P({ stage: "VERIFY_INJURIES", status: "skipped", detail: "no candidate to verify" }); P({ stage: "CALCULATE", status: "skipped", detail: "no candidate to price" }); }
+  let i = 0;
   for (const r of audited) {
     const c = r.candidate;
+    i++;
+    P({ stage: "RETRIEVE_STATS", status: "running", detail: `${c.selection} (${c.matchup}): ${i} of ${audited.length} — injury report, starters, probables, desk notes (${lvl.level})` });
     const game = o.games.find((g: any) => g.sport === c.sport && String(g.game_id) === String(c.game_id)) ?? null;
     try {
       const inv = await researchChain({ dal: o.dal, r, e: o.evidence.get(String(c.id)) ?? {}, game, now: o.now, level: lvl.level, budget: lvl.budget, user, stake: o.stake });
       investigations[c.id] = inv; pairs.push({ inv, c });
     } catch (e) {
       /* a failed investigation never takes the basic analysis with it: the candidate keeps its audit and its price */
+      failed.push(String(c.selection));
       console.warn("research chain failed", String((e as Error)?.message ?? e).slice(0, 160));
     }
   }
   const invs = pairs.map((p) => p.inv);
+  if (audited.length) {
+    const nf = invs.reduce((n, x) => n + (x.research?.findings ?? []).length, 0), srcs = new Set<string>(); invs.forEach((x) => (x.research?.findings ?? []).forEach((f: any) => srcs.add(f.source_url)));
+    const unav = [...new Set(invs.flatMap((x) => x.unavailable ?? []))];
+    P({ stage: "RETRIEVE_STATS", status: failed.length === audited.length ? "failed" : "done", detail: `${nf} finding${nf === 1 ? "" : "s"} from ${srcs.size} source${srcs.size === 1 ? "" : "s"}` + (unav.length ? `; unavailable: ${unav.slice(0, 2).join("; ")}` : "") + (failed.length ? `; research failed for ${failed.join(", ")} (its price and audit are kept)` : "") });
+    const av = invs.reduce((n, x) => n + (x.research?.findings ?? []).filter((f: any) => f.topic === "availability" || f.topic === "starter").length, 0);
+    const cf = invs.reduce((n, x) => n + (x.research?.conflicts ?? []).length, 0), un = invs.reduce((n, x) => n + (x.research?.unresolved ?? []).length, 0);
+    const gp = invs.reduce((n, x) => n + (x.research?.gaps ?? []).length, 0);
+    P({ stage: "VERIFY_INJURIES", status: "done", detail: `${av} availability and starter record${av === 1 ? "" : "s"}; ${cf} conflict${cf === 1 ? "" : "s"} (${un} unresolved); ${gp} not in the model` });
+    const adj = invs.reduce((n, x) => n + (x.quant?.adjustments ?? []).length, 0), refused = invs.reduce((n, x) => n + (x.quant?.adjustments_refused ?? []).length, 0);
+    P({ stage: "CALCULATE", status: "done", detail: `${invs.length} candidate${invs.length === 1 ? "" : "s"} priced on the board's fair` + (adj ? `; ${adj} model scenario adjustment${adj === 1 ? "" : "s"}` : "") + (refused ? `; ${refused} refused` : "") });
+    const cls: Record<string, number> = {}; invs.forEach((x) => { const k = x.classification?.label ?? "UNVERIFIED"; cls[k] = (cls[k] ?? 0) + 1; });
+    P({ stage: "AUDIT", status: "done", detail: Object.entries(cls).map(([k, v]) => `${v} ${k.toLowerCase()}`).join(", ") });
+  }
   return { investigations, pairs, summary: researchSummaryOf(invs, lvl), sources_text: researchSourcesText(invs), level: lvl };
 }
 
 /** The scan: every sport (the board), the top candidates audited, the answer. */
-async function quantScan(o: { body: any; auth: string; dal: Dal; now: number; cls: any }): Promise<any | null> {
+async function quantScan(o: { body: any; auth: string; dal: Dal; now: number; cls: any; progress?: Progress | null }): Promise<any | null> {
   const { body, auth, dal, now, cls } = o;
+  const P = stageEmitter(o.progress);
+  P({ stage: "FIND_EVENTS", status: "running", detail: "every in-season sport EdgeDesk covers, from its captured prices and projections" });
   const q = String(body.question ?? "");
   const tz: string | null = typeof body?.timezone === "string" ? body.timezone.slice(0, 64) : null;
   const plan: any = { depth: "SLATE", budget: 40, intent: "best_bets", entities: { teams: [] } };
   const ctx: any = { sport: null, sport_source: null, single_game: false };
   const sw = await sweepBoard({ dal, plan, ctx, question: q, now, boardReq: { timezone: tz, state: null, follow_up: null }, boardScope: {} as any, primary: null, filter: cls.filter ?? null });
-  if (!sw || !sw.board) return null;
+  if (!sw || !sw.board) { P({ stage: "FIND_EVENTS", status: "failed", detail: "the board could not be read" }); return null; }
   const board = sw.board;
   const coverage = (board.coverage ?? []).map((c: any) => refineCoverage(c, sw.signal_counts?.[c.sport] ?? 0));
+  P({ stage: "FIND_EVENTS", status: "done", detail: `${board.eligibility?.counts?.eligible ?? 0} eligible events, ${board.candidates_considered ?? 0} markets evaluated (${board.scope?.window?.label ?? "window"})`,
+    partial: { coverage: coverage.map((c: any) => ({ sport: c.sport, label: c.label, status: c.status, why: c.why ?? null })) } });
   const cands = EDQUANT.candidatesFromBoard(board, cls.filter ?? null).map((c: any) => {
     const g = sw.games.find((x: any) => x.sport === c.sport && String(x.game_id) === String(c.game_id));
     return (g && (g.home_starter || g.away_starter)) ? { ...c, starters: { home: g.home_starter, away: g.away_starter } } : c;
@@ -50471,15 +50778,21 @@ async function quantScan(o: { body: any; auth: string; dal: Dal; now: number; cl
   /* the evidence each audit gathered is kept, so the researcher reads the same report the auditor did */
   const evStore = new Map<string, any>();
   const g0 = quantAuditGather(dal, sw.games, now);
+  P({ stage: "COMPARE_PRICES", status: cands.length ? "running" : "skipped", detail: cands.length ? `${cands.length} candidate${cands.length === 1 ? "" : "s"} with an executable price; re-reading the top ${Math.min(SCAN_AUDIT_TOP, cands.length)} at every book` : "nothing on the board has an executable price that clears the screen" });
   const audit = await EDAUDIT.run({ candidates: cands, gather: async (c: any, round: number) => { const e = await g0(c, round); evStore.set(String(c.id), e); return e; }, now, top: SCAN_AUDIT_TOP });
+  if (cands.length) P({ stage: "COMPARE_PRICES", status: "done", detail: `${(audit.audited ?? []).length} re-read on a fresh price and per-book quotes`,
+    partial: { audit: (audit.audited ?? []).map((r: any) => ({ selection: r.candidate.selection, matchup: r.candidate.matchup, line: r.candidate.line, market: r.candidate.market, status: r.audit.status, reason: r.audit.reason })) } });
   const evaluate = quantEvaluator(now, cls.risk_dollars ?? null);
   /* the research chain, on every audited candidate: researcher → oddsmaker → strategist → auditor */
-  const rs = await researchAudited({ dal, audit, games: sw.games, evidence: evStore, now, question: q, auth, stake: cls.risk_dollars ?? null, intent: "SCAN" });
+  const rs = await researchAudited({ dal, audit, games: sw.games, evidence: evStore, now, question: q, auth, stake: cls.risk_dollars ?? null, intent: "SCAN", progress: o.progress });
+  if (!rs) P({ stage: "AUDIT", status: "done", detail: `${(audit.audited ?? []).length} audited (the research chain is switched off)` });
   const scan = EDQUANT.scanResult({ board, audit, coverage, not_covered: EDADAPT?.NOT_COVERED ?? [], risk_dollars: cls.risk_dollars ?? null, filter: cls.filter ?? null, now, evaluate, investigations: rs ? rs.investigations : null });
   if (rs) { scan.research_summary = rs.summary; scan.sources_text = rs.sources_text; }
+  P({ stage: "EXPLAIN", status: "running", detail: "writing the answer from the verified result" });
   const det = EDQUANT.renderScan(scan);
   const nar = rs && (scan.best || scan.potential.length) ? await narrateResearch(det, rs.pairs.map((p) => p.inv.research?.graph).filter(Boolean), jwtSub(auth), rs.level.budget, auth) : null;
   const answer = nar ? nar.answer : det;
+  P({ stage: "EXPLAIN", status: "done", detail: nar && nar.narration.prose === "MODEL" ? "rephrased under the critic" : "deterministic answer" + (nar && nar.narration.prose === "REJECTED_BY_CRITIC" ? " (the model's rephrasing was rejected by the critic)" : "") });
   try { await publishBoardRecords(auth, EDBOARD.records(board, { question: q })); } catch { /* best effort */ }
   try { await publishAudits(auth, auditRecords(audit, scan, q, now)); } catch { /* best effort */ }
   if (rs) { try { await publishResearch(auth, rs.pairs, { question: q, now, level: rs.summary.level }, dal.fetchImpl()); } catch { /* best effort */ } }
@@ -50511,18 +50824,23 @@ const BETS_NUMS = ["line", "odds_decimal", "stake", "reported_payout", "fees", "
 const BETS_SELECT = ["id", "platform", "platform_label", "platform_type", "position_type", "sport", "league", "event_name", "event_id", "event_start_at", "market_name", "selection", "side", "odds_american",
   "resolution", "status", "result", "placed_at", "settled_at", "source", "external_position_id", "legs"].concat(BETS_NUMS.map((c) => c + "::text")).join(",");
 const BETS_PAGE = 1000;
-async function quantBets(o: { body: any; dal: Dal; now: number }): Promise<any> {
+async function quantBets(o: { body: any; dal: Dal; now: number; progress?: Progress | null }): Promise<any> {
+  const P = stageEmitter(o.progress);
   const tz = typeof o.body?.timezone === "string" && o.body.timezone ? o.body.timezone.slice(0, 64) : BOARD_DEFAULT_TZ;
   const det = { model: null, narration: { ok: true, prose: "DETERMINISTIC", critic: null }, build: BUILD };
   if (!EDBETS) return { answer: "Betting-history analysis is not available on this deployment, so nothing about your bets was computed.", ...det, bets: { available: false, why: "EDBETS not loaded" } };
+  P({ stage: "READ_HISTORY", status: "running", detail: "your own recorded positions (only your rows are readable)" });
   const settled = await o.dal.read(`portfolio_positions?select=${BETS_SELECT}&status=neq.OPEN&order=settled_at.desc.nullslast,id.asc&limit=${BETS_PAGE}`, "bets");
   const open = await o.dal.read(`portfolio_positions?select=${BETS_SELECT}&status=eq.OPEN&order=placed_at.desc,id.asc&limit=${BETS_PAGE}`, "bets");
+  P({ stage: "READ_HISTORY", status: settled.error ? "failed" : "done", detail: settled.error ? "your positions could not be read" : `${(settled.rows ?? []).length} settled and ${(open.rows ?? []).length} open position${(open.rows ?? []).length === 1 ? "" : "s"}` });
   if (settled.error) return { answer: "EdgeDesk could not read your recorded bets right now (" + String(settled.error).slice(0, 120) + "). Nothing was assumed and nothing was computed.", ...det, bets: { available: false, why: String(settled.error).slice(0, 200) } };
   const rows = [...(settled.rows ?? []), ...(open.error ? [] : (open.rows ?? []))];
   if (!rows.length) return { answer: "You have no bets recorded in your EdgeDesk portfolio yet, so there is nothing to explain. Import a sportsbook export (Portfolio → Import, CSV) or add your wagers, and this question will be answered from them.", ...det, bets: { available: true, tickets: 0 } };
   const src = EDBETS.fromPositions(rows, { now: o.now });
   const a = EDBETS.analyze(src, { tz, now: o.now });
+  P({ stage: "ANALYZE_HISTORY", status: "done", detail: `${a.counts?.tickets ?? 0} tickets (${a.counts?.singles ?? 0} singles, ${a.counts?.parlays ?? 0} parlays), one per parlay however many legs` });
   const ans = EDBETS.answer(a);
+  P({ stage: "EXPLAIN", status: "done", detail: "deterministic answer" });
   const capped = (settled.rows ?? []).length >= BETS_PAGE;
   const notes: string[] = [];
   if (capped) notes.push(`Read: your latest ${BETS_PAGE} settled positions; older ones are not in this answer.`);
@@ -50540,6 +50858,10 @@ async function quantBets(o: { body: any; dal: Dal; now: number }): Promise<any> 
   };
 }
 
+function kickoffLocal(iso: string | null, tz: string | null): string | null {
+  const t = iso ? Date.parse(iso) : NaN; if (!isFinite(t)) return null;
+  try { return new Intl.DateTimeFormat("en-US", { timeZone: tz || BOARD_DEFAULT_TZ, weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(new Date(t)); } catch { return new Date(t).toISOString().slice(0, 16).replace("T", " ") + " UTC"; }
+}
 function minutesAgoText(at: string | null, now: number): string {
   const t = at ? Date.parse(at) : NaN; if (!isFinite(t)) return "capture time unknown";
   const m = Math.max(0, Math.round((now - t) / 60000));
@@ -50556,18 +50878,23 @@ function minutesAgoText(at: string | null, now: number): string {
  * A gap is never an edge by itself: a game with no executable price, or a model that is not validated,
  * is reported as a discrepancy and nothing more.
  */
-async function quantResearchSlate(o: { body: any; auth: string; dal: Dal; now: number; cls: any }): Promise<any | null> {
+async function quantResearchSlate(o: { body: any; auth: string; dal: Dal; now: number; cls: any; progress?: Progress | null; only_game?: { sport: string | null; game_id: string } | null; screen_only?: boolean }): Promise<any | null> {
   const { body, auth, dal, now, cls } = o;
   if (!AGENT_RESEARCH_ENABLED || !EDAGENTS || !EDGRAPH || !EDBUDGET || !EDDISAGREE) return null;
+  const P = stageEmitter(o.progress);
+  P({ stage: "FIND_EVENTS", status: "running", detail: cls.sport ? quantSportLabel(cls.sport) + " games in the window" : "every in-season sport" });
   const q = String(body.question ?? "");
   const tz: string | null = typeof body?.timezone === "string" ? body.timezone.slice(0, 64) : null;
   const plan: any = { depth: "SLATE", budget: 40, intent: "best_bets", entities: { teams: [] } };
   const ctx: any = { sport: null, sport_source: null, single_game: false };
-  const sw = await sweepBoard({ dal, plan, ctx, question: q, now, boardReq: { timezone: tz, state: null, follow_up: null }, boardScope: {} as any, primary: null, filter: cls.filter ?? null });
-  if (!sw || !sw.board) return null;
+  const only = o.only_game ?? null;
+  /* one game: the window must reach its kickoff whatever the question says */
+  const sw = await sweepBoard({ dal, plan, ctx, question: only ? q + " this week" : q, now, boardReq: { timezone: tz, state: null, follow_up: null }, boardScope: {} as any, primary: null, filter: cls.filter ?? null });
+  if (!sw || !sw.board) { P({ stage: "FIND_EVENTS", status: "failed", detail: "the board could not be read" }); return null; }
   const board = sw.board;
-  const sport: string | null = cls.sport ?? null;
+  const sport: string | null = (only?.sport ?? cls.sport) ?? null;
   const inScope = (k: string) => !sport || k === sport;
+  const isOnly = (sp: string, id: any) => !only || (String(id) === String(only.game_id) && (!only.sport || sp === only.sport));
   const lvl = EDBUDGET.selectLevel({ intent: "RESEARCH_SLATE", question: q, candidates: 1, data_available: true, paid_authorized: RESEARCH_PAID_OK });
   RESEARCH_LEDGER?.newTurn();
   const user = jwtSub(auth);
@@ -50575,27 +50902,43 @@ async function quantResearchSlate(o: { body: any; auth: string; dal: Dal; now: n
   /* L1: every pregame game in scope and inside the question's window */
   const games: any[] = [];
   const dropped = (board.eligibility?.dropped ?? []) as any[];
+  /* the NFL efficiency build, once: a game whose two teams it covers is researchable even with no projection */
+  let nflTeams: any = null;
+  if (EDREADY && (sw.slates ?? []).some((x: any) => x.sport === "americanfootball_nfl" && inScope(x.sport))) { try { nflTeams = (await dal.getMatchupMetrics()).json?.nfl?.teams ?? null; } catch { nflTeams = null; } }
   for (const sl of (sw.slates ?? []).filter((x: any) => inScope(x.sport))) {
     const v = EDPRICE ? EDPRICE.validationFor(sl.sport, "spread") : null;
     for (const g of (sl.games ?? [])) {
-      if (g.kickoff && Date.parse(g.kickoff) <= now) continue;
-      if (dropped.some((d) => d.sport === sl.sport && String(d.game_id) === String(g.game_id))) continue;
+      if (!isOnly(sl.sport, g.game_id)) continue;
+      if (g.kickoff && Date.parse(g.kickoff) <= now && !only) continue;
+      if (!only && dropped.some((d) => d.sport === sl.sport && String(d.game_id) === String(g.game_id))) continue;
       const sq = boardSpreadQuote(g, now);
       const mhl = num(g.model_home_line), khl = sq ? num(sq.market_home_line) : null;
-      games.push({ sport: sl.sport, game_id: String(g.game_id), home: g.home_team, away: g.away_team, kickoff: g.kickoff ?? null, matchup: `${g.away_team} @ ${g.home_team}`,
+      const qs = sq && sq.executable ? EDINTEL.quoteState({ captured_at: sq.observed_at, market: "spreads", kickoff: g.kickoff, now }) : null;
+      const metricsCover = sl.sport === "americanfootball_nfl" && !!nflTeams && !!nflTeams[String(g.home_id ?? "").toUpperCase()] && !!nflTeams[String(g.away_id ?? "").toUpperCase()];
+      games.push({ sport: sl.sport, game_id: String(g.game_id), home: g.home_team, away: g.away_team, home_id: g.home_id ?? null, away_id: g.away_id ?? null, kickoff: g.kickoff ?? null, matchup: `${g.away_team} @ ${g.home_team}`,
         model_line: mhl, market_line: khl, gap_points: mhl != null && khl != null ? Math.round((mhl - khl) * 10) / 10 : null,
+        model_total: num((g as any).model_total), market_total: (() => { const tq = boardTotalQuote(g, now); return tq ? num(tq.total) : null; })(),
         freshness: !sq ? "no market number on file" : sq.executable ? `${sq.book ?? "a book"}, ${String(sq.freshness ?? "").toLowerCase().replace(/_/g, " ")}, ${minutesAgoText(sq.observed_at, now)}` : "a reference line, not an executable price",
         executable: !!sq?.executable, actionable: !!sq?.actionable, model_tier: mhl != null ? (v?.tier ?? "RESEARCH") : null,
-        model_version: (sl.model_meta?.version ?? null), diagnosis: null, research: null, disagreement: null });
+        model_version: (sl.model_meta?.version ?? null), model_generated_at: sl.model_meta?.generated_at ?? null, diagnosis: null, research: null, disagreement: null,
+        ready_in: { status: (g as any).status ?? null, model: { status: g.model_status ?? null, home_line: mhl, total: num((g as any).model_total), tier: mhl != null ? (v?.tier ?? "RESEARCH") : null, data_quality: (g as any).data_quality?.status ?? null },
+          market: sq ? { kind: sq.executable ? "PRICE" : "LINE_ONLY", status: sq.executable ? (qs?.status ?? sq.freshness ?? null) : "LINE_ONLY", actionable: !!sq.actionable, captured_at: sq.observed_at ?? null, limit_min: qs?.limit_min ?? null, book: sq.book ?? null, odds_american: num(sq.odds_american), source: sq.source ?? null } : null,
+          metrics: metricsCover } });
     }
   }
+  P({ stage: "FIND_EVENTS", status: "done", detail: only ? (games.length ? games[0].matchup : "the game is not on EdgeDesk's card") : `${games.length} pregame game${games.length === 1 ? "" : "s"} in ${board.scope?.window?.label ?? "the window"}`,
+    partial: { games: games.map((g) => ({ matchup: g.matchup, kickoff: g.kickoff, model_line: g.model_line, market_line: g.market_line, gap_points: g.gap_points, executable: g.executable })) } });
   /* L2: the largest gaps, researched and diagnosed (bounded by the level's game budget) */
   const g0 = quantAuditGather(dal, sw.games, now);
   const l2 = EDBUDGET.LEVELS.L2;
   const ranked = games.filter((g) => g.gap_points != null).sort((a, b) => Math.abs(b.gap_points) - Math.abs(a.gap_points));
-  const l2games = ranked.slice(0, Math.min(Number(l2.games) || 5, 6));
+  /* screen only (readiness): no research is bought, no audit runs — the board's own data answers */
+  const l2games = o.screen_only ? [] : ranked.slice(0, Math.min(Number(l2.games) || 5, 6));
   const l2invs: any[] = [], l2pairs: { inv: any; c: any }[] = [];
+  let l2i = 0;
   for (const g of l2games) {
+    l2i++;
+    P({ stage: "RETRIEVE_STATS", status: "running", detail: `${g.matchup}: ${l2i} of ${l2games.length} largest gaps — injury report, starters, desk notes` });
     const pseudo = { id: "slate:" + g.sport + ":" + g.game_id, sport: g.sport, game_id: g.game_id, home: g.home, away: g.away, kickoff: g.kickoff };
     const sg = sw.games.find((x: any) => x.sport === g.sport && String(x.game_id) === String(g.game_id)) ?? null;
     try {
@@ -50618,45 +50961,156 @@ async function quantResearchSlate(o: { body: any; auth: string; dal: Dal; now: n
       g.diagnosis = "research could not be completed for this game (" + String((err as Error)?.message ?? err).slice(0, 80) + "); the discrepancy is reported without attribution";
     }
   }
+  if (l2games.length) {
+    const nf = l2invs.reduce((n, x) => n + (x.research?.findings ?? []).length, 0), cf = l2invs.reduce((n, x) => n + (x.research?.conflicts ?? []).length, 0);
+    P({ stage: "RETRIEVE_STATS", status: "done", detail: `${nf} finding${nf === 1 ? "" : "s"} on the ${l2games.length} largest gap${l2games.length === 1 ? "" : "s"}` });
+    P({ stage: "VERIFY_INJURIES", status: "done", detail: `${cf} conflict${cf === 1 ? "" : "s"} between sources; ${l2games.filter((g) => g.disagreement).length} gap${l2games.length === 1 ? "" : "s"} attributed to a cause` });
+  }
   /* L3: the board's priced candidates in scope, audited, then the full chain */
-  const cands = EDQUANT.candidatesFromBoard(board, cls.filter ?? null).filter((c: any) => inScope(c.sport)).map((c: any) => {
+  const cands = EDQUANT.candidatesFromBoard(board, cls.filter ?? null).filter((c: any) => inScope(c.sport) && isOnly(c.sport, c.game_id)).map((c: any) => {
     const g = sw.games.find((x: any) => x.sport === c.sport && String(x.game_id) === String(c.game_id));
     return (g && (g.home_starter || g.away_starter)) ? { ...c, starters: { home: g.home_starter, away: g.away_starter } } : c;
   });
   dal.budget = (dal.budget ?? 0) + 2 * SCAN_AUDIT_TOP + 2;
   const evStore = new Map<string, any>();
-  const audit = await EDAUDIT.run({ candidates: cands, gather: async (c: any, round: number) => { const e = await g0(c, round); evStore.set(String(c.id), e); return e; }, now, top: SCAN_AUDIT_TOP });
-  const rs = await researchAudited({ dal, audit, games: sw.games, evidence: evStore, now, question: q, auth, stake: cls.risk_dollars ?? null, intent: "RESEARCH_SLATE", level: lvl.level });
+  const auditCands = o.screen_only ? [] : cands;
+  P({ stage: "COMPARE_PRICES", status: auditCands.length ? "running" : "skipped", detail: o.screen_only ? `${cands.length} priced candidate${cands.length === 1 ? "" : "s"} on the board (no audit for a readiness question)` : cands.length ? `${cands.length} priced candidate${cands.length === 1 ? "" : "s"}; re-reading the top ${Math.min(SCAN_AUDIT_TOP, cands.length)} at every book` : "no executable price in scope clears the board's screen" });
+  const audit = await EDAUDIT.run({ candidates: auditCands, gather: async (c: any, round: number) => { const e = await g0(c, round); evStore.set(String(c.id), e); return e; }, now, top: SCAN_AUDIT_TOP });
+  if (auditCands.length) P({ stage: "COMPARE_PRICES", status: "done", detail: `${(audit.audited ?? []).length} re-read on a fresh price`, partial: { audit: (audit.audited ?? []).map((r: any) => ({ selection: r.candidate.selection, matchup: r.candidate.matchup, line: r.candidate.line, market: r.candidate.market, status: r.audit.status, reason: r.audit.reason })) } });
+  /* stages the L2 pass already completed are not reported "skipped" by the L3 pass */
+  const l3progress: Progress | null = o.progress ? (ev: any) => { if (ev.status === "skipped" && l2games.length && (ev.stage === "RETRIEVE_STATS" || ev.stage === "VERIFY_INJURIES")) return; o.progress!(ev); } : null;
+  const rs = o.screen_only ? null : await researchAudited({ dal, audit, games: sw.games, evidence: evStore, now, question: q, auth, stake: cls.risk_dollars ?? null, intent: "RESEARCH_SLATE", level: lvl.level, progress: l3progress });
+  if (!(audit.audited ?? []).length) { P({ stage: "CALCULATE", status: "skipped", detail: "no priced candidate to calculate" }); P({ stage: "AUDIT", status: "skipped", detail: "no priced candidate to audit" }); }
   const scan = EDQUANT.scanResult({ board, audit, coverage, not_covered: EDADAPT?.NOT_COVERED ?? [], risk_dollars: cls.risk_dollars ?? null, filter: cls.filter ?? null, now, evaluate: quantEvaluator(now, cls.risk_dollars ?? null), investigations: rs ? rs.investigations : null });
   const investigated = [scan.best, ...(scan.verified_rest ?? []), ...scan.potential, ...scan.near_misses].filter(Boolean);
+  /* readiness, per game: five separate states from the data above, and every requirement that is missing */
+  const RANKC: Record<string, number> = { VERIFIED_CANDIDATE: 0, WATCHLIST: 1, RESEARCH_REQUIRED: 2, REJECTED: 3, UNVERIFIED: 4 };
+  for (const g of games) {
+    const rows = investigated.filter((r: any) => r.candidate.sport === g.sport && String(r.candidate.game_id) === g.game_id && r.classification).sort((a: any, b: any) => RANKC[a.classification.classification] - RANKC[b.classification.classification]);
+    const top = rows[0] ?? null;
+    g.readiness = EDREADY ? EDREADY.assess({ sport: g.sport, game_id: g.game_id, kickoff: g.kickoff, status: g.ready_in.status, model: g.ready_in.model, market: g.ready_in.market, metrics: g.ready_in.metrics,
+      audit: top ? { classification: top.classification.classification, reason: (top.classification.reasons ?? [])[0] ?? null } : null,
+      gate: top ? null : (() => {
+        const bc = cands.find((c: any) => c.sport === g.sport && String(c.game_id) === g.game_id);
+        if (o.screen_only && bc) return { actionable: bc.qualification?.status === "QUALIFIED", status: bc.qualification?.status ?? null, why: bc.qualification?.status === "QUALIFIED" ? null : "the board's best price on this game did not qualify" + (bc.qualification?.rules?.[0] ? " (" + bc.qualification.rules[0] + ")" : "") };
+        return { actionable: false, why: g.executable ? "no price on this game cleared the board's screen, so nothing reached the audit" : null };
+      })() }, { now }) : null;
+    g.kickoff_local = kickoffLocal(g.kickoff, tz);
+  }
+  const readiness = EDREADY ? EDREADY.summarize(games.map((g) => g.readiness)) : null;
   const allInvs = (rs ? rs.pairs.map((p) => p.inv) : []).concat(l2invs);
   const summary = researchSummaryOf(allInvs, lvl);
   const notInvestigated: string[] = [];
   games.filter((g) => g.gap_points == null).forEach((g) => notInvestigated.push(`${g.matchup}: ${g.model_line == null ? "no EdgeDesk projection on file" : "no market number on file"}`));
   ranked.slice(l2games.length).forEach((g) => notInvestigated.push(`${g.matchup}: a ${Math.abs(g.gap_points)}-point gap, below the ${l2games.length} largest researched this turn`));
   const covSentence = coverage.length ? coverage.map((c: any) => `${c.label}: ${String(c.status).toLowerCase().replace(/_/g, " ")}${c.why ? " (" + String(c.why).replace(/\.$/, "") + ")" : ""}.`).join(" ") : (sport ? quantSportLabel(sport) + " is not on the board right now." : "");
-  const det = EDQUANT.renderResearchSlate({ sport_label: sport ? quantSportLabel(sport) : "Every in-season sport", window: board.scope?.window?.label ?? null, games, investigated,
-    coverage_sentence: covSentence, research_summary: summary, sources_text: researchSourcesText(allInvs), not_investigated: notInvestigated });
-  const nar = await narrateResearch(det, allInvs.map((x: any) => x.research?.graph).filter(Boolean), user, lvl.budget, auth);
+  P({ stage: "EXPLAIN", status: "running", detail: "writing the answer from the verified result" });
+  const gameOut = (g: any) => ({ sport: g.sport, game_id: g.game_id, matchup: g.matchup, home: g.home, away: g.away, kickoff: g.kickoff, kickoff_local: g.kickoff_local, model_line: g.model_line, market_line: g.market_line, gap_points: g.gap_points,
+    model_total: g.model_total, market_total: g.market_total, freshness: g.freshness, executable: g.executable, model_tier: g.model_tier, model_generated_at: g.model_generated_at,
+    disagreement: g.disagreement ? { verdict: g.disagreement.verdict, primary: g.disagreement.primary, size: g.disagreement.size, explanation: g.disagreement.explanation, is_edge_evidence: g.disagreement.is_edge_evidence, causes: g.disagreement.causes } : null,
+    findings: g.research ? g.research.findings.length : null, conflicts: g.research ? g.research.conflicts.length : null,
+    research: g.research ? researchSlim({ research: g.research, disagreement: g.disagreement, unavailable: [] }) : null,
+    readiness: g.readiness, why_not: EDREADY && g.readiness ? EDREADY.whyNot(g.readiness) : [] });
+  const sportLabel = sport ? quantSportLabel(sport) : "Every in-season sport";
+  const det = only ? EDQUANT.renderGameResearch({ game: games[0] ? gameOut(games[0]) : null, sport_label: sportLabel, investigated, why_not: games[0] && EDREADY && games[0].readiness ? EDREADY.whyNot(games[0].readiness) : [], research_summary: summary, sources_text: researchSourcesText(allInvs) })
+    : o.screen_only ? EDQUANT.renderReadiness({ games: games.map(gameOut), readiness, sport_label: sport ? sportLabel : null, window: board.scope?.window?.label ?? null, coverage_sentence: covSentence })
+    : EDQUANT.renderResearchSlate({ sport_label: sportLabel, window: board.scope?.window?.label ?? null, games, investigated,
+      coverage_sentence: covSentence, research_summary: summary, sources_text: researchSourcesText(allInvs), not_investigated: notInvestigated, readiness });
+  const nar = o.screen_only ? { answer: det, model: null, narration: { ok: true, prose: "DETERMINISTIC", critic: null }, deterministic_answer: null } : await narrateResearch(det, allInvs.map((x: any) => x.research?.graph).filter(Boolean), user, lvl.budget, auth);
   const answer = nar.answer;
-  try { await publishAudits(auth, auditRecords(audit, scan, q, now)); } catch { /* best effort */ }
-  try { await publishResearch(auth, (rs ? rs.pairs : []).concat(l2pairs), { question: q, now, level: lvl.level }, dal.fetchImpl()); } catch { /* best effort */ }
-  return {
+  P({ stage: "EXPLAIN", status: "done", detail: nar.narration.prose === "MODEL" ? "rephrased under the critic" : "deterministic answer" });
+  if (!o.screen_only) {
+    try { await publishAudits(auth, auditRecords(audit, scan, q, now)); } catch { /* best effort */ }
+    try { await publishResearch(auth, (rs ? rs.pairs : []).concat(l2pairs), { question: q, now, level: lvl.level }, dal.fetchImpl()); } catch { /* best effort */ }
+  }
+  const out: any = {
     answer, model: nar.model, narration: nar.narration, ...(nar.deterministic_answer ? { deterministic_answer: nar.deterministic_answer } : {}),
     research_slate: {
       schema: (EDAGENTS.VERSION ?? "edagents") + ":slate", sport, window: board.scope?.window ?? null, level: lvl,
-      games: games.map((g) => ({ sport: g.sport, game_id: g.game_id, matchup: g.matchup, kickoff: g.kickoff, model_line: g.model_line, market_line: g.market_line, gap_points: g.gap_points, freshness: g.freshness, executable: g.executable, model_tier: g.model_tier,
-        disagreement: g.disagreement ? { verdict: g.disagreement.verdict, primary: g.disagreement.primary, size: g.disagreement.size, explanation: g.disagreement.explanation, is_edge_evidence: g.disagreement.is_edge_evidence } : null,
-        findings: g.research ? g.research.findings.length : null, conflicts: g.research ? g.research.conflicts.length : null })),
+      games: games.map(gameOut),
+      readiness, mode: only ? "GAME" : o.screen_only ? "READINESS" : "SLATE",
       investigated: investigated.map(quantRowSlim), survivors: investigated.filter((r: any) => r.classification?.classification === "VERIFIED_CANDIDATE" && !r.withheld_by_board).length,
       final_status: scan.final_status, research_summary: summary, coverage, not_investigated: notInvestigated, research_write: LAST_RESEARCH_WRITE,
     },
     quant_state: EDQUANT.stateFrom({ scan, now }),
     build: BUILD,
   };
+  /* one game: the same research, under the key a game view reads */
+  if (only) { out.game_research = { ...out.research_slate, game: out.research_slate.games[0] ?? null }; delete out.research_slate; }
+  return out;
 }
 
-export async function quantTurn(o: { body: any; auth: string; now?: number; fetchImpl?: typeof fetch }): Promise<any | null> {
+/** "Which matchup has the biggest offensive advantage?" — unit against unit, from the NFL slate's team ratings. */
+async function quantMatchupEdges(o: { body: any; dal: Dal; now: number; cls: any; progress?: Progress | null }): Promise<any> {
+  const P = stageEmitter(o.progress);
+  const det = { model: null, narration: { ok: true, prose: "DETERMINISTIC", critic: null }, build: BUILD };
+  const unit = o.cls.unit ?? "offense";
+  if (o.cls.sport && o.cls.sport !== "americanfootball_nfl") {
+    return { answer: EDQUANT.renderMatchupEdges({ rows: [], unit, sport_label: quantSportLabel(o.cls.sport), missing: "EdgeDesk's " + quantSportLabel(o.cls.sport) + " build publishes quarterback EPA and each game's projection, not unit-against-unit efficiency ratings, so no mismatch is measured here. Open a game for its research packet." }), ...det, matchup_edges: { rows: [], sport: o.cls.sport } };
+  }
+  P({ stage: "RETRIEVE_STATS", status: "running", detail: "EdgeDesk's NFL team ratings (football/nfl/slate.json)" });
+  const art = await o.dal.getArtifact("football/nfl/slate.json", { free: true });
+  const j: any = art.json;
+  if (!j || !j.teams || !Array.isArray(j.games)) { P({ stage: "RETRIEVE_STATS", status: "failed", detail: "the NFL slate could not be read" }); return { answer: EDQUANT.renderMatchupEdges({ rows: [], unit, sport_label: "NFL", missing: "The NFL slate could not be read, so no mismatch can be measured right now." }), ...det, matchup_edges: { rows: [] } }; }
+  const tz = typeof o.body?.timezone === "string" ? o.body.timezone.slice(0, 64) : null;
+  const scope = EDBOARD ? EDBOARD.resolveScope({ question: String(o.body.question ?? ""), now: o.now, timezone: tz, default_timezone: BOARD_DEFAULT_TZ, sport: "americanfootball_nfl", sport_source: "question", state: null, follow_up: null, supported: BOARD_SPORTS }) : null;
+  const from = scope?.window?.from ? Date.parse(scope.window.from) : o.now, to = scope?.window?.to ? Date.parse(scope.window.to) : o.now + 7 * 86400000;
+  const KEYS: Record<string, [string, string, number]> = { offense: ["off_epa_play", "def_epa_play", 1], pass: ["pass_epa_db", "def_pass_epa_db", 1], rush: ["rush_epa_att", "def_rush_epa_att", 1], defense: ["def_epa_play", "off_epa_play", -1] };
+  const [ka, kb, sign] = KEYS[unit] ?? KEYS.offense;
+  const rows: any[] = [];
+  for (const g of j.games) {
+    const ko = Date.parse(g.kickoff ?? ""); if (!isFinite(ko) || ko <= o.now || ko < from || ko > to) continue;
+    const H = j.teams[g.home_code], A = j.teams[g.away_code]; if (!H?.ratings || !A?.ratings) continue;
+    for (const [me, op] of [[A, H], [H, A]] as const) {
+      const a = num(me.ratings[ka]), b = num(op.ratings[kb]); if (a == null || b == null) continue;
+      const edge = sign * (a + b);
+      rows.push({ matchup: `${A.team} @ ${H.team}`, game_id: String(g.game_id), kickoff: g.kickoff, offense: me.team, defense: op.team, edge: Math.round(edge * 1000) / 1000,
+        off_rank: me.ranks?.[ka]?.rank ?? null, def_rank: op.ranks?.[kb]?.rank ?? null, of: me.ranks?.[ka]?.of ?? 32 });
+    }
+  }
+  rows.sort((x, y) => y.edge - x.edge);
+  P({ stage: "RETRIEVE_STATS", status: "done", detail: `${rows.length / 2 | 0} games in ${scope?.window?.label ?? "the next 7 days"}` });
+  P({ stage: "EXPLAIN", status: "done", detail: "deterministic answer" });
+  const label = unit === "pass" ? "passing EPA per dropback" : unit === "rush" ? "rushing EPA per carry" : "EPA per play";
+  return { answer: EDQUANT.renderMatchupEdges({ rows, unit, sport_label: "NFL", window: scope?.window?.label ?? null, metric_label: label, source: "EdgeDesk NFL slate team ratings (nflverse play-by-play)", generated_at: j.generated_at ?? null }),
+    ...det, matchup_edges: { sport: "americanfootball_nfl", unit, metric: [ka, kb], window: scope?.window ?? null, generated_at: j.generated_at ?? null, rows: rows.slice(0, 10) } };
+}
+/** "Compare DraftKings Predictions and Kalshi prices": what is on file for each venue, never an invented price. */
+async function quantVenueCompare(o: { body: any; dal: Dal; now: number; cls: any }): Promise<any> {
+  const LABEL: Record<string, string> = { kalshi: "Kalshi", polymarket: "Polymarket", draftkings_predictions: "DraftKings Predictions", fanduel_predicts: "FanDuel Predicts", robinhood: "Robinhood prediction markets", crypto_com: "Crypto.com", novig: "Novig", prophetx: "ProphetX", sportsbook: "Sportsbooks (DraftKings, FanDuel, BetMGM, Caesars)" };
+  const reg: any = EDFAIR?.VENUES ?? {};
+  const venues = (o.cls.venues ?? []).map((k: string) => {
+    const v = reg[k] ?? null;
+    if (k === "sportsbook") return { key: k, label: LABEL[k], captured: true, fee: "none: the price is the cost", verification: "VERIFIED", note: "EdgeDesk captures sportsbook moneylines and spreads with a capture time; totals and props are not priced by the quant desk." };
+    if (v) return { key: k, label: v.label ?? LABEL[k] ?? k, captured: false, fee: v.fee?.formula ? v.fee.formula : String(v.fee?.kind ?? "unknown").toLowerCase().replace(/_/g, " "), verification: v.fee?.verification ?? "UNKNOWN", note: v.fee?.basis ?? null, source_url: v.fee?.source_url ?? null };
+    return { key: k, label: LABEL[k] ?? k, captured: false, fee: "not on file", verification: "UNKNOWN", note: "No fee schedule for this venue is on file, so its all-in cost cannot be computed; it is never assumed to match another venue's." };
+  });
+  return { answer: EDQUANT.renderVenueCompare({ venues }), model: null, narration: { ok: true, prose: "DETERMINISTIC", critic: null }, venue_compare: { venues }, build: BUILD };
+}
+
+/** The game a research view is about (the new game view sends it): an odds-feed sport key and the board's game id. */
+export function quantGameContext(body: any): { sport: string | null; game_id: string } | null {
+  const g = body?.research_context?.game;
+  if (!g || typeof g !== "object") return null;
+  const id = typeof g.game_id === "string" && /^[A-Za-z0-9_.:-]{1,40}$/.test(g.game_id) ? g.game_id : null;
+  if (!id) return null;
+  const sp = typeof g.sport === "string" && /^(americanfootball_nfl|americanfootball_ncaaf|baseball_mlb|mma_mixed_martial_arts)$/.test(g.sport) ? g.sport : null;
+  return { sport: sp, game_id: id };
+}
+/** Which quant route a question takes, without doing any work (the streaming decision reads it). */
+export function quantRouteOf(body: any): string | null {
+  if (!QUANT_ENABLED || !EDQUANT || !body) return null;
+  const q = String(body.question ?? "").trim();
+  if (!q || q.length > 400) return null;
+  const carried = EDQUANT.sanitizeState(body?.research_context?.quant ?? null);
+  const boardFollow = EDBOARD && BOARD_ENABLED ? EDBOARD.followUp({ question: q, state: EDBOARD.sanitizeState(body?.research_context?.board) }) : null;
+  const cls = EDQUANT.classify(q, { state: carried, has_board_state: !!boardFollow?.is_follow_up });
+  const gctx = quantGameContext(body);
+  if (gctx && body.desk === true && AGENT_RESEARCH_ENABLED && (body.intent_hint === "GAME_RESEARCH" || cls.intent === "READINESS" || /\b(disagree\w*|differ\w*)\b/i.test(q))) return "GAME_RESEARCH";
+  if (!cls.intent && /\b(edgedesk|model|you)\b[^?]{0,40}\b(disagree\w*|differ\w*)\b/i.test(q) && body.desk === true) return "RESEARCH_SLATE";
+  return cls.intent ?? null;
+}
+export async function quantTurn(o: { body: any; auth: string; now?: number; fetchImpl?: typeof fetch; progress?: Progress | null }): Promise<any | null> {
   if (!QUANT_ENABLED || !EDQUANT || !EDFAIR || !o.body) return null;
   const q = String(o.body.question ?? "").trim();
   if (!q || q.length > 400) return null;
@@ -50664,6 +51118,8 @@ export async function quantTurn(o: { body: any; auth: string; now?: number; fetc
   const carried = EDQUANT.sanitizeState(o.body?.research_context?.quant ?? null);
   const boardFollow = EDBOARD && BOARD_ENABLED ? EDBOARD.followUp({ question: q, state: EDBOARD.sanitizeState(o.body?.research_context?.board) }) : null;
   const cls = EDQUANT.classify(q, { state: carried, has_board_state: !!boardFollow?.is_follow_up });
+  const route = quantRouteOf(o.body);
+  if (route === "GAME_RESEARCH" || (route === "RESEARCH_SLATE" && !cls.intent)) cls.intent = route;
   if (!cls.intent) return null;
   /* staking questions keep the staking engine (the full pipeline sizes them) */
   if (cls.intent === "SCAN" && (DESK_STAKING.test(q) || o.body.desk !== true || !BOARD_ENABLED || !EDAUDIT)) return null;
@@ -50679,14 +51135,29 @@ export async function quantTurn(o: { body: any; auth: string; now?: number; fetc
       if (o.body.packet) return null;
       if (quantTokens(q).length) { const named = await quantRows(dal, q, now); if (named.rows.length) return null; }
     }
-    const r = await quantScan({ body: o.body, auth: o.auth, dal, now, cls }); return r ? { ...r, ...base } : null;
+    const r = await quantScan({ body: o.body, auth: o.auth, dal, now, cls, progress: o.progress }); return r ? { ...r, ...base } : null;
   }
-  if (cls.intent === "BETS") { const r = await quantBets({ body: o.body, dal, now }); return { ...r, ...base }; }
+  if (cls.intent === "BETS") { const r = await quantBets({ body: o.body, dal, now, progress: o.progress }); return { ...r, ...base }; }
   if (cls.intent === "RESEARCH_SLATE") {
     /* a deep, multi-game investigation: the desk's surface only, and never a staking question */
     if (DESK_STAKING.test(q) || o.body.desk !== true || !BOARD_ENABLED || !EDAUDIT) return null;
-    const r = await quantResearchSlate({ body: o.body, auth: o.auth, dal, now, cls }); return r ? { ...r, ...base } : null;
+    const r = await quantResearchSlate({ body: o.body, auth: o.auth, dal, now, cls, progress: o.progress }); return r ? { ...r, ...base } : null;
   }
+  if (cls.intent === "GAME_RESEARCH") {
+    /* one game, from the game view: readiness, model and market, the disagreement, the findings, its candidates audited */
+    if (!BOARD_ENABLED || !EDAUDIT) return null;
+    const gctx = quantGameContext(o.body)!;
+    const r = await quantResearchSlate({ body: o.body, auth: o.auth, dal, now, cls: { ...cls, sport: gctx.sport }, progress: o.progress, only_game: gctx });
+    return r ? { ...r, ...base } : null;
+  }
+  if (cls.intent === "READINESS") {
+    /* the board's own data, five states per game and what is missing: no research is bought for it */
+    if (!BOARD_ENABLED) return null;
+    const r = await quantResearchSlate({ body: o.body, auth: o.auth, dal, now, cls, progress: o.progress, screen_only: true });
+    return r ? { ...r, readiness_board: r.research_slate, ...base } : null;
+  }
+  if (cls.intent === "MATCHUP_EDGE") return { ...(await quantMatchupEdges({ body: o.body, dal, now, cls, progress: o.progress })), ...base };
+  if (cls.intent === "VENUE_COMPARE") return { ...(await quantVenueCompare({ body: o.body, dal, now, cls })), ...base };
   if (cls.intent === "CONTRACT" || cls.intent === "PRICE") { const r = await quantPrice({ body: o.body, auth: o.auth, dal, now, cls, carried }); return r ? { ...r, ...base } : null; }
   if (cls.intent === "EXPLAIN_EV") return { ...(await quantPrice({ body: o.body, auth: o.auth, dal, now, cls, carried, explain: true })), ...base };
   if (cls.intent === "COVERAGE") {
@@ -51054,6 +51525,51 @@ export async function handle(req: Request): Promise<Response> {
   if (!dry) {
     try { const pt = await propsTurn({ body, auth }); if (pt) return await rjson(pt, 200, "deterministic"); }
     catch (e) { try { console.error("edgedesk_ai props turn threw", String((e as Error)?.message ?? e).slice(0, 300)); } catch { /* no console */ } }
+  }
+
+  /* --- THE RESEARCH ACTIVITY, STREAMED. A client that asks for it (stream: true) on a question the
+     research routes answer gets newline-delimited JSON: an "accepted" line, one "progress" line per
+     real step as it happens (never on a timer), then the "result" (the same payload as below) or an
+     "error". The usage claim is settled exactly once, as for every other exit. Cancelling the request
+     stops the run at the next step. A route that might hand the question on (a named game) is not
+     streamed, so a question is never claimed twice. */
+  if (!dry && body?.stream === true && body?.desk === true) {
+    const route = quantRouteOf(body);
+    const tokens = quantTokens(String(body.question ?? ""));
+    const staking = DESK_STAKING.test(String(body.question ?? ""));
+    const streamable = (route === "RESEARCH_SLATE" && !staking) || route === "GAME_RESEARCH" || route === "READINESS" || route === "BETS" || route === "MATCHUP_EDGE"
+      || (route === "SCAN" && !staking && !body.packet && (EDQUANT.classify(String(body.question ?? "")).all_sports || !tokens.length));
+    if (streamable) {
+      const enc = new TextEncoder();
+      let cancelled = false;
+      const stream = new ReadableStream<Uint8Array>({
+        async start(ctl) {
+          const send = (o: any) => { if (cancelled) return; try { ctl.enqueue(enc.encode(JSON.stringify(o) + "\n")); } catch { cancelled = true; } };
+          const t0 = Date.now();
+          send({ type: "accepted", route, build: BUILD, at: new Date().toISOString() });
+          let payload: any = null, outcome = "deterministic", failure: string | null = null;
+          try {
+            payload = await quantTurn({ body, auth, progress: (ev) => { if (cancelled) throw new Error("cancelled by the reader"); send({ type: "progress", ...ev, t_ms: Date.now() - t0 }); } });
+          } catch (e) {
+            failure = String((e as Error)?.message ?? e).slice(0, 200);
+            outcome = cancelled ? "cancelled" : "narration_failed";
+            try { console.error("edgedesk_ai research stream threw", failure); } catch { /* no console */ }
+          }
+          if (payload) {
+            try { payload.route = routeNote(turn); if (screenCtx && !payload.screen) payload.screen = Object.assign({ subject_from_screen: subjectFromScreen }, screenCtx); } catch { /* keep the body */ }
+            send({ type: "result", payload: { build: BUILD, ...payload } });
+          } else if (!failure) send({ type: "fallback", why: "this question is answered by the full research route; ask it again without the activity view" });
+          else send({ type: "error", error: cancelled ? "cancelled" : "the research run failed", detail: failure });
+          const ms = Date.now() - turnT0;
+          const settle = usageSettle(auth, turn.lite, payload ? outcome : (failure ? outcome : "answered"), null, ms, null).catch(() => false);
+          const rt = (globalThis as any).EdgeRuntime;
+          if (rt?.waitUntil) rt.waitUntil(settle); else await settle;
+          try { ctl.close(); } catch { /* already closed */ }
+        },
+        cancel() { cancelled = true; },
+      });
+      return new Response(stream, { status: 200, headers: { ...CORS, "content-type": "application/x-ndjson; charset=utf-8", "cache-control": "no-store", "x-edgedesk-build": BUILD } });
+    }
   }
 
   /* --- the quant desk: the audited cross-sport scan (desk clients), and
