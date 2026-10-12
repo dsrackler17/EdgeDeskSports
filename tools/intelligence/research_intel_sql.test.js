@@ -7,6 +7,8 @@
    stored as evidence, a speculative report stored as verified, a prediction
    snapshot taken after kickoff, a ledger row rewritten or deleted, a reader
    raising a provider cap or spending past it, a claim settled twice.
+   Applied over the older desk table production holds under research_findings,
+   and refused, with nothing written, when another table holds a name it owns.
 
    Run: node tools/intelligence/research_intel_sql.test.js
    (RESEARCH_SQL_REQUIRED=1 makes a missing PostgreSQL a failure)
@@ -15,6 +17,7 @@
 const fs = require('fs');
 const path = require('path');
 const PG = require(path.join(__dirname, '..', 'personal', '_pg.js'));
+const { preflightChecks } = require(path.join(__dirname, '_preflight.js'));
 const FILE = path.join(PG.ROOT, 'supabase', 'research_intel.sql');
 
 let pass = 0, fail = 0;
@@ -54,21 +57,36 @@ try {
   db.sql('alter default privileges for role postgres in schema public grant all on tables to anon, authenticated;');
   db.sql(`create table public.signals (sig_key text primary key, closing_sharp_fair numeric, clv numeric, result text, graded_at timestamptz);
           insert into public.signals values ('k1', 0.55, 0.021, 'win', now());`);
+  /* Production already holds an older desk table named research_findings (rememberSession() in edgedesk_ai).
+     Run #19 of Deploy intelligence stopped on it after replacing its comment with the findings table's. */
+  const PHASE2_COMMENT = "Write-once sourced findings the research chain used (supabase/functions/edgedesk_ai/_agents.js). A reader''s own research memory.";
+  db.sql(`create table public.research_findings (id bigint generated always as identity primary key, created_at timestamptz default now(), entity text, fact_type text, claim text, fact_value text,
+            source text, source_timestamp timestamptz, verification_status text, confidence text, valid_until timestamptz, sport text);
+          insert into public.research_findings (entity, fact_type, claim, source, sport) values ('Buffalo Bills', 'injury', 'Josh Allen questionable', 'nflverse', 'americanfootball_nfl');
+          comment on table public.research_findings is '${PHASE2_COMMENT}';`);
+  const legacyCols = () => db.sql("select string_agg(attname::text, ',' order by attnum) from pg_attribute where attrelid = 'public.research_findings'::regclass and attnum > 0 and not attisdropped").trim();
+  const legacyBefore = legacyCols();
+  const legacyComment = () => db.sql("select obj_description('public.research_findings'::regclass, 'pg_class')").trim();
 
   /* ═══ 1. APPLY, TWICE ═════════════════════════════════════════════════ */
   const r1 = db.applyFile(FILE);
   chk('first apply: every report row ok', !/CHECK THIS/.test(r1) && (r1.match(/\|\s*ok/g) || []).length >= 9, r1.slice(-900));
+  chk('the older desk table research_findings is untouched: same columns, its row kept', legacyCols() === legacyBefore && db.sql('select count(*) from public.research_findings').trim() === '1', legacyCols());
+  chk('…and the comment run #19 left on it is replaced by a true description', /rememberSession\(\)/.test(legacyComment()) && !/research chain used/.test(legacyComment()), legacyComment());
+  db.sql("comment on table public.research_findings is 'owner note'");
+  preflightChecks(db, FILE, chk);
   const finding = (id, uid, over) => {
     const o = Object.assign({ provider: 'nflverse_injuries', topic: 'availability', claim: 'Josh Allen (QB) Out', url: 'https://github.com/nflverse/nflverse-data/releases/download/injuries/injuries_2026.csv', reliability: 'OFFICIAL', verified: true, speculative: false, retrieved: 'now()', published: "now() - interval '1 hour'" }, over || {});
-    return `insert into public.research_findings (finding_id, user_id, provider, sport, event_ref, team, player, topic, claim, status, source_url, publisher, published_at, retrieved_at, reliability, verified, speculative)
+    return `insert into public.research_chain_findings (finding_id, user_id, provider, sport, event_ref, team, player, topic, claim, status, source_url, publisher, published_at, retrieved_at, reliability, verified, speculative)
       values (${L(id)}, ${L(uid)}, ${L(o.provider)}, 'americanfootball_nfl', 'ev-det-buf', 'Buffalo Bills', 'Josh Allen', ${L(o.topic)}, ${L(o.claim)}, 'OUT', ${L(o.url)}, 'github.com', ${o.published}, ${o.retrieved}, ${L(o.reliability)}, ${o.verified}, ${o.speculative})`;
   };
   db.as(A, finding('f_00000001', A));
   const r2 = db.applyFile(FILE);
-  chk('second apply: still ok (idempotent), the row kept', !/CHECK THIS/.test(r2) && db.service('select count(*) from public.research_findings').trim() === '1', r2.slice(-600));
+  chk('second apply: still ok (idempotent), the row kept', !/CHECK THIS/.test(r2) && db.service('select count(*) from public.research_chain_findings').trim() === '1', r2.slice(-600));
+  chk('…and a comment anyone else wrote on the older table is left alone', legacyComment() === 'owner note', legacyComment());
 
   /* ═══ 2. FINDINGS ═════════════════════════════════════════════════════ */
-  chk('a reader reads their own finding; another reads none', db.as(A, 'select count(*) from public.research_findings').trim() === '1' && db.as(B, 'select count(*) from public.research_findings').trim() === '0');
+  chk('a reader reads their own finding; another reads none', db.as(A, 'select count(*) from public.research_chain_findings').trim() === '1' && db.as(B, 'select count(*) from public.research_chain_findings').trim() === '0');
   chk('a reader cannot write a finding as someone else', db.mustFail(() => db.as(B, finding('f_00000002', A))) !== null);
   chk('an EdgeDesk-written conclusion is refused as evidence', db.mustFail(() => db.as(A, finding('f_00000003', A, { provider: 'edgedesk_ai' }))) !== null);
   chk('a source that is not https is refused', db.mustFail(() => db.as(A, finding('f_00000004', A, { url: 'http://example.com/x' }))) !== null);
@@ -77,11 +95,11 @@ try {
   chk('an unknown reliability class is refused', db.mustFail(() => db.as(A, finding('f_00000007', A, { reliability: 'TRUST_ME' }))) !== null);
   chk('the same finding id twice for one reader is refused', db.mustFail(() => db.as(A, finding('f_00000001', A))) !== null);
   db.as(B, finding('f_00000001', B));
-  chk('…but another reader may hold the same id (keys are per user)', db.as(B, "select count(*) from public.research_findings where finding_id = 'f_00000001'").trim() === '1');
-  chk('a finding is write-once', /write-once/.test(db.mustFail(() => db.service("update public.research_findings set claim = 'edited'")) || ''));
-  chk('a reader cannot delete it', db.mustFail(() => db.as(A, 'delete from public.research_findings')) !== null || db.service('select count(*) from public.research_findings').trim() === '2');
-  chk('even the service role cannot delete outside retention', /research_intel_prune/.test(db.mustFail(() => db.service('delete from public.research_findings')) || ''));
-  chk('a reader cannot TRUNCATE research memory', db.mustFail(() => db.as(A, 'truncate public.research_findings')) !== null);
+  chk('…but another reader may hold the same id (keys are per user)', db.as(B, "select count(*) from public.research_chain_findings where finding_id = 'f_00000001'").trim() === '1');
+  chk('a finding is write-once', /write-once/.test(db.mustFail(() => db.service("update public.research_chain_findings set claim = 'edited'")) || ''));
+  chk('a reader cannot delete it', db.mustFail(() => db.as(A, 'delete from public.research_chain_findings')) !== null || db.service('select count(*) from public.research_chain_findings').trim() === '2');
+  chk('even the service role cannot delete outside retention', /research_intel_prune/.test(db.mustFail(() => db.service('delete from public.research_chain_findings')) || ''));
+  chk('a reader cannot TRUNCATE research memory', db.mustFail(() => db.as(A, 'truncate public.research_chain_findings')) !== null);
 
   /* ═══ 3. PREDICTION SNAPSHOTS ═════════════════════════════════════════ */
   const snap = (id, uid, start, over) => {
@@ -125,12 +143,23 @@ try {
 
   /* ═══ 5. RETENTION ════════════════════════════════════════════════════ */
   chk('a reader cannot run the retention function', db.mustFail(() => db.as(A, 'select * from public.research_intel_prune(90)')) !== null);
-  db.sql("alter table public.research_findings disable trigger research_findings_immutable_trg; update public.research_findings set created_at = now() - interval '400 days' where user_id = '" + A + "'; alter table public.research_findings enable trigger research_findings_immutable_trg;");
+  db.sql("alter table public.research_chain_findings disable trigger research_chain_findings_immutable_trg; update public.research_chain_findings set created_at = now() - interval '400 days' where user_id = '" + A + "'; alter table public.research_chain_findings enable trigger research_chain_findings_immutable_trg;");
   const pr = db.service('select table_name, removed from public.research_intel_prune(200)');
-  chk('the service role prunes findings past retention, and only those', /research_findings\s*\|\s*1/.test(pr) && db.service('select count(*) from public.research_findings').trim() === '1', pr);
+  chk('the service role prunes findings past retention, and only those', /research_chain_findings\s*\|\s*1/.test(pr) && db.service('select count(*) from public.research_chain_findings').trim() === '1', pr);
   chk('snapshots are not pruned', db.service('select count(*) from public.prediction_snapshots').trim() === '1');
-  const pr2 = db.service("select removed from public.research_intel_prune(1) where table_name = 'research_findings'");
+  const pr2 = db.service("select removed from public.research_intel_prune(1) where table_name = 'research_chain_findings'");
   chk('retention never goes below 90 days', pr2.trim() === '0', pr2);
+
+  /* ═══ 6. PREFLIGHT ════════════════════════════════════════════════════ */
+  db.sql(`alter table public.research_chain_findings rename to rcf_keep;
+          create table public.research_chain_findings (entity text, claim text);
+          comment on table public.research_provider_quota is 'marker';`);
+  const refused = db.mustFail(() => db.applyFile(FILE));
+  chk('PREFLIGHT: another table under a name the file owns stops it, and names the table', /stopped before changing anything: public\.research_chain_findings already exists[\s\S]*it has no/.test(refused || ''), refused);
+  chk('PREFLIGHT: …before anything was written', db.sql("select obj_description('public.research_provider_quota'::regclass, 'pg_class')").trim() === 'marker');
+  db.sql('drop table public.research_chain_findings; alter table public.rcf_keep rename to research_chain_findings;');
+  const back = db.applyFile(FILE);
+  chk('PREFLIGHT: with the name free again, it applies', !/CHECK THIS/.test(back) && db.service('select count(*) from public.research_chain_findings').trim() === '1', back.slice(-300));
 } catch (e) {
   fail++; failures.push({ name: 'the suite threw', detail: String(e && (e.sqlMessage || e.message)).slice(0, 600) });
 }

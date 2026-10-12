@@ -19,6 +19,7 @@ const path = require('path');
 const PG = require(path.join(__dirname, '..', 'personal', '_pg.js'));
 const FILE = path.join(PG.ROOT, 'supabase', 'research_engine.sql');
 const INTEL = path.join(PG.ROOT, 'supabase', 'research_intel.sql');
+const { preflightChecks } = require(path.join(__dirname, '_preflight.js'));
 
 let pass = 0, fail = 0;
 const failures = [];
@@ -38,7 +39,7 @@ function done(db) {
   chk('no DROP TABLE, TRUNCATE or DROP COLUMN', !/\bdrop\s+table\b|\btruncate\b|\bdrop\s+column\b/i.test(code));
   chk('the only DELETEs are the two inside the retention function', (code.match(/\bdelete\s+from\b/gi) || []).length === 2);
   chk('every table is created with IF NOT EXISTS', (code.match(/create table (?!if not exists)/gi) || []).length === 0);
-  chk('it alters no table research_intel.sql owns (additive only)', !/alter table public\.(research_findings|prediction_snapshots|research_usage|research_provider_quota)\b/i.test(code) && !/create or replace function public\.(research_usage_claim|research_usage_settle|research_intel_\w+)\b/i.test(code));
+  chk('it alters no table research_intel.sql owns (additive only)', !/alter table public\.(research_chain_findings|prediction_snapshots|research_usage|research_provider_quota)\b/i.test(code) && !/create or replace function public\.(research_usage_claim|research_usage_settle|research_intel_\w+)\b/i.test(code));
   chk('its only write to research_provider_quota is an insert that never overwrites', (code.match(/insert into public\.research_provider_quota/gi) || []).length === 1 && /on conflict \(provider\) do nothing/i.test(code) && !/update public\.research_provider_quota/i.test(code));
   chk('it touches no billing, auth or entitlement relation', !/\b(subscriptions|billing_|stripe|auth\.users|my_billing_access|ai_usage|portfolio_)\b/i.test(code));
   chk('it says it does not retrain or adjust any model', /does not retrain or change any model/i.test(text) && /nothing reads it to adjust a\s+--\s+probability|nothing here adjusts a model/i.test(text));
@@ -70,6 +71,7 @@ try {
   chk('first apply: every report row ok', !/CHECK THIS/.test(r1) && (r1.match(/\|\s*ok/g) || []).length >= 11, r1.slice(-1200));
   const r2 = db.applyFile(FILE);
   chk('second apply: still ok (idempotent)', !/CHECK THIS/.test(r2), r2.slice(-600));
+  preflightChecks(db, FILE, chk);
   chk('research_intel.sql\'s provider rows are untouched; the two search providers are added paid and disabled', db.service("select count(*) from public.research_provider_quota where provider not in ('claude_web_search','perplexity_search')").trim() === quotaBefore
     && db.service("select count(*) from public.research_provider_quota where provider in ('claude_web_search','perplexity_search') and paid and not enabled").trim() === '2');
   const qc = J(db.as(A, "select public.research_usage_claim('claude_web_search')"));
@@ -171,6 +173,17 @@ try {
     const again = db.applyFile(FILE);
     chk('ROLLBACK: the migration applies again after the rollback', !!again && db.service("select to_regclass('public.research_runs') is not null").trim() === 't', String(again).slice(-300));
   }
+
+  /* ═══ 7. PREFLIGHT ════════════════════════════════════════════════════ */
+  db.sql(`alter view public.research_run_calibration rename to rrc_keep;
+          create table public.research_run_calibration (x int);
+          comment on table public.research_budget_policy is 'marker';`);
+  const refused = db.mustFail(() => db.applyFile(FILE));
+  chk('PREFLIGHT: a table where the file creates a view stops it, and names it', /stopped before changing anything: public\.research_run_calibration already exists and is not a view/.test(refused || ''), refused);
+  chk('PREFLIGHT: …before anything was written', db.sql("select obj_description('public.research_budget_policy'::regclass, 'pg_class')").trim() === 'marker');
+  db.sql('drop table public.research_run_calibration; alter view public.rrc_keep rename to research_run_calibration;');
+  const back = db.applyFile(FILE);
+  chk('PREFLIGHT: with the name free again, it applies', !/CHECK THIS/.test(back), String(back).slice(-300));
 } catch (e) {
   fail++; failures.push({ name: 'the suite threw', detail: String(e && (e.sqlMessage || e.message)).slice(0, 600) });
 }

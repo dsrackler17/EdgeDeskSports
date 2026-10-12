@@ -120,12 +120,14 @@ They are never combined into one number. No model is called calibrated without t
 
 | Object | Rule |
 |---|---|
-| `research_findings` | Write-once, per-user `(user_id, finding_id)`, https source, retrieval time required, provider never `edgedesk_ai`, speculative ≠ verified |
+| `research_chain_findings` | Write-once, per-user `(user_id, finding_id)`, https source, retrieval time required, provider never `edgedesk_ai`, speculative ≠ verified |
 | `prediction_snapshots` | Write-once. Trigger refuses `event_start ≤ now()` and a quote captured at or after kickoff. No outcome columns; grading joins results later (view `prediction_snapshot_grades`) |
 | `research_provider_quota` | Seeded; **paid providers disabled** |
 | `research_usage` + `research_usage_claim()` / `research_usage_settle()` | Security definer, atomic claim, settle once |
 | Retention | No reader deletes; `research_intel_prune(p_days ≥ 90)` for the service role only |
 | RLS | Own rows only; grants revoked, then select/insert granted |
+
+The findings table was first named `research_findings`. Production already holds an older desk table under that name, written by `rememberSession()` with other columns, so the first deploy attempt stopped on it (12 Oct 2026). The file now opens with a preflight that refuses, before writing anything, when a name it owns is taken by another table.
 
 The edge function writes under the caller's JWT (it holds no service-role key).
 

@@ -55,7 +55,7 @@ Every external call goes through one ledger (`lib/edgedesk_research_budget.js`, 
 
 | Table / function | Purpose |
 |---|---|
-| `research_findings` | per-user findings |
+| `research_chain_findings` | per-user findings |
 | `prediction_snapshots` | per-user predictions; refused at or after kickoff |
 | `research_provider_quota` + `research_usage` (`research_usage_claim` / `_settle`) | per-provider count caps; paid providers disabled |
 | `ai_usage_policy` / `ai_usage_events` (`ai_usage_claim` / `_settle`) | the reader's daily allowance |
@@ -96,7 +96,7 @@ flowchart TD
   A --> C["EDCHALLENGE — the eight questions<br/>unresolved → lower confidence or PASS"]
   C --> N["communicator (deterministic)<br/>optional narration under the critic + number verifier"]
   D & E & N & X -- "progress / result events" --> U
-  N --> M[("research_runs · research_findings · prediction_snapshots")]
+  N --> M[("research_runs · research_chain_findings · prediction_snapshots")]
   M --> J["grading job (service role, after the event)<br/>outcomes · closing line → EDCALIB Brier / log loss / CLV"]
 ```
 

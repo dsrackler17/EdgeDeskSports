@@ -44473,7 +44473,7 @@ function mlbStartersFromResearch(research: ResearchOut | null): { label: string;
    build identifier in the response there is no way to tell those apart, and
    this function shipped for months with no way to answer "which version is
    answering?". That is what this constant exists to end. */
-export const BUILD = "edgedesk_ai-2026-10-12-r23-research-engine";
+export const BUILD = "edgedesk_ai-2026-10-12-r24-chain-findings";
 
 /* THE DECISION LAYER'S OWN SWITCH, set by the deployment rather than by code.
    `EDGEDESK_DECISIONS_ENABLED=0` stops EdgeDesk producing recommendations
@@ -52255,7 +52255,7 @@ async function publishResearch(auth: string, invs: { inv: any; c: any }[], o: { 
       return { table, ok: r.ok, status: r.status, rows: rows.length };
     } catch (e) { return { table, ok: false, status: 0, rows: rows.length }; }
   };
-  const w1 = await post("research_findings", "user_id,finding_id", findings);
+  const w1 = await post("research_chain_findings", "user_id,finding_id", findings);
   const w2 = await post("prediction_snapshots", "user_id,snapshot_id", snaps);
   const starts = snaps.map((x: any) => Date.parse(x.event_start)).filter((t: number) => Number.isFinite(t));
   LAST_RESEARCH_WRITE = { at: new Date().toISOString(), findings: quantWriteView(w1), snapshots: quantWriteView(w2),

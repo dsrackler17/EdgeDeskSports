@@ -235,7 +235,7 @@ function consistent(tag, answer, row) {
   ok('S1: the four confidence measures are reported separately', best && best.research.confidence && ['outcome_probability', 'research_confidence', 'model_reliability', 'execution_confidence'].every((k) => best.research.confidence[k]), best && best.research.confidence);
   ok('S1: no model is called calibrated: the LEAN model is a cross-check, the price is the sharp market\'s', best && best.research.fair_kind === 'SHARP_NO_VIG' && /cross-check only/.test(field(s1.answer, 'Independent fair probability') || '') && !/\bcalibrated\b/i.test(field(s1.answer, 'Model reliability') || ''), best && [best.research.fair_kind, field(s1.answer, 'Model reliability')]);
   ok('S1: no guarantee or certainty language anywhere in the answer', !GR.CERTAINTY.test(s1.answer), (s1.answer.match(GR.CERTAINTY) || [])[0]);
-  const rf = posted.filter((p) => p.table === 'research_findings'), ps = posted.filter((p) => p.table === 'prediction_snapshots');
+  const rf = posted.filter((p) => p.table === 'research_chain_findings'), ps = posted.filter((p) => p.table === 'prediction_snapshots');
   ok('S1: the findings are written once each, under the caller\'s token, idempotently keyed', rf.length === 1 && /on_conflict=user_id,finding_id/.test(rf[0].query) && rf[0].auth === 'Bearer ' + USER_JWT && rf[0].body.every((x) => /^f_/.test(x.finding_id) && /^https:\/\//.test(x.source_url) && x.retrieved_at && x.provider !== 'edgedesk_ai'), rf.map((p) => [p.query, p.body.length]));
   ok('S1: pregame prediction snapshots are written before kickoff, with the quote captured before kickoff (no look-ahead)', ps.length === 1 && /on_conflict=user_id,snapshot_id/.test(ps[0].query) && ps[0].body.length >= 2 && ps[0].body.every((x) => Date.parse(x.event_start) > NOW && Date.parse(x.quote_captured_at) < Date.parse(x.event_start) && !('result' in x) && !('outcome' in x)), ps.map((p) => p.body.map((x) => [x.selection, x.classification, x.event_start])));
   ok('S1: the Bills snapshot records the auditor\'s class and the exact EV', ps[0] && ps[0].body.some((x) => x.selection === 'Buffalo Bills' && x.classification === 'VERIFIED_CANDIDATE' && Math.abs(x.net_ev_per_dollar - Number(best.evaluation.net_ev_per_dollar)) < 1e-9), ps[0] && ps[0].body.map((x) => [x.selection, x.classification, x.net_ev_per_dollar]));
@@ -463,7 +463,7 @@ function consistent(tag, answer, row) {
   delete ENV.EDGEDESK_RESEARCH;
   const off = await ask("What's the best bet this weekend across all sports?", { mod: mOff });
   ok('OFF: with the chain switched off the scan answers in the Phase-1 format, priced the same', off && off.scan.researched === false && /^BEST VERIFIED OPPORTUNITY/.test(off.answer) && /Decision: BUY/.test(off.answer) && off.scan.best && off.scan.best.evaluation.net_ev_per_dollar === best.evaluation.net_ev_per_dollar, off && [off.scan.researched, off.answer.split('\n')[0]]);
-  ok('OFF: …and writes no research memory', !posted.some((p) => p.table === 'research_findings' || p.table === 'prediction_snapshots'), posted.map((p) => p.table));
+  ok('OFF: …and writes no research memory', !posted.some((p) => p.table === 'research_chain_findings' || p.table === 'prediction_snapshots'), posted.map((p) => p.table));
 
   /* ═══ PHASE 4 — EXTERNAL SEARCH SWITCHED ON (Claude web search), AGAINST A CONSTRUCTED FIXTURE ═══
      The response is built from the documented shape (tools/research/fixtures, labelled); this proves the wiring, the
@@ -601,7 +601,7 @@ function consistent(tag, answer, row) {
   ok('RDY: Colts @ Texans has no captured price here: researchable, model ready, market NOT verified — and says exactly why', houG && houG.readiness.states.RESEARCH.ok && houG.readiness.states.MODEL.ok && !houG.readiness.states.MARKET.ok && houG.why_not.some((w) => /^Market verified — needs/.test(w)), houG && houG.why_not);
   ok('RDY: a reference line is never counted as a verified market', rb && rb.games.filter((g) => !g.executable && g.market_line != null).every((g) => !g.readiness.states.MARKET.ok), rb && rb.games.map((g) => [g.matchup, g.executable, g.readiness.states.MARKET.ok]));
   ok('RDY: research available ≥ model ready ≥ market-and-model, and nothing is called actionable without a verified market', rb && rb.games.every((g) => (!g.readiness.states.ACTIONABLE.ok || g.readiness.states.MARKET.ok)) && rb.readiness.counts.RESEARCH >= rb.readiness.counts.MODEL, rb && rb.readiness.counts);
-  ok('RDY: no research was bought and no audit ran for a readiness question', !posted.some((p) => p.table === 'research_findings' || p.table === 'opportunity_audits') && !reads.some((r) => /book_quotes\?/.test(r.url)), posted.map((p) => p.table));
+  ok('RDY: no research was bought and no audit ran for a readiness question', !posted.some((p) => p.table === 'research_chain_findings' || p.table === 'opportunity_audits') && !reads.some((r) => /book_quotes\?/.test(r.url)), posted.map((p) => p.table));
   ok('RDY: the answer states the counts and each game\'s missing requirements', /Readiness: \d+ available · \d+ research available · \d+ market verified · \d+ model ready · \d+ actionable signal/.test(rdy.answer) && /Why each game is not fully ready/.test(rdy.answer) && /not ready to research/.test(rdy.answer), rdy && rdy.answer.slice(0, 600));
 
   /* GAME_RESEARCH: the game view's button — one game, readiness, numbers, findings, candidates, sources */
@@ -734,7 +734,7 @@ function consistent(tag, answer, row) {
   ok('STREAM: the streamed result is the engine\'s payload (route, scan, the same verdict)', res && res.quant && res.quant.intent === 'SCAN' && res.scan && res.route && typeof res.answer === 'string', res && Object.keys(res));
   const stc = await streamAsk("What's the best bet this week across all sports?", { cancelAfter: 2 });
   await new Promise((r) => setTimeout(r, 300));
-  ok('STREAM: cancelling stops the run: no result was sent and no research memory was written', !stc.events.some((e) => e.type === 'result') && !posted.some((p) => p.table === 'research_findings' || p.table === 'research_runs'), [stc.events.map((e) => e.type), posted.map((p) => p.table)]);
+  ok('STREAM: cancelling stops the run: no result was sent and no research memory was written', !stc.events.some((e) => e.type === 'result') && !posted.some((p) => p.table === 'research_chain_findings' || p.table === 'research_runs'), [stc.events.map((e) => e.type), posted.map((p) => p.table)]);
   const stp = await streamAsk('Is Guardians at 49¢ on Kalshi a good price?');
   ok('STREAM: a question the research routes do not stream comes back as plain JSON (the client reads both)', /json/.test(stp.ct) && !/ndjson/.test(stp.ct) && stp.json && stp.json.quant && stp.json.quant.intent === 'CONTRACT', [stp.ct, stp.json && stp.json.quant]);
 
