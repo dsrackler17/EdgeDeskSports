@@ -176,6 +176,9 @@ chk('G “Jared Curtis is out” fails', failed(revalidate(o1, add('evidence', '
 chk('G “Kewan Lacy is out” fails: he is questionable', failed(revalidate(o1, add('evidence', 'Kewan Lacy is out against Vanderbilt.')), 'injury_status_correct'));
 chk('G a past absence is not a status claim', passed(revalidate(o1, add('evidence', 'Jared Curtis missed the Georgia game.')), 'injury_status_correct'));
 chk('G history without its date fails', failed(revalidate(o1, add('evidence', 'Ole Miss won the last meeting 33–7.')), 'historical_dated'));
+/* the last score is recognised as a score, not as its two numbers anywhere in a sentence (a date and a stat line) */
+chk('G a date and a stat line that happen to hold the last score’s numbers are not history', passed(revalidate(o1, add('evidence', 'Against Georgia on Oct. 7, Jared Curtis went 33 of 40.')), 'historical_dated'));
+chk('G … but the score written as a score, undated, still fails (either order)', failed(revalidate(o1, add('evidence', 'Vanderbilt lost 7-33 to Ole Miss.')), 'historical_dated'));
 chk('G the wrong gap fails (the published 8.5 is not today’s 9.3)', failed(revalidate(o1, add('thesis', 'That is an 8.5-point gap between EdgeDesk and the market.')), 'gap_arithmetic'));
 chk('G an invented statistic fails', failed(revalidate(o1, add('evidence', 'Vanderbilt commits 7.4 penalties per game.')), 'numbers_in_evidence'));
 /* 70.5 is Chambliss's completion rate: real, in the packet, but only valid where that claim is cited */

@@ -373,14 +373,23 @@ section('11 projected scores reconcile with the total and the margin');
 /* ==================================================================== 12 */
 section('12 exports preserve the approved snapshot');
 const ART_ALL = ART.load();
-const SNAP = CE.research.fromArtifacts(ART_ALL, { now: NOW });
+/* The content-engine sections read the COMMITTED research, which the weekly build replaces. Their
+   clock is that research's own build time (plus the few minutes before an editor drafts from it),
+   not the fixed NOW above: a fixed clock falls behind each new week, every market capture then reads
+   as timestamped in the future (a clock fault, MKT.TIMESTAMP), and the integrity engine withholds
+   almost the whole card — leaving only games with no market to build an article from. */
+const CE_NOW = (() => {
+  const built = Date.parse(CE.research.fromArtifacts(ART_ALL, { now: NOW }).cfb.generated_at || '');
+  return isFinite(built) ? Math.max(NOW, built + 15 * 60000) : NOW;
+})();
+const SNAP = CE.research.fromArtifacts(ART_ALL, { now: CE_NOW });
 const SR = CE.PUBLISHER_TEMPLATES['stadium-rant'];
-const OPPS = CE.discover(SNAP, { now: NOW, publisher: SR });
+const OPPS = CE.discover(SNAP, { now: CE_NOW, publisher: SR });
 const PREV = OPPS.find((o) => o.league === 'cfb' && o.kind === 'weekly_preview');
-const A0 = CE.draft(PREV, { publisher: SR, format: 'cfb_weekly_preview', now: NOW });
+const A0 = CE.draft(PREV, { publisher: SR, format: 'cfb_weekly_preview', now: CE_NOW });
 const TL = ART.teamLists(ART_ALL);
 {
-  const vx = CE.validate(A0, PREV, { now: NOW, teamLists: TL, publisher: SR });
+  const vx = CE.validate(A0, PREV, { now: CE_NOW, teamLists: TL, publisher: SR });
   const row = Object.assign({}, A0, { id: 'x', status: 'approved', revision: 2, content_hash: 'ab'.repeat(32), approved_hash: 'ab'.repeat(32), approved_by: 'owner', approved_at: '2026-10-08T18:00:00Z',
     approved_research_hash: A0.research_hash, campaign_code: 'ce_stadiumrant_x', checks: vx });
   const ctx = { publisher: SR, campaign: 'ce_stadiumrant_x', opportunity: PREV };
@@ -434,7 +443,7 @@ if (db.skip) {
         OPPS.map((o) => o.key));
       chk('the games the integrity engine withholds are named with their rules', SNAP.cfb.withheld.every((w) => w.blocking && w.blocking.length), SNAP.cfb.withheld.slice(0, 2));
       const up = own(`select public.content_engine_opportunity_upsert(${lit(JSON.stringify(withHash(PREV)))}::jsonb, null);`);
-      const v0 = CE.validate(A0, PREV, { publisher: pub, now: NOW, teamLists: TL });
+      const v0 = CE.validate(A0, PREV, { publisher: pub, now: CE_NOW, teamLists: TL });
       chk('the deterministic draft passes every hard check and the integrity engine', v0.ok && (v0.integrity_status === 'PASS' || v0.integrity_status === 'WARNING'), v0.failed);
       /* the week 7 research (committed October 11) features Cincinnati at West
          Virginia, a coin flip at West Virginia by 0.3, beside Virginia at SMU,
@@ -447,7 +456,7 @@ if (db.skip) {
       {
         const g = (id, home, away, favorite, underdog, margin) => ({ game_id: id, home, away, model: { available: true, favorite, underdog, margin } });
         const pair = { league: 'cfb', kind: 'weekly_preview', research: { games: [g('wv', 'West Virginia', 'Cincinnati', 'West Virginia', 'Cincinnati', 0.3), g('uva', 'SMU', 'Virginia', 'SMU', 'Virginia', 6.2)], matchups: [] } };
-        const spread = (body) => CE.validate({ format: 'cfb_weekly_preview', sections: [{ key: 'games', heading: 'The games that matter most', body }] }, pair, { publisher: pub, now: NOW, teamLists: TL })
+        const spread = (body) => CE.validate({ format: 'cfb_weekly_preview', sections: [{ key: 'games', heading: 'The games that matter most', body }] }, pair, { publisher: pub, now: CE_NOW, teamLists: TL })
           .checks.find((c) => c.id === 'spread_claims');
         const wv = spread('EdgeDesk’s model sees a near coin flip: West Virginia by 0.3, West Virginia -0.3 as a line, and SMU by 6.2 over Virginia.');
         chk('… a line printed for West Virginia is West Virginia’s, never charged to Virginia', wv && wv.status === 'pass', wv);
@@ -464,7 +473,7 @@ if (db.skip) {
          before the gate clears; the report is stored for this exact version */
       const row0 = own(`select public.content_engine_article(${lit(cr.id)});`);
       const current = {}; ['cfb', 'nfl'].forEach((lg) => ((SNAP[lg] && SNAP[lg].games) || []).forEach((p) => { current[p.game_id] = p; }));
-      const gctx = (acks) => ({ now: NOW, publisher: row0.publisher_profile, campaign: row0.campaign_code, landing: CE.SITE + '/today/', current, teamLists: TL, acks: acks || {} });
+      const gctx = (acks) => ({ now: CE_NOW, publisher: row0.publisher_profile, campaign: row0.campaign_code, landing: CE.SITE + '/today/', current, teamLists: TL, acks: acks || {} });
       const g0 = CE.gate(Object.assign({}, A0, { format: 'cfb_weekly_preview' }), PREV, gctx());
       const ackKeys = [...new Set([].concat(...g0.items.map((i) => i.findings.filter((f) => f.status === 'BLOCKED' && f.ack_key).map((f) => f.ack_key))))];
       const blockedOther = g0.items.filter((i) => i.findings.some((f) => f.status === 'BLOCKED' && !f.ack_key)).map((i) => i.key);
