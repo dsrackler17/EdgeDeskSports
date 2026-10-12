@@ -2,9 +2,9 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-10-12T06:07:36.985Z",
+ "as_of": "2026-10-12T06:11:29.478Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "cf17bdc8ff6ea66a",
+ "inputs_key": "d8ff248393011abc",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
@@ -37,7 +37,7 @@
   {
    "file": "record/football/summary.json",
    "mode": "LIVE (model record)",
-   "sha1": "f78cbad7dbd1"
+   "sha1": "2d9b26745069"
   },
   {
    "file": "football/params.js",
@@ -15905,56 +15905,56 @@
   "source": "record/football/summary.json",
   "mode": "LIVE",
   "level": "model (the published fair line), not bettor decisions",
-  "generated_at": "2026-10-12T03:48:13.372Z",
+  "generated_at": "2026-10-12T06:11:29.478Z",
   "sports": {
    "nfl": {
     "versions": [
      "edgedesk_football_v1.0.0"
     ],
-    "graded": 61,
+    "graded": 62,
     "ats": {
-     "n": 61,
-     "w": 32,
+     "n": 62,
+     "w": 33,
      "l": 24,
      "p": 5,
-     "pct": 57.1,
+     "pct": 57.9,
      "sample": {
       "key": "EARLY_SIGNAL",
       "label": "Early signal",
-      "n": 61,
-      "text": "n=61 · Early signal",
+      "n": 62,
+      "text": "n=62 · Early signal",
       "recalibration": "NOT_ALLOWED",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "clv_spread_entry": {
-     "n": 61,
-     "avg": 0.4,
-     "beat": 31,
+     "n": 62,
+     "avg": 0.55,
+     "beat": 32,
      "flat": 18,
      "lost": 12,
-     "beat_pct": 50.8,
+     "beat_pct": 51.6,
      "sample": {
       "key": "EARLY_SIGNAL",
       "label": "Early signal",
-      "n": 61,
-      "text": "n=61 · Early signal",
+      "n": 62,
+      "text": "n=62 · Early signal",
       "recalibration": "NOT_ALLOWED",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "error": {
-     "n": 61,
-     "model_mae": 9.52,
-     "close_mae": 9.43,
-     "model_closer_pct": 50.8,
-     "total_n": 61,
-     "model_total_mae": 10.81,
-     "close_total_mae": 10.3
+     "n": 62,
+     "model_mae": 9.48,
+     "close_mae": 9.44,
+     "model_closer_pct": 51.6,
+     "total_n": 62,
+     "model_total_mae": 10.73,
+     "close_total_mae": 10.27
     },
     "brier": {
-     "n": 61,
-     "model": 0.2253
+     "n": 62,
+     "model": 0.2256
     }
    },
    "cfb": {
