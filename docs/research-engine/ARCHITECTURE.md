@@ -182,7 +182,7 @@ Every adapter is off by default and needs all of:
 | 3 | `lib/edgedesk_quant_verify.js` (EDQVERIFY) calculation ledger + number verifier, attached to every priced candidate | ✓ |
 | 4 | `lib/edgedesk_challenge.js` (EDCHALLENGE), applied before a VERIFIED CANDIDATE is published | ✓ |
 | 5 | `lib/edgedesk_providers.js` (EDPROVIDERS) request builders and response parsers for Claude web search and the Perplexity Search API; ledger wiring; gated live-test script | ✓ |
-| 6 | `supabase/research_engine.sql`: `research_runs`, `research_run_outcomes`, `research_budget_policy`, `research_cost_claim()`; run records written; evaluation over graded runs with EDCALIB | — |
+| 6 | `supabase/research_engine.sql`: `research_runs`, `research_run_outcomes`, `research_budget_policy`, `research_cost_claim()`; run records written; evaluation over graded runs with EDCALIB | ✓ |
 | 7 | Safeguards (dollar budget, concurrency, structured logs) + the odds recovery proposal and calculator | — |
 | 8 | Research-terminal UI: plan, sources, verification, contradictions, assumptions, confidence vs probability, why (not) actionable | — |
 | 9 | Benchmark of ≥ 100 questions through the real handler, metrics, cost and performance report | — |

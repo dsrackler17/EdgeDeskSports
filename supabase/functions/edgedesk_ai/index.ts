@@ -52132,7 +52132,7 @@ async function publishResearch(auth: string, invs: { inv: any; c: any }[], o: { 
   const f = fetchImpl ?? fetch;
   const findings: any[] = [], snaps: any[] = [];
   for (const { inv, c } of invs) {
-    for (const x of (inv.research?.findings ?? [])) findings.push({ finding_id: x.id, provider: x.source_class === "OFFICIAL" || x.source_class === "STATISTICAL_DATA" ? "edgedesk_sources" : "desk_notes", sport: c.sport, event_ref: String(c.game_id), team: x.team, player: x.player, topic: x.topic, claim: x.claim.slice(0, 400), status: x.status,
+    for (const x of (inv.research?.findings ?? [])) findings.push({ finding_id: x.id, provider: x.provider ?? (x.source_class === "OFFICIAL" || x.source_class === "STATISTICAL_DATA" ? "edgedesk_sources" : "desk_notes"), sport: c.sport, event_ref: String(c.game_id), team: x.team, player: x.player, topic: x.topic, claim: x.claim.slice(0, 400), status: x.status,
       source_url: x.source_url, source_title: x.source_title, publisher: x.publisher, published_at: x.published_at, retrieved_at: x.retrieved_at, reliability: x.reliability, verified: x.verified && !x.speculative, speculative: x.speculative, verification: x.verification, conflicts: x.conflicts, cost_class: "free" });
     const ev = inv.quant?.evaluation;
     /* a prediction snapshot is a priced call: research on a game with no priced candidate is memory, not a prediction */
@@ -52154,7 +52154,9 @@ async function publishResearch(auth: string, invs: { inv: any; c: any }[], o: { 
   };
   const w1 = await post("research_findings", "user_id,finding_id", findings);
   const w2 = await post("prediction_snapshots", "user_id,snapshot_id", snaps);
-  LAST_RESEARCH_WRITE = { at: new Date().toISOString(), findings: quantWriteView(w1), snapshots: quantWriteView(w2) };
+  const starts = snaps.map((x: any) => Date.parse(x.event_start)).filter((t: number) => Number.isFinite(t));
+  LAST_RESEARCH_WRITE = { at: new Date().toISOString(), findings: quantWriteView(w1), snapshots: quantWriteView(w2),
+    snapshot_ids: w2.ok ? snaps.map((x: any) => x.snapshot_id) : [], earliest_event_start: w2.ok && starts.length ? new Date(Math.min(...starts)).toISOString() : null };
 }
 
 /** The scan's price check for one audited candidate: the candidate's own fair and the fair the audit re-read, the lower EV published. */
@@ -52704,6 +52706,7 @@ export async function quantTurn(o0: { body: any; auth: string; now?: number; fet
   /* every step the route reports is kept, so the answer carries the plan beside what actually ran */
   const ranEvents: any[] = [];
   const o = { ...o0, progress: ((ev: any) => { ranEvents.push({ type: "progress", ...ev }); if (o0.progress) o0.progress(ev); }) as Progress };
+  const started = Date.now();
   const r0 = await quantTurnInner(o);
   if (r0 && EDORCH) {
     try {
@@ -52711,7 +52714,56 @@ export async function quantTurn(o0: { body: any; auth: string; now?: number; fet
       if (plan) { r0.research_plan = plan; r0.research_plan_actual = EDORCH.reconcile(plan, ranEvents); }
     } catch { /* the answer stands without its plan */ }
   }
+  /* the research memory: one write-once run per research turn (supabase/research_engine.sql); never on a cancelled run */
+  if (r0) {
+    try {
+      const row = researchRunRow({ body: o0.body, r0, now: o0.now ?? Date.now(), latency_ms: Date.now() - started, user: jwtSub(o0.auth) });
+      if (row) r0.research_run = { run_id: row.run_id, write: await publishRun(o0.auth, row, o0.fetchImpl) };
+    } catch { /* memory is best effort; the answer stands */ }
+  }
   return r0;
+}
+/* ── THE RUN RECORD (research_runs): question, plan vs actual, sources, model and market snapshots, conclusions, cost ── */
+const RUN_FINAL = new Set(["VERIFIED CANDIDATE", "WATCHLIST", "PASS"]);
+export function researchRunRow(o: { body: any; r0: any; now: number; latency_ms: number; user: string | null }): any | null {
+  const r0 = o.r0, q = String(o.body?.question ?? "").trim().slice(0, 300);
+  const box = r0?.scan ?? r0?.research_slate ?? r0?.game_research ?? null;
+  if (!q || !box || box.mode === "READINESS") return null;
+  const rows: any[] = r0.scan ? [box.best, ...(box.verified_rest ?? []), ...(box.potential ?? []), ...(box.near_misses ?? [])].filter(Boolean) : (box.investigated ?? []).filter(Boolean);
+  const seen = new Set<string>(), sources: any[] = [];
+  const addSrc = (x: any) => { const k = x?.url ?? x?.dataset_id; if (!k || seen.has(k) || sources.length >= 60) return; seen.add(k); sources.push({ url: x.url ?? null, dataset_id: x.dataset_id ?? null, tier: x.tier ?? null, publisher: x.publisher ?? null, retrieved_at: x.retrieved_at ?? null, published_at: x.published_at ?? null }); };
+  rows.forEach((r) => (r.evidence?.sources ?? []).forEach(addSrc));
+  (box.games ?? []).forEach((g: any) => (g.evidence?.sources ?? []).forEach(addSrc));
+  const rec = (L: any, n: string) => L?.records?.find((x: any) => x.name === n) ?? null;
+  const pick = (r: any) => ({ sport: r.candidate.sport, game_id: r.candidate.game_id, market: r.candidate.market, selection: r.candidate.selection, line: r.candidate.line ?? null });
+  const summary = box.research_summary ?? null, w = box.research_write ?? null;
+  const fs = String(box.final_status ?? "").toUpperCase();
+  return {
+    run_id: "rr_" + quantHash([o.user ?? "anon", q, new Date(o.now).toISOString(), rows.map((r) => r.candidate.id).join(",")].join("|")),
+    question: q, route: r0.quant?.intent ?? null, path: r0.research_plan?.path ?? null, research_level: summary?.level ?? null,
+    plan: r0.research_plan ? { path: r0.research_plan.path, classification: r0.research_plan.classification, datasets: (r0.research_plan.datasets ?? []).map((d: any) => d.key), calculations: (r0.research_plan.calculations ?? []).map((c: any) => c.key), external: r0.research_plan.external, estimate: r0.research_plan.estimate } : null,
+    plan_actual: (r0.research_plan_actual ?? []).map((x: any) => ({ stage: x.stage, planned: x.planned, actual: x.actual, detail: x.detail ? String(x.detail).slice(0, 200) : null })),
+    sources,
+    model_snapshot: rows.map((r) => ({ ...pick(r), fair_probability: num(r.evaluation?.fair_probability), fair_kind: r.evaluation?.fair_source?.kind ?? null, model_cover: rec(r.calc, "LINE_DISCREPANCY")?.inputs?.find((i: any) => /model cover/.test(i.name))?.value ?? null, line_gap: rec(r.calc, "LINE_DISCREPANCY")?.output?.value ?? null, tier: r.evaluation?.fair_source?.tier ?? null })),
+    market_snapshot: rows.map((r) => ({ ...pick(r), book: r.candidate.quote?.book ?? null, american: num(r.candidate.quote?.odds_american), decimal: num(r.candidate.quote?.odds_decimal), captured_at: r.candidate.quote?.captured_at ?? null })),
+    conclusions: rows.map((r) => ({ ...pick(r), classification: r.classification?.classification ?? null, final_status: r.classification?.final_status ?? null, challenge: r.challenge?.outcome ?? null, research_confidence: r.challenge?.confidence?.after ?? null, net_ev_per_dollar: num(r.evaluation?.net_ev_per_dollar), reason: (r.classification?.reasons ?? [])[0] ? String(r.classification.reasons[0]).slice(0, 240) : null })),
+    final_status: RUN_FINAL.has(fs) ? fs : rows.length ? null : "NO CANDIDATE",
+    verification: r0.quant_verification ? { verdict: r0.quant_verification.verdict, checked: r0.quant_verification.checked, agreed: r0.quant_verification.agreed, numbers: r0.quant_verification.numbers?.verdict ?? null, numbers_checked: r0.quant_verification.numbers?.checked ?? null } : null,
+    snapshot_ids: (w?.snapshot_ids ?? []).slice(0, 50), earliest_event_start: w?.earliest_event_start ?? null,
+    cost_usd: Math.min(24.99, summary?.search?.cost_usd ?? 0), cost_estimate_usd: Math.min(24.99, num(summary?.cost_estimate_usd) ?? 0),
+    providers: Object.keys(summary?.usage ?? {}).filter((k) => (summary.usage[k]?.calls ?? 0) > 0).slice(0, 12),
+    engine_versions: { orchestrator: EDORCH?.VERSION ?? null, evidence: EDEVIDENCE?.VERSION ?? null, quant_verify: EDQVERIFY?.VERSION ?? null, challenge: EDCHALLENGE?.VERSION ?? null, providers: EDPROVIDERS?.VERSION ?? null, agents: EDAGENTS?.VERSION ?? null, fairodds_calc: EDFAIR?.CALC_VERSION ?? null, build: BUILD ?? null },
+    latency_ms: Math.max(0, Math.round(o.latency_ms)),
+  };
+}
+async function publishRun(auth: string, row: any, fetchImpl?: typeof fetch): Promise<any> {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { ok: false, status: null, detail: "no database configured" };
+  try {
+    const r = await (fetchImpl ?? fetch)(`${SUPABASE_URL}/rest/v1/research_runs?on_conflict=user_id,run_id`, { method: "POST", headers: { apikey: SUPABASE_ANON_KEY, authorization: auth, "content-type": "application/json", prefer: "resolution=ignore-duplicates,return=minimal" }, body: JSON.stringify(row) });
+    const detail = r.ok ? null : String(await r.text().catch(() => "")).slice(0, 200);
+    if (!r.ok) console.warn("research_runs write failed", r.status, detail);
+    return { ok: r.ok, status: r.status, detail: r.ok ? null : (r.status === 404 ? "research_runs is missing: apply supabase/research_engine.sql" : detail) };
+  } catch (e) { return { ok: false, status: 0, detail: String((e as Error)?.message ?? e).slice(0, 160) }; }
 }
 async function quantTurnInner(o: { body: any; auth: string; now?: number; fetchImpl?: typeof fetch; progress?: Progress | null }): Promise<any | null> {
   if (!QUANT_ENABLED || !EDQUANT || !EDFAIR || !o.body) return null;
