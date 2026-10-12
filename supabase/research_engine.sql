@@ -58,6 +58,34 @@ do $req$ begin
   end if;
 end $req$;
 
+/* Preflight, before anything is written: each table this file creates must be
+   absent or already carry every column this file gives it. Production holds
+   older tables under research_* names (research_intel.sql, section 0, says
+   why this matters); any other table under one of these names stops the file
+   here, with nothing changed. */
+do $pre$
+declare tbl text; kind text; cols text[]; gone text[];
+begin
+  for tbl, kind, cols in select * from (values
+    ('research_runs', 'r', array['id', 'run_id', 'user_id', 'created_at', 'question', 'route', 'path', 'research_level', 'plan', 'plan_actual', 'sources', 'model_snapshot', 'market_snapshot', 'conclusions', 'final_status', 'verification', 'snapshot_ids', 'cost_usd', 'cost_estimate_usd', 'providers', 'engine_versions', 'latency_ms', 'earliest_event_start']),
+    ('research_run_outcomes', 'r', array['id', 'snapshot_id', 'user_id', 'event_start', 'result', 'closing_fair', 'closing_line', 'clv', 'graded_at', 'source']),
+    ('research_budget_policy', 'r', array['scope', 'per_request_usd', 'per_user_daily_usd', 'global_daily_usd', 'updated_at', 'note']),
+    ('research_cost_ledger', 'r', array['id', 'user_id', 'provider', 'claimed_at', 'state', 'estimate_usd', 'actual_usd', 'reason', 'settled_at']),
+    ('research_run_calibration', 'v', array['snapshot_id', 'user_id', 'predicted_at', 'event_start', 'sport', 'market', 'selection', 'classification', 'fair_probability', 'fair_kind', 'model_tier', 'odds_decimal', 'net_ev_per_dollar', 'result', 'outcome', 'closing_fair', 'clv', 'graded_at'])
+  ) as v(t, k, c) loop
+    if to_regclass('public.' || tbl) is not null then
+      if (select relkind::text from pg_class where oid = ('public.' || tbl)::regclass) <> kind then
+        raise exception 'research_engine.sql stopped before changing anything: public.% already exists and is not a %. Another object holds the name; rename one of them.', tbl, case kind when 'v' then 'view' else 'table' end;
+      end if;
+      select array_agg(w order by w) into gone from unnest(cols) as w
+       where not exists (select 1 from pg_attribute a where a.attrelid = ('public.' || tbl)::regclass and a.attname = w and a.attnum > 0 and not a.attisdropped);
+      if gone is not null then
+        raise exception 'research_engine.sql stopped before changing anything: public.% already exists and is not the one this file creates (it has no %). Another table holds the name; rename one of them. Do not drop it without a backup.', tbl, array_to_string(gone, ', ');
+      end if;
+    end if;
+  end loop;
+end $pre$;
+
 -- ---------------------------------------------------------------------------
 -- 1. RESEARCH RUNS — one per research turn, frozen when written
 -- ---------------------------------------------------------------------------

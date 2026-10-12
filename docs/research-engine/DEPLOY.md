@@ -1,8 +1,18 @@
 # Research engine — deployment and rollback
 
-**Status.** PR #553, merged on 12 Oct 2026, put stages 0–4 on `main`: the orchestrator, the evidence ledger, the calculation ledger and the challenge pass. Its edge function still carries the build string `edgedesk_ai-2026-10-10-r22-props-cadence`, the same as the build before it. So `?probe=1` and the deploy doctor cannot tell whether that code is running; check the function's last deploy time in the Supabase dashboard.
+**Status (12 Oct 2026, evening).**
+- PR #553 and PR #554 are merged. Production serves `edgedesk_ai-2026-10-12-r23-research-engine` (deploy doctor: CURRENT).
+- Deploy intelligence run #19 applied `research_packets.sql` and `quant_desk.sql`.
+- `research_intel.sql` stopped on run #19 at its first index: `column "event_ref" does not exist`.
+  - Cause: production already holds an older desk table named `research_findings`, written by `rememberSession()` in `edgedesk_ai`, with other columns. The Phase 2 findings table had the same name. `create table if not exists` skipped it, and the index on the new columns failed.
+  - The only statement that changed anything was the one before the index: it replaced the older table's comment. The older table's columns and rows are untouched.
+  - `research_engine.sql` did not run. It needs `research_intel.sql` first.
+- This follow-up (build `r24-chain-findings`) fixes it:
+  - the findings table is renamed `research_chain_findings`, in the migration and in the one function write that uses it;
+  - both migrations open with a preflight that refuses, before writing anything, when a table or view under a name they own has other columns or is the wrong kind;
+  - `research_intel.sql` puts a true description back on the older table, only where the comment is still the one run #19 left.
 
-Stages 5–10 (this follow-up PR) are not merged or deployed. They bump the build to `r23-research-engine`. Every step below needs the owner's explicit go-ahead.
+Every step below needs the owner's explicit go-ahead.
 
 This document assumes nothing about production. Each step says how to check where production stands first, and works whether or not earlier phases (`supabase/research_intel.sql`, PR #551) were applied.
 
@@ -11,7 +21,7 @@ This document assumes nothing about production. Each step says how to check wher
 | Part | How it reaches production | When |
 |---|---|---|
 | **Site:** `app.html`, `lib/edgedesk_intel_ui.js`, `lib/edgedesk_intel.css` and the other `lib/*` files | GitHub Pages serves the repository | **At merge to `main`.** Asset URLs carry `?v=20261012ia8`, so browsers fetch the new files. |
-| **Edge function** `edgedesk_ai`, build `edgedesk_ai-2026-10-12-r23-research-engine` | `Deploy intelligence` workflow (`deploy_function`) | **Within about 6 h of merge, automatically.** The Intelligence doctor (`intelligence-doctor.yml`, 4× a day) deploys `edgedesk_ai` whenever production serves a build other than `main`'s. **Merging is therefore the decision to deploy the function.** |
+| **Edge function** `edgedesk_ai`, build `edgedesk_ai-2026-10-12-r24-chain-findings` | `Deploy intelligence` workflow (`deploy_function`) | **Within about 6 h of merge, automatically.** The Intelligence doctor (`intelligence-doctor.yml`, 4× a day) deploys `edgedesk_ai` whenever production serves a build other than `main`'s. **Merging is therefore the decision to deploy the function.** |
 | **Migration** `supabase/research_engine.sql` | `Deploy intelligence` workflow, `apply_research_engine` (needs the `SB_DB_URL` secret), or `psql` by hand | **Only when a person runs it.** The doctor never applies a migration. |
 | **Migration** `supabase/research_intel.sql` (prerequisite, Phase 2) | the same workflow, `apply_research_intel` | only if it is not applied already (§2, step 1) |
 
@@ -21,7 +31,7 @@ This document assumes nothing about production. Each step says how to check wher
 
 ## 2. Deploying, in order
 
-Apply the migrations **before** merging, so the function finds its tables the moment the doctor deploys it.
+On a first release, apply the migrations **before** merging, so the function finds its tables the moment the doctor deploys it. (For this follow-up the order no longer matters; see step 4.)
 
 The function still works without them:
 - run-record writes fail quietly and the answer is served;
@@ -34,9 +44,11 @@ Without the tables, though, nothing is recorded for grading.
 - `GET https://<project>.supabase.co/functions/v1/edgedesk_ai?probe=1` returns the serving build.
 - In the SQL editor:
   ```sql
-  select to_regclass('public.research_provider_quota') is not null as research_intel_applied,
-         to_regclass('public.research_runs')           is not null as research_engine_applied;
+  select to_regclass('public.research_chain_findings') is not null as research_intel_applied,
+         to_regclass('public.research_runs')           is not null as research_engine_applied,
+         to_regclass('public.research_findings')       is not null as older_desk_findings_table;
   ```
+  The last column is expected to be true in production. That table belongs to the matchup desk; leave it alone.
 
 ### 2. Apply `research_intel.sql`, if `research_intel_applied` is false
 
@@ -46,6 +58,10 @@ Run `Deploy intelligence` with only `apply_research_intel` ticked (untick `deplo
 - seeded with paid providers disabled.
 
 Its last statement is a report: read any row that says `CHECK THIS`.
+
+If it stops with `stopped before changing anything`, another table holds one of its names. Nothing was written. The message names the table and the columns it lacks; bring that to the owner rather than dropping anything.
+
+`apply_research_intel` and `apply_research_engine` can be ticked in the same run: the workflow applies them in this order and stops at the first failure.
 
 ### 3. Apply `research_engine.sql`
 
@@ -57,11 +73,11 @@ Run `Deploy intelligence` with only `apply_research_engine` ticked. It:
 
 Read the report rows at the end.
 
-### 4. Merge this PR (the follow-up to #553; the owner's decision)
+### 4. Merge this PR (the owner's decision)
 
-The site ships at once. Within about 6 h the doctor deploys the function.
+Within about 6 h the doctor deploys the function (r24). To deploy it now instead, run `Deploy intelligence` with only `deploy_function`, from `main`.
 
-To deploy the function now instead, run `Deploy intelligence` with only `deploy_function`, from `main`.
+Either order works now that r23 is live: until the tables exist, r23 and r24 both serve every answer and their memory writes fail quietly. The simplest path is one run of `Deploy intelligence` from `main` after the merge, with `deploy_function`, `apply_research_intel` and `apply_research_engine` ticked.
 
 ### 5. Verify (§3)
 
@@ -69,7 +85,7 @@ To deploy the function now instead, run `Deploy intelligence` with only `deploy_
 
 | Check | Expected |
 |---|---|
-| `?probe=1` | `build` is `edgedesk_ai-2026-10-12-r23-research-engine` |
+| `?probe=1` | `build` is `edgedesk_ai-2026-10-12-r24-chain-findings` |
 | `node tools/intelligence/deploy_doctor.js` (with `SB_URL`, `SB_ANON`) | no `STALE` for `edgedesk_ai` |
 | Ask, signed in: "What's the best bet this weekend across all sports?" | a plan, then streamed steps, then a result with `quant_verification.verdict = VERIFIED` |
 | Ask: "Is <a starting QB this week> playing Sunday?" | an **Availability** card naming each source and its time; no model call (the answer's source line says no model wrote it) |
@@ -107,9 +123,9 @@ Set or unset these as function secrets (Supabase dashboard → Edge Functions �
 1. Pages serves the previous site;
 2. the doctor redeploys the previous function build within about 6 h. To do it at once, run `Deploy intelligence` (`deploy_function`) from `main`.
 
-Check `?probe=1` shows the previous build (`edgedesk_ai-2026-10-10-r22-props-cadence`, or whatever `main` carries).
+Check `?probe=1` shows the previous build (`edgedesk_ai-2026-10-12-r23-research-engine`, or whatever `main` carries).
 
-Do not redeploy an old build by hand while `main` still carries r23: the doctor would put r23 back within hours.
+Do not redeploy an old build by hand while `main` still carries a newer one: the doctor would put it back within hours.
 
 **Faster, partial rollback.** The switches in §4 turn the new routes off without a deploy.
 
@@ -138,3 +154,4 @@ Check the function signatures with `\df public.research_*` before running it. Le
 - Do not enable paid search or a provider row without the live verification run and the owner's approval.
 - Do not re-enable odds capture as part of this release. It has its own runbook (`docs/odds-api-incident-2026-10/INCIDENT.md` §9) and proposal (`ODDS_RECOVERY.md`).
 - Do not apply `research_engine.sql` before `research_intel.sql`. It refuses, and says why.
+- Do not drop, rename or alter the older `research_findings` table. The matchup desk writes to it (`rememberSession()`), and nothing in this release needs it changed.

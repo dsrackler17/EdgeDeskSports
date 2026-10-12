@@ -18,7 +18,7 @@ still missing. Written from the repository on 2026-10-12; every path is real.
 | Desk notebook | `football/notes/current.json` | Operator-recorded findings with a source URL, kind and time |
 | Investigation layer (Brave search, open-meteo, nflverse live) | `RESEARCH_PROVIDERS`, `INVESTIGATION_CACHE` in `index.ts` | Unchanged; the scan's research uses the new ledger instead |
 | Portfolio (RLS own rows, exact decimals, CSV import) | `lib/edgedesk_portfolio*.js`, `supabase/portfolio.sql` | Betting-history analytics read `portfolio_positions` under the caller's JWT |
-| Write-once ledgers | `supabase/opportunity_audits` (quant_desk.sql), `research_packets.sql` | Pattern copied for `research_findings` / `prediction_snapshots` |
+| Write-once ledgers | `supabase/opportunity_audits` (quant_desk.sql), `research_packets.sql` | Pattern copied for `research_chain_findings` / `prediction_snapshots` |
 
 ## 2. What Phase 2 adds
 
