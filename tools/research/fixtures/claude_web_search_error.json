@@ -1,0 +1,13 @@
+{
+  "_label": "CONSTRUCTED from the documented web_search error shape (a 200 response whose web_search_tool_result content is a single error object). NOT a recorded live response.",
+  "response": {
+    "id": "msg_fixture_error", "type": "message", "role": "assistant", "model": "claude-opus-5-5",
+    "content": [
+      { "type": "server_tool_use", "id": "srvtoolu_fx_e", "name": "web_search", "input": { "query": "Lions Bills injuries" } },
+      { "type": "web_search_tool_result", "tool_use_id": "srvtoolu_fx_e", "content": { "type": "web_search_tool_result_error", "error_code": "too_many_requests" } },
+      { "type": "text", "text": "I could not retrieve current reporting." }
+    ],
+    "stop_reason": "end_turn",
+    "usage": { "input_tokens": 1200, "output_tokens": 40, "server_tool_use": { "web_search_requests": 1 } }
+  }
+}

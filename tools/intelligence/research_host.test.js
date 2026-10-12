@@ -43,7 +43,7 @@ const PRINT = process.env.RESEARCH_PRINT === '1';
 const DUMP = process.env.RESEARCH_DUMP ? {} : null;
 
 const ENV = { EDGEDESK_AI_NO_SERVE: '1', ANTHROPIC_API_KEY: 'test-key', SUPABASE_URL: 'https://sb.test', SUPABASE_ANON_KEY: 'anon-key', EDGEDESK_SITE_BASE: 'https://site.test', EDGEDESK_QUOTE_REFRESH: '1', CRON_SECRET: 'cron-test',
-  EDGEDESK_RESEARCH_NARRATE: '1', EDGEDESK_RESEARCH_PAID_OK: '0' };
+  EDGEDESK_RESEARCH_NARRATE: '1', EDGEDESK_RESEARCH_PAID_OK: '0', EDGEDESK_RESEARCH_LOG: '0' };
 globalThis.Deno = { env: { get: (k) => ENV[k] } };
 
 const NOW = Date.parse('2026-10-12T16:00:00Z');            /* Monday noon in New York */
@@ -53,16 +53,30 @@ const etDate = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New
 
 let route = () => [];
 let modelCalls = 0, modelReply = null;
+let searchCalls = [], searchReply = null, searchDelay = 0;
+let costCalls = [], costReply = null;
 let posted = [], reads = [], rpcCalls = [], quotaReply = null;
 const oddsCalls = [];
 globalThis.fetch = async function (url, init) {
   const u = String(url);
+  if (u.indexOf('api.anthropic.com') >= 0 && init && /"web_search"/.test(String(init.body))) {
+    searchCalls.push({ body: JSON.parse(init.body), headers: init.headers || {} });
+    if (searchDelay) await new Promise((r) => setTimeout(r, searchDelay));
+    const rep = typeof searchReply === 'function' ? searchReply(JSON.parse(init.body), searchCalls.length) : searchReply;
+    if (!rep || rep.__status) return { ok: false, status: (rep && rep.__status) || 500, json: async () => ({ type: 'error', error: { type: 'api_error', message: 'fixture failure' } }), text: async () => 'fixture failure' };
+    return { ok: true, status: 200, json: async () => rep, text: async () => JSON.stringify(rep) };
+  }
   if (u.indexOf('api.anthropic.com') >= 0) {
     modelCalls++;
     const text = typeof modelReply === 'function' ? modelReply(JSON.parse(init.body)) : (modelReply || 'ok');
     return { ok: true, status: 200, json: async () => ({ model: 'test', stop_reason: 'end_turn', content: [{ type: 'text', text }] }), text: async () => text };
   }
   if (u.indexOf('the-odds-api.com') >= 0 || u.indexOf('/functions/v1/capture') >= 0) { oddsCalls.push(u); throw new Error('an odds request was made: ' + u); }
+  if (init && init.method === 'POST' && u.indexOf('/rpc/research_cost_') >= 0) {
+    costCalls.push({ fn: u.split('/rpc/')[1], body: JSON.parse(init.body), auth: (init.headers || {}).authorization });
+    const out = /claim/.test(u) ? (costReply || { ok: true, claim_id: 77 }) : { ok: true };
+    return { ok: true, status: 200, text: async () => JSON.stringify(out), json: async () => out };
+  }
   if (init && init.method === 'POST' && u.indexOf('/rpc/research_usage_') >= 0) {
     rpcCalls.push({ fn: u.split('/rpc/')[1], body: JSON.parse(init.body), auth: (init.headers || {}).authorization });
     const out = /claim/.test(u) ? (quotaReply || { ok: true, claim_id: 41 }) : { ok: true };
@@ -174,7 +188,7 @@ function consistent(tag, answer, row) {
     const M = o.mod || m;
     M.clearCache(); M.resetRateLimit(); if (M.clearInvestigationCache) M.clearInvestigationCache(); if (!o.keepLedger) M.resetResearchLedger();
     route = routerFor(o);
-    modelCalls = 0; modelReply = o.modelReply || null; posted = []; reads = []; rpcCalls = []; quotaReply = o.quota || null;
+    modelCalls = 0; modelReply = o.modelReply || null; posted = []; reads = []; rpcCalls = []; quotaReply = o.quota || null; costCalls = []; costReply = o.cost || null;
     const body = { mode: 'chat', question, history: [], research_context: o.carried || null, timezone: 'America/New_York', desk: o.desk === false ? undefined : true, intent_hint: o.qhint || undefined };
     const j = await (o.mod || m).quantTurn({ body, auth: 'Bearer ' + (o.jwt || USER_JWT), now: o.now || NOW });
     if (PRINT) console.log('\n──── Q: ' + question + '\n' + (j ? j.answer : 'null (not a quant route)'));
@@ -199,6 +213,13 @@ function consistent(tag, answer, row) {
   ok('CALC S1: the projection is compared with the market line (gap and cover probability) and never called edge evidence', bC && recC(bC, 'LINE_DISCREPANCY').status === 'COMPUTED' && recC(bC, 'LINE_DISCREPANCY').output.is_edge_evidence === false && recC(bC, 'LINE_DISCREPANCY').output.cover_probability > 0 && recC(bC, 'LINE_DISCREPANCY').inputs.some((i) => /model cover probability/.test(i.name)), bC && recC(bC, 'LINE_DISCREPANCY'));
   ok('CALC S1: the model\'s measured record comes from the validation artifact (held-out Brier against the base rate)', bC && recC(bC, 'CALIBRATION').status === 'COMPUTED' && typeof recC(bC, 'CALIBRATION').output.value === 'number' && typeof recC(bC, 'CALIBRATION').output.beats_base_rate === 'boolean', bC && recC(bC, 'CALIBRATION'));
   ok('CALC S1: the turn is verified: every ledger recomputes, and every probability, price and EV in the answer traces to a calculation', s1 && s1.quant_verification && s1.quant_verification.verdict === 'VERIFIED' && s1.quant_verification.ledgers >= 2 && s1.quant_verification.numbers.verdict === 'PASS' && s1.quant_verification.numbers.checked >= 5, s1 && s1.quant_verification);
+  /* THE RUN RECORD: one write-once research_runs row per research turn */
+  const runPost = posted.find((p) => p.table === 'research_runs'), runRow = runPost && runPost.body;
+  ok('RUN S1: the turn writes one research_runs row under the reader\'s own token, idempotent on (user, run id)', runPost && /on_conflict=user_id,run_id/.test(runPost.query) && /^Bearer /.test(runPost.auth) && /^rr_[0-9a-f]{16}$/.test(runRow.run_id) && s1.research_run && s1.research_run.run_id === runRow.run_id && s1.research_run.write.ok, runPost && [runPost.query, runRow.run_id, s1.research_run]);
+  ok('RUN S1: it holds the question, route, path, level, the plan and what actually ran', runRow && runRow.question === "What's the best bet this weekend across all sports?" && runRow.route === 'SCAN' && runRow.path === s1.research_plan.path && runRow.research_level === 'L3' && runRow.plan_actual.length === s1.research_plan_actual.length && runRow.plan_actual.every((x) => x.stage && x.actual), runRow && [runRow.route, runRow.path, runRow.plan_actual]);
+  ok('RUN S1: sources consulted, the model and market snapshots, and the conclusions (class, challenge, research confidence, EV) per candidate', runRow && runRow.sources.length >= 2 && runRow.sources.every((x) => x.url || x.dataset_id) && runRow.model_snapshot.length === runRow.market_snapshot.length && runRow.conclusions.length === runRow.model_snapshot.length && runRow.conclusions.some((c) => c.selection === 'Buffalo Bills' && c.classification === 'VERIFIED_CANDIDATE' && c.challenge === 'STANDS' && c.research_confidence && c.net_ev_per_dollar === Number(best.evaluation.net_ev_per_dollar)) && runRow.market_snapshot.some((m) => m.selection === 'Buffalo Bills' && m.book === 'FanDuel' && m.captured_at), runRow && runRow.conclusions);
+  ok('RUN S1: the frozen prediction snapshots it rests on, the earliest event start (no look-ahead), the verification, cost and engine versions', runRow && runRow.snapshot_ids.length >= 1 && runRow.snapshot_ids.every((x) => /^ps_[0-9a-f]{16}$/.test(x)) && Date.parse(runRow.earliest_event_start) > NOW && runRow.verification && runRow.verification.verdict === 'VERIFIED' && runRow.cost_usd === 0 && runRow.engine_versions.challenge === 'edgedesk_challenge_v1' && runRow.engine_versions.fairodds_calc && runRow.final_status === 'VERIFIED CANDIDATE', runRow && [runRow.snapshot_ids, runRow.earliest_event_start, runRow.verification, runRow.engine_versions]);
+  ok('RUN S1: the run row carries no outcome (outcomes are written later, apart)', runRow && !Object.keys(runRow).some((k) => /result|outcome|closing|clv|profit/.test(k)), runRow && Object.keys(runRow));
   /* THE CHALLENGE PASS: the eight questions, answered from the evidence and calculation ledgers */
   const bCh = best && best.challenge;
   ok('CHALLENGE S1: the best candidate faced all eight questions and STANDS — each answered from the ledgers, nothing unresolved', bCh && bCh.schema === 'edgedesk_challenge_v1' && bCh.questions.length === 8 && bCh.outcome === 'STANDS' && bCh.unresolved.critical === 0 && bCh.unresolved.important === 0 && bCh.questions.every((x) => x.answer && x.status), bCh && [bCh.outcome, bCh.questions.map((x) => x.id + ':' + x.status + ':' + x.answer.slice(0, 60))]);
@@ -444,6 +465,114 @@ function consistent(tag, answer, row) {
   ok('OFF: with the chain switched off the scan answers in the Phase-1 format, priced the same', off && off.scan.researched === false && /^BEST VERIFIED OPPORTUNITY/.test(off.answer) && /Decision: BUY/.test(off.answer) && off.scan.best && off.scan.best.evaluation.net_ev_per_dollar === best.evaluation.net_ev_per_dollar, off && [off.scan.researched, off.answer.split('\n')[0]]);
   ok('OFF: …and writes no research memory', !posted.some((p) => p.table === 'research_findings' || p.table === 'prediction_snapshots'), posted.map((p) => p.table));
 
+  /* ═══ PHASE 4 — EXTERNAL SEARCH SWITCHED ON (Claude web search), AGAINST A CONSTRUCTED FIXTURE ═══
+     The response is built from the documented shape (tools/research/fixtures, labelled); this proves the wiring, the
+     gates and the evidence path — not a live provider. */
+  {
+    const SFX = require(path.join(ROOT, 'tools', 'research', 'fixtures', 'claude_web_search_det_buf.json')).response;
+    const SFX_ERR = require(path.join(ROOT, 'tools', 'research', 'fixtures', 'claude_web_search_refusal.json')).response;
+    const SFX_PAUSE = require(path.join(ROOT, 'tools', 'research', 'fixtures', 'claude_web_search_pause.json')).response;
+    /* before switching anything on: the default scan never calls a search provider, and says why */
+    searchCalls = [];
+    const s0 = await ask("What's the best bet this weekend across all sports?");
+    ok('SEARCH OFF: the default build never calls a search provider; the subscriber reads that search is off, the operator detail stays in the report', searchCalls.length === 0 && s0.scan.best && s0.scan.best.search && s0.scan.best.search.status === 'NOT_RUN' && /^external search is off/.test(s0.scan.best.search.why) && !/EDGEDESK_|API key/.test(s0.scan.best.search.why) && /not enabled by the operator/.test(s0.scan.best.search.detail) && !/EDGEDESK_SEARCH_PROVIDERS|API key/.test(s0.answer), s0 && s0.scan.best && s0.scan.best.search);
+    ENV.EDGEDESK_SEARCH_PROVIDERS = 'claude_web_search'; ENV.EDGEDESK_RESEARCH_PAID_OK = '1';
+    const mS = await import(pathToFileURL(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', 'index.ts')).href + '?search=claude');
+    delete ENV.EDGEDESK_SEARCH_PROVIDERS; ENV.EDGEDESK_RESEARCH_PAID_OK = '0';
+    searchCalls = []; searchReply = SFX;
+    const s1s = await ask("What's the best bet this weekend across all sports?", { mod: mS });
+    const call = searchCalls[0], bS = s1s && s1s.scan && s1s.scan.best;
+    ok('SEARCH ON: one search per game, sent server-side with the key in the header — never in the body', searchCalls.length >= 1 && call.headers['x-api-key'] === 'test-key' && !/test-key/.test(JSON.stringify(call.body)) && call.body.tools[0].type === 'web_search_20260209' && JSON.stringify(call.body.tools[0].allowed_callers) === '["direct"]' && call.body.model === 'claude-opus-5-5', searchCalls.map((c) => c.body.messages[0].content.slice(0, 80)));
+    ok('SEARCH ON: each real search first claims the persistent quota (research_usage_claim) for its provider and settles it OK', rpcCalls.filter((x) => x.fn === 'research_usage_claim' && x.body.p_provider === 'claude_web_search').length === searchCalls.length && rpcCalls.filter((x) => x.fn === 'research_usage_settle' && x.body.p_state === 'OK').length >= searchCalls.length, rpcCalls.map((x) => x.fn + ':' + JSON.stringify(x.body)));
+    ok('SEARCH ON: each real search first claims its dollar estimate (research_cost_claim) and settles it with the actual cost read from usage', costCalls.filter((x) => x.fn === 'research_cost_claim' && x.body.p_provider === 'claude_web_search' && Math.abs(x.body.p_estimate_usd - 0.084) < 1e-9).length === searchCalls.length && costCalls.some((x) => x.fn === 'research_cost_settle' && x.body.p_state === 'SETTLED' && Math.abs(x.body.p_actual_usd - 0.0722) < 1e-9), costCalls.map((x) => x.fn + ':' + JSON.stringify(x.body)));
+    ok('SEARCH ON: two candidates on the same game share one search (the ledger\'s cache and single flight)', new Set(searchCalls.map((c) => c.body.messages[0].content.split('\n')[0])).size === searchCalls.length, searchCalls.length);
+    const sev = bS && bS.evidence, srec = sev ? sev.records.filter((r) => r.search) : [];
+    ok('SEARCH ON: cited quotes reached the evidence ledger as the source\'s own words, with the provider named', srec.length >= 3 && srec.every((r) => r.search.provider === 'claude_web_search' && r.source.url) && srec.some((r) => /full participant in Thursday's practice/.test(r.claim)), srec.map((r) => [r.source.url, r.type, r.verification, r.claim.slice(0, 50)]));
+    ok('SEARCH ON: the refused citations (a URL the search never returned, a blog off the allowed list) never became evidence', !sev.records.some((r) => /not-in-results|bettingblog/.test(r.source.url || '')) && bS.search.refused.length === 2, bS && bS.search);
+    ok('SEARCH ON: the injected quote is flagged and demoted to an unverified hypothesis', sev.records.some((r) => r.injection && r.injection.flagged && r.type === 'HYPOTHESIS' && r.verification === 'UNVERIFIED'), sev.summary.flagged);
+    ok('SEARCH ON: the undated page is UNKNOWN freshness, never fresh', srec.filter((r) => /apnews/.test(r.source.url)).every((r) => r.freshness.status === 'UNKNOWN'));
+    ok('SEARCH ON: the row reports the search: provider, status, findings, refusals, uncited sentences, cost from usage', bS.search.provider === 'claude_web_search' && bS.search.status === 'OK' && bS.search.findings === 4 && bS.search.uncited_sentences === 2 && Math.abs(bS.search.cost_usd - 0.0722) < 1e-9 && bS.search.schema_verified === true, bS.search);
+    ok('SEARCH ON: the research summary carries the search\'s actual cost, counted once per search', s1s.scan.research_summary && s1s.scan.research_summary.search && Math.abs(s1s.scan.research_summary.search.cost_usd - 0.0722 * new Set(searchCalls.map((c) => c.body.messages[0].content.split('\n')[0])).size) < 1e-6, s1s.scan.research_summary && s1s.scan.research_summary.search);
+    ok('SEARCH ON: the Bills still stand on the numbers — the search\'s reports agree with the official feed (no new conflict)', bS.candidate.selection === 'Buffalo Bills' && bS.classification.classification === 'VERIFIED_CANDIDATE' && bS.challenge.outcome === 'STANDS', bS && [bS.classification, bS.challenge && bS.challenge.questions.filter((x) => x.status !== 'CLEAR' && x.status !== 'NOT_APPLICABLE')]);
+    ok('SEARCH ON: every number in the answer still traces to a calculation', s1s.quant_verification && s1s.quant_verification.numbers.verdict === 'PASS', s1s.quant_verification && s1s.quant_verification.numbers);
+    /* a search report that contradicts the official feed: Allen OUT from ESPN, ACTIVE from the official report → a conflict, the challenge lowers it */
+    const CONTRA = JSON.parse(JSON.stringify(SFX));
+    CONTRA.content.forEach((b) => (b.citations || []).forEach((c) => { if (/fixture-allen-practice/.test(c.url)) c.cited_text = 'Bills quarterback Josh Allen (shoulder) has been ruled out for Sunday.'; }));
+    searchCalls = []; searchReply = CONTRA;
+    const s2s = await ask("What's the best bet this weekend across all sports?", { mod: mS });
+    const allBills = [s2s.scan.best].concat(s2s.scan.verified_rest || [], s2s.scan.potential || [], s2s.scan.near_misses || []).filter(Boolean).find((r) => r.candidate.selection === 'Buffalo Bills');
+    const q4c = allBills && allBills.challenge && allBills.challenge.questions.find((x) => x.id === 'Q4_KEY_PLAYERS');
+    ok('SEARCH REPORTS AN ABSENCE: one credible report that the priced quarterback is out is never priced on, but blocks the verdict — RESEARCH REQUIRED, and the challenge calls it critical', allBills && allBills.classification.classification === 'RESEARCH_REQUIRED' && /Josh Allen .*reported out by espn\.com/.test(allBills.classification.reasons[0]) && q4c && q4c.status === 'UNRESOLVED' && q4c.severity === 'CRITICAL' && Number(allBills.evaluation.net_ev_per_dollar) === Number(bS.evaluation.net_ev_per_dollar), allBills && [allBills.classification, q4c, allBills.evaluation.net_ev_per_dollar]);
+    /* failures never take the basic analysis with them */
+    searchCalls = []; searchReply = { __status: 529 };
+    const s3s = await ask("What's the best bet this weekend across all sports?", { mod: mS });
+    ok('SEARCH FAILS: an HTTP error is reported as FAILED; the scan still answers on EdgeDesk\'s own sources', s3s && s3s.scan && s3s.scan.best && s3s.scan.best.search.status === 'FAILED' && /HTTP 529/.test(s3s.scan.best.search.why) && s3s.scan.best.classification.classification === 'VERIFIED_CANDIDATE', s3s && s3s.scan && s3s.scan.best && s3s.scan.best.search);
+    searchCalls = []; searchReply = SFX;
+    const s3q = await ask("What's the best bet this weekend across all sports?", { mod: mS, quota: { ok: false, why: 'claude_web_search is not enabled by the operator' } });
+    ok('SEARCH QUOTA: when the database quota refuses, no search request is sent, the refusal is reported (not cached, not a breaker failure), and the scan answers', searchCalls.length === 0 && s3q.scan.best.search.status === 'QUOTA_REFUSED' && /not enabled by the operator/.test(s3q.scan.best.search.why) && s3q.scan.best.classification.classification === 'VERIFIED_CANDIDATE', s3q.scan.best.search);
+    searchCalls = []; searchReply = SFX;
+    const s3b = await ask("What's the best bet this weekend across all sports?", { mod: mS, cost: { ok: false, why: 'your research budget for today ($1.00) would be exceeded' } });
+    ok('SEARCH BUDGET: when the dollar budget refuses, no search is sent and no call quota is claimed; the refusal is reported and the scan answers', searchCalls.length === 0 && !rpcCalls.some((x) => x.fn === 'research_usage_claim') && s3b.scan.best.search.status === 'BUDGET_REFUSED' && /research budget for today/.test(s3b.scan.best.search.why) && s3b.scan.best.classification.classification === 'VERIFIED_CANDIDATE', [searchCalls.length, s3b.scan.best.search]);
+    const s3c = await ask("What's the best bet this weekend across all sports?", { mod: mS, quota: { ok: false, why: 'claude_web_search daily limit (300) reached' } });
+    ok('SEARCH QUOTA after BUDGET: a quota refusal releases the dollar claim it already holds', costCalls.some((x) => x.fn === 'research_cost_settle' && x.body.p_state === 'RELEASED') && s3c.scan.best.search.status === 'QUOTA_REFUSED', costCalls.map((x) => x.fn + ':' + x.body.p_state));
+    searchCalls = []; searchReply = SFX_ERR;
+    const s4s = await ask("What's the best bet this weekend across all sports?", { mod: mS });
+    ok('SEARCH REFUSED: a refusal is reported, adds no evidence, and the scan answers', s4s.scan.best.search.status === 'REFUSED' && !s4s.scan.best.evidence.records.some((r) => r.search), s4s.scan.best.search);
+    searchCalls = []; searchReply = (body, n) => n === 1 ? SFX_PAUSE : SFX;
+    const s5s = await ask("What's the best bet this weekend across all sports?", { mod: mS });
+    const rows5 = [s5s.scan.best].concat(s5s.scan.verified_rest || [], s5s.scan.potential || [], s5s.scan.near_misses || []).filter(Boolean);
+    const resumed = rows5.find((r) => r.search && r.search.status === 'OK' && r.search.cost_usd > 0.0722 + 1e-9);
+    ok('SEARCH PAUSED: a paused turn is resumed once — the second call is the original message plus the paused assistant turn, unchanged — and both calls are costed', searchCalls.length >= 2 && searchCalls[1].body.messages.length === 2 && searchCalls[1].body.messages[1].role === 'assistant' && JSON.stringify(searchCalls[1].body.messages[1].content) === JSON.stringify(SFX_PAUSE.content) && searchCalls.filter((c) => c.body.messages.length === 2).length === 1 && resumed && Math.abs(resumed.search.cost_usd - (2100 * 4 / 1e6 + 30 * 20 / 1e6 + 0.01 + 0.0722)) < 1e-9, [searchCalls.length, rows5.map((r) => r.search)]);
+    /* the breaker: three failures open it; the next call is refused without a request */
+    searchCalls = []; searchReply = { __status: 500 };
+    await ask("What's the best bet this weekend across all sports?", { mod: mS });
+    await ask("What's the best bet this weekend across all sports?", { mod: mS, keepLedger: true });
+    await ask("What's the best bet this weekend across all sports?", { mod: mS, keepLedger: true });
+    const before = searchCalls.length;
+    const s6s = await ask("What's the best bet this weekend across all sports?", { mod: mS, keepLedger: true });
+    ok('SEARCH BREAKER: after three consecutive failures the breaker opens and no further request is sent', searchCalls.length === before && /circuit breaker is open/.test(s6s.scan.best.search.why || ''), [before, searchCalls.length, s6s.scan.best.search]);
+    /* the per-turn dollar cap: with a $0.10 request budget, the second game's search ($0.084 more) is refused */
+    ENV.EDGEDESK_SEARCH_PROVIDERS = 'claude_web_search'; ENV.EDGEDESK_RESEARCH_PAID_OK = '1'; ENV.EDGEDESK_RESEARCH_BUDGET_REQUEST_USD = '0.10';
+    const mB = await import(pathToFileURL(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', 'index.ts')).href + '?search=claude&budget=0.10');
+    delete ENV.EDGEDESK_SEARCH_PROVIDERS; ENV.EDGEDESK_RESEARCH_PAID_OK = '0'; delete ENV.EDGEDESK_RESEARCH_BUDGET_REQUEST_USD;
+    searchCalls = []; searchReply = SFX;
+    const sb1 = await ask("What's the best bet this weekend across all sports?", { mod: mB });
+    const rowsB = [sb1.scan.best].concat(sb1.scan.verified_rest || [], sb1.scan.potential || [], sb1.scan.near_misses || []).filter(Boolean);
+    ok('TURN BUDGET: one search per turn fits a $0.10 request budget; the next game\'s search is refused before any claim, and says why', searchCalls.length === 1 && rowsB.some((r) => r.search && r.search.status === 'BUDGET_REFUSED' && /this turn's research budget \(\$0\.10\)/.test(r.search.why)) && costCalls.filter((x) => x.fn === 'research_cost_claim').length === 1, [searchCalls.length, rowsB.map((r) => r.search && r.search.status)]);
+    /* the paid-search slots */
+    const sA = await mS.searchSlot(10), sB2 = await mS.searchSlot(10);
+    const sC = await mS.searchSlot(30);
+    ok('SLOTS: at most two paid searches in flight per isolate; a third waits briefly, then is refused', typeof sA === 'function' && typeof sB2 === 'function' && sC === null && mS.searchSlotsState().active === 2, mS.searchSlotsState());
+    const waiting = mS.searchSlot(500); sA();
+    const sD = await waiting;
+    ok('SLOTS: a released slot goes to the next waiter', typeof sD === 'function' && mS.searchSlotsState().active === 2);
+    sB2(); sD();
+    ok('SLOTS: all released', mS.searchSlotsState().active === 0 && mS.searchSlotsState().waiting === 0, mS.searchSlotsState());
+    /* the per-subscriber in-flight limit: with a limit of one, a second concurrent turn from the same subscriber is refused, not queued */
+    ENV.EDGEDESK_SEARCH_PROVIDERS = 'claude_web_search'; ENV.EDGEDESK_RESEARCH_PAID_OK = '1'; ENV.EDGEDESK_RESEARCH_MAX_INFLIGHT = '1';
+    const mI = await import(pathToFileURL(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', 'index.ts')).href + '?inflight=1');
+    delete ENV.EDGEDESK_SEARCH_PROVIDERS; ENV.EDGEDESK_RESEARCH_PAID_OK = '0'; delete ENV.EDGEDESK_RESEARCH_MAX_INFLIGHT;
+    searchCalls = []; searchReply = SFX; searchDelay = 150;
+    mI.clearCache(); mI.resetRateLimit(); mI.clearInvestigationCache(); mI.resetResearchLedger(); route = routerFor({});
+    const qBody = { mode: 'chat', question: "What's the best bet this weekend across all sports?", history: [], timezone: 'America/New_York', desk: true };
+    const p1 = mI.quantTurn({ body: qBody, auth: 'Bearer ' + USER_JWT, now: NOW });
+    await new Promise((r) => setTimeout(r, 20));
+    const busy = await mI.quantTurn({ body: qBody, auth: 'Bearer ' + USER_JWT, now: NOW });
+    const first = await p1;
+    searchDelay = 0;
+    ok('IN FLIGHT: a second concurrent research turn from the same subscriber is refused with a plain answer; the first completes', busy && busy.quant.intent === 'BUSY' && busy.busy.limit === 1 && /already in progress/.test(busy.answer) && first && first.scan && first.scan.best && Object.keys(mI.researchInflightState()).length === 0, [busy && busy.answer, first && !!first.scan, mI.researchInflightState()]);
+    /* structured logs: one JSON line per search and per turn, no question text, no key, the subscriber hashed */
+    const logs = [], origLog = console.log;
+    console.log = (...a) => { const t = a.join(' '); if (/^\{"ts"/.test(t)) logs.push(JSON.parse(t)); else origLog.apply(console, a); };
+    searchCalls = []; searchReply = SFX; ENV.EDGEDESK_RESEARCH_LOG = '1';
+    try { await ask("What's the best bet this weekend across all sports?", { mod: mS }); } finally { console.log = origLog; ENV.EDGEDESK_RESEARCH_LOG = '0'; }
+    const lt = logs.find((x) => x.event === 'research_turn'), ls = logs.find((x) => x.event === 'research_search');
+    ok('LOGS: a research_turn line with run id, route, level, timing, verdicts, search statuses and cost', lt && lt.svc === 'edgedesk_ai' && /^rr_/.test(lt.run_id) && lt.route === 'SCAN' && lt.level === 'L3' && typeof lt.ms === 'number' && lt.verification === 'VERIFIED/PASS' && Array.isArray(lt.search) && typeof lt.cost_usd === 'number' && lt.challenge && typeof lt.challenge === 'object', lt);
+    ok('LOGS: a research_search line with provider, status, cost, findings and refusals', ls && ls.provider === 'claude_web_search' && ls.status === 'OK' && Math.abs(ls.cost_usd - 0.0722) < 1e-9 && ls.findings === 4 && ls.refused === 2, ls);
+    ok('LOGS: no line carries the question, the API key or the raw subscriber id', logs.length >= 2 && logs.every((x) => !/best bet this weekend/.test(JSON.stringify(x)) && !/test-key/.test(JSON.stringify(x)) && !/11111111-1111/.test(JSON.stringify(x))) && /^u_[0-9a-f]{10}$/.test(lt.user), logs.map((x) => x.event + ':' + x.user));
+    searchReply = null;
+  }
+
   /* ═══ PHASE 3 — THE ROUTES THE WEBSITE'S AI ENTRY POINT AND GAME VIEW CALL ═══════════ */
   /* the six example questions on the Research screen each reach a deterministic engine route, never a model */
   const EX = [
@@ -605,9 +734,58 @@ function consistent(tag, answer, row) {
   ok('STREAM: the streamed result is the engine\'s payload (route, scan, the same verdict)', res && res.quant && res.quant.intent === 'SCAN' && res.scan && res.route && typeof res.answer === 'string', res && Object.keys(res));
   const stc = await streamAsk("What's the best bet this week across all sports?", { cancelAfter: 2 });
   await new Promise((r) => setTimeout(r, 300));
-  ok('STREAM: cancelling stops the run: no result was sent and no research memory was written', !stc.events.some((e) => e.type === 'result') && !posted.some((p) => p.table === 'research_findings'), [stc.events.map((e) => e.type), posted.map((p) => p.table)]);
+  ok('STREAM: cancelling stops the run: no result was sent and no research memory was written', !stc.events.some((e) => e.type === 'result') && !posted.some((p) => p.table === 'research_findings' || p.table === 'research_runs'), [stc.events.map((e) => e.type), posted.map((p) => p.table)]);
   const stp = await streamAsk('Is Guardians at 49¢ on Kalshi a good price?');
   ok('STREAM: a question the research routes do not stream comes back as plain JSON (the client reads both)', /json/.test(stp.ct) && !/ndjson/.test(stp.ct) && stp.json && stp.json.quant && stp.json.quant.intent === 'CONTRACT', [stp.ct, stp.json && stp.json.quant]);
+
+  /* ═══ PHASE 4 — WHAT THE BENCHMARK FOUND (tools/research/benchmark): a player's status, what EdgeDesk does not
+     measure, a schedule question, a price read that failed. Each model-free, through the full handler. ═══ */
+  {
+    const S2M = metricsWith({ BUF: { players: [{ name: 'Josh Allen', position: 'QB', status: 'Out', injury: 'Shoulder', practice: 'Did Not Participate In Practice' }], retrieved_at: ISO(-30 * H) } });
+    const S2N = notes([{ sport: 'americanfootball_nfl', team: 'BUF', kind: 'availability', player: 'Josh Allen', status: 'ACTIVE', key: true, text: 'Josh Allen was a full participant in Saturday practice and will play Sunday', source: 'ESPN', url: 'https://www.espn.com/nfl/story/_/id/fixture-allen-practice', published_at: ISO(-2 * H), recorded_at: ISO(-90), source_kind: 'NEWS' }]);
+    const av = await streamAsk('Is Josh Allen playing Sunday?', { metrics: S2M, notes: S2N, dump: 'b_availability' });
+    const aj = av.json || {}, aa = aj.availability || {};
+    ok('AVAILABILITY: "Is Josh Allen playing Sunday?" is answered from the sources EdgeDesk reads, through the handler, with no model call', aj.quant && aj.quant.intent === 'AVAILABILITY' && modelCalls === 0 && aa.player === 'Josh Allen' && aa.team === 'Buffalo Bills' && aa.game && aa.game.game_id === 'nfl-fx-det-buf', [aj.quant, modelCalls, aa.player, aa.game]);
+    ok('AVAILABILITY: the official OUT and the credible ACTIVE are a conflict it names and does not settle', aa.status && aa.status.code === 'CONFLICTING' && /OUT per nflverse vs ACTIVE per ESPN/.test(aj.answer) && /does not pick one/.test(aj.answer) && (aa.conflicts || []).length >= 1, [aa.status, (aj.answer || '').split('\n').slice(0, 3)]);
+    ok('AVAILABILITY: each source in its own words, with its time and freshness, and a numbered link that was read', aa.records.some((r) => /espn\.com/.test(r.source.url)) && aa.records.some((r) => /injuries_2026\.csv/.test(r.source.url)) && /What each source says:/.test(aj.answer) && /\[1\] .+ — https:\/\//.test(aj.answer), aa.records.map((r) => r.source.url));
+    ok('AVAILABILITY: the engine\'s own QB-out re-run is shown as a model re-run, never a market price', aa.scenario && aa.scenario.side === 'home' && /re-run without Buffalo Bills' starting quarterback/.test(aj.answer) && /not a market price/.test(aj.answer), [aa.scenario, (aj.answer || '').match(/If .*$/m)]);
+    ok('AVAILABILITY: it carries its plan (route AVAILABILITY) and what actually ran', aj.research_plan && aj.research_plan.classification.route === 'AVAILABILITY' && aj.research_plan.path === 'ENGINE_RESEARCH' && aj.research_plan.steps.some((x) => x.stage === 'VERIFY_INJURIES') && Array.isArray(aj.research_plan_actual), aj.research_plan && [aj.research_plan.classification.route, aj.research_plan.steps.map((x) => x.stage)]);
+    const ar = await streamAsk('Is Anthony Richardson starting for the Colts?', {});
+    const arj = ar.json || {};
+    ok('AVAILABILITY: a player EdgeDesk holds nothing on is said to be unknown and given no status; the club\'s listed starter is shown instead', arj.availability && arj.availability.unknown_name === 'Anthony Richardson' && /holds no report on Anthony Richardson/.test(arj.answer) && !/Anthony Richardson (is|will be) (out|active|starting|playing)/i.test(arj.answer) && /Daniel Jones/.test(arj.answer) && modelCalls === 0, (arj.answer || '').split('\n').slice(0, 4));
+    const az = await streamAsk('Is Zebulon Quarterbackson playing Sunday?', {});
+    ok('AVAILABILITY: a name on no list and no club named is not given an availability card', !(az.json && az.json.availability), az.json && az.json.quant);
+    const un = await streamAsk('Best Premier League bet this weekend?', { dump: 'b_unsupported' });
+    const uj = un.json || {};
+    ok('UNSUPPORTED: a soccer question is not answered with an NFL pick: it says soccer is not covered, and calls no model', uj.quant && uj.quant.intent === 'UNSUPPORTED' && uj.unsupported.kind === 'SPORT' && /Soccer is not covered/.test(uj.answer) && !/Buffalo Bills/.test(uj.answer) && modelCalls === 0, [uj.quant, uj.answer]);
+    const uf = await streamAsk('Who will win the Super Bowl in 2031?', {});
+    ok('UNSUPPORTED: a season-long outcome is not modelled and not guessed', uf.json && uf.json.quant.intent === 'UNSUPPORTED' && uf.json.unsupported.kind === 'OUTCOME' && /does not model season-long outcomes/.test(uf.json.answer) && modelCalls === 0, uf.json && uf.json.answer);
+    const ug = await streamAsk('Can you guarantee the Bills cover -2.5?', {});
+    ok('UNSUPPORTED: a demand for a guarantee is answered without one, pointing to the price question it can answer', ug.json && ug.json.unsupported && ug.json.unsupported.kind === 'CERTAINTY' && /Is Buffalo Bills -2\.5 a good bet\?/.test(ug.json.answer) && !/\bguaranteed\b/i.test(ug.json.answer), ug.json && ug.json.answer);
+    const uw = await streamAsk('Who will win Lions at Bills?', {});
+    ok('UNSUPPORTED: "who will win" about a named game is not intercepted (the desk reports that game\'s probability)', !(uw.json && uw.json.unsupported), uw.json && (uw.json.quant || Object.keys(uw.json).slice(0, 6)));
+    const ua = await streamAsk("What's the best bet this weekend across all sports, NBA included?", {});
+    const uaP = ua.events.length ? (ua.events.find((e) => e.type === 'result') || {}).payload : ua.json;
+    ok('UNSUPPORTED: "across all sports" stays a scan whatever else it names', uaP && uaP.quant && uaP.quant.intent === 'SCAN', uaP && uaP.quant);
+    const sc = await streamAsk('When do the Lions play the Bills?', {});
+    ok('SCHEDULE: "When do the Lions play the Bills?" is answered with the kickoff on the card, not a price verdict, with no model call', sc.json && sc.json.desk && sc.json.desk.intent === 'SCHEDULE' && /^Detroit Lions @ Buffalo Bills kicks off /.test(sc.json.answer) && !/paying more|value/i.test(sc.json.answer) && modelCalls === 0, sc.json && sc.json.answer);
+    /* two players with one name: the club the question names, else the listed starter — and the answer says who else has it */
+    const NS = metricsWith({ JAX: { players: [{ name: 'Josh Allen', position: 'LB', status: 'Questionable', injury: 'Ankle', practice: 'Limited Participation In Practice' }] } });
+    const ns1 = await streamAsk('Is Josh Allen playing Sunday?', { metrics: NS });
+    ok('AVAILABILITY: a name two clubs carry goes to the listed starter, and the answer names the other club', ns1.json && ns1.json.availability && ns1.json.availability.team === 'Buffalo Bills' && /Another player with this name is on Jacksonville Jaguars/.test(ns1.json.answer), ns1.json && [ns1.json.availability && ns1.json.availability.team, (ns1.json.answer || '').split('\n').slice(0, 4)]);
+    const ns2 = await streamAsk('Is Josh Allen from the Jaguars playing this week?', { metrics: NS });
+    ok('AVAILABILITY: naming the club picks that club\'s player', ns2.json && ns2.json.availability && ns2.json.availability.team === 'Jacksonville Jaguars' && /Another player with this name is on Buffalo Bills/.test(ns2.json.answer), ns2.json && [ns2.json.availability && ns2.json.availability.team, (ns2.json.answer || '').split('\n').slice(0, 4)]);
+    /* the operator's switches: both routes off, the questions go back to the routes that answered them before */
+    ENV.EDGEDESK_AVAILABILITY = '0'; ENV.EDGEDESK_OUT_OF_SCOPE = '0';
+    const mOff = await import(pathToFileURL(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', 'index.ts')).href + '?flags=off');
+    delete ENV.EDGEDESK_AVAILABILITY; delete ENV.EDGEDESK_OUT_OF_SCOPE;
+    route = routerFor({});
+    const offA = await mOff.availabilityTurn({ body: { question: 'Is Josh Allen playing Sunday?', desk: true }, auth: 'Bearer ' + USER_JWT, now: NOW });
+    const offU = mOff.outOfScopeTurn({ question: 'Best Premier League bet this weekend?', desk: true });
+    ok('SWITCHES: EDGEDESK_AVAILABILITY=0 and EDGEDESK_OUT_OF_SCOPE=0 turn both routes off without a code change', offA === null && offU === null && !!m.outOfScopeTurn({ question: 'Best Premier League bet this weekend?', desk: true }), [offA && offA.quant, offU && offU.quant]);
+    const rf = await ask("What's the best bet this weekend across all sports?", { fail: (u) => /\/rest\/v1\/signals\?/.test(u) });
+    ok('COVERAGE: when the captured prices cannot be read, the coverage says the read failed — never "no captured prices"', rf && /NFL \(read failed\)/.test(rf.answer) && !/NFL \(games but no captured prices\)/.test(rf.answer), rf && (rf.answer || '').split('\n').filter((l) => /Coverage/.test(l)));
+  }
   Date.now = realNow;
 
   if (DUMP) fs.writeFileSync(process.env.RESEARCH_DUMP, JSON.stringify(DUMP));

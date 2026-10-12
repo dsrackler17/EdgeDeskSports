@@ -80,6 +80,10 @@ on:
         description: 'Apply supabase/research_intel.sql — write-once research findings, pregame prediction snapshots and the research-provider quota ledger (idempotent, additive; paid providers seeded DISABLED)'
         type: boolean
         default: false
+      apply_research_engine:
+        description: 'Apply supabase/research_engine.sql — research run memory, graded outcomes, the dollar budget and its claim/settle functions (idempotent, additive; needs apply_research_intel first, or already applied; paid providers stay DISABLED)'
+        type: boolean
+        default: false
       apply_tennis_live_center:
         description: 'Apply supabase/tennis_live_center.sql — the live match centre the record jobs join against (idempotent; already deployed, here so it has an apply path at all)'
         type: boolean
@@ -248,6 +252,18 @@ jobs:
           # reader's rows, the quota race). Paid providers are seeded disabled. Its last
           # statement is a report; a row reading CHECK THIS is the thing to read first.
           psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/research_intel.sql
+
+      - name: Apply the research engine's run memory and dollar budget
+        if: ${{ inputs.apply_research_engine && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Additive and idempotent, and it refuses to run before supabase/research_intel.sql.
+          # research_engine_sql.test.js applies it twice against a throwaway server and attacks it
+          # (edits, deletes, look-ahead, the budget race). Paid providers stay disabled; the dollar
+          # budget defaults to $0.25 a request, $1 a subscriber a day, $20 a day. Its last
+          # statement is a report. Rollback: docs/research-engine/DEPLOY.md.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/research_engine.sql
 
       - name: Apply the tennis live centre contract
         if: ${{ inputs.apply_tennis_live_center && steps.creds.outputs.have_db == 'yes' }}

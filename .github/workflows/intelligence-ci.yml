@@ -36,7 +36,11 @@ on:
       - 'lib/edgedesk_evidence.js'
       - 'lib/edgedesk_quant_verify.js'
       - 'lib/edgedesk_challenge.js'
+      - 'lib/edgedesk_providers.js'
+      - 'lib/edgedesk_odds_recovery.js'
+      - 'tools/research/**'
       - 'supabase/research_intel.sql'
+      - 'supabase/research_engine.sql'
       - 'supabase/quant_desk.sql'
       - 'football/validation/calibration_props_*.json'
       - 'supabase/recommendation_ledger.sql'
@@ -106,7 +110,11 @@ on:
       - 'lib/edgedesk_evidence.js'
       - 'lib/edgedesk_quant_verify.js'
       - 'lib/edgedesk_challenge.js'
+      - 'lib/edgedesk_providers.js'
+      - 'lib/edgedesk_odds_recovery.js'
+      - 'tools/research/**'
       - 'supabase/research_intel.sql'
+      - 'supabase/research_engine.sql'
       - 'supabase/quant_desk.sql'
       - 'football/validation/calibration_props_*.json'
       - 'supabase/research_packets.sql'
@@ -205,6 +213,18 @@ jobs:
         run: node tools/intelligence/quant_verify.test.js
       - name: The challenge pass — the eight questions against the evidence and calculation ledgers; it only lowers, never raises; confidence is a category
         run: node tools/intelligence/challenge.test.js
+      - name: The research providers — request builders and parsers over constructed fixtures (no live call); only cited source words become evidence
+        run: node tools/intelligence/providers.test.js
+      - name: Graded research runs through the calibration kernel — Brier, log loss, CLV, no look-ahead, no claim the sample cannot support
+        run: node tools/intelligence/evaluate_runs.test.js
+      - name: The market-data recovery planner — credits and verifiable share per schedule on the committed slates; it buys nothing
+        run: node tools/intelligence/odds_recovery.test.js
+      - name: The desk kernel — typed evidence in, a direct answer out; the rewrite critic keeps the headline's side, price and numbers
+        run: node tools/intelligence/desk.test.js
+      - name: The desk through the host — a short answer from typed evidence, the critic, the history record
+        run: node tools/intelligence/desk_host.test.js
+      - name: The research benchmark — 100+ questions in 10 categories through the real handler, recorded responses only; no invented link, no unsupported number, no unexpected failure
+        run: node tools/intelligence/benchmark.test.js
 
   football-artifacts:
     runs-on: ubuntu-latest
@@ -255,5 +275,9 @@ jobs:
           QUANT_SQL_REQUIRED: '1'
       - name: Research findings and pregame snapshots are write-once, reader-owned and never postdate kickoff; research quotas are claimed atomically
         run: node tools/intelligence/research_intel_sql.test.js
+        env:
+          RESEARCH_SQL_REQUIRED: '1'
+      - name: Research runs and outcomes are write-once and apart; no look-ahead; research dollars are claimed atomically against per-request, per-reader and global caps
+        run: node tools/intelligence/research_engine_sql.test.js
         env:
           RESEARCH_SQL_REQUIRED: '1'

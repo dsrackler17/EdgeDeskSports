@@ -44,7 +44,7 @@ function run(o) {
   const quote = o.quote || (ev ? { american: ev.entry_price, captured_at: o.quote_at || ago(0.1), source: 'edgedesk://supabase/signals/x' } : {});
   const sens = o.sens !== undefined ? o.sens : ev ? SENS_OK(ev) : null;
   const calc = Q.forCandidate(ev, { quote, fair: cand.fair, model_line: o.model_line || { market: 'spreads', side: 'home', model_line: -5.2, market_line: -2.5, sigma: 13.4 }, validation: o.validation || valN, sensitivity: sens, now: NOW, ttl_min: 90 });
-  const evid = E.ledger({ findings: fs, conflicts: R.conflicts, now: NOW, kickoff: KICK, sport: 'americanfootball_nfl', game_id: 'g1' });
+  const evid = E.ledger({ findings: fs, conflicts: R.conflicts, now: NOW, kickoff: o.kickoff || KICK, sport: 'americanfootball_nfl', game_id: 'g1' });
   const cls = o.cls || { classification: 'VERIFIED_CANDIDATE', label: 'VERIFIED CANDIDATE', final_status: 'VERIFIED CANDIDATE', reasons: ['confirmed'] };
   const ch = C.challenge({ classification: cls, candidate: cand, research: R, evidence: evid, calc, disagreement: o.D || null, audit: o.audit || { checks: [] }, sensitivity: sens, adjustments: o.adjustments || [], research_level: o.level || 'GOOD', scenario_deltas: o.deltas || {}, side: cand.side });
   return { ch, calc, evid, cls };
@@ -87,9 +87,14 @@ const c1c = run({ findings: settled }).ch;
 ok('Q1: a conflict settled by source tier is CLEAR and says how it was settled', qv(c1c, 'Q1_CONTRADICTIONS').status === 'CLEAR' && /settled/.test(qv(c1c, 'Q1_CONTRADICTIONS').answer) && /tier/.test(qv(c1c, 'Q1_CONTRADICTIONS').answer), qv(c1c, 'Q1_CONTRADICTIONS'));
 
 /* ---------------- Q2: outdated statistics ---------------- */
-const oldFs = [norm({ url: BILLS_IR, retrieved_at: ago(100), published_at: ago(100), team: HOME, player: 'Khalil Shakir', role: 'WR', topic: 'availability', status: 'OUT', text: 'Khalil Shakir (ankle) ruled out' }), baseFindings()[1], baseFindings()[2]];
+const oldFs = [norm({ url: BILLS_IR, retrieved_at: ago(230), published_at: ago(230), team: HOME, player: 'Khalil Shakir', role: 'WR', topic: 'availability', status: 'OUT', text: 'Khalil Shakir (ankle) ruled out' }), baseFindings()[1], baseFindings()[2]];
 const c2 = run({ findings: oldFs }).ch;
-ok('Q2: a 100-hour-old availability report is STALE (72 h window) → IMPORTANT, with its age and window', qv(c2, 'Q2_OUTDATED_STATISTICS').status === 'UNRESOLVED' && qv(c2, 'Q2_OUTDATED_STATISTICS').severity === 'IMPORTANT' && /6000 min old/.test(qv(c2, 'Q2_OUTDATED_STATISTICS').answer) && c2.classification.after === 'WATCHLIST', qv(c2, 'Q2_OUTDATED_STATISTICS'));
+ok('Q2: a 230-hour-old availability report is STALE (past 3 × 72 h) → IMPORTANT, with its age and window', qv(c2, 'Q2_OUTDATED_STATISTICS').status === 'UNRESOLVED' && qv(c2, 'Q2_OUTDATED_STATISTICS').severity === 'IMPORTANT' && /13800 min old, stale/.test(qv(c2, 'Q2_OUTDATED_STATISTICS').answer) && c2.classification.after === 'WATCHLIST', qv(c2, 'Q2_OUTDATED_STATISTICS'));
+const agingFs = [norm({ url: BILLS_IR, retrieved_at: ago(100), published_at: ago(100), team: HOME, player: 'Khalil Shakir', role: 'WR', topic: 'availability', status: 'OUT', text: 'Khalil Shakir (ankle) ruled out' }), baseFindings()[1], baseFindings()[2]];
+const c2a = run({ findings: agingFs }).ch;
+ok('Q2: the same report 100 hours old, six days before the game, is AGING — a CONCERN that says to re-check it, not a downgrade', qv(c2a, 'Q2_OUTDATED_STATISTICS').status === 'CONCERN' && /aging, not stale/.test(qv(c2a, 'Q2_OUTDATED_STATISTICS').answer) && c2a.classification.changed === false, qv(c2a, 'Q2_OUTDATED_STATISTICS'));
+const c2n = run({ findings: [norm({ url: BILLS_IR, retrieved_at: ago(30), published_at: ago(30), team: HOME, player: 'Khalil Shakir', role: 'WR', topic: 'availability', status: 'OUT', text: 'Khalil Shakir (ankle) ruled out' }), baseFindings()[1], baseFindings()[2]], kickoff: new Date(NOW + 10 * 3600000).toISOString() }).ch;
+ok('Q2: a 30-hour-old availability report inside a day of the game (24 h window) is AGING and IMPORTANT', qv(c2n, 'Q2_OUTDATED_STATISTICS').status === 'UNRESOLVED' && qv(c2n, 'Q2_OUTDATED_STATISTICS').severity === 'IMPORTANT' && c2n.classification.after === 'WATCHLIST', qv(c2n, 'Q2_OUTDATED_STATISTICS'));
 const wx = baseFindings().concat([norm({ url: 'https://api.open-meteo.com/v1/forecast?x', kind: 'STATISTICAL_DATA', retrieved_at: ago(20), team: HOME, topic: 'weather', text: 'Wind 9 mph at kickoff' })]);
 const c2w = run({ findings: wx }).ch;
 ok('Q2: an old forecast is a CONCERN (noted, not lowering), worded truthfully', qv(c2w, 'Q2_OUTDATED_STATISTICS').status === 'CONCERN' && /\(weather\)/.test(qv(c2w, 'Q2_OUTDATED_STATISTICS').answer) && c2w.classification.changed === false, qv(c2w, 'Q2_OUTDATED_STATISTICS'));
@@ -122,6 +127,24 @@ const c4c = run({ R: research(baseFindings(), { missing: [{ topic: 'availability
 ok('Q4: a required availability check that did not happen is UNKNOWN, naming the team', qv(c4c, 'Q4_KEY_PLAYERS').status === 'UNKNOWN' && /availability for Detroit Lions/.test(qv(c4c, 'Q4_KEY_PLAYERS').answer), qv(c4c, 'Q4_KEY_PLAYERS'));
 const c4d = run({ R: research(baseFindings(), { gaps: [{ kind: 'STARTER_MISMATCH', side: 'home', player: 'Mitchell Trubisky', detail: 'Buffalo Bills: EdgeDesk\'s numbers assume Josh Allen, nflverse lists Mitchell Trubisky' }] }) }).ch;
 ok('Q4: a starter mismatch is CRITICAL (settleable) → RESEARCH REQUIRED', qv(c4d, 'Q4_KEY_PLAYERS').severity === 'CRITICAL' && c4d.classification.after === 'RESEARCH_REQUIRED', qv(c4d, 'Q4_KEY_PLAYERS'));
+
+/* one credible report of a key absence: the researcher flags it unconfirmed, never prices on it, and the challenge calls it critical */
+const EVT = { id: 'g1', sport: 'americanfootball_nfl', home: HOME, away: AWAY, kickoff: KICK };
+const espnOut = { url: 'https://www.espn.com/nfl/story/_/id/allen-out', retrieved_at: ago(1), published_at: ago(1), team: HOME, player: 'Josh Allen', role: 'QB', topic: 'availability', text: 'Bills quarterback Josh Allen has been ruled out for Sunday.' };
+const Ru = A.research({ event: EVT, raw: [espnOut], model: { starters: { home: 'Josh Allen', away: 'Jared Goff' } }, required: [], now: NOW });
+const gu = Ru.gaps.find((g) => g.kind === 'REPORTED_ABSENCE_UNCONFIRMED');
+ok('researcher: one credible report that the priced quarterback is out → an UNCONFIRMED gap (not a verified absence)', gu && gu.player === 'Josh Allen' && gu.priced_starter === true && !Ru.gaps.some((g) => g.kind === 'ABSENCE_NOT_IN_MODEL') && /not confirmed by an official report/.test(gu.detail), Ru.gaps);
+const Rv = A.research({ event: EVT, raw: [Object.assign({}, espnOut, { url: BILLS_IR })], model: { starters: { home: 'Josh Allen', away: 'Jared Goff' } }, required: [], now: NOW });
+ok('researcher: the same report from the club\'s official page is a verified ABSENCE_NOT_IN_MODEL instead', Rv.gaps.some((g) => g.kind === 'ABSENCE_NOT_IN_MODEL') && !Rv.gaps.some((g) => g.kind === 'REPORTED_ABSENCE_UNCONFIRMED'), Rv.gaps);
+const Rs = A.research({ event: EVT, raw: [Object.assign({}, espnOut, { text: 'Josh Allen could miss Sunday, per sources.' })], model: { starters: { home: 'Josh Allen', away: 'Jared Goff' } }, required: [], now: NOW });
+ok('researcher: speculation ("could miss, per sources") is not even an unconfirmed gap', Rs.gaps.length === 0, Rs.gaps);
+const invU = A.investigate({ candidate: { market: 'spreads', selection: HOME }, event: EVT, raw: [espnOut], model: { available: true, prices: false, tier: null, probability: null, inputs: { starters: { home: 'Josh Allen', away: 'Jared Goff' } } },
+  market: { american: -105, captured_at: ago(0.1), sharp_fair: 0.535, kickoff: KICK }, market_view: { line: -2.5 }, audit: { status: 'CONFIRMED', reason: 'ok', checks: [] }, scenario_deltas: { home_qb_out: -6.5 }, sd_points: 13.4, now: NOW, ttl_min: 90, conservative: true });
+ok('investigate: the unconfirmed report is never priced on (no QB-out adjustment, though a scenario delta is on file)', invU.quant.adjustments.length === 0 && invU.research.gaps.some((g) => g.kind === 'REPORTED_ABSENCE_UNCONFIRMED'), [invU.quant.adjustments, invU.research.gaps.map((g) => g.kind)]);
+const clsU = A.classify({ audit: { status: 'CONFIRMED', checks: [] }, quant: { evaluation: Object.assign({}, evalOf(), { classification: 'VERIFIED_EDGE' }), adjustments: [] }, strategist: { verdict: 'SUPPORTED' }, research: { unresolved: [], gaps: Ru.gaps, findings: [] }, sensitivity: { robust: true } });
+ok('classify: an otherwise verified candidate with an unconfirmed key absence is RESEARCH REQUIRED, told to confirm it', clsU.classification === 'RESEARCH_REQUIRED' && /confirm it before acting/.test(clsU.reasons[0]), clsU);
+const cU = run({ R: research(baseFindings(), { gaps: Ru.gaps }) }).ch;
+ok('Q4: an unconfirmed report about the priced quarterback is CRITICAL, settleable by research → RESEARCH REQUIRED', qv(cU, 'Q4_KEY_PLAYERS').status === 'UNRESOLVED' && qv(cU, 'Q4_KEY_PLAYERS').severity === 'CRITICAL' && cU.classification.after === 'RESEARCH_REQUIRED', qv(cU, 'Q4_KEY_PLAYERS'));
 
 /* ---------------- Q7: missing data as the cause ---------------- */
 const c7 = run({ candidate: { outlier: 'the projection disagrees with the market by 12 points, at or past the 7-point disagreement threshold' } }).ch;

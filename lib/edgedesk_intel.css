@@ -104,10 +104,10 @@
 .ia-chipcls{flex:0 0 auto;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:4px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
 .ia-c-v{color:var(--ia-acc)} .ia-c-w{color:var(--ia-gold)} .ia-c-p{color:var(--ia-warn)} .ia-c-x{color:var(--ia-neg)} .ia-c-u{color:var(--ia-dim)}
 .ia-kv{margin:0;display:grid;grid-template-columns:1fr;gap:6px}
-.ia-kv-r{display:grid;grid-template-columns:1fr;gap:1px}
+.ia-kv-r{display:grid;grid-template-columns:minmax(0,1fr);gap:1px}
 .ia-kv dt{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ia-faint)}
 .ia-kv dd{margin:0;font-size:13.5px;line-height:1.45;overflow-wrap:anywhere}
-@media(min-width:760px){.ia-kv-r{grid-template-columns:200px 1fr;gap:10px}}
+@media(min-width:760px){.ia-kv-r{grid-template-columns:200px minmax(0,1fr);gap:10px}}
 .ia-why{font-size:12px;color:var(--ia-dim);margin-top:2px}
 .ia-more{border-top:1px solid var(--ia-line);margin-top:8px}
 .ia-more>summary{cursor:pointer;min-height:40px;display:flex;align-items:center;font-size:13px;font-weight:650;color:var(--ia-acc)}
@@ -180,3 +180,28 @@ html.ig-open{overflow:hidden}
 .ia-method h3{margin:0 0 4px;font-size:15px}
 .ia-meth-a{margin:10px 0 0}
 .ia-cardres p,.ia-method p{font-size:13px;line-height:1.5;margin:4px 0 8px}
+
+/* ---------- 7. the research engine's records (Phase 4): plan, evidence, calculations, challenge ---------- */
+.ia-plan{margin:6px 0 8px;padding:8px 10px;border:1px dashed var(--ia-line);border-radius:10px;background:var(--ia-surf2);font-size:12.5px;line-height:1.45}
+.ia-plan-h{color:var(--ia-fg)} .ia-plan-s{margin:4px 0 0;padding-left:18px} .ia-plan-s li{margin:1px 0} .ia-plan-d{margin-top:4px;color:var(--ia-dim)}
+.ia-ev-sum{margin:2px 0 6px;font-size:12.5px;color:var(--ia-dim)} .ia-ev-x{margin:4px 0;font-size:12.5px;color:var(--ia-warn)}
+.ia-evt{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;padding:2px 6px;border-radius:6px;border:1px solid var(--ia-line);white-space:nowrap}
+.ia-evt-confirmed_fact,.ia-evt-statistic{color:var(--ia-acc)} .ia-evt-external_report{color:var(--ia-gold)} .ia-evt-hypothesis{color:var(--ia-warn)} .ia-evt-model_estimate{color:var(--ia-fg)} .ia-evt-market_quote{color:var(--ia-pos)}
+.ia-ds{font-size:11px;overflow-wrap:anywhere;color:var(--ia-dim)}
+.ia-calc-d>summary{cursor:pointer;font-size:11.5px;color:var(--ia-acc);min-height:28px;display:flex;align-items:center}
+.ia-vfy{margin:0 0 6px;font-size:12.5px;padding:6px 10px;border-radius:10px;border:1px solid var(--ia-line)} .ia-vfy-ok{color:var(--ia-acc)} .ia-vfy-bad{color:var(--ia-warn)}
+.ia-tbl.ia-ev td:nth-child(2),.ia-tbl.ia-ch td:nth-child(2){min-width:180px}
+/* phones: each fact is a block — type and fact, then source · verification · freshness — so nothing is cut off sideways */
+@media(max-width:560px){
+  .ia-tbl.ia-ev,.ia-tbl.ia-ev tbody,.ia-tbl.ia-ev tr,.ia-tbl.ia-ev td{display:block;width:auto}
+  .ia-tbl.ia-ev tr:first-child{display:none}
+  .ia-tbl.ia-ev tr{padding:8px 0;border-bottom:1px solid var(--ia-line)}
+  .ia-tbl.ia-ev td{border:0;padding:2px 0}
+  .ia-tbl.ia-ev td:nth-child(2){min-width:0}
+  .ia-tbl.ia-ev td[data-l]{display:inline-block;margin-right:10px;font-size:12px}
+  .ia-tbl.ia-ev td[data-l]::before{content:attr(data-l) " ";color:var(--ia-faint);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em}
+  .ia-tbl.ia-ch,.ia-tbl.ia-ch tbody,.ia-tbl.ia-ch tr,.ia-tbl.ia-ch td{display:block;width:auto}
+  .ia-tbl.ia-ch tr:first-child{display:none}
+  .ia-tbl.ia-ch tr{padding:8px 0;border-bottom:1px solid var(--ia-line)}
+  .ia-tbl.ia-ch td{border:0;padding:2px 0} .ia-tbl.ia-ch td:first-child{font-weight:700}
+}

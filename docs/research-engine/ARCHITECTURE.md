@@ -82,9 +82,10 @@ flowchart TD
   G --> O["EDORCH plan<br/>classify · datasets · freshness · calculations<br/>external need · est. cost & latency · path"]
   O -- "plan event (before any work)" --> U
   O --> P{path}
+  P -- UNSUPPORTED --> X["said once, no model, no research<br/>(uncovered sport · season outcome · guarantee)"]
   P -- DATABASE --> D["deterministic lookups<br/>(lines, props, schedule, readiness)"]
   P -- ENGINE --> E["quant routes<br/>(scan, game research, mismatches, venues)"]
-  P -- "ENGINE + RESEARCH" --> R["research chain (EDAGENTS)"]
+  P -- "ENGINE + RESEARCH" --> R["research chain (EDAGENTS)<br/>scan · slate · game · player status (AVAILABILITY)"]
   R --> L["EDBUDGET ledger<br/>count quotas · $ budget · cache · single flight · breaker · timeout"]
   L --> S1["internal datasets<br/>signals · slates · injury build · desk notes"]
   L --> S2["official/free feeds<br/>nflverse live · open-meteo"]
@@ -94,7 +95,7 @@ flowchart TD
   Q --> A["EDAUDIT fresh re-read + strategist checks"]
   A --> C["EDCHALLENGE — the eight questions<br/>unresolved → lower confidence or PASS"]
   C --> N["communicator (deterministic)<br/>optional narration under the critic + number verifier"]
-  D & E & N -- "progress / result events" --> U
+  D & E & N & X -- "progress / result events" --> U
   N --> M[("research_runs · research_findings · prediction_snapshots")]
   M --> J["grading job (service role, after the event)<br/>outcomes · closing line → EDCALIB Brier / log loss / CLV"]
 ```
@@ -131,7 +132,8 @@ flowchart TD
 | `ENGINE` | deterministic computation over stored data | $0 | best bet tonight, readiness, one game's research at L1/L2, mismatches |
 | `ENGINE + RESEARCH (free)` | research from internal and free official feeds | $0 | L3 investigation with the nflverse live feed |
 | `ENGINE + RESEARCH (search)` | a question that needs current reporting the datasets cannot hold (a breaking injury report, a coaching change) and the operator has enabled a search provider | ≈ $0.01–0.13 (§ PROVIDERS) | "Is there any news on Josh Allen's shoulder since this morning?" |
-| `UNSUPPORTED` | an unsupported sport, a future result, a guarantee | $0 | "Who will win the Super Bowl?" — says what it cannot do |
+| `ENGINE + RESEARCH` (`AVAILABILITY`) | one player's status, or a club's starter | $0 | "Is Josh Allen playing Sunday?", "Who is pitching for the Rays tomorrow?" — each source's words with its time, any conflict named, never settled by guesswork |
+| `UNSUPPORTED` | an uncovered sport, a season-long outcome, a guarantee | $0 | "Who will win the Super Bowl?" — says what it cannot do, before any route, desk or model (`outOfScopeTurn`) |
 
 The model-backed general desk (existing, `claude-sonnet-5`) stays the last resort for conversation the deterministic routes do not cover. It is still gated by the daily allowance.
 
@@ -181,12 +183,12 @@ Every adapter is off by default and needs all of:
 | 2 | `lib/edgedesk_evidence.js` (EDEVIDENCE) + injection screen, applied to every finding | ✓ |
 | 3 | `lib/edgedesk_quant_verify.js` (EDQVERIFY) calculation ledger + number verifier, attached to every priced candidate | ✓ |
 | 4 | `lib/edgedesk_challenge.js` (EDCHALLENGE), applied before a VERIFIED CANDIDATE is published | ✓ |
-| 5 | `lib/edgedesk_providers.js` (EDPROVIDERS) request builders and response parsers for Claude web search and the Perplexity Search API; ledger wiring; gated live-test script | — |
-| 6 | `supabase/research_engine.sql`: `research_runs`, `research_run_outcomes`, `research_budget_policy`, `research_cost_claim()`; run records written; evaluation over graded runs with EDCALIB | — |
-| 7 | Safeguards (dollar budget, concurrency, structured logs) + the odds recovery proposal and calculator | — |
-| 8 | Research-terminal UI: plan, sources, verification, contradictions, assumptions, confidence vs probability, why (not) actionable | — |
-| 9 | Benchmark of ≥ 100 questions through the real handler, metrics, cost and performance report | — |
-| 10 | Deployment and rollback instructions, risks, regression, PR | — |
+| 5 | `lib/edgedesk_providers.js` (EDPROVIDERS) request builders and response parsers for Claude web search and the Perplexity Search API; ledger wiring; gated live-test script | ✓ |
+| 6 | `supabase/research_engine.sql`: `research_runs`, `research_run_outcomes`, `research_budget_policy`, `research_cost_claim()`; run records written; evaluation over graded runs with EDCALIB | ✓ |
+| 7 | Safeguards (dollar budget, concurrency, structured logs) + the odds recovery proposal and calculator | ✓ |
+| 8 | Research-terminal UI: plan, sources, verification, contradictions, assumptions, confidence vs probability, why (not) actionable | ✓ |
+| 9 | Benchmark of ≥ 100 questions through the real handler, metrics, cost and performance report (`tools/research/benchmark/`, `REPORT.md`); the defects it found fixed | ✓ |
+| 10 | Deployment and rollback instructions (`DEPLOY.md`), risks (`RISKS.md`), full regression, PR | ✓ |
 
 ## 7. What this does not do
 

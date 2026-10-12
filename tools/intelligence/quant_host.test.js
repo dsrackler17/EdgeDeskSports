@@ -34,7 +34,7 @@ const PRINT = process.env.QUANT_PRINT === '1';
 const DUMP = process.env.QUANT_DUMP ? {} : null;
 
 /* the authorised quote refresh is switched ON here, with its secret: the quant desk must still never spend odds credits */
-const ENV = { EDGEDESK_AI_NO_SERVE: '1', ANTHROPIC_API_KEY: 'test-key', SUPABASE_URL: 'https://sb.test', SUPABASE_ANON_KEY: 'anon-key', EDGEDESK_SITE_BASE: 'https://site.test', EDGEDESK_QUOTE_REFRESH: '1', CRON_SECRET: 'cron-test', EDGEDESK_RESEARCH: process.env.EDGEDESK_RESEARCH };
+const ENV = { EDGEDESK_RESEARCH_LOG: '0', EDGEDESK_AI_NO_SERVE: '1', ANTHROPIC_API_KEY: 'test-key', SUPABASE_URL: 'https://sb.test', SUPABASE_ANON_KEY: 'anon-key', EDGEDESK_SITE_BASE: 'https://site.test', EDGEDESK_QUOTE_REFRESH: '1', CRON_SECRET: 'cron-test', EDGEDESK_RESEARCH: process.env.EDGEDESK_RESEARCH };
 globalThis.Deno = { env: { get: (k) => ENV[k] } };
 
 let route = () => [];
@@ -68,6 +68,11 @@ const etDate = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New
 (async function main() {
   const m = await import(path.join(ROOT, 'supabase', 'functions', 'edgedesk_ai', 'index.ts'));
   const fx = FX.build(NOW);
+  /* the committed metrics carry absolute timestamps; anchor them to the test clock (as research_host does) so a run
+     on any date sees the same freshness — injuries read 2 h ago, the depth chart published 20 h ago */
+  fx.metrics = JSON.parse(JSON.stringify(fx.metrics));
+  fx.metrics.generated_at = ISO(-120);
+  Object.keys((fx.metrics.nfl || {}).teams || {}).forEach((k) => { const t = fx.metrics.nfl.teams[k]; if (t.injuries) t.injuries.retrieved_at = ISO(-120); if (t.starter) { t.starter.published_at = ISO(-20 * 60); t.starter.retrieved_at = ISO(-120); } });
   /* the MLB game starts three hours out — but always before midnight in New York, so the questions answered
      for "today" (the underdog, "right now") see it whatever hour the suite runs (after 9 pm ET a fixed
      three hours crossed midnight and those questions found no game) */
@@ -159,7 +164,7 @@ const etDate = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New
   ok('the maximum entry is a whole American price that clears the floor (+116)', /Maximum acceptable price: \+116/.test(s1.j.answer), s1.j.answer.split('\n').find((l) => /Maximum/.test(l)));
   ok('no matchup advantage is invented for a price discrepancy', /Primary matchup advantage: none claimed/.test(s1.j.answer));
   ok('what would invalidate it names the starting pitcher', /What would invalidate the opportunity: .*SP availability/.test(s1.j.answer), s1.j.answer.split('\n').find((l) => /invalidate/.test(l)));
-  ok('the research line and a numbered source list close the answer (MLB probables, statsapi URL)', /Research: L3 \(deep adversarial investigation\)/.test(s1.j.answer) && /\[1\] MLB probable pitchers — https:\/\/statsapi\.mlb\.com\//.test(s1.j.answer) && /cost estimate \$0\.000/.test(s1.j.answer), s1.j.answer.split('\n').slice(-4));
+  ok('the research line and a numbered source list close the answer (MLB probables, statsapi URL)', /Research: L3 \(deep adversarial investigation\)/.test(s1.j.answer) && /\[1\] MLB probable pitchers \(via EdgeDesk's MLB card\) — https:\/\/statsapi\.mlb\.com\//.test(s1.j.answer) && /cost estimate \$0\.000/.test(s1.j.answer), s1.j.answer.split('\n').slice(-4));
   ok('the window is the next 24 hours, not "today until midnight"', sc.window && sc.window.kind === 'next_hours' && /next 24 hours/.test(s1.j.answer), sc.window);
   ok('coverage is printed with counts', /Coverage — Scanned: .*MLB/.test(s1.j.answer) && /NOT scanned: .*NBA \(prices not captured\)/.test(s1.j.answer) && /not covered by EdgeDesk: Soccer/.test(s1.j.answer), s1.j.answer.split('\n').slice(-1)[0]);
   ok('the carried state keeps the coverage for a follow-up', s1.j.quant_state && s1.j.quant_state.schema === 'edgedesk_quant_state_v1' && s1.j.quant_state.coverage.length > 3);

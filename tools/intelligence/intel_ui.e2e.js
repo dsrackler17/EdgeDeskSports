@@ -342,6 +342,34 @@ function siteHandler(req, res) {
       const exp = await page.evaluate(() => { const cs = [...document.querySelectorAll('#edaiLog .ia-card')]; const c = cs[cs.length - 1]; const d = [...c.querySelectorAll('details.ia-more')]; return d.map((x) => ({ s: x.querySelector('summary').textContent, open: x.open, rows: x.querySelectorAll('tr').length, text: x.innerText.slice(0, 160) })); });
       chk(T + '6 · the audit findings list the professional checks and the audit checks', exp.some((x) => x.s === 'Audit findings' && x.rows >= 10), exp.map((x) => [x.s, x.rows]));
       chk(T + '6 · the model calculations show break-even, net EV and the one-point sensitivity', exp.some((x) => x.s === 'Model calculations' && /Break-even probability/i.test(x.text) && /If the fair is wrong/i.test(x.text)), exp.find((x) => x.s === 'Model calculations'));
+      /* ── PHASE 4: the plan, the number check, confidence vs probability, why actionable, evidence, calculations, challenge ── */
+      const p4 = await page.evaluate(() => {
+        const acts = document.querySelectorAll('#edaiLog .ia-act'); const act = acts[acts.length - 1];
+        const plan = act && act.querySelector('.ia-plan');
+        const res = [...document.querySelectorAll('#edaiLog .ia-results')].pop();
+        const cs = [...document.querySelectorAll('#edaiLog .ia-card')]; const c = cs[cs.length - 1];
+        const kv = {}; c.querySelectorAll('.ia-kv-r').forEach((r) => { const k = r.querySelector('dt').textContent; if (!(k in kv)) kv[k] = r.querySelector('dd').innerText.replace(/\s+/g, ' ').trim(); });
+        const sec = (re) => { const d = [...c.querySelectorAll('details.ia-more')].find((x) => re.test(x.querySelector('summary').textContent)); return d ? { s: d.querySelector('summary').textContent, rows: [...d.querySelectorAll('table tr')].slice(1).map((tr) => tr.innerText.replace(/\s+/g, ' ').trim()), text: d.innerText.replace(/\s+/g, ' ') } : null; };
+        return { plan: plan ? { text: plan.innerText.replace(/\s+/g, ' '), steps: plan.querySelectorAll('.ia-plan-s li').length } : null,
+          vfy: res && res.querySelector('.ia-vfy') ? { ok: res.querySelector('.ia-vfy').classList.contains('ia-vfy-ok'), text: res.querySelector('.ia-vfy').textContent } : null,
+          ran: res ? [...res.querySelectorAll('details.ia-more > summary')].map((x) => x.textContent).find((t) => /^What ran/.test(t)) || null : null,
+          kv, ev: sec(/^Evidence/), calc: sec(/^Calculation checks/), ch: sec(/^Challenge/) };
+      });
+      chk(T + 'P4 · the plan the server streamed before any work is on screen: its path, its steps, and that no paid call is planned', p4.plan && /^Plan — /.test(p4.plan.text) && /no paid calls/.test(p4.plan.text) && p4.plan.steps >= 4, p4.plan);
+      chk(T + 'P4 · the answer says every number in it traces to a calculation and the recomputation agrees', p4.vfy && p4.vfy.ok && /numbers in this answer trace to a calculation/.test(p4.vfy.text) && /recomputed independently and agree/.test(p4.vfy.text), p4.vfy);
+      chk(T + 'P4 · "What ran" sets the plan against what actually happened', p4.ran && /steps done/.test(p4.ran), p4.ran);
+      chk(T + 'P4 · "Actionable now?" answers yes at the checked price, and says to re-check', /^Yes, at the checked price/.test(p4.kv['Actionable now?'] || '') && /Re-check before acting/.test(p4.kv['Actionable now?']), p4.kv['Actionable now?']);
+      const fairPct = row2 ? (Number(row2.evaluation.fair_probability) * 100).toFixed(1) + '%' : null;
+      chk(T + 'P4 · research confidence (a category) beside the probability of winning (the engine\'s fair, ' + fairPct + '), with the difference stated', /research confidence/i.test(p4.kv['Research confidence vs. win probability'] || '') && (p4.kv['Research confidence vs. win probability'] || '').indexOf(fairPct + ' probability of winning') >= 0 && /not a chance of winning/.test(p4.kv['Research confidence vs. win probability']) && !/\d%\s*research confidence/i.test(p4.kv['Research confidence vs. win probability']), p4.kv['Research confidence vs. win probability']);
+      chk(T + 'P4 · the evidence ledger lists every fact with its type, source, verification and freshness — the captured price a market quote, the projection a model estimate', p4.ev && p4.ev.rows.length >= 5 && p4.ev.rows.some((r) => /^Market quote/i.test(r) && /verified/i.test(r)) && p4.ev.rows.some((r) => /^Model estimate/i.test(r)) && /\(\d+\)$/.test(p4.ev.s), p4.ev && [p4.ev.s, p4.ev.rows.slice(0, 4)]);
+      chk(T + 'P4 · the calculation checks show each number with its check, the market comparison available, and the recomputation agreeing', p4.calc && p4.calc.rows.length === 11 && p4.calc.rows.filter((r) => /✓/.test(r)).length >= 8 && /Market comparison: available/.test(p4.calc.text) && /all agree/.test(p4.calc.text) && /Projection vs market line/.test(p4.calc.text), p4.calc && [p4.calc.rows.length, p4.calc.rows.slice(0, 3)]);
+      chk(T + 'P4 · the challenge answers all eight questions, and the conclusion stands', p4.ch && p4.ch.rows.length === 8 && /The conclusion stands/.test(p4.ch.text) && p4.ch.rows.some((r) => /^What evidence contradicts this conclusion\?/.test(r)) && p4.ch.rows.some((r) => /^Does the conclusion survive reasonable alternative assumptions\?/.test(r)), p4.ch && [p4.ch.s, p4.ch.rows.length]);
+      await page.evaluate(() => { const cs = [...document.querySelectorAll('#edaiLog .ia-card')]; const c = cs[cs.length - 1]; const r = [...c.querySelectorAll('.ia-kv-r')].find((x) => /Actionable now/.test(x.textContent)); if (r) r.scrollIntoView({ block: 'start' }); });
+      await shot(page, '05a-card-head-' + vp.tag);
+      await page.evaluate(() => { const cs = [...document.querySelectorAll('#edaiLog .ia-card')]; const c = cs[cs.length - 1]; const d = [...c.querySelectorAll('details.ia-more')].find((x) => /^Evidence/.test(x.querySelector('summary').textContent)); if (d) d.scrollIntoView({ block: 'start' }); });
+      await shot(page, '05b-evidence-' + vp.tag);
+      await page.evaluate(() => { const cs = [...document.querySelectorAll('#edaiLog .ia-card')]; const c = cs[cs.length - 1]; const d = [...c.querySelectorAll('details.ia-more')].find((x) => /^Challenge/.test(x.querySelector('summary').textContent)); if (d) d.scrollIntoView({ block: 'start' }); });
+      await shot(page, '05c-challenge-' + vp.tag);
       await shot(page, '05-cards-' + vp.tag);
       await page.evaluate(() => { const cs = [...document.querySelectorAll('#edaiLog .ia-card')]; const c = cs[cs.length - 1]; const d = [...c.querySelectorAll('details.ia-more')].find((x) => /Audit findings/.test(x.textContent)); if (d) d.scrollIntoView({ block: 'start' }); });
       await shot(page, '06-audit-findings-' + vp.tag);
@@ -503,6 +531,29 @@ function siteHandler(req, res) {
       const to = await page.evaluate(() => { const a = [...document.querySelectorAll('#edaiLog .ia-act')].pop(); const f = [...document.querySelectorAll('#edaiLog .ia-fail')].pop(); return { state: a.getAttribute('data-state'), fail: f ? f.innerText : '' }; });
       await page.evaluate(() => { delete window.__edIntelTimeoutMs; });
       chk(T + 'a timeout ends the run with the steps that finished and a retry', to.state === 'timeout' && /stopped waiting after 1 seconds/.test(to.fail), to);
+
+      /* ── P4b. A PLAYER'S STATUS, AND WHAT EDGEDESK DOES NOT MEASURE (tools/research/benchmark findings) ── */
+      await page.evaluate(() => window.EDAI.close());
+      await page.fill('#iaQ', 'Is Josh Allen playing Sunday?');
+      await page.press('#iaQ', 'Enter');
+      await page.waitForFunction(() => document.querySelectorAll('#edaiLog .ia-av').length >= 1, null, { timeout: 20000 }).catch(() => {});
+      const avc = await page.evaluate(() => {
+        const c = [...document.querySelectorAll('#edaiLog .ia-av')].pop(); if (!c) return null;
+        const read = c.closest('#edaiLog > *') ? c.closest('#edaiLog > *').querySelector('.qd-read') : null;
+        return { head: c.querySelector('.ia-res-h').textContent, chip: (c.querySelector('p > [class^="ia-c-"]') || {}).textContent || '', rows: [...c.querySelectorAll('tr')].slice(1).map((r) => r.textContent), links: [...c.querySelectorAll('a[href^="https://"]')].map((a) => a.href),
+          btn: !!c.querySelector('[data-ia-askgame]'), conflict: (c.querySelector('p') || {}).textContent || '', repeated: c.querySelectorAll('.ia-ev-x').length, lab: read ? (read.querySelector('.lab') || {}).textContent || '' : '', text: read ? read.innerText : '' };
+      });
+      chk(T + 'P4b · "Is Josh Allen playing Sunday?" draws a status card: the sources disagree, each source with its link and time, and a way into the game', avc && /Availability — Josh Allen/.test(avc.head) && /sources disagree/.test(avc.chip) && avc.rows.length >= 3 && avc.links.some((u) => /espn\.com/.test(u)) && avc.btn && /OUT per nflverse vs ACTIVE per ESPN/.test(avc.conflict) && avc.repeated === 0, avc);
+      chk(T + 'P4b · the answer is labelled Availability and states the status once; the source list lives in the card, not repeated above it', avc && /^Availability/.test(avc.lab) && /does not pick one/.test(avc.text) && !/What each source says/.test(avc.text), avc && [avc.lab, avc.text.slice(0, 300)]);
+      await page.evaluate(() => { const c = [...document.querySelectorAll('#edaiLog .ia-av')].pop(); if (c) c.scrollIntoView({ block: 'start' }); });
+      await shot(page, '05d-availability-' + vp.tag);
+      await page.fill('#iaQ', 'Best Premier League bet this weekend?');
+      await page.press('#iaQ', 'Enter');
+      await page.waitForFunction(() => document.querySelectorAll('#edaiLog .ia-un').length >= 1, null, { timeout: 20000 }).catch(() => {});
+      const unc = await page.evaluate(() => { const c = [...document.querySelectorAll('#edaiLog .ia-un')].pop(); if (!c) return null; const m = c.closest('#edaiLog > *'); return { head: c.querySelector('.ia-res-h').textContent, text: m ? m.innerText : '', cards: m ? m.querySelectorAll('.ia-card').length : -1 }; });
+      chk(T + 'P4b · a soccer question says soccer is not covered and draws no pick, no card', unc && /Not covered/.test(unc.head) && /Soccer is not covered/.test(unc.text) && !/Buffalo Bills/.test(unc.text) && unc.cards === 0, unc);
+      await shot(page, '05e-unsupported-' + vp.tag);
+      if (vp.tag === 'phone') { const g = await noSideScroll(page); chk('phone: the status card and its table do not push the page sideways', g.sw <= g.iw + 1, g); }
 
       /* phone layout: the conversation's input is above the bottom nav, nothing sideways */
       if (vp.tag === 'phone') {

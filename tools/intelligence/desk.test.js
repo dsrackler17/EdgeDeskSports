@@ -68,6 +68,20 @@ function ask(q, Es, st) { return D.answer({ question: q, evidence: Es, state: st
   const c4 = D.critic('This is a lock. ' + a1.text, a1, { teams });
   ok('critic rejects certainty language', c4.verdict === 'FAIL', c4);
   ok('unused variable guard', !!other);
+  /* a headline that is only a verdict ("No.") still carries its side and price into the check: a rewrite that drops them fails */
+  const noOut = { intent: 'MARKET', text: 'No. At Detroit Lions +2.5 (-115, FanDuel) you\u2019re paying more than EdgeDesk\u2019s number. EdgeDesk makes it Buffalo Bills -5.2, so Detroit Lions +2.5 is 2.7 points worse than our number.', allowed: [2.5, 115, 5.2, 2.7] };
+  const nt = ['Detroit Lions', 'Buffalo Bills'];
+  const c5 = D.critic('EdgeDesk can only speak to what its engines and sources hold for this question.', noOut, { teams: nt });
+  ok('critic: a "No."-led answer rewritten without its side and price is rejected (KEY_FACT_DROPPED)', c5.verdict === 'FAIL' && c5.findings.some((f) => f.code === 'KEY_FACT_DROPPED'), c5);
+  const c6 = D.critic('No \u2014 at the Lions +2.5 (-115 at FanDuel) you are paying more than EdgeDesk\u2019s number: it makes Buffalo Bills -5.2, 2.7 points worse.', noOut, { teams: nt });
+  ok('critic: a faithful rewrite that shortens a club to its nickname still passes', c6.verdict === 'PASS', c6);
+  const c7 = D.critic('No. At +2.5 (-115, FanDuel) you\u2019re paying more than EdgeDesk\u2019s number; it makes Buffalo Bills -5.2.', noOut, { teams: nt });
+  ok('critic: a rewrite that drops the side named in the headline is rejected', c7.verdict === 'FAIL' && c7.findings.some((f) => f.code === 'KEY_FACT_DROPPED' && /Detroit Lions/.test(f.detail)), c7);
+  /* "over" names the total only as a bet; a percentage is never a line */
+  const pc = D.classify('EdgeDesk gives the Bills a 53% chance, so that is a 6% edge over a coin flip, right?', null, Es);
+  ok('classify: "an edge over a coin flip" is not the totals market, and "53%" is not a line', pc.market !== 'total' && !pc.numbers.lines.some((l) => l.value === 53 || l.value === 6), [pc.market, pc.numbers]);
+  ok('classify: "the over", "Over 49.5" and "o/u" still name the totals market', D.classify('Should I take the over?', null, Es).market === 'total' && D.classify('Over 49.5 at -110?', null, Es).market === 'total' && D.classify('What is the o/u?', null, Es).market === 'total', null);
+  ok('classify: "49¢" is not read as a line', !D.classify('Is it worth 49¢?', null, Es).numbers.lines.some((l) => l.value === 49), null);
 
   /* nothing clears -> say so, never force a pick */
   const flat = [D.evidence(F.cfbGame(NOW, { market_home_line: -0.5 })), D.evidence(F.nflGame(NOW, { market_home_line: -7 }))];
