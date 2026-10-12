@@ -238,13 +238,25 @@
             centred_on: fairSpread, method: ce.method, table_keys: ce.keys };
         }
       }
-      var need = line - fairSpread;               // resid must exceed this
+      /* the residuals are whole points and so are margins: a fractional fair is
+         read as a two-shift mixture (the same reading shiftedMix gives the
+         table), so the mass lands on whole margins and a whole-number line
+         keeps its push. Read as fair + resid, a fair of 14.82 put every margin
+         on .82 and a line of 7 got no push at all (2026_06_NYJ_NE, 12 Oct 2026),
+         which the decision layer rightly refuses as corrupted odds. A whole
+         fair gives exactly the old reading. */
+      var base = Math.floor(fairSpread), fr = fairSpread - base, j, sh;
       es = pmfEntries(sp.margin_resid_pmf);
       win = 0; push = 0; tot = 0;
       for (i = 0; i < es.length; i++) {
         tot += es[i][1];
-        if (Math.abs(es[i][0] - need) < 1e-9) push += es[i][1];
-        else if (es[i][0] > need) win += es[i][1];
+        for (j = 0; j < 2; j++) {
+          sh = j === 0 ? 1 - fr : fr;
+          if (!(sh > 0)) continue;
+          var m = base + j + es[i][0];
+          if (Math.abs(m - line) < 1e-9) push += es[i][1] * sh;
+          else if (m > line) win += es[i][1] * sh;
+        }
       }
       if (!(tot > 0.5)) return null;              // degenerate table
       return { win: win / tot, push: push / tot,
