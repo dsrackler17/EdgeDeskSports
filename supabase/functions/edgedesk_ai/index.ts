@@ -22309,7 +22309,7 @@ try { if (EDPRICE && EDRESEARCH) EDPRICE.registerTools(); } catch { /* additive 
     board.id = 'board_' + fnv1a(board.built_at + '|' + scope.sports.join(',') + '|' + scope.window.from + '|' + scope.window.to + '|' + emitted.map(function (c) { return c.id; }).join(','));
     return board;
   }
-  function summariseModel(c) { return { status: c.decision.decision, tier: c.fair.validation && c.fair.validation.tier, fair_line: c.fair.fair_line, model_line: c.fair.model_line, cover_at_market: c.fair.probability, break_even: c.edge.break_even, edge_pp: c.edge.probability_edge_pp, bet_to_line: c.threshold && c.threshold.bet_to_line != null ? c.threshold.bet_to_line : null, why: c.decision.why, outlier: c.outlier || null }; }
+  function summariseModel(c) { return { status: c.decision.decision, tier: c.fair.validation && c.fair.validation.tier, fair_line: c.fair.fair_line, model_line: c.fair.model_line, cover_at_market: c.fair.probability, break_even: c.edge.break_even, edge_pp: c.edge.probability_edge_pp, bet_to_line: c.threshold && c.threshold.bet_to_line != null ? c.threshold.bet_to_line : null, why: c.decision.why, outlier: c.outlier || null, model_version: c.fair.validation ? c.fair.validation.model_version || null : null, model_generated_at: c.fair.validation ? c.fair.validation.model_generated_at || null : null }; }
   function otherSide(c, list) {
     var want = c.market === 'totals' ? (c.side === 'over' ? 'under' : 'over') : c.market === 'spreads' || c.market === 'h2h' ? (c.side === 'home' ? 'away' : 'home') : null;
     if (!want) return null;
@@ -36663,7 +36663,7 @@ const EDBUDGET: any = (globalThis as any).EDBUDGET;
      A. THE RESEARCHER
      ====================================================================== */
   var OFFICIAL_DOMAINS = /(^|\.)(nfl\.com|mlb\.com|nba\.com|nhl\.com|ncaa\.(com|org)|ufc\.com|statsapi\.mlb\.com|operations\.nfl\.com)$/;
-  var STAT_DOMAINS = /(^|\.)(github\.com|nflverse\.com|collegefootballdata\.com|pro-football-reference\.com|sports-reference\.com|baseball-reference\.com|fangraphs\.com|baseballsavant\.mlb\.com|open-meteo\.com|api\.open-meteo\.com)$/;
+  var STAT_DOMAINS = /(^|\.)(nflverse\.com|collegefootballdata\.com|pro-football-reference\.com|sports-reference\.com|baseball-reference\.com|fangraphs\.com|baseballsavant\.mlb\.com|open-meteo\.com|api\.open-meteo\.com)$/;
   var CREDIBLE_DOMAINS = /(^|\.)(espn\.com|theathletic\.com|nytimes\.com|apnews\.com|reuters\.com|si\.com|cbssports\.com|nbcsports\.com|foxsports\.com|usatoday\.com|yahoo\.com|profootballtalk\.com|washingtonpost\.com|latimes\.com|bostonglobe\.com|chicagotribune\.com|theringer\.com|on3\.com|247sports\.com|rivals\.com)$/;
   var SPECULATION_RX = /\b(reportedly|rumou?r(ed|s)?|sources? (say|said|tell|told|indicate)|per sources|is expected to|expected to (start|play|miss|return)|could (start|play|miss|return)|might (start|play|miss)|likely (to )?(start|play|miss|out)|trending (toward|towards)|projected to|anticipated|it is believed|speculat\w+|unconfirmed|in line to)\b/i;
   var OPINION_RX = /\b(i think|i believe|in my opinion|we think|should win|will win|best bet|lock|pick:|my pick|prediction:|fade|hammer|smash|value play|can'?t lose)\b/i;
@@ -36672,11 +36672,22 @@ const EDBUDGET: any = (globalThis as any).EDBUDGET;
 
   function domainOf(url) { var m = /^https?:\/\/([^/?#]+)/i.exec(str(url)); return m ? m[1].toLowerCase().replace(/^www\./, '') : null; }
   /** The source's own class, from what it is (kind) and where it lives (domain). */
+  /* the domain's tier: the evidence layer's list when it is loaded (one list for the researcher, the ledger and the
+     search providers' allowed_domains), else the lists above; github.com counts only under /nflverse */
+  function domainTierOf(url) {
+    var g = typeof globalThis !== 'undefined' ? globalThis : {};
+    if (g.EDEVIDENCE && g.EDEVIDENCE.domainTier) return g.EDEVIDENCE.domainTier(url);
+    var d = domainOf(url) || '';
+    if (OFFICIAL_DOMAINS.test(d)) return 'OFFICIAL';
+    if (STAT_DOMAINS.test(d) || /^https?:\/\/(www\.)?github\.com\/nflverse\//i.test(str(url))) return 'STATISTICAL_DATA';
+    if (CREDIBLE_DOMAINS.test(d)) return 'CREDIBLE_JOURNALISM';
+    return 'UNKNOWN';
+  }
   function sourceClass(s) {
-    var k = str(s.kind || s.source_kind).toUpperCase(), d = domainOf(s.url) || '';
-    if (/OFFICIAL/.test(k) || OFFICIAL_DOMAINS.test(d)) return 'OFFICIAL';
-    if (/STAT|PROVIDER_API|MODEL_INPUT|DATA/.test(k) || STAT_DOMAINS.test(d)) return 'STATISTICAL_DATA';
-    if (/JOURNAL|MEDIA|NEWS/.test(k) || CREDIBLE_DOMAINS.test(d)) return 'CREDIBLE_JOURNALISM';
+    var k = str(s.kind || s.source_kind).toUpperCase(), dt = domainTierOf(s.url);
+    if (/OFFICIAL/.test(k) || dt === 'OFFICIAL') return 'OFFICIAL';
+    if (/STAT|PROVIDER_API|MODEL_INPUT|DATA/.test(k) || dt === 'STATISTICAL_DATA') return 'STATISTICAL_DATA';
+    if (/JOURNAL|MEDIA|NEWS/.test(k) || dt === 'CREDIBLE_JOURNALISM') return 'CREDIBLE_JOURNALISM';
     if (/OPINION|SOCIAL|FORUM|BLOG/.test(k)) return 'OPINION';
     return 'UNKNOWN';
   }
@@ -39938,6 +39949,238 @@ const EDREADY: any = (globalThis as any).EDREADY;
 });
 /*__EDORCH_END__*/
 const EDORCH: any = (globalThis as any).EDORCH;
+
+/*__EDEVIDENCE_START__*/
+/* ===========================================================================
+   EdgeDesk EVIDENCE LAYER (EDEVIDENCE) — every fact an answer rests on, as a
+   typed, dated, verified record. docs/research-engine/ARCHITECTURE.md §2
+
+   ONE RECORD PER FACT
+     source        a URL, or an internal dataset id (edgedesk://<dataset>#<path>)
+     retrieved_at  when EdgeDesk read it;  published_at / event_at when known
+     subject       sport, game, team, player
+     type          CONFIRMED_FACT   an official or statistical source, not speculative
+                   STATISTIC        a measured statistic from a statistical source
+                   EXTERNAL_REPORT  a credible report or a search result, one source
+                   HYPOTHESIS       speculation, opinion, an unsourced or flagged claim
+                   MODEL_ESTIMATE   an EdgeDesk engine's output (a projection, a fair)
+                   MARKET_QUOTE     a captured price, with its capture time
+     verification  VERIFIED (official/statistical) · CORROBORATED (independent credible
+                   sources agree) · SINGLE_SOURCE · UNVERIFIED · CONTRADICTED (an
+                   unresolved conflict) · SUPERSEDED (a conflict resolved against it)
+     freshness     FRESH · AGING · STALE · UNKNOWN, by topic and by how close the game is
+     conflicts     the conflicting evidence, named
+
+   EXTERNAL TEXT IS DATA, NEVER INSTRUCTIONS
+     screen(text) flags text that tries to instruct a model ("ignore previous
+     instructions", role markers, hidden prompts, script) and returns a
+     neutralised copy (control characters removed, markup escaped, length
+     capped). A flagged source can never be VERIFIED or CORROBORATED, and its
+     claim is a HYPOTHESIS. Nothing here sends text to a model.
+
+   It computes no probability and invents no source: a record without a URL
+   or dataset id and a retrieval time is refused.
+
+   Browser/Node/Deno: UMD, ES5. Inlined into supabase/functions/edgedesk_ai/index.ts.
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDEVIDENCE = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+  var VERSION = 'edgedesk_evidence_v1';
+  var TYPES = ['CONFIRMED_FACT', 'STATISTIC', 'EXTERNAL_REPORT', 'HYPOTHESIS', 'MODEL_ESTIMATE', 'MARKET_QUOTE'];
+  var VERIFICATION = ['VERIFIED', 'CORROBORATED', 'SINGLE_SOURCE', 'UNVERIFIED', 'CONTRADICTED', 'SUPERSEDED'];
+  /* minutes a fact stays FRESH by topic; AGING up to 3x; then STALE. Availability tightens inside a day of the game. */
+  var TTL_MIN = { availability: 360, starter: 360, lineup: 240, weather: 180, market: 60, statistic: 7 * 1440, scheme: 14 * 1440, coaching: 14 * 1440, venue: 30 * 1440, projection: 36 * 60, news: 120, other: 1440 };
+  var NEAR_GAME_TTL_MIN = { availability: 90, starter: 90, lineup: 60, weather: 120, news: 60 };
+
+  /* domain tiers for external sources (official > statistical > credible journalism); anything else is UNKNOWN */
+  var NFL_TEAM_SITES = ['azcardinals.com', 'atlantafalcons.com', 'baltimoreravens.com', 'buffalobills.com', 'panthers.com', 'chicagobears.com', 'bengals.com', 'clevelandbrowns.com', 'dallascowboys.com',
+    'denverbroncos.com', 'detroitlions.com', 'packers.com', 'houstontexans.com', 'colts.com', 'jaguars.com', 'chiefs.com', 'raiders.com', 'chargers.com', 'therams.com', 'miamidolphins.com', 'vikings.com',
+    'patriots.com', 'neworleanssaints.com', 'giants.com', 'newyorkjets.com', 'philadelphiaeagles.com', 'steelers.com', '49ers.com', 'seahawks.com', 'buccaneers.com', 'tennesseetitans.com', 'commanders.com'];
+  var DOMAINS = {
+    OFFICIAL: ['nfl.com', 'operations.nfl.com', 'mlb.com', 'nba.com', 'nhl.com', 'ncaa.com', 'ncaa.org', 'ufc.com'].concat(NFL_TEAM_SITES),
+    /* github.com only under /nflverse: any other repository is anyone's upload */
+    STATISTICAL_DATA: ['pro-football-reference.com', 'baseball-reference.com', 'sports-reference.com', 'fangraphs.com', 'baseballsavant.mlb.com', 'nflverse.com', 'github.com/nflverse', 'collegefootballdata.com', 'open-meteo.com', 'pff.com', 'nextgenstats.nfl.com'],
+    CREDIBLE_JOURNALISM: ['espn.com', 'apnews.com', 'reuters.com', 'nytimes.com', 'theathletic.com', 'cbssports.com', 'nbcsports.com', 'foxsports.com', 'si.com', 'usatoday.com', 'yahoo.com', 'washingtonpost.com', 'latimes.com', 'bostonglobe.com', 'chicagotribune.com', 'profootballtalk.com', 'theringer.com', 'on3.com', '247sports.com', 'rivals.com']
+  };
+  /* the list a search provider may be restricted to (allowed_domains) */
+  function allowedDomains() { return DOMAINS.OFFICIAL.concat(DOMAINS.STATISTICAL_DATA.filter(function (d) { return d.indexOf('/') < 0; }), DOMAINS.CREDIBLE_JOURNALISM).filter(function (d, i, a) { return a.indexOf(d) === i; }); }
+
+  function str(v) { return v == null ? '' : String(v); }
+  function num(v) { if (v === null || v === undefined || v === '') return null; var n = Number(v); return isFinite(n) ? n : null; }
+  function toMs(v) { if (v == null || v === '') return null; if (typeof v === 'number') return isFinite(v) ? v : null; var t = Date.parse(String(v)); return isFinite(t) ? t : null; }
+  function iso(v) { var t = toMs(v); return t == null ? null : new Date(t).toISOString(); }
+  function hash(s) { var h = 0x811c9dc5; s = str(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
+  function hostOf(url) { var m = /^https?:\/\/([^/?#]+)(\/[^?#]*)?/i.exec(str(url)); return m ? { host: m[1].toLowerCase().replace(/^www\./, ''), path: (m[2] || '/').toLowerCase() } : null; }
+  /** OFFICIAL | STATISTICAL_DATA | CREDIBLE_JOURNALISM | UNKNOWN for a URL. */
+  function domainTier(url) {
+    var h = hostOf(url); if (!h) return 'UNKNOWN';
+    var order = ['OFFICIAL', 'STATISTICAL_DATA', 'CREDIBLE_JOURNALISM'];
+    for (var i = 0; i < order.length; i++) {
+      var list = DOMAINS[order[i]];
+      for (var j = 0; j < list.length; j++) {
+        var d = list[j], slash = d.indexOf('/');
+        if (slash > 0) { if ((h.host === d.slice(0, slash) || h.host.slice(-(d.slice(0, slash).length + 1)) === '.' + d.slice(0, slash)) && h.path.indexOf(d.slice(slash)) === 0) return order[i]; }
+        else if (h.host === d || h.host.slice(-(d.length + 1)) === '.' + d) return order[i];
+      }
+    }
+    return 'UNKNOWN';
+  }
+
+  /* ---------------- prompt-injection screen ---------------- */
+  var INJECTION = [
+    ['instruction override', /\b(ignore|disregard|forget|override)\b[^.\n]{0,40}\b(previous|prior|above|earlier|all|any|your)\b[^.\n]{0,30}\b(instructions?|prompts?|rules?|directions?|context)\b/i],
+    ['role injection', /(^|\n)\s*(system|assistant|developer|user)\s*:\s*\S/i],
+    ['persona change', /\byou are (now|no longer)\b|\bact as\b[^.\n]{0,40}\b(an?|the)\b|\bpretend (to be|you are)\b/i],
+    ['prompt exfiltration', /\b(reveal|print|show|repeat|output)\b[^.\n]{0,30}\b(system prompt|your (instructions|prompt)|hidden prompt)\b/i],
+    ['tool or action request', /\b(call|invoke|run|execute)\b[^.\n]{0,20}\b(the )?(tool|function|command|code)\b|\bsend (an? )?(email|request|message) to\b/i],
+    ['markup or script', /<\s*(script|iframe|object|embed|style)\b|javascript:|data:text\/html/i],
+    ['instruction block', /\b(begin|start|end) (of )?(system |hidden )?(instructions?|prompt)\b|\[\/?(inst|sys)\]|<\|?(im_start|im_end|system)\|?>/i],
+    ['betting instruction', /\b(tell (the )?(user|reader)s? to|recommend that (the )?users?)\b[^.\n]{0,40}\b(bet|wager|stake|buy)\b/i]
+  ];
+  /** → { flagged, reasons[], text } — text is the neutralised copy (control chars removed, markup escaped, capped). */
+  function screen(text, max) {
+    var raw = str(text);
+    var reasons = INJECTION.filter(function (p) { return p[1].test(raw); }).map(function (p) { return p[0]; });
+    var clean = raw.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2066-\u2069]/g, '').replace(/\s+/g, ' ').trim()
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    var cap = num(max) || 600;
+    if (clean.length > cap) clean = clean.slice(0, cap - 1) + '…';
+    return { flagged: reasons.length > 0, reasons: reasons, text: clean };
+  }
+
+  /* ---------------- freshness ---------------- */
+  /** → { status, age_min, ttl_min, topic, basis } at now, tighter inside 24 h of kickoff. */
+  function freshness(at, topic, now, kickoff) {
+    var t = toMs(at), n = toMs(now) != null ? toMs(now) : Date.now();
+    var tp = TTL_MIN[topic] != null ? topic : 'other';
+    var near = toMs(kickoff) != null && toMs(kickoff) - n < 24 * 3600000 && toMs(kickoff) > n;
+    var ttl = near && NEAR_GAME_TTL_MIN[tp] != null ? NEAR_GAME_TTL_MIN[tp] : TTL_MIN[tp];
+    if (t == null) return { status: 'UNKNOWN', age_min: null, ttl_min: ttl, topic: tp, basis: 'no timestamp' };
+    var age = Math.max(0, Math.round((n - t) / 60000));
+    var st = age <= ttl ? 'FRESH' : age <= 3 * ttl ? 'AGING' : 'STALE';
+    return { status: st, age_min: age, ttl_min: ttl, topic: tp, basis: tp + ' facts are fresh for ' + ttl + ' min' + (near ? ' inside a day of the game' : '') };
+  }
+
+  /* ---------------- records ---------------- */
+  function typeOf(reliability, speculative, kind) {
+    if (kind === 'MODEL') return 'MODEL_ESTIMATE';
+    if (kind === 'MARKET') return 'MARKET_QUOTE';
+    if (speculative || reliability === 'SPECULATION' || reliability === 'OPINION') return 'HYPOTHESIS';
+    if (reliability === 'OFFICIAL') return 'CONFIRMED_FACT';
+    if (reliability === 'STATISTICAL_DATA') return 'STATISTIC';
+    if (reliability === 'CREDIBLE_JOURNALISM') return 'EXTERNAL_REPORT';
+    return 'HYPOTHESIS';
+  }
+  /**
+   * A researcher finding (supabase/functions/edgedesk_ai/_agents.js normalize) → an evidence record.
+   * ctx: { now, kickoff, sport, game_id, conflicts (the researcher's conflict list), corroborated (ids) }
+   */
+  function fromFinding(f, ctx) {
+    ctx = ctx || {};
+    if (!f || (!f.source_url && !f.dataset_id) || toMs(f.retrieved_at) == null) return { refused: true, why: !f ? 'no finding' : (!f.source_url && !f.dataset_id) ? 'no source URL or dataset id' : 'no retrieval time' };
+    var sc = screen(f.claim, 400);
+    var rel = sc.flagged ? 'UNKNOWN' : str(f.reliability).toUpperCase() || 'UNKNOWN';
+    var type = sc.flagged ? 'HYPOTHESIS' : typeOf(rel, f.speculative, f.kind);
+    var mine = (ctx.conflicts || []).filter(function (c) { return (c.findings || []).indexOf(f.id) >= 0; });
+    var lost = mine.filter(function (c) { return c.resolved && c.resolution && c.resolution.finding !== f.id; });
+    var open = mine.filter(function (c) { return c.unresolved; });
+    var verification = open.length ? 'CONTRADICTED' : lost.length ? 'SUPERSEDED'
+      : sc.flagged ? 'UNVERIFIED'
+        : type === 'CONFIRMED_FACT' || type === 'STATISTIC' ? 'VERIFIED'
+          : type === 'HYPOTHESIS' ? 'UNVERIFIED'
+            : (ctx.corroborated || []).indexOf(f.id) >= 0 ? 'CORROBORATED' : 'SINGLE_SOURCE';
+    var at = f.published_at || f.retrieved_at;
+    return {
+      id: 'ev_' + hash([f.id || '', f.source_url || f.dataset_id, f.retrieved_at].join('|')),
+      finding_id: f.id || null,
+      source: { url: f.source_url || null, dataset_id: f.dataset_id || null, title: f.source_title || null, publisher: f.publisher || null, tier: f.source_url ? domainTier(f.source_url) : 'INTERNAL', reliability: rel },
+      retrieved_at: iso(f.retrieved_at), published_at: iso(f.published_at), event_at: iso(f.event_at || ctx.kickoff),
+      subject: { sport: ctx.sport || null, game_id: ctx.game_id != null ? String(ctx.game_id) : (f.event_ref || null), team: f.team || null, player: f.player || null, topic: f.topic || 'other' },
+      claim: sc.text, status: f.status || null,
+      type: type, verification: verification,
+      freshness: freshness(at, f.topic, ctx.now, ctx.kickoff),
+      conflicts: mine.map(function (c) { return { detail: c.detail, resolved: !!c.resolved, by: c.resolution ? c.resolution.by : null, why_unresolved: c.why_unresolved || null }; }),
+      injection: sc.flagged ? { flagged: true, reasons: sc.reasons } : null
+    };
+  }
+  /** An EdgeDesk engine output as evidence: a projection, a fair line. o: { dataset_id, label, value, unit, model_version, tier, generated_at, now, sport, game_id, team } */
+  function modelEstimate(o) {
+    o = o || {};
+    if (!o.dataset_id || toMs(o.generated_at) == null) return { refused: true, why: !o.dataset_id ? 'no dataset id' : 'no build time' };
+    return {
+      id: 'ev_' + hash(['model', o.dataset_id, o.generated_at, o.value].join('|')), finding_id: null,
+      source: { url: null, dataset_id: o.dataset_id, title: o.label || null, publisher: 'EdgeDesk', tier: 'INTERNAL', reliability: 'MODEL' },
+      retrieved_at: iso(o.generated_at), published_at: iso(o.generated_at), event_at: iso(o.kickoff),
+      subject: { sport: o.sport || null, game_id: o.game_id != null ? String(o.game_id) : null, team: o.team || null, player: null, topic: 'projection' },
+      claim: str(o.label) + ': ' + str(o.value) + (o.unit ? ' ' + o.unit : ''), value: o.value, unit: o.unit || null,
+      model: { version: o.model_version || null, tier: o.tier || null },
+      type: 'MODEL_ESTIMATE', verification: 'VERIFIED', freshness: freshness(o.generated_at, 'projection', o.now, o.kickoff), conflicts: [], injection: null
+    };
+  }
+  /** A captured price as evidence. o: { dataset_id, book, selection, line, american, decimal, captured_at, now, sport, game_id, kickoff, kind ('PRICE'|'LINE_ONLY') } */
+  function marketQuote(o) {
+    o = o || {};
+    if (!o.dataset_id || toMs(o.captured_at) == null) return { refused: true, why: !o.dataset_id ? 'no dataset id' : 'no capture time (a reference line is not a price)' };
+    return {
+      id: 'ev_' + hash(['market', o.dataset_id, o.captured_at, o.american, o.decimal].join('|')), finding_id: null,
+      source: { url: null, dataset_id: o.dataset_id, title: (o.book || 'captured book') + ' price', publisher: o.book || null, tier: 'INTERNAL', reliability: 'MARKET' },
+      retrieved_at: iso(o.captured_at), published_at: iso(o.captured_at), event_at: iso(o.kickoff),
+      subject: { sport: o.sport || null, game_id: o.game_id != null ? String(o.game_id) : null, team: null, player: null, topic: 'market' },
+      claim: str(o.selection) + (o.line != null ? ' ' + (o.line > 0 ? '+' : '') + o.line : '') + ' at ' + (o.american != null ? (o.american > 0 ? '+' : '') + Math.round(o.american) : str(o.decimal)) + (o.book ? ' (' + o.book + ')' : ''),
+      type: 'MARKET_QUOTE', verification: o.kind === 'LINE_ONLY' ? 'UNVERIFIED' : 'VERIFIED', freshness: freshness(o.captured_at, 'market', o.now, o.kickoff), conflicts: [], injection: null
+    };
+  }
+  /** Independent credible sources agreeing on the same player, topic and status → their ids (corroboration). */
+  function corroborations(findings) {
+    var groups = {}, out = [];
+    (findings || []).forEach(function (f) {
+      if (!f || !f.player || !f.status || f.speculative) return;
+      var k = str(f.player).toLowerCase() + '|' + f.topic + '|' + f.status;
+      (groups[k] = groups[k] || []).push(f);
+    });
+    Object.keys(groups).forEach(function (k) {
+      var g = groups[k], pubs = {};
+      g.forEach(function (f) { var h = hostOf(f.source_url); pubs[(f.publisher || (h ? h.host.split('.').slice(-2).join('.') : '')).toLowerCase()] = 1; });
+      if (Object.keys(pubs).length >= 2) g.forEach(function (f) { out.push(f.id); });
+    });
+    return out;
+  }
+  /**
+   * The ledger for one investigation: records, counts, and the lists a reader needs.
+   * o: { findings, conflicts, now, kickoff, sport, game_id, model (modelEstimate inputs[]), market (marketQuote inputs[]) }
+   */
+  function ledger(o) {
+    o = o || {};
+    var corro = corroborations(o.findings);
+    var ctx = { now: o.now, kickoff: o.kickoff, sport: o.sport, game_id: o.game_id, conflicts: o.conflicts || [], corroborated: corro };
+    var refused = [], records = [];
+    (o.findings || []).forEach(function (f) { var r = fromFinding(f, ctx); if (r.refused) refused.push(r); else records.push(r); });
+    (o.model || []).forEach(function (m) { var r = modelEstimate(Object.assign({ now: o.now, kickoff: o.kickoff, sport: o.sport, game_id: o.game_id }, m)); if (r.refused) refused.push(r); else records.push(r); });
+    (o.market || []).forEach(function (m) { var r = marketQuote(Object.assign({ now: o.now, kickoff: o.kickoff, sport: o.sport, game_id: o.game_id }, m)); if (r.refused) refused.push(r); else records.push(r); });
+    var count = function (key) { var c = {}; records.forEach(function (r) { var v = key === 'freshness' ? r.freshness.status : r[key]; c[v] = (c[v] || 0) + 1; }); return c; };
+    var sources = {}, srcList = [];
+    records.forEach(function (r) { var k = r.source.url || r.source.dataset_id; if (sources[k]) { sources[k].facts++; return; } sources[k] = { url: r.source.url, dataset_id: r.source.dataset_id, title: r.source.title, publisher: r.source.publisher, tier: r.source.tier, reliability: r.source.reliability, retrieved_at: r.retrieved_at, published_at: r.published_at, facts: 1 }; srcList.push(sources[k]); });
+    return {
+      schema: VERSION, records: records, refused: refused,
+      summary: {
+        total: records.length, by_type: count('type'), by_verification: count('verification'), by_freshness: count('freshness'),
+        contradicted: records.filter(function (r) { return r.verification === 'CONTRADICTED'; }).map(function (r) { return r.claim; }),
+        stale: records.filter(function (r) { return r.freshness.status === 'STALE'; }).map(function (r) { return r.claim + ' (' + r.freshness.age_min + ' min old)'; }),
+        flagged: records.filter(function (r) { return r.injection; }).map(function (r) { return { source: r.source.url, reasons: r.injection.reasons }; })
+      },
+      sources: srcList
+    };
+  }
+
+  return { VERSION: VERSION, TYPES: TYPES, VERIFICATION: VERIFICATION, TTL_MIN: TTL_MIN, DOMAINS: DOMAINS, allowedDomains: allowedDomains, domainTier: domainTier,
+    screen: screen, freshness: freshness, fromFinding: fromFinding, modelEstimate: modelEstimate, marketQuote: marketQuote, corroborations: corroborations, ledger: ledger };
+});
+/*__EDEVIDENCE_END__*/
+const EDEVIDENCE: any = (globalThis as any).EDEVIDENCE;
 
 /*__EDMLBHIST_START__*/
 /*__EDMLBQ_START__*/
@@ -51062,14 +51305,41 @@ function stageEmitter(p?: Progress | null): Progress {
 }
 
 /** One scan row for the response: the candidate, its audit, its evaluation and (when researched) its investigation. */
-function quantRowSlim(r: any): any {
+/* ── THE EVIDENCE LEDGER (EDEVIDENCE): every fact typed, dated, verified; the price and the projection included ── */
+function sportSlatePath(sport: string): string { return sport === "americanfootball_nfl" ? "football/nfl/slate.json" : sport === "americanfootball_ncaaf" ? "football/fbs/slate.json" : sport === "baseball_mlb" ? "supabase/mlb_game_cards" : "edgedesk/" + sport; }
+function evidenceTrim(led: any): any {
+  if (!led) return null;
+  return { schema: led.schema, summary: led.summary, sources: led.sources.slice(0, 20), records: led.records.slice(0, 30), refused: led.refused.length };
+}
+export function evidenceForRow(r: any, now: number): any {
+  if (!EDEVIDENCE || !r?.candidate) return null;
+  try {
+    const c = r.candidate, inv = r.research, q = c.quote ?? {};
+    const market = q.captured_at ? [{ dataset_id: "edgedesk://supabase/signals/" + (c.sig_key ?? c.id), book: q.book ?? null, selection: c.selection, line: num(c.line), american: num(q.odds_american), decimal: num(q.odds_decimal), captured_at: q.captured_at, kind: q.executable === false ? "LINE_ONLY" : "PRICE" }] : [];
+    /* the projection: the candidate's own fair when the model prices it (MODEL_BLEND), else the board's model case (a cross-check) */
+    const isM = c.fair?.method === "MODEL_BLEND", val = c.fair?.validation ?? {}, mc = c.model_case ?? null;
+    const mp = isM ? num(c.fair?.probability) : num(mc?.cover_at_market), gen = isM ? val.model_generated_at : mc?.model_generated_at, tier = isM ? val.tier : mc?.tier;
+    const model = mp != null && gen ? [{ dataset_id: "edgedesk://" + sportSlatePath(c.sport) + "#games/" + c.game_id, label: "EdgeDesk model cover probability for " + c.selection + (c.line != null ? " " + (c.line > 0 ? "+" : "") + c.line : "") + " (" + (tier ?? "unvalidated") + " tier" + (isM ? "" : "; a cross-check, not the price") + ")", value: Math.round(mp * 1000) / 1000, unit: "probability", model_version: (isM ? val.model_version : mc?.model_version) ?? null, tier: tier ?? null, generated_at: gen, team: c.selection }] : [];
+    return evidenceTrim(EDEVIDENCE.ledger({ findings: inv?.research?.findings ?? [], conflicts: inv?.research?.conflicts ?? [], now, kickoff: c.kickoff ?? null, sport: c.sport, game_id: c.game_id, market, model }));
+  } catch { return null; }
+}
+export function evidenceForGame(g: any, now: number): any {
+  if (!EDEVIDENCE || !g) return null;
+  try {
+    const m = g.ready_in?.market;
+    const market = m && m.kind === "PRICE" && m.captured_at ? [{ dataset_id: "edgedesk://supabase/signals/" + g.sport + "/" + g.game_id, book: m.book ?? null, selection: g.home, line: num(g.market_line), american: num(m.odds_american), captured_at: m.captured_at, kind: "PRICE" }] : [];
+    const model = g.model_line != null && g.model_generated_at ? [{ dataset_id: "edgedesk://" + sportSlatePath(g.sport) + "#games/" + g.game_id + "/model_home_line", label: "EdgeDesk projection, " + g.home + " line (" + (g.model_tier ?? "unvalidated") + " model)", value: g.model_line, unit: "points (home line)", model_version: g.model_version ?? null, tier: g.model_tier ?? null, generated_at: g.model_generated_at, team: g.home }] : [];
+    return evidenceTrim(EDEVIDENCE.ledger({ findings: g.research?.findings ?? [], conflicts: g.research?.conflicts ?? [], now, kickoff: g.kickoff ?? null, sport: g.sport, game_id: g.game_id, market, model }));
+  } catch { return null; }
+}
+function quantRowSlim(r: any, now: number = Date.now()): any {
   return r ? { candidate: { id: r.candidate.id, sport: r.candidate.sport, sport_label: r.candidate.sport_label, game_id: r.candidate.game_id != null ? String(r.candidate.game_id) : null, home: r.candidate.home ?? null, away: r.candidate.away ?? null, kickoff: r.candidate.kickoff ?? null, matchup: r.candidate.matchup, kickoff_local: r.candidate.kickoff_local, market: r.candidate.market, selection: r.candidate.selection, line: r.candidate.line, quote: r.candidate.quote, fair: { method: r.candidate.fair?.method, label: r.candidate.fair?.label, probability: r.candidate.fair?.probability }, counter: r.candidate.counter, corrected: r.candidate.corrected ?? [] }, audit: r.audit, evaluation: r.evaluation,
     classification: r.classification ?? null, research: r.research ? researchSlim(r.research) : null,
     /* the card's words, written by the same functions the answer text uses — the page never composes them */
     advantage: EDQUANT?.matchupLine ? EDQUANT.matchupLine(r.candidate) : null,
     counterargument: r.research && EDAGENTS ? EDAGENTS.counterArgument(r.research) : null,
     invalidators: r.research && EDAGENTS ? EDAGENTS.invalidators(Object.assign({}, r.research, { event: { sport: r.candidate.sport } })) : [],
-    withheld_by_board: r.withheld_by_board ?? null } : null;
+    withheld_by_board: r.withheld_by_board ?? null, evidence: evidenceForRow(r, now) } : null;
 }
 /** Every audited candidate through the five-role chain, at the level the question earns. Null when the chain is off. */
 async function researchAudited(o: { dal: Dal; audit: any; games: any[]; evidence: Map<string, any>; now: number; question: string; auth: string; stake: number | null; intent: string; level?: string | null; progress?: Progress | null }): Promise<{ investigations: Record<string, any>; pairs: { inv: any; c: any }[]; summary: any; sources_text: string; level: any } | null> {
@@ -51158,7 +51428,7 @@ async function quantScan(o: { body: any; auth: string; dal: Dal; now: number; cl
   if (rs) { try { await publishResearch(auth, rs.pairs, { question: q, now, level: rs.summary.level }, dal.fetchImpl()); } catch { /* best effort */ } }
   return {
     answer, model: nar?.model ?? null, narration: nar ? nar.narration : { ok: true, prose: "DETERMINISTIC", critic: null }, ...(nar?.deterministic_answer ? { deterministic_answer: nar.deterministic_answer } : {}),
-    scan: { schema: scan.schema, decision: scan.decision, final_status: scan.final_status, researched: scan.researched, best: quantRowSlim(scan.best), verified_rest: (scan.verified_rest ?? []).map(quantRowSlim), potential: scan.potential.map(quantRowSlim), near_misses: scan.near_misses.map(quantRowSlim), board_near_misses: scan.board_near_misses,
+    scan: { schema: scan.schema, decision: scan.decision, final_status: scan.final_status, researched: scan.researched, best: quantRowSlim(scan.best, now), verified_rest: (scan.verified_rest ?? []).map((x: any) => quantRowSlim(x, now)), potential: scan.potential.map((x: any) => quantRowSlim(x, now)), near_misses: scan.near_misses.map((x: any) => quantRowSlim(x, now)), board_near_misses: scan.board_near_misses,
       coverage: scan.coverage, coverage_scope: scan.coverage_scope, not_scanned: scan.not_scanned, not_covered: scan.not_covered, counts: scan.counts, window: scan.window, timezone: scan.timezone,
       filter: scan.filter, risk_dollars: scan.risk_dollars, audit_trail: scan.audit_trail, audit_checks: scan.audit_checks, audit_write: quantWriteView(LAST_AUDIT_WRITE),
       research_summary: scan.research_summary ?? null, research_write: rs ? LAST_RESEARCH_WRITE : null },
@@ -51370,7 +51640,7 @@ async function quantResearchSlate(o: { body: any; auth: string; dal: Dal; now: n
     disagreement: g.disagreement ? { verdict: g.disagreement.verdict, primary: g.disagreement.primary, size: g.disagreement.size, explanation: g.disagreement.explanation, is_edge_evidence: g.disagreement.is_edge_evidence, causes: g.disagreement.causes } : null,
     findings: g.research ? g.research.findings.length : null, conflicts: g.research ? g.research.conflicts.length : null,
     research: g.research ? researchSlim({ research: g.research, disagreement: g.disagreement, unavailable: [] }) : null,
-    readiness: g.readiness, why_not: EDREADY && g.readiness ? EDREADY.whyNot(g.readiness) : [] });
+    readiness: g.readiness, why_not: EDREADY && g.readiness ? EDREADY.whyNot(g.readiness) : [], evidence: evidenceForGame(g, now) });
   const sportLabel = sport ? quantSportLabel(sport) : "Every in-season sport";
   const det = only ? EDQUANT.renderGameResearch({ game: games[0] ? gameOut(games[0]) : null, sport_label: sportLabel, investigated, why_not: games[0] && EDREADY && games[0].readiness ? EDREADY.whyNot(games[0].readiness) : [], research_summary: summary, sources_text: researchSourcesText(allInvs) })
     : o.screen_only ? EDQUANT.renderReadiness({ games: games.map(gameOut), readiness, sport_label: sport ? sportLabel : null, window: board.scope?.window?.label ?? null, coverage_sentence: covSentence, no_game: /\bthis (game|matchup|spread)\b/i.test(q) })
@@ -51389,7 +51659,7 @@ async function quantResearchSlate(o: { body: any; auth: string; dal: Dal; now: n
       schema: (EDAGENTS.VERSION ?? "edagents") + ":slate", sport, window: board.scope?.window ?? null, level: lvl,
       games: games.map(gameOut),
       readiness, mode: only ? "GAME" : o.screen_only ? "READINESS" : "SLATE",
-      investigated: investigated.map(quantRowSlim), survivors: investigated.filter((r: any) => r.classification?.classification === "VERIFIED_CANDIDATE" && !r.withheld_by_board).length,
+      investigated: investigated.map((x: any) => quantRowSlim(x, now)), survivors: investigated.filter((r: any) => r.classification?.classification === "VERIFIED_CANDIDATE" && !r.withheld_by_board).length,
       final_status: scan.final_status, research_summary: summary, coverage, not_investigated: notInvestigated, research_write: LAST_RESEARCH_WRITE,
     },
     quant_state: EDQUANT.stateFrom({ scan, now }),
