@@ -1,0 +1,1280 @@
+{
+  "schema": "edgedesk_game_audit_v1",
+  "key": "NFL:2026_05_BAL_ATL",
+  "game_id": "2026_05_BAL_ATL",
+  "sport": "NFL",
+  "snapshot_id": "snap_67622519c66b784c",
+  "audited_at": "2026-10-12T03:50:33.685Z",
+  "theses": [
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "price",
+      "kind": "price",
+      "claim": "EdgeDesk prices this game at Atlanta Falcons +0.2 with a fair total of 47.2, which makes Baltimore Ravens the better team here by that margin on this field.",
+      "basis": "the model’s own fair spread",
+      "source_path": "model.fair_spread_text",
+      "category": "market",
+      "weight": 0.2,
+      "favours_side": "away",
+      "favours_team": "Baltimore Ravens",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 0.15007771557217753,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "falsifier": "Atlanta Falcons winning the game outright, or the margin landing on the wrong side of zero.",
+      "watch": "Whether Baltimore Ravens is ahead on the scoreboard in a way that looks like Atlanta Falcons +0.2 rather than a coin flip.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "claim": "EdgeDesk makes it Atlanta Falcons +0.2 where the market has Atlanta Falcons -3.5 at Caesars — a 3.7 points disagreement.",
+      "basis": "EdgeDesk’s own number against a captured sportsbook quote",
+      "source_path": "market.difference",
+      "category": "market",
+      "weight": 3.7,
+      "favours_side": "away",
+      "favours_team": "Baltimore Ravens",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": 3.7,
+        "unit": "points",
+        "market_margin": -3.5,
+        "market_text": "Atlanta Falcons -3.5",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "falsifier": "the game landing between the two numbers, or on the market’s side of them — either of which means the market read this matchup better than EdgeDesk did.",
+      "watch": "Whether the scoreboard ever reaches the gap between Atlanta Falcons -3.5 and Atlanta Falcons +0.2.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "claim": "Model baseline — the team-strength model’s constant — worth +2.5 of the EdgeDesk number, in Atlanta Falcons’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[0]",
+      "category": "model_baseline",
+      "weight": 2.5,
+      "favours_side": "home",
+      "favours_team": "Atlanta Falcons",
+      "expected_signal": null,
+      "falsifier": "Baltimore Ravens winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "a model constant is not a claim about this game and is not graded as one"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "claim": "Net passing EPA — Baltimore Ravens by 1.4 points — worth -1.4 of the EdgeDesk number, in Baltimore Ravens’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[1]",
+      "category": "passing",
+      "weight": 1.4,
+      "favours_side": "away",
+      "favours_team": "Baltimore Ravens",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Atlanta Falcons winning this part of the game instead.",
+      "watch": "Whether Baltimore Ravens is actually ahead on yards per pass attempt and net passing yards.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "claim": "Net rushing EPA — Baltimore Ravens by 1.1 points — worth -1.1 of the EdgeDesk number, in Baltimore Ravens’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[2]",
+      "category": "rushing",
+      "weight": 1.1,
+      "favours_side": "away",
+      "favours_team": "Baltimore Ravens",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Atlanta Falcons winning this part of the game instead.",
+      "watch": "Whether Baltimore Ravens is actually ahead on yards per carry and rushing yards.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.3",
+      "kind": "driver",
+      "claim": "Net EPA per play — Baltimore Ravens by 1.0 points — worth -1.0 of the EdgeDesk number, in Baltimore Ravens’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[3]",
+      "category": "efficiency",
+      "weight": 1,
+      "favours_side": "away",
+      "favours_team": "Baltimore Ravens",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_play"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Atlanta Falcons winning this part of the game instead.",
+      "watch": "Whether Baltimore Ravens is actually ahead on yards per play.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.4",
+      "kind": "driver",
+      "claim": "Model baseline — the context model’s constant, home field included — worth +0.6 of the EdgeDesk number, in Atlanta Falcons’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[4]",
+      "category": "home_field",
+      "weight": 0.6,
+      "favours_side": "home",
+      "favours_team": "Atlanta Falcons",
+      "expected_signal": null,
+      "falsifier": "Baltimore Ravens winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "a model constant is not a claim about this game and is not graded as one"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.5",
+      "kind": "driver",
+      "claim": "Quarterback adjustment — Atlanta Falcons by 0.5 points — worth +0.5 of the EdgeDesk number, in Atlanta Falcons’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[5]",
+      "category": "QB",
+      "weight": 0.5,
+      "favours_side": "home",
+      "favours_team": "Atlanta Falcons",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "completion_pct"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Baltimore Ravens winning this part of the game instead.",
+      "watch": "Whether Atlanta Falcons is actually ahead on yards per pass attempt and completion percentage.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "claim": "Baltimore Ravens’ pass offence rates +0.115 (#6 of 32) and Atlanta Falcons’ pass defence rates −0.016 (#15 of 32). Added the way the model adds them, this pairing sits +0.099 from the league mean, which favours Baltimore Ravens.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[0]",
+      "category": "passing",
+      "weight": 1,
+      "favours_side": "away",
+      "favours_team": "Baltimore Ravens",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "the pairing going the other way — Baltimore Ravens losing the phase it is rated to win.",
+      "watch": "How Baltimore Ravens pass offence handles Atlanta Falcons pass defence looks on early downs.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this pairing"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "claim": "Atlanta Falcons’ pass offence rates −0.046 (#20 of 32) and Baltimore Ravens’ pass defence rates +0.036 (#19 of 32). Added the way the model adds them, this pairing sits −0.009 from the league mean, which favours Baltimore Ravens.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[1]",
+      "category": "passing",
+      "weight": 0.1,
+      "favours_side": "away",
+      "favours_team": "Baltimore Ravens",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "the pairing going the other way — Baltimore Ravens losing the phase it is rated to win.",
+      "watch": "How Atlanta Falcons pass offence handles Baltimore Ravens pass defence looks on early downs.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this pairing"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "claim": "Baltimore Ravens’ run offence rates +0.090 (#3 of 32) and Atlanta Falcons’ run defence rates +0.027 (#25 of 32). Added the way the model adds them, this pairing sits +0.118 from the league mean, which favours Baltimore Ravens.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[2]",
+      "category": "rushing",
+      "weight": 1.2,
+      "favours_side": "away",
+      "favours_team": "Baltimore Ravens",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "the pairing going the other way — Baltimore Ravens losing the phase it is rated to win.",
+      "watch": "How Baltimore Ravens run offence handles Atlanta Falcons run defence looks on early downs.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this pairing"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "claim": "Atlanta Falcons’ run offence rates +0.058 (#5 of 32) and Baltimore Ravens’ run defence rates −0.094 (#1 of 32). Added the way the model adds them, this pairing sits −0.036 from the league mean, which favours Baltimore Ravens.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[3]",
+      "category": "rushing",
+      "weight": 0.4,
+      "favours_side": "away",
+      "favours_team": "Baltimore Ravens",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "the pairing going the other way — Baltimore Ravens losing the phase it is rated to win.",
+      "watch": "How Atlanta Falcons run offence handles Baltimore Ravens run defence looks on early downs.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this pairing"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "claim": "Baltimore Ravens holds the largest measured edge in this matchup: Baltimore Ravens −0.094 (#1 of 32) vs Atlanta Falcons +0.027 (#25 of 32) — 24 places on the league board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.away[0]",
+      "category": "defence",
+      "weight": 6,
+      "favours_side": "away",
+      "favours_team": "Baltimore Ravens",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_play"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Atlanta Falcons winning that category on the day.",
+      "watch": "Whether Baltimore Ravens’s edge in Run defence · EPA allowed per carry shows up in the box score.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Run defence · EPA allowed per carry"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "claim": "Atlanta Falcons holds the largest measured edge in this matchup: Atlanta Falcons +1.5 pp (#4 of 32) vs Baltimore Ravens −1.1 pp (#26 of 32) — 22 places on the league board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.home[0]",
+      "category": "pressure",
+      "weight": 5.5,
+      "favours_side": "home",
+      "favours_team": "Atlanta Falcons",
+      "expected_signal": {
+        "metrics": [
+          "sacks_generated",
+          "sacks_allowed"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Baltimore Ravens winning that category on the day.",
+      "watch": "Whether Atlanta Falcons’s edge in Sacks generated per dropback shows up in the box score.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Sacks generated per dropback"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "claim": "The largest stated risk to this read: NFL injury report — not loaded in this session.",
+      "basis": "the model’s own highest-severity published uncertainty",
+      "source_path": "uncertainty.items[0]",
+      "category": "data_quality",
+      "weight": 3,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": "the game passing off without the stated gap mattering.",
+      "watch": "Anything that turns on availability not on file.",
+      "observable": false,
+      "not_observable_why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "audit": [
+    {
+      "thesis_id": "price",
+      "kind": "price",
+      "category": "market",
+      "claim": "EdgeDesk prices this game at Atlanta Falcons +0.2 with a fair total of 47.2, which makes Baltimore Ravens the better team here by that margin on this field.",
+      "weight": 0.2,
+      "favours_team": "Baltimore Ravens",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 0.15007771557217753,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": -7,
+          "away": 7,
+          "diff": 7
+        }
+      ],
+      "observed_result": "Baltimore Ravens won by 7 where EdgeDesk projected a 0.2-point edge.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": "the right side won and the margin landed in the neighbourhood of the projection"
+    },
+    {
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "category": "market",
+      "claim": "EdgeDesk makes it Atlanta Falcons +0.2 where the market has Atlanta Falcons -3.5 at Caesars — a 3.7 points disagreement.",
+      "weight": 3.7,
+      "favours_team": "Baltimore Ravens",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": 3.7,
+        "unit": "points",
+        "market_margin": -3.5,
+        "market_text": "Atlanta Falcons -3.5",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": -7,
+          "away": 7,
+          "diff": 7
+        }
+      ],
+      "observed_result": "Baltimore Ravens won by 7.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": "the result landed on EdgeDesk’s side of the market number: Baltimore Ravens beat a margin of -3.5"
+    },
+    {
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "category": "model_baseline",
+      "claim": "Model baseline — the team-strength model’s constant — worth +2.5 of the EdgeDesk number, in Atlanta Falcons’s favour.",
+      "weight": 2.5,
+      "favours_team": "Atlanta Falcons",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "a model constant is not a claim about this game and is not graded as one"
+    },
+    {
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "category": "passing",
+      "claim": "Net passing EPA — Baltimore Ravens by 1.4 points — worth -1.4 of the EdgeDesk number, in Baltimore Ravens’s favour.",
+      "weight": 1.4,
+      "favours_team": "Baltimore Ravens",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_pass",
+          "available": true,
+          "label": "yards per pass attempt",
+          "unit": "yards",
+          "better": "high",
+          "home": 6.7631578947368425,
+          "away": 5.083333333333333,
+          "diff": 1.68,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.248,
+          "at_size": false
+        },
+        {
+          "metric": "net_pass_yards",
+          "available": true,
+          "label": "net passing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 257,
+          "away": 183,
+          "diff": 74,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.288,
+          "at_size": false
+        }
+      ],
+      "observed_result": "Baltimore Ravens 5.08 yards per pass attempt against Atlanta Falcons 6.76; Baltimore Ravens 183 net passing yards against Atlanta Falcons 257.",
+      "evaluation": "NOT CONFIRMED",
+      "confidence": "medium",
+      "why": "every signal this claim rests on went the other way",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "category": "rushing",
+      "claim": "Net rushing EPA — Baltimore Ravens by 1.1 points — worth -1.1 of the EdgeDesk number, in Baltimore Ravens’s favour.",
+      "weight": 1.1,
+      "favours_team": "Baltimore Ravens",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_rush",
+          "available": true,
+          "label": "yards per carry",
+          "unit": "yards",
+          "better": "high",
+          "home": 4.231,
+          "away": 5.943,
+          "diff": -1.71,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.288,
+          "at_size": true
+        },
+        {
+          "metric": "rush_yards",
+          "available": true,
+          "label": "rushing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 110,
+          "away": 208,
+          "diff": -98,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.471,
+          "at_size": true
+        }
+      ],
+      "observed_result": "Baltimore Ravens 5.94 yards per carry against Atlanta Falcons 4.23; Baltimore Ravens 208 rushing yards against Atlanta Falcons 110.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": null,
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "driver.3",
+      "kind": "driver",
+      "category": "efficiency",
+      "claim": "Net EPA per play — Baltimore Ravens by 1.0 points — worth -1.0 of the EdgeDesk number, in Baltimore Ravens’s favour.",
+      "weight": 1,
+      "favours_team": "Baltimore Ravens",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_play"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_play",
+          "available": true,
+          "label": "yards per play",
+          "unit": "yards",
+          "better": "high",
+          "home": 5.734375,
+          "away": 5.5070422535,
+          "diff": 0.23,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.04,
+          "at_size": false
+        }
+      ],
+      "observed_result": "Baltimore Ravens 5.51 yards per play against Atlanta Falcons 5.73.",
+      "evaluation": "NOT CONFIRMED",
+      "confidence": "medium",
+      "why": "every signal this claim rests on went the other way",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "driver.4",
+      "kind": "driver",
+      "category": "home_field",
+      "claim": "Model baseline — the context model’s constant, home field included — worth +0.6 of the EdgeDesk number, in Atlanta Falcons’s favour.",
+      "weight": 0.6,
+      "favours_team": "Atlanta Falcons",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "a model constant is not a claim about this game and is not graded as one"
+    },
+    {
+      "thesis_id": "driver.5",
+      "kind": "driver",
+      "category": "QB",
+      "claim": "Quarterback adjustment — Atlanta Falcons by 0.5 points — worth +0.5 of the EdgeDesk number, in Atlanta Falcons’s favour.",
+      "weight": 0.5,
+      "favours_team": "Atlanta Falcons",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "completion_pct"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_pass",
+          "available": true,
+          "label": "yards per pass attempt",
+          "unit": "yards",
+          "better": "high",
+          "home": 6.7631578947368425,
+          "away": 5.083333333333333,
+          "diff": 1.68,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.248,
+          "at_size": true
+        },
+        {
+          "metric": "completion_pct",
+          "available": false,
+          "label": "completion percentage",
+          "unit": "%",
+          "why": "the box score for this game published no completion percentage"
+        }
+      ],
+      "observed_result": "Atlanta Falcons 6.76 yards per pass attempt against Baltimore Ravens 5.08.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": null,
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Baltimore Ravens’ pass offence rates +0.115 (#6 of 32) and Atlanta Falcons’ pass defence rates −0.016 (#15 of 32). Added the way the model adds them, this pairing sits +0.099 from the league mean, which favours Baltimore Ravens.",
+      "weight": 1,
+      "favours_team": "Baltimore Ravens",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_pass",
+          "available": true,
+          "label": "yards per pass attempt",
+          "unit": "yards",
+          "better": "high",
+          "home": 6.7631578947368425,
+          "away": 5.083333333333333,
+          "diff": 1.68,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.248,
+          "at_size": false
+        },
+        {
+          "metric": "net_pass_yards",
+          "available": true,
+          "label": "net passing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 257,
+          "away": 183,
+          "diff": 74,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.288,
+          "at_size": false
+        }
+      ],
+      "observed_result": "Baltimore Ravens 5.08 yards per pass attempt against Atlanta Falcons 6.76; Baltimore Ravens 183 net passing yards against Atlanta Falcons 257.",
+      "evaluation": "NOT CONFIRMED",
+      "confidence": "medium",
+      "why": "every signal this claim rests on went the other way",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Atlanta Falcons’ pass offence rates −0.046 (#20 of 32) and Baltimore Ravens’ pass defence rates +0.036 (#19 of 32). Added the way the model adds them, this pairing sits −0.009 from the league mean, which favours Baltimore Ravens.",
+      "weight": 0.1,
+      "favours_team": "Baltimore Ravens",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_pass",
+          "net_pass_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_pass",
+          "available": true,
+          "label": "yards per pass attempt",
+          "unit": "yards",
+          "better": "high",
+          "home": 6.7631578947368425,
+          "away": 5.083333333333333,
+          "diff": 1.68,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.248,
+          "at_size": false
+        },
+        {
+          "metric": "net_pass_yards",
+          "available": true,
+          "label": "net passing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 257,
+          "away": 183,
+          "diff": 74,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.288,
+          "at_size": false
+        }
+      ],
+      "observed_result": "Baltimore Ravens 5.08 yards per pass attempt against Atlanta Falcons 6.76; Baltimore Ravens 183 net passing yards against Atlanta Falcons 257.",
+      "evaluation": "NOT CONFIRMED",
+      "confidence": "medium",
+      "why": "every signal this claim rests on went the other way",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Baltimore Ravens’ run offence rates +0.090 (#3 of 32) and Atlanta Falcons’ run defence rates +0.027 (#25 of 32). Added the way the model adds them, this pairing sits +0.118 from the league mean, which favours Baltimore Ravens.",
+      "weight": 1.2,
+      "favours_team": "Baltimore Ravens",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_rush",
+          "available": true,
+          "label": "yards per carry",
+          "unit": "yards",
+          "better": "high",
+          "home": 4.231,
+          "away": 5.943,
+          "diff": -1.71,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.288,
+          "at_size": true
+        },
+        {
+          "metric": "rush_yards",
+          "available": true,
+          "label": "rushing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 110,
+          "away": 208,
+          "diff": -98,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.471,
+          "at_size": true
+        }
+      ],
+      "observed_result": "Baltimore Ravens 5.94 yards per carry against Atlanta Falcons 4.23; Baltimore Ravens 208 rushing yards against Atlanta Falcons 110.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": null,
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Atlanta Falcons’ run offence rates +0.058 (#5 of 32) and Baltimore Ravens’ run defence rates −0.094 (#1 of 32). Added the way the model adds them, this pairing sits −0.036 from the league mean, which favours Baltimore Ravens.",
+      "weight": 0.4,
+      "favours_team": "Baltimore Ravens",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_rush",
+          "rush_yards"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_rush",
+          "available": true,
+          "label": "yards per carry",
+          "unit": "yards",
+          "better": "high",
+          "home": 4.231,
+          "away": 5.943,
+          "diff": -1.71,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.288,
+          "at_size": true
+        },
+        {
+          "metric": "rush_yards",
+          "available": true,
+          "label": "rushing yards",
+          "unit": "yards",
+          "better": "high",
+          "home": 110,
+          "away": 208,
+          "diff": -98,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.471,
+          "at_size": true
+        }
+      ],
+      "observed_result": "Baltimore Ravens 5.94 yards per carry against Atlanta Falcons 4.23; Baltimore Ravens 208 rushing yards against Atlanta Falcons 110.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": null,
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "category": "defence",
+      "claim": "Baltimore Ravens holds the largest measured edge in this matchup: Baltimore Ravens −0.094 (#1 of 32) vs Atlanta Falcons +0.027 (#25 of 32) — 24 places on the league board.",
+      "weight": 6,
+      "favours_team": "Baltimore Ravens",
+      "favours_side": "away",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_play"
+        ],
+        "side": "away",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_play",
+          "available": true,
+          "label": "yards per play",
+          "unit": "yards",
+          "better": "high",
+          "home": 5.734375,
+          "away": 5.5070422535,
+          "diff": 0.23,
+          "why": null,
+          "won": false,
+          "tie": false,
+          "size": 0.04,
+          "at_size": false
+        }
+      ],
+      "observed_result": "Baltimore Ravens 5.51 yards per play against Atlanta Falcons 5.73.",
+      "evaluation": "NOT CONFIRMED",
+      "confidence": "medium",
+      "why": "every signal this claim rests on went the other way",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "category": "pressure",
+      "claim": "Atlanta Falcons holds the largest measured edge in this matchup: Atlanta Falcons +1.5 pp (#4 of 32) vs Baltimore Ravens −1.1 pp (#26 of 32) — 22 places on the league board.",
+      "weight": 5.5,
+      "favours_team": "Atlanta Falcons",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "sacks_generated",
+          "sacks_allowed"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "sacks_generated",
+          "available": true,
+          "label": "sacks generated",
+          "unit": "sacks",
+          "better": "high",
+          "home": 4,
+          "away": 3,
+          "diff": 1,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.25,
+          "at_size": false
+        },
+        {
+          "metric": "sacks_allowed",
+          "available": true,
+          "label": "sacks allowed",
+          "unit": "sacks",
+          "better": "low",
+          "home": 3,
+          "away": 4,
+          "diff": -1,
+          "why": null,
+          "won": true,
+          "tie": false,
+          "size": 0.25,
+          "at_size": false
+        }
+      ],
+      "observed_result": "Atlanta Falcons 4 sacks generated against Baltimore Ravens 3; Atlanta Falcons 3 sacks allowed against Baltimore Ravens 4.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the direction was right on every signal, but none of the gaps was wide enough in one game to call it settled",
+      "sample_note": "Graded on one game. A single result can confirm a direction; it cannot establish a rate."
+    },
+    {
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "category": "data_quality",
+      "claim": "The largest stated risk to this read: NFL injury report — not loaded in this session.",
+      "weight": 3,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "tally": {
+    "counts": {
+      "CONFIRMED": 6,
+      "PARTIALLY CONFIRMED": 1,
+      "NOT CONFIRMED": 5,
+      "INCONCLUSIVE": 3
+    },
+    "graded": 12,
+    "total": 15,
+    "not_observable": 3,
+    "headline": "6 of 12 gradeable claims held up, 5 did not"
+  },
+  "grading": {
+    "schema": "edgedesk_result_vs_process_v1",
+    "game_id": "2026_05_BAL_ATL",
+    "sport": "NFL",
+    "snapshot_id": "snap_67622519c66b784c",
+    "graded_at": "2026-10-12T03:50:33.685Z",
+    "final": {
+      "home_team": "Atlanta Falcons",
+      "away_team": "Baltimore Ravens",
+      "home_score": 23,
+      "away_score": 30,
+      "margin": 7,
+      "total_points": 53,
+      "winner": "Baltimore Ravens"
+    },
+    "implied_side": {
+      "available": true,
+      "side": "away",
+      "team": "Baltimore Ravens",
+      "point": 3.5,
+      "line_text": "Baltimore Ravens +3.5",
+      "book": "Caesars",
+      "market_home_margin": -3.5,
+      "model_home_margin": 0.2,
+      "gap": 3.7,
+      "why": "EdgeDesk’s own number sat 3.7 points toward Baltimore Ravens of the quote EdgeDesk captured at Caesars. That is what the disagreement implied. It was published as research, not as a recommendation to bet it."
+    },
+    "implied_total": {
+      "available": true,
+      "side": "over",
+      "line": 43.5,
+      "model_total": 47.2,
+      "gap": 3.7,
+      "why": "EdgeDesk’s fair total of 47.2 sat 3.7 points above the captured total of 43.5."
+    },
+    "bet_result": {
+      "spread": {
+        "outcome": "win",
+        "cover_margin": 10.5,
+        "side": "away",
+        "point": 3.5,
+        "team": "Baltimore Ravens",
+        "line_text": "Baltimore Ravens +3.5"
+      },
+      "total": {
+        "outcome": "win",
+        "points": 53,
+        "line": 43.5,
+        "side": "over",
+        "by": 9.5,
+        "direction": "over"
+      },
+      "moneyline": {
+        "outcome": "win",
+        "side": "away",
+        "team": "Baltimore Ravens"
+      }
+    },
+    "bet_headline": "WIN",
+    "closing_line": {
+      "available": false,
+      "why": "no closing line is held for this game: the Collective captured none and the schedule feed carries none. Closing-line value is left blank rather than estimated from the result."
+    },
+    "model_accuracy": {
+      "available": true,
+      "projected_home_margin": -0.2,
+      "actual_home_margin": -7,
+      "margin_error": 6.8,
+      "right_side": true,
+      "projected_total": 47.2,
+      "actual_total": 53,
+      "total_error": 5.8,
+      "projected_score": {
+        "away": 24,
+        "home": 24
+      },
+      "inside_published_range": true,
+      "range_text": "-17.0 → +18.0 (Atlanta Falcons)"
+    },
+    "process": {
+      "grade": "UNSOUND",
+      "reasons": [
+        "5 of 10 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
+        "The result carries 1 high-variance marker — 1 defensive touchdown — so the scoreboard is weaker evidence than it looks.",
+        "EdgeDesk projected a away margin of 0.2 and the game finished 7 the away way — 6.8 points of margin error, inside the range the model published."
+      ],
+      "confirmed": 4,
+      "partial": 1,
+      "wrong": 5,
+      "graded": 10,
+      "high_variance": 1,
+      "basis": "the drivers, matchups and measured advantages only — never the price or the market claim, which are the result in longer words"
+    },
+    "process_headline": "UNSOUND",
+    "variance_markers": [
+      {
+        "key": "defensive_td",
+        "severity": "high",
+        "label": "1 defensive touchdown",
+        "text": "A defensive score puts points on the board that no offensive rating predicted and no offensive rating should be graded on."
+      },
+      {
+        "key": "nonoffensive_score",
+        "severity": "medium",
+        "label": "1 non-offensive or return score",
+        "text": "Points that arrived without an offensive drive. They count the same on the scoreboard and belong to a different distribution from the one the model prices."
+      }
+    ],
+    "verdict": {
+      "key": "right_for_the_wrong_reason",
+      "line": "THE NUMBER LANDED AND THE REASONING DID NOT. This is the most dangerous result on this page, because it pays and teaches nothing. Nothing below should be read as EdgeDesk having understood this game."
+    },
+    "separation_note": "The bet result and the process grade above are computed separately and are allowed to disagree. A winning number with a broken thesis is recorded as exactly that."
+  },
+  "lessons": [
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "2026_05_BAL_ATL:contradicted:passing",
+      "game_id": "2026_05_BAL_ATL",
+      "sport": "NFL",
+      "season": 2026,
+      "week": 5,
+      "article_id": "postgame-nfl-2026_05_BAL_ATL",
+      "snapshot_id": "snap_67622519c66b784c",
+      "thesis_id": "driver.1 matchup.0 matchup.1",
+      "team": "Baltimore Ravens",
+      "opponent": "Atlanta Falcons",
+      "category": "passing",
+      "evaluation": "NOT CONFIRMED",
+      "pregame_expectation": "3 published claims said the same thing: Net passing EPA — Baltimore Ravens by 1.4 points — worth -1.4 of the EdgeDesk number, in Baltimore Ravens’s favour. Baltimore Ravens’ pass offence rates +0.115 (#6 of 32) and Atlanta Falcons’ pass defence rates −0.016 (#15 of 32). Added the way the model adds them, this pairing sits +0.099 from the league mean, which favours Baltimore Ravens. Atlanta Falcons’ pass offence rates −0.046 (#20 of 32) and Baltimore Ravens’ pass defence rates +0.036 (#19 of 32). Added the way the model adds them, this pairing sits −0.009 from the league mean, which favours Baltimore Ravens.",
+      "actual_result": "Baltimore Ravens 5.08 yards per pass attempt against Atlanta Falcons 6.76; Baltimore Ravens 183 net passing yards against Atlanta Falcons 257. Baltimore Ravens 5.08 yards per pass attempt against Atlanta Falcons 6.76; Baltimore Ravens 183 net passing yards against Atlanta Falcons 257. Baltimore Ravens 5.08 yards per pass attempt against Atlanta Falcons 6.76; Baltimore Ravens 183 net passing yards against Atlanta Falcons 257.",
+      "lesson": "EdgeDesk named Baltimore Ravens as better in passing and the game went the other way, across 3 separate published claims. One game does not overturn a season-long rating, but this is the direction to watch: every signal this claim rests on went the other way",
+      "severity": "high",
+      "model_review_required": true,
+      "suggested_investigation": "These claims carried 2.5 points of the published number between them and were contradicted. Check whether the same category has been contradicted in other games this season before touching anything.",
+      "bet_result": "WIN",
+      "process_grade": "UNSOUND",
+      "created_at": "2026-10-12T03:50:33.685Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "2026_05_BAL_ATL:contradicted:efficiency",
+      "game_id": "2026_05_BAL_ATL",
+      "sport": "NFL",
+      "season": 2026,
+      "week": 5,
+      "article_id": "postgame-nfl-2026_05_BAL_ATL",
+      "snapshot_id": "snap_67622519c66b784c",
+      "thesis_id": "driver.3",
+      "team": "Baltimore Ravens",
+      "opponent": "Atlanta Falcons",
+      "category": "efficiency",
+      "evaluation": "NOT CONFIRMED",
+      "pregame_expectation": "Net EPA per play — Baltimore Ravens by 1.0 points — worth -1.0 of the EdgeDesk number, in Baltimore Ravens’s favour.",
+      "actual_result": "Baltimore Ravens 5.51 yards per play against Atlanta Falcons 5.73.",
+      "lesson": "EdgeDesk named Baltimore Ravens as better in efficiency and the game went the other way. One game does not overturn a season-long rating, but this is the direction to watch: every signal this claim rests on went the other way",
+      "severity": "medium",
+      "model_review_required": false,
+      "suggested_investigation": null,
+      "bet_result": "WIN",
+      "process_grade": "UNSOUND",
+      "created_at": "2026-10-12T03:50:33.685Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "2026_05_BAL_ATL:contradicted:defence",
+      "game_id": "2026_05_BAL_ATL",
+      "sport": "NFL",
+      "season": 2026,
+      "week": 5,
+      "article_id": "postgame-nfl-2026_05_BAL_ATL",
+      "snapshot_id": "snap_67622519c66b784c",
+      "thesis_id": "advantage.away",
+      "team": "Baltimore Ravens",
+      "opponent": "Atlanta Falcons",
+      "category": "defence",
+      "evaluation": "NOT CONFIRMED",
+      "pregame_expectation": "Baltimore Ravens holds the largest measured edge in this matchup: Baltimore Ravens −0.094 (#1 of 32) vs Atlanta Falcons +0.027 (#25 of 32) — 24 places on the league board.",
+      "actual_result": "Baltimore Ravens 5.51 yards per play against Atlanta Falcons 5.73.",
+      "lesson": "EdgeDesk named Baltimore Ravens as better in defence and the game went the other way. One game does not overturn a season-long rating, but this is the direction to watch: every signal this claim rests on went the other way",
+      "severity": "high",
+      "model_review_required": true,
+      "suggested_investigation": "These claims carried 6 points of the published number between them and were contradicted. Check whether the same category has been contradicted in other games this season before touching anything.",
+      "bet_result": "WIN",
+      "process_grade": "UNSOUND",
+      "created_at": "2026-10-12T03:50:33.685Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "2026_05_BAL_ATL:won_wrong",
+      "game_id": "2026_05_BAL_ATL",
+      "sport": "NFL",
+      "season": 2026,
+      "week": 5,
+      "article_id": "postgame-nfl-2026_05_BAL_ATL",
+      "snapshot_id": "snap_67622519c66b784c",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "variance",
+      "evaluation": "NOT CONFIRMED",
+      "pregame_expectation": "The number implied Baltimore Ravens +3.5.",
+      "actual_result": "It graded a win. The reasoning behind it did not hold: 5 of 10 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
+      "lesson": "A winning number built on a reading the game contradicted. Nothing about this result should increase confidence in the mechanism EdgeDesk named, and treating it as confirmation is how a model gets worse while its record gets better.",
+      "severity": "high",
+      "model_review_required": true,
+      "suggested_investigation": "Why did the number land while the mechanism failed? Either the number was right for a reason EdgeDesk has not identified, or it was luck. Both are worth knowing and they are different.",
+      "bet_result": "WIN",
+      "process_grade": "UNSOUND",
+      "created_at": "2026-10-12T03:50:33.685Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "2026_05_BAL_ATL:disagreement_landed",
+      "game_id": "2026_05_BAL_ATL",
+      "sport": "NFL",
+      "season": 2026,
+      "week": 5,
+      "article_id": "postgame-nfl-2026_05_BAL_ATL",
+      "snapshot_id": "snap_67622519c66b784c",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "market",
+      "evaluation": "CONFIRMED",
+      "pregame_expectation": "EdgeDesk makes it Atlanta Falcons +0.2 where the market has Atlanta Falcons -3.5 at Caesars — a 3.7 points disagreement.",
+      "actual_result": "Baltimore Ravens won by 7. the result landed on EdgeDesk’s side of the market number: Baltimore Ravens beat a margin of -3.5",
+      "lesson": "The disagreement landed. One landing proves nothing on its own; the aggregate of them, held against the closing line, is the only thing that would.",
+      "severity": "low",
+      "model_review_required": false,
+      "suggested_investigation": null,
+      "bet_result": "WIN",
+      "process_grade": "UNSOUND",
+      "created_at": "2026-10-12T03:50:33.685Z"
+    }
+  ]
+}

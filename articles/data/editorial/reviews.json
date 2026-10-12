@@ -1,6 +1,6 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-10-12T03:40:33.132Z",
+  "generated_at": "2026-10-12T03:50:33.685Z",
   "open": 12,
   "count": 12,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
@@ -183,7 +183,7 @@
       "question": "Does EdgeDesk’s variance handling need investigating? Raised by a published article whose claim the game contradicted.",
       "status": "open",
       "opened_at": "2026-09-21T04:00:22.158Z",
-      "updated_at": "2026-09-29T03:20:22.190Z",
+      "updated_at": "2026-10-12T03:50:33.685Z",
       "evidence": [
         {
           "lesson_id": "2026_02_IND_KC:won_wrong",
@@ -206,14 +206,80 @@
           "result": "It graded a win. The reasoning behind it did not hold: 5 of 9 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
           "severity": "high",
           "at": "2026-09-29T03:20:22.190Z"
+        },
+        {
+          "lesson_id": "2026_05_BAL_ATL:won_wrong",
+          "game_id": "2026_05_BAL_ATL",
+          "season": 2026,
+          "week": 5,
+          "team": null,
+          "expectation": "The number implied Baltimore Ravens +3.5.",
+          "result": "It graded a win. The reasoning behind it did not hold: 5 of 10 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
+          "severity": "high",
+          "at": "2026-10-12T03:50:33.685Z"
         }
       ],
-      "occurrences": 2,
+      "occurrences": 3,
       "disposition": null,
       "disposition_note": null,
       "closed_at": null,
       "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
+      "recurring": true,
+      "note": "Seen 3 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
+      "key": "NFL:defence:advantage",
+      "sport": "NFL",
+      "category": "defence",
+      "question": "Does EdgeDesk’s defence handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-10-06T23:51:04.490Z",
+      "updated_at": "2026-10-12T03:50:33.685Z",
+      "evidence": [
+        {
+          "lesson_id": "2026_04_ATL_NO:contradicted:defence",
+          "game_id": "2026_04_ATL_NO",
+          "season": 2026,
+          "week": 4,
+          "team": "New Orleans Saints",
+          "expectation": "New Orleans Saints holds the largest measured edge in this matchup: New Orleans Saints −0.057 (#6 of 32) vs Atlanta Falcons +0.027 (#25 of 32) — 19 places on the league board.",
+          "result": "New Orleans Saints 4.64 yards per play against Atlanta Falcons 7.5.",
+          "severity": "high",
+          "at": "2026-10-06T23:51:04.490Z"
+        },
+        {
+          "lesson_id": "2026_05_TB_DAL:contradicted:defence",
+          "game_id": "2026_05_TB_DAL",
+          "season": 2026,
+          "week": 5,
+          "team": "Tampa Bay Buccaneers",
+          "expectation": "Tampa Bay Buccaneers holds the largest measured edge in this matchup: Tampa Bay Buccaneers −0.052 (#8 of 32) vs Dallas Cowboys +0.076 (#30 of 32) — 22 places on the league board.",
+          "result": "Tampa Bay Buccaneers 6.45 yards per play against Dallas Cowboys 6.65.",
+          "severity": "high",
+          "at": "2026-10-09T03:20:31.654Z"
+        },
+        {
+          "lesson_id": "2026_05_BAL_ATL:contradicted:defence",
+          "game_id": "2026_05_BAL_ATL",
+          "season": 2026,
+          "week": 5,
+          "team": "Baltimore Ravens",
+          "expectation": "Baltimore Ravens holds the largest measured edge in this matchup: Baltimore Ravens −0.094 (#1 of 32) vs Atlanta Falcons +0.027 (#25 of 32) — 24 places on the league board.",
+          "result": "Baltimore Ravens 5.51 yards per play against Atlanta Falcons 5.73.",
+          "severity": "high",
+          "at": "2026-10-12T03:50:33.685Z"
+        }
+      ],
+      "occurrences": 3,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
+      "recurring": true,
+      "note": "Seen 3 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
@@ -297,46 +363,6 @@
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
-      "key": "NFL:defence:advantage",
-      "sport": "NFL",
-      "category": "defence",
-      "question": "Does EdgeDesk’s defence handling need investigating? Raised by a published article whose claim the game contradicted.",
-      "status": "open",
-      "opened_at": "2026-10-06T23:51:04.490Z",
-      "updated_at": "2026-10-09T03:20:31.654Z",
-      "evidence": [
-        {
-          "lesson_id": "2026_04_ATL_NO:contradicted:defence",
-          "game_id": "2026_04_ATL_NO",
-          "season": 2026,
-          "week": 4,
-          "team": "New Orleans Saints",
-          "expectation": "New Orleans Saints holds the largest measured edge in this matchup: New Orleans Saints −0.057 (#6 of 32) vs Atlanta Falcons +0.027 (#25 of 32) — 19 places on the league board.",
-          "result": "New Orleans Saints 4.64 yards per play against Atlanta Falcons 7.5.",
-          "severity": "high",
-          "at": "2026-10-06T23:51:04.490Z"
-        },
-        {
-          "lesson_id": "2026_05_TB_DAL:contradicted:defence",
-          "game_id": "2026_05_TB_DAL",
-          "season": 2026,
-          "week": 5,
-          "team": "Tampa Bay Buccaneers",
-          "expectation": "Tampa Bay Buccaneers holds the largest measured edge in this matchup: Tampa Bay Buccaneers −0.052 (#8 of 32) vs Dallas Cowboys +0.076 (#30 of 32) — 22 places on the league board.",
-          "result": "Tampa Bay Buccaneers 6.45 yards per play against Dallas Cowboys 6.65.",
-          "severity": "high",
-          "at": "2026-10-09T03:20:31.654Z"
-        }
-      ],
-      "occurrences": 2,
-      "disposition": null,
-      "disposition_note": null,
-      "closed_at": null,
-      "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
-    },
-    {
-      "schema": "edgedesk_model_review_candidate_v1",
       "key": "CFB:market:price market_gap",
       "sport": "CFB",
       "category": "market",
@@ -366,6 +392,46 @@
           "result": "LSU Tigers lost by 1 where EdgeDesk projected a 5.3-point edge. LSU Tigers lost by 1.",
           "severity": "high",
           "at": "2026-10-11T03:00:32.232Z"
+        }
+      ],
+      "occurrences": 2,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
+      "key": "NFL:passing:driver",
+      "sport": "NFL",
+      "category": "passing",
+      "question": "Does EdgeDesk’s passing handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-09-29T01:40:04.103Z",
+      "updated_at": "2026-10-12T03:50:33.685Z",
+      "evidence": [
+        {
+          "lesson_id": "2026_03_HOU_IND:contradicted:passing",
+          "game_id": "2026_03_HOU_IND",
+          "season": 2026,
+          "week": 3,
+          "team": "Houston Texans",
+          "expectation": "2 published claims said the same thing: Net passing EPA — Houston Texans by 2.3 points — worth -2.3 of the EdgeDesk number, in Houston Texans’s favour. Indianapolis Colts’ pass offence rates +0.007 (#17 of 32) and Houston Texans’ pass defence rates −0.189 (#3 of 32). Added the way the model adds them, this pairing sits −0.182 from the league mean, which favours Houston Texans.",
+          "result": "Houston Texans 5.1 yards per pass attempt against Indianapolis Colts 5.28; Houston Texans 153 net passing yards against Indianapolis Colts 211. Houston Texans 5.1 yards per pass attempt against Indianapolis Colts 5.28; Houston Texans 153 net passing yards against Indianapolis Colts 211.",
+          "severity": "high",
+          "at": "2026-09-29T01:40:04.103Z"
+        },
+        {
+          "lesson_id": "2026_05_BAL_ATL:contradicted:passing",
+          "game_id": "2026_05_BAL_ATL",
+          "season": 2026,
+          "week": 5,
+          "team": "Baltimore Ravens",
+          "expectation": "3 published claims said the same thing: Net passing EPA — Baltimore Ravens by 1.4 points — worth -1.4 of the EdgeDesk number, in Baltimore Ravens’s favour. Baltimore Ravens’ pass offence rates +0.115 (#6 of 32) and Atlanta Falcons’ pass defence rates −0.016 (#15 of 32). Added the way the model adds them, this pairing sits +0.099 from the league mean, which favours Baltimore Ravens. Atlanta Falcons’ pass offence rates −0.046 (#20 of 32) and Baltimore Ravens’ pass defence rates +0.036 (#19 of 32). Added the way the model adds them, this pairing sits −0.009 from the league mean, which favours Baltimore Ravens.",
+          "result": "Baltimore Ravens 5.08 yards per pass attempt against Atlanta Falcons 6.76; Baltimore Ravens 183 net passing yards against Atlanta Falcons 257. Baltimore Ravens 5.08 yards per pass attempt against Atlanta Falcons 6.76; Baltimore Ravens 183 net passing yards against Atlanta Falcons 257. Baltimore Ravens 5.08 yards per pass attempt against Atlanta Falcons 6.76; Baltimore Ravens 183 net passing yards against Atlanta Falcons 257.",
+          "severity": "high",
+          "at": "2026-10-12T03:50:33.685Z"
         }
       ],
       "occurrences": 2,
@@ -424,35 +490,6 @@
           "result": "USC Trojans 7.76 yards per pass attempt against Oregon Ducks 10.46; USC Trojans 326 net passing yards against Oregon Ducks 366.",
           "severity": "high",
           "at": "2026-09-27T03:30:36.660Z"
-        }
-      ],
-      "occurrences": 1,
-      "disposition": null,
-      "disposition_note": null,
-      "closed_at": null,
-      "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
-    },
-    {
-      "schema": "edgedesk_model_review_candidate_v1",
-      "key": "NFL:passing:driver",
-      "sport": "NFL",
-      "category": "passing",
-      "question": "Does EdgeDesk’s passing handling need investigating? Raised by a published article whose claim the game contradicted.",
-      "status": "open",
-      "opened_at": "2026-09-29T01:40:04.103Z",
-      "updated_at": "2026-09-29T01:40:04.103Z",
-      "evidence": [
-        {
-          "lesson_id": "2026_03_HOU_IND:contradicted:passing",
-          "game_id": "2026_03_HOU_IND",
-          "season": 2026,
-          "week": 3,
-          "team": "Houston Texans",
-          "expectation": "2 published claims said the same thing: Net passing EPA — Houston Texans by 2.3 points — worth -2.3 of the EdgeDesk number, in Houston Texans’s favour. Indianapolis Colts’ pass offence rates +0.007 (#17 of 32) and Houston Texans’ pass defence rates −0.189 (#3 of 32). Added the way the model adds them, this pairing sits −0.182 from the league mean, which favours Houston Texans.",
-          "result": "Houston Texans 5.1 yards per pass attempt against Indianapolis Colts 5.28; Houston Texans 153 net passing yards against Indianapolis Colts 211. Houston Texans 5.1 yards per pass attempt against Indianapolis Colts 5.28; Houston Texans 153 net passing yards against Indianapolis Colts 211.",
-          "severity": "high",
-          "at": "2026-09-29T01:40:04.103Z"
         }
       ],
       "occurrences": 1,
