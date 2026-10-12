@@ -363,6 +363,13 @@ const LIBS = [
     start: '/*__EDEVIDENCE_START__*/', end: '/*__EDEVIDENCE_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* Phase 4, the calculation ledger and the number verifier; reads EDFAIR (above) when it runs */
+  {
+    name: 'EDQVERIFY',
+    src: path.join(ROOT, 'lib', 'edgedesk_quant_verify.js'),
+    start: '/*__EDQVERIFY_START__*/', end: '/*__EDQVERIFY_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
   {
     name: 'EDBETS',
     src: path.join(ROOT, 'lib', 'edgedesk_bet_history.js'),

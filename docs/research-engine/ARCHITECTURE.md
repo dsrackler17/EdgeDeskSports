@@ -179,7 +179,7 @@ Every adapter is off by default and needs all of:
 | 0 | This audit, the provider comparison, the architecture | ✓ |
 | 1 | `lib/edgedesk_orchestrator.js` (EDORCH) + the streamed `plan` event | ✓ |
 | 2 | `lib/edgedesk_evidence.js` (EDEVIDENCE) + injection screen, applied to every finding | ✓ |
-| 3 | `lib/edgedesk_quant_verify.js` (EDQVERIFY) calculation ledger + number verifier, attached to every priced candidate | — |
+| 3 | `lib/edgedesk_quant_verify.js` (EDQVERIFY) calculation ledger + number verifier, attached to every priced candidate | ✓ |
 | 4 | `lib/edgedesk_challenge.js` (EDCHALLENGE), applied before a VERIFIED CANDIDATE is published | — |
 | 5 | `lib/edgedesk_providers.js` (EDPROVIDERS) request builders and response parsers for Claude web search and the Perplexity Search API; ledger wiring; gated live-test script | — |
 | 6 | `supabase/research_engine.sql`: `research_runs`, `research_run_outcomes`, `research_budget_policy`, `research_cost_claim()`; run records written; evaluation over graded runs with EDCALIB | — |
