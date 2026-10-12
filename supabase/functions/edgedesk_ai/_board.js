@@ -541,7 +541,7 @@
     board.id = 'board_' + fnv1a(board.built_at + '|' + scope.sports.join(',') + '|' + scope.window.from + '|' + scope.window.to + '|' + emitted.map(function (c) { return c.id; }).join(','));
     return board;
   }
-  function summariseModel(c) { return { status: c.decision.decision, tier: c.fair.validation && c.fair.validation.tier, fair_line: c.fair.fair_line, model_line: c.fair.model_line, cover_at_market: c.fair.probability, break_even: c.edge.break_even, edge_pp: c.edge.probability_edge_pp, bet_to_line: c.threshold && c.threshold.bet_to_line != null ? c.threshold.bet_to_line : null, why: c.decision.why, outlier: c.outlier || null }; }
+  function summariseModel(c) { return { status: c.decision.decision, tier: c.fair.validation && c.fair.validation.tier, fair_line: c.fair.fair_line, model_line: c.fair.model_line, cover_at_market: c.fair.probability, break_even: c.edge.break_even, edge_pp: c.edge.probability_edge_pp, bet_to_line: c.threshold && c.threshold.bet_to_line != null ? c.threshold.bet_to_line : null, why: c.decision.why, outlier: c.outlier || null, model_version: c.fair.validation ? c.fair.validation.model_version || null : null, model_generated_at: c.fair.validation ? c.fair.validation.model_generated_at || null : null }; }
   function otherSide(c, list) {
     var want = c.market === 'totals' ? (c.side === 'over' ? 'under' : 'over') : c.market === 'spreads' || c.market === 'h2h' ? (c.side === 'home' ? 'away' : 'home') : null;
     if (!want) return null;

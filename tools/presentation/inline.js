@@ -352,6 +352,32 @@ const LIBS = [
     hosts: [path.join(FN, 'index.ts')],
   },
   {
+    name: 'EDORCH',
+    src: path.join(ROOT, 'lib', 'edgedesk_orchestrator.js'),
+    start: '/*__EDORCH_START__*/', end: '/*__EDORCH_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  {
+    name: 'EDEVIDENCE',
+    src: path.join(ROOT, 'lib', 'edgedesk_evidence.js'),
+    start: '/*__EDEVIDENCE_START__*/', end: '/*__EDEVIDENCE_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  /* Phase 4, the calculation ledger and the number verifier; reads EDFAIR (above) when it runs */
+  {
+    name: 'EDQVERIFY',
+    src: path.join(ROOT, 'lib', 'edgedesk_quant_verify.js'),
+    start: '/*__EDQVERIFY_START__*/', end: '/*__EDQVERIFY_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  /* Phase 4, the challenge pass (the eight questions) over the evidence and calculation ledgers */
+  {
+    name: 'EDCHALLENGE',
+    src: path.join(ROOT, 'lib', 'edgedesk_challenge.js'),
+    start: '/*__EDCHALLENGE_START__*/', end: '/*__EDCHALLENGE_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  {
     name: 'EDBETS',
     src: path.join(ROOT, 'lib', 'edgedesk_bet_history.js'),
     start: '/*__EDBETS_START__*/', end: '/*__EDBETS_END__*/',

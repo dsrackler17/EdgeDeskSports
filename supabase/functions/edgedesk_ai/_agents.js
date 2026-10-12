@@ -90,7 +90,7 @@
      A. THE RESEARCHER
      ====================================================================== */
   var OFFICIAL_DOMAINS = /(^|\.)(nfl\.com|mlb\.com|nba\.com|nhl\.com|ncaa\.(com|org)|ufc\.com|statsapi\.mlb\.com|operations\.nfl\.com)$/;
-  var STAT_DOMAINS = /(^|\.)(github\.com|nflverse\.com|collegefootballdata\.com|pro-football-reference\.com|sports-reference\.com|baseball-reference\.com|fangraphs\.com|baseballsavant\.mlb\.com|open-meteo\.com|api\.open-meteo\.com)$/;
+  var STAT_DOMAINS = /(^|\.)(nflverse\.com|collegefootballdata\.com|pro-football-reference\.com|sports-reference\.com|baseball-reference\.com|fangraphs\.com|baseballsavant\.mlb\.com|open-meteo\.com|api\.open-meteo\.com)$/;
   var CREDIBLE_DOMAINS = /(^|\.)(espn\.com|theathletic\.com|nytimes\.com|apnews\.com|reuters\.com|si\.com|cbssports\.com|nbcsports\.com|foxsports\.com|usatoday\.com|yahoo\.com|profootballtalk\.com|washingtonpost\.com|latimes\.com|bostonglobe\.com|chicagotribune\.com|theringer\.com|on3\.com|247sports\.com|rivals\.com)$/;
   var SPECULATION_RX = /\b(reportedly|rumou?r(ed|s)?|sources? (say|said|tell|told|indicate)|per sources|is expected to|expected to (start|play|miss|return)|could (start|play|miss|return)|might (start|play|miss)|likely (to )?(start|play|miss|out)|trending (toward|towards)|projected to|anticipated|it is believed|speculat\w+|unconfirmed|in line to)\b/i;
   var OPINION_RX = /\b(i think|i believe|in my opinion|we think|should win|will win|best bet|lock|pick:|my pick|prediction:|fade|hammer|smash|value play|can'?t lose)\b/i;
@@ -99,11 +99,22 @@
 
   function domainOf(url) { var m = /^https?:\/\/([^/?#]+)/i.exec(str(url)); return m ? m[1].toLowerCase().replace(/^www\./, '') : null; }
   /** The source's own class, from what it is (kind) and where it lives (domain). */
+  /* the domain's tier: the evidence layer's list when it is loaded (one list for the researcher, the ledger and the
+     search providers' allowed_domains), else the lists above; github.com counts only under /nflverse */
+  function domainTierOf(url) {
+    var g = typeof globalThis !== 'undefined' ? globalThis : {};
+    if (g.EDEVIDENCE && g.EDEVIDENCE.domainTier) return g.EDEVIDENCE.domainTier(url);
+    var d = domainOf(url) || '';
+    if (OFFICIAL_DOMAINS.test(d)) return 'OFFICIAL';
+    if (STAT_DOMAINS.test(d) || /^https?:\/\/(www\.)?github\.com\/nflverse\//i.test(str(url))) return 'STATISTICAL_DATA';
+    if (CREDIBLE_DOMAINS.test(d)) return 'CREDIBLE_JOURNALISM';
+    return 'UNKNOWN';
+  }
   function sourceClass(s) {
-    var k = str(s.kind || s.source_kind).toUpperCase(), d = domainOf(s.url) || '';
-    if (/OFFICIAL/.test(k) || OFFICIAL_DOMAINS.test(d)) return 'OFFICIAL';
-    if (/STAT|PROVIDER_API|MODEL_INPUT|DATA/.test(k) || STAT_DOMAINS.test(d)) return 'STATISTICAL_DATA';
-    if (/JOURNAL|MEDIA|NEWS/.test(k) || CREDIBLE_DOMAINS.test(d)) return 'CREDIBLE_JOURNALISM';
+    var k = str(s.kind || s.source_kind).toUpperCase(), dt = domainTierOf(s.url);
+    if (/OFFICIAL/.test(k) || dt === 'OFFICIAL') return 'OFFICIAL';
+    if (/STAT|PROVIDER_API|MODEL_INPUT|DATA/.test(k) || dt === 'STATISTICAL_DATA') return 'STATISTICAL_DATA';
+    if (/JOURNAL|MEDIA|NEWS/.test(k) || dt === 'CREDIBLE_JOURNALISM') return 'CREDIBLE_JOURNALISM';
     if (/OPINION|SOCIAL|FORUM|BLOG/.test(k)) return 'OPINION';
     return 'UNKNOWN';
   }

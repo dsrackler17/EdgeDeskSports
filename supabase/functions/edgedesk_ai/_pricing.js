@@ -125,7 +125,7 @@
     if (!m) return { tier: 'RESEARCH', required_edge_points: null, basis: 'no pricing validation is loaded for ' + (sport || 'this sport') + ' ' + market + '; the arithmetic below is conditional on an unvalidated projection', blend: null, frame: null, loaded: false };
     var blend = m.blend && m.blend.latest_coef ? { intercept: num(m.blend.latest_coef.intercept), close: num(m.blend.latest_coef.close), model_minus_close: num(m.blend.latest_coef.model_minus_close), sigma: num(m.blend.latest_sigma), held_out: m.blend.pooled_holdout || null, information: m.blend.incremental_information || null } : null;
     if (market === 'moneyline' && m.holdouts && m.holdouts.length) { var h = m.holdouts[m.holdouts.length - 1]; blend = { market: num(h.coef.market), model_minus_market: num(h.coef.model_minus_market), brier: m.brier || null }; }
-    return { tier: m.tier || 'RESEARCH', required_edge_points: num(m.required_edge_points), basis: str(m.tier_basis), blend: blend, frame: v.frame || null, pooled: m.pooled || null, ats: m.ats_vs_close ? (m.ats_vs_close.raw_model_oos || m.ats_vs_close.raw_model || null) : null, loaded: true, generated_at: v.generated_at || null };
+    return { tier: m.tier || 'RESEARCH', required_edge_points: num(m.required_edge_points), basis: str(m.tier_basis), blend: blend, frame: v.frame || null, pooled: m.pooled || null, ats: m.ats_vs_close ? (m.ats_vs_close.raw_model_oos || m.ats_vs_close.raw_model || null) : null, loaded: true, generated_at: v.generated_at || null, calibration: m.calibration || null };
   }
   /** Register football/validation/movement_<sport>.json for a sport. */
   function loadMovement(sport, json) { if (!sport || !json || !json.result) return false; MOVEMENT[sport] = json; return true; }

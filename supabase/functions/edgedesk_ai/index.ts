@@ -21425,7 +21425,7 @@ try { if (EDANALYST && EDRESEARCH) EDANALYST.registerTools(); } catch { /* addit
     if (!m) return { tier: 'RESEARCH', required_edge_points: null, basis: 'no pricing validation is loaded for ' + (sport || 'this sport') + ' ' + market + '; the arithmetic below is conditional on an unvalidated projection', blend: null, frame: null, loaded: false };
     var blend = m.blend && m.blend.latest_coef ? { intercept: num(m.blend.latest_coef.intercept), close: num(m.blend.latest_coef.close), model_minus_close: num(m.blend.latest_coef.model_minus_close), sigma: num(m.blend.latest_sigma), held_out: m.blend.pooled_holdout || null, information: m.blend.incremental_information || null } : null;
     if (market === 'moneyline' && m.holdouts && m.holdouts.length) { var h = m.holdouts[m.holdouts.length - 1]; blend = { market: num(h.coef.market), model_minus_market: num(h.coef.model_minus_market), brier: m.brier || null }; }
-    return { tier: m.tier || 'RESEARCH', required_edge_points: num(m.required_edge_points), basis: str(m.tier_basis), blend: blend, frame: v.frame || null, pooled: m.pooled || null, ats: m.ats_vs_close ? (m.ats_vs_close.raw_model_oos || m.ats_vs_close.raw_model || null) : null, loaded: true, generated_at: v.generated_at || null };
+    return { tier: m.tier || 'RESEARCH', required_edge_points: num(m.required_edge_points), basis: str(m.tier_basis), blend: blend, frame: v.frame || null, pooled: m.pooled || null, ats: m.ats_vs_close ? (m.ats_vs_close.raw_model_oos || m.ats_vs_close.raw_model || null) : null, loaded: true, generated_at: v.generated_at || null, calibration: m.calibration || null };
   }
   /** Register football/validation/movement_<sport>.json for a sport. */
   function loadMovement(sport, json) { if (!sport || !json || !json.result) return false; MOVEMENT[sport] = json; return true; }
@@ -22309,7 +22309,7 @@ try { if (EDPRICE && EDRESEARCH) EDPRICE.registerTools(); } catch { /* additive 
     board.id = 'board_' + fnv1a(board.built_at + '|' + scope.sports.join(',') + '|' + scope.window.from + '|' + scope.window.to + '|' + emitted.map(function (c) { return c.id; }).join(','));
     return board;
   }
-  function summariseModel(c) { return { status: c.decision.decision, tier: c.fair.validation && c.fair.validation.tier, fair_line: c.fair.fair_line, model_line: c.fair.model_line, cover_at_market: c.fair.probability, break_even: c.edge.break_even, edge_pp: c.edge.probability_edge_pp, bet_to_line: c.threshold && c.threshold.bet_to_line != null ? c.threshold.bet_to_line : null, why: c.decision.why, outlier: c.outlier || null }; }
+  function summariseModel(c) { return { status: c.decision.decision, tier: c.fair.validation && c.fair.validation.tier, fair_line: c.fair.fair_line, model_line: c.fair.model_line, cover_at_market: c.fair.probability, break_even: c.edge.break_even, edge_pp: c.edge.probability_edge_pp, bet_to_line: c.threshold && c.threshold.bet_to_line != null ? c.threshold.bet_to_line : null, why: c.decision.why, outlier: c.outlier || null, model_version: c.fair.validation ? c.fair.validation.model_version || null : null, model_generated_at: c.fair.validation ? c.fair.validation.model_generated_at || null : null }; }
   function otherSide(c, list) {
     var want = c.market === 'totals' ? (c.side === 'over' ? 'under' : 'over') : c.market === 'spreads' || c.market === 'h2h' ? (c.side === 'home' ? 'away' : 'home') : null;
     if (!want) return null;
@@ -36663,7 +36663,7 @@ const EDBUDGET: any = (globalThis as any).EDBUDGET;
      A. THE RESEARCHER
      ====================================================================== */
   var OFFICIAL_DOMAINS = /(^|\.)(nfl\.com|mlb\.com|nba\.com|nhl\.com|ncaa\.(com|org)|ufc\.com|statsapi\.mlb\.com|operations\.nfl\.com)$/;
-  var STAT_DOMAINS = /(^|\.)(github\.com|nflverse\.com|collegefootballdata\.com|pro-football-reference\.com|sports-reference\.com|baseball-reference\.com|fangraphs\.com|baseballsavant\.mlb\.com|open-meteo\.com|api\.open-meteo\.com)$/;
+  var STAT_DOMAINS = /(^|\.)(nflverse\.com|collegefootballdata\.com|pro-football-reference\.com|sports-reference\.com|baseball-reference\.com|fangraphs\.com|baseballsavant\.mlb\.com|open-meteo\.com|api\.open-meteo\.com)$/;
   var CREDIBLE_DOMAINS = /(^|\.)(espn\.com|theathletic\.com|nytimes\.com|apnews\.com|reuters\.com|si\.com|cbssports\.com|nbcsports\.com|foxsports\.com|usatoday\.com|yahoo\.com|profootballtalk\.com|washingtonpost\.com|latimes\.com|bostonglobe\.com|chicagotribune\.com|theringer\.com|on3\.com|247sports\.com|rivals\.com)$/;
   var SPECULATION_RX = /\b(reportedly|rumou?r(ed|s)?|sources? (say|said|tell|told|indicate)|per sources|is expected to|expected to (start|play|miss|return)|could (start|play|miss|return)|might (start|play|miss)|likely (to )?(start|play|miss|out)|trending (toward|towards)|projected to|anticipated|it is believed|speculat\w+|unconfirmed|in line to)\b/i;
   var OPINION_RX = /\b(i think|i believe|in my opinion|we think|should win|will win|best bet|lock|pick:|my pick|prediction:|fade|hammer|smash|value play|can'?t lose)\b/i;
@@ -36672,11 +36672,22 @@ const EDBUDGET: any = (globalThis as any).EDBUDGET;
 
   function domainOf(url) { var m = /^https?:\/\/([^/?#]+)/i.exec(str(url)); return m ? m[1].toLowerCase().replace(/^www\./, '') : null; }
   /** The source's own class, from what it is (kind) and where it lives (domain). */
+  /* the domain's tier: the evidence layer's list when it is loaded (one list for the researcher, the ledger and the
+     search providers' allowed_domains), else the lists above; github.com counts only under /nflverse */
+  function domainTierOf(url) {
+    var g = typeof globalThis !== 'undefined' ? globalThis : {};
+    if (g.EDEVIDENCE && g.EDEVIDENCE.domainTier) return g.EDEVIDENCE.domainTier(url);
+    var d = domainOf(url) || '';
+    if (OFFICIAL_DOMAINS.test(d)) return 'OFFICIAL';
+    if (STAT_DOMAINS.test(d) || /^https?:\/\/(www\.)?github\.com\/nflverse\//i.test(str(url))) return 'STATISTICAL_DATA';
+    if (CREDIBLE_DOMAINS.test(d)) return 'CREDIBLE_JOURNALISM';
+    return 'UNKNOWN';
+  }
   function sourceClass(s) {
-    var k = str(s.kind || s.source_kind).toUpperCase(), d = domainOf(s.url) || '';
-    if (/OFFICIAL/.test(k) || OFFICIAL_DOMAINS.test(d)) return 'OFFICIAL';
-    if (/STAT|PROVIDER_API|MODEL_INPUT|DATA/.test(k) || STAT_DOMAINS.test(d)) return 'STATISTICAL_DATA';
-    if (/JOURNAL|MEDIA|NEWS/.test(k) || CREDIBLE_DOMAINS.test(d)) return 'CREDIBLE_JOURNALISM';
+    var k = str(s.kind || s.source_kind).toUpperCase(), dt = domainTierOf(s.url);
+    if (/OFFICIAL/.test(k) || dt === 'OFFICIAL') return 'OFFICIAL';
+    if (/STAT|PROVIDER_API|MODEL_INPUT|DATA/.test(k) || dt === 'STATISTICAL_DATA') return 'STATISTICAL_DATA';
+    if (/JOURNAL|MEDIA|NEWS/.test(k) || dt === 'CREDIBLE_JOURNALISM') return 'CREDIBLE_JOURNALISM';
     if (/OPINION|SOCIAL|FORUM|BLOG/.test(k)) return 'OPINION';
     return 'UNKNOWN';
   }
@@ -39622,6 +39633,1115 @@ const EDBETS: any = (globalThis as any).EDBETS;
 });
 /*__EDREADY_END__*/
 const EDREADY: any = (globalThis as any).EDREADY;
+
+/*__EDORCH_START__*/
+/* ===========================================================================
+   EdgeDesk RESEARCH ORCHESTRATOR (EDORCH) — the plan for one question, before
+   any work is done. docs/research-engine/ARCHITECTURE.md §2–§3
+
+   WHAT IT DOES
+     plan(question, ctx) classifies the question (sport, league, teams,
+     players, event), sets its complexity, lists the datasets it needs and how
+     fresh each must be, decides whether external research is needed and why,
+     names the calculations, estimates cost and time, and chooses the cheapest
+     path that can answer it reliably:
+
+       DATABASE            a stored value                      $0 external
+       ENGINE              deterministic computation           $0 external
+       ENGINE_RESEARCH     research from internal + free feeds $0 external
+       ENGINE_SEARCH       + a search provider (off by default) ≈ $0.01–0.13
+       MODEL_DESK          conversation the routes do not cover (existing desk)
+       UNSUPPORTED         what EdgeDesk cannot answer; said so, $0
+
+   It is PURE: no network, no clock unless given, no model. The host streams
+   the plan as a "plan" event before the work starts; each "progress" event
+   then names a stage, so planned and actual sit side by side. A planned step
+   that cannot run (a provider off, a budget spent) is in the plan as
+   "unavailable" with the reason — never silently dropped, never faked.
+
+   THE RULES
+     - A question that a dataset answers never plans a paid call.
+     - External search is planned only when the question needs reporting the
+       datasets cannot hold (news, a status since the last report, a coaching
+       change), AND it is then marked runnable only when a provider is
+       configured, enabled, paid research is authorised and the budget allows.
+     - Estimates are labelled estimates. Actual cost comes from the ledger.
+
+   Browser/Node/Deno: UMD, ES5, no dependencies. Inlined into
+   supabase/functions/edgedesk_ai/index.ts by tools/presentation/inline.js.
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDORCH = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+  var VERSION = 'edgedesk_orchestrator_v1';
+
+  function str(v) { return v == null ? '' : String(v); }
+  function num(v) { if (v === null || v === undefined || v === '') return null; var n = Number(v); return isFinite(n) ? n : null; }
+  function r4(x) { return Math.round(x * 10000) / 10000; }
+  function uniq(a) { var s = {}, o = []; (a || []).forEach(function (x) { var k = typeof x === 'string' ? x : JSON.stringify(x); if (!s[k]) { s[k] = 1; o.push(x); } }); return o; }
+
+  /* ---------------- entities ---------------- */
+  /* [code, full name, words that name it alone]. A word in two clubs ("Giants") names neither on its own. */
+  var NFL = [
+    ['ARI', 'Arizona Cardinals', ['cardinals', 'arizona']], ['ATL', 'Atlanta Falcons', ['falcons', 'atlanta']], ['BAL', 'Baltimore Ravens', ['ravens', 'baltimore']],
+    ['BUF', 'Buffalo Bills', ['bills', 'buffalo']], ['CAR', 'Carolina Panthers', ['panthers', 'carolina']], ['CHI', 'Chicago Bears', ['bears']], ['CIN', 'Cincinnati Bengals', ['bengals', 'cincinnati']],
+    ['CLE', 'Cleveland Browns', ['browns']], ['DAL', 'Dallas Cowboys', ['cowboys', 'dallas']], ['DEN', 'Denver Broncos', ['broncos', 'denver']], ['DET', 'Detroit Lions', ['lions', 'detroit']],
+    ['GB', 'Green Bay Packers', ['packers', 'green bay']], ['HOU', 'Houston Texans', ['texans']], ['IND', 'Indianapolis Colts', ['colts', 'indianapolis']], ['JAX', 'Jacksonville Jaguars', ['jaguars', 'jacksonville', 'jags']],
+    ['KC', 'Kansas City Chiefs', ['chiefs']], ['LV', 'Las Vegas Raiders', ['raiders', 'las vegas']], ['LAC', 'Los Angeles Chargers', ['chargers']], ['LAR', 'Los Angeles Rams', ['rams']],
+    ['MIA', 'Miami Dolphins', ['dolphins']], ['MIN', 'Minnesota Vikings', ['vikings']], ['NE', 'New England Patriots', ['patriots', 'new england', 'pats']], ['NO', 'New Orleans Saints', ['saints', 'new orleans']],
+    ['NYG', 'New York Giants', []], ['NYJ', 'New York Jets', ['jets']], ['PHI', 'Philadelphia Eagles', ['eagles']], ['PIT', 'Pittsburgh Steelers', ['steelers']],
+    ['SF', 'San Francisco 49ers', ['49ers', 'niners']], ['SEA', 'Seattle Seahawks', ['seahawks', 'seattle']], ['TB', 'Tampa Bay Buccaneers', ['buccaneers', 'bucs']], ['TEN', 'Tennessee Titans', ['titans']],
+    ['WAS', 'Washington Commanders', ['commanders']]
+  ];
+  var MLB = [
+    ['ARI', 'Arizona Diamondbacks', ['diamondbacks', 'dbacks', 'd-backs']], ['ATL', 'Atlanta Braves', ['braves']], ['BAL', 'Baltimore Orioles', ['orioles']], ['BOS', 'Boston Red Sox', ['red sox']],
+    ['CHC', 'Chicago Cubs', ['cubs']], ['CWS', 'Chicago White Sox', ['white sox']], ['CIN', 'Cincinnati Reds', ['reds']], ['CLE', 'Cleveland Guardians', ['guardians']],
+    ['COL', 'Colorado Rockies', ['rockies']], ['DET', 'Detroit Tigers', ['tigers']], ['HOU', 'Houston Astros', ['astros']], ['KC', 'Kansas City Royals', ['royals']],
+    ['LAA', 'Los Angeles Angels', ['angels']], ['LAD', 'Los Angeles Dodgers', ['dodgers']], ['MIA', 'Miami Marlins', ['marlins']], ['MIL', 'Milwaukee Brewers', ['brewers']],
+    ['MIN', 'Minnesota Twins', ['twins']], ['NYM', 'New York Mets', ['mets']], ['NYY', 'New York Yankees', ['yankees']], ['ATH', 'Athletics', ['athletics', "a's"]],
+    ['PHI', 'Philadelphia Phillies', ['phillies']], ['PIT', 'Pittsburgh Pirates', ['pirates']], ['SD', 'San Diego Padres', ['padres']], ['SF', 'San Francisco Giants', []],
+    ['SEA', 'Seattle Mariners', ['mariners']], ['STL', 'St. Louis Cardinals', []], ['TB', 'Tampa Bay Rays', ['rays']], ['TEX', 'Texas Rangers', ['rangers']],
+    ['TOR', 'Toronto Blue Jays', ['blue jays', 'jays']], ['WSH', 'Washington Nationals', ['nationals', 'nats']]
+  ];
+  function rx(w) { return new RegExp('(^|[^a-z0-9])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=$|[^a-z0-9])', 'i'); }
+  function teamsIn(q, list, sport) {
+    var lq = str(q).toLowerCase(), out = [];
+    list.forEach(function (t) {
+      var hit = rx(t[1].toLowerCase()).test(lq) || t[2].some(function (w) { return rx(w).test(lq); });
+      if (hit) out.push({ sport: sport, code: t[0], name: t[1] });
+    });
+    return out;
+  }
+  var SPORT_WORDS = [
+    ['americanfootball_nfl', /\b(nfl|pro football)\b/i], ['americanfootball_ncaaf', /\b(cfb|ncaaf|college football|fbs)\b/i], ['baseball_mlb', /\b(mlb|baseball)\b/i],
+    ['mma_mixed_martial_arts', /\b(ufc|mma)\b/i]
+  ];
+  var UNSUPPORTED_SPORTS = [['NBA', /\b(nba|basketball)\b/i], ['WNBA', /\bwnba\b/i], ['NHL', /\b(nhl|hockey)\b/i], ['college basketball', /\b(ncaab|college basketball|march madness)\b/i],
+    ['soccer', /\b(soccer|premier league|la liga|mls|champions league)\b/i], ['tennis', /\b(tennis|atp|wta)\b/i], ['golf', /\b(golf|pga)\b/i]];
+  var LEAGUE = { americanfootball_nfl: 'NFL', americanfootball_ncaaf: 'College football (FBS)', baseball_mlb: 'MLB', mma_mixed_martial_arts: 'UFC' };
+
+  /** Sport, league, teams, players and event. ctx.game: the game the reader has open; ctx.known_players: names on file. */
+  function entities(q, ctx) {
+    ctx = ctx || {};
+    var said = SPORT_WORDS.filter(function (s) { return s[1].test(q); }).map(function (s) { return s[0]; });
+    var unsupported = UNSUPPORTED_SPORTS.filter(function (s) { return s[1].test(q); }).map(function (s) { return s[0]; });
+    var nfl = teamsIn(q, NFL, 'americanfootball_nfl'), mlb = teamsIn(q, MLB, 'baseball_mlb');
+    var sport = (ctx.game && ctx.game.sport) || (said.length === 1 ? said[0] : null);
+    var teams;
+    if (sport === 'americanfootball_nfl') teams = nfl;
+    else if (sport === 'baseball_mlb') teams = mlb;
+    else if (nfl.length && !mlb.length) { teams = nfl; sport = sport || 'americanfootball_nfl'; }
+    else if (mlb.length && !nfl.length) { teams = mlb; sport = sport || 'baseball_mlb'; }
+    else teams = nfl.concat(mlb);
+    var known = Array.isArray(ctx.known_players) ? ctx.known_players : [];
+    var players = known.filter(function (p) { return p && p.name && rx(String(p.name).toLowerCase()).test(str(q).toLowerCase()); })
+      .map(function (p) { return { name: p.name, team: p.team || null, position: p.position || null, resolved: true }; });
+    /* a player resolved to a club names that club when the question names none */
+    if (!teams.length && players.length) {
+      var pc = players.map(function (p) { return p.team; }).filter(Boolean);
+      var lex = sport === 'baseball_mlb' ? MLB : NFL;
+      pc.forEach(function (code) { var t = lex.filter(function (x) { return x[0] === String(code).toUpperCase(); })[0]; if (t && !teams.some(function (y) { return y.code === t[0]; })) teams.push({ sport: sport || (lex === MLB ? 'baseball_mlb' : 'americanfootball_nfl'), code: t[0], name: t[1], via: 'player' }); });
+      if (teams.length && !sport) sport = teams[0].sport;
+    }
+    var event = ctx.game && ctx.game.game_id ? { kind: 'GAME', game_id: String(ctx.game.game_id), sport: ctx.game.sport || sport, label: ctx.game.label || null, source: 'the game open on screen' }
+      : teams.length === 2 ? { kind: 'MATCHUP', teams: teams.map(function (t) { return t.name; }), sport: sport, source: 'two teams named in the question' }
+        : teams.length === 1 ? { kind: 'TEAM', team: teams[0].name, sport: sport, source: 'one team named' }
+          : said.length || /\b(slate|tonight|today|this week(end)?|every|all)\b/i.test(q) ? { kind: 'SLATE', sport: sport, source: 'a slate question' } : { kind: 'NONE' };
+    return { sports_named: said, unsupported_sports: unsupported, sport: sport, league: sport ? LEAGUE[sport] || sport : null, teams: teams, players: players, event: event };
+  }
+
+  /* ---------------- what kind of question ---------------- */
+  var RX = {
+    news: /\b(news|latest|breaking|update[ds]?|reports?(ed)?|rumou?rs?|since (this morning|yesterday|last night|the last)|today'?s (injury )?report|just (announced|ruled|listed)|coach (said|says)|press conference|beat writer)\b/i,
+    offData: /\b(suspen\w+|trade[ds]?|traded|signed|released|fired|hired|coaching change|new (coach|coordinator|play-?caller)|holdout|arrest\w*|weather delay|postpone\w*)\b/i,
+    deep: /\b(investigat\w*|deep|adversarial|audit|dig into|thorough|every angle|research (this|that|the) game|why does (edgedesk|the model|it) (disagree|differ))\b/i,
+    lookup: /^(when|what time|where|who|what'?s|what is|is)\b[^?]{0,80}\b(play|playing|kick ?off|start(s|ing)?|spread|line|total|odds|price|starter|starting|probable|status|injur\w*|out|questionable|ready)\b/i,
+    future: /\b(who will win|will (they|he|she|it) win|guarantee\w*|lock of the|sure thing|can'?t lose|100%)\b/i,
+    calibration: /\b(calibrat\w*|accura\w*|track record|how (good|well) (is|has|does) (the )?model|brier|log loss|closing line value|clv|hit rate)\b/i,
+    staking: /\b(how (much|many)|units?|stake|kelly|bet size|sizing|bankroll)\b/i
+  };
+  /* route (from the host) -> base complexity, path, datasets, calculations */
+  var ROUTES = {
+    LINES: { c: 'LOOKUP', path: 'DATABASE', d: ['market', 'fair_sheets'], k: ['implied_probability', 'fair_odds'] },
+    PROPS: { c: 'LOOKUP', path: 'DATABASE', d: ['props_board'], k: ['implied_probability', 'fair_odds'] },
+    COVERAGE: { c: 'LOOKUP', path: 'DATABASE', d: ['market_coverage'], k: [] },
+    OUTAGE: { c: 'LOOKUP', path: 'DATABASE', d: ['market_coverage'], k: [] },
+    READINESS: { c: 'STANDARD', path: 'ENGINE', d: ['schedule', 'projections', 'market'], k: ['market_freshness'] },
+    MATCHUP_EDGE: { c: 'STANDARD', path: 'ENGINE', d: ['team_ratings'], k: ['unit_mismatch'] },
+    VENUE_COMPARE: { c: 'STANDARD', path: 'ENGINE', d: ['venue_fees'], k: ['fee_schedule'] },
+    CONTRACT: { c: 'STANDARD', path: 'ENGINE', d: ['market', 'venue_fees'], k: ['implied_probability', 'devig', 'fair_odds', 'expected_value', 'max_price', 'market_freshness'] },
+    PRICE: { c: 'STANDARD', path: 'ENGINE', d: ['market'], k: ['implied_probability', 'devig', 'fair_odds', 'expected_value', 'max_price', 'market_freshness'] },
+    EXPLAIN_EV: { c: 'STANDARD', path: 'ENGINE', d: ['market', 'venue_fees'], k: ['implied_probability', 'devig', 'expected_value'] },
+    BETS: { c: 'STANDARD', path: 'ENGINE', d: ['your_bets'], k: ['history_summary'] },
+    SCAN: { c: 'INVESTIGATION', path: 'ENGINE_RESEARCH', d: ['schedule', 'market', 'projections', 'injuries', 'validation'], k: ['implied_probability', 'devig', 'fair_odds', 'expected_value', 'max_price', 'spread_discrepancy', 'market_freshness', 'sensitivity'] },
+    RESEARCH_SLATE: { c: 'INVESTIGATION', path: 'ENGINE_RESEARCH', d: ['schedule', 'market', 'projections', 'injuries', 'team_ratings', 'validation'], k: ['spread_discrepancy', 'total_discrepancy', 'implied_probability', 'devig', 'fair_odds', 'expected_value', 'max_price', 'market_freshness', 'sensitivity'] },
+    GAME_RESEARCH: { c: 'INVESTIGATION', path: 'ENGINE_RESEARCH', d: ['schedule', 'market', 'projections', 'injuries', 'team_ratings', 'weather', 'validation'], k: ['spread_discrepancy', 'total_discrepancy', 'implied_probability', 'devig', 'fair_odds', 'expected_value', 'max_price', 'market_freshness', 'sensitivity'] }
+  };
+  /* dataset -> what it is, where it lives, how fresh it must be */
+  var DATASETS = {
+    market: { label: 'captured book prices', source: 'supabase:signals, book_quotes', freshness: 'a pregame price counts as current for 60 min; a reference line is never a price' },
+    fair_sheets: { label: 'published fair-line sheets', source: 'football/*/fair sheets', freshness: 'the nightly build' },
+    props_board: { label: 'player props board', source: 'supabase:props', freshness: 'the latest capture' },
+    market_coverage: { label: 'which sports have captured prices', source: 'supabase:signals', freshness: 'the last 3 days' },
+    schedule: { label: 'schedules', source: 'football/nfl/slate.json, football/fbs/slate.json, supabase:games', freshness: 'the nightly build' },
+    projections: { label: 'EdgeDesk projections', source: 'football/nfl/slate.json, football/fbs/slate.json, mlb_game_cards', freshness: 'the nightly build (≤ 36 h)' },
+    injuries: { label: 'injury report and depth charts', source: 'football/matchup/metrics.json (nflverse); live nflverse feed at L3', freshness: '≤ 24 h, ≤ 6 h inside a day of kickoff' },
+    team_ratings: { label: 'unit efficiency ratings (EPA)', source: 'football/nfl/slate.json teams', freshness: 'weekly' },
+    weather: { label: 'forecast and venue', source: 'football/nfl/slate.json forecast (open-meteo)', freshness: '≤ 12 h' },
+    validation: { label: 'model validation tiers', source: 'football/validation/pricing_*.json', freshness: 'per build' },
+    venue_fees: { label: 'venue fee schedules', source: 'lib/edgedesk_fairodds.js VENUES', freshness: 'versioned with the code' },
+    your_bets: { label: 'your recorded bets', source: 'supabase:portfolio_positions (your rows only)', freshness: 'as recorded' },
+    calibration_history: { label: 'graded predictions', source: 'supabase:research_runs + research_run_outcomes', freshness: 'graded after each event' },
+    external_reporting: { label: 'current reporting from official and credible sources', source: 'search provider', freshness: 'minutes; each finding carries its publication time' }
+  };
+  var CALC = {
+    implied_probability: 'implied probability from the price', devig: 'vig removal (two-sided no-vig)', fair_odds: 'fair odds from the fair probability',
+    expected_value: 'expected value per $1, fees included', max_price: 'maximum acceptable price', spread_discrepancy: 'model spread minus market spread',
+    total_discrepancy: 'model total minus market total', market_freshness: 'quote age against the freshness rule', sensitivity: 'EV with the fair one point lower',
+    unit_mismatch: 'offense rating plus opposing defense rating', fee_schedule: 'each venue\'s own fee rule', history_summary: 'your results by bet type',
+    calibration: 'Brier score, log loss and closing-line value over graded predictions'
+  };
+  /* estimates per step (labelled estimates; the ledger records the actual) */
+  var EST = {
+    FIND_EVENTS: { ms: 400, usd: 0 }, COMPARE_PRICES: { ms: 300, usd: 0 }, RETRIEVE_STATS: { ms: 600, usd: 0 }, VERIFY_INJURIES: { ms: 200, usd: 0 },
+    CALCULATE: { ms: 50, usd: 0 }, AUDIT: { ms: 400, usd: 0 }, CHALLENGE: { ms: 20, usd: 0 }, EXPLAIN: { ms: 30, usd: 0 }, READ_HISTORY: { ms: 300, usd: 0 }, ANALYZE_HISTORY: { ms: 50, usd: 0 },
+    LOOKUP: { ms: 250, usd: 0 }, MODEL_DESK: { ms: 6000, usd: 0.012 }
+  };
+  /* search providers: estimates from docs/research-engine/PROVIDERS.md §3 */
+  var SEARCH = {
+    claude_web_search: { label: 'Claude web search (official and credible domains)', ms: 12000, usd_by_model: { 'claude-opus-5-5': 0.084, 'claude-sonnet-5-5': 0.057, 'claude-haiku-5-5': 0.031 }, usd_default: 0.084 },
+    perplexity_search: { label: 'Perplexity Search API', ms: 1500, usd: 0.010 }
+  };
+
+  function step(id, stage, label, extra) { var e = EST[stage] || { ms: 100, usd: 0 }; return Object.assign({ id: id, stage: stage, label: label, est_ms: e.ms, est_usd: e.usd, status: 'planned', why: null }, extra || {}); }
+
+  /**
+   * The plan. ctx:
+   *   route         the host's route for this question (quantRouteOf / turn detectors), or null
+   *   game          { sport, game_id, label } the game the reader has open
+   *   known_players [{ name, team, position }]
+   *   providers     { claude_web_search: { configured, enabled, model }, perplexity_search: { configured, enabled } }
+   *   paid_ok       EDGEDESK_RESEARCH_PAID_OK
+   *   budget        { per_request_usd, remaining_today_usd }
+   *   research_enabled  the research chain is on (EDGEDESK_RESEARCH)
+   */
+  function plan(question, ctx) {
+    ctx = ctx || {};
+    var q = str(question).replace(/\s+/g, ' ').trim();
+    var ent = entities(q, ctx);
+    var route = ctx.route || null;
+    var base = route && ROUTES[route] ? ROUTES[route] : null;
+    var why = [];
+    var complexity, path, datasets, calcs;
+    if (!q) return { schema: VERSION, question: q, classification: { complexity: 'NONE' }, path: 'UNSUPPORTED', steps: [], estimate: { usd: 0, ms: 0 }, why: ['no question'] };
+    if (ent.unsupported_sports.length && !ent.sport) {
+      return finish({ q: q, ent: ent, route: route, complexity: 'LOOKUP', path: 'UNSUPPORTED', datasets: [], calcs: [], steps: [step('s1', 'EXPLAIN', 'Say which sports EdgeDesk covers')],
+        why: [ent.unsupported_sports.join(', ') + ' ' + (ent.unsupported_sports.length === 1 ? 'is' : 'are') + ' not covered by EdgeDesk\'s models or captured prices'], external: none('the sport is not covered'), ctx: ctx });
+    }
+    if (RX.future.test(q) && !base) {
+      return finish({ q: q, ent: ent, route: route, complexity: 'LOOKUP', path: 'UNSUPPORTED', datasets: [], calcs: [], steps: [step('s1', 'EXPLAIN', 'Explain what EdgeDesk can measure instead')],
+        why: ['an outcome cannot be known before the event; EdgeDesk reports probabilities and prices, never a guarantee'], external: none('nothing to search for'), ctx: ctx });
+    }
+    if (base) { complexity = base.c; path = base.path; datasets = base.d.slice(); calcs = base.k.slice(); why.push('the ' + route.toLowerCase().replace(/_/g, ' ') + ' route answers it from EdgeDesk\'s own data'); }
+    else if (RX.calibration.test(q)) { complexity = 'STANDARD'; path = 'ENGINE'; route = 'CALIBRATION'; datasets = ['calibration_history', 'validation']; calcs = ['calibration']; why.push('model performance comes from graded predictions, not from a model\'s opinion'); }
+    else if (RX.lookup.test(q) && (ent.teams.length || ent.event.kind === 'GAME')) { complexity = 'LOOKUP'; path = 'DATABASE'; route = 'LOOKUP'; datasets = /spread|line|odds|price|total/i.test(q) ? ['market', 'schedule'] : /injur|status|out|questionable|starter|probable/i.test(q) ? ['injuries', 'schedule'] : ['schedule']; calcs = /spread|line|odds|price/i.test(q) ? ['implied_probability', 'market_freshness'] : []; why.push('a stored value answers it'); }
+    else { complexity = 'STANDARD'; path = 'MODEL_DESK'; datasets = ent.event.kind !== 'NONE' ? ['schedule', 'projections', 'injuries'] : []; calcs = []; why.push('conversation the research routes do not cover goes to the existing desk, under the daily allowance'); }
+    if (RX.deep.test(q) && complexity !== 'INVESTIGATION' && path !== 'UNSUPPORTED' && path !== 'MODEL_DESK') { complexity = 'INVESTIGATION'; why.push('the question asks for an investigation'); }
+    if (route === 'SCAN' && /\btonight\b|\btoday\b/i.test(q)) why.push('the window is narrow, so the scan may find nothing to research');
+    if (RX.staking.test(q)) why.push('stake sizing is answered by the staking engine, never by research');
+
+    /* external research: needed only for reporting the datasets cannot hold */
+    var needSearch = (RX.news.test(q) || RX.offData.test(q)) && path !== 'UNSUPPORTED';
+    var external = needSearch ? searchDecision(q, ctx) : none(path === 'MODEL_DESK' ? 'no research question detected' : 'EdgeDesk\'s datasets hold what this question needs');
+    var routeHint = route;
+    if (needSearch) {
+      datasets.push('external_reporting'); if (complexity === 'LOOKUP') complexity = 'STANDARD';
+      why.push('the question asks about reporting newer than EdgeDesk\'s datasets');
+      /* no research route covers it: the NEWS route reads the datasets, searches when allowed, and cross-checks */
+      if (!base) { routeHint = 'NEWS'; if (datasets.indexOf('injuries') < 0) datasets.unshift('injuries'); }
+      path = external.runnable ? 'ENGINE_SEARCH' : (base ? path : 'ENGINE_RESEARCH');
+      if (!external.runnable) why.push('no search provider can run, so the answer uses the datasets and says how old they are');
+    }
+
+    /* steps, in the order the work actually happens (stage keys = the progress events') */
+    var s = [], n = 0, id = function () { return 's' + (++n); };
+    if (routeHint === 'NEWS') { s.push(step(id(), 'FIND_EVENTS', 'Resolve ' + (ent.event.kind !== 'NONE' ? eventLabel(ent) : 'the team or player'))); s.push(step(id(), 'RETRIEVE_STATS', 'Read EdgeDesk\'s injury report and depth charts, with their retrieval times')); s.push(step(id(), 'VERIFY_INJURIES', 'Cross-check any report against the official injury report')); }
+    else if (path === 'DATABASE') { s.push(step(id(), 'LOOKUP', 'Read the stored value' + (ent.event.kind !== 'NONE' ? ' for ' + eventLabel(ent) : ''))); if (calcs.length) s.push(step(id(), 'CALCULATE', 'Convert the price and check its age')); }
+    else if (path === 'MODEL_DESK') s.push(step(id(), 'MODEL_DESK', 'Answer with the desk (EdgeDesk data in its packet)'));
+    else if (route === 'BETS') { s.push(step(id(), 'READ_HISTORY', 'Read your recorded bets')); s.push(step(id(), 'ANALYZE_HISTORY', 'Summarise results by bet type')); }
+    else if (route === 'MATCHUP_EDGE') { s.push(step(id(), 'RETRIEVE_STATS', 'Read unit efficiency ratings')); }
+    else if (route === 'CALIBRATION') { s.push(step(id(), 'RETRIEVE_STATS', 'Read graded predictions and the validation build')); s.push(step(id(), 'CALCULATE', 'Brier score, log loss and closing-line value')); }
+    else if (route === 'VENUE_COMPARE' || route === 'CONTRACT' || route === 'PRICE' || route === 'EXPLAIN_EV') { s.push(step(id(), 'COMPARE_PRICES', 'Read the captured market for the selection')); s.push(step(id(), 'CALCULATE', 'Price it: implied, no-vig fair, fees, EV')); }
+    else if (route === 'READINESS') { s.push(step(id(), 'FIND_EVENTS', 'Find the games in the window')); s.push(step(id(), 'COMPARE_PRICES', 'Check which games have a verified market')); }
+    else if (path !== 'UNSUPPORTED') {
+      s.push(step(id(), 'FIND_EVENTS', 'Find ' + (ent.event.kind === 'GAME' ? 'the game' : 'the games in the window')));
+      if (complexity === 'INVESTIGATION' || ent.event.kind === 'GAME') { s.push(step(id(), 'RETRIEVE_STATS', 'Read projections, ratings and the injury report')); s.push(step(id(), 'VERIFY_INJURIES', 'Cross-check availability between sources')); }
+      s.push(step(id(), 'COMPARE_PRICES', 'Re-read the market at every book'));
+      s.push(step(id(), 'CALCULATE', 'Fair probability, EV, maximum price, sensitivity'));
+      s.push(step(id(), 'AUDIT', 'Adversarial audit on a fresh price'));
+      s.push(step(id(), 'CHALLENGE', 'Challenge the conclusion: stale data, sample size, missing players, alternatives'));
+    }
+    if (needSearch) {
+      /* the search runs after the datasets are read and before anything is cross-checked or priced */
+      var at = s.findIndex(function (x) { return x.stage === 'VERIFY_INJURIES' || x.stage === 'COMPARE_PRICES' || x.stage === 'CALCULATE'; });
+      var sp = external.provider ? SEARCH[external.provider] : null;
+      var ss = step('sx', 'SEARCH', external.provider ? 'Search ' + sp.label : 'Search current reporting', { provider: external.provider, est_ms: sp ? sp.ms : 0, est_usd: external.est_usd || 0, status: external.runnable ? 'planned' : 'unavailable', why: external.runnable ? null : external.why });
+      s.splice(at < 0 ? s.length : at, 0, ss);
+      s.forEach(function (x, i) { x.id = 's' + (i + 1); });
+    }
+    if (path !== 'MODEL_DESK') s.push(step('s' + (s.length + 1), 'EXPLAIN', 'Write the answer from the verified result'));
+    return finish({ q: q, ent: ent, route: routeHint, complexity: complexity, path: path, datasets: uniq(datasets), calcs: uniq(calcs), steps: s, why: why, external: external, ctx: ctx });
+  }
+  function eventLabel(ent) { var e = ent.event; return e.kind === 'GAME' ? (e.label || 'the game open') : e.kind === 'MATCHUP' ? e.teams.join(' vs ') : e.kind === 'TEAM' ? e.team : 'the slate'; }
+  function none(why) { return { needed: false, runnable: false, provider: null, why: why, est_usd: 0 }; }
+  /** Which search provider would run, or why none can. Cheapest runnable first when the question is a lookup; the deep adapter for an investigation. */
+  function searchDecision(q, ctx) {
+    var pv = ctx.providers || {}, paid = !!ctx.paid_ok, b = ctx.budget || {};
+    var cands = [];
+    ['perplexity_search', 'claude_web_search'].forEach(function (k) {
+      var p = pv[k] || {};
+      var usd = k === 'claude_web_search' ? (SEARCH[k].usd_by_model[p.model] != null ? SEARCH[k].usd_by_model[p.model] : SEARCH[k].usd_default) : SEARCH[k].usd;
+      var blocked = !p.configured ? SEARCH[k].label + ' has no API key configured'
+        : !p.enabled ? SEARCH[k].label + ' is not enabled by the operator (research_provider_quota)'
+          : !paid ? 'paid research is not authorised (EDGEDESK_RESEARCH_PAID_OK)'
+            : num(b.per_request_usd) != null && usd > num(b.per_request_usd) ? 'the estimate ($' + usd.toFixed(3) + ') is over the per-request budget ($' + num(b.per_request_usd).toFixed(2) + ')'
+              : num(b.remaining_today_usd) != null && usd > num(b.remaining_today_usd) ? 'today\'s research budget is spent' : null;
+      cands.push({ provider: k, usd: usd, blocked: blocked });
+    });
+    var deep = RX.deep.test(q) || RX.offData.test(q);
+    var order = deep ? ['claude_web_search', 'perplexity_search'] : ['perplexity_search', 'claude_web_search'];
+    for (var i = 0; i < order.length; i++) { var c = cands.filter(function (x) { return x.provider === order[i]; })[0]; if (!c.blocked) return { needed: true, runnable: true, provider: c.provider, why: (deep ? 'an investigation: the deep adapter reads pages and quotes them' : 'a lookup: raw results are enough') , est_usd: c.usd }; }
+    return { needed: true, runnable: false, provider: null, why: 'no search provider can run: ' + cands.map(function (c) { return c.blocked; }).filter(function (x, i, a) { return a.indexOf(x) === i; }).join('; ') + '. The answer uses EdgeDesk\'s datasets and says how old they are.', est_usd: 0 };
+  }
+  function finish(o) {
+    var runnable = o.steps.filter(function (x) { return x.status === 'planned'; });
+    var ms = runnable.reduce(function (a, x) { return a + (x.est_ms || 0); }, 0), usd = runnable.reduce(function (a, x) { return a + (x.est_usd || 0); }, 0);
+    return {
+      schema: VERSION, question: o.q,
+      classification: {
+        sport: o.ent.sport, league: o.ent.league, sports_named: o.ent.sports_named, unsupported_sports: o.ent.unsupported_sports,
+        teams: o.ent.teams, players: o.ent.players, event: o.ent.event, complexity: o.complexity, route: o.route
+      },
+      path: o.path,
+      datasets: o.datasets.map(function (k) { var d = DATASETS[k] || { label: k, source: k, freshness: '—' }; return { key: k, label: d.label, source: d.source, freshness: d.freshness }; }),
+      calculations: o.calcs.map(function (k) { return { key: k, label: CALC[k] || k }; }),
+      external: o.external,
+      steps: o.steps,
+      estimate: { usd: r4(usd), ms: Math.round(ms), basis: 'estimates (docs/research-engine/PROVIDERS.md §3); the ledger records actual cost' },
+      why: o.why
+    };
+  }
+
+  /** Planned vs actual: each planned step's final status from the progress events the run emitted. */
+  function reconcile(p, events) {
+    var by = {};
+    (events || []).forEach(function (e) { if (e && e.type === 'progress' && e.stage) by[e.stage] = e; });
+    return (p && p.steps || []).map(function (s) {
+      var e = by[s.stage];
+      return { id: s.id, stage: s.stage, label: s.label, planned: s.status, actual: e ? e.status : (s.status === 'unavailable' ? 'unavailable' : 'not_run'), detail: e ? e.detail : s.why };
+    });
+  }
+
+  return { VERSION: VERSION, plan: plan, entities: entities, reconcile: reconcile, DATASETS: DATASETS, CALC: CALC, SEARCH: SEARCH, ROUTES: ROUTES };
+});
+/*__EDORCH_END__*/
+const EDORCH: any = (globalThis as any).EDORCH;
+
+/*__EDEVIDENCE_START__*/
+/* ===========================================================================
+   EdgeDesk EVIDENCE LAYER (EDEVIDENCE) — every fact an answer rests on, as a
+   typed, dated, verified record. docs/research-engine/ARCHITECTURE.md §2
+
+   ONE RECORD PER FACT
+     source        a URL, or an internal dataset id (edgedesk://<dataset>#<path>)
+     retrieved_at  when EdgeDesk read it;  published_at / event_at when known
+     subject       sport, game, team, player
+     type          CONFIRMED_FACT   an official or statistical source, not speculative
+                   STATISTIC        a measured statistic from a statistical source
+                   EXTERNAL_REPORT  a credible report or a search result, one source
+                   HYPOTHESIS       speculation, opinion, an unsourced or flagged claim
+                   MODEL_ESTIMATE   an EdgeDesk engine's output (a projection, a fair)
+                   MARKET_QUOTE     a captured price, with its capture time
+     verification  VERIFIED (official/statistical) · CORROBORATED (independent credible
+                   sources agree) · SINGLE_SOURCE · UNVERIFIED · CONTRADICTED (an
+                   unresolved conflict) · SUPERSEDED (a conflict resolved against it)
+     freshness     FRESH · AGING · STALE · UNKNOWN, by topic and by how close the game is
+     conflicts     the conflicting evidence, named
+
+   EXTERNAL TEXT IS DATA, NEVER INSTRUCTIONS
+     screen(text) flags text that tries to instruct a model ("ignore previous
+     instructions", role markers, hidden prompts, script) and returns a
+     neutralised copy (control characters removed, markup escaped, length
+     capped). A flagged source can never be VERIFIED or CORROBORATED, and its
+     claim is a HYPOTHESIS. Nothing here sends text to a model.
+
+   It computes no probability and invents no source: a record without a URL
+   or dataset id and a retrieval time is refused.
+
+   Browser/Node/Deno: UMD, ES5. Inlined into supabase/functions/edgedesk_ai/index.ts.
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDEVIDENCE = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+  var VERSION = 'edgedesk_evidence_v1';
+  var TYPES = ['CONFIRMED_FACT', 'STATISTIC', 'EXTERNAL_REPORT', 'HYPOTHESIS', 'MODEL_ESTIMATE', 'MARKET_QUOTE'];
+  var VERIFICATION = ['VERIFIED', 'CORROBORATED', 'SINGLE_SOURCE', 'UNVERIFIED', 'CONTRADICTED', 'SUPERSEDED'];
+  /* minutes a fact stays FRESH by topic; AGING up to 3x; then STALE. Far from the game the windows are the researcher's
+     own (supabase/functions/edgedesk_ai/_agents.js research TTL: availability 72 h, starter 24 h, weather 12 h), so the
+     two never disagree on whether a fact is current; inside a day of the game they tighten. */
+  var TTL_MIN = { availability: 72 * 60, starter: 24 * 60, lineup: 24 * 60, weather: 12 * 60, market: 60, statistic: 7 * 1440, scheme: 14 * 1440, coaching: 14 * 1440, venue: 30 * 1440, projection: 36 * 60, news: 6 * 60, other: 1440 };
+  var NEAR_GAME_TTL_MIN = { availability: 24 * 60, starter: 12 * 60, lineup: 4 * 60, weather: 6 * 60, news: 2 * 60 };
+
+  /* domain tiers for external sources (official > statistical > credible journalism); anything else is UNKNOWN */
+  var NFL_TEAM_SITES = ['azcardinals.com', 'atlantafalcons.com', 'baltimoreravens.com', 'buffalobills.com', 'panthers.com', 'chicagobears.com', 'bengals.com', 'clevelandbrowns.com', 'dallascowboys.com',
+    'denverbroncos.com', 'detroitlions.com', 'packers.com', 'houstontexans.com', 'colts.com', 'jaguars.com', 'chiefs.com', 'raiders.com', 'chargers.com', 'therams.com', 'miamidolphins.com', 'vikings.com',
+    'patriots.com', 'neworleanssaints.com', 'giants.com', 'newyorkjets.com', 'philadelphiaeagles.com', 'steelers.com', '49ers.com', 'seahawks.com', 'buccaneers.com', 'tennesseetitans.com', 'commanders.com'];
+  var DOMAINS = {
+    OFFICIAL: ['nfl.com', 'operations.nfl.com', 'mlb.com', 'nba.com', 'nhl.com', 'ncaa.com', 'ncaa.org', 'ufc.com'].concat(NFL_TEAM_SITES),
+    /* github.com only under /nflverse: any other repository is anyone's upload */
+    STATISTICAL_DATA: ['pro-football-reference.com', 'baseball-reference.com', 'sports-reference.com', 'fangraphs.com', 'baseballsavant.mlb.com', 'nflverse.com', 'github.com/nflverse', 'collegefootballdata.com', 'open-meteo.com', 'pff.com', 'nextgenstats.nfl.com'],
+    CREDIBLE_JOURNALISM: ['espn.com', 'apnews.com', 'reuters.com', 'nytimes.com', 'theathletic.com', 'cbssports.com', 'nbcsports.com', 'foxsports.com', 'si.com', 'usatoday.com', 'yahoo.com', 'washingtonpost.com', 'latimes.com', 'bostonglobe.com', 'chicagotribune.com', 'profootballtalk.com', 'theringer.com', 'on3.com', '247sports.com', 'rivals.com']
+  };
+  /* the list a search provider may be restricted to (allowed_domains) */
+  function allowedDomains() { return DOMAINS.OFFICIAL.concat(DOMAINS.STATISTICAL_DATA.filter(function (d) { return d.indexOf('/') < 0; }), DOMAINS.CREDIBLE_JOURNALISM).filter(function (d, i, a) { return a.indexOf(d) === i; }); }
+
+  function str(v) { return v == null ? '' : String(v); }
+  function num(v) { if (v === null || v === undefined || v === '') return null; var n = Number(v); return isFinite(n) ? n : null; }
+  function toMs(v) { if (v == null || v === '') return null; if (typeof v === 'number') return isFinite(v) ? v : null; var t = Date.parse(String(v)); return isFinite(t) ? t : null; }
+  function iso(v) { var t = toMs(v); return t == null ? null : new Date(t).toISOString(); }
+  function hash(s) { var h = 0x811c9dc5; s = str(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
+  function hostOf(url) { var m = /^https?:\/\/([^/?#]+)(\/[^?#]*)?/i.exec(str(url)); return m ? { host: m[1].toLowerCase().replace(/^www\./, ''), path: (m[2] || '/').toLowerCase() } : null; }
+  /** OFFICIAL | STATISTICAL_DATA | CREDIBLE_JOURNALISM | UNKNOWN for a URL. */
+  function domainTier(url) {
+    var h = hostOf(url); if (!h) return 'UNKNOWN';
+    var order = ['OFFICIAL', 'STATISTICAL_DATA', 'CREDIBLE_JOURNALISM'];
+    for (var i = 0; i < order.length; i++) {
+      var list = DOMAINS[order[i]];
+      for (var j = 0; j < list.length; j++) {
+        var d = list[j], slash = d.indexOf('/');
+        if (slash > 0) { if ((h.host === d.slice(0, slash) || h.host.slice(-(d.slice(0, slash).length + 1)) === '.' + d.slice(0, slash)) && h.path.indexOf(d.slice(slash)) === 0) return order[i]; }
+        else if (h.host === d || h.host.slice(-(d.length + 1)) === '.' + d) return order[i];
+      }
+    }
+    return 'UNKNOWN';
+  }
+
+  /* ---------------- prompt-injection screen ---------------- */
+  var INJECTION = [
+    ['instruction override', /\b(ignore|disregard|forget|override)\b[^.\n]{0,40}\b(previous|prior|above|earlier|all|any|your)\b[^.\n]{0,30}\b(instructions?|prompts?|rules?|directions?|context)\b/i],
+    ['role injection', /(^|\n)\s*(system|assistant|developer|user)\s*:\s*\S/i],
+    ['persona change', /\byou are (now|no longer)\b|\bact as\b[^.\n]{0,40}\b(an?|the)\b|\bpretend (to be|you are)\b/i],
+    ['prompt exfiltration', /\b(reveal|print|show|repeat|output)\b[^.\n]{0,30}\b(system prompt|your (instructions|prompt)|hidden prompt)\b/i],
+    ['tool or action request', /\b(call|invoke|run|execute)\b[^.\n]{0,20}\b(the )?(tool|function|command|code)\b|\bsend (an? )?(email|request|message) to\b/i],
+    ['markup or script', /<\s*(script|iframe|object|embed|style)\b|javascript:|data:text\/html/i],
+    ['instruction block', /\b(begin|start|end) (of )?(system |hidden )?(instructions?|prompt)\b|\[\/?(inst|sys)\]|<\|?(im_start|im_end|system)\|?>/i],
+    ['betting instruction', /\b(tell (the )?(user|reader)s? to|recommend that (the )?users?)\b[^.\n]{0,40}\b(bet|wager|stake|buy)\b/i]
+  ];
+  /** → { flagged, reasons[], text } — text is the neutralised copy (control chars removed, markup escaped, capped). */
+  function screen(text, max) {
+    var raw = str(text);
+    var reasons = INJECTION.filter(function (p) { return p[1].test(raw); }).map(function (p) { return p[0]; });
+    var clean = raw.replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f\u200b-\u200f\u202a-\u202e\u2066-\u2069]/g, '').replace(/\s+/g, ' ').trim()
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    var cap = num(max) || 600;
+    if (clean.length > cap) clean = clean.slice(0, cap - 1) + '…';
+    return { flagged: reasons.length > 0, reasons: reasons, text: clean };
+  }
+
+  /* ---------------- freshness ---------------- */
+  /** → { status, age_min, ttl_min, topic, basis } at now, tighter inside 24 h of kickoff. */
+  function freshness(at, topic, now, kickoff) {
+    var t = toMs(at), n = toMs(now) != null ? toMs(now) : Date.now();
+    var tp = TTL_MIN[topic] != null ? topic : 'other';
+    var near = toMs(kickoff) != null && toMs(kickoff) - n < 24 * 3600000 && toMs(kickoff) > n;
+    var ttl = near && NEAR_GAME_TTL_MIN[tp] != null ? NEAR_GAME_TTL_MIN[tp] : TTL_MIN[tp];
+    if (t == null) return { status: 'UNKNOWN', age_min: null, ttl_min: ttl, topic: tp, basis: 'no timestamp' };
+    var age = Math.max(0, Math.round((n - t) / 60000));
+    var st = age <= ttl ? 'FRESH' : age <= 3 * ttl ? 'AGING' : 'STALE';
+    return { status: st, age_min: age, ttl_min: ttl, topic: tp, basis: tp + ' facts are fresh for ' + ttl + ' min' + (near ? ' inside a day of the game' : '') };
+  }
+
+  /* ---------------- records ---------------- */
+  function typeOf(reliability, speculative, kind) {
+    if (kind === 'MODEL') return 'MODEL_ESTIMATE';
+    if (kind === 'MARKET') return 'MARKET_QUOTE';
+    if (speculative || reliability === 'SPECULATION' || reliability === 'OPINION') return 'HYPOTHESIS';
+    if (reliability === 'OFFICIAL') return 'CONFIRMED_FACT';
+    if (reliability === 'STATISTICAL_DATA') return 'STATISTIC';
+    if (reliability === 'CREDIBLE_JOURNALISM') return 'EXTERNAL_REPORT';
+    return 'HYPOTHESIS';
+  }
+  /**
+   * A researcher finding (supabase/functions/edgedesk_ai/_agents.js normalize) → an evidence record.
+   * ctx: { now, kickoff, sport, game_id, conflicts (the researcher's conflict list), corroborated (ids) }
+   */
+  function fromFinding(f, ctx) {
+    ctx = ctx || {};
+    if (!f || (!f.source_url && !f.dataset_id) || toMs(f.retrieved_at) == null) return { refused: true, why: !f ? 'no finding' : (!f.source_url && !f.dataset_id) ? 'no source URL or dataset id' : 'no retrieval time' };
+    var sc = screen(f.claim, 400);
+    var rel = sc.flagged ? 'UNKNOWN' : str(f.reliability).toUpperCase() || 'UNKNOWN';
+    var type = sc.flagged ? 'HYPOTHESIS' : typeOf(rel, f.speculative, f.kind);
+    var mine = (ctx.conflicts || []).filter(function (c) { return (c.findings || []).indexOf(f.id) >= 0; });
+    var lost = mine.filter(function (c) { return c.resolved && c.resolution && c.resolution.finding !== f.id; });
+    var open = mine.filter(function (c) { return c.unresolved; });
+    var verification = open.length ? 'CONTRADICTED' : lost.length ? 'SUPERSEDED'
+      : sc.flagged ? 'UNVERIFIED'
+        : type === 'CONFIRMED_FACT' || type === 'STATISTIC' ? 'VERIFIED'
+          : type === 'HYPOTHESIS' ? 'UNVERIFIED'
+            : (ctx.corroborated || []).indexOf(f.id) >= 0 ? 'CORROBORATED' : 'SINGLE_SOURCE';
+    var at = f.published_at || f.retrieved_at;
+    return {
+      id: 'ev_' + hash([f.id || '', f.source_url || f.dataset_id, f.retrieved_at].join('|')),
+      finding_id: f.id || null,
+      source: { url: f.source_url || null, dataset_id: f.dataset_id || null, title: f.source_title || null, publisher: f.publisher || null, tier: f.source_url ? domainTier(f.source_url) : 'INTERNAL', reliability: rel },
+      retrieved_at: iso(f.retrieved_at), published_at: iso(f.published_at), event_at: iso(f.event_at || ctx.kickoff),
+      subject: { sport: ctx.sport || null, game_id: ctx.game_id != null ? String(ctx.game_id) : (f.event_ref || null), team: f.team || null, player: f.player || null, topic: f.topic || 'other' },
+      claim: sc.text, status: f.status || null,
+      type: type, verification: verification,
+      freshness: freshness(at, f.topic, ctx.now, ctx.kickoff),
+      conflicts: mine.map(function (c) { return { detail: c.detail, resolved: !!c.resolved, by: c.resolution ? c.resolution.by : null, why_unresolved: c.why_unresolved || null }; }),
+      injection: sc.flagged ? { flagged: true, reasons: sc.reasons } : null
+    };
+  }
+  /** An EdgeDesk engine output as evidence: a projection, a fair line. o: { dataset_id, label, value, unit, model_version, tier, generated_at, now, sport, game_id, team } */
+  function modelEstimate(o) {
+    o = o || {};
+    if (!o.dataset_id || toMs(o.generated_at) == null) return { refused: true, why: !o.dataset_id ? 'no dataset id' : 'no build time' };
+    return {
+      id: 'ev_' + hash(['model', o.dataset_id, o.generated_at, o.value].join('|')), finding_id: null,
+      source: { url: null, dataset_id: o.dataset_id, title: o.label || null, publisher: 'EdgeDesk', tier: 'INTERNAL', reliability: 'MODEL' },
+      retrieved_at: iso(o.generated_at), published_at: iso(o.generated_at), event_at: iso(o.kickoff),
+      subject: { sport: o.sport || null, game_id: o.game_id != null ? String(o.game_id) : null, team: o.team || null, player: null, topic: 'projection' },
+      claim: str(o.label) + ': ' + str(o.value) + (o.unit ? ' ' + o.unit : ''), value: o.value, unit: o.unit || null,
+      model: { version: o.model_version || null, tier: o.tier || null },
+      type: 'MODEL_ESTIMATE', verification: 'VERIFIED', freshness: freshness(o.generated_at, 'projection', o.now, o.kickoff), conflicts: [], injection: null
+    };
+  }
+  /** A captured price as evidence. o: { dataset_id, book, selection, line, american, decimal, captured_at, now, sport, game_id, kickoff, kind ('PRICE'|'LINE_ONLY') } */
+  function marketQuote(o) {
+    o = o || {};
+    if (!o.dataset_id || toMs(o.captured_at) == null) return { refused: true, why: !o.dataset_id ? 'no dataset id' : 'no capture time (a reference line is not a price)' };
+    return {
+      id: 'ev_' + hash(['market', o.dataset_id, o.captured_at, o.american, o.decimal].join('|')), finding_id: null,
+      source: { url: null, dataset_id: o.dataset_id, title: (o.book || 'captured book') + ' price', publisher: o.book || null, tier: 'INTERNAL', reliability: 'MARKET' },
+      retrieved_at: iso(o.captured_at), published_at: iso(o.captured_at), event_at: iso(o.kickoff),
+      subject: { sport: o.sport || null, game_id: o.game_id != null ? String(o.game_id) : null, team: null, player: null, topic: 'market' },
+      claim: str(o.selection) + (o.line != null ? ' ' + (o.line > 0 ? '+' : '') + o.line : '') + ' at ' + (o.american != null ? (o.american > 0 ? '+' : '') + Math.round(o.american) : str(o.decimal)) + (o.book ? ' (' + o.book + ')' : ''),
+      type: 'MARKET_QUOTE', verification: o.kind === 'LINE_ONLY' ? 'UNVERIFIED' : 'VERIFIED', freshness: freshness(o.captured_at, 'market', o.now, o.kickoff), conflicts: [], injection: null
+    };
+  }
+  /** Independent credible sources agreeing on the same player, topic and status → their ids (corroboration). */
+  function corroborations(findings) {
+    var groups = {}, out = [];
+    (findings || []).forEach(function (f) {
+      if (!f || !f.player || !f.status || f.speculative) return;
+      var k = str(f.player).toLowerCase() + '|' + f.topic + '|' + f.status;
+      (groups[k] = groups[k] || []).push(f);
+    });
+    Object.keys(groups).forEach(function (k) {
+      var g = groups[k], pubs = {};
+      g.forEach(function (f) { var h = hostOf(f.source_url); pubs[(f.publisher || (h ? h.host.split('.').slice(-2).join('.') : '')).toLowerCase()] = 1; });
+      if (Object.keys(pubs).length >= 2) g.forEach(function (f) { out.push(f.id); });
+    });
+    return out;
+  }
+  /**
+   * The ledger for one investigation: records, counts, and the lists a reader needs.
+   * o: { findings, conflicts, now, kickoff, sport, game_id, model (modelEstimate inputs[]), market (marketQuote inputs[]) }
+   */
+  function ledger(o) {
+    o = o || {};
+    var corro = corroborations(o.findings);
+    var ctx = { now: o.now, kickoff: o.kickoff, sport: o.sport, game_id: o.game_id, conflicts: o.conflicts || [], corroborated: corro };
+    var refused = [], records = [];
+    (o.findings || []).forEach(function (f) { var r = fromFinding(f, ctx); if (r.refused) refused.push(r); else records.push(r); });
+    (o.model || []).forEach(function (m) { var r = modelEstimate(Object.assign({ now: o.now, kickoff: o.kickoff, sport: o.sport, game_id: o.game_id }, m)); if (r.refused) refused.push(r); else records.push(r); });
+    (o.market || []).forEach(function (m) { var r = marketQuote(Object.assign({ now: o.now, kickoff: o.kickoff, sport: o.sport, game_id: o.game_id }, m)); if (r.refused) refused.push(r); else records.push(r); });
+    var count = function (key) { var c = {}; records.forEach(function (r) { var v = key === 'freshness' ? r.freshness.status : r[key]; c[v] = (c[v] || 0) + 1; }); return c; };
+    var sources = {}, srcList = [];
+    records.forEach(function (r) { var k = r.source.url || r.source.dataset_id; if (sources[k]) { sources[k].facts++; return; } sources[k] = { url: r.source.url, dataset_id: r.source.dataset_id, title: r.source.title, publisher: r.source.publisher, tier: r.source.tier, reliability: r.source.reliability, retrieved_at: r.retrieved_at, published_at: r.published_at, facts: 1 }; srcList.push(sources[k]); });
+    return {
+      schema: VERSION, records: records, refused: refused,
+      summary: {
+        total: records.length, by_type: count('type'), by_verification: count('verification'), by_freshness: count('freshness'),
+        contradicted: records.filter(function (r) { return r.verification === 'CONTRADICTED'; }).map(function (r) { return r.claim; }),
+        stale: records.filter(function (r) { return r.freshness.status === 'STALE'; }).map(function (r) { return r.claim + ' (' + r.freshness.age_min + ' min old)'; }),
+        flagged: records.filter(function (r) { return r.injection; }).map(function (r) { return { source: r.source.url, reasons: r.injection.reasons }; })
+      },
+      sources: srcList
+    };
+  }
+
+  return { VERSION: VERSION, TYPES: TYPES, VERIFICATION: VERIFICATION, TTL_MIN: TTL_MIN, DOMAINS: DOMAINS, allowedDomains: allowedDomains, domainTier: domainTier,
+    screen: screen, freshness: freshness, fromFinding: fromFinding, modelEstimate: modelEstimate, marketQuote: marketQuote, corroborations: corroborations, ledger: ledger };
+});
+/*__EDEVIDENCE_END__*/
+const EDEVIDENCE: any = (globalThis as any).EDEVIDENCE;
+
+/*__EDQVERIFY_START__*/
+/* ===========================================================================
+   EdgeDesk QUANTITATIVE VERIFICATION (EDQVERIFY) — every number an answer
+   prints, as a calculation record that can be checked.
+   docs/research-engine/ARCHITECTURE.md §3
+
+   ONE RECORD PER CALCULATION
+     name        IMPLIED_PROBABILITY · NO_VIG · FAIR_ODDS · BREAK_EVEN ·
+                 EXPECTED_VALUE · PROBABILITY_EDGE · MAXIMUM_ENTRY_PRICE ·
+                 LINE_DISCREPANCY · MARKET_FRESHNESS · CALIBRATION · SENSITIVITY
+     version     <name>@<semver> — a change to a formula changes its version
+     formula     the formula, written out
+     inputs      each input by name, value, unit and SOURCE (an evidence id, a
+                 dataset id, or the calculation it came from)
+     assumptions what the number takes for granted (push refunded, no fee, the
+                 normal residual, the fair's own error not quantified …)
+     output      the value the engine computed (EDFAIR's exact decimal arithmetic)
+     check       an independent recomputation in floating point from the same
+                 inputs, and whether the two agree within the stated tolerance
+     status      COMPUTED · UNAVAILABLE (with why) — never a substituted number
+
+   WHAT IT WILL NOT DO
+     It never invents a price or a probability. Without a verified quote the
+     market comparison is UNAVAILABLE and says why; the research continues.
+     A model-versus-market gap is reported as a gap, with the model's measured
+     record beside it — never as proof of positive expected value.
+
+   NUMBER VERIFIER
+     checkNumbers(text, ledgers) finds every probability, American price and
+     dollar EV in an answer and checks each against the calculation records
+     (and any numbers the caller names as known). A labelled number ("break-even
+     51.2%") must match that calculation; an unlabelled one must match some
+     record. Anything else is UNSUPPORTED.
+
+   Browser/Node/Deno: UMD, ES5. Reads EDFAIR (lib/edgedesk_fairodds.js) when it
+   is loaded; inlined into supabase/functions/edgedesk_ai/index.ts.
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory(root);
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDQVERIFY = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (root) {
+  'use strict';
+  var VERSION = 'edgedesk_quant_verify_v1';
+  var CALCS = {
+    IMPLIED_PROBABILITY: { version: '1.0.0', unit: 'probability', formula: 'p_implied = 1 / D, where D = 1 + A/100 for A > 0 and D = 1 + 100/|A| for A < 0 (A American, D decimal odds)' },
+    NO_VIG: { version: '1.0.0', unit: 'probability', formula: 'multiplicative: p_i = (1/D_i) / Σ_j (1/D_j) over every outcome at one book; overround = Σ_j (1/D_j) − 1' },
+    FAIR_ODDS: { version: '1.0.0', unit: 'american', formula: 'q = p / (1 − push); fair A = −100·q/(1 − q) when q ≥ 0.5, else 100·(1 − q)/q; fair D = (1 − push) / p' },
+    BREAK_EVEN: { version: '1.0.0', unit: 'probability', formula: 'p_break_even = (1 − push) / D (a push refunds the stake)' },
+    EXPECTED_VALUE: { version: '1.0.0', unit: 'dollars per $1 risked', formula: 'EV = p·(D − 1) − (1 − p − push)' },
+    PROBABILITY_EDGE: { version: '1.0.0', unit: 'probability', formula: 'edge = p_fair − p_break_even' },
+    MAXIMUM_ENTRY_PRICE: { version: '1.0.0', unit: 'american', formula: 'D_min = (1 − push + EV floor) / p; the worst whole American price at or above D_min' },
+    LINE_DISCREPANCY: { version: '1.0.0', unit: 'points', formula: 'gap = model line − market line (selection lines; totals: model total − market total); P(cover at the market line) ≈ Φ((market line − model line)/σ) for a side, Φ((model total − market total)/σ) for the over' },
+    MARKET_FRESHNESS: { version: '1.0.0', unit: 'minutes', formula: 'age = now − captured_at; FRESH while age ≤ TTL' },
+    CALIBRATION: { version: '1.0.0', unit: 'brier', formula: 'held-out Brier = mean((p − outcome)²), compared with the base-rate Brier; record against the close = wins / (n − pushes) with a one-sided binomial p-value (from the validation artifact)' },
+    SENSITIVITY: { version: '1.0.0', unit: 'dollars per $1 risked', formula: 'EV recomputed at fair ± k percentage points; robust when EV > 0 at fair − 1 pp' }
+  };
+  /* the engine prints probabilities to 6 dp and EV to 8: the check catches a wrong formula or input, not the last digit */
+  var TOL = { probability: 1e-5, ev: 1e-5, american: 1, points: 1e-9, minutes: 1 };
+
+  function F() { return root && root.EDFAIR ? root.EDFAIR : null; }
+  function str(v) { return v == null ? '' : String(v); }
+  function num(v) { if (v === null || v === undefined || v === '') return null; var n = Number(v); return isFinite(n) ? n : null; }
+  function toMs(v) { if (v == null || v === '') return null; if (typeof v === 'number') return isFinite(v) ? v : null; var t = Date.parse(String(v)); return isFinite(t) ? t : null; }
+  function r(v, k) { if (v == null || !isFinite(v)) return null; var f = Math.pow(10, k == null ? 6 : k); return Math.round(v * f) / f; }
+  function hash(s) { var h = 0x811c9dc5; s = str(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return ('0000000' + h.toString(16)).slice(-8); }
+  /* float conversions, written independently of EDFAIR so the check is a second computation */
+  function amToDec(a) { a = num(a); if (a == null || Math.abs(a) < 100) return null; return a > 0 ? 1 + a / 100 : 1 + 100 / -a; }
+  function probToAm(q) { if (!(q > 0 && q < 1)) return null; return q >= 0.5 ? -100 * q / (1 - q) : 100 * (1 - q) / q; }
+  function decToAm(d) { if (!(d > 1)) return null; return d >= 2 ? (d - 1) * 100 : -100 / (d - 1); }
+  function phi(z) { var t = 1 / (1 + 0.3275911 * Math.abs(z) / Math.SQRT2), y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-z * z / 2); return z >= 0 ? (1 + y) / 2 : (1 - y) / 2; }
+  function pct(p, k) { return p == null ? null : (Math.round(p * Math.pow(10, 2 + (k == null ? 1 : k))) / Math.pow(10, k == null ? 1 : k)).toFixed(k == null ? 1 : k) + '%'; }
+  function am(a) { return a == null ? null : (a > 0 ? '+' : '') + Math.round(a); }
+
+  function input(name, value, unit, source) { return { name: name, value: value == null ? null : value, unit: unit || null, source: source || null }; }
+  function record(name, o) {
+    var c = CALCS[name];
+    var out = {
+      id: 'calc_' + name.toLowerCase() + '_' + hash(JSON.stringify([o.inputs, o.output && o.output.value])),
+      name: name, version: name.toLowerCase() + '@' + c.version, formula: c.formula, engine: o.engine || VERSION,
+      inputs: o.inputs || [], assumptions: o.assumptions || [],
+      output: o.output || null, status: o.status || (o.output && o.output.value != null ? 'COMPUTED' : 'UNAVAILABLE'), why: o.why || null,
+      check: o.check || null
+    };
+    if (out.status === 'UNAVAILABLE' && !out.why) out.why = 'an input is missing';
+    return out;
+  }
+  function check(engineVal, recomputed, tol, method) {
+    var e = num(engineVal), x = num(recomputed);
+    if (e == null || x == null) return { method: method || 'independent float recomputation', value: x, agrees: null, tolerance: tol, note: e == null ? 'no engine value to check' : 'could not recompute' };
+    return { method: method || 'independent float recomputation', value: r(x, 8), agrees: Math.abs(e - x) <= tol, tolerance: tol, difference: r(e - x, 10) };
+  }
+  function unavailable(name, why, inputs) { return record(name, { status: 'UNAVAILABLE', why: why, inputs: inputs || [] }); }
+
+  /* ---------------- single calculations ---------------- */
+  /** o: { american | decimal, source, engine_value } */
+  function implied(o) {
+    o = o || {};
+    var d = num(o.decimal) != null ? num(o.decimal) : amToDec(o.american);
+    var ins = [input('price', o.american != null ? am(num(o.american)) : o.decimal, o.american != null ? 'american' : 'decimal', o.source)];
+    if (d == null || d <= 1) return unavailable('IMPLIED_PROBABILITY', 'no verified price: the market comparison is unavailable', ins);
+    var x = 1 / d, ev = num(o.engine_value);
+    return record('IMPLIED_PROBABILITY', { engine: ev != null ? 'EDFAIR ' + (o.calc_version || '') : VERSION, inputs: ins, assumptions: ['the quoted price includes the book\'s margin; this is not a fair probability'],
+      output: { value: ev != null ? ev : r(x, 6), unit: 'probability', display: pct(ev != null ? ev : x) }, check: check(ev != null ? ev : r(x, 6), x, TOL.probability) });
+  }
+  /** o: { prices: [{american|decimal, label}], index (the selection), source } — every outcome at ONE book */
+  function noVig(o) {
+    o = o || {};
+    var ps = o.prices || [];
+    var ins = ps.map(function (p, i) { return input('price ' + (p.label || 'outcome ' + (i + 1)), p.american != null ? am(num(p.american)) : p.decimal, p.american != null ? 'american' : 'decimal', o.source); });
+    if (ps.length < 2) return unavailable('NO_VIG', o.why || 'a no-vig probability needs every outcome of the market priced at the same book; ' + (ps.length ? 'only one side is on file' : 'no prices are on file'), ins);
+    var imp = ps.map(function (p) { var d = num(p.decimal) != null ? num(p.decimal) : amToDec(p.american); return d ? 1 / d : null; });
+    if (imp.some(function (x) { return x == null; })) return unavailable('NO_VIG', 'an outcome has no usable price', ins);
+    var tot = imp.reduce(function (a, b) { return a + b; }, 0), i = num(o.index) || 0, x = imp[i] / tot;
+    var Fx = F(), eng = Fx ? Fx.noVig(ps.map(function (p) { return p.decimal != null ? { decimal: String(p.decimal) } : { american: p.american }; }), 'multiplicative') : null;
+    var val = eng && eng.ok ? num(eng.probabilities[i]) : r(x, 6);
+    return record('NO_VIG', { engine: eng && eng.ok ? 'EDFAIR ' + Fx.CALC_VERSION : VERSION, inputs: ins, assumptions: ['multiplicative margin removal (the board\'s method)', 'the error of a de-vigged price is largest on heavy favourites and long shots'],
+      output: { value: val, unit: 'probability', display: pct(val), overround: eng && eng.ok ? num(eng.overround) : r(tot - 1, 6) }, check: check(val, x, TOL.probability) });
+  }
+
+  /* ---------------- the ledger for one priced candidate ---------------- */
+  /**
+   * ev: the EDFAIR evaluation the scan published (evaluateWager result, with priced_on).
+   * o: { quote: { american, decimal, book, captured_at, source }, fair: { method, label, source }, other_side: { american } (same book),
+   *      model_line: { market: 'spreads'|'totals', side, selection, model_line, market_line, sigma, sigma_basis, source, tier },
+   *      validation: (EDPRICE.validationFor), sensitivity: (EDAGENTS.sensitivity), now, ttl_min }
+   */
+  function forCandidate(ev, o) {
+    o = o || {}; var q = o.quote || {}, recs = [];
+    var priced = !!(ev && ev.ok);
+    /* the price as quoted (the engine's entry_decimal is a 4-dp display): decimal when the quote carries it, else the American price */
+    var qSrc = q.source || null, d = num(q.decimal) != null ? num(q.decimal) : q.american != null ? amToDec(q.american) : priced ? amToDec(ev.entry_price) : null;
+    var market = priced && d != null ? { status: 'AVAILABLE', why: null } : { status: 'UNAVAILABLE', why: !q.captured_at && q.american == null && q.decimal == null ? 'no verified price is on file for this selection; the research continues, and no market comparison or expected value is computed' : ev && ev.ok === false ? 'the price did not evaluate: ' + str(ev.error && ev.error.message || ev.why || ev.code) : 'no verified price' };
+    /* 1. implied */
+    recs.push(implied({ american: q.decimal == null ? (q.american != null ? q.american : priced ? ev.entry_price : null) : null, decimal: q.decimal, source: qSrc, engine_value: priced ? ev.market_probability : null, calc_version: ev && ev.calc_version }));
+    /* 2. no-vig at the same book */
+    if (o.other_side && o.other_side.american != null && d != null) recs.push(noVig({ prices: [{ decimal: d, label: 'selection' }, { american: o.other_side.american, label: 'other side' }], index: 0, source: qSrc }));
+    else recs.push(unavailable('NO_VIG', 'the other side\'s price at ' + (q.book || 'the same book') + ' is not on the candidate' + (o.fair && o.fair.method === 'MARKET_DEVIG' ? '; the fair used below is ' + (o.fair.label || 'a de-vigged sharp reference') + ', carried as the board computed it' : ''), [input('selection price', priced ? am(num(ev.entry_price)) : null, 'american', qSrc)]));
+    if (!priced) {
+      ['FAIR_ODDS', 'BREAK_EVEN', 'EXPECTED_VALUE', 'PROBABILITY_EDGE', 'MAXIMUM_ENTRY_PRICE'].forEach(function (n) { recs.push(unavailable(n, market.why)); });
+    } else {
+      var p = num(ev.fair_probability), push = num(ev.push_probability) || 0, fs = ev.fair_source || {};
+      var fairIn = input('fair probability', p, 'probability', (o.fair && o.fair.source) || (fs.kind ? fs.kind + (fs.label ? ' — ' + fs.label : '') : null));
+      var pushIn = input('push probability', push, 'probability', push ? 'the board\'s push model for this line' : 'no push on this line');
+      var decIn = input('decimal odds', d, 'decimal', qSrc);
+      var fairAssume = fs.kind === 'MODEL' ? 'the fair is EdgeDesk\'s ' + (fs.tier || ev.model_tier || 'unvalidated') + '-tier model; its error is not in the number (see CALIBRATION)' : 'the fair is a de-vigged market price; it carries no confidence interval';
+      /* 3. fair odds */
+      if (p != null && p > 0 && p < 1) {
+        var qq = p / (1 - push);
+        recs.push(record('FAIR_ODDS', { engine: 'EDFAIR ' + ev.calc_version, inputs: [fairIn, pushIn], assumptions: [fairAssume, 'a push refunds the stake'],
+          output: { value: num(ev.fair_american_odds), unit: 'american', display: am(num(ev.fair_american_odds)), decimal: num(ev.fair_decimal_odds) }, check: check(ev.fair_american_odds, Math.round(probToAm(qq)), TOL.american, 'independent float recomputation, rounded to a whole American price') }));
+      } else recs.push(unavailable('FAIR_ODDS', 'no fair probability for this selection', [fairIn]));
+      /* 4. break-even */
+      recs.push(record('BREAK_EVEN', { engine: 'EDFAIR ' + ev.calc_version, inputs: [decIn, pushIn], assumptions: ['a push refunds the stake', 'no explicit fee (a fixed-odds sportsbook)'],
+        output: { value: num(ev.break_even_probability), unit: 'probability', display: pct(num(ev.break_even_probability)) }, check: check(ev.break_even_probability, (1 - push) / d, TOL.probability) }));
+      /* 5. expected value */
+      var evv = ev.net_ev_per_dollar != null ? num(ev.net_ev_per_dollar) : num(ev.gross_expected_value);
+      if (p != null) recs.push(record('EXPECTED_VALUE', { engine: 'EDFAIR ' + ev.calc_version, inputs: [fairIn, decIn, pushIn], assumptions: [fairAssume, ev.net_ev_per_dollar != null ? 'no fee (a fixed-odds sportsbook)' : 'gross: the venue may charge a fee that is not on file', 'priced on ' + str(ev.priced_on || (fs.kind || 'the fair')).toLowerCase()],
+        output: { value: evv, unit: 'dollars per $1 risked', display: evv == null ? null : (evv >= 0 ? '+' : '−') + '$' + Math.abs(evv).toFixed(4) + ' per $1', net: ev.net_ev_per_dollar != null }, check: check(evv, p * (d - 1) - (1 - p - push), TOL.ev) }));
+      else recs.push(unavailable('EXPECTED_VALUE', 'no fair probability, so no expected value'));
+      /* 6. edge */
+      if (p != null && ev.probability_edge != null) recs.push(record('PROBABILITY_EDGE', { engine: 'EDFAIR ' + ev.calc_version, inputs: [fairIn, input('break-even probability', num(ev.break_even_probability), 'probability', 'BREAK_EVEN')], assumptions: [fairAssume],
+        output: { value: num(ev.probability_edge), unit: 'probability', display: pct(num(ev.probability_edge), 2) }, check: check(ev.probability_edge, p - (1 - push) / d, TOL.probability) }));
+      else recs.push(unavailable('PROBABILITY_EDGE', p == null ? 'no fair probability' : 'the fee is unknown, so the edge after fees is not computed'));
+      /* 7. maximum entry price */
+      var floor = num(ev.thresholds && ev.thresholds.ev_floor);
+      if (p != null && ev.maximum_entry_price != null && floor != null) {
+        var dmin = (1 - push + floor) / p, amMin = decToAm(dmin), cl = amMin == null ? null : Math.ceil(amMin - 1e-9);
+        if (cl != null && cl < 0 && cl >= -100) cl = 100; if (cl != null && cl > 0 && cl < 100) cl = 100;
+        recs.push(record('MAXIMUM_ENTRY_PRICE', { engine: 'EDFAIR ' + ev.calc_version, inputs: [fairIn, pushIn, input('EV floor', floor, 'dollars per $1', 'EDFAIR thresholds (operator setting)')], assumptions: [fairAssume, 'the price is rounded to the conservative whole American price'],
+          output: { value: num(ev.maximum_entry_price), unit: 'american', display: am(num(ev.maximum_entry_price)) }, check: check(ev.maximum_entry_price, cl, TOL.american, 'independent float recomputation, ceiling to a whole American price') }));
+      } else recs.push(unavailable('MAXIMUM_ENTRY_PRICE', p == null ? 'no fair probability' : 'not computed by the engine for this venue'));
+    }
+    /* 8. line discrepancy (the projection against the market line) */
+    recs.push(lineDiscrepancy(o.model_line));
+    /* 9. market freshness */
+    recs.push(marketFreshness({ captured_at: q.captured_at, now: o.now, ttl_min: o.ttl_min != null ? o.ttl_min : priced && ev.data_freshness && ev.data_freshness.quote ? ev.data_freshness.quote.ttl_min : null, engine: priced && ev.data_freshness ? ev.data_freshness.quote : null, source: qSrc }));
+    /* 10. calibration and the model's measured record */
+    recs.push(calibration({ validation: o.validation, market: o.model_line ? o.model_line.market : (o.market || null), gap_points: o.model_line ? gapOf(o.model_line) : null, calibration_status: priced ? ev.calibration_status : null, fair_kind: priced && ev.fair_source ? ev.fair_source.kind : null }));
+    /* 11. sensitivity */
+    recs.push(sensitivity(o.sensitivity, priced ? ev : null));
+    return finish(recs, market);
+  }
+  /** The ledger for one game: the projection against the market line, its record, and the price when one is verified. */
+  function forGame(g, o) {
+    g = g || {}; o = o || {};
+    var recs = [], hasPrice = !!(o.quote && (o.quote.american != null || o.quote.decimal != null) && o.quote.captured_at);
+    var market = hasPrice ? { status: 'AVAILABLE', why: null } : { status: 'UNAVAILABLE', why: g.market_line != null ? 'only a reference line is on file (no captured price): the line can be compared, but no implied probability or expected value is computed' : 'no market number is on file for this game' };
+    if (hasPrice) recs.push(implied({ american: o.quote.american, decimal: o.quote.decimal, source: o.quote.source }));
+    recs.push(lineDiscrepancy(o.model_line));
+    if (hasPrice) recs.push(marketFreshness({ captured_at: o.quote.captured_at, now: o.now, ttl_min: o.ttl_min, source: o.quote.source }));
+    recs.push(calibration({ validation: o.validation, market: 'spreads', gap_points: o.model_line ? gapOf(o.model_line) : null }));
+    return finish(recs, market);
+  }
+  function gapOf(m) { return m && num(m.model_line) != null && num(m.market_line) != null ? r(num(m.model_line) - num(m.market_line), 4) : null; }
+  /** m: { market 'spreads'|'totals', side ('home'|'away'|'over'|'under'), selection, model_line, market_line (selection lines; totals as totals), sigma, sigma_basis, source, market_source, tier, model_cover: { probability, label, source } } */
+  function lineDiscrepancy(m) {
+    if (!m) return unavailable('LINE_DISCREPANCY', 'no projection is on file for this market');
+    var ml = num(m.model_line), kl = num(m.market_line), sg = num(m.sigma), tot = m.market === 'totals';
+    var ins = [input(tot ? 'model total' : 'model line (' + (m.selection || m.side || 'selection') + ')', ml, 'points', m.source), input(tot ? 'market total' : 'market line (' + (m.selection || m.side || 'selection') + ')', kl, 'points', m.market_source), input('residual sigma', sg, 'points', m.sigma_basis)];
+    /* the board's own cover probability at the market line (the validated blend of projection and market), as it was computed */
+    if (m.model_cover && num(m.model_cover.probability) != null) ins.push(input('model cover probability at the market line (' + (m.model_cover.label || 'the board\'s blend') + ')', num(m.model_cover.probability), 'probability', m.model_cover.source || m.source));
+    if (ml == null || kl == null) return unavailable('LINE_DISCREPANCY', ml == null ? 'no projection is on file for this market' : 'no market line is on file', ins);
+    var gap = r(ml - kl, 4), z = sg ? (tot ? (ml - kl) / sg : (kl - ml) / sg) : null, pc = z == null ? null : tot && m.side === 'under' ? 1 - phi(z) : phi(z);
+    return record('LINE_DISCREPANCY', { inputs: ins,
+      assumptions: ['the margin (or total) is normal around the projection with the residual sigma', 'pushes ignored in the cover probability', 'the raw projection, not the blend the board prices on: the market carries most of the weight in the blend', m.tier ? 'the model is ' + m.tier + ' tier for this market' : 'the model tier is not on file'],
+      output: { value: gap, unit: 'points', display: (gap > 0 ? '+' : '') + gap + ' points', cover_probability: r(pc, 4), cover_display: pc == null ? null : pct(pc), is_edge_evidence: false,
+        note: 'A gap between the projection and the market is a disagreement to explain, not proof of positive expected value.' },
+      check: check(gap, ml - kl, TOL.points) });
+  }
+  function marketFreshness(o) {
+    o = o || {};
+    var t = toMs(o.captured_at), n = toMs(o.now) != null ? toMs(o.now) : Date.now(), ttl = num(o.ttl_min);
+    var ins = [input('captured at', o.captured_at || null, 'time', o.source), input('now', new Date(n).toISOString(), 'time', 'the request'), input('TTL', ttl, 'minutes', 'EDINTEL quote-state limit for this market and time to kickoff')];
+    if (t == null) return unavailable('MARKET_FRESHNESS', 'no capture time: the price cannot be treated as current', ins);
+    var age = Math.max(0, Math.round((n - t) / 60000)), eng = o.engine && o.engine.age_min != null ? num(o.engine.age_min) : null;
+    var status = ttl == null ? 'UNKNOWN' : age <= ttl ? 'FRESH' : 'STALE';
+    return record('MARKET_FRESHNESS', { engine: eng != null ? 'EDFAIR freshness' : VERSION, inputs: ins, assumptions: ['the book has not moved since the capture (unverifiable without a new capture)'],
+      output: { value: eng != null ? eng : age, unit: 'minutes', display: (eng != null ? eng : age) + ' min old', status: o.engine && o.engine.status ? o.engine.status : status }, check: check(eng != null ? eng : age, (n - t) / 60000, TOL.minutes) });
+  }
+  /** The model's measured record for this market: held-out Brier against the base rate, and the record against the close near this gap. */
+  function calibration(o) {
+    o = o || {}; var v = o.validation || null;
+    var ins = [input('validation artifact', v && v.loaded ? (v.generated_at || 'loaded') : null, 'time', v && v.frame ? str(v.frame.engine) : 'football/validation/pricing_<sport>.json')];
+    if (o.fair_kind && o.fair_kind !== 'MODEL') ins.push(input('fair source', o.fair_kind, null, 'the evaluation'));
+    if (!v || !v.loaded) return record('CALIBRATION', { status: 'UNAVAILABLE', why: 'no validation is loaded for this sport and market: the projection is unvalidated, and its probabilities are not betting probabilities', inputs: ins, output: { value: null, unit: 'brier', tier: (v && v.tier) || 'RESEARCH', calibration_status: o.calibration_status || 'UNCALIBRATED', display: null } });
+    var cal = v.calibration || null, held = cal && (cal.blend_held_out || cal.raw_model_held_out) || null;
+    var atsRow = null, gap = num(o.gap_points);
+    if (v.ats && gap != null) {
+      var ks = Object.keys(v.ats).map(Number).filter(function (k) { return isFinite(k) && k <= Math.abs(gap); }).sort(function (a, b) { return b - a; });
+      if (ks.length) { var a = v.ats[String(ks[0])]; atsRow = { threshold_points: ks[0], n: a.n, wins: a.wins, pushes: a.pushes, win_pct: a.win_pct, p_one_sided: a.p_one_sided }; }
+    }
+    if (held) ins.push(input('held-out sample', held.n, 'games', 'the validation artifact'));
+    var beats = held && num(held.brier) != null && num(held.brier_base_rate) != null ? num(held.brier) < num(held.brier_base_rate) : null;
+    return record('CALIBRATION', { engine: 'validation artifact (offline replay, no look-ahead: each game projected from the state before it)', inputs: ins,
+      assumptions: ['the replay\'s seasons resemble this one', atsRow ? 'the record is for gaps of at least ' + atsRow.threshold_points + ' points, measured against the close' : 'no record against the close at this gap'],
+      output: { value: held ? num(held.brier) : null, unit: 'brier', tier: v.tier, basis: v.basis || null, base_rate_brier: held ? num(held.brier_base_rate) : null, held_out_n: held ? held.n : null, beats_base_rate: beats,
+        record_vs_close: atsRow, calibration_status: o.calibration_status || null,
+        display: held ? 'held-out Brier ' + num(held.brier) + ' vs ' + num(held.brier_base_rate) + ' base rate (n ' + held.n + ')' + (beats === false ? ': no better than the base rate' : '') : v.tier + ' tier' },
+      status: held || atsRow ? 'COMPUTED' : 'UNAVAILABLE', why: held || atsRow ? null : 'the validation carries no calibration table for this market' });
+  }
+  function sensitivity(s, ev) {
+    if (!s || !s.available || !ev) return unavailable('SENSITIVITY', !ev ? 'no priced evaluation to perturb' : 'not computed for this candidate');
+    var rows = (s.rows || []).map(function (x) { return { shift_pp: x.shift_pp, fair: x.fair, net_ev_per_dollar: x.net_ev_per_dollar }; });
+    var p = num(ev.fair_probability), d = num(ev.entry_decimal), push = num(ev.push_probability) || 0;
+    var bad = rows.filter(function (x) { return x.net_ev_per_dollar != null && x.fair != null && d && Math.abs(x.fair * (d - 1) - (1 - x.fair - push) - x.net_ev_per_dollar) > 1e-4; });
+    return record('SENSITIVITY', { engine: 'EDAGENTS sensitivity over EDFAIR', inputs: [input('fair probability', p, 'probability', 'EXPECTED_VALUE'), input('decimal odds', d, 'decimal', 'IMPLIED_PROBABILITY')], assumptions: ['only the fair moves; the price is held'],
+      output: { value: s.cushion_pp != null ? s.cushion_pp : null, unit: 'percentage points of cushion', rows: rows, robust: !!s.robust, display: s.note || null },
+      check: { method: 'each row\'s EV recomputed in floating point', value: rows.length - bad.length, agrees: bad.length === 0, tolerance: 1e-4, disagreeing_rows: bad.map(function (x) { return x.shift_pp; }) } });
+  }
+  function finish(recs, market) {
+    var checked = recs.filter(function (x) { return x.check && x.check.agrees != null; });
+    var bad = checked.filter(function (x) { return x.check.agrees === false; });
+    return {
+      schema: VERSION, records: recs, market_comparison: market,
+      verification: { computed: recs.filter(function (x) { return x.status === 'COMPUTED'; }).length, unavailable: recs.filter(function (x) { return x.status === 'UNAVAILABLE'; }).map(function (x) { return { name: x.name, why: x.why }; }),
+        checked: checked.length, agreed: checked.length - bad.length, mismatches: bad.map(function (x) { return { name: x.name, engine: x.output && x.output.value, recomputed: x.check.value, difference: x.check.difference }; }),
+        verdict: bad.length ? 'MISMATCH' : 'VERIFIED' }
+    };
+  }
+  function byName(ledger, name) { return ledger && ledger.records ? ledger.records.filter(function (x) { return x.name === name; })[0] || null : null; }
+
+  /* ---------------- the number verifier ---------------- */
+  var LABELS = [
+    ['BREAK_EVEN', /break[- ]even(?: probability)?/i, 'probability'],
+    ['IMPLIED_PROBABILITY', /implied(?: probability)?/i, 'probability'],
+    ['NO_VIG', /no[- ]vig(?: (?:market )?probability)?/i, 'probability'],
+    ['EXPECTED_VALUE', /(?:net |estimated |gross )*(?:expected value|EV)\b/i, 'ev'],
+    ['MAXIMUM_ENTRY_PRICE', /maximum (?:acceptable |entry )?price|worst price/i, 'american'],
+    ['FAIR_ODDS', /fair (?:american )?(?:odds|price)/i, 'american']
+  ];
+  /** Every quantitative token in text: percentages, signed American prices, dollar EVs. */
+  function tokens(text) {
+    var t = str(text), out = [], m;
+    var rx = /([+\u2212-]?\$\d+(?:\.\d+)?)|([+\u2212-]?\d+(?:\.\d+)?)\s?%|(^|[^\w.$/:-])([+\u2212-]\d{3,4})(?!\d|\.\d|%)/g;
+    while ((m = rx.exec(t))) {
+      var raw = m[1] || (m[2] != null ? m[2] + '%' : m[4]), kind = m[1] ? 'usd' : m[2] != null ? 'pct' : 'american';
+      var at = m.index + (m[3] ? m[3].length : 0), ctx = t.slice(Math.max(0, at - 48), at);
+      if (kind === 'usd' && /\bper\s*$/i.test(ctx)) continue; /* "per $1" is a unit, not a number */
+      var v = Number(String(m[1] || m[2] || m[4]).replace('$', '').replace('\u2212', '-'));
+      out.push({ token: raw, kind: kind, value: v, context: ctx.replace(/\s+/g, ' ') });
+    }
+    return out;
+  }
+  function near(a, b, tol) { return a != null && b != null && Math.abs(a - b) <= tol; }
+  /** Known values from the ledgers: probabilities (as %), American prices, EVs per $1, points, plus the caller's known numbers. */
+  function knownOf(ledgers, extra) {
+    var k = { pct: [], american: [], usd: [] };
+    (ledgers || []).forEach(function (L) {
+      (L && L.records || []).forEach(function (x) {
+        var o = x.output || {};
+        if (o.unit === 'probability' && o.value != null) k.pct.push(o.value * 100);
+        if (o.cover_probability != null) k.pct.push(o.cover_probability * 100);
+        if (o.unit === 'american' && o.value != null) k.american.push(o.value);
+        if (o.unit === 'dollars per $1 risked' && o.value != null) { k.usd.push(o.value); k.pct.push(o.value * 100); }
+        if (o.record_vs_close && o.record_vs_close.win_pct != null) k.pct.push(o.record_vs_close.win_pct * 100);
+        (o.rows || []).forEach(function (row) { if (row.fair != null) k.pct.push(row.fair * 100); if (row.net_ev_per_dollar != null) { k.usd.push(row.net_ev_per_dollar); k.pct.push(row.net_ev_per_dollar * 100); } });
+        (x.inputs || []).forEach(function (i) { var v = num(String(i.value).replace('+', '')); if (v == null) return; if (i.unit === 'probability') k.pct.push(v * 100); if (i.unit === 'american') k.american.push(v); });
+      });
+    });
+    (extra && extra.pct || []).forEach(function (v) { k.pct.push(num(v)); });
+    (extra && extra.american || []).forEach(function (v) { k.american.push(num(v)); });
+    (extra && extra.usd || []).forEach(function (v) { k.usd.push(num(v)); });
+    return k;
+  }
+  /**
+   * → { verdict PASS|FAIL, checked, supported, unsupported[{token, context}], mismatched[{label, token, expected}] }
+   * A labelled number must match its calculation (to the printed precision); an unlabelled one must match some record or a known number.
+   */
+  function checkNumbers(text, ledgers, extra) {
+    var K = knownOf(ledgers, extra), toks = tokens(text), uns = [], mis = [], sup = 0;
+    toks.forEach(function (tk) {
+      var dp = (String(tk.token).split('.')[1] || '').replace(/\D/g, '').length, tolP = 0.5 * Math.pow(10, -dp) + 1e-9;
+      var lab = LABELS.filter(function (L) { return L[1].test(tk.context.slice(-40)); })[0];
+      if (lab) {
+        var expected = (ledgers || []).map(function (L) { return byName(L, lab[0]); }).filter(function (x) { return x && x.output && x.output.value != null; });
+        if (expected.length) {
+          var hit = expected.some(function (x) { var v = x.output.value; return tk.kind === 'pct' ? near(tk.value, v * 100, tolP) : tk.kind === 'american' ? near(tk.value, v, 0.5) : near(tk.value, v, tolP); });
+          if (hit) { sup++; return; }
+          mis.push({ label: lab[0], token: tk.token, expected: expected.map(function (x) { return x.output.display; }) }); return;
+        }
+      }
+      var pool = tk.kind === 'pct' ? K.pct : tk.kind === 'american' ? K.american : K.usd;
+      if (pool.some(function (v) { return near(tk.value, v, tk.kind === 'american' ? 0.5 : tolP); })) sup++;
+      else uns.push({ token: tk.token, kind: tk.kind, context: tk.context });
+    });
+    return { verdict: uns.length || mis.length ? 'FAIL' : 'PASS', checked: toks.length, supported: sup, unsupported: uns, mismatched: mis };
+  }
+
+  return { VERSION: VERSION, CALCS: CALCS, implied: implied, noVig: noVig, lineDiscrepancy: lineDiscrepancy, marketFreshness: marketFreshness, calibration: calibration, sensitivity: sensitivity,
+    forCandidate: forCandidate, forGame: forGame, byName: byName, tokens: tokens, checkNumbers: checkNumbers, _f: { amToDec: amToDec, probToAm: probToAm, decToAm: decToAm, phi: phi } };
+});
+/*__EDQVERIFY_END__*/
+const EDQVERIFY: any = (globalThis as any).EDQVERIFY;
+
+/*__EDCHALLENGE_START__*/
+/* ===========================================================================
+   EdgeDesk CHALLENGE PASS (EDCHALLENGE) — an independent attempt to break a
+   conclusion before it is published. docs/research-engine/ARCHITECTURE.md §6
+
+   THE EIGHT QUESTIONS (the brief's, verbatim)
+     Q1 What evidence contradicts this conclusion?
+     Q2 Are the statistics outdated?
+     Q3 Is the sample size adequate?
+     Q4 Are key players missing?
+     Q5 Is the market quote stale?
+     Q6 Are the model assumptions calibrated?
+     Q7 Could this apparent edge be caused by missing data?
+     Q8 Does the conclusion survive reasonable alternative assumptions?
+
+   Each is answered only from what the run actually holds: the researcher's
+   findings and conflicts, the evidence ledger (EDEVIDENCE), the calculation
+   ledger (EDQVERIFY), the disagreement diagnosis, the audit and the
+   sensitivity. Each answer is CLEAR · CONCERN (noted, does not lower) ·
+   UNRESOLVED (IMPORTANT or CRITICAL) · UNKNOWN (could not be checked;
+   counts as unresolved) · NOT_APPLICABLE (with why).
+
+   WHAT IT DOES WITH THE ANSWERS — it can only lower, never raise
+     a CRITICAL item that research could settle (a key contradiction, a key
+       player missing)  → at best RESEARCH REQUIRED
+     a CRITICAL item research cannot settle (a stale quote, an unvalidated
+       model pricing the bet, a suspected data fault)  → PASS
+     an IMPORTANT item  → a VERIFIED CANDIDATE becomes WATCHLIST; research
+       confidence drops one level per item
+   outcome: STANDS · CONFIDENCE_LOWERED (open items; the class already says
+   as much) · DOWNGRADED · PASS
+   Research confidence is a category (HIGH · MODERATE · LOW · INSUFFICIENT)
+   with its reasons — never a percentage, and never mixed with the win
+   probability, which is the price's business.
+
+   Browser/Node/Deno: UMD, ES5. Inlined into supabase/functions/edgedesk_ai/index.ts.
+   =========================================================================== */
+(function (root, factory) {
+  var api = factory();
+  if (typeof module === 'object' && module && module.exports) module.exports = api;
+  root.EDCHALLENGE = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+  var VERSION = 'edgedesk_challenge_v1';
+  var QUESTIONS = [
+    ['Q1_CONTRADICTIONS', 'What evidence contradicts this conclusion?'],
+    ['Q2_OUTDATED_STATISTICS', 'Are the statistics outdated?'],
+    ['Q3_SAMPLE_SIZE', 'Is the sample size adequate?'],
+    ['Q4_KEY_PLAYERS', 'Are key players missing?'],
+    ['Q5_STALE_QUOTE', 'Is the market quote stale?'],
+    ['Q6_CALIBRATION', 'Are the model assumptions calibrated?'],
+    ['Q7_MISSING_DATA', 'Could this apparent edge be caused by missing data?'],
+    ['Q8_ALTERNATIVES', 'Does the conclusion survive reasonable alternative assumptions?']
+  ];
+  var SCALE = ['HIGH', 'MODERATE', 'LOW', 'INSUFFICIENT'];
+  /* the researcher's own research-confidence level → the starting category */
+  var FROM_RESEARCH = { GOOD: 'HIGH', THIN: 'MODERATE', PARTIAL: 'MODERATE', CONFLICTED: 'LOW', NONE: 'INSUFFICIENT' };
+  var RANK = { VERIFIED_CANDIDATE: 0, WATCHLIST: 1, RESEARCH_REQUIRED: 2, REJECTED: 3, UNVERIFIED: 4 };
+  var MIN_N = { held_out: 100, record: 300 }; /* the validation rules' minimums (min_cal_n, LEAN min_n) */
+
+  function str(v) { return v == null ? '' : String(v); }
+  function num(v) { if (v === null || v === undefined || v === '') return null; var n = Number(v); return isFinite(n) ? n : null; }
+  function rec(L, name) { return L && L.records ? L.records.filter(function (x) { return x.name === name; })[0] || null : null; }
+  function item(id, status, o) {
+    o = o || {};
+    var q = QUESTIONS.filter(function (x) { return x[0] === id; })[0];
+    return { id: id, question: q[1], status: status, severity: status === 'UNRESOLVED' || status === 'UNKNOWN' ? (o.severity || 'IMPORTANT') : status === 'CONCERN' ? 'MINOR' : null,
+      resolvable_by_research: !!o.resolvable, answer: o.answer, refs: o.refs || [] };
+  }
+  function normTeam(t) { return str(t).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
+  function sameTeam(a, b) { var x = normTeam(a), y = normTeam(b); return !!x && !!y && (x === y || x.indexOf(y) >= 0 || y.indexOf(x) >= 0); }
+  function isKeyFinding(f) { return !!f && (f.key === true || /^QB$|QUARTERBACK/i.test(str(f.role)) || f.topic === 'starter'); }
+
+  /**
+   * o: { classification: {classification, reasons}, candidate, research (EDAGENTS research()), evidence (EDEVIDENCE ledger),
+   *      calc (EDQVERIFY ledger), disagreement (EDDISAGREE), audit, sensitivity, adjustments, research_level ('GOOD'|...),
+   *      scenario_deltas { home_qb_out, away_qb_out }, side ('home'|'away') }
+   */
+  function challenge(o) {
+    o = o || {};
+    var c = o.candidate || {}, R = o.research || {}, E = o.evidence || null, L = o.calc || null, D = o.disagreement || null, a = o.audit || {}, S = o.sensitivity || null;
+    /* what actually priced it: the EV record's fair source (a model candidate can be priced on the lower-EV audited market fair) */
+    var fairKind = (function () { var ev = rec(L, 'EXPECTED_VALUE'); var fi = ev && ev.status === 'COMPUTED' ? ev.inputs.filter(function (i) { return i.name === 'fair probability'; })[0] : null; if (fi) return /^MODEL\b/.test(str(fi.source)) ? 'MODEL' : 'MARKET'; return c.fair && c.fair.method === 'MODEL_BLEND' ? 'MODEL' : 'MARKET'; })();
+    var priced = !!(L && L.market_comparison && L.market_comparison.status === 'AVAILABLE');
+    var findings = R.findings || [], byId = {};
+    findings.forEach(function (f) { byId[f.id] = f; });
+    var out = [];
+
+    /* Q1 — contradictions */
+    var open = (R.unresolved || []).slice();
+    var contradicted = E ? E.records.filter(function (x) { return x.verification === 'CONTRADICTED'; }) : [];
+    if (open.length || contradicted.length) {
+      var keyed = open.some(function (cf) { return (cf.findings || []).some(function (id) { return isKeyFinding(byId[id]); }); });
+      out.push(item('Q1_CONTRADICTIONS', 'UNRESOLVED', { severity: keyed ? 'CRITICAL' : 'IMPORTANT', resolvable: true,
+        answer: (open.length ? open.map(function (cf) { return cf.detail + ' (' + (cf.why_unresolved || 'unresolved') + ')'; }).join('; ') : contradicted.map(function (x) { return x.claim; }).join('; ')) + (keyed ? ' — about a key player' : ''),
+        refs: contradicted.map(function (x) { return x.id; }) }));
+    } else {
+      var settled = (R.conflicts || []).filter(function (cf) { return cf.resolved; });
+      out.push(item('Q1_CONTRADICTIONS', 'CLEAR', { answer: findings.length ? 'No unresolved contradiction among ' + findings.length + ' finding' + (findings.length === 1 ? '' : 's') + (settled.length ? '; ' + settled.length + ' conflict' + (settled.length === 1 ? ' was' : 's were') + ' settled (' + settled.map(function (cf) { return cf.resolution && cf.resolution.by; }).filter(Boolean).join('; ') + ')' : '') : 'No research findings to contradict it (see Q7)' }));
+    }
+
+    /* Q2 — outdated statistics: a lineup, availability or pricing input past its window (AGING already means past the
+       researcher's own TTL) is unresolved; anything else past its window is noted */
+    var recs = E ? E.records.filter(function (x) { return x.type !== 'MARKET_QUOTE'; }) : [];
+    var old = recs.filter(function (x) { return x.freshness && (x.freshness.status === 'STALE' || x.freshness.status === 'AGING'); });
+    var isKeyRec = function (x) { return ['availability', 'starter', 'lineup'].indexOf(x.subject.topic) >= 0 || (x.type === 'MODEL_ESTIMATE' && fairKind === 'MODEL'); };
+    var oldKey = old.filter(isKeyRec), oldOther = old.filter(function (x) { return !isKeyRec(x); });
+    if (!recs.length) out.push(item('Q2_OUTDATED_STATISTICS', 'UNKNOWN', { severity: 'IMPORTANT', resolvable: true, answer: 'No dated statistic, report or projection is on file for this game, so freshness cannot be checked' }));
+    else if (oldKey.length) out.push(item('Q2_OUTDATED_STATISTICS', 'UNRESOLVED', { severity: 'IMPORTANT', resolvable: true, answer: oldKey.map(function (x) { return x.claim + ' — ' + x.freshness.age_min + ' min old, ' + x.freshness.status.toLowerCase() + ' (' + x.freshness.basis + ')'; }).slice(0, 3).join('; '), refs: oldKey.map(function (x) { return x.id; }) }));
+    else if (oldOther.length) out.push(item('Q2_OUTDATED_STATISTICS', 'CONCERN', { answer: oldOther.length + ' record' + (oldOther.length === 1 ? '' : 's') + ' past ' + (oldOther.length === 1 ? 'its' : 'their') + ' window (' + oldOther.map(function (x) { return x.subject.topic; }).filter(function (t, i, a) { return a.indexOf(t) === i; }).join(', ') + '); none is a lineup, availability or pricing input', refs: oldOther.map(function (x) { return x.id; }) }));
+    else out.push(item('Q2_OUTDATED_STATISTICS', 'CLEAR', { answer: 'Every dated record is fresh for its topic (' + recs.length + ' checked)' }));
+
+    /* Q3 — sample size (of the model that prices it) */
+    var cal = rec(L, 'CALIBRATION'), co = cal && cal.output;
+    if (!priced) out.push(item('Q3_SAMPLE_SIZE', 'NOT_APPLICABLE', { answer: 'Nothing is priced, so no model sample is relied on' }));
+    else if (fairKind !== 'MODEL') out.push(item('Q3_SAMPLE_SIZE', 'NOT_APPLICABLE', { answer: 'The price is judged against the de-vigged sharp market, not a model sample; that method\'s record is the closing-line ledger' + (co && co.record_vs_close ? '. The model cross-check\'s record at this gap: ' + co.record_vs_close.wins + '-' + (co.record_vs_close.n - co.record_vs_close.wins - (co.record_vs_close.pushes || 0)) + ' against the close (n ' + co.record_vs_close.n + ')' : '') }));
+    else if (!co || (co.held_out_n == null && !co.record_vs_close)) out.push(item('Q3_SAMPLE_SIZE', 'UNKNOWN', { severity: 'CRITICAL', answer: 'The model prices this bet but no validation sample is on file' }));
+    else {
+      var nRec = co.record_vs_close ? co.record_vs_close.n : null, nHeld = co.held_out_n;
+      var thin = (nRec != null && nRec < MIN_N.record) || (nHeld != null && nHeld < MIN_N.held_out);
+      out.push(item('Q3_SAMPLE_SIZE', thin ? 'UNRESOLVED' : 'CLEAR', { severity: 'IMPORTANT', answer: (nHeld != null ? 'held-out calibration n ' + nHeld : '') + (nHeld != null && nRec != null ? '; ' : '') + (nRec != null ? 'record against the close at gaps of ' + co.record_vs_close.threshold_points + '+ points n ' + nRec : '') + (thin ? ' — below the ' + (nRec != null && nRec < MIN_N.record ? MIN_N.record + ' the LEAN tier requires' : MIN_N.held_out + ' a calibration table needs') : ''), refs: [cal.id] }));
+    }
+
+    /* Q4 — key players */
+    var miss = (R.missing || []).filter(function (m) { return /availability|starter|lineup/.test(str(m.topic || m)); });
+    var gaps = (R.gaps || []).filter(function (g) { return g.kind === 'ABSENCE_NOT_IN_MODEL' || g.kind === 'STARTER_MISMATCH'; });
+    var adjusted = (o.adjustments || []).length > 0;
+    if (gaps.length && !adjusted) {
+      var qbGap = gaps.some(function (g) { return g.kind === 'STARTER_MISMATCH' || isKeyFinding(byId[g.finding]) && /QB/i.test(str(byId[g.finding] && byId[g.finding].role)); });
+      out.push(item('Q4_KEY_PLAYERS', 'UNRESOLVED', { severity: qbGap ? 'CRITICAL' : 'IMPORTANT', resolvable: true, answer: gaps.map(function (g) { return g.detail; }).join('; ') + ' — and no model scenario quantifies it' }));
+    } else if (miss.length) out.push(item('Q4_KEY_PLAYERS', 'UNKNOWN', { severity: 'IMPORTANT', resolvable: true, answer: 'Not checked: ' + miss.map(function (m) { return typeof m === 'string' ? m : str(m.topic) + (m.team ? ' for ' + m.team : '') + (m.why ? ' (' + m.why + ')' : ''); }).join('; ') }));
+    else {
+      var outs = findings.filter(function (f) { return isKeyFinding(f) && (f.status === 'OUT' || f.status === 'DOUBTFUL') && !f.speculative; });
+      out.push(item('Q4_KEY_PLAYERS', 'CLEAR', { answer: (gaps.length && adjusted ? 'Absences found and priced by a model scenario: ' + gaps.map(function (g) { return g.player; }).join(', ') : outs.length ? 'Key absences on file and carried by the model: ' + outs.map(function (f) { return f.player + ' ' + f.status.toLowerCase(); }).join(', ') : 'No key absence the model does not carry') }));
+    }
+
+    /* Q5 — the quote */
+    var fr = rec(L, 'MARKET_FRESHNESS');
+    if (!priced) out.push(item('Q5_STALE_QUOTE', 'UNRESOLVED', { severity: 'CRITICAL', answer: 'No verified quote: ' + (L && L.market_comparison ? L.market_comparison.why : 'the market comparison is unavailable') + '. Nothing is actionable without one' }));
+    else if (!fr || fr.status !== 'COMPUTED') out.push(item('Q5_STALE_QUOTE', 'UNKNOWN', { severity: 'CRITICAL', answer: 'The quote carries no capture time, so it cannot be treated as current' }));
+    else {
+      var fst = fr.output.status;
+      out.push(item('Q5_STALE_QUOTE', fst === 'STALE' || fst === 'UNKNOWN' ? 'UNRESOLVED' : fst === 'AGING' ? 'CONCERN' : 'CLEAR', { severity: 'CRITICAL', answer: 'The quote is ' + fr.output.display + ' (' + fst.toLowerCase() + (fr.inputs[2] && fr.inputs[2].value != null ? ', limit ' + fr.inputs[2].value + ' min' : '') + ')', refs: [fr.id] }));
+    }
+
+    /* Q6 — calibration of what prices it */
+    var tier = c.fair && c.fair.validation ? c.fair.validation.tier : null;
+    if (!priced) out.push(item('Q6_CALIBRATION', 'NOT_APPLICABLE', { answer: 'Nothing is priced' }));
+    else if (fairKind !== 'MODEL') out.push(item('Q6_CALIBRATION', 'NOT_APPLICABLE', { answer: 'The fair is the de-vigged sharp market, not a model; it carries no confidence interval (its error is largest on heavy favourites and long shots)' + (co && co.beats_base_rate === false ? '. The model cross-check does not beat the base rate on held-out games, so its agreement adds nothing' : '') }));
+    else if (tier !== 'VALIDATED' && tier !== 'LEAN') out.push(item('Q6_CALIBRATION', 'UNRESOLVED', { severity: 'CRITICAL', answer: 'An ' + (tier || 'unvalidated').toLowerCase() + '-tier model prices this bet; its probabilities are not betting probabilities' }));
+    else if (co && co.beats_base_rate === false) out.push(item('Q6_CALIBRATION', 'UNRESOLVED', { severity: 'IMPORTANT', answer: tier + ' tier, but ' + co.display, refs: [cal.id] }));
+    else out.push(item('Q6_CALIBRATION', tier === 'LEAN' ? 'CONCERN' : 'CLEAR', { answer: tier + ' tier' + (co && co.display ? '; ' + co.display : '') + (tier === 'LEAN' ? ' — a break-even history, not a profit record' : ''), refs: cal ? [cal.id] : [] }));
+
+    /* Q7 — missing data as the cause */
+    var dq = D && D.causes ? D.causes.filter(function (x) { return x.cause === 'DATA_QUALITY' && x.assessment === 'LIKELY'; })[0] : null;
+    var lineCause = D && D.causes ? D.causes.filter(function (x) { return (x.cause === 'INJURY_INFORMATION' || x.cause === 'LINEUP_ASSUMPTIONS') && x.assessment === 'LIKELY'; })[0] : null;
+    var availNotChecked = (a.checks || []).some(function (x) { return x.id === 'A8_AVAILABILITY' && x.result === 'NOT_CHECKED'; });
+    if (c.outlier || dq) out.push(item('Q7_MISSING_DATA', 'UNRESOLVED', { severity: 'CRITICAL', answer: c.outlier ? 'Suspected data fault first: ' + c.outlier : 'The disagreement diagnosis finds a data-quality problem likely' + (dq.detail ? ': ' + dq.detail : '') }));
+    else if (lineCause) out.push(item('Q7_MISSING_DATA', 'UNRESOLVED', { severity: 'IMPORTANT', resolvable: true, answer: 'The gap is likely explained by ' + (lineCause.cause === 'INJURY_INFORMATION' ? 'injury information the model does not carry' : 'a lineup or starter assumption') + (lineCause.detail ? ': ' + lineCause.detail : '') + ' — not an edge' }));
+    else if (availNotChecked && !findings.some(function (f) { return f.topic === 'availability'; })) out.push(item('Q7_MISSING_DATA', 'UNKNOWN', { severity: 'IMPORTANT', resolvable: true, answer: 'Availability was not checked, so an absence could be what the price already knows' }));
+    else if (!findings.length) out.push(item('Q7_MISSING_DATA', 'UNKNOWN', { severity: 'IMPORTANT', resolvable: true, answer: 'No research findings: an unseen absence or lineup change cannot be ruled out' }));
+    else out.push(item('Q7_MISSING_DATA', E && E.refused ? 'CONCERN' : 'CLEAR', { answer: (D && D.verdict ? 'Disagreement diagnosis: ' + str(D.verdict).toLowerCase().replace(/_/g, ' ') + '; ' : '') + 'no data fault or missing input is flagged' + (E && E.refused ? '; ' + E.refused + ' record' + (E.refused === 1 ? ' was' : 's were') + ' refused for lacking a source or a time' : '') }));
+
+    /* Q8 — alternative assumptions */
+    if (!priced) out.push(item('Q8_ALTERNATIVES', 'NOT_APPLICABLE', { answer: 'Nothing is priced to perturb' }));
+    else {
+      var sens = rec(L, 'SENSITIVITY'), so = sens && sens.status === 'COMPUTED' ? sens.output : null;
+      var rows = so ? so.rows : (S && S.rows) || [], robust = so ? so.robust : S ? !!S.robust : null;
+      var at2 = rows.filter(function (x) { return x.shift_pp === -2; })[0];
+      /* the selection's OWN quarterback uncertain, with a priced scenario for losing him (the opponent's helps the side) */
+      var qbRisk = (function () {
+        var d = o.scenario_deltas || {}, side = o.side; if (side !== 'home' && side !== 'away') return null;
+        var mine = num(d[side + '_qb_out']), team = side === 'home' ? c.home : c.away;
+        var qb = findings.filter(function (f) { return /QB/i.test(str(f.role)) && (f.status === 'QUESTIONABLE' || f.status === 'DOUBTFUL') && !f.speculative && sameTeam(f.team, team); })[0];
+        return qb && mine != null && mine < 0 ? qb.player + ' (' + team + ') is ' + qb.status.toLowerCase() + ', and losing him moves this side ' + mine + ' points' : null;
+      })();
+      if (robust === null) out.push(item('Q8_ALTERNATIVES', 'UNKNOWN', { severity: 'IMPORTANT', answer: 'No sensitivity was computed' }));
+      else if (!robust) out.push(item('Q8_ALTERNATIVES', 'UNRESOLVED', { severity: 'IMPORTANT', answer: 'The edge does not survive a one-point error in the fair' + (so && so.display ? ' (' + so.display + ')' : '') }));
+      else if (qbRisk) out.push(item('Q8_ALTERNATIVES', 'UNRESOLVED', { severity: 'IMPORTANT', resolvable: true, answer: 'Survives a one-point error in the fair, but ' + qbRisk }));
+      else out.push(item('Q8_ALTERNATIVES', at2 && at2.net_ev_per_dollar != null && at2.net_ev_per_dollar <= 0 ? 'CONCERN' : 'CLEAR', { answer: 'Survives a one-point error in the fair' + (at2 && at2.net_ev_per_dollar != null ? '; at two points EV is ' + (at2.net_ev_per_dollar >= 0 ? '+' : '') + (Math.round(at2.net_ev_per_dollar * 10000) / 100) + '% per $1' : '') + '; priced on the lower-EV of the model and the audited market fair' }));
+    }
+
+    return outcome(out, o);
+  }
+
+  function outcome(items, o) {
+    var cls0 = o.classification ? o.classification.classification : null;
+    var unres = items.filter(function (x) { return x.status === 'UNRESOLVED' || x.status === 'UNKNOWN'; });
+    var crit = unres.filter(function (x) { return x.severity === 'CRITICAL'; }), imp = unres.filter(function (x) { return x.severity === 'IMPORTANT'; });
+    var critHard = crit.filter(function (x) { return !x.resolvable_by_research; }), critSoft = crit.filter(function (x) { return x.resolvable_by_research; });
+    var start = FROM_RESEARCH[o.research_level] || 'MODERATE', why = [];
+    var idx = SCALE.indexOf(start);
+    imp.forEach(function (x) { if (idx < SCALE.length - 1) { idx++; why.push(x.question + ' — ' + x.answer); } });
+    if (crit.length) { idx = SCALE.length - 1; crit.forEach(function (x) { why.push(x.question + ' — ' + x.answer); }); }
+    var to = cls0, reason = null;
+    function lower(target, r) { if (cls0 && RANK[target] > RANK[to]) { to = target; reason = r; } }
+    if (critHard.length) lower('REJECTED', 'the challenge pass: ' + critHard[0].answer);
+    else if (critSoft.length) lower('RESEARCH_REQUIRED', 'the challenge pass: ' + critSoft[0].answer);
+    if (imp.length && to === 'VERIFIED_CANDIDATE') lower('WATCHLIST', 'the challenge pass left ' + imp.length + ' important question' + (imp.length === 1 ? '' : 's') + ' unresolved: ' + imp[0].question.replace(/\?$/, '') + ' — ' + imp[0].answer);
+    var changed = to !== cls0;
+    return {
+      schema: VERSION, questions: items,
+      unresolved: { critical: crit.length, important: imp.length, minor: items.filter(function (x) { return x.status === 'CONCERN'; }).length },
+      /* STANDS: nothing important left open · CONFIDENCE_LOWERED: open items, but the class already says as much ·
+         DOWNGRADED: the class was lowered · PASS: lowered to a pass */
+      outcome: !cls0 ? 'NOT_APPLICABLE' : to === 'REJECTED' && changed ? 'PASS' : changed ? 'DOWNGRADED' : crit.length || imp.length ? 'CONFIDENCE_LOWERED' : 'STANDS',
+      confidence: { before: start, after: SCALE[idx], scale: SCALE.slice(), why: why, note: 'Research confidence is how well the evidence supports the conclusion; it is not a probability of winning.' },
+      classification: { before: cls0, after: to, changed: changed, reason: reason }
+    };
+  }
+
+  /** Apply the outcome to a researcher classification ({classification, label, final_status, reasons}) — lowering only. */
+  function apply(cls, ch, labels) {
+    if (!cls || !ch || !ch.classification.changed) return cls;
+    var L = labels || { label: {}, final: {} };
+    return Object.assign({}, cls, { classification: ch.classification.after, label: L.label[ch.classification.after] || ch.classification.after, final_status: L.final[ch.classification.after] || cls.final_status,
+      reasons: [ch.classification.reason].concat(cls.reasons || []), challenged_from: cls.classification });
+  }
+
+  return { VERSION: VERSION, QUESTIONS: QUESTIONS, SCALE: SCALE, challenge: challenge, apply: apply };
+});
+/*__EDCHALLENGE_END__*/
+const EDCHALLENGE: any = (globalThis as any).EDCHALLENGE;
 
 /*__EDMLBHIST_START__*/
 /*__EDMLBQ_START__*/
@@ -50416,6 +51536,36 @@ const RESEARCH_PAID_OK = (Deno.env.get("EDGEDESK_RESEARCH_PAID_OK") ?? "0") === 
 const RESEARCH_LIVE = (Deno.env.get("EDGEDESK_RESEARCH_LIVE") ?? "1") !== "0";
 const PERPLEXITY_API_KEY = Deno.env.get("EDGEDESK_PERPLEXITY_API_KEY") ?? "";
 const RESEARCH_NARRATE = (Deno.env.get("EDGEDESK_RESEARCH_NARRATE") ?? "0") === "1";
+/* ── THE RESEARCH PLAN (EDORCH, docs/research-engine/ARCHITECTURE.md §2) ─────────────────────────────
+   Every desk question gets a plan before any work: its classification, the datasets and how fresh they must be,
+   whether external research is needed, the calculations, an estimate of cost and time, and the path. A search
+   provider is "enabled" only when the operator lists it in EDGEDESK_SEARCH_PROVIDERS; the database quota and the
+   dollar budget are still checked at call time. */
+const SEARCH_PROVIDERS_ON = new Set(String(Deno.env.get("EDGEDESK_SEARCH_PROVIDERS") ?? "").split(",").map((x) => x.trim()).filter(Boolean));
+const RESEARCH_MODEL = Deno.env.get("EDGEDESK_RESEARCH_MODEL") ?? "claude-opus-5-5";
+const RESEARCH_BUDGET_DEFAULTS = {
+  per_request_usd: Number(Deno.env.get("EDGEDESK_RESEARCH_BUDGET_REQUEST_USD") ?? "0.25") || 0.25,
+  per_user_daily_usd: Number(Deno.env.get("EDGEDESK_RESEARCH_BUDGET_USER_DAY_USD") ?? "1") || 1,
+  global_daily_usd: Number(Deno.env.get("EDGEDESK_RESEARCH_BUDGET_DAY_USD") ?? "20") || 20,
+};
+export function researchProvidersState(): any {
+  return {
+    claude_web_search: { configured: !!ANTHROPIC_API_KEY, enabled: SEARCH_PROVIDERS_ON.has("claude_web_search"), model: RESEARCH_MODEL },
+    perplexity_search: { configured: !!PERPLEXITY_API_KEY, enabled: SEARCH_PROVIDERS_ON.has("perplexity_search") },
+  };
+}
+export function researchPlanFor(body: any, route?: string | null, extra?: any): any | null {
+  if (!EDORCH || !body) return null;
+  try {
+    const g = body?.research_context?.game;
+    const game = g && typeof g === "object" && typeof g.game_id === "string" ? { sport: typeof g.sport === "string" ? g.sport : null, game_id: g.game_id.slice(0, 40), label: typeof g.label === "string" ? g.label.slice(0, 80) : null } : null;
+    return EDORCH.plan(String(body.question ?? "").slice(0, 400), {
+      route: route ?? null, game, providers: researchProvidersState(), paid_ok: RESEARCH_PAID_OK,
+      budget: { per_request_usd: RESEARCH_BUDGET_DEFAULTS.per_request_usd, remaining_today_usd: extra?.remaining_today_usd ?? null },
+      research_enabled: AGENT_RESEARCH_ENABLED, known_players: extra?.known_players ?? [],
+    });
+  } catch { return null; }
+}
 const newResearchLedger = () => EDBUDGET ? EDBUDGET.ledger({ paid_authorized: RESEARCH_PAID_OK, configured: { brave_search: !!SEARCH_API_KEY, perplexity_sonar: !!PERPLEXITY_API_KEY, anthropic_narration: !!ANTHROPIC_API_KEY } }) : null;
 let RESEARCH_LEDGER: any = newResearchLedger();
 let LAST_RESEARCH_WRITE: any = null;
@@ -50611,6 +51761,22 @@ async function researchChain(o: { dal: Dal; r: any; e: any; game: any; now: numb
     conservative: true,
   });
   inv.unavailable = gathered.unavailable; inv.providers = gathered.providers;
+  /* THE CHALLENGE PASS: the brief's eight questions against the evidence and calculation ledgers, before anything is
+     published. It can only lower a classification; if it cannot run, a VERIFIED CANDIDATE is not published as one. */
+  if (inv?.classification) {
+    try {
+      if (!EDCHALLENGE) throw new Error("EDCHALLENGE not loaded");
+      const pseudo = { candidate: c, research: inv, evaluation: inv.quant?.evaluation };
+      const prof = EDAGENTS.confidenceProfile ? EDAGENTS.confidenceProfile(inv) : null;
+      const ch = EDCHALLENGE.challenge({ classification: inv.classification, candidate: c, research: inv.research, evidence: evidenceForRow(pseudo, now), calc: calcForRow(pseudo, now),
+        disagreement: inv.disagreement, audit: a, sensitivity: inv.sensitivity, adjustments: inv.quant?.adjustments ?? [], research_level: prof?.research_confidence?.level ?? null, scenario_deltas: deltas, side: selSide });
+      inv.challenge = ch;
+      inv.classification = EDCHALLENGE.apply(inv.classification, ch, { label: EDAGENTS.CLASS_LABEL, final: EDAGENTS.FINAL_STATUS });
+    } catch (e) {
+      inv.challenge = { schema: "edgedesk_challenge_v1", error: String((e as any)?.message ?? e).slice(0, 160), outcome: "NOT_RUN" };
+      if (inv.classification.classification === "VERIFIED_CANDIDATE") inv.classification = { ...inv.classification, classification: "WATCHLIST", label: EDAGENTS.CLASS_LABEL.WATCHLIST, final_status: EDAGENTS.FINAL_STATUS.WATCHLIST, reasons: ["the challenge pass could not run, so this is not published as verified"].concat(inv.classification.reasons ?? []), challenged_from: "VERIFIED_CANDIDATE" };
+    }
+  }
   return inv;
 }
 /** One summary of a turn's research: level, findings, sources, conflicts, what was unavailable, the cost. */
@@ -50716,14 +51882,86 @@ function stageEmitter(p?: Progress | null): Progress {
 }
 
 /** One scan row for the response: the candidate, its audit, its evaluation and (when researched) its investigation. */
-function quantRowSlim(r: any): any {
+/* ── THE EVIDENCE LEDGER (EDEVIDENCE): every fact typed, dated, verified; the price and the projection included ── */
+function sportSlatePath(sport: string): string { return sport === "americanfootball_nfl" ? "football/nfl/slate.json" : sport === "americanfootball_ncaaf" ? "football/fbs/slate.json" : sport === "baseball_mlb" ? "supabase/mlb_game_cards" : "edgedesk/" + sport; }
+function evidenceTrim(led: any): any {
+  if (!led) return null;
+  return { schema: led.schema, summary: led.summary, sources: led.sources.slice(0, 20), records: led.records.slice(0, 30), refused: led.refused.length };
+}
+export function evidenceForRow(r: any, now: number): any {
+  if (!EDEVIDENCE || !r?.candidate) return null;
+  try {
+    const c = r.candidate, inv = r.research, q = c.quote ?? {};
+    const market = q.captured_at ? [{ dataset_id: "edgedesk://supabase/signals/" + (c.sig_key ?? c.id), book: q.book ?? null, selection: c.selection, line: num(c.line), american: num(q.odds_american), decimal: num(q.odds_decimal), captured_at: q.captured_at, kind: q.executable === false ? "LINE_ONLY" : "PRICE" }] : [];
+    /* the projection: the candidate's own fair when the model prices it (MODEL_BLEND), else the board's model case (a cross-check) */
+    const isM = c.fair?.method === "MODEL_BLEND", val = c.fair?.validation ?? {}, mc = c.model_case ?? null;
+    const mp = isM ? num(c.fair?.probability) : num(mc?.cover_at_market), gen = isM ? val.model_generated_at : mc?.model_generated_at, tier = isM ? val.tier : mc?.tier;
+    const model = mp != null && gen ? [{ dataset_id: "edgedesk://" + sportSlatePath(c.sport) + "#games/" + c.game_id, label: "EdgeDesk model cover probability for " + c.selection + (c.line != null ? " " + (c.line > 0 ? "+" : "") + c.line : "") + " (" + (tier ?? "unvalidated") + " tier" + (isM ? "" : "; a cross-check, not the price") + ")", value: Math.round(mp * 1000) / 1000, unit: "probability", model_version: (isM ? val.model_version : mc?.model_version) ?? null, tier: tier ?? null, generated_at: gen, team: c.selection }] : [];
+    return evidenceTrim(EDEVIDENCE.ledger({ findings: inv?.research?.findings ?? [], conflicts: inv?.research?.conflicts ?? [], now, kickoff: c.kickoff ?? null, sport: c.sport, game_id: c.game_id, market, model }));
+  } catch { return null; }
+}
+export function evidenceForGame(g: any, now: number): any {
+  if (!EDEVIDENCE || !g) return null;
+  try {
+    const m = g.ready_in?.market;
+    const market = m && m.kind === "PRICE" && m.captured_at ? [{ dataset_id: "edgedesk://supabase/signals/" + g.sport + "/" + g.game_id, book: m.book ?? null, selection: g.home, line: num(g.market_line), american: num(m.odds_american), captured_at: m.captured_at, kind: "PRICE" }] : [];
+    const model = g.model_line != null && g.model_generated_at ? [{ dataset_id: "edgedesk://" + sportSlatePath(g.sport) + "#games/" + g.game_id + "/model_home_line", label: "EdgeDesk projection, " + g.home + " line (" + (g.model_tier ?? "unvalidated") + " model)", value: g.model_line, unit: "points (home line)", model_version: g.model_version ?? null, tier: g.model_tier ?? null, generated_at: g.model_generated_at, team: g.home }] : [];
+    return evidenceTrim(EDEVIDENCE.ledger({ findings: g.research?.findings ?? [], conflicts: g.research?.conflicts ?? [], now, kickoff: g.kickoff ?? null, sport: g.sport, game_id: g.game_id, market, model }));
+  } catch { return null; }
+}
+/* ── THE CALCULATION LEDGER (EDQVERIFY): every number on a row as a versioned record, recomputed independently ── */
+function calcValidation(sport: string, market: string): { v: any; sg: any } {
+  const mk = market === "totals" || market === "total" ? "total" : "spread";
+  const v = EDPRICE && String(sport).startsWith("americanfootball") ? EDPRICE.validationFor(sport, mk) : null;
+  return { v, sg: v && EDPRICE ? EDPRICE.sigmaFor(sport, mk, v) : null };
+}
+export function calcForRow(r: any, now: number): any {
+  if (!EDQVERIFY || !r?.candidate) return null;
+  try {
+    const c = r.candidate, q = c.quote ?? {}, lined = c.market === "spreads" || c.market === "totals";
+    const { v, sg } = lined ? calcValidation(c.sport, c.market) : { v: null, sg: null };
+    const isM = c.fair?.method === "MODEL_BLEND", mc = c.model_case ?? null, modelLine = isM ? num(c.fair?.model_line) : num(mc?.model_line);
+    const sigSrc = q.captured_at ? "edgedesk://supabase/signals/" + (c.sig_key ?? c.id) : null;
+    const ml = lined && modelLine != null && num(c.line) != null ? { market: c.market, side: c.side, selection: c.selection, model_line: modelLine, market_line: num(c.line), sigma: num(sg?.sigma), sigma_basis: sg?.basis ?? null,
+      source: "edgedesk://" + sportSlatePath(c.sport) + "#games/" + c.game_id, market_source: sigSrc ?? "reference line (no captured price)", tier: (isM ? c.fair?.validation?.tier : mc?.tier) ?? null,
+      model_cover: { probability: isM ? num(c.fair?.probability) : num(mc?.cover_at_market), label: "the board's " + ((isM ? c.fair?.validation?.tier : mc?.tier) ?? "unvalidated") + "-tier blend" + (isM ? ", the price's fair" : ", a cross-check") } } : null;
+    const qs = q.captured_at ? EDINTEL.quoteState({ captured_at: q.captured_at, market: c.market, kickoff: c.kickoff, now }) : null;
+    return EDQVERIFY.forCandidate(r.evaluation?.ok ? r.evaluation : null, { quote: { american: num(q.odds_american), decimal: num(q.odds_decimal), book: q.book ?? null, captured_at: q.captured_at ?? null, source: sigSrc },
+      fair: { method: c.fair?.method ?? null, label: c.fair?.label ?? null }, model_line: ml, validation: v, sensitivity: r.research?.sensitivity ?? null, now, ttl_min: qs?.limit_min ?? null, market: c.market });
+  } catch { return null; }
+}
+export function calcForGame(g: any, now: number): any {
+  if (!EDQVERIFY || !g) return null;
+  try {
+    const { v, sg } = calcValidation(g.sport, "spreads");
+    const m = g.ready_in?.market, priced = m && m.kind === "PRICE" && m.captured_at;
+    const quote = priced ? { american: num(m.odds_american), captured_at: m.captured_at, source: "edgedesk://supabase/signals/" + g.sport + "/" + g.game_id } : null;
+    const qs = priced ? EDINTEL.quoteState({ captured_at: m.captured_at, market: "spreads", kickoff: g.kickoff, now }) : null;
+    const ml = g.model_line != null ? { market: "spreads", side: "home", selection: g.home, model_line: num(g.model_line), market_line: num(g.market_line), sigma: num(sg?.sigma), sigma_basis: sg?.basis ?? null,
+      source: "edgedesk://" + sportSlatePath(g.sport) + "#games/" + g.game_id + "/model_home_line", market_source: priced ? quote!.source : g.market_line != null ? "reference line (no captured price)" : null, tier: g.model_tier ?? null } : null;
+    return EDQVERIFY.forGame({ market_line: g.market_line }, { quote, model_line: ml, validation: v, now, ttl_min: qs?.limit_min ?? null });
+  } catch { return null; }
+}
+/** The turn's verification: every ledger's recomputation, and every number in the answer traced to a calculation (or a named known value). */
+export function quantVerificationOf(answer: string, ledgers: any[], extra?: any): any {
+  if (!EDQVERIFY) return null;
+  try {
+    const L = (ledgers ?? []).filter(Boolean);
+    const mism: any[] = []; let checked = 0, agreed = 0, computed = 0;
+    L.forEach((l: any) => { checked += l.verification.checked; agreed += l.verification.agreed; computed += l.verification.computed; l.verification.mismatches.forEach((m: any) => mism.push(m)); });
+    const n = EDQVERIFY.checkNumbers(String(answer ?? ""), L, extra ?? null);
+    return { schema: EDQVERIFY.VERSION, ledgers: L.length, computed, checked, agreed, mismatches: mism.slice(0, 10), verdict: mism.length ? "MISMATCH" : "VERIFIED",
+      numbers: { verdict: n.verdict, checked: n.checked, supported: n.supported, unsupported: n.unsupported.slice(0, 10), mismatched: n.mismatched.slice(0, 10) } };
+  } catch { return null; }
+}
+function quantRowSlim(r: any, now: number = Date.now()): any {
   return r ? { candidate: { id: r.candidate.id, sport: r.candidate.sport, sport_label: r.candidate.sport_label, game_id: r.candidate.game_id != null ? String(r.candidate.game_id) : null, home: r.candidate.home ?? null, away: r.candidate.away ?? null, kickoff: r.candidate.kickoff ?? null, matchup: r.candidate.matchup, kickoff_local: r.candidate.kickoff_local, market: r.candidate.market, selection: r.candidate.selection, line: r.candidate.line, quote: r.candidate.quote, fair: { method: r.candidate.fair?.method, label: r.candidate.fair?.label, probability: r.candidate.fair?.probability }, counter: r.candidate.counter, corrected: r.candidate.corrected ?? [] }, audit: r.audit, evaluation: r.evaluation,
     classification: r.classification ?? null, research: r.research ? researchSlim(r.research) : null,
     /* the card's words, written by the same functions the answer text uses — the page never composes them */
     advantage: EDQUANT?.matchupLine ? EDQUANT.matchupLine(r.candidate) : null,
     counterargument: r.research && EDAGENTS ? EDAGENTS.counterArgument(r.research) : null,
     invalidators: r.research && EDAGENTS ? EDAGENTS.invalidators(Object.assign({}, r.research, { event: { sport: r.candidate.sport } })) : [],
-    withheld_by_board: r.withheld_by_board ?? null } : null;
+    withheld_by_board: r.withheld_by_board ?? null, evidence: evidenceForRow(r, now), calc: calcForRow(r, now), challenge: r.research?.challenge ?? null } : null;
 }
 /** Every audited candidate through the five-role chain, at the level the question earns. Null when the chain is off. */
 async function researchAudited(o: { dal: Dal; audit: any; games: any[]; evidence: Map<string, any>; now: number; question: string; auth: string; stake: number | null; intent: string; level?: string | null; progress?: Progress | null }): Promise<{ investigations: Record<string, any>; pairs: { inv: any; c: any }[]; summary: any; sources_text: string; level: any } | null> {
@@ -50810,9 +52048,11 @@ async function quantScan(o: { body: any; auth: string; dal: Dal; now: number; cl
   try { await publishBoardRecords(auth, EDBOARD.records(board, { question: q })); } catch { /* best effort */ }
   try { await publishAudits(auth, auditRecords(audit, scan, q, now)); } catch { /* best effort */ }
   if (rs) { try { await publishResearch(auth, rs.pairs, { question: q, now, level: rs.summary.level }, dal.fetchImpl()); } catch { /* best effort */ } }
+  const slim = { best: quantRowSlim(scan.best, now), verified_rest: (scan.verified_rest ?? []).map((x: any) => quantRowSlim(x, now)), potential: scan.potential.map((x: any) => quantRowSlim(x, now)), near_misses: scan.near_misses.map((x: any) => quantRowSlim(x, now)) };
   return {
+    quant_verification: quantVerificationOf(answer, [slim.best, ...slim.verified_rest, ...slim.potential, ...slim.near_misses].map((r: any) => r?.calc), { usd: [scan.research_summary?.cost_estimate_usd ?? 0] }),
     answer, model: nar?.model ?? null, narration: nar ? nar.narration : { ok: true, prose: "DETERMINISTIC", critic: null }, ...(nar?.deterministic_answer ? { deterministic_answer: nar.deterministic_answer } : {}),
-    scan: { schema: scan.schema, decision: scan.decision, final_status: scan.final_status, researched: scan.researched, best: quantRowSlim(scan.best), verified_rest: (scan.verified_rest ?? []).map(quantRowSlim), potential: scan.potential.map(quantRowSlim), near_misses: scan.near_misses.map(quantRowSlim), board_near_misses: scan.board_near_misses,
+    scan: { schema: scan.schema, decision: scan.decision, final_status: scan.final_status, researched: scan.researched, best: slim.best, verified_rest: slim.verified_rest, potential: slim.potential, near_misses: slim.near_misses, board_near_misses: scan.board_near_misses,
       coverage: scan.coverage, coverage_scope: scan.coverage_scope, not_scanned: scan.not_scanned, not_covered: scan.not_covered, counts: scan.counts, window: scan.window, timezone: scan.timezone,
       filter: scan.filter, risk_dollars: scan.risk_dollars, audit_trail: scan.audit_trail, audit_checks: scan.audit_checks, audit_write: quantWriteView(LAST_AUDIT_WRITE),
       research_summary: scan.research_summary ?? null, research_write: rs ? LAST_RESEARCH_WRITE : null },
@@ -51024,7 +52264,7 @@ async function quantResearchSlate(o: { body: any; auth: string; dal: Dal; now: n
     disagreement: g.disagreement ? { verdict: g.disagreement.verdict, primary: g.disagreement.primary, size: g.disagreement.size, explanation: g.disagreement.explanation, is_edge_evidence: g.disagreement.is_edge_evidence, causes: g.disagreement.causes } : null,
     findings: g.research ? g.research.findings.length : null, conflicts: g.research ? g.research.conflicts.length : null,
     research: g.research ? researchSlim({ research: g.research, disagreement: g.disagreement, unavailable: [] }) : null,
-    readiness: g.readiness, why_not: EDREADY && g.readiness ? EDREADY.whyNot(g.readiness) : [] });
+    readiness: g.readiness, why_not: EDREADY && g.readiness ? EDREADY.whyNot(g.readiness) : [], evidence: evidenceForGame(g, now), calc: calcForGame(g, now) });
   const sportLabel = sport ? quantSportLabel(sport) : "Every in-season sport";
   const det = only ? EDQUANT.renderGameResearch({ game: games[0] ? gameOut(games[0]) : null, sport_label: sportLabel, investigated, why_not: games[0] && EDREADY && games[0].readiness ? EDREADY.whyNot(games[0].readiness) : [], research_summary: summary, sources_text: researchSourcesText(allInvs) })
     : o.screen_only ? EDQUANT.renderReadiness({ games: games.map(gameOut), readiness, sport_label: sport ? sportLabel : null, window: board.scope?.window?.label ?? null, coverage_sentence: covSentence, no_game: /\bthis (game|matchup|spread)\b/i.test(q) })
@@ -51043,12 +52283,13 @@ async function quantResearchSlate(o: { body: any; auth: string; dal: Dal; now: n
       schema: (EDAGENTS.VERSION ?? "edagents") + ":slate", sport, window: board.scope?.window ?? null, level: lvl,
       games: games.map(gameOut),
       readiness, mode: only ? "GAME" : o.screen_only ? "READINESS" : "SLATE",
-      investigated: investigated.map(quantRowSlim), survivors: investigated.filter((r: any) => r.classification?.classification === "VERIFIED_CANDIDATE" && !r.withheld_by_board).length,
+      investigated: investigated.map((x: any) => quantRowSlim(x, now)), survivors: investigated.filter((r: any) => r.classification?.classification === "VERIFIED_CANDIDATE" && !r.withheld_by_board).length,
       final_status: scan.final_status, research_summary: summary, coverage, not_investigated: notInvestigated, research_write: LAST_RESEARCH_WRITE,
     },
     quant_state: EDQUANT.stateFrom({ scan, now }),
     build: BUILD,
   };
+  out.quant_verification = quantVerificationOf(answer, out.research_slate.investigated.map((r: any) => r?.calc).concat(out.research_slate.games.map((g: any) => g.calc)), { usd: [summary?.cost_estimate_usd ?? 0] });
   /* one game: the same research, under the key a game view reads */
   if (only) { out.game_research = { ...out.research_slate, game: out.research_slate.games[0] ?? null }; delete out.research_slate; }
   return out;
@@ -51137,7 +52378,20 @@ export function quantRouteOf(body: any): string | null {
   if (!cls.intent && /\b(edgedesk|model|you)\b[^?]{0,40}\b(disagree\w*|differ\w*)\b/i.test(q) && body.desk === true) return "RESEARCH_SLATE";
   return cls.intent ?? null;
 }
-export async function quantTurn(o: { body: any; auth: string; now?: number; fetchImpl?: typeof fetch; progress?: Progress | null }): Promise<any | null> {
+export async function quantTurn(o0: { body: any; auth: string; now?: number; fetchImpl?: typeof fetch; progress?: Progress | null; plan?: any }): Promise<any | null> {
+  /* every step the route reports is kept, so the answer carries the plan beside what actually ran */
+  const ranEvents: any[] = [];
+  const o = { ...o0, progress: ((ev: any) => { ranEvents.push({ type: "progress", ...ev }); if (o0.progress) o0.progress(ev); }) as Progress };
+  const r0 = await quantTurnInner(o);
+  if (r0 && EDORCH) {
+    try {
+      const plan = o0.plan ?? researchPlanFor(o0.body, r0?.quant?.intent ?? null);
+      if (plan) { r0.research_plan = plan; r0.research_plan_actual = EDORCH.reconcile(plan, ranEvents); }
+    } catch { /* the answer stands without its plan */ }
+  }
+  return r0;
+}
+async function quantTurnInner(o: { body: any; auth: string; now?: number; fetchImpl?: typeof fetch; progress?: Progress | null }): Promise<any | null> {
   if (!QUANT_ENABLED || !EDQUANT || !EDFAIR || !o.body) return null;
   const q = String(o.body.question ?? "").trim();
   if (!q || q.length > 400) return null;
@@ -51574,9 +52828,12 @@ export async function handle(req: Request): Promise<Response> {
           const send = (o: any) => { if (cancelled) return; try { ctl.enqueue(enc.encode(JSON.stringify(o) + "\n")); } catch { cancelled = true; } };
           const t0 = Date.now();
           send({ type: "accepted", route, build: BUILD, at: new Date().toISOString() });
+          /* the plan, before any work: what will be read, how fresh it must be, what it may cost */
+          const plan = researchPlanFor(body, route);
+          if (plan) send({ type: "plan", plan });
           let payload: any = null, outcome = "deterministic", failure: string | null = null;
           try {
-            payload = await quantTurn({ body, auth, progress: (ev) => { if (cancelled) throw new Error("cancelled by the reader"); send({ type: "progress", ...ev, t_ms: Date.now() - t0 }); } });
+            payload = await quantTurn({ body, auth, plan, progress: (ev) => { if (cancelled) throw new Error("cancelled by the reader"); send({ type: "progress", ...ev, t_ms: Date.now() - t0 }); } });
           } catch (e) {
             failure = String((e as Error)?.message ?? e).slice(0, 200);
             outcome = cancelled ? "cancelled" : "narration_failed";
