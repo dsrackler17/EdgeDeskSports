@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-12T21:07:34.999Z",
- "board_generated_at": "2026-10-12T21:07:31.419Z",
+ "generated_at": "2026-10-12T22:07:27.111Z",
+ "board_generated_at": "2026-10-12T22:07:23.674Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -76,6 +76,46 @@
    "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
+   "game_id": "401858489",
+   "game": "Rutgers @ Maryland",
+   "kickoff": "2026-10-17T16:30:00.000Z",
+   "named": false,
+   "edgedesk": "Rutgers -1.6",
+   "market": "Maryland -5.3",
+   "books": 2,
+   "gap": 6.9,
+   "gap_class": "MODERATE",
+   "favorite_flip": true,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
+   "game_id": "401856830",
+   "game": "Kansas @ Kansas State",
+   "kickoff": "2026-10-17T16:00:00.000Z",
+   "named": false,
+   "edgedesk": "Kansas State -3.0",
+   "market": "Kansas State -5.4",
+   "books": 2,
+   "gap": 2.4,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
    "game_id": "401858494",
    "game": "Wisconsin @ UCLA",
    "kickoff": "2026-10-17T23:30:00.000Z",
@@ -116,41 +156,21 @@
    "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
-   "game_id": "401862801",
-   "game": "Memphis @ Tulane",
-   "kickoff": "2026-10-16T23:30:00.000Z",
-   "named": false,
-   "edgedesk": "Memphis -4.8",
-   "market": "Memphis -6.9",
-   "books": 2,
-   "gap": 2.1,
-   "gap_class": "MODERATE",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
-   "gate_status": "NOT REQUIRED (under 7 pts)",
-   "root_cause": null,
-   "requirements": null,
-   "consistent": true,
-   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
-  },
-  {
    "game_id": "401856724",
    "game": "Florida @ Texas",
    "kickoff": "2026-10-17T16:00:00.000Z",
    "named": false,
    "edgedesk": "Texas -18.0",
-   "market": "Texas -10.0",
-   "books": 1,
-   "gap": 8,
+   "market": "Texas -10.3",
+   "books": 2,
+   "gap": 7.7,
    "gap_class": "MAJOR",
    "favorite_flip": false,
-   "research_status": "MARKET_FAULT",
-   "research_label": "MARKET FAULT",
-   "decision_status": "NO_DECISION",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "INVESTIGATE",
+   "root_cause": "HFA_ERROR",
    "requirements": [
     {
      "requirement": "correct game",
@@ -164,8 +184,8 @@
     },
     {
      "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+     "result": "PASS",
+     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 0 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 0.5"
     },
     {
      "requirement": "current team states",
@@ -190,16 +210,36 @@
     {
      "requirement": "submodel support",
      "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 6.8 pts on EdgeDesk’s side"
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 6.5 pts on EdgeDesk’s side"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
      "result": "FAIL",
-     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 6 — the extreme is not supported by how margins of this size have actually finished"
+     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 5.8 — the extreme is not supported by how margins of this size have actually finished"
     }
    ],
    "consistent": true,
-   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
+   "verdict": "INVESTIGATE is correct: football-only calibration preserves the major gap fail."
+  },
+  {
+   "game_id": "401862801",
+   "game": "Memphis @ Tulane",
+   "kickoff": "2026-10-16T23:30:00.000Z",
+   "named": false,
+   "edgedesk": "Memphis -4.8",
+   "market": "Memphis -6.9",
+   "books": 2,
+   "gap": 2.1,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
    "game_id": "401869934",
@@ -210,26 +250,6 @@
    "market": "Arkansas State -7.0",
    "books": 1,
    "gap": 4.2,
-   "gap_class": "MODERATE",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "NO_DECISION",
-   "gate_status": "NOT REQUIRED (under 7 pts)",
-   "root_cause": null,
-   "requirements": null,
-   "consistent": true,
-   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
-  },
-  {
-   "game_id": "401856830",
-   "game": "Kansas @ Kansas State",
-   "kickoff": "2026-10-17T16:00:00.000Z",
-   "named": false,
-   "edgedesk": "Kansas State -3.0",
-   "market": "Kansas State -6.3",
-   "books": 1,
-   "gap": 3.3,
    "gap_class": "MODERATE",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
