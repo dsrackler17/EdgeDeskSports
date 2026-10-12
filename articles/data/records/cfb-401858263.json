@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Florida State vs. Miami: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Florida State vs. Miami 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk fair spread for Florida State at Miami: Miami -26.3, fair total 52.7. Miami wins 96% of simulations. Data confidence 84%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk fair spread for Florida State at Miami: Miami -26.3, fair total 52.7. Miami wins 96% of simulations. Data confidence 84%. Model status RESEARCH. Research, not picks.",
   "excerpt": "Miami carries the stronger underlying team rating — +11.1 against +2.6, a 8.5-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it Miami -26.3 before any sportsbook number is consulted, with Miami winning 96% of…",
   "home_team": "Miami",
   "away_team": "Florida State",
@@ -21,11 +21,11 @@
   "game_time": "2026-10-17T23:00:00.000Z",
   "game_when_label": "2026-10-17 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-12T21:13:54.478Z",
-  "generated_at": "2026-10-12T21:13:54.478Z",
+  "updated_at": "2026-10-12T21:43:47.288Z",
+  "generated_at": "2026-10-12T21:43:47.288Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "RESEARCH",
+  "model_status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
   "confidence": 84,
   "priced": true,
   "fair_spread_text": "Miami -26.3",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-12. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": null,
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at DraftKings on 2026-10-10, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -155,8 +155,8 @@
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
       },
-      "status": "NO MARKET",
-      "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "RESEARCH",
+      "status_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
     },
@@ -1403,7 +1403,7 @@
           "Run offense: Florida State 60.5 (#21 of 138) vs Miami 59.1 (#27 of 138) — 6 places on the national board.",
           "Receivers: Florida State 56.4 (#23 of 138) vs Miami 56.2 (#29 of 138) — 6 places on the national board.",
           "The outcome range is 14.6 points wide at one sigma — p10 +4.3 to p90 +46.3 for Miami, so a projection of +26.3 still produces results a long way either side of it.",
-          "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies."
+          "The market disagrees by 6.8 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong."
         ]
       },
       "note": "These are football cases assembled from measured states. Neither is a bet, and neither is advice."
@@ -1412,8 +1412,20 @@
       "items": [
         {
           "sev": "MEDIUM",
+          "label": "market disagreement",
+          "text": "The market disagrees by 6.8 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "sample",
           "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 70h old",
           "widening": null
         },
         {
@@ -1462,18 +1474,6 @@
           "sev": "LOW",
           "label": "missing",
           "text": "away injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book spread joined to this game — no edge is claimed",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book total joined to this game",
           "widening": null
         },
         {
@@ -1536,11 +1536,23 @@
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "Miami -26.3",
       "model_raw": "Miami -26.3",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+      "market": "Miami -19.5",
+      "difference": "6.8 points",
+      "difference_n": 6.8,
+      "difference_exact": 6.780389474101476,
+      "total_model": "52.7",
+      "total_market": "55.5",
+      "total_market_held": null,
+      "book": "captured consensus (stale) · 1 book · best at DraftKings",
+      "captured": "2026-10-10T00:04:01.399+00:00",
+      "capture_age": "70 hours old",
+      "stale": false,
+      "classification": "RESEARCH",
+      "classification_note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
     },
     "research_view": {
       "contract": "cfb_research_brief/1",
@@ -1552,9 +1564,9 @@
       "engine_status": "PREDICTED",
       "label": {
         "key": "NO_MARKET",
-        "label": "NO MARKET",
-        "rule": "no_market",
-        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1567,8 +1579,18 @@
         "is_near_pickem": false
       },
       "market_gap": {
-        "available": false,
-        "reason": "no market line is joined to this game"
+        "available": true,
+        "points": 6.8,
+        "toward_team": "Miami",
+        "text": "6.8 pts toward Miami",
+        "market_line_text": "Miami -19.5",
+        "market_home_margin": 19.5,
+        "favorite_differs": false,
+        "source": "captured consensus (stale) · 1 book · best at DraftKings",
+        "as_of": "2026-10-10T00:04:01.399+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": null
       },
       "confidence": {
         "score": 84,
@@ -1576,11 +1598,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 88,
+        "pct": 87,
         "tier": "STRONG",
-        "text": "88 · STRONG",
+        "text": "87 · STRONG",
         "sub": "main deduction: Florida State’s availability report is not due yet",
-        "score": 88,
+        "score": 87,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1612,7 +1634,7 @@
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 15,
+            "score": 14.7,
             "max": 15
           },
           {
@@ -1627,18 +1649,18 @@
         "next_actions": [
           {
             "action": "Re-read availability inside the filing window (Florida State)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "potential_gain": 2,
+            "text": "up to +2"
           },
           {
             "action": "Re-read availability inside the filing window (Miami)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "potential_gain": 2,
+            "text": "up to +2"
           },
           {
-            "action": "Capture a market quote",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
           }
         ],
         "stability": {
@@ -1675,7 +1697,7 @@
       },
       "best_available_line": {
         "available": false,
-        "reason": "no sportsbook quote has been captured for this game"
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1724,8 +1746,8 @@
     },
     "headline": "EdgeDesk projects Miami 39, Florida State 13.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "RESEARCH",
+      "note": "EdgeDesk and the market are close enough that there is nothing unusual to report.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1877,7 +1899,7 @@
       "EdgeDesk’s line is Miami -26.3 on a neutral read of the two teams, before any book is consulted. Projected total 52.7.",
       "Miami wins 96% of the time in EdgeDesk’s simulation, Florida State 4%.",
       "Eight games in ten land between +4.3 and +46.3 for Miami. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "The market has Miami -19.5 at captured consensus (stale) · 1 book · best at DraftKings, 6.8 points from EdgeDesk’s number.",
       "Florida State quarterback: Ashton Daniels — started the last game; no announcement for this one.",
       "Miami quarterback: Darian Mensah — started the last game; no announcement for this one."
     ],
@@ -1973,6 +1995,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-12T21:13:54.478Z"
+    "at": "2026-10-12T21:43:47.288Z"
   }
 }

@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Notre Dame vs. BYU: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Notre Dame vs. BYU 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk fair spread for Notre Dame at BYU: BYU +3.2, fair total 51.2. Notre Dame wins 59% of simulations. Data confidence 82%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk fair spread for Notre Dame at BYU: BYU +3.2, fair total 51.2. Notre Dame wins 59% of simulations. Data confidence 82%. Model status DATA FAULT. Research, not picks.",
   "excerpt": "Notre Dame carries the stronger underlying team rating — +15.9 against +6.8, a 9.1-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it BYU +3.2 before any sportsbook number is consulted, with Notre Dame winning 59%…",
   "home_team": "BYU",
   "away_team": "Notre Dame",
@@ -21,11 +21,11 @@
   "game_time": "2026-10-17T23:30:00.000Z",
   "game_when_label": "2026-10-17 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-12T21:13:54.478Z",
-  "generated_at": "2026-10-12T21:13:54.478Z",
+  "updated_at": "2026-10-12T21:43:47.288Z",
+  "generated_at": "2026-10-12T21:43:47.288Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "DATA FAULT",
+  "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
   "confidence": 82,
   "priced": true,
   "fair_spread_text": "BYU +3.2",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-12. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": null,
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at DraftKings on 2026-10-10, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -167,8 +167,8 @@
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
       },
-      "status": "NO MARKET",
-      "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "DATA FAULT",
+      "status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
     },
@@ -1440,8 +1440,20 @@
       "items": [
         {
           "sev": "MEDIUM",
+          "label": "market disagreement",
+          "text": "The market disagrees by 9.3 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "sample",
           "text": "College ratings are built on twelve-game seasons against wildly uneven schedules; even a clean rating gap carries more estimation error than the number implies.",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 70h old",
           "widening": null
         },
         {
@@ -1484,18 +1496,6 @@
           "sev": "LOW",
           "label": "missing",
           "text": "away injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book spread joined to this game — no edge is claimed",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book total joined to this game",
           "widening": null
         }
       ],
@@ -1552,11 +1552,23 @@
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "BYU +3.2",
       "model_raw": "BYU +3.2",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+      "market": "BYU +12.5",
+      "difference": "9.3 points",
+      "difference_n": 9.3,
+      "difference_exact": 9.302864822764176,
+      "total_model": "51.2",
+      "total_market": "48.5",
+      "total_market_held": null,
+      "book": "captured consensus (stale) · 1 book · best at DraftKings",
+      "captured": "2026-10-10T00:04:01.399+00:00",
+      "capture_age": "70 hours old",
+      "stale": false,
+      "classification": "DATA FAULT",
+      "classification_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
     },
     "research_view": {
       "contract": "cfb_research_brief/1",
@@ -1568,11 +1580,26 @@
       "engine_status": "PREDICTED",
       "label": {
         "key": "NO_MARKET",
-        "label": "NO MARKET",
-        "rule": "no_market",
-        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
-      "disagreement": null,
+      "disagreement": {
+        "status": "MARKET_FAULT",
+        "verified": false,
+        "raw_market_gap": 9.3,
+        "verified_market_gap": null,
+        "calibrated_gap": 8.07,
+        "root_cause": "STALE_MARKET",
+        "failed": [
+          "MARKET.quote_fresh",
+          "MARKET.book_count",
+          "ROSTER.away_availability"
+        ],
+        "incomplete": [],
+        "favorite_flip": false,
+        "manual_review": false
+      },
       "fair": {
         "line_text": "Notre Dame -3.2",
         "favorite_team": "Notre Dame",
@@ -1583,8 +1610,18 @@
         "is_near_pickem": false
       },
       "market_gap": {
-        "available": false,
-        "reason": "no market line is joined to this game"
+        "available": true,
+        "points": 9.3,
+        "toward_team": "BYU",
+        "text": "9.3 pts toward BYU",
+        "market_line_text": "Notre Dame -12.5",
+        "market_home_margin": -12.5,
+        "favorite_differs": false,
+        "source": "captured consensus (stale) · 1 book · best at DraftKings",
+        "as_of": "2026-10-10T00:04:01.399+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": null
       },
       "confidence": {
         "score": 82,
@@ -1628,7 +1665,7 @@
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 15,
+            "score": 14.7,
             "max": 15
           },
           {
@@ -1652,7 +1689,7 @@
             "text": "up to +4"
           },
           {
-            "action": "Capture a market quote",
+            "action": "Refresh the market quote",
             "potential_gain": 2,
             "text": "up to +2"
           }
@@ -1685,7 +1722,7 @@
       },
       "best_available_line": {
         "available": false,
-        "reason": "no sportsbook quote has been captured for this game"
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1734,8 +1771,8 @@
     },
     "headline": "EdgeDesk projects Notre Dame 27, BYU 24.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "DATA FAULT",
+      "note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1887,7 +1924,7 @@
       "EdgeDesk’s line is BYU +3.2 on a neutral read of the two teams, before any book is consulted. Projected total 51.2.",
       "BYU wins 41% of the time in EdgeDesk’s simulation, Notre Dame 59%.",
       "Eight games in ten land between -25.2 and +16.8 for BYU. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "The market has BYU +12.5 at captured consensus (stale) · 1 book · best at DraftKings, 9.3 points from EdgeDesk’s number.",
       "Notre Dame quarterback: CJ Carr — started the last game; no announcement for this one.",
       "BYU quarterback: Bear Bachmeier — started the last game; no announcement for this one."
     ],
@@ -1984,6 +2021,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-12T21:13:54.478Z"
+    "at": "2026-10-12T21:43:47.288Z"
   }
 }

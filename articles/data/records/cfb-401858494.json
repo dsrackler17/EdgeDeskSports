@@ -9,7 +9,7 @@
   "aliases": [],
   "title": "Wisconsin vs. UCLA: EdgeDesk Model Projection, Matchup Analysis and Fair Spread",
   "seo_title": "Wisconsin vs. UCLA 2026: EdgeDesk Fair Spread & Model Projection",
-  "seo_description": "EdgeDesk fair spread for Wisconsin at UCLA: UCLA -6.3, fair total 46.1. UCLA wins 67% of simulations. Data confidence 83%. Model status NO MARKET. Research, not picks.",
+  "seo_description": "EdgeDesk fair spread for Wisconsin at UCLA: UCLA -6.3, fair total 46.1. UCLA wins 67% of simulations. Data confidence 83%. Model status INVESTIGATE. Research, not picks.",
   "excerpt": "UCLA carries the stronger underlying team rating — +10.3 against +5.7, a 4.6-point separation on a neutral field before home advantage, travel or rest. EdgeDesk makes it UCLA -6.3 before any sportsbook number is consulted, with UCLA winning 67% of simulations.",
   "home_team": "UCLA",
   "away_team": "Wisconsin",
@@ -21,11 +21,11 @@
   "game_time": "2026-10-17T23:30:00.000Z",
   "game_when_label": "2026-10-17 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-12T21:13:54.478Z",
-  "generated_at": "2026-10-12T21:13:54.478Z",
+  "updated_at": "2026-10-12T21:43:47.288Z",
+  "generated_at": "2026-10-12T21:43:47.288Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
-  "model_status": "NO MARKET",
-  "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+  "model_status": "INVESTIGATE",
+  "model_status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
   "confidence": 83,
   "priced": true,
   "fair_spread_text": "UCLA -6.3",
@@ -42,7 +42,7 @@
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-12. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
-  "market_source": null,
+  "market_source": "The sportsbook number on this page is a quote EdgeDesk captured at BetRivers on 2026-10-10, replayed from a committed snapshot rather than read live. It is the book’s number, not EdgeDesk’s, and EdgeDesk’s own number was produced before it was read. Source: EdgeDesk odds capture (public.signals), read by the newsletter pipeline.",
   "research": {
     "kind": "CFB_GAME",
     "game": {
@@ -155,8 +155,8 @@
         ],
         "basis": "Every applicable field EdgeDesk retrieved, over every applicable field. A question that does not arise here (weather in a dome, travel at a neutral site) leaves the denominator; a source that refused does not."
       },
-      "status": "NO MARKET",
-      "status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "status": "INVESTIGATE",
+      "status_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
       "engine": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
       "validation": "UNPROVEN — research only. Nothing on this page is graded as a bet."
     },
@@ -1420,6 +1420,12 @@
         },
         {
           "sev": "MEDIUM",
+          "label": "stale",
+          "text": "odds is 56h old",
+          "widening": null
+        },
+        {
+          "sev": "MEDIUM",
           "label": "Wisconsin — injury uncertainty",
           "text": "100% of projected starter value has no availability record.",
           "widening": null
@@ -1458,18 +1464,6 @@
           "sev": "LOW",
           "label": "missing",
           "text": "REGIME CHANGE (UCLA): REGIME CHANGE: new head coach; returning roster share at the 16th percentile. The long-run state is weighted 68% (regime curve) instead of 80% (standard curve) at 5 games played.",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book spread joined to this game — no edge is claimed",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "no book total joined to this game",
           "widening": null
         }
       ],
@@ -1526,11 +1520,23 @@
       "note": "Unknown is never scored as zero. Every line here is a gap EdgeDesk carries as uncertainty rather than filling in."
     },
     "market": {
-      "available": false,
+      "available": true,
       "model": "UCLA -6.3",
       "model_raw": "UCLA -6.3",
-      "headline": "No sportsbook spread is currently joined to this game.",
-      "note": "There is no model-vs-market comparison yet. Everything above is still EdgeDesk’s current view of the matchup; a missing price removes the comparison and nothing else."
+      "market": "UCLA -3.5",
+      "difference": "2.8 points",
+      "difference_n": 2.8,
+      "difference_exact": 2.7674041288054845,
+      "total_model": "46.1",
+      "total_market": "49.5",
+      "total_market_held": null,
+      "book": "captured consensus (stale) · 1 book · best at BetRivers",
+      "captured": "2026-10-10T14:00:01.583+00:00",
+      "capture_age": "56 hours old",
+      "stale": false,
+      "classification": "INVESTIGATE",
+      "classification_note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
+      "note": "EdgeDesk compares its own number with a captured price. The comparison is a research state, not a bet."
     },
     "research_view": {
       "contract": "cfb_research_brief/1",
@@ -1542,9 +1548,9 @@
       "engine_status": "PREDICTED",
       "label": {
         "key": "NO_MARKET",
-        "label": "NO MARKET",
-        "rule": "no_market",
-        "means": "There is no current market line to compare with: no market line is joined to this game. The projection stands on its own until a quote lands."
+        "label": "STALE MARKET",
+        "rule": "stale_market",
+        "means": "The market number on file is older than the freshness threshold, so any gap is measured against a price that may no longer exist. Excluded from research ranking until a fresh consensus lands."
       },
       "disagreement": null,
       "fair": {
@@ -1557,8 +1563,18 @@
         "is_near_pickem": false
       },
       "market_gap": {
-        "available": false,
-        "reason": "no market line is joined to this game"
+        "available": true,
+        "points": 2.8,
+        "toward_team": "UCLA",
+        "text": "2.8 pts toward UCLA",
+        "market_line_text": "UCLA -3.5",
+        "market_home_margin": 3.5,
+        "favorite_differs": false,
+        "source": "captured consensus (stale) · 1 book · best at BetRivers",
+        "as_of": "2026-10-10T14:00:01.583+00:00",
+        "stale": true,
+        "measured_from": "raw",
+        "note": null
       },
       "confidence": {
         "score": 83,
@@ -1566,11 +1582,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 88,
+        "pct": 87,
         "tier": "STRONG",
-        "text": "88 · STRONG",
+        "text": "87 · STRONG",
         "sub": "main deduction: Wisconsin’s availability report is not due yet",
-        "score": 88,
+        "score": 87,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1602,7 +1618,7 @@
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 15,
+            "score": 14.7,
             "max": 15
           },
           {
@@ -1617,18 +1633,18 @@
         "next_actions": [
           {
             "action": "Re-read availability inside the filing window (Wisconsin)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "potential_gain": 2,
+            "text": "up to +2"
           },
           {
             "action": "Re-read availability inside the filing window (UCLA)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "potential_gain": 2,
+            "text": "up to +2"
           },
           {
-            "action": "Capture a market quote",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Refresh the market quote",
+            "potential_gain": 2,
+            "text": "up to +2"
           }
         ],
         "stability": {
@@ -1665,7 +1681,7 @@
       },
       "best_available_line": {
         "available": false,
-        "reason": "no sportsbook quote has been captured for this game"
+        "reason": "every captured quote is past its freshness limit, so none is shown as available"
       },
       "projection_status": {
         "key": "STABLE",
@@ -1714,8 +1730,8 @@
     },
     "headline": "EdgeDesk projects UCLA 26, Wisconsin 20.",
     "state": {
-      "label": "NO MARKET",
-      "note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
+      "label": "INVESTIGATE",
+      "note": "EdgeDesk and the market disagree by enough to be worth a second look before anything is published.",
       "scope": "This describes the state of EdgeDesk’s model-versus-market research on this game. It is not a statement about whether the matchup is worth researching."
     },
     "score": {
@@ -1867,7 +1883,7 @@
       "EdgeDesk’s line is UCLA -6.3 on a neutral read of the two teams, before any book is consulted. Projected total 46.1.",
       "UCLA wins 67% of the time in EdgeDesk’s simulation, Wisconsin 33%.",
       "Eight games in ten land between -15.7 and +26.3 for UCLA. A single result inside that band tells you nothing new about either team.",
-      "No sportsbook spread is joined to this game, so there is no model-versus-market comparison. EdgeDesk’s own number and the research behind it are unchanged by that.",
+      "The market has UCLA -3.5 at captured consensus (stale) · 1 book · best at BetRivers, 2.8 points from EdgeDesk’s number.",
       "Wisconsin quarterback: Colton Joseph — started the last game; no announcement for this one.",
       "UCLA quarterback: Nico Iamaleava — started the last game; no announcement for this one."
     ],
@@ -1974,6 +1990,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-12T21:13:54.478Z"
+    "at": "2026-10-12T21:43:47.288Z"
   }
 }
