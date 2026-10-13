@@ -1,0 +1,275 @@
+{
+  "family": "football",
+  "table": "participation",
+  "grain": "one player per snap",
+  "priority": "P1",
+  "default_source": "nflverse participation / licensed charting",
+  "definition_status": "canonical_contract_not_claim_of_provider_coverage",
+  "keys": [
+    "record_id",
+    "revision"
+  ],
+  "columns": [
+    {
+      "field": "record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "event_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "entity_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "source_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Source registry identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "source_record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Original provider record identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "occurred_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "known_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "retrieved_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "revision",
+      "type": "integer",
+      "unit": "none",
+      "description": "Monotone version of this source record.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "quality_status",
+      "type": "text",
+      "unit": "none",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "play_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Play id.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "player_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Player id.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "team_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Team id.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "position",
+      "type": "text",
+      "unit": "category",
+      "description": "Position.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "assignment",
+      "type": "text",
+      "unit": "category",
+      "description": "Assignment.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "route_type",
+      "type": "text",
+      "unit": "category",
+      "description": "Route type.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "alignment",
+      "type": "text",
+      "unit": "category",
+      "description": "Alignment.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "coverage_assignment",
+      "type": "text",
+      "unit": "category",
+      "description": "Coverage assignment.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "on_field",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "On field.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "ran_route",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Ran route.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "pass_block",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Pass block.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "run_block",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Run block.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "targeted",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Targeted.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "pressured_passer",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Pressured passer.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "time_to_throw",
+      "type": "integer",
+      "unit": "seconds",
+      "description": "Time to throw.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "time_to_pressure",
+      "type": "integer",
+      "unit": "seconds",
+      "description": "Time to pressure.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "receiver_separation",
+      "type": "number",
+      "unit": "yards",
+      "description": "Receiver separation.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "cushion",
+      "type": "number",
+      "unit": "yards",
+      "description": "Cushion.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "route_depth",
+      "type": "number",
+      "unit": "yards",
+      "description": "Route depth.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    }
+  ]
+}

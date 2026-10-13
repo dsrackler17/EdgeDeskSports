@@ -14,6 +14,7 @@
 | Retrosheet game logs (`chadwickbureau/retrosheet`) | MLB results, starters, parks 2010-2023, 2025 | keyless | free with the Retrosheet notice | yearly | free |
 | `nflverse/nfldata` games.csv | the data pack's NFL labels cross-check (the football engine's own source) | keyless | CC-BY-4.0 | weekly | free |
 | The EdgeDesk Quant Data Pack (`datapack/quant_v1`) | one ESPN season per sport, NFL derived tables, MLB 2024, UFC 2024, contracts | imported | research copies; each source's terms (`sources/source_registry.json`) | one-off | — |
+| The EdgeDesk NFL Data Pack (`datapack/nfl_v1`) | nflverse 2025-2026 play-by-play (2026 partial), snaps, rosters, depth charts, injuries, PFR advanced, NGS; derived 2022-2026 tables | imported (Parquet read by my own helpers with pyarrow) | nflverse CC-BY-4.0; NGS/PFR/ESPN upstream terms not certified | one-off | — |
 | The EdgeDesk NHL Data Pack (`datapack/nhl_v1`) | ESPN's full 2024-25 NHL season: games, events, shot attempts, player and goalie boxes, officials, lagged features | imported (the two largest tables gzipped, verified on their uncompressed bytes) | ESPN public responses; redistribution rights not certified — research copy | one-off | — |
 | Licensed closing archive (not present) | the market test | — | must be licensed | weekly | depends on source |
 
@@ -107,6 +108,15 @@ attempt, goalies, skaters, officials),
 `hockey/validation/nhl_blocked_attribution.json` (who shot a blocked attempt,
 every season), `hockey/validation/nhl_contracts.json` (canonical contracts and
 per-field missingness), `engine/missingness.json` (per sport and season).
+
+### NFL pack reports and crosswalk
+`datapack/nfl_v1/EDGEDESK_VERIFICATION.json` (18 checks and the facts found),
+`football/validation/nfl_pack_crosscheck.json` (the pack against games.csv and
+my live 2026 team-week table), `football/validation/nfl_pack_research.json`
+(offseason carryover and starting-QB change, held out), and
+`football/nfl/crosswalk/players_2024_2026.csv`: `gsis_id, pfr_id, espn_id,
+full_name, position, seasons, teams, status` — `status` is OK or
+`CONFLICT: …`, and a conflicting id is left blank.
 
 ### NHL crosswalks and officials — `hockey/data/crosswalk/`, `hockey/data/officials/`
 - `espn_nhl_2025.csv`: `espn_game_id, nhl_game_id, home, away, espn_start,

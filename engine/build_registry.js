@@ -40,7 +40,15 @@ function football(league) {
       file: ['football/validation/linemaker_' + league + '.json', 'football/validation/pricing_' + league + '.json'].join(' + '),
     };
   }
-  return { markets: out, files: ['football/validation/linemaker_' + league + '.json', 'football/validation/pricing_' + league + '.json'], generated_at: (lm && lm.generated_at) || (pr && pr.generated_at) };
+  const files = ['football/validation/linemaker_' + league + '.json', 'football/validation/pricing_' + league + '.json'];
+  const res = { markets: out, files, generated_at: (lm && lm.generated_at) || (pr && pr.generated_at) };
+  /* the NFL data pack: verified, reconciled with the brain's own sources, and researched (not in the price) */
+  const xc = league === 'nfl' && read('football/validation/nfl_pack_crosscheck.json');
+  if (xc && xc.labels) {
+    files.push('datapack/nfl_v1/EDGEDESK_VERIFICATION.json', 'football/validation/nfl_pack_crosscheck.json', 'football/validation/nfl_pack_research.json');
+    res.data = { loaded: true, note: 'nflverse history and the live 2026 season; second source: the NFL data pack, ' + xc.labels.final_agree + '/' + xc.labels.pack_games + ' games 2022-2026 agree with games.csv, live 2026 pass EPA r ' + xc.live_input_2026.pass_epa.r };
+  }
+  return res;
 }
 
 /* a lab walk-forward record (engine/lab/protocol.js) -> registry markets, the data and model rungs of the ladder */
@@ -142,7 +150,7 @@ function ladder(s, ev, rd) {
   };
 }
 
-const GAP_KEY = { nhl: 'nhl', nba: 'nba', wnba: 'wnba', ncaab_m: 'ncaam', ncaab_w: 'ncaaw', soccer: 'soccer', mlb: 'mlb', mma: 'ufc' };
+const GAP_KEY = { nfl: 'nfl', nhl: 'nhl', nba: 'nba', wnba: 'wnba', ncaab_m: 'ncaam', ncaab_w: 'ncaaw', soccer: 'soccer', mlb: 'mlb', mma: 'ufc' };
 function gapsFor(id) {
   const m = read('engine/missingness.json'); const k = GAP_KEY[id];
   if (!m || !k || !m.sports[k]) return [];

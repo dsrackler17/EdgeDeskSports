@@ -256,6 +256,8 @@
     "datapack:test": "node tools/datapack/datapack.test.js",
     "datapack:crosscheck": "node tools/datapack/crosscheck.js",
     "datapack:verify-nhl": "node tools/datapack/verify_nhl.js",
+    "datapack:verify-nfl": "node tools/datapack/verify_nfl.js",
+    "nfl:pack": "node football/nfl/pack_crosscheck.js && node football/nfl/research/pack_research.js",
     "nhl:second-source": "node hockey/crosscheck/espn.js && node hockey/crosscheck/blocked.js && node hockey/research/officials.js && node hockey/research/pack_features.js",
     "lab:ingest": "node basketball/ingest.js --league all && node soccer/ingest.js && node mlb/history/ingest.js",
     "lab:validate": "node basketball/walkforward.js --league all && node soccer/walkforward.js --league all && node mlb/history/walkforward.js && node engine/lab/ufc_elo.js",

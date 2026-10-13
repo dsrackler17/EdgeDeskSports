@@ -267,3 +267,111 @@ The verifier also records facts about the data, not pass/fail:
   net per shot.
 - First-publication times.
 - More than one season from this second source.
+
+---
+
+# The EdgeDesk NFL Data Pack — how it was integrated
+
+`EdgeDesk_NFL_Data_Pack.zip` (29 MB, SHA-256 `b8f05d62…`) is imported as
+shipped into `datapack/nfl_v1/`. It contains:
+
+- nflverse 2025 and 2026 play-by-play (62,613 plays, all 372 native columns);
+- snap counts, season and weekly rosters, depth charts, injuries, PFR
+  advanced passing/rushing/receiving/defense and NGS aggregates for 2024–2026;
+- derived team-game, opportunity, label and lagged tables for 2022–2026.
+
+Its 2022–24 seed tables are byte-identical to the Quant Data Pack's NFL
+tables. Its contracts are identical too. The pack's Python is never run;
+Parquet is read by my own helpers (`tools/datapack/parquet_meta.py`,
+`tools/datapack/parquet.js`) under `python3 -I`.
+
+## Verification (`tools/datapack/verify_nfl.js` → `EDGEDESK_VERIFICATION.json`)
+
+**PASSED, 18 of 18 checks.**
+
+- **Inventory:** every file's SHA-256, rows and columns match the inventory,
+  and every Parquet file matches its digest in the lossless-encoding
+  manifest.
+- **Time:** `known_at` is blank throughout.
+- **Seeds:** identical to the earlier pack.
+- **Play-by-play:** unique `(game, play)` keys; 285 games in 2025 (272
+  regular season, 13 playoff); 79 in 2026, through week 5 on 2026-10-12.
+  **2026 is PARTIAL.**
+- **Recomputed from play-by-play:** every 2025/2026 team-game measure, every
+  player opportunity cell and every game label.
+- **Recomputed over 2022–2026:** every prior-5/10/20 lagged feature, with the
+  target game excluded.
+- **Contracts:** each JSON Schema matches its empty template.
+- **Manifests:** only github.com URLs, with no signed queries.
+
+Facts it records:
+
+- **Windows cross seasons:** the prior-game windows run across the offseason.
+  The prior-5 window reaches into last season in 638 of 2,436 rows, the
+  prior-20 in 1,865.
+- **NGS week 0** is a separate season aggregate, not the sum of the published
+  weeks (equal in only 295 of 447 passing rows), so the two are never pooled.
+- **Identity:** the GSIS ↔ PFR ↔ ESPN roster crosswalk has 7 source conflicts.
+  - Two pairs of players share an ESPN id (DJ Turner and DJ Turner II;
+    Jaylon Jones and Jaylon Jones).
+  - Some players carry two PFR or two ESPN ids.
+
+  These ids are left out, never guessed. Coverage through the crosswalk:
+
+  | Table | Ids covered |
+  |---|---|
+  | Play-by-play players, injuries, NGS (2024+) | 100% |
+  | Depth charts (GSIS) | 99.6% |
+  | PFR advanced | 97% |
+  | Snap counts (PFR ids) | 79% |
+  | Depth charts (ESPN) | 64% |
+- **No timestamps:** injuries carry no publication time. Depth charts are a
+  weekly table in 2024 and timestamped provider snapshots from 2025, and
+  neither is a proven pregame announcement.
+- **NGS percentages** are 0–100, except `rush_pct_over_expected` (0–1).
+
+## Against my NFL brain's own sources (`football/nfl/pack_crosscheck.js`)
+
+- **Labels:** 1,218 of 1,218 pack games (2022–2026) are in nflverse
+  `games.csv`, with every final, every archived closing spread and every
+  total agreeing.
+- **Starting QB:** the pack's primary passer is `games.csv`'s listed starting
+  QB in 95.2% of team-games. The rest are injured or benched starters.
+- **The live input:** the pack's play-by-play against my committed 2026
+  team-week table (`football/nfl/stats_team_week_2026.csv`), which my live
+  NFL model absorbs:
+  - pass EPA r = 0.985 and rush EPA r = 0.905, with definitions stated per
+    field (scrambles, spikes);
+  - the table lacks one game the pack has (2026-10-12, BUF at LA). The
+    scheduled build fills it.
+- **Crosswalk:** `football/nfl/crosswalk/players_2024_2026.csv` covers 4,614
+  players, with conflicts blank and named.
+
+## Research (`football/nfl/research/pack_research.js` → `football/validation/nfl_pack_research.json`)
+
+The design was declared before any result: fit on 2023–24, score on 2025–26
+(2026 partial), squared error on the home margin, and a paired bootstrap by
+season-week.
+
+- **Offseason carryover**, as the pack's instructions ask. No rule beats the
+  pack's full carry by a distinguishable margin; δ = 0.25 was chosen on the
+  fitting window. Resetting at the season start is the worst choice early:
+  weeks 1–4 squared error is 204.9 against 169.2 when last season carries in
+  full. My NFL brain carries 0.8 of last season, which this supports.
+- **Starting-QB change:** −3.1 points per change (95% −4.4 to +0.3). It does
+  not improve held-out error by a distinguishable margin.
+
+  My brain's QB layer receives no QB starts in its scored replays, so it is
+  untested. That is filed as its own task, not changed here.
+- **Against the close:** every variant (squared error ≈ 172) is far from the
+  archived closing spread (≈ 151). These features do not approach the
+  market, and nothing here changes a price.
+
+## Still missing (the pack's P0 list)
+
+- Fresh and historical executable odds, with settlement rules.
+- Injury, inactive and QB-confirmation reports with publication times.
+- Routes and participation by snap.
+- A fully reconciled identity bridge (the 7 conflicts above).
+- First-publication times and frozen EPA/CPOE model versions.
+- The rest of the 2026 season.

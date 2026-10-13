@@ -1,0 +1,399 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "football.player_game",
+  "type": "object",
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "event_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "entity_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Source registry identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_record_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Original provider record identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "occurred_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "known_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "retrieved_at": {
+      "type": "string",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "description": "Monotone version of this source record.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "quality_status": {
+      "type": "string",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "snaps": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Snaps.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "offensive_snaps": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Offensive snaps.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "defensive_snaps": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Defensive snaps.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "special_teams_snaps": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Special teams snaps.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "routes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Routes.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "targets": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Targets.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "receptions": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Receptions.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "carries": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Carries.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "pass_attempts": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Pass attempts.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "completions": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Completions.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "passing_touchdowns": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Passing touchdowns.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "interceptions": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Interceptions.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "rushing_touchdowns": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Rushing touchdowns.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "receiving_touchdowns": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Receiving touchdowns.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "sacks": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Sacks.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "tackles": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Tackles.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "solo_tackles": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Solo tackles.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "tackles_for_loss": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Tackles for loss.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "pressures": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Pressures.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "qb_hits": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Qb hits.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "passes_defended": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Passes defended.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "field_goal_attempts": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Field goal attempts.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "field_goals_made": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Field goals made.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "passing_yards": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Passing yards.",
+      "x-unit": "yards",
+      "x-priority": "P1"
+    },
+    "receiving_yards": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Receiving yards.",
+      "x-unit": "yards",
+      "x-priority": "P1"
+    },
+    "rushing_yards": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Rushing yards.",
+      "x-unit": "yards",
+      "x-priority": "P1"
+    },
+    "air_yards": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Air yards.",
+      "x-unit": "yards",
+      "x-priority": "P1"
+    },
+    "yards_after_catch": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Yards after catch.",
+      "x-unit": "yards",
+      "x-priority": "P1"
+    },
+    "passing_epa": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Passing epa.",
+      "x-unit": "number",
+      "x-priority": "P1"
+    },
+    "rushing_epa": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Rushing epa.",
+      "x-unit": "number",
+      "x-priority": "P1"
+    },
+    "receiving_epa": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Receiving epa.",
+      "x-unit": "number",
+      "x-priority": "P1"
+    },
+    "cpoe": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Cpoe.",
+      "x-unit": "number",
+      "x-priority": "P1"
+    },
+    "target_share": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Target share.",
+      "x-unit": "number",
+      "x-priority": "P1"
+    },
+    "air_yard_share": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Air yard share.",
+      "x-unit": "number",
+      "x-priority": "P1"
+    }
+  },
+  "required": [
+    "record_id",
+    "source_id",
+    "retrieved_at",
+    "revision",
+    "quality_status"
+  ],
+  "additionalProperties": false
+}

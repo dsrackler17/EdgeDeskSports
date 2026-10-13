@@ -1,0 +1,374 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "shared.event_context",
+  "type": "object",
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "event_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "entity_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Source registry identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_record_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Original provider record identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "occurred_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "known_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "retrieved_at": {
+      "type": "string",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "description": "Monotone version of this source record.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "quality_status": {
+      "type": "string",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "home_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Home id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "away_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Away id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "venue_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Venue id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "competition_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Competition id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "season_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Season id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "scheduled_start": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Scheduled start.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "context_asof": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Context asof.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "season_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Season type.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "venue_surface": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Venue surface.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "roof_status": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Roof status.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "timezone": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Timezone.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "competition_rules": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Competition rules.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "home_rest_days": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Home rest days.",
+      "x-unit": "days",
+      "x-priority": "P0"
+    },
+    "away_rest_days": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Away rest days.",
+      "x-unit": "days",
+      "x-priority": "P0"
+    },
+    "home_travel_km": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Home travel km.",
+      "x-unit": "kilometers",
+      "x-priority": "P0"
+    },
+    "away_travel_km": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Away travel km.",
+      "x-unit": "kilometers",
+      "x-priority": "P0"
+    },
+    "home_games_last_7_days": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Home games last 7 days.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "away_games_last_7_days": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Away games last 7 days.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "home_timezone_shift_hours": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Home timezone shift hours.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "away_timezone_shift_hours": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Away timezone shift hours.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "venue_altitude": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Venue altitude.",
+      "x-unit": "meters",
+      "x-priority": "P0"
+    },
+    "temperature": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Temperature.",
+      "x-unit": "celsius",
+      "x-priority": "P0"
+    },
+    "wind_speed": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Wind speed.",
+      "x-unit": "mph",
+      "x-priority": "P0"
+    },
+    "wind_gust": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Wind gust.",
+      "x-unit": "mph",
+      "x-priority": "P0"
+    },
+    "humidity": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Humidity.",
+      "x-unit": "percent",
+      "x-priority": "P0"
+    },
+    "precipitation_probability": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Precipitation probability.",
+      "x-unit": "percent",
+      "x-priority": "P0"
+    },
+    "neutral_site": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Neutral site.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "rivalry_game": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Rivalry game.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "postseason": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Postseason.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "back_to_back_home": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Back to back home.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "back_to_back_away": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Back to back away.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    }
+  },
+  "required": [
+    "record_id",
+    "source_id",
+    "retrieved_at",
+    "revision",
+    "quality_status"
+  ],
+  "additionalProperties": false
+}

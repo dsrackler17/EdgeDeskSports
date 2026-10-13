@@ -1,0 +1,126 @@
+{
+ "schema": "edgedesk_nfl_pack_research_v1",
+ "windows": {
+  "history_from": 2022,
+  "fit": [
+   2023,
+   2024
+  ],
+  "score": [
+   2025,
+   2026
+  ],
+  "score_games": 364,
+  "fit_games": 570,
+  "note": "2026 is partial: through the pack's last game"
+ },
+ "carryover": {
+  "chosen_decay_on_fit": "decay_0.25",
+  "variants": {
+   "cross": {
+    "delta": 1,
+    "home_edge": 2.4255,
+    "slope": 30.2034,
+    "fit_mse": 178.9587,
+    "score_mse": 172.9488,
+    "score_mae": 10.2469,
+    "score_mse_weeks_1_4": 169.2204
+   },
+   "reset": {
+    "delta": 0,
+    "home_edge": 2.4353,
+    "slope": 22.3108,
+    "fit_mse": 184.237,
+    "score_mse": 186.8399,
+    "score_mae": 10.6877,
+    "score_mse_weeks_1_4": 204.9225
+   },
+   "decay_0.25": {
+    "delta": 0.25,
+    "home_edge": 2.4114,
+    "slope": 29.1876,
+    "fit_mse": 177.63,
+    "score_mse": 173.4781,
+    "score_mae": 10.3002,
+    "score_mse_weeks_1_4": 171.7295
+   },
+   "decay_0.5": {
+    "delta": 0.5,
+    "home_edge": 2.4149,
+    "slope": 30.1865,
+    "fit_mse": 177.7021,
+    "score_mse": 172.3787,
+    "score_mae": 10.2599,
+    "score_mse_weeks_1_4": 169.0366
+   },
+   "decay_0.75": {
+    "delta": 0.75,
+    "home_edge": 2.4201,
+    "slope": 30.3458,
+    "fit_mse": 178.2728,
+    "score_mse": 172.5512,
+    "score_mae": 10.251,
+    "score_mse_weeks_1_4": 168.9808
+   }
+  },
+  "reset_vs_cross": {
+   "mse_change": 13.8911,
+   "ci95": [
+    -6.9577,
+    38.0035
+   ],
+   "adds_information": false
+  },
+  "chosen_decay_vs_cross": {
+   "mse_change": 0.5293,
+   "ci95": [
+    -6.7264,
+    7.9742
+   ],
+   "adds_information": false
+  },
+  "chosen_decay_vs_reset": {
+   "mse_change": -13.3618,
+   "ci95": [
+    -31.9384,
+    1.7489
+   ],
+   "adds_information": false
+  }
+ },
+ "qb_change": {
+  "games_with_a_starter_change": 217,
+  "of_games": 934,
+  "points_per_change_fit": -3.0636,
+  "points_per_change_all_seasons_ci95": [
+   -4.442,
+   0.3415
+  ],
+  "score_mse_with_term": 174.9886,
+  "vs_without": {
+   "mse_change": 1.5104,
+   "ci95": [
+    -2.5963,
+    6.1884
+   ],
+   "adds_information": false
+  },
+  "reading": "listed starters come from nflverse games.csv after the fact; starters are usually announced before kickoff, but no announcement time is recorded, so this is a confirmed-starter scenario, not a pregame-certified feature"
+ },
+ "baselines": {
+  "home_edge_only": {
+   "score_mse": 194.6721,
+   "home_edge": 2.6
+  },
+  "closing_spread_label": {
+   "score_mse": 150.921,
+   "games": 364,
+   "note": "archived consensus close (spread_line, home favoured positive): a label, never a price I could have taken"
+  }
+ },
+ "conclusion": [
+  "No carryover rule beats the pack's full carry by a margin the held-out games can distinguish (decay_0.25 chosen on the fitting window). Resetting at the season start is the worst choice early: weeks 1-4 squared error 204.9225 against 169.2204 carrying in full — last season's games carry information.",
+  "A starting-QB change moves the margin by -3.0636 points (95% -4.442 to 0.3415) but does not improve held-out squared error by a distinguishable margin.",
+  "Every variant is far from the archived closing spread: these pack features do not approach the market, and nothing here changes a price."
+ ]
+}
