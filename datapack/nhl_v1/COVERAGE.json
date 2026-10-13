@@ -1,0 +1,109 @@
+{
+  "verified_at": "2026-10-13T12:01:27.060692+00:00",
+  "status": "passed",
+  "nhl_clubs": 32,
+  "games": 1398,
+  "season_type_counts": {
+    "2": 1312,
+    "3": 86
+  },
+  "shot_attempts": 167569,
+  "events": 448177,
+  "player_game_rows": 53259,
+  "goalie_game_rows": 2953,
+  "csv_datasets": 11,
+  "inventory": [
+    {
+      "file": "data/events.csv",
+      "rows": 448177,
+      "columns": 21,
+      "bytes": 115820354,
+      "sha256": "81ec63c971c30d823c929fe19dbda42fcdff59420c1018422a3b72a33e25aeff"
+    },
+    {
+      "file": "data/games.csv",
+      "rows": 1398,
+      "columns": 24,
+      "bytes": 274903,
+      "sha256": "e939606e825c166121eec714e40fbc03f8f97d1d35cd7c9641235f2c98054b1f"
+    },
+    {
+      "file": "data/goalie_game_boxscores.csv",
+      "rows": 2953,
+      "columns": 20,
+      "bytes": 252520,
+      "sha256": "eadb238916949b156b1f1a6fac9caf88f0f016b8896d3818464c0f89bbd1bb18"
+    },
+    {
+      "file": "data/goalie_game_measured_features.csv",
+      "rows": 2953,
+      "columns": 15,
+      "bytes": 241493,
+      "sha256": "6fe5fb3b27c364202de9e9d9a04d0597bee254c691ea6aec619334118804fd2d"
+    },
+    {
+      "file": "data/officials.csv",
+      "rows": 5722,
+      "columns": 4,
+      "bytes": 198079,
+      "sha256": "c1629dbab28ff3c79db0f03799b3541a9b4300a2fffe8803e021bff74c310a8e"
+    },
+    {
+      "file": "data/player_game_boxscores.csv",
+      "rows": 53259,
+      "columns": 41,
+      "bytes": 6853211,
+      "sha256": "7fbeb23d306a5cc608223901722efd021db74817db77e962606cb6ba625c26fc"
+    },
+    {
+      "file": "data/pregame_lagged_research_features.csv",
+      "rows": 2796,
+      "columns": 59,
+      "bytes": 1291408,
+      "sha256": "e6d729d07bc23a1a59e84c425ea39b794b4ecfeb71e5c4ab0f2f58d614bcdb4f"
+    },
+    {
+      "file": "data/schedule_all_statuses.csv",
+      "rows": 1514,
+      "columns": 11,
+      "bytes": 142279,
+      "sha256": "39b3690679bcc3964f444ddebe756b4b2d5315e8c7f007218d78dc105a9a64d3"
+    },
+    {
+      "file": "data/shot_attempts.csv",
+      "rows": 167569,
+      "columns": 41,
+      "bytes": 85037566,
+      "sha256": "f8548042cc6c69a3f918856ea3a83fada9e7ff91898a051b64441a35ea728084"
+    },
+    {
+      "file": "data/team_game_boxscores.csv",
+      "rows": 2796,
+      "columns": 19,
+      "bytes": 212981,
+      "sha256": "ea118042b6a2caaf488d3a096df936e7574448eb52c16dd619f5e223a2985bc7"
+    },
+    {
+      "file": "data/team_game_measured_features.csv",
+      "rows": 2796,
+      "columns": 41,
+      "bytes": 676907,
+      "sha256": "9c017296453955ea32f6215b0f3d4d9892943a097e7ab7f3a724fc17654a5982"
+    }
+  ],
+  "checks": [
+    "File counts and hashes",
+    "32-club scope; national tournaments excluded",
+    "Unique games, shot events and player/game rows",
+    "All shot records point to delivered games",
+    "Every prior-5/10/20 Corsi/Fenwick ratio independently recomputed",
+    "No target or future event in lagged features",
+    "Missing xG/GSAx retained, never fabricated"
+  ],
+  "limitations": [
+    "Not source rights certification",
+    "Not strict historical availability certification",
+    "Not model validation",
+    "Coordinate units and exact manpower not established"
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "schema": "edgedesk_datapack_import_v1",
+  "pack": "EdgeDesk NHL Data Pack",
+  "scope": "NHL 2024-25 club games (regular season and playoffs), ESPN public factual responses",
+  "imported_at": "2026-10-13",
+  "imported_into": "datapack/nhl_v1",
+  "source_archives": [
+    {
+      "name": "EdgeDesk_NHL_Data_Pack.zip",
+      "bytes": 26516820,
+      "sha256": "c725dbbe4fee272d21731dfcecb2f42bc625df433826c5eacfee7f3aa56fb339",
+      "files": 54,
+      "contents": "docs, COVERAGE.json, 11 tables, NHL and shared contracts, feature catalog, scripts, source manifests"
+    }
+  ],
+  "stored_gzipped": [
+    {
+      "file": "data/events.csv",
+      "stored_as": "data/events.csv.gz",
+      "uncompressed_bytes": 115820354,
+      "uncompressed_sha256": "81ec63c971c30d823c929fe19dbda42fcdff59420c1018422a3b72a33e25aeff",
+      "gzip_bytes": 14476963,
+      "gzip_sha256": "9332dcf1766b3e7f19b5d4c721587cdc491342801e86be1065312bca0971f8b6",
+      "reason": "GitHub refuses files over 100 MB (events.csv is 116 MB); gzip -n -9 is lossless and the verifier checks the SHA-256 of the uncompressed bytes"
+    },
+    {
+      "file": "data/shot_attempts.csv",
+      "stored_as": "data/shot_attempts.csv.gz",
+      "uncompressed_bytes": 85037566,
+      "uncompressed_sha256": "f8548042cc6c69a3f918856ea3a83fada9e7ff91898a051b64441a35ea728084",
+      "gzip_bytes": 9061027,
+      "gzip_sha256": "f6e1ea12567488fe700e2f4cda0f3d5e53efba47c25bbafee3019754abd23625",
+      "reason": "GitHub refuses files over 100 MB (events.csv is 116 MB); gzip -n -9 is lossless and the verifier checks the SHA-256 of the uncompressed bytes"
+    }
+  ],
+  "excluded_from_git": [],
+  "modified_after_import": [],
+  "not_executed": [
+    "scripts/collect_nhl.py",
+    "scripts/build_features.py",
+    "scripts/verify_and_package.py",
+    "scripts/quant_math.py (identical to datapack/quant_v1/scripts/quant_math.py, already ported to engine/quant.js)"
+  ],
+  "verification": "node tools/datapack/verify_nhl.js -> EDGEDESK_VERIFICATION.json",
+  "reconciliation": "node hockey/crosscheck/espn.js -> hockey/validation/nhl_crosscheck_espn.json",
+  "secret_scan": "tools/cfb/secret_audit.js over the extracted pack plus a pattern scan of the two gzipped tables: no secret, no signed URL; the manifests list only site.api.espn.com URLs"
+}

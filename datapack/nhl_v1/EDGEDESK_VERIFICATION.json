@@ -1,0 +1,615 @@
+{
+  "schema": "edgedesk_datapack_verification_v1",
+  "pack": "datapack/nhl_v1",
+  "verified_at": "2026-10-13T12:34:11.118Z",
+  "status": "PASSED",
+  "summary": {
+    "datasets": 11,
+    "verified": 11,
+    "failed": 0,
+    "games": 1398,
+    "shot_attempts": 167569,
+    "events": 448177,
+    "player_game_rows": 53259,
+    "goalie_game_rows": 2953,
+    "checks": 34,
+    "checks_passed": 34
+  },
+  "checks": [
+    {
+      "id": "inventory_sha256_rows_columns",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "id": "known_at_blank_everywhere",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "id": "no_unlisted_tables",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "id": "gzip_storage_declared",
+      "pass": true,
+      "detail": [
+        "data/events.csv",
+        "data/shot_attempts.csv"
+      ]
+    },
+    {
+      "id": "scope_32_clubs_national_excluded",
+      "pass": true,
+      "detail": {
+        "clubs": 32
+      }
+    },
+    {
+      "id": "scope_game_types",
+      "pass": true,
+      "detail": {
+        "2": 1312,
+        "3": 86
+      }
+    },
+    {
+      "id": "scope_all_final",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "id": "schedule_every_final_club_game_delivered",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "id": "unique_games",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "id": "unique_events",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "id": "unique_shots",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "id": "unique_player_games",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "id": "shots_are_events_of_delivered_games",
+      "pass": true,
+      "detail": {
+        "orphan": 0,
+        "mismatched": 0
+      }
+    },
+    {
+      "id": "shot_event_types",
+      "pass": true,
+      "detail": {
+        "Blocked": 47098,
+        "Goal": 8604,
+        "Missed": 41032,
+        "Shot": 70835
+      }
+    },
+    {
+      "id": "shooting_team_is_a_club_or_explicitly_unmapped",
+      "pass": true,
+      "detail": 0
+    },
+    {
+      "id": "unmapped_attempts_match_build_status",
+      "pass": true,
+      "detail": {
+        "unmapped": 33,
+        "build_status": 33
+      }
+    },
+    {
+      "id": "native_team_is_shooting_team_on_unblocked",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "id": "xg_never_filled",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "id": "shootout_candidates_regular_season_period_5_plus",
+      "pass": true,
+      "detail": 0
+    },
+    {
+      "id": "coordinates_flagged_unverified",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "id": "nonshootout_goals_recomputed",
+      "pass": true,
+      "detail": 0
+    },
+    {
+      "id": "final_minus_nonshootout_is_shootout_winner",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "id": "toi_seconds_parsed_from_mmss",
+      "pass": true,
+      "detail": 0
+    },
+    {
+      "id": "toi_es_plus_pp_plus_sh",
+      "pass": true,
+      "detail": {
+        "skater_rows": 50306,
+        "mismatched": 0
+      }
+    },
+    {
+      "id": "sog_is_shootout_goals_never_outside_shootouts",
+      "pass": true,
+      "detail": 0
+    },
+    {
+      "id": "goalie_xg_gsax_confirmation_blank",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "id": "goalie_sa_minus_sv_minus_ga_zero_or_minus_one",
+      "pass": true,
+      "detail": {
+        "0": 2933,
+        "-1": 20
+      }
+    },
+    {
+      "id": "measured_features_recomputed",
+      "pass": true,
+      "detail": {}
+    },
+    {
+      "id": "lagged_features_recomputed_target_excluded",
+      "pass": true,
+      "detail": {
+        "prior_not_strictly_earlier": 0
+      }
+    },
+    {
+      "id": "lagged_quality_label_retrospective",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "id": "schemas_match_quant_v1_contracts",
+      "pass": true,
+      "detail": {
+        "identical": 27,
+        "differ": [
+          "feature_catalog.json"
+        ]
+      }
+    },
+    {
+      "id": "json_schema_matches_empty_template",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "id": "feature_catalog_subset_of_quant_v1",
+      "pass": true,
+      "detail": {
+        "entries": 26,
+        "new_or_changed": []
+      }
+    },
+    {
+      "id": "manifest_matches_delivery",
+      "pass": true,
+      "detail": {
+        "selected": 1398,
+        "details": 1398
+      }
+    }
+  ],
+  "findings": {
+    "schedule_audit": {
+      "rows": 1514,
+      "by_type_status": {
+        "1:STATUS_CANCELED": 1,
+        "1:STATUS_FINAL": 104,
+        "1:STATUS_POSTPONED": 2,
+        "2:STATUS_FINAL": 1319,
+        "2:STATUS_POSTPONED": 2,
+        "3:STATUS_FINAL": 86
+      },
+      "final_club_games_not_delivered": [],
+      "national_team_events_excluded": 7,
+      "preseason_excluded": 107,
+      "note": "type 1 = preseason, 2 = regular season (with the Four Nations events), 3 = playoffs"
+    },
+    "event_types": {
+      "Blocked": 47098,
+      "End of Game": 1398,
+      "Face Off": 79480,
+      "Giveaway": 41765,
+      "Goal": 8604,
+      "Hit": 62813,
+      "Missed": 41032,
+      "Penalty": 9759,
+      "Period End": 4566,
+      "Period Start": 4567,
+      "Shootout End": 77,
+      "Shot": 70835,
+      "Stoppage": 62827,
+      "Takeaway": 13347,
+      "early intermission end": 1,
+      "early intermission start": 1,
+      "failed shot attempt": 7
+    },
+    "native_team_vs_shooting_team": {
+      "by_event_type": {
+        "Blocked": {
+          "n": 47090,
+          "native_is_shooting_team": 4131,
+          "native_is_defending_team": 42959
+        },
+        "Goal": {
+          "n": 8435,
+          "native_is_shooting_team": 8435,
+          "native_is_defending_team": 0
+        },
+        "Missed": {
+          "n": 40945,
+          "native_is_shooting_team": 40945,
+          "native_is_defending_team": 0
+        },
+        "Shot": {
+          "n": 70558,
+          "native_is_shooting_team": 70558,
+          "native_is_defending_team": 0
+        }
+      },
+      "blocked_native_is_defending_share": 0.912274,
+      "rule": "on Blocked rows the native team is usually the defending team but not always, so it cannot say who shot: every count here uses shooting_team_id (resolved from the shooter id)"
+    },
+    "coordinates_native": {
+      "with_xy": 167566,
+      "without_xy": 3,
+      "x": {
+        "min": -100,
+        "p01": -88,
+        "p99": 88,
+        "max": 100
+      },
+      "y": {
+        "min": -42,
+        "p01": -40,
+        "p99": 40,
+        "max": 42
+      },
+      "unit": "unverified (hockey/crosscheck/espn.js maps them against the NHL frame)"
+    },
+    "strength_labels": {
+      "Empty Net": 562,
+      "Even Strength": 142028,
+      "Penalty Shot": 7,
+      "Power Play": 16959,
+      "Shorthanded": 7505
+    },
+    "shot_type_extracted": {
+      "method": "description keyword (engineered, not a provider code)",
+      "counts": {
+        "(none)": 1043,
+        "Backhand": 8552,
+        "Deflected": 2041,
+        "Slap Shot": 13957,
+        "Snap Shot": 25286,
+        "Tip-In": 10625,
+        "Wrap-around": 867,
+        "Wrist Shot": 57592
+      }
+    },
+    "goalie_on_shot": {
+      "shots_on_goal": 70579,
+      "sog_without_goalie": 31,
+      "goals_without_goalie": 8435,
+      "rule": "a missing goalie id does not mean an empty net"
+    },
+    "shootouts": {
+      "games": 77,
+      "rule": "the native final includes the awarded shootout goal; nonshootout goals are the model target"
+    },
+    "end_period": {
+      "(blank)": 1398
+    },
+    "neutral_site": [
+      {
+        "game_id": "401687600",
+        "start": "2024-10-04T17:00Z",
+        "home": "Buffalo Sabres",
+        "away": "New Jersey Devils",
+        "venue": "O2 Arena (Prague)"
+      },
+      {
+        "game_id": "401687601",
+        "start": "2024-10-05T14:00Z",
+        "home": "New Jersey Devils",
+        "away": "Buffalo Sabres",
+        "venue": "O2 Arena (Prague)"
+      },
+      {
+        "game_id": "401687771",
+        "start": "2024-11-01T18:00Z",
+        "home": "Dallas Stars",
+        "away": "Florida Panthers",
+        "venue": "Nokia Arena"
+      },
+      {
+        "game_id": "401687776",
+        "start": "2024-11-02T16:00Z",
+        "home": "Florida Panthers",
+        "away": "Dallas Stars",
+        "venue": "Nokia Arena"
+      }
+    ],
+    "assists": {
+      "goals_with_two_assisters": 6348,
+      "collapsed_in_by_role_object": 6348,
+      "rule": "read participant_role_rows_json; the by-role object keeps one assister"
+    },
+    "player_groups": {
+      "defenses": 16915,
+      "forwards": 33391,
+      "goalies": 2953
+    },
+    "skaters_per_team_game": {
+      "17": 22,
+      "18": 2774
+    },
+    "sog_shootout_goals": {
+      "rows_above_zero": 0,
+      "shootout_games": 77,
+      "note": "SOG (shootout goals) is 0 in every row, including the shootout games: the field is not populated, so shootout scorers cannot be read from it"
+    },
+    "goalie_ga_not_in_sa": {
+      "rows": 20,
+      "of_which_toi_under_60_min": 13,
+      "note": "GA counts one goal that SA does not (most of these goalies were pulled): save rates use SV / SA, never GA"
+    },
+    "goalie_rows": {
+      "per_team_game": {
+        "1": 2637,
+        "2": 158
+      },
+      "team_games_without_goalie_row": [
+        {
+          "game_id": "401687863",
+          "start": "2024-11-15T02:00Z",
+          "team_id": "27",
+          "team": "Nashville Predators"
+        }
+      ],
+      "native_starter_flag": {
+        "(blank)": 2953
+      }
+    },
+    "sog_reconciliation": {
+      "team_games": 2796,
+      "pbp_sog_equals_box_shots": 2754,
+      "distribution": {
+        "0": 2754,
+        "1": 31,
+        "-1": 5,
+        "-2": 3,
+        "-3": 2,
+        "-4": 1
+      }
+    },
+    "officials": {
+      "rows": 5722,
+      "games": 1397,
+      "distinct_referees": 44,
+      "referees_listed_per_game": {
+        "2": 1311,
+        "3": 86
+      },
+      "three_referees_listed": {
+        "type 3": 86
+      },
+      "games_without_officials": [
+        "401688822"
+      ],
+      "note": "playoff listings can name three referees (ESPN does not say which two worked); no assignment time is recorded, so officials are research only"
+    },
+    "source_manifest": {
+      "source": "ESPN undocumented public factual feed",
+      "season": "2024-25",
+      "selected_completed_games": 1398,
+      "failures": 0,
+      "responses_listed": 1408,
+      "responses_with_retrieved_at": 1319,
+      "known_at_recorded": 0,
+      "digests_verifiable_here": 0,
+      "reason": "the raw responses were not shipped (sources/COLLECTION_MANIFEST.json raw_cache_not_shipped); the digests are kept as provenance",
+      "hosts": {
+        "site.api.espn.com": 1408
+      }
+    }
+  },
+  "datasets": [
+    {
+      "file": "data/events.csv",
+      "expected_rows": 448177,
+      "expected_sha256": "81ec63c971c30d823c929fe19dbda42fcdff59420c1018422a3b72a33e25aeff",
+      "stored_as": "data/events.csv.gz",
+      "sha_ok": true,
+      "bytes_ok": true,
+      "rows": 448177,
+      "columns": 21,
+      "ragged": 0,
+      "counts_ok": true,
+      "known_at": "BLANK",
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/games.csv",
+      "expected_rows": 1398,
+      "expected_sha256": "e939606e825c166121eec714e40fbc03f8f97d1d35cd7c9641235f2c98054b1f",
+      "stored_as": "data/games.csv",
+      "sha_ok": true,
+      "bytes_ok": true,
+      "rows": 1398,
+      "columns": 24,
+      "ragged": 0,
+      "counts_ok": true,
+      "known_at": "BLANK",
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/goalie_game_boxscores.csv",
+      "expected_rows": 2953,
+      "expected_sha256": "eadb238916949b156b1f1a6fac9caf88f0f016b8896d3818464c0f89bbd1bb18",
+      "stored_as": "data/goalie_game_boxscores.csv",
+      "sha_ok": true,
+      "bytes_ok": true,
+      "rows": 2953,
+      "columns": 20,
+      "ragged": 0,
+      "counts_ok": true,
+      "known_at": "BLANK",
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/goalie_game_measured_features.csv",
+      "expected_rows": 2953,
+      "expected_sha256": "6fe5fb3b27c364202de9e9d9a04d0597bee254c691ea6aec619334118804fd2d",
+      "stored_as": "data/goalie_game_measured_features.csv",
+      "sha_ok": true,
+      "bytes_ok": true,
+      "rows": 2953,
+      "columns": 15,
+      "ragged": 0,
+      "counts_ok": true,
+      "known_at": "BLANK",
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/officials.csv",
+      "expected_rows": 5722,
+      "expected_sha256": "c1629dbab28ff3c79db0f03799b3541a9b4300a2fffe8803e021bff74c310a8e",
+      "stored_as": "data/officials.csv",
+      "sha_ok": true,
+      "bytes_ok": true,
+      "rows": 5722,
+      "columns": 4,
+      "ragged": 0,
+      "counts_ok": true,
+      "known_at": "BLANK",
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/player_game_boxscores.csv",
+      "expected_rows": 53259,
+      "expected_sha256": "7fbeb23d306a5cc608223901722efd021db74817db77e962606cb6ba625c26fc",
+      "stored_as": "data/player_game_boxscores.csv",
+      "sha_ok": true,
+      "bytes_ok": true,
+      "rows": 53259,
+      "columns": 41,
+      "ragged": 0,
+      "counts_ok": true,
+      "known_at": "BLANK",
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/pregame_lagged_research_features.csv",
+      "expected_rows": 2796,
+      "expected_sha256": "e6d729d07bc23a1a59e84c425ea39b794b4ecfeb71e5c4ab0f2f58d614bcdb4f",
+      "stored_as": "data/pregame_lagged_research_features.csv",
+      "sha_ok": true,
+      "bytes_ok": true,
+      "rows": 2796,
+      "columns": 59,
+      "ragged": 0,
+      "counts_ok": true,
+      "known_at": "BLANK",
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/schedule_all_statuses.csv",
+      "expected_rows": 1514,
+      "expected_sha256": "39b3690679bcc3964f444ddebe756b4b2d5315e8c7f007218d78dc105a9a64d3",
+      "stored_as": "data/schedule_all_statuses.csv",
+      "sha_ok": true,
+      "bytes_ok": true,
+      "rows": 1514,
+      "columns": 11,
+      "ragged": 0,
+      "counts_ok": true,
+      "known_at": "NO_COLUMN",
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/shot_attempts.csv",
+      "expected_rows": 167569,
+      "expected_sha256": "f8548042cc6c69a3f918856ea3a83fada9e7ff91898a051b64441a35ea728084",
+      "stored_as": "data/shot_attempts.csv.gz",
+      "sha_ok": true,
+      "bytes_ok": true,
+      "rows": 167569,
+      "columns": 41,
+      "ragged": 0,
+      "counts_ok": true,
+      "known_at": "BLANK",
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/team_game_boxscores.csv",
+      "expected_rows": 2796,
+      "expected_sha256": "ea118042b6a2caaf488d3a096df936e7574448eb52c16dd619f5e223a2985bc7",
+      "stored_as": "data/team_game_boxscores.csv",
+      "sha_ok": true,
+      "bytes_ok": true,
+      "rows": 2796,
+      "columns": 19,
+      "ragged": 0,
+      "counts_ok": true,
+      "known_at": "BLANK",
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/team_game_measured_features.csv",
+      "expected_rows": 2796,
+      "expected_sha256": "9c017296453955ea32f6215b0f3d4d9892943a097e7ab7f3a724fc17654a5982",
+      "stored_as": "data/team_game_measured_features.csv",
+      "sha_ok": true,
+      "bytes_ok": true,
+      "rows": 2796,
+      "columns": 41,
+      "ragged": 0,
+      "counts_ok": true,
+      "known_at": "BLANK",
+      "state": "VERIFIED"
+    }
+  ],
+  "limitations": [
+    "Not a point-in-time certification: known_at is blank throughout, so every table is retrospective research data.",
+    "Not a licensing certification: ESPN's public responses carry no redistribution grant (sources/ACCESS_AND_RIGHTS.md).",
+    "Not model validation: the pack ships no trained model, no xG and no bookmaker prices.",
+    "One season (2024-25): enough to cross-check my NHL history and to explore; not enough to calibrate a 2026-27 model on its own."
+  ]
+}

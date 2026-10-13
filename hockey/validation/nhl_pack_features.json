@@ -1,0 +1,96 @@
+{
+ "schema": "edgedesk_nhl_pack_features_v1",
+ "season": 2025,
+ "question": "Given my model's out-of-sample moneyline probability, does a data-pack lagged feature still predict the result?",
+ "chosen_model": "xg_no_goalie",
+ "games": 1143,
+ "fit_games": 578,
+ "score_games": 565,
+ "fit_window": [
+  "2024-10-30",
+  "2025-01-20"
+ ],
+ "score_window": [
+  "2025-01-21",
+  "2025-04-17"
+ ],
+ "baseline_score_log_loss": 0.657149,
+ "baseline_recalibration": {
+  "intercept": 0.076985,
+  "slope": 0.835871
+ },
+ "tests": {
+  "corsi_share_prior_10": {
+   "log_loss_change": -0.001845,
+   "ci95": [
+    -0.008662,
+    0.005177
+   ],
+   "coefficients_per_sd": {
+    "corsi_share_prior_10": 0.174241
+   },
+   "adds_information": false
+  },
+  "fenwick_share_prior_10": {
+   "log_loss_change": -0.002771,
+   "ci95": [
+    -0.009958,
+    0.004983
+   ],
+   "coefficients_per_sd": {
+    "fenwick_share_prior_10": 0.206736
+   },
+   "adds_information": false
+  },
+  "regulation_goal_diff_prior_10": {
+   "log_loss_change": -0.000166,
+   "ci95": [
+    -0.002755,
+    0.002174
+   ],
+   "coefficients_per_sd": {
+    "regulation_goal_diff_prior_10": -0.06802
+   },
+   "adds_information": false
+  },
+  "hours_since_previous_start": {
+   "log_loss_change": 0.003873,
+   "ci95": [
+    -0.004007,
+    0.011247
+   ],
+   "coefficients_per_sd": {
+    "hours_since_previous_start": 0.211211
+   },
+   "adds_information": false
+  },
+  "games_in_prior_7_days": {
+   "log_loss_change": 0.004093,
+   "ci95": [
+    -0.002932,
+    0.01231
+   ],
+   "coefficients_per_sd": {
+    "games_in_prior_7_days": -0.179216
+   },
+   "adds_information": false
+  },
+  "all_five": {
+   "log_loss_change": 0.003461,
+   "ci95": [
+    -0.01,
+    0.017461
+   ],
+   "coefficients_per_sd": {
+    "corsi_share_prior_10": -0.23291,
+    "fenwick_share_prior_10": 0.485578,
+    "regulation_goal_diff_prior_10": -0.09798,
+    "hours_since_previous_start": 0.184445,
+    "games_in_prior_7_days": -0.122426
+   },
+   "adds_information": false
+  }
+ },
+ "conclusion": "No pack feature adds information beyond my model on the 2024-25 scoring half; none enters the price.",
+ "limits": "One season; the pack's lagged features are retrospective (first publication unknown); hours since the previous start is not recovery time or verified travel."
+}

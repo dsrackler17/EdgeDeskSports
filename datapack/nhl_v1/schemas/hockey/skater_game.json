@@ -1,0 +1,374 @@
+{
+  "family": "hockey",
+  "table": "skater_game",
+  "grain": "one skater game and strength state",
+  "priority": "P1",
+  "default_source": "NHL / boxscore / authorized analytics",
+  "definition_status": "canonical_contract_not_claim_of_provider_coverage",
+  "keys": [
+    "record_id",
+    "revision"
+  ],
+  "columns": [
+    {
+      "field": "record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "event_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "entity_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "source_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Source registry identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "source_record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Original provider record identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "occurred_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "known_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "retrieved_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "revision",
+      "type": "integer",
+      "unit": "none",
+      "description": "Monotone version of this source record.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "quality_status",
+      "type": "text",
+      "unit": "none",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "strength_state",
+      "type": "text",
+      "unit": "category",
+      "description": "Strength state.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "position",
+      "type": "text",
+      "unit": "category",
+      "description": "Position.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "toi_seconds",
+      "type": "integer",
+      "unit": "seconds",
+      "description": "Toi seconds.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "pp_toi_seconds",
+      "type": "integer",
+      "unit": "seconds",
+      "description": "Pp toi seconds.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "pk_toi_seconds",
+      "type": "integer",
+      "unit": "seconds",
+      "description": "Pk toi seconds.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "goals",
+      "type": "integer",
+      "unit": "count",
+      "description": "Goals.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "primary_assists",
+      "type": "integer",
+      "unit": "count",
+      "description": "Primary assists.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "secondary_assists",
+      "type": "integer",
+      "unit": "count",
+      "description": "Secondary assists.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "shots_on_goal",
+      "type": "integer",
+      "unit": "count",
+      "description": "Shots on goal.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "missed_shots",
+      "type": "integer",
+      "unit": "count",
+      "description": "Missed shots.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "blocked_shots",
+      "type": "integer",
+      "unit": "count",
+      "description": "Blocked shots.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "shots_blocked",
+      "type": "integer",
+      "unit": "count",
+      "description": "Shots blocked.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "hits",
+      "type": "integer",
+      "unit": "count",
+      "description": "Hits.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "takeaways",
+      "type": "integer",
+      "unit": "count",
+      "description": "Takeaways.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "giveaways",
+      "type": "integer",
+      "unit": "count",
+      "description": "Giveaways.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "penalty_minutes",
+      "type": "integer",
+      "unit": "count",
+      "description": "Penalty minutes.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "faceoffs_won",
+      "type": "integer",
+      "unit": "count",
+      "description": "Faceoffs won.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "faceoffs_lost",
+      "type": "integer",
+      "unit": "count",
+      "description": "Faceoffs lost.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "offensive_zone_starts",
+      "type": "integer",
+      "unit": "count",
+      "description": "Offensive zone starts.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "defensive_zone_starts",
+      "type": "integer",
+      "unit": "count",
+      "description": "Defensive zone starts.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "neutral_zone_starts",
+      "type": "integer",
+      "unit": "count",
+      "description": "Neutral zone starts.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "on_ice_shots_for",
+      "type": "integer",
+      "unit": "count",
+      "description": "On ice shots for.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "on_ice_shots_against",
+      "type": "integer",
+      "unit": "count",
+      "description": "On ice shots against.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "on_ice_attempts_for",
+      "type": "integer",
+      "unit": "count",
+      "description": "On ice attempts for.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "on_ice_attempts_against",
+      "type": "integer",
+      "unit": "count",
+      "description": "On ice attempts against.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "on_ice_goals_for",
+      "type": "integer",
+      "unit": "count",
+      "description": "On ice goals for.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "on_ice_goals_against",
+      "type": "integer",
+      "unit": "count",
+      "description": "On ice goals against.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "individual_xg",
+      "type": "number",
+      "unit": "number",
+      "description": "Individual xg.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "on_ice_xg_for",
+      "type": "number",
+      "unit": "number",
+      "description": "On ice xg for.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "on_ice_xg_against",
+      "type": "number",
+      "unit": "number",
+      "description": "On ice xg against.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    }
+  ]
+}

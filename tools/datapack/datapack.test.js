@@ -9,7 +9,9 @@
    line split settlement, exposures, baseball outs, shrinkage, and the
    fail-closed as-of rule); the verifier passes on the committed pack and
    catches a tampered file, a filled known_at and an invented xG; the
-   external-file fetch accepts only the pack's exact bytes.
+   external-file fetch accepts only the pack's exact bytes. The NHL pack
+   (datapack/nhl_v1) passes its own verifier, which catches a backdated
+   known_at, an invented xG and a changed lagged feature.
 
    Run: node tools/datapack/datapack.test.js
    =========================================================================== */
@@ -102,6 +104,35 @@ function verifyAt(dir) {
   lines[1] = lines[1].replace(/,(\r?)$/, ',2024-10-01T23:30:00Z$1');
   fs.writeFileSync(f, lines.join('\n'));
   ok('a backdated known_at is caught', verifyAt(p).indexOf('historical_known_at_blank') >= 0);
+}
+
+/* 3b. the NHL data pack (datapack/nhl_v1) */
+{
+  const V = require('./verify_nhl');
+  const r = V.verify();
+  ok('NHL pack: the verifier passes every check on the committed pack', r.status === 'PASSED' && r.checks.every((c) => c.pass) && r.summary.verified === 11, r.checks.filter((c) => !c.pass));
+  ok('NHL pack: the committed verification is a fresh run (time stamp aside)', (() => { const c = JSON.parse(fs.readFileSync(path.join(ROOT, 'datapack', 'nhl_v1', 'EDGEDESK_VERIFICATION.json'), 'utf8')); delete c.verified_at; const x = JSON.parse(JSON.stringify(r)); delete x.verified_at; return JSON.stringify(c) === JSON.stringify(x); })());
+  ok('NHL pack: 32 clubs, 1,312 + 86 games, the Four Nations events excluded and counted', r.findings.schedule_audit.national_team_events_excluded === 7 && r.checks.find((c) => c.id === 'scope_game_types').pass);
+  ok('NHL pack: every lagged and measured feature recomputed, the target game excluded', r.checks.find((c) => c.id === 'lagged_features_recomputed_target_excluded').pass && r.checks.find((c) => c.id === 'measured_features_recomputed').pass);
+  ok('NHL pack: blocked rows name the defending team natively; every count uses the shooter', r.findings.native_team_vs_shooting_team.blocked_native_is_defending_share > 0.9 && r.findings.native_team_vs_shooting_team.by_event_type.Shot.native_is_defending_team === 0);
+  ok('NHL pack: SOG in these boxes is shootout goals, never shots on goal', r.checks.find((c) => c.id === 'sog_is_shootout_goals_never_outside_shootouts').pass && /shootout/.test(r.findings.sog_shootout_goals.note || 'shootout'));
+  ok('NHL pack: the two large tables are stored gzipped and verified on their uncompressed bytes', JSON.parse(fs.readFileSync(path.join(ROOT, 'datapack', 'nhl_v1', 'IMPORT.json'), 'utf8')).stored_gzipped.length === 2 && r.datasets.filter((d) => /\.gz$/.test(d.stored_as)).every((d) => d.sha_ok));
+  /* tamper, on a copy: a filled known_at, an invented xG and a changed lagged feature are each caught */
+  const zlib = require('zlib');
+  const tmpN = fs.mkdtempSync(path.join(os.tmpdir(), 'ednhl-'));
+  const cp = path.join(tmpN, 'nhl_v1'); fs.cpSync(path.join(ROOT, 'datapack', 'nhl_v1'), cp, { recursive: true });
+  const off = path.join(cp, 'data', 'officials.csv'); const ol = fs.readFileSync(off, 'utf8').split('\n'); ol[1] = ol[1].replace(/,(\r?)$/, ',2024-10-04T12:00:00Z$1'); fs.writeFileSync(off, ol.join('\n'));
+  const sa = path.join(cp, 'data', 'shot_attempts.csv.gz'); fs.writeFileSync(sa, zlib.gzipSync(zlib.gunzipSync(fs.readFileSync(sa)).toString('utf8').replace('description_keyword_extraction_not_provider_structured_code,,', 'description_keyword_extraction_not_provider_structured_code,0.071,')));
+  const lf = path.join(cp, 'data', 'pregame_lagged_research_features.csv'); const ll = fs.readFileSync(lf, 'utf8').split('\n'); const hdr = ll[0].split(','); const ci = hdr.indexOf('corsi_share_prior_10');
+  const row = ll.findIndex((l, i) => i > 0 && l.split(',')[ci] && l.split(',')[ci] !== ''); const cells = ll[row].split(','); cells[ci] = String(Number(cells[ci]) + 0.01); ll[row] = cells.join(','); fs.writeFileSync(lf, ll.join('\n'));
+  const { execFileSync } = require('child_process');
+  let failed = [];
+  try { failed = JSON.parse(execFileSync('node', ['-e', 'const r=require(' + JSON.stringify(path.join(__dirname, 'verify_nhl.js')) + ').verify();console.log(JSON.stringify(r.checks.filter(c=>!c.pass).map(c=>c.id)))'], { encoding: 'utf8', env: Object.assign({}, process.env, { EDGEDESK_NHL_PACK: cp }), maxBuffer: 1 << 26 })); } catch (e) { failed = ['CRASH ' + e.message]; }
+  ok('NHL pack: a backdated known_at is caught', failed.indexOf('known_at_blank_everywhere') >= 0, failed);
+  ok('NHL pack: an invented shot xG is caught', failed.indexOf('xg_never_filled') >= 0, failed);
+  ok('NHL pack: a changed lagged feature is caught by the recomputation', failed.indexOf('lagged_features_recomputed_target_excluded') >= 0, failed);
+  ok('NHL pack: each changed file fails its SHA-256', failed.indexOf('inventory_sha256_rows_columns') >= 0, failed);
+  fs.rmSync(tmpN, { recursive: true, force: true });
 }
 
 /* 4. the external fetch: only the pack's exact bytes */

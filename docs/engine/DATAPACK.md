@@ -128,3 +128,142 @@ fail-closed as-of rule. It is held to the pack's own test cases.
 - Owner review of terms before any paid use. NHL.com, ESPN, MLB and Retrosheet
   each have their own terms; openfootball is public domain; nflverse is
   CC-BY-4.0.
+
+---
+
+# The EdgeDesk NHL Data Pack — how it was integrated
+
+A second, NHL-only pack arrived as `EdgeDesk_NHL_Data_Pack.zip` (26.5 MB,
+SHA-256 `c725dbbe…`). It is ESPN's retrieval of the **whole 2024-25 NHL
+season**. It is imported as shipped into `datapack/nhl_v1/` (`IMPORT.json`).
+The two largest tables are stored gzipped: `events.csv` is 116 MB, over
+GitHub's file limit. Both are verified on their uncompressed bytes.
+
+I read `CLAUDE_NHL_START_HERE.md`, `README.md`, `COVERAGE.json`,
+`docs/MISSING_DATA_PRIORITY.csv` and `sources/ACCESS_AND_RIGHTS.md` first.
+The pack calls itself historical facts and features, not a trained or
+validated oddsmaker, and it is used as exactly that. Its schemas are
+byte-identical to the Quant Data Pack's contracts, so
+`hockey/contracts/canonical.js` already covers them. Its `quant_math.py` is
+the same file already ported to `engine/quant.js`.
+
+| Table | Rows | Columns |
+|---|---:|---:|
+| games | 1,398 (1,312 regular season, 86 playoffs) | 24 |
+| events | 448,177 | 21 |
+| shot_attempts | 167,569 | 41 |
+| player_game_boxscores | 53,259 | 41 |
+| goalie_game_boxscores / measured features | 2,953 | 20 / 15 |
+| team_game_boxscores / measured features | 2,796 | 19 / 41 |
+| pregame_lagged_research_features | 2,796 | 59 |
+| officials | 5,722 | 4 |
+| schedule_all_statuses | 1,514 | 11 |
+
+## Verification (`tools/datapack/verify_nhl.js` → `EDGEDESK_VERIFICATION.json`)
+
+**PASSED, 34 of 34 checks**, in Node. The pack's Python is never run. The
+checks cover:
+
+- **Inventory:** hashes, row and column counts.
+- **Time:** `known_at` is blank in every table.
+- **Scope:** 32 clubs, the 7 Four Nations events excluded and counted, and
+  every final club game delivered.
+- **Keys:** unique keys; every shot is an event of a delivered game.
+- **Shooting team:** `shooting_team_id` is a club, or explicitly unmapped
+  (33).
+- **Never filled:** xG, GSAx and pregame goalie confirmation stay blank.
+- **Goals:** final minus non-shootout goals is the shootout winner (77
+  shootouts).
+- **Units:** TOI parsed from mm:ss; ES + PP + SH = TOI.
+- **Features:** every measured team-game feature and every prior-5/10/20
+  lagged feature recomputed, with the target game excluded.
+- **Schemas:** identical to the contracts; each JSON Schema matches its empty
+  template.
+
+The verifier also records facts about the data, not pass/fail:
+
+- **Blocked rows:** the native team is the defending team 91% of the time,
+  and the shooting team the rest, so only `shooting_team_id` can say who shot.
+- **Assists:** the by-role object collapses two assisters into one in all
+  6,348 two-assist goals.
+- **Goals and goalies:** every goal row lacks a goalie id.
+- **Shootout goals:** `SOG` means shootout goals in these boxes and is never
+  populated, even in the 77 shootouts.
+- **Goals-against:** in 20 goalie rows GA counts a goal that SA does not.
+- **Missing rows:** one team-game has no goalie row, and one game has no
+  officials.
+- **Officials:** playoff listings name three referees.
+- **Neutral sites:** four games (Prague, Tampere).
+- **Not recorded:** `end_period` is never populated.
+- **Unverifiable:** the source manifest's 1,408 response digests cannot be
+  re-hashed here, because the raw responses were not shipped.
+
+## What the pack's instructions asked, and what was done
+
+1. **Stable IDs, provenance, scope.**
+   - Games map 1,398/1,398 to NHL ids (`hockey/data/crosswalk/espn_nhl_2025.csv`).
+   - Players map 1,027/1,027 (`espn_nhl_players_2025.csv`): 1,020 from id
+     pairs carried by matched events, 7 by name within the team-game.
+   - The 32-club scope holds; Four Nations events are excluded; shootout
+     conversions are never counted as ordinary goals.
+2. **`shooting_team_id`, not the native team; Even Strength is not 5v5;
+   shot type is engineered.** Every count here uses the shooter. This exposed
+   **an error in my own ingest**: my NHL feed names the blocking team on a
+   blocked attempt, and my ingest had credited it to the blocker.
+   - Across every season it is the shooter's club in 1 of 610,859 blocked
+     attempts.
+   - Against ESPN it is the shooter's club in 0 of 47,087 matched.
+   - Fixed in `hockey/ingest/game.js`: every season was re-ingested and
+     refitted (`docs/engine/NHL.md` §1).
+   - "Even Strength" is 5v5 in 94.6% of attempts, so my states come from
+     skater counts.
+   - The description-extracted shot type agrees with the NHL's code 99.5% of
+     the time.
+3. **Units and nulls.**
+   - TOI is parsed to seconds and verified.
+   - ESPN's coordinates, unverified in the pack, are the NHL's raw rink feet
+     (99.4% within 1 ft).
+   - Nulls stay null: no xG, GSAx, starter confirmation, shifts or prices
+     were invented.
+4. **P0 gaps.**
+   - **Shot model:** my own xG is regularised and walk-forward (each season
+     scored by a model fitted on earlier seasons, `hockey/xg/report.json`).
+   - **Strength-state exposure:** built from the NHL feed's on-ice counts.
+   - **Still missing:** timestamped goalie and lineup reports, shift charts,
+     and odds. No authorised source exists; nothing is filled in their place.
+5. **Separate regulation and OT/shootout components.** These already exist:
+   - a regulation goal model;
+   - an overtime and shootout model;
+   - separate fair prices for the regulation 3-way and the moneyline
+     including OT, then puck lines and totals (`hockey/model/distribution.js`).
+
+   Player props are not offered: no validated opportunity or TOI model exists.
+6. **Chronological held-out evaluation.** The walk-forward was rescored after
+   the fix:
+   - 17,236 games, 0 leakage violations;
+   - against Elo, −0.0038 log loss (95% −0.0056 to −0.0021);
+   - moneyline and puck line OUTCOME_VALIDATED; totals and the 3-way
+     PROVISIONAL.
+
+   The pack's lagged features were tested against my out-of-sample
+   probabilities on a later hold-out. None adds information
+   (`hockey/validation/nhl_pack_features.json`). Officials show no repeatable
+   referee effect (`hockey/validation/nhl_officials_research.json`). Neither
+   enters a price.
+7. **Odds only from verified fresh quotes.** Unchanged: NHL price capture
+   stays disabled until authorised. Without a fresh price there is no EV
+   claim, and the board says PASS.
+8. **The interface.**
+   - The NHL page's record names its second source with these figures, as a
+     check of past data, not a forecast.
+   - The Engine panel's readiness ladder and sources list it.
+   - Nothing from 2024-25 is shown as a current projection.
+
+## Still missing (the pack's P0 list, unchanged by this import)
+
+- Timestamped executable odds and settlement rules.
+- Pregame goalie confirmations and lineup or injury reports with timestamps.
+- Shift charts, and so exact on-ice exposure from a second source and empty
+  net per shot.
+- First-publication times.
+- More than one season from this second source.

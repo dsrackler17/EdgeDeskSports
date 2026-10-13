@@ -1,133 +1,267 @@
 {
- "schema": "edgedesk_nhl_crosscheck_v1",
+ "schema": "edgedesk_nhl_crosscheck_v2",
  "season": 2025,
  "season_label": "2024-25",
  "sources": {
   "primary": "NHL game feeds via sportsdataverse fastRhockey (my history)",
-  "second": "ESPN, as retrieved in the data pack (datapack/quant_v1/data/nhl), research copy"
+  "second": "ESPN public responses, full season, as delivered in the NHL data pack (datapack/nhl_v1, verified by tools/datapack/verify_nhl.js)"
  },
  "games": {
-  "espn_rows": 1443,
-  "espn_final": 1440,
+  "espn_club_games": 1398,
   "nhl_feed_games": 1398,
   "matched": 1398,
-  "unmatched": 45,
-  "unmatched_by_reason": {
-   "preseason": 35,
-   "ESPN status STATUS_CANCELED": 1,
-   "ESPN status STATUS_POSTPONED": 2,
-   "not an NHL club game": 7
-  },
-  "unmatched_examples": [
+  "unmatched": 0,
+  "unmatched_by_reason": {},
+  "unmatched_examples": [],
+  "neutral_site": [
    {
-    "espn_game_id": "401685327",
-    "side": "espn",
-    "reason": "preseason (my history excludes preseason by design)",
-    "home": "PIT",
-    "away": "DET",
-    "start": "2024-10-01T23:00Z"
+    "espn_game_id": "401687600",
+    "nhl_game_id": 2024020001,
+    "venue": "O2 Arena (Prague), Czechia",
+    "home": "BUF",
+    "my_model_home_ice": "applied (no neutral-site flag in my feed)"
    },
    {
-    "espn_game_id": "401685328",
-    "side": "espn",
-    "reason": "preseason (my history excludes preseason by design)",
-    "home": "NYR",
-    "away": "NJD",
-    "start": "2024-10-01T23:00Z"
+    "espn_game_id": "401687601",
+    "nhl_game_id": 2024020002,
+    "venue": "O2 Arena (Prague), Czechia",
+    "home": "NJD",
+    "my_model_home_ice": "applied (no neutral-site flag in my feed)"
    },
    {
-    "espn_game_id": "401685329",
-    "side": "espn",
-    "reason": "preseason (my history excludes preseason by design)",
-    "home": "MTL",
-    "away": "OTT",
-    "start": "2024-10-01T23:00Z"
+    "espn_game_id": "401687771",
+    "nhl_game_id": 2024020168,
+    "venue": "Nokia Arena, Finland",
+    "home": "DAL",
+    "my_model_home_ice": "applied (no neutral-site flag in my feed)"
    },
    {
-    "espn_game_id": "401685330",
-    "side": "espn",
-    "reason": "preseason (my history excludes preseason by design)",
-    "home": "BOS",
-    "away": "PHI",
-    "start": "2024-10-01T23:00Z"
-   },
-   {
-    "espn_game_id": "401685325",
-    "side": "espn",
-    "reason": "preseason (my history excludes preseason by design)",
-    "home": "MIN",
-    "away": "CHI",
-    "start": "2024-10-02T00:00Z"
-   },
-   {
-    "espn_game_id": "401685326",
-    "side": "espn",
-    "reason": "preseason (my history excludes preseason by design)",
-    "home": "STL",
-    "away": "CBJ",
-    "start": "2024-10-02T00:00Z"
-   },
-   {
-    "espn_game_id": "401685332",
-    "side": "espn",
-    "reason": "preseason (my history excludes preseason by design)",
-    "home": "COL",
-    "away": "VGK",
-    "start": "2024-10-02T01:30Z"
-   },
-   {
-    "espn_game_id": "401685331",
-    "side": "espn",
-    "reason": "preseason (my history excludes preseason by design)",
-    "home": "SJS",
-    "away": "UTA",
-    "start": "2024-10-02T02:00Z"
-   },
-   {
-    "espn_game_id": "401685333",
-    "side": "espn",
-    "reason": "preseason (my history excludes preseason by design)",
-    "home": "CAR",
-    "away": "NSH",
-    "start": "2024-10-02T23:00Z"
-   },
-   {
-    "espn_game_id": "401685334",
-    "side": "espn",
-    "reason": "preseason (my history excludes preseason by design)",
-    "home": "TBL",
-    "away": "FLA",
-    "start": "2024-10-02T23:00Z"
-   },
-   {
-    "espn_game_id": "401685336",
-    "side": "espn",
-    "reason": "preseason (my history excludes preseason by design)",
-    "home": "WPG",
-    "away": "CGY",
-    "start": "2024-10-03T00:00Z"
-   },
-   {
-    "espn_game_id": "401685335",
-    "side": "espn",
-    "reason": "preseason (my history excludes preseason by design)",
-    "home": "SEA",
-    "away": "EDM",
-    "start": "2024-10-03T02:00Z"
+    "espn_game_id": "401687776",
+    "nhl_game_id": 2024020174,
+    "venue": "Nokia Arena, Finland",
+    "home": "FLA",
+    "my_model_home_ice": "applied (no neutral-site flag in my feed)"
    }
   ]
  },
  "results": {
   "compared": 1398,
   "final_agree": 1398,
-  "past_regulation_agree": 1398,
+  "decided_agree": 1398,
+  "team_games": 2796,
+  "regulation_goals_agree": 2796,
+  "shootouts_espn": 77,
   "disagreements": []
  },
+ "events": {
+  "recomputed_at_run": true,
+  "espn_attempts": 167061,
+  "matched": 167013,
+  "by_type": {
+   "Shot": {
+    "espn": 70579,
+    "matched": 70550
+   },
+   "Blocked": {
+    "espn": 47098,
+    "matched": 47087
+   },
+   "Missed": {
+    "espn": 40949,
+    "matched": 40942
+   },
+   "Goal": {
+    "espn": 8435,
+    "matched": 8434
+   }
+  },
+  "clock": {
+   "elapsed": 167012,
+   "remaining": 1
+  },
+  "coordinates": {
+   "compared": 167010,
+   "within_1ft_of_nhl_raw": 165931,
+   "within_1ft_of_mirrored": 0,
+   "by_type": {
+    "Shot": {
+     "compared": 70549,
+     "within_1ft": 69654
+    },
+    "Blocked": {
+     "compared": 47087,
+     "within_1ft": 46987
+    },
+    "Missed": {
+     "compared": 40940,
+     "within_1ft": 40857
+    },
+    "Goal": {
+     "compared": 8434,
+     "within_1ft": 8433
+    }
+   },
+   "share_within_1ft_of_nhl_raw": 0.9935,
+   "reading": "ESPN's x_native / y_native are the NHL's raw rink coordinates in feet (origin at centre ice, x along the length of the rink, x in ±100, y in ±42.5), not attack-normalised"
+  },
+  "blocked": {
+   "matched": 47087,
+   "espn_shooter_team_is_nhl_event_team": 0,
+   "espn_shooter_team_is_shooter_view_team": 47087,
+   "frame": {
+    "compared": 47087,
+    "feed_fixed_matches_period_frame": 53,
+    "shooter_view_matches_period_frame": 47034
+   },
+   "reading": "the NHL feed's event team on a BLOCKED_SHOT is the blocking team, and its fixed-frame x/y are rotated 180° from the frame of the period's other attempts; hockey/ingest/game.js shooterView() credits the attempt to the shooter and rotates the location back"
+  },
+  "strength": {
+   "espn_label_by_my_state": {
+    "Even Strength": {
+     "ev5": 134272,
+     "ena": 4085,
+     "enf": 648,
+     "evo": 2979,
+     "pp": 2,
+     "sh": 2
+    },
+    "Shorthanded": {
+     "sh": 2594,
+     "pp": 4738,
+     "ena": 130,
+     "enf": 41
+    },
+    "Power Play": {
+     "pp": 16220,
+     "ena": 374,
+     "sh": 343,
+     "enf": 16
+    },
+    "Empty Net": {
+     "enf": 562
+    },
+    "Penalty Shot": {
+     "ena": 7
+    }
+   },
+   "even_strength_is_5v5_share": 0.9457,
+   "reading": "ESPN's \"Even Strength\" also covers 4v4 and 3v3 (my \"evo\") and some goalie-pulled time: it is a label, not a manpower count"
+  },
+  "shot_type": {
+   "compared": 118883,
+   "agree": 118331,
+   "matrix": {
+    "Backhand -> wrist": 64,
+    "Wrist Shot -> tip-in": 60,
+    "Wrist Shot -> backhand": 57,
+    "Backhand -> tip-in": 50,
+    "Snap Shot -> wrist": 45,
+    "Wrist Shot -> snap": 34,
+    "Snap Shot -> tip-in": 24,
+    "Deflected -> wrist": 23,
+    "Wrist Shot -> deflected": 22,
+    "Backhand -> snap": 18
+   },
+   "agree_share": 0.9954
+  },
+  "match_rate": 0.9997
+ },
+ "unblocked_attempts": {
+  "team_games": 2796,
+  "exact": 2775,
+  "within_2": 2793,
+  "mean_abs_diff": 0.0122,
+  "largest": [
+   {
+    "nhl_game_id": 2024020228,
+    "team": "DET",
+    "espn": 56,
+    "nhl_feed": 60,
+    "diff": -4
+   },
+   {
+    "nhl_game_id": 2024020014,
+    "team": "DET",
+    "espn": 40,
+    "nhl_feed": 43,
+    "diff": -3
+   },
+   {
+    "nhl_game_id": 2024020076,
+    "team": "DET",
+    "espn": 32,
+    "nhl_feed": 35,
+    "diff": -3
+   },
+   {
+    "nhl_game_id": 2024020063,
+    "team": "DET",
+    "espn": 46,
+    "nhl_feed": 48,
+    "diff": -2
+   },
+   {
+    "nhl_game_id": 2024020098,
+    "team": "DET",
+    "espn": 16,
+    "nhl_feed": 18,
+    "diff": -2
+   }
+  ]
+ },
  "goalies": {
-  "team_games": 164,
-  "matched": 160,
-  "most_toi_is_my_starter": 156,
+  "team_games": 2795,
+  "most_toi_is_my_starter": 2723,
   "starter_disagreements": [
+   {
+    "nhl_game_id": 2024020014,
+    "team": "DET",
+    "espn_most_toi": "Cam Talbot (34:32)",
+    "my_starter": "V. Husso",
+    "note": "two goalies played: a pulled starter is expected to differ"
+   },
+   {
+    "nhl_game_id": 2024020034,
+    "team": "COL",
+    "espn_most_toi": "Justus Annunen (35:53)",
+    "my_starter": "A. Georgiev",
+    "note": "two goalies played: a pulled starter is expected to differ"
+   },
+   {
+    "nhl_game_id": 2024020043,
+    "team": "OTT",
+    "espn_most_toi": "Mads Sogaard (34:29)",
+    "my_starter": "A. Forsberg",
+    "note": "two goalies played: a pulled starter is expected to differ"
+   },
+   {
+    "nhl_game_id": 2024020057,
+    "team": "PIT",
+    "espn_most_toi": "Joel Blomqvist (49:00)",
+    "my_starter": "T. Jarry",
+    "note": "two goalies played: a pulled starter is expected to differ"
+   },
+   {
+    "nhl_game_id": 2024020073,
+    "team": "SJS",
+    "espn_most_toi": "Vitek Vanecek (38:14)",
+    "my_starter": "M. Blackwood",
+    "note": "two goalies played: a pulled starter is expected to differ"
+   },
+   {
+    "nhl_game_id": 2024020096,
+    "team": "MTL",
+    "espn_most_toi": "Cayden Primeau (48:55)",
+    "my_starter": "S. Montembeault",
+    "note": "two goalies played: a pulled starter is expected to differ"
+   },
+   {
+    "nhl_game_id": 2024020104,
+    "team": "UTA",
+    "espn_most_toi": "Karel Vejmelka (39:58)",
+    "my_starter": "C. Ingram",
+    "note": "two goalies played: a pulled starter is expected to differ"
+   },
    {
     "nhl_game_id": 2024020149,
     "team": "MTL",
@@ -136,81 +270,146 @@
     "note": "two goalies played: a pulled starter is expected to differ"
    },
    {
-    "nhl_game_id": 2024020758,
-    "team": "NJD",
-    "espn_most_toi": "Jake Allen (36:51)",
-    "my_starter": "J. Markstrom",
+    "nhl_game_id": 2024020165,
+    "team": "BOS",
+    "espn_most_toi": "Joonas Korpisalo (30:28)",
+    "my_starter": "J. Swayman",
     "note": "two goalies played: a pulled starter is expected to differ"
    },
    {
-    "nhl_game_id": 2024020413,
-    "team": "SJS",
-    "espn_most_toi": "Mackenzie Blackwood (40:00)",
-    "my_starter": "V. Vanecek",
+    "nhl_game_id": 2024020175,
+    "team": "PHI",
+    "espn_most_toi": "Aleksei Kolosov (51:25)",
+    "my_starter": "S. Ersson",
     "note": "two goalies played: a pulled starter is expected to differ"
    },
    {
-    "nhl_game_id": 2024020752,
-    "team": "NSH",
-    "espn_most_toi": "Justus Annunen (40:00)",
-    "my_starter": "J. Saros",
+    "nhl_game_id": 2024020230,
+    "team": "DAL",
+    "espn_most_toi": "Casey DeSmith (30:39)",
+    "my_starter": "J. Oettinger",
+    "note": "two goalies played: a pulled starter is expected to differ"
+   },
+   {
+    "nhl_game_id": 2024020241,
+    "team": "PIT",
+    "espn_most_toi": "Alex Nedeljkovic (49:44)",
+    "my_starter": "J. Blomqvist",
     "note": "two goalies played: a pulled starter is expected to differ"
    }
   ],
-  "goalie_rows": 167,
-  "goals_against_agree": 167,
-  "goals_against_disagreements": [],
-  "starter_flag_blank_in_espn": true
- },
- "unblocked_attempts": {
-  "team_games": 160,
-  "exact": 160,
-  "within_2": 160,
-  "mean_abs_diff": 0,
-  "largest": [
+  "goalie_rows": 2953,
+  "goals_against_agree": 2950,
+  "goals_against_disagreements": [
    {
-    "nhl_game_id": 2024020433,
-    "team": "TOR",
-    "espn": 46,
-    "nhl_feed": 46,
-    "diff": 0
-   },
-   {
-    "nhl_game_id": 2024020433,
-    "team": "PIT",
-    "espn": 42,
-    "nhl_feed": 42,
-    "diff": 0
-   },
-   {
-    "nhl_game_id": 2024020372,
-    "team": "PIT",
-    "espn": 48,
-    "nhl_feed": 48,
-    "diff": 0
-   },
-   {
-    "nhl_game_id": 2024020372,
+    "nhl_game_id": 2024020195,
     "team": "BOS",
-    "espn": 37,
-    "nhl_feed": 37,
-    "diff": 0
+    "espn_goalie": "Joonas Korpisalo",
+    "reason": "not among my goalies for this game (faced no unblocked attempt in my feed)"
    },
    {
-    "nhl_game_id": 2024020933,
-    "team": "BOS",
-    "espn": 65,
-    "nhl_feed": 65,
-    "diff": 0
+    "nhl_game_id": 2024020641,
+    "team": "EDM",
+    "espn_goalie": "Calvin Pickard",
+    "reason": "not among my goalies for this game (faced no unblocked attempt in my feed)"
+   },
+   {
+    "nhl_game_id": 2024020931,
+    "team": "NJD",
+    "espn_goalie": "Nico Daws",
+    "reason": "not among my goalies for this game (faced no unblocked attempt in my feed)"
    }
-  ]
+  ],
+  "shots_on_goal_compared": 2950,
+  "shots_on_goal_agree": 2930,
+  "shots_on_goal_disagreements": [
+   {
+    "nhl_game_id": 2024020218,
+    "goalie": "Darcy Kuemper",
+    "espn_sa": 22,
+    "nhl_feed_sog_faced": 23
+   },
+   {
+    "nhl_game_id": 2024020293,
+    "goalie": "Mackenzie Blackwood",
+    "espn_sa": 20,
+    "nhl_feed_sog_faced": 21
+   },
+   {
+    "nhl_game_id": 2024020317,
+    "goalie": "John Gibson",
+    "espn_sa": 32,
+    "nhl_feed_sog_faced": 33
+   },
+   {
+    "nhl_game_id": 2024020327,
+    "goalie": "Jake Allen",
+    "espn_sa": 25,
+    "nhl_feed_sog_faced": 26
+   },
+   {
+    "nhl_game_id": 2024020351,
+    "goalie": "Charlie Lindgren",
+    "espn_sa": 28,
+    "nhl_feed_sog_faced": 29
+   },
+   {
+    "nhl_game_id": 2024020453,
+    "goalie": "Andrei Vasilevskiy",
+    "espn_sa": 25,
+    "nhl_feed_sog_faced": 26
+   },
+   {
+    "nhl_game_id": 2024020575,
+    "goalie": "Tristan Jarry",
+    "espn_sa": 33,
+    "nhl_feed_sog_faced": 34
+   },
+   {
+    "nhl_game_id": 2024020647,
+    "goalie": "Juuse Saros",
+    "espn_sa": 29,
+    "nhl_feed_sog_faced": 30
+   }
+  ],
+  "goals_against_explained_by_espn_sa": 0,
+  "starter_disagreements_total": 72,
+  "starter_disagreements_in_one_goalie_games": 0
  },
- "lineups": {
+ "skaters": {
   "available": true,
-  "team_games": 160,
-  "skaters_agree": 158,
-  "toi_within_60s": 158,
+  "team_games": 2796,
+  "skaters_agree": 2781,
+  "team_toi_within_60s": 2782,
+  "player_rows": 50306,
+  "player_rows_mapped": 50306,
+  "player_toi_exact": 50304,
+  "player_toi_within_5s": 50306,
   "disagreements": [
+   {
+    "nhl_game_id": 2024020014,
+    "side": "h",
+    "espn_skaters": 17,
+    "my_skaters": 18,
+    "espn_toi_s": 16621,
+    "my_toi_s": 17832
+   },
+   {
+    "nhl_game_id": 2024020063,
+    "side": "h",
+    "espn_skaters": 17,
+    "my_skaters": 18,
+    "espn_toi_s": 16409,
+    "my_toi_s": 17534
+   },
+   {
+    "nhl_game_id": 2024020076,
+    "side": "a",
+    "espn_skaters": 17,
+    "my_skaters": 18,
+    "espn_toi_s": 16601,
+    "my_toi_s": 17664
+   },
    {
     "nhl_game_id": 2024020098,
     "side": "a",
@@ -220,19 +419,100 @@
     "my_toi_s": 17640
    },
    {
+    "nhl_game_id": 2024020111,
+    "side": "h",
+    "espn_skaters": 17,
+    "my_skaters": 18,
+    "espn_toi_s": 16893,
+    "my_toi_s": 17628
+   },
+   {
+    "nhl_game_id": 2024020122,
+    "side": "a",
+    "espn_skaters": 17,
+    "my_skaters": 18,
+    "espn_toi_s": 16716,
+    "my_toi_s": 17634
+   },
+   {
+    "nhl_game_id": 2024020179,
+    "side": "h",
+    "espn_skaters": 17,
+    "my_skaters": 18,
+    "espn_toi_s": 16649,
+    "my_toi_s": 17760
+   },
+   {
+    "nhl_game_id": 2024020206,
+    "side": "a",
+    "espn_skaters": 17,
+    "my_skaters": 18,
+    "espn_toi_s": 16880,
+    "my_toi_s": 17781
+   },
+   {
+    "nhl_game_id": 2024020220,
+    "side": "a",
+    "espn_skaters": 17,
+    "my_skaters": 18,
+    "espn_toi_s": 16774,
+    "my_toi_s": 18001
+   },
+   {
     "nhl_game_id": 2024020228,
     "side": "h",
     "espn_skaters": 17,
     "my_skaters": 18,
     "espn_toi_s": 16870,
     "my_toi_s": 17900
+   },
+   {
+    "nhl_game_id": 2024020242,
+    "side": "h",
+    "espn_skaters": 17,
+    "my_skaters": 18,
+    "espn_toi_s": 17423,
+    "my_toi_s": 17883
+   },
+   {
+    "nhl_game_id": 2024020261,
+    "side": "h",
+    "espn_skaters": 17,
+    "my_skaters": 18,
+    "espn_toi_s": 16965,
+    "my_toi_s": 17756
    }
-  ]
+  ],
+  "espn_box_short_one_skater": 15,
+  "unmapped_pack_attempts_in_those_games": 33,
+  "unmapped_pack_attempts": 33
+ },
+ "players": {
+  "espn_players": 1027,
+  "mapped": 1027,
+  "by_basis": {
+   "event id pairs": 1020,
+   "name within the team-game": 7
+  },
+  "conflicts": 2,
+  "nhl_id_mapped_twice": 0,
+  "unmapped_examples": []
+ },
+ "officials": {
+  "games": 1398,
+  "with_officials": 1397,
+  "without_officials": [
+   2024021223
+  ],
+  "three_referees_listed": 86,
+  "distinct_referees": 44,
+  "file": "hockey/data/officials/2025.csv",
+  "use": "research only: no assignment time is recorded (known_at and assumed_available_at blank)"
  },
  "reading": [
-  "Matched games prove the id map; a final that disagrees would be a data error in one source and is listed, never overwritten.",
+  "Matched games prove the game id map; matched attempts carry both sources' player ids, so the player crosswalk rests on id pairs, not names, wherever a player had an attempt.",
   "ESPN supplies no starter flag (native_starter_flag is blank), so \"starter\" is checked as the goalie with the most time on ice; a pulled starter is expected to differ.",
-  "Attempt counts can differ by a few: the two feeds classify some blocked or wide attempts differently, and ESPN coordinates are unverified native units (not converted).",
+  "Neither source is \"corrected\" from the other: a disagreement is listed with examples.",
   "This is a consistency check of retrospective data, not a point-in-time certification."
  ]
 }
