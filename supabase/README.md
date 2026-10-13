@@ -302,6 +302,21 @@ database. The answer is cached for 60 seconds in `public_home_board_cache`
 (internal), so a traffic spike is one build a minute. Report rows 1-4 should
 say `ok`. Tested by `tools/home/home_sql.test.js`.
 
+### `games_slate.sql` — Today's Games: the live layer and the subscriber's prices
+Needs nothing before it (`slate_markets()` uses `personal_research.sql`'s
+`edp_entitled()` when it exists, and entitles nobody when it does not). The slate
+itself is the static `today/slate.json`; this file adds what a static file cannot:
+`public.slate_live` and `public.slate_feed_state` (RLS on, no client grants), written
+only through `slate_live_ingest()` (service role) by the live poller
+(`tools/slate/live_poll.js`, `games-live.yml`). A (feed, day) that answered replaces
+what was held for it, so a moved game leaves its old day; an older read never
+overwrites a newer one; a failed read writes no events. `public_slate_live(from, to)`
+(anon, at most four days) returns status, score, clock and ESPN's pregame quote, with
+the (feed, day) pairs it covered and when. `slate_markets(from, to)` (authenticated)
+returns the `featured` snapshots capture already stored, every book with its own
+update time, to an entitled reader only; nothing is bought. Report rows 1-8 should say
+`ok`. Tested by `tools/slate/slate_sql.test.js`; see `docs/games/README.md`.
+
 ### `lifecycle_email.sql` — the four trial emails, and nothing more
 Run after `funnel.sql`. `lifecycle_settings` (one row; **`sending_enabled`
 defaults to false**, a switch per email, the renewal lead time — 24 to 120

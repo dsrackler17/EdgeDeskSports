@@ -147,7 +147,11 @@ has(APP, "EdgeDesk\\u2019s own graded record, in More. Its record, never yours."
 chk('the P&L summary is still the first thing under the Model performance header',
     /<div class="row-between"><h2 style="margin:0">Model performance[\s\S]{0,700}?<\/div>\s*(<!--[\s\S]*?-->\s*)*<div id="recPnlWrap"><\/div>/.test(APP));
 /* destinations with no seat light the seat that owns them */
-has(APP, "var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',news:'more',record:'more'};", 'everything reached through More lights More');
+has(APP, "var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',news:'more',record:'more',games:'research'};", 'everything reached through More lights More');
+/* Today's Games (#games) is the full slate behind the Research strip: it is not
+   a sixth seat, it lights Research, and #games routes through navHashRoute */
+has(APP, "games:'research'", 'the games page lights the Research seat, not a new one');
+has(APP, "if(/^#games(?:[\\/?]|$)/.test(h))", 'a #games link routes to the games page');
 has(APP, "var NAV_PRIMARY={research:1,card:1,portfolio:1,process:1};", '"remember last tab" remembers destinations only');
 
 /* ======================================================================== */

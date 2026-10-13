@@ -1,31 +1,6 @@
 # Changelog
 
-## 2026-10-13 — The NHL Data Pack: ESPN's full 2024-25 season, verified and reconciled event by event; it exposed a blocked-shot error in my ingest, now fixed across every season
 
-**I imported the NHL Data Pack and verified it independently: 34 of 34 checks, every lagged feature recomputed. I reconciled its whole season against my NHL feed, game by game, attempt by attempt, goalie by goalie and skater by skater. It agrees everywhere it should. It also showed that my feed names the *blocking* team on a blocked shot, which my ingest had credited to the blocker. I fixed that, re-ingested every season since 2010-11 and refitted xG and the walk-forward: the record holds, and the choice is unchanged. Officials and the pack's lagged features were measured; neither adds a repeatable signal, so neither enters a price.** Docs: `docs/engine/DATAPACK.md` (second half), `NHL.md` §1, `DATA.md`.
-
-- **The pack** (`datapack/nhl_v1`): 11 tables imported as shipped, the two largest gzipped and verified on their uncompressed bytes (`tools/datapack/verify_nhl.js`).
-  - 1,398 games, 448,177 events, 167,569 shot attempts, 53,259 player-games, 2,953 goalie-games, officials.
-  - `known_at` is blank throughout.
-  - The pack's Python is never run.
-- **Second source, full season** (`hockey/crosscheck/espn.js`, report schema v2):
-  - **Games:** 1,398/1,398, with every final, decision and regulation score agreeing.
-  - **Shot attempts:** 167,013/167,061 matched by period, second and shooter.
-  - **Coordinates:** ESPN x/y are the NHL's raw rink feet (99.4%).
-  - **Strength labels:** ESPN's "Even Strength" is 5v5 in 94.6% of attempts.
-  - **Goalies:** goals against agree for every goalie my feed saw.
-  - **Skaters:** every TOI agrees within 5 s.
-  - **Crosswalks:** game and player crosswalks; the officials are keyed to NHL ids.
-- **The fix** (`hockey/ingest/game.js` `shooterView`): a blocked attempt is credited to the shooter, and its location is rotated back into the period's frame.
-  - **Before:** the feed's event team was the shooter's club in 1 of 610,859 blocked attempts over 17 seasons (`hockey/crosscheck/blocked.js`), and ESPN's shooter matched it in 0 of 47,087.
-  - **After:** 47,087/47,087 match.
-  - **xG:** pooled held-out log loss is unchanged (0.212991 → 0.212986).
-  - **Walk-forward:** −0.0038 vs Elo (95% −0.0056 to −0.0021). Moneyline and puck line stay OUTCOME_VALIDATED.
-- **Research, not in the price**:
-  - **Referees** (`hockey/research/officials.js`): no repeatable effect on minors (p 0.065), power-play time (p 0.19) or goals (p 0.56).
-  - **The pack's prior-10 shares, goal difference and rest** (`hockey/research/pack_features.js`): none adds information beyond my model on a later 2024-25 hold-out.
-- **The app**: the NHL record names its second source with these figures, as a check of past data. The registry's NHL ladder and sources include it.
-- **CI**: the lab job verifies the NHL pack. The NHL job checks the cross-check, the blocked-shot audit and both research reports, and the weekly refit regenerates them. `no_bypass` §10 covers every new file. Spend stays zero.
 
 ## 2026-10-13 — The Quant Data Pack, integrated: verified history, NHL lineups and a second source, ten new walk-forward fits (four basketball leagues, five soccer leagues, MLB), and a six-rung readiness ladder
 

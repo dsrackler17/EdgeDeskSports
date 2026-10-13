@@ -2921,6 +2921,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_workspace.css?v=20261004b">
 <link rel="stylesheet" href="/lib/edgedesk_portfolio.css?v=20261012bh1">
 <link rel="stylesheet" href="/lib/edgedesk_intel.css?v=20261012ia8">
+<link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261013gm1">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3212,6 +3213,11 @@ body.focus .dk-focusnote{display:block}
       <button class="rs-tool ic" id="rsSavedBtn" onclick="rsToggleSaved()" title="Saved research" aria-label="Saved research"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button>
       <button class="rs-tool ic rs-ask" id="rsAskBtn" onclick="edAsk()" title="Ask EdgeDesk AI" aria-label="Ask EdgeDesk AI about the research"><svg viewBox="0 0 24 24"><path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2L12 3z"/></svg><span class="rs-ask-l">Ask AI</span></button>
       <p class="rs-sub">Model, market, roster and uncertainty in one place.</p></div>
+    <!-- TODAY'S GAMES (lib/edgedesk_games_ui.js over today/slate.json): what is being
+         played today in every sport, on the reader's own calendar day, each game one tap
+         from its research. The first thing in Research, so opening EdgeDesk answers
+         "what's on today?" before anything else. View all opens #games. docs/games/README.md -->
+    <section id="gamesStrip" class="gm-strip" aria-labelledby="gmStripH"></section>
     <!-- ASK EDGEDESK AI (lib/edgedesk_intel_ui.js): the research engine's front door, on every Research tab.
          Static, so the board re-rendering never clears what the reader is typing. -->
     <div id="iaAskHost"></div>
@@ -3442,6 +3448,12 @@ body.focus .dk-focusnote{display:block}
       <div class="rs-dossier-card" id="rsDossierCard"></div>
     </div>
   </section>
+
+  <!-- GAMES — the full daily slate (#games[/<sport>[/<date>]][?status=…&q=…]): every sport,
+       Yesterday / Today / Tomorrow and a date picker, status filters and team search. Its
+       state lives in the hash, so research opened from here comes Back to the same slate.
+       Owned by the Research seat (NAV_OWNER). lib/edgedesk_games_ui.js -->
+  <section id="v-games" class="view hide"><div id="gamesPage"></div></section>
 
   <!-- TERMS -->
   <!-- MORE — the secondary and system destinations. Every row opens something
@@ -4031,6 +4043,34 @@ window.mcRefresh=function(){
 <!-- BET HISTORY: loss patterns over the reader's own tickets (EDBETS), after the importer it groups leg rows with -->
 <script src="/lib/edgedesk_bet_history.js?v=20261012bh1"></script>
 <script src="/lib/edgedesk_readiness.js?v=20261012ia2"></script>
+<!-- TODAY'S GAMES: the slate kernel (dates, statuses, markets, research links), then the strip and page -->
+<script src="/lib/edgedesk_games.js?v=20261013gm1"></script>
+<script src="/lib/edgedesk_games_ui.js?v=20261013gm1"></script>
+<script>
+/* Today's Games in the terminal. The strip mounts once the page's own scripts
+   have defined SB_URL and edToken; the page mounts on its first #games visit.
+   Prices are the reader's: slate_markets() answers only an entitled login
+   (supabase/games_slate.sql). */
+(function(){
+  function gmOpts(){return {
+    host:'app', sbUrl:SB_URL, sbKey:SB_KEY,
+    /* the reader's own token (edToken refreshes it), but NOT through sbGet: a
+       function not yet installed is "no prices", never a database fault on
+       the System health pill */
+    loadMarkets:function(from,to){return edToken().then(function(t){
+      return fetch(SB_URL+'/rest/v1/rpc/slate_markets?p_from='+encodeURIComponent(from)+'&p_to='+encodeURIComponent(to),{headers:{apikey:SB_KEY,authorization:'Bearer '+t}});
+    }).then(function(r){if(r.status===404)return {entitled:false,available:false,events:[]};if(!r.ok)throw new Error('prices answered '+r.status);return r.json();});},
+    allHref:function(st){return window.EDGames.stateHash({sport:st.sport,date:st.date});}
+  };}
+  window.gmMountStrip=function(){var el=document.getElementById('gamesStrip');if(!el||!window.EDGamesUI||el.getAttribute('data-mounted'))return;el.setAttribute('data-mounted','1');window.EDGamesUI.mountStrip(el,gmOpts());};
+  window.gmShowPage=function(h){var el=document.getElementById('gamesPage');if(!el||!window.EDGamesUI)return;
+    if(!el.getAttribute('data-mounted')){el.setAttribute('data-mounted','1');window.EDGamesUI.mountPage(el,gmOpts());}
+    else if(h&&/^#games/.test(h))window.EDGamesUI.applyHash(h);
+    else if(window.EDGamesUI.page)window.EDGamesUI.page.setState(window.EDGamesUI.page.st);};
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){try{window.gmMountStrip();}catch(e){try{console.error('games strip',e);}catch(_){}}});
+  else try{window.gmMountStrip();}catch(e){}
+})();
+</script>
 <script src="/lib/edgedesk_intel_ui.js?v=20261012ia9"></script>
 <script src="/lib/edgedesk_portfolio_connectors.js?v=20261005pf3"></script>
 <script src="/lib/edgedesk_portfolio_connect_core.js?v=20261005pf3"></script>
@@ -5379,7 +5419,7 @@ var NAV_ALIAS={ledger:'portfolio',bets:'portfolio',records:'record',performance:
 var NAV_PRIMARY={research:1,card:1,portfolio:1,process:1};
 /* views with no seat light the seat that owns them, so a reader never loses
    their place: everything reached through More reads as More */
-var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',news:'more',record:'more'};
+var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',news:'more',record:'more',games:'research'};
 /* views that carry their own #hash, so a destination can be linked to */
 var NAV_HASH_RE=/^#(card|portfolio|process|more)(\/[a-z]+)?$/;
 function navPaint(on){var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++){var x=b[j].dataset.v===on;b[j].classList.toggle('on',x);if(x)b[j].setAttribute('aria-current','page');else b[j].removeAttribute('aria-current');}}
@@ -5428,6 +5468,7 @@ function show(v){if(v==='ai'){try{window.EDAI.open();}catch(_){}return;}/*ADDED:
   if(v==='portfolio'){try{if(window.pfOpen)window.pfOpen();}catch(_){}}   /* settles, refreshes live CLV and paints (lib/edgedesk_workspace_ui.js) */
   if(v==='process'){try{if(window.pcOpen)window.pcOpen();}catch(_){}}
   if(v==='setup'){try{if(window.setupOpen)window.setupOpen();}catch(_){}}
+  if(v==='games'){try{if(window.gmShowPage)window.gmShowPage(location.hash);}catch(_){}}
   plStop();}
 /* A #destination link — the ones this app always had (#card, #receipt=…) and
    the ones the five destinations add (#portfolio[/tab], #process, #more), plus
@@ -5439,6 +5480,8 @@ var NAV_HASH_MAP={card:'card',portfolio:'portfolio',process:'process',more:'more
 function navHashRoute(h){
   h=h||'';
   if(/^#receipt=/.test(h)){var rv=$('v-record');if(rv&&rv.classList.contains('hide'))show('record');return true;}
+  /* Today's Games: #games[/<sport>[/<date>]][?status=…&q=…] (lib/edgedesk_games.js parseState) */
+  if(/^#games(?:[\/?]|$)/.test(h)){if($('v-games').classList.contains('hide'))show('games');else{try{window.gmShowPage(h);}catch(_){}}return true;}
   var m=h.match(/^#([a-z]+)(?:\/([a-z]+))?$/);if(!m||!NAV_HASH_MAP[m[1]])return false;
   var t=NAV_HASH_MAP[m[1]];
   /* the coach was a Portfolio tab before it became the Process seat */

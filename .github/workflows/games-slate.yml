@@ -1,0 +1,70 @@
+# EdgeDesk Today's Games — build today/slate.json, the daily slate every page
+# reads (the terminal's strip, its #games page, the public /today/ page).
+#
+# EVERY HALF HOUR, AND CHEAP. The builder (tools/slate/build.js) reads ESPN's
+# public scoreboard one feed and one day at a time, and only the (feed, day)
+# buckets that are due: yesterday and today every 20 minutes, tomorrow hourly,
+# later days every three hours, a past day whose games are all final never
+# again. A steady half hour is a few dozen requests for every sport together;
+# readers never reach the provider, they read the committed file.
+#
+# INDEPENDENT OF ODDS. Nothing here touches the odds gateway, spends a credit
+# or waits for capture: the slate is complete when capture is paused or the
+# quota is exhausted. Prices ride along only where ESPN's scoreboard quotes a
+# named book before the game, and they sit in their own `markets` map.
+#
+# A FAILED READ NEVER EMPTIES THE SLATE: the previous read is carried with its
+# age, else the repo's own schedule files, else the day is marked failed so the
+# page says "Unable to load" rather than "No games".
+#
+# Commits only when the slate changed beyond its timestamps, through
+# tools/ci/push_generated.sh (our path on top of the remote tip, never a rebase).
+name: Today's Games slate
+
+on:
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Re-read every (feed, day) now, ignoring the refresh intervals'
+        type: boolean
+        default: false
+      verify:
+        description: 'Only read today''s scoreboard for every feed and report what answered (writes nothing)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: games-slate
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The slate's suites pass before anything is read or written
+        run: node tools/slate/games.test.js && node tools/slate/build.test.js
+      - name: Verify the source (report only)
+        if: ${{ inputs.verify }}
+        run: node tools/slate/build.js --verify
+      - name: Build today/slate.json
+        if: ${{ !inputs.verify }}
+        run: |
+          ARGS="--write"
+          if [ "${{ inputs.force }}" = "true" ]; then ARGS="$ARGS --force"; fi
+          node tools/slate/build.js $ARGS
+      - name: Commit via tools/ci/push_generated.sh
+        if: ${{ !inputs.verify }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "slate: today's games" -- today/slate.json
