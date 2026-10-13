@@ -1,0 +1,248 @@
+{
+  "family": "football",
+  "table": "college_roster_context",
+  "grain": "one college team season as-of version",
+  "priority": "P1",
+  "default_source": "CFBD / official roster / licensed charting",
+  "definition_status": "canonical_contract_not_claim_of_provider_coverage",
+  "keys": [
+    "record_id",
+    "revision"
+  ],
+  "columns": [
+    {
+      "field": "record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "event_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "entity_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "source_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Source registry identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "source_record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Original provider record identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "occurred_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "known_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "retrieved_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "revision",
+      "type": "integer",
+      "unit": "none",
+      "description": "Monotone version of this source record.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "quality_status",
+      "type": "text",
+      "unit": "none",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "returning_qb_starts",
+      "type": "integer",
+      "unit": "count",
+      "description": "Returning qb starts.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "returning_ol_starts",
+      "type": "integer",
+      "unit": "count",
+      "description": "Returning ol starts.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "returning_defensive_starts",
+      "type": "integer",
+      "unit": "count",
+      "description": "Returning defensive starts.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "transfer_additions",
+      "type": "integer",
+      "unit": "count",
+      "description": "Transfer additions.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "transfer_departures",
+      "type": "integer",
+      "unit": "count",
+      "description": "Transfer departures.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "recruiting_class_size",
+      "type": "integer",
+      "unit": "count",
+      "description": "Recruiting class size.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "returning_production_offense",
+      "type": "number",
+      "unit": "number",
+      "description": "Returning production offense.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "returning_production_defense",
+      "type": "number",
+      "unit": "number",
+      "description": "Returning production defense.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "recruit_composite",
+      "type": "number",
+      "unit": "number",
+      "description": "Recruit composite.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "team_talent_composite",
+      "type": "number",
+      "unit": "number",
+      "description": "Team talent composite.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "returning_snap_share",
+      "type": "number",
+      "unit": "number",
+      "description": "Returning snap share.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "conference",
+      "type": "text",
+      "unit": "category",
+      "description": "Conference.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "subdivision",
+      "type": "text",
+      "unit": "category",
+      "description": "Subdivision.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "coaching_scheme",
+      "type": "text",
+      "unit": "category",
+      "description": "Coaching scheme.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "offensive_coordinator",
+      "type": "text",
+      "unit": "category",
+      "description": "Offensive coordinator.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "defensive_coordinator",
+      "type": "text",
+      "unit": "category",
+      "description": "Defensive coordinator.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    }
+  ]
+}

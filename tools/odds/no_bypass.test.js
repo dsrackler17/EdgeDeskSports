@@ -152,7 +152,9 @@ chk('7 · the prop capture asks for the core markets only by default', JSON.stri
     'basketball/ingest.js', 'basketball/walkforward.js', 'basketball/build_slate.js', 'soccer/ingest.js', 'soccer/walkforward.js', 'soccer/build_slate.js',
     'mlb/history/ingest.js', 'mlb/history/walkforward.js', 'tools/datapack/verify.js', 'tools/datapack/fetch_external.js', 'tools/datapack/crosscheck.js',
     /* the NHL data pack (datapack/nhl_v1) and the research built on it */
-    'tools/datapack/verify_nhl.js', 'hockey/ingest/game.js', 'hockey/crosscheck/blocked.js', 'hockey/research/officials.js', 'hockey/research/pack_features.js'].forEach((f) => {
+    'tools/datapack/verify_nhl.js', 'hockey/ingest/game.js', 'hockey/crosscheck/blocked.js', 'hockey/research/officials.js', 'hockey/research/pack_features.js',
+    /* the NFL data pack (datapack/nfl_v1) and what is built on it */
+    'tools/datapack/verify_nfl.js', 'tools/datapack/parquet.js', 'football/nfl/pack_crosscheck.js', 'football/nfl/research/pack_research.js'].forEach((f) => {
     const t = read(f);
     /* a CALL is a URL to a spending function, a require of the gateway client, or the provider host — prose naming the gateway is fine */
     chk('10 · ' + f + ' calls no odds gateway, capture or provider', !/functions\/v1\/(odds_gateway|capture|odds|close)\b|require\([^)]*odds_gateway|api\.the-odds-api\.com|oddsblaze/.test(t));

@@ -1,0 +1,226 @@
+{
+ "schema": "edgedesk_nfl_pack_crosscheck_v1",
+ "pack": "datapack/nfl_v1",
+ "labels": {
+  "recomputed_at_run": true,
+  "pack_games": 1218,
+  "matched": 1218,
+  "final_agree": 1218,
+  "spread_line_agree": 1218,
+  "total_line_agree": 1218,
+  "type_agree": 1218,
+  "by_season": {
+   "2022": 284,
+   "2023": 285,
+   "2024": 285,
+   "2025": 285,
+   "2026": 79
+  },
+  "disagreements": [],
+  "reading": "Both are nflverse. spread_line / total_line are archived consensus closing lines without a capture time: research labels, never a market test or a \"pregame known\" price."
+ },
+ "starters": {
+  "recomputed_at_run": true,
+  "team_games": 2436,
+  "listed_starter_known": 2436,
+  "primary_passer_is_listed_starter": 2320,
+  "by_season": {
+   "2022": {
+    "compared": 568,
+    "agree": 550
+   },
+   "2023": {
+    "compared": 570,
+    "agree": 553
+   },
+   "2024": {
+    "compared": 570,
+    "agree": 520
+   },
+   "2025": {
+    "compared": 570,
+    "agree": 549
+   },
+   "2026": {
+    "compared": 158,
+    "agree": 148
+   }
+  },
+  "disagreements": [
+   {
+    "game": "2025_02_BUF_NYJ",
+    "team": "NYJ",
+    "primary_passer": "00-0028118 (13 att)",
+    "listed_starter": "00-0036945 Justin Fields"
+   },
+   {
+    "game": "2025_02_JAX_CIN",
+    "team": "CIN",
+    "primary_passer": "00-0035100 (33 att)",
+    "listed_starter": "00-0036442 Joe Burrow"
+   },
+   {
+    "game": "2025_04_WAS_ATL",
+    "team": "WAS",
+    "primary_passer": "00-0032268 (29 att)",
+    "listed_starter": "00-0039910 Jayden Daniels"
+   },
+   {
+    "game": "2025_07_CAR_NYJ",
+    "team": "NYJ",
+    "primary_passer": "00-0028118 (25 att)",
+    "listed_starter": "00-0036945 Justin Fields"
+   },
+   {
+    "game": "2025_08_BUF_CAR",
+    "team": "CAR",
+    "primary_passer": "00-0027973 (31 att)",
+    "listed_starter": "00-0039150 Bryce Young"
+   },
+   {
+    "game": "2025_08_TB_NO",
+    "team": "NO",
+    "primary_passer": "00-0040743 (32 att)",
+    "listed_starter": "00-0039376 Spencer Rattler"
+   },
+   {
+    "game": "2025_08_WAS_KC",
+    "team": "WAS",
+    "primary_passer": "00-0032268 (32 att)",
+    "listed_starter": "00-0039910 Jayden Daniels"
+   },
+   {
+    "game": "2025_09_DEN_HOU",
+    "team": "HOU",
+    "primary_passer": "00-0036898 (32 att)",
+    "listed_starter": "00-0039163 C.J. Stroud"
+   },
+   {
+    "game": "2025_10_CLE_NYJ",
+    "team": "NYJ",
+    "primary_passer": "00-0036945 (14 att)",
+    "listed_starter": "00-0028118 Tyrod Taylor"
+   },
+   {
+    "game": "2025_11_BAL_CLE",
+    "team": "CLE",
+    "primary_passer": "00-0040668 (18 att)",
+    "listed_starter": "00-0040704 Dillon Gabriel"
+   },
+   {
+    "game": "2025_11_NYJ_NE",
+    "team": "NYJ",
+    "primary_passer": "00-0036945 (28 att)",
+    "listed_starter": "00-0028118 Tyrod Taylor"
+   },
+   {
+    "game": "2025_14_IND_JAX",
+    "team": "IND",
+    "primary_passer": "00-0040206 (31 att)",
+    "listed_starter": "00-0035710 Daniel Jones"
+   }
+  ],
+  "share": 0.9524,
+  "reading": "A disagreement is usually an injured or benched starter (the backup threw more) or a two-QB game: the listed starter is who started; the primary passer is who threw most. Neither carries a pregame announcement time."
+ },
+ "live_input_2026": {
+  "pack_team_games": 158,
+  "live_team_games": 156,
+  "in_both": 156,
+  "pack_only": [
+   "2026_05_BUF_LA|BUF",
+   "2026_05_BUF_LA|LA"
+  ],
+  "live_only": [],
+  "dropbacks_exact": 118,
+  "pass_epa": {
+   "r": 0.9846,
+   "mean_abs_diff": 0.7571
+  },
+  "rush_epa": {
+   "r": 0.905
+  },
+  "definitions": {
+   "dropbacks": "pack: pass_attempt or sack on a scrimmage pass/run play with EPA, kneels and spikes out; live: attempts + sacks_suffered",
+   "pass_epa": "pack: EPA of those dropbacks; live: nflverse passing_epa (the passer's EPA, which treats fumbles after the catch differently)",
+   "rush_epa": "pack: designed rushes only (scrambles out); live: rushing_epa includes QB scrambles"
+  },
+  "reading": "my committed team-week table lacks 1 game(s) the pack has (built before it finished): 2026_05_BUF_LA"
+ },
+ "identity": {
+  "players": 4614,
+  "with_pfr": 2796,
+  "with_espn": 2920,
+  "conflicts": 7,
+  "conflict_examples": [
+   {
+    "gsis_id": "00-0032667",
+    "name": "Roy Robertson-Harris",
+    "kind": "one GSIS id, several ESPN ids",
+    "ids": [
+     "2574891",
+     "3159215"
+    ]
+   },
+   {
+    "gsis_id": "00-0035944",
+    "name": "Jonah Williams",
+    "kind": "one GSIS id, several PFR ids",
+    "ids": [
+     "WillJo10",
+     "WillJo16"
+    ]
+   },
+   {
+    "gsis_id": "00-0036527",
+    "name": "DJ Turner",
+    "kind": "ESPN id shared with another GSIS id",
+    "ids": [
+     "4036211"
+    ]
+   },
+   {
+    "gsis_id": "00-0037106",
+    "name": "Jaylon Jones",
+    "kind": "one GSIS id, several ESPN ids",
+    "ids": [
+     "4047655",
+     "4685145"
+    ]
+   },
+   {
+    "gsis_id": "00-0038407",
+    "name": "Jaylon Jones",
+    "kind": "ESPN id shared with another GSIS id",
+    "ids": [
+     "4685145"
+    ]
+   },
+   {
+    "gsis_id": "00-0038549",
+    "name": "DJ Turner II",
+    "kind": "one GSIS id, several ESPN ids",
+    "ids": [
+     "4036211",
+     "4572036"
+    ]
+   },
+   {
+    "gsis_id": "00-0040317",
+    "name": "Jacoby Jones",
+    "kind": "one GSIS id, several PFR ids",
+    "ids": [
+     "JoneJa15",
+     "JoneJa16"
+    ]
+   }
+  ],
+  "file": "football/nfl/crosswalk/players_2024_2026.csv",
+  "rule": "ids from the pack's season and weekly rosters; a conflicting id is blank in the crosswalk and named in status"
+ },
+ "reading": [
+  "Labels and starters are nflverse against nflverse: agreement proves the joins, not independence.",
+  "The live-input check is the pack's play-by-play against my committed team-week table, field by field, with the definitions stated.",
+  "This is a consistency check of retrospective data, not a point-in-time certification."
+ ]
+}

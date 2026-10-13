@@ -1,0 +1,38 @@
+{
+  "verified_at": "2026-10-13T12:37:59.655617+00:00",
+  "status": "passed",
+  "source_tables": 35,
+  "csv_tables": 7,
+  "new_raw_play_rows": 62613,
+  "new_raw_game_count": 364,
+  "new_raw_game_types": {
+    "data/play_by_play_2025.parquet": {
+      "REG": 272,
+      "POST": 13
+    },
+    "data/play_by_play_2026.parquet": {
+      "REG": 79
+    }
+  },
+  "new_raw_latest_game_date": "2026-10-12",
+  "feature_years": "2022-2026, latest season partial",
+  "team_game_rows": 2436,
+  "lagged_feature_rows": 2436,
+  "game_label_rows": 1218,
+  "player_stat_opportunity_rows": 79946,
+  "checks": [
+    "Parquet schemas/counts read successfully",
+    "Delivered source hashes match lossless encoding manifest",
+    "Source Parquet re-encoding previously verified exact value/type equality",
+    "Unique raw game/play and team/game keys",
+    "Every prior-5/10/20 feature independently recomputed",
+    "Target and future-game exclusion",
+    "Historical known_at kept blank"
+  ],
+  "limitations": [
+    "No strict historical availability certification",
+    "No trained model or validated live edge",
+    "No current executable bookmaker quotes",
+    "Provider-specific upstream rights not certified"
+  ]
+}

@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "football.college_roster_context",
+  "type": "object",
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "event_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "entity_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Source registry identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_record_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Original provider record identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "occurred_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "known_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "retrieved_at": {
+      "type": "string",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "description": "Monotone version of this source record.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "quality_status": {
+      "type": "string",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "returning_qb_starts": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Returning qb starts.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "returning_ol_starts": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Returning ol starts.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "returning_defensive_starts": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Returning defensive starts.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "transfer_additions": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Transfer additions.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "transfer_departures": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Transfer departures.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "recruiting_class_size": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Recruiting class size.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "returning_production_offense": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Returning production offense.",
+      "x-unit": "number",
+      "x-priority": "P1"
+    },
+    "returning_production_defense": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Returning production defense.",
+      "x-unit": "number",
+      "x-priority": "P1"
+    },
+    "recruit_composite": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Recruit composite.",
+      "x-unit": "number",
+      "x-priority": "P1"
+    },
+    "team_talent_composite": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Team talent composite.",
+      "x-unit": "number",
+      "x-priority": "P1"
+    },
+    "returning_snap_share": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Returning snap share.",
+      "x-unit": "number",
+      "x-priority": "P1"
+    },
+    "conference": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Conference.",
+      "x-unit": "category",
+      "x-priority": "P1"
+    },
+    "subdivision": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Subdivision.",
+      "x-unit": "category",
+      "x-priority": "P1"
+    },
+    "coaching_scheme": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Coaching scheme.",
+      "x-unit": "category",
+      "x-priority": "P1"
+    },
+    "offensive_coordinator": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Offensive coordinator.",
+      "x-unit": "category",
+      "x-priority": "P1"
+    },
+    "defensive_coordinator": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Defensive coordinator.",
+      "x-unit": "category",
+      "x-priority": "P1"
+    }
+  },
+  "required": [
+    "record_id",
+    "source_id",
+    "retrieved_at",
+    "revision",
+    "quality_status"
+  ],
+  "additionalProperties": false
+}
