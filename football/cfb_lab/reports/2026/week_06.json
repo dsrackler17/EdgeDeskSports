@@ -1,0 +1,837 @@
+{
+ "kind": "weekly",
+ "season": 2026,
+ "week": 6,
+ "generated_at": "2026-10-13T03:07:28.000Z",
+ "champion": "edgedesk_cfb_p4_v1.0.0",
+ "summary": {
+  "games_predicted": 58,
+  "snapshots": 1487,
+  "official_predictions": 174,
+  "official_settled": 174,
+  "champion_decisions": {
+   "PASS": 20,
+   "LEAN": 38
+  }
+ },
+ "model_performance": {
+  "champion": {
+   "errors": {
+    "n": 58,
+    "label": "provisional",
+    "mae": 11.898,
+    "rmse": 14.818,
+    "median_ae": 9.42,
+    "bias": -0.27,
+    "p90_ae": 21.798,
+    "p95_ae": 33.035,
+    "mae_se": 1.17,
+    "favorite_bias": -0.75,
+    "favorite_bias_se": 1.96,
+    "total_mae": 12.957,
+    "winner_accuracy": 0.6552,
+    "brier": 0.2103,
+    "log_loss": 0.60269,
+    "coverage_50": null,
+    "coverage_80": null,
+    "coverage_95": null,
+    "n_intervals": 0
+   },
+   "brier": 0.2103,
+   "win_ece": 0.146,
+   "calibration": [
+    {
+     "bucket": "50-55",
+     "n": 7,
+     "predicted": 0.5276,
+     "observed": 0.7143,
+     "label": "small sample",
+     "difference": 0.1867
+    },
+    {
+     "bucket": "55-60",
+     "n": 6,
+     "predicted": 0.5734,
+     "observed": 0.5,
+     "label": "small sample",
+     "difference": -0.0734
+    },
+    {
+     "bucket": "60-65",
+     "n": 8,
+     "predicted": 0.6307,
+     "observed": 0.5,
+     "label": "small sample",
+     "difference": -0.1307
+    },
+    {
+     "bucket": "65-70",
+     "n": 10,
+     "predicted": 0.6744,
+     "observed": 0.3,
+     "label": "small sample",
+     "difference": -0.3744
+    },
+    {
+     "bucket": "70-75",
+     "n": 9,
+     "predicted": 0.7258,
+     "observed": 0.6667,
+     "label": "small sample",
+     "difference": -0.0591
+    },
+    {
+     "bucket": "75-80",
+     "n": 5,
+     "predicted": 0.7834,
+     "observed": 1,
+     "label": "small sample",
+     "difference": 0.2166
+    },
+    {
+     "bucket": "80+",
+     "n": 13,
+     "predicted": 0.8988,
+     "observed": 0.9231,
+     "label": "small sample",
+     "difference": 0.0243
+    }
+   ],
+   "intervals": {
+    "p50": {
+     "nominal": 0.5,
+     "n": 0,
+     "coverage": null,
+     "band": [
+      null,
+      null
+     ],
+     "label": "small sample",
+     "verdict": "insufficient sample"
+    },
+    "p80": {
+     "nominal": 0.8,
+     "n": 0,
+     "coverage": null,
+     "band": [
+      null,
+      null
+     ],
+     "label": "small sample",
+     "verdict": "insufficient sample"
+    },
+    "p95": {
+     "nominal": 0.95,
+     "n": 0,
+     "coverage": null,
+     "band": [
+      null,
+      null
+     ],
+     "label": "small sample",
+     "verdict": "insufficient sample"
+    }
+   },
+   "research_positions": {
+    "record": "17-18-3",
+    "ats_pct": 0.4857,
+    "roi": -0.0643,
+    "clv_mean": 0.145,
+    "positive_clv_pct": 0.4474,
+    "max_drawdown": 7.46
+   }
+  },
+  "by_model": {
+   "edgedesk_cfb_p4_v1.0.0": {
+    "errors": {
+     "n": 58,
+     "label": "provisional",
+     "mae": 11.898,
+     "rmse": 14.818,
+     "median_ae": 9.42,
+     "bias": -0.27,
+     "p90_ae": 21.798,
+     "p95_ae": 33.035,
+     "mae_se": 1.17,
+     "favorite_bias": -0.75,
+     "favorite_bias_se": 1.96,
+     "total_mae": 12.957,
+     "winner_accuracy": 0.6552,
+     "brier": 0.2103,
+     "log_loss": 0.60269,
+     "coverage_50": null,
+     "coverage_80": null,
+     "coverage_95": null,
+     "n_intervals": 0
+    },
+    "brier": 0.2103,
+    "win_ece": 0.146,
+    "calibration": [
+     {
+      "bucket": "50-55",
+      "n": 7,
+      "predicted": 0.5276,
+      "observed": 0.7143,
+      "label": "small sample",
+      "difference": 0.1867
+     },
+     {
+      "bucket": "55-60",
+      "n": 6,
+      "predicted": 0.5734,
+      "observed": 0.5,
+      "label": "small sample",
+      "difference": -0.0734
+     },
+     {
+      "bucket": "60-65",
+      "n": 8,
+      "predicted": 0.6307,
+      "observed": 0.5,
+      "label": "small sample",
+      "difference": -0.1307
+     },
+     {
+      "bucket": "65-70",
+      "n": 10,
+      "predicted": 0.6744,
+      "observed": 0.3,
+      "label": "small sample",
+      "difference": -0.3744
+     },
+     {
+      "bucket": "70-75",
+      "n": 9,
+      "predicted": 0.7258,
+      "observed": 0.6667,
+      "label": "small sample",
+      "difference": -0.0591
+     },
+     {
+      "bucket": "75-80",
+      "n": 5,
+      "predicted": 0.7834,
+      "observed": 1,
+      "label": "small sample",
+      "difference": 0.2166
+     },
+     {
+      "bucket": "80+",
+      "n": 13,
+      "predicted": 0.8988,
+      "observed": 0.9231,
+      "label": "small sample",
+      "difference": 0.0243
+     }
+    ],
+    "intervals": {
+     "p50": {
+      "nominal": 0.5,
+      "n": 0,
+      "coverage": null,
+      "band": [
+       null,
+       null
+      ],
+      "label": "small sample",
+      "verdict": "insufficient sample"
+     },
+     "p80": {
+      "nominal": 0.8,
+      "n": 0,
+      "coverage": null,
+      "band": [
+       null,
+       null
+      ],
+      "label": "small sample",
+      "verdict": "insufficient sample"
+     },
+     "p95": {
+      "nominal": 0.95,
+      "n": 0,
+      "coverage": null,
+      "band": [
+       null,
+       null
+      ],
+      "label": "small sample",
+      "verdict": "insufficient sample"
+     }
+    },
+    "research_positions": {
+     "record": "17-18-3",
+     "ats_pct": 0.4857,
+     "roi": -0.0643,
+     "clv_mean": 0.145,
+     "positive_clv_pct": 0.4474,
+     "max_drawdown": 7.46
+    }
+   },
+   "edgedesk_cfb_v2.0.0": {
+    "errors": {
+     "n": 58,
+     "label": "provisional",
+     "mae": 11.367,
+     "rmse": 14.699,
+     "median_ae": 9.36,
+     "bias": 0.673,
+     "p90_ae": 23.785,
+     "p95_ae": 31.705,
+     "mae_se": 1.235,
+     "favorite_bias": 0.762,
+     "favorite_bias_se": 1.944,
+     "total_mae": 13.445,
+     "winner_accuracy": 0.7069,
+     "brier": 0.20799,
+     "log_loss": 0.60232,
+     "coverage_50": 0.5345,
+     "coverage_80": 0.8793,
+     "coverage_95": 0.931,
+     "n_intervals": 58
+    },
+    "brier": 0.20799,
+    "win_ece": 0.1532,
+    "calibration": [
+     {
+      "bucket": "50-55",
+      "n": 8,
+      "predicted": 0.5236,
+      "observed": 0.75,
+      "label": "small sample",
+      "difference": 0.2264
+     },
+     {
+      "bucket": "55-60",
+      "n": 6,
+      "predicted": 0.5783,
+      "observed": 0.5,
+      "label": "small sample",
+      "difference": -0.0783
+     },
+     {
+      "bucket": "60-65",
+      "n": 17,
+      "predicted": 0.627,
+      "observed": 0.7059,
+      "label": "small sample",
+      "difference": 0.0789
+     },
+     {
+      "bucket": "65-70",
+      "n": 4,
+      "predicted": 0.6653,
+      "observed": 1,
+      "label": "small sample",
+      "difference": 0.3347
+     },
+     {
+      "bucket": "70-75",
+      "n": 7,
+      "predicted": 0.7213,
+      "observed": 0.2857,
+      "label": "small sample",
+      "difference": -0.4356
+     },
+     {
+      "bucket": "75-80",
+      "n": 2,
+      "predicted": 0.7803,
+      "observed": 1,
+      "label": "small sample",
+      "difference": 0.2197
+     },
+     {
+      "bucket": "80+",
+      "n": 14,
+      "predicted": 0.8881,
+      "observed": 0.8571,
+      "label": "small sample",
+      "difference": -0.031
+     }
+    ],
+    "intervals": {
+     "p50": {
+      "nominal": 0.5,
+      "n": 58,
+      "coverage": 0.5345,
+      "band": [
+       0.3713,
+       0.6287
+      ],
+      "label": "provisional",
+      "verdict": "within band"
+     },
+     "p80": {
+      "nominal": 0.8,
+      "n": 58,
+      "coverage": 0.8793,
+      "band": [
+       0.6971,
+       0.9029
+      ],
+      "label": "provisional",
+      "verdict": "within band"
+     },
+     "p95": {
+      "nominal": 0.95,
+      "n": 58,
+      "coverage": 0.931,
+      "band": [
+       0.8939,
+       1.0061
+      ],
+      "label": "provisional",
+      "verdict": "within band"
+     }
+    },
+    "research_positions": {
+     "record": "5-2-0",
+     "ats_pct": 0.7143,
+     "roi": 0.3708,
+     "clv_mean": 0.214,
+     "positive_clv_pct": 0.5714,
+     "max_drawdown": 1
+    }
+   },
+   "edgedesk_cfb_v2.1.0": {
+    "errors": {
+     "n": 58,
+     "label": "provisional",
+     "mae": 11.232,
+     "rmse": 14.603,
+     "median_ae": 9.28,
+     "bias": 0.769,
+     "p90_ae": 23.84,
+     "p95_ae": 31.397,
+     "mae_se": 1.236,
+     "favorite_bias": 0.806,
+     "favorite_bias_se": 1.931,
+     "total_mae": 13.445,
+     "winner_accuracy": 0.7069,
+     "brier": 0.20645,
+     "log_loss": 0.59902,
+     "coverage_50": 0.5517,
+     "coverage_80": 0.8621,
+     "coverage_95": 0.9483,
+     "n_intervals": 58
+    },
+    "brier": 0.20645,
+    "win_ece": 0.0903,
+    "calibration": [
+     {
+      "bucket": "50-55",
+      "n": 10,
+      "predicted": 0.5304,
+      "observed": 0.6,
+      "label": "small sample",
+      "difference": 0.0696
+     },
+     {
+      "bucket": "55-60",
+      "n": 3,
+      "predicted": 0.582,
+      "observed": 1,
+      "label": "small sample",
+      "difference": 0.418
+     },
+     {
+      "bucket": "60-65",
+      "n": 18,
+      "predicted": 0.6249,
+      "observed": 0.6667,
+      "label": "small sample",
+      "difference": 0.0418
+     },
+     {
+      "bucket": "65-70",
+      "n": 6,
+      "predicted": 0.6766,
+      "observed": 0.6667,
+      "label": "small sample",
+      "difference": -0.0099
+     },
+     {
+      "bucket": "70-75",
+      "n": 5,
+      "predicted": 0.7244,
+      "observed": 0.4,
+      "label": "small sample",
+      "difference": -0.3244
+     },
+     {
+      "bucket": "75-80",
+      "n": 2,
+      "predicted": 0.7829,
+      "observed": 1,
+      "label": "small sample",
+      "difference": 0.2171
+     },
+     {
+      "bucket": "80+",
+      "n": 14,
+      "predicted": 0.8871,
+      "observed": 0.8571,
+      "label": "small sample",
+      "difference": -0.03
+     }
+    ],
+    "intervals": {
+     "p50": {
+      "nominal": 0.5,
+      "n": 58,
+      "coverage": 0.5517,
+      "band": [
+       0.3713,
+       0.6287
+      ],
+      "label": "provisional",
+      "verdict": "within band"
+     },
+     "p80": {
+      "nominal": 0.8,
+      "n": 58,
+      "coverage": 0.8621,
+      "band": [
+       0.6971,
+       0.9029
+      ],
+      "label": "provisional",
+      "verdict": "within band"
+     },
+     "p95": {
+      "nominal": 0.95,
+      "n": 58,
+      "coverage": 0.9483,
+      "band": [
+       0.8939,
+       1.0061
+      ],
+      "label": "provisional",
+      "verdict": "within band"
+     }
+    },
+    "research_positions": {
+     "record": "6-4-0",
+     "ats_pct": 0.6,
+     "roi": 0.1532,
+     "clv_mean": 0.15,
+     "positive_clv_pct": 0.6,
+     "max_drawdown": 2.074
+    }
+   }
+  }
+ },
+ "market_performance": {
+  "vs_open": {
+   "n": 58,
+   "label": "provisional",
+   "model_mae": 11.898,
+   "market_mae": 11.543,
+   "mean_error_diff": 0.354,
+   "diff_ci": [
+    -0.671,
+    1.425
+   ],
+   "beat_share": 0.4828,
+   "tie_share": 0
+  },
+  "vs_close": {
+   "n": 58,
+   "label": "provisional",
+   "model_mae": 11.898,
+   "market_mae": 11.448,
+   "mean_error_diff": 0.449,
+   "diff_ci": [
+    -0.447,
+    1.348
+   ],
+   "beat_share": 0.3966,
+   "tie_share": 0
+  },
+  "discovery": {
+   "n": 58,
+   "label": "provisional",
+   "moved_toward_share": 0.5862,
+   "mean_move_points": 0.94,
+   "mean_move_ci": [
+    0.397,
+    1.517
+   ]
+  },
+  "positive_clv_pct": 0.3793,
+  "clv_mean": 0.121
+ },
+ "betting_performance": {
+  "research_positions": {
+   "decisions": 38,
+   "wins": 17,
+   "losses": 18,
+   "pushes": 3,
+   "ats_pct": 0.4857,
+   "label": "provisional",
+   "units": -2.444,
+   "risked": 38,
+   "roi": -0.0643,
+   "max_drawdown": 7.46,
+   "clv_n": 38,
+   "clv_mean": 0.145,
+   "clv_median": 0,
+   "positive_clv_pct": 0.4474,
+   "price_assumed_share": 0
+  },
+  "bets": {
+   "decisions": 0,
+   "wins": 0,
+   "losses": 0,
+   "pushes": 0,
+   "ats_pct": null,
+   "label": "small sample",
+   "units": 0,
+   "risked": 0,
+   "roi": null,
+   "max_drawdown": 0,
+   "clv_n": 0,
+   "clv_mean": null,
+   "clv_median": null,
+   "positive_clv_pct": null,
+   "price_assumed_share": null
+  }
+ },
+ "submodel_performance": [
+  {
+   "name": "D_gbm · V2.1 · hardened",
+   "n": 58,
+   "label": "provisional",
+   "mae": 11.187,
+   "rmse": 14.692,
+   "bias": 0.767,
+   "p90_ae": 22.813,
+   "p95_ae": 32.094,
+   "rank_by_mae": 1
+  },
+  {
+   "name": "ensemble · V2.1 · hardened",
+   "n": 58,
+   "label": "provisional",
+   "mae": 11.232,
+   "rmse": 14.603,
+   "bias": 0.769,
+   "p90_ae": 23.84,
+   "p95_ae": 31.397,
+   "rank_by_mae": 2
+  },
+  {
+   "name": "C_ridge · V2.1 · hardened",
+   "n": 58,
+   "label": "provisional",
+   "mae": 11.295,
+   "rmse": 14.581,
+   "bias": 0.772,
+   "p90_ae": 24.705,
+   "p95_ae": 30.699,
+   "rank_by_mae": 3
+  },
+  {
+   "name": "D_gbm · V2 · candidate 001",
+   "n": 58,
+   "label": "provisional",
+   "mae": 11.325,
+   "rmse": 14.793,
+   "bias": 0.754,
+   "p90_ae": 22.873,
+   "p95_ae": 32.123,
+   "rank_by_mae": 4
+  },
+  {
+   "name": "ensemble · V2 · candidate 001",
+   "n": 58,
+   "label": "provisional",
+   "mae": 11.367,
+   "rmse": 14.699,
+   "bias": 0.673,
+   "p90_ae": 23.785,
+   "p95_ae": 31.705,
+   "rank_by_mae": 5
+  },
+  {
+   "name": "C_ridge · V2 · candidate 001",
+   "n": 58,
+   "label": "provisional",
+   "mae": 11.381,
+   "rmse": 14.636,
+   "bias": 0.689,
+   "p90_ae": 24.648,
+   "p95_ae": 30.749,
+   "rank_by_mae": 6
+  },
+  {
+   "name": "E_drive · V2 · candidate 001",
+   "n": 58,
+   "label": "provisional",
+   "mae": 11.631,
+   "rmse": 15.03,
+   "bias": -1.196,
+   "p90_ae": 26.155,
+   "p95_ae": 31.193,
+   "rank_by_mae": 7
+  },
+  {
+   "name": "ensemble · V1",
+   "n": 58,
+   "label": "provisional",
+   "mae": 11.898,
+   "rmse": 14.818,
+   "bias": -0.27,
+   "p90_ae": 21.798,
+   "p95_ae": 33.035,
+   "rank_by_mae": 8
+  },
+  {
+   "name": "B_elo · V2 · candidate 001",
+   "n": 58,
+   "label": "provisional",
+   "mae": 12.207,
+   "rmse": 15.901,
+   "bias": 1.058,
+   "p90_ae": 25.314,
+   "p95_ae": 31.366,
+   "rank_by_mae": 9
+  },
+  {
+   "name": "A_adj_eff · V2 · candidate 001",
+   "n": 58,
+   "label": "provisional",
+   "mae": 12.51,
+   "rmse": 15.498,
+   "bias": -0.746,
+   "p90_ae": 23.548,
+   "p95_ae": 29.669,
+   "rank_by_mae": 10
+  }
+ ],
+ "biggest_wins": [
+  {
+   "matchup": "UCLA @ Oregon",
+   "model": "V1",
+   "predicted": 3.48,
+   "actual": -2,
+   "abs_error": 5.48,
+   "close_abs_error": 12,
+   "beat_close": true
+  },
+  {
+   "matchup": "Central Michigan @ Ohio",
+   "model": "V1",
+   "predicted": 8.05,
+   "actual": 17,
+   "abs_error": 8.95,
+   "close_abs_error": 14.5,
+   "beat_close": true
+  },
+  {
+   "matchup": "Sam Houston @ Liberty",
+   "model": "V1",
+   "predicted": 18.85,
+   "actual": 32,
+   "abs_error": 13.15,
+   "close_abs_error": 18.5,
+   "beat_close": true
+  },
+  {
+   "matchup": "Texas A&M @ Missouri",
+   "model": "V1",
+   "predicted": 8.7,
+   "actual": 21,
+   "abs_error": 12.3,
+   "close_abs_error": 17,
+   "beat_close": true
+  },
+  {
+   "matchup": "Charlotte @ North Texas",
+   "model": "V1",
+   "predicted": 32.15,
+   "actual": 40,
+   "abs_error": 7.85,
+   "close_abs_error": 12.5,
+   "beat_close": true
+  }
+ ],
+ "biggest_misses": [
+  {
+   "matchup": "San Diego State @ Oregon State",
+   "model": "V1",
+   "predicted": 13.14,
+   "actual": 52,
+   "abs_error": 38.86,
+   "close_abs_error": 36.5,
+   "beat_close": false
+  },
+  {
+   "matchup": "Buffalo @ Toledo",
+   "model": "V1",
+   "predicted": 22.24,
+   "actual": -15,
+   "abs_error": 37.24,
+   "close_abs_error": 33.5,
+   "beat_close": false
+  },
+  {
+   "matchup": "Ole Miss @ Vanderbilt",
+   "model": "V1",
+   "predicted": -0.18,
+   "actual": -35,
+   "abs_error": 34.82,
+   "close_abs_error": 25.5,
+   "beat_close": false
+  },
+  {
+   "matchup": "Minnesota @ Purdue",
+   "model": "V1",
+   "predicted": -4.72,
+   "actual": 28,
+   "abs_error": 32.72,
+   "close_abs_error": 30.5,
+   "beat_close": false
+  },
+  {
+   "matchup": "South Carolina @ Florida",
+   "model": "V1",
+   "predicted": 7.37,
+   "actual": -19,
+   "abs_error": 26.37,
+   "close_abs_error": 29.5,
+   "beat_close": true
+  }
+ ],
+ "miss_classifications": {
+  "UNKNOWN": 77,
+  "MODEL_FAILURE": 5,
+  "INFORMATION_CHANGE": 1
+ },
+ "model_lessons": [],
+ "postmortem": {
+  "what_worked": [
+   "champion MAE 11.898 vs holdout reference 12.6017 (n=58, z=-0.6)",
+   "the market moved toward the model in 59% of 58 games (mean 0.94 pts)"
+  ],
+  "what_failed": [
+   "closer than the closing line in 40% of 58 games (mean |model error| − |close error| 0.449 pts)"
+  ],
+  "what_changed": [
+   "MODEL_REGISTERED edgedesk_cfb_p4_v1.0.0 — first seen by the Model Lab",
+   "MODEL_REGISTERED edgedesk_cfb_v2.1.0 — first seen by the Model Lab",
+   "MODEL_REGISTERED edgedesk_cfb_v2.0.0 — first seen by the Model Lab",
+   "THRESHOLD_CHANGED edgedesk_cfb_v2.1.0 — detected by the hourly lab run (ensemble_version)",
+   "THRESHOLD_CHANGED edgedesk_cfb_v2.0.0 — detected by the hourly lab run (ensemble_version)"
+  ],
+  "what_may_be_random": [
+   "the MAE difference from the reference is within 2 SE: indistinguishable from noise at n=58"
+  ],
+  "what_deserves_investigation": [
+   "5 miss(es) classified MODEL_FAILURE (the close was 7+ pts closer)",
+   "77 miss(es) could not be explained from the available evidence"
+  ]
+ },
+ "policy": "Nothing in this report changes a model. Weights, features, thresholds and calibration change only through a pre-registered experiment and a governed release (docs/cfb-lab/RUNBOOK.md)."
+}

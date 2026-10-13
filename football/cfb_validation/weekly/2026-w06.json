@@ -1,0 +1,123 @@
+{
+ "schema": "edgedesk_cfb_weekly_scorecard_v1",
+ "written_at": "2026-10-13T03:07:43.866Z",
+ "immutable": "written once when the week completed; never regenerated",
+ "written_retroactively": null,
+ "season": 2026,
+ "week": 6,
+ "epoch": "CURRENT",
+ "epoch_note": "LIVE official snapshots of the frozen champion",
+ "this_week": {
+  "model_quality": {
+   "games_graded": 58,
+   "mae": 11.898,
+   "median_error": 9.42,
+   "worst_error": 38.86,
+   "interval_coverage_80": null,
+   "calibration_error": 0.146
+  },
+  "market_quality": {
+   "early_disagreements": 38,
+   "market_moved_toward_pct": 58.6,
+   "average_clv": 0.121
+  },
+  "decisions": {
+   "BET": 0,
+   "WAIT": 0,
+   "PASS": 58,
+   "qualified_wagers": 0,
+   "ats": "—",
+   "units": null,
+   "betting_enabled": false
+  }
+ },
+ "rolling_4_weeks": {
+  "model_quality": {
+   "games_graded": 117,
+   "mae": 12.667,
+   "median_error": 9.39,
+   "worst_error": 41.86,
+   "interval_coverage_80": null,
+   "calibration_error": 0.0986
+  },
+  "market_quality": {
+   "early_disagreements": 78,
+   "market_moved_toward_pct": 53.9,
+   "average_clv": -0.009
+  },
+  "decisions": {
+   "BET": 0,
+   "WAIT": 0,
+   "PASS": 117,
+   "qualified_wagers": 0,
+   "ats": "—",
+   "units": null,
+   "betting_enabled": false
+  }
+ },
+ "season_to_date": {
+  "model_quality": {
+   "games_graded": 117,
+   "mae": 12.667,
+   "median_error": 9.39,
+   "worst_error": 41.86,
+   "interval_coverage_80": null,
+   "calibration_error": 0.0986
+  },
+  "market_quality": {
+   "early_disagreements": 78,
+   "market_moved_toward_pct": 53.9,
+   "average_clv": -0.009
+  },
+  "decisions": {
+   "BET": 0,
+   "WAIT": 0,
+   "PASS": 117,
+   "qualified_wagers": 0,
+   "ats": "—",
+   "units": null,
+   "betting_enabled": false
+  }
+ },
+ "current_model_version": {
+  "model_quality": {
+   "games_graded": 117,
+   "mae": 12.667,
+   "median_error": 9.39,
+   "worst_error": 41.86,
+   "interval_coverage_80": null,
+   "calibration_error": 0.0986
+  },
+  "market_quality": {
+   "early_disagreements": 78,
+   "market_moved_toward_pct": 53.9,
+   "average_clv": -0.009
+  },
+  "decisions": {
+   "BET": 0,
+   "WAIT": 0,
+   "PASS": 117,
+   "qualified_wagers": 0,
+   "ats": "—",
+   "units": null,
+   "betting_enabled": false
+  }
+ },
+ "research_gates": {
+  "verified": 0,
+  "investigate": 4,
+  "data_faults": 0,
+  "not_run": 0,
+  "raw_7plus": 4,
+  "favorite_flips": 2,
+  "downgraded": null
+ },
+ "report": {
+  "text": "EDGEDESK CFB WEEK 6 (2026)\n\nGames: 58\nMargin MAE: 11.898 (median 9.42, worst 38.86)\nMarket movement toward early EdgeDesk: 58.6%\nAverage CLV: 0.121 pts\nVerified major: 0\nInvestigate: 4\nBET decisions: 0 (betting disabled by policy)\nRecord: —\nPrimary concern: None beyond ordinary weekly noise.\nResearch trigger: CALIBRATION_DRIFT\n\nRolling 4 weeks: MAE 12.667 on 117 games · Season: MAE 12.667 on 117 · Current version: 117 games graded.\nOne week is never the verdict. No model change follows from this report; research triggers open candidates, promotions need walk-forward evidence.",
+  "primary_concern": "None beyond ordinary weekly noise.",
+  "research_trigger": [
+   "CALIBRATION_DRIFT"
+  ],
+  "state": "RESEARCH TRIGGER: CALIBRATION_DRIFT"
+ }
+}
