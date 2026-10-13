@@ -1,0 +1,926 @@
+{
+ "schema": "edgedesk_nhl_team_games_v1",
+ "columns": [
+  "game_id",
+  "season",
+  "type",
+  "date",
+  "start_utc",
+  "known_at",
+  "team",
+  "opp",
+  "home",
+  "decided",
+  "gf",
+  "ga",
+  "gf_reg",
+  "ga_reg",
+  "win",
+  "so",
+  "toi_ev5",
+  "toi_evo",
+  "toi_pp",
+  "toi_sh",
+  "toi_enf",
+  "toi_ena",
+  "toi_ev5_lead",
+  "toi_ev5_tie",
+  "toi_ev5_trail",
+  "ev5_gf",
+  "ev5_ff",
+  "ev5_cf",
+  "ev5_xgf",
+  "evo_gf",
+  "evo_ff",
+  "evo_xgf",
+  "pp_gf",
+  "pp_ff",
+  "pp_xgf",
+  "sh_gf",
+  "sh_ff",
+  "sh_xgf",
+  "enf_gf",
+  "enf_ff",
+  "ena_gf",
+  "ena_ff",
+  "ena_xgf",
+  "ev5_xgf_lead",
+  "ev5_xgf_tie",
+  "ev5_xgf_trail",
+  "ev5_ff_lead",
+  "ev5_ff_tie",
+  "ev5_ff_trail",
+  "pen_minors",
+  "pen_majors",
+  "pim",
+  "g_start",
+  "g1_id",
+  "g1_fa",
+  "g1_ga",
+  "g1_xga",
+  "g2_id",
+  "g2_fa",
+  "g2_ga",
+  "g2_xga",
+  "xg_model",
+  "src"
+ ],
+ "seasons": {
+  "2011": {
+   "rows": 2636,
+   "games": 1318,
+   "xg_model": "xg_for_2011",
+   "sources": {
+    "schedule": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2011.parquet",
+     "sha256": "d51b87196aa749e1a8c42bfa5b4e885c484e7430da7ed0a885e191e1c01fa682",
+     "bytes": 30318,
+     "fetched_at": "2026-10-13T04:08:35.112Z",
+     "stale": false
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2011.parquet",
+     "sha256": "fe526250eb45b8b4da4343eb6260e4dee1c336773307624184e805393fbb540e",
+     "bytes": 75258,
+     "fetched_at": "2026-10-13T04:05:42.776Z",
+     "stale": false
+    },
+    "pbp": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/pbp_lite/parquet/play_by_play_lite_2011.parquet",
+     "sha256": "74fb653ca9caaf6feaf6864abe22c88bb5e6352dc97fee2c61dc272b09cc58cd",
+     "bytes": 17686438,
+     "fetched_at": "2026-10-13T04:05:42.540Z",
+     "stale": false
+    }
+   },
+   "ingest": {
+    "season": 2011,
+    "games": 1318,
+    "regular": 1229,
+    "playoff": 89,
+    "dropped_type": 0,
+    "duplicates": 0,
+    "shots": 111466,
+    "shots_no_xy": 9,
+    "issues": 0,
+    "issue_examples": []
+   },
+   "files": [
+    "hockey/data/team_games/2011/2010-10.csv",
+    "hockey/data/team_games/2011/2010-11.csv",
+    "hockey/data/team_games/2011/2010-12.csv",
+    "hockey/data/team_games/2011/2011-01.csv",
+    "hockey/data/team_games/2011/2011-02.csv",
+    "hockey/data/team_games/2011/2011-03.csv",
+    "hockey/data/team_games/2011/2011-04.csv",
+    "hockey/data/team_games/2011/2011-05.csv",
+    "hockey/data/team_games/2011/2011-06.csv"
+   ]
+  },
+  "2012": {
+   "rows": 2632,
+   "games": 1316,
+   "xg_model": "xg_for_2012",
+   "sources": {
+    "schedule": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2012.parquet",
+     "sha256": "aebf7936d24b49a57f83efb11e18dad7515a56ea056cedf897525eb03afcf4a4",
+     "bytes": 30298,
+     "fetched_at": "2026-10-13T04:08:35.596Z",
+     "stale": false
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2012.parquet",
+     "sha256": "c7ee6d54c69b31f37d8a8ac2c02b11345904d644c561db1d14a1ae61b4671650",
+     "bytes": 74551,
+     "fetched_at": "2026-10-13T04:05:43.712Z",
+     "stale": false
+    },
+    "pbp": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/pbp_lite/parquet/play_by_play_lite_2012.parquet",
+     "sha256": "a571c6d2676172ab658f3d2ed55f44d7bc64abef6d7f6e6d889147465c09b981",
+     "bytes": 17456399,
+     "fetched_at": "2026-10-13T04:05:43.472Z",
+     "stale": false
+    }
+   },
+   "ingest": {
+    "season": 2012,
+    "games": 1316,
+    "regular": 1230,
+    "playoff": 86,
+    "dropped_type": 0,
+    "duplicates": 0,
+    "shots": 108823,
+    "shots_no_xy": 2,
+    "issues": 0,
+    "issue_examples": []
+   },
+   "files": [
+    "hockey/data/team_games/2012/2011-10.csv",
+    "hockey/data/team_games/2012/2011-11.csv",
+    "hockey/data/team_games/2012/2011-12.csv",
+    "hockey/data/team_games/2012/2012-01.csv",
+    "hockey/data/team_games/2012/2012-02.csv",
+    "hockey/data/team_games/2012/2012-03.csv",
+    "hockey/data/team_games/2012/2012-04.csv",
+    "hockey/data/team_games/2012/2012-05.csv",
+    "hockey/data/team_games/2012/2012-06.csv"
+   ]
+  },
+  "2013": {
+   "rows": 1612,
+   "games": 806,
+   "xg_model": "xg_for_2013",
+   "sources": {
+    "schedule": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2013.parquet",
+     "sha256": "e519edef94e8ac5a6fe7bf1a9fc9bdb564f1871707246bf1c33f1d3d73c0ac33",
+     "bytes": 22659,
+     "fetched_at": "2026-10-13T04:08:35.839Z",
+     "stale": false
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2013.parquet",
+     "sha256": "e60b3bb9803c96e7d3494ec518e5b40b2fae4d0b0ba86fc18e3dcf67c1285248",
+     "bytes": 50633,
+     "fetched_at": "2026-10-13T04:05:44.504Z",
+     "stale": false
+    },
+    "pbp": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/pbp_lite/parquet/play_by_play_lite_2013.parquet",
+     "sha256": "962e9cb9799bc681a13013b3923bed77ddc9ea04977f93aeb67b6d586dc2a0af",
+     "bytes": 10965829,
+     "fetched_at": "2026-10-13T04:05:44.260Z",
+     "stale": false
+    }
+   },
+   "ingest": {
+    "season": 2013,
+    "games": 806,
+    "regular": 720,
+    "playoff": 86,
+    "dropped_type": 0,
+    "duplicates": 0,
+    "shots": 66121,
+    "shots_no_xy": 3,
+    "issues": 0,
+    "issue_examples": []
+   },
+   "files": [
+    "hockey/data/team_games/2013/2013-01.csv",
+    "hockey/data/team_games/2013/2013-02.csv",
+    "hockey/data/team_games/2013/2013-03.csv",
+    "hockey/data/team_games/2013/2013-04.csv",
+    "hockey/data/team_games/2013/2013-05.csv",
+    "hockey/data/team_games/2013/2013-06.csv"
+   ]
+  },
+  "2014": {
+   "rows": 2646,
+   "games": 1323,
+   "xg_model": "xg_for_2014",
+   "sources": {
+    "schedule": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2014.parquet",
+     "sha256": "7099609d82bf44745cca2cf9d02b84eaf72a902f239bee61c691778c8485dc3c",
+     "bytes": 30391,
+     "fetched_at": "2026-10-13T04:08:36.068Z",
+     "stale": false
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2014.parquet",
+     "sha256": "4bfaa0a543333e0826afea69ef55ccfe53ee4d0768045dbafa9d5f6f38137e90",
+     "bytes": 76931,
+     "fetched_at": "2026-10-13T04:05:45.372Z",
+     "stale": false
+    },
+    "pbp": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/pbp_lite/parquet/play_by_play_lite_2014.parquet",
+     "sha256": "48a8fb3046e7b16884cfe8e124b6dc3e5c2130e928c9b02de9e780af6269419f",
+     "bytes": 17902722,
+     "fetched_at": "2026-10-13T04:05:45.128Z",
+     "stale": false
+    }
+   },
+   "ingest": {
+    "season": 2014,
+    "games": 1323,
+    "regular": 1230,
+    "playoff": 93,
+    "dropped_type": 0,
+    "duplicates": 0,
+    "shots": 110752,
+    "shots_no_xy": 5,
+    "issues": 0,
+    "issue_examples": []
+   },
+   "files": [
+    "hockey/data/team_games/2014/2013-10.csv",
+    "hockey/data/team_games/2014/2013-11.csv",
+    "hockey/data/team_games/2014/2013-12.csv",
+    "hockey/data/team_games/2014/2014-01.csv",
+    "hockey/data/team_games/2014/2014-02.csv",
+    "hockey/data/team_games/2014/2014-03.csv",
+    "hockey/data/team_games/2014/2014-04.csv",
+    "hockey/data/team_games/2014/2014-05.csv",
+    "hockey/data/team_games/2014/2014-06.csv"
+   ]
+  },
+  "2015": {
+   "rows": 2638,
+   "games": 1319,
+   "xg_model": "xg_for_2015",
+   "sources": {
+    "schedule": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2015.parquet",
+     "sha256": "54a2a6d30c8d52acfb9bdb1d6ea2a151f37942483f156c5011760ce43d7dbec9",
+     "bytes": 30151,
+     "fetched_at": "2026-10-13T04:08:36.332Z",
+     "stale": false
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2015.parquet",
+     "sha256": "7df788eeb8fb0c10ac565ee73a6816e9412fb6ff41170e1bfdc58283d0011396",
+     "bytes": 76075,
+     "fetched_at": "2026-10-13T04:05:46.352Z",
+     "stale": false
+    },
+    "pbp": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/pbp_lite/parquet/play_by_play_lite_2015.parquet",
+     "sha256": "f9cb771f5ce4b9a1b05956fa72c7b856284205f05e080adca5d9b243c83b08d1",
+     "bytes": 18048903,
+     "fetched_at": "2026-10-13T04:05:46.048Z",
+     "stale": false
+    }
+   },
+   "ingest": {
+    "season": 2015,
+    "games": 1319,
+    "regular": 1230,
+    "playoff": 89,
+    "dropped_type": 0,
+    "duplicates": 0,
+    "shots": 109669,
+    "shots_no_xy": 3,
+    "issues": 0,
+    "issue_examples": []
+   },
+   "files": [
+    "hockey/data/team_games/2015/2014-10.csv",
+    "hockey/data/team_games/2015/2014-11.csv",
+    "hockey/data/team_games/2015/2014-12.csv",
+    "hockey/data/team_games/2015/2015-01.csv",
+    "hockey/data/team_games/2015/2015-02.csv",
+    "hockey/data/team_games/2015/2015-03.csv",
+    "hockey/data/team_games/2015/2015-04.csv",
+    "hockey/data/team_games/2015/2015-05.csv",
+    "hockey/data/team_games/2015/2015-06.csv"
+   ]
+  },
+  "2016": {
+   "rows": 2642,
+   "games": 1321,
+   "xg_model": "xg_for_2016",
+   "sources": {
+    "schedule": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2016.parquet",
+     "sha256": "abee13eca014c851fb864778340836ff0d517790f75d08122267475cc3aaada3",
+     "bytes": 30386,
+     "fetched_at": "2026-10-13T04:08:36.572Z",
+     "stale": false
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2016.parquet",
+     "sha256": "44b8460299d6d27cc2b9211b21eab38a052322f5b310f2cc2931d9584aa341ea",
+     "bytes": 75269,
+     "fetched_at": "2026-10-13T04:05:47.252Z",
+     "stale": false
+    },
+    "pbp": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/pbp_lite/parquet/play_by_play_lite_2016.parquet",
+     "sha256": "f0c979e656a7d48ebc01256f98eb992bddc5025db98b2eaaf8a9aab6055e6df1",
+     "bytes": 17745614,
+     "fetched_at": "2026-10-13T04:05:46.976Z",
+     "stale": false
+    }
+   },
+   "ingest": {
+    "season": 2016,
+    "games": 1321,
+    "regular": 1230,
+    "playoff": 91,
+    "dropped_type": 0,
+    "duplicates": 0,
+    "shots": 109522,
+    "shots_no_xy": 1,
+    "issues": 0,
+    "issue_examples": []
+   },
+   "files": [
+    "hockey/data/team_games/2016/2015-10.csv",
+    "hockey/data/team_games/2016/2015-11.csv",
+    "hockey/data/team_games/2016/2015-12.csv",
+    "hockey/data/team_games/2016/2016-01.csv",
+    "hockey/data/team_games/2016/2016-02.csv",
+    "hockey/data/team_games/2016/2016-03.csv",
+    "hockey/data/team_games/2016/2016-04.csv",
+    "hockey/data/team_games/2016/2016-05.csv",
+    "hockey/data/team_games/2016/2016-06.csv"
+   ]
+  },
+  "2017": {
+   "rows": 2634,
+   "games": 1317,
+   "xg_model": "xg_for_2017",
+   "sources": {
+    "schedule": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2017.parquet",
+     "sha256": "8be59f6ba4e38cda7cb74f3a0f77cab093adf74cf9363c23a5059f25994c5000",
+     "bytes": 30212,
+     "fetched_at": "2026-10-13T04:08:36.816Z",
+     "stale": false
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2017.parquet",
+     "sha256": "301195c57c47098e84e579ce3dcc36b6baf2b1a4f0b12374388dfd04bc6ffd39",
+     "bytes": 74627,
+     "fetched_at": "2026-10-13T04:05:48.216Z",
+     "stale": false
+    },
+    "pbp": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/pbp_lite/parquet/play_by_play_lite_2017.parquet",
+     "sha256": "314f599db44d2c90c602b7a49959c9d5f8e48f968dc55aa020ce5db19dbe802d",
+     "bytes": 17718844,
+     "fetched_at": "2026-10-13T04:05:47.956Z",
+     "stale": false
+    }
+   },
+   "ingest": {
+    "season": 2017,
+    "games": 1317,
+    "regular": 1230,
+    "playoff": 87,
+    "dropped_type": 0,
+    "duplicates": 0,
+    "shots": 110999,
+    "shots_no_xy": 4,
+    "issues": 0,
+    "issue_examples": []
+   },
+   "files": [
+    "hockey/data/team_games/2017/2016-10.csv",
+    "hockey/data/team_games/2017/2016-11.csv",
+    "hockey/data/team_games/2017/2016-12.csv",
+    "hockey/data/team_games/2017/2017-01.csv",
+    "hockey/data/team_games/2017/2017-02.csv",
+    "hockey/data/team_games/2017/2017-03.csv",
+    "hockey/data/team_games/2017/2017-04.csv",
+    "hockey/data/team_games/2017/2017-05.csv",
+    "hockey/data/team_games/2017/2017-06.csv"
+   ]
+  },
+  "2018": {
+   "rows": 2710,
+   "games": 1355,
+   "xg_model": "xg_for_2018",
+   "sources": {
+    "schedule": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2018.parquet",
+     "sha256": "c02e235629b8fe7fbd9c2901270962481fe2e11489748bd74bd113626bd4f5d5",
+     "bytes": 30909,
+     "fetched_at": "2026-10-13T04:08:37.040Z",
+     "stale": false
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2018.parquet",
+     "sha256": "0830d7f93ecbbcd0b2dca8417c78b8875d023695c1628013ceb168a79d1a4e1f",
+     "bytes": 78401,
+     "fetched_at": "2026-10-13T04:05:49.216Z",
+     "stale": false
+    },
+    "pbp": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/pbp_lite/parquet/play_by_play_lite_2018.parquet",
+     "sha256": "3de8c6e700e5bc42414c33c2ba980761c034161526b71a30dcd6ffb4754b5256",
+     "bytes": 18494797,
+     "fetched_at": "2026-10-13T04:05:48.956Z",
+     "stale": false
+    }
+   },
+   "ingest": {
+    "season": 2018,
+    "games": 1355,
+    "regular": 1271,
+    "playoff": 84,
+    "dropped_type": 0,
+    "duplicates": 0,
+    "shots": 119770,
+    "shots_no_xy": 3,
+    "issues": 0,
+    "issue_examples": []
+   },
+   "files": [
+    "hockey/data/team_games/2018/2017-10.csv",
+    "hockey/data/team_games/2018/2017-11.csv",
+    "hockey/data/team_games/2018/2017-12.csv",
+    "hockey/data/team_games/2018/2018-01.csv",
+    "hockey/data/team_games/2018/2018-02.csv",
+    "hockey/data/team_games/2018/2018-03.csv",
+    "hockey/data/team_games/2018/2018-04.csv",
+    "hockey/data/team_games/2018/2018-05.csv",
+    "hockey/data/team_games/2018/2018-06.csv"
+   ]
+  },
+  "2019": {
+   "rows": 2716,
+   "games": 1358,
+   "xg_model": "xg_for_2019",
+   "sources": {
+    "schedule": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2019.parquet",
+     "sha256": "b2a945deaa24e94f244572495374b5e7454fe75339e92c450c824322cdc101ed",
+     "bytes": 30897,
+     "fetched_at": "2026-10-13T04:08:37.264Z",
+     "stale": false
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2019.parquet",
+     "sha256": "8954b75ead8733b7c4c3c6aad2469bcc1f66b8f239b1b8df105bc7c70242e124",
+     "bytes": 79095,
+     "fetched_at": "2026-10-13T04:05:50.148Z",
+     "stale": false
+    },
+    "pbp": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/pbp_lite/parquet/play_by_play_lite_2019.parquet",
+     "sha256": "9d77b3227ca7f8d0f5d5eb5ede5711f57c62d4e1675e404af633d360e46b4bd8",
+     "bytes": 18399521,
+     "fetched_at": "2026-10-13T04:05:49.900Z",
+     "stale": false
+    }
+   },
+   "ingest": {
+    "season": 2019,
+    "games": 1358,
+    "regular": 1271,
+    "playoff": 87,
+    "dropped_type": 0,
+    "duplicates": 0,
+    "shots": 117802,
+    "shots_no_xy": 4,
+    "issues": 0,
+    "issue_examples": []
+   },
+   "files": [
+    "hockey/data/team_games/2019/2018-10.csv",
+    "hockey/data/team_games/2019/2018-11.csv",
+    "hockey/data/team_games/2019/2018-12.csv",
+    "hockey/data/team_games/2019/2019-01.csv",
+    "hockey/data/team_games/2019/2019-02.csv",
+    "hockey/data/team_games/2019/2019-03.csv",
+    "hockey/data/team_games/2019/2019-04.csv",
+    "hockey/data/team_games/2019/2019-05.csv",
+    "hockey/data/team_games/2019/2019-06.csv"
+   ]
+  },
+  "2020": {
+   "rows": 2424,
+   "games": 1212,
+   "xg_model": "xg_for_2020",
+   "sources": {
+    "schedule": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2020.parquet",
+     "sha256": "69ddf3d41a4e3f5cf38cb2f5151dc0c2d4dbf232bc3e2ee6fc1c313b9b7fc108",
+     "bytes": 29000,
+     "fetched_at": "2026-10-13T04:08:37.497Z",
+     "stale": false
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2020.parquet",
+     "sha256": "876193c46f9ab517d35d53d50f3d02689e87ebda0e77a43c05ad992e0bc1e4a0",
+     "bytes": 69833,
+     "fetched_at": "2026-10-13T04:05:50.936Z",
+     "stale": false
+    },
+    "pbp": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/pbp_lite/parquet/play_by_play_lite_2020.parquet",
+     "sha256": "3e7c4949a68c7113b52febbcf2d528b99d3dd037ff947b22e0b439f49cf0a343",
+     "bytes": 15666367,
+     "fetched_at": "2026-10-13T04:05:50.716Z",
+     "stale": false
+    }
+   },
+   "ingest": {
+    "season": 2020,
+    "games": 1212,
+    "regular": 1082,
+    "playoff": 130,
+    "dropped_type": 0,
+    "duplicates": 0,
+    "shots": 104415,
+    "shots_no_xy": 0,
+    "issues": 0,
+    "issue_examples": []
+   },
+   "files": [
+    "hockey/data/team_games/2020/2019-10.csv",
+    "hockey/data/team_games/2020/2019-11.csv",
+    "hockey/data/team_games/2020/2019-12.csv",
+    "hockey/data/team_games/2020/2020-01.csv",
+    "hockey/data/team_games/2020/2020-02.csv",
+    "hockey/data/team_games/2020/2020-03.csv",
+    "hockey/data/team_games/2020/2020-08.csv",
+    "hockey/data/team_games/2020/2020-09.csv"
+   ]
+  },
+  "2021": {
+   "rows": 1904,
+   "games": 952,
+   "xg_model": "xg_for_2021",
+   "sources": {
+    "schedule": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2021.parquet",
+     "sha256": "8366e574d7e3f1da1c4d9d13334d6a0606f3aa9a77c1137ba917c26f1abcc7f5",
+     "bytes": 24782,
+     "fetched_at": "2026-10-13T04:08:37.704Z",
+     "stale": false
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2021.parquet",
+     "sha256": "c68536928d1a5ad6c92ebd8b5c5adaa114ae0cbf6ace7400df0b1fe87a655e94",
+     "bytes": 56820,
+     "fetched_at": "2026-10-13T04:05:51.600Z",
+     "stale": false
+    },
+    "pbp": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/pbp_lite/parquet/play_by_play_lite_2021.parquet",
+     "sha256": "234c064cb3a10853e790a795173b265683fda43b9d94cd974675d7b1004c7c73",
+     "bytes": 12345049,
+     "fetched_at": "2026-10-13T04:05:51.376Z",
+     "stale": false
+    }
+   },
+   "ingest": {
+    "season": 2021,
+    "games": 952,
+    "regular": 868,
+    "playoff": 84,
+    "dropped_type": 0,
+    "duplicates": 0,
+    "shots": 78671,
+    "shots_no_xy": 0,
+    "issues": 0,
+    "issue_examples": []
+   },
+   "files": [
+    "hockey/data/team_games/2021/2021-01.csv",
+    "hockey/data/team_games/2021/2021-02.csv",
+    "hockey/data/team_games/2021/2021-03.csv",
+    "hockey/data/team_games/2021/2021-04.csv",
+    "hockey/data/team_games/2021/2021-05.csv",
+    "hockey/data/team_games/2021/2021-06.csv",
+    "hockey/data/team_games/2021/2021-07.csv"
+   ]
+  },
+  "2022": {
+   "rows": 2802,
+   "games": 1401,
+   "xg_model": "xg_for_2022",
+   "sources": {
+    "schedule": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2022.parquet",
+     "sha256": "e47f54c523296d69c4c620e8d4cb00eae751e166e81aeba7374701ffb703e261",
+     "bytes": 32163,
+     "fetched_at": "2026-10-13T04:08:37.928Z",
+     "stale": false
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2022.parquet",
+     "sha256": "258efd9dbfb4415937699240e3a891856216e080ac8e3133c3fffe86ba508809",
+     "bytes": 78790,
+     "fetched_at": "2026-10-13T04:05:52.484Z",
+     "stale": false
+    },
+    "pbp": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/pbp_lite/parquet/play_by_play_lite_2022.parquet",
+     "sha256": "e5afc00cfd1d08dc8eceacc5da59b8ab6a2aef8dd262222314d098e1d9b41bac",
+     "bytes": 18791957,
+     "fetched_at": "2026-10-13T04:05:52.188Z",
+     "stale": false
+    }
+   },
+   "ingest": {
+    "season": 2022,
+    "games": 1401,
+    "regular": 1312,
+    "playoff": 89,
+    "dropped_type": 0,
+    "duplicates": 0,
+    "shots": 121603,
+    "shots_no_xy": 0,
+    "issues": 0,
+    "issue_examples": []
+   },
+   "files": [
+    "hockey/data/team_games/2022/2021-10.csv",
+    "hockey/data/team_games/2022/2021-11.csv",
+    "hockey/data/team_games/2022/2021-12.csv",
+    "hockey/data/team_games/2022/2022-01.csv",
+    "hockey/data/team_games/2022/2022-02.csv",
+    "hockey/data/team_games/2022/2022-03.csv",
+    "hockey/data/team_games/2022/2022-04.csv",
+    "hockey/data/team_games/2022/2022-05.csv",
+    "hockey/data/team_games/2022/2022-06.csv"
+   ]
+  },
+  "2023": {
+   "rows": 2800,
+   "games": 1400,
+   "xg_model": "xg_for_2023",
+   "sources": {
+    "schedule": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2023.parquet",
+     "sha256": "e1ceaf26cb64576166fe98c7b8a2a6a4b1959a56bc3725b19dfb42ec63e9572f",
+     "bytes": 31851,
+     "fetched_at": "2026-10-13T04:08:38.168Z",
+     "stale": false
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2023.parquet",
+     "sha256": "266785b0e7f1e995bd446338d172ae7c2e999f109a8ba8c7c60d97007f42606d",
+     "bytes": 80530,
+     "fetched_at": "2026-10-13T04:05:53.278Z",
+     "stale": false
+    },
+    "pbp": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/pbp_lite/parquet/play_by_play_lite_2023.parquet",
+     "sha256": "f2a640c8f3a63fa24856011ba1c9532f2625205af1b8942c0c79f7a8704da093",
+     "bytes": 18947987,
+     "fetched_at": "2026-10-13T04:05:52.980Z",
+     "stale": false
+    }
+   },
+   "ingest": {
+    "season": 2023,
+    "games": 1400,
+    "regular": 1312,
+    "playoff": 88,
+    "dropped_type": 0,
+    "duplicates": 0,
+    "shots": 122066,
+    "shots_no_xy": 0,
+    "issues": 0,
+    "issue_examples": []
+   },
+   "files": [
+    "hockey/data/team_games/2023/2022-10.csv",
+    "hockey/data/team_games/2023/2022-11.csv",
+    "hockey/data/team_games/2023/2022-12.csv",
+    "hockey/data/team_games/2023/2023-01.csv",
+    "hockey/data/team_games/2023/2023-02.csv",
+    "hockey/data/team_games/2023/2023-03.csv",
+    "hockey/data/team_games/2023/2023-04.csv",
+    "hockey/data/team_games/2023/2023-05.csv",
+    "hockey/data/team_games/2023/2023-06.csv"
+   ]
+  },
+  "2024": {
+   "rows": 2800,
+   "games": 1400,
+   "xg_model": "xg_for_2024",
+   "sources": {
+    "schedule": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2024.parquet",
+     "sha256": "16954b015e88f94ee0e4eff0dfa2f67e1c155f4c78b7d06bd9b3627092c74196",
+     "bytes": 31847,
+     "fetched_at": "2026-10-13T04:08:38.404Z",
+     "stale": false
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2024.parquet",
+     "sha256": "298555a6c8b3acd294fb6a4cb2588bc2fa72f72f139a9601058be41be262f639",
+     "bytes": 78923,
+     "fetched_at": "2026-10-13T04:05:54.044Z",
+     "stale": false
+    },
+    "pbp": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/pbp_lite/parquet/play_by_play_lite_2024.parquet",
+     "sha256": "2ce02c591f02b971b5cf6e4f281bff529c30749cc88f99a72d739286d2ef0858",
+     "bytes": 19273037,
+     "fetched_at": "2026-10-13T04:05:53.848Z",
+     "stale": false
+    }
+   },
+   "ingest": {
+    "season": 2024,
+    "games": 1400,
+    "regular": 1312,
+    "playoff": 88,
+    "dropped_type": 0,
+    "duplicates": 0,
+    "shots": 122529,
+    "shots_no_xy": 0,
+    "issues": 0,
+    "issue_examples": []
+   },
+   "files": [
+    "hockey/data/team_games/2024/2023-10.csv",
+    "hockey/data/team_games/2024/2023-11.csv",
+    "hockey/data/team_games/2024/2023-12.csv",
+    "hockey/data/team_games/2024/2024-01.csv",
+    "hockey/data/team_games/2024/2024-02.csv",
+    "hockey/data/team_games/2024/2024-03.csv",
+    "hockey/data/team_games/2024/2024-04.csv",
+    "hockey/data/team_games/2024/2024-05.csv",
+    "hockey/data/team_games/2024/2024-06.csv"
+   ]
+  },
+  "2025": {
+   "rows": 2796,
+   "games": 1398,
+   "xg_model": "xg_for_2025",
+   "sources": {
+    "schedule": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2025.parquet",
+     "sha256": "0b5c51b195a29687371b582cf761a755077411d6b02c11a4546c94f6d0064bea",
+     "bytes": 31489,
+     "fetched_at": "2026-10-13T04:08:38.616Z",
+     "stale": false
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2025.parquet",
+     "sha256": "f0059f79374cdf71892320fd449d123534b7b242a53c1b0cea46731495fcb3ad",
+     "bytes": 78242,
+     "fetched_at": "2026-10-13T04:05:55.107Z",
+     "stale": false
+    },
+    "pbp": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/pbp_lite/parquet/play_by_play_lite_2025.parquet",
+     "sha256": "dcdc87b336f4372ae3f5a328541f8059261545639932b7c28cf43a298cf60ff5",
+     "bytes": 19343025,
+     "fetched_at": "2026-10-13T04:05:54.828Z",
+     "stale": false
+    }
+   },
+   "ingest": {
+    "season": 2025,
+    "games": 1398,
+    "regular": 1312,
+    "playoff": 86,
+    "dropped_type": 0,
+    "duplicates": 0,
+    "shots": 119954,
+    "shots_no_xy": 0,
+    "issues": 0,
+    "issue_examples": []
+   },
+   "files": [
+    "hockey/data/team_games/2025/2024-10.csv",
+    "hockey/data/team_games/2025/2024-11.csv",
+    "hockey/data/team_games/2025/2024-12.csv",
+    "hockey/data/team_games/2025/2025-01.csv",
+    "hockey/data/team_games/2025/2025-02.csv",
+    "hockey/data/team_games/2025/2025-03.csv",
+    "hockey/data/team_games/2025/2025-04.csv",
+    "hockey/data/team_games/2025/2025-05.csv",
+    "hockey/data/team_games/2025/2025-06.csv"
+   ]
+  },
+  "2026": {
+   "rows": 2788,
+   "games": 1394,
+   "xg_model": "xg_for_2026",
+   "sources": {
+    "schedule": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2026.parquet",
+     "sha256": "7447e4cee23fe94d960db4d07923e27d06cc8013693317fb3064e372537886cd",
+     "bytes": 32137,
+     "fetched_at": "2026-10-13T04:08:38.839Z",
+     "stale": false
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2026.parquet",
+     "sha256": "7ce8fd512f14e7c990bb430f3ba89a09c2fb091752134ae6cd7de3dc95565323",
+     "bytes": 78221,
+     "fetched_at": "2026-10-13T04:05:55.792Z",
+     "stale": false
+    },
+    "pbp": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/pbp_lite/parquet/play_by_play_lite_2026.parquet",
+     "sha256": "f1ebc578ea2067574950ee2c7d46dad450e786ed5923b84d7e952701c546c85f",
+     "bytes": 19062775,
+     "fetched_at": "2026-10-13T04:05:55.644Z",
+     "stale": false
+    }
+   },
+   "ingest": {
+    "season": 2026,
+    "games": 1394,
+    "regular": 1312,
+    "playoff": 82,
+    "dropped_type": 0,
+    "duplicates": 0,
+    "shots": 119357,
+    "shots_no_xy": 0,
+    "issues": 0,
+    "issue_examples": []
+   },
+   "files": [
+    "hockey/data/team_games/2026/2025-10.csv",
+    "hockey/data/team_games/2026/2025-11.csv",
+    "hockey/data/team_games/2026/2025-12.csv",
+    "hockey/data/team_games/2026/2026-01.csv",
+    "hockey/data/team_games/2026/2026-02.csv",
+    "hockey/data/team_games/2026/2026-03.csv",
+    "hockey/data/team_games/2026/2026-04.csv",
+    "hockey/data/team_games/2026/2026-05.csv",
+    "hockey/data/team_games/2026/2026-06.csv"
+   ]
+  },
+  "2027": {
+   "rows": 172,
+   "games": 86,
+   "xg_model": "xg_for_2027",
+   "sources": {
+    "schedule": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2027.parquet",
+     "sha256": "76d36a20f834930e445dbe194d903243732bba885ecf2a47b9fbab0ccb4dc7f5",
+     "bytes": 20616,
+     "fetched_at": "2026-10-13T04:04:49.471Z",
+     "stale": false
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2027.parquet",
+     "sha256": "784bf4e46212c6abffd0f97976c1a27314adacb5059f49f85bb5ce9dadf50335",
+     "bytes": 16481,
+     "fetched_at": "2026-10-13T04:05:56.289Z",
+     "stale": false
+    },
+    "pbp": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/pbp_lite/parquet/play_by_play_lite_2027.parquet",
+     "sha256": "36e2d4424d7bfd79ab922f6de4cc8eb7e3f62d2ea310a50f4af100ef7fb21ee0",
+     "bytes": 1360676,
+     "fetched_at": "2026-10-13T04:05:56.144Z",
+     "stale": false
+    }
+   },
+   "ingest": {
+    "season": 2027,
+    "games": 86,
+    "regular": 86,
+    "playoff": 0,
+    "dropped_type": 0,
+    "duplicates": 0,
+    "shots": 7084,
+    "shots_no_xy": 0,
+    "issues": 0,
+    "issue_examples": []
+   },
+   "files": [
+    "hockey/data/team_games/2027/2026-09.csv",
+    "hockey/data/team_games/2027/2026-10.csv"
+   ]
+  }
+ },
+ "license": "sportsdataverse/fastRhockey-nhl-data and -raw are MIT-licensed repositories; the game data inside them is compiled from the NHL's public game feeds and remains the NHL's. NHL.com terms restrict commercial use of its content: the owner must review this before NHL output is sold in a paid tier. Attribution is printed on every NHL artifact.",
+ "updated_at": "2026-10-13T04:22:02.359Z"
+}
