@@ -1,0 +1,1049 @@
+{
+  "schema": "edgedesk_datapack_verification_v1",
+  "pack": "datapack/nfl_v1",
+  "verified_at": "2026-10-13T13:12:22.057Z",
+  "status": "PASSED",
+  "summary": {
+    "datasets": 42,
+    "verified": 42,
+    "failed": 0,
+    "new_plays": 62613,
+    "new_games": 364,
+    "team_game_rows": 2436,
+    "checks": 18,
+    "checks_passed": 18
+  },
+  "checks": [
+    {
+      "id": "inventory_sha256_rows_columns",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "id": "parquet_lossless_digests",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "id": "no_unlisted_data_files",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "id": "known_at_blank_everywhere",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "id": "seeds_identical_to_quant_v1",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "id": "pbp_unique_keys_and_372_columns",
+      "pass": true,
+      "detail": {
+        "play_by_play_2025.parquet": {
+          "plays": 48771,
+          "unique_keys": true,
+          "columns": 372,
+          "games": 285,
+          "by_type": {
+            "POST": 13,
+            "REG": 272
+          },
+          "first_date": "2025-09-04",
+          "last_date": "2026-02-08",
+          "weeks": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22
+          ]
+        },
+        "play_by_play_2026.parquet": {
+          "plays": 13842,
+          "unique_keys": true,
+          "columns": 372,
+          "games": 79,
+          "by_type": {
+            "REG": 79
+          },
+          "first_date": "2026-09-09",
+          "last_date": "2026-10-12",
+          "weeks": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      }
+    },
+    {
+      "id": "pbp_game_counts",
+      "pass": true,
+      "detail": {
+        "2025": {
+          "POST": 13,
+          "REG": 272
+        },
+        "2026": {
+          "REG": 79
+        }
+      }
+    },
+    {
+      "id": "team_game_measures_recomputed_2025_2026",
+      "pass": true,
+      "detail": {
+        "recomputed": 728,
+        "rows_2025_2026": 728,
+        "missing": 0
+      }
+    },
+    {
+      "id": "player_opportunities_recomputed_2025_2026",
+      "pass": true,
+      "detail": {
+        "cells": 23787,
+        "mismatched": 0,
+        "missing_in_pack": 0
+      }
+    },
+    {
+      "id": "game_labels_recomputed_2025_2026",
+      "pass": true,
+      "detail": {
+        "mismatched": 0
+      }
+    },
+    {
+      "id": "lagged_features_recomputed_target_excluded",
+      "pass": true,
+      "detail": {
+        "prior_not_strictly_earlier": 0
+      }
+    },
+    {
+      "id": "ngs_weekly_keys_unique_and_week0_separate",
+      "pass": true,
+      "detail": {
+        "ngs_passing.parquet": {
+          "rows": 6134,
+          "week_0_rows": 447,
+          "weekly_rows": 5687,
+          "weekly_keys_unique": true,
+          "week_0_equals_sum_of_weeks": 295,
+          "week_0_reg_rows_compared": 447,
+          "stat": "attempts"
+        },
+        "ngs_receiving.parquet": {
+          "rows": 15223,
+          "week_0_rows": 1379,
+          "weekly_rows": 13844,
+          "weekly_keys_unique": true,
+          "week_0_equals_sum_of_weeks": 110,
+          "week_0_reg_rows_compared": 1379,
+          "stat": "targets"
+        },
+        "ngs_rushing.parquet": {
+          "rows": 6270,
+          "week_0_rows": 561,
+          "weekly_rows": 5709,
+          "weekly_keys_unique": true,
+          "week_0_equals_sum_of_weeks": 63,
+          "week_0_reg_rows_compared": 561,
+          "stat": "rush_attempts"
+        }
+      }
+    },
+    {
+      "id": "identity_conflicts_few_and_enumerated",
+      "pass": true,
+      "detail": {
+        "gsis_to_several_pfr": 2,
+        "pfr_to_several_gsis": 0,
+        "gsis_to_several_espn": 3,
+        "espn_to_several_gsis": 2
+      }
+    },
+    {
+      "id": "injuries_have_no_publication_time",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "id": "depth_schemas_differ_and_are_recorded",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "id": "contracts_identical_to_quant_v1",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "id": "json_schema_matches_empty_template",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "id": "manifests_name_only_github",
+      "pass": true,
+      "detail": {
+        "github.com": 3126
+      }
+    }
+  ],
+  "findings": {
+    "play_by_play": {
+      "play_by_play_2025.parquet": {
+        "plays": 48771,
+        "unique_keys": true,
+        "columns": 372,
+        "games": 285,
+        "by_type": {
+          "POST": 13,
+          "REG": 272
+        },
+        "first_date": "2025-09-04",
+        "last_date": "2026-02-08",
+        "weeks": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20,
+          21,
+          22
+        ]
+      },
+      "play_by_play_2026.parquet": {
+        "plays": 13842,
+        "unique_keys": true,
+        "columns": 372,
+        "games": 79,
+        "by_type": {
+          "REG": 79
+        },
+        "first_date": "2026-09-09",
+        "last_date": "2026-10-12",
+        "weeks": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    },
+    "current_season": {
+      "season": 2026,
+      "games_in_archive": 79,
+      "weeks": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "last_game_date": "2026-10-12",
+      "state": "PARTIAL",
+      "note": "the 2026 archive ends at week 5 (2026-10-12): a partial current season, never called complete"
+    },
+    "lag_window_crosses_seasons": {
+      "rows": 2436,
+      "rows_whose_prior_5_reaches_last_season": 638,
+      "prior_10": 1118,
+      "prior_20": 1865,
+      "team_season_openers": 128,
+      "rule": "the pack's windows run straight across the offseason; football/nfl/research/pack_research.js measures whether that helps or hurts"
+    },
+    "ngs_grain": {
+      "ngs_passing.parquet": {
+        "rows": 6134,
+        "week_0_rows": 447,
+        "weekly_rows": 5687,
+        "weekly_keys_unique": true,
+        "week_0_equals_sum_of_weeks": 295,
+        "week_0_reg_rows_compared": 447,
+        "stat": "attempts"
+      },
+      "ngs_receiving.parquet": {
+        "rows": 15223,
+        "week_0_rows": 1379,
+        "weekly_rows": 13844,
+        "weekly_keys_unique": true,
+        "week_0_equals_sum_of_weeks": 110,
+        "week_0_reg_rows_compared": 1379,
+        "stat": "targets"
+      },
+      "ngs_rushing.parquet": {
+        "rows": 6270,
+        "week_0_rows": 561,
+        "weekly_rows": 5709,
+        "weekly_keys_unique": true,
+        "week_0_equals_sum_of_weeks": 63,
+        "week_0_reg_rows_compared": 561,
+        "stat": "rush_attempts"
+      }
+    },
+    "identity": {
+      "roster_rows": 115862,
+      "gsis_ids": 4614,
+      "gsis_with_pfr": 2798,
+      "gsis_with_espn": 2925,
+      "conflicts": {
+        "gsis_to_several_pfr": 2,
+        "pfr_to_several_gsis": 0,
+        "gsis_to_several_espn": 3,
+        "espn_to_several_gsis": 2
+      },
+      "coverage": {
+        "snap_counts_pfr": {
+          "distinct_ids": 2968,
+          "mapped": 2358,
+          "share": 0.794474
+        },
+        "pfr_advanced_pfr": {
+          "distinct_ids": 2093,
+          "mapped": 2030,
+          "share": 0.9699
+        },
+        "injuries_gsis": {
+          "distinct_ids": 2073,
+          "mapped": 2073,
+          "share": 1
+        },
+        "depth_charts_gsis": {
+          "distinct_ids": 3644,
+          "mapped": 3628,
+          "share": 0.995609
+        },
+        "depth_charts_espn": {
+          "distinct_ids": 3958,
+          "mapped": 2547,
+          "share": 0.643507
+        },
+        "pbp_players_gsis": {
+          "distinct_ids": 699,
+          "mapped": 699,
+          "share": 1
+        },
+        "ngs_2024_on_gsis": {
+          "distinct_ids": 490,
+          "mapped": 490,
+          "share": 1
+        }
+      },
+      "conflict_examples": [
+        {
+          "kind": "gsis_to_several_pfr",
+          "id": "00-0035944",
+          "partners": [
+            "WillJo10",
+            "WillJo16"
+          ],
+          "names": [
+            "Jonah Williams (DL)"
+          ]
+        },
+        {
+          "kind": "gsis_to_several_pfr",
+          "id": "00-0040317",
+          "partners": [
+            "JoneJa15",
+            "JoneJa16"
+          ],
+          "names": [
+            "Jacoby Jones (WR)"
+          ]
+        },
+        {
+          "kind": "gsis_to_several_espn",
+          "id": "00-0032667",
+          "partners": [
+            "2574891",
+            "3159215"
+          ],
+          "names": [
+            "Roy Robertson-Harris (DL)"
+          ]
+        },
+        {
+          "kind": "gsis_to_several_espn",
+          "id": "00-0037106",
+          "partners": [
+            "4047655",
+            "4685145"
+          ],
+          "names": [
+            "Jaylon Jones (DB)"
+          ]
+        },
+        {
+          "kind": "gsis_to_several_espn",
+          "id": "00-0038549",
+          "partners": [
+            "4036211",
+            "4572036"
+          ],
+          "names": [
+            "DJ Turner II (DB)"
+          ]
+        },
+        {
+          "kind": "espn_to_several_gsis",
+          "id": "4036211",
+          "partners": [
+            "00-0036527",
+            "00-0038549"
+          ],
+          "names": [
+            "DJ Turner (WR)",
+            "DJ Turner II (DB)"
+          ]
+        },
+        {
+          "kind": "espn_to_several_gsis",
+          "id": "4685145",
+          "partners": [
+            "00-0037106",
+            "00-0038407"
+          ],
+          "names": [
+            "Jaylon Jones (DB)",
+            "Jaylon Jones (DB)"
+          ]
+        }
+      ],
+      "rule": "join through these id pairs, never names; an id with several partners is a source conflict (two players sharing an ESPN id, one player with two PFR ids): it is left out of the crosswalk, never guessed"
+    },
+    "time": {
+      "injuries_timestamp_columns": [],
+      "injuries_note": "season, week and status only: no publication time, so a report cannot be placed before a kickoff",
+      "depth_2024_columns": [
+        "season",
+        "club_code",
+        "week",
+        "game_type",
+        "depth_team",
+        "last_name",
+        "first_name",
+        "football_name",
+        "formation",
+        "gsis_id",
+        "jersey_number",
+        "position",
+        "elias_id",
+        "depth_position",
+        "full_name"
+      ],
+      "depth_2025_columns": [
+        "dt",
+        "team",
+        "player_name",
+        "espn_id",
+        "gsis_id",
+        "pos_grp_id",
+        "pos_grp",
+        "pos_id",
+        "pos_name",
+        "pos_abb",
+        "pos_slot",
+        "pos_rank"
+      ],
+      "depth_dt_span": {
+        "2025": [
+          "2025-08-03T10:09:07Z",
+          "2026-03-14T07:32:09Z"
+        ],
+        "2026": [
+          "2026-03-22T06:38:42Z",
+          "2026-10-13T06:02:07Z"
+        ]
+      },
+      "depth_note": "the 2024 depth chart is weekly (week, game_type); 2025+ are timestamped provider snapshots (dt) — context, not a proven pregame announcement"
+    },
+    "ngs_percent_scales": {
+      "ngs_passing.completion_percentage": {
+        "min": 23.809524,
+        "max": 100,
+        "scale": "0-100"
+      },
+      "ngs_passing.expected_completion_percentage": {
+        "min": 37.546895,
+        "max": 83.319573,
+        "scale": "0-100"
+      },
+      "ngs_passing.completion_percentage_above_expectation": {
+        "min": -40.331046,
+        "max": 31.381316,
+        "scale": "0-100"
+      },
+      "ngs_receiving.percent_share_of_intended_air_yards": {
+        "min": -22.306278,
+        "max": 149.148242,
+        "scale": "0-100"
+      },
+      "ngs_receiving.catch_percentage": {
+        "min": 0,
+        "max": 100,
+        "scale": "0-100"
+      },
+      "ngs_rushing.percent_attempts_gte_eight_defenders": {
+        "min": 0,
+        "max": 100,
+        "scale": "0-100"
+      },
+      "ngs_rushing.rush_pct_over_expected": {
+        "min": 0,
+        "max": 0.818182,
+        "scale": "0-1"
+      }
+    },
+    "manifest_hosts": {
+      "github.com": 3126
+    }
+  },
+  "datasets": [
+    {
+      "file": "data/advstats_week_def_2024.parquet",
+      "expected_rows": 7992,
+      "expected_sha256": "5673c4efccff78fb1aeefa3fd860fd1190044cdd463e674303131bb48c9786c4",
+      "sha_ok": true,
+      "rows": 7992,
+      "columns": 29,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/advstats_week_def_2025.parquet",
+      "expected_rows": 7926,
+      "expected_sha256": "54a7674b746a9e694b4fc09074efe6ac36f270cb2b5d0abe131ef62d4e3e8c9b",
+      "sha_ok": true,
+      "rows": 7926,
+      "columns": 29,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/advstats_week_def_2026.parquet",
+      "expected_rows": 1841,
+      "expected_sha256": "015a08c01c3ff953c0c0608edbe24afd6323716b3767f4e2fc746c5d7fe517d4",
+      "sha_ok": true,
+      "rows": 1841,
+      "columns": 29,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/advstats_week_pass_2024.parquet",
+      "expected_rows": 697,
+      "expected_sha256": "fc4f137a549c53bc8fb3b81379961a62a3a6e12e9360d59a3907d04e2723516f",
+      "sha_ok": true,
+      "rows": 697,
+      "columns": 24,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/advstats_week_pass_2025.parquet",
+      "expected_rows": 684,
+      "expected_sha256": "542ea455037ec0731f4ffb406f4a3fb90ffb4a34d8c0e547cdf767aa048b377d",
+      "sha_ok": true,
+      "rows": 684,
+      "columns": 24,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/advstats_week_pass_2026.parquet",
+      "expected_rows": 152,
+      "expected_sha256": "14c706270057f240ff9350fb04912249fb71255b92c87628f96b9507ecb54899",
+      "sha_ok": true,
+      "rows": 152,
+      "columns": 24,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/advstats_week_rec_2024.parquet",
+      "expected_rows": 4453,
+      "expected_sha256": "9766d86ab8b708cb29b0257ca33b45925605da541bc0154a7d34c02453bb66cf",
+      "sha_ok": true,
+      "rows": 4453,
+      "columns": 17,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/advstats_week_rec_2025.parquet",
+      "expected_rows": 4533,
+      "expected_sha256": "56346a75dba27b46310e2cf0d02fd7cbe23651c7d6c4861c68ced8fa892ca9d2",
+      "sha_ok": true,
+      "rows": 4533,
+      "columns": 17,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/advstats_week_rec_2026.parquet",
+      "expected_rows": 1048,
+      "expected_sha256": "7b0a388c0b1f62ae5bbed11d7aacef046aa476398f94944896bed5875eaa4b38",
+      "sha_ok": true,
+      "rows": 1048,
+      "columns": 17,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/advstats_week_rush_2024.parquet",
+      "expected_rows": 2359,
+      "expected_sha256": "21fdc9eb56dc20cbfe85137d1aad5638aa730ee0c06a184d30acdd2f01ab4243",
+      "sha_ok": true,
+      "rows": 2359,
+      "columns": 16,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/advstats_week_rush_2025.parquet",
+      "expected_rows": 2355,
+      "expected_sha256": "196fc21114474249e7f80b12c696e1ad7984430c549e0bd9181846072354faff",
+      "sha_ok": true,
+      "rows": 2355,
+      "columns": 16,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/advstats_week_rush_2026.parquet",
+      "expected_rows": 512,
+      "expected_sha256": "be290b41b33b107e52f61f0ca2c1345f6d6551326c9506e878e60a3259ca63c4",
+      "sha_ok": true,
+      "rows": 512,
+      "columns": 16,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/depth_charts_2024.parquet",
+      "expected_rows": 37312,
+      "expected_sha256": "e7f91f20e443b6d1056cc8a716ac2e3432cb224f3977223079bf301a992285f1",
+      "sha_ok": true,
+      "rows": 37312,
+      "columns": 15,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/depth_charts_2025.parquet",
+      "expected_rows": 554215,
+      "expected_sha256": "61b2db479c3dd4ce50ef731b834e4f346a0fd6908f7946b39b1b1428ea766bed",
+      "sha_ok": true,
+      "rows": 554215,
+      "columns": 12,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/depth_charts_2026.parquet",
+      "expected_rows": 643146,
+      "expected_sha256": "7c0b4d9d77101c2155c7a2758af52546f8f7f788d87530ce65cb505555e52efe",
+      "sha_ok": true,
+      "rows": 643146,
+      "columns": 12,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/game_labels_2022_2026.csv",
+      "expected_rows": 1218,
+      "expected_sha256": "fd2fb1550c962d89662ba3c08c3f9a6e99de2c2e43b63c6808336770fcb8de9c",
+      "sha_ok": true,
+      "rows": 1218,
+      "columns": 18,
+      "known_at": "BLANK",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/game_labels_historical_seed_2022_2024.csv",
+      "expected_rows": 854,
+      "expected_sha256": "dfc58c7a6a1ea991f73dfaf9cf074fda6d6736f7ddccddfe0ed9c821f75a1197",
+      "sha_ok": true,
+      "rows": 854,
+      "columns": 18,
+      "known_at": "BLANK",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/injuries_2024.parquet",
+      "expected_rows": 6215,
+      "expected_sha256": "9edcf3f7aff5f560a0f7232ce489d178606e5e0392616c2164a76dd20c2fb76d",
+      "sha_ok": true,
+      "rows": 6215,
+      "columns": 16,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/injuries_2025.parquet",
+      "expected_rows": 6068,
+      "expected_sha256": "ff066bd3c60bb7b3e8544862277a969474c929e93cc3b843466c0239b1b1b481",
+      "sha_ok": true,
+      "rows": 6068,
+      "columns": 16,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/injuries_2026.parquet",
+      "expected_rows": 1413,
+      "expected_sha256": "f17d7dd44e105dcb4e628e480b8934766531f7a99b99b139c9ebec6e87617ea8",
+      "sha_ok": true,
+      "rows": 1413,
+      "columns": 16,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/ngs_passing.parquet",
+      "expected_rows": 6134,
+      "expected_sha256": "87bdc919e51b6d3c0a111fc1254718e8d2f3a8b840e725cfde536c0ad3f81c9b",
+      "sha_ok": true,
+      "rows": 6134,
+      "columns": 29,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/ngs_receiving.parquet",
+      "expected_rows": 15223,
+      "expected_sha256": "7a812719ed8ec3c508f41d268ab53c8f6b2396ae2b9a522338fb46b975d2ef9b",
+      "sha_ok": true,
+      "rows": 15223,
+      "columns": 23,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/ngs_rushing.parquet",
+      "expected_rows": 6270,
+      "expected_sha256": "b154d31cb53d887c6360b8cbfbb22e89350559b372a25f25bb90d779b20e2642",
+      "sha_ok": true,
+      "rows": 6270,
+      "columns": 22,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/play_by_play_2025.parquet",
+      "expected_rows": 48771,
+      "expected_sha256": "3de92dcef9ec8384237b11e71062a1fe4a52aefe814daf7e5688db5f0745411a",
+      "sha_ok": true,
+      "rows": 48771,
+      "columns": 372,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/play_by_play_2026.parquet",
+      "expected_rows": 13842,
+      "expected_sha256": "e309202b68650e66de2f7a377a7a03b29438ae307bbc3d0a0df6e34be9c9094a",
+      "sha_ok": true,
+      "rows": 13842,
+      "columns": 372,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/player_game_opportunities_2022_2026.csv",
+      "expected_rows": 79946,
+      "expected_sha256": "ec5ff01834dfa39a561b112de759c106a4ad701339597d75282896d7f3ff04a9",
+      "sha_ok": true,
+      "rows": 79946,
+      "columns": 9,
+      "known_at": "BLANK",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/player_game_opportunities_historical_seed_2022_2024.csv",
+      "expected_rows": 56159,
+      "expected_sha256": "175f9e10567bac25eaa65ad0181aa32910114a901b8746491059057b39e07ef0",
+      "sha_ok": true,
+      "rows": 56159,
+      "columns": 9,
+      "known_at": "BLANK",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/player_stats_def_2024.parquet",
+      "expected_rows": 9994,
+      "expected_sha256": "dc819b47414186b37ddc6a1e2340db307ffa33308c458616bbdbcccf1380eb4e",
+      "sha_ok": true,
+      "rows": 9994,
+      "columns": 32,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/player_stats_kicking_2024.parquet",
+      "expected_rows": 567,
+      "expected_sha256": "106fae3b9e02d03478198cc46afae563f9b6f15d7099a1bbdf68a6c15f69792e",
+      "sha_ok": true,
+      "rows": 567,
+      "columns": 44,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/pregame_rolling_features_2022_2026.csv",
+      "expected_rows": 2436,
+      "expected_sha256": "46a935a83cadb730f3f3cf9b9e59f4d44f9ad8ec09179e7cfdd4141065e7ed9d",
+      "sha_ok": true,
+      "rows": 2436,
+      "columns": 58,
+      "known_at": "BLANK",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/roster_2024.parquet",
+      "expected_rows": 3216,
+      "expected_sha256": "f5029ef3bfe457b0518a49ee43aa0869d121f42e6606966ade4747662c2fa46c",
+      "sha_ok": true,
+      "rows": 3216,
+      "columns": 36,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/roster_2025.parquet",
+      "expected_rows": 3137,
+      "expected_sha256": "f746a34c04c1149e9e96684a23aaa524425bf463c8875bb19b67356d0e81a8fe",
+      "sha_ok": true,
+      "rows": 3137,
+      "columns": 36,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/roster_2026.parquet",
+      "expected_rows": 3033,
+      "expected_sha256": "40cc5a33412d744f665979e2d8650f10b60c766abb76012fa23dcf3d12bd3ee3",
+      "sha_ok": true,
+      "rows": 3033,
+      "columns": 36,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/roster_weekly_2024.parquet",
+      "expected_rows": 46579,
+      "expected_sha256": "9d63e6fcde203e1b963f2071092d80e45770471bfeb9cc480d1be5903c8970d7",
+      "sha_ok": true,
+      "rows": 46579,
+      "columns": 36,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/roster_weekly_2025.parquet",
+      "expected_rows": 46849,
+      "expected_sha256": "6d466d955b6a1b1e4a3f0866ec98fe65d94391e3bbf24659367f243a76791196",
+      "sha_ok": true,
+      "rows": 46849,
+      "columns": 36,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/roster_weekly_2026.parquet",
+      "expected_rows": 13048,
+      "expected_sha256": "ad465a398c3e96c7444f2a92f2fa4c73642f91ba6ffeb025f2d32a2b389d0d27",
+      "sha_ok": true,
+      "rows": 13048,
+      "columns": 36,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/snap_counts_2024.parquet",
+      "expected_rows": 26615,
+      "expected_sha256": "a07bdaf111a5f08a06e2acd4f81c29f7fcc95cda6f9030e419953ad750cdc3fa",
+      "sha_ok": true,
+      "rows": 26615,
+      "columns": 16,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/snap_counts_2025.parquet",
+      "expected_rows": 26613,
+      "expected_sha256": "2f1032279c67197a183bb7e80ca40b66367fc7a8edf3578e158cad0e7cd11b0c",
+      "sha_ok": true,
+      "rows": 26613,
+      "columns": 16,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/snap_counts_2026.parquet",
+      "expected_rows": 7370,
+      "expected_sha256": "6bffecbae506239f7810ddaeb68a349afa3bde011460e8431e9af0f617e5e777",
+      "sha_ok": true,
+      "rows": 7370,
+      "columns": 16,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/stats_player_week_2024.parquet",
+      "expected_rows": 18981,
+      "expected_sha256": "b4e4a59fd8add7a1a962b9b51702a978051e424c9271ae74e8fe5e823d54bace",
+      "sha_ok": true,
+      "rows": 18981,
+      "columns": 114,
+      "lossless_digest_ok": true,
+      "known_at": "NO_COLUMN",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/team_game_advanced_2022_2026.csv",
+      "expected_rows": 2436,
+      "expected_sha256": "9302754f343da5c5c3da8cbcc73c6b7386bf239b3c0595dcd8b57bcab284614d",
+      "sha_ok": true,
+      "rows": 2436,
+      "columns": 27,
+      "known_at": "BLANK",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/team_game_advanced_historical_seed_2022_2024.csv",
+      "expected_rows": 1708,
+      "expected_sha256": "94b31b827f9edec091ecda010646d868914bc7ed7df4613293693f174b8c435b",
+      "sha_ok": true,
+      "rows": 1708,
+      "columns": 27,
+      "known_at": "BLANK",
+      "counts_ok": true,
+      "state": "VERIFIED"
+    }
+  ],
+  "limitations": [
+    "Not a point-in-time certification: known_at is blank; EPA and CPOE are nflfastR model outputs that can be refit after the fact.",
+    "Not a licensing certification: nflverse is CC-BY-4.0; upstream sources (NGS, PFR, ESPN) keep their own terms.",
+    "Not model validation and not prices: spread_line / total_line are historical labels, not executable quotes.",
+    "The 2026 season is partial (the archive ends 2026-10-12)."
+  ]
+}

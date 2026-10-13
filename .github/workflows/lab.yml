@@ -1,7 +1,7 @@
 name: Multi-sport lab
 run-name: Multi-sport lab · ${{ inputs.mode || github.event_name }}
 
-# The data pack (datapack/quant_v1) and the brains built on it beside the NHL:
+# The data packs (datapack/quant_v1, nhl_v1, nfl_v1) and the brains built on them beside the NHL:
 # basketball (NBA, WNBA, men's and women's college), soccer (five leagues),
 # MLB history, the UFC measurement, missingness, the registry and the board.
 # Every source here is free and keyless (raw.githubusercontent.com through
@@ -20,6 +20,11 @@ on:
       - 'lib/edgedesk_engine_ui.js'
       - 'tools/datapack/**'
       - 'tools/lab/**'
+      - 'football/nfl/pack_crosscheck.js'
+      - 'football/nfl/research/**'
+      - 'football/nfl/crosswalk/**'
+      - 'football/validation/nfl_pack_*.json'
+      - 'hockey/tools/parquet_select.py'
       - '.github/workflows/lab.yml'
   push:
     branches: [main]
@@ -54,10 +59,17 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: pyarrow (the NFL pack is Parquet; read by my own helpers, never the pack's scripts)
+        run: pip install --quiet pyarrow
       - name: The data packs verify (hashes, counts, blank known_at, contracts, NFL and NHL lags recomputed, no invented xG)
         env:
           NODE_OPTIONS: --max-old-space-size=4096
-        run: node tools/datapack/verify.js --check && node tools/datapack/verify_nhl.js --check && node tools/datapack/datapack.test.js
+        run: node tools/datapack/verify.js --check && node tools/datapack/verify_nhl.js --check && node tools/datapack/verify_nfl.js --check && node tools/datapack/datapack.test.js
+      - name: The NFL pack against my NFL brain's sources, and the research on it
+        run: node football/nfl/pack_crosscheck.js --check && node football/nfl/research/pack_research.js --check
       - name: The pack agrees with each brain's own source
         run: node tools/datapack/crosscheck.js --check
       - name: The brains, the protocol, the board's settlement and sensitivity rules, the ladder

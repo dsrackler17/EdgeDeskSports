@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_missingness_v1",
- "generated_at": "2026-10-13T12:50:01.576Z",
+ "generated_at": "2026-10-13T13:20:16.495Z",
  "rule": "a blank is missing, never zero; known_at is blank on every historical row by design (first publication was not recorded)",
  "sports": {
   "nhl": {
@@ -1669,6 +1669,59 @@
     "2024 starters, park, outs": "Retrosheet 2024 not reachable; the data pack's StatsAPI table has no starters",
     "bullpen": "no bullpen usage archive",
     "lineups": "no lineup archive"
+   }
+  },
+  "nfl": {
+   "table": "datapack/nfl_v1/data/team_game_advanced_2022_2026.csv",
+   "by_season": {
+    "2022": {
+     "rows": 568,
+     "missing": {
+      "cpoe_sum": 0,
+      "def_plays": 0,
+      "known_at": 1
+     }
+    },
+    "2023": {
+     "rows": 570,
+     "missing": {
+      "cpoe_sum": 0,
+      "def_plays": 0,
+      "known_at": 1
+     }
+    },
+    "2024": {
+     "rows": 570,
+     "missing": {
+      "cpoe_sum": 0,
+      "def_plays": 0,
+      "known_at": 1
+     }
+    },
+    "2025": {
+     "rows": 570,
+     "missing": {
+      "cpoe_sum": 0,
+      "def_plays": 0,
+      "known_at": 1
+     }
+    },
+    "2026": {
+     "rows": 158,
+     "missing": {
+      "cpoe_sum": 0,
+      "def_plays": 0,
+      "known_at": 1
+     }
+    }
+   },
+   "structural": {
+    "known_at": "never recorded for history; EPA and CPOE are model outputs that can be refit",
+    "injuries": "weekly status rows with no publication time: they cannot be placed before a kickoff",
+    "depth_charts": "provider snapshots (2025+) or weekly rows (2024), not announcements",
+    "routes_participation": "not in any source here: targets and snaps cannot stand in for routes",
+    "current_season": "2026 is partial in the pack (through week 5)",
+    "identity": "7 roster id conflicts (two pairs of players sharing an ESPN id; players with two PFR or two ESPN ids): left out of the crosswalk, never guessed"
    }
   },
   "ufc": {

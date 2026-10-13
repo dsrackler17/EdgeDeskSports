@@ -11,7 +11,9 @@
    catches a tampered file, a filled known_at and an invented xG; the
    external-file fetch accepts only the pack's exact bytes. The NHL pack
    (datapack/nhl_v1) passes its own verifier, which catches a backdated
-   known_at, an invented xG and a changed lagged feature.
+   known_at, an invented xG and a changed lagged feature. The NFL pack
+   (datapack/nfl_v1) does too, and its cross-check, crosswalk and research
+   reports hold their stated rules.
 
    Run: node tools/datapack/datapack.test.js
    =========================================================================== */
@@ -133,6 +135,40 @@ function verifyAt(dir) {
   ok('NHL pack: a changed lagged feature is caught by the recomputation', failed.indexOf('lagged_features_recomputed_target_excluded') >= 0, failed);
   ok('NHL pack: each changed file fails its SHA-256', failed.indexOf('inventory_sha256_rows_columns') >= 0, failed);
   fs.rmSync(tmpN, { recursive: true, force: true });
+}
+
+/* 3c. the NFL data pack (datapack/nfl_v1) and what was built on it */
+{
+  const V = require('./verify_nfl');
+  const r = V.verify();
+  ok('NFL pack: the verifier passes every check on the committed pack', r.status === 'PASSED' && r.checks.every((c) => c.pass) && r.summary.verified === 42, r.checks.filter((c) => !c.pass));
+  ok('NFL pack: the committed verification is a fresh run (time stamp aside)', (() => { const c = JSON.parse(fs.readFileSync(path.join(ROOT, 'datapack', 'nfl_v1', 'EDGEDESK_VERIFICATION.json'), 'utf8')); delete c.verified_at; const x = JSON.parse(JSON.stringify(r)); delete x.verified_at; return JSON.stringify(c) === JSON.stringify(x); })());
+  ok('NFL pack: 2025 and 2026 play-by-play recompute every team-game measure, opportunity cell and label', ['team_game_measures_recomputed_2025_2026', 'player_opportunities_recomputed_2025_2026', 'game_labels_recomputed_2025_2026', 'lagged_features_recomputed_target_excluded'].every((id) => r.checks.find((c) => c.id === id).pass));
+  ok('NFL pack: 2026 is labelled PARTIAL, never a complete season', r.findings.current_season.state === 'PARTIAL' && /partial/.test(r.limitations.join(' ')));
+  ok('NFL pack: NGS week 0 rows are counted apart from the weekly rows', Object.values(r.findings.ngs_grain).every((g) => g.week_0_rows > 0 && g.weekly_keys_unique));
+  ok('NFL pack: injuries carry no publication time and depth snapshots are not announcements', r.checks.find((c) => c.id === 'injuries_have_no_publication_time').pass && /not a proven pregame announcement/.test(r.findings.time.depth_note));
+  const xc = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'validation', 'nfl_pack_crosscheck.json'), 'utf8'));
+  ok('NFL pack: every pack game 2022-2026 is in games.csv with the same final, spread and total label', xc.labels.matched === xc.labels.pack_games && xc.labels.final_agree === xc.labels.matched && xc.labels.spread_line_agree === xc.labels.matched, xc.labels);
+  ok('NFL pack: the live 2026 team-week input tracks the pack\'s play-by-play (pass EPA r ≥ 0.95)', xc.live_input_2026.pass_epa.r >= 0.95 && xc.live_input_2026.in_both > 100, xc.live_input_2026);
+  const cw = CSV.readCsv(path.join(ROOT, 'football', 'nfl', 'crosswalk', 'players_2024_2026.csv')).rows;
+  ok('NFL pack: the player crosswalk leaves every conflicting id blank and names it', cw.length === xc.identity.players && cw.filter((x) => x.status !== 'OK').length === xc.identity.conflicts && cw.filter((x) => x.status !== 'OK').every((x) => /CONFLICT/.test(x.status)) && new Set(cw.filter((x) => x.pfr_id).map((x) => x.pfr_id)).size === cw.filter((x) => x.pfr_id).length && new Set(cw.filter((x) => x.espn_id).map((x) => x.espn_id)).size === cw.filter((x) => x.espn_id).length);
+  const rs = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'validation', 'nfl_pack_research.json'), 'utf8'));
+  ok('NFL pack: research is fitted on 2023-24 and scored on 2025-26 with a fixed bar, and claims nothing it did not clear', rs.windows.fit.join() === '2023,2024' && rs.windows.score.join() === '2025,2026' && [rs.carryover.reset_vs_cross, rs.carryover.chosen_decay_vs_cross, rs.qb_change.vs_without].every((t) => t.adds_information === (t.mse_change < 0 && t.ci95[1] < 0)) && /nothing here changes a price/.test(rs.conclusion.join(' ')));
+  /* tamper, on a copy: a filled known_at, a changed 2025 team-game measure and a changed lagged feature are each caught */
+  const tmpF = fs.mkdtempSync(path.join(os.tmpdir(), 'ednfl-'));
+  const cp = path.join(tmpF, 'nfl_v1'); fs.cpSync(path.join(ROOT, 'datapack', 'nfl_v1'), cp, { recursive: true });
+  const gl = path.join(cp, 'data', 'game_labels_2022_2026.csv'); const gll = fs.readFileSync(gl, 'utf8').split('\n'); gll[1] = gll[1].replace(/,(\r?)$/, ',2025-09-07T12:00:00Z$1'); fs.writeFileSync(gl, gll.join('\n'));
+  const tg = path.join(cp, 'data', 'team_game_advanced_2022_2026.csv'); const tgl = fs.readFileSync(tg, 'utf8').split('\n'); const th = tgl[0].split(','); const pi = th.indexOf('plays');
+  const ti = tgl.findIndex((l, i) => i > 0 && l.split(',')[th.indexOf('season')] === '2025'); const tc = tgl[ti].split(','); tc[pi] = String(Number(tc[pi]) + 1); tgl[ti] = tc.join(','); fs.writeFileSync(tg, tgl.join('\n'));
+  const lf = path.join(cp, 'data', 'pregame_rolling_features_2022_2026.csv'); const lfl = fs.readFileSync(lf, 'utf8').split('\n'); const lh = lfl[0].split(','); const li = lh.indexOf('off_epa_per_play_prior_10');
+  const lr = lfl.findIndex((l, i) => i > 0 && l.split(',')[li] !== ''); const lc = lfl[lr].split(','); lc[li] = String(Number(lc[li]) + 0.01); lfl[lr] = lc.join(','); fs.writeFileSync(lf, lfl.join('\n'));
+  const { execFileSync } = require('child_process');
+  let failed = [];
+  try { failed = JSON.parse(execFileSync('node', ['-e', 'const r=require(' + JSON.stringify(path.join(__dirname, 'verify_nfl.js')) + ').verify();console.log(JSON.stringify(r.checks.filter(c=>!c.pass).map(c=>c.id)))'], { encoding: 'utf8', env: Object.assign({}, process.env, { EDGEDESK_NFL_PACK: cp }), maxBuffer: 1 << 26 })); } catch (e) { failed = ['CRASH ' + e.message]; }
+  ok('NFL pack: a backdated known_at is caught', failed.indexOf('known_at_blank_everywhere') >= 0, failed);
+  ok('NFL pack: a changed 2025 team-game measure is caught by the play-by-play recomputation', failed.indexOf('team_game_measures_recomputed_2025_2026') >= 0, failed);
+  ok('NFL pack: a changed lagged feature is caught by the recomputation', failed.indexOf('lagged_features_recomputed_target_excluded') >= 0, failed);
+  fs.rmSync(tmpF, { recursive: true, force: true });
 }
 
 /* 4. the external fetch: only the pack's exact bytes */

@@ -1,23 +1,5 @@
 # Changelog
 
-## 2026-10-13 — Today's Games: every sport's slate on the first screen, one tap from its research
-
-**Opening EdgeDesk now answers "what's on today?" first. The Research screen leads with today's games in nine sports, on the reader's own calendar day and in their own time zone. Each card shows live status and score, a captured price with its book and time (or "Odds unavailable"), and View Research into the research EdgeDesk already has. View all opens a full games page with dates, filters and search. The public /today/ page shows the same slate without prices.** Docs: `docs/games/README.md`.
-
-- **The kernel** (`lib/edgedesk_games.js`):
-  - The reader's day is computed, not assumed: 23- and 25-hour DST days, a zone whose midnight does not exist, America/Chicago when the browser gives no zone.
-  - It never puts a later game under Today; a sport with nothing on the day gets a separate Upcoming list.
-  - Statuses come from the feed. A game the feed has gone quiet on is "Started", with no score.
-  - Doubleheaders are two games, live first, and a rescheduled game leaves its old day.
-  - Markets: the puck line, the run line and the 1X2 with the draw, both sides labelled, through one integrity check.
-- **The pipeline** (`tools/slate/`):
-  - ESPN scoreboard adapters for every sport, one plain request per feed per day, only when due. Steady state is a few dozen requests every half hour.
-  - The repo's own schedules are the fallback, and a failed read carries the last good one with its age.
-  - Research is joined from the existing artifacts: the football module, the NHL panel, the MLB and college-baseball cards, the UFC panel, free articles, the models and the boards' reads.
-  - The schedule never touches the odds pipeline.
-- **Live** (`supabase/games_slate.sql`, `tools/slate/live_poll.js`, `games-live.yml`): one poller for every visitor, about every 45 seconds while games are on. `public_slate_live()` is the anonymous read; `slate_markets()` gives entitled subscribers the prices capture already stored.
-- **Signals**: only the CFB decision engine's BET, the NFL pricer's PLAY under a VALIDATED tier, or the engine's BEST_SUPPORTED pick, still re-judged by `EDREADY` against a current price. None is certified today, so no card shows one.
-- **Tests**: 106 kernel and 59 pipeline checks; 23 SQL checks on PostgreSQL with Supabase's default grants; 88 Chromium checks at 390 px and 1280 px.
 
 ## 2026-10-13 — The Quant Data Pack, integrated: verified history, NHL lineups and a second source, ten new walk-forward fits (four basketball leagues, five soccer leagues, MLB), and a six-rung readiness ladder
 

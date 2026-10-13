@@ -1,0 +1,696 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "football.plays",
+  "type": "object",
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "event_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "entity_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Source registry identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_record_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Original provider record identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "occurred_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "known_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "retrieved_at": {
+      "type": "string",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "description": "Monotone version of this source record.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "quality_status": {
+      "type": "string",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "period": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Period.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "down": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Down.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "yards_to_go": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Yards to go.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "yardline_100": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Yardline 100.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "offense_score_before": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Offense score before.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "defense_score_before": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Defense score before.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "offense_timeouts": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Offense timeouts.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "defense_timeouts": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Defense timeouts.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "defenders_in_box": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Defenders in box.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "game_seconds_remaining": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Game seconds remaining.",
+      "x-unit": "seconds",
+      "x-priority": "P0"
+    },
+    "half_seconds_remaining": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Half seconds remaining.",
+      "x-unit": "seconds",
+      "x-priority": "P0"
+    },
+    "play_clock_seconds": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Play clock seconds.",
+      "x-unit": "seconds",
+      "x-priority": "P0"
+    },
+    "drive_elapsed_seconds": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Drive elapsed seconds.",
+      "x-unit": "seconds",
+      "x-priority": "P0"
+    },
+    "offense_team_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Offense team id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "defense_team_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Defense team id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "quarterback_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Quarterback id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "passer_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Passer id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "receiver_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Receiver id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "rusher_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Rusher id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "kicker_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Kicker id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "drive_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Drive id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "play_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Play type.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "pass_location": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Pass location.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "run_location": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Run location.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "run_gap": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Run gap.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "formation": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Formation.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "personnel": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Personnel.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "coverage_shell": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Coverage shell.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "blitz_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Blitz type.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "weather_surface": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Weather surface.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "yards_gained": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Yards gained.",
+      "x-unit": "yards",
+      "x-priority": "P0"
+    },
+    "air_yards": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Air yards.",
+      "x-unit": "yards",
+      "x-priority": "P0"
+    },
+    "yards_after_catch": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Yards after catch.",
+      "x-unit": "yards",
+      "x-priority": "P0"
+    },
+    "pass_distance": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Pass distance.",
+      "x-unit": "yards",
+      "x-priority": "P0"
+    },
+    "kick_distance": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Kick distance.",
+      "x-unit": "yards",
+      "x-priority": "P0"
+    },
+    "net_punt_yards": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Net punt yards.",
+      "x-unit": "yards",
+      "x-priority": "P0"
+    },
+    "epa": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Epa.",
+      "x-unit": "number",
+      "x-priority": "P0"
+    },
+    "wp_before": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Wp before.",
+      "x-unit": "number",
+      "x-priority": "P0"
+    },
+    "wp_after": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Wp after.",
+      "x-unit": "number",
+      "x-priority": "P0"
+    },
+    "wpa": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Wpa.",
+      "x-unit": "number",
+      "x-priority": "P0"
+    },
+    "completion_probability": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Completion probability.",
+      "x-unit": "number",
+      "x-priority": "P0"
+    },
+    "cpoe": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Cpoe.",
+      "x-unit": "number",
+      "x-priority": "P0"
+    },
+    "no_play": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "No play.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "pass_attempt": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Pass attempt.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "rush_attempt": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Rush attempt.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "complete_pass": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Complete pass.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "interception": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Interception.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "fumble": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Fumble.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "fumble_lost": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Fumble lost.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "sack": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Sack.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "qb_hit": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Qb hit.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "pressure": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Pressure.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "blitz": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Blitz.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "shotgun": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Shotgun.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "no_huddle": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "No huddle.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "play_action": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Play action.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "rpo": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Rpo.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "kneel": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Kneel.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "spike": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Spike.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "scramble": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Scramble.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "touchdown": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Touchdown.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "first_down": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "First down.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "penalty": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Penalty.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "accepted_penalty": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Accepted penalty.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "explosive_play": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Explosive play.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "penalty_yards": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Penalty yards.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "rushers": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Rushers.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    }
+  },
+  "required": [
+    "record_id",
+    "source_id",
+    "retrieved_at",
+    "revision",
+    "quality_status"
+  ],
+  "additionalProperties": false
+}
