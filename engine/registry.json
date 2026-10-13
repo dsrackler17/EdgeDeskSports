@@ -64,7 +64,9 @@
     "not_modelled": [
      "skater injuries and late scratches",
      "travel distance and time zones (not tested yet)",
-     "line combinations"
+     "line combinations",
+     "referees (screened on 2024-25: no repeatable effect on penalties, power-play time or goals; no assignment timestamps)",
+     "neutral-site games (priced with home ice: my feed has no neutral flag; 4 such games in 2024-25)"
     ]
    },
    "readiness": {
@@ -85,7 +87,7 @@
       "outcome": "VALIDATED",
       "market": "NOT_TESTED",
       "n": 7945,
-      "headline": "outcomes: OUTCOME_VALIDATED; held-out log loss 0.66267; vs close: not tested; vs Elo Δ log loss -0.003876 (95% -0.005669 to -0.002192)",
+      "headline": "outcomes: OUTCOME_VALIDATED; held-out log loss 0.66271; vs close: not tested; vs Elo Δ log loss -0.003833 (95% -0.005648 to -0.00212)",
       "file": "hockey/validation/nhl_walkforward.json"
      },
      "spread": {
@@ -95,7 +97,7 @@
       "outcome": "VALIDATED",
       "market": "NOT_TESTED",
       "n": 7945,
-      "headline": "outcomes: OUTCOME_VALIDATED; held-out log loss 0.61251; vs close: not tested",
+      "headline": "outcomes: OUTCOME_VALIDATED; held-out log loss 0.61255; vs close: not tested",
       "file": "hockey/validation/nhl_walkforward.json"
      },
      "total": {
@@ -105,7 +107,7 @@
       "outcome": "PROVISIONAL",
       "market": "NOT_TESTED",
       "n": 7945,
-      "headline": "outcomes: PROVISIONAL (calibration slope 0.814); held-out log loss 0.68169; vs close: not tested",
+      "headline": "outcomes: PROVISIONAL (calibration slope 0.81); held-out log loss 0.68168; vs close: not tested",
       "file": "hockey/validation/nhl_walkforward.json"
      },
      "regulation_3way": {
@@ -115,7 +117,7 @@
       "outcome": "PROVISIONAL",
       "market": "NOT_TESTED",
       "n": null,
-      "headline": "outcomes: PROVISIONAL (no binary calibration rule defined for a 3-way market yet; log loss reported); held-out log loss 1.03843; vs close: not tested",
+      "headline": "outcomes: PROVISIONAL (no binary calibration rule defined for a 3-way market yet; log loss reported); held-out log loss 1.03847; vs close: not tested",
       "file": "hockey/validation/nhl_walkforward.json"
      }
     },
@@ -123,11 +125,11 @@
     "ladder": {
      "data_loaded": {
       "done": true,
-      "detail": "see the sport's own pipeline"
+      "detail": "17236 games (2011-2027), retrospective; second source 2024-25: 1398/1398 matched, every final agrees"
      },
      "model_trained": {
       "done": true,
-      "detail": "edgedesk_nhl_v1"
+      "detail": "xg_no_goalie"
      },
      "validation_passed": {
       "done": true,
@@ -142,9 +144,12 @@
    },
    "evidence_files": [
     "hockey/validation/nhl_walkforward.json",
-    "hockey/xg/report.json"
+    "hockey/xg/report.json",
+    "hockey/validation/nhl_crosscheck_espn.json",
+    "hockey/validation/nhl_blocked_attribution.json",
+    "datapack/nhl_v1/EDGEDESK_VERIFICATION.json"
    ],
-   "evidence_generated_at": "2026-10-13T05:48:41.472Z",
+   "evidence_generated_at": "2026-10-13T12:49:14.617Z",
    "data": [
     {
      "source": "sportsdataverse fastRhockey-nhl-data (play-by-play, goalie box, game info)",
@@ -152,6 +157,13 @@
      "cadence": "daily in season",
      "license": "MIT repository; underlying data from the NHL public feeds (NHL terms restrict commercial use — owner review needed)",
      "cost": "free, keyless"
+    },
+    {
+     "source": "EdgeDesk NHL Data Pack (datapack/nhl_v1): ESPN public responses, 2024-25",
+     "what": "second source for one full season — 1,398 games, 448k events, 167k shot attempts, every player and goalie box, officials; reconciled event by event against my feed (it exposed and confirmed the blocked-shot attribution fix)",
+     "cadence": "one-off import, fixed scope",
+     "license": "ESPN public responses; redistribution rights not certified — research copy, never resold",
+     "cost": "free (delivered)"
     },
     {
      "source": "sportsdataverse fastRhockey-nhl-raw (season schedule)",
@@ -1876,5 +1888,5 @@
   "UNAVAILABLE": "Unavailable",
   "RETIRED": "Retired"
  },
- "generated_at": "2026-10-13T06:41:57.021Z"
+ "generated_at": "2026-10-13T12:50:40.253Z"
 }

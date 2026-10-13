@@ -111,6 +111,7 @@ const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
       chk(label + ': readiness says value claims are disabled and why', await page.evaluate(() => /value claims/i.test(document.querySelector('.xe-ready').textContent) && /disabled/i.test(document.querySelector('.xe-ready').textContent) && /closing/i.test(document.querySelector('.xe-ready').textContent)));
       chk(label + ': each card shows a fair moneyline and a total', await page.evaluate(() => Array.from(document.querySelectorAll('.xe-game')).every((c) => /ML/.test(c.textContent) && /Total/.test(c.textContent))));
       chk(label + ': no horizontal scroll on the NHL list', await noHScroll(page));
+      chk(label + ': the record names its second source and calls it a check of past data, not a forecast', await page.evaluate(() => { const e = document.querySelector('#nhlHost .xe-2nd'); return !!e && /Second source/.test(e.textContent) && /2024-25/.test(e.textContent) && /not a forecast/.test(e.textContent); }));
       await shot(page, label + '_nhl_list');
       const g = SLATE.games[0];
       await page.click('#nhlHost .xe-game[data-game="' + g.game_id + '"]');

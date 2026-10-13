@@ -1,0 +1,221 @@
+{
+  "family": "hockey",
+  "table": "goalie_game",
+  "grain": "one goalie game and strength state",
+  "priority": "P0",
+  "default_source": "NHL / authorized shot model",
+  "definition_status": "canonical_contract_not_claim_of_provider_coverage",
+  "keys": [
+    "record_id",
+    "revision"
+  ],
+  "columns": [
+    {
+      "field": "record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "event_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "entity_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "source_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Source registry identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "source_record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Original provider record identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "occurred_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "known_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "retrieved_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "revision",
+      "type": "integer",
+      "unit": "none",
+      "description": "Monotone version of this source record.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "quality_status",
+      "type": "text",
+      "unit": "none",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "strength_state",
+      "type": "text",
+      "unit": "category",
+      "description": "Strength state.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "toi_seconds",
+      "type": "integer",
+      "unit": "seconds",
+      "description": "Toi seconds.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "shots_faced",
+      "type": "integer",
+      "unit": "count",
+      "description": "Shots faced.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "goals_allowed",
+      "type": "integer",
+      "unit": "count",
+      "description": "Goals allowed.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "saves",
+      "type": "integer",
+      "unit": "count",
+      "description": "Saves.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "low_danger_shots",
+      "type": "integer",
+      "unit": "count",
+      "description": "Low danger shots.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "medium_danger_shots",
+      "type": "integer",
+      "unit": "count",
+      "description": "Medium danger shots.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "high_danger_shots",
+      "type": "integer",
+      "unit": "count",
+      "description": "High danger shots.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "rebounds_allowed",
+      "type": "integer",
+      "unit": "count",
+      "description": "Rebounds allowed.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "expected_goals_against",
+      "type": "number",
+      "unit": "number",
+      "description": "Expected goals against.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "started",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Started.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "confirmed_starter",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Confirmed starter.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "starter_confirmed_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "Starter confirmed at.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    }
+  ]
+}

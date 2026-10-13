@@ -43,6 +43,7 @@ and the artifact-commit procedure (`tools/ci/push_generated.sh`).
 | 16 | UFC, college baseball, tennis | measured or recorded as insufficient — **no model claimed** |
 | 17 | Board v2: pushes, voids, split settlement, sensitivity gate; the six-rung readiness ladder in the UI | done |
 | 18 | Missingness diagnostics; CI for the lab (`.github/workflows/lab.yml`) | done |
+| 19 | The NHL Data Pack (ESPN, full 2024-25) imported and verified (11/11 tables, 34/34 checks); reconciled event by event against my feed; the blocked-shot attribution error it exposed fixed across every season; officials and the pack's lagged features measured | done (`datapack/nhl_v1`, `tools/datapack/verify_nhl.js`, `hockey/crosscheck/`, `hockey/research/`) |
 
 ## What I found in the repository first
 

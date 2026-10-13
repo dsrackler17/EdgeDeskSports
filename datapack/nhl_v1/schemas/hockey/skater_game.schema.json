@@ -1,0 +1,363 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "hockey.skater_game",
+  "type": "object",
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "event_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "entity_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Source registry identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_record_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Original provider record identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "occurred_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "known_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "retrieved_at": {
+      "type": "string",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "description": "Monotone version of this source record.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "quality_status": {
+      "type": "string",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "strength_state": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Strength state.",
+      "x-unit": "category",
+      "x-priority": "P1"
+    },
+    "position": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Position.",
+      "x-unit": "category",
+      "x-priority": "P1"
+    },
+    "toi_seconds": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Toi seconds.",
+      "x-unit": "seconds",
+      "x-priority": "P1"
+    },
+    "pp_toi_seconds": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Pp toi seconds.",
+      "x-unit": "seconds",
+      "x-priority": "P1"
+    },
+    "pk_toi_seconds": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Pk toi seconds.",
+      "x-unit": "seconds",
+      "x-priority": "P1"
+    },
+    "goals": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Goals.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "primary_assists": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Primary assists.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "secondary_assists": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Secondary assists.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "shots_on_goal": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Shots on goal.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "missed_shots": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Missed shots.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "blocked_shots": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Blocked shots.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "shots_blocked": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Shots blocked.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "hits": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Hits.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "takeaways": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Takeaways.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "giveaways": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Giveaways.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "penalty_minutes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Penalty minutes.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "faceoffs_won": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Faceoffs won.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "faceoffs_lost": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Faceoffs lost.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "offensive_zone_starts": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Offensive zone starts.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "defensive_zone_starts": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Defensive zone starts.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "neutral_zone_starts": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Neutral zone starts.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "on_ice_shots_for": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "On ice shots for.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "on_ice_shots_against": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "On ice shots against.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "on_ice_attempts_for": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "On ice attempts for.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "on_ice_attempts_against": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "On ice attempts against.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "on_ice_goals_for": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "On ice goals for.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "on_ice_goals_against": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "On ice goals against.",
+      "x-unit": "count",
+      "x-priority": "P1"
+    },
+    "individual_xg": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Individual xg.",
+      "x-unit": "number",
+      "x-priority": "P1"
+    },
+    "on_ice_xg_for": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "On ice xg for.",
+      "x-unit": "number",
+      "x-priority": "P1"
+    },
+    "on_ice_xg_against": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "On ice xg against.",
+      "x-unit": "number",
+      "x-priority": "P1"
+    }
+  },
+  "required": [
+    "record_id",
+    "source_id",
+    "retrieved_at",
+    "revision",
+    "quality_status"
+  ],
+  "additionalProperties": false
+}

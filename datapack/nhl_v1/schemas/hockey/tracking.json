@@ -1,0 +1,212 @@
+{
+  "family": "hockey",
+  "table": "tracking",
+  "grain": "one tracked possession or action",
+  "priority": "P2",
+  "default_source": "licensed tracking provider",
+  "definition_status": "canonical_contract_not_claim_of_provider_coverage",
+  "keys": [
+    "record_id",
+    "revision"
+  ],
+  "columns": [
+    {
+      "field": "record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "event_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "entity_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "source_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Source registry identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "source_record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Original provider record identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "occurred_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "known_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "retrieved_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "revision",
+      "type": "integer",
+      "unit": "none",
+      "description": "Monotone version of this source record.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "quality_status",
+      "type": "text",
+      "unit": "none",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "controlled_entries",
+      "type": "integer",
+      "unit": "count",
+      "description": "Controlled entries.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "uncontrolled_entries",
+      "type": "integer",
+      "unit": "count",
+      "description": "Uncontrolled entries.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "entry_denials",
+      "type": "integer",
+      "unit": "count",
+      "description": "Entry denials.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "controlled_exits",
+      "type": "integer",
+      "unit": "count",
+      "description": "Controlled exits.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "failed_exits",
+      "type": "integer",
+      "unit": "count",
+      "description": "Failed exits.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "slot_passes",
+      "type": "integer",
+      "unit": "count",
+      "description": "Slot passes.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "cross_slot_passes",
+      "type": "integer",
+      "unit": "count",
+      "description": "Cross slot passes.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "forecheck_recoveries",
+      "type": "integer",
+      "unit": "count",
+      "description": "Forecheck recoveries.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "rush_attempts",
+      "type": "integer",
+      "unit": "count",
+      "description": "Rush attempts.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "puck_possession_seconds",
+      "type": "integer",
+      "unit": "seconds",
+      "description": "Puck possession seconds.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "skating_speed",
+      "type": "number",
+      "unit": "feet_per_second",
+      "description": "Skating speed.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "tracking_frame_json",
+      "type": "text",
+      "unit": "json",
+      "description": "Tracking frame json.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    }
+  ]
+}

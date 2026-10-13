@@ -71,6 +71,16 @@ const near = (a, b, e) => Math.abs(a - b) <= (e == null ? 1e-6 : e);
   const so = events.concat([ev({ event_idx: 11, period: 5, period_type: 'SHOOTOUT', event_type: 'GOAL', event_team_type: 'away', game_seconds: 3900, x_fixed: -80, y_fixed: 0 })]);
   const recSo = G.processGame(Object.assign({}, meta, { final_home: 1, final_away: 2 }), so);
   chk('ingest: shootout attempts never enter shots or rates', recSo.shots.length === recTie.shots.length && recSo.game.so_winner === 'away');
+  /* a blocked attempt: the feed names the BLOCKING team and rotates the location as if the blocker attacked */
+  const blk = ev({ event_idx: 3, event_type: 'BLOCKED_SHOT', event_team_type: 'home', event_team_abbr: 'AAA', home_abbr: 'AAA', away_abbr: 'BBB', game_seconds: 101, x_fixed: 60, y_fixed: -12 });
+  const v = G.shooterView(blk);
+  chk('ingest: a BLOCKED_SHOT is credited to the shooter (the other club) and its location rotated back', v.event_team_type === 'away' && v.event_team_abbr === 'BBB' && v.x_fixed === -60 && v.y_fixed === 12 && v.blocking_team_type === 'home' && blk.event_team_type === 'home', v);
+  chk('ingest: any other event passes through unchanged', G.shooterView(events[1]) === events[1]);
+  const withBlock = [events[0], blk, ev({ event_idx: 4, event_type: 'SHOT', event_team_type: 'away', game_seconds: 103, x_fixed: -70, y_fixed: 10, secondary_type: 'wrist', event_goalie_id: 9 }), events[9]];
+  const recB = G.processGame(Object.assign({}, meta, { final_home: 0, final_away: 0, season_type: 'P' }), withBlock);
+  const bShot = recB.shots.find((s) => s.side === 'away');
+  chk('ingest: the blocked attempt counts in the shooter\'s Corsi, not the blocker\'s', recB.teams.away.ev5.cf === 2 && recB.teams.home.ev5.cf === 0 && recB.teams.away.ev5.ff === 1, [recB.teams.home.ev5, recB.teams.away.ev5]);
+  chk('ingest: a shot 2 s after the same team\'s blocked attempt is a rebound, not a rush', bShot.rebound === 1 && bShot.rush === 0 && bShot.prev_same === 1 && bShot.prev_type === 'BLOCKED_SHOT', bShot);
 
   /* ---------------- xG ---------------- */
   const shots = [];
@@ -270,8 +280,20 @@ const near = (a, b, e) => Math.abs(a - b) <= (e == null ? 1e-6 : e);
     const nc = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'validation', 'nhl_contracts.json'), 'utf8'));
     chk('contracts: the committed mapping validates and gives a reason for every always-empty field', nc.tables.every((t) => t.ok !== false) && nc.tables.filter((t) => t.always_missing).every((t) => t.always_missing.every((f) => f.reason)) && nc.tables.some((t) => t.table === 'hockey/shots' && t.rows > 100000));
     const xc = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'validation', 'nhl_crosscheck_espn.json'), 'utf8'));
-    chk('second source: every 2024-25 NHL-feed game maps to ESPN and every final agrees', xc.results.compared === xc.games.nhl_feed_games && xc.results.final_agree === xc.results.compared && !xc.games.unmatched_by_reason['no NHL-feed game with these clubs within 6 h'], xc.results);
-    chk('second source: goals against per goalie agree on every sampled row', xc.goalies.goals_against_agree === xc.goalies.goalie_rows && xc.goalies.goalie_rows > 100);
+    chk('second source: every 2024-25 NHL-feed game maps to ESPN; every final, decision and regulation score agrees', xc.schema === 'edgedesk_nhl_crosscheck_v2' && xc.results.compared === xc.games.nhl_feed_games && xc.results.final_agree === xc.results.compared && xc.results.decided_agree === xc.results.compared && xc.results.regulation_goals_agree === xc.results.team_games && !xc.games.unmatched_by_reason['no NHL-feed game with these clubs within 6 h'], xc.results);
+    chk('second source: 99% of ESPN attempts match an NHL event; ESPN x/y are the NHL raw rink feet', xc.events.match_rate >= 0.99 && xc.events.espn_attempts > 160000 && xc.events.coordinates.share_within_1ft_of_nhl_raw >= 0.98, xc.events);
+    chk('second source: every matched blocked attempt is credited to the shooter ESPN names, in the period\'s frame', xc.events.blocked.espn_shooter_team_is_shooter_view_team === xc.events.blocked.matched && xc.events.blocked.espn_shooter_team_is_nhl_event_team === 0 && xc.events.blocked.frame.shooter_view_matches_period_frame >= 0.98 * xc.events.blocked.frame.compared, xc.events.blocked);
+    chk('second source: "Even Strength" is a label, not 5v5 (some of it is 4v4, 3v3 or a pulled goalie)', xc.events.strength.even_strength_is_5v5_share < 1 && xc.events.strength.espn_label_by_my_state['Even Strength'].evo > 0);
+    chk('second source: goals against agree for every goalie my feed saw; starter differences are all two-goalie games', xc.goalies.goalie_rows > 2900 && xc.goalies.goals_against_disagreements.every((d) => /not among my goalies/.test(d.reason || '')) && xc.goalies.starter_disagreements_in_one_goalie_games === 0 && xc.goalies.starter_disagreements_total > 0, xc.goalies.goals_against_disagreements);
+    chk('second source: every skater TOI maps and agrees within 5 s; every ESPN player has an NHL id, none twice', xc.skaters.player_rows_mapped === xc.skaters.player_rows && xc.skaters.player_toi_within_5s === xc.skaters.player_rows_mapped && xc.players.mapped === xc.players.espn_players && xc.players.nhl_id_mapped_twice === 0, xc.players);
+    chk('second source: the pack\'s unmapped attempts all sit in team-games where ESPN\'s box lists one skater fewer', xc.skaters.unmapped_pack_attempts > 0 && xc.skaters.unmapped_pack_attempts_in_those_games === xc.skaters.unmapped_pack_attempts);
+    const bl = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'validation', 'nhl_blocked_attribution.json'), 'utf8'));
+    chk('blocked attempts: over every season the feed\'s event team is (all but once in 610k) not the shooter\'s club', bl.totals.seasons_measured >= 15 && bl.totals.event_team_is_shooters_club <= bl.totals.blocked / 1e5 && bl.totals.player_1_is_shooter === bl.totals.blocked, bl.totals);
+    const offs = fs.readFileSync(path.join(ROOT, 'hockey', 'data', 'officials', '2025.csv'), 'utf8').trim().split('\n');
+    const ofr = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'validation', 'nhl_officials_research.json'), 'utf8'));
+    chk('officials: keyed to NHL game ids, with no assignment time (known_at blank, RETRO), and a research screen only', offs.length - 1 === xc.games.matched && offs.slice(1).every((l) => /,,,RETRO,/.test(l)) && /Research only/.test(ofr.conclusion) && ['minors', 'pp_minutes', 'regulation_goals'].every((k) => ofr.outcomes[k].permutation_p != null));
+    const pf = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'validation', 'nhl_pack_features.json'), 'utf8'));
+    chk('pack features: tested against my model on a later hold-out with a fixed bar, and none enters the price unless it clears it', pf.score_games > 300 && pf.fit_window[1] < pf.score_window[0] && Object.values(pf.tests).every((t) => t.adds_information === (t.log_loss_change <= -0.001 && t.ci95[1] < 0)) && !Object.keys(require(path.join(ROOT, 'hockey', 'model', 'glm.js')).FEATURES).some((f) => /corsi|fenwick|referee/.test(f)), pf.tests);
     const xw = fs.readFileSync(path.join(ROOT, 'hockey', 'data', 'crosswalk', 'espn_nhl_2025.csv'), 'utf8').trim().split('\n');
     chk('second source: the id crosswalk has one row per matched game, no id twice', xw.length - 1 === xc.games.matched && new Set(xw.slice(1).map((l) => l.split(',')[0])).size === xw.length - 1 && new Set(xw.slice(1).map((l) => l.split(',')[1])).size === xw.length - 1);
   }

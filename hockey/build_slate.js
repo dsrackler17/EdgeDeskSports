@@ -84,6 +84,15 @@ async function refreshFromApi(games, now, hours, offline) {
 
 function bin(bins, p) { return (bins || []).find((b) => p >= b.lo && p < b.hi) || null; }
 
+/* the second source: the NHL data pack's ESPN 2024-25 season, reconciled event by event (hockey/crosscheck/espn.js) */
+function secondSource() {
+  const x = readJson(path.join(C.PATHS.validation, 'nhl_crosscheck_espn.json'), null);
+  if (!x || x.schema !== 'edgedesk_nhl_crosscheck_v2') return null;
+  return { season: x.season_label, source: 'ESPN (the NHL data pack, datapack/nhl_v1)', games_matched: x.results.compared, games: x.games.espn_club_games, finals_agree: x.results.final_agree, decided_agree: x.results.decided_agree,
+    attempts_matched: x.events.matched, attempts: x.events.espn_attempts, blocked_credited_to_shooter: x.events.blocked.espn_shooter_team_is_shooter_view_team, blocked: x.events.blocked.matched,
+    skater_toi_within_5s: x.skaters.player_toi_within_5s, skater_rows: x.skaters.player_rows, file: 'hockey/validation/nhl_crosscheck_espn.json' };
+}
+
 function build(o) {
   const live = readJson(path.join(C.HOCKEY, 'model', 'params', 'live.json'), null);
   const val = readJson(path.join(C.PATHS.validation, 'nhl_walkforward.json'), null);
@@ -250,7 +259,7 @@ function build(o) {
       market: quotes && quotes.status === 'LIVE' ? { state: 'CAPTURED', captured_at: quotes.generated_at } : { state: quotes ? quotes.status : 'NOT_CAPTURED', reason: quotes ? quotes.reason : 'NHL prices are not captured: icehockey_nhl is not enabled in the odds gateway (supabase/odds_api_gateway.sql) and the repository variable NHL_PRICES is not on' },
       value_claims: { state: 'DISABLED', reasons: ['the NHL model has not been tested against closing prices (no licensed closing-price archive)'].concat(quotes && quotes.status === 'LIVE' ? [] : ['no verified current NHL prices are captured']) },
     },
-    record: { moneyline: val.markets && val.markets.moneyline, comparisons: val.comparisons, leakage: val.leakage, live_games_graded: (val.live_games || []).length },
+    record: { moneyline: val.markets && val.markets.moneyline, comparisons: val.comparisons, leakage: val.leakage, live_games_graded: (val.live_games || []).length, second_source: secondSource() },
     quotes_by_game: quotesByGame,
     attribution: 'NHL game data: sportsdataverse fastRhockey (compiled from the NHL\'s public game feeds). ' + C.LICENSE.sportsdataverse,
     games: out,

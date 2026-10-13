@@ -35,6 +35,8 @@ on:
       - 'supabase/nhl_odds_sport.sql'
       - 'supabase/functions/edgedesk_ai/index.ts'
       - 'app.html'
+      - 'datapack/nhl_v1/**'
+      - 'tools/datapack/verify_nhl.js'
       - '.github/workflows/nhl.yml'
   push:
     branches: [main]
@@ -78,7 +80,7 @@ jobs:
       - name: The cross-sport board's rules and the readiness registry
         run: node tools/engine/engine.test.js
       - name: The committed record, slate, registry and board pass their checks
-        run: node hockey/model/walkforward.js --check && node hockey/build_slate.js --check && node hockey/crosscheck/espn.js --check && node hockey/contracts/canonical.js --check && node engine/build_registry.js --check && node engine/build_board.js --check
+        run: node hockey/model/walkforward.js --check && node hockey/build_slate.js --check && node hockey/crosscheck/espn.js --check && node hockey/crosscheck/blocked.js --check && node hockey/research/officials.js --check && node hockey/research/pack_features.js --check && node hockey/contracts/canonical.js --check && node engine/build_registry.js --check && node engine/build_board.js --check
       - name: The NHL odds row on a real PostgreSQL (disabled until authorised)
         env: { NHL_SQL_REQUIRED: '1' }
         run: node tools/hockey/nhl_sql.test.js
@@ -173,7 +175,8 @@ jobs:
       - name: The canonical contracts and the ESPN cross-check on the new tables
         run: |
           S=$(node -e "console.log(require('./hockey/config.js').CURRENT_SEASON)")
-          node hockey/contracts/canonical.js --season "$((S-1))" && node hockey/crosscheck/espn.js
+          node hockey/contracts/canonical.js --season "$((S-1))" && node hockey/crosscheck/espn.js && node hockey/crosscheck/blocked.js
+          node hockey/research/officials.js && node hockey/research/pack_features.js
       - name: Rebuild the slate, the registry and the board on the new record
         run: node hockey/build_slate.js && node hockey/grade_ledger.js && node engine/build_registry.js && node engine/build_board.js
       - name: The suites pass on the new record before anything commits
