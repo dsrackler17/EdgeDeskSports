@@ -170,7 +170,8 @@ const GATEWAY_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   var RESEARCH_COVERAGE = [
     { id: 'football', label: 'Football' },
     { id: 'ufc', label: 'UFC' },
-    { id: 'baseball', label: 'Baseball' }
+    { id: 'baseball', label: 'Baseball' },
+    { id: 'nhl', label: 'NHL' }
   ];
   /* Where a retired research module's old route lands: the shell's default. */
   var RESEARCH_DEFAULT = 'football';

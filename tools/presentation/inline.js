@@ -178,6 +178,13 @@ const LIBS = [
     start: '/*__EDLINESDESK_START__*/', end: '/*__EDLINESDESK_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* The NHL on the desk: questions answered from hockey/slate.json. */
+  {
+    name: 'EDNHLDESK',
+    src: path.join(ROOT, 'hockey', 'desk.js'),
+    start: '/*__EDNHLDESK_START__*/', end: '/*__EDNHLDESK_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
   /* The desk layer: the sport-aware typed-evidence contract, the price
      verdict and ladder, the deterministic board ranking, intent, the
      conversation state, Similar Situations' gate and the short answer.

@@ -134,6 +134,27 @@ chk('7 · the prop capture asks for the core markets only by default', JSON.stri
   chk('9 · ' + f + ' calls no odds gateway, capture or provider', !/odds_gateway|functions\/v1\/(capture|odds|close)\b|the-odds-api|oddsblaze/.test(t));
 });
 
+/* ── 10 · the multi-sport engine spends nothing by default ──────────────
+   The NHL brain, the registry and the cross-sport board are built from
+   committed data. One file may ask the gateway for NHL prices —
+   hockey/market/fetch_quotes.js — through the shared client, for the
+   `featured` category, and only when the repository variable NHL_PRICES is
+   "on" (the gateway's own icehockey_nhl row is created disabled,
+   supabase/nhl_odds_sport.sql). The engine's own fetch client cannot reach
+   the provider host. */
+{
+  const FQ = read('hockey/market/fetch_quotes.js');
+  chk('10 · the NHL quote job asks the gateway through the shared client', /tools['\/,\s]+lib['\/,\s]+odds_gateway\.js|tools\/lib\/odds_gateway\.js/.test(FQ) && /category: 'featured'/.test(FQ) && /sport_key: 'icehockey_nhl'/.test(FQ));
+  chk('10 · and only behind NHL_PRICES=on', /NHL_PRICES/.test(FQ) && FQ.indexOf("!== 'on'") > 0 && FQ.indexOf("!== 'on'") < FQ.indexOf('client.request('));
+  ['hockey/build_slate.js', 'hockey/grade_ledger.js', 'hockey/model/walkforward.js', 'hockey/model/market_test.js', 'hockey/ingest/season.js', 'hockey/ingest/team_games.js', 'hockey/xg/train.js', 'engine/build_board.js', 'engine/build_registry.js', 'engine/http.js', 'lib/edgedesk_xboard.js', 'lib/edgedesk_sport_brains.js', 'lib/edgedesk_engine_ui.js'].forEach((f) => {
+    const t = read(f);
+    /* a CALL is a URL to a spending function, a require of the gateway client, or the provider host — prose naming the gateway is fine */
+    chk('10 · ' + f + ' calls no odds gateway, capture or provider', !/functions\/v1\/(odds_gateway|capture|odds|close)\b|require\([^)]*odds_gateway|api\.the-odds-api\.com|oddsblaze/.test(t));
+  });
+  chk('10 · the engine fetch client registers no odds host', !/odds/i.test((read('engine/http.js').split('const DEFAULT_PROVIDERS')[1] || '').split('};')[0]));
+  chk('10 · the NHL sport row is created disabled', /values \('icehockey_nhl', 'nhl', false,/.test(read('supabase/nhl_odds_sport.sql')));
+}
+
 failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 500) : '')));
 console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'no path around the odds gateway — ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail === 0 ? 0 : 1);

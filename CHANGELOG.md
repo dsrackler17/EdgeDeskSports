@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-10-13 — The multi-sport engine: a complete NHL brain, a readiness registry for twelve sports, and one board across them
+
+**I now price every NHL game myself — moneyline, 60-minute 3-way, puck line, totals and team totals — from shot-quality ratings and an exact score distribution, validated walk-forward on 17,236 games the model never saw. A readiness registry says, from evidence files, how far every sport has been validated, and one cross-sport board names the best-supported opportunity or says PASS and why. Today it says PASS: no sport's model has beaten the closing market, so no price is called an edge.** Docs: `docs/engine/README.md`, `NHL.md`, `METHODS.md`, `DATA.md`.
+
+- **NHL data** (`hockey/ingest/`): 2010-11 → today from the sportsdataverse mirror of the NHL's own feeds, through a guarded client (`engine/http.js`: cache, revalidation, quotas, breaker, retries). A versioned team-game table with `known_at` and source hashes (`hockey/data/team_games/`). Every play-by-play final matches the official final.
+- **NHL model**: a walk-forward xG model (`hockey/xg/`), point-in-time team and goalie ratings, a Poisson goal model with a league-scoring offset and a prior-season recalibration, and an exact score distribution with score effects, goalie pulls, 3-on-3 overtime and the shootout (`hockey/model/`).
+- **The record** (`hockey/validation/nhl_walkforward.json`): 0 leakage violations. Moneyline and puck line OUTCOME_VALIDATED on 2020-21 to 2025-26 (n 7,945); beats a tuned Elo by 0.0039 log loss (95% −0.0057 to −0.0022). Totals and the 3-way PROVISIONAL. **Not tested against the close**: `hockey/model/market_test.js` is ready for a licensed archive.
+- **The slate** (`hockey/slate.json`): fair prices for the next 72 h, goalie scenarios, evidence, uncertainty, invalidators, and an append-only pregame ledger with a grader.
+- **Readiness registry** (`lib/edgedesk_sport_brains.js` → `engine/registry.json`) for NFL, CFB, NBA, WNBA, men's and women's college basketball, MLB, college baseball, NHL, soccer, tennis and UFC/MMA, computed from validation files, with each sport's method, sources, data, blockers and enable steps.
+- **Cross-sport board** (`lib/edgedesk_xboard.js` → `engine/board.json`): EV at the actual price with pushes, shrinkage toward the no-vig market, a selection-adjusted bar for the number of markets scanned, a sanity ceiling, one opportunity per event, minimum acceptable price, and PASS with reasons.
+- **The app**: Research → Other → **NHL** and → **Engine** (`lib/edgedesk_engine_ui.js`); NHL joins the research coverage (`lib/edgedesk_sports.js`).
+- **The desk**: the AI desk answers NHL questions from the slate, deterministically (`hockey/desk.js` → `nhlTurn` in `edgedesk_ai`; `EDGEDESK_NHL=0` turns it off). Needs a redeploy of `edgedesk_ai`.
+- **Spend**: zero by default. NHL prices need `supabase/nhl_odds_sport.sql` + `odds_api_set_sport('icehockey_nhl', true)` + `NHL_PRICES=on`; `tools/odds/no_bypass.test.js` §10 guards it.
+- **CI** (`.github/workflows/nhl.yml`): suites on every PR, a 3-hourly build, a weekly validation.
+
 ## 2026-10-11 — The linemaker: one projection priced in every market, with an honest record behind each probability
 
 **EdgeDesk's own NFL and CFB engines are now priced in every football market: spread, moneyline, total, both team totals and the alternate lines around each. Every probability carries the calibration record that stands behind it, measured on seasons the method never saw. A new Lines panel, desk answers for team totals and alternate lines, a clock on the model call, a shared AI allowance with Lite/Pro routing, the on-screen game passed to the desk, saved research on the reader's account, and a fix for a cross-user read.** Docs: `docs/linemaker/DESIGN.md`, `AUDIT.md`, `REPORT.md`.
