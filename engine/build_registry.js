@@ -75,7 +75,13 @@ const READERS = {
         headline: 'outcomes: ' + m.status + (m.failed && m.failed.length ? ' (' + m.failed.join('; ') + ')' : '') + (m.log_loss != null ? '; held-out log loss ' + m.log_loss : '') + '; vs close: not tested', file: 'hockey/validation/nhl_walkforward.json' };
     }
     if (v.comparisons) { const c = Object.entries(v.comparisons).find(([k]) => /_vs_elo$/.test(k)); if (c && out.moneyline) out.moneyline.headline += '; vs Elo Δ log loss ' + c[1].mean_diff + ' (95% ' + c[1].ci95.join(' to ') + ')'; }
-    return { markets: out, files: ['hockey/validation/nhl_walkforward.json', 'hockey/xg/report.json'], generated_at: v.generated_at };
+    /* the second source: the NHL data pack's ESPN season, reconciled event by event */
+    const xc = read('hockey/validation/nhl_crosscheck_espn.json');
+    const second = xc && xc.schema === 'edgedesk_nhl_crosscheck_v2' ? { season: xc.season_label, games: xc.results.compared + '/' + xc.games.espn_club_games + ' matched, every final agrees', attempts: xc.events.matched + '/' + xc.events.espn_attempts + ' matched; blocked attempts credited to the shooter ' + xc.events.blocked.espn_shooter_team_is_shooter_view_team + '/' + xc.events.blocked.matched, file: 'hockey/validation/nhl_crosscheck_espn.json' } : null;
+    const d = v.data || {};
+    return { markets: out, files: ['hockey/validation/nhl_walkforward.json', 'hockey/xg/report.json', 'hockey/validation/nhl_crosscheck_espn.json', 'hockey/validation/nhl_blocked_attribution.json', 'datapack/nhl_v1/EDGEDESK_VERIFICATION.json'], generated_at: v.generated_at,
+      data: { loaded: true, games: d.games_scored || null, seasons: d.seasons || null, source: d.source || null, point_in_time: d.temporal ? d.temporal.point_in_time : null, second_source: second },
+      model: { trained: true, chosen: v.selection ? v.selection.chosen : null } };
   },
   nfl() { return football('nfl'); },
   cfb() { return football('cfb'); },
@@ -129,7 +135,7 @@ function ladder(s, ev, rd) {
   if (!ev.data && (s.id === 'nhl' || s.id === 'nfl' || s.id === 'cfb' || s.id === 'tennis')) data.loaded = !!(ev.files && ev.files.length);
   if (s.id === 'college_baseball') { data.loaded = true; data.note = 'a 313-game sample (data pack) and the live ESPN results union: too sparse for a validated model'; }
   return {
-    data_loaded: { done: !!data.loaded, detail: data.games ? data.games + ' games' + (data.seasons ? ' (' + data.seasons.join('-') + ')' : '') + (data.point_in_time ? ', ' + data.point_in_time.toLowerCase() : '') : (data.note || null) },
+    data_loaded: { done: !!data.loaded, detail: data.games ? data.games + ' games' + (data.seasons ? ' (' + data.seasons.join('-') + ')' : '') + (data.point_in_time ? ', ' + data.point_in_time.toLowerCase() : '') + (data.second_source ? '; second source ' + data.second_source.season + ': ' + data.second_source.games : '') : (data.note || null) },
     model_trained: { done: ev.model ? !!ev.model.trained : (s.brain.status === 'BUILT' || s.brain.status === 'PARTIAL') && mk.length > 0, detail: ev.model ? (ev.model.note || (typeof ev.model.chosen === 'string' ? ev.model.chosen : ev.model.chosen ? JSON.stringify(ev.model.chosen) : null)) : s.brain.id },
     validation_passed: { done: validated.length > 0, partial: !!rd.partial, detail: (validated.length ? validated.length + ' of ' + mk.length + ' markets validated vs outcomes' : mk.length ? 'no market passed (' + mk.length + ' scored)' : 'nothing scored') + (rd.primary ? '; primary market (' + rd.primary.replace('*.', '') + '): ' + String(rd.primary_state || 'none').replace(/_/g, ' ').toLowerCase() : '') },
     market_tested: { done: tested, detail: tested ? 'tested against a closing archive' : 'no licensed closing archive: never compared with the market' },

@@ -12,7 +12,8 @@
 | Schedule | sportsdataverse `fastRhockey-nhl-raw` season schedule; the NHL API `/v1/schedule/{date}` in CI | every scheduled game with UTC start | `hockey/sources/nhl_api.js` |
 | Team-game table | built here (schema `edgedesk_nhl_team_games_v2`) | 41,352 rows, 2 per game | `hockey/data/team_games/<season>/<YYYY-MM>.csv`, `hockey/data/manifest.json` |
 | Lineups | sportsdataverse skater box scores: who dressed, time on ice | every scored game since 2013-14 (17,236 of 17,236) | `.cache/nhl_work/lineups_<season>.json.gz` (`hockey/ingest/lineups.js`) |
-| Second source | the data pack's ESPN retrieval of 2024-25 | 1,398 games, samples of goalies, skaters, attempts | `datapack/quant_v1/data/nhl`, `hockey/crosscheck/espn.js` |
+| Second source | the NHL data pack's ESPN retrieval of 2024-25 (`datapack/nhl_v1`, verified by `tools/datapack/verify_nhl.js`) | the full season: 1,398 games, 448,177 events, 167,569 shot attempts, 53,259 player-games, 2,953 goalie-games, officials | `hockey/crosscheck/espn.js` → `hockey/validation/nhl_crosscheck_espn.json`, crosswalks in `hockey/data/crosswalk/` |
+| Officials | the same pack (ESPN lists referees and linesmen) | 1,397 of 1,398 games of 2024-25 | `hockey/data/officials/2025.csv` (research only: no assignment time) |
 
 **Time (the data pack's rule).** `known_at` is blank on every row: when the
 source first published a game was never recorded, and nothing is backdated.
@@ -21,15 +22,86 @@ the scheduled start plus four hours — and every row carries `pit = RETRO`:
 retrieved after the fact from a source that can revise, so the record is a
 retrospective test, not a certified point-in-time one.
 
-**A second source agrees.** ESPN (the data pack) and the NHL feeds were mapped
-game by game for 2024-25 (`hockey/data/crosswalk/espn_nhl_2025.csv`):
-1,398 of 1,398 NHL-feed games matched (the other 42 ESPN rows are 35 preseason
-games and 7 4 Nations games); every final and every overtime/shootout flag
-agrees; goals against agree for 167 of 167 sampled goalie rows; unblocked
-attempts agree exactly in 160 of 160 sampled team-games; dressed skaters agree
-in 158 of 160 (the pack's de-duplicated sample drops one skater in two).
-The goalie with the most ESPN time on ice is my recorded starter in 156 of
-160; the four exceptions are pulled starters.
+**A second source agrees, event by event, over a full season.** The NHL data
+pack (`datapack/nhl_v1`) is ESPN's retrieval of the whole 2024-25 season. Its
+tables pass 34 of 34 independent checks in Node (`tools/datapack/verify_nhl.js`:
+hashes, blank `known_at`, the 32-club scope, every measured and lagged feature
+recomputed with the target game excluded); the pack's own Python is never run.
+Reconciled against my NHL feed (`hockey/crosscheck/espn.js`):
+
+- **Games**: 1,398 of 1,398 matched (`hockey/data/crosswalk/espn_nhl_2025.csv`);
+  every final, every regulation / overtime / shootout decision and every
+  team's regulation goals agree.
+- **Shot attempts**: 167,013 of 167,061 non-shootout attempts matched to an NHL
+  event by period, elapsed second (±1) and shooter. Their ids give a player
+  crosswalk resting on id pairs, not names
+  (`hockey/data/crosswalk/espn_nhl_players_2025.csv`: 1,027 of 1,027 players;
+  1,020 from events, 7 by name within the team-game).
+- **Coordinates**: ESPN's x/y, which the pack leaves unverified, are the NHL's
+  raw rink coordinates in feet (99.4% within 1 ft).
+- **Strength**: ESPN's "Even Strength" is 5v5 in 94.6% of attempts. The rest
+  is 4v4 or 3v3, or time with a goalie pulled: it is a label, not a manpower
+  count. My states come from on-ice skater counts.
+- **Shot type**: the type ESPN's description implies agrees with the NHL's
+  coded type in 99.5%.
+- **Goalies and skaters**: goals against agree for every goalie my feed saw
+  (2,950 of 2,953; the other three faced no unblocked attempt). Shots on goal
+  faced agree in 2,930 of 2,950; the 20 others are exactly the rows where
+  ESPN's GA counts a goal its SA does not. The goalie with the most ESPN time
+  is my starter in every one-goalie game; the 72 exceptions are pulled
+  starters. Every skater's TOI agrees within 5 s (50,306 of 50,306). ESPN's box
+  lists one skater fewer in 15 team-games, and those hold all 33 of the pack's
+  attempts with no shooting team.
+
+**The pack found an error in my ingest.** On a `BLOCKED_SHOT` my feed's event
+team is the *blocking* team, and its fixed-frame location is rotated 180° as if
+the blocker had attacked. My ingest had credited blocked attempts to the
+blocker. Two checks:
+
+- **Every season:** the event team is the shooter's club in 1 of 610,859
+  blocked attempts, 2010-11 to 2026-27 (`hockey/crosscheck/blocked.js` →
+  `hockey/validation/nhl_blocked_attribution.json`).
+- **Against ESPN, 2024-25:** ESPN's shooting team is the NHL event team in 0
+  of 47,087 matched blocked attempts.
+
+`hockey/ingest/game.js` `shooterView()` now credits the shooter and rotates
+the location back: 47,087 of 47,087 agree with ESPN's shooter, and 99.9% sit
+in the period's shot frame.
+
+The fix moves blocked attempts to the right team's Corsi, and it changes three
+xG context features:
+
+- **Rebound and second chance:** a shot after the same team's blocked attempt
+  now counts as a rebound or second chance, as the features were defined.
+- **Rush:** such a shot is no longer flagged a rush.
+
+The xG refit's pooled held-out log loss is unchanged: 0.212991 → 0.212986
+over 1.64 million shots. It is slightly better in 2012–2021 and slightly
+worse in 2024–2026. The features were not re-tuned on held-out seasons to
+win that back.
+
+**Officials** (research only; `hockey/research/officials.js` →
+`hockey/validation/nhl_officials_research.json`). I tested 1,311
+regular-season games for a repeatable referee effect. The test splits each
+referee's games into alternating halves and compares them, against a
+2,000-shuffle permutation null. No effect cleared p < 0.01:
+
+| Outcome | Split-half r | p |
+|---|---|---|
+| Minor penalties | 0.27 | 0.065 |
+| Power-play time | 0.16 | 0.19 |
+| Regulation goals | −0.05 | 0.56 |
+
+No assignment time is recorded, so no referee term may enter a price.
+
+**The pack's lagged features** (research; `hockey/research/pack_features.js` →
+`hockey/validation/nhl_pack_features.json`). Given my model's out-of-sample
+moneyline probability, I tested whether the pack's prior-10 Corsi or Fenwick
+share, prior-10 regulation goal difference, rest hours or games in the prior
+7 days still predict the result. Each was fitted on the first half of 2024-25
+and scored on the second. None clears the walk-forward bar (≥ 0.001 better
+with a 95% interval below zero); the best is Fenwick share at −0.0028
+(−0.0100 to +0.0050). None enters the price.
 
 **Canonical contracts.** The shots, goalie-game and event-context tables are
 mapped onto the pack's contracts and validated row by row
@@ -45,10 +117,11 @@ in every regulation game; one goal-attribution mismatch in 41,352 team-game
 rows (`tools/hockey/hockey.test.js` tolerates none in the 2025-26 partition it
 checks). 2009-10 is excluded (no strength state in the source).
 
-Semantics verified on the 2025-26 source before any code relied on them: the
-home team attacks +x; `event_team` is the shooter (shots) and the penalised
-team (penalties); a goal row's score already includes the goal; `empty_net`
-is true exactly when the defending goalie is out.
+Semantics verified on the source before any code relied on them: the home
+team attacks +x; `event_team` is the shooter on shots, misses and goals, the
+**blocker** on blocked attempts (turned around on ingest, above) and the
+penalised team on penalties; a goal row's score already includes the goal;
+`empty_net` is true exactly when the defending goalie is out.
 
 ## 2. Method
 
@@ -105,15 +178,19 @@ Moneyline log loss (lower is better):
 | Home ice only | 0.6899 | 0.6908 | 0.6894 |
 | Elo (FiveThirtyEight MOV form, tuned on selection) | 0.6767 | 0.6665 | 0.6592 |
 | Goals-only ratings | 0.6758 | 0.6649 | 0.6568 |
-| **xG model (chosen)** | **0.6747** | **0.6627** | **0.6539** |
-| xG + projected goalie | 0.6745 | 0.6625 | 0.6541 |
-| xG + confirmed goalie | 0.6743 | 0.6625 | 0.6532 |
-| xG + projected lineup | 0.6746 | 0.6625 | 0.6579 |
-| xG + confirmed lineup | 0.6746 | 0.6618 | 0.6569 |
-| xG + confirmed goalie and lineup | 0.6743 | 0.6616 | 0.6562 |
+| **xG model (chosen)** | **0.6747** | **0.6627** | **0.6534** |
+| xG + projected goalie | 0.6745 | 0.6625 | 0.6537 |
+| xG + confirmed goalie | 0.6744 | 0.6626 | 0.6529 |
+| xG + projected lineup | 0.6745 | 0.6625 | 0.6574 |
+| xG + confirmed lineup | 0.6746 | 0.6618 | 0.6565 |
+| xG + confirmed goalie and lineup | 0.6743 | 0.6617 | 0.6558 |
 
-On confirmation the chosen model beats Elo by 0.0039 (block bootstrap 95%
-interval −0.0057 to −0.0022) and goals-only by 0.0023 (−0.0035 to −0.0012).
+(Rescored after the blocked-shot fix: every selection and confirmation figure
+is unchanged to four decimals, give or take one in the last digit, and so is
+the choice.)
+
+On confirmation the chosen model beats Elo by 0.0038 (block bootstrap 95%
+interval −0.0056 to −0.0021) and goals-only by 0.0022 (−0.0035 to −0.0011).
 Goalie information adds a statistically detectable but tiny amount
 (−0.0002); under the pre-registered rule (a challenger must beat the
 incumbent by 0.001 on selection) the goalie-free model was chosen, and the
@@ -164,5 +241,9 @@ undocumented, so possibly in-sample) is better calibrated than mine.
 - Retrospective data: `known_at` is unknown for every historical row; the
   walk-forward assumes a game is known four hours after its start.
 - Starters are projected unless confirmed by hand with a source.
+- Neutral-site games (the Global Series: four in 2024-25, flagged by ESPN) are
+  priced with home ice: my feed carries no neutral flag.
+- Referees are not modelled: one season of assignments, no assignment times,
+  and no repeatable effect found.
 - Totals are over-confident and the 60-minute draw is under-priced; both are
   labelled PROVISIONAL in every view.

@@ -14,6 +14,7 @@
 | Retrosheet game logs (`chadwickbureau/retrosheet`) | MLB results, starters, parks 2010-2023, 2025 | keyless | free with the Retrosheet notice | yearly | free |
 | `nflverse/nfldata` games.csv | the data pack's NFL labels cross-check (the football engine's own source) | keyless | CC-BY-4.0 | weekly | free |
 | The EdgeDesk Quant Data Pack (`datapack/quant_v1`) | one ESPN season per sport, NFL derived tables, MLB 2024, UFC 2024, contracts | imported | research copies; each source's terms (`sources/source_registry.json`) | one-off | — |
+| The EdgeDesk NHL Data Pack (`datapack/nhl_v1`) | ESPN's full 2024-25 NHL season: games, events, shot attempts, player and goalie boxes, officials, lagged features | imported (the two largest tables gzipped, verified on their uncompressed bytes) | ESPN public responses; redistribution rights not certified — research copy | one-off | — |
 | Licensed closing archive (not present) | the market test | — | must be licensed | weekly | depends on source |
 
 Market-definition assumption (documented, not verified against the provider's
@@ -97,10 +98,32 @@ outcomes), inputs and invalidators.
 
 ### Quality reports
 `datapack/quant_v1/EDGEDESK_VERIFICATION.json` (the pack verified),
+`datapack/nhl_v1/EDGEDESK_VERIFICATION.json` (the NHL pack verified: 34
+checks and the facts it found),
 `datapack/quant_v1/EDGEDESK_CROSSCHECK.json` (the pack against each brain's
-source), `hockey/validation/nhl_crosscheck_espn.json` (+ the ESPN↔NHL
-crosswalk), `hockey/validation/nhl_contracts.json` (canonical contracts and
+source), `hockey/validation/nhl_crosscheck_espn.json` (`edgedesk_nhl_crosscheck_v2`:
+the NHL pack's full 2024-25 season against my feed — games, every shot
+attempt, goalies, skaters, officials),
+`hockey/validation/nhl_blocked_attribution.json` (who shot a blocked attempt,
+every season), `hockey/validation/nhl_contracts.json` (canonical contracts and
 per-field missingness), `engine/missingness.json` (per sport and season).
+
+### NHL crosswalks and officials — `hockey/data/crosswalk/`, `hockey/data/officials/`
+- `espn_nhl_2025.csv`: `espn_game_id, nhl_game_id, home, away, espn_start,
+  nhl_start, minutes_apart, basis` — one row per matched 2024-25 game.
+- `espn_nhl_players_2025.csv`: `espn_player_id, nhl_player_id, espn_name,
+  nhl_name, role, espn_games, basis` — the basis is the count of matched events
+  that carried both ids, or "name within the team-game" for a player with no
+  attempt, or UNMAPPED.
+- `officials/2025.csv`: `nhl_game_id, espn_game_id, date, home, away,
+  referees, linesmen, referees_listed, known_at, assumed_available_at, pit,
+  src` — `known_at` and `assumed_available_at` are blank (no assignment time
+  is recorded), `pit = RETRO`. Research only.
+
+### NHL research — `hockey/validation/nhl_officials_research.json`, `nhl_pack_features.json`
+Referee split-half reliability with a permutation null; the NHL pack's lagged
+features tested against my model's out-of-sample probability on a later
+hold-out. Neither enters a price; both say why.
 
 ### `edgedesk_nhl_slate_v1` — `hockey/slate.json`
 Upcoming games: λ, prices for every market with settlement text, goalie
