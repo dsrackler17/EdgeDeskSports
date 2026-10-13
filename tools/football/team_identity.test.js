@@ -83,15 +83,29 @@ chk('one snapshot is one snapshot, not one snapshots', /\b1 snapshot\b/.test(B.S
 chk('the sentence ends cleanly, so a summary never trails a dangling space',
   [1, B.SAMPLE_MIN_TREND].every((n) => /\.$/.test(B.SAMPLE_READ(n)) && B.SAMPLE_READ(n) === B.SAMPLE_READ(n).trim()),
   [1, B.SAMPLE_MIN_TREND].map((n) => JSON.stringify(B.SAMPLE_READ(n))));
-/* and the built artifact carries it, whatever size today's history is */
+/* the NFL trend counts games off the team-week feed, on its own line of six */
+chk('in games, the sentence names its count either side of the NFL line and never vanishes',
+  [1, 5, B.SAMPLE_MIN_TREND_GAMES, 17].every((n) => new RegExp('^Over ' + n + ' games? this (is a hypothesis, not a trend|reads as a trend)\\.$').test(B.SAMPLE_READ(n, 'game', B.SAMPLE_MIN_TREND_GAMES)))
+    && /hypothesis/.test(B.SAMPLE_READ(B.SAMPLE_MIN_TREND_GAMES - 1, 'game', B.SAMPLE_MIN_TREND_GAMES))
+    && /reads as a trend/.test(B.SAMPLE_READ(B.SAMPLE_MIN_TREND_GAMES, 'game', B.SAMPLE_MIN_TREND_GAMES))
+    && /\b1 game\b/.test(B.SAMPLE_READ(1, 'game', B.SAMPLE_MIN_TREND_GAMES)),
+  [1, B.SAMPLE_MIN_TREND_GAMES - 1, B.SAMPLE_MIN_TREND_GAMES].map((n) => B.SAMPLE_READ(n, 'game', B.SAMPLE_MIN_TREND_GAMES)));
+/* and the built artifact carries it, whatever size today's history is: a
+   snapshot trend (college) counts snapshots, a per-game trend (the NFL, when
+   the team-week feed is on disk) counts games */
+const trendCount = (e) => (e.sample_snapshots != null ? [e.sample_snapshots, 'snapshot'] : [e.sample_games, 'game']);
 chk('every team trend on the real artifact carries the sentence and the count',
   Object.values(art.teams).every((t) => {
     const e = t.trend && t.trend.early_vs_recent;
-    return !e || (/hypothesis|trend/.test(e.summary) && new RegExp('\\b' + e.sample_snapshots + ' snapshot').test(e.summary));
+    if (!e) return true;
+    const [n, unit] = trendCount(e);
+    return n != null && /hypothesis|trend/.test(e.summary) && new RegExp('\\b' + n + ' ' + unit).test(e.summary);
   }),
   Object.values(art.teams).filter((t) => {
     const e = t.trend && t.trend.early_vs_recent;
-    return e && !/hypothesis|trend/.test(e.summary);
+    if (!e) return false;
+    const [n, unit] = trendCount(e);
+    return n == null || !/hypothesis|trend/.test(e.summary) || !new RegExp('\\b' + n + ' ' + unit).test(e.summary);
   }).slice(0, 3).map((t) => t.trend.early_vs_recent.summary));
 
 /* ---- inference rules are deterministic over stated inputs -------------- */

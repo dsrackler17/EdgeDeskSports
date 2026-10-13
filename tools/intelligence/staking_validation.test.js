@@ -206,7 +206,12 @@ function done() {
   const src = V.nflRows();
   chk('the NFL loader always reports an engine verdict', src.engine && typeof src.engine.available === 'boolean', src.engine);
   if (src.engine.available) {
-    chk('an available replay joins most of the archive', src.engine.joined / src.games > 0.5, { joined: src.engine.joined, games: src.games });
+    /* the replay scores only its own evaluation window, so that window is the
+       denominator: against the whole archive (1999 on) a replay that joined
+       every game it scores would still read as joining a third of it */
+    const VR = require(path.join(ROOT, 'tools', 'football', 'validate_pricing.js')).RULES;
+    const scored = src.rows.filter((r) => r.season >= VR.first_eval && r.season <= VR.last).length;
+    chk('an available replay joins most of the archive games in its scoring window', scored > 0 && src.engine.joined / scored > 0.5, { joined: src.engine.joined, window: VR.first_eval + '-' + VR.last, window_games: scored, archive_games: src.games });
     chk('and names where the numbers came from', /football\/engine\.js/.test(src.engine.source), src.engine.source);
   } else {
     chk('an unavailable replay refuses with a reason a reader can act on', typeof src.engine.why === 'string' && src.engine.why.length > 20, src.engine.why);
