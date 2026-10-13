@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_model_lab_v1",
- "generated_at": "2026-10-13T22:07:17.000Z",
+ "generated_at": "2026-10-13T23:07:30.000Z",
  "season": 2026,
  "rules": {
   "ledger": "cfb_lab_ledger_v1",
@@ -46,34 +46,34 @@
     "model_version": "edgedesk_cfb_p4_v1.0.0",
     "label": "V1",
     "role": "champion",
-    "snapshots": 985,
-    "latest_snapshot_at": "2026-10-13T22:07:17.000Z",
-    "upcoming_games": 69,
+    "snapshots": 986,
+    "latest_snapshot_at": "2026-10-13T23:07:30.000Z",
+    "upcoming_games": 68,
     "avg_confidence_upcoming": 75
    },
    {
     "model_version": "edgedesk_cfb_v2.0.0",
     "label": "V2 · candidate 001",
     "role": "candidate",
-    "snapshots": 1304,
-    "latest_snapshot_at": "2026-10-13T22:07:17.000Z",
-    "upcoming_games": 66,
-    "avg_confidence_upcoming": 77.2
+    "snapshots": 1305,
+    "latest_snapshot_at": "2026-10-13T23:07:30.000Z",
+    "upcoming_games": 65,
+    "avg_confidence_upcoming": 77.3
    },
    {
     "model_version": "edgedesk_cfb_v2.1.0",
     "label": "V2.1 · hardened",
     "role": "challenger",
-    "snapshots": 1304,
-    "latest_snapshot_at": "2026-10-13T22:07:17.000Z",
-    "upcoming_games": 66,
-    "avg_confidence_upcoming": 77
+    "snapshots": 1305,
+    "latest_snapshot_at": "2026-10-13T23:07:30.000Z",
+    "upcoming_games": 65,
+    "avg_confidence_upcoming": 77.1
    }
   ],
   "data_quality": {
-   "games": 69,
+   "games": 68,
    "counts": {
-    "GREEN": 7,
+    "GREEN": 6,
     "YELLOW": 62,
     "RED": 0
    },
@@ -911,8 +911,8 @@
     }
    ],
    "feeds": {
-    "last_quote_at": "2026-10-13T22:07:17.000Z",
-    "quotes_total": 15453,
+    "last_quote_at": "2026-10-13T23:07:30.000Z",
+    "quotes_total": 15471,
     "last_result_at": "2026-10-11T07:07:14.000Z"
    }
   },
@@ -946,9 +946,9 @@
    }
   ],
   "ledger": {
-   "predictions": 4103,
-   "live_predictions": 3593,
-   "quotes": 15453,
+   "predictions": 4106,
+   "live_predictions": 3596,
+   "quotes": 15471,
    "lines": 2709,
    "results": 399,
    "evaluations": 3716,
@@ -956,93 +956,6 @@
   }
  },
  "this_week": [
-  {
-   "game_id": "401871067",
-   "week": 7,
-   "kickoff": "2026-10-13T23:00:00.000Z",
-   "home": "Middle Tennessee",
-   "away": "Delaware",
-   "market": {
-    "current": 1.5,
-    "open": 1.5,
-    "books": 1,
-    "as_of": "2026-10-13T22:07:17.000Z",
-    "sources": [
-     "espn"
-    ],
-    "stale": false
-   },
-   "models": {
-    "edgedesk_cfb_p4_v1.0.0": {
-     "label": "V1",
-     "checkpoint": "FINAL",
-     "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-13T22:07:17.000Z",
-     "margin": -0.77,
-     "fair": "Delaware -1.0",
-     "p_home": 0.479,
-     "sigma": null,
-     "conf": 77,
-     "dq": "GREEN",
-     "decision": "PASS",
-     "status": "PASS",
-     "side": "HOME",
-     "gap": 0.73,
-     "line": 1.5,
-     "decision_basis": "research: lab_rule:v1_gap_v1 (the official decision is the governed policy cfb_decision_policy_v1)",
-     "degraded_modes": null
-    },
-    "edgedesk_cfb_v2.1.0": {
-     "label": "V2.1 · hardened",
-     "checkpoint": "FINAL",
-     "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-13T22:07:17.000Z",
-     "margin": 0.72,
-     "fair": "Middle Tennessee -0.5",
-     "p_home": 0.5179,
-     "sigma": 16.105,
-     "conf": 75,
-     "dq": "GREEN",
-     "decision": "PASS",
-     "status": "PASS",
-     "side": "HOME",
-     "gap": 2.22,
-     "line": 1.5,
-     "decision_basis": "research: engine:edgedesk_cfb_v2.1.0 (the official decision is the governed policy cfb_decision_policy_v1)",
-     "degraded_modes": [
-      "NO_PLAYER_DATA",
-      "QB_UNCERTAIN",
-      "MARKET_DEGRADED"
-     ]
-    },
-    "edgedesk_cfb_v2.0.0": {
-     "label": "V2 · candidate 001",
-     "checkpoint": "FINAL",
-     "origin": "LIVE",
-     "official": false,
-     "prediction_ts": "2026-10-13T22:07:17.000Z",
-     "margin": 0.8,
-     "fair": "Middle Tennessee -1.0",
-     "p_home": 0.5201,
-     "sigma": 16.026,
-     "conf": 75,
-     "dq": "GREEN",
-     "decision": "PASS",
-     "status": "PASS",
-     "side": "HOME",
-     "gap": 2.3,
-     "line": 1.5,
-     "decision_basis": "research: engine:edgedesk_cfb_v2.0.0 (the official decision is the governed policy cfb_decision_policy_v1)",
-     "degraded_modes": [
-      "NO_PLAYER_DATA",
-      "QB_UNCERTAIN",
-      "MARKET_DEGRADED"
-     ]
-    }
-   }
-  },
   {
    "game_id": "401871053",
    "week": 7,
@@ -1053,7 +966,7 @@
     "current": -3,
     "open": -3,
     "books": 1,
-    "as_of": "2026-10-13T22:07:17.000Z",
+    "as_of": "2026-10-13T23:07:30.000Z",
     "sources": [
      "espn"
     ],
@@ -1062,10 +975,10 @@
    "models": {
     "edgedesk_cfb_p4_v1.0.0": {
      "label": "V1",
-     "checkpoint": "T2",
+     "checkpoint": "FINAL",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-13T22:07:17.000Z",
+     "prediction_ts": "2026-10-13T23:07:30.000Z",
      "margin": 4.69,
      "fair": "Jacksonville State -4.5",
      "p_home": 0.6258,
@@ -1082,18 +995,18 @@
     },
     "edgedesk_cfb_v2.1.0": {
      "label": "V2.1 · hardened",
-     "checkpoint": "T2",
+     "checkpoint": "FINAL",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-13T22:07:17.000Z",
+     "prediction_ts": "2026-10-13T23:07:30.000Z",
      "margin": 6.71,
      "fair": "Jacksonville State -6.5",
      "p_home": 0.6659,
      "sigma": 15.772,
      "conf": 86,
      "dq": "GREEN",
-     "decision": "PASS",
-     "status": "PASS",
+     "decision": "LEAN",
+     "status": "LEAN",
      "side": "HOME",
      "gap": 3.71,
      "line": -3,
@@ -1105,18 +1018,18 @@
     },
     "edgedesk_cfb_v2.0.0": {
      "label": "V2 · candidate 001",
-     "checkpoint": "T2",
+     "checkpoint": "FINAL",
      "origin": "LIVE",
      "official": false,
-     "prediction_ts": "2026-10-13T22:07:17.000Z",
+     "prediction_ts": "2026-10-13T23:07:30.000Z",
      "margin": 6.85,
      "fair": "Jacksonville State -7.0",
      "p_home": 0.6702,
      "sigma": 15.663,
      "conf": 89,
      "dq": "GREEN",
-     "decision": "PASS",
-     "status": "PASS",
+     "decision": "LEAN",
+     "status": "LEAN",
      "side": "HOME",
      "gap": 3.85,
      "line": -3,
