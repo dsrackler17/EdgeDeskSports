@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_pricing_validation_v1",
  "sport": "americanfootball_nfl",
- "generated_at": "2026-09-16T16:30:19.183Z",
+ "generated_at": "2026-10-13T13:36:53.421Z",
  "frame": {
   "engine": "football/engine.js edgedesk_football_v1.0.0",
   "params_trained_through": 2025,
@@ -39,7 +39,7 @@
   "caveats": [
    "league-mean priors come from the shipped parameter set (trained through 2025); the club ratings start at zero",
    "the close is nflverse’s consensus number, not a book’s; no opener is on file for the NFL, so open-to-close value cannot be measured here",
-   "quarterback starts are absorbed without pass-deviation splits, as the live board does"
+   "quarterback starts are not absorbed, as the live board runs; qb_layer measures the same replay with the listed starters absorbed (football/pricing/qb_starts_nfl.json)"
   ]
  },
  "rules": {
@@ -910,6 +910,258 @@
    "tier_basis": "the model does not improve on the de-vigged market win probability; the market is the fair price",
    "required_edge_points": null
   }
+ },
+ "qb_layer": {
+  "question": "does feeding the engine’s quarterback layer the listed starters (football/engine.js nfl.absorbGame qbStarts, until now an empty list in every replay and on the live board) bring the projection closer to the result?",
+  "scenario": "CONFIRMED_STARTER",
+  "scenario_basis": "nflverse records the starting quarterback after the game and carries no announcement time. A replay that reads this archive measures the quarterback layer as if the starter were known; it does not certify that he was known before kickoff.",
+  "source": "football/pricing/qb_starts_nfl.json (2006-2026; listed starter from games.csv, his line from stats_player_week)",
+  "arms": {
+   "off": "no quarterback starts absorbed: the layer stays at its prior, as the live board runs; every other number in this file is this arm",
+   "on": "the listed starter of each side absorbed with his pass deviation (football/engine.js nfl.qbPassDev, as research/train_nfl.py computes it)"
+  },
+  "coverage": {
+   "starts_with_pass_dev": 9620,
+   "games_absorbed": 4889,
+   "games_without_record": 0
+  },
+  "spread": {
+   "raw": {
+    "window": "2016-2025",
+    "n": 2658,
+    "mae_off": 10.382,
+    "mae_on": 10.378,
+    "improvement": 0.004,
+    "paired_abs": {
+     "t": 0.393,
+     "p": 0.6945
+    },
+    "rmse_off": 13.466,
+    "rmse_on": 13.447,
+    "paired_squared": {
+     "t": 1.888,
+     "p": 0.059
+    },
+    "by_season": [
+     {
+      "season": 2016,
+      "n": 228,
+      "mae_off": 9.783,
+      "mae_on": 9.779,
+      "improvement": 0.004
+     },
+     {
+      "season": 2017,
+      "n": 243,
+      "mae_off": 11.151,
+      "mae_on": 11.129,
+      "improvement": 0.021
+     },
+     {
+      "season": 2018,
+      "n": 251,
+      "mae_off": 9.973,
+      "mae_on": 10.011,
+      "improvement": -0.038
+     },
+     {
+      "season": 2019,
+      "n": 251,
+      "mae_off": 11.015,
+      "mae_on": 11.027,
+      "improvement": -0.012
+     },
+     {
+      "season": 2020,
+      "n": 261,
+      "mae_off": 10.392,
+      "mae_on": 10.381,
+      "improvement": 0.011
+     },
+     {
+      "season": 2021,
+      "n": 285,
+      "mae_off": 11.341,
+      "mae_on": 11.32,
+      "improvement": 0.021
+     },
+     {
+      "season": 2022,
+      "n": 284,
+      "mae_off": 8.948,
+      "mae_on": 8.94,
+      "improvement": 0.008
+     },
+     {
+      "season": 2023,
+      "n": 285,
+      "mae_off": 10.609,
+      "mae_on": 10.649,
+      "improvement": -0.039
+     },
+     {
+      "season": 2024,
+      "n": 285,
+      "mae_off": 10.111,
+      "mae_on": 10.107,
+      "improvement": 0.003
+     },
+     {
+      "season": 2025,
+      "n": 285,
+      "mae_off": 10.514,
+      "mae_on": 10.457,
+      "improvement": 0.057
+     }
+    ]
+   },
+   "blend_held_out": {
+    "window": "2019-2025",
+    "n": 1936,
+    "mae_off": 9.811,
+    "mae_on": 9.814,
+    "pooled_improvement": -0.002,
+    "paired_t": -0.884,
+    "paired_p": 0.3768,
+    "by_season": [
+     {
+      "season": 2019,
+      "n": 251,
+      "base_mae": 10.104,
+      "candidate_mae": 10.112,
+      "improvement": -0.008
+     },
+     {
+      "season": 2020,
+      "n": 261,
+      "base_mae": 9.822,
+      "candidate_mae": 9.812,
+      "improvement": 0.01
+     },
+     {
+      "season": 2021,
+      "n": 285,
+      "base_mae": 10.611,
+      "candidate_mae": 10.627,
+      "improvement": -0.016
+     },
+     {
+      "season": 2022,
+      "n": 284,
+      "base_mae": 8.784,
+      "candidate_mae": 8.791,
+      "improvement": -0.006
+     },
+     {
+      "season": 2023,
+      "n": 285,
+      "base_mae": 10.014,
+      "candidate_mae": 10.015,
+      "improvement": -0.001
+     },
+     {
+      "season": 2024,
+      "n": 285,
+      "base_mae": 9.651,
+      "candidate_mae": 9.66,
+      "improvement": -0.009
+     },
+     {
+      "season": 2025,
+      "n": 285,
+      "base_mae": 9.727,
+      "candidate_mae": 9.712,
+      "improvement": 0.015
+     }
+    ],
+    "latest_coef": {
+     "off": {
+      "intercept": -0.3811,
+      "close": 1.1565,
+      "model_minus_close": 0.232
+     },
+     "on": {
+      "intercept": -0.3283,
+      "close": 1.1347,
+      "model_minus_close": 0.2034
+     }
+    }
+   },
+   "calibration": {
+    "blend_brier_off": 0.2502,
+    "blend_brier_on": 0.2502,
+    "raw_brier_off": 0.2624,
+    "raw_brier_on": 0.2625
+   },
+   "tier": {
+    "off": "LEAN",
+    "on": "LEAN",
+    "required_edge_off": 1.5,
+    "required_edge_on": 2
+   },
+   "layer_moves": {
+    "mean_abs_points": 0.406,
+    "games_moved_1_point": 152,
+    "games_moved_2_points": 3
+   }
+  },
+  "total": {
+   "identical": true,
+   "basis": "the quarterback term is not a total feature and the layer does not touch the club ratings, so the total cannot move"
+  },
+  "moneyline": {
+   "raw_brier_off": 0.2298,
+   "raw_brier_on": 0.2292,
+   "blend_brier_off": 0.2101,
+   "blend_brier_on": 0.2101,
+   "market_brier": 0.21,
+   "tier_off": "RESEARCH",
+   "tier_on": "RESEARCH"
+  },
+  "starter_changes": {
+   "definition": "one club, not both, lists a different starting quarterback from its previous game of the same season",
+   "n": 451,
+   "mean_residual_changed_side": {
+    "off": -3.29,
+    "on": -3.049,
+    "close": -0.996
+   },
+   "layer_shift_toward_changed_side": -0.241,
+   "mae_off": 10.774,
+   "mae_on": 10.731,
+   "paired_abs": {
+    "t": 1.413,
+    "p": 0.1576
+   },
+   "basis": "residual = result minus projection from the changed club’s side: negative means it did worse than projected"
+  },
+  "sensitivity_top_passer": {
+   "rule": "credit the club QB with the most dropbacks, as research/train_nfl.py does, instead of the listed starter",
+   "raw_mae": 10.38,
+   "raw_improvement": 0.002,
+   "paired_abs": {
+    "t": 0.173,
+    "p": 0.8623
+   },
+   "blend_held_out_mae": 9.814,
+   "blend_improvement": -0.002
+  },
+  "rules": {
+   "min_holdout_seasons": 2,
+   "p_max": 0.05,
+   "min_pooled_improvement": 0.02,
+   "max_season_degradation": 0.15,
+   "max_brier_degradation": 0.002,
+   "applied_to": "the held-out blend, paired per game"
+  },
+  "status": "REJECTED",
+  "reasons": [
+   "pooled improvement -0.002 below 0.02 points of MAE",
+   "paired p 0.3768 not below 0.05"
+  ],
+  "verdict": "NO_DIFFERENCE",
+  "verdict_text": "no different: with the starters absorbed the spread moves by 0.004 points of raw MAE (paired p 0.6945) and -0.002 on the held-out blend (paired p 0.3768); totals cannot move",
+  "live": "not wired into the live board: it keeps absorbing no quarterback starts, the arm this file’s tiers and blend were measured on"
  },
  "note": "A number that has not cleared this file is a projection, not a price. Tiers are read by the pricing kernel; nothing here promotes itself."
 }

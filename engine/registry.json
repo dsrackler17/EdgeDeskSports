@@ -217,7 +217,7 @@
    "brain": {
     "status": "BUILT",
     "id": "edgedesk_football NFL engine (football/engine.js)",
-    "approach": "Opponent-adjusted EPA per play and success rate, a quarterback layer, rest/roof/surface/weather context → projected margin and total → linemaker distributions (football/linemaker) and the validated market blend (football/validation/pricing_nfl.json).",
+    "approach": "Opponent-adjusted EPA per play and success rate, a quarterback layer (on the board, held at its end-of-training seeds), rest/roof/surface/weather context → projected margin and total → linemaker distributions (football/linemaker) and the validated market blend (football/validation/pricing_nfl.json).",
     "why": "EPA (yurko2019) measures play value against down, distance and field position; scores are near-normal around the projection with key-number structure (glickman1998).",
     "candidates": [
      {
@@ -236,7 +236,8 @@
      "kickoff forecast"
     ],
     "not_modelled": [
-     "offensive line continuity as a priced input (researched, rejected by the feature intake)"
+     "offensive line continuity as a priced input (researched, rejected by the feature intake)",
+     "in-season quarterback starts (fed the listed starters, the replayed quarterback layer measured no different on 2016-2025, so the board does not absorb them: football/validation/pricing_nfl.json qb_layer)"
     ]
    },
    "readiness": {
@@ -315,7 +316,7 @@
     "football/validation/linemaker_nfl.json",
     "football/validation/pricing_nfl.json"
    ],
-   "evidence_generated_at": "2026-10-11T05:27:06.998Z",
+   "evidence_generated_at": "2026-10-13T13:39:59.301Z",
    "data": [
     {
      "source": "nflverse (GitHub)",
@@ -1888,5 +1889,5 @@
   "UNAVAILABLE": "Unavailable",
   "RETIRED": "Retired"
  },
- "generated_at": "2026-10-13T12:50:40.253Z"
+ "generated_at": "2026-10-13T13:46:08.124Z"
 }
