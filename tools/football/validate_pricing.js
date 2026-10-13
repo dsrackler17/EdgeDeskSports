@@ -62,6 +62,7 @@ const ROOT = path.join(__dirname, '..', '..');
 const R = require(path.join(ROOT, 'football', 'data', 'recovery.js'));
 const E = require(path.join(ROOT, 'football', 'engine.js'));
 const { writeIfChanged } = require(path.join(__dirname, 'write_if_changed.js'));
+const QB = require(path.join(__dirname, 'build_qb_starts_archive.js'));
 
 const SCHEMA = 'edgedesk_pricing_validation_v1';
 const CACHE = path.join(ROOT, 'football', 'nfl', '.cache');
@@ -100,6 +101,10 @@ function ols(rows, xf, yf) {
 function replayNfl(archive, opts) {
   opts = opts || {};
   const inj = opts.injuries && opts.injuries.seasons ? opts.injuries.seasons : null;
+  /* opts.qbStarts (football/pricing/qb_starts_nfl.json) feeds the engine's quarterback layer the listed starters; without it
+     the layer sees no start, as the live board runs. opts.qbRule 'top_passer' credits train_nfl.py's passer instead. */
+  const qbArc = opts.qbStarts && opts.qbStarts.games ? opts.qbStarts : null;
+  const qbLast = {}; let qbWithDev = 0, qbNoRecord = 0;
   const injFor = (season, week, team) => { const t = inj && inj[String(season)] && inj[String(season)].teams[team]; return t && t[String(week)] ? t[String(week)] : null; };
   const grp = (w, g, k) => (w && w.groups && w.groups[g] ? w.groups[g][k] || 0 : 0);
   const games = archive.games.filter((g) => g.margin != null && g.season >= RULES.replay_from && g.season <= RULES.last && g.close.home_line != null);
@@ -115,13 +120,15 @@ function replayNfl(archive, opts) {
   games.forEach((g) => {
     if (season != null && g.season !== season) E.nfl.seasonBreak(st);
     season = g.season;
+    /* a club starting a different listed quarterback from its previous game of the season */
+    const qbChange = {}; ['home', 'away'].forEach((side) => { const k = g.season + '|' + g[side], id = g.ctx[side + '_qb_id']; qbChange[side] = !!(id && qbLast[k] && qbLast[k] !== id); if (id) qbLast[k] = id; });
     if (g.season >= RULES.first_eval) {
       const req = { sport: 'nfl', state: st, season: g.season, game: { home: g.home, away: g.away, week: g.week, home_rest: g.ctx.home_rest, away_rest: g.ctx.away_rest, roof: g.ctx.roof, surface: g.ctx.surface, div_game: g.ctx.divisional ? 1 : 0, temp: g.ctx.temp, wind: g.ctx.wind, home_qb_id: g.ctx.home_qb_id, away_qb_id: g.ctx.away_qb_id }, market: { spread_line: -g.close.home_line, total_line: g.close.total } };
       let p = null; try { p = E.predictGame(req); } catch (_) { p = null; }
       if (p && p.status === 'PREDICTED' && (st.ngames[g.home] || 0) >= 8 && (st.ngames[g.away] || 0) >= 8) {
         rows.push({ id: g.id, season: g.season, week: g.week, type: g.type, model: p.model.fair_spread, close: -g.close.home_line, margin: g.margin, model_total: p.model.fair_total, close_total: g.close.total, points: g.points, p_home: p.model.home_win_prob, ml_home: g.close.home_moneyline, ml_away: g.close.away_moneyline,
           ctx: (() => { const hi = injFor(g.season, g.week, g.home), ai = injFor(g.season, g.week, g.away); const outs = (w) => (w ? (w.out || 0) + (w.doubtful || 0) : 0); const go = (w, x) => grp(w, x, 'out') + grp(w, x, 'doubtful');
-            return { dome: g.ctx.roof === 'dome' || g.ctx.roof === 'closed', temp: g.ctx.temp, wind: g.ctx.wind, rest_diff: (g.ctx.home_rest != null && g.ctx.away_rest != null) ? g.ctx.home_rest - g.ctx.away_rest : null, divisional: !!g.ctx.divisional, grass: g.ctx.surface === 'grass', qb_known: !!(g.ctx.home_qb_id && g.ctx.away_qb_id),
+            return { dome: g.ctx.roof === 'dome' || g.ctx.roof === 'closed', temp: g.ctx.temp, wind: g.ctx.wind, rest_diff: (g.ctx.home_rest != null && g.ctx.away_rest != null) ? g.ctx.home_rest - g.ctx.away_rest : null, divisional: !!g.ctx.divisional, grass: g.ctx.surface === 'grass', qb_known: !!(g.ctx.home_qb_id && g.ctx.away_qb_id), qb_change_home: qbChange.home, qb_change_away: qbChange.away,
               injuries_on_file: !!(hi || ai), out_home: outs(hi), out_away: outs(ai), ol_out_home: go(hi, 'OL'), ol_out_away: go(ai, 'OL'), qb_out_home: go(hi, 'QB'), qb_out_away: go(ai, 'QB'), dl_out_home: go(hi, 'DL'), dl_out_away: go(ai, 'DL'), db_out_home: go(hi, 'DB'), db_out_away: go(ai, 'DB'), wr_out_home: go(hi, 'WR') + go(hi, 'TE'), wr_out_away: go(ai, 'WR') + go(ai, 'TE') }; })() });
       } else refused++;
     }
@@ -131,10 +138,13 @@ function replayNfl(archive, opts) {
     if (!h || !a) { noRows++; return; }
     const hr = E.nfl.teamGameFromStw(h), ar = E.nfl.teamGameFromStw(a);
     hr.pts_for = g.home_score; hr.pts_against = g.away_score; ar.pts_for = g.away_score; ar.pts_against = g.home_score;
-    E.nfl.absorbGame(st, [[g.home, hr], [g.away, ar]], []);
+    const qbs = qbArc ? QB.startsFor(E, st, qbArc.games[g.id], g.home, g.away, opts.qbRule) : [];
+    if (qbArc && !qbArc.games[g.id]) qbNoRecord++;
+    qbWithDev += qbs.filter((x) => x[2] != null).length;
+    E.nfl.absorbGame(st, [[g.home, hr], [g.away, ar]], qbs);
     absorbed++;
   });
-  return { rows, absorbed, refused, no_rows: noRows, seasons_loaded: seasonsLoaded };
+  return { rows, absorbed, refused, no_rows: noRows, seasons_loaded: seasonsLoaded, qb: { starts_absorbed: !!qbArc, rule: qbArc ? (opts.qbRule === 'top_passer' ? 'top_passer' : 'listed_starter') : null, starts_with_pass_dev: qbWithDev, games_without_record: qbArc ? qbNoRecord : null } };
 }
 
 /* -------------------------------------------------------- the scoring */
@@ -301,11 +311,102 @@ function featureStatus(rep) {
   };
 }
 
+/* ------------------------------------------------ the quarterback layer */
+/** Per game id, the held-out blend's absolute error: fitted on 2016..S-1, scored on S, exactly as scoreMarket fits it. */
+function heldOutBlend(rows, cfg) {
+  const out = {};
+  for (let S = RULES.first_holdout; S <= RULES.last; S++) {
+    const tune = rows.filter((r) => r.season < S && r.season >= RULES.first_eval), test = rows.filter((r) => r.season === S);
+    if (tune.length < 300 || !test.length) continue;
+    const fit = ols(tune, [cfg.closeOf, (r) => cfg.modelOf(r) - cfg.closeOf(r)], cfg.actualOf);
+    test.forEach((r) => { out[r.id] = { season: S, err: Math.abs(cfg.actualOf(r) - fit.pred(r)) }; });
+  }
+  return out;
+}
+/** The engine's quarterback layer, measured: the same replay with the listed starters absorbed (on) against the replay
+    without them (off, the arm the live board runs and the rest of this file grades), paired game by game, with the
+    feature intake's rules applied to the held-out blend the pricing kernel prices with. A verdict, never an edit. */
+function qbLayer(off, on, top, qbArc) {
+  const SP = { modelOf: (r) => r.model, closeOf: (r) => r.close, actualOf: (r) => r.margin };
+  const ok = (r) => r.model != null && r.close != null && r.margin != null;
+  const idx = (rows) => { const m = {}; rows.forEach((r) => { m[r.id] = r; }); return m; };
+  const ON = idx(on.rows), TOP = idx(top.rows);
+  const pairs = off.rows.filter((r) => ok(r) && ON[r.id] && ok(ON[r.id]));
+  const ae = (r) => Math.abs(r.margin - r.model), se = (r) => (r.margin - r.model) * (r.margin - r.model);
+  const a0 = pairs.map(ae), a1 = pairs.map((r) => ae(ON[r.id]));
+  const seasons = [...new Set(pairs.map((r) => r.season))].sort((a, b) => a - b).map((s) => {
+    const p = pairs.filter((r) => r.season === s); const m0 = mean(p.map(ae)), m1 = mean(p.map((r) => ae(ON[r.id])));
+    return { season: s, n: p.length, mae_off: r3(m0), mae_on: r3(m1), improvement: r3(m0 - m1) };
+  });
+  /* the held-out blend, each arm fitted on its own earlier seasons */
+  const b0 = heldOutBlend(off.rows.filter(ok), SP), b1 = heldOutBlend(on.rows.filter(ok), SP), bt = heldOutBlend(top.rows.filter(ok), SP);
+  const ids = Object.keys(b0).filter((id) => b1[id]).sort();
+  const e0 = ids.map((id) => b0[id].err), e1 = ids.map((id) => b1[id].err);
+  const blendSeasons = [...new Set(ids.map((id) => b0[id].season))].sort((a, b) => a - b).map((s) => {
+    const k = ids.filter((id) => b0[id].season === s); const m0 = mean(k.map((id) => b0[id].err)), m1 = mean(k.map((id) => b1[id].err));
+    return { season: s, n: k.length, base_mae: r3(m0), candidate_mae: r3(m1), improvement: r3(m0 - m1) };
+  });
+  const pooled = ids.length ? r3(mean(e0) - mean(e1)) : null, pt = pairedT(e0, e1);
+  const worst = blendSeasons.length ? Math.min(...blendSeasons.map((x) => x.improvement)) : null;
+  const m0 = scoreMarket(off.rows, SP), m1 = scoreMarket(on.rows, SP);
+  const ml0 = scoreMoneyline(off.rows), ml1 = scoreMoneyline(on.rows);
+  const brier0 = m0.calibration.blend_held_out.brier, brier1 = m1.calibration.blend_held_out.brier;
+  /* the feature intake's rules (FEATURE_RULES), plus promote.js's calibration condition */
+  const reasons = [];
+  if (blendSeasons.length < FEATURE_RULES.min_holdout_seasons) reasons.push('fewer than ' + FEATURE_RULES.min_holdout_seasons + ' held-out seasons');
+  if (pooled == null || pooled < FEATURE_RULES.min_pooled_improvement) reasons.push('pooled improvement ' + pooled + ' below ' + FEATURE_RULES.min_pooled_improvement + ' points of MAE');
+  if (pt.p == null || pt.p >= FEATURE_RULES.p_max) reasons.push('paired p ' + pt.p + ' not below ' + FEATURE_RULES.p_max);
+  if (worst != null && worst < -FEATURE_RULES.max_season_degradation) reasons.push('a held-out season degraded by ' + Math.abs(worst) + ' (limit ' + FEATURE_RULES.max_season_degradation + ')');
+  if (brier0 != null && brier1 != null && brier1 - brier0 > 0.002) reasons.push('the cover-probability Brier worsened by ' + r4(brier1 - brier0) + ' (limit 0.002)');
+  const status = reasons.length ? (pooled != null && pooled > 0 && pt.p != null && pt.p < 0.2 ? 'CANDIDATE' : 'REJECTED') : 'VALIDATED';
+  const rawT = pairedT(a0, a1);
+  const worse = (pooled != null && pooled < 0 && pt.p != null && pt.p < FEATURE_RULES.p_max) || (mean(a0) < mean(a1) && rawT.p != null && rawT.p < FEATURE_RULES.p_max);
+  const verdict = status === 'VALIDATED' ? 'BETTER' : worse ? 'WORSE' : 'NO_DIFFERENCE';
+  /* the games the layer exists for: one club, not both, changed its listed starter since its previous game of the season */
+  const one = pairs.filter((r) => r.ctx && r.ctx.qb_change_home !== r.ctx.qb_change_away), sg = (r) => (r.ctx.qb_change_home ? 1 : -1);
+  const c0 = one.map(ae), c1 = one.map((r) => ae(ON[r.id]));
+  const tp = pairs.filter((r) => TOP[r.id] && ok(TOP[r.id])), ta = tp.map(ae), tb = tp.map((r) => ae(TOP[r.id]));
+  const tIds = ids.filter((id) => bt[id]);
+  return {
+    question: 'does feeding the engine’s quarterback layer the listed starters (football/engine.js nfl.absorbGame qbStarts, until now an empty list in every replay and on the live board) bring the projection closer to the result?',
+    scenario: qbArc.scenario, scenario_basis: qbArc.scenario_basis,
+    source: path.relative(ROOT, QB.OUT) + ' (' + qbArc.counts.first_season + '-' + qbArc.counts.last_season + '; listed starter from games.csv, his line from stats_player_week)',
+    arms: { off: 'no quarterback starts absorbed: the layer stays at its prior, as the live board runs; every other number in this file is this arm', on: 'the listed starter of each side absorbed with his pass deviation (football/engine.js nfl.qbPassDev, as research/train_nfl.py computes it)' },
+    coverage: { starts_with_pass_dev: on.qb.starts_with_pass_dev, games_absorbed: on.absorbed, games_without_record: on.qb.games_without_record },
+    spread: {
+      raw: { window: RULES.first_eval + '-' + RULES.last, n: pairs.length, mae_off: r3(mean(a0)), mae_on: r3(mean(a1)), improvement: r3(mean(a0) - mean(a1)), paired_abs: rawT,
+        rmse_off: r3(Math.sqrt(mean(pairs.map(se)))), rmse_on: r3(Math.sqrt(mean(pairs.map((r) => se(ON[r.id]))))), paired_squared: pairedT(pairs.map(se), pairs.map((r) => se(ON[r.id]))), by_season: seasons },
+      blend_held_out: { window: RULES.first_holdout + '-' + RULES.last, n: ids.length, mae_off: r3(mean(e0)), mae_on: r3(mean(e1)), pooled_improvement: pooled, paired_t: pt.t, paired_p: pt.p, by_season: blendSeasons,
+        latest_coef: { off: m0.blend.latest_coef, on: m1.blend.latest_coef } },
+      calibration: { blend_brier_off: brier0, blend_brier_on: brier1, raw_brier_off: m0.calibration.raw_model_held_out.brier, raw_brier_on: m1.calibration.raw_model_held_out.brier },
+      tier: { off: m0.tier, on: m1.tier, required_edge_off: m0.required_edge_points, required_edge_on: m1.required_edge_points },
+      layer_moves: { mean_abs_points: r3(mean(pairs.map((r) => Math.abs(ON[r.id].model - r.model)))), games_moved_1_point: pairs.filter((r) => Math.abs(ON[r.id].model - r.model) >= 1).length, games_moved_2_points: pairs.filter((r) => Math.abs(ON[r.id].model - r.model) >= 2).length },
+    },
+    total: { identical: pairs.every((r) => r.model_total === ON[r.id].model_total), basis: 'the quarterback term is not a total feature and the layer does not touch the club ratings, so the total cannot move' },
+    moneyline: { raw_brier_off: ml0.brier.raw_model, raw_brier_on: ml1.brier.raw_model, blend_brier_off: ml0.brier.blend_held_out, blend_brier_on: ml1.brier.blend_held_out, market_brier: ml0.brier.market_devigged, tier_off: ml0.tier, tier_on: ml1.tier },
+    starter_changes: { definition: 'one club, not both, lists a different starting quarterback from its previous game of the same season', n: one.length,
+      mean_residual_changed_side: { off: r3(mean(one.map((r) => sg(r) * (r.margin - r.model)))), on: r3(mean(one.map((r) => sg(r) * (ON[r.id].margin - ON[r.id].model)))), close: r3(mean(one.map((r) => sg(r) * (r.margin - r.close)))) },
+      layer_shift_toward_changed_side: r3(mean(one.map((r) => sg(r) * (ON[r.id].model - r.model)))), mae_off: r3(mean(c0)), mae_on: r3(mean(c1)), paired_abs: pairedT(c0, c1),
+      basis: 'residual = result minus projection from the changed club’s side: negative means it did worse than projected' },
+    sensitivity_top_passer: { rule: 'credit the club QB with the most dropbacks, as research/train_nfl.py does, instead of the listed starter', raw_mae: r3(mean(tb)), raw_improvement: r3(mean(ta) - mean(tb)), paired_abs: pairedT(ta, tb),
+      blend_held_out_mae: r3(mean(tIds.map((id) => bt[id].err))), blend_improvement: r3(mean(tIds.map((id) => b0[id].err)) - mean(tIds.map((id) => bt[id].err))) },
+    rules: Object.assign({}, FEATURE_RULES, { max_brier_degradation: 0.002, applied_to: 'the held-out blend, paired per game' }),
+    status, reasons, verdict,
+    verdict_text: verdict === 'BETTER' ? 'the layer earns its place: it cleared the feature intake on the held-out blend'
+      : verdict === 'WORSE' ? 'the layer makes the projection measurably worse'
+      : 'no different: with the starters absorbed the spread moves by ' + r3(mean(a0) - mean(a1)) + ' points of raw MAE (paired p ' + rawT.p + ') and ' + pooled + ' on the held-out blend (paired p ' + pt.p + '); totals cannot move',
+    live: verdict === 'BETTER' ? 'eligible for the live board as a reviewed change' : 'not wired into the live board: it keeps absorbing no quarterback starts, the arm this file’s tiers and blend were measured on',
+  };
+}
+
 function buildNfl() {
   if (!fs.existsSync(ARCHIVE)) throw new Error('no closing-line archive; run tools/football/build_lines_archive.js first');
   const archive = JSON.parse(fs.readFileSync(ARCHIVE, 'utf8'));
   let injuries = null; try { injuries = JSON.parse(fs.readFileSync(INJURIES, 'utf8')); } catch (_) { injuries = null; }
   const rep = replayNfl(archive, { injuries });
+  const qbArc = QB.readArchive();
+  const qb = qbArc ? qbLayer(rep, replayNfl(archive, { injuries, qbStarts: qbArc }), replayNfl(archive, { injuries, qbStarts: qbArc, qbRule: 'top_passer' }), qbArc)
+    : { status: 'NOT_EVALUATED', verdict: null, reasons: ['no quarterback-start archive (' + path.relative(ROOT, QB.OUT) + '); run tools/football/build_qb_starts_archive.js'] };
   const spread = scoreMarket(rep.rows, { modelOf: (r) => r.model, closeOf: (r) => r.close, actualOf: (r) => r.margin });
   const total = scoreMarket(rep.rows, { modelOf: (r) => r.model_total, closeOf: (r) => r.close_total, actualOf: (r) => r.points });
   const moneyline = scoreMoneyline(rep.rows);
@@ -313,8 +414,8 @@ function buildNfl() {
   return {
     schema: SCHEMA, sport: 'americanfootball_nfl', generated_at: new Date().toISOString(),
     frame: { engine: 'football/engine.js ' + (E.version() || ''), params_trained_through: E.meta() && E.meta().nfl ? E.meta().nfl.trained_through : null, replay: 'cold from ' + RULES.replay_from + ' in kickoff order; seeds discarded; a game is projected from the state before it and absorbed after; both clubs need 8 absorbed games', eval_window: RULES.first_eval + '-' + RULES.last, holdout_window: RULES.first_holdout + '-' + RULES.last, archive: path.relative(ROOT, ARCHIVE), injury_archive: injuries ? path.relative(ROOT, INJURIES) + ' (' + (injuries.counts ? injuries.counts.first_season + '-' + injuries.counts.last_season : '?') + ')' : null, seasons_loaded: rep.seasons_loaded, games_scored: rep.rows.length, games_absorbed: rep.absorbed, refused: rep.refused, without_team_week_rows: rep.no_rows,
-      caveats: ['league-mean priors come from the shipped parameter set (trained through ' + (E.meta() && E.meta().nfl ? E.meta().nfl.trained_through : '?') + '); the club ratings start at zero', 'the close is nflverse’s consensus number, not a book’s; no opener is on file for the NFL, so open-to-close value cannot be measured here', 'quarterback starts are absorbed without pass-deviation splits, as the live board does'] },
-    rules: RULES, markets: { spread, total, moneyline },
+      caveats: ['league-mean priors come from the shipped parameter set (trained through ' + (E.meta() && E.meta().nfl ? E.meta().nfl.trained_through : '?') + '); the club ratings start at zero', 'the close is nflverse’s consensus number, not a book’s; no opener is on file for the NFL, so open-to-close value cannot be measured here', 'quarterback starts are not absorbed, as the live board runs; qb_layer measures the same replay with the listed starters absorbed (' + path.relative(ROOT, QB.OUT) + ')'] },
+    rules: RULES, markets: { spread, total, moneyline }, qb_layer: qb,
     note: 'A number that has not cleared this file is a projection, not a price. Tiers are read by the pricing kernel; nothing here promotes itself.',
   };
 }
@@ -379,6 +480,7 @@ async function main() {
   const art = sport === 'cfb' ? buildCfb() : buildNfl();
   const m = art.markets;
   console.log(`pricing validation (${sport}): spread ${m.spread.tier}${m.spread.pooled ? ' model MAE ' + m.spread.pooled.model_mae + ' vs close ' + m.spread.pooled.close_mae : ''}${m.spread.blend && m.spread.blend.pooled_holdout ? ', blend held-out ' + m.spread.blend.pooled_holdout.blend_mae + ' vs close ' + m.spread.blend.pooled_holdout.close_mae + ' (c=' + (m.spread.blend.latest_coef || {}).model_minus_close + ')' : ''}; total ${m.total.tier}; moneyline ${m.moneyline.tier}`);
+  if (art.qb_layer) { const q = art.qb_layer; console.log('quarterback layer: ' + (q.verdict || q.status) + (q.spread ? ' (spread raw MAE ' + q.spread.raw.mae_off + ' -> ' + q.spread.raw.mae_on + ', p ' + q.spread.raw.paired_abs.p + '; blend held-out ' + q.spread.blend_held_out.mae_off + ' -> ' + q.spread.blend_held_out.mae_on + ', p ' + q.spread.blend_held_out.paired_p + '; status ' + q.status + ')' : ': ' + q.reasons.join('; '))); }
   if (m.spread.ats_vs_close) { const t = m.spread.ats_vs_close.raw_model_oos || m.spread.ats_vs_close.raw_model; Object.keys(t).sort((a, b) => a - b).forEach((k) => console.log(`  spread gap >= ${k}: n ${t[k].n} win ${t[k].win_pct} p ${t[k].p_one_sided}`)); }
   if (args.includes('--check')) {
     if (!fs.existsSync(out)) { console.error('CHECK: no artifact'); process.exit(1); }
@@ -388,5 +490,5 @@ async function main() {
   console.log(writeIfChanged(out, art, { pretty: true }) + ' ' + path.relative(ROOT, out));
 }
 
-module.exports = { replayNfl, scoreMarket, scoreMoneyline, atsTable, requiredEdge, passes, calibration, ols, buildCfb, featureArms, featureStatus, pairedT, FEATURE_RULES, CANDIDATES, RULES, SCHEMA, THRESHOLDS };
+module.exports = { replayNfl, qbLayer, heldOutBlend, scoreMarket, scoreMoneyline, atsTable, requiredEdge, passes, calibration, ols, buildCfb, featureArms, featureStatus, pairedT, FEATURE_RULES, CANDIDATES, RULES, SCHEMA, THRESHOLDS };
 if (require.main === module) main().catch((e) => { console.error(e && e.stack || e); process.exit(2); });

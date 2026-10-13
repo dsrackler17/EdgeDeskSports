@@ -71,6 +71,12 @@ jobs:
       - name: Injury archive (official report, every season)
         run: node tools/football/build_injury_archive.js || true
 
+      # Who started each game and his passing line, for the replays' quarterback
+      # layer (football/validation/pricing_nfl.json qb_layer). Past seasons stay
+      # as committed; only the season in progress is read from the feed above.
+      - name: Quarterback-start archive
+        run: node tools/football/build_qb_starts_archive.js || true
+
       - name: Rebuild the team identity profiles
         run: node tools/football/build_team_identity.js
 

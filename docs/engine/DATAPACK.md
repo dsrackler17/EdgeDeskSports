@@ -361,8 +361,13 @@ season-week.
 - **Starting-QB change:** −3.1 points per change (95% −4.4 to +0.3). It does
   not improve held-out error by a distinguishable margin.
 
-  My brain's QB layer receives no QB starts in its scored replays, so it is
-  untested. That is filed as its own task, not changed here.
+  My brain's QB layer now receives the listed starters in its scored replays
+  (`football/pricing/qb_starts_nfl.json`, a confirmed-starter scenario: nflverse
+  records the starter after the game). On 2016–2025 it measures no different:
+  spread MAE 10.382 → 10.378, held-out blend 9.811 → 9.814
+  (`football/validation/pricing_nfl.json` `qb_layer`). On games where one club
+  changed starters, the replay misses by 3.3 points against that club and the
+  layer moves only 0.24 of them. The board keeps the layer at its trained seeds.
 - **Against the close:** every variant (squared error ≈ 172) is far from the
   archived closing spread (≈ 151). These features do not approach the
   market, and nothing here changes a price.

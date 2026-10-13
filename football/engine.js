@@ -396,6 +396,16 @@
       if (typeof qbId !== 'string' || !qbId) return 0;
       return nfl.qbEff(st, qbId) - (st.teamQb[team] || 0);
     },
+    /* the pass deviation one start hands absorbGame, exactly as
+       research/train_nfl.py sequential_pass computes it: the passer's EPA per
+       dropback (attempts + sacks) minus the league pass_epa_db mean as it
+       stands BEFORE this game is absorbed. null under 10 dropbacks or without
+       a league mean, and absorbGame then records no start. */
+    qbPassDev: function (st, passingEpa, dropbacks) {
+      var lm = st.lmean.pass_epa_db;
+      if (!isNum(passingEpa) || !isNum(dropbacks) || !isNum(lm) || dropbacks < 10) return null;
+      return passingEpa / dropbacks - lm;
+    },
     /* exact per-team-game feature computation from a raw stats_team_week row
        (mirrors research/build_features.py) */
     teamGameFromStw: function (r) {

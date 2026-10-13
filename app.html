@@ -49967,6 +49967,9 @@ function fbLoadNfl(signal){
         var hr=E.nfl.teamGameFromStw(hRow),ar=E.nfl.teamGameFromStw(aRow);
         hr.pts_for=fbNum(g.home_score);hr.pts_against=fbNum(g.away_score);
         ar.pts_for=fbNum(g.away_score);ar.pts_against=fbNum(g.home_score);
+        /* no quarterback starts: the quarterback layer stays at its trained
+           seeds. Fed the listed starters, the replayed layer measured no
+           different on 2016-2025 (football/validation/pricing_nfl.json qb_layer) */
         E.nfl.absorbGame(st,[[g.home_team,hr],[g.away_team,ar]],[]);
         absorbed++;
       });

@@ -106,7 +106,11 @@ What IS validated out of sample:
 
 * NFL projections track the market at 0.85 correlation with every layer
   earning its keep in ablations (EPA over points −0.64 MAE, season carryover
-  −0.17, QB layer −0.03).
+  −0.17, QB layer −0.03). That QB figure is the trainer's own walk-forward,
+  which refits the weights. Replaying the shipped engine with the listed
+  starters fed to its QB layer, against the same replay without them, measures
+  no different on 2016–2025 (`validation/pricing_nfl.json` `qb_layer`), so the
+  board keeps the layer at its trained seeds.
 * CFB margin projections match the third-party pregame-Elo benchmark
   (13.11 vs 13.16 MAE) and crush home-field-only (16.37), with clean
   probability calibration (Brier 0.183).

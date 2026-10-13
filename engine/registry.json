@@ -217,7 +217,7 @@
    "brain": {
     "status": "BUILT",
     "id": "edgedesk_football NFL engine (football/engine.js)",
-    "approach": "Opponent-adjusted EPA per play and success rate, a quarterback layer, rest/roof/surface/weather context → projected margin and total → linemaker distributions (football/linemaker) and the validated market blend (football/validation/pricing_nfl.json).",
+    "approach": "Opponent-adjusted EPA per play and success rate, a quarterback layer (on the board, held at its end-of-training seeds), rest/roof/surface/weather context → projected margin and total → linemaker distributions (football/linemaker) and the validated market blend (football/validation/pricing_nfl.json).",
     "why": "EPA (yurko2019) measures play value against down, distance and field position; scores are near-normal around the projection with key-number structure (glickman1998).",
     "candidates": [
      {
@@ -231,14 +231,15 @@
     ],
     "inputs": [
      "nflverse team-week EPA per play, pass and rush (aggregated from play-by-play)",
-     "a QB passing-EPA layer (the scored replays pass no QB starts, so the layer is not yet tested; football/validation/nfl_pack_research.json measures a starting-QB change at about −3 points)",
+     "a QB passing-EPA layer (fed the listed starters, the scored replays measure it no different on 2016-2025, so the board keeps it at its trained seeds: football/validation/pricing_nfl.json qb_layer; football/validation/nfl_pack_research.json measures a starting-QB change at about −3 points, of which the layer moves about 0.24)",
      "official injury report (a ruled-out starting QB swaps to the next starter)",
      "roof, temperature and wind (context model)"
     ],
     "not_modelled": [
      "offensive line continuity as a priced input (researched, rejected by the feature intake)",
      "CPOE, snap counts, PFR pressure and NGS measures (in the NFL data pack, not in the game model)",
-     "depth charts and injury reports with publication times (the pack has neither timestamp)"
+     "depth charts and injury reports with publication times (the pack has neither timestamp)",
+     "in-season quarterback starts on the board (the listed starters are recorded after the game; replayed as a confirmed-starter scenario they did not earn a place)"
     ]
    },
    "readiness": {
@@ -320,7 +321,7 @@
     "football/validation/nfl_pack_crosscheck.json",
     "football/validation/nfl_pack_research.json"
    ],
-   "evidence_generated_at": "2026-10-11T05:27:06.998Z",
+   "evidence_generated_at": "2026-10-13T13:39:59.301Z",
    "data": [
     {
      "source": "nflverse (GitHub)",
@@ -1907,5 +1908,5 @@
   "UNAVAILABLE": "Unavailable",
   "RETIRED": "Retired"
  },
- "generated_at": "2026-10-13T13:20:17.878Z"
+ "generated_at": "2026-10-13T13:51:33.020Z"
 }
