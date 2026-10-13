@@ -8,7 +8,7 @@ from the research EdgeDesk already has on it.
 |---|---|
 | Terminal, Research screen (`app.html`, `#gamesStrip`) | The strip: sport pills, compact cards, **View all games**. A swipeable rail on a phone, a grid on a desktop. |
 | Terminal, `#games[/<sport>[/<date>]][?status=…&q=…]` | The full slate: Yesterday / Today / Tomorrow and a date picker, sport and status filters, team search. Live first, then scheduled by start time, then final, then postponed and canceled. The state lives in the hash, so research opened from here comes **Back** to the same slate. |
-| Public `/today/` | The same slate for a signed-out visitor: schedule, status, scores, the free published research and the public read for up to eight games. **No prices and no EdgeDesk numbers.** |
+| Public `/today/` | The same slate for a signed-out visitor: schedule, status, scores, the free published research and the public read for up to eight games, with the upgrade path last on every card. **No prices and no EdgeDesk numbers.** If the slate file cannot be loaded, it falls back to the public board’s games and says so. |
 
 Research, not picks. An available game is not a recommendation.
 
@@ -108,7 +108,7 @@ Rollback: revert the merge. The SQL is additive: drop `public.slate_live`, `publ
 |---|---|
 | `npm run slate:test` | The kernel (106 checks: DST and midnight, selection, statuses, doubleheaders, overlay, markets, readiness, URL) and the pipeline (59: adapter, builder carry-forward and fallback, research join, poller). |
 | `npm run slate:sql` | `supabase/games_slate.sql` on a real PostgreSQL (23), with Supabase's own default grants in place. |
-| `npm run slate:e2e` | Chromium at 390 px and 1280 px (86): the strip, the page, the dialog, the live overlay, the reader's prices, failure and the device copy, staleness, local midnight, `/today/`, and the terminal's own navigation. |
+| `npm run slate:e2e` | Chromium at 390 px and 1280 px (88): the strip, the page, the dialog, the live overlay, the reader's prices, failure and the device copy, staleness, local midnight, `/today/`, and the terminal's own navigation. |
 
 ## Known limits
 
