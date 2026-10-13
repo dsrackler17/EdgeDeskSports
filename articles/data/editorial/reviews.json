@@ -1,6 +1,6 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-10-13T03:40:38.638Z",
+  "generated_at": "2026-10-13T03:50:37.392Z",
   "open": 12,
   "count": 12,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
@@ -13,7 +13,7 @@
       "question": "Does EdgeDesk’s explosiveness handling need investigating? Raised by a published article whose claim the game contradicted.",
       "status": "open",
       "opened_at": "2026-09-13T20:41:25.405Z",
-      "updated_at": "2026-09-29T03:20:22.190Z",
+      "updated_at": "2026-10-13T03:50:37.392Z",
       "evidence": [
         {
           "lesson_id": "2026_01_BUF_HOU:contradicted:explosiveness",
@@ -58,16 +58,27 @@
           "result": "Philadelphia Eagles 5.28 yards per play against Chicago Bears 5.43.",
           "severity": "high",
           "at": "2026-09-29T03:20:22.190Z"
+        },
+        {
+          "lesson_id": "2026_05_BUF_LA:contradicted:explosiveness",
+          "game_id": "2026_05_BUF_LA",
+          "season": 2026,
+          "week": 5,
+          "team": "Los Angeles Rams",
+          "expectation": "Los Angeles Rams holds the largest measured edge in this matchup: Los Angeles Rams −1.3 pp (#9 of 32) vs Buffalo Bills +2.9 pp (#31 of 32) — 22 places on the league board.",
+          "result": "Los Angeles Rams 5.82 yards per play against Buffalo Bills 7.65.",
+          "severity": "high",
+          "at": "2026-10-13T03:50:37.392Z"
         }
       ],
-      "occurrences": 4,
+      "occurrences": 5,
       "disposition": null,
       "disposition_note": null,
       "closed_at": null,
       "closed_by": null,
       "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
       "recurring": true,
-      "note": "Seen 4 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
+      "note": "Seen 5 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
