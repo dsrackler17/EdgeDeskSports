@@ -2,7 +2,7 @@
  "schema": "edgedesk_nhl_slate_v1",
  "sport": "NHL",
  "sport_key": "icehockey_nhl",
- "generated_at": "2026-10-13T12:51:18.791Z",
+ "generated_at": "2026-10-13T19:31:43.515Z",
  "horizon_hours": 72,
  "model": {
   "id": "edgedesk_nhl_v1:xg_no_goalie",
@@ -24,42 +24,20 @@
  "readiness": {
   "data": {
    "state": "STALE",
-   "latest_completed_game": "2026-10-11",
+   "latest_completed_game": "2026-10-12",
    "hours_since_latest_result": null,
-   "results_lagging": [
-    {
-     "game_id": 2026020087,
-     "date": "2026-10-12",
-     "home": "BUF",
-     "away": "FLA"
-    },
-    {
-     "game_id": 2026020088,
-     "date": "2026-10-12",
-     "home": "NJD",
-     "away": "OTT"
-    },
-    {
-     "game_id": 2026020089,
-     "date": "2026-10-12",
-     "home": "MIN",
-     "away": "VGK"
-    }
-   ],
+   "results_lagging": [],
    "schedule": {
     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2027.parquet",
-    "fetched_at": "2026-10-13T12:49:50.142Z",
+    "fetched_at": "2026-10-13T19:31:41.061Z",
     "ok": true,
     "sha256": "70b1ebc635f6f0bd0ddd7c46a132d32cd96cbab592cf680952e3d74e6a401dfd"
    },
    "nhl_api": {
-    "used": false,
-    "fetched": 0,
+    "used": true,
+    "fetched": 2,
     "updated": 0,
-    "error": {
-     "code": "NETWORK",
-     "message": "fetch failed"
-    }
+    "error": null
    }
   },
   "model": {
@@ -247,74 +225,74 @@
    "away": "NJD",
    "venue": "Little Caesars Arena",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
-    "home": 3.1905,
-    "away": 2.7221
+    "home": 3.1968,
+    "away": 2.7095
    },
    "prices": {
     "moneyline": {
-     "home": 0.5764,
-     "away": 0.4236,
-     "fair_home": -136,
-     "fair_away": 136,
+     "home": 0.5794,
+     "away": 0.4206,
+     "fair_home": -138,
+     "fair_away": 138,
      "settles": "includes overtime and shootout"
     },
     "regulation": {
-     "home": 0.4616,
-     "draw": 0.2157,
-     "away": 0.3227,
-     "fair_home": 117,
+     "home": 0.4645,
+     "draw": 0.2155,
+     "away": 0.32,
+     "fair_home": 115,
      "fair_draw": 364,
-     "fair_away": 210,
+     "fair_away": 213,
      "settles": "60 minutes only"
     },
     "puck_line": {
-     "home_minus_1_5": 0.3561,
-     "away_plus_1_5": 0.6439,
-     "away_minus_1_5": 0.2282,
-     "home_plus_1_5": 0.7718,
-     "fair_home_minus_1_5": 181,
-     "fair_away_plus_1_5": -181,
-     "fair_away_minus_1_5": 338,
-     "fair_home_plus_1_5": -338,
+     "home_minus_1_5": 0.3588,
+     "away_plus_1_5": 0.6412,
+     "away_minus_1_5": 0.2257,
+     "home_plus_1_5": 0.7743,
+     "fair_home_minus_1_5": 179,
+     "fair_away_plus_1_5": -179,
+     "fair_away_minus_1_5": 343,
+     "fair_home_plus_1_5": -343,
      "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
     },
     "total": {
-     "expected": 6.13,
+     "expected": 6.12,
      "fair_line": 6,
      "lines": {
       "5": {
-       "over": 0.55,
-       "under": 0.2265,
-       "push": 0.2235,
-       "fair_over": -243,
-       "fair_under": 243
+       "over": 0.5489,
+       "under": 0.2273,
+       "push": 0.2238,
+       "fair_over": -242,
+       "fair_under": 242
       },
       "6": {
-       "over": 0.4407,
-       "under": 0.45,
+       "over": 0.4396,
+       "under": 0.4511,
        "push": 0.1093,
-       "fair_over": 102,
-       "fair_under": -102
+       "fair_over": 103,
+       "fair_under": -103
       },
       "7": {
-       "over": 0.2435,
-       "under": 0.5593,
-       "push": 0.1972,
-       "fair_over": 230,
-       "fair_under": -230
+       "over": 0.2426,
+       "under": 0.5604,
+       "push": 0.197,
+       "fair_over": 231,
+       "fair_under": -231
       },
       "5.5": {
-       "over": 0.55,
-       "under": 0.45,
+       "over": 0.5489,
+       "under": 0.4511,
        "push": 0,
        "fair_over": -122,
        "fair_under": 122
       },
       "6.5": {
-       "over": 0.4407,
-       "under": 0.5593,
+       "over": 0.4396,
+       "under": 0.5604,
        "push": 0,
        "fair_over": 127,
        "fair_under": -127
@@ -325,22 +303,22 @@
     "team_total": {
      "home": {
       "3": {
-       "over": 0.4359,
-       "under": 0.3502,
-       "push": 0.2139,
-       "fair_over": -124,
-       "fair_under": 124
+       "over": 0.4374,
+       "under": 0.3488,
+       "push": 0.2138,
+       "fair_over": -125,
+       "fair_under": 125
       },
       "2.5": {
-       "over": 0.6498,
-       "under": 0.3502,
+       "over": 0.6512,
+       "under": 0.3488,
        "push": 0,
-       "fair_over": -186,
-       "fair_under": 186
+       "fair_over": -187,
+       "fair_under": 187
       },
       "3.5": {
-       "over": 0.4359,
-       "under": 0.5641,
+       "over": 0.4374,
+       "under": 0.5626,
        "push": 0,
        "fair_over": 129,
        "fair_under": -129
@@ -348,33 +326,33 @@
      },
      "away": {
       "3": {
-       "over": 0.3248,
-       "under": 0.4607,
-       "push": 0.2145,
-       "fair_over": 142,
-       "fair_under": -142
+       "over": 0.3219,
+       "under": 0.4638,
+       "push": 0.2143,
+       "fair_over": 144,
+       "fair_under": -144
       },
       "2.5": {
-       "over": 0.5393,
-       "under": 0.4607,
+       "over": 0.5362,
+       "under": 0.4638,
        "push": 0,
-       "fair_over": -117,
-       "fair_under": 117
+       "fair_over": -116,
+       "fair_under": 116
       },
       "3.5": {
-       "over": 0.3248,
-       "under": 0.6752,
+       "over": 0.3219,
+       "under": 0.6781,
        "push": 0,
-       "fair_over": 208,
-       "fair_under": -208
+       "fair_over": 211,
+       "fair_under": -211
       }
      }
     },
-    "p_overtime": 0.146,
+    "p_overtime": 0.1458,
     "p_shootout": 0.0697
    },
    "uncertainty": {
-    "moneyline_sd_pp": 1.56,
+    "moneyline_sd_pp": 1.51,
     "total_sd_goals": 0.02,
     "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
@@ -414,16 +392,16 @@
      {
       "goalie": 8474596,
       "name": "J. Allen",
-      "p_start": 0.5905,
+      "p_start": 0.7067,
       "confirmed": false,
       "gsax_rate": -0.0057
      },
      {
       "goalie": 8482076,
       "name": "N. Daws",
-      "p_start": 0.3153,
+      "p_start": 0.2324,
       "confirmed": false,
-      "gsax_rate": -0.0342
+      "gsax_rate": -0.0374
      }
     ],
     "scenarios": [
@@ -432,35 +410,35 @@
       "home_goalie_name": "J. Gibson",
       "away_goalie": 8474596,
       "away_goalie_name": "J. Allen",
-      "p_scenario": 0.5209,
-      "p_home": 0.5702,
-      "exp_total": 6.11
+      "p_scenario": 0.6013,
+      "p_home": 0.5726,
+      "exp_total": 6.1
      },
      {
       "home_goalie": 8476434,
       "home_goalie_name": "J. Gibson",
       "away_goalie": 8482076,
       "away_goalie_name": "N. Daws",
-      "p_scenario": 0.2781,
-      "p_home": 0.5789,
-      "exp_total": 6.15
+      "p_scenario": 0.1978,
+      "p_home": 0.5823,
+      "exp_total": 6.14
      },
      {
       "home_goalie": 8480193,
       "home_goalie_name": "D. Tarasov",
       "away_goalie": 8474596,
       "away_goalie_name": "J. Allen",
-      "p_scenario": 0.131,
-      "p_home": 0.5688,
-      "exp_total": 6.12
+      "p_scenario": 0.1512,
+      "p_home": 0.5712,
+      "exp_total": 6.11
      },
      {
       "home_goalie": 8480193,
       "home_goalie_name": "D. Tarasov",
       "away_goalie": 8482076,
       "away_goalie_name": "N. Daws",
-      "p_scenario": 0.0699,
-      "p_home": 0.5775,
+      "p_scenario": 0.0497,
+      "p_home": 0.5809,
       "exp_total": 6.15
      }
     ],
@@ -499,61 +477,61 @@
      ]
     },
     "away": {
-     "projected_delta": 0.0383,
+     "projected_delta": 0.0333,
      "regulars_absent": [
       {
        "player_id": 8483495,
        "name": "S. Nemec",
        "toi_per_game": "18:39",
-       "dressed_in_last_10": "6/10",
-       "absent_last_games": 4,
-       "reading": "absent from the most recent game(s)"
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
       },
       {
        "player_id": 8477015,
        "name": "C. Brown",
        "toi_per_game": "18:07",
-       "dressed_in_last_10": "6/10",
-       "absent_last_games": 4,
-       "reading": "absent from the most recent game(s)"
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
       },
       {
        "player_id": 8480192,
        "name": "J. Kovacevic",
        "toi_per_game": "17:35",
-       "dressed_in_last_10": "6/10",
-       "absent_last_games": 4,
-       "reading": "absent from the most recent game(s)"
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
       }
      ]
     },
-    "p_home_lineup_variant": 0.5334,
+    "p_home_lineup_variant": 0.5391,
     "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000895 (95% CI -0.001693 to -0.000052)."
    },
    "evidence": {
     "home": {
-     "ev_xg_for_vs_league": 0.9834,
-     "ev_xg_against_vs_league": 1.012,
+     "ev_xg_for_vs_league": 0.9835,
+     "ev_xg_against_vs_league": 1.0121,
      "goals_for_vs_league": 0.9534,
-     "goals_against_vs_league": 1.0097,
-     "pp_vs_league": 1.0838,
-     "pk_xga_vs_league": 1.0452,
-     "pp_minutes_vs_league": 1.0263,
+     "goals_against_vs_league": 1.0096,
+     "pp_vs_league": 1.0837,
+     "pk_xga_vs_league": 1.0451,
+     "pp_minutes_vs_league": 1.026,
      "rest_days": 3,
      "back_to_back": false,
      "history_weight_games": 43.03
     },
     "away": {
-     "ev_xg_for_vs_league": 1.0066,
-     "ev_xg_against_vs_league": 0.9867,
-     "goals_for_vs_league": 0.9494,
-     "goals_against_vs_league": 1.0036,
-     "pp_vs_league": 1.0663,
-     "pk_xga_vs_league": 0.9995,
-     "pp_minutes_vs_league": 0.958,
+     "ev_xg_for_vs_league": 1.0097,
+     "ev_xg_against_vs_league": 0.9849,
+     "goals_for_vs_league": 0.9414,
+     "goals_against_vs_league": 1.0071,
+     "pp_vs_league": 1.0626,
+     "pk_xga_vs_league": 0.982,
+     "pp_minutes_vs_league": 0.9529,
      "rest_days": 1,
      "back_to_back": true,
-     "history_weight_games": 42.81
+     "history_weight_games": 43.8
     },
     "league": {
      "ev_xg_per60": 2.61,
@@ -565,7 +543,7 @@
     ]
    },
    "data_quality": {
-    "history_weight_games": 42.81,
+    "history_weight_games": 43.03,
     "early_season": false,
     "goalie_certainty": "PROJECTED_UNCERTAIN",
     "missing": []
@@ -587,77 +565,77 @@
    "away": "FLA",
    "venue": "Nationwide Arena",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
-    "home": 3.1968,
-    "away": 2.7625
+    "home": 3.2123,
+    "away": 2.7599
    },
    "prices": {
     "moneyline": {
-     "home": 0.5707,
-     "away": 0.4293,
-     "fair_home": -133,
-     "fair_away": 133,
+     "home": 0.5735,
+     "away": 0.4265,
+     "fair_home": -134,
+     "fair_away": 134,
      "settles": "includes overtime and shootout"
     },
     "regulation": {
-     "home": 0.4565,
-     "draw": 0.2155,
-     "away": 0.328,
-     "fair_home": 119,
-     "fair_draw": 364,
-     "fair_away": 205,
+     "home": 0.4593,
+     "draw": 0.2151,
+     "away": 0.3256,
+     "fair_home": 118,
+     "fair_draw": 365,
+     "fair_away": 207,
      "settles": "60 minutes only"
     },
     "puck_line": {
-     "home_minus_1_5": 0.3518,
-     "away_plus_1_5": 0.6482,
-     "away_minus_1_5": 0.2335,
-     "home_plus_1_5": 0.7665,
-     "fair_home_minus_1_5": 184,
-     "fair_away_plus_1_5": -184,
-     "fair_away_minus_1_5": 328,
-     "fair_home_plus_1_5": -328,
+     "home_minus_1_5": 0.3547,
+     "away_plus_1_5": 0.6453,
+     "away_minus_1_5": 0.2315,
+     "home_plus_1_5": 0.7685,
+     "fair_home_minus_1_5": 182,
+     "fair_away_plus_1_5": -182,
+     "fair_away_minus_1_5": 332,
+     "fair_home_plus_1_5": -332,
      "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
     },
     "total": {
-     "expected": 6.17,
+     "expected": 6.19,
      "fair_line": 6,
      "lines": {
       "5": {
-       "over": 0.5578,
-       "under": 0.2208,
-       "push": 0.2214,
-       "fair_over": -253,
-       "fair_under": 253
+       "over": 0.5599,
+       "under": 0.2193,
+       "push": 0.2208,
+       "fair_over": -255,
+       "fair_under": 255
       },
       "6": {
-       "over": 0.4487,
-       "under": 0.4422,
+       "over": 0.4508,
+       "under": 0.4401,
        "push": 0.1091,
-       "fair_over": -101,
-       "fair_under": 101
+       "fair_over": -102,
+       "fair_under": 102
       },
       "7": {
-       "over": 0.25,
-       "under": 0.5513,
-       "push": 0.1986,
-       "fair_over": 221,
-       "fair_under": -221
+       "over": 0.2518,
+       "under": 0.5492,
+       "push": 0.199,
+       "fair_over": 218,
+       "fair_under": -218
       },
       "5.5": {
-       "over": 0.5578,
-       "under": 0.4422,
+       "over": 0.5599,
+       "under": 0.4401,
        "push": 0,
-       "fair_over": -126,
-       "fair_under": 126
+       "fair_over": -127,
+       "fair_under": 127
       },
       "6.5": {
-       "over": 0.4487,
-       "under": 0.5513,
+       "over": 0.4508,
+       "under": 0.5492,
        "push": 0,
-       "fair_over": 123,
-       "fair_under": -123
+       "fair_over": 122,
+       "fair_under": -122
       }
      },
      "settles": "includes overtime; the shootout winner is credited one goal"
@@ -665,56 +643,56 @@
     "team_total": {
      "home": {
       "3": {
-       "over": 0.437,
-       "under": 0.3496,
-       "push": 0.2133,
-       "fair_over": -125,
-       "fair_under": 125
+       "over": 0.4406,
+       "under": 0.3465,
+       "push": 0.213,
+       "fair_over": -127,
+       "fair_under": 127
       },
       "2.5": {
-       "over": 0.6504,
-       "under": 0.3496,
+       "over": 0.6535,
+       "under": 0.3465,
        "push": 0,
-       "fair_over": -186,
-       "fair_under": 186
+       "fair_over": -189,
+       "fair_under": 189
       },
       "3.5": {
-       "over": 0.437,
-       "under": 0.563,
+       "over": 0.4406,
+       "under": 0.5594,
        "push": 0,
-       "fair_over": 129,
-       "fair_under": -129
+       "fair_over": 127,
+       "fair_under": -127
       }
      },
      "away": {
       "3": {
-       "over": 0.334,
-       "under": 0.4513,
-       "push": 0.2147,
-       "fair_over": 135,
-       "fair_under": -135
+       "over": 0.3332,
+       "under": 0.4522,
+       "push": 0.2146,
+       "fair_over": 136,
+       "fair_under": -136
       },
       "2.5": {
-       "over": 0.5487,
-       "under": 0.4513,
+       "over": 0.5478,
+       "under": 0.4522,
        "push": 0,
-       "fair_over": -122,
-       "fair_under": 122
+       "fair_over": -121,
+       "fair_under": 121
       },
       "3.5": {
-       "over": 0.334,
-       "under": 0.666,
+       "over": 0.3332,
+       "under": 0.6668,
        "push": 0,
-       "fair_over": 199,
-       "fair_under": -199
+       "fair_over": 200,
+       "fair_under": -200
       }
      }
     },
-    "p_overtime": 0.1465,
-    "p_shootout": 0.069
+    "p_overtime": 0.1464,
+    "p_shootout": 0.0687
    },
    "uncertainty": {
-    "moneyline_sd_pp": 1.47,
+    "moneyline_sd_pp": 1.42,
     "total_sd_goals": 0.02,
     "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
@@ -752,56 +730,56 @@
     ],
     "away": [
      {
-      "goalie": 8474593,
-      "name": "J. Markstrom",
-      "p_start": 0.578,
-      "confirmed": false,
-      "gsax_rate": -0.0239
-     },
-     {
       "goalie": 8480193,
       "name": "D. Tarasov",
-      "p_start": 0.2564,
+      "p_start": 0.432,
       "confirmed": false,
       "gsax_rate": -0.009
+     },
+     {
+      "goalie": 8474593,
+      "name": "J. Markstrom",
+      "p_start": 0.2324,
+      "confirmed": false,
+      "gsax_rate": -0.0257
      }
     ],
     "scenarios": [
      {
       "home_goalie": 8482982,
       "home_goalie_name": "J. Greaves",
-      "away_goalie": 8474593,
-      "away_goalie_name": "J. Markstrom",
-      "p_scenario": 0.5827,
-      "p_home": 0.5742,
-      "exp_total": 6.17
+      "away_goalie": 8480193,
+      "away_goalie_name": "D. Tarasov",
+      "p_scenario": 0.547,
+      "p_home": 0.5719,
+      "exp_total": 6.16
      },
      {
       "home_goalie": 8482982,
       "home_goalie_name": "J. Greaves",
+      "away_goalie": 8474593,
+      "away_goalie_name": "J. Markstrom",
+      "p_scenario": 0.2943,
+      "p_home": 0.5771,
+      "exp_total": 6.18
+     },
+     {
+      "home_goalie": 8475660,
+      "home_goalie_name": "C. Talbot",
       "away_goalie": 8480193,
       "away_goalie_name": "D. Tarasov",
-      "p_scenario": 0.2585,
-      "p_home": 0.5696,
-      "exp_total": 6.15
+      "p_scenario": 0.1032,
+      "p_home": 0.5609,
+      "exp_total": 6.2
      },
      {
       "home_goalie": 8475660,
       "home_goalie_name": "C. Talbot",
       "away_goalie": 8474593,
       "away_goalie_name": "J. Markstrom",
-      "p_scenario": 0.11,
-      "p_home": 0.5631,
-      "exp_total": 6.21
-     },
-     {
-      "home_goalie": 8475660,
-      "home_goalie_name": "C. Talbot",
-      "away_goalie": 8480193,
-      "away_goalie_name": "D. Tarasov",
-      "p_scenario": 0.0488,
-      "p_home": 0.5585,
-      "exp_total": 6.19
+      "p_scenario": 0.0555,
+      "p_home": 0.566,
+      "exp_total": 6.22
      }
     ],
     "confirmed_source": null
@@ -855,53 +833,36 @@
      ]
     },
     "away": {
-     "projected_delta": 0.0485,
-     "regulars_absent": [
-      {
-       "player_id": 8482131,
-       "name": "D. Sebrango",
-       "toi_per_game": "16:49",
-       "dressed_in_last_10": "5/10",
-       "absent_last_games": 5,
-       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
-      },
-      {
-       "player_id": 8482107,
-       "name": "M. Benning",
-       "toi_per_game": "15:55",
-       "dressed_in_last_10": "5/10",
-       "absent_last_games": 5,
-       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
-      }
-     ]
+     "projected_delta": 0.0437,
+     "regulars_absent": []
     },
-    "p_home_lineup_variant": 0.5346,
+    "p_home_lineup_variant": 0.54,
     "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000895 (95% CI -0.001693 to -0.000052)."
    },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 1.0256,
-     "ev_xg_against_vs_league": 0.9855,
-     "goals_for_vs_league": 1.0046,
-     "goals_against_vs_league": 1.0043,
-     "pp_vs_league": 0.9758,
-     "pk_xga_vs_league": 1.0767,
-     "pp_minutes_vs_league": 0.9073,
+     "ev_xg_against_vs_league": 0.9856,
+     "goals_for_vs_league": 1.0045,
+     "goals_against_vs_league": 1.0042,
+     "pp_vs_league": 0.9756,
+     "pk_xga_vs_league": 1.0766,
+     "pp_minutes_vs_league": 0.9071,
      "rest_days": 3,
      "back_to_back": false,
      "history_weight_games": 42.32
     },
     "away": {
-     "ev_xg_for_vs_league": 1.0126,
-     "ev_xg_against_vs_league": 0.9676,
-     "goals_for_vs_league": 0.9876,
-     "goals_against_vs_league": 0.9888,
-     "pp_vs_league": 1.0412,
-     "pk_xga_vs_league": 0.9399,
-     "pp_minutes_vs_league": 1.0896,
+     "ev_xg_for_vs_league": 1.0066,
+     "ev_xg_against_vs_league": 0.9701,
+     "goals_for_vs_league": 0.9874,
+     "goals_against_vs_league": 0.9955,
+     "pp_vs_league": 1.0649,
+     "pk_xga_vs_league": 0.9409,
+     "pp_minutes_vs_league": 1.0842,
      "rest_days": 1,
      "back_to_back": true,
-     "history_weight_games": 47.4
+     "history_weight_games": 48.39
     },
     "league": {
      "ev_xg_per60": 2.61,
@@ -935,74 +896,74 @@
    "away": "BUF",
    "venue": "Centre Bell",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
-    "home": 3.2718,
-    "away": 2.906
+    "home": 3.2581,
+    "away": 2.9248
    },
    "prices": {
     "moneyline": {
-     "home": 0.5587,
-     "away": 0.4413,
-     "fair_home": -127,
-     "fair_away": 127,
+     "home": 0.5535,
+     "away": 0.4465,
+     "fair_home": -124,
+     "fair_away": 124,
      "settles": "includes overtime and shootout"
     },
     "regulation": {
-     "home": 0.4465,
-     "draw": 0.2134,
-     "away": 0.3401,
-     "fair_home": 124,
-     "fair_draw": 369,
-     "fair_away": 194,
+     "home": 0.4417,
+     "draw": 0.2137,
+     "away": 0.3447,
+     "fair_home": 126,
+     "fair_draw": 368,
+     "fair_away": 190,
      "settles": "60 minutes only"
     },
     "puck_line": {
-     "home_minus_1_5": 0.3456,
-     "away_plus_1_5": 0.6544,
-     "away_minus_1_5": 0.247,
-     "home_plus_1_5": 0.753,
-     "fair_home_minus_1_5": 189,
-     "fair_away_plus_1_5": -189,
-     "fair_away_minus_1_5": 305,
-     "fair_home_plus_1_5": -305,
+     "home_minus_1_5": 0.3411,
+     "away_plus_1_5": 0.6589,
+     "away_minus_1_5": 0.2512,
+     "home_plus_1_5": 0.7488,
+     "fair_home_minus_1_5": 193,
+     "fair_away_plus_1_5": -193,
+     "fair_away_minus_1_5": 298,
+     "fair_home_plus_1_5": -298,
      "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
     },
     "total": {
-     "expected": 6.39,
+     "expected": 6.4,
      "fair_line": 6.5,
      "lines": {
       "5": {
-       "over": 0.5934,
-       "under": 0.1959,
-       "push": 0.2107,
-       "fair_over": -303,
-       "fair_under": 303
+       "over": 0.5942,
+       "under": 0.1953,
+       "push": 0.2105,
+       "fair_over": -304,
+       "fair_under": 304
       },
       "6": {
-       "over": 0.4853,
-       "under": 0.4066,
-       "push": 0.1081,
-       "fair_over": -119,
-       "fair_under": 119
+       "over": 0.4862,
+       "under": 0.4058,
+       "push": 0.108,
+       "fair_over": -120,
+       "fair_under": 120
       },
       "7": {
-       "over": 0.2813,
-       "under": 0.5147,
-       "push": 0.204,
-       "fair_over": 183,
-       "fair_under": -183
+       "over": 0.282,
+       "under": 0.5138,
+       "push": 0.2042,
+       "fair_over": 182,
+       "fair_under": -182
       },
       "5.5": {
-       "over": 0.5934,
-       "under": 0.4066,
+       "over": 0.5942,
+       "under": 0.4058,
        "push": 0,
        "fair_over": -146,
        "fair_under": 146
       },
       "6.5": {
-       "over": 0.4853,
-       "under": 0.5147,
+       "over": 0.4862,
+       "under": 0.5138,
        "push": 0,
        "fair_over": 106,
        "fair_under": -106
@@ -1013,56 +974,56 @@
     "team_total": {
      "home": {
       "3": {
-       "over": 0.4527,
-       "under": 0.3372,
-       "push": 0.2101,
-       "fair_over": -134,
-       "fair_under": 134
+       "over": 0.4495,
+       "under": 0.3401,
+       "push": 0.2104,
+       "fair_over": -132,
+       "fair_under": 132
       },
       "2.5": {
-       "over": 0.6628,
-       "under": 0.3372,
+       "over": 0.6599,
+       "under": 0.3401,
        "push": 0,
-       "fair_over": -197,
-       "fair_under": 197
+       "fair_over": -194,
+       "fair_under": 194
       },
       "3.5": {
-       "over": 0.4527,
-       "under": 0.5473,
+       "over": 0.4495,
+       "under": 0.5505,
        "push": 0,
-       "fair_over": 121,
-       "fair_under": -121
+       "fair_over": 122,
+       "fair_under": -122
       }
      },
      "away": {
       "3": {
-       "over": 0.366,
-       "under": 0.4196,
+       "over": 0.3705,
+       "under": 0.4153,
        "push": 0.2143,
-       "fair_over": 115,
-       "fair_under": -115
+       "fair_over": 112,
+       "fair_under": -112
       },
       "2.5": {
-       "over": 0.5804,
-       "under": 0.4196,
+       "over": 0.5847,
+       "under": 0.4153,
        "push": 0,
-       "fair_over": -138,
-       "fair_under": 138
+       "fair_over": -141,
+       "fair_under": 141
       },
       "3.5": {
-       "over": 0.366,
-       "under": 0.634,
+       "over": 0.3705,
+       "under": 0.6295,
        "push": 0,
-       "fair_over": 173,
-       "fair_under": -173
+       "fair_over": 170,
+       "fair_under": -170
       }
      }
     },
-    "p_overtime": 0.1479,
+    "p_overtime": 0.1481,
     "p_shootout": 0.0656
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.91,
+    "moneyline_sd_pp": 0.72,
     "total_sd_goals": 0.03,
     "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
@@ -1102,16 +1063,16 @@
      {
       "goalie": 8480045,
       "name": "U. Luukkonen",
-      "p_start": 0.5646,
+      "p_start": 0.6824,
       "confirmed": false,
-      "gsax_rate": -0.0219
+      "gsax_rate": -0.0183
      },
      {
       "goalie": 8481551,
       "name": "C. Ellis",
-      "p_start": 0.3217,
+      "p_start": 0.2324,
       "confirmed": false,
-      "gsax_rate": -0.0223
+      "gsax_rate": -0.0257
      }
     ],
     "scenarios": [
@@ -1120,8 +1081,8 @@
       "home_goalie_name": "J. Dobes",
       "away_goalie": 8480045,
       "away_goalie_name": "U. Luukkonen",
-      "p_scenario": 0.4169,
-      "p_home": 0.5639,
+      "p_scenario": 0.4882,
+      "p_home": 0.5581,
       "exp_total": 6.4
      },
      {
@@ -1129,17 +1090,17 @@
       "home_goalie_name": "J. Dobes",
       "away_goalie": 8481551,
       "away_goalie_name": "C. Ellis",
-      "p_scenario": 0.2376,
-      "p_home": 0.5641,
-      "exp_total": 6.4
+      "p_scenario": 0.1663,
+      "p_home": 0.5604,
+      "exp_total": 6.41
      },
      {
       "home_goalie": 8484170,
       "home_goalie_name": "J. Fowler",
       "away_goalie": 8480045,
       "away_goalie_name": "U. Luukkonen",
-      "p_scenario": 0.2201,
-      "p_home": 0.5536,
+      "p_scenario": 0.2577,
+      "p_home": 0.5478,
       "exp_total": 6.44
      },
      {
@@ -1147,9 +1108,9 @@
       "home_goalie_name": "J. Fowler",
       "away_goalie": 8481551,
       "away_goalie_name": "C. Ellis",
-      "p_scenario": 0.1254,
-      "p_home": 0.5538,
-      "exp_total": 6.44
+      "p_scenario": 0.0878,
+      "p_home": 0.5501,
+      "exp_total": 6.45
      }
     ],
     "confirmed_source": null
@@ -1171,61 +1132,36 @@
      ]
     },
     "away": {
-     "projected_delta": -0.0398,
-     "regulars_absent": [
-      {
-       "player_id": 8481524,
-       "name": "B. Byram",
-       "toi_per_game": "21:06",
-       "dressed_in_last_10": "5/10",
-       "absent_last_games": 5,
-       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
-      },
-      {
-       "player_id": 8477949,
-       "name": "A. Tuch",
-       "toi_per_game": "18:51",
-       "dressed_in_last_10": "5/10",
-       "absent_last_games": 5,
-       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
-      },
-      {
-       "player_id": 8479982,
-       "name": "C. Timmins",
-       "toi_per_game": "15:43",
-       "dressed_in_last_10": "5/10",
-       "absent_last_games": 5,
-       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
-      }
-     ]
+     "projected_delta": -0.0129,
+     "regulars_absent": []
     },
-    "p_home_lineup_variant": 0.5795,
+    "p_home_lineup_variant": 0.56,
     "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000895 (95% CI -0.001693 to -0.000052)."
    },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 1.0211,
      "ev_xg_against_vs_league": 1.0643,
-     "goals_for_vs_league": 1.0283,
+     "goals_for_vs_league": 1.0282,
      "goals_against_vs_league": 0.9949,
-     "pp_vs_league": 0.9742,
-     "pk_xga_vs_league": 1.0944,
-     "pp_minutes_vs_league": 1.0321,
+     "pp_vs_league": 0.9741,
+     "pk_xga_vs_league": 1.0943,
+     "pp_minutes_vs_league": 1.0318,
      "rest_days": 3,
      "back_to_back": false,
      "history_weight_games": 54.28
     },
     "away": {
-     "ev_xg_for_vs_league": 1.0281,
-     "ev_xg_against_vs_league": 1.0025,
-     "goals_for_vs_league": 1.0527,
-     "goals_against_vs_league": 0.9946,
-     "pp_vs_league": 0.9756,
-     "pk_xga_vs_league": 0.9911,
-     "pp_minutes_vs_league": 1.0378,
+     "ev_xg_for_vs_league": 1.0307,
+     "ev_xg_against_vs_league": 0.9968,
+     "goals_for_vs_league": 1.0595,
+     "goals_against_vs_league": 0.9944,
+     "pp_vs_league": 0.9759,
+     "pk_xga_vs_league": 1.0168,
+     "pp_minutes_vs_league": 1.0433,
      "rest_days": 1,
      "back_to_back": true,
-     "history_weight_games": 50.19
+     "history_weight_games": 51.19
     },
     "league": {
      "ev_xg_per60": 2.61,
@@ -1237,7 +1173,7 @@
     ]
    },
    "data_quality": {
-    "history_weight_games": 50.19,
+    "history_weight_games": 51.19,
     "early_season": false,
     "goalie_certainty": "PROJECTED_UNCERTAIN",
     "missing": []
@@ -1259,17 +1195,17 @@
    "away": "WSH",
    "venue": "Lenovo Center",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
     "home": 3.4432,
-    "away": 2.672
+    "away": 2.6721
    },
    "prices": {
     "moneyline": {
      "home": 0.6219,
      "away": 0.3781,
-     "fair_home": -165,
-     "fair_away": 165,
+     "fair_home": -164,
+     "fair_away": 164,
      "settles": "includes overtime and shootout"
     },
     "regulation": {
@@ -1539,22 +1475,22 @@
      "ev_xg_for_vs_league": 1.156,
      "ev_xg_against_vs_league": 0.9445,
      "goals_for_vs_league": 1.1009,
-     "goals_against_vs_league": 0.9091,
-     "pp_vs_league": 1.0199,
-     "pk_xga_vs_league": 0.8545,
-     "pp_minutes_vs_league": 1.0668,
+     "goals_against_vs_league": 0.909,
+     "pp_vs_league": 1.0197,
+     "pk_xga_vs_league": 0.8544,
+     "pp_minutes_vs_league": 1.0665,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 58.5
     },
     "away": {
-     "ev_xg_for_vs_league": 1.0405,
-     "ev_xg_against_vs_league": 1.0437,
-     "goals_for_vs_league": 1.0258,
+     "ev_xg_for_vs_league": 1.0406,
+     "ev_xg_against_vs_league": 1.0438,
+     "goals_for_vs_league": 1.0257,
      "goals_against_vs_league": 0.9721,
-     "pp_vs_league": 0.9795,
-     "pk_xga_vs_league": 1.0519,
-     "pp_minutes_vs_league": 1.0006,
+     "pp_vs_league": 0.9794,
+     "pk_xga_vs_league": 1.0517,
+     "pp_minutes_vs_league": 1.0003,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 44.45
@@ -1590,7 +1526,7 @@
    "away": "SEA",
    "venue": "Xfinity Mobile Arena",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
     "home": 2.9678,
     "away": 2.8481
@@ -1794,7 +1730,7 @@
       "away_goalie": 8478916,
       "away_goalie_name": "J. Daccord",
       "p_scenario": 0.3334,
-      "p_home": 0.5317,
+      "p_home": 0.5316,
       "exp_total": 6.03
      },
      {
@@ -1860,24 +1796,24 @@
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 0.9397,
-     "ev_xg_against_vs_league": 0.9746,
-     "goals_for_vs_league": 0.9196,
-     "goals_against_vs_league": 0.9928,
-     "pp_vs_league": 0.9526,
-     "pk_xga_vs_league": 0.9189,
-     "pp_minutes_vs_league": 1.021,
+     "ev_xg_against_vs_league": 0.9747,
+     "goals_for_vs_league": 0.9195,
+     "goals_against_vs_league": 0.9927,
+     "pp_vs_league": 0.9525,
+     "pk_xga_vs_league": 0.9187,
+     "pp_minutes_vs_league": 1.0207,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 50.51
     },
     "away": {
      "ev_xg_for_vs_league": 0.9381,
-     "ev_xg_against_vs_league": 1.0244,
-     "goals_for_vs_league": 0.9821,
+     "ev_xg_against_vs_league": 1.0245,
+     "goals_for_vs_league": 0.982,
      "goals_against_vs_league": 1.0164,
-     "pp_vs_league": 0.9545,
-     "pk_xga_vs_league": 1.0409,
-     "pp_minutes_vs_league": 0.9561,
+     "pp_vs_league": 0.9544,
+     "pk_xga_vs_league": 1.0408,
+     "pp_minutes_vs_league": 0.9558,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 44.43
@@ -1913,9 +1849,9 @@
    "away": "TBL",
    "venue": "Madison Square Garden",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
-    "home": 2.8543,
+    "home": 2.8544,
     "away": 3.0372
    },
    "prices": {
@@ -2173,25 +2109,25 @@
    },
    "evidence": {
     "home": {
-     "ev_xg_for_vs_league": 0.9538,
-     "ev_xg_against_vs_league": 0.9918,
+     "ev_xg_for_vs_league": 0.9539,
+     "ev_xg_against_vs_league": 0.9919,
      "goals_for_vs_league": 0.9958,
      "goals_against_vs_league": 0.9577,
-     "pp_vs_league": 1.0598,
-     "pk_xga_vs_league": 0.9821,
-     "pp_minutes_vs_league": 0.9518,
+     "pp_vs_league": 1.0596,
+     "pk_xga_vs_league": 0.9819,
+     "pp_minutes_vs_league": 0.9515,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 45.54
     },
     "away": {
-     "ev_xg_for_vs_league": 1.0415,
-     "ev_xg_against_vs_league": 0.9488,
+     "ev_xg_for_vs_league": 1.0416,
+     "ev_xg_against_vs_league": 0.9489,
      "goals_for_vs_league": 1.0595,
      "goals_against_vs_league": 0.9319,
-     "pp_vs_league": 1.0086,
-     "pk_xga_vs_league": 0.9846,
-     "pp_minutes_vs_league": 1.0585,
+     "pp_vs_league": 1.0084,
+     "pk_xga_vs_league": 0.9844,
+     "pp_minutes_vs_league": 1.0581,
      "rest_days": 3,
      "back_to_back": false,
      "history_weight_games": 48.01
@@ -2227,37 +2163,37 @@
    "away": "STL",
    "venue": "Canadian Tire Centre",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
-    "home": 2.9444,
-    "away": 2.8179
+    "home": 2.949,
+    "away": 2.8084
    },
    "prices": {
     "moneyline": {
-     "home": 0.5219,
-     "away": 0.4781,
-     "fair_home": -109,
-     "fair_away": 109,
+     "home": 0.5242,
+     "away": 0.4758,
+     "fair_home": -110,
+     "fair_away": 110,
      "settles": "includes overtime and shootout"
     },
     "regulation": {
-     "home": 0.4086,
+     "home": 0.4108,
      "draw": 0.2209,
-     "away": 0.3705,
-     "fair_home": 145,
+     "away": 0.3684,
+     "fair_home": 143,
      "fair_draw": 353,
-     "fair_away": 170,
+     "fair_away": 171,
      "settles": "60 minutes only"
     },
     "puck_line": {
-     "home_minus_1_5": 0.3035,
-     "away_plus_1_5": 0.6965,
-     "away_minus_1_5": 0.2686,
-     "home_plus_1_5": 0.7314,
-     "fair_home_minus_1_5": 229,
-     "fair_away_plus_1_5": -229,
-     "fair_away_minus_1_5": 272,
-     "fair_home_plus_1_5": -272,
+     "home_minus_1_5": 0.3054,
+     "away_plus_1_5": 0.6946,
+     "away_minus_1_5": 0.2666,
+     "home_plus_1_5": 0.7334,
+     "fair_home_minus_1_5": 227,
+     "fair_away_plus_1_5": -227,
+     "fair_away_minus_1_5": 275,
+     "fair_home_plus_1_5": -275,
      "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
     },
     "total": {
@@ -2265,39 +2201,39 @@
      "fair_line": 5.5,
      "lines": {
       "5": {
-       "over": 0.5248,
-       "under": 0.2447,
-       "push": 0.2305,
+       "over": 0.524,
+       "under": 0.2453,
+       "push": 0.2307,
        "fair_over": -214,
        "fair_under": 214
       },
       "6": {
-       "over": 0.4163,
-       "under": 0.4752,
+       "over": 0.4155,
+       "under": 0.476,
        "push": 0.1085,
-       "fair_over": 114,
-       "fair_under": -114
+       "fair_over": 115,
+       "fair_under": -115
       },
       "7": {
-       "over": 0.2232,
-       "under": 0.5837,
-       "push": 0.1931,
-       "fair_over": 262,
-       "fair_under": -262
+       "over": 0.2225,
+       "under": 0.5845,
+       "push": 0.193,
+       "fair_over": 263,
+       "fair_under": -263
       },
       "5.5": {
-       "over": 0.5248,
-       "under": 0.4752,
+       "over": 0.524,
+       "under": 0.476,
        "push": 0,
        "fair_over": -110,
        "fair_under": 110
       },
       "6.5": {
-       "over": 0.4163,
-       "under": 0.5837,
+       "over": 0.4155,
+       "under": 0.5845,
        "push": 0,
-       "fair_over": 140,
-       "fair_under": -140
+       "fair_over": 141,
+       "fair_under": -141
       }
      },
      "settles": "includes overtime; the shootout winner is credited one goal"
@@ -2305,48 +2241,48 @@
     "team_total": {
      "home": {
       "3": {
-       "over": 0.3793,
-       "under": 0.4033,
-       "push": 0.2174,
+       "over": 0.3804,
+       "under": 0.4022,
+       "push": 0.2175,
        "fair_over": 106,
        "fair_under": -106
       },
       "2.5": {
-       "over": 0.5967,
-       "under": 0.4033,
+       "over": 0.5978,
+       "under": 0.4022,
        "push": 0,
-       "fair_over": -148,
-       "fair_under": 148
+       "fair_over": -149,
+       "fair_under": 149
       },
       "3.5": {
-       "over": 0.3793,
-       "under": 0.6207,
+       "over": 0.3804,
+       "under": 0.6196,
        "push": 0,
-       "fair_over": 164,
-       "fair_under": -164
+       "fair_over": 163,
+       "fair_under": -163
       }
      },
      "away": {
       "3": {
-       "over": 0.3487,
-       "under": 0.4345,
-       "push": 0.2168,
-       "fair_over": 125,
-       "fair_under": -125
+       "over": 0.3465,
+       "under": 0.4368,
+       "push": 0.2167,
+       "fair_over": 126,
+       "fair_under": -126
       },
       "2.5": {
-       "over": 0.5655,
-       "under": 0.4345,
+       "over": 0.5632,
+       "under": 0.4368,
        "push": 0,
-       "fair_over": -130,
-       "fair_under": 130
+       "fair_over": -129,
+       "fair_under": 129
       },
       "3.5": {
-       "over": 0.3487,
-       "under": 0.6513,
+       "over": 0.3465,
+       "under": 0.6535,
        "push": 0,
-       "fair_over": 187,
-       "fair_under": -187
+       "fair_over": 189,
+       "fair_under": -189
       }
      }
     },
@@ -2376,18 +2312,18 @@
     "certainty": "PROJECTED_UNCERTAIN",
     "home": [
      {
-      "goalie": 8476999,
-      "name": "L. Ullmark",
-      "p_start": 0.8218,
-      "confirmed": false,
-      "gsax_rate": 0.0056
-     },
-     {
       "goalie": 8481035,
       "name": "S. Ersson",
-      "p_start": 0.1349,
+      "p_start": 0.7676,
       "confirmed": false,
       "gsax_rate": -0.0479
+     },
+     {
+      "goalie": 8476999,
+      "name": "L. Ullmark",
+      "p_start": 0.2324,
+      "confirmed": false,
+      "gsax_rate": 0.0117
      }
     ],
     "away": [
@@ -2408,30 +2344,12 @@
     ],
     "scenarios": [
      {
-      "home_goalie": 8476999,
-      "home_goalie_name": "L. Ullmark",
-      "away_goalie": 8480981,
-      "away_goalie_name": "J. Hofer",
-      "p_scenario": 0.5023,
-      "p_home": 0.5214,
-      "exp_total": 5.93
-     },
-     {
-      "home_goalie": 8476999,
-      "home_goalie_name": "L. Ullmark",
-      "away_goalie": 8476412,
-      "away_goalie_name": "J. Binnington",
-      "p_scenario": 0.3566,
-      "p_home": 0.5398,
-      "exp_total": 5.99
-     },
-     {
       "home_goalie": 8481035,
       "home_goalie_name": "S. Ersson",
       "away_goalie": 8480981,
       "away_goalie_name": "J. Hofer",
-      "p_scenario": 0.0825,
-      "p_home": 0.5054,
+      "p_scenario": 0.4489,
+      "p_home": 0.5068,
       "exp_total": 5.98
      },
      {
@@ -2439,9 +2357,27 @@
       "home_goalie_name": "S. Ersson",
       "away_goalie": 8476412,
       "away_goalie_name": "J. Binnington",
-      "p_scenario": 0.0586,
-      "p_home": 0.5239,
+      "p_scenario": 0.3187,
+      "p_home": 0.5252,
       "exp_total": 6.05
+     },
+     {
+      "home_goalie": 8476999,
+      "home_goalie_name": "L. Ullmark",
+      "away_goalie": 8480981,
+      "away_goalie_name": "J. Hofer",
+      "p_scenario": 0.1359,
+      "p_home": 0.5246,
+      "exp_total": 5.92
+     },
+     {
+      "home_goalie": 8476999,
+      "home_goalie_name": "L. Ullmark",
+      "away_goalie": 8476412,
+      "away_goalie_name": "J. Binnington",
+      "p_scenario": 0.0965,
+      "p_home": 0.543,
+      "exp_total": 5.98
      }
     ],
     "confirmed_source": null
@@ -2450,7 +2386,7 @@
     "state": "PROJECTED_FROM_LAST_GAME",
     "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
     "home": {
-     "projected_delta": -0.0034,
+     "projected_delta": -0.0148,
      "regulars_absent": []
     },
     "away": {
@@ -2466,30 +2402,30 @@
       }
      ]
     },
-    "p_home_lineup_variant": 0.5225,
+    "p_home_lineup_variant": 0.5187,
     "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000895 (95% CI -0.001693 to -0.000052)."
    },
    "evidence": {
     "home": {
-     "ev_xg_for_vs_league": 1.0121,
-     "ev_xg_against_vs_league": 0.9338,
-     "goals_for_vs_league": 1.0139,
-     "goals_against_vs_league": 0.9463,
-     "pp_vs_league": 0.9883,
-     "pk_xga_vs_league": 0.9461,
-     "pp_minutes_vs_league": 1.0976,
+     "ev_xg_for_vs_league": 1.0103,
+     "ev_xg_against_vs_league": 0.9367,
+     "goals_for_vs_league": 1.0173,
+     "goals_against_vs_league": 0.9386,
+     "pp_vs_league": 0.9741,
+     "pk_xga_vs_league": 0.9437,
+     "pp_minutes_vs_league": 1.1101,
      "rest_days": 1,
      "back_to_back": true,
-     "history_weight_games": 46.15
+     "history_weight_games": 47.15
     },
     "away": {
-     "ev_xg_for_vs_league": 0.9622,
+     "ev_xg_for_vs_league": 0.9623,
      "ev_xg_against_vs_league": 0.9552,
      "goals_for_vs_league": 0.9768,
      "goals_against_vs_league": 0.9868,
-     "pp_vs_league": 0.8789,
-     "pk_xga_vs_league": 0.9613,
-     "pp_minutes_vs_league": 0.9529,
+     "pp_vs_league": 0.8788,
+     "pk_xga_vs_league": 0.9611,
+     "pp_minutes_vs_league": 0.9526,
      "rest_days": 3,
      "back_to_back": false,
      "history_weight_games": 44
@@ -2526,7 +2462,7 @@
    "away": "VAN",
    "venue": "UBS Arena",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
     "home": 3.3972,
     "away": 2.7
@@ -2571,7 +2507,7 @@
        "fair_under": 282
       },
       "6": {
-       "over": 0.4705,
+       "over": 0.4706,
        "under": 0.4199,
        "push": 0.1096,
        "fair_over": -112,
@@ -2579,7 +2515,7 @@
       },
       "7": {
        "over": 0.2693,
-       "under": 0.5295,
+       "under": 0.5294,
        "push": 0.2012,
        "fair_over": 197,
        "fair_under": -197
@@ -2592,8 +2528,8 @@
        "fair_under": 138
       },
       "6.5": {
-       "over": 0.4705,
-       "under": 0.5295,
+       "over": 0.4706,
+       "under": 0.5294,
        "push": 0,
        "fair_over": 113,
        "fair_under": -113
@@ -2787,25 +2723,25 @@
    },
    "evidence": {
     "home": {
-     "ev_xg_for_vs_league": 0.999,
+     "ev_xg_for_vs_league": 0.9991,
      "ev_xg_against_vs_league": 1.0272,
-     "goals_for_vs_league": 0.9538,
+     "goals_for_vs_league": 0.9537,
      "goals_against_vs_league": 0.9756,
-     "pp_vs_league": 0.9366,
-     "pk_xga_vs_league": 1.1049,
-     "pp_minutes_vs_league": 1.0102,
+     "pp_vs_league": 0.9365,
+     "pk_xga_vs_league": 1.1047,
+     "pp_minutes_vs_league": 1.0099,
      "rest_days": 3,
      "back_to_back": false,
      "history_weight_games": 43.28
     },
     "away": {
-     "ev_xg_for_vs_league": 0.9152,
+     "ev_xg_for_vs_league": 0.9153,
      "ev_xg_against_vs_league": 1.0772,
-     "goals_for_vs_league": 0.9466,
-     "goals_against_vs_league": 1.1454,
-     "pp_vs_league": 0.9707,
-     "pk_xga_vs_league": 1.0585,
-     "pp_minutes_vs_league": 0.9675,
+     "goals_for_vs_league": 0.9465,
+     "goals_against_vs_league": 1.1453,
+     "pp_vs_league": 0.9705,
+     "pk_xga_vs_league": 1.0583,
+     "pp_minutes_vs_league": 0.9672,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 45.57
@@ -2841,9 +2777,9 @@
    "away": "PIT",
    "venue": "United Center",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
-    "home": 2.7269,
+    "home": 2.727,
     "away": 3.4481
    },
    "prices": {
@@ -2886,7 +2822,7 @@
        "fair_under": 301
       },
       "6": {
-       "over": 0.4833,
+       "over": 0.4834,
        "under": 0.4074,
        "push": 0.1093,
        "fair_over": -119,
@@ -2894,7 +2830,7 @@
       },
       "7": {
        "over": 0.2805,
-       "under": 0.5167,
+       "under": 0.5166,
        "push": 0.2028,
        "fair_over": 184,
        "fair_under": -184
@@ -2907,8 +2843,8 @@
        "fair_under": 145
       },
       "6.5": {
-       "over": 0.4833,
-       "under": 0.5167,
+       "over": 0.4834,
+       "under": 0.5166,
        "push": 0,
        "fair_over": 107,
        "fair_under": -107
@@ -2919,7 +2855,7 @@
     "team_total": {
      "home": {
       "3": {
-       "over": 0.3241,
+       "over": 0.3242,
        "under": 0.4628,
        "push": 0.2131,
        "fair_over": 143,
@@ -2933,11 +2869,11 @@
        "fair_under": 116
       },
       "3.5": {
-       "over": 0.3241,
-       "under": 0.6759,
+       "over": 0.3242,
+       "under": 0.6758,
        "push": 0,
-       "fair_over": 209,
-       "fair_under": -209
+       "fair_over": 208,
+       "fair_under": -208
       }
      },
      "away": {
@@ -3064,7 +3000,7 @@
     "state": "PROJECTED_FROM_LAST_GAME",
     "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
     "home": {
-     "projected_delta": 0.0066,
+     "projected_delta": 0.0067,
      "regulars_absent": [
       {
        "player_id": 8483493,
@@ -3077,7 +3013,7 @@
      ]
     },
     "away": {
-     "projected_delta": -0.0183,
+     "projected_delta": -0.0178,
      "regulars_absent": [
       {
        "player_id": 8477845,
@@ -3089,30 +3025,30 @@
       }
      ]
     },
-    "p_home_lineup_variant": 0.4024,
+    "p_home_lineup_variant": 0.4022,
     "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000895 (95% CI -0.001693 to -0.000052)."
    },
    "evidence": {
     "home": {
-     "ev_xg_for_vs_league": 0.9082,
+     "ev_xg_for_vs_league": 0.9083,
      "ev_xg_against_vs_league": 1.0986,
-     "goals_for_vs_league": 0.8921,
-     "goals_against_vs_league": 1.0865,
-     "pp_vs_league": 0.9081,
-     "pk_xga_vs_league": 1.0106,
-     "pp_minutes_vs_league": 0.9721,
+     "goals_for_vs_league": 0.892,
+     "goals_against_vs_league": 1.0864,
+     "pp_vs_league": 0.908,
+     "pk_xga_vs_league": 1.0104,
+     "pp_minutes_vs_league": 0.9718,
      "rest_days": 3,
      "back_to_back": false,
      "history_weight_games": 44.1
     },
     "away": {
-     "ev_xg_for_vs_league": 1.0501,
-     "ev_xg_against_vs_league": 0.9981,
+     "ev_xg_for_vs_league": 1.0502,
+     "ev_xg_against_vs_league": 0.9982,
      "goals_for_vs_league": 1.0664,
      "goals_against_vs_league": 1.0254,
-     "pp_vs_league": 0.9767,
-     "pk_xga_vs_league": 0.957,
-     "pp_minutes_vs_league": 1.0184,
+     "pp_vs_league": 0.9766,
+     "pk_xga_vs_league": 0.9568,
+     "pp_minutes_vs_league": 1.0181,
      "rest_days": 3,
      "back_to_back": false,
      "history_weight_games": 47.3
@@ -3148,77 +3084,77 @@
    "away": "MIN",
    "venue": "Canada Life Centre",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
-    "home": 3.0173,
-    "away": 2.8505
+    "home": 3.0064,
+    "away": 2.8582
    },
    "prices": {
     "moneyline": {
-     "home": 0.5281,
-     "away": 0.4719,
-     "fair_home": -112,
-     "fair_away": 112,
+     "home": 0.5252,
+     "away": 0.4748,
+     "fair_home": -111,
+     "fair_away": 111,
      "settles": "includes overtime and shootout"
     },
     "regulation": {
-     "home": 0.4153,
-     "draw": 0.2192,
-     "away": 0.3655,
-     "fair_home": 141,
+     "home": 0.4125,
+     "draw": 0.2193,
+     "away": 0.3682,
+     "fair_home": 142,
      "fair_draw": 356,
-     "fair_away": 174,
+     "fair_away": 172,
      "settles": "60 minutes only"
     },
     "puck_line": {
-     "home_minus_1_5": 0.3114,
-     "away_plus_1_5": 0.6886,
-     "away_minus_1_5": 0.2656,
-     "home_plus_1_5": 0.7344,
-     "fair_home_minus_1_5": 221,
-     "fair_away_plus_1_5": -221,
-     "fair_away_minus_1_5": 276,
-     "fair_home_plus_1_5": -276,
+     "home_minus_1_5": 0.3087,
+     "away_plus_1_5": 0.6913,
+     "away_minus_1_5": 0.268,
+     "home_plus_1_5": 0.732,
+     "fair_home_minus_1_5": 224,
+     "fair_away_plus_1_5": -224,
+     "fair_away_minus_1_5": 273,
+     "fair_home_plus_1_5": -273,
      "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
     },
     "total": {
-     "expected": 6.09,
+     "expected": 6.08,
      "fair_line": 6,
      "lines": {
       "5": {
-       "over": 0.5427,
-       "under": 0.2315,
-       "push": 0.2259,
+       "over": 0.5421,
+       "under": 0.2319,
+       "push": 0.226,
        "fair_over": -234,
        "fair_under": 234
       },
       "6": {
-       "over": 0.434,
-       "under": 0.4573,
+       "over": 0.4335,
+       "under": 0.4579,
        "push": 0.1086,
-       "fair_over": 105,
-       "fair_under": -105
+       "fair_over": 106,
+       "fair_under": -106
       },
       "7": {
-       "over": 0.2375,
-       "under": 0.566,
-       "push": 0.1965,
-       "fair_over": 238,
-       "fair_under": -238
+       "over": 0.2371,
+       "under": 0.5665,
+       "push": 0.1964,
+       "fair_over": 239,
+       "fair_under": -239
       },
       "5.5": {
-       "over": 0.5427,
-       "under": 0.4573,
+       "over": 0.5421,
+       "under": 0.4579,
        "push": 0,
-       "fair_over": -119,
-       "fair_under": 119
+       "fair_over": -118,
+       "fair_under": 118
       },
       "6.5": {
-       "over": 0.434,
-       "under": 0.566,
+       "over": 0.4335,
+       "under": 0.5665,
        "push": 0,
-       "fair_over": 130,
-       "fair_under": -130
+       "fair_over": 131,
+       "fair_under": -131
       }
      },
      "settles": "includes overtime; the shootout winner is credited one goal"
@@ -3226,56 +3162,56 @@
     "team_total": {
      "home": {
       "3": {
-       "over": 0.3957,
-       "under": 0.3881,
-       "push": 0.2162,
-       "fair_over": -102,
-       "fair_under": 102
+       "over": 0.3932,
+       "under": 0.3905,
+       "push": 0.2163,
+       "fair_over": -101,
+       "fair_under": 101
       },
       "2.5": {
-       "over": 0.6119,
-       "under": 0.3881,
+       "over": 0.6095,
+       "under": 0.3905,
        "push": 0,
-       "fair_over": -158,
-       "fair_under": 158
+       "fair_over": -156,
+       "fair_under": 156
       },
       "3.5": {
-       "over": 0.3957,
-       "under": 0.6043,
+       "over": 0.3932,
+       "under": 0.6068,
        "push": 0,
-       "fair_over": 153,
-       "fair_under": -153
+       "fair_over": 154,
+       "fair_under": -154
       }
      },
      "away": {
       "3": {
-       "over": 0.3556,
-       "under": 0.4283,
-       "push": 0.2161,
-       "fair_over": 120,
-       "fair_under": -120
+       "over": 0.3574,
+       "under": 0.4264,
+       "push": 0.2162,
+       "fair_over": 119,
+       "fair_under": -119
       },
       "2.5": {
-       "over": 0.5717,
-       "under": 0.4283,
+       "over": 0.5736,
+       "under": 0.4264,
        "push": 0,
-       "fair_over": -134,
-       "fair_under": 134
+       "fair_over": -135,
+       "fair_under": 135
       },
       "3.5": {
-       "over": 0.3556,
-       "under": 0.6444,
+       "over": 0.3574,
+       "under": 0.6426,
        "push": 0,
-       "fair_over": 181,
-       "fair_under": -181
+       "fair_over": 180,
+       "fair_under": -180
       }
      }
     },
-    "p_overtime": 0.1477,
-    "p_shootout": 0.0714
+    "p_overtime": 0.1478,
+    "p_shootout": 0.0715
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.61,
+    "moneyline_sd_pp": 0.63,
     "total_sd_goals": 0.03,
     "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
@@ -3313,56 +3249,56 @@
     ],
     "away": [
      {
-      "goalie": 8482661,
-      "name": "J. Wallstedt",
-      "p_start": 0.9491,
-      "confirmed": false,
-      "gsax_rate": 0.0182
-     },
-     {
       "goalie": 8479406,
       "name": "F. Gustavsson",
-      "p_start": 0.0509,
+      "p_start": 0.7676,
       "confirmed": false,
       "gsax_rate": -0.0173
+     },
+     {
+      "goalie": 8482661,
+      "name": "J. Wallstedt",
+      "p_start": 0.2324,
+      "confirmed": false,
+      "gsax_rate": 0.0214
      }
     ],
     "scenarios": [
      {
       "home_goalie": 8479973,
       "home_goalie_name": "S. Skinner",
-      "away_goalie": 8482661,
-      "away_goalie_name": "J. Wallstedt",
-      "p_scenario": 0.5083,
-      "p_home": 0.5207,
-      "exp_total": 6.05
+      "away_goalie": 8479406,
+      "away_goalie_name": "F. Gustavsson",
+      "p_scenario": 0.4111,
+      "p_home": 0.5287,
+      "exp_total": 6.09
      },
      {
       "home_goalie": 8479973,
       "home_goalie_name": "S. Skinner",
+      "away_goalie": 8482661,
+      "away_goalie_name": "J. Wallstedt",
+      "p_scenario": 0.1245,
+      "p_home": 0.5169,
+      "exp_total": 6.05
+     },
+     {
+      "home_goalie": 8483532,
+      "home_goalie_name": "C. Stevenson",
       "away_goalie": 8479406,
       "away_goalie_name": "F. Gustavsson",
-      "p_scenario": 0.0273,
-      "p_home": 0.5315,
-      "exp_total": 6.09
+      "p_scenario": 0.3565,
+      "p_home": 0.5204,
+      "exp_total": 6.12
      },
      {
       "home_goalie": 8483532,
       "home_goalie_name": "C. Stevenson",
       "away_goalie": 8482661,
       "away_goalie_name": "J. Wallstedt",
-      "p_scenario": 0.4408,
-      "p_home": 0.5124,
+      "p_scenario": 0.108,
+      "p_home": 0.5086,
       "exp_total": 6.08
-     },
-     {
-      "home_goalie": 8483532,
-      "home_goalie_name": "C. Stevenson",
-      "away_goalie": 8479406,
-      "away_goalie_name": "F. Gustavsson",
-      "p_scenario": 0.0236,
-      "p_home": 0.5232,
-      "exp_total": 6.12
      }
     ],
     "confirmed_source": null
@@ -3384,61 +3320,36 @@
      ]
     },
     "away": {
-     "projected_delta": -0.0093,
-     "regulars_absent": [
-      {
-       "player_id": 8482122,
-       "name": "B. Faber",
-       "toi_per_game": "25:09",
-       "dressed_in_last_10": "5/10",
-       "absent_last_games": 5,
-       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
-      },
-      {
-       "player_id": 8475692,
-       "name": "M. Zuccarello",
-       "toi_per_game": "16:48",
-       "dressed_in_last_10": "5/10",
-       "absent_last_games": 5,
-       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
-      },
-      {
-       "player_id": 8478136,
-       "name": "J. Middleton",
-       "toi_per_game": "15:49",
-       "dressed_in_last_10": "5/10",
-       "absent_last_games": 5,
-       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
-      }
-     ]
+     "projected_delta": 0.0011,
+     "regulars_absent": []
     },
-    "p_home_lineup_variant": 0.5266,
+    "p_home_lineup_variant": 0.518,
     "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000895 (95% CI -0.001693 to -0.000052)."
    },
    "evidence": {
     "home": {
-     "ev_xg_for_vs_league": 0.9609,
+     "ev_xg_for_vs_league": 0.961,
      "ev_xg_against_vs_league": 1.0045,
      "goals_for_vs_league": 0.9576,
      "goals_against_vs_league": 0.9814,
-     "pp_vs_league": 0.9871,
-     "pk_xga_vs_league": 0.9751,
-     "pp_minutes_vs_league": 0.9854,
+     "pp_vs_league": 0.987,
+     "pk_xga_vs_league": 0.975,
+     "pp_minutes_vs_league": 0.9851,
      "rest_days": 4,
      "back_to_back": false,
      "history_weight_games": 45.23
     },
     "away": {
-     "ev_xg_for_vs_league": 0.9821,
-     "ev_xg_against_vs_league": 0.9658,
-     "goals_for_vs_league": 1.0421,
-     "goals_against_vs_league": 0.9564,
-     "pp_vs_league": 1.0134,
-     "pk_xga_vs_league": 1.0401,
-     "pp_minutes_vs_league": 1.0216,
+     "ev_xg_for_vs_league": 0.9865,
+     "ev_xg_against_vs_league": 0.9649,
+     "goals_for_vs_league": 1.0459,
+     "goals_against_vs_league": 0.9522,
+     "pp_vs_league": 1.0154,
+     "pk_xga_vs_league": 1.0336,
+     "pp_minutes_vs_league": 1.0096,
      "rest_days": 1,
      "back_to_back": true,
-     "history_weight_games": 49.57
+     "history_weight_games": 50.57
     },
     "league": {
      "ev_xg_per60": 2.61,
@@ -3472,10 +3383,10 @@
    "away": "COL",
    "venue": "American Airlines Center",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
     "home": 2.9101,
-    "away": 3.058
+    "away": 3.0581
    },
    "prices": {
     "moneyline": {
@@ -3524,7 +3435,7 @@
        "fair_under": 102
       },
       "7": {
-       "over": 0.2514,
+       "over": 0.2515,
        "under": 0.5491,
        "push": 0.1994,
        "fair_over": 218,
@@ -3725,24 +3636,24 @@
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 0.9948,
-     "ev_xg_against_vs_league": 0.9639,
-     "goals_for_vs_league": 1.0158,
-     "goals_against_vs_league": 0.9265,
-     "pp_vs_league": 1.1353,
-     "pk_xga_vs_league": 0.9517,
-     "pp_minutes_vs_league": 1.012,
+     "ev_xg_against_vs_league": 0.964,
+     "goals_for_vs_league": 1.0157,
+     "goals_against_vs_league": 0.9264,
+     "pp_vs_league": 1.1351,
+     "pk_xga_vs_league": 0.9515,
+     "pp_minutes_vs_league": 1.0117,
      "rest_days": 3,
      "back_to_back": false,
      "history_weight_games": 49.46
     },
     "away": {
-     "ev_xg_for_vs_league": 1.1057,
+     "ev_xg_for_vs_league": 1.1058,
      "ev_xg_against_vs_league": 0.9496,
-     "goals_for_vs_league": 1.124,
-     "goals_against_vs_league": 0.9216,
-     "pp_vs_league": 0.985,
-     "pk_xga_vs_league": 0.9498,
-     "pp_minutes_vs_league": 1.0431,
+     "goals_for_vs_league": 1.1239,
+     "goals_against_vs_league": 0.9215,
+     "pp_vs_league": 0.9849,
+     "pk_xga_vs_league": 0.9497,
+     "pp_minutes_vs_league": 1.0427,
      "rest_days": 3,
      "back_to_back": false,
      "history_weight_games": 51.75
@@ -3778,37 +3689,37 @@
    "away": "VGK",
    "venue": "Bridgestone Arena",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
-    "home": 2.909,
-    "away": 3.0192
+    "home": 2.923,
+    "away": 3.0084
    },
    "prices": {
     "moneyline": {
-     "home": 0.4833,
-     "away": 0.5167,
-     "fair_home": 107,
-     "fair_away": -107,
+     "home": 0.4873,
+     "away": 0.5127,
+     "fair_home": 105,
+     "fair_away": -105,
      "settles": "includes overtime and shootout"
     },
     "regulation": {
-     "home": 0.3743,
-     "draw": 0.2185,
-     "away": 0.4071,
-     "fair_home": 167,
+     "home": 0.378,
+     "draw": 0.2186,
+     "away": 0.4034,
+     "fair_home": 165,
      "fair_draw": 358,
-     "fair_away": 146,
+     "fair_away": 148,
      "settles": "60 minutes only"
     },
     "puck_line": {
-     "home_minus_1_5": 0.2745,
-     "away_plus_1_5": 0.7255,
-     "away_minus_1_5": 0.3047,
-     "home_plus_1_5": 0.6953,
-     "fair_home_minus_1_5": 264,
-     "fair_away_plus_1_5": -264,
-     "fair_away_minus_1_5": 228,
-     "fair_home_plus_1_5": -228,
+     "home_minus_1_5": 0.2779,
+     "away_plus_1_5": 0.7221,
+     "away_minus_1_5": 0.3013,
+     "home_plus_1_5": 0.6987,
+     "fair_home_minus_1_5": 260,
+     "fair_away_plus_1_5": -260,
+     "fair_away_minus_1_5": 232,
+     "fair_home_plus_1_5": -232,
      "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
     },
     "total": {
@@ -3816,36 +3727,36 @@
      "fair_line": 6,
      "lines": {
       "5": {
-       "over": 0.5528,
-       "under": 0.2241,
-       "push": 0.2231,
+       "over": 0.5533,
+       "under": 0.2237,
+       "push": 0.223,
        "fair_over": -247,
        "fair_under": 247
       },
       "6": {
-       "over": 0.4442,
-       "under": 0.4472,
-       "push": 0.1086,
-       "fair_over": 101,
-       "fair_under": -101
+       "over": 0.4448,
+       "under": 0.4467,
+       "push": 0.1085,
+       "fair_over": 100,
+       "fair_under": -100
       },
       "7": {
-       "over": 0.2459,
-       "under": 0.5558,
-       "push": 0.1983,
-       "fair_over": 226,
-       "fair_under": -226
+       "over": 0.2463,
+       "under": 0.5552,
+       "push": 0.1984,
+       "fair_over": 225,
+       "fair_under": -225
       },
       "5.5": {
-       "over": 0.5528,
-       "under": 0.4472,
+       "over": 0.5533,
+       "under": 0.4467,
        "push": 0,
        "fair_over": -124,
        "fair_under": 124
       },
       "6.5": {
-       "over": 0.4442,
-       "under": 0.5558,
+       "over": 0.4448,
+       "under": 0.5552,
        "push": 0,
        "fair_over": 125,
        "fair_under": -125
@@ -3856,56 +3767,56 @@
     "team_total": {
      "home": {
       "3": {
-       "over": 0.3696,
-       "under": 0.4144,
+       "over": 0.3729,
+       "under": 0.4111,
        "push": 0.2159,
-       "fair_over": 112,
-       "fair_under": -112
+       "fair_over": 110,
+       "fair_under": -110
       },
       "2.5": {
-       "over": 0.5856,
-       "under": 0.4144,
+       "over": 0.5889,
+       "under": 0.4111,
        "push": 0,
-       "fair_over": -141,
-       "fair_under": 141
+       "fair_over": -143,
+       "fair_under": 143
       },
       "3.5": {
-       "over": 0.3696,
-       "under": 0.6304,
+       "over": 0.3729,
+       "under": 0.6271,
        "push": 0,
-       "fair_over": 171,
-       "fair_under": -171
+       "fair_over": 168,
+       "fair_under": -168
       }
      },
      "away": {
       "3": {
-       "over": 0.395,
-       "under": 0.3893,
-       "push": 0.2156,
-       "fair_over": -101,
-       "fair_under": 101
+       "over": 0.3925,
+       "under": 0.3919,
+       "push": 0.2157,
+       "fair_over": -100,
+       "fair_under": 100
       },
       "2.5": {
-       "over": 0.6107,
-       "under": 0.3893,
+       "over": 0.6081,
+       "under": 0.3919,
        "push": 0,
-       "fair_over": -157,
-       "fair_under": 157
+       "fair_over": -155,
+       "fair_under": 155
       },
       "3.5": {
-       "over": 0.395,
-       "under": 0.605,
+       "over": 0.3925,
+       "under": 0.6075,
        "push": 0,
-       "fair_over": 153,
-       "fair_under": -153
+       "fair_over": 155,
+       "fair_under": -155
       }
      }
     },
-    "p_overtime": 0.1481,
+    "p_overtime": 0.1482,
     "p_shootout": 0.0704
    },
    "uncertainty": {
-    "moneyline_sd_pp": 1.29,
+    "moneyline_sd_pp": 1.32,
     "total_sd_goals": 0.02,
     "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
@@ -3943,56 +3854,56 @@
     ],
     "away": [
      {
-      "goalie": 8479394,
-      "name": "C. Hart",
-      "p_start": 0.7265,
-      "confirmed": false,
-      "gsax_rate": -0.0167
-     },
-     {
       "goalie": 8478499,
       "name": "A. Hill",
-      "p_start": 0.2735,
+      "p_start": 0.7676,
       "confirmed": false,
       "gsax_rate": -0.0433
+     },
+     {
+      "goalie": 8479394,
+      "name": "C. Hart",
+      "p_start": 0.2324,
+      "confirmed": false,
+      "gsax_rate": -0.0151
      }
     ],
     "scenarios": [
      {
       "home_goalie": 8477424,
       "home_goalie_name": "J. Saros",
-      "away_goalie": 8479394,
-      "away_goalie_name": "C. Hart",
-      "p_scenario": 0.5623,
-      "p_home": 0.4728,
-      "exp_total": 6.14
+      "away_goalie": 8478499,
+      "away_goalie_name": "A. Hill",
+      "p_scenario": 0.5941,
+      "p_home": 0.4848,
+      "exp_total": 6.18
      },
      {
       "home_goalie": 8477424,
       "home_goalie_name": "J. Saros",
+      "away_goalie": 8479394,
+      "away_goalie_name": "C. Hart",
+      "p_scenario": 0.1799,
+      "p_home": 0.4762,
+      "exp_total": 6.14
+     },
+     {
+      "home_goalie": 8483575,
+      "home_goalie_name": "M. Murray",
       "away_goalie": 8478499,
       "away_goalie_name": "A. Hill",
-      "p_scenario": 0.2117,
-      "p_home": 0.4809,
-      "exp_total": 6.17
+      "p_scenario": 0.1735,
+      "p_home": 0.482,
+      "exp_total": 6.18
      },
      {
       "home_goalie": 8483575,
       "home_goalie_name": "M. Murray",
       "away_goalie": 8479394,
       "away_goalie_name": "C. Hart",
-      "p_scenario": 0.1642,
-      "p_home": 0.4701,
+      "p_scenario": 0.0525,
+      "p_home": 0.4735,
       "exp_total": 6.15
-     },
-     {
-      "home_goalie": 8483575,
-      "home_goalie_name": "M. Murray",
-      "away_goalie": 8478499,
-      "away_goalie_name": "A. Hill",
-      "p_scenario": 0.0618,
-      "p_home": 0.4781,
-      "exp_total": 6.18
      }
     ],
     "confirmed_source": null
@@ -4001,12 +3912,12 @@
     "state": "PROJECTED_FROM_LAST_GAME",
     "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
     "home": {
-     "projected_delta": -0.0066,
+     "projected_delta": -0.0063,
      "regulars_absent": [
       {
        "player_id": 8482146,
        "name": "L. Evangelista",
-       "toi_per_game": "15:12",
+       "toi_per_game": "15:03",
        "dressed_in_last_10": "5/10",
        "absent_last_games": 5,
        "reading": "a long absence: injury or no longer on the roster (no feed says which)"
@@ -4014,36 +3925,45 @@
      ]
     },
     "away": {
-     "projected_delta": -0.0088,
-     "regulars_absent": []
+     "projected_delta": -0.0221,
+     "regulars_absent": [
+      {
+       "player_id": 8478450,
+       "name": "P. Wotherspoon",
+       "toi_per_game": "18:40",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 1,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
     },
-    "p_home_lineup_variant": 0.483,
+    "p_home_lineup_variant": 0.4943,
     "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000895 (95% CI -0.001693 to -0.000052)."
    },
    "evidence": {
     "home": {
-     "ev_xg_for_vs_league": 0.9823,
-     "ev_xg_against_vs_league": 1.0304,
+     "ev_xg_for_vs_league": 0.9824,
+     "ev_xg_against_vs_league": 1.0305,
      "goals_for_vs_league": 0.9747,
      "goals_against_vs_league": 1.0158,
-     "pp_vs_league": 0.9957,
-     "pk_xga_vs_league": 0.9801,
-     "pp_minutes_vs_league": 0.999,
+     "pp_vs_league": 0.9956,
+     "pk_xga_vs_league": 0.9799,
+     "pp_minutes_vs_league": 0.9987,
      "rest_days": 3,
      "back_to_back": false,
      "history_weight_games": 43.42
     },
     "away": {
-     "ev_xg_for_vs_league": 1.0233,
-     "ev_xg_against_vs_league": 0.8999,
-     "goals_for_vs_league": 1.0472,
-     "goals_against_vs_league": 0.9456,
-     "pp_vs_league": 1.1226,
-     "pk_xga_vs_league": 0.8995,
-     "pp_minutes_vs_league": 0.9745,
+     "ev_xg_for_vs_league": 1.0225,
+     "ev_xg_against_vs_league": 0.9035,
+     "goals_for_vs_league": 1.0431,
+     "goals_against_vs_league": 0.9488,
+     "pp_vs_league": 1.115,
+     "pk_xga_vs_league": 0.9015,
+     "pp_minutes_vs_league": 0.9831,
      "rest_days": 1,
      "back_to_back": true,
-     "history_weight_games": 58.41
+     "history_weight_games": 59.41
     },
     "league": {
      "ev_xg_per60": 2.61,
@@ -4077,10 +3997,10 @@
    "away": "TOR",
    "venue": "Delta Center",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
-    "home": 3.4276,
-    "away": 2.7801
+    "home": 3.4277,
+    "away": 2.7802
    },
    "prices": {
     "moneyline": {
@@ -4322,24 +4242,24 @@
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 1.0716,
-     "ev_xg_against_vs_league": 0.982,
+     "ev_xg_against_vs_league": 0.9821,
      "goals_for_vs_league": 1.0335,
-     "goals_against_vs_league": 0.984,
-     "pp_vs_league": 1.0071,
-     "pk_xga_vs_league": 1.0203,
-     "pp_minutes_vs_league": 1.0098,
+     "goals_against_vs_league": 0.9839,
+     "pp_vs_league": 1.007,
+     "pk_xga_vs_league": 1.0202,
+     "pp_minutes_vs_league": 1.0095,
      "rest_days": 3,
      "back_to_back": false,
      "history_weight_games": 47.14
     },
     "away": {
      "ev_xg_for_vs_league": 0.9633,
-     "ev_xg_against_vs_league": 1.0452,
-     "goals_for_vs_league": 1.012,
-     "goals_against_vs_league": 1.0589,
-     "pp_vs_league": 1.0031,
-     "pk_xga_vs_league": 1.0819,
-     "pp_minutes_vs_league": 0.9388,
+     "ev_xg_against_vs_league": 1.0453,
+     "goals_for_vs_league": 1.0119,
+     "goals_against_vs_league": 1.0588,
+     "pp_vs_league": 1.003,
+     "pk_xga_vs_league": 1.0818,
+     "pp_minutes_vs_league": 0.9386,
      "rest_days": 3,
      "back_to_back": false,
      "history_weight_games": 46.11
@@ -4375,7 +4295,7 @@
    "away": "CGY",
    "venue": "Honda Center",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
     "home": 3.3346,
     "away": 2.7813
@@ -4420,7 +4340,7 @@
        "fair_under": 287
       },
       "6": {
-       "over": 0.4743,
+       "over": 0.4744,
        "under": 0.4167,
        "push": 0.1089,
        "fair_over": -114,
@@ -4428,7 +4348,7 @@
       },
       "7": {
        "over": 0.2722,
-       "under": 0.5257,
+       "under": 0.5256,
        "push": 0.2022,
        "fair_over": 193,
        "fair_under": -193
@@ -4441,8 +4361,8 @@
        "fair_under": 140
       },
       "6.5": {
-       "over": 0.4743,
-       "under": 0.5257,
+       "over": 0.4744,
+       "under": 0.5256,
        "push": 0,
        "fair_over": 111,
        "fair_under": -111
@@ -4598,7 +4518,7 @@
     "state": "PROJECTED_FROM_LAST_GAME",
     "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
     "home": {
-     "projected_delta": -0.0454,
+     "projected_delta": -0.0457,
      "regulars_absent": [
       {
        "player_id": 8476885,
@@ -4627,12 +4547,12 @@
      ]
     },
     "away": {
-     "projected_delta": -0.0054,
+     "projected_delta": -0.0055,
      "regulars_absent": [
       {
        "player_id": 8476874,
        "name": "O. Maatta",
-       "toi_per_game": "20:36",
+       "toi_per_game": "20:41",
        "dressed_in_last_10": "5/10",
        "absent_last_games": 5,
        "reading": "a long absence: injury or no longer on the roster (no feed says which)"
@@ -4647,30 +4567,30 @@
       }
      ]
     },
-    "p_home_lineup_variant": 0.565,
+    "p_home_lineup_variant": 0.5649,
     "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000895 (95% CI -0.001693 to -0.000052)."
    },
    "evidence": {
     "home": {
-     "ev_xg_for_vs_league": 1.0469,
-     "ev_xg_against_vs_league": 1.045,
-     "goals_for_vs_league": 1.0214,
+     "ev_xg_for_vs_league": 1.047,
+     "ev_xg_against_vs_league": 1.0451,
+     "goals_for_vs_league": 1.0213,
      "goals_against_vs_league": 1.0545,
-     "pp_vs_league": 0.9876,
-     "pk_xga_vs_league": 1.0223,
-     "pp_minutes_vs_league": 1.0327,
+     "pp_vs_league": 0.9874,
+     "pk_xga_vs_league": 1.0221,
+     "pp_minutes_vs_league": 1.0324,
      "rest_days": 3,
      "back_to_back": false,
      "history_weight_games": 49.68
     },
     "away": {
      "ev_xg_for_vs_league": 0.958,
-     "ev_xg_against_vs_league": 1.0378,
-     "goals_for_vs_league": 0.898,
+     "ev_xg_against_vs_league": 1.0379,
+     "goals_for_vs_league": 0.8979,
      "goals_against_vs_league": 1.0513,
-     "pp_vs_league": 0.9091,
-     "pk_xga_vs_league": 0.984,
-     "pp_minutes_vs_league": 0.9482,
+     "pp_vs_league": 0.909,
+     "pk_xga_vs_league": 0.9838,
+     "pp_minutes_vs_league": 0.948,
      "rest_days": 3,
      "back_to_back": false,
      "history_weight_games": 43.19
@@ -4706,7 +4626,7 @@
    "away": "EDM",
    "venue": "Crypto.com Arena",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
     "home": 2.9343,
     "away": 3.063
@@ -4745,21 +4665,21 @@
      "lines": {
       "5": {
        "over": 0.5642,
-       "under": 0.216,
+       "under": 0.2159,
        "push": 0.2198,
        "fair_over": -261,
        "fair_under": 261
       },
       "6": {
-       "over": 0.4557,
+       "over": 0.4558,
        "under": 0.4358,
        "push": 0.1085,
        "fair_over": -105,
        "fair_under": 105
       },
       "7": {
-       "over": 0.2555,
-       "under": 0.5443,
+       "over": 0.2556,
+       "under": 0.5442,
        "push": 0.2002,
        "fair_over": 213,
        "fair_under": -213
@@ -4772,8 +4692,8 @@
        "fair_under": 129
       },
       "6.5": {
-       "over": 0.4557,
-       "under": 0.5443,
+       "over": 0.4558,
+       "under": 0.5442,
        "push": 0,
        "fair_over": 119,
        "fair_under": -119
@@ -4994,22 +4914,22 @@
      "ev_xg_for_vs_league": 0.9701,
      "ev_xg_against_vs_league": 0.9299,
      "goals_for_vs_league": 0.937,
-     "goals_against_vs_league": 0.9899,
-     "pp_vs_league": 0.9768,
-     "pk_xga_vs_league": 0.9941,
-     "pp_minutes_vs_league": 0.9685,
+     "goals_against_vs_league": 0.9898,
+     "pp_vs_league": 0.9767,
+     "pk_xga_vs_league": 0.994,
+     "pp_minutes_vs_league": 0.9683,
      "rest_days": 3,
      "back_to_back": false,
      "history_weight_games": 45.42
     },
     "away": {
      "ev_xg_for_vs_league": 1.048,
-     "ev_xg_against_vs_league": 0.9793,
-     "goals_for_vs_league": 1.0878,
-     "goals_against_vs_league": 1.0282,
-     "pp_vs_league": 1.1569,
-     "pk_xga_vs_league": 1.0385,
-     "pp_minutes_vs_league": 0.9471,
+     "ev_xg_against_vs_league": 0.9794,
+     "goals_for_vs_league": 1.0877,
+     "goals_against_vs_league": 1.0281,
+     "pp_vs_league": 1.1567,
+     "pk_xga_vs_league": 1.0384,
+     "pp_minutes_vs_league": 0.9468,
      "rest_days": 3,
      "back_to_back": false,
      "history_weight_games": 50.1
@@ -5045,9 +4965,9 @@
    "away": "BOS",
    "venue": "SAP Center at San Jose",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
-    "home": 2.8675,
+    "home": 2.8676,
     "away": 3.2073
    },
    "prices": {
@@ -5068,8 +4988,8 @@
      "settles": "60 minutes only"
     },
     "puck_line": {
-     "home_minus_1_5": 0.2479,
-     "away_plus_1_5": 0.7521,
+     "home_minus_1_5": 0.248,
+     "away_plus_1_5": 0.752,
      "away_minus_1_5": 0.3401,
      "home_plus_1_5": 0.6599,
      "fair_home_minus_1_5": 303,
@@ -5315,24 +5235,24 @@
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 0.9263,
-     "ev_xg_against_vs_league": 1.0376,
-     "goals_for_vs_league": 0.9605,
-     "goals_against_vs_league": 1.0969,
-     "pp_vs_league": 0.9465,
-     "pk_xga_vs_league": 1.0699,
-     "pp_minutes_vs_league": 0.9942,
+     "ev_xg_against_vs_league": 1.0377,
+     "goals_for_vs_league": 0.9604,
+     "goals_against_vs_league": 1.0968,
+     "pp_vs_league": 0.9464,
+     "pk_xga_vs_league": 1.0697,
+     "pp_minutes_vs_league": 0.9939,
      "rest_days": 3,
      "back_to_back": false,
      "history_weight_games": 43.29
     },
     "away": {
-     "ev_xg_for_vs_league": 0.9882,
+     "ev_xg_for_vs_league": 0.9883,
      "ev_xg_against_vs_league": 1.0203,
      "goals_for_vs_league": 1.0121,
      "goals_against_vs_league": 0.9648,
-     "pp_vs_league": 0.9782,
-     "pk_xga_vs_league": 1.0404,
-     "pp_minutes_vs_league": 0.9703,
+     "pp_vs_league": 0.9781,
+     "pk_xga_vs_league": 1.0403,
+     "pp_minutes_vs_league": 0.97,
      "rest_days": 3,
      "back_to_back": false,
      "history_weight_games": 47.45
@@ -5368,7 +5288,7 @@
    "away": "MTL",
    "venue": "Capital One Arena",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
     "home": 3.2092,
     "away": 2.9442
@@ -5645,25 +5565,25 @@
    },
    "evidence": {
     "home": {
-     "ev_xg_for_vs_league": 1.0404,
-     "ev_xg_against_vs_league": 1.0436,
+     "ev_xg_for_vs_league": 1.0405,
+     "ev_xg_against_vs_league": 1.0437,
      "goals_for_vs_league": 1.0257,
-     "goals_against_vs_league": 0.9722,
-     "pp_vs_league": 0.9795,
-     "pk_xga_vs_league": 1.0518,
-     "pp_minutes_vs_league": 1.0006,
+     "goals_against_vs_league": 0.9721,
+     "pp_vs_league": 0.9794,
+     "pk_xga_vs_league": 1.0517,
+     "pp_minutes_vs_league": 1.0003,
      "rest_days": 1,
      "back_to_back": true,
      "history_weight_games": 44.28
     },
     "away": {
-     "ev_xg_for_vs_league": 1.021,
-     "ev_xg_against_vs_league": 1.0642,
+     "ev_xg_for_vs_league": 1.0211,
+     "ev_xg_against_vs_league": 1.0643,
      "goals_for_vs_league": 1.0282,
      "goals_against_vs_league": 0.9949,
-     "pp_vs_league": 0.9743,
-     "pk_xga_vs_league": 1.0943,
-     "pp_minutes_vs_league": 1.0321,
+     "pp_vs_league": 0.9741,
+     "pk_xga_vs_league": 1.0941,
+     "pp_minutes_vs_league": 1.0317,
      "rest_days": 1,
      "back_to_back": true,
      "history_weight_games": 54.07
@@ -5700,9 +5620,9 @@
    "away": "DAL",
    "venue": "Ball Arena",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
-    "home": 3.2114,
+    "home": 3.2115,
     "away": 2.7502
    },
    "prices": {
@@ -5752,7 +5672,7 @@
        "fair_under": 102
       },
       "7": {
-       "over": 0.2503,
+       "over": 0.2504,
        "under": 0.551,
        "push": 0.1986,
        "fair_over": 220,
@@ -5954,11 +5874,11 @@
     "home": {
      "ev_xg_for_vs_league": 1.1056,
      "ev_xg_against_vs_league": 0.9497,
-     "goals_for_vs_league": 1.1238,
+     "goals_for_vs_league": 1.1237,
      "goals_against_vs_league": 0.9217,
-     "pp_vs_league": 0.985,
-     "pk_xga_vs_league": 0.9499,
-     "pp_minutes_vs_league": 1.043,
+     "pp_vs_league": 0.9849,
+     "pk_xga_vs_league": 0.9497,
+     "pp_minutes_vs_league": 1.0427,
      "rest_days": 1,
      "back_to_back": true,
      "history_weight_games": 51.55
@@ -5968,9 +5888,9 @@
      "ev_xg_against_vs_league": 0.964,
      "goals_for_vs_league": 1.0157,
      "goals_against_vs_league": 0.9266,
-     "pp_vs_league": 1.1351,
-     "pk_xga_vs_league": 0.9517,
-     "pp_minutes_vs_league": 1.0119,
+     "pp_vs_league": 1.1349,
+     "pk_xga_vs_league": 0.9516,
+     "pp_minutes_vs_league": 1.0116,
      "rest_days": 1,
      "back_to_back": true,
      "history_weight_games": 49.27
@@ -6007,77 +5927,77 @@
    "away": "BUF",
    "venue": "Scotiabank Arena",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
-    "home": 2.9981,
-    "away": 3.1986
+    "home": 2.9851,
+    "away": 3.2186
    },
    "prices": {
     "moneyline": {
-     "home": 0.4695,
-     "away": 0.5305,
-     "fair_home": 113,
-     "fair_away": -113,
+     "home": 0.4643,
+     "away": 0.5357,
+     "fair_home": 115,
+     "fair_away": -115,
      "settles": "includes overtime and shootout"
     },
     "regulation": {
-     "home": 0.3636,
-     "draw": 0.2145,
-     "away": 0.4219,
-     "fair_home": 175,
-     "fair_draw": 366,
-     "fair_away": 137,
+     "home": 0.3589,
+     "draw": 0.2142,
+     "away": 0.4269,
+     "fair_home": 179,
+     "fair_draw": 367,
+     "fair_away": 134,
      "settles": "60 minutes only"
     },
     "puck_line": {
-     "home_minus_1_5": 0.2684,
-     "away_plus_1_5": 0.7316,
-     "away_minus_1_5": 0.3225,
-     "home_plus_1_5": 0.6775,
-     "fair_home_minus_1_5": 273,
-     "fair_away_plus_1_5": -273,
-     "fair_away_minus_1_5": 210,
-     "fair_home_plus_1_5": -210,
+     "home_minus_1_5": 0.2643,
+     "away_plus_1_5": 0.7357,
+     "away_minus_1_5": 0.3273,
+     "home_plus_1_5": 0.6727,
+     "fair_home_minus_1_5": 278,
+     "fair_away_plus_1_5": -278,
+     "fair_away_minus_1_5": 206,
+     "fair_home_plus_1_5": -206,
      "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
     },
     "total": {
-     "expected": 6.41,
+     "expected": 6.42,
      "fair_line": 6.5,
      "lines": {
       "5": {
-       "over": 0.5965,
-       "under": 0.1937,
-       "push": 0.2099,
-       "fair_over": -308,
-       "fair_under": 308
+       "over": 0.5976,
+       "under": 0.193,
+       "push": 0.2095,
+       "fair_over": -310,
+       "fair_under": 310
       },
       "6": {
-       "over": 0.4887,
-       "under": 0.4035,
+       "over": 0.4898,
+       "under": 0.4024,
        "push": 0.1077,
-       "fair_over": -121,
-       "fair_under": 121
+       "fair_over": -122,
+       "fair_under": 122
       },
       "7": {
-       "over": 0.2841,
-       "under": 0.5113,
-       "push": 0.2046,
-       "fair_over": 180,
-       "fair_under": -180
+       "over": 0.2851,
+       "under": 0.5102,
+       "push": 0.2047,
+       "fair_over": 179,
+       "fair_under": -179
       },
       "5.5": {
-       "over": 0.5965,
-       "under": 0.4035,
+       "over": 0.5976,
+       "under": 0.4024,
        "push": 0,
        "fair_over": -148,
        "fair_under": 148
       },
       "6.5": {
-       "over": 0.4887,
-       "under": 0.5113,
+       "over": 0.4898,
+       "under": 0.5102,
        "push": 0,
-       "fair_over": 105,
-       "fair_under": -105
+       "fair_over": 104,
+       "fair_under": -104
       }
      },
      "settles": "includes overtime; the shootout winner is credited one goal"
@@ -6085,56 +6005,56 @@
     "team_total": {
      "home": {
       "3": {
-       "over": 0.3884,
-       "under": 0.3977,
+       "over": 0.3852,
+       "under": 0.4008,
        "push": 0.214,
-       "fair_over": 102,
-       "fair_under": -102
+       "fair_over": 104,
+       "fair_under": -104
       },
       "2.5": {
-       "over": 0.6023,
-       "under": 0.3977,
+       "over": 0.5992,
+       "under": 0.4008,
        "push": 0,
-       "fair_over": -151,
-       "fair_under": 151
+       "fair_over": -149,
+       "fair_under": 149
       },
       "3.5": {
-       "over": 0.3884,
-       "under": 0.6116,
+       "over": 0.3852,
+       "under": 0.6148,
        "push": 0,
-       "fair_over": 157,
-       "fair_under": -157
+       "fair_over": 160,
+       "fair_under": -160
       }
      },
      "away": {
       "3": {
-       "over": 0.4349,
-       "under": 0.3536,
-       "push": 0.2115,
-       "fair_over": -123,
-       "fair_under": 123
+       "over": 0.4395,
+       "under": 0.3494,
+       "push": 0.2111,
+       "fair_over": -126,
+       "fair_under": 126
       },
       "2.5": {
-       "over": 0.6464,
-       "under": 0.3536,
+       "over": 0.6506,
+       "under": 0.3494,
        "push": 0,
-       "fair_over": -183,
-       "fair_under": 183
+       "fair_over": -186,
+       "fair_under": 186
       },
       "3.5": {
-       "over": 0.4349,
-       "under": 0.5651,
+       "over": 0.4395,
+       "under": 0.5605,
        "push": 0,
-       "fair_over": 130,
-       "fair_under": -130
+       "fair_over": 128,
+       "fair_under": -128
       }
      }
     },
-    "p_overtime": 0.1488,
-    "p_shootout": 0.0657
+    "p_overtime": 0.1487,
+    "p_shootout": 0.0655
    },
    "uncertainty": {
-    "moneyline_sd_pp": 1.11,
+    "moneyline_sd_pp": 0.6,
     "total_sd_goals": 0.01,
     "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
@@ -6174,16 +6094,16 @@
      {
       "goalie": 8480045,
       "name": "U. Luukkonen",
-      "p_start": 0.5646,
+      "p_start": 0.4799,
       "confirmed": false,
-      "gsax_rate": -0.0219
+      "gsax_rate": -0.0184
      },
      {
       "goalie": 8481551,
       "name": "C. Ellis",
-      "p_start": 0.3217,
+      "p_start": 0.4602,
       "confirmed": false,
-      "gsax_rate": -0.0224
+      "gsax_rate": -0.0257
      }
     ],
     "scenarios": [
@@ -6192,8 +6112,8 @@
       "home_goalie_name": "S. Bobrovsky",
       "away_goalie": 8480045,
       "away_goalie_name": "U. Luukkonen",
-      "p_scenario": 0.4461,
-      "p_home": 0.4716,
+      "p_scenario": 0.3575,
+      "p_home": 0.4657,
       "exp_total": 6.45
      },
      {
@@ -6201,27 +6121,27 @@
       "home_goalie_name": "S. Bobrovsky",
       "away_goalie": 8481551,
       "away_goalie_name": "C. Ellis",
-      "p_scenario": 0.2542,
-      "p_home": 0.4717,
-      "exp_total": 6.45
+      "p_scenario": 0.3428,
+      "p_home": 0.468,
+      "exp_total": 6.46
      },
      {
       "home_goalie": 8476932,
       "home_goalie_name": "A. Stolarz",
       "away_goalie": 8480045,
       "away_goalie_name": "U. Luukkonen",
-      "p_scenario": 0.1909,
-      "p_home": 0.4736,
-      "exp_total": 6.44
+      "p_scenario": 0.153,
+      "p_home": 0.4678,
+      "exp_total": 6.45
      },
      {
       "home_goalie": 8476932,
       "home_goalie_name": "A. Stolarz",
       "away_goalie": 8481551,
       "away_goalie_name": "C. Ellis",
-      "p_scenario": 0.1088,
-      "p_home": 0.4738,
-      "exp_total": 6.44
+      "p_scenario": 0.1467,
+      "p_home": 0.47,
+      "exp_total": 6.45
      }
     ],
     "confirmed_source": null
@@ -6243,61 +6163,36 @@
      ]
     },
     "away": {
-     "projected_delta": -0.0398,
-     "regulars_absent": [
-      {
-       "player_id": 8481524,
-       "name": "B. Byram",
-       "toi_per_game": "21:06",
-       "dressed_in_last_10": "5/10",
-       "absent_last_games": 5,
-       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
-      },
-      {
-       "player_id": 8477949,
-       "name": "A. Tuch",
-       "toi_per_game": "18:51",
-       "dressed_in_last_10": "5/10",
-       "absent_last_games": 5,
-       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
-      },
-      {
-       "player_id": 8479982,
-       "name": "C. Timmins",
-       "toi_per_game": "15:43",
-       "dressed_in_last_10": "5/10",
-       "absent_last_games": 5,
-       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
-      }
-     ]
+     "projected_delta": -0.0129,
+     "regulars_absent": []
     },
-    "p_home_lineup_variant": 0.5038,
+    "p_home_lineup_variant": 0.4838,
     "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000895 (95% CI -0.001693 to -0.000052)."
    },
    "evidence": {
     "home": {
-     "ev_xg_for_vs_league": 0.9634,
+     "ev_xg_for_vs_league": 0.9635,
      "ev_xg_against_vs_league": 1.0451,
      "goals_for_vs_league": 1.0119,
-     "goals_against_vs_league": 1.0587,
-     "pp_vs_league": 1.0031,
-     "pk_xga_vs_league": 1.0817,
-     "pp_minutes_vs_league": 0.939,
+     "goals_against_vs_league": 1.0586,
+     "pp_vs_league": 1.003,
+     "pk_xga_vs_league": 1.0815,
+     "pp_minutes_vs_league": 0.9388,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 45.75
     },
     "away": {
-     "ev_xg_for_vs_league": 1.0281,
-     "ev_xg_against_vs_league": 1.0025,
-     "goals_for_vs_league": 1.0525,
-     "goals_against_vs_league": 0.9946,
-     "pp_vs_league": 0.9756,
-     "pk_xga_vs_league": 0.9911,
-     "pp_minutes_vs_league": 1.0377,
+     "ev_xg_for_vs_league": 1.0306,
+     "ev_xg_against_vs_league": 0.9969,
+     "goals_for_vs_league": 1.0593,
+     "goals_against_vs_league": 0.9944,
+     "pp_vs_league": 0.976,
+     "pk_xga_vs_league": 1.0167,
+     "pp_minutes_vs_league": 1.0431,
      "rest_days": 2,
      "back_to_back": false,
-     "history_weight_games": 49.81
+     "history_weight_games": 50.79
     },
     "league": {
      "ev_xg_per60": 2.61,
@@ -6330,74 +6225,74 @@
    "away": "NYI",
    "venue": "Canadian Tire Centre",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
-    "home": 3.2126,
-    "away": 2.6385
+    "home": 3.2174,
+    "away": 2.6294
    },
    "prices": {
     "moneyline": {
-     "home": 0.5936,
-     "away": 0.4064,
-     "fair_home": -146,
-     "fair_away": 146,
+     "home": 0.5959,
+     "away": 0.4041,
+     "fair_home": -147,
+     "fair_away": 147,
      "settles": "includes overtime and shootout"
     },
     "regulation": {
-     "home": 0.478,
-     "draw": 0.2149,
-     "away": 0.3071,
-     "fair_home": 109,
-     "fair_draw": 365,
-     "fair_away": 226,
+     "home": 0.4801,
+     "draw": 0.2147,
+     "away": 0.3052,
+     "fair_home": 108,
+     "fair_draw": 366,
+     "fair_away": 228,
      "settles": "60 minutes only"
     },
     "puck_line": {
-     "home_minus_1_5": 0.3709,
-     "away_plus_1_5": 0.6291,
-     "away_minus_1_5": 0.2139,
-     "home_plus_1_5": 0.7861,
-     "fair_home_minus_1_5": 170,
-     "fair_away_plus_1_5": -170,
-     "fair_away_minus_1_5": 368,
-     "fair_home_plus_1_5": -368,
+     "home_minus_1_5": 0.373,
+     "away_plus_1_5": 0.627,
+     "away_minus_1_5": 0.2121,
+     "home_plus_1_5": 0.7879,
+     "fair_home_minus_1_5": 168,
+     "fair_away_plus_1_5": -168,
+     "fair_away_minus_1_5": 371,
+     "fair_home_plus_1_5": -371,
      "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
     },
     "total": {
-     "expected": 6.07,
+     "expected": 6.06,
      "fair_line": 6,
      "lines": {
       "5": {
-       "over": 0.5395,
-       "under": 0.2343,
-       "push": 0.2262,
-       "fair_over": -230,
-       "fair_under": 230
+       "over": 0.5388,
+       "under": 0.2348,
+       "push": 0.2263,
+       "fair_over": -229,
+       "fair_under": 229
       },
       "6": {
-       "over": 0.4299,
-       "under": 0.4605,
-       "push": 0.1096,
+       "over": 0.4291,
+       "under": 0.4612,
+       "push": 0.1097,
        "fair_over": 107,
        "fair_under": -107
       },
       "7": {
-       "over": 0.2349,
-       "under": 0.5701,
-       "push": 0.195,
-       "fair_over": 243,
-       "fair_under": -243
+       "over": 0.2343,
+       "under": 0.5709,
+       "push": 0.1948,
+       "fair_over": 244,
+       "fair_under": -244
       },
       "5.5": {
-       "over": 0.5395,
-       "under": 0.4605,
+       "over": 0.5388,
+       "under": 0.4612,
        "push": 0,
        "fair_over": -117,
        "fair_under": 117
       },
       "6.5": {
-       "over": 0.4299,
-       "under": 0.5701,
+       "over": 0.4291,
+       "under": 0.5709,
        "push": 0,
        "fair_over": 133,
        "fair_under": -133
@@ -6408,56 +6303,56 @@
     "team_total": {
      "home": {
       "3": {
-       "over": 0.4414,
-       "under": 0.3444,
+       "over": 0.4425,
+       "under": 0.3434,
        "push": 0.2141,
-       "fair_over": -128,
-       "fair_under": 128
+       "fair_over": -129,
+       "fair_under": 129
       },
       "2.5": {
-       "over": 0.6556,
-       "under": 0.3444,
+       "over": 0.6566,
+       "under": 0.3434,
        "push": 0,
-       "fair_over": -190,
-       "fair_under": 190
+       "fair_over": -191,
+       "fair_under": 191
       },
       "3.5": {
-       "over": 0.4414,
-       "under": 0.5586,
+       "over": 0.4425,
+       "under": 0.5575,
        "push": 0,
-       "fair_over": 127,
-       "fair_under": -127
+       "fair_over": 126,
+       "fair_under": -126
       }
      },
      "away": {
       "3": {
-       "over": 0.3056,
-       "under": 0.4811,
-       "push": 0.2133,
-       "fair_over": 157,
-       "fair_under": -157
+       "over": 0.3035,
+       "under": 0.4834,
+       "push": 0.2131,
+       "fair_over": 159,
+       "fair_under": -159
       },
       "2.5": {
-       "over": 0.5189,
-       "under": 0.4811,
+       "over": 0.5166,
+       "under": 0.4834,
        "push": 0,
-       "fair_over": -108,
-       "fair_under": 108
+       "fair_over": -107,
+       "fair_under": 107
       },
       "3.5": {
-       "over": 0.3056,
-       "under": 0.6944,
+       "over": 0.3035,
+       "under": 0.6965,
        "push": 0,
-       "fair_over": 227,
-       "fair_under": -227
+       "fair_over": 229,
+       "fair_under": -229
       }
      }
     },
-    "p_overtime": 0.1446,
+    "p_overtime": 0.1444,
     "p_shootout": 0.0703
    },
    "uncertainty": {
-    "moneyline_sd_pp": 1.14,
+    "moneyline_sd_pp": 1.1,
     "total_sd_goals": 0.04,
     "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
@@ -6481,14 +6376,14 @@
      {
       "goalie": 8476999,
       "name": "L. Ullmark",
-      "p_start": 0.8218,
+      "p_start": 0.8853,
       "confirmed": false,
-      "gsax_rate": 0.0054
+      "gsax_rate": 0.0115
      },
      {
       "goalie": 8481035,
       "name": "S. Ersson",
-      "p_start": 0.1349,
+      "p_start": 0.1147,
       "confirmed": false,
       "gsax_rate": -0.0478
      }
@@ -6515,26 +6410,26 @@
       "home_goalie_name": "L. Ullmark",
       "away_goalie": 8478009,
       "away_goalie_name": "I. Sorokin",
-      "p_scenario": 0.7326,
-      "p_home": 0.591,
-      "exp_total": 6.03
+      "p_scenario": 0.755,
+      "p_home": 0.5941,
+      "exp_total": 6.02
      },
      {
       "home_goalie": 8476999,
       "home_goalie_name": "L. Ullmark",
       "away_goalie": 8473575,
       "away_goalie_name": "S. Varlamov",
-      "p_scenario": 0.1264,
-      "p_home": 0.6089,
-      "exp_total": 6.1
+      "p_scenario": 0.1303,
+      "p_home": 0.6119,
+      "exp_total": 6.09
      },
      {
       "home_goalie": 8481035,
       "home_goalie_name": "S. Ersson",
       "away_goalie": 8478009,
       "away_goalie_name": "I. Sorokin",
-      "p_scenario": 0.1203,
-      "p_home": 0.5757,
+      "p_scenario": 0.0978,
+      "p_home": 0.577,
       "exp_total": 6.08
      },
      {
@@ -6542,8 +6437,8 @@
       "home_goalie_name": "S. Ersson",
       "away_goalie": 8473575,
       "away_goalie_name": "S. Varlamov",
-      "p_scenario": 0.0208,
-      "p_home": 0.5937,
+      "p_scenario": 0.0169,
+      "p_home": 0.595,
       "exp_total": 6.15
      }
     ],
@@ -6553,7 +6448,7 @@
     "state": "PROJECTED_FROM_LAST_GAME",
     "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
     "home": {
-     "projected_delta": -0.0034,
+     "projected_delta": -0.0148,
      "regulars_absent": []
     },
     "away": {
@@ -6577,30 +6472,30 @@
       }
      ]
     },
-    "p_home_lineup_variant": 0.5933,
+    "p_home_lineup_variant": 0.5895,
     "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000895 (95% CI -0.001693 to -0.000052)."
    },
    "evidence": {
     "home": {
-     "ev_xg_for_vs_league": 1.012,
-     "ev_xg_against_vs_league": 0.934,
-     "goals_for_vs_league": 1.0139,
-     "goals_against_vs_league": 0.9464,
-     "pp_vs_league": 0.9883,
-     "pk_xga_vs_league": 0.9463,
-     "pp_minutes_vs_league": 1.0973,
+     "ev_xg_for_vs_league": 1.0102,
+     "ev_xg_against_vs_league": 0.9369,
+     "goals_for_vs_league": 1.0172,
+     "goals_against_vs_league": 0.9388,
+     "pp_vs_league": 0.9741,
+     "pk_xga_vs_league": 0.9439,
+     "pp_minutes_vs_league": 1.1098,
      "rest_days": 2,
      "back_to_back": false,
-     "history_weight_games": 45.8
+     "history_weight_games": 46.78
     },
     "away": {
-     "ev_xg_for_vs_league": 0.999,
+     "ev_xg_for_vs_league": 0.9991,
      "ev_xg_against_vs_league": 1.0271,
      "goals_for_vs_league": 0.9539,
      "goals_against_vs_league": 0.9757,
-     "pp_vs_league": 0.9368,
-     "pk_xga_vs_league": 1.1045,
-     "pp_minutes_vs_league": 1.0102,
+     "pp_vs_league": 0.9367,
+     "pk_xga_vs_league": 1.1044,
+     "pp_minutes_vs_league": 1.0099,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 42.95
@@ -6636,9 +6531,9 @@
    "away": "SEA",
    "venue": "Benchmark International Arena",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
-    "home": 3.3811,
+    "home": 3.3812,
     "away": 2.6135
    },
    "prices": {
@@ -6840,7 +6735,7 @@
       "away_goalie": 8478916,
       "away_goalie_name": "J. Daccord",
       "p_scenario": 0.1063,
-      "p_home": 0.6241,
+      "p_home": 0.624,
       "exp_total": 6.23
      },
      {
@@ -6909,21 +6804,21 @@
      "ev_xg_against_vs_league": 0.949,
      "goals_for_vs_league": 1.0593,
      "goals_against_vs_league": 0.9321,
-     "pp_vs_league": 1.0085,
-     "pk_xga_vs_league": 0.9846,
-     "pp_minutes_vs_league": 1.0583,
+     "pp_vs_league": 1.0084,
+     "pk_xga_vs_league": 0.9845,
+     "pp_minutes_vs_league": 1.058,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 47.64
     },
     "away": {
-     "ev_xg_for_vs_league": 0.9382,
+     "ev_xg_for_vs_league": 0.9383,
      "ev_xg_against_vs_league": 1.0244,
      "goals_for_vs_league": 0.9821,
-     "goals_against_vs_league": 1.0164,
-     "pp_vs_league": 0.9547,
-     "pk_xga_vs_league": 1.0408,
-     "pp_minutes_vs_league": 0.9562,
+     "goals_against_vs_league": 1.0163,
+     "pp_vs_league": 0.9545,
+     "pk_xga_vs_league": 1.0406,
+     "pp_minutes_vs_league": 0.9559,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 44.09
@@ -6959,77 +6854,77 @@
    "away": "VAN",
    "venue": "Amerant Bank Arena",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
-    "home": 3.53,
-    "away": 2.6084
+    "home": 3.5276,
+    "away": 2.6217
    },
    "prices": {
     "moneyline": {
-     "home": 0.6444,
-     "away": 0.3556,
-     "fair_home": -181,
-     "fair_away": 181,
+     "home": 0.642,
+     "away": 0.358,
+     "fair_home": -179,
+     "fair_away": 179,
      "settles": "includes overtime and shootout"
     },
     "regulation": {
-     "home": 0.5309,
-     "draw": 0.204,
-     "away": 0.2651,
-     "fair_home": -113,
+     "home": 0.5284,
+     "draw": 0.2042,
+     "away": 0.2673,
+     "fair_home": -112,
      "fair_draw": 390,
-     "fair_away": 277,
+     "fair_away": 274,
      "settles": "60 minutes only"
     },
     "puck_line": {
-     "home_minus_1_5": 0.428,
-     "away_plus_1_5": 0.572,
-     "away_minus_1_5": 0.1816,
-     "home_plus_1_5": 0.8184,
-     "fair_home_minus_1_5": 134,
-     "fair_away_plus_1_5": -134,
-     "fair_away_minus_1_5": 451,
-     "fair_home_plus_1_5": -451,
+     "home_minus_1_5": 0.4257,
+     "away_plus_1_5": 0.5743,
+     "away_minus_1_5": 0.1835,
+     "home_plus_1_5": 0.8165,
+     "fair_home_minus_1_5": 135,
+     "fair_away_plus_1_5": -135,
+     "fair_away_minus_1_5": 445,
+     "fair_home_plus_1_5": -445,
      "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
     },
     "total": {
-     "expected": 6.34,
+     "expected": 6.35,
      "fair_line": 6.5,
      "lines": {
       "5": {
-       "over": 0.5865,
-       "under": 0.2016,
-       "push": 0.2119,
-       "fair_over": -291,
-       "fair_under": 291
+       "over": 0.5882,
+       "under": 0.2003,
+       "push": 0.2114,
+       "fair_over": -294,
+       "fair_under": 294
       },
       "6": {
-       "over": 0.476,
-       "under": 0.4135,
-       "push": 0.1105,
-       "fair_over": -115,
-       "fair_under": 115
+       "over": 0.4779,
+       "under": 0.4118,
+       "push": 0.1103,
+       "fair_over": -116,
+       "fair_under": 116
       },
       "7": {
-       "over": 0.2749,
-       "under": 0.524,
-       "push": 0.2011,
-       "fair_over": 191,
-       "fair_under": -191
+       "over": 0.2765,
+       "under": 0.5221,
+       "push": 0.2014,
+       "fair_over": 189,
+       "fair_under": -189
       },
       "5.5": {
-       "over": 0.5865,
-       "under": 0.4135,
+       "over": 0.5882,
+       "under": 0.4118,
        "push": 0,
-       "fair_over": -142,
-       "fair_under": 142
+       "fair_over": -143,
+       "fair_under": 143
       },
       "6.5": {
-       "over": 0.476,
-       "under": 0.524,
+       "over": 0.4779,
+       "under": 0.5221,
        "push": 0,
-       "fair_over": 110,
-       "fair_under": -110
+       "fair_over": 109,
+       "fair_under": -109
       }
      },
      "settles": "includes overtime; the shootout winner is credited one goal"
@@ -7037,57 +6932,57 @@
     "team_total": {
      "home": {
       "3": {
-       "over": 0.5114,
-       "under": 0.2853,
+       "over": 0.5108,
+       "under": 0.2859,
        "push": 0.2032,
        "fair_over": -179,
        "fair_under": 179
       },
       "2.5": {
-       "over": 0.7147,
-       "under": 0.2853,
+       "over": 0.7141,
+       "under": 0.2859,
        "push": 0,
        "fair_over": -250,
        "fair_under": 250
       },
       "3.5": {
-       "over": 0.5114,
-       "under": 0.4886,
+       "over": 0.5108,
+       "under": 0.4892,
        "push": 0,
-       "fair_over": -105,
-       "fair_under": 105
+       "fair_over": -104,
+       "fair_under": 104
       }
      },
      "away": {
       "3": {
-       "over": 0.2959,
-       "under": 0.4931,
-       "push": 0.211,
-       "fair_over": 167,
-       "fair_under": -167
+       "over": 0.2989,
+       "under": 0.4898,
+       "push": 0.2112,
+       "fair_over": 164,
+       "fair_under": -164
       },
       "2.5": {
-       "over": 0.5069,
-       "under": 0.4931,
+       "over": 0.5102,
+       "under": 0.4898,
        "push": 0,
-       "fair_over": -103,
-       "fair_under": 103
+       "fair_over": -104,
+       "fair_under": 104
       },
       "3.5": {
-       "over": 0.2959,
-       "under": 0.7041,
+       "over": 0.2989,
+       "under": 0.7011,
        "push": 0,
-       "fair_over": 238,
-       "fair_under": -238
+       "fair_over": 235,
+       "fair_under": -235
       }
      }
     },
-    "p_overtime": 0.1408,
+    "p_overtime": 0.1412,
     "p_shootout": 0.0631
    },
    "uncertainty": {
-    "moneyline_sd_pp": 1.43,
-    "total_sd_goals": 0.02,
+    "moneyline_sd_pp": 1.4,
+    "total_sd_goals": 0.03,
     "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
@@ -7110,14 +7005,14 @@
      {
       "goalie": 8474593,
       "name": "J. Markstrom",
-      "p_start": 0.578,
+      "p_start": 0.678,
       "confirmed": false,
-      "gsax_rate": -0.0239
+      "gsax_rate": -0.0257
      },
      {
       "goalie": 8480193,
       "name": "D. Tarasov",
-      "p_start": 0.2564,
+      "p_start": 0.1812,
       "confirmed": false,
       "gsax_rate": -0.0091
      }
@@ -7144,36 +7039,36 @@
       "home_goalie_name": "J. Markstrom",
       "away_goalie": 8480947,
       "away_goalie_name": "K. Lankinen",
-      "p_scenario": 0.5071,
-      "p_home": 0.6533,
-      "exp_total": 6.41
+      "p_scenario": 0.5778,
+      "p_home": 0.6508,
+      "exp_total": 6.43
      },
      {
       "home_goalie": 8474593,
       "home_goalie_name": "J. Markstrom",
       "away_goalie": 8482447,
       "away_goalie_name": "L. Meriläinen",
-      "p_scenario": 0.1855,
-      "p_home": 0.6441,
-      "exp_total": 6.37
+      "p_scenario": 0.2114,
+      "p_home": 0.6416,
+      "exp_total": 6.39
      },
      {
       "home_goalie": 8480193,
       "home_goalie_name": "D. Tarasov",
       "away_goalie": 8480947,
       "away_goalie_name": "K. Lankinen",
-      "p_scenario": 0.225,
-      "p_home": 0.6574,
-      "exp_total": 6.4
+      "p_scenario": 0.1544,
+      "p_home": 0.6554,
+      "exp_total": 6.41
      },
      {
       "home_goalie": 8480193,
       "home_goalie_name": "D. Tarasov",
       "away_goalie": 8482447,
       "away_goalie_name": "L. Meriläinen",
-      "p_scenario": 0.0823,
-      "p_home": 0.6482,
-      "exp_total": 6.36
+      "p_scenario": 0.0565,
+      "p_home": 0.6462,
+      "exp_total": 6.37
      }
     ],
     "confirmed_source": null
@@ -7182,25 +7077,8 @@
     "state": "PROJECTED_FROM_LAST_GAME",
     "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
     "home": {
-     "projected_delta": 0.0485,
-     "regulars_absent": [
-      {
-       "player_id": 8482131,
-       "name": "D. Sebrango",
-       "toi_per_game": "16:49",
-       "dressed_in_last_10": "5/10",
-       "absent_last_games": 5,
-       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
-      },
-      {
-       "player_id": 8482107,
-       "name": "M. Benning",
-       "toi_per_game": "15:55",
-       "dressed_in_last_10": "5/10",
-       "absent_last_games": 5,
-       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
-      }
-     ]
+     "projected_delta": 0.0437,
+     "regulars_absent": []
     },
     "away": {
      "projected_delta": -0.0136,
@@ -7215,30 +7093,30 @@
       }
      ]
     },
-    "p_home_lineup_variant": 0.6755,
+    "p_home_lineup_variant": 0.6707,
     "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000895 (95% CI -0.001693 to -0.000052)."
    },
    "evidence": {
     "home": {
-     "ev_xg_for_vs_league": 1.0125,
-     "ev_xg_against_vs_league": 0.9677,
-     "goals_for_vs_league": 0.9877,
-     "goals_against_vs_league": 0.9888,
-     "pp_vs_league": 1.0411,
-     "pk_xga_vs_league": 0.9401,
-     "pp_minutes_vs_league": 1.0894,
+     "ev_xg_for_vs_league": 1.0066,
+     "ev_xg_against_vs_league": 0.9702,
+     "goals_for_vs_league": 0.9875,
+     "goals_against_vs_league": 0.9955,
+     "pp_vs_league": 1.0647,
+     "pk_xga_vs_league": 0.9411,
+     "pp_minutes_vs_league": 1.0839,
      "rest_days": 2,
      "back_to_back": false,
-     "history_weight_games": 47.03
+     "history_weight_games": 48.02
     },
     "away": {
      "ev_xg_for_vs_league": 0.9155,
-     "ev_xg_against_vs_league": 1.0769,
+     "ev_xg_against_vs_league": 1.077,
      "goals_for_vs_league": 0.9467,
      "goals_against_vs_league": 1.1449,
-     "pp_vs_league": 0.9708,
-     "pk_xga_vs_league": 1.0583,
-     "pp_minutes_vs_league": 0.9676,
+     "pp_vs_league": 0.9706,
+     "pk_xga_vs_league": 1.0582,
+     "pp_minutes_vs_league": 0.9673,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 45.22
@@ -7274,77 +7152,77 @@
    "away": "NYR",
    "venue": "Prudential Center",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
-    "home": 2.9113,
-    "away": 2.9501
+    "home": 2.8981,
+    "away": 2.9562
    },
    "prices": {
     "moneyline": {
-     "home": 0.4948,
-     "away": 0.5052,
-     "fair_home": 102,
-     "fair_away": -102,
+     "home": 0.4917,
+     "away": 0.5083,
+     "fair_home": 103,
+     "fair_away": -103,
      "settles": "includes overtime and shootout"
     },
     "regulation": {
-     "home": 0.3844,
+     "home": 0.3815,
      "draw": 0.2197,
-     "away": 0.396,
-     "fair_home": 160,
+     "away": 0.3988,
+     "fair_home": 162,
      "fair_draw": 355,
-     "fair_away": 153,
+     "fair_away": 151,
      "settles": "60 minutes only"
     },
     "puck_line": {
-     "home_minus_1_5": 0.2827,
-     "away_plus_1_5": 0.7173,
-     "away_minus_1_5": 0.2933,
-     "home_plus_1_5": 0.7067,
-     "fair_home_minus_1_5": 254,
-     "fair_away_plus_1_5": -254,
-     "fair_away_minus_1_5": 241,
-     "fair_home_plus_1_5": -241,
+     "home_minus_1_5": 0.2799,
+     "away_plus_1_5": 0.7201,
+     "away_minus_1_5": 0.2959,
+     "home_plus_1_5": 0.7041,
+     "fair_home_minus_1_5": 257,
+     "fair_away_plus_1_5": -257,
+     "fair_away_minus_1_5": 238,
+     "fair_home_plus_1_5": -238,
      "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
     },
     "total": {
-     "expected": 6.08,
+     "expected": 6.07,
      "fair_line": 6,
      "lines": {
       "5": {
-       "over": 0.5416,
-       "under": 0.2322,
-       "push": 0.2262,
-       "fair_over": -233,
-       "fair_under": 233
+       "over": 0.5404,
+       "under": 0.2331,
+       "push": 0.2265,
+       "fair_over": -232,
+       "fair_under": 232
       },
       "6": {
-       "over": 0.4331,
-       "under": 0.4584,
+       "over": 0.4318,
+       "under": 0.4596,
        "push": 0.1086,
        "fair_over": 106,
        "fair_under": -106
       },
       "7": {
-       "over": 0.2367,
-       "under": 0.5669,
-       "push": 0.1964,
-       "fair_over": 240,
-       "fair_under": -240
+       "over": 0.2357,
+       "under": 0.5682,
+       "push": 0.1962,
+       "fair_over": 241,
+       "fair_under": -241
       },
       "5.5": {
-       "over": 0.5416,
-       "under": 0.4584,
+       "over": 0.5404,
+       "under": 0.4596,
        "push": 0,
        "fair_over": -118,
        "fair_under": 118
       },
       "6.5": {
-       "over": 0.4331,
-       "under": 0.5669,
+       "over": 0.4318,
+       "under": 0.5682,
        "push": 0,
-       "fair_over": 131,
-       "fair_under": -131
+       "fair_over": 132,
+       "fair_under": -132
       }
      },
      "settles": "includes overtime; the shootout winner is credited one goal"
@@ -7352,56 +7230,56 @@
     "team_total": {
      "home": {
       "3": {
-       "over": 0.3707,
-       "under": 0.4128,
+       "over": 0.3677,
+       "under": 0.4158,
        "push": 0.2165,
-       "fair_over": 111,
-       "fair_under": -111
+       "fair_over": 113,
+       "fair_under": -113
       },
       "2.5": {
-       "over": 0.5872,
-       "under": 0.4128,
+       "over": 0.5842,
+       "under": 0.4158,
        "push": 0,
-       "fair_over": -142,
-       "fair_under": 142
+       "fair_over": -140,
+       "fair_under": 140
       },
       "3.5": {
-       "over": 0.3707,
-       "under": 0.6293,
+       "over": 0.3677,
+       "under": 0.6323,
        "push": 0,
-       "fair_over": 170,
-       "fair_under": -170
+       "fair_over": 172,
+       "fair_under": -172
       }
      },
      "away": {
       "3": {
-       "over": 0.3792,
-       "under": 0.4044,
-       "push": 0.2164,
-       "fair_over": 107,
-       "fair_under": -107
+       "over": 0.3807,
+       "under": 0.4028,
+       "push": 0.2165,
+       "fair_over": 106,
+       "fair_under": -106
       },
       "2.5": {
-       "over": 0.5956,
-       "under": 0.4044,
+       "over": 0.5972,
+       "under": 0.4028,
        "push": 0,
-       "fair_over": -147,
-       "fair_under": 147
+       "fair_over": -148,
+       "fair_under": 148
       },
       "3.5": {
-       "over": 0.3792,
-       "under": 0.6208,
+       "over": 0.3807,
+       "under": 0.6193,
        "push": 0,
-       "fair_over": 164,
-       "fair_under": -164
+       "fair_over": 163,
+       "fair_under": -163
       }
      }
     },
-    "p_overtime": 0.148,
-    "p_shootout": 0.0717
+    "p_overtime": 0.1479,
+    "p_shootout": 0.0718
    },
    "uncertainty": {
-    "moneyline_sd_pp": 1.1,
+    "moneyline_sd_pp": 1.11,
     "total_sd_goals": 0.02,
     "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
@@ -7425,16 +7303,16 @@
      {
       "goalie": 8474596,
       "name": "J. Allen",
-      "p_start": 0.5905,
+      "p_start": 0.502,
       "confirmed": false,
       "gsax_rate": -0.0059
      },
      {
       "goalie": 8482076,
       "name": "N. Daws",
-      "p_start": 0.3153,
+      "p_start": 0.4548,
       "confirmed": false,
-      "gsax_rate": -0.0341
+      "gsax_rate": -0.0373
      }
     ],
     "away": [
@@ -7459,35 +7337,35 @@
       "home_goalie_name": "J. Allen",
       "away_goalie": 8478048,
       "away_goalie_name": "I. Shesterkin",
-      "p_scenario": 0.4155,
-      "p_home": 0.4914,
-      "exp_total": 6.05
+      "p_scenario": 0.3344,
+      "p_home": 0.4889,
+      "exp_total": 6.04
      },
      {
       "home_goalie": 8474596,
       "home_goalie_name": "J. Allen",
       "away_goalie": 8482193,
       "away_goalie_name": "D. Garand",
-      "p_scenario": 0.2364,
-      "p_home": 0.5047,
-      "exp_total": 6.09
+      "p_scenario": 0.1902,
+      "p_home": 0.5022,
+      "exp_total": 6.08
      },
      {
       "home_goalie": 8482076,
       "home_goalie_name": "N. Daws",
       "away_goalie": 8478048,
       "away_goalie_name": "I. Shesterkin",
-      "p_scenario": 0.2219,
-      "p_home": 0.4828,
-      "exp_total": 6.08
+      "p_scenario": 0.303,
+      "p_home": 0.4794,
+      "exp_total": 6.07
      },
      {
       "home_goalie": 8482076,
       "home_goalie_name": "N. Daws",
       "away_goalie": 8482193,
       "away_goalie_name": "D. Garand",
-      "p_scenario": 0.1262,
-      "p_home": 0.4961,
+      "p_scenario": 0.1724,
+      "p_home": 0.4926,
       "exp_total": 6.12
      }
     ],
@@ -7497,31 +7375,31 @@
     "state": "PROJECTED_FROM_LAST_GAME",
     "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
     "home": {
-     "projected_delta": 0.0383,
+     "projected_delta": 0.0333,
      "regulars_absent": [
       {
        "player_id": 8483495,
        "name": "S. Nemec",
        "toi_per_game": "18:39",
-       "dressed_in_last_10": "6/10",
-       "absent_last_games": 4,
-       "reading": "absent from the most recent game(s)"
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
       },
       {
        "player_id": 8477015,
        "name": "C. Brown",
        "toi_per_game": "18:07",
-       "dressed_in_last_10": "6/10",
-       "absent_last_games": 4,
-       "reading": "absent from the most recent game(s)"
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
       },
       {
        "player_id": 8480192,
        "name": "J. Kovacevic",
        "toi_per_game": "17:35",
-       "dressed_in_last_10": "6/10",
-       "absent_last_games": 4,
-       "reading": "absent from the most recent game(s)"
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
       }
      ]
     },
@@ -7529,30 +7407,30 @@
      "projected_delta": 0.0033,
      "regulars_absent": []
     },
-    "p_home_lineup_variant": 0.5137,
+    "p_home_lineup_variant": 0.5079,
     "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000895 (95% CI -0.001693 to -0.000052)."
    },
    "evidence": {
     "home": {
-     "ev_xg_for_vs_league": 1.0066,
-     "ev_xg_against_vs_league": 0.9867,
-     "goals_for_vs_league": 0.9496,
-     "goals_against_vs_league": 1.0036,
-     "pp_vs_league": 1.0661,
-     "pk_xga_vs_league": 0.9995,
-     "pp_minutes_vs_league": 0.9581,
+     "ev_xg_for_vs_league": 1.0097,
+     "ev_xg_against_vs_league": 0.9849,
+     "goals_for_vs_league": 0.9416,
+     "goals_against_vs_league": 1.0071,
+     "pp_vs_league": 1.0624,
+     "pk_xga_vs_league": 0.9821,
+     "pp_minutes_vs_league": 0.953,
      "rest_days": 2,
      "back_to_back": false,
-     "history_weight_games": 42.48
+     "history_weight_games": 43.47
     },
     "away": {
      "ev_xg_for_vs_league": 0.954,
      "ev_xg_against_vs_league": 0.9919,
      "goals_for_vs_league": 0.9958,
-     "goals_against_vs_league": 0.9579,
-     "pp_vs_league": 1.0596,
-     "pk_xga_vs_league": 0.9821,
-     "pp_minutes_vs_league": 0.9519,
+     "goals_against_vs_league": 0.9578,
+     "pp_vs_league": 1.0594,
+     "pk_xga_vs_league": 0.982,
+     "pp_minutes_vs_league": 0.9516,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 45.19
@@ -7567,7 +7445,7 @@
     ]
    },
    "data_quality": {
-    "history_weight_games": 42.48,
+    "history_weight_games": 43.47,
     "early_season": false,
     "goalie_certainty": "PROJECTED_UNCERTAIN",
     "missing": []
@@ -7588,9 +7466,9 @@
    "away": "PHI",
    "venue": "Little Caesars Arena",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
-    "home": 3.0057,
+    "home": 3.0058,
     "away": 2.7879
    },
    "prices": {
@@ -7690,14 +7568,14 @@
      "away": {
       "3": {
        "over": 0.3413,
-       "under": 0.4425,
+       "under": 0.4424,
        "push": 0.2162,
        "fair_over": 130,
        "fair_under": -130
       },
       "2.5": {
-       "over": 0.5575,
-       "under": 0.4425,
+       "over": 0.5576,
+       "under": 0.4424,
        "push": 0,
        "fair_over": -126,
        "fair_under": 126
@@ -7875,11 +7753,11 @@
     "home": {
      "ev_xg_for_vs_league": 0.9835,
      "ev_xg_against_vs_league": 1.012,
-     "goals_for_vs_league": 0.9536,
+     "goals_for_vs_league": 0.9535,
      "goals_against_vs_league": 1.0096,
-     "pp_vs_league": 1.0836,
-     "pk_xga_vs_league": 1.0451,
-     "pp_minutes_vs_league": 1.0263,
+     "pp_vs_league": 1.0834,
+     "pk_xga_vs_league": 1.0449,
+     "pp_minutes_vs_league": 1.026,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 42.7
@@ -7888,10 +7766,10 @@
      "ev_xg_for_vs_league": 0.9399,
      "ev_xg_against_vs_league": 0.9747,
      "goals_for_vs_league": 0.9198,
-     "goals_against_vs_league": 0.9928,
-     "pp_vs_league": 0.9528,
-     "pk_xga_vs_league": 0.9191,
-     "pp_minutes_vs_league": 1.0209,
+     "goals_against_vs_league": 0.9927,
+     "pp_vs_league": 0.9526,
+     "pk_xga_vs_league": 0.919,
+     "pp_minutes_vs_league": 1.0206,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 50.12
@@ -7927,7 +7805,7 @@
    "away": "WPG",
    "venue": "United Center",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
     "home": 2.739,
     "away": 3.193
@@ -8150,7 +8028,7 @@
     "state": "PROJECTED_FROM_LAST_GAME",
     "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
     "home": {
-     "projected_delta": 0.0066,
+     "projected_delta": 0.0067,
      "regulars_absent": [
       {
        "player_id": 8483493,
@@ -8180,25 +8058,25 @@
    },
    "evidence": {
     "home": {
-     "ev_xg_for_vs_league": 0.9085,
+     "ev_xg_for_vs_league": 0.9086,
      "ev_xg_against_vs_league": 1.0983,
      "goals_for_vs_league": 0.8924,
      "goals_against_vs_league": 1.0862,
-     "pp_vs_league": 0.9084,
-     "pk_xga_vs_league": 1.0105,
-     "pp_minutes_vs_league": 0.9722,
+     "pp_vs_league": 0.9083,
+     "pk_xga_vs_league": 1.0104,
+     "pp_minutes_vs_league": 0.9719,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 43.76
     },
     "away": {
-     "ev_xg_for_vs_league": 0.961,
+     "ev_xg_for_vs_league": 0.9611,
      "ev_xg_against_vs_league": 1.0045,
      "goals_for_vs_league": 0.9577,
-     "goals_against_vs_league": 0.9815,
-     "pp_vs_league": 0.9871,
-     "pk_xga_vs_league": 0.9752,
-     "pp_minutes_vs_league": 0.9855,
+     "goals_against_vs_league": 0.9814,
+     "pp_vs_league": 0.987,
+     "pk_xga_vs_league": 0.9751,
+     "pp_minutes_vs_league": 0.9852,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 44.89
@@ -8234,7 +8112,7 @@
    "away": "SJS",
    "venue": "Bridgestone Arena",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
     "home": 3.2679,
     "away": 2.836
@@ -8286,7 +8164,7 @@
        "fair_under": 113
       },
       "7": {
-       "over": 0.2705,
+       "over": 0.2706,
        "under": 0.5272,
        "push": 0.2023,
        "fair_over": 195,
@@ -8314,7 +8192,7 @@
       "3": {
        "over": 0.4524,
        "under": 0.3368,
-       "push": 0.2108,
+       "push": 0.2107,
        "fair_over": -134,
        "fair_under": 134
       },
@@ -8457,12 +8335,12 @@
     "state": "PROJECTED_FROM_LAST_GAME",
     "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
     "home": {
-     "projected_delta": -0.0066,
+     "projected_delta": -0.0063,
      "regulars_absent": [
       {
        "player_id": 8482146,
        "name": "L. Evangelista",
-       "toi_per_game": "15:12",
+       "toi_per_game": "15:03",
        "dressed_in_last_10": "5/10",
        "absent_last_games": 5,
        "reading": "a long absence: injury or no longer on the roster (no feed says which)"
@@ -8498,30 +8376,30 @@
       }
      ]
     },
-    "p_home_lineup_variant": 0.5566,
+    "p_home_lineup_variant": 0.5567,
     "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000895 (95% CI -0.001693 to -0.000052)."
    },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 0.9824,
-     "ev_xg_against_vs_league": 1.0303,
+     "ev_xg_against_vs_league": 1.0304,
      "goals_for_vs_league": 0.9748,
-     "goals_against_vs_league": 1.0158,
-     "pp_vs_league": 0.9957,
-     "pk_xga_vs_league": 0.9801,
-     "pp_minutes_vs_league": 0.999,
+     "goals_against_vs_league": 1.0157,
+     "pp_vs_league": 0.9956,
+     "pk_xga_vs_league": 0.98,
+     "pp_minutes_vs_league": 0.9987,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 43.08
     },
     "away": {
-     "ev_xg_for_vs_league": 0.9265,
-     "ev_xg_against_vs_league": 1.0375,
+     "ev_xg_for_vs_league": 0.9266,
+     "ev_xg_against_vs_league": 1.0376,
      "goals_for_vs_league": 0.9606,
-     "goals_against_vs_league": 1.0966,
-     "pp_vs_league": 0.9467,
-     "pk_xga_vs_league": 1.0697,
-     "pp_minutes_vs_league": 0.9942,
+     "goals_against_vs_league": 1.0965,
+     "pp_vs_league": 0.9465,
+     "pk_xga_vs_league": 1.0695,
+     "pp_minutes_vs_league": 0.9939,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 42.96
@@ -8557,77 +8435,77 @@
    "away": "STL",
    "venue": "Grand Casino Arena",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
-    "home": 3.1241,
-    "away": 2.7146
+    "home": 3.1321,
+    "away": 2.7046
    },
    "prices": {
     "moneyline": {
-     "home": 0.5674,
-     "away": 0.4326,
-     "fair_home": -131,
-     "fair_away": 131,
+     "home": 0.5703,
+     "away": 0.4297,
+     "fair_home": -133,
+     "fair_away": 133,
      "settles": "includes overtime and shootout"
     },
     "regulation": {
-     "home": 0.4524,
-     "draw": 0.2175,
-     "away": 0.3301,
-     "fair_home": 121,
+     "home": 0.4552,
+     "draw": 0.2173,
+     "away": 0.3275,
+     "fair_home": 120,
      "fair_draw": 360,
-     "fair_away": 203,
+     "fair_away": 205,
      "settles": "60 minutes only"
     },
     "puck_line": {
-     "home_minus_1_5": 0.346,
-     "away_plus_1_5": 0.654,
-     "away_minus_1_5": 0.2337,
-     "home_plus_1_5": 0.7663,
-     "fair_home_minus_1_5": 189,
-     "fair_away_plus_1_5": -189,
-     "fair_away_minus_1_5": 328,
-     "fair_home_plus_1_5": -328,
+     "home_minus_1_5": 0.3487,
+     "away_plus_1_5": 0.6513,
+     "away_minus_1_5": 0.2314,
+     "home_plus_1_5": 0.7686,
+     "fair_home_minus_1_5": 187,
+     "fair_away_plus_1_5": -187,
+     "fair_away_minus_1_5": 332,
+     "fair_home_plus_1_5": -332,
      "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
     },
     "total": {
-     "expected": 6.06,
+     "expected": 6.05,
      "fair_line": 6,
      "lines": {
       "5": {
-       "over": 0.5376,
-       "under": 0.2354,
+       "over": 0.5373,
+       "under": 0.2357,
        "push": 0.227,
        "fair_over": -228,
        "fair_under": 228
       },
       "6": {
-       "over": 0.4285,
-       "under": 0.4624,
+       "over": 0.4281,
+       "under": 0.4627,
        "push": 0.1091,
        "fair_over": 108,
        "fair_under": -108
       },
       "7": {
-       "over": 0.2334,
-       "under": 0.5715,
-       "push": 0.1951,
+       "over": 0.2331,
+       "under": 0.5719,
+       "push": 0.195,
        "fair_over": 245,
        "fair_under": -245
       },
       "5.5": {
-       "over": 0.5376,
-       "under": 0.4624,
+       "over": 0.5373,
+       "under": 0.4627,
        "push": 0,
        "fair_over": -116,
        "fair_under": 116
       },
       "6.5": {
-       "over": 0.4285,
-       "under": 0.5715,
+       "over": 0.4281,
+       "under": 0.5719,
        "push": 0,
-       "fair_over": 133,
-       "fair_under": -133
+       "fair_over": 134,
+       "fair_under": -134
       }
      },
      "settles": "includes overtime; the shootout winner is credited one goal"
@@ -8635,56 +8513,56 @@
     "team_total": {
      "home": {
       "3": {
-       "over": 0.4209,
-       "under": 0.3635,
+       "over": 0.4228,
+       "under": 0.3617,
        "push": 0.2155,
-       "fair_over": -116,
-       "fair_under": 116
+       "fair_over": -117,
+       "fair_under": 117
       },
       "2.5": {
-       "over": 0.6365,
-       "under": 0.3635,
+       "over": 0.6383,
+       "under": 0.3617,
        "push": 0,
-       "fair_over": -175,
-       "fair_under": 175
+       "fair_over": -176,
+       "fair_under": 176
       },
       "3.5": {
-       "over": 0.4209,
-       "under": 0.5791,
+       "over": 0.4228,
+       "under": 0.5772,
        "push": 0,
-       "fair_over": 138,
-       "fair_under": -138
+       "fair_over": 137,
+       "fair_under": -137
       }
      },
      "away": {
       "3": {
-       "over": 0.3237,
-       "under": 0.4615,
-       "push": 0.2149,
-       "fair_over": 143,
-       "fair_under": -143
+       "over": 0.3213,
+       "under": 0.464,
+       "push": 0.2147,
+       "fair_over": 144,
+       "fair_under": -144
       },
       "2.5": {
-       "over": 0.5385,
-       "under": 0.4615,
+       "over": 0.536,
+       "under": 0.464,
        "push": 0,
-       "fair_over": -117,
-       "fair_under": 117
+       "fair_over": -116,
+       "fair_under": 116
       },
       "3.5": {
-       "over": 0.3237,
-       "under": 0.6763,
+       "over": 0.3213,
+       "under": 0.6787,
        "push": 0,
-       "fair_over": 209,
-       "fair_under": -209
+       "fair_over": 211,
+       "fair_under": -211
       }
      }
     },
-    "p_overtime": 0.1462,
-    "p_shootout": 0.0713
+    "p_overtime": 0.146,
+    "p_shootout": 0.0712
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.87,
+    "moneyline_sd_pp": 0.86,
     "total_sd_goals": 0.06,
     "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
@@ -8708,14 +8586,14 @@
      {
       "goalie": 8482661,
       "name": "J. Wallstedt",
-      "p_start": 0.9491,
+      "p_start": 0.9567,
       "confirmed": false,
-      "gsax_rate": 0.0179
+      "gsax_rate": 0.0212
      },
      {
       "goalie": 8479406,
       "name": "F. Gustavsson",
-      "p_start": 0.0509,
+      "p_start": 0.0433,
       "confirmed": false,
       "gsax_rate": -0.0174
      }
@@ -8742,8 +8620,8 @@
       "home_goalie_name": "J. Wallstedt",
       "away_goalie": 8480981,
       "away_goalie_name": "J. Hofer",
-      "p_scenario": 0.5551,
-      "p_home": 0.5648,
+      "p_scenario": 0.5595,
+      "p_home": 0.5686,
       "exp_total": 6.01
      },
      {
@@ -8751,8 +8629,8 @@
       "home_goalie_name": "J. Wallstedt",
       "away_goalie": 8476412,
       "away_goalie_name": "J. Binnington",
-      "p_scenario": 0.394,
-      "p_home": 0.5833,
+      "p_scenario": 0.3972,
+      "p_home": 0.587,
       "exp_total": 6.08
      },
      {
@@ -8760,8 +8638,8 @@
       "home_goalie_name": "F. Gustavsson",
       "away_goalie": 8480981,
       "away_goalie_name": "J. Hofer",
-      "p_scenario": 0.0298,
-      "p_home": 0.5545,
+      "p_scenario": 0.0253,
+      "p_home": 0.5573,
       "exp_total": 6.05
      },
      {
@@ -8769,8 +8647,8 @@
       "home_goalie_name": "F. Gustavsson",
       "away_goalie": 8476412,
       "away_goalie_name": "J. Binnington",
-      "p_scenario": 0.0211,
-      "p_home": 0.573,
+      "p_scenario": 0.018,
+      "p_home": 0.5758,
       "exp_total": 6.12
      }
     ],
@@ -8780,33 +8658,8 @@
     "state": "PROJECTED_FROM_LAST_GAME",
     "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
     "home": {
-     "projected_delta": -0.0093,
-     "regulars_absent": [
-      {
-       "player_id": 8482122,
-       "name": "B. Faber",
-       "toi_per_game": "25:09",
-       "dressed_in_last_10": "5/10",
-       "absent_last_games": 5,
-       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
-      },
-      {
-       "player_id": 8475692,
-       "name": "M. Zuccarello",
-       "toi_per_game": "16:48",
-       "dressed_in_last_10": "5/10",
-       "absent_last_games": 5,
-       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
-      },
-      {
-       "player_id": 8478136,
-       "name": "J. Middleton",
-       "toi_per_game": "15:49",
-       "dressed_in_last_10": "5/10",
-       "absent_last_games": 5,
-       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
-      }
-     ]
+     "projected_delta": 0.0011,
+     "regulars_absent": []
     },
     "away": {
      "projected_delta": -0.0031,
@@ -8821,30 +8674,30 @@
       }
      ]
     },
-    "p_home_lineup_variant": 0.5627,
+    "p_home_lineup_variant": 0.5712,
     "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000895 (95% CI -0.001693 to -0.000052)."
    },
    "evidence": {
     "home": {
-     "ev_xg_for_vs_league": 0.9821,
-     "ev_xg_against_vs_league": 0.9659,
-     "goals_for_vs_league": 1.0419,
-     "goals_against_vs_league": 0.9565,
-     "pp_vs_league": 1.0134,
-     "pk_xga_vs_league": 1.04,
-     "pp_minutes_vs_league": 1.0215,
+     "ev_xg_for_vs_league": 0.9865,
+     "ev_xg_against_vs_league": 0.965,
+     "goals_for_vs_league": 1.0458,
+     "goals_against_vs_league": 0.9523,
+     "pp_vs_league": 1.0153,
+     "pk_xga_vs_league": 1.0335,
+     "pp_minutes_vs_league": 1.0096,
      "rest_days": 2,
      "back_to_back": false,
-     "history_weight_games": 49.19
+     "history_weight_games": 50.18
     },
     "away": {
      "ev_xg_for_vs_league": 0.9624,
      "ev_xg_against_vs_league": 0.9553,
      "goals_for_vs_league": 0.9769,
-     "goals_against_vs_league": 0.9869,
-     "pp_vs_league": 0.8794,
-     "pk_xga_vs_league": 0.9614,
-     "pp_minutes_vs_league": 0.953,
+     "goals_against_vs_league": 0.9868,
+     "pp_vs_league": 0.8792,
+     "pk_xga_vs_league": 0.9613,
+     "pp_minutes_vs_league": 0.9527,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 43.66
@@ -8880,10 +8733,10 @@
    "away": "UTA",
    "venue": "Rogers Place",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
-    "home": 3.2097,
-    "away": 3.0422
+    "home": 3.2098,
+    "away": 3.0423
    },
    "prices": {
     "moneyline": {
@@ -8958,7 +8811,7 @@
     "team_total": {
      "home": {
       "3": {
-       "over": 0.4376,
+       "over": 0.4377,
        "under": 0.3514,
        "push": 0.2109,
        "fair_over": -125,
@@ -8972,8 +8825,8 @@
        "fair_under": 185
       },
       "3.5": {
-       "over": 0.4376,
-       "under": 0.5624,
+       "over": 0.4377,
+       "under": 0.5623,
        "push": 0,
        "fair_over": 128,
        "fair_under": -128
@@ -9159,10 +9012,10 @@
      "ev_xg_for_vs_league": 1.0479,
      "ev_xg_against_vs_league": 0.9794,
      "goals_for_vs_league": 1.0875,
-     "goals_against_vs_league": 1.0281,
-     "pp_vs_league": 1.1564,
-     "pk_xga_vs_league": 1.0384,
-     "pp_minutes_vs_league": 0.9473,
+     "goals_against_vs_league": 1.028,
+     "pp_vs_league": 1.1562,
+     "pk_xga_vs_league": 1.0382,
+     "pp_minutes_vs_league": 0.947,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 49.72
@@ -9172,9 +9025,9 @@
      "ev_xg_against_vs_league": 0.9821,
      "goals_for_vs_league": 1.0334,
      "goals_against_vs_league": 0.984,
-     "pp_vs_league": 1.0071,
-     "pk_xga_vs_league": 1.0203,
-     "pp_minutes_vs_league": 1.0098,
+     "pp_vs_league": 1.007,
+     "pk_xga_vs_league": 1.0201,
+     "pp_minutes_vs_league": 1.0095,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 46.78
@@ -9210,37 +9063,37 @@
    "away": "CGY",
    "venue": "T-Mobile Arena",
    "state": "FUT",
-   "schedule_source": "sportsdataverse_schedule",
+   "schedule_source": "nhl_api",
    "lambda": {
-    "home": 3.5053,
-    "away": 2.412
+    "home": 3.4937,
+    "away": 2.4243
    },
    "prices": {
     "moneyline": {
-     "home": 0.6729,
-     "away": 0.3271,
-     "fair_home": -206,
-     "fair_away": 206,
+     "home": 0.6694,
+     "away": 0.3306,
+     "fair_home": -202,
+     "fair_away": 202,
      "settles": "includes overtime and shootout"
     },
     "regulation": {
-     "home": 0.5585,
-     "draw": 0.2015,
-     "away": 0.2399,
-     "fair_home": -127,
-     "fair_draw": 396,
-     "fair_away": 317,
+     "home": 0.5548,
+     "draw": 0.2023,
+     "away": 0.2429,
+     "fair_home": -125,
+     "fair_draw": 394,
+     "fair_away": 312,
      "settles": "60 minutes only"
     },
     "puck_line": {
-     "home_minus_1_5": 0.4524,
-     "away_plus_1_5": 0.5476,
-     "away_minus_1_5": 0.1583,
-     "home_plus_1_5": 0.8417,
-     "fair_home_minus_1_5": 121,
-     "fair_away_plus_1_5": -121,
-     "fair_away_minus_1_5": 532,
-     "fair_home_plus_1_5": -532,
+     "home_minus_1_5": 0.4487,
+     "away_plus_1_5": 0.5513,
+     "away_minus_1_5": 0.1607,
+     "home_plus_1_5": 0.8393,
+     "fair_home_minus_1_5": 123,
+     "fair_away_plus_1_5": -123,
+     "fair_away_minus_1_5": 522,
+     "fair_home_plus_1_5": -522,
      "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
     },
     "total": {
@@ -9248,39 +9101,39 @@
      "fair_line": 6,
      "lines": {
       "5": {
-       "over": 0.5499,
-       "under": 0.2281,
+       "over": 0.55,
+       "under": 0.2279,
        "push": 0.222,
        "fair_over": -241,
        "fair_under": 241
       },
       "6": {
-       "over": 0.4375,
-       "under": 0.4501,
-       "push": 0.1124,
+       "over": 0.4378,
+       "under": 0.45,
+       "push": 0.1122,
        "fair_over": 103,
        "fair_under": -103
       },
       "7": {
-       "over": 0.2432,
-       "under": 0.5625,
-       "push": 0.1943,
+       "over": 0.2434,
+       "under": 0.5622,
+       "push": 0.1945,
        "fair_over": 231,
        "fair_under": -231
       },
       "5.5": {
-       "over": 0.5499,
-       "under": 0.4501,
+       "over": 0.55,
+       "under": 0.45,
        "push": 0,
        "fair_over": -122,
        "fair_under": 122
       },
       "6.5": {
-       "over": 0.4375,
-       "under": 0.5625,
+       "over": 0.4378,
+       "under": 0.5622,
        "push": 0,
-       "fair_over": 129,
-       "fair_under": -129
+       "fair_over": 128,
+       "fair_under": -128
       }
      },
      "settles": "includes overtime; the shootout winner is credited one goal"
@@ -9288,56 +9141,56 @@
     "team_total": {
      "home": {
       "3": {
-       "over": 0.5072,
-       "under": 0.2865,
-       "push": 0.2064,
-       "fair_over": -177,
-       "fair_under": 177
+       "over": 0.5046,
+       "under": 0.2887,
+       "push": 0.2067,
+       "fair_over": -175,
+       "fair_under": 175
       },
       "2.5": {
-       "over": 0.7135,
-       "under": 0.2865,
+       "over": 0.7113,
+       "under": 0.2887,
        "push": 0,
-       "fair_over": -249,
-       "fair_under": 249
+       "fair_over": -246,
+       "fair_under": 246
       },
       "3.5": {
-       "over": 0.5072,
-       "under": 0.4928,
+       "over": 0.5046,
+       "under": 0.4954,
        "push": 0,
-       "fair_over": -103,
-       "fair_under": 103
+       "fair_over": -102,
+       "fair_under": 102
       }
      },
      "away": {
       "3": {
-       "over": 0.2524,
-       "under": 0.5421,
-       "push": 0.2055,
-       "fair_over": 215,
-       "fair_under": -215
+       "over": 0.2552,
+       "under": 0.5388,
+       "push": 0.206,
+       "fair_over": 211,
+       "fair_under": -211
       },
       "2.5": {
-       "over": 0.4579,
-       "under": 0.5421,
+       "over": 0.4612,
+       "under": 0.5388,
        "push": 0,
-       "fair_over": 118,
-       "fair_under": -118
+       "fair_over": 117,
+       "fair_under": -117
       },
       "3.5": {
-       "over": 0.2524,
-       "under": 0.7476,
+       "over": 0.2552,
+       "under": 0.7448,
        "push": 0,
-       "fair_over": 296,
-       "fair_under": -296
+       "fair_over": 292,
+       "fair_under": -292
       }
      }
     },
-    "p_overtime": 0.1365,
-    "p_shootout": 0.0651
+    "p_overtime": 0.137,
+    "p_shootout": 0.0653
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.75,
+    "moneyline_sd_pp": 0.8,
     "total_sd_goals": 0.02,
     "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
@@ -9361,14 +9214,14 @@
      {
       "goalie": 8479394,
       "name": "C. Hart",
-      "p_start": 0.7265,
+      "p_start": 0.7676,
       "confirmed": false,
-      "gsax_rate": -0.0167
+      "gsax_rate": -0.0152
      },
      {
       "goalie": 8478499,
       "name": "A. Hill",
-      "p_start": 0.2735,
+      "p_start": 0.2324,
       "confirmed": false,
       "gsax_rate": -0.0432
      }
@@ -9395,8 +9248,8 @@
       "home_goalie_name": "C. Hart",
       "away_goalie": 8481692,
       "away_goalie_name": "D. Wolf",
-      "p_scenario": 0.4696,
-      "p_home": 0.6793,
+      "p_scenario": 0.4961,
+      "p_home": 0.6763,
       "exp_total": 6.13
      },
      {
@@ -9404,8 +9257,8 @@
       "home_goalie_name": "C. Hart",
       "away_goalie": 8482445,
       "away_goalie_name": "D. Cooley",
-      "p_scenario": 0.2569,
-      "p_home": 0.6744,
+      "p_scenario": 0.2715,
+      "p_home": 0.6713,
       "exp_total": 6.11
      },
      {
@@ -9413,17 +9266,17 @@
       "home_goalie_name": "A. Hill",
       "away_goalie": 8481692,
       "away_goalie_name": "D. Wolf",
-      "p_scenario": 0.1767,
-      "p_home": 0.6725,
-      "exp_total": 6.15
+      "p_scenario": 0.1502,
+      "p_home": 0.669,
+      "exp_total": 6.16
      },
      {
       "home_goalie": 8478499,
       "home_goalie_name": "A. Hill",
       "away_goalie": 8482445,
       "away_goalie_name": "D. Cooley",
-      "p_scenario": 0.0967,
-      "p_home": 0.6675,
+      "p_scenario": 0.0822,
+      "p_home": 0.664,
       "exp_total": 6.13
      }
     ],
@@ -9433,16 +9286,25 @@
     "state": "PROJECTED_FROM_LAST_GAME",
     "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
     "home": {
-     "projected_delta": -0.0088,
-     "regulars_absent": []
+     "projected_delta": -0.0221,
+     "regulars_absent": [
+      {
+       "player_id": 8478450,
+       "name": "P. Wotherspoon",
+       "toi_per_game": "18:40",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 1,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
     },
     "away": {
-     "projected_delta": -0.0054,
+     "projected_delta": -0.0055,
      "regulars_absent": [
       {
        "player_id": 8476874,
        "name": "O. Maatta",
-       "toi_per_game": "20:36",
+       "toi_per_game": "20:41",
        "dressed_in_last_10": "5/10",
        "absent_last_games": 5,
        "reading": "a long absence: injury or no longer on the roster (no feed says which)"
@@ -9457,30 +9319,30 @@
       }
      ]
     },
-    "p_home_lineup_variant": 0.6697,
+    "p_home_lineup_variant": 0.6595,
     "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000895 (95% CI -0.001693 to -0.000052)."
    },
    "evidence": {
     "home": {
-     "ev_xg_for_vs_league": 1.0232,
-     "ev_xg_against_vs_league": 0.9002,
-     "goals_for_vs_league": 1.0471,
-     "goals_against_vs_league": 0.9458,
-     "pp_vs_league": 1.1223,
-     "pk_xga_vs_league": 0.8997,
-     "pp_minutes_vs_league": 0.9745,
+     "ev_xg_for_vs_league": 1.0225,
+     "ev_xg_against_vs_league": 0.9038,
+     "goals_for_vs_league": 1.043,
+     "goals_against_vs_league": 0.9489,
+     "pp_vs_league": 1.1147,
+     "pk_xga_vs_league": 0.9017,
+     "pp_minutes_vs_league": 0.9831,
      "rest_days": 2,
      "back_to_back": false,
-     "history_weight_games": 57.96
+     "history_weight_games": 58.95
     },
     "away": {
      "ev_xg_for_vs_league": 0.9581,
      "ev_xg_against_vs_league": 1.0377,
      "goals_for_vs_league": 0.8983,
      "goals_against_vs_league": 1.0511,
-     "pp_vs_league": 0.9094,
-     "pk_xga_vs_league": 0.984,
-     "pp_minutes_vs_league": 0.9484,
+     "pp_vs_league": 0.9093,
+     "pk_xga_vs_league": 0.9839,
+     "pp_minutes_vs_league": 0.9481,
      "rest_days": 2,
      "back_to_back": false,
      "history_weight_games": 42.86
