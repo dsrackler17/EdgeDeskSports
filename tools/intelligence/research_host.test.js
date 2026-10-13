@@ -47,6 +47,11 @@ const ENV = { EDGEDESK_AI_NO_SERVE: '1', ANTHROPIC_API_KEY: 'test-key', SUPABASE
 globalThis.Deno = { env: { get: (k) => ENV[k] } };
 
 const NOW = Date.parse('2026-10-12T16:00:00Z');            /* Monday noon in New York */
+/* the handler and the kernels read Date.now(): pinned to the scenario clock for the WHOLE suite, so it means the same
+   on any day. (It was pinned for the streaming block only; the slate scenarios above it ran on the wall clock and
+   failed once the fixtures' injury and depth-chart reports passed their 6-hour limit — 22:00 UTC on 12 Oct.) */
+const realNow = Date.now, T0 = realNow();
+Date.now = () => NOW + (realNow() - T0);
 const ISO = (min) => new Date(NOW + min * 60000).toISOString();
 const H = 60;
 const etDate = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(ms));
@@ -658,9 +663,6 @@ function consistent(tag, answer, row) {
     if (DUMP && o.dump) DUMP[o.dump] = { question, carried: o.carried || null, qhint: o.qhint || null, events };
     return { ct, events };
   }
-  /* the handler reads Date.now(): pinned to the scenario clock for these checks, so they mean the same on any day */
-  const realNow = Date.now, T0 = realNow();
-  Date.now = () => NOW + (realNow() - T0);
   /* every example question through the REAL handler (mine, opportunity, lines and props run first): each reaches its research route */
   for (const [qx, want] of EX.concat([['Analyze every NFL game this weekend.', 'RESEARCH_SLATE']])) {
     const hx = await streamAsk(qx, { dump: 'h_' + want.toLowerCase() });
