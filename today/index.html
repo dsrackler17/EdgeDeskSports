@@ -129,25 +129,37 @@
   var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdHR4YmtidWZzbGJhdW91bWdhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2MzY4MDUsImV4cCI6MjA5NzIxMjgwNX0.Mly5G587o5IFRnEigU2wRp9buWEk3dFwH9RNPJK7Uo8';
   var H = window.EDHome, F = window.EDFlags, UI = window.EDGamesUI;
   if (!UI) return;
+  var live = !F || F.on('today_live_data');
+  /* the public board, read once: its read rides on its games, and when the
+     slate file itself cannot be loaded its games are the fallback slate */
+  var board = live ? fetch(SB_URL + '/rest/v1/rpc/public_home_board', { method: 'POST',
+    headers: { apikey: SB_KEY, authorization: 'Bearer ' + SB_KEY, 'content-type': 'application/json' }, body: '{}' })
+    .then(function (r) { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
+    .then(function (rpc) { return H && rpc ? H.build(rpc, null, Date.now(), {}) : null; })
+    .catch(function () { return null; }) : Promise.resolve(null);
+  function boardEvents(view) {
+    return (view && view.games || []).filter(function (v) { return v.game_key && v.kickoff_at && (v.league === 'nfl' || v.league === 'cfb'); }).map(function (v) {
+      var id = String(v.game_key).split('|')[1] || '';
+      return { id: v.league + ':board:' + id, sport: v.league, league: v.league === 'nfl' ? 'NFL' : 'FBS', provider: 'board', provider_id: id,
+        start_utc: new Date(Date.parse(v.kickoff_at)).toISOString(), status: 'SCHEDULED', updated_at: new Date().toISOString(),
+        home: { name: v.home }, away: { name: v.away },
+        research: { module: 'football', entity: v.league === 'nfl' ? 'nfl|' + id : id, game_key: v.game_key } };
+    });
+  }
   var used = false;
   UI.mountPage(document.getElementById('gamesPage'), {
-    host: 'public', markets: false, model: false, sbUrl: SB_URL,
-    sbKey: (!F || F.on('today_live_data')) ? SB_KEY : null
+    host: 'public', markets: false, model: false, sbUrl: SB_URL, sbKey: live ? SB_KEY : null,
+    fallback: function () { return board.then(boardEvents); }
   });
   document.getElementById('gamesPage').addEventListener('click', function (ev) {
     if (used || !window.EDPublic || !ev.target.closest('button')) return;
     used = true; window.EDPublic.track('tool_used', { entity: 'todays_games' });
   });
-  if (F && !F.on('today_live_data')) return;
-  fetch(SB_URL + '/rest/v1/rpc/public_home_board', { method: 'POST',
-    headers: { apikey: SB_KEY, authorization: 'Bearer ' + SB_KEY, 'content-type': 'application/json' }, body: '{}' })
-    .then(function (r) { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
-    .then(function (rpc) {
-      var view = H && rpc ? H.build(rpc, null, Date.now(), {}) : null;
-      var read = {};
-      (view && view.games || []).forEach(function (v) { if (v.game_key) read[v.game_key] = v; });
-      UI.setPublicRead(read);
-    }).catch(function () { /* the slate stands without the public read */ });
+  board.then(function (view) {
+    var read = {};
+    (view && view.games || []).forEach(function (v) { if (v.game_key) read[v.game_key] = v; });
+    UI.setPublicRead(read);
+  });
 })();
 </script>
 <script src="/lib/edgedesk_track.js?v=20261008a" defer></script>

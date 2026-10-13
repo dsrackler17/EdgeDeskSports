@@ -17,11 +17,13 @@
                 the honeypot, and counts one signup; the confirm page calls
                 nothing until the button is pressed; the manage page reads,
                 then saves the four topics
-     TODAY      /today/ draws the week's slate from the schedule file, day
-                by day; EdgeDesk's public read only on the board's games; the
-                free research before the upgrade on every row; filters; one
-                tool_used; only the public board is read; with its flag off
-                or its schedule missing it still draws what it has
+     TODAY      /today/ draws the slate file (today/slate.json) one day at a
+                time, every game reachable by its date; EdgeDesk's public read
+                only on the board's games; no price and no model number; the
+                free research before the upgrade on every card; sport filter;
+                one tool_used; only public doors are read; with its flag off
+                it still draws the slate, and with no slate file it falls back
+                to the public board's games
      EVERYWHERE nothing wider than the screen; no script error; the trial
                 terms as lib/edgedesk_pricing.js words them
 
@@ -37,6 +39,8 @@ const ROOT = path.join(__dirname, '..', '..');
 const args = process.argv.slice(2);
 const SHOTS = args.indexOf('--shots') >= 0 ? args[args.indexOf('--shots') + 1] : null;
 const PRICING = require(path.join(ROOT, 'lib', 'edgedesk_pricing.js'));
+const G = require(path.join(ROOT, 'lib', 'edgedesk_games.js'));
+const ZONE = 'America/Chicago';
 let pass = 0, fail = 0;
 function chk(name, ok, detail) {
   if (ok) { pass++; return; }
@@ -104,13 +108,41 @@ function serve() {
         { key: 'cfb|999000002', league: 'cfb', kickoff: new Date(Date.now() + 98 * H).toISOString(), away: 'East Test', home: 'West Test', away_conf: 'Mid Test', home_conf: 'Big Test' }
       ]).sort((a, b) => Date.parse(a.kickoff) - Date.parse(b.kickoff)) };
   let scheduleBody = JSON.stringify(SCHEDULE);
+  /* /today/ reads today/slate.json (tools/slate/build.js): the same games, as
+     the slate builder writes them, every feed and day answered */
+  const ARTS = {};
+  PUB.articles.forEach((a) => { if (a.game_id && (a.type === 'pregame' || !ARTS[a.game_id])) ARTS[a.game_id] = { url: a.url, type: a.type }; });
+  const FEED = { nfl: 'nfl:football/nfl', cfb: 'cfb:football/college-football' };
+  const SLATE = (function () {
+    const now = Date.now(), at = new Date(now - 20 * 60000).toISOString();
+    const events = SCHEDULE.games.map((g) => { const lg = g.league, id = g.key.split('|')[1], t = Date.parse(g.kickoff);
+      return { id: lg + ':espn:' + id, sport: lg, league: lg === 'nfl' ? 'NFL' : 'FBS', provider: 'espn', provider_id: id, start_utc: new Date(t).toISOString(),
+        status: 'SCHEDULED', updated_at: at, home: { name: g.home }, away: { name: g.away }, feed: FEED[lg], sb_day: G.etDay(t),
+        research: { module: 'football', entity: lg === 'nfl' ? 'nfl|' + id : id, game_key: g.key, article: ARTS[id] || null } }; });
+    const last = Math.max.apply(null, events.map((e) => Date.parse(e.start_utc)));
+    /* one Eastern day past the last game, so the reader's own last day is wholly inside the window */
+    const from = G.addDays(G.etDay(now), -2), to = G.addDays(G.etDay(Math.max(last, now + 3 * 864e5)), 1);
+    const buckets = {};
+    for (let d = from; d <= to; d = G.addDays(d, 1)) Object.keys(FEED).forEach((lg) => {
+      const ids = events.filter((e) => e.sport === lg && e.sb_day === d).map((e) => e.id);
+      buckets[FEED[lg] + '|' + d] = { ok: true, source: 'espn', fetched_at: at, checked_at: at, count: ids.length, ids, kind: 'window' };
+    });
+    return { schema: 'edgedesk_slate/1', generated_at: at, window: { from_day: from, to_day: to, zone: 'America/New_York' }, sports: {}, events, upcoming: [], markets: {}, buckets };
+  })();
+  let slateBody = JSON.stringify(SLATE);
+  const slateDates = Array.from(new Set(SLATE.events.map((e) => G.dateKey(Date.parse(e.start_utc), ZONE)))).sort();
+  const expectFor = (date) => G.select(SLATE.events, { date, zone: ZONE, now: Date.now() }).games.map((e) => e.research.game_key);
 
   async function open(urlPath, viewport, opts) {
     opts = opts || {};
-    const ctx = await browser.newContext({ viewport, deviceScaleFactor: 1, hasTouch: viewport.width < 800, isMobile: viewport.width < 800 });
+    const ctx = await browser.newContext(Object.assign({ viewport, deviceScaleFactor: 1, hasTouch: viewport.width < 800, isMobile: viewport.width < 800 }, opts.tz ? { timezoneId: opts.tz } : {}));
     const rec = { events: [], rpc: [], nl: [], errors: [] };
     await ctx.route('**/*', async (route) => {
       const req = route.request(), url = req.url();
+      if (url.indexOf('/today/slate.json') >= 0) {
+        return slateBody == null ? route.fulfill({ status: 404, body: 'not found' })
+          : route.fulfill({ status: 200, contentType: 'application/json', body: slateBody });
+      }
       if (url.indexOf('/football/home/schedule.json') >= 0) {
         return scheduleBody == null ? route.fulfill({ status: 404, body: 'not found' })
           : route.fulfill({ status: 200, contentType: 'application/json', body: scheduleBody });
@@ -208,58 +240,77 @@ function serve() {
     await o.ctx.close();
 
     /* ── today's games ───────────────────────────────────────────────── */
-    o = await open('/today/', vp, { referer: 'https://www.google.com/' });
-    await o.page.waitForSelector('#days article.game', { timeout: 5000 }).catch(() => null);
-    const rows = await o.page.$$eval('#days article.game', (as) => as.map((a) => ({ key: a.getAttribute('data-key'),
-      pill: !!a.querySelector('.meta .pill'), nums: !!a.querySelector('.nums'), art: (a.querySelector('a[data-ed-cta="today_article"]') || {}).href || null,
-      up: (a.querySelector('a.up') || {}).href || null, order: [...a.querySelectorAll('.row a')].map((x) => x.getAttribute('data-ed-cta')),
-      numsText: (a.querySelector('.nums') || {}).textContent || '' })));
     const boardKeys = (BOARD.games || []).map((g) => g.game_key);
-    eq(tag + ' today: every game on the slate is drawn, soonest first', rows.map((r) => r.key), SCHEDULE.games.map((g) => g.key));
-    chk(tag + ' today: grouped by day under a heading', (await o.page.$$('#days section.day h2')).length >= 2);
-    chk(tag + ' today: EdgeDesk\'s public read only on the public board\'s games',
-      rows.every((r) => r.pill === (boardKeys.indexOf(r.key) >= 0)), rows.map((r) => [r.key, r.pill]));
-    chk(tag + ' today: no model number on a game the board does not carry', rows.filter((r) => boardKeys.indexOf(r.key) < 0).every((r) => !r.nums));
-    chk(tag + ' today: no EV percentage and no player props in a row', rows.every((r) => !/%/.test(r.numsText))
-      && !/Receiving Yards|Passing Yards/.test(await o.page.textContent('#days')));
-    chk(tag + ' today: the published game links to its free research', rows.some((r) => r.art && r.art.endsWith(pre.url.replace('https://edgedesksports.com', ''))), rows.map((r) => r.art));
-    chk(tag + ' today: every row has an upgrade path to pricing', rows.every((r) => r.up && /\/#pricing$/.test(r.up)));
-    chk(tag + ' today: the free research comes before the upgrade', rows.every((r) => r.order[r.order.length - 1] === 'today_row_upgrade'));
+    const D1 = slateDates[0];
+    o = await open('/today/#games/all/' + D1, vp, { referer: 'https://www.google.com/', tz: ZONE });
+    await o.page.waitForSelector('#gamesPage .gm-card[data-key]', { timeout: 8000 }).catch(() => null);
+    /* the day's own sections; the separately labelled Upcoming list is not the day */
+    const cardsOf = (pg) => pg.$$eval('#gamesPage .gm-sec .gm-card[data-key]', (as) => as.map((a) => ({ key: a.getAttribute('data-key'),
+      pill: !!a.querySelector('.gm-pread'), mk: !!a.querySelector('.gm-mk'), text: a.textContent,
+      art: (a.querySelector('a[data-ed-cta="today_article"]') || {}).href || null,
+      up: (a.querySelector('a[data-ed-cta="today_row_upgrade"]') || {}).href || null,
+      order: [...a.querySelectorAll('a[data-ed-cta]')].map((x) => x.getAttribute('data-ed-cta')) })));
+    let rows = await cardsOf(o.page);
+    eq(tag + ' today: the day’s games are drawn, in slate order', rows.map((r) => r.key), expectFor(D1));
+    chk(tag + ' today: one day at a time, under its own date', (await o.page.textContent('#gamesPage .gm-fresh')).indexOf(G.dateText(D1)) >= 0);
+    /* every game on the slate is reachable by its date */
+    await o.page.waitForFunction(() => document.querySelectorAll('#gamesPage .gm-pread').length > 0, null, { timeout: 8000 }).catch(() => null);
+    const seen = [];
+    for (const d of slateDates) {
+      await o.page.evaluate((h) => { location.hash = h; }, '#games/all/' + d);
+      await o.page.waitForFunction((dt) => ((document.querySelector('#gamesPage .gm-fresh') || {}).textContent || '').indexOf(dt) >= 0, G.dateText(d));
+      const r = await cardsOf(o.page);
+      eq(tag + ' today: ' + d + ' holds exactly its own games', r.map((x) => x.key), expectFor(d));
+      r.forEach((x) => seen.push(x));
+    }
+    eq(tag + ' today: every game on the slate is reachable by its date', seen.map((r) => r.key).sort(), SCHEDULE.games.map((g) => g.key).sort());
+    chk(tag + ' today: EdgeDesk’s public read only on the public board’s games', seen.every((r) => r.pill === (boardKeys.indexOf(r.key) >= 0)), seen.map((r) => [r.key, r.pill]));
+    chk(tag + ' today: no price and no model number on the public page', seen.every((r) => !r.mk && !/%/.test(r.text) && !/Puck line|Run line|Moneyline|Fair line/.test(r.text))
+      && !/Receiving Yards|Passing Yards/.test(await o.page.textContent('#gamesPage')));
+    chk(tag + ' today: the published game links to its free research', seen.some((r) => r.art && r.art.endsWith(pre.url.replace('https://edgedesksports.com', ''))), seen.map((r) => r.art));
+    chk(tag + ' today: every card has an upgrade path to pricing', seen.every((r) => r.up && /\/#pricing$/.test(r.up)));
+    chk(tag + ' today: the free research comes before the upgrade', seen.every((r) => r.order[r.order.length - 1] === 'today_row_upgrade'));
     chk(tag + ' today: the nav marks Today\'s Games as this page', await o.page.$('header nav a[data-ed-nav="today"][aria-current="page"]') !== null);
-    const summary = await o.page.textContent('#summary');
-    chk(tag + ' today: the summary counts the week', new RegExp('\\b' + SCHEDULE.games.length + '\\b this week').test(summary), summary);
-    await o.page.selectOption('#fLeague', 'nfl');
-    const nflKeys = await o.page.$$eval('#days article.game', (as) => as.map((a) => a.getAttribute('data-key')));
-    eq(tag + ' today: filters by league', nflKeys, SCHEDULE.games.filter((g) => g.league === 'nfl').map((g) => g.key));
-    await o.page.selectOption('#fLeague', '');
-    await o.page.selectOption('#fShow', 'research');
-    const artKeys = await o.page.$$eval('#days article.game', (as) => as.map((a) => a.getAttribute('data-key')));
-    chk(tag + ' today: "with free research" keeps only games with an article', artKeys.length >= 1 && artKeys.length < SCHEDULE.games.length, artKeys);
+    await o.page.evaluate((h) => { location.hash = h; }, '#games/all/' + D1);
+    await o.page.waitForFunction((dt) => ((document.querySelector('#gamesPage .gm-fresh') || {}).textContent || '').indexOf(dt) >= 0, G.dateText(D1));
+    const summary = await o.page.textContent('#gamesPage .gm-fresh');
+    chk(tag + ' today: the summary counts the day', new RegExp('\\b' + expectFor(D1).length + '\\b games?').test(summary), summary);
+    const nflDate = slateDates.find((d) => SLATE.events.some((e) => e.sport === 'nfl' && G.dateKey(Date.parse(e.start_utc), ZONE) === d)) || D1;
+    await o.page.evaluate((h) => { location.hash = h; }, '#games/all/' + nflDate);
+    await o.page.waitForFunction((dt) => ((document.querySelector('#gamesPage .gm-fresh') || {}).textContent || '').indexOf(dt) >= 0, G.dateText(nflDate));
+    await o.page.click('#gamesPage [data-gm-sport="nfl"]');
+    await o.page.waitForFunction((dd) => location.hash === '#games/nfl/' + dd, nflDate);
+    const nflKeys = (await cardsOf(o.page)).map((r) => r.key);
+    eq(tag + ' today: filters by sport', nflKeys, expectFor(nflDate).filter((k) => k.indexOf('nfl|') === 0));
+    await o.page.click('#gamesPage [data-gm-status="upcoming"]');
+    await o.page.click('#gamesPage [data-gm-sport="all"]');
     await flush(o.page);
     eq(tag + ' today: one tool_used, however many filters', o.rec.events.filter((e) => e.event === 'tool_used').map((e) => e.props && e.props.entity), ['todays_games']);
-    chk(tag + ' today: reads only the public board', o.rec.rpc.every((r) => ['public_home_board', 'acq_track_visit', 'affiliate_track_click'].indexOf(r.fn) >= 0)
+    chk(tag + ' today: reads only public doors (the board and the live layer)', o.rec.rpc.every((r) => ['public_home_board', 'public_slate_live', 'acq_track_visit', 'affiliate_track_click'].indexOf(r.fn) >= 0)
       && o.rec.rpc.some((r) => r.fn === 'public_home_board'), o.rec.rpc.map((r) => r.fn));
     chk(tag + ' today: nothing wider than the screen, no script error', (await overflow(o.page, vp.width)).length === 0 && o.rec.errors.length === 0, o.rec.errors);
     await shot(o.page, 'today' + vp.width);
     await o.ctx.close();
 
-    /* its live read switched off: the slate still draws, the board is not asked */
-    o = await open('/today/?ff=today_live_data:0', vp);
-    await o.page.waitForSelector('#days article.game', { timeout: 5000 }).catch(() => null);
-    eq(tag + ' today, flag off: the whole slate still draws', (await o.page.$$('#days article.game')).length, SCHEDULE.games.length);
-    chk(tag + ' today, flag off: the public board is not asked', !o.rec.rpc.some((r) => r.fn === 'public_home_board'), o.rec.rpc.map((r) => r.fn));
-    chk(tag + ' today, flag off: and no read is shown', (await o.page.$$('#days .meta .pill')).length === 0);
+    /* its live read switched off: the slate still draws, the board and the live layer are not asked */
+    o = await open('/today/?ff=today_live_data:0#games/all/' + D1, vp, { tz: ZONE });
+    await o.page.waitForSelector('#gamesPage .gm-card[data-key]', { timeout: 8000 }).catch(() => null);
+    eq(tag + ' today, flag off: the whole day still draws', (await cardsOf(o.page)).map((r) => r.key), expectFor(D1));
+    chk(tag + ' today, flag off: the public board and the live layer are not asked', !o.rec.rpc.some((r) => r.fn === 'public_home_board' || r.fn === 'public_slate_live'), o.rec.rpc.map((r) => r.fn));
+    chk(tag + ' today, flag off: and no read is shown', (await o.page.$$('#gamesPage .gm-pread')).length === 0);
     await o.ctx.close();
 
-    /* no schedule file: the public board's own games are still a slate */
-    scheduleBody = null;
-    o = await open('/today/', vp);
-    await o.page.waitForSelector('#days article.game', { timeout: 5000 }).catch(() => null);
-    const fb = await o.page.$$eval('#days article.game', (as) => as.map((a) => a.getAttribute('data-key')));
-    chk(tag + ' today, no schedule: falls back to the board\'s games', fb.length > 0 && fb.every((k) => boardKeys.indexOf(k) >= 0), fb);
-    chk(tag + ' today, no schedule: no script error', o.rec.errors.length === 0, o.rec.errors);
+    /* no slate file: the public board's own games are still a slate */
+    slateBody = null;
+    const BD = G.dateKey(Math.min.apply(null, (BOARD.games || []).map((g) => Date.parse(g.kickoff_at))), ZONE);
+    o = await open('/today/#games/all/' + BD, vp, { tz: ZONE });
+    await o.page.waitForSelector('#gamesPage .gm-card[data-key]', { timeout: 8000 }).catch(() => null);
+    const fb = (await cardsOf(o.page)).map((r) => r.key);
+    chk(tag + ' today, no slate file: falls back to the board\'s games', fb.length > 0 && fb.every((k) => boardKeys.indexOf(k) >= 0), fb);
+    chk(tag + ' today, no slate file: and says it is only the board', /only the games on EdgeDesk’s public board/.test(await o.page.textContent('#gamesPage')));
+    chk(tag + ' today, no slate file: no script error', o.rec.errors.length === 0, o.rec.errors);
     await o.ctx.close();
-    scheduleBody = JSON.stringify(SCHEDULE);
+    slateBody = JSON.stringify(SLATE);
 
     /* ── a research article ──────────────────────────────────────────── */
     o = await open('/articles/' + pre.slug + '/', vp, { referer: 'https://www.bing.com/' });
