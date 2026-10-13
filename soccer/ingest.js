@@ -84,7 +84,7 @@ function updateManifest(league, results) {
   let man = {}; try { man = JSON.parse(fs.readFileSync(p, 'utf8')); } catch (_) {}
   man.schema = 'edgedesk_soccer_matches_v1'; man.league = league; man.columns = COLS; man.license = C.LICENSE; man.seasons = man.seasons || {};
   man.temporal = { known_at: 'blank (never backdated)', assumed_available_at: 'the match day 23:59 UTC', pit: 'RETRO' };
-  const teams = process.argv.includes('--keep-names') ? (man.teams || {}) : {};
+  const teams = process.argv.includes('--fresh-names') ? {} : (man.teams || {}); /* --fresh-names rebuilds the display-name map from the seasons ingested now */
   for (const r of results) {
     if (r.error || r.not_published) continue;
     man.seasons[r.season] = Object.assign({}, r.stats, { source: r.source });
