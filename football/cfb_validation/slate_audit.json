@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-13T11:07:51.385Z",
- "board_generated_at": "2026-10-13T11:07:46.663Z",
+ "generated_at": "2026-10-13T13:07:46.346Z",
+ "board_generated_at": "2026-10-13T13:07:42.862Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -16,14 +16,54 @@
  ],
  "games": [
   {
+   "game_id": "401862805",
+   "game": "Tulsa @ Rice",
+   "kickoff": "2026-10-17T20:30:00.000Z",
+   "named": false,
+   "edgedesk": "Rice -1.5",
+   "market": "Tulsa -4.0",
+   "books": 2,
+   "gap": 5.5,
+   "gap_class": "MODERATE",
+   "favorite_flip": true,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
    "game_id": "401856831",
    "game": "Oklahoma State @ Houston",
    "kickoff": "2026-10-17T23:30:00.000Z",
    "named": false,
    "edgedesk": "Houston -10.9",
-   "market": "Houston -4.5",
-   "books": 1,
-   "gap": 6.4,
+   "market": "Houston -4.6",
+   "books": 2,
+   "gap": 6.3,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
+   "game_id": "401869934",
+   "game": "Arkansas State @ Southern Miss",
+   "kickoff": "2026-10-17T23:00:00.000Z",
+   "named": false,
+   "edgedesk": "Arkansas State -2.8",
+   "market": "Arkansas State -7.0",
+   "books": 2,
+   "gap": 4.2,
    "gap_class": "MODERATE",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -48,7 +88,7 @@
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
    "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
+   "decision_status": "NO_DECISION",
    "gate_status": "NOT REQUIRED (under 7 pts)",
    "root_cause": null,
    "requirements": null,
@@ -56,19 +96,19 @@
    "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
-   "game_id": "401871054",
-   "game": "Kennesaw State @ Missouri State",
-   "kickoff": "2026-10-14T23:30:00.000Z",
+   "game_id": "401858494",
+   "game": "Wisconsin @ UCLA",
+   "kickoff": "2026-10-17T23:30:00.000Z",
    "named": false,
-   "edgedesk": "Missouri State -0.2",
-   "market": "Kennesaw State -3.0",
+   "edgedesk": "UCLA -6.3",
+   "market": "UCLA -2.5",
    "books": 1,
-   "gap": 3.2,
+   "gap": 3.8,
    "gap_class": "MODERATE",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
    "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
+   "decision_status": "NO_DECISION",
    "gate_status": "NOT REQUIRED (under 7 pts)",
    "root_cause": null,
    "requirements": null,
@@ -88,7 +128,7 @@
    "favorite_flip": false,
    "research_status": "MARKET_FAULT",
    "research_label": "MARKET FAULT",
-   "decision_status": "PASS",
+   "decision_status": "NO_DECISION",
    "gate_status": "MARKET_FAULT",
    "root_cause": "THIN_MARKET",
    "requirements": [
@@ -147,14 +187,14 @@
    "kickoff": "2026-10-18T02:15:00.000Z",
    "named": false,
    "edgedesk": "Utah -23.0",
-   "market": "Utah -15.5",
+   "market": "Utah -15.8",
    "books": 1,
-   "gap": 7.5,
+   "gap": 7.2,
    "gap_class": "MAJOR",
    "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
+   "research_status": "MARKET_FAULT",
+   "research_label": "MARKET FAULT",
+   "decision_status": "NO_DECISION",
    "gate_status": "MARKET_FAULT",
    "root_cause": "THIN_MARKET",
    "requirements": [
@@ -191,21 +231,21 @@
     {
      "requirement": "component adjustments within historical bounds",
      "result": "PASS",
-     "detail": "WARN: the matchup term alone (-4.5 pts) lifts the gap over 7: without it the gap is 3 — historically informative, flagged for scrutiny"
+     "detail": "WARN: the matchup term alone (-4.5 pts) lifts the gap over 7: without it the gap is 2.7 — historically informative, flagged for scrutiny"
     },
     {
      "requirement": "submodel support",
      "result": "FAIL",
-     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · FAIL: the independent ensemble is 0.4 pts on the market’s side"
+     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · FAIL: the independent ensemble is 0.6 pts on the market’s side"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
      "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 8"
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7.7"
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; submodel support fail."
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; submodel support fail."
   },
   {
    "game_id": "401858489",
@@ -218,9 +258,9 @@
    "gap": 7.6,
    "gap_class": "MAJOR",
    "favorite_flip": true,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
+   "research_status": "MARKET_FAULT",
+   "research_label": "MARKET FAULT",
+   "decision_status": "NO_DECISION",
    "gate_status": "MARKET_FAULT",
    "root_cause": "THIN_MARKET",
    "requirements": [
@@ -271,7 +311,27 @@
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; resolved QB fail; submodel support fail."
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; resolved QB fail; submodel support fail."
+  },
+  {
+   "game_id": "401862801",
+   "game": "Memphis @ Tulane",
+   "kickoff": "2026-10-16T23:30:00.000Z",
+   "named": false,
+   "edgedesk": "Memphis -4.8",
+   "market": "Memphis -6.8",
+   "books": 1,
+   "gap": 2,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "NO_DECISION",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   }
  ],
  "inconsistent": [],

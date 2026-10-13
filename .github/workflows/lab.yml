@@ -54,8 +54,10 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
-      - name: The data pack verifies (hashes, counts, blank known_at, contracts, NFL lags, no invented xG)
-        run: node tools/datapack/verify.js --check && node tools/datapack/datapack.test.js
+      - name: The data packs verify (hashes, counts, blank known_at, contracts, NFL and NHL lags recomputed, no invented xG)
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: node tools/datapack/verify.js --check && node tools/datapack/verify_nhl.js --check && node tools/datapack/datapack.test.js
       - name: The pack agrees with each brain's own source
         run: node tools/datapack/crosscheck.js --check
       - name: The brains, the protocol, the board's settlement and sensitivity rules, the ladder

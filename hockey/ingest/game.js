@@ -8,8 +8,14 @@
      - x_fixed/y_fixed: the home team always attacks +x (the net at x = +89),
        the away team −x. A shot is turned to "attacking right" by negating the
        away team's coordinates.
-     - event_team is the SHOOTING team for SHOT, MISSED_SHOT, BLOCKED_SHOT and
-       GOAL; the PENALISED team for PENALTY.
+     - event_team is the SHOOTING team for SHOT, MISSED_SHOT and GOAL; the
+       PENALISED team for PENALTY. On BLOCKED_SHOT it is the BLOCKING team
+       (event_player_1 is the shooter, event_player_2 the blocker), and
+       x_fixed/y_fixed are rotated 180° as if the blocker had attacked:
+       shooterView() turns such a row to the shooting team and its frame
+       before anything reads it. Measured on every season 2010-11..2025-26
+       (the shooter's club is never the event team) and against ESPN's
+       2024-25 shots in datapack/nhl_v1 (hockey/crosscheck/espn.js).
      - home_score/away_score on a GOAL row already include that goal; the
        score BEFORE a shot is tracked here from the goals themselves.
      - empty_net is true exactly when the defending goalie is out of the net.
@@ -42,6 +48,19 @@ function shotType(s) {
   return 'other';
 }
 const UNBLOCKED = { SHOT: 1, MISSED_SHOT: 1, GOAL: 1 };
+const OTHER = { home: 'away', away: 'home' };
+
+/** a BLOCKED_SHOT row seen from the shooting team: its side, and its location in the fixed frame */
+function shooterView(e) {
+  if (e.event_type !== 'BLOCKED_SHOT' || !OTHER[e.event_team_type]) return e;
+  const x = num(e.x_fixed), y = num(e.y_fixed);
+  return Object.assign({}, e, {
+    event_team_type: OTHER[e.event_team_type],
+    event_team_abbr: e.event_team_abbr === e.home_abbr ? e.away_abbr : e.event_team_abbr === e.away_abbr ? e.home_abbr : null,
+    x_fixed: x == null ? null : -x, y_fixed: y == null ? null : -y,
+    blocking_team_type: e.event_team_type,
+  });
+}
 
 function blankTeam() {
   const t = { toi: { ev5: 0, evo: 0, pp: 0, sh: 0, enf: 0, ena: 0 }, toi_ev5_score: { lead: 0, tie: 0, trail: 0 } };
@@ -65,7 +84,7 @@ function stateFor(side, hs, as, hg, ag) {
 function processGame(meta, events, opts) {
   opts = opts || {};
   const issues = [];
-  const evs = events.slice().sort((a, b) => (num(a.period) - num(b.period)) || (num(a.game_seconds) - num(b.game_seconds)) || (num(a.event_idx) - num(b.event_idx)));
+  const evs = events.map(shooterView).sort((a, b) => (num(a.period) - num(b.period)) || (num(a.game_seconds) - num(b.game_seconds)) || (num(a.event_idx) - num(b.event_idx)));
   const H = blankTeam(), A = blankTeam();
   const T = { home: H, away: A };
   let hScore = 0, aScore = 0;            /* running score, regulation + OT (no shootout) */
@@ -209,4 +228,4 @@ function applyXg(rec, xg) {
   return rec;
 }
 
-module.exports = { processGame, applyXg, stateFor, shotType, SHOT_TYPES, NET_X };
+module.exports = { processGame, applyXg, stateFor, shotType, shooterView, SHOT_TYPES, NET_X };

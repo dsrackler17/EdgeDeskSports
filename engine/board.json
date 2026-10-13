@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_engine_board_v1",
  "version": "edgedesk_xboard_v2",
- "evaluated_at": "2026-10-13T06:41:57.145Z",
+ "evaluated_at": "2026-10-13T12:50:00.882Z",
  "verdict": "PASS",
  "best": null,
  "why": [
@@ -37,7 +37,7 @@
   },
   "quote": null,
   "model": {
-   "p_win": 0.7205,
+   "p_win": 0.7154,
    "p_push": 0,
    "method": "MODEL",
    "model_id": "edgedesk_football_v1.0.0",
@@ -61,21 +61,21 @@
     "gate": "VALUE",
     "ok": false,
     "code": "NEEDS_PRICE",
-    "reason": "needs a price of -100 or better to clear the bar (if value claims were enabled)"
+    "reason": "needs a price of +100 or better to clear the bar (if value claims were enabled)"
    }
   ],
   "id": "bf4e53df",
   "label": "New York Jets @ New England Patriots — New England Patriots -7.5",
-  "fair_american": -258,
+  "fair_american": -251,
   "priced": false,
   "prob": {
-   "model": 0.7205,
+   "model": 0.7154,
    "push": 0,
    "market_novig": 0.5,
    "shrink_k": 0.1286,
-   "posterior": 0.5284,
+   "posterior": 0.5277,
    "sd": 0.014,
-   "conservative": 0.5104,
+   "conservative": 0.5097,
    "components": {
     "model_sd": 0.03,
     "calibration_sd": 0.015,
@@ -86,9 +86,9 @@
   "ev_raw": null,
   "ev_posterior": null,
   "ev_conservative": null,
-  "min_acceptable_american": -100,
+  "min_acceptable_american": 100,
   "status": "RESEARCH",
-  "disagreement": 0.0104
+  "disagreement": 0.0097
  },
  "counts": {
   "RESEARCH": 396
@@ -1970,16 +1970,16 @@
    },
    "label": "New York Jets @ New England Patriots — New England Patriots -7.5",
    "quote": null,
-   "fair_american": -258,
+   "fair_american": -251,
    "break_even": null,
    "prob": {
-    "model": 0.7205,
+    "model": 0.7154,
     "push": 0,
     "market_novig": 0.5,
     "shrink_k": 0.1286,
-    "posterior": 0.5284,
+    "posterior": 0.5277,
     "sd": 0.014,
-    "conservative": 0.5104,
+    "conservative": 0.5097,
     "components": {
      "model_sd": 0.03,
      "calibration_sd": 0.015,
@@ -1989,8 +1989,8 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -100,
-   "disagreement": 0.0104,
+   "min_acceptable_american": 100,
+   "disagreement": 0.0097,
    "gates": [
     {
      "gate": "PRICE",
@@ -2002,7 +2002,7 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -100 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +100 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
@@ -3677,15 +3677,15 @@
    "fair_american": -181,
    "break_even": null,
    "prob": {
-    "model": 0.6442,
+    "model": 0.6439,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.6442,
+    "posterior": 0.6439,
     "sd": 0.0258,
-    "conservative": 0.6111,
+    "conservative": 0.6109,
     "components": {
-     "model_sd": 0.0173,
+     "model_sd": 0.0172,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -3712,8 +3712,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.201 (DET) vs 2.7379 (NJD) regulation goals",
-    "DET 5v5 xG for 0.9832× league, NJD 5v5 xG for 1.0079×",
+    "λ 3.1905 (DET) vs 2.7221 (NJD) regulation goals",
+    "DET 5v5 xG for 0.9834× league, NJD 5v5 xG for 1.0066×",
     "goalies: projected uncertain (J. Gibson 74% / J. Allen 59%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -3752,15 +3752,15 @@
    "fair_american": -136,
    "break_even": null,
    "prob": {
-    "model": 0.5754,
+    "model": 0.5764,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5754,
-    "sd": 0.0219,
-    "conservative": 0.5474,
+    "posterior": 0.5764,
+    "sd": 0.0218,
+    "conservative": 0.5485,
     "components": {
-     "model_sd": 0.0157,
+     "model_sd": 0.0156,
      "calibration_sd": 0.0094,
      "lineup_sd": 0.012
     }
@@ -3787,8 +3787,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.201 (DET) vs 2.7379 (NJD) regulation goals",
-    "DET 5v5 xG for 0.9832× league, NJD 5v5 xG for 1.0079×",
+    "λ 3.1905 (DET) vs 2.7221 (NJD) regulation goals",
+    "DET 5v5 xG for 0.9834× league, NJD 5v5 xG for 1.0066×",
     "goalies: projected uncertain (J. Gibson 74% / J. Allen 59%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -3824,16 +3824,16 @@
    },
    "label": "NJD @ DET — under 6",
    "quote": null,
-   "fair_american": -100,
+   "fair_american": -102,
    "break_even": null,
    "prob": {
-    "model": 0.4456,
-    "push": 0.1092,
+    "model": 0.45,
+    "push": 0.1093,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4456,
+    "posterior": 0.45,
     "sd": 0.0277,
-    "conservative": 0.4101,
+    "conservative": 0.4145,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -3843,7 +3843,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 122,
+   "min_acceptable_american": 120,
    "disagreement": null,
    "gates": [
     {
@@ -3856,14 +3856,14 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +122 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +120 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.201 (DET) vs 2.7379 (NJD) regulation goals",
-    "DET 5v5 xG for 0.9832× league, NJD 5v5 xG for 1.0079×",
+    "λ 3.1905 (DET) vs 2.7221 (NJD) regulation goals",
+    "DET 5v5 xG for 0.9834× league, NJD 5v5 xG for 1.0066×",
     "goalies: projected uncertain (J. Gibson 74% / J. Allen 59%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -3899,16 +3899,16 @@
    },
    "label": "NJD @ DET — over 6",
    "quote": null,
-   "fair_american": 100,
+   "fair_american": 102,
    "break_even": null,
    "prob": {
-    "model": 0.4452,
-    "push": 0.1092,
+    "model": 0.4407,
+    "push": 0.1093,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4452,
+    "posterior": 0.4407,
     "sd": 0.0277,
-    "conservative": 0.4097,
+    "conservative": 0.4052,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -3918,7 +3918,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 122,
+   "min_acceptable_american": 125,
    "disagreement": null,
    "gates": [
     {
@@ -3931,14 +3931,14 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +122 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +125 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.201 (DET) vs 2.7379 (NJD) regulation goals",
-    "DET 5v5 xG for 0.9832× league, NJD 5v5 xG for 1.0079×",
+    "λ 3.1905 (DET) vs 2.7221 (NJD) regulation goals",
+    "DET 5v5 xG for 0.9834× league, NJD 5v5 xG for 1.0066×",
     "goalies: projected uncertain (J. Gibson 74% / J. Allen 59%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -3977,15 +3977,15 @@
    "fair_american": 136,
    "break_even": null,
    "prob": {
-    "model": 0.4246,
+    "model": 0.4236,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4246,
-    "sd": 0.0248,
-    "conservative": 0.3928,
+    "posterior": 0.4236,
+    "sd": 0.0247,
+    "conservative": 0.3919,
     "components": {
-     "model_sd": 0.0157,
+     "model_sd": 0.0156,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -4012,8 +4012,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.201 (DET) vs 2.7379 (NJD) regulation goals",
-    "DET 5v5 xG for 0.9832× league, NJD 5v5 xG for 1.0079×",
+    "λ 3.1905 (DET) vs 2.7221 (NJD) regulation goals",
+    "DET 5v5 xG for 0.9834× league, NJD 5v5 xG for 1.0066×",
     "goalies: projected uncertain (J. Gibson 74% / J. Allen 59%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -4052,15 +4052,15 @@
    "fair_american": 181,
    "break_even": null,
    "prob": {
-    "model": 0.3558,
+    "model": 0.3561,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.3558,
+    "posterior": 0.3561,
     "sd": 0.0258,
-    "conservative": 0.3227,
+    "conservative": 0.3231,
     "components": {
-     "model_sd": 0.0173,
+     "model_sd": 0.0172,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -4087,8 +4087,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.201 (DET) vs 2.7379 (NJD) regulation goals",
-    "DET 5v5 xG for 0.9832× league, NJD 5v5 xG for 1.0079×",
+    "λ 3.1905 (DET) vs 2.7221 (NJD) regulation goals",
+    "DET 5v5 xG for 0.9834× league, NJD 5v5 xG for 1.0066×",
     "goalies: projected uncertain (J. Gibson 74% / J. Allen 59%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -4124,18 +4124,18 @@
    },
    "label": "FLA @ CBJ — FLA +1.5",
    "quote": null,
-   "fair_american": -185,
+   "fair_american": -184,
    "break_even": null,
    "prob": {
-    "model": 0.6492,
+    "model": 0.6482,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.6492,
-    "sd": 0.0254,
-    "conservative": 0.6167,
+    "posterior": 0.6482,
+    "sd": 0.0251,
+    "conservative": 0.616,
     "components": {
-     "model_sd": 0.0166,
+     "model_sd": 0.0162,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -4143,7 +4143,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -153,
+   "min_acceptable_american": -152,
    "disagreement": null,
    "gates": [
     {
@@ -4156,14 +4156,14 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -153 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -152 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.1969 (CBJ) vs 2.7711 (FLA) regulation goals",
-    "CBJ 5v5 xG for 1.0244× league, FLA 5v5 xG for 1.0094×",
+    "λ 3.1968 (CBJ) vs 2.7625 (FLA) regulation goals",
+    "CBJ 5v5 xG for 1.0256× league, FLA 5v5 xG for 1.0126×",
     "goalies: projected uncertain (J. Greaves 84% / J. Markstrom 58%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -4199,18 +4199,18 @@
    },
    "label": "FLA @ CBJ — CBJ moneyline",
    "quote": null,
-   "fair_american": -132,
+   "fair_american": -133,
    "break_even": null,
    "prob": {
-    "model": 0.5693,
+    "model": 0.5707,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5693,
-    "sd": 0.0214,
-    "conservative": 0.5418,
+    "posterior": 0.5707,
+    "sd": 0.0212,
+    "conservative": 0.5436,
     "components": {
-     "model_sd": 0.0151,
+     "model_sd": 0.0147,
      "calibration_sd": 0.0094,
      "lineup_sd": 0.012
     }
@@ -4218,7 +4218,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -113,
+   "min_acceptable_american": -114,
    "disagreement": null,
    "gates": [
     {
@@ -4231,14 +4231,14 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -113 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -114 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.1969 (CBJ) vs 2.7711 (FLA) regulation goals",
-    "CBJ 5v5 xG for 1.0244× league, FLA 5v5 xG for 1.0094×",
+    "λ 3.1968 (CBJ) vs 2.7625 (FLA) regulation goals",
+    "CBJ 5v5 xG for 1.0256× league, FLA 5v5 xG for 1.0126×",
     "goalies: projected uncertain (J. Greaves 84% / J. Markstrom 58%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -4274,16 +4274,16 @@
    },
    "label": "FLA @ CBJ — over 6",
    "quote": null,
-   "fair_american": -102,
+   "fair_american": -101,
    "break_even": null,
    "prob": {
-    "model": 0.4502,
+    "model": 0.4487,
     "push": 0.1091,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4502,
+    "posterior": 0.4487,
     "sd": 0.0277,
-    "conservative": 0.4147,
+    "conservative": 0.4132,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -4312,8 +4312,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.1969 (CBJ) vs 2.7711 (FLA) regulation goals",
-    "CBJ 5v5 xG for 1.0244× league, FLA 5v5 xG for 1.0094×",
+    "λ 3.1968 (CBJ) vs 2.7625 (FLA) regulation goals",
+    "CBJ 5v5 xG for 1.0256× league, FLA 5v5 xG for 1.0126×",
     "goalies: projected uncertain (J. Greaves 84% / J. Markstrom 58%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -4349,16 +4349,16 @@
    },
    "label": "FLA @ CBJ — under 6",
    "quote": null,
-   "fair_american": 102,
+   "fair_american": 101,
    "break_even": null,
    "prob": {
-    "model": 0.4408,
+    "model": 0.4422,
     "push": 0.1091,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4408,
+    "posterior": 0.4422,
     "sd": 0.0277,
-    "conservative": 0.4053,
+    "conservative": 0.4067,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -4368,7 +4368,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 125,
+   "min_acceptable_american": 124,
    "disagreement": null,
    "gates": [
     {
@@ -4381,14 +4381,14 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +125 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.1969 (CBJ) vs 2.7711 (FLA) regulation goals",
-    "CBJ 5v5 xG for 1.0244× league, FLA 5v5 xG for 1.0094×",
+    "λ 3.1968 (CBJ) vs 2.7625 (FLA) regulation goals",
+    "CBJ 5v5 xG for 1.0256× league, FLA 5v5 xG for 1.0126×",
     "goalies: projected uncertain (J. Greaves 84% / J. Markstrom 58%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -4424,18 +4424,18 @@
    },
    "label": "FLA @ CBJ — FLA moneyline",
    "quote": null,
-   "fair_american": 132,
+   "fair_american": 133,
    "break_even": null,
    "prob": {
-    "model": 0.4307,
+    "model": 0.4293,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4307,
-    "sd": 0.0244,
-    "conservative": 0.3994,
+    "posterior": 0.4293,
+    "sd": 0.0242,
+    "conservative": 0.3983,
     "components": {
-     "model_sd": 0.0151,
+     "model_sd": 0.0147,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -4443,7 +4443,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 155,
+   "min_acceptable_american": 156,
    "disagreement": null,
    "gates": [
     {
@@ -4456,14 +4456,14 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +155 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +156 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.1969 (CBJ) vs 2.7711 (FLA) regulation goals",
-    "CBJ 5v5 xG for 1.0244× league, FLA 5v5 xG for 1.0094×",
+    "λ 3.1968 (CBJ) vs 2.7625 (FLA) regulation goals",
+    "CBJ 5v5 xG for 1.0256× league, FLA 5v5 xG for 1.0126×",
     "goalies: projected uncertain (J. Greaves 84% / J. Markstrom 58%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -4499,18 +4499,18 @@
    },
    "label": "FLA @ CBJ — CBJ -1.5",
    "quote": null,
-   "fair_american": 185,
+   "fair_american": 184,
    "break_even": null,
    "prob": {
-    "model": 0.3508,
+    "model": 0.3518,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.3508,
-    "sd": 0.0254,
-    "conservative": 0.3183,
+    "posterior": 0.3518,
+    "sd": 0.0251,
+    "conservative": 0.3196,
     "components": {
-     "model_sd": 0.0166,
+     "model_sd": 0.0162,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -4518,7 +4518,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 220,
+   "min_acceptable_american": 219,
    "disagreement": null,
    "gates": [
     {
@@ -4531,14 +4531,14 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +220 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +219 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.1969 (CBJ) vs 2.7711 (FLA) regulation goals",
-    "CBJ 5v5 xG for 1.0244× league, FLA 5v5 xG for 1.0094×",
+    "λ 3.1968 (CBJ) vs 2.7625 (FLA) regulation goals",
+    "CBJ 5v5 xG for 1.0256× league, FLA 5v5 xG for 1.0126×",
     "goalies: projected uncertain (J. Greaves 84% / J. Markstrom 58%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -4574,18 +4574,18 @@
    },
    "label": "BUF @ MTL — BUF +1.5",
    "quote": null,
-   "fair_american": -188,
+   "fair_american": -189,
    "break_even": null,
    "prob": {
-    "model": 0.653,
+    "model": 0.6544,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.653,
-    "sd": 0.0215,
-    "conservative": 0.6254,
+    "posterior": 0.6544,
+    "sd": 0.0217,
+    "conservative": 0.6266,
     "components": {
-     "model_sd": 0.0097,
+     "model_sd": 0.01,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -4612,8 +4612,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.2818 (MTL) vs 2.9078 (BUF) regulation goals",
-    "MTL 5v5 xG for 1.0215× league, BUF 5v5 xG for 1.0292×",
+    "λ 3.2718 (MTL) vs 2.906 (BUF) regulation goals",
+    "MTL 5v5 xG for 1.0211× league, BUF 5v5 xG for 1.0281×",
     "goalies: projected uncertain (J. Dobes 65% / U. Luukkonen 56%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -4652,15 +4652,15 @@
    "fair_american": -127,
    "break_even": null,
    "prob": {
-    "model": 0.5599,
+    "model": 0.5587,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5599,
-    "sd": 0.0176,
-    "conservative": 0.5374,
+    "posterior": 0.5587,
+    "sd": 0.0177,
+    "conservative": 0.536,
     "components": {
-     "model_sd": 0.0088,
+     "model_sd": 0.0091,
      "calibration_sd": 0.0094,
      "lineup_sd": 0.012
     }
@@ -4687,8 +4687,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.2818 (MTL) vs 2.9078 (BUF) regulation goals",
-    "MTL 5v5 xG for 1.0215× league, BUF 5v5 xG for 1.0292×",
+    "λ 3.2718 (MTL) vs 2.906 (BUF) regulation goals",
+    "MTL 5v5 xG for 1.0211× league, BUF 5v5 xG for 1.0281×",
     "goalies: projected uncertain (J. Dobes 65% / U. Luukkonen 56%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -4724,16 +4724,16 @@
    },
    "label": "BUF @ MTL — under 6.5",
    "quote": null,
-   "fair_american": -105,
+   "fair_american": -106,
    "break_even": null,
    "prob": {
-    "model": 0.5128,
+    "model": 0.5147,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5128,
+    "posterior": 0.5147,
     "sd": 0.0277,
-    "conservative": 0.4773,
+    "conservative": 0.4792,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -4743,7 +4743,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 114,
+   "min_acceptable_american": 113,
    "disagreement": null,
    "gates": [
     {
@@ -4756,14 +4756,14 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +114 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +113 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.2818 (MTL) vs 2.9078 (BUF) regulation goals",
-    "MTL 5v5 xG for 1.0215× league, BUF 5v5 xG for 1.0292×",
+    "λ 3.2718 (MTL) vs 2.906 (BUF) regulation goals",
+    "MTL 5v5 xG for 1.0211× league, BUF 5v5 xG for 1.0281×",
     "goalies: projected uncertain (J. Dobes 65% / U. Luukkonen 56%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -4799,16 +4799,16 @@
    },
    "label": "BUF @ MTL — over 6.5",
    "quote": null,
-   "fair_american": 105,
+   "fair_american": 106,
    "break_even": null,
    "prob": {
-    "model": 0.4872,
+    "model": 0.4853,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4872,
+    "posterior": 0.4853,
     "sd": 0.0277,
-    "conservative": 0.4517,
+    "conservative": 0.4498,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -4818,7 +4818,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 126,
+   "min_acceptable_american": 127,
    "disagreement": null,
    "gates": [
     {
@@ -4831,14 +4831,14 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +126 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +127 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.2818 (MTL) vs 2.9078 (BUF) regulation goals",
-    "MTL 5v5 xG for 1.0215× league, BUF 5v5 xG for 1.0292×",
+    "λ 3.2718 (MTL) vs 2.906 (BUF) regulation goals",
+    "MTL 5v5 xG for 1.0211× league, BUF 5v5 xG for 1.0281×",
     "goalies: projected uncertain (J. Dobes 65% / U. Luukkonen 56%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -4877,15 +4877,15 @@
    "fair_american": 127,
    "break_even": null,
    "prob": {
-    "model": 0.4401,
+    "model": 0.4413,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4401,
-    "sd": 0.0211,
-    "conservative": 0.413,
+    "posterior": 0.4413,
+    "sd": 0.0213,
+    "conservative": 0.4141,
     "components": {
-     "model_sd": 0.0088,
+     "model_sd": 0.0091,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -4893,7 +4893,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 147,
+   "min_acceptable_american": 146,
    "disagreement": null,
    "gates": [
     {
@@ -4906,14 +4906,14 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +147 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +146 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.2818 (MTL) vs 2.9078 (BUF) regulation goals",
-    "MTL 5v5 xG for 1.0215× league, BUF 5v5 xG for 1.0292×",
+    "λ 3.2718 (MTL) vs 2.906 (BUF) regulation goals",
+    "MTL 5v5 xG for 1.0211× league, BUF 5v5 xG for 1.0281×",
     "goalies: projected uncertain (J. Dobes 65% / U. Luukkonen 56%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -4949,18 +4949,18 @@
    },
    "label": "BUF @ MTL — MTL -1.5",
    "quote": null,
-   "fair_american": 188,
+   "fair_american": 189,
    "break_even": null,
    "prob": {
-    "model": 0.347,
+    "model": 0.3456,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.347,
-    "sd": 0.0215,
-    "conservative": 0.3194,
+    "posterior": 0.3456,
+    "sd": 0.0217,
+    "conservative": 0.3178,
     "components": {
-     "model_sd": 0.0097,
+     "model_sd": 0.01,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -4968,7 +4968,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 219,
+   "min_acceptable_american": 221,
    "disagreement": null,
    "gates": [
     {
@@ -4981,14 +4981,14 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +219 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +221 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.2818 (MTL) vs 2.9078 (BUF) regulation goals",
-    "MTL 5v5 xG for 1.0215× league, BUF 5v5 xG for 1.0292×",
+    "λ 3.2718 (MTL) vs 2.906 (BUF) regulation goals",
+    "MTL 5v5 xG for 1.0211× league, BUF 5v5 xG for 1.0281×",
     "goalies: projected uncertain (J. Dobes 65% / U. Luukkonen 56%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -5027,15 +5027,15 @@
    "fair_american": -164,
    "break_even": null,
    "prob": {
-    "model": 0.6208,
+    "model": 0.6219,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.6208,
-    "sd": 0.02,
-    "conservative": 0.5952,
+    "posterior": 0.6219,
+    "sd": 0.0203,
+    "conservative": 0.5959,
     "components": {
-     "model_sd": 0.0113,
+     "model_sd": 0.0118,
      "calibration_sd": 0.0113,
      "lineup_sd": 0.012
     }
@@ -5043,7 +5043,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -140,
+   "min_acceptable_american": -141,
    "disagreement": null,
    "gates": [
     {
@@ -5056,14 +5056,14 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -140 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -141 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.4418 (CAR) vs 2.6778 (WSH) regulation goals",
-    "CAR 5v5 xG for 1.1507× league, WSH 5v5 xG for 1.0393×",
+    "λ 3.4432 (CAR) vs 2.672 (WSH) regulation goals",
+    "CAR 5v5 xG for 1.156× league, WSH 5v5 xG for 1.0405×",
     "goalies: projected uncertain (B. Bussi 58% / L. Thompson 76%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -5098,18 +5098,18 @@
    },
    "label": "WSH @ CAR — WSH +1.5",
    "quote": null,
-   "fair_american": -148,
+   "fair_american": -147,
    "break_even": null,
    "prob": {
-    "model": 0.5963,
+    "model": 0.5953,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5963,
-    "sd": 0.0229,
-    "conservative": 0.567,
+    "posterior": 0.5953,
+    "sd": 0.0232,
+    "conservative": 0.5656,
     "components": {
-     "model_sd": 0.0124,
+     "model_sd": 0.013,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -5117,7 +5117,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -125,
+   "min_acceptable_american": -124,
    "disagreement": null,
    "gates": [
     {
@@ -5130,14 +5130,14 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -125 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -124 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.4418 (CAR) vs 2.6778 (WSH) regulation goals",
-    "CAR 5v5 xG for 1.1507× league, WSH 5v5 xG for 1.0393×",
+    "λ 3.4432 (CAR) vs 2.672 (WSH) regulation goals",
+    "CAR 5v5 xG for 1.156× league, WSH 5v5 xG for 1.0405×",
     "goalies: projected uncertain (B. Bussi 58% / L. Thompson 76%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -5175,13 +5175,13 @@
    "fair_american": -111,
    "break_even": null,
    "prob": {
-    "model": 0.5261,
+    "model": 0.5269,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.5261,
+    "posterior": 0.5269,
     "sd": 0.0277,
-    "conservative": 0.4906,
+    "conservative": 0.4914,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -5210,8 +5210,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.4418 (CAR) vs 2.6778 (WSH) regulation goals",
-    "CAR 5v5 xG for 1.1507× league, WSH 5v5 xG for 1.0393×",
+    "λ 3.4432 (CAR) vs 2.672 (WSH) regulation goals",
+    "CAR 5v5 xG for 1.156× league, WSH 5v5 xG for 1.0405×",
     "goalies: projected uncertain (B. Bussi 58% / L. Thompson 76%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -5249,13 +5249,13 @@
    "fair_american": 111,
    "break_even": null,
    "prob": {
-    "model": 0.4739,
+    "model": 0.4731,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4739,
+    "posterior": 0.4731,
     "sd": 0.0277,
-    "conservative": 0.4384,
+    "conservative": 0.4376,
     "components": {
      "model_sd": 0.02,
      "calibration_sd": 0.015,
@@ -5284,8 +5284,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.4418 (CAR) vs 2.6778 (WSH) regulation goals",
-    "CAR 5v5 xG for 1.1507× league, WSH 5v5 xG for 1.0393×",
+    "λ 3.4432 (CAR) vs 2.672 (WSH) regulation goals",
+    "CAR 5v5 xG for 1.156× league, WSH 5v5 xG for 1.0405×",
     "goalies: projected uncertain (B. Bussi 58% / L. Thompson 76%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -5320,18 +5320,18 @@
    },
    "label": "WSH @ CAR — CAR -1.5",
    "quote": null,
-   "fair_american": 148,
+   "fair_american": 147,
    "break_even": null,
    "prob": {
-    "model": 0.4037,
+    "model": 0.4047,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.4037,
-    "sd": 0.0229,
-    "conservative": 0.3744,
+    "posterior": 0.4047,
+    "sd": 0.0232,
+    "conservative": 0.375,
     "components": {
-     "model_sd": 0.0124,
+     "model_sd": 0.013,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -5358,8 +5358,8 @@
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.4418 (CAR) vs 2.6778 (WSH) regulation goals",
-    "CAR 5v5 xG for 1.1507× league, WSH 5v5 xG for 1.0393×",
+    "λ 3.4432 (CAR) vs 2.672 (WSH) regulation goals",
+    "CAR 5v5 xG for 1.156× league, WSH 5v5 xG for 1.0405×",
     "goalies: projected uncertain (B. Bussi 58% / L. Thompson 76%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -5397,15 +5397,15 @@
    "fair_american": 164,
    "break_even": null,
    "prob": {
-    "model": 0.3792,
+    "model": 0.3781,
     "push": 0,
     "market_novig": null,
     "shrink_k": 1,
-    "posterior": 0.3792,
-    "sd": 0.0223,
-    "conservative": 0.3506,
+    "posterior": 0.3781,
+    "sd": 0.0225,
+    "conservative": 0.3492,
     "components": {
-     "model_sd": 0.0113,
+     "model_sd": 0.0118,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -5413,7 +5413,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 191,
+   "min_acceptable_american": 192,
    "disagreement": null,
    "gates": [
     {
@@ -5426,14 +5426,14 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +191 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +192 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "sensitivity": null,
    "settlement": null,
    "evidence": [
-    "λ 3.4418 (CAR) vs 2.6778 (WSH) regulation goals",
-    "CAR 5v5 xG for 1.1507× league, WSH 5v5 xG for 1.0393×",
+    "λ 3.4432 (CAR) vs 2.672 (WSH) regulation goals",
+    "CAR 5v5 xG for 1.156× league, WSH 5v5 xG for 1.0405×",
     "goalies: projected uncertain (B. Bussi 58% / L. Thompson 76%)",
     "model edgedesk_nhl_v1:xg_no_goalie; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
    ],
@@ -5885,8 +5885,8 @@
   }
  ],
  "inputs": {
-  "registry_generated_at": "2026-10-13T06:41:57.021Z",
-  "nhl_slate_generated_at": "2026-10-13T05:54:50.803Z",
+  "registry_generated_at": "2026-10-13T12:50:00.825Z",
+  "nhl_slate_generated_at": "2026-10-13T12:49:49.795Z",
   "basketball_slate_generated_at": "2026-10-13T06:41:26.560Z",
   "soccer_slate_generated_at": "2026-10-13T06:41:26.796Z",
   "nhl_quotes": {
@@ -5894,7 +5894,7 @@
    "generated_at": "2026-10-13T04:59:46.173Z",
    "reason": "NHL price capture is not authorised: the repository variable NHL_PRICES is not \"on\" (and odds_api_sports.icehockey_nhl must be enabled in the gateway)"
   },
-  "football_sheets_generated_at": "2026-10-13T02:38:09.426Z",
+  "football_sheets_generated_at": "2026-10-13T10:48:37.526Z",
   "manual_quotes_applied": 0
  },
  "candidates_trimmed": {

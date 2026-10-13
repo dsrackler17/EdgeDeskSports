@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_rating_divergence_v1",
- "generated_at": "2026-10-13T11:07:51.385Z",
+ "generated_at": "2026-10-13T13:07:46.346Z",
  "names": {
   "current": {
    "key": "CURRENT_FBS_POWER_RATING",
@@ -36,8 +36,8 @@
   "scale_offset": -4.668
  },
  "median_abs": 3.217,
- "p90_abs": 7.809,
- "max_abs": 13.934,
+ "p90_abs": 7.808,
+ "max_abs": 13.933,
  "bands": {
   "basis": "this build’s own distribution: |divergence| p50 → ELEVATED, p90 → LARGE",
   "elevated": 3.22,
@@ -216,7 +216,7 @@
    "why": [
     "The pricing state is 60% the long-run trained state (+17.4) and 40% this season’s own track (+9.8): the learned prior-weight curve keeps 60% on the long-run state at 6 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 67% (+11.5 from 6 games), with +3.6 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +2.3 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "The current rating includes a roster/talent term of +2.2 pts. Roster talent enters no production price (it widens uncertainty only).",
     "−4.7 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −9.8."
    ],
    "expected_text": "UNUSUAL — among the largest divergences on the FBS board. Diagnostic only: large game-level divergence has historically come with larger model error, so it widens caution, never the line."
@@ -254,8 +254,8 @@
    "prior_weight": 0.6,
    "games_played": 6,
    "difference": -14.14,
-   "rating_state_divergence": 9.48,
-   "abs_divergence": 9.48,
+   "rating_state_divergence": 9.47,
+   "abs_divergence": 9.47,
    "band": "LARGE",
    "flagged": true,
    "why": [
@@ -492,7 +492,7 @@
    "why": [
     "The pricing state is 60% the long-run trained state (+17.4) and 40% this season’s own track (+9.8): the learned prior-weight curve keeps 60% on the long-run state at 6 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 67% (+11.5 from 6 games), with +3.6 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of +2.3 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "The current rating includes a roster/talent term of +2.2 pts. Roster talent enters no production price (it widens uncertainty only).",
     "−4.7 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −9.8."
    ],
    "expected_text": "UNUSUAL — among the largest divergences on the FBS board. Diagnostic only: large game-level divergence has historically come with larger model error, so it widens caution, never the line."
@@ -530,8 +530,8 @@
    "prior_weight": 0.6,
    "games_played": 6,
    "difference": -14.14,
-   "rating_state_divergence": 9.48,
-   "abs_divergence": 9.48,
+   "rating_state_divergence": 9.47,
+   "abs_divergence": 9.47,
    "band": "LARGE",
    "flagged": true,
    "why": [
@@ -849,8 +849,8 @@
    "prior_weight": 0.8,
    "games_played": 5,
    "difference": 2.42,
-   "rating_state_divergence": -7.08,
-   "abs_divergence": 7.08,
+   "rating_state_divergence": -7.09,
+   "abs_divergence": 7.09,
    "band": "ELEVATED",
    "flagged": false,
    "why": [
@@ -918,8 +918,8 @@
    "prior_weight": 0.8,
    "games_played": 5,
    "difference": 2.07,
-   "rating_state_divergence": -6.73,
-   "abs_divergence": 6.73,
+   "rating_state_divergence": -6.74,
+   "abs_divergence": 6.74,
    "band": "ELEVATED",
    "flagged": false,
    "why": [
@@ -1122,8 +1122,8 @@
    "prior_weight": 0.6,
    "games_played": 6,
    "difference": -10.44,
-   "rating_state_divergence": 5.78,
-   "abs_divergence": 5.78,
+   "rating_state_divergence": 5.77,
+   "abs_divergence": 5.77,
    "band": "ELEVATED",
    "flagged": false,
    "why": [
@@ -1272,22 +1272,22 @@
    "key": "westernkentucky",
    "team": "Western Kentucky",
    "conference": "Conference USA",
-   "current": -2.71,
+   "current": -2.7,
    "state": -12.43,
    "carried": -8.85,
    "this_season": -17.8,
    "prior_weight": 0.6,
    "games_played": 6,
-   "difference": -9.72,
-   "rating_state_divergence": 5.05,
-   "abs_divergence": 5.05,
+   "difference": -9.73,
+   "rating_state_divergence": 5.06,
+   "abs_divergence": 5.06,
    "band": "ELEVATED",
    "flagged": false,
    "why": [
     "The pricing state is 60% the long-run trained state (−8.8) and 40% this season’s own track (−17.8): the learned prior-weight curve keeps 60% on the long-run state at 6 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 65% (−4.1 from 6 games), with +0.5 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of −1.8 pts. Roster talent enters no production price (it widens uncertainty only).",
-    "−4.7 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +5.0."
+    "The current rating includes a roster/talent term of −1.7 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "−4.7 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is +5.1."
    ],
    "expected_text": "EXPECTED, but larger than typical: the two numbers are built differently (see why)."
   },
@@ -1438,8 +1438,8 @@
    "prior_weight": 0.6,
    "games_played": 6,
    "difference": -0.36,
-   "rating_state_divergence": -4.3,
-   "abs_divergence": 4.3,
+   "rating_state_divergence": -4.31,
+   "abs_divergence": 4.31,
    "band": "ELEVATED",
    "flagged": false,
    "why": [
@@ -1666,8 +1666,8 @@
    "prior_weight": 0.6,
    "games_played": 6,
    "difference": -8.56,
-   "rating_state_divergence": 3.9,
-   "abs_divergence": 3.9,
+   "rating_state_divergence": 3.89,
+   "abs_divergence": 3.89,
    "band": "ELEVATED",
    "flagged": false,
    "why": [
@@ -1758,8 +1758,8 @@
    "prior_weight": 0.6,
    "games_played": 6,
    "difference": -1.15,
-   "rating_state_divergence": -3.51,
-   "abs_divergence": 3.51,
+   "rating_state_divergence": -3.52,
+   "abs_divergence": 3.52,
    "band": "ELEVATED",
    "flagged": false,
    "why": [
@@ -1803,8 +1803,8 @@
    "prior_weight": 0.6,
    "games_played": 6,
    "difference": -1.19,
-   "rating_state_divergence": -3.47,
-   "abs_divergence": 3.47,
+   "rating_state_divergence": -3.48,
+   "abs_divergence": 3.48,
    "band": "ELEVATED",
    "flagged": false,
    "why": [
@@ -2024,21 +2024,21 @@
    "key": "eastcarolina",
    "team": "East Carolina",
    "conference": "American",
-   "current": -1.36,
+   "current": -1.32,
    "state": -2.97,
    "carried": -1.14,
    "this_season": -10.29,
    "prior_weight": 0.8,
    "games_played": 5,
-   "difference": -1.61,
-   "rating_state_divergence": -3.06,
-   "abs_divergence": 3.06,
+   "difference": -1.65,
+   "rating_state_divergence": -3.02,
+   "abs_divergence": 3.02,
    "band": "NORMAL",
    "flagged": false,
    "why": [
     "The pricing state is 80% the long-run trained state (−1.1) and 20% this season’s own track (−10.3): the learned prior-weight curve keeps 80% on the long-run state at 5 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 60% (−2.0 from 5 games), with −0.3 of measured carryover from last season.",
-    "−4.7 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −3.1."
+    "−4.7 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −3.0."
    ],
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
   },
@@ -2716,8 +2716,8 @@
    "prior_weight": 0.6,
    "games_played": 6,
    "difference": -6.2,
-   "rating_state_divergence": 1.54,
-   "abs_divergence": 1.54,
+   "rating_state_divergence": 1.53,
+   "abs_divergence": 1.53,
    "band": "NORMAL",
    "flagged": false,
    "why": [
@@ -3126,8 +3126,8 @@
    "prior_weight": 0.8,
    "games_played": 5,
    "difference": -5.32,
-   "rating_state_divergence": 0.66,
-   "abs_divergence": 0.66,
+   "rating_state_divergence": 0.65,
+   "abs_divergence": 0.65,
    "band": "NORMAL",
    "flagged": false,
    "why": [
@@ -3155,7 +3155,7 @@
    "why": [
     "The pricing state is 80% the long-run trained state (−10.4) and 20% this season’s own track (−17.8): the learned prior-weight curve keeps 80% on the long-run state at 5 games played (it falls to 60% from 6 games).",
     "The current rating weights this season’s opponent-adjusted play-level results at 60% (−8.7 from 5 games), with −6.3 of measured carryover from last season.",
-    "The current rating includes a roster/talent term of −2.1 pts. Roster talent enters no production price (it widens uncertainty only).",
+    "The current rating includes a roster/talent term of −2.2 pts. Roster talent enters no production price (it widens uncertainty only).",
     "−4.7 pts of the raw difference is the two scales’ different FBS average, not a football difference; the team-specific divergence is −0.6."
    ],
    "expected_text": "EXPECTED — inside the normal range for two differently built ratings."
@@ -3478,7 +3478,7 @@
   }
  ],
  "state_source": "football/cfb_p4 engine replay (football/fbs/build_coverage.js buildState): trained seeds through 2025, 448 completed games absorbed",
- "current_source": "football/rating/current.json (2026-10-12T19:19:43.067Z, week 6)",
+ "current_source": "football/rating/current.json (2026-10-13T11:43:50.881Z, week 6)",
  "season": 2026,
  "unseeded": [
   {
