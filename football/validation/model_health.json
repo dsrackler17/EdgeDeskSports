@@ -2,15 +2,15 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-10-13T06:07:39.589Z",
+ "as_of": "2026-10-13T07:07:25.003Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "974cc68a3b456ca0",
+ "inputs_key": "2ab7b3cbeec78d1a",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "rows": 3035,
+   "rows": 3036,
    "mode": "LIVE",
-   "sha1": "b1eb0470638d"
+   "sha1": "f5568bbdf885"
   },
   {
    "file": "football/cfb_terminal/decisions/2026/evaluations.jsonl",
@@ -37,7 +37,7 @@
   {
    "file": "record/football/summary.json",
    "mode": "LIVE (model record)",
-   "sha1": "f472181625a4"
+   "sha1": "7999cdf76322"
   },
   {
    "file": "football/params.js",
@@ -99,7 +99,7 @@
     "recalibration": "NOT_ALLOWED",
     "note": "A product maturity label, not a scientific verdict."
    },
-   "note": "3035 decision snapshots issued before kickoff; 147 settled"
+   "note": "3036 decision snapshots issued before kickoff; 147 settled"
   },
   {
    "key": "LIVE_CLV",
@@ -133,9 +133,9 @@
   }
  ],
  "live_decisions": {
-  "issued_snapshots": 3035,
+  "issued_snapshots": 3036,
   "issued_by_decision": {
-   "NO_DECISION": 1368,
+   "NO_DECISION": 1369,
    "PASS": 1540,
    "WATCH": 127
   },
@@ -15905,55 +15905,55 @@
   "source": "record/football/summary.json",
   "mode": "LIVE",
   "level": "model (the published fair line), not bettor decisions",
-  "generated_at": "2026-10-13T01:26:33.654Z",
+  "generated_at": "2026-10-13T06:55:11.445Z",
   "sports": {
    "nfl": {
     "versions": [
      "edgedesk_football_v1.0.0"
     ],
-    "graded": 62,
+    "graded": 63,
     "ats": {
-     "n": 62,
-     "w": 33,
+     "n": 63,
+     "w": 34,
      "l": 24,
      "p": 5,
-     "pct": 57.9,
+     "pct": 58.6,
      "sample": {
       "key": "EARLY_SIGNAL",
       "label": "Early signal",
-      "n": 62,
-      "text": "n=62 · Early signal",
+      "n": 63,
+      "text": "n=63 · Early signal",
       "recalibration": "NOT_ALLOWED",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "clv_spread_entry": {
-     "n": 62,
-     "avg": 0.55,
+     "n": 63,
+     "avg": 0.51,
      "beat": 32,
      "flat": 18,
-     "lost": 12,
-     "beat_pct": 51.6,
+     "lost": 13,
+     "beat_pct": 50.8,
      "sample": {
       "key": "EARLY_SIGNAL",
       "label": "Early signal",
-      "n": 62,
-      "text": "n=62 · Early signal",
+      "n": 63,
+      "text": "n=63 · Early signal",
       "recalibration": "NOT_ALLOWED",
       "note": "A product maturity label, not a scientific verdict."
      }
     },
     "error": {
-     "n": 62,
-     "model_mae": 9.48,
-     "close_mae": 9.44,
-     "model_closer_pct": 51.6,
-     "total_n": 62,
-     "model_total_mae": 10.73,
-     "close_total_mae": 10.27
+     "n": 63,
+     "model_mae": 9.37,
+     "close_mae": 9.4,
+     "model_closer_pct": 52.4,
+     "total_n": 63,
+     "model_total_mae": 10.82,
+     "close_total_mae": 10.36
     },
     "brier": {
-     "n": 62,
+     "n": 63,
      "model": 0.2256
     }
    },
