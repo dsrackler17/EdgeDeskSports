@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_pnl_ledger_v1",
  "season": 2026,
- "generated_at": "2026-10-13T10:09:12.807Z",
+ "generated_at": "2026-10-13T11:07:07.513Z",
  "what": "Every EdgeDesk recommendation with a side, one row each, with its settlement and its profit and loss at the price recorded when it was made. Written by tools/record/pnl_ledger.js; nobody edits it by hand.",
  "sources": [
   {
@@ -10,7 +10,7 @@
    "file": "football/props/nfl/2026/evaluations.jsonl",
    "rows": 3279,
    "results_file": "football/props/nfl/2026/results.jsonl",
-   "results": 7272
+   "results": 7277
   },
   {
    "source": "player_props",
@@ -583205,31 +583205,51 @@
    "odds_captured_at": "2026-10-09T00:15:51.713Z",
    "odds_captured_basis": "quote capture",
    "evaluation_mode": "LIVE",
-   "result": "void",
-   "result_value": null,
-   "result_detail": "player did not play",
+   "result": "loss",
+   "result_value": 0,
+   "result_detail": null,
    "final_score": null,
    "closing_line": 7.5,
    "closing_odds": null,
    "clv_points": -12,
    "clv_prob_pp": null,
    "beat_close": false,
-   "settled_at": "2026-10-13T04:36:09.047Z",
+   "settled_at": "2026-10-13T11:06:07.212Z",
    "first_recorded_at": "2026-10-09T00:20:53.007Z",
-   "corrections": [],
-   "corrected": false,
+   "corrections": [
+    {
+     "at": "2026-10-13T11:07:07.513Z",
+     "fields": {
+      "result": {
+       "from": "void",
+       "to": "loss"
+      },
+      "result_value": {
+       "from": null,
+       "to": 0
+      },
+      "settled_at": {
+       "from": "2026-10-13T04:36:09.047Z",
+       "to": "2026-10-13T11:06:07.212Z"
+      }
+     },
+     "reason": "official statistic changed: VOID → 0 (VOID → LOSS)",
+     "origin": "source"
+    }
+   ],
+   "corrected": true,
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.3077,
    "profit_units": null,
-   "flat_profit_units": 0,
-   "pnl_status": "VOID",
-   "pnl_eligible": false,
-   "pnl_note": "Void — stake returned",
-   "record_state": "VOID",
-   "state_reason": "Void — stake returned",
-   "pnl_verified": false,
-   "pnl_exclusion_reason": "void"
+   "flat_profit_units": -1,
+   "pnl_status": "VERIFIED",
+   "pnl_eligible": true,
+   "pnl_note": "Verified P&L",
+   "record_state": "VERIFIED",
+   "state_reason": null,
+   "pnl_verified": true,
+   "pnl_exclusion_reason": null
   },
   {
    "recommendation_id": "pp:ppe_cc0d3f0d",
