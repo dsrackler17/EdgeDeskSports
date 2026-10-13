@@ -1,0 +1,62 @@
+{
+ "schema": "edgedesk_lab_walkforward_v1",
+ "sport": "mma",
+ "label": "UFC / MMA",
+ "generated_at": "2026-10-13T06:26:08.039Z",
+ "data": {
+  "source": "datapack/quant_v1/data/ufc/bouts_2024.csv (ESPN, research copy)",
+  "bouts": 566,
+  "final": 566,
+  "draws_or_no_contests": 4,
+  "scored": 138,
+  "seasons": [
+   2024,
+   2024
+  ],
+  "temporal": {
+   "point_in_time": "RETROSPECTIVE",
+   "known_at": "blank"
+  }
+ },
+ "method": "chronological Elo, K = 32 (not tuned: there is no separate selection window in one year); scored only when both fighters had an earlier 2024 bout",
+ "result": {
+  "elo": {
+   "log_loss": 0.68886,
+   "brier": 0.24786,
+   "n": 138,
+   "calibration_slope": 0.923
+  },
+  "coin_flip": {
+   "log_loss": 0.69315
+  },
+  "elo_vs_coin_flip": {
+   "n": 138,
+   "blocks": 35,
+   "mean_diff": -0.004289,
+   "ci95": [
+    -0.012204,
+    0.003885
+   ],
+   "a_better": false,
+   "b_better": false
+  }
+ },
+ "markets": {
+  "moneyline": {
+   "market": "fight winner",
+   "status": "INSUFFICIENT",
+   "failed": [
+    "n 138 < 1000",
+    "1 season < 2",
+    "does not beat a coin flip with a 95% interval below zero"
+   ],
+   "market_status": "NOT_TESTED",
+   "market_reason": "no licensed archive of timestamped closing prices is on file; archived untimestamped lines are not a market test"
+  }
+ },
+ "unresolved": [
+  "Round-level fight statistics (significant strikes, takedowns, control time) — UFCStats refuses automated access; an authorised feed is needed.",
+  "Multi-year bout history — the pack holds 2024 only; the live UFC center syncs events into Supabase, not a training archive.",
+  "Method-of-victory and round markets need the round-level data above."
+ ]
+}

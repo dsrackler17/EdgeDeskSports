@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_engine_board_v1",
- "version": "edgedesk_xboard_v1",
- "evaluated_at": "2026-10-13T05:55:49.281Z",
+ "version": "edgedesk_xboard_v2",
+ "evaluated_at": "2026-10-13T06:41:57.145Z",
  "verdict": "PASS",
  "best": null,
  "why": [
-  "No market had a fresh executable price: 246 without a price, 0 stale."
+  "No market had a fresh executable price: 396 without a price, 0 stale."
  ],
  "strongest_candidate": {
   "sport_id": "nfl",
@@ -91,13 +91,13 @@
   "disagreement": 0.0104
  },
  "counts": {
-  "RESEARCH": 246
+  "RESEARCH": 396
  },
  "gate_failures": {
-  "NO_PRICE": 246,
-  "NEEDS_PRICE": 246
+  "NO_PRICE": 396,
+  "NEEDS_PRICE": 396
  },
- "n_candidates": 246,
+ "n_candidates": 396,
  "n_priced": 0,
  "selection_z": 1.2816,
  "rules": {
@@ -110,7 +110,10 @@
    "spread": 0.1,
    "total": 0.1,
    "team_total": 0.1,
-   "regulation_3way": 0.15
+   "regulation_3way": 0.15,
+   "three_way": 0.15,
+   "asian_handicap": 0.1,
+   "btts": 0.1
   },
   "sharp_books": [
    "pinnacle",
@@ -127,6 +130,1826 @@
   }
  },
  "candidates": [
+  {
+   "id": "b97477d5",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · Bundesliga",
+   "event_key": "SOCCER|bundesliga:2026-10-16:eintrachtfrankfurt:koln",
+   "event": {
+    "home": "Eintracht Frankfurt",
+    "away": "1. FC Köln",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "1. FC Köln @ Eintracht Frankfurt"
+   },
+   "market": {
+    "kind": "total",
+    "registry_key": "bundesliga.total",
+    "side": "over",
+    "line": 2.5,
+    "settles": "90 minutes plus stoppage time"
+   },
+   "label": "1. FC Köln @ Eintracht Frankfurt — over 2.5",
+   "quote": null,
+   "fair_american": -279,
+   "break_even": null,
+   "prob": {
+    "model": 0.7359,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.7359,
+    "sd": 0.0354,
+    "conservative": 0.6906,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -210,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -210 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.4303 / 1.3996 goals",
+    "model poisson (bundesliga); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
+    "the source has not published 9 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/bundesliga:poisson"
+  },
+  {
+   "id": "831ed6bf",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · Ligue 1",
+   "event_key": "SOCCER|ligue1:2026-10-16:lemans:toulouse",
+   "event": {
+    "home": "Le Mans FC",
+    "away": "Toulouse FC",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "Toulouse FC @ Le Mans FC"
+   },
+   "market": {
+    "kind": "total",
+    "registry_key": "ligue1.total",
+    "side": "over",
+    "line": 2.5,
+    "settles": "90 minutes plus stoppage time"
+   },
+   "label": "Toulouse FC @ Le Mans FC — over 2.5",
+   "quote": null,
+   "fair_american": -173,
+   "break_even": null,
+   "prob": {
+    "model": 0.6335,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.6335,
+    "sd": 0.0354,
+    "conservative": 0.5882,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -136,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -136 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 1.6195 / 1.6458 goals",
+    "model poisson (ligue1); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
+    "the source has not published 9 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/ligue1:poisson"
+  },
+  {
+   "id": "fcbd4cf5",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · Bundesliga",
+   "event_key": "SOCCER|bundesliga:2026-10-16:eintrachtfrankfurt:koln",
+   "event": {
+    "home": "Eintracht Frankfurt",
+    "away": "1. FC Köln",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "1. FC Köln @ Eintracht Frankfurt"
+   },
+   "market": {
+    "kind": "three_way",
+    "registry_key": "bundesliga.moneyline",
+    "side": "Eintracht Frankfurt",
+    "line": null,
+    "settles": "90 minutes plus stoppage time"
+   },
+   "label": "1. FC Köln @ Eintracht Frankfurt — Eintracht Frankfurt (90 minutes)",
+   "quote": null,
+   "fair_american": -151,
+   "break_even": null,
+   "prob": {
+    "model": 0.6019,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.6019,
+    "sd": 0.0354,
+    "conservative": 0.5566,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -120,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -120 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.4303 / 1.3996 goals",
+    "model poisson (bundesliga); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
+    "the source has not published 9 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/bundesliga:poisson"
+  },
+  {
+   "id": "ab19c3e4",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · Bundesliga",
+   "event_key": "SOCCER|bundesliga:2026-10-16:eintrachtfrankfurt:koln",
+   "event": {
+    "home": "Eintracht Frankfurt",
+    "away": "1. FC Köln",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "1. FC Köln @ Eintracht Frankfurt"
+   },
+   "market": {
+    "kind": "asian_handicap",
+    "registry_key": "bundesliga.spread",
+    "side": "Eintracht Frankfurt",
+    "line": -0.25,
+    "settles": "quarter line: two half stakes on 0 and -0.5"
+   },
+   "label": "1. FC Köln @ Eintracht Frankfurt — Eintracht Frankfurt -0.25 (Asian)",
+   "quote": null,
+   "fair_american": -198,
+   "break_even": null,
+   "prob": {
+    "model": 0.6019,
+    "push": 0.094,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.6019,
+    "sd": 0.0354,
+    "conservative": 0.5566,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -151,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -151 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": {
+    "split": true,
+    "p_void": 0,
+    "effective_p_win": 0.6019,
+    "stake_returned": 0.094
+   },
+   "evidence": [
+    "λ 2.4303 / 1.3996 goals",
+    "model poisson (bundesliga); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
+    "the source has not published 9 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/bundesliga:poisson"
+  },
+  {
+   "id": "06b4d17c",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · La Liga",
+   "event_key": "SOCCER|laliga:2026-10-16:deportivolacoruna:levante",
+   "event": {
+    "home": "RC Deportivo La Coruña",
+    "away": "Levante UD",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "Levante UD @ RC Deportivo La Coruña"
+   },
+   "market": {
+    "kind": "total",
+    "registry_key": "laliga.total",
+    "side": "over",
+    "line": 2.5,
+    "settles": "90 minutes plus stoppage time"
+   },
+   "label": "Levante UD @ RC Deportivo La Coruña — over 2.5",
+   "quote": null,
+   "fair_american": -144,
+   "break_even": null,
+   "prob": {
+    "model": 0.5905,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.5905,
+    "sd": 0.0354,
+    "conservative": 0.5452,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -115,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -115 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 1.8692 / 1.1928 goals",
+    "model poisson (laliga); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
+    "the source has not published 10 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/laliga:poisson"
+  },
+  {
+   "id": "2b568804",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · La Liga",
+   "event_key": "SOCCER|laliga:2026-10-16:deportivolacoruna:levante",
+   "event": {
+    "home": "RC Deportivo La Coruña",
+    "away": "Levante UD",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "Levante UD @ RC Deportivo La Coruña"
+   },
+   "market": {
+    "kind": "three_way",
+    "registry_key": "laliga.moneyline",
+    "side": "RC Deportivo La Coruña",
+    "line": null,
+    "settles": "90 minutes plus stoppage time"
+   },
+   "label": "Levante UD @ RC Deportivo La Coruña — RC Deportivo La Coruña (90 minutes)",
+   "quote": null,
+   "fair_american": -114,
+   "break_even": null,
+   "prob": {
+    "model": 0.5319,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.5319,
+    "sd": 0.0354,
+    "conservative": 0.4866,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 110,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +110 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 1.8692 / 1.1928 goals",
+    "model poisson (laliga); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
+    "the source has not published 10 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/laliga:poisson"
+  },
+  {
+   "id": "58fa881f",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · La Liga",
+   "event_key": "SOCCER|laliga:2026-10-16:deportivolacoruna:levante",
+   "event": {
+    "home": "RC Deportivo La Coruña",
+    "away": "Levante UD",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "Levante UD @ RC Deportivo La Coruña"
+   },
+   "market": {
+    "kind": "asian_handicap",
+    "registry_key": "laliga.spread",
+    "side": "RC Deportivo La Coruña",
+    "line": -0.25,
+    "settles": "quarter line: two half stakes on 0 and -0.5"
+   },
+   "label": "Levante UD @ RC Deportivo La Coruña — RC Deportivo La Coruña -0.25 (Asian)",
+   "quote": null,
+   "fair_american": -150,
+   "break_even": null,
+   "prob": {
+    "model": 0.5319,
+    "push": 0.113,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.5319,
+    "sd": 0.0354,
+    "conservative": 0.4866,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -116,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -116 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": {
+    "split": true,
+    "p_void": 0,
+    "effective_p_win": 0.5319,
+    "stake_returned": 0.113
+   },
+   "evidence": [
+    "λ 1.8692 / 1.1928 goals",
+    "model poisson (laliga); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
+    "the source has not published 10 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/laliga:poisson"
+  },
+  {
+   "id": "5e9e1ea5",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · Serie A",
+   "event_key": "SOCCER|seriea:2026-10-16:frosinone:sassuolo",
+   "event": {
+    "home": "Frosinone Calcio",
+    "away": "US Sassuolo Calcio",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "US Sassuolo Calcio @ Frosinone Calcio"
+   },
+   "market": {
+    "kind": "total",
+    "registry_key": "seriea.total",
+    "side": "under",
+    "line": 2.5,
+    "settles": "90 minutes plus stoppage time"
+   },
+   "label": "US Sassuolo Calcio @ Frosinone Calcio — under 2.5",
+   "quote": null,
+   "fair_american": -102,
+   "break_even": null,
+   "prob": {
+    "model": 0.5041,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.5041,
+    "sd": 0.0354,
+    "conservative": 0.4588,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 122,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +122 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 1.5498 / 1.1078 goals",
+    "model poisson (seriea); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
+    "the source has not published 10 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/seriea:poisson"
+  },
+  {
+   "id": "665ca8a9",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · Serie A",
+   "event_key": "SOCCER|seriea:2026-10-16:frosinone:sassuolo",
+   "event": {
+    "home": "Frosinone Calcio",
+    "away": "US Sassuolo Calcio",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "US Sassuolo Calcio @ Frosinone Calcio"
+   },
+   "market": {
+    "kind": "total",
+    "registry_key": "seriea.total",
+    "side": "over",
+    "line": 2.5,
+    "settles": "90 minutes plus stoppage time"
+   },
+   "label": "US Sassuolo Calcio @ Frosinone Calcio — over 2.5",
+   "quote": null,
+   "fair_american": 102,
+   "break_even": null,
+   "prob": {
+    "model": 0.4959,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4959,
+    "sd": 0.0354,
+    "conservative": 0.4506,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 126,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +126 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 1.5498 / 1.1078 goals",
+    "model poisson (seriea); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
+    "the source has not published 10 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/seriea:poisson"
+  },
+  {
+   "id": "c9530c2c",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · Serie A",
+   "event_key": "SOCCER|seriea:2026-10-16:frosinone:sassuolo",
+   "event": {
+    "home": "Frosinone Calcio",
+    "away": "US Sassuolo Calcio",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "US Sassuolo Calcio @ Frosinone Calcio"
+   },
+   "market": {
+    "kind": "three_way",
+    "registry_key": "seriea.moneyline",
+    "side": "Frosinone Calcio",
+    "line": null,
+    "settles": "90 minutes plus stoppage time"
+   },
+   "label": "US Sassuolo Calcio @ Frosinone Calcio — Frosinone Calcio (90 minutes)",
+   "quote": null,
+   "fair_american": 110,
+   "break_even": null,
+   "prob": {
+    "model": 0.4751,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4751,
+    "sd": 0.0354,
+    "conservative": 0.4298,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 137,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +137 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 1.5498 / 1.1078 goals",
+    "model poisson (seriea); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
+    "the source has not published 10 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/seriea:poisson"
+  },
+  {
+   "id": "c0e7f649",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · Serie A",
+   "event_key": "SOCCER|seriea:2026-10-16:frosinone:sassuolo",
+   "event": {
+    "home": "Frosinone Calcio",
+    "away": "US Sassuolo Calcio",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "US Sassuolo Calcio @ Frosinone Calcio"
+   },
+   "market": {
+    "kind": "asian_handicap",
+    "registry_key": "seriea.spread",
+    "side": "Frosinone Calcio",
+    "line": -0.25,
+    "settles": "quarter line: two half stakes on 0 and -0.5"
+   },
+   "label": "US Sassuolo Calcio @ Frosinone Calcio — Frosinone Calcio -0.25 (Asian)",
+   "quote": null,
+   "fair_american": -119,
+   "break_even": null,
+   "prob": {
+    "model": 0.4751,
+    "push": 0.1266,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4751,
+    "sd": 0.0354,
+    "conservative": 0.4298,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 108,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +108 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": {
+    "split": true,
+    "p_void": 0,
+    "effective_p_win": 0.4751,
+    "stake_returned": 0.1266
+   },
+   "evidence": [
+    "λ 1.5498 / 1.1078 goals",
+    "model poisson (seriea); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
+    "the source has not published 10 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/seriea:poisson"
+  },
+  {
+   "id": "89f37046",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · La Liga",
+   "event_key": "SOCCER|laliga:2026-10-16:deportivolacoruna:levante",
+   "event": {
+    "home": "RC Deportivo La Coruña",
+    "away": "Levante UD",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "Levante UD @ RC Deportivo La Coruña"
+   },
+   "market": {
+    "kind": "total",
+    "registry_key": "laliga.total",
+    "side": "under",
+    "line": 2.5,
+    "settles": "90 minutes plus stoppage time"
+   },
+   "label": "Levante UD @ RC Deportivo La Coruña — under 2.5",
+   "quote": null,
+   "fair_american": 144,
+   "break_even": null,
+   "prob": {
+    "model": 0.4095,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4095,
+    "sd": 0.0354,
+    "conservative": 0.3642,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 180,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +180 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 1.8692 / 1.1928 goals",
+    "model poisson (laliga); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
+    "the source has not published 10 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/laliga:poisson"
+  },
+  {
+   "id": "54a1fe91",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · Ligue 1",
+   "event_key": "SOCCER|ligue1:2026-10-16:lemans:toulouse",
+   "event": {
+    "home": "Le Mans FC",
+    "away": "Toulouse FC",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "Toulouse FC @ Le Mans FC"
+   },
+   "market": {
+    "kind": "three_way",
+    "registry_key": "ligue1.moneyline",
+    "side": "Toulouse FC",
+    "line": null,
+    "settles": "90 minutes plus stoppage time"
+   },
+   "label": "Toulouse FC @ Le Mans FC — Toulouse FC (90 minutes)",
+   "quote": null,
+   "fair_american": 157,
+   "break_even": null,
+   "prob": {
+    "model": 0.3898,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.3898,
+    "sd": 0.0354,
+    "conservative": 0.3445,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 196,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +196 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 1.6195 / 1.6458 goals",
+    "model poisson (ligue1); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
+    "the source has not published 9 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/ligue1:poisson"
+  },
+  {
+   "id": "22b3936d",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · Ligue 1",
+   "event_key": "SOCCER|ligue1:2026-10-16:lemans:toulouse",
+   "event": {
+    "home": "Le Mans FC",
+    "away": "Toulouse FC",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "Toulouse FC @ Le Mans FC"
+   },
+   "market": {
+    "kind": "three_way",
+    "registry_key": "ligue1.moneyline",
+    "side": "Le Mans FC",
+    "line": null,
+    "settles": "90 minutes plus stoppage time"
+   },
+   "label": "Toulouse FC @ Le Mans FC — Le Mans FC (90 minutes)",
+   "quote": null,
+   "fair_american": 164,
+   "break_even": null,
+   "prob": {
+    "model": 0.3786,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.3786,
+    "sd": 0.0354,
+    "conservative": 0.3333,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 206,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +206 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 1.6195 / 1.6458 goals",
+    "model poisson (ligue1); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
+    "the source has not published 9 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/ligue1:poisson"
+  },
+  {
+   "id": "e316bf1a",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · Ligue 1",
+   "event_key": "SOCCER|ligue1:2026-10-16:lemans:toulouse",
+   "event": {
+    "home": "Le Mans FC",
+    "away": "Toulouse FC",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "Toulouse FC @ Le Mans FC"
+   },
+   "market": {
+    "kind": "asian_handicap",
+    "registry_key": "ligue1.spread",
+    "side": "Le Mans FC",
+    "line": -0.25,
+    "settles": "quarter line: two half stakes on 0 and -0.5"
+   },
+   "label": "Toulouse FC @ Le Mans FC — Le Mans FC -0.25 (Asian)",
+   "quote": null,
+   "fair_american": 134,
+   "break_even": null,
+   "prob": {
+    "model": 0.3786,
+    "push": 0.1158,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.3786,
+    "sd": 0.0354,
+    "conservative": 0.3333,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 171,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +171 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": {
+    "split": true,
+    "p_void": 0,
+    "effective_p_win": 0.3786,
+    "stake_returned": 0.1158
+   },
+   "evidence": [
+    "λ 1.6195 / 1.6458 goals",
+    "model poisson (ligue1); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
+    "the source has not published 9 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/ligue1:poisson"
+  },
+  {
+   "id": "b6169c23",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · Ligue 1",
+   "event_key": "SOCCER|ligue1:2026-10-16:lemans:toulouse",
+   "event": {
+    "home": "Le Mans FC",
+    "away": "Toulouse FC",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "Toulouse FC @ Le Mans FC"
+   },
+   "market": {
+    "kind": "total",
+    "registry_key": "ligue1.total",
+    "side": "under",
+    "line": 2.5,
+    "settles": "90 minutes plus stoppage time"
+   },
+   "label": "Toulouse FC @ Le Mans FC — under 2.5",
+   "quote": null,
+   "fair_american": 173,
+   "break_even": null,
+   "prob": {
+    "model": 0.3665,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.3665,
+    "sd": 0.0354,
+    "conservative": 0.3212,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 218,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +218 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 1.6195 / 1.6458 goals",
+    "model poisson (ligue1); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
+    "the source has not published 9 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/ligue1:poisson"
+  },
+  {
+   "id": "2b02c158",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · Serie A",
+   "event_key": "SOCCER|seriea:2026-10-16:frosinone:sassuolo",
+   "event": {
+    "home": "Frosinone Calcio",
+    "away": "US Sassuolo Calcio",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "US Sassuolo Calcio @ Frosinone Calcio"
+   },
+   "market": {
+    "kind": "three_way",
+    "registry_key": "seriea.moneyline",
+    "side": "US Sassuolo Calcio",
+    "line": null,
+    "settles": "90 minutes plus stoppage time"
+   },
+   "label": "US Sassuolo Calcio @ Frosinone Calcio — US Sassuolo Calcio (90 minutes)",
+   "quote": null,
+   "fair_american": 268,
+   "break_even": null,
+   "prob": {
+    "model": 0.2717,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.2717,
+    "sd": 0.0354,
+    "conservative": 0.2264,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 351,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +351 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 1.5498 / 1.1078 goals",
+    "model poisson (seriea); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
+    "the source has not published 10 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/seriea:poisson"
+  },
+  {
+   "id": "e00f6f11",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · Bundesliga",
+   "event_key": "SOCCER|bundesliga:2026-10-16:eintrachtfrankfurt:koln",
+   "event": {
+    "home": "Eintracht Frankfurt",
+    "away": "1. FC Köln",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "1. FC Köln @ Eintracht Frankfurt"
+   },
+   "market": {
+    "kind": "total",
+    "registry_key": "bundesliga.total",
+    "side": "under",
+    "line": 2.5,
+    "settles": "90 minutes plus stoppage time"
+   },
+   "label": "1. FC Köln @ Eintracht Frankfurt — under 2.5",
+   "quote": null,
+   "fair_american": 279,
+   "break_even": null,
+   "prob": {
+    "model": 0.2641,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.2641,
+    "sd": 0.0354,
+    "conservative": 0.2188,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 366,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +366 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.4303 / 1.3996 goals",
+    "model poisson (bundesliga); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
+    "the source has not published 9 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/bundesliga:poisson"
+  },
+  {
+   "id": "9f94609e",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · Serie A",
+   "event_key": "SOCCER|seriea:2026-10-16:frosinone:sassuolo",
+   "event": {
+    "home": "Frosinone Calcio",
+    "away": "US Sassuolo Calcio",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "US Sassuolo Calcio @ Frosinone Calcio"
+   },
+   "market": {
+    "kind": "three_way",
+    "registry_key": "seriea.moneyline",
+    "side": "draw",
+    "line": null,
+    "settles": "90 minutes plus stoppage time"
+   },
+   "label": "US Sassuolo Calcio @ Frosinone Calcio — draw (90 minutes)",
+   "quote": null,
+   "fair_american": 295,
+   "break_even": null,
+   "prob": {
+    "model": 0.2532,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.2532,
+    "sd": 0.0354,
+    "conservative": 0.2079,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 391,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +391 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 1.5498 / 1.1078 goals",
+    "model poisson (seriea); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
+    "the source has not published 10 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/seriea:poisson"
+  },
+  {
+   "id": "43971323",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · La Liga",
+   "event_key": "SOCCER|laliga:2026-10-16:deportivolacoruna:levante",
+   "event": {
+    "home": "RC Deportivo La Coruña",
+    "away": "Levante UD",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "Levante UD @ RC Deportivo La Coruña"
+   },
+   "market": {
+    "kind": "three_way",
+    "registry_key": "laliga.moneyline",
+    "side": "Levante UD",
+    "line": null,
+    "settles": "90 minutes plus stoppage time"
+   },
+   "label": "Levante UD @ RC Deportivo La Coruña — Levante UD (90 minutes)",
+   "quote": null,
+   "fair_american": 313,
+   "break_even": null,
+   "prob": {
+    "model": 0.2422,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.2422,
+    "sd": 0.0354,
+    "conservative": 0.1969,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 418,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +418 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 1.8692 / 1.1928 goals",
+    "model poisson (laliga); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
+    "the source has not published 10 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/laliga:poisson"
+  },
+  {
+   "id": "9d2ed004",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · Ligue 1",
+   "event_key": "SOCCER|ligue1:2026-10-16:lemans:toulouse",
+   "event": {
+    "home": "Le Mans FC",
+    "away": "Toulouse FC",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "Toulouse FC @ Le Mans FC"
+   },
+   "market": {
+    "kind": "three_way",
+    "registry_key": "ligue1.moneyline",
+    "side": "draw",
+    "line": null,
+    "settles": "90 minutes plus stoppage time"
+   },
+   "label": "Toulouse FC @ Le Mans FC — draw (90 minutes)",
+   "quote": null,
+   "fair_american": 332,
+   "break_even": null,
+   "prob": {
+    "model": 0.2316,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.2316,
+    "sd": 0.0354,
+    "conservative": 0.1863,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 448,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +448 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 1.6195 / 1.6458 goals",
+    "model poisson (ligue1); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
+    "the source has not published 9 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/ligue1:poisson"
+  },
+  {
+   "id": "85415b45",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · La Liga",
+   "event_key": "SOCCER|laliga:2026-10-16:deportivolacoruna:levante",
+   "event": {
+    "home": "RC Deportivo La Coruña",
+    "away": "Levante UD",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "Levante UD @ RC Deportivo La Coruña"
+   },
+   "market": {
+    "kind": "three_way",
+    "registry_key": "laliga.moneyline",
+    "side": "draw",
+    "line": null,
+    "settles": "90 minutes plus stoppage time"
+   },
+   "label": "Levante UD @ RC Deportivo La Coruña — draw (90 minutes)",
+   "quote": null,
+   "fair_american": 343,
+   "break_even": null,
+   "prob": {
+    "model": 0.2259,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.2259,
+    "sd": 0.0354,
+    "conservative": 0.1806,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 465,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +465 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 1.8692 / 1.1928 goals",
+    "model poisson (laliga); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
+    "the source has not published 10 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/laliga:poisson"
+  },
+  {
+   "id": "6ea33ea5",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · Bundesliga",
+   "event_key": "SOCCER|bundesliga:2026-10-16:eintrachtfrankfurt:koln",
+   "event": {
+    "home": "Eintracht Frankfurt",
+    "away": "1. FC Köln",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "1. FC Köln @ Eintracht Frankfurt"
+   },
+   "market": {
+    "kind": "three_way",
+    "registry_key": "bundesliga.moneyline",
+    "side": "1. FC Köln",
+    "line": null,
+    "settles": "90 minutes plus stoppage time"
+   },
+   "label": "1. FC Köln @ Eintracht Frankfurt — 1. FC Köln (90 minutes)",
+   "quote": null,
+   "fair_american": 376,
+   "break_even": null,
+   "prob": {
+    "model": 0.2102,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.2102,
+    "sd": 0.0354,
+    "conservative": 0.1649,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 519,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +519 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.4303 / 1.3996 goals",
+    "model poisson (bundesliga); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
+    "the source has not published 9 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/bundesliga:poisson"
+  },
+  {
+   "id": "60006b72",
+   "status": "RESEARCH",
+   "sport_id": "soccer",
+   "sport_label": "Soccer · Bundesliga",
+   "event_key": "SOCCER|bundesliga:2026-10-16:eintrachtfrankfurt:koln",
+   "event": {
+    "home": "Eintracht Frankfurt",
+    "away": "1. FC Köln",
+    "start_utc": "2026-10-16T23:59:00Z",
+    "date": "2026-10-16",
+    "label": "1. FC Köln @ Eintracht Frankfurt"
+   },
+   "market": {
+    "kind": "three_way",
+    "registry_key": "bundesliga.moneyline",
+    "side": "draw",
+    "line": null,
+    "settles": "90 minutes plus stoppage time"
+   },
+   "label": "1. FC Köln @ Eintracht Frankfurt — draw (90 minutes)",
+   "quote": null,
+   "fair_american": 432,
+   "break_even": null,
+   "prob": {
+    "model": 0.1879,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.1879,
+    "sd": 0.0354,
+    "conservative": 0.1426,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 615,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +615 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.4303 / 1.3996 goals",
+    "model poisson (bundesliga); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
+    "the source has not published 9 recent result(s); ratings miss them"
+   ],
+   "invalidators": [
+    "Team news (injuries, rotation before a European or cup match) is not modelled.",
+    "Kick-off time zone is not in the source; prices are keyed by date.",
+    "The source is missing recent results: ratings are stale."
+   ],
+   "data": {
+    "state": "STALE",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "soccer/bundesliga:poisson"
+  },
   {
    "id": "bf4e53df",
    "status": "RESEARCH",
@@ -182,6 +2005,8 @@
      "reason": "needs a price of -100 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -14.8 vs consensus -7.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -251,6 +2076,8 @@
      "reason": "needs a price of +155 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -2.8 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -320,6 +2147,8 @@
      "reason": "needs a price of -280 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -14.8 vs consensus -7.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -389,6 +2218,8 @@
      "reason": "needs a price of +103 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -2.8 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -458,6 +2289,8 @@
      "reason": "needs a price of +104 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -4.7 vs consensus -8.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -527,6 +2360,8 @@
      "reason": "needs a price of +145 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -1.4 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -596,6 +2431,8 @@
      "reason": "needs a price of +376 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -4.7 vs consensus -8.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -665,6 +2502,8 @@
      "reason": "needs a price of +106 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -1.4 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -734,6 +2573,8 @@
      "reason": "needs a price of +106 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -1.4 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -803,6 +2644,8 @@
      "reason": "needs a price of +108 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread 0.1 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -872,6 +2715,8 @@
      "reason": "needs a price of +107 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -14.8 vs consensus -7.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -941,6 +2786,8 @@
      "reason": "needs a price of +108 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -2.8 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -1010,6 +2857,8 @@
      "reason": "needs a price of +103 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -2.2 vs consensus -1.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -1079,6 +2928,8 @@
      "reason": "needs a price of +109 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -9.1 vs consensus -7 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -1148,6 +2999,8 @@
      "reason": "needs a price of +108 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread 4.7 vs consensus 4.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -1217,6 +3070,8 @@
      "reason": "needs a price of +139 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread 0.1 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -1286,6 +3141,8 @@
      "reason": "needs a price of -252 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -9.1 vs consensus -7 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -1355,6 +3212,8 @@
      "reason": "needs a price of +109 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -0.2 vs consensus -1.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -1424,6 +3283,8 @@
      "reason": "needs a price of +110 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -2.2 vs consensus -3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -1493,6 +3354,8 @@
      "reason": "needs a price of +109 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -2.2 vs consensus -1.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -1562,6 +3425,8 @@
      "reason": "needs a price of +109 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -4.7 vs consensus -8.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -1631,6 +3496,8 @@
      "reason": "needs a price of +110 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -1.2 vs consensus -1.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -1700,6 +3567,8 @@
      "reason": "needs a price of +105 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -1.2 vs consensus -1.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -1769,6 +3638,8 @@
      "reason": "needs a price of +110 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "fair spread -7.7 vs consensus -7.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
     "spread CALIBRATED vs outcomes, LEAN vs close"
@@ -1838,6 +3709,8 @@
      "reason": "needs a price of -149 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.201 (DET) vs 2.7379 (NJD) regulation goals",
     "DET 5v5 xG for 0.9832× league, NJD 5v5 xG for 1.0079×",
@@ -1911,6 +3784,8 @@
      "reason": "needs a price of -116 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.201 (DET) vs 2.7379 (NJD) regulation goals",
     "DET 5v5 xG for 0.9832× league, NJD 5v5 xG for 1.0079×",
@@ -1984,6 +3859,8 @@
      "reason": "needs a price of +122 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.201 (DET) vs 2.7379 (NJD) regulation goals",
     "DET 5v5 xG for 0.9832× league, NJD 5v5 xG for 1.0079×",
@@ -2057,6 +3934,8 @@
      "reason": "needs a price of +122 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.201 (DET) vs 2.7379 (NJD) regulation goals",
     "DET 5v5 xG for 0.9832× league, NJD 5v5 xG for 1.0079×",
@@ -2130,6 +4009,8 @@
      "reason": "needs a price of +160 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.201 (DET) vs 2.7379 (NJD) regulation goals",
     "DET 5v5 xG for 0.9832× league, NJD 5v5 xG for 1.0079×",
@@ -2203,6 +4084,8 @@
      "reason": "needs a price of +216 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.201 (DET) vs 2.7379 (NJD) regulation goals",
     "DET 5v5 xG for 0.9832× league, NJD 5v5 xG for 1.0079×",
@@ -2276,6 +4159,8 @@
      "reason": "needs a price of -153 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.1969 (CBJ) vs 2.7711 (FLA) regulation goals",
     "CBJ 5v5 xG for 1.0244× league, FLA 5v5 xG for 1.0094×",
@@ -2349,6 +4234,8 @@
      "reason": "needs a price of -113 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.1969 (CBJ) vs 2.7711 (FLA) regulation goals",
     "CBJ 5v5 xG for 1.0244× league, FLA 5v5 xG for 1.0094×",
@@ -2422,6 +4309,8 @@
      "reason": "needs a price of +120 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.1969 (CBJ) vs 2.7711 (FLA) regulation goals",
     "CBJ 5v5 xG for 1.0244× league, FLA 5v5 xG for 1.0094×",
@@ -2495,6 +4384,8 @@
      "reason": "needs a price of +125 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.1969 (CBJ) vs 2.7711 (FLA) regulation goals",
     "CBJ 5v5 xG for 1.0244× league, FLA 5v5 xG for 1.0094×",
@@ -2568,6 +4459,8 @@
      "reason": "needs a price of +155 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.1969 (CBJ) vs 2.7711 (FLA) regulation goals",
     "CBJ 5v5 xG for 1.0244× league, FLA 5v5 xG for 1.0094×",
@@ -2641,6 +4534,8 @@
      "reason": "needs a price of +220 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.1969 (CBJ) vs 2.7711 (FLA) regulation goals",
     "CBJ 5v5 xG for 1.0244× league, FLA 5v5 xG for 1.0094×",
@@ -2714,6 +4609,8 @@
      "reason": "needs a price of -159 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.2818 (MTL) vs 2.9078 (BUF) regulation goals",
     "MTL 5v5 xG for 1.0215× league, BUF 5v5 xG for 1.0292×",
@@ -2787,6 +4684,8 @@
      "reason": "needs a price of -111 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.2818 (MTL) vs 2.9078 (BUF) regulation goals",
     "MTL 5v5 xG for 1.0215× league, BUF 5v5 xG for 1.0292×",
@@ -2860,6 +4759,8 @@
      "reason": "needs a price of +114 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.2818 (MTL) vs 2.9078 (BUF) regulation goals",
     "MTL 5v5 xG for 1.0215× league, BUF 5v5 xG for 1.0292×",
@@ -2933,6 +4834,8 @@
      "reason": "needs a price of +126 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.2818 (MTL) vs 2.9078 (BUF) regulation goals",
     "MTL 5v5 xG for 1.0215× league, BUF 5v5 xG for 1.0292×",
@@ -3006,6 +4909,8 @@
      "reason": "needs a price of +147 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.2818 (MTL) vs 2.9078 (BUF) regulation goals",
     "MTL 5v5 xG for 1.0215× league, BUF 5v5 xG for 1.0292×",
@@ -3079,6 +4984,8 @@
      "reason": "needs a price of +219 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.2818 (MTL) vs 2.9078 (BUF) regulation goals",
     "MTL 5v5 xG for 1.0215× league, BUF 5v5 xG for 1.0292×",
@@ -3152,6 +5059,8 @@
      "reason": "needs a price of -140 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.4418 (CAR) vs 2.6778 (WSH) regulation goals",
     "CAR 5v5 xG for 1.1507× league, WSH 5v5 xG for 1.0393×",
@@ -3224,6 +5133,8 @@
      "reason": "needs a price of -125 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.4418 (CAR) vs 2.6778 (WSH) regulation goals",
     "CAR 5v5 xG for 1.1507× league, WSH 5v5 xG for 1.0393×",
@@ -3296,6 +5207,8 @@
      "reason": "needs a price of +108 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.4418 (CAR) vs 2.6778 (WSH) regulation goals",
     "CAR 5v5 xG for 1.1507× league, WSH 5v5 xG for 1.0393×",
@@ -3368,6 +5281,8 @@
      "reason": "needs a price of +133 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.4418 (CAR) vs 2.6778 (WSH) regulation goals",
     "CAR 5v5 xG for 1.1507× league, WSH 5v5 xG for 1.0393×",
@@ -3440,6 +5355,8 @@
      "reason": "needs a price of +172 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.4418 (CAR) vs 2.6778 (WSH) regulation goals",
     "CAR 5v5 xG for 1.1507× league, WSH 5v5 xG for 1.0393×",
@@ -3512,6 +5429,8 @@
      "reason": "needs a price of +191 or better to clear the bar (if value claims were enabled)"
     }
    ],
+   "sensitivity": null,
+   "settlement": null,
    "evidence": [
     "λ 3.4418 (CAR) vs 2.6778 (WSH) regulation goals",
     "CAR 5v5 xG for 1.1507× league, WSH 5v5 xG for 1.0393×",
@@ -3539,7 +5458,34 @@
    "value_claims": false,
    "candidates": 174,
    "priced": 0,
-   "note": "29 upcoming games priced by the model; book prices: DISABLED"
+   "note": "29 upcoming games priced by the model; book prices: DISABLED",
+   "ladder": {
+    "data_loaded": {
+     "done": true,
+     "detail": "see the sport's own pipeline"
+    },
+    "model_trained": {
+     "done": true,
+     "detail": "edgedesk_nhl_v1"
+    },
+    "validation_passed": {
+     "done": true,
+     "partial": false,
+     "detail": "2 of 4 markets validated vs outcomes; primary market (moneyline): outcome validated"
+    },
+    "market_tested": {
+     "done": false,
+     "detail": "no licensed closing archive: never compared with the market"
+    },
+    "market_verified": {
+     "done": false,
+     "detail": "no executable price on file now"
+    },
+    "actionable": {
+     "done": false,
+     "detail": "none"
+    }
+   }
   },
   {
    "id": "nfl",
@@ -3548,7 +5494,34 @@
    "value_claims": false,
    "candidates": 72,
    "priced": 0,
-   "note": "72 sides at the consensus line (a reference, not a price); captured book prices live in the desk (Supabase), not in this static board"
+   "note": "72 sides at the consensus line (a reference, not a price); captured book prices live in the desk (Supabase), not in this static board",
+   "ladder": {
+    "data_loaded": {
+     "done": true,
+     "detail": "see the sport's own pipeline"
+    },
+    "model_trained": {
+     "done": true,
+     "detail": "edgedesk_football NFL engine (football/engine.js)"
+    },
+    "validation_passed": {
+     "done": true,
+     "partial": false,
+     "detail": "1 of 4 markets validated vs outcomes; primary market (spread): outcome validated"
+    },
+    "market_tested": {
+     "done": true,
+     "detail": "tested against a closing archive"
+    },
+    "market_verified": {
+     "done": false,
+     "detail": "no executable price on file now"
+    },
+    "actionable": {
+     "done": false,
+     "detail": "none"
+    }
+   }
   },
   {
    "id": "cfb",
@@ -3557,16 +5530,70 @@
    "value_claims": false,
    "candidates": 0,
    "priced": 0,
-   "note": "no sheet with a reference line in the window"
+   "note": "no sheet with a reference line in the window",
+   "ladder": {
+    "data_loaded": {
+     "done": true,
+     "detail": "see the sport's own pipeline"
+    },
+    "model_trained": {
+     "done": true,
+     "detail": "edgedesk_cfb_p4 / FBS board engine"
+    },
+    "validation_passed": {
+     "done": true,
+     "partial": true,
+     "detail": "1 of 4 markets validated vs outcomes; primary market (spread): experimental"
+    },
+    "market_tested": {
+     "done": true,
+     "detail": "tested against a closing archive"
+    },
+    "market_verified": {
+     "done": false,
+     "detail": "no executable price on file now"
+    },
+    "actionable": {
+     "done": false,
+     "detail": "none"
+    }
+   }
   },
   {
    "id": "mlb",
    "label": "MLB",
-   "state": "EXPERIMENTAL",
+   "state": "OUTCOME_VALIDATED",
    "value_claims": false,
    "candidates": 0,
    "priced": 0,
-   "note": "no independent model: nothing to evaluate here"
+   "note": "the record is walk-forward through 2025; no 2026 schedule or game logs are in the sources, so nothing is priced now",
+   "ladder": {
+    "data_loaded": {
+     "done": true,
+     "detail": "37346 games (2010-2025), retrospective"
+    },
+    "model_trained": {
+     "done": true,
+     "detail": "team_park_sp"
+    },
+    "validation_passed": {
+     "done": true,
+     "partial": true,
+     "detail": "1 of 3 markets validated vs outcomes; primary market (moneyline): experimental"
+    },
+    "market_tested": {
+     "done": false,
+     "detail": "no licensed closing archive: never compared with the market"
+    },
+    "market_verified": {
+     "done": false,
+     "detail": "no executable price on file now"
+    },
+    "actionable": {
+     "done": false,
+     "detail": "none"
+    }
+   }
   },
   {
    "id": "college_baseball",
@@ -3575,52 +5602,214 @@
    "value_claims": false,
    "candidates": 0,
    "priced": 0,
-   "note": "no independent model: nothing to evaluate here"
+   "note": "no independent model: nothing to evaluate here",
+   "ladder": {
+    "data_loaded": {
+     "done": true,
+     "detail": "a 313-game sample (data pack) and the live ESPN results union: too sparse for a validated model"
+    },
+    "model_trained": {
+     "done": false,
+     "detail": null
+    },
+    "validation_passed": {
+     "done": false,
+     "partial": false,
+     "detail": "nothing scored; primary market (moneyline): none"
+    },
+    "market_tested": {
+     "done": false,
+     "detail": "no licensed closing archive: never compared with the market"
+    },
+    "market_verified": {
+     "done": false,
+     "detail": "no executable price on file now"
+    },
+    "actionable": {
+     "done": false,
+     "detail": "none"
+    }
+   }
   },
   {
    "id": "nba",
    "label": "NBA",
-   "state": "UNAVAILABLE",
+   "state": "OUTCOME_VALIDATED",
    "value_claims": false,
    "candidates": 0,
    "priced": 0,
-   "note": "no data or model wired"
+   "note": "no game in the window (fair prices appear when the schedule reaches it)",
+   "ladder": {
+    "data_loaded": {
+     "done": true,
+     "detail": "24443 games (2008-2027), retrospective"
+    },
+    "model_trained": {
+     "done": true,
+     "detail": "points_rest"
+    },
+    "validation_passed": {
+     "done": true,
+     "partial": false,
+     "detail": "3 of 3 markets validated vs outcomes; primary market (moneyline): outcome validated"
+    },
+    "market_tested": {
+     "done": false,
+     "detail": "no licensed closing archive: never compared with the market"
+    },
+    "market_verified": {
+     "done": false,
+     "detail": "no executable price on file now"
+    },
+    "actionable": {
+     "done": false,
+     "detail": "none"
+    }
+   }
   },
   {
    "id": "wnba",
    "label": "WNBA",
-   "state": "UNAVAILABLE",
+   "state": "OUTCOME_VALIDATED",
    "value_claims": false,
    "candidates": 0,
    "priced": 0,
-   "note": "no data or model wired"
+   "note": "no game in the window (fair prices appear when the schedule reaches it)",
+   "ladder": {
+    "data_loaded": {
+     "done": true,
+     "detail": "4495 games (2008-2026), retrospective"
+    },
+    "model_trained": {
+     "done": true,
+     "detail": "points"
+    },
+    "validation_passed": {
+     "done": true,
+     "partial": true,
+     "detail": "2 of 3 markets validated vs outcomes; primary market (moneyline): experimental"
+    },
+    "market_tested": {
+     "done": false,
+     "detail": "no licensed closing archive: never compared with the market"
+    },
+    "market_verified": {
+     "done": false,
+     "detail": "no executable price on file now"
+    },
+    "actionable": {
+     "done": false,
+     "detail": "none"
+    }
+   }
   },
   {
    "id": "ncaab_m",
    "label": "Men's college basketball",
-   "state": "UNAVAILABLE",
+   "state": "OUTCOME_VALIDATED",
    "value_claims": false,
    "candidates": 0,
    "priced": 0,
-   "note": "no data or model wired"
+   "note": "no game in the window (fair prices appear when the schedule reaches it)",
+   "ladder": {
+    "data_loaded": {
+     "done": true,
+     "detail": "99845 games (2010-2027), retrospective"
+    },
+    "model_trained": {
+     "done": true,
+     "detail": "points"
+    },
+    "validation_passed": {
+     "done": true,
+     "partial": false,
+     "detail": "3 of 3 markets validated vs outcomes; primary market (moneyline): outcome validated"
+    },
+    "market_tested": {
+     "done": false,
+     "detail": "no licensed closing archive: never compared with the market"
+    },
+    "market_verified": {
+     "done": false,
+     "detail": "no executable price on file now"
+    },
+    "actionable": {
+     "done": false,
+     "detail": "none"
+    }
+   }
   },
   {
    "id": "ncaab_w",
    "label": "Women's college basketball",
-   "state": "UNAVAILABLE",
+   "state": "OUTCOME_VALIDATED",
    "value_claims": false,
    "candidates": 0,
    "priced": 0,
-   "note": "no data or model wired"
+   "note": "no game in the window (fair prices appear when the schedule reaches it)",
+   "ladder": {
+    "data_loaded": {
+     "done": true,
+     "detail": "93934 games (2010-2027), retrospective"
+    },
+    "model_trained": {
+     "done": true,
+     "detail": "points"
+    },
+    "validation_passed": {
+     "done": true,
+     "partial": false,
+     "detail": "3 of 3 markets validated vs outcomes; primary market (moneyline): outcome validated"
+    },
+    "market_tested": {
+     "done": false,
+     "detail": "no licensed closing archive: never compared with the market"
+    },
+    "market_verified": {
+     "done": false,
+     "detail": "no executable price on file now"
+    },
+    "actionable": {
+     "done": false,
+     "detail": "none"
+    }
+   }
   },
   {
    "id": "soccer",
    "label": "Soccer",
-   "state": "UNAVAILABLE",
+   "state": "OUTCOME_VALIDATED",
    "value_claims": false,
-   "candidates": 0,
+   "candidates": 150,
    "priced": 0,
-   "note": "no data or model wired"
+   "note": "150 fair prices in the window; no book price is captured for this sport",
+   "ladder": {
+    "data_loaded": {
+     "done": true,
+     "detail": "25572 games, retrospective"
+    },
+    "model_trained": {
+     "done": true,
+     "detail": "{\"epl\":\"poisson\",\"bundesliga\":\"poisson\",\"laliga\":\"poisson\",\"seriea\":\"poisson\",\"ligue1\":\"poisson\"}"
+    },
+    "validation_passed": {
+     "done": true,
+     "partial": true,
+     "detail": "3 of 20 markets validated vs outcomes; primary market (moneyline): experimental"
+    },
+    "market_tested": {
+     "done": false,
+     "detail": "no licensed closing archive: never compared with the market"
+    },
+    "market_verified": {
+     "done": false,
+     "detail": "no executable price on file now"
+    },
+    "actionable": {
+     "done": false,
+     "detail": "none"
+    }
+   }
   },
   {
    "id": "tennis",
@@ -3629,7 +5818,34 @@
    "value_claims": false,
    "candidates": 0,
    "priced": 0,
-   "note": "retired product"
+   "note": "retired product",
+   "ladder": {
+    "data_loaded": {
+     "done": true,
+     "detail": "see the sport's own pipeline"
+    },
+    "model_trained": {
+     "done": true,
+     "detail": "tennis-baseline-2026.09.19.874 (lib/tennis_model.js)"
+    },
+    "validation_passed": {
+     "done": false,
+     "partial": false,
+     "detail": "no market passed (1 scored)"
+    },
+    "market_tested": {
+     "done": false,
+     "detail": "no licensed closing archive: never compared with the market"
+    },
+    "market_verified": {
+     "done": false,
+     "detail": "no executable price on file now"
+    },
+    "actionable": {
+     "done": false,
+     "detail": "none"
+    }
+   }
   },
   {
    "id": "mma",
@@ -3638,12 +5854,41 @@
    "value_claims": false,
    "candidates": 0,
    "priced": 0,
-   "note": "no independent model: nothing to evaluate here"
+   "note": "no independent model: nothing to evaluate here",
+   "ladder": {
+    "data_loaded": {
+     "done": true,
+     "detail": "566 games (2024-2024), retrospective"
+    },
+    "model_trained": {
+     "done": false,
+     "detail": "Elo measured on 2024 only: INSUFFICIENT (not a model)"
+    },
+    "validation_passed": {
+     "done": false,
+     "partial": false,
+     "detail": "no market passed (1 scored); primary market (moneyline): research only"
+    },
+    "market_tested": {
+     "done": false,
+     "detail": "no licensed closing archive: never compared with the market"
+    },
+    "market_verified": {
+     "done": false,
+     "detail": "no executable price on file now"
+    },
+    "actionable": {
+     "done": false,
+     "detail": "none"
+    }
+   }
   }
  ],
  "inputs": {
-  "registry_generated_at": "2026-10-13T05:55:49.237Z",
+  "registry_generated_at": "2026-10-13T06:41:57.021Z",
   "nhl_slate_generated_at": "2026-10-13T05:54:50.803Z",
+  "basketball_slate_generated_at": "2026-10-13T06:41:26.560Z",
+  "soccer_slate_generated_at": "2026-10-13T06:41:26.796Z",
   "nhl_quotes": {
    "status": "DISABLED",
    "generated_at": "2026-10-13T04:59:46.173Z",
@@ -3653,8 +5898,8 @@
   "manual_quotes_applied": 0
  },
  "candidates_trimmed": {
-  "research_total": 246,
-  "research_kept": 48,
+  "research_total": 396,
+  "research_kept": 72,
   "rule": "all non-research rows; per sport, 24 research rows by conservative disagreement with the market reference, then by start time"
  }
 }

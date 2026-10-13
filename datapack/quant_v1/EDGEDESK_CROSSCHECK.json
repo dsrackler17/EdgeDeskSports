@@ -1,0 +1,170 @@
+{
+ "schema": "edgedesk_datapack_crosscheck_v1",
+ "sports": {
+  "nhl": {
+   "matched": 1398,
+   "final_agree": 1398,
+   "goals_against_agree": "167/167",
+   "unblocked_attempts_exact": "160/160",
+   "file": "hockey/validation/nhl_crosscheck_espn.json"
+  },
+  "nba": {
+   "pack_rows": 1403,
+   "pack_final": 1397,
+   "matched": 1321,
+   "final_agree": 1321,
+   "neutral_agree": 1321,
+   "added_from_pack": 3,
+   "unmatched": 73,
+   "unmatched_examples": [
+    {
+     "id": "401716947",
+     "game": "Boston Celtics at Denver Nuggets",
+     "start": "2024-10-04T16:00Z"
+    },
+    {
+     "id": "401716948",
+     "game": "New Zealand Breakers at Utah Jazz",
+     "start": "2024-10-05T01:00Z"
+    },
+    {
+     "id": "401716949",
+     "game": "Minnesota Timberwolves at Los Angeles Lakers",
+     "start": "2024-10-05T02:30Z"
+    },
+    {
+     "id": "401716950",
+     "game": "Golden State Warriors at LA Clippers",
+     "start": "2024-10-05T23:00Z"
+    },
+    {
+     "id": "401716951",
+     "game": "Denver Nuggets at Boston Celtics",
+     "start": "2024-10-06T14:00Z"
+    }
+   ],
+   "disagreements": [],
+   "reading": "Same game ids (both ESPN-derived). matched/final_agree compare the source's own rows; added_from_pack are pack games the source lacked, now in the table (src = P). Unmatched pack games are preseason or exhibition events dropped by design."
+  },
+  "wnba": {
+   "pack_rows": 275,
+   "pack_final": 275,
+   "matched": 263,
+   "final_agree": 263,
+   "neutral_agree": 263,
+   "added_from_pack": 1,
+   "unmatched": 11,
+   "unmatched_examples": [
+    {
+     "id": "401649378",
+     "game": "Chicago Sky at Minnesota Lynx",
+     "start": "2024-05-04T00:00Z"
+    },
+    {
+     "id": "401653060",
+     "game": "Indiana Fever at Dallas Wings",
+     "start": "2024-05-04T00:00Z"
+    },
+    {
+     "id": "401653631",
+     "game": "Washington Mystics at Atlanta Dream",
+     "start": "2024-05-04T17:00Z"
+    },
+    {
+     "id": "401647556",
+     "game": "Los Angeles Sparks at Seattle Storm",
+     "start": "2024-05-05T01:30Z"
+    },
+    {
+     "id": "401649379",
+     "game": "New York Liberty at Chicago Sky",
+     "start": "2024-05-08T00:00Z"
+    }
+   ],
+   "disagreements": [],
+   "reading": "Same game ids (both ESPN-derived). matched/final_agree compare the source's own rows; added_from_pack are pack games the source lacked, now in the table (src = P). Unmatched pack games are preseason or exhibition events dropped by design."
+  },
+  "ncaam": {
+   "pack_rows": 3677,
+   "pack_final": 3677,
+   "matched": 3677,
+   "final_agree": 3677,
+   "neutral_agree": 3677,
+   "added_from_pack": 0,
+   "unmatched": 0,
+   "unmatched_examples": [],
+   "disagreements": [],
+   "reading": "Same game ids (both ESPN-derived). matched/final_agree compare the source's own rows; added_from_pack are pack games the source lacked, now in the table (src = P). Unmatched pack games are preseason or exhibition events dropped by design."
+  },
+  "ncaaw": {
+   "pack_rows": 3597,
+   "pack_final": 3593,
+   "matched": 3384,
+   "final_agree": 3384,
+   "neutral_agree": 3384,
+   "added_from_pack": 209,
+   "unmatched": 0,
+   "unmatched_examples": [],
+   "disagreements": [],
+   "reading": "Same game ids (both ESPN-derived). matched/final_agree compare the source's own rows; added_from_pack are pack games the source lacked, now in the table (src = P). Unmatched pack games are preseason or exhibition events dropped by design."
+  },
+  "epl": {
+   "pack_rows": 380,
+   "matched": 380,
+   "final_agree": 380,
+   "unmatched": 0,
+   "unmatched_examples": [],
+   "disagreements": [],
+   "date_shift_days": {
+    "0": 380
+   },
+   "reading": "Independent sources. ESPN dates are UTC; openfootball dates are local, so an evening kick-off can sit one day apart."
+  },
+  "nfl": {
+   "pack_rows": 854,
+   "matched": 854,
+   "final_agree": 854,
+   "spread_line_agree": 854,
+   "total_line_agree": 854,
+   "unmatched": 0,
+   "disagreements": [],
+   "source": {
+    "url": "https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv",
+    "sha256": "77f166da45ff403ddad85647d02ee30c45670ba6c57e822e99c64e0a810fa132"
+   },
+   "reading": "Both from nflverse. Archived spread and total lines are consensus closing lines without a capture time: they are research labels, never a market test or a \"pregame known\" price."
+  },
+  "mlb": {
+   "rows": 2998,
+   "regular_season_final": 2432,
+   "expected_regular_season": 2430,
+   "state": "TRAINING_SOURCE_FOR_2024",
+   "note": "the 2024 season of mlb/history comes from this table; no starting pitchers"
+  },
+  "cfb": {
+   "rows": 111,
+   "state": "NO_SECOND_SOURCE",
+   "note": "111-game sample; the CFB brain trains on its own sources (football/)"
+  },
+  "college_baseball": {
+   "rows": 313,
+   "state": "NO_SECOND_SOURCE",
+   "note": "explicit-date sample; too sparse for a model"
+  },
+  "ufc": {
+   "rows": 566,
+   "state": "NO_SECOND_SOURCE",
+   "note": "one year of bout results; see engine/lab/ufc_elo.json"
+  },
+  "tennis_atp": {
+   "rows": 1233,
+   "state": "NO_SECOND_SOURCE",
+   "note": "four query dates; tennis is retired"
+  },
+  "tennis_wta": {
+   "rows": 1609,
+   "state": "NO_SECOND_SOURCE",
+   "note": "four query dates; tennis is retired"
+  }
+ }
+}

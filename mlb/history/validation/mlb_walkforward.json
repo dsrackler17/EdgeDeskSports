@@ -1,0 +1,927 @@
+{
+ "schema": "edgedesk_lab_walkforward_v1",
+ "sport": "mlb",
+ "label": "MLB",
+ "generated_at": "2026-10-13T06:40:36.442Z",
+ "protocol": {
+  "windows": {
+   "burn_in": [
+    2010,
+    2011
+   ],
+   "selection": [
+    2012,
+    2017
+   ],
+   "confirmation": [
+    2018,
+    2025
+   ],
+   "live": null
+  },
+  "rules": {
+   "min_n": 1000,
+   "min_seasons": 2,
+   "max_citl": 0.02,
+   "slope": [
+    0.85,
+    1.15
+   ],
+   "challenger_margin": 0.001,
+   "coverage80": [
+    0.77,
+    0.83
+   ],
+   "max_bias_share": 0.01
+  },
+  "prediction_time": "09:00 UTC on the game date; inputs: games of earlier dates (ended by 08:00 UTC)",
+  "candidates": [
+   "team",
+   "team_park",
+   "team_park_sp"
+  ],
+  "baselines": {
+   "elo": "Elo with a log-margin multiplier, tuned on the selection window {\"k\":3,\"hfa\":24,\"revert\":0.67,\"ll\":0.683698714417088}",
+   "const_home": "home win rate of the three seasons before"
+  }
+ },
+ "data": {
+  "source": "mlb/history/data (Retrosheet game logs; 2024 from the data pack's StatsAPI table)",
+  "license": "Retrosheet: \"The information used here was obtained free of charge from and is copyrighted by Retrosheet. Interested parties may contact Retrosheet at www.retrosheet.org.\" 2024 from the data pack's MLB StatsAPI retrieval (MLB terms apply).",
+  "seasons": [
+   2010,
+   2025
+  ],
+  "games": 37346,
+  "games_scored": 32487,
+  "starters_missing": 2432,
+  "temporal": {
+   "point_in_time": "RETROSPECTIVE",
+   "known_at": "blank (never backdated)",
+   "assumed_available_at": "08:00 UTC the day after"
+  }
+ },
+ "leakage": {
+  "basis": "inputs dated by assumed_available_at (08:00 UTC the next day); predictions at 09:00 UTC on the game date",
+  "checked": 32487,
+  "violations": 0,
+  "examples": [],
+  "ok": true
+ },
+ "tuning": {
+  "chosen": {
+   "half_life_days": 365,
+   "window_days": 800,
+   "prior_games": 40,
+   "prior_starts": 64,
+   "prior_park_games": 120,
+   "carry": 0.7,
+   "sweeps": 3
+  },
+  "elo": {
+   "k": 3,
+   "hfa": 24,
+   "revert": 0.67,
+   "ll": 0.683698714417088
+  },
+  "rule": "chosen by SELECTION-window (2012-2017) moneyline log loss of team_park_sp; no later season is read"
+ },
+ "selection": {
+  "rule": "lowest selection-window moneyline log loss; a challenger must beat the incumbent by >= 0.001",
+  "ll": {
+   "team": 0.68468,
+   "team_park": 0.68468,
+   "team_park_sp": 0.68195,
+   "elo": 0.6837,
+   "const_home": 0.69068
+  },
+  "chosen": "team_park_sp"
+ },
+ "comparisons": {
+  "team_park_sp_vs_elo": {
+   "n": 17909,
+   "blocks": 1348,
+   "mean_diff": 0.001616,
+   "ci95": [
+    0.000416,
+    0.002766
+   ],
+   "a_better": false,
+   "b_better": true
+  },
+  "team_park_sp_vs_const_home": {
+   "n": 17909,
+   "blocks": 1348,
+   "mean_diff": -0.013958,
+   "ci95": [
+    -0.016478,
+    -0.011417
+   ],
+   "a_better": true,
+   "b_better": false
+  },
+  "team_park_sp_vs_team_park": {
+   "n": 15477,
+   "blocks": 1163,
+   "mean_diff": 0.000202,
+   "ci95": [
+    -0.000989,
+    0.001302
+   ],
+   "a_better": false,
+   "b_better": false
+  }
+ },
+ "best_baseline": "elo",
+ "markets": {
+  "moneyline": {
+   "market": "moneyline (incl. extra innings)",
+   "status": "PROVISIONAL",
+   "failed": [
+    "does not beat the best baseline with a 95% interval below zero"
+   ],
+   "n": 17909,
+   "log_loss": 0.67727,
+   "brier": 0.24214,
+   "calibration_in_the_large": -0.0006,
+   "calibration_slope": 0.984,
+   "market_status": "NOT_TESTED",
+   "market_reason": "no licensed archive of timestamped closing prices is on file; archived untimestamped lines are not a market test"
+  },
+  "run_line": {
+   "market": "run line home -1.5",
+   "status": "OUTCOME_VALIDATED",
+   "failed": [],
+   "n": 17909,
+   "log_loss": 0.64397,
+   "brier": 0.22606,
+   "calibration_in_the_large": -0.0033,
+   "calibration_slope": 0.85,
+   "market_status": "NOT_TESTED",
+   "market_reason": "no licensed archive of timestamped closing prices is on file; archived untimestamped lines are not a market test"
+  },
+  "total": {
+   "market": "total runs 8.5",
+   "status": "PROVISIONAL",
+   "failed": [
+    "calibration slope 0.647"
+   ],
+   "n": 17909,
+   "log_loss": 0.68956,
+   "brier": 0.24818,
+   "calibration_in_the_large": -0.0133,
+   "calibration_slope": 0.647,
+   "market_status": "NOT_TESTED",
+   "market_reason": "no licensed archive of timestamped closing prices is on file; archived untimestamped lines are not a market test"
+  }
+ },
+ "windows": {
+  "selection": {
+   "seasons_range": [
+    2012,
+    2017
+   ],
+   "n": 14578,
+   "seasons": 6,
+   "by_candidate": {
+    "team": {
+     "moneyline": {
+      "n": 14578,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.68468,
+      "brier": 0.24579,
+      "climatology": {
+       "rate": 0.5354,
+       "log_loss": 0.69064,
+       "brier": 0.24875
+      },
+      "brier_skill": 0.0119,
+      "mean_p": 0.5345,
+      "mean_y": 0.5354,
+      "calibration_in_the_large": -0.0009,
+      "calibration_slope": 1.069,
+      "calibration_intercept": -0.006
+     },
+     "run_line_home_minus_1_5": {
+      "n": 14578,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.64912,
+      "brier": 0.22847,
+      "climatology": {
+       "rate": 0.3617,
+       "log_loss": 0.6544,
+       "brier": 0.23088
+      },
+      "brier_skill": 0.0104,
+      "mean_p": 0.3559,
+      "mean_y": 0.3617,
+      "calibration_in_the_large": -0.0058,
+      "calibration_slope": 0.847,
+      "calibration_intercept": -0.064
+     },
+     "total_over_8_5": {
+      "n": 14578,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.68643,
+      "brier": 0.24664,
+      "climatology": {
+       "rate": 0.466,
+       "log_loss": 0.69083,
+       "brier": 0.24884
+      },
+      "brier_skill": 0.0089,
+      "mean_p": 0.4531,
+      "mean_y": 0.466,
+      "calibration_in_the_large": -0.0129,
+      "calibration_slope": 0.752,
+      "calibration_intercept": 0.006
+     },
+     "total_bias": -0.084
+    },
+    "team_park": {
+     "moneyline": {
+      "n": 14578,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.68468,
+      "brier": 0.24579,
+      "climatology": {
+       "rate": 0.5354,
+       "log_loss": 0.69064,
+       "brier": 0.24875
+      },
+      "brier_skill": 0.0119,
+      "mean_p": 0.5347,
+      "mean_y": 0.5354,
+      "calibration_in_the_large": -0.0007,
+      "calibration_slope": 1.07,
+      "calibration_intercept": -0.007
+     },
+     "run_line_home_minus_1_5": {
+      "n": 14578,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.64925,
+      "brier": 0.22853,
+      "climatology": {
+       "rate": 0.3617,
+       "log_loss": 0.6544,
+       "brier": 0.23088
+      },
+      "brier_skill": 0.0101,
+      "mean_p": 0.3557,
+      "mean_y": 0.3617,
+      "calibration_in_the_large": -0.006,
+      "calibration_slope": 0.839,
+      "calibration_intercept": -0.068
+     },
+     "total_over_8_5": {
+      "n": 14578,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.68175,
+      "brier": 0.24434,
+      "climatology": {
+       "rate": 0.466,
+       "log_loss": 0.69083,
+       "brier": 0.24884
+      },
+      "brier_skill": 0.0181,
+      "mean_p": 0.4516,
+      "mean_y": 0.466,
+      "calibration_in_the_large": -0.0144,
+      "calibration_slope": 0.831,
+      "calibration_intercept": 0.027
+     },
+     "total_bias": -0.084
+    },
+    "team_park_sp": {
+     "moneyline": {
+      "n": 14578,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.68195,
+      "brier": 0.24446,
+      "climatology": {
+       "rate": 0.5354,
+       "log_loss": 0.69064,
+       "brier": 0.24875
+      },
+      "brier_skill": 0.0172,
+      "mean_p": 0.535,
+      "mean_y": 0.5354,
+      "calibration_in_the_large": -0.0004,
+      "calibration_slope": 1.072,
+      "calibration_intercept": -0.008
+     },
+     "run_line_home_minus_1_5": {
+      "n": 14578,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.6475,
+      "brier": 0.22773,
+      "climatology": {
+       "rate": 0.3617,
+       "log_loss": 0.6544,
+       "brier": 0.23088
+      },
+      "brier_skill": 0.0136,
+      "mean_p": 0.355,
+      "mean_y": 0.3617,
+      "calibration_in_the_large": -0.0068,
+      "calibration_slope": 0.797,
+      "calibration_intercept": -0.089
+     },
+     "total_over_8_5": {
+      "n": 14578,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.68051,
+      "brier": 0.24369,
+      "climatology": {
+       "rate": 0.466,
+       "log_loss": 0.69083,
+       "brier": 0.24884
+      },
+      "brier_skill": 0.0207,
+      "mean_p": 0.4436,
+      "mean_y": 0.466,
+      "calibration_in_the_large": -0.0224,
+      "calibration_slope": 0.808,
+      "calibration_intercept": 0.05
+     },
+     "total_bias": -0.16
+    },
+    "elo": {
+     "moneyline": {
+      "n": 14578,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.6837,
+      "brier": 0.24531,
+      "climatology": {
+       "rate": 0.5354,
+       "log_loss": 0.69064,
+       "brier": 0.24875
+      },
+      "brier_skill": 0.0138,
+      "mean_p": 0.5338,
+      "mean_y": 0.5354,
+      "calibration_in_the_large": -0.0016,
+      "calibration_slope": 0.878,
+      "calibration_intercept": 0.023
+     }
+    },
+    "const_home": {
+     "moneyline": {
+      "n": 14578,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.69068,
+      "brier": 0.24877,
+      "climatology": {
+       "rate": 0.5354,
+       "log_loss": 0.69064,
+       "brier": 0.24875
+      },
+      "brier_skill": -0.0001,
+      "mean_p": 0.5363,
+      "mean_y": 0.5354,
+      "calibration_in_the_large": 0.0009,
+      "calibration_slope": -0.175,
+      "calibration_intercept": 0.167
+     }
+    }
+   }
+  },
+  "confirmation": {
+   "seasons_range": [
+    2018,
+    2025
+   ],
+   "n": 17909,
+   "seasons": 8,
+   "by_candidate": {
+    "team": {
+     "moneyline": {
+      "n": 17909,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.67703,
+      "brier": 0.24204,
+      "climatology": {
+       "rate": 0.532,
+       "log_loss": 0.6911,
+       "brier": 0.24898
+      },
+      "brier_skill": 0.0279,
+      "mean_p": 0.5308,
+      "mean_y": 0.532,
+      "calibration_in_the_large": -0.0012,
+      "calibration_slope": 0.982,
+      "calibration_intercept": 0.007
+     },
+     "run_line_home_minus_1_5": {
+      "n": 17909,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.64293,
+      "brier": 0.22561,
+      "climatology": {
+       "rate": 0.364,
+       "log_loss": 0.65566,
+       "brier": 0.23149
+      },
+      "brier_skill": 0.0254,
+      "mean_p": 0.3606,
+      "mean_y": 0.364,
+      "calibration_in_the_large": -0.0033,
+      "calibration_slope": 0.952,
+      "calibration_intercept": -0.012
+     },
+     "total_over_8_5": {
+      "n": 17909,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.6918,
+      "brier": 0.24931,
+      "climatology": {
+       "rate": 0.5032,
+       "log_loss": 0.69313,
+       "brier": 0.24999
+      },
+      "brier_skill": 0.0027,
+      "mean_p": 0.4977,
+      "mean_y": 0.5032,
+      "calibration_in_the_large": -0.0055,
+      "calibration_slope": 0.614,
+      "calibration_intercept": 0.018
+     },
+     "total_bias": 0.019
+    },
+    "team_park": {
+     "moneyline": {
+      "n": 17909,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.67704,
+      "brier": 0.24204,
+      "climatology": {
+       "rate": 0.532,
+       "log_loss": 0.6911,
+       "brier": 0.24898
+      },
+      "brier_skill": 0.0279,
+      "mean_p": 0.531,
+      "mean_y": 0.532,
+      "calibration_in_the_large": -0.0009,
+      "calibration_slope": 0.981,
+      "calibration_intercept": 0.006
+     },
+     "run_line_home_minus_1_5": {
+      "n": 17909,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.64311,
+      "brier": 0.2257,
+      "climatology": {
+       "rate": 0.364,
+       "log_loss": 0.65566,
+       "brier": 0.23149
+      },
+      "brier_skill": 0.025,
+      "mean_p": 0.3611,
+      "mean_y": 0.364,
+      "calibration_in_the_large": -0.0028,
+      "calibration_slope": 0.96,
+      "calibration_intercept": -0.01
+     },
+     "total_over_8_5": {
+      "n": 17909,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.68975,
+      "brier": 0.24829,
+      "climatology": {
+       "rate": 0.5032,
+       "log_loss": 0.69313,
+       "brier": 0.24999
+      },
+      "brier_skill": 0.0068,
+      "mean_p": 0.4964,
+      "mean_y": 0.5032,
+      "calibration_in_the_large": -0.0068,
+      "calibration_slope": 0.674,
+      "calibration_intercept": 0.023
+     },
+     "total_bias": 0.02
+    },
+    "team_park_sp": {
+     "moneyline": {
+      "n": 17909,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.67727,
+      "brier": 0.24214,
+      "climatology": {
+       "rate": 0.532,
+       "log_loss": 0.6911,
+       "brier": 0.24898
+      },
+      "brier_skill": 0.0274,
+      "mean_p": 0.5313,
+      "mean_y": 0.532,
+      "calibration_in_the_large": -0.0006,
+      "calibration_slope": 0.984,
+      "calibration_intercept": 0.005
+     },
+     "run_line_home_minus_1_5": {
+      "n": 17909,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.64397,
+      "brier": 0.22606,
+      "climatology": {
+       "rate": 0.364,
+       "log_loss": 0.65566,
+       "brier": 0.23149
+      },
+      "brier_skill": 0.0235,
+      "mean_p": 0.3607,
+      "mean_y": 0.364,
+      "calibration_in_the_large": -0.0033,
+      "calibration_slope": 0.85,
+      "calibration_intercept": -0.069
+     },
+     "total_over_8_5": {
+      "n": 17909,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.68956,
+      "brier": 0.24818,
+      "climatology": {
+       "rate": 0.5032,
+       "log_loss": 0.69313,
+       "brier": 0.24999
+      },
+      "brier_skill": 0.0073,
+      "mean_p": 0.49,
+      "mean_y": 0.5032,
+      "calibration_in_the_large": -0.0133,
+      "calibration_slope": 0.647,
+      "calibration_intercept": 0.039
+     },
+     "total_bias": -0.04
+    },
+    "elo": {
+     "moneyline": {
+      "n": 17909,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.67565,
+      "brier": 0.24139,
+      "climatology": {
+       "rate": 0.532,
+       "log_loss": 0.6911,
+       "brier": 0.24898
+      },
+      "brier_skill": 0.0305,
+      "mean_p": 0.5336,
+      "mean_y": 0.532,
+      "calibration_in_the_large": 0.0016,
+      "calibration_slope": 1.005,
+      "calibration_intercept": -0.007
+     }
+    },
+    "const_home": {
+     "moneyline": {
+      "n": 17909,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.69123,
+      "brier": 0.24904,
+      "climatology": {
+       "rate": 0.532,
+       "log_loss": 0.6911,
+       "brier": 0.24898
+      },
+      "brier_skill": -0.0003,
+      "mean_p": 0.5337,
+      "mean_y": 0.532,
+      "calibration_in_the_large": 0.0017,
+      "calibration_slope": -1.06,
+      "calibration_intercept": 0.271
+     }
+    }
+   }
+  },
+  "season_2024_no_starters": {
+   "note": "starting pitchers unknown for 2024; the starter term is 0",
+   "n": 2432,
+   "seasons": 1,
+   "by_candidate": {
+    "team": {
+     "moneyline": {
+      "n": 2432,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.68048,
+      "brier": 0.24373,
+      "climatology": {
+       "rate": 0.5214,
+       "log_loss": 0.69223,
+       "brier": 0.24954
+      },
+      "brier_skill": 0.0233,
+      "mean_p": 0.5218,
+      "mean_y": 0.5214,
+      "calibration_in_the_large": 0.0004,
+      "calibration_slope": 1.001,
+      "calibration_intercept": -0.002
+     },
+     "run_line_home_minus_1_5": {
+      "n": 2432,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.63663,
+      "brier": 0.22266,
+      "climatology": {
+       "rate": 0.3532,
+       "log_loss": 0.64941,
+       "brier": 0.22845
+      },
+      "brier_skill": 0.0254,
+      "mean_p": 0.3517,
+      "mean_y": 0.3532,
+      "calibration_in_the_large": -0.0015,
+      "calibration_slope": 0.996,
+      "calibration_intercept": 0.004
+     },
+     "total_over_8_5": {
+      "n": 2432,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.69194,
+      "brier": 0.24939,
+      "climatology": {
+       "rate": 0.4844,
+       "log_loss": 0.69266,
+       "brier": 0.24976
+      },
+      "brier_skill": 0.0015,
+      "mean_p": 0.4889,
+      "mean_y": 0.4844,
+      "calibration_in_the_large": 0.0046,
+      "calibration_slope": 0.583,
+      "calibration_intercept": -0.037
+     },
+     "total_bias": 0.161
+    },
+    "team_park": {
+     "moneyline": {
+      "n": 2432,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.68053,
+      "brier": 0.24375,
+      "climatology": {
+       "rate": 0.5214,
+       "log_loss": 0.69223,
+       "brier": 0.24954
+      },
+      "brier_skill": 0.0232,
+      "mean_p": 0.5219,
+      "mean_y": 0.5214,
+      "calibration_in_the_large": 0.0005,
+      "calibration_slope": 1.002,
+      "calibration_intercept": -0.002
+     },
+     "run_line_home_minus_1_5": {
+      "n": 2432,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.63661,
+      "brier": 0.22265,
+      "climatology": {
+       "rate": 0.3532,
+       "log_loss": 0.64941,
+       "brier": 0.22845
+      },
+      "brier_skill": 0.0254,
+      "mean_p": 0.3526,
+      "mean_y": 0.3532,
+      "calibration_in_the_large": -0.0007,
+      "calibration_slope": 1.024,
+      "calibration_intercept": 0.017
+     },
+     "total_over_8_5": {
+      "n": 2432,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.69069,
+      "brier": 0.24875,
+      "climatology": {
+       "rate": 0.4844,
+       "log_loss": 0.69266,
+       "brier": 0.24976
+      },
+      "brier_skill": 0.004,
+      "mean_p": 0.4881,
+      "mean_y": 0.4844,
+      "calibration_in_the_large": 0.0038,
+      "calibration_slope": 0.631,
+      "calibration_intercept": -0.033
+     },
+     "total_bias": 0.164
+    },
+    "team_park_sp": {
+     "moneyline": {
+      "n": 2432,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.68092,
+      "brier": 0.24394,
+      "climatology": {
+       "rate": 0.5214,
+       "log_loss": 0.69223,
+       "brier": 0.24954
+      },
+      "brier_skill": 0.0224,
+      "mean_p": 0.5233,
+      "mean_y": 0.5214,
+      "calibration_in_the_large": 0.0019,
+      "calibration_slope": 1.147,
+      "calibration_intercept": -0.021
+     },
+     "run_line_home_minus_1_5": {
+      "n": 2432,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.63668,
+      "brier": 0.22268,
+      "climatology": {
+       "rate": 0.3532,
+       "log_loss": 0.64941,
+       "brier": 0.22845
+      },
+      "brier_skill": 0.0253,
+      "mean_p": 0.353,
+      "mean_y": 0.3532,
+      "calibration_in_the_large": -0.0002,
+      "calibration_slope": 1.048,
+      "calibration_intercept": 0.03
+     },
+     "total_over_8_5": {
+      "n": 2432,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.69072,
+      "brier": 0.24876,
+      "climatology": {
+       "rate": 0.4844,
+       "log_loss": 0.69266,
+       "brier": 0.24976
+      },
+      "brier_skill": 0.004,
+      "mean_p": 0.4915,
+      "mean_y": 0.4844,
+      "calibration_in_the_large": 0.0071,
+      "calibration_slope": 0.634,
+      "calibration_intercept": -0.041
+     },
+     "total_bias": 0.202
+    },
+    "elo": {
+     "moneyline": {
+      "n": 2432,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.68095,
+      "brier": 0.24396,
+      "climatology": {
+       "rate": 0.5214,
+       "log_loss": 0.69223,
+       "brier": 0.24954
+      },
+      "brier_skill": 0.0224,
+      "mean_p": 0.5336,
+      "mean_y": 0.5214,
+      "calibration_in_the_large": 0.0122,
+      "calibration_slope": 0.898,
+      "calibration_intercept": -0.037
+     }
+    },
+    "const_home": {
+     "moneyline": {
+      "n": 2432,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.69242,
+      "brier": 0.24964,
+      "climatology": {
+       "rate": 0.5214,
+       "log_loss": 0.69223,
+       "brier": 0.24954
+      },
+      "brier_skill": -0.0004,
+      "mean_p": 0.5311,
+      "mean_y": 0.5214,
+      "calibration_in_the_large": 0.0097,
+      "calibration_slope": -30.936,
+      "calibration_intercept": 3.936
+     }
+    }
+   }
+  }
+ },
+ "calibration_by_season": {
+  "2012": {
+   "nb_size": 4,
+   "extra_inning_home": 0.547,
+   "recal": [
+    0.1057,
+    0.6557
+   ]
+  },
+  "2013": {
+   "nb_size": 4,
+   "extra_inning_home": 0.5331,
+   "recal": [
+    0.1029,
+    0.7024
+   ]
+  },
+  "2014": {
+   "nb_size": 4,
+   "extra_inning_home": 0.5283,
+   "recal": [
+    0.083,
+    0.8365
+   ]
+  },
+  "2015": {
+   "nb_size": 4,
+   "extra_inning_home": 0.4993,
+   "recal": [
+    0.106,
+    0.9118
+   ]
+  },
+  "2016": {
+   "nb_size": 4,
+   "extra_inning_home": 0.5066,
+   "recal": [
+    0.1137,
+    0.8666
+   ]
+  },
+  "2017": {
+   "nb_size": 4,
+   "extra_inning_home": 0.5024,
+   "recal": [
+    0.1042,
+    0.8957
+   ]
+  },
+  "2018": {
+   "nb_size": 4,
+   "extra_inning_home": 0.5181,
+   "recal": [
+    0.1043,
+    0.8489
+   ]
+  },
+  "2019": {
+   "nb_size": 4,
+   "extra_inning_home": 0.5249,
+   "recal": [
+    0.0737,
+    0.9665
+   ]
+  },
+  "2020": {
+   "nb_size": 4,
+   "extra_inning_home": 0.5149,
+   "recal": [
+    0.0778,
+    1.0081
+   ]
+  },
+  "2021": {
+   "nb_size": 4,
+   "extra_inning_home": 0.5081,
+   "recal": [
+    0.0882,
+    0.9956
+   ]
+  },
+  "2022": {
+   "nb_size": 4,
+   "extra_inning_home": 0.4776,
+   "recal": [
+    0.1215,
+    0.9244
+   ]
+  },
+  "2023": {
+   "nb_size": 4,
+   "extra_inning_home": 0.498,
+   "recal": [
+    0.119,
+    0.8658
+   ]
+  },
+  "2024": {
+   "nb_size": 4,
+   "extra_inning_home": 0.4913,
+   "recal": [
+    0.0965,
+    0.8346
+   ]
+  },
+  "2025": {
+   "nb_size": 4,
+   "extra_inning_home": 0.5012,
+   "recal": [
+    0.0841,
+    0.8624
+   ]
+  }
+ },
+ "caveats": [
+  "Retrospective, not point-in-time certified; a starter is treated as known before the game (probable starters are announced, but late changes happen and are not modelled).",
+  "No lineup, bullpen-availability, platoon, weather or umpire input. The pack's Statcast-style pitch sample (30 games) is too small to model.",
+  "2024 starters are unknown (Retrosheet's 2024 log is not reachable; the pack's table has none).",
+  "Outcome validation only: no licensed archive of timestamped closing prices."
+ ]
+}

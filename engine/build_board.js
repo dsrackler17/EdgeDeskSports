@@ -12,6 +12,10 @@
                (captured book prices, only when authorised)
      NFL, CFB  football/linemaker/fair_lines.json — probabilities at the
                consensus line; the consensus is a REFERENCE, never a price
+     NBA, WNBA, men's and women's college basketball
+               basketball/slate.json — fair prices (no book prices captured)
+     soccer    soccer/slate.json — 1X2, total 2.5, both-to-score and a
+               quarter Asian line (split settlement), per league
      any       engine/market/manual_quotes.json — a price I typed in from a
                sportsbook screen, labelled USER_SUPPLIED with its time
    Spends nothing: no network, no odds credit.
@@ -131,6 +135,48 @@ function footballCandidates(sheets, now) {
   return out;
 }
 
+/* ---------- basketball and soccer (fair prices, research until a price exists) ---------- */
+function basketballCandidates(slate, now) {
+  if (!slate || !slate.leagues) return [];
+  const out = [];
+  for (const [league, L] of Object.entries(slate.leagues)) for (const g of L.games || []) {
+    if (!(Date.parse(g.start_utc) > now)) continue;
+    const base = { sport_id: L.registry, sport_label: L.label, event_key: g.event_key, event: { home: g.home, away: g.away, start_utc: g.start_utc, label: g.away + ' @ ' + g.home },
+      data: { state: g.data_quality.early_season ? 'FRESH' : 'FRESH', lineup_certainty: 'UNKNOWN' },
+      evidence: ['projected margin ' + g.prices.spread.projected_margin + ' (home), total ' + g.prices.total.projected, 'model ' + L.model + ' (' + league + '); moneyline ' + L.validation.moneyline + ', spread ' + L.validation.spread + ', total ' + L.validation.total + ' vs outcomes; never tested vs the close'],
+      invalidators: g.invalidators };
+    for (const side of ['home', 'away']) out.push(Object.assign({}, base, { market: { kind: 'moneyline', side: side === 'home' ? g.home : g.away, line: null, settles: g.prices.moneyline.settles }, quote: null,
+      model: { p_win: g.prices.moneyline[side], p_push: 0, method: 'MODEL', model_id: 'basketball/' + league + ':' + L.model, sd: 0.025 }, market_ref: null }));
+    const fl = g.prices.spread.fair_home_line; const sl = g.prices.spread.lines[fl];
+    if (sl) for (const side of ['home', 'away']) out.push(Object.assign({}, base, { market: { kind: 'spread', side: side === 'home' ? g.home : g.away, line: side === 'home' ? fl : -fl, settles: g.prices.spread.settles }, quote: null,
+      model: { p_win: side === 'home' ? sl.home_cover : sl.away_cover, p_push: sl.push, method: 'MODEL', model_id: 'basketball/' + league + ':' + L.model, sd: 0.025 }, market_ref: null }));
+    const tl = g.prices.total.lines[g.prices.total.fair_line];
+    if (tl) for (const side of ['over', 'under']) out.push(Object.assign({}, base, { market: { kind: 'total', side, line: g.prices.total.fair_line, settles: g.prices.total.settles }, quote: null,
+      model: { p_win: tl[side], p_push: tl.push, method: 'MODEL', model_id: 'basketball/' + league + ':' + L.model, sd: 0.025 }, market_ref: null }));
+  }
+  return out;
+}
+function soccerCandidates(slate) {
+  if (!slate || !slate.leagues) return [];
+  const out = [];
+  for (const [league, L] of Object.entries(slate.leagues)) for (const g of L.games || []) {
+    const base = { sport_id: 'soccer', sport_label: 'Soccer · ' + L.label, event_key: g.event_key, event: { home: g.home, away: g.away, start_utc: g.date + 'T23:59:00Z', date: g.date, label: g.away + ' @ ' + g.home },
+      data: { state: g.data_quality.state, lineup_certainty: 'UNKNOWN' },
+      evidence: ['λ ' + g.lambda.home + ' / ' + g.lambda.away + ' goals', 'model ' + L.model + ' (' + league + '); 1X2 ' + L.validation.three_way + ', Asian handicap ' + L.validation.asian_handicap + ' vs outcomes; never tested vs the close'].concat(L.data.note ? [L.data.note] : []),
+      invalidators: g.invalidators };
+    const t = g.prices.three_way;
+    for (const [side, p] of [['home', t.home], ['draw', t.draw], ['away', t.away]]) out.push(Object.assign({}, base, { market: { kind: 'three_way', registry_key: league + '.moneyline', side: side === 'home' ? g.home : side === 'away' ? g.away : 'draw', line: null, settles: t.settles }, quote: null,
+      model: { p_win: p, p_push: 0, method: 'MODEL', model_id: 'soccer/' + league + ':' + L.model, sd: 0.025 }, market_ref: null }));
+    const tot = g.prices.total;
+    for (const side of ['over', 'under']) out.push(Object.assign({}, base, { market: { kind: 'total', registry_key: league + '.total', side, line: 2.5, settles: '90 minutes plus stoppage time' }, quote: null,
+      model: { p_win: side === 'over' ? tot.over_2_5 : 1 - tot.over_2_5, p_push: 0, method: 'MODEL', model_id: 'soccer/' + league + ':' + L.model, sd: 0.025 }, market_ref: null }));
+    const ah = g.prices.asian_handicap_home['-0.25'];
+    if (ah) out.push(Object.assign({}, base, { market: { kind: 'asian_handicap', registry_key: league + '.spread', side: g.home, line: -0.25, settles: 'quarter line: two half stakes on 0 and -0.5' }, quote: null,
+      model: { settlement: { type: 'split', full_win: ah.full_win, half_win: ah.half_win, push: ah.push, half_loss: ah.half_loss, full_loss: ah.full_loss }, method: 'MODEL', model_id: 'soccer/' + league + ':' + L.model, sd: 0.025 }, market_ref: null }));
+  }
+  return out;
+}
+
 /* ---------- my own quotes ---------- */
 function applyManual(cands, manual) {
   if (!manual || !Array.isArray(manual.quotes)) return { applied: 0 };
@@ -152,8 +198,17 @@ function coverage(registry, cands, slate, quotes) {
     let note;
     if (s.id === 'nhl') note = slate ? slate.games.length + ' upcoming games priced by the model; book prices: ' + (quotes ? quotes.status : 'NOT_CAPTURED') : 'no slate built';
     else if (s.id === 'nfl' || s.id === 'cfb') note = mine.length ? mine.length + ' sides at the consensus line (a reference, not a price); captured book prices live in the desk (Supabase), not in this static board' : 'no sheet with a reference line in the window';
+    else if (['nba', 'wnba', 'ncaab_m', 'ncaab_w', 'soccer'].indexOf(s.id) >= 0) note = mine.length ? mine.length + ' fair prices in the window; no book price is captured for this sport' : 'no game in the window (fair prices appear when the schedule reaches it)';
+    else if (s.id === 'mlb') note = 'the record is walk-forward through 2025; no 2026 schedule or game logs are in the sources, so nothing is priced now';
     else note = s.readiness.state === 'UNAVAILABLE' ? 'no data or model wired' : s.readiness.state === 'RETIRED' ? 'retired product' : 'no independent model: nothing to evaluate here';
-    return { id: s.id, label: s.label, state: s.readiness.state, value_claims: s.readiness.value_claims_any, candidates: mine.length, priced, note };
+    const L = s.readiness.ladder || {};
+    const fresh = mine.filter((c) => (c.gates || []).some((g) => g.gate === 'PRICE' && g.ok)).length;
+    const actionable = mine.filter((c) => c.status === 'QUALIFIED').length;
+    const ladder = Object.assign({}, L, {
+      market_verified: { done: fresh > 0, detail: fresh ? fresh + ' fresh verified price' + (fresh === 1 ? '' : 's') + ' now' : priced ? priced + ' price' + (priced === 1 ? '' : 's') + ', none fresh' : 'no executable price on file now' },
+      actionable: { done: actionable > 0, detail: actionable ? actionable + ' qualified' : 'none' },
+    });
+    return { id: s.id, label: s.label, state: s.readiness.state, value_claims: s.readiness.value_claims_any, candidates: mine.length, priced, note, ladder };
   });
 }
 
@@ -163,12 +218,14 @@ function build(now) {
   const quotes = read('hockey/market/quotes.json');
   const sheets = read('football/linemaker/fair_lines.json');
   const manual = read('engine/market/manual_quotes.json');
-  const cands = nhlCandidates(slate, quotes).concat(footballCandidates(sheets, now));
+  const bb = read('basketball/slate.json');
+  const sc = read('soccer/slate.json');
+  const cands = nhlCandidates(slate, quotes).concat(footballCandidates(sheets, now), basketballCandidates(bb, now), soccerCandidates(sc));
   const man = applyManual(cands, manual);
   const board = XB.evaluate({ candidates: cands, registry, now });
   board.schema = 'edgedesk_engine_board_v1';
   board.coverage = coverage(registry, cands, slate, quotes);
-  board.inputs = { registry_generated_at: registry && registry.generated_at, nhl_slate_generated_at: slate && slate.generated_at, nhl_quotes: quotes ? { status: quotes.status, generated_at: quotes.generated_at, reason: quotes.reason || null } : { status: 'NOT_CAPTURED' }, football_sheets_generated_at: sheets && sheets.generated_at, manual_quotes_applied: man.applied };
+  board.inputs = { registry_generated_at: registry && registry.generated_at, nhl_slate_generated_at: slate && slate.generated_at, basketball_slate_generated_at: bb && bb.generated_at, soccer_slate_generated_at: sc && sc.generated_at, nhl_quotes: quotes ? { status: quotes.status, generated_at: quotes.generated_at, reason: quotes.reason || null } : { status: 'NOT_CAPTURED' }, football_sheets_generated_at: sheets && sheets.generated_at, manual_quotes_applied: man.applied };
   /* keep the file small: every actionable row, and per sport the 24 research rows
      with the largest conservative disagreement with a market reference (the
      soonest games where no reference exists); counts above cover every candidate */
@@ -182,7 +239,7 @@ function build(now) {
     kept = kept.concat(list.slice(0, 24));
   }
   board.candidates_trimmed = { research_total: research.length, research_kept: kept.length, rule: 'all non-research rows; per sport, 24 research rows by conservative disagreement with the market reference, then by start time' };
-  board.candidates = keep.concat(kept).map((c) => ({ id: c.id, status: c.status, sport_id: c.sport_id, sport_label: c.sport_label, event_key: c.event_key, event: c.event, market: c.market, label: c.label, quote: c.quote, quote_age_min: c.quote_age_min, fair_american: c.fair_american, break_even: c.break_even, prob: c.prob, ev_raw: c.ev_raw, ev_posterior: c.ev_posterior, ev_conservative: c.ev_conservative, min_acceptable_american: c.min_acceptable_american, disagreement: c.disagreement, gates: c.gates, evidence: c.evidence, invalidators: c.invalidators, data: c.data, model_id: c.model && c.model.model_id }));
+  board.candidates = keep.concat(kept).map((c) => ({ id: c.id, status: c.status, sport_id: c.sport_id, sport_label: c.sport_label, event_key: c.event_key, event: c.event, market: c.market, label: c.label, quote: c.quote, quote_age_min: c.quote_age_min, fair_american: c.fair_american, break_even: c.break_even, prob: c.prob, ev_raw: c.ev_raw, ev_posterior: c.ev_posterior, ev_conservative: c.ev_conservative, min_acceptable_american: c.min_acceptable_american, disagreement: c.disagreement, gates: c.gates, sensitivity: c.sensitivity || null, settlement: c.settlement || null, evidence: c.evidence, invalidators: c.invalidators, data: c.data, model_id: c.model && c.model.model_id }));
   return board;
 }
 

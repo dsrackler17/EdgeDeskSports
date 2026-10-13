@@ -18,6 +18,7 @@ and the artifact-commit procedure (`tools/ci/push_generated.sh`).
 | [`NHL.md`](NHL.md) | The NHL model card: data, method, the walk-forward record, limits |
 | [`METHODS.md`](METHODS.md) | Every sport's researched method, with sources and why it fits |
 | [`DATA.md`](DATA.md) | Schemas, sources, licensing, update cadence, cost, quotas, provenance |
+| [`DATAPACK.md`](DATAPACK.md) | How the EdgeDesk Quant Data Pack was integrated, step by step, and what it could not supply |
 
 ## Implementation checklist
 
@@ -36,7 +37,12 @@ and the artifact-commit procedure (`tools/ci/push_generated.sh`).
 | 11 | UI: NHL and Engine panels, filters, reasoning, sources, readiness | done (Chromium, desktop + 390 px) |
 | 11b | The AI desk answers NHL questions from the slate (`hockey/desk.js` → `nhlTurn`, deterministic, no model call) | done in code; **needs a redeploy** of `edgedesk_ai` |
 | 12 | CI: tests on every PR, 3-hourly build, weekly validation | done (`.github/workflows/nhl.yml`) |
-| 13 | Other sports' brains | researched and designed; **not built** (see the registry) |
+| 13 | The Quant Data Pack imported and verified (44/45 tables; NFL 2022 play-by-play arrived empty) | done (`datapack/quant_v1`, `tools/datapack/verify.js`) |
+| 14 | NHL temporal rule (blank `known_at`, explicit availability, RETRO), lineups, ESPN cross-check, canonical contracts | done |
+| 15 | Basketball ×4, soccer ×5, MLB brains walk-forward on multi-season free sources, reconciled with the pack | done |
+| 16 | UFC, college baseball, tennis | measured or recorded as insufficient — **no model claimed** |
+| 17 | Board v2: pushes, voids, split settlement, sensitivity gate; the six-rung readiness ladder in the UI | done |
+| 18 | Missingness diagnostics; CI for the lab (`.github/workflows/lab.yml`) | done |
 
 ## What I found in the repository first
 
@@ -63,19 +69,24 @@ and the artifact-commit procedure (`tools/ci/push_generated.sh`).
 
 | Sport | State | Why |
 |---|---|---|
-| NHL | **Validated vs outcomes** | Moneyline and puck line pass every pre-registered rule on 7,945 held-out games and beat a tuned Elo; totals and 3-way are provisional; **never tested against the close** |
-| NFL | Validated vs outcomes | Spread calibrated vs outcomes; against the close LEAN (break-even), not ahead |
-| College football | Validated vs outcomes | Total calibrated vs outcomes; behind the close |
-| MLB | Experimental | A model exists, never validated out of sample |
-| College baseball | Research only | Data, no validated model |
-| UFC / MMA | Research only | Data, no model (the only probability is the market's) |
-| NBA, WNBA, men's and women's college basketball, soccer | Unavailable | No data or model wired |
-| Tennis | Retired | Outcome-validated model archived; product retired |
+| NHL | **Validated vs outcomes** — moneyline, puck line | 7,945 held-out games, beats a tuned Elo; totals and 3-way provisional; **never tested against the close** |
+| NBA | **Validated vs outcomes** — moneyline, spread, total | 11,546 held-out games (2018-2026); beats Elo (−0.0023, 95% −0.0043 to −0.0003) |
+| Men's college basketball | **Validated vs outcomes** — all three | 47,123 held-out games; beats Elo by 0.033 log loss |
+| Women's college basketball | **Validated vs outcomes** — all three | 44,014 held-out games; beats Elo by 0.049 |
+| WNBA | Validated vs outcomes — spread, total | the moneyline does not beat Elo with a clean interval |
+| NFL | Validated vs outcomes — spread | against the close LEAN (break-even), not ahead |
+| College football | Validated vs outcomes — total | behind the close |
+| Soccer (5 leagues) | Validated vs outcomes — the home −1.5 Asian line in 3 leagues only | **1X2 is level with Elo everywhere (provisional)**; totals over-confident |
+| MLB | Validated vs outcomes — run line only | **the moneyline does not beat Elo out of sample** (worse by 0.0016); totals over-confident; 2024 has no starters |
+| College baseball | Research only | a 313-game sample: no model |
+| UFC / MMA | Research only | one year (138 scorable bouts): Elo indistinguishable from a coin flip |
+| Tennis | Retired | outcome-validated model archived |
 
-**No sport may claim betting value today.** A value claim needs a market
-that beat the no-vig close out of sample (`MARKET_VALIDATED`). The board
-therefore answers **PASS** and says why; it lists the closest research
-candidate and the price it would need.
+**No sport may claim betting value today.** Nothing has beaten a closing
+market, because no licensed closing archive exists here. The board therefore
+answers **PASS**; the ladder in the Engine panel shows, sport by sport, which
+rungs are reached (data loaded · model trained · validation passed · tested
+against the close · a fresh verified price now · an actionable signal).
 
 ## How to run
 
@@ -87,6 +98,11 @@ npm run nhl:ingest       # the season in progress only
 npm run nhl:quotes       # NHL prices — spends nothing unless NHL_PRICES=on
 npm run nhl:slate        # fair prices for the next 72 h, ledger, grades
 npm run engine:board     # registry + cross-sport board
+npm run datapack:check   # the pack verifies (and npm run datapack:test)
+npm run lab:ingest       # basketball, soccer, MLB history (free sources, cached)
+npm run lab:validate     # every lab walk-forward record (tuning files kept)
+npm run lab:slates       # basketball and soccer fair prices, missingness, registry, board
+npm run lab:test         # the lab suite (protocol, brains, settlement, ladder)
 npm run nhl:test && npm run engine:test && npm run nhl:sql && npm run engine:e2e   # nhl:test includes the desk through the real handler
 npm run nhl:check && npm run engine:check
 ```
@@ -112,8 +128,18 @@ npm run nhl:check && npm run engine:check
    replaces the projection.
 4. **Licensing.** The NHL data originates from the NHL's public feeds; NHL.com
    terms restrict commercial use. Review before NHL output is sold in a paid tier.
-5. **Other sports.** Each registry entry lists its blockers and enable steps;
-   none can be built responsibly from this environment (no reachable data).
+5. **Market tests for every sport.** Add a licensed, timestamped closing
+   archive per sport; until then every market stays `NOT_TESTED` and value
+   claims stay off. Basketball and soccer prices are not captured at all (the
+   gateway allowlist has no row for them).
+6. **Lineups and availability.** No injury or lineup feed exists for any
+   sport. NHL confirmed lineups measurably help (−0.0009 log loss) but arrive
+   only at warmups; wiring a pregame lineup feed would let the price use them.
+7. **NFL 2022 play-by-play.** The upload was empty; re-send the archive or run
+   `npm run datapack:fetch` (accepted only if nflverse still serves the exact
+   bytes).
+8. **UFC.** An authorised fight-statistics feed or a multi-year results archive
+   (UFCStats refuses automated access and is not bypassed).
 
 ## The desk
 
@@ -128,6 +154,13 @@ predates the NHL brain. A shared nickname (Rangers, Jets, Kings, Panthers) or
 a city counts only with hockey context or an NHL game on screen; a
 cross-sport question stays with the all-sports scan. `EDGEDESK_NHL=0` turns
 it off. It reaches readers only after the function is redeployed.
+
+## The data pack
+
+`datapack/quant_v1` is the pack as shipped (minus the out-of-git NFL
+play-by-play); `DATAPACK.md` maps each of its instructions to the code and the
+evidence. `EDGEDESK_VERIFICATION.json` and `EDGEDESK_CROSSCHECK.json` are its
+quality record.
 
 ## Rollback
 

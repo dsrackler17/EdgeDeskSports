@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-10-13 — The Quant Data Pack, integrated: verified history, NHL lineups and a second source, ten new walk-forward fits (four basketball leagues, five soccer leagues, MLB), and a six-rung readiness ladder
+
+**I imported and verified the EdgeDesk Quant Data Pack, held my NHL history to its time rule, reconciled it against a second source, and measured lineups. I then built separate, walk-forward brains for the NBA, WNBA, men's and women's college basketball, five soccer leagues and MLB, each reconciled with the pack. Basketball validates against outcomes. Soccer is level with Elo and says so. UFC, college baseball and tennis are too thin and say so. Nothing has beaten a closing market, so the board still says PASS.** Docs: `docs/engine/DATAPACK.md`, `README.md`, `METHODS.md`, `DATA.md`, `NHL.md`.
+
+- **The pack** (`datapack/quant_v1`): 44 of 45 tables verified by SHA-256, counts and blank `known_at` in Node (`tools/datapack/verify.js`; the pack's Python is never run).
+  - NFL 2022 play-by-play arrived empty and is recorded MISSING.
+  - 2023 and 2024 are kept out of git and accepted only on a matching hash.
+  - `engine/quant.js` ports its price and settlement math; `engine/csv.js` reads RFC 4180.
+- **NHL**:
+  - **Time rule:** `known_at` is blank and never backdated; an explicit `assumed_available_at` stands in, every row is `pit = RETRO`, and the team-game schema is now v2.
+  - **Lineups:** box-score lineups enter the walk-forward as point-in-time lineup value. Confirmed lineups improve held-out log loss by 0.0009 (95% −0.0017 to −0.0001); projected ones do not clear the bar. No pregame feed exists, so they are a sensitivity, not the price.
+  - **ESPN cross-check, 2024-25:** 1,398/1,398 games mapped, every final agrees, goals against 167/167, unblocked attempts 160/160.
+  - **Contracts:** shots, goalie-game and event-context tables are mapped onto the pack's canonical contracts with zero errors.
+- **Basketball** (`basketball/`): offence/defence points ratings, causal by result availability; calibration, spreads and back-to-backs are fitted on earlier seasons.
+  - NBA, men's and women's college: moneyline, spread and total OUTCOME_VALIDATED. The men's and women's college models beat Elo by 0.033 and 0.049 log loss.
+  - WNBA: spread and total only.
+  - 209 women's college games the source lacked come from the pack.
+- **Soccer** (`soccer/`): Poisson / Dixon-Coles per league on public-domain results, with quarter Asian lines settled as two half stakes.
+  - 1X2 is level with a tuned Elo and stays PROVISIONAL.
+  - The source's missing results are listed and make a league STALE.
+- **MLB** (`mlb/history/`): Retrosheet game logs with starters, parks and negative-binomial runs. 2024 comes from the pack, with no starters. On held-out games the run model is **worse than Elo** (0.0016 log loss), so its moneyline stays PROVISIONAL; only the run line passes.
+- **UFC** (`engine/lab/ufc_elo.json`): 138 scorable bouts in one year. Elo is indistinguishable from a coin flip: INSUFFICIENT.
+- **The board** (`lib/edgedesk_xboard.js` v2): voids, split settlement, and a sensitivity gate. A qualifier must survive its worst scenario, a worse tick and another reference, or it is FRAGILE.
+- **The app**: the Engine panel shows a six-rung readiness ladder for all 12 sports, known data gaps, settlement and sensitivity. NHL games show lineups.
+- **Quality**: `EDGEDESK_CROSSCHECK.json` reconciles the pack against every brain's source; `engine/missingness.json` reports gaps by sport and season.
+- **CI** (`.github/workflows/lab.yml`): suites on every PR, a daily build and a weekly refit. The NHL jobs ingest lineups and run the cross-check and contracts. Spend stays zero, and `no_bypass` §10 covers every new file.
+
 ## 2026-10-13 — The multi-sport engine: a complete NHL brain, a readiness registry for twelve sports, and one board across them
 
 **I now price every NHL game myself — moneyline, 60-minute 3-way, puck line, totals and team totals — from shot-quality ratings and an exact score distribution, validated walk-forward on 17,236 games the model never saw. A readiness registry says, from evidence files, how far every sport has been validated, and one cross-sport board names the best-supported opportunity or says PASS and why. Today it says PASS: no sport's model has beaten the closing market, so no price is called an edge.** Docs: `docs/engine/README.md`, `NHL.md`, `METHODS.md`, `DATA.md`.

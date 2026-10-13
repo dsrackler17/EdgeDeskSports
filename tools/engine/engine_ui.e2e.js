@@ -95,6 +95,8 @@ const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
   }
   const shot = async (page, name) => { if (SHOTS) { fs.mkdirSync(SHOTS, { recursive: true }); await page.screenshot({ path: path.join(SHOTS, name + '.png'), fullPage: true }); } };
   const noHScroll = (page) => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1);
+  /* on failure, name the elements that stick out past the viewport */
+  const overflowers = (page) => page.evaluate(() => { const W = document.documentElement.clientWidth; return Array.from(document.querySelectorAll('body *')).filter((e) => { const r = e.getBoundingClientRect(); return r.width && r.right > W + 1; }).slice(-6).map((e) => e.tagName + '.' + String(e.className).slice(0, 30) + ' right=' + Math.round(e.getBoundingClientRect().right) + ' "' + (e.textContent || '').slice(0, 50) + '"'); });
 
   try {
     for (const [label, vp] of [['desktop', { width: 1440, height: 900 }], ['phone', { width: 390, height: 844 }]]) {
@@ -115,7 +117,8 @@ const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
       await page.waitForSelector('#nhlHost .xe-detail');
       chk(label + ': opening a game writes its URL', await page.evaluate(() => location.hash) === '#research/nhl/' + g.game_id, await page.evaluate(() => location.hash));
       const caps = await page.$$eval('#nhlHost .xe-t caption', (x) => x.map((c) => c.textContent));
-      chk(label + ': the game shows moneyline, 3-way, puck line, totals, team totals, goalies and evidence', ['Moneyline', '60-minute', 'Puck line', 'Total', 'Team totals', 'Goalies', 'Evidence'].every((k) => caps.some((c) => c.indexOf(k) === 0)), caps);
+      chk(label + ': the game shows moneyline, 3-way, puck line, totals, team totals, goalies, lineups and evidence', ['Moneyline', '60-minute', 'Puck line', 'Total', 'Team totals', 'Goalies', 'Lineups', 'Evidence'].every((k) => caps.some((c) => c.indexOf(k) === 0)), caps);
+      chk(label + ': the lineup block never calls a projection confirmed', caps.filter((c) => c.indexOf('Lineups') === 0).every((c) => !/confirmed/i.test(c.split(' · ')[0])), caps.filter((c) => c.indexOf('Lineups') === 0));
       chk(label + ': the fair home moneyline matches the slate', await page.evaluate((fh) => document.querySelector('.xe-detail').textContent.indexOf((fh > 0 ? '+' : '') + fh) >= 0, g.prices.moneyline.fair_home));
       await page.fill('.xe-pc input[name="price"]', '-110');
       await page.click('.xe-pc button[type="submit"]');
@@ -141,7 +144,10 @@ const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
       chk(label + ': #research/engine opens the Engine panel', await page.evaluate(() => !document.getElementById('v-engine').classList.contains('hide')));
       const verdict = await page.textContent('.xe-verdict');
       chk(label + ': the verdict is the board\'s, with its reasons', BOARD.verdict === 'PASS' ? /PASS/.test(verdict) && BOARD.why.every((w) => verdict.indexOf(w.slice(0, 30)) >= 0) : /Best-supported/.test(verdict), verdict.slice(0, 300));
+      const ladder = await page.$$eval('#engineHost .xe-ladder tr', (rows) => rows.map((r) => Array.from(r.children).map((c) => c.textContent.trim())));
+      chk(label + ': the readiness ladder keeps data, model, validation, market test, verified price and actionable apart, for all 12 sports', ladder.length === 13 && ['Historical data loaded', 'Model trained', 'Validation passed', 'Tested vs closing prices', 'Market price verified now', 'Actionable signal'].every((h, i) => ladder[0][i + 1] === h), ladder[0]);
       const covN = await page.$$eval('#engineHost .xe-sport', (x) => x.length);
+      chk(label + ': no sport is marked actionable while the board says PASS', BOARD.verdict !== 'PASS' || ladder.slice(1).every((r) => /^—/.test(r[6])), ladder.map((r) => r[0] + ':' + r[6]));
       chk(label + ': readiness and methods cover all 12 sports (+ sources)', covN === 12 * 2 + 1, covN);
       await page.click('.xe-seg button[data-f="sport"][data-v="nhl"]');
       const sports = await page.$$eval('#engineHost .xe-card .xe-sub', (x) => x.map((s) => s.textContent.split(' · ')[0]));
@@ -155,7 +161,7 @@ const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
       chk(label + ': a candidate shows event, book, fair price, break-even, probability, EV, minimum price, rules, evidence and invalidators', ['Event', 'Sportsbook', 'Fair price', 'Break-even', 'Probability', 'EV at the price', 'Minimum acceptable price', 'Rules applied', 'Supporting evidence', 'What could invalidate it'].every((k) => facts.indexOf(k) >= 0), facts.slice(0, 300));
       await page.click('#engineHost .xe-sport summary');
       chk(label + ': a sport\'s readiness expands to markets, data, blockers and enable steps', await page.evaluate(() => { const t = document.querySelector('#engineHost .xe-sport[open]').textContent; return /Markets/.test(t) && /Blocked by/.test(t) && /To enable/.test(t); }));
-      chk(label + ': no horizontal scroll on the engine', await noHScroll(page));
+      chk(label + ': no horizontal scroll on the engine', await noHScroll(page), await overflowers(page));
       await shot(page, label + '_engine');
       /* states */
       boardMode = 'down';

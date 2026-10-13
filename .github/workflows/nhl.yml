@@ -78,7 +78,7 @@ jobs:
       - name: The cross-sport board's rules and the readiness registry
         run: node tools/engine/engine.test.js
       - name: The committed record, slate, registry and board pass their checks
-        run: node hockey/model/walkforward.js --check && node hockey/build_slate.js --check && node engine/build_registry.js --check && node engine/build_board.js --check
+        run: node hockey/model/walkforward.js --check && node hockey/build_slate.js --check && node hockey/crosscheck/espn.js --check && node hockey/contracts/canonical.js --check && node engine/build_registry.js --check && node engine/build_board.js --check
       - name: The NHL odds row on a real PostgreSQL (disabled until authorised)
         env: { NHL_SQL_REQUIRED: '1' }
         run: node tools/hockey/nhl_sql.test.js
@@ -115,6 +115,7 @@ jobs:
           S=$(node -e "console.log(require('./hockey/config.js').CURRENT_SEASON)")
           node hockey/ingest/season.js --season "$S"
           node hockey/ingest/team_games.js --season "$S"
+          node hockey/ingest/lineups.js --season "$((S-1)),$S"
       - name: NHL book prices (spends nothing unless NHL_PRICES is on and the gateway row is enabled)
         env:
           NHL_PRICES: ${{ vars.NHL_PRICES }}
@@ -166,8 +167,13 @@ jobs:
           S=$(node -e "console.log(require('./hockey/config.js').CURRENT_SEASON)")
           node --max-old-space-size=6144 hockey/xg/train.js
           node hockey/ingest/team_games.js --season "2011-$S"
+          node hockey/ingest/lineups.js --season "2011-$S" --ttl-hours 160
       - name: The walk-forward record and the market test
         run: node --max-old-space-size=8192 hockey/model/walkforward.js && node hockey/model/market_test.js && node --max-old-space-size=8192 hockey/model/walkforward.js
+      - name: The canonical contracts and the ESPN cross-check on the new tables
+        run: |
+          S=$(node -e "console.log(require('./hockey/config.js').CURRENT_SEASON)")
+          node hockey/contracts/canonical.js --season "$((S-1))" && node hockey/crosscheck/espn.js
       - name: Rebuild the slate, the registry and the board on the new record
         run: node hockey/build_slate.js && node hockey/grade_ledger.js && node engine/build_registry.js && node engine/build_board.js
       - name: The suites pass on the new record before anything commits
