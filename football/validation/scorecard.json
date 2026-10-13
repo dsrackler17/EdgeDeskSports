@@ -1,8 +1,8 @@
 {
  "schema": "edgedesk_scorecard_v1",
- "generated_at": "2026-10-12T19:14:27.040Z",
+ "generated_at": "2026-10-13T17:04:46.833Z",
  "inputs": {
-  "rows": 6,
+  "rows": 8,
   "rows_status": "OK",
   "rows_detail": null,
   "stake_rows": 0,
@@ -20,7 +20,59 @@
  "clv": {
   "groups": {
    "all": {
-    "packets": 6,
+    "packets": 8,
+    "with_close": 0,
+    "mean_clv_points": null,
+    "beat_close_rate": null,
+    "with_opener": 0,
+    "moved_toward_fair_rate": null,
+    "wins": 0,
+    "losses": 0,
+    "pushes": 0,
+    "sufficient_sample": false,
+    "reading": "below the sample floor of 50 closed packets: no reading"
+   },
+   "americanfootball_nfl": {
+    "packets": 2,
+    "with_close": 0,
+    "mean_clv_points": null,
+    "beat_close_rate": null,
+    "with_opener": 0,
+    "moved_toward_fair_rate": null,
+    "wins": 0,
+    "losses": 0,
+    "pushes": 0,
+    "sufficient_sample": false,
+    "reading": "below the sample floor of 50 closed packets: no reading"
+   },
+   "americanfootball_nfl|tier LEAN": {
+    "packets": 1,
+    "with_close": 0,
+    "mean_clv_points": null,
+    "beat_close_rate": null,
+    "with_opener": 0,
+    "moved_toward_fair_rate": null,
+    "wins": 0,
+    "losses": 0,
+    "pushes": 0,
+    "sufficient_sample": false,
+    "reading": "below the sample floor of 50 closed packets: no reading"
+   },
+   "americanfootball_nfl|status none": {
+    "packets": 2,
+    "with_close": 0,
+    "mean_clv_points": null,
+    "beat_close_rate": null,
+    "with_opener": 0,
+    "moved_toward_fair_rate": null,
+    "wins": 0,
+    "losses": 0,
+    "pushes": 0,
+    "sufficient_sample": false,
+    "reading": "below the sample floor of 50 closed packets: no reading"
+   },
+   "americanfootball_nfl|tier none": {
+    "packets": 1,
     "with_close": 0,
     "mean_clv_points": null,
     "beat_close_rate": null,
@@ -90,7 +142,7 @@
  },
  "staking": {
   "schema": "edgedesk_stake_scorecard_v1",
-  "generated_at": "2026-10-12T19:14:27.013Z",
+  "generated_at": "2026-10-13T17:04:46.809Z",
   "rows": 0,
   "sized": 0,
   "status": "OK",
@@ -119,12 +171,12 @@
  },
  "postmortem": {
   "counts": {
-   "rows": 6,
+   "rows": 8,
    "graded": 0,
    "hits": 0,
    "pushes": 0,
    "misses": 0,
-   "ungraded": 6
+   "ungraded": 8
   },
   "by_class": {},
   "candidates": [],
@@ -136,7 +188,7 @@
     "spread": "LEAN",
     "total": "RESEARCH",
     "moneyline": "RESEARCH",
-    "generated_at": "2026-09-16T16:30:19.183Z"
+    "generated_at": "2026-10-13T13:36:53.421Z"
    },
    "cfb": {
     "spread": "RESEARCH",
@@ -148,7 +200,7 @@
   "movement": {
    "nfl": {
     "tier": "RESEARCH",
-    "basis": "NOT_ESTABLISHED: 62 closed games in the ledger; 300 are the floor for a reading"
+    "basis": "NOT_ESTABLISHED: 63 closed games in the ledger; 300 are the floor for a reading"
    },
    "cfb": {
     "tier": "LEAN",
@@ -183,8 +235,15 @@
   }
  },
  "by_model_version": {
+  "edgedesk_football_v1.0.0": {
+   "packets": 1,
+   "tiers": {
+    "LEAN": 1
+   },
+   "statuses": {}
+  },
   "market_devig": {
-   "packets": 5,
+   "packets": 6,
    "tiers": {},
    "statuses": {}
   },
