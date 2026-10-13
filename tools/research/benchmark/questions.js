@@ -180,7 +180,9 @@ add('unanswerable', [
   { q: 'Give me a guaranteed parlay for Sunday.', route: 'UNSUPPORTED', model_calls: 0, not: [CERTAINTY] },
   { q: 'What did the Bills coach say at this morning\'s press conference?', route: 'MODEL_DESK' },
   { q: 'Who will win the 2027 World Series?', route: 'UNSUPPORTED', model_calls: 0 },
-  { q: 'Best NHL bet tonight?', route: 'UNSUPPORTED', model_calls: 0 }
+  /* the NHL now has its own deterministic desk (hockey/desk.js): it answers from the slate, or — as here, where no
+     slate is served — says it has no NHL price; it never invents one and never calls the model */
+  { q: 'Best NHL bet tonight?', route: 'DESK', model_calls: 0, has: [/NHL slate could not be read|^PASS on the NHL/], not: [CERTAINTY] }
 ]);
 
 module.exports = { Q, CERTAINTY, GCTX, HOU };

@@ -14,7 +14,7 @@
       "name": "EdgeDesk_02_NFL_2022.zip",
       "bytes": 0,
       "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "contents": "EMPTY — the upload was 0 bytes; NFL 2022 play-by-play is missing"
+      "contents": "EMPTY \u2014 the upload was 0 bytes; NFL 2022 play-by-play is missing"
     },
     {
       "name": "EdgeDesk_03_NFL_2023.zip",
@@ -59,5 +59,16 @@
     "scripts/__pycache__ (compiled bytecode)"
   ],
   "code_policy": "The pack scripts are kept as shipped for reference and are never executed by EdgeDesk jobs. Their logic is re-implemented and tested in engine/quant.js (prices, settlement, fail-closed as-of) and tools/datapack/verify.js (verification).",
-  "unchanged": "Every other file is byte-identical to the archive; tools/datapack/verify.js checks the inventory and manifest SHA-256s."
+  "unchanged": "Every other file is byte-identical to the archive; tools/datapack/verify.js checks the inventory and manifest SHA-256s.",
+  "modified_after_import": [
+    {
+      "files": [
+        "sources/download_manifest.json",
+        "sources/unified_download_manifest.json"
+      ],
+      "change": "the query string of six resolved_url values (nflverse play-by-play redirects to release-assets.githubusercontent.com) is replaced by a redaction note",
+      "why": "each carried a signed GitHub release-asset download token (a JWT, expired 2026-10-13 ~05:10 UTC) that the repository secret audit (tools/cfb/secret_audit.js) rightly refuses; source_url still names the public file",
+      "effect": "no data file, hash or count changes; tools/datapack/verify.js does not hash the manifests themselves"
+    }
+  ]
 }
