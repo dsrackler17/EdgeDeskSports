@@ -1,0 +1,58 @@
+# Apply supabase/games_slate.sql — the live layer and the subscriber's price
+# read for Today's Games. MANUAL ON PURPOSE, like every other deploy here.
+#
+# What it installs (idempotent, additive, ends in a report):
+#   public.slate_live, public.slate_feed_state     RLS on, no client grants
+#   slate_live_ingest()      the poller's door      service_role only
+#   public_slate_live()      the visitor's read     anon + authenticated
+#   slate_markets()          captured prices        authenticated, and only
+#                                                    an entitled reader gets any
+#
+# SECRETS: SB_DB_URL (the database connection string). Without it, paste
+# supabase/games_slate.sql into the Supabase SQL editor instead: its last
+# statement prints eight rows that must all say ok.
+#
+# Until this is applied the slate still works: the pages read today/slate.json
+# and say live scores are unavailable; the terminal shows the prices in the
+# slate file and no subscriber prices.
+name: Deploy Today's Games (SQL)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-games-slate
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The SQL passes against a throwaway PostgreSQL first, as every role
+        env:
+          SLATE_SQL_REQUIRED: '1'
+        run: node tools/slate/slate_sql.test.js
+      - name: Check the credential exists before claiming anything
+        id: creds
+        env:
+          DBURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          echo "have_db=$([ -n "$DBURL" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          if [ -z "$DBURL" ]; then echo "::warning::SB_DB_URL is not set — paste supabase/games_slate.sql into the SQL editor instead."; fi
+      - name: Apply supabase/games_slate.sql
+        if: steps.creds.outputs.have_db == 'yes'
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/games_slate.sql)
+          echo "$out" | tail -12
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::games_slate.sql: a report row says CHECK THIS"; exit 1; fi

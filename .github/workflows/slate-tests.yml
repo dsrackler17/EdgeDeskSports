@@ -1,0 +1,100 @@
+# EdgeDesk Today's Games — the checks that gate every change to the daily slate.
+#
+#   suites     the slate kernel (dates, DST, local midnight, statuses, markets,
+#              readiness, the URL state) and the pipeline (the ESPN adapter,
+#              the builder's carry-forward and fallback, the research join, the
+#              live poller) — offline, no provider is reached
+#   migration  supabase/games_slate.sql applied twice to a throwaway
+#              PostgreSQL, then attacked as anon, as a signed-in reader without
+#              an entitlement, and as the poller
+#   browser    app.html and /today/ in Chromium (1280 px and a 390 px phone)
+#              over the slate the real builder makes from constructed payloads
+#
+# Nothing here deploys or writes anywhere. The slate is built by
+# games-slate.yml; the live layer is games-live.yml; the SQL is applied by
+# deploy-games-slate.yml, run by hand.
+name: Today's Games tests
+
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_games*.js'
+      - 'lib/edgedesk_games.css'
+      - 'lib/edgedesk_readiness.js'
+      - 'lib/edgedesk_plans.js'
+      - 'tools/slate/**'
+      - 'tools/record/football_record_sources.js'
+      - 'supabase/games_slate.sql'
+      - 'app.html'
+      - 'today/**'
+      - '.github/workflows/slate-tests.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lib/edgedesk_games*.js'
+      - 'tools/slate/**'
+      - 'supabase/games_slate.sql'
+      - 'today/index.html'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: slate-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The slate kernel (dates, DST, midnight, statuses, doubleheaders, markets, readiness, URL state)
+        run: node tools/slate/games.test.js
+      - name: The pipeline (ESPN adapter, builder, carry-forward and fallback, research join, live poller)
+        run: node tools/slate/build.test.js
+      - name: The committed slate still parses and still builds offline
+        run: node -e "const s=require('./today/slate.json');if(s.schema!=='edgedesk_slate/1'||!Array.isArray(s.events))process.exit(1)" && node tools/slate/build.js --offline
+      - name: The app's navigation and the free pages' doors still hold
+        run: node tools/app/navigation.test.js && node tools/site/nav.test.js && node tools/site/free_access.test.js
+
+  migration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      # The runner image ships PostgreSQL; the suite starts its own throwaway cluster.
+      - name: supabase/games_slate.sql against a real PostgreSQL, as every role
+        env:
+          SLATE_SQL_REQUIRED: '1'
+        run: node tools/slate/slate_sql.test.js
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Install Chromium
+        run: npm install --no-save playwright@1.49.1 && npx playwright install --with-deps chromium
+      - name: The strip, the games page, the matchup view and /today/ in Chromium, desktop and a 390 px phone
+        run: node tools/slate/games_ui.e2e.js --shots slate-shots
+      - name: The research screen still opens on Ask EdgeDesk AI in the first screenful
+        run: node tools/intelligence/intel_ui.e2e.js
+      - name: The terminal's navigation in the browser
+        run: node tools/app/navigation.e2e.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: slate-shots
+          path: slate-shots
+          if-no-files-found: ignore

@@ -125,6 +125,26 @@ through `supabase/functions/odds_gateway` and its control plane
 [`docs/market-resilience/README.md`](docs/market-resilience/README.md).
 Tests: `npm run resilience:test`.
 
+## Today's Games — what is being played today, one tap from its research
+
+The first thing on the Research screen is today's slate in every sport EdgeDesk
+lists: NFL, college football, NBA, college basketball, NHL, MLB, college baseball,
+soccer and UFC. It covers the reader's own calendar day in their own time zone
+(America/Chicago when the browser does not say), with live status and scores, the
+price where one was captured from a named book, and **View Research** straight into
+the existing research for that game. **View all games** opens `#games`: Yesterday,
+Today, Tomorrow and a date picker, sport and status filters, and team search. The
+public `/today/` page shows the same slate with the free research and no prices.
+
+Schedules come from ESPN's scoreboard, built into `today/slate.json` every half hour
+(`tools/slate/build.js`, `games-slate.yml`), never from the odds pipeline. The slate
+is complete while capture is paused. A failed read keeps the last good one with its
+age, and a sport that could not be read says "Unable to load", never "No games". Live
+scores come from one poller for every visitor (`games-live.yml`,
+`supabase/games_slate.sql`). A signal appears only where the owning engine
+certified one. See [`docs/games/README.md`](docs/games/README.md).
+Tests: `npm run slate:test`, `npm run slate:sql`, `npm run slate:e2e`.
+
 ## The linemaker — fair lines in every market, with the record behind them
 
 Research → Other → **Lines** shows EdgeDesk's own fair sheet for every NFL

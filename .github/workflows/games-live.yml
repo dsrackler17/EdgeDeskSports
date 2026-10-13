@@ -1,0 +1,66 @@
+# EdgeDesk Today's Games — live status, score and clock between slate builds.
+#
+# Same shape as the UFC live center (ufc-live.yml): GitHub's scheduler cannot
+# poll every minute and is not asked to. Every ten minutes a GATE reads the
+# committed slate and asks one question: is any game live, or starting within
+# 45 minutes? When the answer is no, the run ends in seconds. When it is yes,
+# ONE poller (tools/slate/live_poll.js) stays alive for up to 55 minutes,
+# reading only the scoreboards with a game in its live window, about every 45
+# seconds, and writing through slate_live_ingest() (supabase/games_slate.sql)
+# with the service role. Visitors read public_slate_live(); nobody but this
+# job reaches the provider. When every watched game is final it stops early.
+#
+# The job-level concurrency group means at most one poller runs and at most
+# one waits behind it, so a long night of games is covered by back-to-back
+# runs. A provider outage records the failed reads and writes no events, so
+# the last good read stands with its age.
+#
+# Needs supabase/games_slate.sql applied (deploy-games-slate.yml) and the
+# repository secrets every writer here uses: SB_SERVICE_ROLE and SB_URL. No
+# credential reaches the browser.
+name: Today's Games live
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+    inputs:
+      max_minutes:
+        description: 'How long the poller may stay alive'
+        required: false
+        default: '55'
+
+permissions:
+  contents: read
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    concurrency:
+      group: games-live
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Is any game live, or about to start?
+        id: gate
+        run: node tools/slate/live_poll.js --gate
+      - name: The live rules must pass before a live write
+        if: steps.gate.outputs.found == 'true'
+        run: node tools/slate/build.test.js
+      - name: Poll
+        if: steps.gate.outputs.found == 'true'
+        env:
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+        run: |
+          if [ -z "$EDGD_SB_SERVICE" ] || [ -z "$EDGD_SB_URL" ]; then
+            echo "::error::SB_SERVICE_ROLE and SB_URL are not both set — the poller has nowhere to write."
+            exit 1
+          fi
+          MAX="${{ inputs.max_minutes }}"
+          if [ -z "$MAX" ]; then MAX=55; fi
+          node tools/slate/live_poll.js --max-minutes "$MAX"
