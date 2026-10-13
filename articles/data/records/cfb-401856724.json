@@ -21,8 +21,8 @@
   "game_time": "2026-10-17T16:00:00.000Z",
   "game_when_label": "2026-10-17 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-12T21:43:47.288Z",
-  "generated_at": "2026-10-12T21:43:47.288Z",
+  "updated_at": "2026-10-13T06:41:21.229Z",
+  "generated_at": "2026-10-13T06:41:21.229Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "DATA FAULT",
   "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -249,7 +249,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-10T16:45:00.000Z",
-        "retrieved_at": "2026-10-12T19:19:20.533Z"
+        "retrieved_at": "2026-10-13T01:25:00.873Z"
       },
       "home": {
         "team": "Texas",
@@ -321,9 +321,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-10T19:30:00.000Z",
-        "retrieved_at": "2026-10-12T19:19:20.533Z"
+        "retrieved_at": "2026-10-13T01:25:00.873Z"
       },
-      "generated_at": "2026-10-12T19:20:05.016Z",
+      "generated_at": "2026-10-13T01:24:59.885Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1449,7 +1449,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 56h old",
+          "text": "odds is 65h old",
           "widening": null
         },
         {
@@ -1560,7 +1560,7 @@
       "total_market_held": null,
       "book": "captured consensus (stale) · 1 book · best at BetRivers",
       "captured": "2026-10-10T14:00:01.583+00:00",
-      "capture_age": "56 hours old",
+      "capture_age": "65 hours old",
       "stale": false,
       "classification": "DATA FAULT",
       "classification_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1940,13 +1940,13 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "239qgs12x4cm6",
+    "packet_hash": "10fn8s9pd9vq3",
     "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": false,
+    "input_suspect": true,
     "question": "Can Texas take away Florida’s big plays?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Texas, and its own breakdown accounts for about 0.0 of the 8.0 points, but not the full gap. It is a research question, not a bet.",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Texas, and its own breakdown accounts for about 0.0 of the 7.5 points, but not the full gap. Input warning: EdgeDesk’s game page already labels this gap a DATA FAULT: EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game. It is a research question, not a bet.",
     "gap": {
-      "points": 8,
+      "points": 7.5,
       "toward": "Texas",
       "other": "Florida"
     },
@@ -1992,6 +1992,11 @@
         "text": "EdgeDesk’s own sources disagree on sack rate allowed (Texas), sack rate (Texas) and sack rate allowed (Florida); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
       },
       {
+        "key": "DATA_FAULT",
+        "severity": "high",
+        "text": "EdgeDesk’s game page already labels this gap a DATA FAULT: EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game."
+      },
+      {
         "key": "HFA_CONSTANT",
         "severity": "medium",
         "text": "EdgeDesk’s model gives Texas 4.1 points for playing at home — a league-wide value, not one measured for this stadium; historically, the closing market has priced about 61% of EdgeDesk’s home-field number."
@@ -2007,7 +2012,7 @@
         "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-12T19:20:11.400Z",
+        "observed_at": "2026-10-13T01:25:19.622Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2023,6 +2028,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-12T21:43:47.288Z"
+    "at": "2026-10-13T06:41:21.229Z"
   }
 }

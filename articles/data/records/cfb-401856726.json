@@ -21,8 +21,8 @@
   "game_time": "2026-10-17T23:00:00.000Z",
   "game_when_label": "2026-10-17 23:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-12T21:43:47.288Z",
-  "generated_at": "2026-10-12T21:43:47.288Z",
+  "updated_at": "2026-10-13T06:41:21.229Z",
+  "generated_at": "2026-10-13T06:41:21.229Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -237,7 +237,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-10T20:15:00.000Z",
-        "retrieved_at": "2026-10-12T19:19:20.533Z"
+        "retrieved_at": "2026-10-13T01:25:00.873Z"
       },
       "home": {
         "team": "Vanderbilt",
@@ -321,9 +321,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-10T19:30:00.000Z",
-        "retrieved_at": "2026-10-12T19:19:20.533Z"
+        "retrieved_at": "2026-10-13T01:25:00.873Z"
       },
-      "generated_at": "2026-10-12T19:20:05.016Z",
+      "generated_at": "2026-10-13T01:24:59.885Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1896,25 +1896,25 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "xgmb9c702pia",
+    "packet_hash": "50oete1ggnc80",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can Vanderbilt’s pass rush get to KJ Jackson?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.3 points.",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 0.2 points.",
     "gap": {
-      "points": 0.3,
-      "toward": "Arkansas",
-      "other": "Vanderbilt"
+      "points": 0.2,
+      "toward": "Vanderbilt",
+      "other": "Arkansas"
     },
     "supporting": [
-      "In his last two games (Auburn and Ole Miss), Curtis averaged 6.4 yards per attempt, against 8.4 in his three games before that.",
-      "EdgeDesk’s position-group ratings put Arkansas’ quarterback room No. 76 nationally and Vanderbilt’s No. 108."
-    ],
-    "contradicting": [
       "When Arkansas has the ball (pass protection against the pass rush): Arkansas’ offense has allowed a sack on 6.9% of its dropbacks, and Vanderbilt’s defense sacks the quarterback on 7.2% of opponent dropbacks (FBS average 5.6%).",
       "When Arkansas has the ball (big plays on the ground): Arkansas’ offense turns 3.3% of its runs into explosive gains, and Vanderbilt’s defense gives up explosive gains on 8.2% of opponent runs (FBS average 6.6%).",
       "In his last two games (Texas A&M and Tennessee), Jackson averaged 5.1 yards per attempt, against 6.9 in his four games before that.",
       "EdgeDesk’s position-group ratings put Vanderbilt’s offensive line No. 4 nationally and Arkansas’ No. 113."
+    ],
+    "contradicting": [
+      "In his last two games (Auburn and Ole Miss), Curtis averaged 6.4 yards per attempt, against 8.4 in his three games before that.",
+      "EdgeDesk’s position-group ratings put Arkansas’ quarterback room No. 76 nationally and Vanderbilt’s No. 108."
     ],
     "quarterbacks": [
       "Jared Curtis has completed 82 of 131 passes (62.6%) for 968 yards, 7.4 yards per attempt, 5 touchdowns and 5 interceptions in five games for Vanderbilt, and has been sacked on 8 of 139 dropbacks.",
@@ -1925,13 +1925,14 @@
     "availability": [],
     "script": {
       "model": [
-        "Arkansas’ offense has to keep winning in the pass-rush matchup: it has allowed a sack on 6.9% of its dropbacks, and Vanderbilt’s defense sacks the quarterback on 7.2% of opponent dropbacks.",
-        "Arkansas’ offense has to hold its own on long runs against a defense that gives up explosive gains on 8.2% of opponent runs."
-      ],
-      "market": [
         "Vanderbilt’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 7.2% of opponent dropbacks, against an offense that has allowed a sack on 6.9% of its dropbacks.",
         "Vanderbilt’s defense has to come out ahead on long runs: it gives up explosive gains on 8.2% of opponent runs, against an offense that turns 3.3% of its runs into explosive gains.",
-        "Curtis keeps producing at his season rate (62.6% completions, 7.4 yards per attempt, 5 TD, 5 INT)."
+        "Vanderbilt’s quarterback situation has to settle: Jared Curtis has taken 52% of Vanderbilt’s recent dropbacks and Blaze Berlowitz 45%.",
+        "Home field has to be worth something close to the full 4.1 points EdgeDesk gives it."
+      ],
+      "market": [
+        "Arkansas’ offense has to keep winning in the pass-rush matchup: it has allowed a sack on 6.9% of its dropbacks, and Vanderbilt’s defense sacks the quarterback on 7.2% of opponent dropbacks.",
+        "Jackson keeps producing at his season rate (59.1% completions, 6.4 yards per attempt, 7 TD, 4 INT)."
       ]
     },
     "unknown": [
@@ -1945,12 +1946,24 @@
         "text": "EdgeDesk’s own sources disagree on sack rate allowed (Vanderbilt), sack rate (Vanderbilt), sack rate allowed (Arkansas) and sack rate (Arkansas); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
       },
       {
+        "key": "HFA_CONSTANT",
+        "severity": "medium",
+        "text": "EdgeDesk’s model gives Vanderbilt 4.1 points for playing at home — a league-wide value, not one measured for this stadium; historically, the closing market has priced about 61% of EdgeDesk’s home-field number."
+      },
+      {
         "key": "REGIME_CHANGE",
         "severity": "medium",
         "text": "Arkansas: new head coach; returning roster share at the 7th percentile; returning production at the 25th percentile; transfers out at the 97th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 6 games played."
       }
     ],
     "sources": [
+      {
+        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-13T01:25:19.622Z",
+        "verification": "VERIFIED_DATA"
+      },
       {
         "label": "EdgeDesk play-by-play quarterback logs (2026)",
         "url": null,
@@ -1964,13 +1977,6 @@
         "path": "football/rankings/current.json",
         "observed_at": "2026-10-12T19:19:43.067Z",
         "verification": "RATING"
-      },
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-12T19:20:11.400Z",
-        "verification": "VERIFIED_DATA"
       }
     ],
     "needs_confirmation": []
@@ -1978,6 +1984,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-12T21:43:47.288Z"
+    "at": "2026-10-13T06:41:21.229Z"
   }
 }
