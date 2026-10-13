@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_nhl_live_params_v1",
- "generated_at": "2026-10-13T05:17:32.649Z",
+ "generated_at": "2026-10-13T05:48:41.472Z",
  "for_season": 2027,
  "model": "xg_no_goalie",
  "confirmed_variant": "xg_goalie_confirmed",
@@ -133,7 +133,123 @@
    ],
    "n": 13986,
    "deviance": 15134.75003514394
+  },
+  "xg_lineup_confirmed": {
+   "names": [
+    "home",
+    "ev_off",
+    "ev_def_opp",
+    "g_off",
+    "g_def_opp",
+    "pp_off",
+    "pk_def_opp",
+    "pp_draw",
+    "pk_take_opp",
+    "fin",
+    "b2b",
+    "b2b_opp",
+    "lu_own_conf",
+    "lu_opp_conf"
+   ],
+   "offset": "log(league goals per team-game, running)",
+   "beta": [
+    -0.051138,
+    0.05777,
+    0.485197,
+    0.677637,
+    0.587356,
+    0.829226,
+    0.171087,
+    0.012725,
+    0.109681,
+    -0.028142,
+    0.179044,
+    -0.066405,
+    0.062414,
+    0.863697,
+    -0.404114
+   ],
+   "se": [
+    0.009293,
+    0.010002,
+    0.185138,
+    0.138784,
+    0.231682,
+    0.100891,
+    0.08893,
+    0.094993,
+    0.112109,
+    0.085379,
+    0.179327,
+    0.014646,
+    0.014016,
+    0.187713,
+    0.185512
+   ],
+   "n": 13986,
+   "deviance": 15064.529527798122
+  },
+  "xg_all_confirmed": {
+   "names": [
+    "home",
+    "ev_off",
+    "ev_def_opp",
+    "g_off",
+    "g_def_opp",
+    "pp_off",
+    "pk_def_opp",
+    "pp_draw",
+    "pk_take_opp",
+    "fin",
+    "goalie_conf",
+    "b2b",
+    "b2b_opp",
+    "lu_own_conf",
+    "lu_opp_conf"
+   ],
+   "offset": "log(league goals per team-game, running)",
+   "beta": [
+    -0.056702,
+    0.056458,
+    0.410379,
+    0.844074,
+    0.704647,
+    0.572784,
+    0.151758,
+    0.072718,
+    0.090876,
+    0.001215,
+    0.084025,
+    -0.687873,
+    -0.066747,
+    0.055166,
+    0.867939,
+    -0.372373
+   ],
+   "se": [
+    0.009475,
+    0.010011,
+    0.186809,
+    0.149041,
+    0.234914,
+    0.131185,
+    0.089134,
+    0.096972,
+    0.112294,
+    0.085875,
+    0.182062,
+    0.225505,
+    0.014645,
+    0.014216,
+    0.187713,
+    0.18575
+   ],
+   "n": 13986,
+   "deviance": 15055.229441531701
   }
+ },
+ "lineups": {
+  "available": true
  },
  "glm_train_seasons": [
   2022,
@@ -180,6 +296,27 @@
    "a": 0.525,
    "b": 0.9,
    "c": 6.0223,
+   "n": 4192,
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+  },
+  "xg_lineup_projected": {
+   "a": 0.525,
+   "b": 0.9,
+   "c": 6.0263,
+   "n": 4192,
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+  },
+  "xg_lineup_confirmed": {
+   "a": 0.5,
+   "b": 0.9,
+   "c": 6.0255,
+   "n": 4192,
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+  },
+  "xg_all_confirmed": {
+   "a": 0.525,
+   "b": 0.9,
+   "c": 6.0226,
    "n": 4192,
    "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
   }

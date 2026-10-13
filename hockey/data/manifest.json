@@ -1,5 +1,5 @@
 {
- "schema": "edgedesk_nhl_team_games_v1",
+ "schema": "edgedesk_nhl_team_games_v2",
  "columns": [
   "game_id",
   "season",
@@ -7,6 +7,8 @@
   "date",
   "start_utc",
   "known_at",
+  "assumed_available_at",
+  "pit",
   "team",
   "opp",
   "home",
@@ -922,5 +924,10 @@
   }
  },
  "license": "sportsdataverse/fastRhockey-nhl-data and -raw are MIT-licensed repositories; the game data inside them is compiled from the NHL's public game feeds and remains the NHL's. NHL.com terms restrict commercial use of its content: the owner must review this before NHL output is sold in a paid tier. Attribution is printed on every NHL artifact.",
- "updated_at": "2026-10-13T04:22:02.359Z"
+ "updated_at": "2026-10-13T05:46:42.963Z",
+ "temporal": {
+  "known_at": "blank: the source's first publication time was not recorded for history (never backdated)",
+  "assumed_available_at": "scheduled start + 4 h (end of the game's day when the start is unknown); an explicit modelling assumption",
+  "pit": "RETRO on every row: retrieved after the fact from a source that can revise; retrospective research data, not point-in-time certified"
+ }
 }

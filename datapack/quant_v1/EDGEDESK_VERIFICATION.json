@@ -1,0 +1,714 @@
+{
+  "schema": "edgedesk_datapack_verification_v1",
+  "pack": "datapack/quant_v1",
+  "verified_at": "2026-10-13T05:39:32.812Z",
+  "status": "PASSED",
+  "summary": {
+    "datasets": 45,
+    "verified": 44,
+    "external": 0,
+    "missing": 1,
+    "failed": 0,
+    "contract_tables": 43
+  },
+  "checks": [
+    {
+      "id": "csv_counts_sha256",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "id": "historical_known_at_blank",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "id": "every_absent_file_declared",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "id": "unique_contract_tables",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "id": "unique_contract_columns",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "id": "json_schema_correspondence",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "id": "sqlite_ddl_executes",
+      "pass": true,
+      "detail": {
+        "created": 43,
+        "contract": 43
+      }
+    },
+    {
+      "id": "templates_are_empty",
+      "pass": true,
+      "detail": {
+        "templates": 43,
+        "with_rows": []
+      }
+    },
+    {
+      "id": "nfl_lag_features_recomputed",
+      "pass": true,
+      "detail": {
+        "values": 40992,
+        "errors": []
+      }
+    },
+    {
+      "id": "nhl_xg_not_invented",
+      "pass": true,
+      "detail": {
+        "attempts": 9895
+      }
+    },
+    {
+      "id": "nhl_event_ids_unique",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "id": "nhl_goalie_xg_gsax_not_invented",
+      "pass": true,
+      "detail": {
+        "rows": 171
+      }
+    },
+    {
+      "id": "tennis_atp_singles_only",
+      "pass": true,
+      "detail": {
+        "rows": 1233
+      }
+    },
+    {
+      "id": "tennis_atp_matches_unique",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "id": "tennis_wta_singles_only",
+      "pass": true,
+      "detail": {
+        "rows": 1609
+      }
+    },
+    {
+      "id": "tennis_wta_matches_unique",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "id": "source_manifest_sha256",
+      "pass": true,
+      "detail": {
+        "checked": 584,
+        "absent": 2,
+        "mismatched": []
+      }
+    },
+    {
+      "id": "no_unlisted_tables",
+      "pass": true,
+      "detail": []
+    }
+  ],
+  "datasets": [
+    {
+      "file": "data/cbb_men/events_sample.csv",
+      "expected_rows": 4386,
+      "expected_sha256": "e4cd30c72594e7848eae9f4a7563a8e0ce3bc5eef5ac0b966ccbfbe5b49e9f06",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 4386,
+      "columns": 18,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/cbb_men/games_historical.csv",
+      "expected_rows": 3677,
+      "expected_sha256": "1581d6ffb3064b7e531199565903d66da42f1e9303cf9bbed4f811e391930ca1",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 3677,
+      "columns": 15,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/cbb_men/player_game_stats_sample.csv",
+      "expected_rows": 2821,
+      "expected_sha256": "83406dee246db74a686775cac30b2841ef4a0cc64e9b0f41428a370d194e9ecd",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 2821,
+      "columns": 11,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/cbb_men/team_game_stats_sample.csv",
+      "expected_rows": 552,
+      "expected_sha256": "351f08f8ef24d56c2c2d93ee530659521f1dbfbd9b4bb59fba8ad585b1165ee6",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 552,
+      "columns": 6,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/cbb_women/events_sample.csv",
+      "expected_rows": 4328,
+      "expected_sha256": "be5aee1182bdd84ec5a6f6dc8ab16f2d94fdb9b212472187df87371cf52a8fff",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 4328,
+      "columns": 18,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/cbb_women/games_historical.csv",
+      "expected_rows": 3597,
+      "expected_sha256": "1ebff0ea85df75e1074e975e94ade79e990a9165677ddd9d44022251e058a120",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 3597,
+      "columns": 15,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/cbb_women/player_game_stats_sample.csv",
+      "expected_rows": 2977,
+      "expected_sha256": "c2118ebe4e25cd462b017d0e44a29a4956d49f65a15e8723ee32824ad8082596",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 2977,
+      "columns": 11,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/cbb_women/team_game_stats_sample.csv",
+      "expected_rows": 528,
+      "expected_sha256": "7c123252aa57b66ee9242bf3e6189157161531318a513b96bf6ec6248d91557e",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 528,
+      "columns": 6,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/cfb/events_sample.csv",
+      "expected_rows": 2135,
+      "expected_sha256": "8ae9cc05b05fcd435b9c8157ed60e2e2b599aa22891a60af2eb4d8b8a81ed859",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 2135,
+      "columns": 18,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/cfb/games_historical.csv",
+      "expected_rows": 111,
+      "expected_sha256": "656929ce801dad756d7f58e4312c5b210a31953ebe0d08e58291a4167600a0d5",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 111,
+      "columns": 15,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/cfb/player_game_stats_sample.csv",
+      "expected_rows": 5566,
+      "expected_sha256": "1791a052e848e051711f93c23fcfe9003404267a1164b1ae4eaa1f45e1856a54",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 5566,
+      "columns": 11,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/cfb/team_game_stats_sample.csv",
+      "expected_rows": 360,
+      "expected_sha256": "174bb26d166214d94ac5c5493cb528786c37cce5936081ee86063ea809906f2d",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 360,
+      "columns": 6,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/college_baseball/events_sample.csv",
+      "expected_rows": 2954,
+      "expected_sha256": "74052f2cd1261c15cc33a07768a7765d27b6f68c180662037750546119f49f92",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 2954,
+      "columns": 18,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/college_baseball/games_historical.csv",
+      "expected_rows": 313,
+      "expected_sha256": "6bf60756298fe383f862943b24ed3f061986f0e30e5831afcda31762aaef557b",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 313,
+      "columns": 15,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/college_baseball/player_game_stats_sample.csv",
+      "expected_rows": 2138,
+      "expected_sha256": "7f716ce7953e11fa5588edf3d6623d7c9fba19a565b81b10798377525db04529",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 2138,
+      "columns": 11,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/college_baseball/team_game_stats_sample.csv",
+      "expected_rows": 60,
+      "expected_sha256": "bc8d22d621ec21f462042b4ae8511403f4285120f489ddbd2ee130382f42a94c",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 60,
+      "columns": 6,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/mlb/games_2024.csv",
+      "expected_rows": 2998,
+      "expected_sha256": "12d7c732b8b4e751593279961a291a3a9b40c4ce1e0f10f81b5e52c1bfbdc9cb",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 2998,
+      "columns": 15,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/mlb/pitches_sample_2024.csv",
+      "expected_rows": 8800,
+      "expected_sha256": "41e64faed76b9925f57bcfe19bbf3dbf2264dd2fac8c852da9bce548f693fe6e",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 8800,
+      "columns": 41,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/mlb/player_game_stats_sample_2024.csv",
+      "expected_rows": 43535,
+      "expected_sha256": "be95b8bc4869e98daa9abfd92a51677cce3c0f7ab4478a1fcd913c1673b3e636",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 43535,
+      "columns": 9,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/nba/events_sample.csv",
+      "expected_rows": 5303,
+      "expected_sha256": "d73b29703db7293e3ddf4079b3f07ed0fbe58a65c63d7c711dfcbfb3fe18bee6",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 5303,
+      "columns": 18,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/nba/games_historical.csv",
+      "expected_rows": 1403,
+      "expected_sha256": "29e73f085d382c6945a0f2ca0a129ed81697e371a384e18513ccf73cc4e7c85e",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 1403,
+      "columns": 15,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/nba/player_game_stats_sample.csv",
+      "expected_rows": 3962,
+      "expected_sha256": "d8c48aa1612c1fb47311e41c67b939c765baf125902fa7ac5808a789d415df80",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 3962,
+      "columns": 11,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/nba/team_game_stats_sample.csv",
+      "expected_rows": 552,
+      "expected_sha256": "8311d2f863f77325fcc35d3c420fe9140626646108b4813896473054fe8ffa4a",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 552,
+      "columns": 6,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/nfl/game_labels_2022_2024.csv",
+      "expected_rows": 854,
+      "expected_sha256": "dfc58c7a6a1ea991f73dfaf9cf074fda6d6736f7ddccddfe0ed9c821f75a1197",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 854,
+      "columns": 18,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/nfl/play_by_play_2022.csv.gz",
+      "expected_rows": 49434,
+      "expected_sha256": "0c69a71eb39498956c7b1d5c1ca52ce7fe679934a95d1af249facb5ea9829ea4",
+      "known_at_status": "unverified_historical_availability",
+      "state": "MISSING",
+      "note": "The 2022 archive arrived empty (0 bytes). The file is missing, not reconstructed: nflverse revises play-by-play, so a fresh download is accepted only if its SHA-256 matches the pack (tools/datapack/fetch_external.js)."
+    },
+    {
+      "file": "data/nfl/play_by_play_2023.csv.gz",
+      "expected_rows": 49665,
+      "expected_sha256": "4649804ee0f0a40b41e51ec75a1ce921949d7fab5459213488656b92f78560e8",
+      "known_at_status": "unverified_historical_availability",
+      "location": "EXTERNAL_CACHE",
+      "sha_ok": true,
+      "rows": 49665,
+      "columns": 372,
+      "counts_ok": true,
+      "known_at_blank": null,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/nfl/play_by_play_2024.csv.gz",
+      "expected_rows": 49492,
+      "expected_sha256": "23370d5d10f8104d80d46a1fc5e61f4f6f5a3263fe96fe2dd629913cfcb08c06",
+      "known_at_status": "unverified_historical_availability",
+      "location": "EXTERNAL_CACHE",
+      "sha_ok": true,
+      "rows": 49492,
+      "columns": 372,
+      "counts_ok": true,
+      "known_at_blank": null,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/nfl/player_game_opportunities_2022_2024.csv",
+      "expected_rows": 56159,
+      "expected_sha256": "175f9e10567bac25eaa65ad0181aa32910114a901b8746491059057b39e07ef0",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 56159,
+      "columns": 9,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/nfl/pregame_rolling_features_2022_2024.csv",
+      "expected_rows": 1708,
+      "expected_sha256": "6d3bfbdf55eec21f78c985032cd923ddba9c8744756bfac4673537f4d64fb37c",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 1708,
+      "columns": 58,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/nfl/team_game_advanced_2022_2024.csv",
+      "expected_rows": 1708,
+      "expected_sha256": "94b31b827f9edec091ecda010646d868914bc7ed7df4613293693f174b8c435b",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 1708,
+      "columns": 27,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/nhl/events_sample.csv",
+      "expected_rows": 23203,
+      "expected_sha256": "5fbab5dac0e59152044c57dbf5783e655085737622be50d5d2e7f7c2156cbd30",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 23203,
+      "columns": 18,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/nhl/games_historical.csv",
+      "expected_rows": 1443,
+      "expected_sha256": "eb1d32a3b1e23d38e1e0a85c0ab10995810dbcd5bc9bdfa49366e3cce47c5ed3",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 1443,
+      "columns": 15,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/nhl/goalie_game_observed_sample.csv",
+      "expected_rows": 171,
+      "expected_sha256": "93a0d165ef43a5fe36c1e0d8279afb3badd1a6d9acef9ddd9fe24aef246e34a6",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 171,
+      "columns": 14,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/nhl/player_game_deduplicated_sample.csv",
+      "expected_rows": 3121,
+      "expected_sha256": "de2b2189cf80b56ace212e1891a77aa1f676b4bae0d9ccef1fc03f6bcac393ba",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 3121,
+      "columns": 9,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/nhl/player_game_stats_sample.csv",
+      "expected_rows": 56232,
+      "expected_sha256": "c1a6a203ba3899730c7740499c834d92727bc09adddee97878ab5f955daaf4c9",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 56232,
+      "columns": 11,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/nhl/shot_attempts_sample.csv",
+      "expected_rows": 9895,
+      "expected_sha256": "bfdd134caa34fd34f154f08813bcd36409a0904807b4a1e1fdd7d7cb605f0aab",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 9895,
+      "columns": 25,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/nhl/team_game_stats_sample.csv",
+      "expected_rows": 2016,
+      "expected_sha256": "dd1729a4b11eff46a311653fe60fbe6c12cd84c0a2ae10094a9b37c264c3c60f",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 2016,
+      "columns": 6,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/soccer/games_historical.csv",
+      "expected_rows": 380,
+      "expected_sha256": "8fdb8ead206a16a0f59f685327e43bb78dbc295855f9c08d5f915acd05cd0e71",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 380,
+      "columns": 15,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/tennis_atp/matches_sample.csv",
+      "expected_rows": 1233,
+      "expected_sha256": "a89694d8d5edba7a9def6f782b525f0ff377a50402f99003bd2fb8b99b1685fe",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 1233,
+      "columns": 22,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/tennis_wta/matches_sample.csv",
+      "expected_rows": 1609,
+      "expected_sha256": "cc4705be469d726dab5e27fa17d6bc1b287cdf7a59fdd4824aecc5eb38e9d07e",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 1609,
+      "columns": 22,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/ufc/bouts_2024.csv",
+      "expected_rows": 566,
+      "expected_sha256": "da07cfb2619b7552b62a26614017e787c015eba36ecb2d4cd8e28bc2deea89c0",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 566,
+      "columns": 17,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/wnba/events_sample.csv",
+      "expected_rows": 4604,
+      "expected_sha256": "e811518b2a266277ecc353442866103f3b31324416fabb878d9706556344fc83",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 4604,
+      "columns": 18,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/wnba/games_historical.csv",
+      "expected_rows": 275,
+      "expected_sha256": "b90669402456c653a18d0f9154c94745202e716c768595133c7c59b6f7786686",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 275,
+      "columns": 15,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/wnba/player_game_stats_sample.csv",
+      "expected_rows": 3206,
+      "expected_sha256": "50b287c0d4a37fc7ca8a8b2c76aa1bd3f868e1ad4be4e177dda59ef0e3f25cbb",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 3206,
+      "columns": 11,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    },
+    {
+      "file": "data/wnba/team_game_stats_sample.csv",
+      "expected_rows": 552,
+      "expected_sha256": "c488ed49590be4337e4d517edf0823219f4f0be6b4b88bb53f7baa6b3946cc3f",
+      "known_at_status": "unverified_historical_availability",
+      "location": "IN_REPO",
+      "sha_ok": true,
+      "rows": 552,
+      "columns": 6,
+      "counts_ok": true,
+      "known_at_blank": true,
+      "state": "VERIFIED"
+    }
+  ],
+  "limitations": [
+    "Not a point-in-time certification: historical known_at is blank throughout, so every table is retrospective research data.",
+    "Not a licensing certification: each source keeps its own terms (sources/source_registry.json).",
+    "Not model validation: the pack ships no trained model and no bookmaker prices."
+  ]
+}

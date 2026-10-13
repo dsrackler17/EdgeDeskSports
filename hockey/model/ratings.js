@@ -220,4 +220,4 @@ function scoreWeights(rows) {
   return { lead: +w('lead').toFixed(4), tie: +w('tie').toFixed(4), trail: +w('trail').toFixed(4) };
 }
 
-module.exports = { RatingState, scoreWeights, DEFAULTS, dayNum };
+module.exports = { RatingState, scoreWeights, DEFAULTS, dayNum, PREDECESSOR };

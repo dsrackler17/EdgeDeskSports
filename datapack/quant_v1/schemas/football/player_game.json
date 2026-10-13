@@ -1,0 +1,410 @@
+{
+  "family": "football",
+  "table": "player_game",
+  "grain": "one player game",
+  "priority": "P1",
+  "default_source": "nflverse / CFBD / boxscore",
+  "definition_status": "canonical_contract_not_claim_of_provider_coverage",
+  "keys": [
+    "record_id",
+    "revision"
+  ],
+  "columns": [
+    {
+      "field": "record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "event_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "entity_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "source_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Source registry identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "source_record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Original provider record identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "occurred_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "known_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "retrieved_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "revision",
+      "type": "integer",
+      "unit": "none",
+      "description": "Monotone version of this source record.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "quality_status",
+      "type": "text",
+      "unit": "none",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "snaps",
+      "type": "integer",
+      "unit": "count",
+      "description": "Snaps.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "offensive_snaps",
+      "type": "integer",
+      "unit": "count",
+      "description": "Offensive snaps.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "defensive_snaps",
+      "type": "integer",
+      "unit": "count",
+      "description": "Defensive snaps.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "special_teams_snaps",
+      "type": "integer",
+      "unit": "count",
+      "description": "Special teams snaps.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "routes",
+      "type": "integer",
+      "unit": "count",
+      "description": "Routes.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "targets",
+      "type": "integer",
+      "unit": "count",
+      "description": "Targets.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "receptions",
+      "type": "integer",
+      "unit": "count",
+      "description": "Receptions.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "carries",
+      "type": "integer",
+      "unit": "count",
+      "description": "Carries.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "pass_attempts",
+      "type": "integer",
+      "unit": "count",
+      "description": "Pass attempts.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "completions",
+      "type": "integer",
+      "unit": "count",
+      "description": "Completions.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "passing_touchdowns",
+      "type": "integer",
+      "unit": "count",
+      "description": "Passing touchdowns.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "interceptions",
+      "type": "integer",
+      "unit": "count",
+      "description": "Interceptions.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "rushing_touchdowns",
+      "type": "integer",
+      "unit": "count",
+      "description": "Rushing touchdowns.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "receiving_touchdowns",
+      "type": "integer",
+      "unit": "count",
+      "description": "Receiving touchdowns.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "sacks",
+      "type": "integer",
+      "unit": "count",
+      "description": "Sacks.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "tackles",
+      "type": "integer",
+      "unit": "count",
+      "description": "Tackles.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "solo_tackles",
+      "type": "integer",
+      "unit": "count",
+      "description": "Solo tackles.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "tackles_for_loss",
+      "type": "integer",
+      "unit": "count",
+      "description": "Tackles for loss.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "pressures",
+      "type": "integer",
+      "unit": "count",
+      "description": "Pressures.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "qb_hits",
+      "type": "integer",
+      "unit": "count",
+      "description": "Qb hits.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "passes_defended",
+      "type": "integer",
+      "unit": "count",
+      "description": "Passes defended.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "field_goal_attempts",
+      "type": "integer",
+      "unit": "count",
+      "description": "Field goal attempts.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "field_goals_made",
+      "type": "integer",
+      "unit": "count",
+      "description": "Field goals made.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "passing_yards",
+      "type": "number",
+      "unit": "yards",
+      "description": "Passing yards.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "receiving_yards",
+      "type": "number",
+      "unit": "yards",
+      "description": "Receiving yards.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "rushing_yards",
+      "type": "number",
+      "unit": "yards",
+      "description": "Rushing yards.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "air_yards",
+      "type": "number",
+      "unit": "yards",
+      "description": "Air yards.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "yards_after_catch",
+      "type": "number",
+      "unit": "yards",
+      "description": "Yards after catch.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "passing_epa",
+      "type": "number",
+      "unit": "number",
+      "description": "Passing epa.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "rushing_epa",
+      "type": "number",
+      "unit": "number",
+      "description": "Rushing epa.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "receiving_epa",
+      "type": "number",
+      "unit": "number",
+      "description": "Receiving epa.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "cpoe",
+      "type": "number",
+      "unit": "number",
+      "description": "Cpoe.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "target_share",
+      "type": "number",
+      "unit": "number",
+      "description": "Target share.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "air_yard_share",
+      "type": "number",
+      "unit": "number",
+      "description": "Air yard share.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    }
+  ]
+}

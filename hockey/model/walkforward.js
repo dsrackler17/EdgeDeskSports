@@ -42,7 +42,9 @@ const path = require('path');
 const C = require('../config');
 const V = require('../../engine/validation');
 const TG = require('../ingest/team_games');
-const { RatingState, scoreWeights, dayNum, DEFAULTS } = require('./ratings');
+const { RatingState, scoreWeights, dayNum, DEFAULTS, PREDECESSOR } = require('./ratings');
+const { LineupState } = require('./lineups');
+const { loadLineups } = require('../ingest/lineups');
 const GLM = require('./glm');
 const DIST = require('./distribution');
 
@@ -117,7 +119,7 @@ function loadGames(seasons) {
   const byId = new Map();
   for (const r of rows) { if (!byId.has(r.game_id)) byId.set(r.game_id, {}); byId.get(r.game_id)[r.home ? 'h' : 'a'] = r; }
   const games = [...byId.values()].filter((x) => x.h && x.a).map((x) => ({
-    game_id: x.h.game_id, season: x.h.season, type: x.h.type, date: x.h.date, start_utc: x.h.start_utc, known_at: x.h.known_at,
+    game_id: x.h.game_id, season: x.h.season, type: x.h.type, date: x.h.date, start_utc: x.h.start_utc, available_at: x.h.assumed_available_at,
     home: x.h.team, away: x.a.team, final_home: x.h.gf, final_away: x.a.gf, reg_home: x.h.gf_reg, reg_away: x.a.gf_reg, decided: x.h.decided,
     hw: x.h.win, h: x.h, a: x.a,
   })).sort((p, q) => (p.date < q.date ? -1 : p.date > q.date ? 1 : (predictedAt(p) - predictedAt(q)) || p.game_id - q.game_id));
@@ -134,9 +136,16 @@ function seasonParams(rows, seasons, cacheOk) {
   return P;
 }
 
-/* one chronological ratings pass: games on date D see only games before D */
-function ratingsPass(games, P, ratingParams) {
+/* lineup features of one team-game snapshot pair (lineups.js); conf is null when the box score is absent */
+function lineupFeatures(luOwn, luOpp) {
+  return { lu_own_proj: luOwn.proj, lu_opp_proj: luOpp.proj, lu_own_conf: luOwn.conf, lu_opp_conf: luOpp.conf, lu_known: luOwn.known && luOpp.known };
+}
+
+/* one chronological ratings pass: games on date D see only games before D.
+   `lineups` (game_id -> { home, away } dressed skaters) is optional. */
+function ratingsPass(games, P, ratingParams, lineups) {
   const rs = new RatingState(ratingParams);
+  const ls = new LineupState(null, PREDECESSOR);
   const snaps = new Map();
   let curSeason = null, maxKnown = null;
   let i = 0;
@@ -148,12 +157,23 @@ function ratingsPass(games, P, ratingParams) {
     for (const g of day) {
       const fh = rs.snapshot(g.home, g.away, true, g.date, { opp: g.a.g_start });
       const fa = rs.snapshot(g.away, g.home, false, g.date, { opp: g.h.g_start });
+      if (lineups) {
+        const lu = lineups.get(g.game_id);
+        const ids = (side) => (lu && lu[side] && lu[side].length ? lu[side].map((x) => x[0]) : null);
+        const lh = ls.snapshot(g.home, ids('home')), la = ls.snapshot(g.away, ids('away'));
+        Object.assign(fh, lineupFeatures(lh, la)); Object.assign(fa, lineupFeatures(la, lh));
+        fh.lu_box = fa.lu_box = !!lu;
+      }
       snaps.set(g.game_id, { fh, fa, inputs_known_at: maxKnown });
     }
-    for (const g of day) { rs.absorb([g.h, g.a]); const k = Date.parse(g.known_at); if (maxKnown == null || k > maxKnown) maxKnown = k; }
+    for (const g of day) {
+      rs.absorb([g.h, g.a]); const k = Date.parse(g.available_at); if (maxKnown == null || k > maxKnown) maxKnown = k;
+      const lu = lineups && lineups.get(g.game_id);
+      if (lu) { if (lu.home.length) ls.absorb(g.home, lu.home); if (lu.away.length) ls.absorb(g.away, lu.away); }
+    }
     i = j;
   }
-  return { snaps, state: rs };
+  return { snaps, state: rs, lineups: ls };
 }
 
 function trainRows(games, snaps, S) {
@@ -225,7 +245,21 @@ function main() {
   const cacheOk = !arg('no-cache') && fs.existsSync(path.join(C.PATHS.cacheWork, 'games_' + (C.CURRENT_SEASON - 1) + '.jsonl.gz'));
   const P = seasonParams(rows, seasons, cacheOk);
   const tuned = fs.existsSync(TUNING) ? JSON.parse(fs.readFileSync(TUNING, 'utf8')).chosen : DEFAULTS;
-  const { snaps } = ratingsPass(games, P, tuned);
+  /* lineups (hockey/ingest/lineups.js): every scored season must have its box scores, or the lineup candidates sit out */
+  const LU = loadLineups(seasons);
+  const scoredSeasons = seasons.filter((s) => s >= FIRST_SCORED);
+  const lineupOk = !arg('no-lineups') && scoredSeasons.filter((s) => s < C.CURRENT_SEASON).every((s) => LU.absent.indexOf(s) < 0);
+  const { snaps } = ratingsPass(games, P, tuned, lineupOk ? LU.map : null);
+  const luCover = lineupOk ? games.filter((g) => g.season >= FIRST_SCORED && LU.map.has(g.game_id)).length : 0;
+  const lineupInfo = {
+    available: lineupOk,
+    source: 'per-game skater box scores (sportsdataverse fastRhockey skater_box, from the NHL game feeds)',
+    coverage: lineupOk ? { scored_games: games.filter((g) => g.season >= FIRST_SCORED).length, with_box_score: luCover } : null,
+    absent_seasons: LU.absent,
+    method: 'player value = recent TOI per game (last 20 of his games, any team) shrunk toward 10 min with 3 games of prior; lineup value = sum over the dressed skaters; feature = ln(lineup value / the team\'s mean over its last 10 games, re-valued today). Projected = the previous game\'s lineup; confirmed = the lineup that dressed.',
+    assumption: 'the dressed lineup is known at warmups, about 30 minutes before puck drop (the prediction time). No injury report is used; nothing about the game itself enters its own snapshot.',
+    added: 'the three lineup candidates were declared on 2026-10-13, after the confirmation window had been read for the original five; the selection rule is unchanged.',
+  };
 
   /* Elo: tuned on SELECTION only */
   let bestElo = null;
@@ -238,7 +272,7 @@ function main() {
   const eloP = eloPass(games, bestElo.k, bestElo.hfa, bestElo.revert);
 
   /* per-season GLM fits: raw λ for every game of season S from a fit on seasons before S */
-  const cands = Object.keys(GLM.CANDIDATES);
+  const cands = Object.keys(GLM.CANDIDATES).filter((c) => lineupOk || GLM.LINEUP_CANDIDATES.indexOf(c) < 0);
   const fits = {}; const raw = new Map(); /* game_id → { c: { lh, la } } */
   for (const S of seasons.filter((s) => s >= FIRST_SCORED)) {
     const train = trainRows(games, snaps, S);
@@ -340,7 +374,7 @@ function main() {
   const selLL = (c) => windows.selection.by_candidate[c].moneyline.log_loss;
   const simplest = 'goals_only';
   let chosen = simplest;
-  for (const c of ['xg_no_goalie', 'xg_goalie_projected']) if (selLL(c) <= selLL(chosen) - 0.001) chosen = c;
+  for (const c of ['xg_no_goalie', 'xg_goalie_projected'].concat(lineupOk ? ['xg_lineup_projected'] : [])) if (selLL(c) <= selLL(chosen) - 0.001) chosen = c;
   /* the confirmed-starter variant is the same model with the announced goalie; it is reported, and used when a starter is confirmed */
   const selection = { rule: 'lowest selection-window moneyline log loss; a challenger must beat the incumbent by >= 0.001', ll: Object.fromEntries(allC.map((c) => [c, selLL(c)])), chosen, confirmed_variant: 'xg_goalie_confirmed' };
 
@@ -351,6 +385,11 @@ function main() {
   for (const b of BASELINES) comparisons[chosen + '_vs_' + b] = pair(chosen, b);
   comparisons.xg_goalie_confirmed_vs_xg_goalie_projected = pair('xg_goalie_confirmed', 'xg_goalie_projected');
   comparisons.xg_goalie_projected_vs_xg_no_goalie = pair('xg_goalie_projected', 'xg_no_goalie');
+  if (lineupOk) {
+    comparisons.xg_lineup_projected_vs_xg_no_goalie = pair('xg_lineup_projected', 'xg_no_goalie');
+    comparisons.xg_lineup_confirmed_vs_xg_no_goalie = pair('xg_lineup_confirmed', 'xg_no_goalie');
+    comparisons.xg_all_confirmed_vs_xg_goalie_confirmed = pair('xg_all_confirmed', 'xg_goalie_confirmed');
+  }
 
   /* ---------- status (rule 5) ---------- */
   function status(market, getter, baselineBeat) {
@@ -382,7 +421,9 @@ function main() {
   const live = {
     schema: 'edgedesk_nhl_live_params_v1', generated_at: new Date().toISOString(), for_season: liveS,
     model: chosen, confirmed_variant: 'xg_goalie_confirmed',
-    glm: { [chosen]: fits[liveS][chosen], xg_goalie_confirmed: fits[liveS].xg_goalie_confirmed, goals_only: fits[liveS].goals_only },
+    glm: Object.assign({ [chosen]: fits[liveS][chosen], xg_no_goalie: fits[liveS].xg_no_goalie, xg_goalie_confirmed: fits[liveS].xg_goalie_confirmed, goals_only: fits[liveS].goals_only },
+      lineupOk ? { xg_lineup_confirmed: fits[liveS].xg_lineup_confirmed, xg_all_confirmed: fits[liveS].xg_all_confirmed } : {}),
+    lineups: { available: lineupOk },
     glm_train_seasons: [Math.max(C.FIRST_SEASON + 1, liveS - GLM_WINDOW), liveS - 1],
     ratings: tuned, pair_calibration: cal[liveS], score_weights: P[liveS].sw, ot: P[liveS].ot, effects: P[liveS].effects, elo: bestElo,
   };
@@ -399,8 +440,10 @@ function main() {
   const report = {
     schema: C.SCHEMA.validation, generated_at: live.generated_at,
     protocol: { selection: SELECTION, confirmation: CONFIRMATION, live: LIVE, glm_window_seasons: GLM_WINDOW, first_scored: FIRST_SCORED, prediction_time: 'scheduled start − 30 min; inputs: games on earlier dates only', candidates: GLM.CANDIDATES, baselines: { elo: 'FiveThirtyEight NHL Elo form (MOV multiplier 0.6686·ln(MOV)+0.8048), K/HFA/reversion tuned on the selection window', goals_only: 'the same GLM on goals ratings and rest only', const_home: 'home advantage only' } },
-    data: { seasons: [C.FIRST_SEASON, C.CURRENT_SEASON], games_scored: preds.length, source: 'hockey/data/team_games (sportsdataverse fastRhockey, from the NHL public game feeds)', license: C.LICENSE.sportsdataverse },
-    leakage: leak,
+    data: { seasons: [C.FIRST_SEASON, C.CURRENT_SEASON], games_scored: preds.length, source: 'hockey/data/team_games (sportsdataverse fastRhockey, from the NHL public game feeds)', license: C.LICENSE.sportsdataverse,
+      temporal: { point_in_time: 'RETROSPECTIVE', known_at: 'blank (unknown first publication; never backdated)', assumed_available_at: 'scheduled start + 4 h', revisions: 'the history was retrieved after the fact; later source corrections may be present, so this is a retrospective test, not a certified point-in-time one' } },
+    lineups: lineupInfo,
+    leakage: Object.assign({ basis: 'inputs dated by assumed_available_at (scheduled start + 4 h); the source never recorded when it first published each game' }, leak),
     elo: bestElo,
     selection, comparisons, best_baseline: bestBaseline, markets,
     windows, by_season: bySeason,
@@ -409,6 +452,7 @@ function main() {
     ratings_params: tuned,
     live_games: liveGames,
     caveats: [
+      'Retrospective, not point-in-time certified: every input row was retrieved after the fact, its first-publication time is unknown, and the walk-forward assumes a game\'s facts were available four hours after its scheduled start.',
       'Outcome validation only: no licensed archive of NHL closing prices is available to this build, so the model has NOT been compared with the market. Beating Elo is not beating a sportsbook.',
       'The xG model is fitted walk-forward on seasons before each season it scores; from 2022-23 the source changed how it records shot locations and the xG model is less well calibrated on those seasons (hockey/xg/report.json).',
       'Confirmed-goalie results assume the starter is known 30 minutes before puck drop; prices posted earlier use the projected starter.',
@@ -429,6 +473,7 @@ function check() {
   const fails = [];
   if (r.schema !== C.SCHEMA.validation) fails.push('schema');
   if (!r.leakage || r.leakage.violations !== 0) fails.push('leakage violations: ' + (r.leakage && r.leakage.violations));
+  if (!r.data || !r.data.temporal || r.data.temporal.point_in_time !== 'RETROSPECTIVE') fails.push('the record must say it is retrospective (pack temporal rule)');
   if (!r.markets || !r.markets.moneyline) fails.push('no moneyline status');
   for (const [k, m] of Object.entries(r.markets || {})) if (m.market_status !== 'NOT_TESTED' && !fs.existsSync(path.join(C.PATHS.market, 'closing'))) fails.push(k + ' claims a market test with no closing archive');
   if (!fs.existsSync(path.join(PARAMS_DIR, 'live.json'))) fails.push('no live params');
@@ -437,4 +482,4 @@ function check() {
 }
 
 if (require.main === module) { if (arg('check')) check(); else if (arg('tune')) tune(); else main(); }
-module.exports = { otParams, eloPass, predictedAt, loadGames, seasonParams, ratingsPass, trainRows, fitRho, SELECTION, CONFIRMATION, LIVE };
+module.exports = { otParams, eloPass, predictedAt, loadGames, seasonParams, ratingsPass, trainRows, fitRho, lineupFeatures, SELECTION, CONFIRMATION, LIVE };

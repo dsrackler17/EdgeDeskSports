@@ -1,0 +1,444 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "tennis.matches",
+  "type": "object",
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "event_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "entity_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Source registry identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_record_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Original provider record identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "occurred_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "known_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "retrieved_at": {
+      "type": "string",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "description": "Monotone version of this source record.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "quality_status": {
+      "type": "string",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "player_a_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Player a id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "player_b_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Player b id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "tournament_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Tournament id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "winner_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Winner id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "surface": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Surface.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "indoor_outdoor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Indoor outdoor.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "tournament_level": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Tournament level.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "round": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Round.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "match_status": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Match status.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "retirement_reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Retirement reason.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "draw_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Draw type.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "best_of": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Best of.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "a_sets_won": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "A sets won.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "b_sets_won": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "B sets won.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "a_games_won": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "A games won.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "b_games_won": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "B games won.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "a_aces": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "A aces.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "b_aces": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "B aces.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "a_double_faults": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "A double faults.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "b_double_faults": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "B double faults.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "a_service_points": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "A service points.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "b_service_points": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "B service points.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "a_first_serves_in": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "A first serves in.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "b_first_serves_in": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "B first serves in.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "a_first_serve_points_won": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "A first serve points won.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "b_first_serve_points_won": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "B first serve points won.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "a_second_serve_points_won": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "A second serve points won.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "b_second_serve_points_won": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "B second serve points won.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "a_break_points_faced": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "A break points faced.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "b_break_points_faced": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "B break points faced.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "a_break_points_saved": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "A break points saved.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "b_break_points_saved": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "B break points saved.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "a_service_games": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "A service games.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "b_service_games": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "B service games.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "a_rank": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "A rank.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "b_rank": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "B rank.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "duration_seconds": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Duration seconds.",
+      "x-unit": "seconds",
+      "x-priority": "P0"
+    },
+    "retirement": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Retirement.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "walkover": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Walkover.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    }
+  },
+  "required": [
+    "record_id",
+    "source_id",
+    "retrieved_at",
+    "revision",
+    "quality_status"
+  ],
+  "additionalProperties": false
+}

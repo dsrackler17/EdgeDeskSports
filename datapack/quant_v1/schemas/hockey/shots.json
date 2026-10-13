@@ -1,0 +1,437 @@
+{
+  "family": "hockey",
+  "table": "shots",
+  "grain": "one attempted shot",
+  "priority": "P0",
+  "default_source": "NHL native / authorized shot feed",
+  "definition_status": "canonical_contract_not_claim_of_provider_coverage",
+  "keys": [
+    "record_id",
+    "revision"
+  ],
+  "columns": [
+    {
+      "field": "record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "event_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "entity_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "source_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Source registry identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "source_record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Original provider record identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "occurred_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "known_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "retrieved_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "revision",
+      "type": "integer",
+      "unit": "none",
+      "description": "Monotone version of this source record.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "quality_status",
+      "type": "text",
+      "unit": "none",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "period",
+      "type": "integer",
+      "unit": "count",
+      "description": "Period.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "shooter_team_skaters",
+      "type": "integer",
+      "unit": "count",
+      "description": "Shooter team skaters.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "defending_team_skaters",
+      "type": "integer",
+      "unit": "count",
+      "description": "Defending team skaters.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "home_score_before",
+      "type": "integer",
+      "unit": "count",
+      "description": "Home score before.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "away_score_before",
+      "type": "integer",
+      "unit": "count",
+      "description": "Away score before.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "period_seconds",
+      "type": "integer",
+      "unit": "seconds",
+      "description": "Period seconds.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "game_seconds",
+      "type": "integer",
+      "unit": "seconds",
+      "description": "Game seconds.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "time_since_previous_event_seconds",
+      "type": "integer",
+      "unit": "seconds",
+      "description": "Time since previous event seconds.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "shooter_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Shooter id.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "goalie_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Goalie id.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "assisting_player_1_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Assisting player 1 id.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "assisting_player_2_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Assisting player 2 id.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "strength_state",
+      "type": "text",
+      "unit": "category",
+      "description": "Strength state.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "shot_type",
+      "type": "text",
+      "unit": "category",
+      "description": "Shot type.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "event_type",
+      "type": "text",
+      "unit": "category",
+      "description": "Event type.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "previous_event_type",
+      "type": "text",
+      "unit": "category",
+      "description": "Previous event type.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "game_type",
+      "type": "text",
+      "unit": "category",
+      "description": "Game type.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "shooting_side",
+      "type": "text",
+      "unit": "category",
+      "description": "Shooting side.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "rink_coordinate_convention",
+      "type": "text",
+      "unit": "category",
+      "description": "Rink coordinate convention.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "x",
+      "type": "number",
+      "unit": "feet",
+      "description": "X.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "y",
+      "type": "number",
+      "unit": "feet",
+      "description": "Y.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "distance",
+      "type": "number",
+      "unit": "feet",
+      "description": "Distance.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "release_x",
+      "type": "number",
+      "unit": "feet",
+      "description": "Release x.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "release_y",
+      "type": "number",
+      "unit": "feet",
+      "description": "Release y.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "angle",
+      "type": "number",
+      "unit": "degrees",
+      "description": "Angle.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "previous_shot_angle_change",
+      "type": "number",
+      "unit": "degrees",
+      "description": "Previous shot angle change.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "is_goal",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Is goal.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "is_rebound",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Is rebound.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "is_rush",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Is rush.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "is_empty_net",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Is empty net.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "is_penalty_shot",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Is penalty shot.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "is_blocked",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Is blocked.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "is_missed",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Is missed.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "is_one_timer",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Is one timer.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "is_deflected",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Is deflected.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "provider_xg",
+      "type": "number",
+      "unit": "number",
+      "description": "Provider model expected goal probability 0 to 1",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "provider_xg_model_version",
+      "type": "text",
+      "unit": "text",
+      "description": "Provider xg model version.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    }
+  ]
+}

@@ -220,24 +220,85 @@ const near = (a, b, e) => Math.abs(a - b) <= (e == null ? 1e-6 : e);
     if (keep) fs.writeFileSync(out, keep); else fs.unlinkSync(out);
   }
 
+  /* ---------------- lineups ---------------- */
+  {
+    const LI = require(path.join(ROOT, 'hockey', 'ingest', 'lineups.js'));
+    const { LineupState } = require(path.join(ROOT, 'hockey', 'model', 'lineups.js'));
+    chk('lineups: TOI parses mm:ss and refuses anything else (null, never 0)', LI.toiSeconds('15:29') === 929 && LI.toiSeconds('') === null && LI.toiSeconds('n/a') === null && LI.toiSeconds(null) === null);
+    const b = LI.buildLineups([
+      { game_id: 1, game_date: '2026-10-01', home_away: 'home', player_id: 10, player_name: 'A. One', position: 'C', toi: '20:00' },
+      { game_id: 1, game_date: '2026-10-01', home_away: 'home', player_id: 10, player_name: 'A. One', position: 'C', toi: '21:00' },
+      { game_id: 1, game_date: '2026-10-01', home_away: 'home', player_id: 11, position: 'D', toi: 'bad' },
+      { game_id: 1, game_date: '2026-10-01', home_away: 'away', player_id: 20, position: 'L', toi: '12:00' },
+    ]);
+    chk('lineups: a repeated player counts once (larger TOI), an unparsed TOI is null and counted', b.games[1].home.length === 2 && b.games[1].home[0][1] === 1260 && b.games[1].home[1][1] === null && b.stats.duplicates === 1 && b.stats.toi_unparsed === 1 && b.names[10] === 'A. One');
+    chk('lineups: a team-game with an implausible skater count is flagged, not dropped', b.stats.flagged.length === 2 && b.games[1].away.length === 1);
+    const ls = new LineupState(null, { NEW: 'OLD' });
+    const L = (ids, star) => ids.map((id) => [id, id === star ? 1500 : 800, 'F']);
+    const base = [...Array(18)].map((_, i) => 100 + i);
+    chk('lineups: no history -> unknown, delta 0', ls.snapshot('OLD', base).known === false && ls.snapshot('OLD', base).proj === 0);
+    for (let k = 0; k < 5; k++) ls.absorb('OLD', L(base, 100));
+    const full = ls.snapshot('OLD', base), noStar = ls.snapshot('OLD', base.slice(1).concat([999]));
+    chk('lineups: the usual lineup is delta 0; losing the 25-minute regular for a call-up is below 0', Math.abs(full.conf) < 1e-9 && noStar.conf < -0.02, { full, noStar });
+    chk('lineups: a snapshot never sees its own game (absorb comes after)', (() => { const before = ls.snapshot('OLD', base); ls.absorb('OLD', L(base.slice(1).concat([999]), 100)); const after = ls.snapshot('OLD', base); return before.proj === 0 && after.proj < 0; })());
+    const miss = ls.missingRegulars('OLD', null, 900);
+    chk('lineups: an absent regular is listed with how long he has been out', miss.length === 1 && miss[0].player_id === 100 && miss[0].absent_last_games === 1, miss);
+    chk('lineups: a relocated club inherits its predecessor\'s lineups', ls.snapshot('NEW', base).known === true);
+    const GLM = require(path.join(ROOT, 'hockey', 'model', 'glm.js'));
+    chk('lineups: an unknown lineup enters the regression as 0, never as a guess', GLM.FEATURES.lu_own_conf({}) === 0 && GLM.FEATURES.lu_own_conf({ lu_own_proj: -0.04 }) === -0.04 && GLM.FEATURES.lu_own_conf({ lu_own_conf: -0.1, lu_own_proj: 0 }) === -0.1);
+  }
+
+  /* ---------------- contracts and the second source ---------------- */
+  {
+    const K = require(path.join(ROOT, 'engine', 'contracts.js'));
+    const good = Object.assign(K.blank('shared', 'event_context'), { record_id: 'r1', source_id: 's', retrieved_at: '2026-10-13T04:00:00Z', revision: 1, quality_status: 'RETRO', home_rest_days: 1, postseason: false });
+    chk('contracts: a complete row validates', K.validate('shared', 'event_context', [good]).ok);
+    const v = K.validate('shared', 'event_context', [
+      Object.assign({}, good, { record_id: 'r2', home_rest_days: '1' }),
+      Object.assign({}, good, { record_id: 'r3', revision: null }),
+      Object.assign({}, good, { record_id: 'r4', invented: 1 }),
+      Object.assign({}, good, { record_id: 'r1' }), good,
+      Object.assign({}, good, { record_id: 'r5', known_at: '2027-01-01T00:00:00Z' }),
+      Object.assign({}, good, { record_id: 'r6', retrieved_at: '2026-10-13' }),
+    ]);
+    const has = (re) => v.errors.some((e) => re.test(e));
+    chk('contracts: wrong type, a null required field, an extra field, a duplicate key, known_at after retrieval and a zone-less timestamp are all errors', !v.ok && has(/home_rest_days is not number/) && has(/revision is required/) && has(/invented is not in the contract/) && has(/duplicate key r1/) && has(/known_at after retrieved_at/) && has(/retrieved_at is not timestamp/), v.errors);
+    chk('contracts: missingness is reported per field', v.missing.temperature === 1 && v.missing.home_rest_days === 0);
+    const CN = require(path.join(ROOT, 'hockey', 'contracts', 'canonical.js'));
+    const shots = CN.shotsFromRecord({ game: { game_id: 7, season_type: 'R' }, shots: [{ period: 2, gs: 1500, state: 'pp', goal: 1, X: 80, Y: -3, dist: 9.5, angle: 17.6, type: 'wrist', rebound: 1, rush: 0, since_prev: 2, prev_type: 'SHOT', empty_net: 0, goalie: 5, shooter: 9, xg: 0.31 }] }, { retrieved_at: '2026-10-13T04:00:00Z', xg_model: 'xg_for_2026' });
+    chk('contracts: a shot maps with units, state, its xG model and RETRO', K.validate('hockey', 'shots', shots).ok && shots[0].period_seconds === 300 && shots[0].strength_state === 'PP' && shots[0].shooter_team_skaters === null && shots[0].provider_xg_model_version === 'edgedesk:xg_for_2026' && /RETRO/.test(shots[0].quality_status) && shots[0].known_at === null, shots[0]);
+    const nc = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'validation', 'nhl_contracts.json'), 'utf8'));
+    chk('contracts: the committed mapping validates and gives a reason for every always-empty field', nc.tables.every((t) => t.ok !== false) && nc.tables.filter((t) => t.always_missing).every((t) => t.always_missing.every((f) => f.reason)) && nc.tables.some((t) => t.table === 'hockey/shots' && t.rows > 100000));
+    const xc = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'validation', 'nhl_crosscheck_espn.json'), 'utf8'));
+    chk('second source: every 2024-25 NHL-feed game maps to ESPN and every final agrees', xc.results.compared === xc.games.nhl_feed_games && xc.results.final_agree === xc.results.compared && !xc.games.unmatched_by_reason['no NHL-feed game with these clubs within 6 h'], xc.results);
+    chk('second source: goals against per goalie agree on every sampled row', xc.goalies.goals_against_agree === xc.goalies.goalie_rows && xc.goalies.goalie_rows > 100);
+    const xw = fs.readFileSync(path.join(ROOT, 'hockey', 'data', 'crosswalk', 'espn_nhl_2025.csv'), 'utf8').trim().split('\n');
+    chk('second source: the id crosswalk has one row per matched game, no id twice', xw.length - 1 === xc.games.matched && new Set(xw.slice(1).map((l) => l.split(',')[0])).size === xw.length - 1 && new Set(xw.slice(1).map((l) => l.split(',')[1])).size === xw.length - 1);
+  }
+
   /* ---------------- committed artifacts ---------------- */
   {
     const TG = require(path.join(ROOT, 'hockey', 'ingest', 'team_games.js'));
     const man = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'data', 'manifest.json'), 'utf8'));
-    chk('data: the manifest names the schema and every season 2011-2027', man.schema === 'edgedesk_nhl_team_games_v1' && [...Array(17)].every((_, i) => man.seasons[2011 + i]), Object.keys(man.seasons || {}));
+    chk('data: the manifest names the schema and every season 2011-2027', man.schema === 'edgedesk_nhl_team_games_v2' && [...Array(17)].every((_, i) => man.seasons[2011 + i]), Object.keys(man.seasons || {}));
     const rows = TG.loadTeamGames([2026]);
     const byG = new Map(); for (const r of rows) { if (!byG.has(r.game_id)) byG.set(r.game_id, []); byG.get(r.game_id).push(r); }
     chk('data: two rows per game, each the mirror of the other', [...byG.values()].every((a) => a.length === 2 && a[0].gf === a[1].ga && a[0].toi_pp === a[1].toi_sh));
     chk('data: no duplicate game ids in a season', byG.size === rows.length / 2);
-    chk('data: every row knows when its facts existed and which source and model made it', rows.every((r) => r.known_at && r.src && /^xg_for_2026$/.test(r.xg_model)));
+    chk('data: known_at is blank (never backdated), the availability assumption is explicit, every row is RETRO', rows.every((r) => r.known_at === '' && r.assumed_available_at && Date.parse(r.assumed_available_at) > Date.parse(r.start_utc || r.date) && r.pit === 'RETRO'));
+    chk('data: every row names its source file and the xG model that scored it', rows.every((r) => r.src && /^xg_for_2026$/.test(r.xg_model)));
+    chk('data: the manifest states the temporal rule', man.temporal && /never backdated/.test(man.temporal.known_at) && /RETRO/.test(man.temporal.pit));
     chk('data: xG was scored by a model fitted only on earlier seasons', (() => { const m = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'xg', 'models', 'xg_for_2026.json'), 'utf8')); return m.train_seasons.every((s) => s < 2026); })());
     const wf = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'validation', 'nhl_walkforward.json'), 'utf8'));
     chk('record: zero leakage violations over every scored game', wf.leakage.violations === 0 && wf.leakage.checked > 15000, wf.leakage);
     chk('record: the market is NOT_TESTED without a closing archive', !fs.existsSync(path.join(ROOT, 'hockey', 'market', 'closing')) ? Object.values(wf.markets).every((m) => m.market_status === 'NOT_TESTED') : true);
     chk('record: the chosen model was chosen on the selection window', wf.selection && wf.selection.ll[wf.selection.chosen] <= wf.selection.ll.goals_only);
+    chk('record: it says it is retrospective, with its availability assumption', wf.data.temporal && wf.data.temporal.point_in_time === 'RETROSPECTIVE' && /start \+ 4 h/.test(wf.leakage.basis));
+    chk('record: lineup candidates are scored and reported, and a challenger was adopted only by the selection rule', wf.lineups && wf.lineups.available === true && wf.lineups.coverage.with_box_score === wf.lineups.coverage.scored_games && (wf.selection.chosen !== 'xg_lineup_projected' || wf.selection.ll.xg_lineup_projected <= wf.selection.ll.xg_no_goalie - 0.001) && wf.comparisons.xg_lineup_confirmed_vs_xg_no_goalie);
     const slate = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'slate.json'), 'utf8'));
     chk('slate: value claims are disabled and say why', slate.readiness.value_claims.state === 'DISABLED' && slate.readiness.value_claims.reasons.length > 0);
     chk('slate: every game has prices, goalies, evidence, uncertainty and invalidators', slate.games.every((g) => g.prices.moneyline && g.prices.puck_line && g.prices.total && g.goalies && g.evidence && g.uncertainty && g.invalidators.length));
+    chk('slate: every game says what it knows about lineups, and never calls a projection confirmed', slate.games.every((g) => g.lineups && /^(PROJECTED_FROM_LAST_GAME|UNKNOWN)$/.test(g.lineups.state) && Array.isArray(g.lineups.home.regulars_absent)));
   }
 
   failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 400) : '')));

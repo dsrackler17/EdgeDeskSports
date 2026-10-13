@@ -2,7 +2,7 @@
  "schema": "edgedesk_nhl_slate_v1",
  "sport": "NHL",
  "sport_key": "icehockey_nhl",
- "generated_at": "2026-10-13T05:17:32.985Z",
+ "generated_at": "2026-10-13T05:54:50.803Z",
  "horizon_hours": 72,
  "model": {
   "id": "edgedesk_nhl_v1:xg_no_goalie",
@@ -11,8 +11,8 @@
    2022,
    2026
   ],
-  "params_generated_at": "2026-10-13T05:17:32.649Z",
-  "validation_generated_at": "2026-10-13T05:17:32.649Z",
+  "params_generated_at": "2026-10-13T05:48:41.472Z",
+  "validation_generated_at": "2026-10-13T05:48:41.472Z",
   "pair_calibration": {
    "a": 0.5,
    "b": 0.9,
@@ -23,19 +23,24 @@
  },
  "readiness": {
   "data": {
-   "state": "FRESH",
+   "state": "STALE",
    "latest_completed_game": "2026-10-11",
-   "hours_since_latest_result": 26.29,
+   "hours_since_latest_result": null,
    "results_lagging": [],
    "schedule": {
     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_2027.parquet",
-    "fetched_at": "2026-10-13T04:04:49.471Z",
+    "fetched_at": "2026-10-13T05:54:20.840Z",
     "ok": true,
-    "sha256": null
+    "sha256": "76d36a20f834930e445dbe194d903243732bba885ecf2a47b9fbab0ccb4dc7f5"
    },
    "nhl_api": {
     "used": false,
-    "reason": "offline run"
+    "fetched": 0,
+    "updated": 0,
+    "error": {
+     "code": "NETWORK",
+     "message": "fetch failed"
+    }
    }
   },
   "model": {
@@ -151,9 +156,43 @@
     ],
     "a_better": true,
     "b_better": false
+   },
+   "xg_lineup_projected_vs_xg_no_goalie": {
+    "n": 7945,
+    "blocks": 1288,
+    "mean_diff": -0.000183,
+    "ci95": [
+     -0.000909,
+     0.000567
+    ],
+    "a_better": false,
+    "b_better": false
+   },
+   "xg_lineup_confirmed_vs_xg_no_goalie": {
+    "n": 7945,
+    "blocks": 1288,
+    "mean_diff": -0.000901,
+    "ci95": [
+     -0.001698,
+     -0.000058
+    ],
+    "a_better": true,
+    "b_better": false
+   },
+   "xg_all_confirmed_vs_xg_goalie_confirmed": {
+    "n": 7945,
+    "blocks": 1288,
+    "mean_diff": -0.000878,
+    "ci95": [
+     -0.001669,
+     -0.000044
+    ],
+    "a_better": true,
+    "b_better": false
    }
   },
   "leakage": {
+   "basis": "inputs dated by assumed_available_at (scheduled start + 4 h); the source never recorded when it first published each game",
    "checked": 17236,
    "violations": 0,
    "examples": [],
@@ -301,9 +340,9 @@
     "p_shootout": 0.0693
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.52,
+    "moneyline_sd_pp": 1.57,
     "total_sd_goals": 0.02,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.5,
@@ -393,6 +432,70 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": -0.0372,
+     "regulars_absent": [
+      {
+       "player_id": 8482762,
+       "name": "S. Edvinsson",
+       "toi_per_game": "20:09",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8474141,
+       "name": "P. Kane",
+       "toi_per_game": "17:51",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8477456,
+       "name": "J. Compher",
+       "toi_per_game": "16:31",
+       "dressed_in_last_10": "7/10",
+       "absent_last_games": 3,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": 0.0383,
+     "regulars_absent": [
+      {
+       "player_id": 8483495,
+       "name": "S. Nemec",
+       "toi_per_game": "18:39",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 4,
+       "reading": "absent from the most recent game(s)"
+      },
+      {
+       "player_id": 8477015,
+       "name": "C. Brown",
+       "toi_per_game": "18:07",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 4,
+       "reading": "absent from the most recent game(s)"
+      },
+      {
+       "player_id": 8480192,
+       "name": "J. Kovacevic",
+       "toi_per_game": "17:35",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 4,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.5323,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 0.9832,
@@ -435,7 +538,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ]
@@ -577,9 +680,9 @@
     "p_shootout": 0.0689
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.89,
+    "moneyline_sd_pp": 1.51,
     "total_sd_goals": 0.02,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.5,
@@ -669,6 +772,78 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": -0.0136,
+     "regulars_absent": [
+      {
+       "player_id": 8478500,
+       "name": "I. Provorov",
+       "toi_per_game": "21:45",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 4,
+       "reading": "absent from the most recent game(s)"
+      },
+      {
+       "player_id": 8480893,
+       "name": "K. Marchenko",
+       "toi_per_game": "18:10",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 4,
+       "reading": "absent from the most recent game(s)"
+      },
+      {
+       "player_id": 8479371,
+       "name": "D. Fabbro",
+       "toi_per_game": "17:04",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 4,
+       "reading": "absent from the most recent game(s)"
+      },
+      {
+       "player_id": 8478975,
+       "name": "M. Marchment",
+       "toi_per_game": "16:09",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 4,
+       "reading": "absent from the most recent game(s)"
+      },
+      {
+       "player_id": 8476432,
+       "name": "B. Jenner",
+       "toi_per_game": "15:01",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 4,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": 0.0485,
+     "regulars_absent": [
+      {
+       "player_id": 8482131,
+       "name": "D. Sebrango",
+       "toi_per_game": "16:49",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8482107,
+       "name": "M. Benning",
+       "toi_per_game": "15:55",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.5331,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 1.0244,
@@ -711,7 +886,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ]
@@ -853,9 +1028,9 @@
     "p_shootout": 0.0653
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.64,
+    "moneyline_sd_pp": 0.88,
     "total_sd_goals": 0.04,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.5,
@@ -945,6 +1120,54 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": 0.0029,
+     "regulars_absent": [
+      {
+       "player_id": 8484984,
+       "name": "I. Demidov",
+       "toi_per_game": "16:01",
+       "dressed_in_last_10": "7/10",
+       "absent_last_games": 3,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": -0.0398,
+     "regulars_absent": [
+      {
+       "player_id": 8481524,
+       "name": "B. Byram",
+       "toi_per_game": "21:06",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8477949,
+       "name": "A. Tuch",
+       "toi_per_game": "18:51",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8479982,
+       "name": "C. Timmins",
+       "toi_per_game": "15:43",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.5807,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 1.0215,
@@ -987,7 +1210,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ]
@@ -1129,9 +1352,9 @@
     "p_shootout": 0.0646
    },
    "uncertainty": {
-    "moneyline_sd_pp": 1.21,
+    "moneyline_sd_pp": 1.13,
     "total_sd_goals": 0.06,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.6,
@@ -1221,6 +1444,62 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": -0.0326,
+     "regulars_absent": [
+      {
+       "player_id": 8473533,
+       "name": "J. Staal",
+       "toi_per_game": "15:59",
+       "dressed_in_last_10": "9/10",
+       "absent_last_games": 1,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": -0.0148,
+     "regulars_absent": [
+      {
+       "player_id": 8478911,
+       "name": "M. Roy",
+       "toi_per_game": "18:43",
+       "dressed_in_last_10": "7/10",
+       "absent_last_games": 3,
+       "reading": "absent from the most recent game(s)"
+      },
+      {
+       "player_id": 8477845,
+       "name": "T. van Riemsdyk",
+       "toi_per_game": "17:24",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8479400,
+       "name": "P. Dubois",
+       "toi_per_game": "16:01",
+       "dressed_in_last_10": "8/10",
+       "absent_last_games": 1,
+       "reading": "absent from the most recent game(s)"
+      },
+      {
+       "player_id": 8481580,
+       "name": "C. McMichael",
+       "toi_per_game": "15:51",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.6109,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 1.1507,
@@ -1263,7 +1542,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   },
@@ -1404,9 +1683,9 @@
     "p_shootout": 0.0722
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.89,
+    "moneyline_sd_pp": 1.14,
     "total_sd_goals": 0.02,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.5,
@@ -1496,6 +1775,54 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": -0.0387,
+     "regulars_absent": [
+      {
+       "player_id": 8477499,
+       "name": "R. Ristolainen",
+       "toi_per_game": "21:18",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 4,
+       "reading": "absent from the most recent game(s)"
+      },
+      {
+       "player_id": 8481546,
+       "name": "C. York",
+       "toi_per_game": "20:59",
+       "dressed_in_last_10": "8/10",
+       "absent_last_games": 2,
+       "reading": "absent from the most recent game(s)"
+      },
+      {
+       "player_id": 8478439,
+       "name": "T. Konecny",
+       "toi_per_game": "16:33",
+       "dressed_in_last_10": "8/10",
+       "absent_last_games": 2,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": -0.0005,
+     "regulars_absent": [
+      {
+       "player_id": 8479324,
+       "name": "R. Lindgren",
+       "toi_per_game": "15:57",
+       "dressed_in_last_10": "7/10",
+       "absent_last_games": 2,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.5031,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 0.9399,
@@ -1538,7 +1865,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   },
@@ -1679,9 +2006,9 @@
     "p_shootout": 0.0708
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.85,
+    "moneyline_sd_pp": 0.81,
     "total_sd_goals": 0.03,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.4,
@@ -1771,6 +2098,45 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": 0.0033,
+     "regulars_absent": []
+    },
+    "away": {
+     "projected_delta": -0.0061,
+     "regulars_absent": [
+      {
+       "player_id": 8478178,
+       "name": "D. Raddysh",
+       "toi_per_game": "21:36",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8482929,
+       "name": "E. Lilleberg",
+       "toi_per_game": "16:32",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 3,
+       "reading": "absent from the most recent game(s)"
+      },
+      {
+       "player_id": 8476826,
+       "name": "Y. Gourde",
+       "toi_per_game": "15:10",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.4754,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 0.954,
@@ -1813,7 +2179,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   },
@@ -1954,9 +2320,9 @@
     "p_shootout": 0.0733
    },
    "uncertainty": {
-    "moneyline_sd_pp": 1.1,
+    "moneyline_sd_pp": 1.02,
     "total_sd_goals": 0.06,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.5,
@@ -2046,6 +2412,29 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": -0.0034,
+     "regulars_absent": []
+    },
+    "away": {
+     "projected_delta": -0.0031,
+     "regulars_absent": [
+      {
+       "player_id": 8482733,
+       "name": "L. Mailloux",
+       "toi_per_game": "20:03",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.5214,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 1.0121,
@@ -2088,7 +2477,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ]
@@ -2230,9 +2619,9 @@
     "p_shootout": 0.0651
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.78,
+    "moneyline_sd_pp": 0.72,
     "total_sd_goals": 0.04,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.6,
@@ -2322,6 +2711,46 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": -0.0034,
+     "regulars_absent": [
+      {
+       "player_id": 8478445,
+       "name": "M. Barzal",
+       "toi_per_game": "19:10",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8477369,
+       "name": "C. Soucy",
+       "toi_per_game": "15:47",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": -0.0136,
+     "regulars_absent": [
+      {
+       "player_id": 8476467,
+       "name": "J. Oleksiak",
+       "toi_per_game": "15:34",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 1,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.6161,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 0.999,
@@ -2364,7 +2793,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   },
@@ -2505,9 +2934,9 @@
     "p_shootout": 0.0638
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.96,
+    "moneyline_sd_pp": 0.98,
     "total_sd_goals": 0.03,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.3,
@@ -2597,6 +3026,38 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": 0.0066,
+     "regulars_absent": [
+      {
+       "player_id": 8483493,
+       "name": "F. Nazar",
+       "toi_per_game": "16:53",
+       "dressed_in_last_10": "9/10",
+       "absent_last_games": 1,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": -0.0183,
+     "regulars_absent": [
+      {
+       "player_id": 8477845,
+       "name": "T. van Riemsdyk",
+       "toi_per_game": "17:24",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 1,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.4034,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 0.9107,
@@ -2639,7 +3100,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   },
@@ -2780,9 +3241,9 @@
     "p_shootout": 0.0712
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.65,
+    "moneyline_sd_pp": 0.61,
     "total_sd_goals": 0.02,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.5,
@@ -2872,6 +3333,54 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": -0.01,
+     "regulars_absent": [
+      {
+       "player_id": 8477504,
+       "name": "J. Morrissey",
+       "toi_per_game": "22:11",
+       "dressed_in_last_10": "9/10",
+       "absent_last_games": 1,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": -0.0093,
+     "regulars_absent": [
+      {
+       "player_id": 8482122,
+       "name": "B. Faber",
+       "toi_per_game": "25:09",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8475692,
+       "name": "M. Zuccarello",
+       "toi_per_game": "16:48",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8478136,
+       "name": "J. Middleton",
+       "toi_per_game": "15:49",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.5267,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 0.9611,
@@ -2914,7 +3423,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ]
@@ -3056,9 +3565,9 @@
     "p_shootout": 0.0696
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.41,
+    "moneyline_sd_pp": 0.58,
     "total_sd_goals": 0.02,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.4,
@@ -3148,6 +3657,37 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": -0.0005,
+     "regulars_absent": [
+      {
+       "player_id": 8475168,
+       "name": "M. Duchene",
+       "toi_per_game": "17:26",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8482145,
+       "name": "M. Bourque",
+       "toi_per_game": "16:09",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": 0.0235,
+     "regulars_absent": []
+    },
+    "p_home_lineup_variant": 0.4632,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 0.9922,
@@ -3190,7 +3730,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   },
@@ -3331,9 +3871,9 @@
     "p_shootout": 0.0702
    },
    "uncertainty": {
-    "moneyline_sd_pp": 1.46,
+    "moneyline_sd_pp": 1.35,
     "total_sd_goals": 0.02,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.4,
@@ -3423,6 +3963,29 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": -0.0066,
+     "regulars_absent": [
+      {
+       "player_id": 8482146,
+       "name": "L. Evangelista",
+       "toi_per_game": "15:12",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": -0.0088,
+     "regulars_absent": []
+    },
+    "p_home_lineup_variant": 0.4811,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 0.9811,
@@ -3465,7 +4028,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ]
@@ -3607,9 +4170,9 @@
     "p_shootout": 0.064
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.88,
+    "moneyline_sd_pp": 0.82,
     "total_sd_goals": 0.02,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.6,
@@ -3699,6 +4262,29 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": 0.0041,
+     "regulars_absent": []
+    },
+    "away": {
+     "projected_delta": 0.0224,
+     "regulars_absent": [
+      {
+       "player_id": 8475166,
+       "name": "J. Tavares",
+       "toi_per_game": "17:28",
+       "dressed_in_last_10": "9/10",
+       "absent_last_games": 1,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.5911,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 1.0709,
@@ -3741,7 +4327,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   },
@@ -3882,9 +4468,9 @@
     "p_shootout": 0.0657
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.22,
+    "moneyline_sd_pp": 0.84,
     "total_sd_goals": 0.03,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.5,
@@ -3974,6 +4560,62 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": -0.0454,
+     "regulars_absent": [
+      {
+       "player_id": 8476885,
+       "name": "J. Trouba",
+       "toi_per_game": "21:48",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8474590,
+       "name": "J. Carlson",
+       "toi_per_game": "21:10",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8478873,
+       "name": "T. Terry",
+       "toi_per_game": "17:08",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": -0.0054,
+     "regulars_absent": [
+      {
+       "player_id": 8476874,
+       "name": "O. Maatta",
+       "toi_per_game": "20:36",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8484150,
+       "name": "H. Brzustewicz",
+       "toi_per_game": "16:53",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.5661,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 1.0454,
@@ -4016,7 +4658,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   },
@@ -4157,9 +4799,9 @@
     "p_shootout": 0.069
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.45,
+    "moneyline_sd_pp": 0.46,
     "total_sd_goals": 0.02,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.4,
@@ -4249,6 +4891,70 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": -0.0134,
+     "regulars_absent": [
+      {
+       "player_id": 8471685,
+       "name": "A. Kopitar",
+       "toi_per_game": "18:40",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 4,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": -0.0251,
+     "regulars_absent": [
+      {
+       "player_id": 8477498,
+       "name": "D. Nurse",
+       "toi_per_game": "20:36",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8475786,
+       "name": "Z. Hyman",
+       "toi_per_game": "17:58",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 4,
+       "reading": "absent from the most recent game(s)"
+      },
+      {
+       "player_id": 8476454,
+       "name": "R. Nugent-Hopkins",
+       "toi_per_game": "17:19",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8483512,
+       "name": "M. Savoie",
+       "toi_per_game": "16:02",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8478013,
+       "name": "J. Walman",
+       "toi_per_game": "15:32",
+       "dressed_in_last_10": "9/10",
+       "absent_last_games": 1,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.4875,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 0.9682,
@@ -4291,7 +4997,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   },
@@ -4432,9 +5138,9 @@
     "p_shootout": 0.0674
    },
    "uncertainty": {
-    "moneyline_sd_pp": 1.06,
+    "moneyline_sd_pp": 1.16,
     "total_sd_goals": 0.03,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.4,
@@ -4524,6 +5230,54 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": 0.0163,
+     "regulars_absent": [
+      {
+       "player_id": 8479983,
+       "name": "M. Ferraro",
+       "toi_per_game": "19:27",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8482166,
+       "name": "S. Mukhamadullin",
+       "toi_per_game": "15:55",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8482667,
+       "name": "W. Eklund",
+       "toi_per_game": "15:24",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": -0.0132,
+     "regulars_absent": [
+      {
+       "player_id": 8481219,
+       "name": "J. Aspirot",
+       "toi_per_game": "16:03",
+       "dressed_in_last_10": "7/10",
+       "absent_last_games": 3,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.4633,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 0.9302,
@@ -4566,7 +5320,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   },
@@ -4707,9 +5461,9 @@
     "p_shootout": 0.0662
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.99,
+    "moneyline_sd_pp": 0.96,
     "total_sd_goals": 0.06,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.5,
@@ -4799,6 +5553,62 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": -0.0148,
+     "regulars_absent": [
+      {
+       "player_id": 8478911,
+       "name": "M. Roy",
+       "toi_per_game": "18:43",
+       "dressed_in_last_10": "7/10",
+       "absent_last_games": 3,
+       "reading": "absent from the most recent game(s)"
+      },
+      {
+       "player_id": 8477845,
+       "name": "T. van Riemsdyk",
+       "toi_per_game": "17:24",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8479400,
+       "name": "P. Dubois",
+       "toi_per_game": "16:01",
+       "dressed_in_last_10": "8/10",
+       "absent_last_games": 1,
+       "reading": "absent from the most recent game(s)"
+      },
+      {
+       "player_id": 8481580,
+       "name": "C. McMichael",
+       "toi_per_game": "15:51",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": 0.0029,
+     "regulars_absent": [
+      {
+       "player_id": 8484984,
+       "name": "I. Demidov",
+       "toi_per_game": "16:01",
+       "dressed_in_last_10": "7/10",
+       "absent_last_games": 3,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.5318,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 1.0393,
@@ -4841,7 +5651,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ]
@@ -4983,9 +5793,9 @@
     "p_shootout": 0.0688
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.43,
+    "moneyline_sd_pp": 0.59,
     "total_sd_goals": 0.02,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.5,
@@ -5075,6 +5885,37 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": 0.0235,
+     "regulars_absent": []
+    },
+    "away": {
+     "projected_delta": -0.0005,
+     "regulars_absent": [
+      {
+       "player_id": 8475168,
+       "name": "M. Duchene",
+       "toi_per_game": "17:26",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8482145,
+       "name": "M. Bourque",
+       "toi_per_game": "16:09",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.5881,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 1.1036,
@@ -5117,7 +5958,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ]
@@ -5259,9 +6100,9 @@
     "p_shootout": 0.0654
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.21,
+    "moneyline_sd_pp": 1.11,
     "total_sd_goals": 0.02,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.4,
@@ -5351,6 +6192,54 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": 0.0224,
+     "regulars_absent": [
+      {
+       "player_id": 8475166,
+       "name": "J. Tavares",
+       "toi_per_game": "17:28",
+       "dressed_in_last_10": "9/10",
+       "absent_last_games": 1,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": -0.0398,
+     "regulars_absent": [
+      {
+       "player_id": 8481524,
+       "name": "B. Byram",
+       "toi_per_game": "21:06",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8477949,
+       "name": "A. Tuch",
+       "toi_per_game": "18:51",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8479982,
+       "name": "C. Timmins",
+       "toi_per_game": "15:43",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.5026,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 0.967,
@@ -5393,7 +6282,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   },
@@ -5534,9 +6423,9 @@
     "p_shootout": 0.07
    },
    "uncertainty": {
-    "moneyline_sd_pp": 1.2,
+    "moneyline_sd_pp": 1.12,
     "total_sd_goals": 0.04,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.5,
@@ -5626,6 +6515,37 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": -0.0034,
+     "regulars_absent": []
+    },
+    "away": {
+     "projected_delta": -0.0034,
+     "regulars_absent": [
+      {
+       "player_id": 8478445,
+       "name": "M. Barzal",
+       "toi_per_game": "19:10",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8477369,
+       "name": "C. Soucy",
+       "toi_per_game": "15:47",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.5935,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 1.0121,
@@ -5668,7 +6588,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   },
@@ -5809,9 +6729,9 @@
     "p_shootout": 0.0664
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.83,
+    "moneyline_sd_pp": 0.79,
     "total_sd_goals": 0.02,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.6,
@@ -5901,6 +6821,54 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": -0.0061,
+     "regulars_absent": [
+      {
+       "player_id": 8478178,
+       "name": "D. Raddysh",
+       "toi_per_game": "21:36",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8482929,
+       "name": "E. Lilleberg",
+       "toi_per_game": "16:32",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 3,
+       "reading": "absent from the most recent game(s)"
+      },
+      {
+       "player_id": 8476826,
+       "name": "Y. Gourde",
+       "toi_per_game": "15:10",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": -0.0005,
+     "regulars_absent": [
+      {
+       "player_id": 8479324,
+       "name": "R. Lindgren",
+       "toi_per_game": "15:57",
+       "dressed_in_last_10": "7/10",
+       "absent_last_games": 2,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.6199,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 1.0426,
@@ -5943,7 +6911,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   },
@@ -6084,9 +7052,9 @@
     "p_shootout": 0.0628
    },
    "uncertainty": {
-    "moneyline_sd_pp": 1.13,
+    "moneyline_sd_pp": 1.5,
     "total_sd_goals": 0.03,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.6,
@@ -6176,6 +7144,46 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": 0.0485,
+     "regulars_absent": [
+      {
+       "player_id": 8482131,
+       "name": "D. Sebrango",
+       "toi_per_game": "16:49",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8482107,
+       "name": "M. Benning",
+       "toi_per_game": "15:55",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": -0.0136,
+     "regulars_absent": [
+      {
+       "player_id": 8476467,
+       "name": "J. Oleksiak",
+       "toi_per_game": "15:34",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 1,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.6782,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 1.0094,
@@ -6218,7 +7226,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   },
@@ -6359,9 +7367,9 @@
     "p_shootout": 0.0713
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.89,
+    "moneyline_sd_pp": 1.15,
     "total_sd_goals": 0.02,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.4,
@@ -6451,6 +7459,45 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": 0.0383,
+     "regulars_absent": [
+      {
+       "player_id": 8483495,
+       "name": "S. Nemec",
+       "toi_per_game": "18:39",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 4,
+       "reading": "absent from the most recent game(s)"
+      },
+      {
+       "player_id": 8477015,
+       "name": "C. Brown",
+       "toi_per_game": "18:07",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 4,
+       "reading": "absent from the most recent game(s)"
+      },
+      {
+       "player_id": 8480192,
+       "name": "J. Kovacevic",
+       "toi_per_game": "17:35",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 4,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": 0.0033,
+     "regulars_absent": []
+    },
+    "p_home_lineup_variant": 0.5165,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 1.0078,
@@ -6493,7 +7540,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   },
@@ -6634,9 +7681,9 @@
     "p_shootout": 0.0723
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.27,
+    "moneyline_sd_pp": 0.26,
     "total_sd_goals": 0.01,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.5,
@@ -6726,6 +7773,70 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": -0.0372,
+     "regulars_absent": [
+      {
+       "player_id": 8482762,
+       "name": "S. Edvinsson",
+       "toi_per_game": "20:09",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8474141,
+       "name": "P. Kane",
+       "toi_per_game": "17:51",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8477456,
+       "name": "J. Compher",
+       "toi_per_game": "16:31",
+       "dressed_in_last_10": "7/10",
+       "absent_last_games": 3,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": -0.0387,
+     "regulars_absent": [
+      {
+       "player_id": 8477499,
+       "name": "R. Ristolainen",
+       "toi_per_game": "21:18",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 4,
+       "reading": "absent from the most recent game(s)"
+      },
+      {
+       "player_id": 8481546,
+       "name": "C. York",
+       "toi_per_game": "20:59",
+       "dressed_in_last_10": "8/10",
+       "absent_last_games": 2,
+       "reading": "absent from the most recent game(s)"
+      },
+      {
+       "player_id": 8478439,
+       "name": "T. Konecny",
+       "toi_per_game": "16:33",
+       "dressed_in_last_10": "8/10",
+       "absent_last_games": 2,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.5348,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 0.9832,
@@ -6768,7 +7879,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   },
@@ -6909,9 +8020,9 @@
     "p_shootout": 0.0693
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.77,
+    "moneyline_sd_pp": 0.76,
     "total_sd_goals": 0.03,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.4,
@@ -7001,6 +8112,38 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": 0.0066,
+     "regulars_absent": [
+      {
+       "player_id": 8483493,
+       "name": "F. Nazar",
+       "toi_per_game": "16:53",
+       "dressed_in_last_10": "9/10",
+       "absent_last_games": 1,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": -0.01,
+     "regulars_absent": [
+      {
+       "player_id": 8477504,
+       "name": "J. Morrissey",
+       "toi_per_game": "22:11",
+       "dressed_in_last_10": "9/10",
+       "absent_last_games": 1,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.4381,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 0.911,
@@ -7043,7 +8186,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   },
@@ -7184,9 +8327,9 @@
     "p_shootout": 0.0665
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.47,
+    "moneyline_sd_pp": 0.6,
     "total_sd_goals": 0.02,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.5,
@@ -7276,6 +8419,54 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": -0.0066,
+     "regulars_absent": [
+      {
+       "player_id": 8482146,
+       "name": "L. Evangelista",
+       "toi_per_game": "15:12",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": 0.0163,
+     "regulars_absent": [
+      {
+       "player_id": 8479983,
+       "name": "M. Ferraro",
+       "toi_per_game": "19:27",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8482166,
+       "name": "S. Mukhamadullin",
+       "toi_per_game": "15:55",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8482667,
+       "name": "W. Eklund",
+       "toi_per_game": "15:24",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.5566,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 0.9812,
@@ -7318,7 +8509,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   },
@@ -7459,9 +8650,9 @@
     "p_shootout": 0.0711
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.95,
+    "moneyline_sd_pp": 0.91,
     "total_sd_goals": 0.05,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.5,
@@ -7551,6 +8742,54 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": -0.0093,
+     "regulars_absent": [
+      {
+       "player_id": 8482122,
+       "name": "B. Faber",
+       "toi_per_game": "25:09",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8475692,
+       "name": "M. Zuccarello",
+       "toi_per_game": "16:48",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8478136,
+       "name": "J. Middleton",
+       "toi_per_game": "15:49",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": -0.0031,
+     "regulars_absent": [
+      {
+       "player_id": 8482733,
+       "name": "L. Mailloux",
+       "toi_per_game": "20:03",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.5615,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 0.9819,
@@ -7593,7 +8832,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   },
@@ -7734,9 +8973,9 @@
     "p_shootout": 0.0649
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.43,
+    "moneyline_sd_pp": 0.71,
     "total_sd_goals": 0.03,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.5,
@@ -7826,6 +9065,61 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": -0.0251,
+     "regulars_absent": [
+      {
+       "player_id": 8477498,
+       "name": "D. Nurse",
+       "toi_per_game": "20:36",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8475786,
+       "name": "Z. Hyman",
+       "toi_per_game": "17:58",
+       "dressed_in_last_10": "6/10",
+       "absent_last_games": 4,
+       "reading": "absent from the most recent game(s)"
+      },
+      {
+       "player_id": 8476454,
+       "name": "R. Nugent-Hopkins",
+       "toi_per_game": "17:19",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8483512,
+       "name": "M. Savoie",
+       "toi_per_game": "16:02",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8478013,
+       "name": "J. Walman",
+       "toi_per_game": "15:32",
+       "dressed_in_last_10": "9/10",
+       "absent_last_games": 1,
+       "reading": "absent from the most recent game(s)"
+      }
+     ]
+    },
+    "away": {
+     "projected_delta": 0.0041,
+     "regulars_absent": []
+    },
+    "p_home_lineup_variant": 0.5113,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 1.0505,
@@ -7868,7 +9162,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   },
@@ -8009,9 +9303,9 @@
     "p_shootout": 0.0648
    },
    "uncertainty": {
-    "moneyline_sd_pp": 0.85,
+    "moneyline_sd_pp": 0.78,
     "total_sd_goals": 0.02,
-    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.",
+    "basis": "spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club's last lineup). A sensitivity, not a confidence interval.",
     "calibration_bin": {
      "range": [
       0.6,
@@ -8101,6 +9395,37 @@
     ],
     "confirmed_source": null
    },
+   "lineups": {
+    "state": "PROJECTED_FROM_LAST_GAME",
+    "basis": "each club's previous game's dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.",
+    "home": {
+     "projected_delta": -0.0088,
+     "regulars_absent": []
+    },
+    "away": {
+     "projected_delta": -0.0054,
+     "regulars_absent": [
+      {
+       "player_id": 8476874,
+       "name": "O. Maatta",
+       "toi_per_game": "20:36",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      },
+      {
+       "player_id": 8484150,
+       "name": "H. Brzustewicz",
+       "toi_per_game": "16:53",
+       "dressed_in_last_10": "5/10",
+       "absent_last_games": 5,
+       "reading": "a long absence: injury or no longer on the roster (no feed says which)"
+      }
+     ]
+    },
+    "p_home_lineup_variant": 0.671,
+    "note": "The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar; confirmed lineups changed held-out log loss by -0.000901 (95% CI -0.001698 to -0.000058)."
+   },
    "evidence": {
     "home": {
      "ev_xg_for_vs_league": 1.0236,
@@ -8143,7 +9468,7 @@
    },
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ]
   }

@@ -1,0 +1,284 @@
+{
+  "family": "cricket",
+  "table": "deliveries",
+  "grain": "one ball",
+  "priority": "P1",
+  "default_source": "authorized ball-by-ball feed",
+  "definition_status": "canonical_contract_not_claim_of_provider_coverage",
+  "keys": [
+    "record_id",
+    "revision"
+  ],
+  "columns": [
+    {
+      "field": "record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "event_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "entity_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "source_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Source registry identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "source_record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Original provider record identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "occurred_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "known_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "retrieved_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "revision",
+      "type": "integer",
+      "unit": "none",
+      "description": "Monotone version of this source record.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "quality_status",
+      "type": "text",
+      "unit": "none",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "batter_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Batter id.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "non_striker_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Non striker id.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "bowler_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Bowler id.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "innings",
+      "type": "integer",
+      "unit": "count",
+      "description": "Innings.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "over",
+      "type": "integer",
+      "unit": "count",
+      "description": "Over.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "ball",
+      "type": "integer",
+      "unit": "count",
+      "description": "Ball.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "runs_batter",
+      "type": "integer",
+      "unit": "count",
+      "description": "Runs batter.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "extras",
+      "type": "integer",
+      "unit": "count",
+      "description": "Extras.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "wickets_before",
+      "type": "integer",
+      "unit": "count",
+      "description": "Wickets before.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "runs_before",
+      "type": "integer",
+      "unit": "count",
+      "description": "Runs before.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "balls_remaining",
+      "type": "integer",
+      "unit": "count",
+      "description": "Balls remaining.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "format",
+      "type": "text",
+      "unit": "category",
+      "description": "Format.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "dismissal_type",
+      "type": "text",
+      "unit": "category",
+      "description": "Dismissal type.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "bowling_type",
+      "type": "text",
+      "unit": "category",
+      "description": "Bowling type.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "pitch_type",
+      "type": "text",
+      "unit": "category",
+      "description": "Pitch type.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "legal_ball",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Legal ball.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "wicket",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Wicket.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "wide",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Wide.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "no_ball",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "No ball.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "ball_speed",
+      "type": "number",
+      "unit": "mph",
+      "description": "Ball speed.",
+      "priority": "P1",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    }
+  ]
+}

@@ -31,6 +31,11 @@ const FEATURES = {
   goalie_conf: (f) => (f.opp_goalie_act != null ? f.opp_goalie_act : f.opp_goalie_proj),
   b2b: (f) => f.b2b,
   b2b_opp: (f) => f.b2b_opp,
+  /* lineup availability (lineups.js): ln(tonight's lineup value / the team's typical), 0 when unknown */
+  lu_own_proj: (f) => f.lu_own_proj || 0,
+  lu_opp_proj: (f) => f.lu_opp_proj || 0,
+  lu_own_conf: (f) => (f.lu_own_conf != null ? f.lu_own_conf : f.lu_own_proj || 0),
+  lu_opp_conf: (f) => (f.lu_opp_conf != null ? f.lu_opp_conf : f.lu_opp_proj || 0),
 };
 
 /* the candidates (fixed before scoring) */
@@ -40,7 +45,13 @@ const CANDIDATES = {
   xg_no_goalie: ['home', 'ev_off', 'ev_def_opp', 'g_off', 'g_def_opp', 'pp_off', 'pk_def_opp', 'pp_draw', 'pk_take_opp', 'fin', 'b2b', 'b2b_opp'],
   xg_goalie_projected: ['home', 'ev_off', 'ev_def_opp', 'g_off', 'g_def_opp', 'pp_off', 'pk_def_opp', 'pp_draw', 'pk_take_opp', 'fin', 'goalie_proj', 'b2b', 'b2b_opp'],
   xg_goalie_confirmed: ['home', 'ev_off', 'ev_def_opp', 'g_off', 'g_def_opp', 'pp_off', 'pk_def_opp', 'pp_draw', 'pk_take_opp', 'fin', 'goalie_conf', 'b2b', 'b2b_opp'],
+  /* added 2026-10-13 with the data pack's P0 lineup item, after the confirmation
+     window had been read for the five above; the selection rule is unchanged */
+  xg_lineup_projected: ['home', 'ev_off', 'ev_def_opp', 'g_off', 'g_def_opp', 'pp_off', 'pk_def_opp', 'pp_draw', 'pk_take_opp', 'fin', 'b2b', 'b2b_opp', 'lu_own_proj', 'lu_opp_proj'],
+  xg_lineup_confirmed: ['home', 'ev_off', 'ev_def_opp', 'g_off', 'g_def_opp', 'pp_off', 'pk_def_opp', 'pp_draw', 'pk_take_opp', 'fin', 'b2b', 'b2b_opp', 'lu_own_conf', 'lu_opp_conf'],
+  xg_all_confirmed: ['home', 'ev_off', 'ev_def_opp', 'g_off', 'g_def_opp', 'pp_off', 'pk_def_opp', 'pp_draw', 'pk_take_opp', 'fin', 'goalie_conf', 'b2b', 'b2b_opp', 'lu_own_conf', 'lu_opp_conf'],
 };
+const LINEUP_CANDIDATES = ['xg_lineup_projected', 'xg_lineup_confirmed', 'xg_all_confirmed'];
 
 function design(f, names) { const x = [1]; for (const n of names) x.push(FEATURES[n](f)); return x; }
 /* The league's running scoring level enters as an OFFSET (coefficient fixed at 1):
@@ -93,4 +104,4 @@ function applyPairCalibration(lh, la, cal) {
   return { lh: T * pi, la: T * (1 - pi) };
 }
 
-module.exports = { FEATURES, CANDIDATES, design, offset, fit, predict, ln, fitPairCalibration, applyPairCalibration };
+module.exports = { FEATURES, CANDIDATES, LINEUP_CANDIDATES, design, offset, fit, predict, ln, fitPairCalibration, applyPairCalibration };

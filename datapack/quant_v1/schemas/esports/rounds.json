@@ -1,0 +1,275 @@
+{
+  "family": "esports",
+  "table": "rounds",
+  "grain": "one team map or round with title-defined rules",
+  "priority": "P2",
+  "default_source": "licensed title-specific feed",
+  "definition_status": "canonical_contract_not_claim_of_provider_coverage",
+  "keys": [
+    "record_id",
+    "revision"
+  ],
+  "columns": [
+    {
+      "field": "record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "event_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "entity_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "source_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Source registry identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "source_record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Original provider record identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "occurred_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "known_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "retrieved_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "revision",
+      "type": "integer",
+      "unit": "none",
+      "description": "Monotone version of this source record.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "quality_status",
+      "type": "text",
+      "unit": "none",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "team_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Team id.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "opponent_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Opponent id.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "map_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Map id.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "player_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Player id.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "game_title",
+      "type": "text",
+      "unit": "category",
+      "description": "Game title.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "patch",
+      "type": "text",
+      "unit": "category",
+      "description": "Patch.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "map",
+      "type": "text",
+      "unit": "category",
+      "description": "Map.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "side",
+      "type": "text",
+      "unit": "category",
+      "description": "Side.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "ruleset",
+      "type": "text",
+      "unit": "category",
+      "description": "Ruleset.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "round",
+      "type": "integer",
+      "unit": "count",
+      "description": "Round.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "kills",
+      "type": "integer",
+      "unit": "count",
+      "description": "Kills.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "deaths",
+      "type": "integer",
+      "unit": "count",
+      "description": "Deaths.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "assists",
+      "type": "integer",
+      "unit": "count",
+      "description": "Assists.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "economy",
+      "type": "integer",
+      "unit": "count",
+      "description": "Economy.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "objective_count",
+      "type": "integer",
+      "unit": "count",
+      "description": "Objective count.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "round_won",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Round won.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "pistol_round",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Pistol round.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "overtime",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Overtime.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "duration_seconds",
+      "type": "integer",
+      "unit": "seconds",
+      "description": "Duration seconds.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    }
+  ]
+}

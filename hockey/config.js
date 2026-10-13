@@ -26,6 +26,8 @@ const SOURCES = {
   pbp: (season) => `https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/pbp_lite/parquet/play_by_play_lite_${season}.parquet`,
   goalie_box: (season) => `https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_${season}.parquet`,
   game_info: (season) => `https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/game_info/parquet/game_info_${season}.parquet`,
+  /* per-game skater box scores: who dressed, and their time on ice (the lineup input) */
+  skater_box: (season) => `https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_${season}.parquet`,
   /* sportsdataverse/fastRhockey-nhl-raw: the season schedule (api-web club-schedule-season union), incl. future games */
   schedule: (season) => `https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_${season}.parquet`,
   /* the NHL's own public web API — primary for today's schedule and game state in CI */
@@ -56,7 +58,7 @@ const PATHS = {
 };
 
 const SCHEMA = {
-  team_games: 'edgedesk_nhl_team_games_v1',
+  team_games: 'edgedesk_nhl_team_games_v2',
   xg: 'edgedesk_nhl_xg_v1',
   validation: 'edgedesk_nhl_walkforward_v1',
   slate: 'edgedesk_nhl_slate_v1',
@@ -75,6 +77,7 @@ const PBP_COLUMNS = [
   'penalty_minutes', 'penalty_severity', 'xg',
 ];
 const GOALIE_COLUMNS = ['game_id', 'home_away', 'team_abbrev', 'player_id', 'player_name', 'starter', 'toi', 'shots_against', 'goals_against', 'decision'];
+const SKATER_COLUMNS = ['game_id', 'game_date', 'home_away', 'team_abbrev', 'player_id', 'player_name', 'position', 'toi'];
 const SCHEDULE_COLUMNS = ['game_id', 'season_full', 'game_type', 'game_date', 'game_time', 'home_team_abbr', 'away_team_abbr', 'home_score', 'away_score', 'game_state', 'venue'];
 
-module.exports = { ROOT, HOCKEY, FIRST_SEASON, CURRENT_SEASON, currentSeason, SOURCES, LICENSE, PATHS, SCHEMA, PBP_COLUMNS, GOALIE_COLUMNS, SCHEDULE_COLUMNS };
+module.exports = { ROOT, HOCKEY, FIRST_SEASON, CURRENT_SEASON, currentSeason, SOURCES, LICENSE, PATHS, SCHEMA, PBP_COLUMNS, GOALIE_COLUMNS, SKATER_COLUMNS, SCHEDULE_COLUMNS };

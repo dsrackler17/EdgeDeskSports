@@ -1,0 +1,282 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "baseball.pitcher_game",
+  "type": "object",
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "event_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "entity_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Source registry identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_record_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Original provider record identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "occurred_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "known_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "retrieved_at": {
+      "type": "string",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "description": "Monotone version of this source record.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "quality_status": {
+      "type": "string",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "outs_recorded": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Outs recorded.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "pitches": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Pitches.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "strikes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Strikes.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "batters_faced": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Batters faced.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "hits_allowed": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Hits allowed.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "home_runs_allowed": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Home runs allowed.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "walks": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Walks.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "strikeouts": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Strikeouts.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "earned_runs": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Earned runs.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "runs_allowed": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Runs allowed.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "ground_balls": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Ground balls.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "fly_balls": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Fly balls.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "inherited_runners": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Inherited runners.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "inherited_runners_scored": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Inherited runners scored.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "starter": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Starter.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "closer": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Closer.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "appearance_back_to_back": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Appearance back to back.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "fip": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Fip.",
+      "x-unit": "number",
+      "x-priority": "P0"
+    },
+    "x_fip": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "X fip.",
+      "x-unit": "number",
+      "x-priority": "P0"
+    },
+    "siera": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Siera.",
+      "x-unit": "number",
+      "x-priority": "P0"
+    },
+    "average_fastball_speed": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Average fastball speed.",
+      "x-unit": "mph",
+      "x-priority": "P0"
+    }
+  },
+  "required": [
+    "record_id",
+    "source_id",
+    "retrieved_at",
+    "revision",
+    "quality_status"
+  ],
+  "additionalProperties": false
+}

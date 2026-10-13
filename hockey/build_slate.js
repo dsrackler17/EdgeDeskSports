@@ -92,7 +92,14 @@ function build(o) {
   const seasons = []; for (let s = C.FIRST_SEASON; s <= C.CURRENT_SEASON; s++) seasons.push(s);
   const { rows, games } = W.loadGames(seasons);
   const P = W.seasonParams(rows, seasons, false);
-  const { state: rs } = W.ratingsPass(games, P, live.ratings);
+  /* lineups: this season's and last season's box scores, when the lineup ingest has run */
+  const LU = require('./ingest/lineups').loadLineups([C.CURRENT_SEASON - 1, C.CURRENT_SEASON]);
+  const luOk = LU.map.size > 0;
+  const { state: rs, lineups: ls } = W.ratingsPass(games, P, live.ratings, luOk ? LU.map : null);
+  const gLineup = live.glm.xg_lineup_confirmed || null;
+  const luCmp = val.comparisons && val.comparisons.xg_lineup_confirmed_vs_xg_no_goalie;
+  const luNote = 'The price uses the chosen model (ratings only). The lineup-aware variant is a sensitivity: projected lineups did not clear the selection bar' +
+    (luCmp ? '; confirmed lineups changed held-out log loss by ' + luCmp.mean_diff + ' (95% CI ' + luCmp.ci95.join(' to ') + ')' : '') + '.';
   const goalieNames = readJson(C.PATHS.goalies, {});
   const confirmed = readJson(path.join(C.HOCKEY, 'data', 'confirmed_starters.json'), { starters: {} }).starters || {};
   const lastCompleted = games.length ? games[games.length - 1] : null;
@@ -150,7 +157,16 @@ function build(o) {
       scen.push({ home_goalie: h.goalie, home_goalie_name: goalieNames[h.goalie] || null, away_goalie: a.goalie, away_goalie_name: goalieNames[a.goalie] || null, p_scenario: r4((h.p / sumH) * (a.p / sumA)), p_home: r4(Dg.p_home), exp_total: r2(DIST.expectedTotal(Dg)) });
     }
     const Dgoals = price(gGoals, cal.goals_only, fh, fa);
-    const variants = [D.p_home, Dgoals.p_home].concat(scen.map((x) => x.p_home));
+    /* lineups: the previous game's dressed skaters against each club's typical lineup (projected; confirmed only at warmups) */
+    const luH = luOk ? ls.snapshot(g.home, null) : { known: false }, luA = luOk ? ls.snapshot(g.away, null) : { known: false };
+    const missing = (team) => (luOk ? ls.missingRegulars(team, null, 900).slice(0, 5).map((m) => ({ player_id: m.player_id, name: LU.names[m.player_id] || null, toi_per_game: Math.floor(m.toi_per_game_s / 60) + ':' + String(m.toi_per_game_s % 60).padStart(2, '0'), dressed_in_last_10: m.dressed_in_window, absent_last_games: m.absent_last_games, reading: m.absent_last_games >= 5 ? 'a long absence: injury or no longer on the roster (no feed says which)' : 'absent from the most recent game(s)' })) : []);
+    let Dlu = null;
+    if (gLineup && luH.known && luA.known) {
+      const sh = Object.assign({}, fh, W.lineupFeatures(luH, luA)), sa = Object.assign({}, fa, W.lineupFeatures(luA, luH));
+      Dlu = price(gLineup, cal.xg_lineup_confirmed, sh, sa);
+    }
+    const lineupState = luH.known && luA.known ? 'PROJECTED_FROM_LAST_GAME' : 'UNKNOWN';
+    const variants = [D.p_home, Dgoals.p_home].concat(scen.map((x) => x.p_home)).concat(Dlu ? [Dlu.p_home] : []);
     const mean = variants.reduce((a, v) => a + v, 0) / variants.length;
     const sdPP = Math.sqrt(variants.reduce((a, v) => a + (v - mean) * (v - mean), 0) / variants.length) * 100;
     const totals = [DIST.expectedTotal(D), DIST.expectedTotal(Dgoals)].concat(scen.map((x) => x.exp_total));
@@ -176,10 +192,18 @@ function build(o) {
       },
       uncertainty: {
         moneyline_sd_pp: r2(sdPP), total_sd_goals: r2(totSd),
-        basis: 'spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing). A sensitivity, not a confidence interval.',
+        basis: 'spread of the home win probability and expected total across the validated variants (chosen model, goals-only, goalie-aware under each projected goalie pairing, lineup-aware with each club\'s last lineup). A sensitivity, not a confidence interval.',
         calibration_bin: b ? { range: [b.lo, b.hi], n: b.n, model_mean: b.mean_p, observed: b.observed, wilson95: [b.wilson_low, b.wilson_high], window: 'confirmation 2020-21 to 2025-26' } : null,
       },
       goalies: { certainty: goalieCertainty, home: gH.map((x) => ({ goalie: x.goalie, name: goalieNames[x.goalie] || null, p_start: r4(x.p), confirmed: !!x.confirmed, gsax_rate: r4(rs.goalieRating(x.goalie, day).rate) })), away: gA.map((x) => ({ goalie: x.goalie, name: goalieNames[x.goalie] || null, p_start: r4(x.p), confirmed: !!x.confirmed, gsax_rate: r4(rs.goalieRating(x.goalie, day).rate) })), scenarios: scen, confirmed_source: conf ? { source: conf.source, url: conf.url || null, recorded_at: conf.recorded_at } : null },
+      lineups: {
+        state: lineupState,
+        basis: 'each club\'s previous game\'s dressed skaters against its typical lineup (box scores; hockey/model/lineups.js). Confirmed lineups are known only at warmups, and no pregame lineup feed is wired.',
+        home: { projected_delta: luH.known ? r4(luH.proj) : null, regulars_absent: missing(g.home) },
+        away: { projected_delta: luA.known ? r4(luA.proj) : null, regulars_absent: missing(g.away) },
+        p_home_lineup_variant: Dlu ? r4(Dlu.p_home) : null,
+        note: luNote,
+      },
       evidence: {
         home: { ev_xg_for_vs_league: r4(fh.ev_off), ev_xg_against_vs_league: r4(fa.ev_def_opp), goals_for_vs_league: r4(fh.g_off), goals_against_vs_league: r4(fa.g_def_opp), pp_vs_league: r4(fh.pp_off), pk_xga_vs_league: r4(fa.pk_def_opp), pp_minutes_vs_league: r4(fh.pp_draw), rest_days: fh.rest, back_to_back: !!fh.b2b, history_weight_games: r2(fh.weight) },
         away: { ev_xg_for_vs_league: r4(fa.ev_off), ev_xg_against_vs_league: r4(fh.ev_def_opp), goals_for_vs_league: r4(fa.g_off), goals_against_vs_league: r4(fh.g_def_opp), pp_vs_league: r4(fa.pp_off), pk_xga_vs_league: r4(fh.pk_def_opp), pp_minutes_vs_league: r4(fa.pp_draw), rest_days: fa.rest, back_to_back: !!fa.b2b, history_weight_games: r2(fa.weight) },
@@ -196,7 +220,7 @@ function build(o) {
       },
       invalidators: [
         'A starting goalie other than the projected one (see the goalie scenarios for the size of the move).',
-        'A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.',
+        'A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club\'s last game and for how long.',
         'A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).',
       ].concat(fh.b2b || fa.b2b ? ['A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet.'] : []),
     });
@@ -216,7 +240,7 @@ function build(o) {
     }
   }
   const latestDate = lastCompleted ? lastCompleted.date : null;
-  const dataAgeH = lastCompleted ? (now - Date.parse(lastCompleted.known_at)) / 3600e3 : null;
+  const dataAgeH = lastCompleted ? (now - Date.parse(lastCompleted.assumed_available_at)) / 3600e3 : null;
   return {
     schema: C.SCHEMA.slate, sport: 'NHL', sport_key: 'icehockey_nhl', generated_at: new Date(now).toISOString(), horizon_hours: o.hours,
     model: { id: 'edgedesk_nhl_v1:' + chosen, chosen, glm_train_seasons: live.glm_train_seasons, params_generated_at: live.generated_at, validation_generated_at: val.generated_at, pair_calibration: cal[chosen] || null },

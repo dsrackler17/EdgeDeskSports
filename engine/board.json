@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_engine_board_v1",
  "version": "edgedesk_xboard_v1",
- "evaluated_at": "2026-10-13T05:17:35.439Z",
+ "evaluated_at": "2026-10-13T05:55:49.281Z",
  "verdict": "PASS",
  "best": null,
  "why": [
@@ -1811,10 +1811,10 @@
     "market_novig": null,
     "shrink_k": 1,
     "posterior": 0.6442,
-    "sd": 0.02,
-    "conservative": 0.6185,
+    "sd": 0.0258,
+    "conservative": 0.6111,
     "components": {
-     "model_sd": 0.0057,
+     "model_sd": 0.0173,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -1822,7 +1822,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -154,
+   "min_acceptable_american": -149,
    "disagreement": null,
    "gates": [
     {
@@ -1835,7 +1835,7 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -154 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -149 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "evidence": [
@@ -1846,12 +1846,12 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -1884,10 +1884,10 @@
     "market_novig": null,
     "shrink_k": 1,
     "posterior": 0.5754,
-    "sd": 0.0161,
-    "conservative": 0.5548,
+    "sd": 0.0219,
+    "conservative": 0.5474,
     "components": {
-     "model_sd": 0.0052,
+     "model_sd": 0.0157,
      "calibration_sd": 0.0094,
      "lineup_sd": 0.012
     }
@@ -1895,7 +1895,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -119,
+   "min_acceptable_american": -116,
    "disagreement": null,
    "gates": [
     {
@@ -1908,7 +1908,7 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -119 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -116 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "evidence": [
@@ -1919,12 +1919,12 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -1992,12 +1992,12 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -2065,12 +2065,12 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -2103,10 +2103,10 @@
     "market_novig": null,
     "shrink_k": 1,
     "posterior": 0.4246,
-    "sd": 0.0199,
-    "conservative": 0.3991,
+    "sd": 0.0248,
+    "conservative": 0.3928,
     "components": {
-     "model_sd": 0.0052,
+     "model_sd": 0.0157,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -2114,7 +2114,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 156,
+   "min_acceptable_american": 160,
    "disagreement": null,
    "gates": [
     {
@@ -2127,7 +2127,7 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +156 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +160 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "evidence": [
@@ -2138,12 +2138,12 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -2176,10 +2176,10 @@
     "market_novig": null,
     "shrink_k": 1,
     "posterior": 0.3558,
-    "sd": 0.02,
-    "conservative": 0.3301,
+    "sd": 0.0258,
+    "conservative": 0.3227,
     "components": {
-     "model_sd": 0.0057,
+     "model_sd": 0.0173,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -2187,7 +2187,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 209,
+   "min_acceptable_american": 216,
    "disagreement": null,
    "gates": [
     {
@@ -2200,7 +2200,7 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +209 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +216 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "evidence": [
@@ -2211,12 +2211,12 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -2249,10 +2249,10 @@
     "market_novig": null,
     "shrink_k": 1,
     "posterior": 0.6492,
-    "sd": 0.0216,
-    "conservative": 0.6216,
+    "sd": 0.0254,
+    "conservative": 0.6167,
     "components": {
-     "model_sd": 0.0098,
+     "model_sd": 0.0166,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -2260,7 +2260,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -156,
+   "min_acceptable_american": -153,
    "disagreement": null,
    "gates": [
     {
@@ -2273,7 +2273,7 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -156 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -153 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "evidence": [
@@ -2284,12 +2284,12 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -2322,10 +2322,10 @@
     "market_novig": null,
     "shrink_k": 1,
     "posterior": 0.5693,
-    "sd": 0.0176,
-    "conservative": 0.5467,
+    "sd": 0.0214,
+    "conservative": 0.5418,
     "components": {
-     "model_sd": 0.0089,
+     "model_sd": 0.0151,
      "calibration_sd": 0.0094,
      "lineup_sd": 0.012
     }
@@ -2333,7 +2333,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -116,
+   "min_acceptable_american": -113,
    "disagreement": null,
    "gates": [
     {
@@ -2346,7 +2346,7 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -116 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -113 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "evidence": [
@@ -2357,12 +2357,12 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -2430,12 +2430,12 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -2503,12 +2503,12 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -2541,10 +2541,10 @@
     "market_novig": null,
     "shrink_k": 1,
     "posterior": 0.4307,
-    "sd": 0.0212,
-    "conservative": 0.4036,
+    "sd": 0.0244,
+    "conservative": 0.3994,
     "components": {
-     "model_sd": 0.0089,
+     "model_sd": 0.0151,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -2552,7 +2552,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 153,
+   "min_acceptable_american": 155,
    "disagreement": null,
    "gates": [
     {
@@ -2565,7 +2565,7 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +153 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +155 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "evidence": [
@@ -2576,12 +2576,12 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -2614,10 +2614,10 @@
     "market_novig": null,
     "shrink_k": 1,
     "posterior": 0.3508,
-    "sd": 0.0216,
-    "conservative": 0.3232,
+    "sd": 0.0254,
+    "conservative": 0.3183,
     "components": {
-     "model_sd": 0.0098,
+     "model_sd": 0.0166,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -2625,7 +2625,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 216,
+   "min_acceptable_american": 220,
    "disagreement": null,
    "gates": [
     {
@@ -2638,7 +2638,7 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +216 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +220 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "evidence": [
@@ -2649,12 +2649,12 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -2687,10 +2687,10 @@
     "market_novig": null,
     "shrink_k": 1,
     "posterior": 0.653,
-    "sd": 0.0205,
-    "conservative": 0.6268,
+    "sd": 0.0215,
+    "conservative": 0.6254,
     "components": {
-     "model_sd": 0.007,
+     "model_sd": 0.0097,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -2722,12 +2722,12 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -2760,10 +2760,10 @@
     "market_novig": null,
     "shrink_k": 1,
     "posterior": 0.5599,
-    "sd": 0.0165,
-    "conservative": 0.5387,
+    "sd": 0.0176,
+    "conservative": 0.5374,
     "components": {
-     "model_sd": 0.0064,
+     "model_sd": 0.0088,
      "calibration_sd": 0.0094,
      "lineup_sd": 0.012
     }
@@ -2771,7 +2771,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": -112,
+   "min_acceptable_american": -111,
    "disagreement": null,
    "gates": [
     {
@@ -2784,7 +2784,7 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of -112 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of -111 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "evidence": [
@@ -2795,12 +2795,12 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -2868,12 +2868,12 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -2941,12 +2941,12 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -2979,10 +2979,10 @@
     "market_novig": null,
     "shrink_k": 1,
     "posterior": 0.4401,
-    "sd": 0.0202,
-    "conservative": 0.4142,
+    "sd": 0.0211,
+    "conservative": 0.413,
     "components": {
-     "model_sd": 0.0064,
+     "model_sd": 0.0088,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -2990,7 +2990,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 146,
+   "min_acceptable_american": 147,
    "disagreement": null,
    "gates": [
     {
@@ -3003,7 +3003,7 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +146 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +147 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "evidence": [
@@ -3014,12 +3014,12 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -3052,10 +3052,10 @@
     "market_novig": null,
     "shrink_k": 1,
     "posterior": 0.347,
-    "sd": 0.0205,
-    "conservative": 0.3208,
+    "sd": 0.0215,
+    "conservative": 0.3194,
     "components": {
-     "model_sd": 0.007,
+     "model_sd": 0.0097,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -3063,7 +3063,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 218,
+   "min_acceptable_american": 219,
    "disagreement": null,
    "gates": [
     {
@@ -3076,7 +3076,7 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +218 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +219 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "evidence": [
@@ -3087,12 +3087,12 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
     "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -3125,10 +3125,10 @@
     "market_novig": null,
     "shrink_k": 1,
     "posterior": 0.6208,
-    "sd": 0.0204,
-    "conservative": 0.5946,
+    "sd": 0.02,
+    "conservative": 0.5952,
     "components": {
-     "model_sd": 0.0121,
+     "model_sd": 0.0113,
      "calibration_sd": 0.0113,
      "lineup_sd": 0.012
     }
@@ -3160,11 +3160,11 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -3197,10 +3197,10 @@
     "market_novig": null,
     "shrink_k": 1,
     "posterior": 0.5963,
-    "sd": 0.0234,
-    "conservative": 0.5663,
+    "sd": 0.0229,
+    "conservative": 0.567,
     "components": {
-     "model_sd": 0.0133,
+     "model_sd": 0.0124,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -3232,11 +3232,11 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -3304,11 +3304,11 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -3376,11 +3376,11 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -3413,10 +3413,10 @@
     "market_novig": null,
     "shrink_k": 1,
     "posterior": 0.4037,
-    "sd": 0.0234,
-    "conservative": 0.3737,
+    "sd": 0.0229,
+    "conservative": 0.3744,
     "components": {
-     "model_sd": 0.0133,
+     "model_sd": 0.0124,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -3424,7 +3424,7 @@
    "ev_raw": null,
    "ev_posterior": null,
    "ev_conservative": null,
-   "min_acceptable_american": 173,
+   "min_acceptable_american": 172,
    "disagreement": null,
    "gates": [
     {
@@ -3437,7 +3437,7 @@
      "gate": "VALUE",
      "ok": false,
      "code": "NEEDS_PRICE",
-     "reason": "needs a price of +173 or better to clear the bar (if value claims were enabled)"
+     "reason": "needs a price of +172 or better to clear the bar (if value claims were enabled)"
     }
    ],
    "evidence": [
@@ -3448,11 +3448,11 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -3485,10 +3485,10 @@
     "market_novig": null,
     "shrink_k": 1,
     "posterior": 0.3792,
-    "sd": 0.0227,
-    "conservative": 0.3501,
+    "sd": 0.0223,
+    "conservative": 0.3506,
     "components": {
-     "model_sd": 0.0121,
+     "model_sd": 0.0113,
      "calibration_sd": 0.015,
      "lineup_sd": 0.012
     }
@@ -3520,11 +3520,11 @@
    ],
    "invalidators": [
     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch of a top-line forward or top-pair defenceman: skater availability is NOT modelled.",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
     "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
    ],
    "data": {
-    "state": "FRESH",
+    "state": "STALE",
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_no_goalie"
@@ -3642,8 +3642,8 @@
   }
  ],
  "inputs": {
-  "registry_generated_at": "2026-10-13T05:17:35.381Z",
-  "nhl_slate_generated_at": "2026-10-13T05:17:32.985Z",
+  "registry_generated_at": "2026-10-13T05:55:49.237Z",
+  "nhl_slate_generated_at": "2026-10-13T05:54:50.803Z",
   "nhl_quotes": {
    "status": "DISABLED",
    "generated_at": "2026-10-13T04:59:46.173Z",
