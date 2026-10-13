@@ -1,0 +1,273 @@
+{
+ "schema": "edgedesk_nhl_contracts_v1",
+ "season": 2026,
+ "contract": "datapack/quant_v1/schemas/table_catalog.json",
+ "temporal": "known_at null on every row; quality_status carries RETRO; retrieved_at is the source file's fetch time",
+ "tables": [
+  {
+   "table": "hockey/shots",
+   "grain": "one attempted shot",
+   "priority": "P0",
+   "rows": 119357,
+   "ok": true,
+   "error_count": 0,
+   "errors": [],
+   "always_missing": [
+    {
+     "field": "source_record_id",
+     "reason": "the compact shot record keeps no source event id; record_id is game id + ordinal"
+    },
+    {
+     "field": "occurred_at",
+     "reason": "the feed gives game seconds, not wall-clock time"
+    },
+    {
+     "field": "known_at",
+     "reason": "first publication was never recorded (retrospective data)"
+    },
+    {
+     "field": "home_score_before",
+     "reason": "the shot record keeps the shooter's score difference, not both scores"
+    },
+    {
+     "field": "away_score_before",
+     "reason": "as home_score_before"
+    },
+    {
+     "field": "assisting_player_1_id",
+     "reason": "not kept in the compact shot record (present in the source play-by-play)"
+    },
+    {
+     "field": "assisting_player_2_id",
+     "reason": "as assisting_player_1_id"
+    },
+    {
+     "field": "shooting_side",
+     "reason": "not recorded (handedness is in the source rosters; not joined)"
+    },
+    {
+     "field": "release_x",
+     "reason": "no tracking source"
+    },
+    {
+     "field": "release_y",
+     "reason": "no tracking source"
+    },
+    {
+     "field": "previous_shot_angle_change",
+     "reason": "computed inside the xG features, not stored"
+    },
+    {
+     "field": "is_penalty_shot",
+     "reason": "not recorded in the compact shot record"
+    },
+    {
+     "field": "is_missed",
+     "reason": "the compact record keeps unblocked attempts without the on-goal / wide split"
+    },
+    {
+     "field": "is_one_timer",
+     "reason": "no source records it"
+    },
+    {
+     "field": "is_deflected",
+     "reason": "the shot type keeps tips and deflections as one class"
+    }
+   ],
+   "partly_missing": {
+    "shooter_team_skaters": 0.221,
+    "defending_team_skaters": 0.221,
+    "goalie_id": 0.0089
+   }
+  },
+  {
+   "table": "hockey/goalie_game",
+   "grain": "one goalie game and strength state",
+   "priority": "P0",
+   "rows": 2939,
+   "ok": true,
+   "error_count": 0,
+   "errors": [],
+   "always_missing": [
+    {
+     "field": "source_record_id",
+     "reason": "the goalie box row has no id of its own"
+    },
+    {
+     "field": "occurred_at",
+     "reason": "the game's scheduled start is the closest time recorded; left empty rather than implying the stat existed then"
+    },
+    {
+     "field": "known_at",
+     "reason": "first publication was never recorded (retrospective data)"
+    },
+    {
+     "field": "toi_seconds",
+     "reason": "the team-game table keeps attempts faced, not goalie TOI (in the source goalie box; not joined)"
+    },
+    {
+     "field": "shots_faced",
+     "reason": "the ledger counts unblocked attempts faced, which is not shots on goal — left empty rather than mislabelled"
+    },
+    {
+     "field": "saves",
+     "reason": "needs shots on goal (above)"
+    },
+    {
+     "field": "low_danger_shots",
+     "reason": "no danger-zone split is defined in my model"
+    },
+    {
+     "field": "medium_danger_shots",
+     "reason": "as low_danger_shots"
+    },
+    {
+     "field": "high_danger_shots",
+     "reason": "as low_danger_shots"
+    },
+    {
+     "field": "rebounds_allowed",
+     "reason": "not aggregated per goalie"
+    },
+    {
+     "field": "confirmed_starter",
+     "reason": "no confirmed-starter feed: the historical starter is known after the game only"
+    },
+    {
+     "field": "starter_confirmed_at",
+     "reason": "as confirmed_starter"
+    }
+   ],
+   "partly_missing": {}
+  },
+  {
+   "table": "shared/event_context",
+   "grain": "one pre-event context version",
+   "priority": "P0",
+   "rows": 1394,
+   "ok": true,
+   "error_count": 0,
+   "errors": [],
+   "always_missing": [
+    {
+     "field": "entity_id",
+     "reason": "a game-level row has no entity"
+    },
+    {
+     "field": "source_record_id",
+     "reason": "the game id is the source record"
+    },
+    {
+     "field": "known_at",
+     "reason": "first publication was never recorded (retrospective data)"
+    },
+    {
+     "field": "venue_id",
+     "reason": "no arena table is wired"
+    },
+    {
+     "field": "context_asof",
+     "reason": "the schedule was retrieved after the fact; no as-of version exists"
+    },
+    {
+     "field": "venue_surface",
+     "reason": "ice (not a variable)"
+    },
+    {
+     "field": "roof_status",
+     "reason": "indoor (not a variable)"
+    },
+    {
+     "field": "timezone",
+     "reason": "no arena table is wired"
+    },
+    {
+     "field": "home_travel_km",
+     "reason": "no arena coordinates are wired"
+    },
+    {
+     "field": "away_travel_km",
+     "reason": "as home_travel_km"
+    },
+    {
+     "field": "home_timezone_shift_hours",
+     "reason": "no arena table"
+    },
+    {
+     "field": "away_timezone_shift_hours",
+     "reason": "no arena table"
+    },
+    {
+     "field": "venue_altitude",
+     "reason": "no arena table"
+    },
+    {
+     "field": "temperature",
+     "reason": "indoor"
+    },
+    {
+     "field": "wind_speed",
+     "reason": "indoor"
+    },
+    {
+     "field": "wind_gust",
+     "reason": "indoor"
+    },
+    {
+     "field": "humidity",
+     "reason": "indoor"
+    },
+    {
+     "field": "precipitation_probability",
+     "reason": "indoor"
+    },
+    {
+     "field": "neutral_site",
+     "reason": "the feed does not flag neutral sites (global-series games are home games in the schedule)"
+    },
+    {
+     "field": "rivalry_game",
+     "reason": "no rivalry definition"
+    }
+   ],
+   "partly_missing": {
+    "home_rest_days": 0.0122,
+    "away_rest_days": 0.0108,
+    "back_to_back_home": 0.0122,
+    "back_to_back_away": 0.0108
+   }
+  }
+ ],
+ "not_mapped": [
+  {
+   "table": "hockey/shifts",
+   "priority": "P0",
+   "state": "AVAILABLE_NOT_INGESTED",
+   "note": "the source publishes shift charts (≈ 12 MB a season); on-ice player models would need them"
+  },
+  {
+   "table": "hockey/skater_game",
+   "priority": "P1",
+   "state": "PARTIAL",
+   "note": "the lineup ingest keeps who dressed and TOI only; the source box score has goals, shots, hits, blocks"
+  },
+  {
+   "table": "hockey/tracking",
+   "priority": "P2",
+   "state": "UNAVAILABLE",
+   "note": "no tracking source"
+  },
+  {
+   "table": "shared/availability",
+   "priority": "P0",
+   "state": "UNAVAILABLE",
+   "note": "no timestamped injury or lineup report feed; the dressed lineup is known only from the box score after the game"
+  },
+  {
+   "table": "shared/market_quotes",
+   "priority": "P0",
+   "state": "GATED",
+   "note": "NHL prices only through the odds gateway, disabled until authorised (hockey/market/quotes.json)"
+  }
+ ]
+}

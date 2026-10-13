@@ -1,0 +1,4393 @@
+{
+ "schema": "edgedesk_lab_slate_v1",
+ "sport": "soccer",
+ "generated_at": "2026-10-13T06:41:26.796Z",
+ "horizon_days": 4,
+ "leagues": {
+  "epl": {
+   "label": "Premier League",
+   "sport_key": "soccer_epl",
+   "model": "poisson",
+   "params_generated_at": "2026-10-13T06:16:49.843Z",
+   "validation": {
+    "three_way": "PROVISIONAL",
+    "total_over_2_5": "PROVISIONAL",
+    "btts": "PROVISIONAL",
+    "asian_handicap": "OUTCOME_VALIDATED"
+   },
+   "value_claims": "DISABLED",
+   "value_reason": "never compared with closing prices, and no book price is captured for soccer",
+   "data": {
+    "state": "STALE",
+    "results_missing_last_14_days": 10,
+    "latest_result": "2026-09-20",
+    "note": "the source has not published 10 recent result(s); ratings miss them"
+   },
+   "games": [
+    {
+     "event_key": "SOCCER|epl:2026-10-17:brentford:liverpool",
+     "match_id": "epl:2026-10-17:brentford:liverpool",
+     "date": "2026-10-17",
+     "time_local": "15:00",
+     "home": "Brentford FC",
+     "away": "Liverpool FC",
+     "home_key": "brentford",
+     "away_key": "liverpool",
+     "lambda": {
+      "home": 1.532,
+      "away": 1.7392
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.3412,
+       "draw": 0.2301,
+       "away": 0.4287,
+       "fair_home": 193,
+       "fair_draw": 335,
+       "fair_away": 133,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 3.27,
+       "over_1_5": 0.8379,
+       "over_2_5": 0.6348,
+       "over_3_5": 0.4133,
+       "fair_over_2_5": -174,
+       "fair_under_2_5": 174,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.6462,
+       "fair_yes": -183,
+       "fair_no": 183,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.3412,
+        "half_win": 0,
+        "push": 0.2301,
+        "half_loss": 0,
+        "full_loss": 0.4287,
+        "split": false,
+        "fair_home": 126
+       },
+       "1": {
+        "full_win": 0.5713,
+        "half_win": 0,
+        "push": 0.203,
+        "half_loss": 0,
+        "full_loss": 0.2257,
+        "split": false,
+        "fair_home": -253
+       },
+       "-1.5": {
+        "full_win": 0.1624,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.8376,
+        "split": false,
+        "fair_home": 516
+       },
+       "-1.25": {
+        "full_win": 0.1624,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1788,
+        "full_loss": 0.6588,
+        "split": true,
+        "fair_home": 461
+       },
+       "-1": {
+        "full_win": 0.1624,
+        "half_win": 0,
+        "push": 0.1788,
+        "half_loss": 0,
+        "full_loss": 0.6588,
+        "split": false,
+        "fair_home": 406
+       },
+       "-0.75": {
+        "full_win": 0.1624,
+        "half_win": 0.1788,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.6588,
+        "split": true,
+        "fair_home": 262
+       },
+       "-0.5": {
+        "full_win": 0.3412,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.6588,
+        "split": false,
+        "fair_home": 193
+       },
+       "-0.25": {
+        "full_win": 0.3412,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2301,
+        "full_loss": 0.4287,
+        "split": true,
+        "fair_home": 159
+       },
+       "0.25": {
+        "full_win": 0.3412,
+        "half_win": 0.2301,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.4287,
+        "split": true,
+        "fair_home": -106
+       },
+       "0.5": {
+        "full_win": 0.5713,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.4287,
+        "split": false,
+        "fair_home": -133
+       },
+       "0.75": {
+        "full_win": 0.5713,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.203,
+        "full_loss": 0.2257,
+        "split": true,
+        "fair_home": -175
+       },
+       "1.25": {
+        "full_win": 0.5713,
+        "half_win": 0.203,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2257,
+        "split": true,
+        "fair_home": -298
+       },
+       "1.5": {
+        "full_win": 0.7743,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2257,
+        "split": false,
+        "fair_home": -343
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "OUTCOME_VALIDATED"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    },
+    {
+     "event_key": "SOCCER|epl:2026-10-17:everton:chelsea",
+     "match_id": "epl:2026-10-17:everton:chelsea",
+     "date": "2026-10-17",
+     "time_local": "12:30",
+     "home": "Everton FC",
+     "away": "Chelsea FC",
+     "home_key": "everton",
+     "away_key": "chelsea",
+     "lambda": {
+      "home": 1.3291,
+      "away": 1.2965
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.3764,
+       "draw": 0.2624,
+       "away": 0.3612,
+       "fair_home": 166,
+       "fair_draw": 281,
+       "fair_away": 177,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 2.63,
+       "over_1_5": 0.7375,
+       "over_2_5": 0.488,
+       "over_3_5": 0.2696,
+       "fair_over_2_5": 105,
+       "fair_under_2_5": -105,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.5342,
+       "fair_yes": -115,
+       "fair_no": 115,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.3764,
+        "half_win": 0,
+        "push": 0.2624,
+        "half_loss": 0,
+        "full_loss": 0.3612,
+        "split": false,
+        "fair_home": -104
+       },
+       "1": {
+        "full_win": 0.6388,
+        "half_win": 0,
+        "push": 0.2016,
+        "half_loss": 0,
+        "full_loss": 0.1596,
+        "split": false,
+        "fair_home": -400
+       },
+       "-1.5": {
+        "full_win": 0.1697,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.8303,
+        "split": false,
+        "fair_home": 489
+       },
+       "-1.25": {
+        "full_win": 0.1697,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2067,
+        "full_loss": 0.6236,
+        "split": true,
+        "fair_home": 428
+       },
+       "-1": {
+        "full_win": 0.1697,
+        "half_win": 0,
+        "push": 0.2067,
+        "half_loss": 0,
+        "full_loss": 0.6236,
+        "split": false,
+        "fair_home": 367
+       },
+       "-0.75": {
+        "full_win": 0.1697,
+        "half_win": 0.2067,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.6236,
+        "split": true,
+        "fair_home": 228
+       },
+       "-0.5": {
+        "full_win": 0.3764,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.6236,
+        "split": false,
+        "fair_home": 166
+       },
+       "-0.25": {
+        "full_win": 0.3764,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2624,
+        "full_loss": 0.3612,
+        "split": true,
+        "fair_home": 131
+       },
+       "0.25": {
+        "full_win": 0.3764,
+        "half_win": 0.2624,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3612,
+        "split": true,
+        "fair_home": -141
+       },
+       "0.5": {
+        "full_win": 0.6388,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3612,
+        "split": false,
+        "fair_home": -177
+       },
+       "0.75": {
+        "full_win": 0.6388,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2016,
+        "full_loss": 0.1596,
+        "split": true,
+        "fair_home": -245
+       },
+       "1.25": {
+        "full_win": 0.6388,
+        "half_win": 0.2016,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1596,
+        "split": true,
+        "fair_home": -463
+       },
+       "1.5": {
+        "full_win": 0.8404,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1596,
+        "split": false,
+        "fair_home": -526
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "OUTCOME_VALIDATED"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    },
+    {
+     "event_key": "SOCCER|epl:2026-10-17:fulham:hull",
+     "match_id": "epl:2026-10-17:fulham:hull",
+     "date": "2026-10-17",
+     "time_local": "15:00",
+     "home": "Fulham FC",
+     "away": "Hull City AFC",
+     "home_key": "fulham",
+     "away_key": "hull",
+     "lambda": {
+      "home": 1.3457,
+      "away": 1.2009
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.401,
+       "draw": 0.2663,
+       "away": 0.3327,
+       "fair_home": 149,
+       "fair_draw": 276,
+       "fair_away": 201,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 2.55,
+       "over_1_5": 0.7221,
+       "over_2_5": 0.4681,
+       "over_3_5": 0.2524,
+       "fair_over_2_5": 114,
+       "fair_under_2_5": -114,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.5171,
+       "fair_yes": -107,
+       "fair_no": 107,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.401,
+        "half_win": 0,
+        "push": 0.2663,
+        "half_loss": 0,
+        "full_loss": 0.3327,
+        "split": false,
+        "fair_home": -121
+       },
+       "1": {
+        "full_win": 0.6673,
+        "half_win": 0,
+        "push": 0.1936,
+        "half_loss": 0,
+        "full_loss": 0.1391,
+        "split": false,
+        "fair_home": -480
+       },
+       "-1.5": {
+        "full_win": 0.1841,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.8159,
+        "split": false,
+        "fair_home": 443
+       },
+       "-1.25": {
+        "full_win": 0.1841,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2169,
+        "full_loss": 0.599,
+        "split": true,
+        "fair_home": 384
+       },
+       "-1": {
+        "full_win": 0.1841,
+        "half_win": 0,
+        "push": 0.2169,
+        "half_loss": 0,
+        "full_loss": 0.599,
+        "split": false,
+        "fair_home": 325
+       },
+       "-0.75": {
+        "full_win": 0.1841,
+        "half_win": 0.2169,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.599,
+        "split": true,
+        "fair_home": 205
+       },
+       "-0.5": {
+        "full_win": 0.401,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.599,
+        "split": false,
+        "fair_home": 149
+       },
+       "-0.25": {
+        "full_win": 0.401,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2663,
+        "full_loss": 0.3327,
+        "split": true,
+        "fair_home": 116
+       },
+       "0.25": {
+        "full_win": 0.401,
+        "half_win": 0.2663,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3327,
+        "split": true,
+        "fair_home": -161
+       },
+       "0.5": {
+        "full_win": 0.6673,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3327,
+        "split": false,
+        "fair_home": -201
+       },
+       "0.75": {
+        "full_win": 0.6673,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1936,
+        "full_loss": 0.1391,
+        "split": true,
+        "fair_home": -283
+       },
+       "1.25": {
+        "full_win": 0.6673,
+        "half_win": 0.1936,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1391,
+        "split": true,
+        "fair_home": -549
+       },
+       "1.5": {
+        "full_win": 0.8609,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1391,
+        "split": false,
+        "fair_home": -619
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "OUTCOME_VALIDATED"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    },
+    {
+     "event_key": "SOCCER|epl:2026-10-17:mancity:ipswich",
+     "match_id": "epl:2026-10-17:mancity:ipswich",
+     "date": "2026-10-17",
+     "time_local": "15:00",
+     "home": "Manchester City FC",
+     "away": "Ipswich Town FC",
+     "home_key": "mancity",
+     "away_key": "ipswich",
+     "lambda": {
+      "home": 3.1437,
+      "away": 0.703
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.8461,
+       "draw": 0.102,
+       "away": 0.0519,
+       "fair_home": -550,
+       "fair_draw": 880,
+       "fair_away": 1828,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 3.85,
+       "over_1_5": 0.8965,
+       "over_2_5": 0.7385,
+       "over_3_5": 0.5358,
+       "fair_over_2_5": -282,
+       "fair_under_2_5": 282,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.4831,
+       "fair_yes": 107,
+       "fair_no": -107,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.8461,
+        "half_win": 0,
+        "push": 0.102,
+        "half_loss": 0,
+        "full_loss": 0.0519,
+        "split": false,
+        "fair_home": -1631
+       },
+       "1": {
+        "full_win": 0.9481,
+        "half_win": 0,
+        "push": 0.039,
+        "half_loss": 0,
+        "full_loss": 0.0129,
+        "split": false,
+        "fair_home": -7357
+       },
+       "-1.5": {
+        "full_win": 0.6718,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3282,
+        "split": false,
+        "fair_home": -205
+       },
+       "-1.25": {
+        "full_win": 0.6718,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1743,
+        "full_loss": 0.1539,
+        "split": true,
+        "fair_home": -279
+       },
+       "-1": {
+        "full_win": 0.6718,
+        "half_win": 0,
+        "push": 0.1743,
+        "half_loss": 0,
+        "full_loss": 0.1539,
+        "split": false,
+        "fair_home": -437
+       },
+       "-0.75": {
+        "full_win": 0.6718,
+        "half_win": 0.1743,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1539,
+        "split": true,
+        "fair_home": -493
+       },
+       "-0.5": {
+        "full_win": 0.8461,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1539,
+        "split": false,
+        "fair_home": -550
+       },
+       "-0.25": {
+        "full_win": 0.8461,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.102,
+        "full_loss": 0.0519,
+        "split": true,
+        "fair_home": -822
+       },
+       "0.25": {
+        "full_win": 0.8461,
+        "half_win": 0.102,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.0519,
+        "split": true,
+        "fair_home": -1730
+       },
+       "0.5": {
+        "full_win": 0.9481,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.0519,
+        "split": false,
+        "fair_home": -1828
+       },
+       "0.75": {
+        "full_win": 0.9481,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.039,
+        "full_loss": 0.0129,
+        "split": true,
+        "fair_home": -2928
+       },
+       "1.25": {
+        "full_win": 0.9481,
+        "half_win": 0.039,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.0129,
+        "split": true,
+        "fair_home": -7508
+       },
+       "1.5": {
+        "full_win": 0.9871,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.0129,
+        "split": false,
+        "fair_home": -7659
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "OUTCOME_VALIDATED"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    },
+    {
+     "event_key": "SOCCER|epl:2026-10-17:newcastle:astonvilla",
+     "match_id": "epl:2026-10-17:newcastle:astonvilla",
+     "date": "2026-10-17",
+     "time_local": "17:30",
+     "home": "Newcastle United FC",
+     "away": "Aston Villa FC",
+     "home_key": "newcastle",
+     "away_key": "astonvilla",
+     "lambda": {
+      "home": 1.8045,
+      "away": 1.3918
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.473,
+       "draw": 0.2293,
+       "away": 0.2977,
+       "fair_home": 111,
+       "fair_draw": 336,
+       "fair_away": 236,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 3.2,
+       "over_1_5": 0.8283,
+       "over_2_5": 0.6193,
+       "over_3_5": 0.3967,
+       "fair_over_2_5": -163,
+       "fair_under_2_5": 163,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.6277,
+       "fair_yes": -169,
+       "fair_no": 169,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.473,
+        "half_win": 0,
+        "push": 0.2293,
+        "half_loss": 0,
+        "full_loss": 0.2977,
+        "split": false,
+        "fair_home": -159
+       },
+       "1": {
+        "full_win": 0.7023,
+        "half_win": 0,
+        "push": 0.1655,
+        "half_loss": 0,
+        "full_loss": 0.1322,
+        "split": false,
+        "fair_home": -531
+       },
+       "-1.5": {
+        "full_win": 0.2584,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.7416,
+        "split": false,
+        "fair_home": 287
+       },
+       "-1.25": {
+        "full_win": 0.2584,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2146,
+        "full_loss": 0.527,
+        "split": true,
+        "fair_home": 245
+       },
+       "-1": {
+        "full_win": 0.2584,
+        "half_win": 0,
+        "push": 0.2146,
+        "half_loss": 0,
+        "full_loss": 0.527,
+        "split": false,
+        "fair_home": 204
+       },
+       "-0.75": {
+        "full_win": 0.2584,
+        "half_win": 0.2146,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.527,
+        "split": true,
+        "fair_home": 144
+       },
+       "-0.5": {
+        "full_win": 0.473,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.527,
+        "split": false,
+        "fair_home": 111
+       },
+       "-0.25": {
+        "full_win": 0.473,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2293,
+        "full_loss": 0.2977,
+        "split": true,
+        "fair_home": -115
+       },
+       "0.25": {
+        "full_win": 0.473,
+        "half_win": 0.2293,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2977,
+        "split": true,
+        "fair_home": -197
+       },
+       "0.5": {
+        "full_win": 0.7023,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2977,
+        "split": false,
+        "fair_home": -236
+       },
+       "0.75": {
+        "full_win": 0.7023,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1655,
+        "full_loss": 0.1322,
+        "split": true,
+        "fair_home": -327
+       },
+       "1.25": {
+        "full_win": 0.7023,
+        "half_win": 0.1655,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1322,
+        "split": true,
+        "fair_home": -594
+       },
+       "1.5": {
+        "full_win": 0.8678,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1322,
+        "split": false,
+        "fair_home": -656
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "OUTCOME_VALIDATED"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    }
+   ]
+  },
+  "bundesliga": {
+   "label": "Bundesliga",
+   "sport_key": "soccer_germany_bundesliga",
+   "model": "poisson",
+   "params_generated_at": "2026-10-13T06:17:17.371Z",
+   "validation": {
+    "three_way": "PROVISIONAL",
+    "total_over_2_5": "PROVISIONAL",
+    "btts": "PROVISIONAL",
+    "asian_handicap": "OUTCOME_VALIDATED"
+   },
+   "value_claims": "DISABLED",
+   "value_reason": "never compared with closing prices, and no book price is captured for soccer",
+   "data": {
+    "state": "STALE",
+    "results_missing_last_14_days": 9,
+    "latest_result": "2026-09-20",
+    "note": "the source has not published 9 recent result(s); ratings miss them"
+   },
+   "games": [
+    {
+     "event_key": "SOCCER|bundesliga:2026-10-16:eintrachtfrankfurt:koln",
+     "match_id": "bundesliga:2026-10-16:eintrachtfrankfurt:koln",
+     "date": "2026-10-16",
+     "time_local": "20:30",
+     "home": "Eintracht Frankfurt",
+     "away": "1. FC Köln",
+     "home_key": "eintrachtfrankfurt",
+     "away_key": "koln",
+     "lambda": {
+      "home": 2.4303,
+      "away": 1.3996
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.6019,
+       "draw": 0.1879,
+       "away": 0.2102,
+       "fair_home": -151,
+       "fair_draw": 432,
+       "fair_away": 376,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 3.83,
+       "over_1_5": 0.8951,
+       "over_2_5": 0.7359,
+       "over_3_5": 0.5326,
+       "fair_over_2_5": -279,
+       "fair_under_2_5": 279,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.687,
+       "fair_yes": -219,
+       "fair_no": 219,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.6019,
+        "half_win": 0,
+        "push": 0.1879,
+        "half_loss": 0,
+        "full_loss": 0.2102,
+        "split": false,
+        "fair_home": -286
+       },
+       "1": {
+        "full_win": 0.7898,
+        "half_win": 0,
+        "push": 0.1213,
+        "half_loss": 0,
+        "full_loss": 0.0889,
+        "split": false,
+        "fair_home": -888
+       },
+       "-1.5": {
+        "full_win": 0.3913,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.6087,
+        "split": false,
+        "fair_home": 156
+       },
+       "-1.25": {
+        "full_win": 0.3913,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2106,
+        "full_loss": 0.3981,
+        "split": true,
+        "fair_home": 129
+       },
+       "-1": {
+        "full_win": 0.3913,
+        "half_win": 0,
+        "push": 0.2106,
+        "half_loss": 0,
+        "full_loss": 0.3981,
+        "split": false,
+        "fair_home": 102
+       },
+       "-0.75": {
+        "full_win": 0.3913,
+        "half_win": 0.2106,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3981,
+        "split": true,
+        "fair_home": -125
+       },
+       "-0.5": {
+        "full_win": 0.6019,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3981,
+        "split": false,
+        "fair_home": -151
+       },
+       "-0.25": {
+        "full_win": 0.6019,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1879,
+        "full_loss": 0.2102,
+        "split": true,
+        "fair_home": -198
+       },
+       "0.25": {
+        "full_win": 0.6019,
+        "half_win": 0.1879,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2102,
+        "split": true,
+        "fair_home": -331
+       },
+       "0.5": {
+        "full_win": 0.7898,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2102,
+        "split": false,
+        "fair_home": -376
+       },
+       "0.75": {
+        "full_win": 0.7898,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1213,
+        "full_loss": 0.0889,
+        "split": true,
+        "fair_home": -528
+       },
+       "1.25": {
+        "full_win": 0.7898,
+        "half_win": 0.1213,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.0889,
+        "split": true,
+        "fair_home": -957
+       },
+       "1.5": {
+        "full_win": 0.9111,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.0889,
+        "split": false,
+        "fair_home": -1025
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "OUTCOME_VALIDATED"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    },
+    {
+     "event_key": "SOCCER|bundesliga:2026-10-17:bayern:rbleipzig",
+     "match_id": "bundesliga:2026-10-17:bayern:rbleipzig",
+     "date": "2026-10-17",
+     "time_local": "18:30",
+     "home": "FC Bayern München",
+     "away": "RB Leipzig",
+     "home_key": "bayern",
+     "away_key": "rbleipzig",
+     "lambda": {
+      "home": 3.1143,
+      "away": 1.1311
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.7652,
+       "draw": 0.1311,
+       "away": 0.1036,
+       "fair_home": -326,
+       "fair_draw": 663,
+       "fair_away": 865,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 4.25,
+       "over_1_5": 0.9248,
+       "over_2_5": 0.7956,
+       "over_3_5": 0.6128,
+       "fair_over_2_5": -389,
+       "fair_under_2_5": 389,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.6472,
+       "fair_yes": -183,
+       "fair_no": 183,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.7652,
+        "half_win": 0,
+        "push": 0.1311,
+        "half_loss": 0,
+        "full_loss": 0.1036,
+        "split": false,
+        "fair_home": -739
+       },
+       "1": {
+        "full_win": 0.8964,
+        "half_win": 0,
+        "push": 0.0674,
+        "half_loss": 0,
+        "full_loss": 0.0362,
+        "split": false,
+        "fair_home": -2479
+       },
+       "-1.5": {
+        "full_win": 0.5796,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.4204,
+        "split": false,
+        "fair_home": -138
+       },
+       "-1.25": {
+        "full_win": 0.5796,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1857,
+        "full_loss": 0.2348,
+        "split": true,
+        "fair_home": -177
+       },
+       "-1": {
+        "full_win": 0.5796,
+        "half_win": 0,
+        "push": 0.1857,
+        "half_loss": 0,
+        "full_loss": 0.2348,
+        "split": false,
+        "fair_home": -247
+       },
+       "-0.75": {
+        "full_win": 0.5796,
+        "half_win": 0.1857,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2348,
+        "split": true,
+        "fair_home": -286
+       },
+       "-0.5": {
+        "full_win": 0.7652,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2348,
+        "split": false,
+        "fair_home": -326
+       },
+       "-0.25": {
+        "full_win": 0.7652,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1311,
+        "full_loss": 0.1036,
+        "split": true,
+        "fair_home": -452
+       },
+       "0.25": {
+        "full_win": 0.7652,
+        "half_win": 0.1311,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1036,
+        "split": true,
+        "fair_home": -802
+       },
+       "0.5": {
+        "full_win": 0.8964,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1036,
+        "split": false,
+        "fair_home": -865
+       },
+       "0.75": {
+        "full_win": 0.8964,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.0674,
+        "full_loss": 0.0362,
+        "split": true,
+        "fair_home": -1283
+       },
+       "1.25": {
+        "full_win": 0.8964,
+        "half_win": 0.0674,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.0362,
+        "split": true,
+        "fair_home": -2572
+       },
+       "1.5": {
+        "full_win": 0.9638,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.0362,
+        "split": false,
+        "fair_home": -2665
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "OUTCOME_VALIDATED"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    },
+    {
+     "event_key": "SOCCER|bundesliga:2026-10-17:elversberg:augsburg",
+     "match_id": "bundesliga:2026-10-17:elversberg:augsburg",
+     "date": "2026-10-17",
+     "time_local": "15:30",
+     "home": "SV 07 Elversberg",
+     "away": "FC Augsburg",
+     "home_key": "elversberg",
+     "away_key": "augsburg",
+     "lambda": {
+      "home": 1.982,
+      "away": 1.3535
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.521,
+       "draw": 0.2178,
+       "away": 0.2612,
+       "fair_home": -109,
+       "fair_draw": 359,
+       "fair_away": 283,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 3.34,
+       "over_1_5": 0.8457,
+       "over_2_5": 0.6476,
+       "over_3_5": 0.4275,
+       "fair_over_2_5": -184,
+       "fair_under_2_5": 184,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.6395,
+       "fair_yes": -177,
+       "fair_no": 177,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.521,
+        "half_win": 0,
+        "push": 0.2178,
+        "half_loss": 0,
+        "full_loss": 0.2612,
+        "split": false,
+        "fair_home": -199
+       },
+       "1": {
+        "full_win": 0.7388,
+        "half_win": 0,
+        "push": 0.1491,
+        "half_loss": 0,
+        "full_loss": 0.1121,
+        "split": false,
+        "fair_home": -659
+       },
+       "-1.5": {
+        "full_win": 0.3026,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.6974,
+        "split": false,
+        "fair_home": 230
+       },
+       "-1.25": {
+        "full_win": 0.3026,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2183,
+        "full_loss": 0.479,
+        "split": true,
+        "fair_home": 194
+       },
+       "-1": {
+        "full_win": 0.3026,
+        "half_win": 0,
+        "push": 0.2183,
+        "half_loss": 0,
+        "full_loss": 0.479,
+        "split": false,
+        "fair_home": 158
+       },
+       "-0.75": {
+        "full_win": 0.3026,
+        "half_win": 0.2183,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.479,
+        "split": true,
+        "fair_home": 116
+       },
+       "-0.5": {
+        "full_win": 0.521,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.479,
+        "split": false,
+        "fair_home": -109
+       },
+       "-0.25": {
+        "full_win": 0.521,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2178,
+        "full_loss": 0.2612,
+        "split": true,
+        "fair_home": -141
+       },
+       "0.25": {
+        "full_win": 0.521,
+        "half_win": 0.2178,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2612,
+        "split": true,
+        "fair_home": -241
+       },
+       "0.5": {
+        "full_win": 0.7388,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2612,
+        "split": false,
+        "fair_home": -283
+       },
+       "0.75": {
+        "full_win": 0.7388,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1491,
+        "full_loss": 0.1121,
+        "split": true,
+        "fair_home": -396
+       },
+       "1.25": {
+        "full_win": 0.7388,
+        "half_win": 0.1491,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1121,
+        "split": true,
+        "fair_home": -725
+       },
+       "1.5": {
+        "full_win": 0.8879,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1121,
+        "split": false,
+        "fair_home": -792
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "OUTCOME_VALIDATED"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    },
+    {
+     "event_key": "SOCCER|bundesliga:2026-10-17:hamburger:stuttgart",
+     "match_id": "bundesliga:2026-10-17:hamburger:stuttgart",
+     "date": "2026-10-17",
+     "time_local": "15:30",
+     "home": "Hamburger SV",
+     "away": "VfB Stuttgart",
+     "home_key": "hamburger",
+     "away_key": "stuttgart",
+     "lambda": {
+      "home": 1.3085,
+      "away": 2.1202
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.232,
+       "draw": 0.2078,
+       "away": 0.5603,
+       "fair_home": 331,
+       "fair_draw": 381,
+       "fair_away": -127,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 3.43,
+       "over_1_5": 0.8564,
+       "over_2_5": 0.6658,
+       "over_3_5": 0.4479,
+       "fair_over_2_5": -199,
+       "fair_under_2_5": 199,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.6422,
+       "fair_yes": -179,
+       "fair_no": 179,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.232,
+        "half_win": 0,
+        "push": 0.2078,
+        "half_loss": 0,
+        "full_loss": 0.5603,
+        "split": false,
+        "fair_home": 242
+       },
+       "1": {
+        "full_win": 0.4397,
+        "half_win": 0,
+        "push": 0.22,
+        "half_loss": 0,
+        "full_loss": 0.3403,
+        "split": false,
+        "fair_home": -129
+       },
+       "-1.5": {
+        "full_win": 0.0962,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.9038,
+        "split": false,
+        "fair_home": 940
+       },
+       "-1.25": {
+        "full_win": 0.0962,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1358,
+        "full_loss": 0.768,
+        "split": true,
+        "fair_home": 869
+       },
+       "-1": {
+        "full_win": 0.0962,
+        "half_win": 0,
+        "push": 0.1358,
+        "half_loss": 0,
+        "full_loss": 0.768,
+        "split": false,
+        "fair_home": 798
+       },
+       "-0.75": {
+        "full_win": 0.0962,
+        "half_win": 0.1358,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.768,
+        "split": true,
+        "fair_home": 468
+       },
+       "-0.5": {
+        "full_win": 0.232,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.768,
+        "split": false,
+        "fair_home": 331
+       },
+       "-0.25": {
+        "full_win": 0.232,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2078,
+        "full_loss": 0.5603,
+        "split": true,
+        "fair_home": 286
+       },
+       "0.25": {
+        "full_win": 0.232,
+        "half_win": 0.2078,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.5603,
+        "split": true,
+        "fair_home": 167
+       },
+       "0.5": {
+        "full_win": 0.4397,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.5603,
+        "split": false,
+        "fair_home": 127
+       },
+       "0.75": {
+        "full_win": 0.4397,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.22,
+        "full_loss": 0.3403,
+        "split": true,
+        "fair_home": 102
+       },
+       "1.25": {
+        "full_win": 0.4397,
+        "half_win": 0.22,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3403,
+        "split": true,
+        "fair_home": -162
+       },
+       "1.5": {
+        "full_win": 0.6597,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3403,
+        "split": false,
+        "fair_home": -194
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "OUTCOME_VALIDATED"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    },
+    {
+     "event_key": "SOCCER|bundesliga:2026-10-17:schalke:mainz",
+     "match_id": "bundesliga:2026-10-17:schalke:mainz",
+     "date": "2026-10-17",
+     "time_local": "15:30",
+     "home": "FC Schalke 04",
+     "away": "1. FSV Mainz 05",
+     "home_key": "schalke",
+     "away_key": "mainz",
+     "lambda": {
+      "home": 1.2657,
+      "away": 1.7449
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.2782,
+       "draw": 0.2351,
+       "away": 0.4867,
+       "fair_home": 260,
+       "fair_draw": 325,
+       "fair_away": 105,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 3.01,
+       "over_1_5": 0.8024,
+       "over_2_5": 0.5792,
+       "over_3_5": 0.3551,
+       "fair_over_2_5": -138,
+       "fair_under_2_5": 138,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.5926,
+       "fair_yes": -145,
+       "fair_no": 145,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.2782,
+        "half_win": 0,
+        "push": 0.2351,
+        "half_loss": 0,
+        "full_loss": 0.4867,
+        "split": false,
+        "fair_home": 175
+       },
+       "1": {
+        "full_win": 0.5133,
+        "half_win": 0,
+        "push": 0.223,
+        "half_loss": 0,
+        "full_loss": 0.2637,
+        "split": false,
+        "fair_home": -195
+       },
+       "-1.5": {
+        "full_win": 0.1164,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.8836,
+        "split": false,
+        "fair_home": 759
+       },
+       "-1.25": {
+        "full_win": 0.1164,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1618,
+        "full_loss": 0.7218,
+        "split": true,
+        "fair_home": 690
+       },
+       "-1": {
+        "full_win": 0.1164,
+        "half_win": 0,
+        "push": 0.1618,
+        "half_loss": 0,
+        "full_loss": 0.7218,
+        "split": false,
+        "fair_home": 620
+       },
+       "-0.75": {
+        "full_win": 0.1164,
+        "half_win": 0.1618,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.7218,
+        "split": true,
+        "fair_home": 366
+       },
+       "-0.5": {
+        "full_win": 0.2782,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.7218,
+        "split": false,
+        "fair_home": 260
+       },
+       "-0.25": {
+        "full_win": 0.2782,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2351,
+        "full_loss": 0.4867,
+        "split": true,
+        "fair_home": 217
+       },
+       "0.25": {
+        "full_win": 0.2782,
+        "half_win": 0.2351,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.4867,
+        "split": true,
+        "fair_home": 123
+       },
+       "0.5": {
+        "full_win": 0.5133,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.4867,
+        "split": false,
+        "fair_home": -105
+       },
+       "0.75": {
+        "full_win": 0.5133,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.223,
+        "full_loss": 0.2637,
+        "split": true,
+        "fair_home": -137
+       },
+       "1.25": {
+        "full_win": 0.5133,
+        "half_win": 0.223,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2637,
+        "split": true,
+        "fair_home": -237
+       },
+       "1.5": {
+        "full_win": 0.7363,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2637,
+        "split": false,
+        "fair_home": -279
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "OUTCOME_VALIDATED"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    },
+    {
+     "event_key": "SOCCER|bundesliga:2026-10-17:unionberlin:dortmund",
+     "match_id": "bundesliga:2026-10-17:unionberlin:dortmund",
+     "date": "2026-10-17",
+     "time_local": "15:30",
+     "home": "1. FC Union Berlin",
+     "away": "Borussia Dortmund",
+     "home_key": "unionberlin",
+     "away_key": "dortmund",
+     "lambda": {
+      "home": 0.9791,
+      "away": 2.0966
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.1672,
+       "draw": 0.2022,
+       "away": 0.6306,
+       "fair_home": 498,
+       "fair_draw": 395,
+       "fair_away": -171,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 3.08,
+       "over_1_5": 0.8119,
+       "over_2_5": 0.5935,
+       "over_3_5": 0.3697,
+       "fair_over_2_5": -146,
+       "fair_under_2_5": 146,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.5476,
+       "fair_yes": -121,
+       "fair_no": 121,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.1672,
+        "half_win": 0,
+        "push": 0.2022,
+        "half_loss": 0,
+        "full_loss": 0.6306,
+        "split": false,
+        "fair_home": 377
+       },
+       "1": {
+        "full_win": 0.3694,
+        "half_win": 0,
+        "push": 0.2365,
+        "half_loss": 0,
+        "full_loss": 0.3941,
+        "split": false,
+        "fair_home": 107
+       },
+       "-1.5": {
+        "full_win": 0.0567,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.9433,
+        "split": false,
+        "fair_home": 1663
+       },
+       "-1.25": {
+        "full_win": 0.0567,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1105,
+        "full_loss": 0.8328,
+        "split": true,
+        "fair_home": 1566
+       },
+       "-1": {
+        "full_win": 0.0567,
+        "half_win": 0,
+        "push": 0.1105,
+        "half_loss": 0,
+        "full_loss": 0.8328,
+        "split": false,
+        "fair_home": 1469
+       },
+       "-0.75": {
+        "full_win": 0.0567,
+        "half_win": 0.1105,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.8328,
+        "split": true,
+        "fair_home": 744
+       },
+       "-0.5": {
+        "full_win": 0.1672,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.8328,
+        "split": false,
+        "fair_home": 498
+       },
+       "-0.25": {
+        "full_win": 0.1672,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2022,
+        "full_loss": 0.6306,
+        "split": true,
+        "fair_home": 438
+       },
+       "0.25": {
+        "full_win": 0.1672,
+        "half_win": 0.2022,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.6306,
+        "split": true,
+        "fair_home": 235
+       },
+       "0.5": {
+        "full_win": 0.3694,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.6306,
+        "split": false,
+        "fair_home": 171
+       },
+       "0.75": {
+        "full_win": 0.3694,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2365,
+        "full_loss": 0.3941,
+        "split": true,
+        "fair_home": 139
+       },
+       "1.25": {
+        "full_win": 0.3694,
+        "half_win": 0.2365,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3941,
+        "split": true,
+        "fair_home": -124
+       },
+       "1.5": {
+        "full_win": 0.6059,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3941,
+        "split": false,
+        "fair_home": -154
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "OUTCOME_VALIDATED"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    },
+    {
+     "event_key": "SOCCER|bundesliga:2026-10-17:werderbremen:paderborn",
+     "match_id": "bundesliga:2026-10-17:werderbremen:paderborn",
+     "date": "2026-10-17",
+     "time_local": "15:30",
+     "home": "Werder Bremen",
+     "away": "SC Paderborn 07",
+     "home_key": "werderbremen",
+     "away_key": "paderborn",
+     "lambda": {
+      "home": 1.504,
+      "away": 1.1293
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.4585,
+       "draw": 0.2566,
+       "away": 0.2849,
+       "fair_home": 118,
+       "fair_draw": 290,
+       "fair_away": 251,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 2.63,
+       "over_1_5": 0.739,
+       "over_2_5": 0.4899,
+       "over_3_5": 0.2713,
+       "fair_over_2_5": 104,
+       "fair_under_2_5": -104,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.5263,
+       "fair_yes": -111,
+       "fair_no": 111,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.4585,
+        "half_win": 0,
+        "push": 0.2566,
+        "half_loss": 0,
+        "full_loss": 0.2849,
+        "split": false,
+        "fair_home": -161
+       },
+       "1": {
+        "full_win": 0.7151,
+        "half_win": 0,
+        "push": 0.1725,
+        "half_loss": 0,
+        "full_loss": 0.1124,
+        "split": false,
+        "fair_home": -636
+       },
+       "-1.5": {
+        "full_win": 0.2287,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.7713,
+        "split": false,
+        "fair_home": 337
+       },
+       "-1.25": {
+        "full_win": 0.2287,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2298,
+        "full_loss": 0.5415,
+        "split": true,
+        "fair_home": 287
+       },
+       "-1": {
+        "full_win": 0.2287,
+        "half_win": 0,
+        "push": 0.2298,
+        "half_loss": 0,
+        "full_loss": 0.5415,
+        "split": false,
+        "fair_home": 237
+       },
+       "-0.75": {
+        "full_win": 0.2287,
+        "half_win": 0.2298,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.5415,
+        "split": true,
+        "fair_home": 158
+       },
+       "-0.5": {
+        "full_win": 0.4585,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.5415,
+        "split": false,
+        "fair_home": 118
+       },
+       "-0.25": {
+        "full_win": 0.4585,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2566,
+        "full_loss": 0.2849,
+        "split": true,
+        "fair_home": -111
+       },
+       "0.25": {
+        "full_win": 0.4585,
+        "half_win": 0.2566,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2849,
+        "split": true,
+        "fair_home": -206
+       },
+       "0.5": {
+        "full_win": 0.7151,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2849,
+        "split": false,
+        "fair_home": -251
+       },
+       "0.75": {
+        "full_win": 0.7151,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1725,
+        "full_loss": 0.1124,
+        "split": true,
+        "fair_home": -360
+       },
+       "1.25": {
+        "full_win": 0.7151,
+        "half_win": 0.1725,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1124,
+        "split": true,
+        "fair_home": -713
+       },
+       "1.5": {
+        "full_win": 0.8876,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1124,
+        "split": false,
+        "fair_home": -790
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "OUTCOME_VALIDATED"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    }
+   ]
+  },
+  "laliga": {
+   "label": "La Liga",
+   "sport_key": "soccer_spain_la_liga",
+   "model": "poisson",
+   "params_generated_at": "2026-10-13T06:17:56.221Z",
+   "validation": {
+    "three_way": "PROVISIONAL",
+    "total_over_2_5": "PROVISIONAL",
+    "btts": "PROVISIONAL",
+    "asian_handicap": "PROVISIONAL"
+   },
+   "value_claims": "DISABLED",
+   "value_reason": "never compared with closing prices, and no book price is captured for soccer",
+   "data": {
+    "state": "STALE",
+    "results_missing_last_14_days": 10,
+    "latest_result": "2026-09-20",
+    "note": "the source has not published 10 recent result(s); ratings miss them"
+   },
+   "games": [
+    {
+     "event_key": "SOCCER|laliga:2026-10-16:deportivolacoruna:levante",
+     "match_id": "laliga:2026-10-16:deportivolacoruna:levante",
+     "date": "2026-10-16",
+     "time_local": "21:00",
+     "home": "RC Deportivo La Coruña",
+     "away": "Levante UD",
+     "home_key": "deportivolacoruna",
+     "away_key": "levante",
+     "lambda": {
+      "home": 1.8692,
+      "away": 1.1928
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.5319,
+       "draw": 0.2259,
+       "away": 0.2422,
+       "fair_home": -114,
+       "fair_draw": 343,
+       "fair_away": 313,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 3.06,
+       "over_1_5": 0.8099,
+       "over_2_5": 0.5905,
+       "over_3_5": 0.3666,
+       "fair_over_2_5": -144,
+       "fair_under_2_5": 144,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.5892,
+       "fair_yes": -143,
+       "fair_no": 143,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.5319,
+        "half_win": 0,
+        "push": 0.2259,
+        "half_loss": 0,
+        "full_loss": 0.2422,
+        "split": false,
+        "fair_home": -220
+       },
+       "1": {
+        "full_win": 0.7578,
+        "half_win": 0,
+        "push": 0.146,
+        "half_loss": 0,
+        "full_loss": 0.0963,
+        "split": false,
+        "fair_home": -787
+       },
+       "-1.5": {
+        "full_win": 0.3031,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.6969,
+        "split": false,
+        "fair_home": 230
+       },
+       "-1.25": {
+        "full_win": 0.3031,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2288,
+        "full_loss": 0.4681,
+        "split": true,
+        "fair_home": 192
+       },
+       "-1": {
+        "full_win": 0.3031,
+        "half_win": 0,
+        "push": 0.2288,
+        "half_loss": 0,
+        "full_loss": 0.4681,
+        "split": false,
+        "fair_home": 154
+       },
+       "-0.75": {
+        "full_win": 0.3031,
+        "half_win": 0.2288,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.4681,
+        "split": true,
+        "fair_home": 112
+       },
+       "-0.5": {
+        "full_win": 0.5319,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.4681,
+        "split": false,
+        "fair_home": -114
+       },
+       "-0.25": {
+        "full_win": 0.5319,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2259,
+        "full_loss": 0.2422,
+        "split": true,
+        "fair_home": -150
+       },
+       "0.25": {
+        "full_win": 0.5319,
+        "half_win": 0.2259,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2422,
+        "split": true,
+        "fair_home": -266
+       },
+       "0.5": {
+        "full_win": 0.7578,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2422,
+        "split": false,
+        "fair_home": -313
+       },
+       "0.75": {
+        "full_win": 0.7578,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.146,
+        "full_loss": 0.0963,
+        "split": true,
+        "fair_home": -448
+       },
+       "1.25": {
+        "full_win": 0.7578,
+        "half_win": 0.146,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.0963,
+        "split": true,
+        "fair_home": -863
+       },
+       "1.5": {
+        "full_win": 0.9037,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.0963,
+        "split": false,
+        "fair_home": -939
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "PROVISIONAL"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    },
+    {
+     "event_key": "SOCCER|laliga:2026-10-17:espanyolbarcelona:atletico",
+     "match_id": "laliga:2026-10-17:espanyolbarcelona:atletico",
+     "date": "2026-10-17",
+     "time_local": "14:00",
+     "home": "RCD Espanyol de Barcelona",
+     "away": "Club Atlético de Madrid",
+     "home_key": "espanyolbarcelona",
+     "away_key": "atletico",
+     "lambda": {
+      "home": 1.0536,
+      "away": 1.6248
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.2461,
+       "draw": 0.2472,
+       "away": 0.5067,
+       "fair_home": 306,
+       "fair_draw": 305,
+       "fair_away": -103,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 2.68,
+       "over_1_5": 0.7474,
+       "over_2_5": 0.5011,
+       "over_3_5": 0.2812,
+       "fair_over_2_5": -100,
+       "fair_under_2_5": 100,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.523,
+       "fair_yes": -110,
+       "fair_no": 110,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.2461,
+        "half_win": 0,
+        "push": 0.2472,
+        "half_loss": 0,
+        "full_loss": 0.5067,
+        "split": false,
+        "fair_home": 206
+       },
+       "1": {
+        "full_win": 0.4933,
+        "half_win": 0,
+        "push": 0.2386,
+        "half_loss": 0,
+        "full_loss": 0.2681,
+        "split": false,
+        "fair_home": -184
+       },
+       "-1.5": {
+        "full_win": 0.0914,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.9086,
+        "split": false,
+        "fair_home": 994
+       },
+       "-1.25": {
+        "full_win": 0.0914,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1547,
+        "full_loss": 0.7539,
+        "split": true,
+        "fair_home": 910
+       },
+       "-1": {
+        "full_win": 0.0914,
+        "half_win": 0,
+        "push": 0.1547,
+        "half_loss": 0,
+        "full_loss": 0.7539,
+        "split": false,
+        "fair_home": 825
+       },
+       "-0.75": {
+        "full_win": 0.0914,
+        "half_win": 0.1547,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.7539,
+        "split": true,
+        "fair_home": 447
+       },
+       "-0.5": {
+        "full_win": 0.2461,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.7539,
+        "split": false,
+        "fair_home": 306
+       },
+       "-0.25": {
+        "full_win": 0.2461,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2472,
+        "full_loss": 0.5067,
+        "split": true,
+        "fair_home": 256
+       },
+       "0.25": {
+        "full_win": 0.2461,
+        "half_win": 0.2472,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.5067,
+        "split": true,
+        "fair_home": 137
+       },
+       "0.5": {
+        "full_win": 0.4933,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.5067,
+        "split": false,
+        "fair_home": 103
+       },
+       "0.75": {
+        "full_win": 0.4933,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2386,
+        "full_loss": 0.2681,
+        "split": true,
+        "fair_home": -127
+       },
+       "1.25": {
+        "full_win": 0.4933,
+        "half_win": 0.2386,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2681,
+        "split": true,
+        "fair_home": -228
+       },
+       "1.5": {
+        "full_win": 0.7319,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2681,
+        "split": false,
+        "fair_home": -273
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "PROVISIONAL"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    },
+    {
+     "event_key": "SOCCER|laliga:2026-10-17:realbetis:barcelona",
+     "match_id": "laliga:2026-10-17:realbetis:barcelona",
+     "date": "2026-10-17",
+     "time_local": "18:30",
+     "home": "Real Betis Balompié",
+     "away": "FC Barcelona",
+     "home_key": "realbetis",
+     "away_key": "barcelona",
+     "lambda": {
+      "home": 1.319,
+      "away": 2.1003
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.2369,
+       "draw": 0.2093,
+       "away": 0.5538,
+       "fair_home": 322,
+       "fair_draw": 378,
+       "fair_away": -124,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 3.42,
+       "over_1_5": 0.8553,
+       "over_2_5": 0.664,
+       "over_3_5": 0.4459,
+       "fair_over_2_5": -198,
+       "fair_under_2_5": 198,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.6429,
+       "fair_yes": -180,
+       "fair_no": 180,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.2369,
+        "half_win": 0,
+        "push": 0.2093,
+        "half_loss": 0,
+        "full_loss": 0.5538,
+        "split": false,
+        "fair_home": 234
+       },
+       "1": {
+        "full_win": 0.4462,
+        "half_win": 0,
+        "push": 0.2197,
+        "half_loss": 0,
+        "full_loss": 0.3342,
+        "split": false,
+        "fair_home": -134
+       },
+       "-1.5": {
+        "full_win": 0.0989,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.9011,
+        "split": false,
+        "fair_home": 911
+       },
+       "-1.25": {
+        "full_win": 0.0989,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1379,
+        "full_loss": 0.7631,
+        "split": true,
+        "fair_home": 841
+       },
+       "-1": {
+        "full_win": 0.0989,
+        "half_win": 0,
+        "push": 0.1379,
+        "half_loss": 0,
+        "full_loss": 0.7631,
+        "split": false,
+        "fair_home": 771
+       },
+       "-0.75": {
+        "full_win": 0.0989,
+        "half_win": 0.1379,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.7631,
+        "split": true,
+        "fair_home": 455
+       },
+       "-0.5": {
+        "full_win": 0.2369,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.7631,
+        "split": false,
+        "fair_home": 322
+       },
+       "-0.25": {
+        "full_win": 0.2369,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2093,
+        "full_loss": 0.5538,
+        "split": true,
+        "fair_home": 278
+       },
+       "0.25": {
+        "full_win": 0.2369,
+        "half_win": 0.2093,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.5538,
+        "split": true,
+        "fair_home": 162
+       },
+       "0.5": {
+        "full_win": 0.4462,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.5538,
+        "split": false,
+        "fair_home": 124
+       },
+       "0.75": {
+        "full_win": 0.4462,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2197,
+        "full_loss": 0.3342,
+        "split": true,
+        "fair_home": -100
+       },
+       "1.25": {
+        "full_win": 0.4462,
+        "half_win": 0.2197,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3342,
+        "split": true,
+        "fair_home": -166
+       },
+       "1.5": {
+        "full_win": 0.6658,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3342,
+        "split": false,
+        "fair_home": -199
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "PROVISIONAL"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    },
+    {
+     "event_key": "SOCCER|laliga:2026-10-17:valencia:athleticclub",
+     "match_id": "laliga:2026-10-17:valencia:athleticclub",
+     "date": "2026-10-17",
+     "time_local": "21:00",
+     "home": "Valencia CF",
+     "away": "Athletic Club",
+     "home_key": "valencia",
+     "away_key": "athleticclub",
+     "lambda": {
+      "home": 1.1904,
+      "away": 1.2117
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.3566,
+       "draw": 0.2765,
+       "away": 0.3669,
+       "fair_home": 180,
+       "fair_draw": 262,
+       "fair_away": 173,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 2.4,
+       "over_1_5": 0.692,
+       "over_2_5": 0.4308,
+       "over_3_5": 0.2217,
+       "fair_over_2_5": 132,
+       "fair_under_2_5": -132,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.4887,
+       "fair_yes": 105,
+       "fair_no": -105,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.3566,
+        "half_win": 0,
+        "push": 0.2765,
+        "half_loss": 0,
+        "full_loss": 0.3669,
+        "split": false,
+        "fair_home": 103
+       },
+       "1": {
+        "full_win": 0.6331,
+        "half_win": 0,
+        "push": 0.2103,
+        "half_loss": 0,
+        "full_loss": 0.1566,
+        "split": false,
+        "fair_home": -404
+       },
+       "-1.5": {
+        "full_win": 0.15,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.85,
+        "split": false,
+        "fair_home": 567
+       },
+       "-1.25": {
+        "full_win": 0.15,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2066,
+        "full_loss": 0.6434,
+        "split": true,
+        "fair_home": 498
+       },
+       "-1": {
+        "full_win": 0.15,
+        "half_win": 0,
+        "push": 0.2066,
+        "half_loss": 0,
+        "full_loss": 0.6434,
+        "split": false,
+        "fair_home": 429
+       },
+       "-0.75": {
+        "full_win": 0.15,
+        "half_win": 0.2066,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.6434,
+        "split": true,
+        "fair_home": 254
+       },
+       "-0.5": {
+        "full_win": 0.3566,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.6434,
+        "split": false,
+        "fair_home": 180
+       },
+       "-0.25": {
+        "full_win": 0.3566,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2765,
+        "full_loss": 0.3669,
+        "split": true,
+        "fair_home": 142
+       },
+       "0.25": {
+        "full_win": 0.3566,
+        "half_win": 0.2765,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3669,
+        "split": true,
+        "fair_home": -135
+       },
+       "0.5": {
+        "full_win": 0.6331,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3669,
+        "split": false,
+        "fair_home": -173
+       },
+       "0.75": {
+        "full_win": 0.6331,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2103,
+        "full_loss": 0.1566,
+        "split": true,
+        "fair_home": -242
+       },
+       "1.25": {
+        "full_win": 0.6331,
+        "half_win": 0.2103,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1566,
+        "split": true,
+        "fair_home": -471
+       },
+       "1.5": {
+        "full_win": 0.8434,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1566,
+        "split": false,
+        "fair_home": -538
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "PROVISIONAL"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    },
+    {
+     "event_key": "SOCCER|laliga:2026-10-17:villarreal:elche",
+     "match_id": "laliga:2026-10-17:villarreal:elche",
+     "date": "2026-10-17",
+     "time_local": "16:15",
+     "home": "Villarreal CF",
+     "away": "Elche CF",
+     "home_key": "villarreal",
+     "away_key": "elche",
+     "lambda": {
+      "home": 2.5607,
+      "away": 1.1682
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.6745,
+       "draw": 0.1713,
+       "away": 0.1543,
+       "fair_home": -207,
+       "fair_draw": 484,
+       "fair_away": 548,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 3.73,
+       "over_1_5": 0.8864,
+       "over_2_5": 0.7194,
+       "over_3_5": 0.5118,
+       "fair_over_2_5": -256,
+       "fair_under_2_5": 256,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.6359,
+       "fair_yes": -175,
+       "fair_no": 175,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.6745,
+        "half_win": 0,
+        "push": 0.1713,
+        "half_loss": 0,
+        "full_loss": 0.1543,
+        "split": false,
+        "fair_home": -437
+       },
+       "1": {
+        "full_win": 0.8457,
+        "half_win": 0,
+        "push": 0.097,
+        "half_loss": 0,
+        "full_loss": 0.0572,
+        "split": false,
+        "fair_home": -1478
+       },
+       "-1.5": {
+        "full_win": 0.4618,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.5382,
+        "split": false,
+        "fair_home": 117
+       },
+       "-1.25": {
+        "full_win": 0.4618,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2127,
+        "full_loss": 0.3255,
+        "split": true,
+        "fair_home": -107
+       },
+       "-1": {
+        "full_win": 0.4618,
+        "half_win": 0,
+        "push": 0.2127,
+        "half_loss": 0,
+        "full_loss": 0.3255,
+        "split": false,
+        "fair_home": -142
+       },
+       "-0.75": {
+        "full_win": 0.4618,
+        "half_win": 0.2127,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3255,
+        "split": true,
+        "fair_home": -175
+       },
+       "-0.5": {
+        "full_win": 0.6745,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3255,
+        "split": false,
+        "fair_home": -207
+       },
+       "-0.25": {
+        "full_win": 0.6745,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1713,
+        "full_loss": 0.1543,
+        "split": true,
+        "fair_home": -281
+       },
+       "0.25": {
+        "full_win": 0.6745,
+        "half_win": 0.1713,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1543,
+        "split": true,
+        "fair_home": -493
+       },
+       "0.5": {
+        "full_win": 0.8457,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1543,
+        "split": false,
+        "fair_home": -548
+       },
+       "0.75": {
+        "full_win": 0.8457,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.097,
+        "full_loss": 0.0572,
+        "split": true,
+        "fair_home": -800
+       },
+       "1.25": {
+        "full_win": 0.8457,
+        "half_win": 0.097,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.0572,
+        "split": true,
+        "fair_home": -1562
+       },
+       "1.5": {
+        "full_win": 0.9428,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.0572,
+        "split": false,
+        "fair_home": -1647
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "PROVISIONAL"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    }
+   ]
+  },
+  "seriea": {
+   "label": "Serie A",
+   "sport_key": "soccer_italy_serie_a",
+   "model": "poisson",
+   "params_generated_at": "2026-10-13T06:18:16.947Z",
+   "validation": {
+    "three_way": "PROVISIONAL",
+    "total_over_2_5": "PROVISIONAL",
+    "btts": "PROVISIONAL",
+    "asian_handicap": "PROVISIONAL"
+   },
+   "value_claims": "DISABLED",
+   "value_reason": "never compared with closing prices, and no book price is captured for soccer",
+   "data": {
+    "state": "STALE",
+    "results_missing_last_14_days": 10,
+    "latest_result": "2026-09-20",
+    "note": "the source has not published 10 recent result(s); ratings miss them"
+   },
+   "games": [
+    {
+     "event_key": "SOCCER|seriea:2026-10-16:frosinone:sassuolo",
+     "match_id": "seriea:2026-10-16:frosinone:sassuolo",
+     "date": "2026-10-16",
+     "time_local": "20:45",
+     "home": "Frosinone Calcio",
+     "away": "US Sassuolo Calcio",
+     "home_key": "frosinone",
+     "away_key": "sassuolo",
+     "lambda": {
+      "home": 1.5498,
+      "away": 1.1078
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.4751,
+       "draw": 0.2532,
+       "away": 0.2717,
+       "fair_home": 110,
+       "fair_draw": 295,
+       "fair_away": 268,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 2.66,
+       "over_1_5": 0.7435,
+       "over_2_5": 0.4959,
+       "over_3_5": 0.2766,
+       "fair_over_2_5": 102,
+       "fair_under_2_5": -102,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.5275,
+       "fair_yes": -112,
+       "fair_no": 112,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.4751,
+        "half_win": 0,
+        "push": 0.2532,
+        "half_loss": 0,
+        "full_loss": 0.2717,
+        "split": false,
+        "fair_home": -175
+       },
+       "1": {
+        "full_win": 0.7283,
+        "half_win": 0,
+        "push": 0.1664,
+        "half_loss": 0,
+        "full_loss": 0.1053,
+        "split": false,
+        "fair_home": -692
+       },
+       "-1.5": {
+        "full_win": 0.2423,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.7577,
+        "split": false,
+        "fair_home": 313
+       },
+       "-1.25": {
+        "full_win": 0.2423,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2328,
+        "full_loss": 0.5249,
+        "split": true,
+        "fair_home": 265
+       },
+       "-1": {
+        "full_win": 0.2423,
+        "half_win": 0,
+        "push": 0.2328,
+        "half_loss": 0,
+        "full_loss": 0.5249,
+        "split": false,
+        "fair_home": 217
+       },
+       "-0.75": {
+        "full_win": 0.2423,
+        "half_win": 0.2328,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.5249,
+        "split": true,
+        "fair_home": 146
+       },
+       "-0.5": {
+        "full_win": 0.4751,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.5249,
+        "split": false,
+        "fair_home": 110
+       },
+       "-0.25": {
+        "full_win": 0.4751,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2532,
+        "full_loss": 0.2717,
+        "split": true,
+        "fair_home": -119
+       },
+       "0.25": {
+        "full_win": 0.4751,
+        "half_win": 0.2532,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2717,
+        "split": true,
+        "fair_home": -221
+       },
+       "0.5": {
+        "full_win": 0.7283,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2717,
+        "split": false,
+        "fair_home": -268
+       },
+       "0.75": {
+        "full_win": 0.7283,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1664,
+        "full_loss": 0.1053,
+        "split": true,
+        "fair_home": -386
+       },
+       "1.25": {
+        "full_win": 0.7283,
+        "half_win": 0.1664,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1053,
+        "split": true,
+        "fair_home": -771
+       },
+       "1.5": {
+        "full_win": 0.8947,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1053,
+        "split": false,
+        "fair_home": -850
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "PROVISIONAL"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    },
+    {
+     "event_key": "SOCCER|seriea:2026-10-17:bologna:inter",
+     "match_id": "seriea:2026-10-17:bologna:inter",
+     "date": "2026-10-17",
+     "time_local": "18:00",
+     "home": "Bologna FC 1909",
+     "away": "Inter",
+     "home_key": "bologna",
+     "away_key": "inter",
+     "lambda": {
+      "home": 1.0824,
+      "away": 2.0699
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.1914,
+       "draw": 0.2076,
+       "away": 0.601,
+       "fair_home": 422,
+       "fair_draw": 382,
+       "fair_away": -151,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 3.15,
+       "over_1_5": 0.8225,
+       "over_2_5": 0.6101,
+       "over_3_5": 0.3868,
+       "fair_over_2_5": -156,
+       "fair_under_2_5": 156,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.5778,
+       "fair_yes": -137,
+       "fair_no": 137,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.1914,
+        "half_win": 0,
+        "push": 0.2076,
+        "half_loss": 0,
+        "full_loss": 0.601,
+        "split": false,
+        "fair_home": 314
+       },
+       "1": {
+        "full_win": 0.399,
+        "half_win": 0,
+        "push": 0.2324,
+        "half_loss": 0,
+        "full_loss": 0.3686,
+        "split": false,
+        "fair_home": -108
+       },
+       "-1.5": {
+        "full_win": 0.0699,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.9301,
+        "split": false,
+        "fair_home": 1330
+       },
+       "-1.25": {
+        "full_win": 0.0699,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1215,
+        "full_loss": 0.8086,
+        "split": true,
+        "fair_home": 1243
+       },
+       "-1": {
+        "full_win": 0.0699,
+        "half_win": 0,
+        "push": 0.1215,
+        "half_loss": 0,
+        "full_loss": 0.8086,
+        "split": false,
+        "fair_home": 1156
+       },
+       "-0.75": {
+        "full_win": 0.0699,
+        "half_win": 0.1215,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.8086,
+        "split": true,
+        "fair_home": 619
+       },
+       "-0.5": {
+        "full_win": 0.1914,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.8086,
+        "split": false,
+        "fair_home": 422
+       },
+       "-0.25": {
+        "full_win": 0.1914,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2076,
+        "full_loss": 0.601,
+        "split": true,
+        "fair_home": 368
+       },
+       "0.25": {
+        "full_win": 0.1914,
+        "half_win": 0.2076,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.601,
+        "split": true,
+        "fair_home": 204
+       },
+       "0.5": {
+        "full_win": 0.399,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.601,
+        "split": false,
+        "fair_home": 151
+       },
+       "0.75": {
+        "full_win": 0.399,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2324,
+        "full_loss": 0.3686,
+        "split": true,
+        "fair_home": 121
+       },
+       "1.25": {
+        "full_win": 0.399,
+        "half_win": 0.2324,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3686,
+        "split": true,
+        "fair_home": -140
+       },
+       "1.5": {
+        "full_win": 0.6314,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3686,
+        "split": false,
+        "fair_home": -171
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "PROVISIONAL"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    },
+    {
+     "event_key": "SOCCER|seriea:2026-10-17:roma:genoacfc",
+     "match_id": "seriea:2026-10-17:roma:genoacfc",
+     "date": "2026-10-17",
+     "time_local": "20:45",
+     "home": "AS Roma",
+     "away": "Genoa CFC",
+     "home_key": "roma",
+     "away_key": "genoacfc",
+     "lambda": {
+      "home": 2.1128,
+      "away": 0.6872
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.7045,
+       "draw": 0.1868,
+       "away": 0.1087,
+       "fair_home": -238,
+       "fair_draw": 435,
+       "fair_away": 820,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 2.8,
+       "over_1_5": 0.7689,
+       "over_2_5": 0.5305,
+       "over_3_5": 0.3081,
+       "fair_over_2_5": -113,
+       "fair_under_2_5": 113,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.4369,
+       "fair_yes": 129,
+       "fair_no": -129,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.7045,
+        "half_win": 0,
+        "push": 0.1868,
+        "half_loss": 0,
+        "full_loss": 0.1087,
+        "split": false,
+        "fair_home": -648
+       },
+       "1": {
+        "full_win": 0.8913,
+        "half_win": 0,
+        "push": 0.0804,
+        "half_loss": 0,
+        "full_loss": 0.0282,
+        "split": false,
+        "fair_home": -3157
+       },
+       "-1.5": {
+        "full_win": 0.4573,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.5427,
+        "split": false,
+        "fair_home": 119
+       },
+       "-1.25": {
+        "full_win": 0.4573,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2473,
+        "full_loss": 0.2955,
+        "split": true,
+        "fair_home": -109
+       },
+       "-1": {
+        "full_win": 0.4573,
+        "half_win": 0,
+        "push": 0.2473,
+        "half_loss": 0,
+        "full_loss": 0.2955,
+        "split": false,
+        "fair_home": -155
+       },
+       "-0.75": {
+        "full_win": 0.4573,
+        "half_win": 0.2473,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2955,
+        "split": true,
+        "fair_home": -197
+       },
+       "-0.5": {
+        "full_win": 0.7045,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.2955,
+        "split": false,
+        "fair_home": -238
+       },
+       "-0.25": {
+        "full_win": 0.7045,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1868,
+        "full_loss": 0.1087,
+        "split": true,
+        "fair_home": -349
+       },
+       "0.25": {
+        "full_win": 0.7045,
+        "half_win": 0.1868,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1087,
+        "split": true,
+        "fair_home": -734
+       },
+       "0.5": {
+        "full_win": 0.8913,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1087,
+        "split": false,
+        "fair_home": -820
+       },
+       "0.75": {
+        "full_win": 0.8913,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.0804,
+        "full_loss": 0.0282,
+        "split": true,
+        "fair_home": -1302
+       },
+       "1.25": {
+        "full_win": 0.8913,
+        "half_win": 0.0804,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.0282,
+        "split": true,
+        "fair_home": -3299
+       },
+       "1.5": {
+        "full_win": 0.9718,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.0282,
+        "split": false,
+        "fair_home": -3442
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "PROVISIONAL"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    },
+    {
+     "event_key": "SOCCER|seriea:2026-10-17:venezia:napoli",
+     "match_id": "seriea:2026-10-17:venezia:napoli",
+     "date": "2026-10-17",
+     "time_local": "15:00",
+     "home": "Venezia FC",
+     "away": "SSC Napoli",
+     "home_key": "venezia",
+     "away_key": "napoli",
+     "lambda": {
+      "home": 0.6637,
+      "away": 2.1329
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.1027,
+       "draw": 0.1832,
+       "away": 0.7141,
+       "fair_home": 873,
+       "fair_draw": 446,
+       "fair_away": -250,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 2.8,
+       "over_1_5": 0.7683,
+       "over_2_5": 0.5297,
+       "over_3_5": 0.3073,
+       "fair_over_2_5": -113,
+       "fair_under_2_5": 113,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.4276,
+       "fair_yes": 134,
+       "fair_no": -134,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.1027,
+        "half_win": 0,
+        "push": 0.1832,
+        "half_loss": 0,
+        "full_loss": 0.7141,
+        "split": false,
+        "fair_home": 695
+       },
+       "1": {
+        "full_win": 0.2859,
+        "half_win": 0,
+        "push": 0.2467,
+        "half_loss": 0,
+        "full_loss": 0.4673,
+        "split": false,
+        "fair_home": 163
+       },
+       "-1.5": {
+        "full_win": 0.0259,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.9741,
+        "split": false,
+        "fair_home": 3754
+       },
+       "-1.25": {
+        "full_win": 0.0259,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.0768,
+        "full_loss": 0.8973,
+        "split": true,
+        "fair_home": 3606
+       },
+       "-1": {
+        "full_win": 0.0259,
+        "half_win": 0,
+        "push": 0.0768,
+        "half_loss": 0,
+        "full_loss": 0.8973,
+        "split": false,
+        "fair_home": 3458
+       },
+       "-0.75": {
+        "full_win": 0.0259,
+        "half_win": 0.0768,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.8973,
+        "split": true,
+        "fair_home": 1395
+       },
+       "-0.5": {
+        "full_win": 0.1027,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.8973,
+        "split": false,
+        "fair_home": 873
+       },
+       "-0.25": {
+        "full_win": 0.1027,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1832,
+        "full_loss": 0.7141,
+        "split": true,
+        "fair_home": 784
+       },
+       "0.25": {
+        "full_win": 0.1027,
+        "half_win": 0.1832,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.7141,
+        "split": true,
+        "fair_home": 367
+       },
+       "0.5": {
+        "full_win": 0.2859,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.7141,
+        "split": false,
+        "fair_home": 250
+       },
+       "0.75": {
+        "full_win": 0.2859,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2467,
+        "full_loss": 0.4673,
+        "split": true,
+        "fair_home": 207
+       },
+       "1.25": {
+        "full_win": 0.2859,
+        "half_win": 0.2467,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.4673,
+        "split": true,
+        "fair_home": 114
+       },
+       "1.5": {
+        "full_win": 0.5327,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.4673,
+        "split": false,
+        "fair_home": -114
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "PROVISIONAL"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    }
+   ]
+  },
+  "ligue1": {
+   "label": "Ligue 1",
+   "sport_key": "soccer_france_ligue_one",
+   "model": "poisson",
+   "params_generated_at": "2026-10-13T06:18:39.675Z",
+   "validation": {
+    "three_way": "PROVISIONAL",
+    "total_over_2_5": "PROVISIONAL",
+    "btts": "PROVISIONAL",
+    "asian_handicap": "OUTCOME_VALIDATED"
+   },
+   "value_claims": "DISABLED",
+   "value_reason": "never compared with closing prices, and no book price is captured for soccer",
+   "data": {
+    "state": "STALE",
+    "results_missing_last_14_days": 9,
+    "latest_result": "2026-09-20",
+    "note": "the source has not published 9 recent result(s); ratings miss them"
+   },
+   "games": [
+    {
+     "event_key": "SOCCER|ligue1:2026-10-16:lemans:toulouse",
+     "match_id": "ligue1:2026-10-16:lemans:toulouse",
+     "date": "2026-10-16",
+     "time_local": "20:45",
+     "home": "Le Mans FC",
+     "away": "Toulouse FC",
+     "home_key": "lemans",
+     "away_key": "toulouse",
+     "lambda": {
+      "home": 1.6195,
+      "away": 1.6458
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.3786,
+       "draw": 0.2316,
+       "away": 0.3898,
+       "fair_home": 164,
+       "fair_draw": 332,
+       "fair_away": 157,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 3.27,
+       "over_1_5": 0.8371,
+       "over_2_5": 0.6335,
+       "over_3_5": 0.412,
+       "fair_over_2_5": -173,
+       "fair_under_2_5": 173,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.6473,
+       "fair_yes": -184,
+       "fair_no": 184,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.3786,
+        "half_win": 0,
+        "push": 0.2316,
+        "half_loss": 0,
+        "full_loss": 0.3898,
+        "split": false,
+        "fair_home": 103
+       },
+       "1": {
+        "full_win": 0.6102,
+        "half_win": 0,
+        "push": 0.1933,
+        "half_loss": 0,
+        "full_loss": 0.1965,
+        "split": false,
+        "fair_home": -311
+       },
+       "-1.5": {
+        "full_win": 0.1884,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.8116,
+        "split": false,
+        "fair_home": 431
+       },
+       "-1.25": {
+        "full_win": 0.1884,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1902,
+        "full_loss": 0.6214,
+        "split": true,
+        "fair_home": 380
+       },
+       "-1": {
+        "full_win": 0.1884,
+        "half_win": 0,
+        "push": 0.1902,
+        "half_loss": 0,
+        "full_loss": 0.6214,
+        "split": false,
+        "fair_home": 330
+       },
+       "-0.75": {
+        "full_win": 0.1884,
+        "half_win": 0.1902,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.6214,
+        "split": true,
+        "fair_home": 219
+       },
+       "-0.5": {
+        "full_win": 0.3786,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.6214,
+        "split": false,
+        "fair_home": 164
+       },
+       "-0.25": {
+        "full_win": 0.3786,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2316,
+        "full_loss": 0.3898,
+        "split": true,
+        "fair_home": 134
+       },
+       "0.25": {
+        "full_win": 0.3786,
+        "half_win": 0.2316,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3898,
+        "split": true,
+        "fair_home": -127
+       },
+       "0.5": {
+        "full_win": 0.6102,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3898,
+        "split": false,
+        "fair_home": -157
+       },
+       "0.75": {
+        "full_win": 0.6102,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1933,
+        "full_loss": 0.1965,
+        "split": true,
+        "fair_home": -208
+       },
+       "1.25": {
+        "full_win": 0.6102,
+        "half_win": 0.1933,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1965,
+        "split": true,
+        "fair_home": -360
+       },
+       "1.5": {
+        "full_win": 0.8035,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1965,
+        "split": false,
+        "fair_home": -409
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "OUTCOME_VALIDATED"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    },
+    {
+     "event_key": "SOCCER|ligue1:2026-10-17:estroyes:lens",
+     "match_id": "ligue1:2026-10-17:estroyes:lens",
+     "date": "2026-10-17",
+     "time_local": "20:45",
+     "home": "ESTAC Troyes",
+     "away": "Racing Club de Lens",
+     "home_key": "estroyes",
+     "away_key": "lens",
+     "lambda": {
+      "home": 1.1019,
+      "away": 2.4244
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.1561,
+       "draw": 0.1789,
+       "away": 0.665,
+       "fair_home": 541,
+       "fair_draw": 459,
+       "fair_away": -198,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 3.53,
+       "over_1_5": 0.8669,
+       "over_2_5": 0.684,
+       "over_3_5": 0.469,
+       "fair_over_2_5": -216,
+       "fair_under_2_5": 216,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.6086,
+       "fair_yes": -156,
+       "fair_no": 156,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.1561,
+        "half_win": 0,
+        "push": 0.1789,
+        "half_loss": 0,
+        "full_loss": 0.665,
+        "split": false,
+        "fair_home": 426
+       },
+       "1": {
+        "full_win": 0.335,
+        "half_win": 0,
+        "push": 0.2198,
+        "half_loss": 0,
+        "full_loss": 0.4452,
+        "split": false,
+        "fair_home": 133
+       },
+       "-1.5": {
+        "full_win": 0.0562,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.9438,
+        "split": false,
+        "fair_home": 1680
+       },
+       "-1.25": {
+        "full_win": 0.0562,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.0999,
+        "full_loss": 0.8439,
+        "split": true,
+        "fair_home": 1591
+       },
+       "-1": {
+        "full_win": 0.0562,
+        "half_win": 0,
+        "push": 0.0999,
+        "half_loss": 0,
+        "full_loss": 0.8439,
+        "split": false,
+        "fair_home": 1502
+       },
+       "-0.75": {
+        "full_win": 0.0562,
+        "half_win": 0.0999,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.8439,
+        "split": true,
+        "fair_home": 795
+       },
+       "-0.5": {
+        "full_win": 0.1561,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.8439,
+        "split": false,
+        "fair_home": 541
+       },
+       "-0.25": {
+        "full_win": 0.1561,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1789,
+        "full_loss": 0.665,
+        "split": true,
+        "fair_home": 483
+       },
+       "0.25": {
+        "full_win": 0.1561,
+        "half_win": 0.1789,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.665,
+        "split": true,
+        "fair_home": 271
+       },
+       "0.5": {
+        "full_win": 0.335,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.665,
+        "split": false,
+        "fair_home": 198
+       },
+       "0.75": {
+        "full_win": 0.335,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2198,
+        "full_loss": 0.4452,
+        "split": true,
+        "fair_home": 166
+       },
+       "1.25": {
+        "full_win": 0.335,
+        "half_win": 0.2198,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.4452,
+        "split": true,
+        "fair_home": 100
+       },
+       "1.5": {
+        "full_win": 0.5548,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.4452,
+        "split": false,
+        "fair_home": -125
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "OUTCOME_VALIDATED"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    },
+    {
+     "event_key": "SOCCER|ligue1:2026-10-17:lilleosc:brestois",
+     "match_id": "ligue1:2026-10-17:lilleosc:brestois",
+     "date": "2026-10-17",
+     "time_local": "20:45",
+     "home": "Lille OSC",
+     "away": "Stade Brestois 29",
+     "home_key": "lilleosc",
+     "away_key": "brestois",
+     "lambda": {
+      "home": 1.8959,
+      "away": 0.887
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.6108,
+       "draw": 0.2187,
+       "away": 0.1705,
+       "fair_home": -157,
+       "fair_draw": 357,
+       "fair_away": 486,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 2.78,
+       "over_1_5": 0.766,
+       "over_2_5": 0.5265,
+       "over_3_5": 0.3043,
+       "fair_over_2_5": -111,
+       "fair_under_2_5": 111,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.4998,
+       "fair_yes": 100,
+       "fair_no": -100,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.6108,
+        "half_win": 0,
+        "push": 0.2187,
+        "half_loss": 0,
+        "full_loss": 0.1705,
+        "split": false,
+        "fair_home": -358
+       },
+       "1": {
+        "full_win": 0.8295,
+        "half_win": 0,
+        "push": 0.1159,
+        "half_loss": 0,
+        "full_loss": 0.0546,
+        "split": false,
+        "fair_home": -1519
+       },
+       "-1.5": {
+        "full_win": 0.363,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.637,
+        "split": false,
+        "fair_home": 175
+       },
+       "-1.25": {
+        "full_win": 0.363,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2477,
+        "full_loss": 0.3892,
+        "split": true,
+        "fair_home": 141
+       },
+       "-1": {
+        "full_win": 0.363,
+        "half_win": 0,
+        "push": 0.2477,
+        "half_loss": 0,
+        "full_loss": 0.3892,
+        "split": false,
+        "fair_home": 107
+       },
+       "-0.75": {
+        "full_win": 0.363,
+        "half_win": 0.2477,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3892,
+        "split": true,
+        "fair_home": -125
+       },
+       "-0.5": {
+        "full_win": 0.6108,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3892,
+        "split": false,
+        "fair_home": -157
+       },
+       "-0.25": {
+        "full_win": 0.6108,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2187,
+        "full_loss": 0.1705,
+        "split": true,
+        "fair_home": -218
+       },
+       "0.25": {
+        "full_win": 0.6108,
+        "half_win": 0.2187,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1705,
+        "split": true,
+        "fair_home": -422
+       },
+       "0.5": {
+        "full_win": 0.8295,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.1705,
+        "split": false,
+        "fair_home": -486
+       },
+       "0.75": {
+        "full_win": 0.8295,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1159,
+        "full_loss": 0.0546,
+        "split": true,
+        "fair_home": -737
+       },
+       "1.25": {
+        "full_win": 0.8295,
+        "half_win": 0.1159,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.0546,
+        "split": true,
+        "fair_home": -1625
+       },
+       "1.5": {
+        "full_win": 0.9454,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.0546,
+        "split": false,
+        "fair_home": -1731
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "OUTCOME_VALIDATED"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    },
+    {
+     "event_key": "SOCCER|ligue1:2026-10-17:strasbourg:psg",
+     "match_id": "ligue1:2026-10-17:strasbourg:psg",
+     "date": "2026-10-17",
+     "time_local": "17:15",
+     "home": "RC Strasbourg Alsace",
+     "away": "Paris Saint-Germain FC",
+     "home_key": "strasbourg",
+     "away_key": "psg",
+     "lambda": {
+      "home": 1.3481,
+      "away": 1.9864
+     },
+     "prices": {
+      "three_way": {
+       "home": 0.2594,
+       "draw": 0.2175,
+       "away": 0.5231,
+       "fair_home": 286,
+       "fair_draw": 360,
+       "fair_away": -110,
+       "settles": "90 minutes plus stoppage time",
+       "status": "PROVISIONAL"
+      },
+      "total": {
+       "expected": 3.33,
+       "over_1_5": 0.8455,
+       "over_2_5": 0.6474,
+       "over_3_5": 0.4273,
+       "fair_over_2_5": -184,
+       "fair_under_2_5": 184,
+       "status": "PROVISIONAL"
+      },
+      "btts": {
+       "yes": 0.6387,
+       "fair_yes": -177,
+       "fair_no": 177,
+       "status": "PROVISIONAL"
+      },
+      "asian_handicap_home": {
+       "0": {
+        "full_win": 0.2594,
+        "half_win": 0,
+        "push": 0.2175,
+        "half_loss": 0,
+        "full_loss": 0.5231,
+        "split": false,
+        "fair_home": 202
+       },
+       "1": {
+        "full_win": 0.4769,
+        "half_win": 0,
+        "push": 0.2187,
+        "half_loss": 0,
+        "full_loss": 0.3044,
+        "split": false,
+        "fair_home": -157
+       },
+       "-1.5": {
+        "full_win": 0.111,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.889,
+        "split": false,
+        "fair_home": 801
+       },
+       "-1.25": {
+        "full_win": 0.111,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.1484,
+        "full_loss": 0.7406,
+        "split": true,
+        "fair_home": 734
+       },
+       "-1": {
+        "full_win": 0.111,
+        "half_win": 0,
+        "push": 0.1484,
+        "half_loss": 0,
+        "full_loss": 0.7406,
+        "split": false,
+        "fair_home": 667
+       },
+       "-0.75": {
+        "full_win": 0.111,
+        "half_win": 0.1484,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.7406,
+        "split": true,
+        "fair_home": 400
+       },
+       "-0.5": {
+        "full_win": 0.2594,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.7406,
+        "split": false,
+        "fair_home": 286
+       },
+       "-0.25": {
+        "full_win": 0.2594,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2175,
+        "full_loss": 0.5231,
+        "split": true,
+        "fair_home": 244
+       },
+       "0.25": {
+        "full_win": 0.2594,
+        "half_win": 0.2175,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.5231,
+        "split": true,
+        "fair_home": 142
+       },
+       "0.5": {
+        "full_win": 0.4769,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.5231,
+        "split": false,
+        "fair_home": 110
+       },
+       "0.75": {
+        "full_win": 0.4769,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0.2187,
+        "full_loss": 0.3044,
+        "split": true,
+        "fair_home": -115
+       },
+       "1.25": {
+        "full_win": 0.4769,
+        "half_win": 0.2187,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3044,
+        "split": true,
+        "fair_home": -193
+       },
+       "1.5": {
+        "full_win": 0.6956,
+        "half_win": 0,
+        "push": 0,
+        "half_loss": 0,
+        "full_loss": 0.3044,
+        "split": false,
+        "fair_home": -228
+       },
+       "settles": "quarter lines as two half stakes",
+       "status": "OUTCOME_VALIDATED"
+      }
+     },
+     "data_quality": {
+      "state": "STALE",
+      "lineup": "UNKNOWN — no lineup feed"
+     },
+     "invalidators": [
+      "Team news (injuries, rotation before a European or cup match) is not modelled.",
+      "Kick-off time zone is not in the source; prices are keyed by date.",
+      "The source is missing recent results: ratings are stale."
+     ]
+    }
+   ]
+  }
+ }
+}

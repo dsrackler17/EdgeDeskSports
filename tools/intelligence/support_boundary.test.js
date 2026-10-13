@@ -73,7 +73,7 @@ function gamePacket(sportKey, away, home) {
   const TENNIS = EDSPORTS.RETIRED.find((r) => r.id === 'tennis');
   const SENTENCE = EDSPORTS.unsupportedAnswer(TENNIS);
   chk('the boundary sentence names the sport and what IS covered',
-    /^Tennis is not currently supported by EdgeDesk Research\./.test(SENTENCE) && /Football, UFC and Baseball/.test(SENTENCE), SENTENCE);
+    /^Tennis is not currently supported by EdgeDesk Research\./.test(SENTENCE) && /Football, UFC, Baseball and NHL/.test(SENTENCE), SENTENCE);
 
   async function ask(body) {
     modelCalls = []; dbReads = [];
@@ -89,7 +89,7 @@ function gamePacket(sportKey, away, home) {
     chk('"' + q + '" is answered before retrieval: no read beyond the entitlement check', reads.length === 0, reads);
     chk('"' + q + '" builds no research packet', !j.research && !j.research_packet, Object.keys(j));
     chk('"' + q + '" says why, and names the coverage', j.support_boundary && j.support_boundary.sport === 'tennis'
-      && j.support_boundary.coverage.join() === 'Football,UFC,Baseball', j.support_boundary);
+      && j.support_boundary.coverage.join() === 'Football,UFC,Baseball,NHL', j.support_boundary);
   }
   /* the desk client path (`desk: true`) is gated before the desk turn too */
   {

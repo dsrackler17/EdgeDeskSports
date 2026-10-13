@@ -1,0 +1,707 @@
+{
+  "family": "football",
+  "table": "plays",
+  "grain": "one snap including no-play flag",
+  "priority": "P0",
+  "default_source": "nflverse / CFBD / ESPN",
+  "definition_status": "canonical_contract_not_claim_of_provider_coverage",
+  "keys": [
+    "record_id",
+    "revision"
+  ],
+  "columns": [
+    {
+      "field": "record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "event_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "entity_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "source_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Source registry identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "source_record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Original provider record identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "occurred_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "known_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "retrieved_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "revision",
+      "type": "integer",
+      "unit": "none",
+      "description": "Monotone version of this source record.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "quality_status",
+      "type": "text",
+      "unit": "none",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "period",
+      "type": "integer",
+      "unit": "count",
+      "description": "Period.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "down",
+      "type": "integer",
+      "unit": "count",
+      "description": "Down.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "yards_to_go",
+      "type": "integer",
+      "unit": "count",
+      "description": "Yards to go.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "yardline_100",
+      "type": "integer",
+      "unit": "count",
+      "description": "Yardline 100.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "offense_score_before",
+      "type": "integer",
+      "unit": "count",
+      "description": "Offense score before.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "defense_score_before",
+      "type": "integer",
+      "unit": "count",
+      "description": "Defense score before.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "offense_timeouts",
+      "type": "integer",
+      "unit": "count",
+      "description": "Offense timeouts.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "defense_timeouts",
+      "type": "integer",
+      "unit": "count",
+      "description": "Defense timeouts.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "defenders_in_box",
+      "type": "integer",
+      "unit": "count",
+      "description": "Defenders in box.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "game_seconds_remaining",
+      "type": "integer",
+      "unit": "seconds",
+      "description": "Game seconds remaining.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "half_seconds_remaining",
+      "type": "integer",
+      "unit": "seconds",
+      "description": "Half seconds remaining.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "play_clock_seconds",
+      "type": "integer",
+      "unit": "seconds",
+      "description": "Play clock seconds.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "drive_elapsed_seconds",
+      "type": "integer",
+      "unit": "seconds",
+      "description": "Drive elapsed seconds.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "offense_team_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Offense team id.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "defense_team_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Defense team id.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "quarterback_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Quarterback id.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "passer_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Passer id.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "receiver_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Receiver id.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "rusher_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Rusher id.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "kicker_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Kicker id.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "drive_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Drive id.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "play_type",
+      "type": "text",
+      "unit": "category",
+      "description": "Play type.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "pass_location",
+      "type": "text",
+      "unit": "category",
+      "description": "Pass location.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "run_location",
+      "type": "text",
+      "unit": "category",
+      "description": "Run location.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "run_gap",
+      "type": "text",
+      "unit": "category",
+      "description": "Run gap.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "formation",
+      "type": "text",
+      "unit": "category",
+      "description": "Formation.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "personnel",
+      "type": "text",
+      "unit": "category",
+      "description": "Personnel.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "coverage_shell",
+      "type": "text",
+      "unit": "category",
+      "description": "Coverage shell.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "blitz_type",
+      "type": "text",
+      "unit": "category",
+      "description": "Blitz type.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "weather_surface",
+      "type": "text",
+      "unit": "category",
+      "description": "Weather surface.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "yards_gained",
+      "type": "number",
+      "unit": "yards",
+      "description": "Yards gained.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "air_yards",
+      "type": "number",
+      "unit": "yards",
+      "description": "Air yards.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "yards_after_catch",
+      "type": "number",
+      "unit": "yards",
+      "description": "Yards after catch.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "pass_distance",
+      "type": "number",
+      "unit": "yards",
+      "description": "Pass distance.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "kick_distance",
+      "type": "number",
+      "unit": "yards",
+      "description": "Kick distance.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "net_punt_yards",
+      "type": "number",
+      "unit": "yards",
+      "description": "Net punt yards.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "epa",
+      "type": "number",
+      "unit": "number",
+      "description": "Epa.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "wp_before",
+      "type": "number",
+      "unit": "number",
+      "description": "Wp before.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "wp_after",
+      "type": "number",
+      "unit": "number",
+      "description": "Wp after.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "wpa",
+      "type": "number",
+      "unit": "number",
+      "description": "Wpa.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "completion_probability",
+      "type": "number",
+      "unit": "number",
+      "description": "Completion probability.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "cpoe",
+      "type": "number",
+      "unit": "number",
+      "description": "Cpoe.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "no_play",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "No play.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "pass_attempt",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Pass attempt.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "rush_attempt",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Rush attempt.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "complete_pass",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Complete pass.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "interception",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Interception.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "fumble",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Fumble.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "fumble_lost",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Fumble lost.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "sack",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Sack.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "qb_hit",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Qb hit.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "pressure",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Pressure.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "blitz",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Blitz.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "shotgun",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Shotgun.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "no_huddle",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "No huddle.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "play_action",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Play action.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "rpo",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Rpo.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "kneel",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Kneel.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "spike",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Spike.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "scramble",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Scramble.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "touchdown",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Touchdown.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "first_down",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "First down.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "penalty",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Penalty.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "accepted_penalty",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Accepted penalty.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "explosive_play",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Explosive play.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "penalty_yards",
+      "type": "integer",
+      "unit": "count",
+      "description": "Penalty yards.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "rushers",
+      "type": "integer",
+      "unit": "count",
+      "description": "Rushers.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    }
+  ]
+}

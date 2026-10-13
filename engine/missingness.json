@@ -1,0 +1,1682 @@
+{
+ "schema": "edgedesk_missingness_v1",
+ "generated_at": "2026-10-13T06:41:24.687Z",
+ "rule": "a blank is missing, never zero; known_at is blank on every historical row by design (first publication was not recorded)",
+ "sports": {
+  "nhl": {
+   "table": "hockey/data/team_games",
+   "by_season": {
+    "2011": {
+     "rows": 2636,
+     "missing": {
+      "known_at": 1,
+      "start_utc": 0,
+      "g_start": 0,
+      "ev5_xgf": 0,
+      "g1_xga": 0
+     }
+    },
+    "2012": {
+     "rows": 2632,
+     "missing": {
+      "known_at": 1,
+      "start_utc": 0,
+      "g_start": 0,
+      "ev5_xgf": 0,
+      "g1_xga": 0
+     }
+    },
+    "2013": {
+     "rows": 1612,
+     "missing": {
+      "known_at": 1,
+      "start_utc": 0,
+      "g_start": 0,
+      "ev5_xgf": 0,
+      "g1_xga": 0
+     }
+    },
+    "2014": {
+     "rows": 2646,
+     "missing": {
+      "known_at": 1,
+      "start_utc": 0,
+      "g_start": 0,
+      "ev5_xgf": 0,
+      "g1_xga": 0
+     }
+    },
+    "2015": {
+     "rows": 2638,
+     "missing": {
+      "known_at": 1,
+      "start_utc": 0,
+      "g_start": 0,
+      "ev5_xgf": 0,
+      "g1_xga": 0
+     }
+    },
+    "2016": {
+     "rows": 2642,
+     "missing": {
+      "known_at": 1,
+      "start_utc": 0,
+      "g_start": 0,
+      "ev5_xgf": 0,
+      "g1_xga": 0
+     }
+    },
+    "2017": {
+     "rows": 2634,
+     "missing": {
+      "known_at": 1,
+      "start_utc": 0,
+      "g_start": 0,
+      "ev5_xgf": 0,
+      "g1_xga": 0
+     }
+    },
+    "2018": {
+     "rows": 2710,
+     "missing": {
+      "known_at": 1,
+      "start_utc": 0,
+      "g_start": 0,
+      "ev5_xgf": 0,
+      "g1_xga": 0
+     }
+    },
+    "2019": {
+     "rows": 2716,
+     "missing": {
+      "known_at": 1,
+      "start_utc": 0,
+      "g_start": 0,
+      "ev5_xgf": 0,
+      "g1_xga": 0
+     }
+    },
+    "2020": {
+     "rows": 2424,
+     "missing": {
+      "known_at": 1,
+      "start_utc": 0.0099,
+      "g_start": 0,
+      "ev5_xgf": 0,
+      "g1_xga": 0
+     }
+    },
+    "2021": {
+     "rows": 1904,
+     "missing": {
+      "known_at": 1,
+      "start_utc": 0,
+      "g_start": 0,
+      "ev5_xgf": 0,
+      "g1_xga": 0
+     }
+    },
+    "2022": {
+     "rows": 2802,
+     "missing": {
+      "known_at": 1,
+      "start_utc": 0,
+      "g_start": 0,
+      "ev5_xgf": 0,
+      "g1_xga": 0
+     }
+    },
+    "2023": {
+     "rows": 2800,
+     "missing": {
+      "known_at": 1,
+      "start_utc": 0,
+      "g_start": 0,
+      "ev5_xgf": 0,
+      "g1_xga": 0
+     }
+    },
+    "2024": {
+     "rows": 2800,
+     "missing": {
+      "known_at": 1,
+      "start_utc": 0,
+      "g_start": 0,
+      "ev5_xgf": 0,
+      "g1_xga": 0
+     }
+    },
+    "2025": {
+     "rows": 2796,
+     "missing": {
+      "known_at": 1,
+      "start_utc": 0,
+      "g_start": 0,
+      "ev5_xgf": 0,
+      "g1_xga": 0
+     }
+    },
+    "2026": {
+     "rows": 2788,
+     "missing": {
+      "known_at": 1,
+      "start_utc": 0,
+      "g_start": 0,
+      "ev5_xgf": 0,
+      "g1_xga": 0
+     }
+    },
+    "2027": {
+     "rows": 172,
+     "missing": {
+      "known_at": 1,
+      "start_utc": 0,
+      "g_start": 0,
+      "ev5_xgf": 0,
+      "g1_xga": 0
+     }
+    }
+   },
+   "structural": {
+    "known_at": "never recorded for history (RETRO rows)",
+    "lineups (warmup)": "not available before the game: only the box score afterwards",
+    "confirmed goalie": "no feed; historical starter known after the game"
+   },
+   "contracts": "hockey/validation/nhl_contracts.json (per-field missingness of the canonical tables)"
+  },
+  "nba": {
+   "table": "basketball/data/nba",
+   "by_season": {
+    "2008": {
+     "rows": 1316,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2009": {
+     "rows": 1315,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2010": {
+     "rows": 1312,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2011": {
+     "rows": 1311,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2012": {
+     "rows": 1074,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2013": {
+     "rows": 1314,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2014": {
+     "rows": 1319,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2015": {
+     "rows": 1311,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2016": {
+     "rows": 1316,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2017": {
+     "rows": 1309,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2018": {
+     "rows": 1312,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2019": {
+     "rows": 1312,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2020": {
+     "rows": 1143,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2021": {
+     "rows": 1171,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2022": {
+     "rows": 1323,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2023": {
+     "rows": 1320,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2024": {
+     "rows": 1319,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2025": {
+     "rows": 1324,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0.0023,
+      "known_at": 1
+     }
+    },
+    "2026": {
+     "rows": 1322,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2027": {
+     "rows": 0,
+     "missing": {
+      "start_utc": null,
+      "ot": null,
+      "known_at": null
+     }
+    }
+   },
+   "structural": {
+    "ot": "blank for rows added from the data pack (its games table has no period count)",
+    "availability": "no injury or lineup feed"
+   }
+  },
+  "wnba": {
+   "table": "basketball/data/wnba",
+   "by_season": {
+    "2008": {
+     "rows": 259,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2009": {
+     "rows": 242,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2010": {
+     "rows": 220,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2011": {
+     "rows": 224,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2012": {
+     "rows": 223,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2013": {
+     "rows": 221,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2014": {
+     "rows": 222,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2015": {
+     "rows": 225,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2016": {
+     "rows": 220,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2017": {
+     "rows": 219,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2018": {
+     "rows": 220,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2019": {
+     "rows": 220,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2020": {
+     "rows": 147,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2021": {
+     "rows": 210,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2022": {
+     "rows": 240,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2023": {
+     "rows": 261,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2024": {
+     "rows": 264,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0.0038,
+      "known_at": 1
+     }
+    },
+    "2025": {
+     "rows": 311,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2026": {
+     "rows": 347,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    }
+   },
+   "structural": {
+    "availability": "no injury or lineup feed"
+   }
+  },
+  "ncaam": {
+   "table": "basketball/data/ncaam",
+   "by_season": {
+    "2010": {
+     "rows": 5622,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2011": {
+     "rows": 5771,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2012": {
+     "rows": 5776,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2013": {
+     "rows": 5817,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2014": {
+     "rows": 5948,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2015": {
+     "rows": 5932,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2016": {
+     "rows": 5893,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2017": {
+     "rows": 5960,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2018": {
+     "rows": 6003,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2019": {
+     "rows": 6049,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2020": {
+     "rows": 5767,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2021": {
+     "rows": 4285,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2022": {
+     "rows": 5966,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2023": {
+     "rows": 6222,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2024": {
+     "rows": 6243,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2025": {
+     "rows": 6291,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2026": {
+     "rows": 6300,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "known_at": 1
+     }
+    },
+    "2027": {
+     "rows": 0,
+     "missing": {
+      "start_utc": null,
+      "ot": null,
+      "known_at": null
+     }
+    }
+   },
+   "structural": {
+    "availability": "no injury or lineup feed"
+   }
+  },
+  "ncaaw": {
+   "table": "basketball/data/ncaaw",
+   "by_season": {
+    "2010": {
+     "rows": 5450,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "src": 0,
+      "known_at": 1
+     }
+    },
+    "2011": {
+     "rows": 5461,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "src": 0,
+      "known_at": 1
+     }
+    },
+    "2012": {
+     "rows": 5463,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "src": 0,
+      "known_at": 1
+     }
+    },
+    "2013": {
+     "rows": 5484,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "src": 0,
+      "known_at": 1
+     }
+    },
+    "2014": {
+     "rows": 5588,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "src": 0,
+      "known_at": 1
+     }
+    },
+    "2015": {
+     "rows": 5603,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "src": 0,
+      "known_at": 1
+     }
+    },
+    "2016": {
+     "rows": 5619,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "src": 0,
+      "known_at": 1
+     }
+    },
+    "2017": {
+     "rows": 5622,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "src": 0,
+      "known_at": 1
+     }
+    },
+    "2018": {
+     "rows": 5630,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "src": 0,
+      "known_at": 1
+     }
+    },
+    "2019": {
+     "rows": 5658,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "src": 0,
+      "known_at": 1
+     }
+    },
+    "2020": {
+     "rows": 5434,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "src": 0,
+      "known_at": 1
+     }
+    },
+    "2021": {
+     "rows": 3823,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "src": 0,
+      "known_at": 1
+     }
+    },
+    "2022": {
+     "rows": 5512,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "src": 0,
+      "known_at": 1
+     }
+    },
+    "2023": {
+     "rows": 5820,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "src": 0,
+      "known_at": 1
+     }
+    },
+    "2024": {
+     "rows": 5898,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "src": 0,
+      "known_at": 1
+     }
+    },
+    "2025": {
+     "rows": 5840,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0.0358,
+      "src": 0,
+      "known_at": 1
+     }
+    },
+    "2026": {
+     "rows": 6029,
+     "missing": {
+      "start_utc": 0,
+      "ot": 0,
+      "src": 0,
+      "known_at": 1
+     }
+    },
+    "2027": {
+     "rows": 0,
+     "missing": {
+      "start_utc": null,
+      "ot": null,
+      "src": null,
+      "known_at": null
+     }
+    }
+   },
+   "structural": {
+    "coverage": "2024-25: the source lacked 209 games; added from the data pack (src = P)",
+    "availability": "no injury or lineup feed"
+   }
+  },
+  "soccer": {
+   "epl": {
+    "table": "soccer/data/epl",
+    "by_season": {
+     "2011": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0658
+      }
+     },
+     "2012": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0711
+      }
+     },
+     "2013": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0921
+      }
+     },
+     "2014": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0711
+      }
+     },
+     "2015": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0816
+      }
+     },
+     "2016": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0842
+      }
+     },
+     "2017": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0711
+      }
+     },
+     "2018": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0842
+      }
+     },
+     "2019": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0579
+      }
+     },
+     "2020": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0553
+      }
+     },
+     "2021": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0789
+      }
+     },
+     "2022": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0579
+      }
+     },
+     "2023": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0605
+      }
+     },
+     "2024": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0289
+      }
+     },
+     "2025": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0421
+      }
+     },
+     "2026": {
+      "rows": 380,
+      "result_missing": 27,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0
+      }
+     },
+     "2027": {
+      "rows": 380,
+      "result_missing": 15,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0
+      }
+     }
+    },
+    "structural": {
+     "result_missing": "the source has not published these results (2019-20 Ligue 1: the season was abandoned)",
+     "time_zone": "kick-off times are local with no zone",
+     "xg": "no xG source",
+     "lineups": "no lineup feed"
+    }
+   },
+   "bundesliga": {
+    "table": "soccer/data/bundesliga",
+    "by_season": {
+     "2011": {
+      "rows": 306,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0458
+      }
+     },
+     "2012": {
+      "rows": 306,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0719
+      }
+     },
+     "2013": {
+      "rows": 306,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0654
+      }
+     },
+     "2014": {
+      "rows": 306,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0425
+      }
+     },
+     "2015": {
+      "rows": 306,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0915
+      }
+     },
+     "2016": {
+      "rows": 306,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0784
+      }
+     },
+     "2017": {
+      "rows": 306,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0621
+      }
+     },
+     "2018": {
+      "rows": 306,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0686
+      }
+     },
+     "2019": {
+      "rows": 306,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0556
+      }
+     },
+     "2020": {
+      "rows": 306,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0392
+      }
+     },
+     "2021": {
+      "rows": 306,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0588
+      }
+     },
+     "2022": {
+      "rows": 306,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0523
+      }
+     },
+     "2023": {
+      "rows": 306,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.049
+      }
+     },
+     "2024": {
+      "rows": 306,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0425
+      }
+     },
+     "2025": {
+      "rows": 306,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0752
+      }
+     },
+     "2026": {
+      "rows": 306,
+      "result_missing": 12,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0
+      }
+     },
+     "2027": {
+      "rows": 306,
+      "result_missing": 12,
+      "missing": {
+       "time_local": 0.6471,
+       "ht_score": 0
+      }
+     }
+    },
+    "structural": {
+     "result_missing": "the source has not published these results (2019-20 Ligue 1: the season was abandoned)",
+     "time_zone": "kick-off times are local with no zone",
+     "xg": "no xG source",
+     "lineups": "no lineup feed"
+    }
+   },
+   "laliga": {
+    "table": "soccer/data/laliga",
+    "by_season": {
+     "2013": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0658
+      }
+     },
+     "2014": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0842
+      }
+     },
+     "2015": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0789
+      }
+     },
+     "2016": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0658
+      }
+     },
+     "2017": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0711
+      }
+     },
+     "2018": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0737
+      }
+     },
+     "2019": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0737
+      }
+     },
+     "2020": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0868
+      }
+     },
+     "2021": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0789
+      }
+     },
+     "2022": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.1132
+      }
+     },
+     "2023": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0684
+      }
+     },
+     "2024": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0816
+      }
+     },
+     "2025": {
+      "rows": 380,
+      "result_missing": 10,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0526
+      }
+     },
+     "2026": {
+      "rows": 380,
+      "result_missing": 15,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0
+      }
+     },
+     "2027": {
+      "rows": 380,
+      "result_missing": 15,
+      "missing": {
+       "time_local": 0.7632,
+       "ht_score": 0
+      }
+     }
+    },
+    "structural": {
+     "result_missing": "the source has not published these results (2019-20 Ligue 1: the season was abandoned)",
+     "time_zone": "kick-off times are local with no zone",
+     "xg": "no xG source",
+     "lineups": "no lineup feed"
+    }
+   },
+   "seriea": {
+    "table": "soccer/data/seriea",
+    "by_season": {
+     "2014": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0605
+      }
+     },
+     "2015": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0789
+      }
+     },
+     "2016": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0816
+      }
+     },
+     "2017": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0526
+      }
+     },
+     "2018": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0737
+      }
+     },
+     "2019": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0895
+      }
+     },
+     "2020": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0553
+      }
+     },
+     "2021": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0526
+      }
+     },
+     "2022": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0579
+      }
+     },
+     "2023": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0526
+      }
+     },
+     "2024": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0789
+      }
+     },
+     "2025": {
+      "rows": 380,
+      "result_missing": 10,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0737
+      }
+     },
+     "2026": {
+      "rows": 380,
+      "result_missing": 36,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0
+      }
+     },
+     "2027": {
+      "rows": 380,
+      "result_missing": 10,
+      "missing": {
+       "time_local": 0.6842,
+       "ht_score": 0
+      }
+     }
+    },
+    "structural": {
+     "result_missing": "the source has not published these results (2019-20 Ligue 1: the season was abandoned)",
+     "time_zone": "kick-off times are local with no zone",
+     "xg": "no xG source",
+     "lineups": "no lineup feed"
+    }
+   },
+   "ligue1": {
+    "table": "soccer/data/ligue1",
+    "by_season": {
+     "2015": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0895
+      }
+     },
+     "2016": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0895
+      }
+     },
+     "2017": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0789
+      }
+     },
+     "2018": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0553
+      }
+     },
+     "2019": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0842
+      }
+     },
+     "2020": {
+      "rows": 380,
+      "result_missing": 101,
+      "missing": {
+       "time_local": 0.2658,
+       "ht_score": 0.0553
+      }
+     },
+     "2021": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0684
+      }
+     },
+     "2022": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0632
+      }
+     },
+     "2023": {
+      "rows": 380,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0684
+      }
+     },
+     "2024": {
+      "rows": 306,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.0882
+      }
+     },
+     "2025": {
+      "rows": 306,
+      "result_missing": 0,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0.049
+      }
+     },
+     "2026": {
+      "rows": 306,
+      "result_missing": 24,
+      "missing": {
+       "time_local": 0,
+       "ht_score": 0
+      }
+     },
+     "2027": {
+      "rows": 306,
+      "result_missing": 13,
+      "missing": {
+       "time_local": 0.6275,
+       "ht_score": 0
+      }
+     }
+    },
+    "structural": {
+     "result_missing": "the source has not published these results (2019-20 Ligue 1: the season was abandoned)",
+     "time_zone": "kick-off times are local with no zone",
+     "xg": "no xG source",
+     "lineups": "no lineup feed"
+    }
+   }
+  },
+  "mlb": {
+   "table": "mlb/history/data",
+   "by_season": {
+    "2010": {
+     "rows": 2430,
+     "missing": {
+      "sp_home": 0,
+      "sp_away": 0,
+      "park": 0,
+      "outs": 0,
+      "dn": 0
+     }
+    },
+    "2011": {
+     "rows": 2429,
+     "missing": {
+      "sp_home": 0,
+      "sp_away": 0,
+      "park": 0,
+      "outs": 0,
+      "dn": 0
+     }
+    },
+    "2012": {
+     "rows": 2430,
+     "missing": {
+      "sp_home": 0,
+      "sp_away": 0,
+      "park": 0,
+      "outs": 0,
+      "dn": 0
+     }
+    },
+    "2013": {
+     "rows": 2431,
+     "missing": {
+      "sp_home": 0,
+      "sp_away": 0,
+      "park": 0,
+      "outs": 0,
+      "dn": 0
+     }
+    },
+    "2014": {
+     "rows": 2430,
+     "missing": {
+      "sp_home": 0,
+      "sp_away": 0,
+      "park": 0,
+      "outs": 0,
+      "dn": 0
+     }
+    },
+    "2015": {
+     "rows": 2429,
+     "missing": {
+      "sp_home": 0,
+      "sp_away": 0,
+      "park": 0,
+      "outs": 0,
+      "dn": 0
+     }
+    },
+    "2016": {
+     "rows": 2428,
+     "missing": {
+      "sp_home": 0,
+      "sp_away": 0,
+      "park": 0,
+      "outs": 0,
+      "dn": 0
+     }
+    },
+    "2017": {
+     "rows": 2430,
+     "missing": {
+      "sp_home": 0,
+      "sp_away": 0,
+      "park": 0,
+      "outs": 0,
+      "dn": 0
+     }
+    },
+    "2018": {
+     "rows": 2431,
+     "missing": {
+      "sp_home": 0,
+      "sp_away": 0,
+      "park": 0,
+      "outs": 0,
+      "dn": 0
+     }
+    },
+    "2019": {
+     "rows": 2429,
+     "missing": {
+      "sp_home": 0,
+      "sp_away": 0,
+      "park": 0,
+      "outs": 0,
+      "dn": 0
+     }
+    },
+    "2020": {
+     "rows": 898,
+     "missing": {
+      "sp_home": 0,
+      "sp_away": 0,
+      "park": 0,
+      "outs": 0,
+      "dn": 0
+     }
+    },
+    "2021": {
+     "rows": 2429,
+     "missing": {
+      "sp_home": 0,
+      "sp_away": 0,
+      "park": 0,
+      "outs": 0,
+      "dn": 0
+     }
+    },
+    "2022": {
+     "rows": 2430,
+     "missing": {
+      "sp_home": 0,
+      "sp_away": 0,
+      "park": 0,
+      "outs": 0,
+      "dn": 0
+     }
+    },
+    "2023": {
+     "rows": 2430,
+     "missing": {
+      "sp_home": 0,
+      "sp_away": 0,
+      "park": 0,
+      "outs": 0,
+      "dn": 0
+     }
+    },
+    "2024": {
+     "rows": 2432,
+     "missing": {
+      "sp_home": 1,
+      "sp_away": 1,
+      "park": 1,
+      "outs": 1,
+      "dn": 1
+     }
+    },
+    "2025": {
+     "rows": 2430,
+     "missing": {
+      "sp_home": 0,
+      "sp_away": 0,
+      "park": 0,
+      "outs": 0,
+      "dn": 0
+     }
+    }
+   },
+   "structural": {
+    "2024 starters, park, outs": "Retrosheet 2024 not reachable; the data pack's StatsAPI table has no starters",
+    "bullpen": "no bullpen usage archive",
+    "lineups": "no lineup archive"
+   }
+  },
+  "ufc": {
+   "table": "datapack/quant_v1/data/ufc/bouts_2024.csv",
+   "structural": {
+    "round_statistics": "UFCStats refused automated access; not bypassed",
+    "multi_year": "one year only"
+   }
+  }
+ }
+}

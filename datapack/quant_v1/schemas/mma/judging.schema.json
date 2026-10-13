@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "mma.judging",
+  "type": "object",
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "event_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "entity_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Source registry identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_record_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Original provider record identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "occurred_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "known_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "retrieved_at": {
+      "type": "string",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "description": "Monotone version of this source record.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "quality_status": {
+      "type": "string",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "judge_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Judge id.",
+      "x-unit": "identifier",
+      "x-priority": "P2"
+    },
+    "fighter_a_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Fighter a id.",
+      "x-unit": "identifier",
+      "x-priority": "P2"
+    },
+    "fighter_b_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Fighter b id.",
+      "x-unit": "identifier",
+      "x-priority": "P2"
+    },
+    "round": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Round.",
+      "x-unit": "count",
+      "x-priority": "P2"
+    },
+    "a_score": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "A score.",
+      "x-unit": "count",
+      "x-priority": "P2"
+    },
+    "b_score": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "B score.",
+      "x-unit": "count",
+      "x-priority": "P2"
+    },
+    "commission": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Commission.",
+      "x-unit": "category",
+      "x-priority": "P2"
+    }
+  },
+  "required": [
+    "record_id",
+    "source_id",
+    "retrieved_at",
+    "revision",
+    "quality_status"
+  ],
+  "additionalProperties": false
+}

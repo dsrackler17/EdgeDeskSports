@@ -1,0 +1,74 @@
+{
+  "schema": "edgedesk_datapack_import_v1",
+  "pack": "EdgeDesk Quant Data Pack",
+  "imported_at": "2026-10-13",
+  "imported_into": "datapack/quant_v1",
+  "source_archives": [
+    {
+      "name": "EdgeDesk_01_Core_and_Other_Sports.zip",
+      "bytes": 27463707,
+      "sha256": "9a25fadd6ffe9aa114bd7cb6e806d932389436e279ce3a5ee22b53c33a071e72",
+      "contents": "docs, schemas, sources, scripts, tests and every table except NFL play-by-play"
+    },
+    {
+      "name": "EdgeDesk_02_NFL_2022.zip",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "contents": "EMPTY \u2014 the upload was 0 bytes; NFL 2022 play-by-play is missing"
+    },
+    {
+      "name": "EdgeDesk_03_NFL_2023.zip",
+      "bytes": 19176203,
+      "sha256": "734ea93d04c35d3170b09720e8a084a76a05ed5c9c62cb9c0739a928d76ee670",
+      "contents": "data/nfl/play_by_play_2023.csv.gz"
+    },
+    {
+      "name": "EdgeDesk_04_NFL_2024.zip",
+      "bytes": 19368814,
+      "sha256": "435c6392eacef3dca23de3f65c3ba90fda8f4c945932a7de29a6f13126f10ffa",
+      "contents": "data/nfl/play_by_play_2024.csv.gz"
+    }
+  ],
+  "excluded_from_git": [
+    {
+      "file": "data/nfl/play_by_play_2022.csv.gz",
+      "reason_code": "EMPTY_UPLOAD",
+      "reason": "The 2022 archive arrived empty (0 bytes). The file is missing, not reconstructed: nflverse revises play-by-play, so a fresh download is accepted only if its SHA-256 matches the pack (tools/datapack/fetch_external.js).",
+      "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2022.csv.gz",
+      "sha256": "0c69a71eb39498956c7b1d5c1ca52ce7fe679934a95d1af249facb5ea9829ea4",
+      "bytes": 19093961
+    },
+    {
+      "file": "data/nfl/play_by_play_2023.csv.gz",
+      "reason_code": "SIZE_EXTERNAL",
+      "reason": "19 MB, already derivable by the football pipeline. Kept outside git in .cache/datapack/quant_v1; verified there when present.",
+      "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2023.csv.gz",
+      "sha256": "4649804ee0f0a40b41e51ec75a1ce921949d7fab5459213488656b92f78560e8",
+      "bytes": 19169807
+    },
+    {
+      "file": "data/nfl/play_by_play_2024.csv.gz",
+      "reason_code": "SIZE_EXTERNAL",
+      "reason": "19 MB, already derivable by the football pipeline. Kept outside git in .cache/datapack/quant_v1; verified there when present.",
+      "source_url": "https://github.com/nflverse/nflverse-data/releases/download/pbp/play_by_play_2024.csv.gz",
+      "sha256": "23370d5d10f8104d80d46a1fc5e61f4f6f5a3263fe96fe2dd629913cfcb08c06",
+      "bytes": 19362351
+    }
+  ],
+  "not_copied": [
+    "scripts/__pycache__ (compiled bytecode)"
+  ],
+  "code_policy": "The pack scripts are kept as shipped for reference and are never executed by EdgeDesk jobs. Their logic is re-implemented and tested in engine/quant.js (prices, settlement, fail-closed as-of) and tools/datapack/verify.js (verification).",
+  "unchanged": "Every other file is byte-identical to the archive; tools/datapack/verify.js checks the inventory and manifest SHA-256s.",
+  "modified_after_import": [
+    {
+      "files": [
+        "sources/download_manifest.json",
+        "sources/unified_download_manifest.json"
+      ],
+      "change": "the query string of six resolved_url values (nflverse play-by-play redirects to release-assets.githubusercontent.com) is replaced by a redaction note",
+      "why": "each carried a signed GitHub release-asset download token (a JWT, expired 2026-10-13 ~05:10 UTC) that the repository secret audit (tools/cfb/secret_audit.js) rightly refuses; source_url still names the public file",
+      "effect": "no data file, hash or count changes; tools/datapack/verify.js does not hash the manifests themselves"
+    }
+  ]
+}

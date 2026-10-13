@@ -1,0 +1,327 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "mma.fighter_round",
+  "type": "object",
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "event_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "entity_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Source registry identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_record_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Original provider record identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "occurred_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "known_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "retrieved_at": {
+      "type": "string",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "description": "Monotone version of this source record.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "quality_status": {
+      "type": "string",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "fighter_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Fighter id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "opponent_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Opponent id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "round": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Round.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "knockdowns": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Knockdowns.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "significant_strikes_landed": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Significant strikes landed.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "significant_strikes_attempted": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Significant strikes attempted.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "total_strikes_landed": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Total strikes landed.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "total_strikes_attempted": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Total strikes attempted.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "head_landed": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Head landed.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "head_attempted": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Head attempted.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "body_landed": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Body landed.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "body_attempted": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Body attempted.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "leg_landed": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Leg landed.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "leg_attempted": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Leg attempted.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "distance_landed": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Distance landed.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "distance_attempted": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Distance attempted.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "clinch_landed": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Clinch landed.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "clinch_attempted": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Clinch attempted.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "ground_landed": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Ground landed.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "ground_attempted": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Ground attempted.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "takedowns_landed": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Takedowns landed.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "takedowns_attempted": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Takedowns attempted.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "submission_attempts": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Submission attempts.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "reversals": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Reversals.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "control_seconds": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Control seconds.",
+      "x-unit": "seconds",
+      "x-priority": "P0"
+    },
+    "round_seconds": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Round seconds.",
+      "x-unit": "seconds",
+      "x-priority": "P0"
+    }
+  },
+  "required": [
+    "record_id",
+    "source_id",
+    "retrieved_at",
+    "revision",
+    "quality_status"
+  ],
+  "additionalProperties": false
+}

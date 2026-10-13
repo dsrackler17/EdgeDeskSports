@@ -1,0 +1,653 @@
+{
+  "family": "baseball",
+  "table": "pitches",
+  "grain": "one pitch or explicitly identified non-pitch event",
+  "priority": "P0",
+  "default_source": "MLB feed / Statcast / authorized college feed",
+  "definition_status": "canonical_contract_not_claim_of_provider_coverage",
+  "keys": [
+    "record_id",
+    "revision"
+  ],
+  "columns": [
+    {
+      "field": "record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "event_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "entity_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "source_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Source registry identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "source_record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Original provider record identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "occurred_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "known_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "retrieved_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "revision",
+      "type": "integer",
+      "unit": "none",
+      "description": "Monotone version of this source record.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "quality_status",
+      "type": "text",
+      "unit": "none",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "pitcher_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Pitcher id.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "batter_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Batter id.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "catcher_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Catcher id.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "plate_appearance_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Plate appearance id.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "inning",
+      "type": "integer",
+      "unit": "count",
+      "description": "Inning.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "balls_before",
+      "type": "integer",
+      "unit": "count",
+      "description": "Balls before.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "strikes_before",
+      "type": "integer",
+      "unit": "count",
+      "description": "Strikes before.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "outs_before",
+      "type": "integer",
+      "unit": "count",
+      "description": "Outs before.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "home_score_before",
+      "type": "integer",
+      "unit": "count",
+      "description": "Home score before.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "away_score_before",
+      "type": "integer",
+      "unit": "count",
+      "description": "Away score before.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "pitch_number",
+      "type": "integer",
+      "unit": "count",
+      "description": "Pitch number.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "plate_appearance_number",
+      "type": "integer",
+      "unit": "count",
+      "description": "Plate appearance number.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "base_state_mask",
+      "type": "integer",
+      "unit": "count",
+      "description": "Base state mask.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "half_inning",
+      "type": "text",
+      "unit": "category",
+      "description": "Half inning.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "pitch_type",
+      "type": "text",
+      "unit": "category",
+      "description": "Pitch type.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "pitcher_hand",
+      "type": "text",
+      "unit": "category",
+      "description": "Pitcher hand.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "batter_side",
+      "type": "text",
+      "unit": "category",
+      "description": "Batter side.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "call",
+      "type": "text",
+      "unit": "category",
+      "description": "Call.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "result",
+      "type": "text",
+      "unit": "category",
+      "description": "Result.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "shift_type",
+      "type": "text",
+      "unit": "category",
+      "description": "Shift type.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "is_pitch",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Is pitch.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "swing",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Swing.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "whiff",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Whiff.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "called_strike",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Called strike.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "foul",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Foul.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "in_play",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "In play.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "hit",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Hit.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "home_run",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Home run.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "walk",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Walk.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "strikeout",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Strikeout.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "hit_by_pitch",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Hit by pitch.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "release_speed",
+      "type": "number",
+      "unit": "mph",
+      "description": "Release speed.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "end_speed",
+      "type": "number",
+      "unit": "mph",
+      "description": "End speed.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "exit_velocity",
+      "type": "number",
+      "unit": "mph",
+      "description": "Exit velocity.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "spin_rate",
+      "type": "number",
+      "unit": "rpm",
+      "description": "Spin rate.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "spin_axis",
+      "type": "number",
+      "unit": "degrees",
+      "description": "Spin axis.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "launch_angle",
+      "type": "number",
+      "unit": "degrees",
+      "description": "Launch angle.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "spray_angle",
+      "type": "number",
+      "unit": "degrees",
+      "description": "Spray angle.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "plate_x",
+      "type": "number",
+      "unit": "feet",
+      "description": "Plate x.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "plate_z",
+      "type": "number",
+      "unit": "feet",
+      "description": "Plate z.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "release_x",
+      "type": "number",
+      "unit": "feet",
+      "description": "Release x.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "release_y",
+      "type": "number",
+      "unit": "feet",
+      "description": "Release y.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "release_z",
+      "type": "number",
+      "unit": "feet",
+      "description": "Release z.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "movement_x",
+      "type": "number",
+      "unit": "feet",
+      "description": "Movement x.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "movement_z",
+      "type": "number",
+      "unit": "feet",
+      "description": "Movement z.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "extension",
+      "type": "number",
+      "unit": "feet",
+      "description": "Extension.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "strike_zone_top",
+      "type": "number",
+      "unit": "feet",
+      "description": "Strike zone top.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "strike_zone_bottom",
+      "type": "number",
+      "unit": "feet",
+      "description": "Strike zone bottom.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "hit_distance",
+      "type": "number",
+      "unit": "feet",
+      "description": "Hit distance.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "vx0",
+      "type": "number",
+      "unit": "feet_per_second",
+      "description": "Vx0.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "vy0",
+      "type": "number",
+      "unit": "feet_per_second",
+      "description": "Vy0.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "vz0",
+      "type": "number",
+      "unit": "feet_per_second",
+      "description": "Vz0.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "ax",
+      "type": "number",
+      "unit": "feet_per_second_squared",
+      "description": "Ax.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "ay",
+      "type": "number",
+      "unit": "feet_per_second_squared",
+      "description": "Ay.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "az",
+      "type": "number",
+      "unit": "feet_per_second_squared",
+      "description": "Az.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "xwoba",
+      "type": "number",
+      "unit": "number",
+      "description": "Xwoba.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "xba",
+      "type": "number",
+      "unit": "number",
+      "description": "Xba.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "xslg",
+      "type": "number",
+      "unit": "number",
+      "description": "Xslg.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "run_expectancy_before",
+      "type": "number",
+      "unit": "number",
+      "description": "Run expectancy before.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "run_expectancy_after",
+      "type": "number",
+      "unit": "number",
+      "description": "Run expectancy after.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "run_value",
+      "type": "number",
+      "unit": "number",
+      "description": "Run value.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    }
+  ]
+}

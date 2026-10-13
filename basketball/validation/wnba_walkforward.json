@@ -1,0 +1,701 @@
+{
+ "schema": "edgedesk_lab_walkforward_v1",
+ "sport": "wnba",
+ "label": "WNBA",
+ "generated_at": "2026-10-13T06:25:33.575Z",
+ "protocol": {
+  "windows": {
+   "burn_in": [
+    2008,
+    2009
+   ],
+   "selection": [
+    2010,
+    2017
+   ],
+   "confirmation": [
+    2018,
+    2025
+   ],
+   "live": [
+    2026,
+    2026
+   ]
+  },
+  "calibration_seasons": 3,
+  "rules": {
+   "min_n": 1000,
+   "min_seasons": 2,
+   "max_citl": 0.02,
+   "slope": [
+    0.85,
+    1.15
+   ],
+   "challenger_margin": 0.001,
+   "coverage80": [
+    0.77,
+    0.83
+   ],
+   "max_bias_share": 0.01
+  },
+  "prediction_time": "scheduled start - 30 min; inputs: games whose assumed availability (start + 4 h) is before it",
+  "candidates": [
+   "points",
+   "points_rest"
+  ],
+  "baselines": {
+   "elo": "FiveThirtyEight NBA Elo form, tuned on the selection window: {\"k\":28,\"hfa\":60,\"revert\":0.5,\"selection_ml_log_loss\":0.61667}",
+   "const_home": "home win rate of the three seasons before (0.5 at a neutral site)"
+  }
+ },
+ "data": {
+  "source": "basketball/data/wnba (sportsdataverse, from ESPN)",
+  "license": "sportsdataverse hoopR-*-data / wehoop-*-data: MIT-licensed repositories of data compiled from ESPN's public feeds. ESPN's terms govern the underlying data; the owner must review before basketball output is sold in a paid tier.",
+  "seasons": [
+   2008,
+   2026
+  ],
+  "games": 4495,
+  "games_scored": 3994,
+  "temporal": {
+   "point_in_time": "RETROSPECTIVE",
+   "known_at": "blank (first publication unknown; never backdated)",
+   "assumed_available_at": "start + 4 h"
+  }
+ },
+ "leakage": {
+  "basis": "inputs dated by assumed_available_at (start + 4 h)",
+  "checked": 3994,
+  "violations": 0,
+  "examples": [],
+  "ok": true
+ },
+ "tuning": {
+  "chosen": {
+   "half_life_days": 365,
+   "prior_games": 4,
+   "carry": 0.8,
+   "sweeps": 3,
+   "k_mu": 40,
+   "k_h": 150
+  },
+  "elo": {
+   "k": 28,
+   "hfa": 60,
+   "revert": 0.5,
+   "selection_ml_log_loss": 0.61667
+  },
+  "rule": "chosen by SELECTION-window (2010-2017) moneyline log loss of `points`; no later season is read"
+ },
+ "selection": {
+  "rule": "lowest selection-window moneyline log loss; a challenger must beat the incumbent by >= 0.001",
+  "ll": {
+   "points": 0.61255,
+   "points_rest": 0.61278,
+   "elo": 0.61669,
+   "const_home": 0.67691
+  },
+  "chosen": "points"
+ },
+ "comparisons": {
+  "points_vs_elo": {
+   "n": 1873,
+   "blocks": 736,
+   "mean_diff": -0.001191,
+   "ci95": [
+    -0.008062,
+    0.005435
+   ],
+   "a_better": false,
+   "b_better": false
+  },
+  "points_vs_const_home": {
+   "n": 1873,
+   "blocks": 736,
+   "mean_diff": -0.075468,
+   "ci95": [
+    -0.092195,
+    -0.059975
+   ],
+   "a_better": true,
+   "b_better": false
+  },
+  "points_rest_vs_points": {
+   "n": 1873,
+   "blocks": 736,
+   "mean_diff": 0.001858,
+   "ci95": [
+    -0.000425,
+    0.004093
+   ],
+   "a_better": false,
+   "b_better": false
+  },
+  "margin_crps_vs_baseline": {
+   "n": 1873,
+   "blocks": 736,
+   "mean_diff": -0.845424,
+   "ci95": [
+    -0.994037,
+    -0.702897
+   ],
+   "a_better": true,
+   "b_better": false
+  },
+  "total_crps_vs_baseline": {
+   "n": 1873,
+   "blocks": 736,
+   "mean_diff": -0.537872,
+   "ci95": [
+    -0.673179,
+    -0.403619
+   ],
+   "a_better": true,
+   "b_better": false
+  }
+ },
+ "best_baseline": "elo",
+ "markets": {
+  "moneyline": {
+   "market": "moneyline (incl. overtime)",
+   "status": "PROVISIONAL",
+   "failed": [
+    "does not beat the best baseline with a 95% interval below zero"
+   ],
+   "n": 1873,
+   "log_loss": 0.61321,
+   "brier": 0.21216,
+   "calibration_in_the_large": -0.0016,
+   "calibration_slope": 0.953,
+   "market_status": "NOT_TESTED",
+   "market_reason": "no licensed archive of timestamped closing prices is on file; archived untimestamped lines are not a market test"
+  },
+  "spread": {
+   "market": "point spread (margin distribution, incl. overtime)",
+   "status": "OUTCOME_VALIDATED",
+   "failed": [],
+   "n": 1873,
+   "crps": 7.0613,
+   "mean_bias": -0.096,
+   "mean_outcome": 1.89,
+   "coverage_80": 0.8078,
+   "market_status": "NOT_TESTED",
+   "market_reason": "no licensed archive of timestamped closing prices is on file; archived untimestamped lines are not a market test"
+  },
+  "total": {
+   "market": "total points (incl. overtime)",
+   "status": "OUTCOME_VALIDATED",
+   "failed": [],
+   "n": 1873,
+   "crps": 9.3797,
+   "mean_bias": 0.041,
+   "mean_outcome": 163.44,
+   "coverage_80": 0.8003,
+   "market_status": "NOT_TESTED",
+   "market_reason": "no licensed archive of timestamped closing prices is on file; archived untimestamped lines are not a market test"
+  }
+ },
+ "windows": {
+  "selection": {
+   "seasons_range": [
+    2010,
+    2017
+   ],
+   "n": 1774,
+   "by_candidate": {
+    "points": {
+     "moneyline": {
+      "n": 1774,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.61255,
+      "brier": 0.21267,
+      "climatology": {
+       "rate": 0.593,
+       "log_loss": 0.67574,
+       "brier": 0.24135
+      },
+      "brier_skill": 0.1188,
+      "mean_p": 0.6022,
+      "mean_y": 0.593,
+      "calibration_in_the_large": 0.0092,
+      "calibration_slope": 1.041,
+      "calibration_intercept": -0.059
+     }
+    },
+    "points_rest": {
+     "moneyline": {
+      "n": 1774,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.61278,
+      "brier": 0.21276,
+      "climatology": {
+       "rate": 0.593,
+       "log_loss": 0.67574,
+       "brier": 0.24135
+      },
+      "brier_skill": 0.1184,
+      "mean_p": 0.602,
+      "mean_y": 0.593,
+      "calibration_in_the_large": 0.009,
+      "calibration_slope": 1.032,
+      "calibration_intercept": -0.054
+     }
+    },
+    "elo": {
+     "moneyline": {
+      "n": 1774,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.61669,
+      "brier": 0.21437,
+      "climatology": {
+       "rate": 0.593,
+       "log_loss": 0.67574,
+       "brier": 0.24135
+      },
+      "brier_skill": 0.1118,
+      "mean_p": 0.5782,
+      "mean_y": 0.593,
+      "calibration_in_the_large": -0.0148,
+      "calibration_slope": 1.114,
+      "calibration_intercept": 0.036
+     }
+    },
+    "const_home": {
+     "moneyline": {
+      "n": 1774,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.67691,
+      "brier": 0.2419,
+      "climatology": {
+       "rate": 0.593,
+       "log_loss": 0.67574,
+       "brier": 0.24135
+      },
+      "brier_skill": -0.0023,
+      "mean_p": 0.6072,
+      "mean_y": 0.593,
+      "calibration_in_the_large": 0.0141,
+      "calibration_slope": 0.041,
+      "calibration_intercept": 0.358
+     }
+    }
+   },
+   "margin": {
+    "points": {
+     "n": 1774,
+     "crps": 6.8066,
+     "mean_bias": 0.013,
+     "mean_outcome": 3.08,
+     "coverage_80": 0.8038
+    },
+    "points_rest": {
+     "n": 1774,
+     "crps": 6.7987,
+     "mean_bias": 0.068,
+     "mean_outcome": 3.08,
+     "coverage_80": 0.8044
+    },
+    "baseline": {
+     "n": 1774,
+     "crps": 7.4134,
+     "mean_bias": 0.11,
+     "mean_outcome": 3.08,
+     "coverage_80": 0.801
+    }
+   },
+   "total": {
+    "points": {
+     "n": 1774,
+     "crps": 9.3041,
+     "mean_bias": -0.238,
+     "mean_outcome": 156.61,
+     "coverage_80": 0.8174
+    },
+    "baseline": {
+     "n": 1774,
+     "crps": 10.665,
+     "mean_bias": -1.492,
+     "mean_outcome": 156.61,
+     "coverage_80": 0.8157
+    }
+   },
+   "seasons": 8
+  },
+  "confirmation": {
+   "seasons_range": [
+    2018,
+    2025
+   ],
+   "n": 1873,
+   "by_candidate": {
+    "points": {
+     "moneyline": {
+      "n": 1873,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.61321,
+      "brier": 0.21216,
+      "climatology": {
+       "rate": 0.5515,
+       "log_loss": 0.68783,
+       "brier": 0.24735
+      },
+      "brier_skill": 0.1422,
+      "mean_p": 0.55,
+      "mean_y": 0.5515,
+      "calibration_in_the_large": -0.0016,
+      "calibration_slope": 0.953,
+      "calibration_intercept": 0.016
+     }
+    },
+    "points_rest": {
+     "moneyline": {
+      "n": 1873,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.61507,
+      "brier": 0.21297,
+      "climatology": {
+       "rate": 0.5515,
+       "log_loss": 0.68783,
+       "brier": 0.24735
+      },
+      "brier_skill": 0.139,
+      "mean_p": 0.5501,
+      "mean_y": 0.5515,
+      "calibration_in_the_large": -0.0014,
+      "calibration_slope": 0.929,
+      "calibration_intercept": 0.019
+     }
+    },
+    "elo": {
+     "moneyline": {
+      "n": 1873,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.6144,
+      "brier": 0.21289,
+      "climatology": {
+       "rate": 0.5515,
+       "log_loss": 0.68783,
+       "brier": 0.24735
+      },
+      "brier_skill": 0.1393,
+      "mean_p": 0.5795,
+      "mean_y": 0.5515,
+      "calibration_in_the_large": 0.0279,
+      "calibration_slope": 1.126,
+      "calibration_intercept": -0.168
+     }
+    },
+    "const_home": {
+     "moneyline": {
+      "n": 1873,
+      "sample_state": "MEANINGFUL",
+      "log_loss": 0.68868,
+      "brier": 0.24776,
+      "climatology": {
+       "rate": 0.5515,
+       "log_loss": 0.68783,
+       "brier": 0.24735
+      },
+      "brier_skill": -0.0017,
+      "mean_p": 0.5561,
+      "mean_y": 0.5515,
+      "calibration_in_the_large": 0.0046,
+      "calibration_slope": 0.023,
+      "calibration_intercept": 0.202
+     }
+    }
+   },
+   "margin": {
+    "points": {
+     "n": 1873,
+     "crps": 7.0613,
+     "mean_bias": -0.096,
+     "mean_outcome": 1.89,
+     "coverage_80": 0.8078
+    },
+    "points_rest": {
+     "n": 1873,
+     "crps": 7.0613,
+     "mean_bias": -0.096,
+     "mean_outcome": 1.89,
+     "coverage_80": 0.8078
+    },
+    "baseline": {
+     "n": 1873,
+     "crps": 7.9068,
+     "mean_bias": 0.077,
+     "mean_outcome": 1.89,
+     "coverage_80": 0.7939
+    }
+   },
+   "total": {
+    "points": {
+     "n": 1873,
+     "crps": 9.3797,
+     "mean_bias": 0.041,
+     "mean_outcome": 163.44,
+     "coverage_80": 0.8003
+    },
+    "baseline": {
+     "n": 1873,
+     "crps": 9.9176,
+     "mean_bias": -0.609,
+     "mean_outcome": 163.44,
+     "coverage_80": 0.8014
+    }
+   },
+   "seasons": 8
+  },
+  "live": {
+   "seasons_range": [
+    2026,
+    2026
+   ],
+   "n": 347,
+   "by_candidate": {
+    "points": {
+     "moneyline": {
+      "n": 347,
+      "sample_state": "DEVELOPING",
+      "log_loss": 0.60182,
+      "brier": 0.20653,
+      "climatology": {
+       "rate": 0.5504,
+       "log_loss": 0.68805,
+       "brier": 0.24746
+      },
+      "brier_skill": 0.1654,
+      "mean_p": 0.5508,
+      "mean_y": 0.5504,
+      "calibration_in_the_large": 0.0004,
+      "calibration_slope": 1.082,
+      "calibration_intercept": -0.016
+     }
+    },
+    "points_rest": {
+     "moneyline": {
+      "n": 347,
+      "sample_state": "DEVELOPING",
+      "log_loss": 0.60161,
+      "brier": 0.20643,
+      "climatology": {
+       "rate": 0.5504,
+       "log_loss": 0.68805,
+       "brier": 0.24746
+      },
+      "brier_skill": 0.1658,
+      "mean_p": 0.5509,
+      "mean_y": 0.5504,
+      "calibration_in_the_large": 0.0005,
+      "calibration_slope": 1.084,
+      "calibration_intercept": -0.017
+     }
+    },
+    "elo": {
+     "moneyline": {
+      "n": 347,
+      "sample_state": "DEVELOPING",
+      "log_loss": 0.59821,
+      "brier": 0.20542,
+      "climatology": {
+       "rate": 0.5504,
+       "log_loss": 0.68805,
+       "brier": 0.24746
+      },
+      "brier_skill": 0.1699,
+      "mean_p": 0.5734,
+      "mean_y": 0.5504,
+      "calibration_in_the_large": 0.023,
+      "calibration_slope": 1.224,
+      "calibration_intercept": -0.171
+     }
+    },
+    "const_home": {
+     "moneyline": {
+      "n": 347,
+      "sample_state": "DEVELOPING",
+      "log_loss": 0.68778,
+      "brier": 0.24732,
+      "climatology": {
+       "rate": 0.5504,
+       "log_loss": 0.68805,
+       "brier": 0.24746
+      },
+      "brier_skill": 0.0005,
+      "mean_p": 0.5473,
+      "mean_y": 0.5504,
+      "calibration_in_the_large": -0.0031,
+      "calibration_slope": 140.154,
+      "calibration_intercept": -26.455
+     }
+    }
+   },
+   "margin": {
+    "points": {
+     "n": 347,
+     "crps": 7.3103,
+     "mean_bias": 0.21,
+     "mean_outcome": 1.93,
+     "coverage_80": 0.7752
+    },
+    "points_rest": {
+     "n": 347,
+     "crps": 7.3077,
+     "mean_bias": 0.216,
+     "mean_outcome": 1.93,
+     "coverage_80": 0.7752
+    },
+    "baseline": {
+     "n": 347,
+     "crps": 8.1558,
+     "mean_bias": 0.102,
+     "mean_outcome": 1.93,
+     "coverage_80": 0.8012
+    }
+   },
+   "total": {
+    "points": {
+     "n": 347,
+     "crps": 10.8453,
+     "mean_bias": -4.157,
+     "mean_outcome": 174.03,
+     "coverage_80": 0.7262
+    },
+    "baseline": {
+     "n": 347,
+     "crps": 12.8141,
+     "mean_bias": -10.049,
+     "mean_outcome": 174.03,
+     "coverage_80": 0.7003
+    }
+   },
+   "seasons": 1
+  }
+ },
+ "by_season": {
+  "2010": {
+   "n": 220,
+   "ml_log_loss": {
+    "points": 0.61963,
+    "elo": 0.6294
+   }
+  },
+  "2011": {
+   "n": 224,
+   "ml_log_loss": {
+    "points": 0.57879,
+    "elo": 0.58344
+   }
+  },
+  "2012": {
+   "n": 223,
+   "ml_log_loss": {
+    "points": 0.57173,
+    "elo": 0.57699
+   }
+  },
+  "2013": {
+   "n": 221,
+   "ml_log_loss": {
+    "points": 0.64389,
+    "elo": 0.64145
+   }
+  },
+  "2014": {
+   "n": 222,
+   "ml_log_loss": {
+    "points": 0.6448,
+    "elo": 0.63937
+   }
+  },
+  "2015": {
+   "n": 225,
+   "ml_log_loss": {
+    "points": 0.64145,
+    "elo": 0.64972
+   }
+  },
+  "2016": {
+   "n": 220,
+   "ml_log_loss": {
+    "points": 0.61455,
+    "elo": 0.62509
+   }
+  },
+  "2017": {
+   "n": 219,
+   "ml_log_loss": {
+    "points": 0.58552,
+    "elo": 0.58798
+   }
+  },
+  "2018": {
+   "n": 220,
+   "ml_log_loss": {
+    "points": 0.64144,
+    "elo": 0.63355
+   }
+  },
+  "2019": {
+   "n": 220,
+   "ml_log_loss": {
+    "points": 0.61142,
+    "elo": 0.61264
+   }
+  },
+  "2020": {
+   "n": 147,
+   "ml_log_loss": {
+    "points": 0.6028,
+    "elo": 0.61157
+   }
+  },
+  "2021": {
+   "n": 210,
+   "ml_log_loss": {
+    "points": 0.61696,
+    "elo": 0.61117
+   }
+  },
+  "2022": {
+   "n": 240,
+   "ml_log_loss": {
+    "points": 0.6132,
+    "elo": 0.62153
+   }
+  },
+  "2023": {
+   "n": 261,
+   "ml_log_loss": {
+    "points": 0.59319,
+    "elo": 0.60873
+   }
+  },
+  "2024": {
+   "n": 264,
+   "ml_log_loss": {
+    "points": 0.59761,
+    "elo": 0.60412
+   }
+  },
+  "2025": {
+   "n": 311,
+   "ml_log_loss": {
+    "points": 0.62697,
+    "elo": 0.61364
+   }
+  },
+  "2026": {
+   "n": 347,
+   "ml_log_loss": {
+    "points": 0.60182,
+    "elo": 0.59821
+   }
+  }
+ },
+ "caveats": [
+  "Retrospective, not point-in-time certified: results were retrieved after the fact; a game is assumed known 4 hours after its start.",
+  "No lineup, injury or rest-of-roster input: a star's absence is not in the number (the data pack lists availability as a P0 gap).",
+  "Outcome validation only: no licensed archive of timestamped closing prices exists here, so nothing is compared with the market."
+ ]
+}

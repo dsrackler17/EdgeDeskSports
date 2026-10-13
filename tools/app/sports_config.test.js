@@ -70,7 +70,7 @@ chk('dropRetired keeps every current row and nothing else',
 chk('the PostgREST rule keeps NULL keys and drops every retired prefix',
   S.postgrestKeep('sport_key') === 'or=(sport_key.is.null,sport_key.not.like.tennis_*)', S.postgrestKeep('sport_key'));
 chk('old research modules land on the default', JSON.stringify(S.retiredModuleRoutes()) === JSON.stringify({ tennis: 'football', wta: 'football' }));
-chk('the boundary sentence', S.unsupportedAnswer(TENNIS) === 'Tennis is not currently supported by EdgeDesk Research. Current research coverage includes Football, UFC and Baseball.');
+chk('the boundary sentence', S.unsupportedAnswer(TENNIS) === 'Tennis is not currently supported by EdgeDesk Research. Current research coverage includes Football, UFC, Baseball and NHL.');
 [['Who has value in this ATP match?', true], ['Best WTA bets today?', true], ['Research Alcaraz vs Sinner', false],
  ['Any tennis edges?', true], ['Why did you stop covering tennis?', false], ['How does Texas State look?', false],
  ['Is Deshaun Watson starting?', false]].forEach(([q, want]) => {
@@ -89,7 +89,7 @@ const other = (APP.match(/<div class="rs-oth-row hide" id="rsOther"[^\n]*?<\/div
 const subs = ((nav + other).match(/data-sub="([a-z]+)"/g) || []).map((x) => x.slice(10, -1));
 const cov = S.RESEARCH_COVERAGE.map((c) => c.id);
 chk('the Research tabs are the first covered sport, Props, Edges and Other, then the rest of the coverage and the tools',
-  JSON.stringify(subs) === JSON.stringify([cov[0], 'pprops', 'edges', 'other'].concat(cov.slice(1), ['lines', 'stats', 'lab', 'rdesk'])), subs);
+  JSON.stringify(subs) === JSON.stringify([cov[0], 'pprops', 'edges', 'other'].concat(cov.slice(1), ['lines', 'engine', 'stats', 'lab', 'rdesk'])), subs);
 chk('every covered sport has a Research tab, in coverage order', JSON.stringify(subs.filter((x) => cov.indexOf(x) >= 0)) === JSON.stringify(cov), subs);
 S.RETIRED.forEach((r) => r.modules.forEach((m) => {
   chk('no Research tab for retired module ' + m, subs.indexOf(m) < 0);

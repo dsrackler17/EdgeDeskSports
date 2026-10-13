@@ -1,0 +1,318 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "tennis.points",
+  "type": "object",
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "event_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "entity_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Source registry identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_record_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Original provider record identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "occurred_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "known_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "retrieved_at": {
+      "type": "string",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "description": "Monotone version of this source record.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "quality_status": {
+      "type": "string",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "server_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Server id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "returner_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Returner id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "point_winner_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Point winner id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "set_number": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Set number.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "game_number": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Game number.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "point_number": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Point number.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "server_points_before": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Server points before.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "returner_points_before": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Returner points before.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "server_games_before": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Server games before.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "returner_games_before": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Returner games before.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "server_sets_before": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Server sets before.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "returner_sets_before": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Returner sets before.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "serve_number": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Serve number.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "rally_length": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Rally length.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "tiebreak": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Tiebreak.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "ace": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Ace.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "double_fault": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Double fault.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "first_serve_in": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "First serve in.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "break_point": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Break point.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "set_point": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Set point.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "match_point": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Match point.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "serve_direction": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Serve direction.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "point_end_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Point end type.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "winner_shot_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Winner shot type.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "serve_speed": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Serve speed.",
+      "x-unit": "mph",
+      "x-priority": "P0"
+    }
+  },
+  "required": [
+    "record_id",
+    "source_id",
+    "retrieved_at",
+    "revision",
+    "quality_status"
+  ],
+  "additionalProperties": false
+}

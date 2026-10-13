@@ -271,6 +271,30 @@ history". See `docs/intelligence-architecture.md` §15 and
 - `npm run intel:test` — the kernel, the evaluation harness, the migrations
 - `npm run intel:stake` · `npm run stake:validate` — the sizing rules, and whether they beat flat staking
 
+## The multi-sport engine — NHL first, every sport honest
+
+Research → Other → **NHL** prices every NHL game with my own model:
+moneyline, 60-minute 3-way, puck line, totals and team totals, with the
+goalie scenarios, the evidence, the uncertainty and the walk-forward record
+behind each number (`hockey/`, docs/engine/NHL.md). Research → Other →
+**Engine** is one board across every sport: the best-supported opportunity at
+an actual price — or PASS, with why — beside each sport's readiness, computed
+from its validation files (`lib/edgedesk_sport_brains.js`,
+`lib/edgedesk_xboard.js`). Today the NHL is validated against outcomes and
+not yet against the closing market, no sport may claim value, and NHL prices
+are not bought until I authorise it. See
+[`docs/engine/README.md`](docs/engine/README.md).
+Tests: `npm run nhl:test`, `npm run engine:test`, `npm run nhl:sql`, `npm run engine:e2e`.
+
+The EdgeDesk Quant Data Pack is imported and verified (`datapack/quant_v1`,
+[`docs/engine/DATAPACK.md`](docs/engine/DATAPACK.md)). On it and on free
+multi-season sources I built and validated walk-forward brains for the NBA,
+WNBA, men's and women's college basketball (`basketball/`), five soccer
+leagues (`soccer/`) and MLB (`mlb/history/`). UFC, college baseball and
+tennis are measured as too thin for a model. The Engine's readiness ladder
+keeps apart what is loaded, trained, validated, market-tested, priced now and
+actionable. Tests: `npm run datapack:test`, `npm run lab:test`, `npm run lab:check`.
+
 ## The quant desk — the best verified bet across every sport, contract prices, and an independent audit
 
 "What's the best bet right now?" with no league named is now a scan of **every

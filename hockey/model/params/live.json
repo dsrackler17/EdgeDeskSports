@@ -1,0 +1,428 @@
+{
+ "schema": "edgedesk_nhl_live_params_v1",
+ "generated_at": "2026-10-13T05:48:41.472Z",
+ "for_season": 2027,
+ "model": "xg_no_goalie",
+ "confirmed_variant": "xg_goalie_confirmed",
+ "glm": {
+  "xg_no_goalie": {
+   "names": [
+    "home",
+    "ev_off",
+    "ev_def_opp",
+    "g_off",
+    "g_def_opp",
+    "pp_off",
+    "pk_def_opp",
+    "pp_draw",
+    "pk_take_opp",
+    "fin",
+    "b2b",
+    "b2b_opp"
+   ],
+   "offset": "log(league goals per team-game, running)",
+   "beta": [
+    -0.051944,
+    0.058634,
+    0.480086,
+    0.679682,
+    0.606706,
+    0.83737,
+    0.172287,
+    0.001296,
+    0.110282,
+    -0.028248,
+    0.172818,
+    -0.069074,
+    0.063802
+   ],
+   "se": [
+    0.009288,
+    0.010001,
+    0.185158,
+    0.138776,
+    0.231675,
+    0.100815,
+    0.088943,
+    0.094996,
+    0.112109,
+    0.085372,
+    0.179331,
+    0.014635,
+    0.014005
+   ],
+   "n": 13986,
+   "deviance": 15089.979488080373
+  },
+  "xg_goalie_confirmed": {
+   "names": [
+    "home",
+    "ev_off",
+    "ev_def_opp",
+    "g_off",
+    "g_def_opp",
+    "pp_off",
+    "pk_def_opp",
+    "pp_draw",
+    "pk_take_opp",
+    "fin",
+    "goalie_conf",
+    "b2b",
+    "b2b_opp"
+   ],
+   "offset": "log(league goals per team-game, running)",
+   "beta": [
+    -0.057672,
+    0.057276,
+    0.403423,
+    0.8498,
+    0.726775,
+    0.574362,
+    0.152831,
+    0.06283,
+    0.091079,
+    0.001685,
+    0.075636,
+    -0.703234,
+    -0.069426,
+    0.056299
+   ],
+   "se": [
+    0.009472,
+    0.01001,
+    0.186832,
+    0.148993,
+    0.234907,
+    0.131203,
+    0.089139,
+    0.096979,
+    0.112292,
+    0.085863,
+    0.18206,
+    0.22512,
+    0.014634,
+    0.01421
+   ],
+   "n": 13986,
+   "deviance": 15080.226425455667
+  },
+  "goals_only": {
+   "names": [
+    "home",
+    "g_off",
+    "g_def_opp",
+    "b2b",
+    "b2b_opp"
+   ],
+   "offset": "log(league goals per team-game, running)",
+   "beta": [
+    -0.058059,
+    0.058782,
+    1.115161,
+    1.184504,
+    -0.068041,
+    0.063541
+   ],
+   "se": [
+    0.007593,
+    0.01,
+    0.074286,
+    0.070827,
+    0.014633,
+    0.013999
+   ],
+   "n": 13986,
+   "deviance": 15134.75003514394
+  },
+  "xg_lineup_confirmed": {
+   "names": [
+    "home",
+    "ev_off",
+    "ev_def_opp",
+    "g_off",
+    "g_def_opp",
+    "pp_off",
+    "pk_def_opp",
+    "pp_draw",
+    "pk_take_opp",
+    "fin",
+    "b2b",
+    "b2b_opp",
+    "lu_own_conf",
+    "lu_opp_conf"
+   ],
+   "offset": "log(league goals per team-game, running)",
+   "beta": [
+    -0.051138,
+    0.05777,
+    0.485197,
+    0.677637,
+    0.587356,
+    0.829226,
+    0.171087,
+    0.012725,
+    0.109681,
+    -0.028142,
+    0.179044,
+    -0.066405,
+    0.062414,
+    0.863697,
+    -0.404114
+   ],
+   "se": [
+    0.009293,
+    0.010002,
+    0.185138,
+    0.138784,
+    0.231682,
+    0.100891,
+    0.08893,
+    0.094993,
+    0.112109,
+    0.085379,
+    0.179327,
+    0.014646,
+    0.014016,
+    0.187713,
+    0.185512
+   ],
+   "n": 13986,
+   "deviance": 15064.529527798122
+  },
+  "xg_all_confirmed": {
+   "names": [
+    "home",
+    "ev_off",
+    "ev_def_opp",
+    "g_off",
+    "g_def_opp",
+    "pp_off",
+    "pk_def_opp",
+    "pp_draw",
+    "pk_take_opp",
+    "fin",
+    "goalie_conf",
+    "b2b",
+    "b2b_opp",
+    "lu_own_conf",
+    "lu_opp_conf"
+   ],
+   "offset": "log(league goals per team-game, running)",
+   "beta": [
+    -0.056702,
+    0.056458,
+    0.410379,
+    0.844074,
+    0.704647,
+    0.572784,
+    0.151758,
+    0.072718,
+    0.090876,
+    0.001215,
+    0.084025,
+    -0.687873,
+    -0.066747,
+    0.055166,
+    0.867939,
+    -0.372373
+   ],
+   "se": [
+    0.009475,
+    0.010011,
+    0.186809,
+    0.149041,
+    0.234914,
+    0.131185,
+    0.089134,
+    0.096972,
+    0.112294,
+    0.085875,
+    0.182062,
+    0.225505,
+    0.014645,
+    0.014216,
+    0.187713,
+    0.18575
+   ],
+   "n": 13986,
+   "deviance": 15055.229441531701
+  }
+ },
+ "lineups": {
+  "available": true
+ },
+ "glm_train_seasons": [
+  2022,
+  2026
+ ],
+ "ratings": {
+  "half_life_days": 180,
+  "goalie_half_life_days": 200,
+  "prior_games": 32,
+  "goalie_prior_xg": 250,
+  "goalie_prior_rate": -0.03,
+  "starter_memory": 10
+ },
+ "pair_calibration": {
+  "const_home": {
+   "a": 0.3,
+   "b": 0.85,
+   "c": 6.0241,
+   "n": 4192,
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+  },
+  "goals_only": {
+   "a": 0.45,
+   "b": 0.925,
+   "c": 6.023,
+   "n": 4192,
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+  },
+  "xg_no_goalie": {
+   "a": 0.5,
+   "b": 0.9,
+   "c": 6.0254,
+   "n": 4192,
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+  },
+  "xg_goalie_projected": {
+   "a": 0.5,
+   "b": 0.9,
+   "c": 6.0243,
+   "n": 4192,
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+  },
+  "xg_goalie_confirmed": {
+   "a": 0.525,
+   "b": 0.9,
+   "c": 6.0223,
+   "n": 4192,
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+  },
+  "xg_lineup_projected": {
+   "a": 0.525,
+   "b": 0.9,
+   "c": 6.0263,
+   "n": 4192,
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+  },
+  "xg_lineup_confirmed": {
+   "a": 0.5,
+   "b": 0.9,
+   "c": 6.0255,
+   "n": 4192,
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+  },
+  "xg_all_confirmed": {
+   "a": 0.525,
+   "b": 0.9,
+   "c": 6.0226,
+   "n": 4192,
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+  }
+ },
+ "score_weights": {
+  "lead": 1.0487,
+  "tie": 1.0056,
+  "trail": 0.95
+ },
+ "ot": {
+  "format": "R3v3",
+  "k": 2.2925,
+  "so_home": 0.5159,
+  "p_ot_decided": 0.6801,
+  "n_tied": 869,
+  "lam_reg": 2.983,
+  "basis": "seasons before"
+ },
+ "effects": {
+  "t_buckets": [
+   0,
+   2400,
+   3000,
+   3300,
+   3420,
+   3480,
+   3540,
+   3600
+  ],
+  "d_min": -3,
+  "d_max": 3,
+  "m": [
+   [
+    0.9576,
+    1.0222,
+    1.0019,
+    0.9213,
+    0.9863,
+    0.9759,
+    1.0063
+   ],
+   [
+    0.9353,
+    0.9982,
+    0.9351,
+    0.8741,
+    0.9036,
+    0.8976,
+    0.8899
+   ],
+   [
+    0.9019,
+    1.0181,
+    0.951,
+    0.8386,
+    0.7992,
+    0.8085,
+    1.0555
+   ],
+   [
+    1.038,
+    1.0659,
+    0.929,
+    0.7867,
+    0.8284,
+    1.674,
+    1.4214
+   ],
+   [
+    0.8807,
+    1.4918,
+    1.0087,
+    0.7536,
+    1.1638,
+    3.2192,
+    1.2274
+   ],
+   [
+    0.872,
+    1.4996,
+    1.3697,
+    0.6946,
+    3.4982,
+    4.0722,
+    1.1541
+   ],
+   [
+    0.8379,
+    1.4745,
+    2.1689,
+    0.708,
+    5.8259,
+    4.7339,
+    0.8994
+   ]
+  ],
+  "goals": 33518,
+  "team_seconds": 40262400,
+  "base_rate_per_hour": 2.997,
+  "for_season": 2027,
+  "games": 5592
+ },
+ "elo": {
+  "k": 6,
+  "hfa": 35,
+  "revert": 0.7,
+  "ll": 0.6766876166800263
+ }
+}

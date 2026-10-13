@@ -1,0 +1,25 @@
+source_id,native_field,canonical_field,unit,mapping_rule
+nflverse_pbp,epa,football.plays.epa,points,"Provider-derived EPA, current archive model; retain model version"
+nflverse_pbp,game_id,football.plays.event_id,identifier,Game-level event ID; play record_id also includes play_id
+nflverse_pbp,play_id,football.plays.record_id,identifier,Combine with game_id and source_id
+nflverse_pbp,posteam,football.plays.offense_team_id,identifier,Map stable team aliases to canonical team registry
+nflverse_pbp,defteam,football.plays.defense_team_id,identifier,Map stable team aliases
+nflverse_pbp,yardline_100,football.plays.yardline_100,yards,Distance to opponent goal line
+nflverse_pbp,air_yards,football.plays.air_yards,yards,Missing when not applicable; preserve negative values
+nflverse_pbp,cpoe,football.plays.cpoe,percentage_points_native,Do not mix with raw probability proportions
+mlb_statsapi,pitchData.startSpeed,baseball.pitches.release_speed,mph,Measured pitch source field; not inferred velocity
+mlb_statsapi,pitchData.coordinates.pX,baseball.pitches.plate_x,feet,Provider plate coordinate frame
+mlb_statsapi,pitchData.coordinates.pZ,baseball.pitches.plate_z,feet,Height at plate
+mlb_statsapi,pitchData.breaks.spinRate,baseball.pitches.spin_rate,rpm,Null if not supplied
+mlb_statsapi,hitData.launchSpeed,baseball.pitches.exit_velocity,mph,Only measured batted balls
+mlb_statsapi,hitData.launchAngle,baseball.pitches.launch_angle,degrees,Only measured batted balls
+mlb_statsapi,pitching.inningsPitched,baseball.pitcher_game.outs_recorded,outs,Parse baseball notation: 5.2 = 17 outs
+espn_public_nhl,boxscore.players.statistics.labels: TOI,hockey.skater_game.toi_seconds,seconds,"Parse mm:ss, category/deduplication policy required"
+espn_public_nhl,boxscore.players.statistics.labels: SA,hockey.goalie_game.shots_faced,count,Goalie group only
+espn_public_nhl,boxscore.players.statistics.labels: SV,hockey.goalie_game.saves,count,Goalie group only
+espn_public_nhl,boxscore.players.statistics.labels: GA,hockey.goalie_game.goals_allowed,count,Goalie group only
+espn_public_nhl,plays.coordinate,hockey.shots.x/y,unverified_native,Do not compute feet/distance/angle without frame verification
+espn_public_nba,boxscore.players.statistics.labels: MIN,basketball.player_game.minutes_seconds,seconds,Parse native clock or minute notation explicitly
+espn_public_nba,boxscore.players.statistics.labels: 3PT,basketball.player_game.three_pm/three_pa,count,Split made-attempted tuple; do not parse as decimal
+espn_public_tennis,groupings.grouping.slug,tennis.matches.draw_type,category,Filter mens-singles/womens-singles; do not pool doubles
+espn_public_ufc,competitions.status.period,mma.bouts.finish_round,count,Result-level round; not a round-statistics record

@@ -1,0 +1,186 @@
+# EdgeDesk — the NHL brain and the multi-sport engine (docs/engine/README.md).
+#
+#   tests     on every pull request and push that touches this work: the NHL
+#             brain offline, the market test, the board's rules, the registry,
+#             the NHL odds row on a throwaway PostgreSQL, the no-bypass guard,
+#             the navigation, and both panels in Chromium (desktop + 390 px).
+#   build     every three hours: ingest the season in progress (sportsdataverse
+#             fastRhockey, public, keyless), rebuild its team-game partitions
+#             with the committed xG model, price the slate (refreshing today's
+#             times from the NHL's own API), grade the ledger, rebuild the
+#             registry and the cross-sport board, commit only on change.
+#             NHL book prices are requested ONLY when the repository variable
+#             NHL_PRICES is "on" AND the gateway row icehockey_nhl is enabled
+#             (supabase/nhl_odds_sport.sql creates it disabled). Default spend: 0.
+#   validate  weekly (Tuesday, 10:23 UTC): ingest every season since 2010-11,
+#             refit the walk-forward xG models, rerun the walk-forward record
+#             and the market test (NO_ARCHIVE until a licensed closing archive
+#             is added), refresh the live parameters, rebuild everything, and
+#             commit only if the suites pass on the new record.
+name: NHL engine
+run-name: NHL engine · ${{ inputs.mode || github.event_name }}
+
+on:
+  pull_request:
+    paths:
+      - 'hockey/**'
+      - 'engine/**'
+      - 'lib/edgedesk_xboard.js'
+      - 'lib/edgedesk_sport_brains.js'
+      - 'lib/edgedesk_engine_ui.js'
+      - 'lib/edgedesk_engine.css'
+      - 'lib/edgedesk_sports.js'
+      - 'tools/hockey/**'
+      - 'tools/engine/**'
+      - 'supabase/nhl_odds_sport.sql'
+      - 'supabase/functions/edgedesk_ai/index.ts'
+      - 'app.html'
+      - '.github/workflows/nhl.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'hockey/**'
+      - 'engine/**'
+      - 'lib/edgedesk_xboard.js'
+      - 'lib/edgedesk_sport_brains.js'
+      - 'lib/edgedesk_engine_ui.js'
+      - 'tools/hockey/**'
+      - 'tools/engine/**'
+  schedule:
+    - cron: '41 */3 * * *'   # build
+    - cron: '23 10 * * 2'    # validate
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'build or validate'
+        required: false
+        default: 'build'
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The NHL brain offline (ingest, xG, ratings, distribution, settlement, guard, sources, spend, artifacts)
+        run: node tools/hockey/hockey.test.js
+      - name: The market test on synthetic archives
+        run: node tools/hockey/market_test.test.js
+      - name: The NHL on the desk (module and the real edge handler, no model)
+        run: node tools/hockey/nhl_desk.test.js
+      - name: The cross-sport board's rules and the readiness registry
+        run: node tools/engine/engine.test.js
+      - name: The committed record, slate, registry and board pass their checks
+        run: node hockey/model/walkforward.js --check && node hockey/build_slate.js --check && node hockey/crosscheck/espn.js --check && node hockey/contracts/canonical.js --check && node engine/build_registry.js --check && node engine/build_board.js --check
+      - name: The NHL odds row on a real PostgreSQL (disabled until authorised)
+        env: { NHL_SQL_REQUIRED: '1' }
+        run: node tools/hockey/nhl_sql.test.js
+      - name: No path around the odds gateway; the navigation names NHL and Engine
+        run: node tools/odds/no_bypass.test.js && node tools/app/navigation.test.js && node tools/app/sports_config.test.js && node tools/presentation/presentation_sync.test.js
+      - name: Install Chromium for the panels
+        continue-on-error: true
+        run: npm install --no-save playwright@1.49.1 && npx playwright install --with-deps chromium
+      - name: The NHL and Engine panels in Chromium, desktop and a 390 px phone
+        run: node tools/engine/engine_ui.e2e.js
+
+  build:
+    if: (github.event_name == 'schedule' && github.event.schedule == '41 */3 * * *') || (github.event_name == 'workflow_dispatch' && (inputs.mode == '' || inputs.mode == 'build'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    concurrency:
+      group: nhl-artifacts
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet pyarrow
+      - name: Ingest the season in progress and rebuild its team-game partitions
+        run: |
+          S=$(node -e "console.log(require('./hockey/config.js').CURRENT_SEASON)")
+          node hockey/ingest/season.js --season "$S"
+          node hockey/ingest/team_games.js --season "$S"
+          node hockey/ingest/lineups.js --season "$((S-1)),$S"
+      - name: NHL book prices (spends nothing unless NHL_PRICES is on and the gateway row is enabled)
+        env:
+          NHL_PRICES: ${{ vars.NHL_PRICES }}
+          EDGD_SB_URL: ${{ vars.NHL_PRICES == 'on' && secrets.SB_URL || '' }}
+          EDGD_SB_SERVICE: ${{ vars.NHL_PRICES == 'on' && secrets.SB_SERVICE_ROLE || '' }}
+        run: node hockey/market/fetch_quotes.js
+      - name: Price the slate, grade the ledger, rebuild the registry and the board
+        run: node hockey/build_slate.js && node hockey/grade_ledger.js && node engine/build_registry.js && node engine/build_board.js
+      - name: The suites and checks pass before anything is written
+        run: node tools/hockey/hockey.test.js && node tools/engine/engine.test.js && node hockey/build_slate.js --check && node engine/build_registry.js --check && node engine/build_board.js --check
+      - name: Commit via tools/ci/push_generated.sh (our paths on top of the remote tip, never a rebase)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "nhl: slate, ledger and the cross-sport board" -- \
+            hockey/data hockey/slate.json hockey/ledger hockey/market/quotes.json engine/registry.json engine/board.json
+
+  validate:
+    if: (github.event_name == 'schedule' && github.event.schedule == '23 10 * * 2') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'validate')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    concurrency:
+      group: nhl-artifacts
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet pyarrow
+      - uses: actions/cache@v4
+        with:
+          path: .cache/nhl_src
+          key: nhl-src-${{ github.run_id }}
+          restore-keys: nhl-src-
+      - name: Ingest every season since 2010-11 (≈300 MB of public parquet; cached between runs)
+        run: |
+          S=$(node -e "console.log(require('./hockey/config.js').CURRENT_SEASON)")
+          node --max-old-space-size=6144 hockey/ingest/season.js --season "2011-$S" --ttl-hours 160
+      - name: Refit the walk-forward xG models and rebuild the team-game table
+        run: |
+          S=$(node -e "console.log(require('./hockey/config.js').CURRENT_SEASON)")
+          node --max-old-space-size=6144 hockey/xg/train.js
+          node hockey/ingest/team_games.js --season "2011-$S"
+          node hockey/ingest/lineups.js --season "2011-$S" --ttl-hours 160
+      - name: The walk-forward record and the market test
+        run: node --max-old-space-size=8192 hockey/model/walkforward.js && node hockey/model/market_test.js && node --max-old-space-size=8192 hockey/model/walkforward.js
+      - name: The canonical contracts and the ESPN cross-check on the new tables
+        run: |
+          S=$(node -e "console.log(require('./hockey/config.js').CURRENT_SEASON)")
+          node hockey/contracts/canonical.js --season "$((S-1))" && node hockey/crosscheck/espn.js
+      - name: Rebuild the slate, the registry and the board on the new record
+        run: node hockey/build_slate.js && node hockey/grade_ledger.js && node engine/build_registry.js && node engine/build_board.js
+      - name: The suites pass on the new record before anything commits
+        run: node hockey/model/walkforward.js --check && node tools/hockey/hockey.test.js && node tools/engine/engine.test.js && node engine/build_registry.js --check && node engine/build_board.js --check
+      - name: Commit (tools/ci/push_generated.sh)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "nhl: weekly walk-forward record and live parameters" -- \
+            hockey/data hockey/xg hockey/model/params hockey/validation hockey/slate.json hockey/ledger hockey/market/quotes.json engine/registry.json engine/board.json

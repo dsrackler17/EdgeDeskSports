@@ -1,0 +1,238 @@
+{
+ "schema": "edgedesk_nhl_crosscheck_v1",
+ "season": 2025,
+ "season_label": "2024-25",
+ "sources": {
+  "primary": "NHL game feeds via sportsdataverse fastRhockey (my history)",
+  "second": "ESPN, as retrieved in the data pack (datapack/quant_v1/data/nhl), research copy"
+ },
+ "games": {
+  "espn_rows": 1443,
+  "espn_final": 1440,
+  "nhl_feed_games": 1398,
+  "matched": 1398,
+  "unmatched": 45,
+  "unmatched_by_reason": {
+   "preseason": 35,
+   "ESPN status STATUS_CANCELED": 1,
+   "ESPN status STATUS_POSTPONED": 2,
+   "not an NHL club game": 7
+  },
+  "unmatched_examples": [
+   {
+    "espn_game_id": "401685327",
+    "side": "espn",
+    "reason": "preseason (my history excludes preseason by design)",
+    "home": "PIT",
+    "away": "DET",
+    "start": "2024-10-01T23:00Z"
+   },
+   {
+    "espn_game_id": "401685328",
+    "side": "espn",
+    "reason": "preseason (my history excludes preseason by design)",
+    "home": "NYR",
+    "away": "NJD",
+    "start": "2024-10-01T23:00Z"
+   },
+   {
+    "espn_game_id": "401685329",
+    "side": "espn",
+    "reason": "preseason (my history excludes preseason by design)",
+    "home": "MTL",
+    "away": "OTT",
+    "start": "2024-10-01T23:00Z"
+   },
+   {
+    "espn_game_id": "401685330",
+    "side": "espn",
+    "reason": "preseason (my history excludes preseason by design)",
+    "home": "BOS",
+    "away": "PHI",
+    "start": "2024-10-01T23:00Z"
+   },
+   {
+    "espn_game_id": "401685325",
+    "side": "espn",
+    "reason": "preseason (my history excludes preseason by design)",
+    "home": "MIN",
+    "away": "CHI",
+    "start": "2024-10-02T00:00Z"
+   },
+   {
+    "espn_game_id": "401685326",
+    "side": "espn",
+    "reason": "preseason (my history excludes preseason by design)",
+    "home": "STL",
+    "away": "CBJ",
+    "start": "2024-10-02T00:00Z"
+   },
+   {
+    "espn_game_id": "401685332",
+    "side": "espn",
+    "reason": "preseason (my history excludes preseason by design)",
+    "home": "COL",
+    "away": "VGK",
+    "start": "2024-10-02T01:30Z"
+   },
+   {
+    "espn_game_id": "401685331",
+    "side": "espn",
+    "reason": "preseason (my history excludes preseason by design)",
+    "home": "SJS",
+    "away": "UTA",
+    "start": "2024-10-02T02:00Z"
+   },
+   {
+    "espn_game_id": "401685333",
+    "side": "espn",
+    "reason": "preseason (my history excludes preseason by design)",
+    "home": "CAR",
+    "away": "NSH",
+    "start": "2024-10-02T23:00Z"
+   },
+   {
+    "espn_game_id": "401685334",
+    "side": "espn",
+    "reason": "preseason (my history excludes preseason by design)",
+    "home": "TBL",
+    "away": "FLA",
+    "start": "2024-10-02T23:00Z"
+   },
+   {
+    "espn_game_id": "401685336",
+    "side": "espn",
+    "reason": "preseason (my history excludes preseason by design)",
+    "home": "WPG",
+    "away": "CGY",
+    "start": "2024-10-03T00:00Z"
+   },
+   {
+    "espn_game_id": "401685335",
+    "side": "espn",
+    "reason": "preseason (my history excludes preseason by design)",
+    "home": "SEA",
+    "away": "EDM",
+    "start": "2024-10-03T02:00Z"
+   }
+  ]
+ },
+ "results": {
+  "compared": 1398,
+  "final_agree": 1398,
+  "past_regulation_agree": 1398,
+  "disagreements": []
+ },
+ "goalies": {
+  "team_games": 164,
+  "matched": 160,
+  "most_toi_is_my_starter": 156,
+  "starter_disagreements": [
+   {
+    "nhl_game_id": 2024020149,
+    "team": "MTL",
+    "espn_most_toi": "Cayden Primeau (37:23)",
+    "my_starter": "S. Montembeault",
+    "note": "two goalies played: a pulled starter is expected to differ"
+   },
+   {
+    "nhl_game_id": 2024020758,
+    "team": "NJD",
+    "espn_most_toi": "Jake Allen (36:51)",
+    "my_starter": "J. Markstrom",
+    "note": "two goalies played: a pulled starter is expected to differ"
+   },
+   {
+    "nhl_game_id": 2024020413,
+    "team": "SJS",
+    "espn_most_toi": "Mackenzie Blackwood (40:00)",
+    "my_starter": "V. Vanecek",
+    "note": "two goalies played: a pulled starter is expected to differ"
+   },
+   {
+    "nhl_game_id": 2024020752,
+    "team": "NSH",
+    "espn_most_toi": "Justus Annunen (40:00)",
+    "my_starter": "J. Saros",
+    "note": "two goalies played: a pulled starter is expected to differ"
+   }
+  ],
+  "goalie_rows": 167,
+  "goals_against_agree": 167,
+  "goals_against_disagreements": [],
+  "starter_flag_blank_in_espn": true
+ },
+ "unblocked_attempts": {
+  "team_games": 160,
+  "exact": 160,
+  "within_2": 160,
+  "mean_abs_diff": 0,
+  "largest": [
+   {
+    "nhl_game_id": 2024020433,
+    "team": "TOR",
+    "espn": 46,
+    "nhl_feed": 46,
+    "diff": 0
+   },
+   {
+    "nhl_game_id": 2024020433,
+    "team": "PIT",
+    "espn": 42,
+    "nhl_feed": 42,
+    "diff": 0
+   },
+   {
+    "nhl_game_id": 2024020372,
+    "team": "PIT",
+    "espn": 48,
+    "nhl_feed": 48,
+    "diff": 0
+   },
+   {
+    "nhl_game_id": 2024020372,
+    "team": "BOS",
+    "espn": 37,
+    "nhl_feed": 37,
+    "diff": 0
+   },
+   {
+    "nhl_game_id": 2024020933,
+    "team": "BOS",
+    "espn": 65,
+    "nhl_feed": 65,
+    "diff": 0
+   }
+  ]
+ },
+ "lineups": {
+  "available": true,
+  "team_games": 160,
+  "skaters_agree": 158,
+  "toi_within_60s": 158,
+  "disagreements": [
+   {
+    "nhl_game_id": 2024020098,
+    "side": "a",
+    "espn_skaters": 17,
+    "my_skaters": 18,
+    "espn_toi_s": 16818,
+    "my_toi_s": 17640
+   },
+   {
+    "nhl_game_id": 2024020228,
+    "side": "h",
+    "espn_skaters": 17,
+    "my_skaters": 18,
+    "espn_toi_s": 16870,
+    "my_toi_s": 17900
+   }
+  ]
+ },
+ "reading": [
+  "Matched games prove the id map; a final that disagrees would be a data error in one source and is listed, never overwritten.",
+  "ESPN supplies no starter flag (native_starter_flag is blank), so \"starter\" is checked as the goalie with the most time on ice; a pulled starter is expected to differ.",
+  "Attempt counts can differ by a few: the two feeds classify some blocked or wide attempts differently, and ESPN coordinates are unverified native units (not converted).",
+  "This is a consistency check of retrospective data, not a point-in-time certification."
+ ]
+}

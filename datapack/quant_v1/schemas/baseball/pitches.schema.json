@@ -1,0 +1,642 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "baseball.pitches",
+  "type": "object",
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "event_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "entity_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Source registry identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_record_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Original provider record identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "occurred_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "known_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "retrieved_at": {
+      "type": "string",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "description": "Monotone version of this source record.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "quality_status": {
+      "type": "string",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "pitcher_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Pitcher id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "batter_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Batter id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "catcher_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Catcher id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "plate_appearance_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Plate appearance id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "inning": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Inning.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "balls_before": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Balls before.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "strikes_before": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Strikes before.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "outs_before": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Outs before.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "home_score_before": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Home score before.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "away_score_before": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Away score before.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "pitch_number": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Pitch number.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "plate_appearance_number": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Plate appearance number.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "base_state_mask": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Base state mask.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "half_inning": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Half inning.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "pitch_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Pitch type.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "pitcher_hand": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Pitcher hand.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "batter_side": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Batter side.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "call": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Call.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "result": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Result.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "shift_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Shift type.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "is_pitch": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Is pitch.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "swing": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Swing.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "whiff": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Whiff.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "called_strike": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Called strike.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "foul": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Foul.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "in_play": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "In play.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "hit": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Hit.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "home_run": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Home run.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "walk": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Walk.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "strikeout": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Strikeout.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "hit_by_pitch": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Hit by pitch.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "release_speed": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Release speed.",
+      "x-unit": "mph",
+      "x-priority": "P0"
+    },
+    "end_speed": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "End speed.",
+      "x-unit": "mph",
+      "x-priority": "P0"
+    },
+    "exit_velocity": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Exit velocity.",
+      "x-unit": "mph",
+      "x-priority": "P0"
+    },
+    "spin_rate": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Spin rate.",
+      "x-unit": "rpm",
+      "x-priority": "P0"
+    },
+    "spin_axis": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Spin axis.",
+      "x-unit": "degrees",
+      "x-priority": "P0"
+    },
+    "launch_angle": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Launch angle.",
+      "x-unit": "degrees",
+      "x-priority": "P0"
+    },
+    "spray_angle": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Spray angle.",
+      "x-unit": "degrees",
+      "x-priority": "P0"
+    },
+    "plate_x": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Plate x.",
+      "x-unit": "feet",
+      "x-priority": "P0"
+    },
+    "plate_z": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Plate z.",
+      "x-unit": "feet",
+      "x-priority": "P0"
+    },
+    "release_x": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Release x.",
+      "x-unit": "feet",
+      "x-priority": "P0"
+    },
+    "release_y": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Release y.",
+      "x-unit": "feet",
+      "x-priority": "P0"
+    },
+    "release_z": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Release z.",
+      "x-unit": "feet",
+      "x-priority": "P0"
+    },
+    "movement_x": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Movement x.",
+      "x-unit": "feet",
+      "x-priority": "P0"
+    },
+    "movement_z": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Movement z.",
+      "x-unit": "feet",
+      "x-priority": "P0"
+    },
+    "extension": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Extension.",
+      "x-unit": "feet",
+      "x-priority": "P0"
+    },
+    "strike_zone_top": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Strike zone top.",
+      "x-unit": "feet",
+      "x-priority": "P0"
+    },
+    "strike_zone_bottom": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Strike zone bottom.",
+      "x-unit": "feet",
+      "x-priority": "P0"
+    },
+    "hit_distance": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Hit distance.",
+      "x-unit": "feet",
+      "x-priority": "P0"
+    },
+    "vx0": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Vx0.",
+      "x-unit": "feet_per_second",
+      "x-priority": "P0"
+    },
+    "vy0": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Vy0.",
+      "x-unit": "feet_per_second",
+      "x-priority": "P0"
+    },
+    "vz0": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Vz0.",
+      "x-unit": "feet_per_second",
+      "x-priority": "P0"
+    },
+    "ax": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Ax.",
+      "x-unit": "feet_per_second_squared",
+      "x-priority": "P0"
+    },
+    "ay": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Ay.",
+      "x-unit": "feet_per_second_squared",
+      "x-priority": "P0"
+    },
+    "az": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Az.",
+      "x-unit": "feet_per_second_squared",
+      "x-priority": "P0"
+    },
+    "xwoba": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Xwoba.",
+      "x-unit": "number",
+      "x-priority": "P0"
+    },
+    "xba": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Xba.",
+      "x-unit": "number",
+      "x-priority": "P0"
+    },
+    "xslg": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Xslg.",
+      "x-unit": "number",
+      "x-priority": "P0"
+    },
+    "run_expectancy_before": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Run expectancy before.",
+      "x-unit": "number",
+      "x-priority": "P0"
+    },
+    "run_expectancy_after": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Run expectancy after.",
+      "x-unit": "number",
+      "x-priority": "P0"
+    },
+    "run_value": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Run value.",
+      "x-unit": "number",
+      "x-priority": "P0"
+    }
+  },
+  "required": [
+    "record_id",
+    "source_id",
+    "retrieved_at",
+    "revision",
+    "quality_status"
+  ],
+  "additionalProperties": false
+}

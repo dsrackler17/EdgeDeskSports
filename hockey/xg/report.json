@@ -1,0 +1,5366 @@
+{
+ "schema": "edgedesk_nhl_xg_v1_report",
+ "generated_at": "2026-10-13T04:20:04.830Z",
+ "window": 3,
+ "seasons": [
+  {
+   "season": 2011,
+   "burn_in": true,
+   "train_seasons": [
+    2011
+   ],
+   "n_train": 111038,
+   "fit_seconds": 0.6,
+   "model": {
+    "n": 111038,
+    "log_loss": 0.20442,
+    "brier": 0.05428,
+    "mean_p": 0.0628,
+    "mean_y": 0.0628,
+    "calibration_slope": 1.002,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 31273,
+      "mean_p": 0.0134,
+      "observed": 0.0122,
+      "wilson_low": 0.011,
+      "wilson_high": 0.0134,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 33629,
+      "mean_p": 0.0332,
+      "observed": 0.0338,
+      "wilson_low": 0.0319,
+      "wilson_high": 0.0358,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 25658,
+      "mean_p": 0.0718,
+      "observed": 0.0712,
+      "wilson_low": 0.0681,
+      "wilson_high": 0.0744,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 15288,
+      "mean_p": 0.1348,
+      "observed": 0.1393,
+      "wilson_low": 0.1339,
+      "wilson_high": 0.1448,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 3267,
+      "mean_p": 0.2408,
+      "observed": 0.2458,
+      "wilson_low": 0.2313,
+      "wilson_high": 0.2608,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1726,
+      "mean_p": 0.3672,
+      "observed": 0.3494,
+      "wilson_low": 0.3272,
+      "wilson_high": 0.3722,
+      "inside": true
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 197,
+      "mean_p": 0.5613,
+      "observed": 0.467,
+      "wilson_low": 0.3986,
+      "wilson_high": 0.5366,
+      "inside": false
+     }
+    ]
+   },
+   "distance_only": {
+    "n": 111038,
+    "log_loss": 0.21572,
+    "brier": 0.05638,
+    "mean_p": 0.0628,
+    "mean_y": 0.0628,
+    "calibration_slope": 1,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 15174,
+      "mean_p": 0.0157,
+      "observed": 0.015,
+      "wilson_low": 0.0131,
+      "wilson_high": 0.017,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 46970,
+      "mean_p": 0.0322,
+      "observed": 0.0307,
+      "wilson_low": 0.0291,
+      "wilson_high": 0.0323,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 25237,
+      "mean_p": 0.0711,
+      "observed": 0.077,
+      "wilson_low": 0.0738,
+      "wilson_high": 0.0803,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 21924,
+      "mean_p": 0.1384,
+      "observed": 0.1367,
+      "wilson_low": 0.1323,
+      "wilson_high": 0.1414,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 1685,
+      "mean_p": 0.2223,
+      "observed": 0.1994,
+      "wilson_low": 0.181,
+      "wilson_high": 0.2192,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 48,
+      "mean_p": 0.3289,
+      "observed": 0.5417,
+      "wilson_low": 0.4029,
+      "wilson_high": 0.6742,
+      "inside": false
+     }
+    ]
+   },
+   "source_xg": {
+    "n": 109650,
+    "log_loss": 0.20763,
+    "brier": 0.05472,
+    "mean_p": 0.0885,
+    "mean_y": 0.0631,
+    "calibration_slope": 1.142,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 16489,
+      "mean_p": 0.0126,
+      "observed": 0.007,
+      "wilson_low": 0.0059,
+      "wilson_high": 0.0084,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 29860,
+      "mean_p": 0.0338,
+      "observed": 0.0211,
+      "wilson_low": 0.0195,
+      "wilson_high": 0.0228,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 26717,
+      "mean_p": 0.0722,
+      "observed": 0.0444,
+      "wilson_low": 0.0419,
+      "wilson_high": 0.0469,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 26618,
+      "mean_p": 0.1406,
+      "observed": 0.0956,
+      "wilson_low": 0.0921,
+      "wilson_high": 0.0992,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 6997,
+      "mean_p": 0.2401,
+      "observed": 0.1941,
+      "wilson_low": 0.185,
+      "wilson_high": 0.2035,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 2716,
+      "mean_p": 0.3621,
+      "observed": 0.3454,
+      "wilson_low": 0.3277,
+      "wilson_high": 0.3635,
+      "inside": true
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 253,
+      "mean_p": 0.5779,
+      "observed": 0.6008,
+      "wilson_low": 0.5394,
+      "wilson_high": 0.6592,
+      "inside": true
+     }
+    ],
+    "note": "the source's own xG (fastRhockey/hockeyR); its training window is not documented per season, so it may be in-sample for earlier seasons"
+   },
+   "model_on_source_rows": {
+    "n": 109650,
+    "log_loss": 0.20538,
+    "brier": 0.05458,
+    "mean_p": 0.063,
+    "mean_y": 0.0631,
+    "calibration_slope": 0.999,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 30762,
+      "mean_p": 0.0134,
+      "observed": 0.0123,
+      "wilson_low": 0.0111,
+      "wilson_high": 0.0136,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 33176,
+      "mean_p": 0.0332,
+      "observed": 0.0339,
+      "wilson_low": 0.032,
+      "wilson_high": 0.0359,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 25373,
+      "mean_p": 0.0718,
+      "observed": 0.0713,
+      "wilson_low": 0.0682,
+      "wilson_high": 0.0745,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 15155,
+      "mean_p": 0.1349,
+      "observed": 0.1395,
+      "wilson_low": 0.1341,
+      "wilson_high": 0.1451,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 3261,
+      "mean_p": 0.2408,
+      "observed": 0.2456,
+      "wilson_low": 0.2312,
+      "wilson_high": 0.2607,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1726,
+      "mean_p": 0.3672,
+      "observed": 0.3494,
+      "wilson_low": 0.3272,
+      "wilson_high": 0.3722,
+      "inside": true
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 197,
+      "mean_p": 0.5613,
+      "observed": 0.467,
+      "wilson_low": 0.3986,
+      "wilson_high": 0.5366,
+      "inside": false
+     }
+    ]
+   }
+  },
+  {
+   "season": 2012,
+   "burn_in": false,
+   "train_seasons": [
+    2011
+   ],
+   "n_train": 111038,
+   "fit_seconds": 0.9,
+   "model": {
+    "n": 108424,
+    "log_loss": 0.20298,
+    "brier": 0.0538,
+    "mean_p": 0.0627,
+    "mean_y": 0.0618,
+    "calibration_slope": 0.969,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 31793,
+      "mean_p": 0.0133,
+      "observed": 0.0125,
+      "wilson_low": 0.0113,
+      "wilson_high": 0.0138,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 32422,
+      "mean_p": 0.0332,
+      "observed": 0.0329,
+      "wilson_low": 0.0311,
+      "wilson_high": 0.0349,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 24177,
+      "mean_p": 0.0718,
+      "observed": 0.0739,
+      "wilson_low": 0.0707,
+      "wilson_high": 0.0773,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 14717,
+      "mean_p": 0.135,
+      "observed": 0.1386,
+      "wilson_low": 0.1331,
+      "wilson_high": 0.1443,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 3312,
+      "mean_p": 0.2417,
+      "observed": 0.2207,
+      "wilson_low": 0.2069,
+      "wilson_high": 0.2352,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1798,
+      "mean_p": 0.3688,
+      "observed": 0.3215,
+      "wilson_low": 0.3003,
+      "wilson_high": 0.3434,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 205,
+      "mean_p": 0.5604,
+      "observed": 0.5073,
+      "wilson_low": 0.4394,
+      "wilson_high": 0.575,
+      "inside": true
+     }
+    ]
+   },
+   "distance_only": {
+    "n": 108424,
+    "log_loss": 0.21343,
+    "brier": 0.05569,
+    "mean_p": 0.0626,
+    "mean_y": 0.0618,
+    "calibration_slope": 0.988,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 15557,
+      "mean_p": 0.0157,
+      "observed": 0.015,
+      "wilson_low": 0.0132,
+      "wilson_high": 0.0171,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 45793,
+      "mean_p": 0.0321,
+      "observed": 0.0307,
+      "wilson_low": 0.0291,
+      "wilson_high": 0.0323,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 23936,
+      "mean_p": 0.0711,
+      "observed": 0.0768,
+      "wilson_low": 0.0735,
+      "wilson_high": 0.0803,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 21338,
+      "mean_p": 0.1392,
+      "observed": 0.134,
+      "wilson_low": 0.1295,
+      "wilson_high": 0.1386,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 1765,
+      "mean_p": 0.222,
+      "observed": 0.1983,
+      "wilson_low": 0.1804,
+      "wilson_high": 0.2175,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 35,
+      "mean_p": 0.3375,
+      "observed": 0.5429,
+      "wilson_low": 0.3819,
+      "wilson_high": 0.6953,
+      "inside": false
+     }
+    ]
+   },
+   "source_xg": {
+    "n": 107067,
+    "log_loss": 0.20572,
+    "brier": 0.05421,
+    "mean_p": 0.0879,
+    "mean_y": 0.0621,
+    "calibration_slope": 1.121,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 16988,
+      "mean_p": 0.0125,
+      "observed": 0.0084,
+      "wilson_low": 0.0072,
+      "wilson_high": 0.0099,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 29013,
+      "mean_p": 0.0336,
+      "observed": 0.0189,
+      "wilson_low": 0.0174,
+      "wilson_high": 0.0205,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 25853,
+      "mean_p": 0.0721,
+      "observed": 0.0434,
+      "wilson_low": 0.041,
+      "wilson_high": 0.046,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 25298,
+      "mean_p": 0.141,
+      "observed": 0.0997,
+      "wilson_low": 0.096,
+      "wilson_high": 0.1034,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 6996,
+      "mean_p": 0.2405,
+      "observed": 0.19,
+      "wilson_low": 0.1809,
+      "wilson_high": 0.1993,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 2668,
+      "mean_p": 0.3608,
+      "observed": 0.3163,
+      "wilson_low": 0.299,
+      "wilson_high": 0.3342,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 251,
+      "mean_p": 0.5749,
+      "observed": 0.5697,
+      "wilson_low": 0.5079,
+      "wilson_high": 0.6295,
+      "inside": true
+     }
+    ],
+    "note": "the source's own xG (fastRhockey/hockeyR); its training window is not documented per season, so it may be in-sample for earlier seasons"
+   },
+   "model_on_source_rows": {
+    "n": 107067,
+    "log_loss": 0.20372,
+    "brier": 0.05402,
+    "mean_p": 0.063,
+    "mean_y": 0.0621,
+    "calibration_slope": 0.966,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 31252,
+      "mean_p": 0.0133,
+      "observed": 0.0125,
+      "wilson_low": 0.0114,
+      "wilson_high": 0.0138,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 31990,
+      "mean_p": 0.0332,
+      "observed": 0.0332,
+      "wilson_low": 0.0313,
+      "wilson_high": 0.0352,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 23922,
+      "mean_p": 0.0718,
+      "observed": 0.0738,
+      "wilson_low": 0.0705,
+      "wilson_high": 0.0772,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 14597,
+      "mean_p": 0.1351,
+      "observed": 0.1383,
+      "wilson_low": 0.1328,
+      "wilson_high": 0.144,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 3303,
+      "mean_p": 0.2418,
+      "observed": 0.221,
+      "wilson_low": 0.2072,
+      "wilson_high": 0.2355,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1798,
+      "mean_p": 0.3688,
+      "observed": 0.3215,
+      "wilson_low": 0.3003,
+      "wilson_high": 0.3434,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 205,
+      "mean_p": 0.5604,
+      "observed": 0.5073,
+      "wilson_low": 0.4394,
+      "wilson_high": 0.575,
+      "inside": true
+     }
+    ]
+   }
+  },
+  {
+   "season": 2013,
+   "burn_in": false,
+   "train_seasons": [
+    2011,
+    2012
+   ],
+   "n_train": 219462,
+   "fit_seconds": 1.5,
+   "model": {
+    "n": 65894,
+    "log_loss": 0.20508,
+    "brier": 0.0543,
+    "mean_p": 0.0616,
+    "mean_y": 0.0623,
+    "calibration_slope": 0.969,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 19272,
+      "mean_p": 0.0131,
+      "observed": 0.0133,
+      "wilson_low": 0.0118,
+      "wilson_high": 0.015,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 19586,
+      "mean_p": 0.033,
+      "observed": 0.0345,
+      "wilson_low": 0.032,
+      "wilson_high": 0.0371,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 14996,
+      "mean_p": 0.072,
+      "observed": 0.0719,
+      "wilson_low": 0.0679,
+      "wilson_high": 0.0761,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 9137,
+      "mean_p": 0.1347,
+      "observed": 0.1421,
+      "wilson_low": 0.1351,
+      "wilson_high": 0.1494,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 1846,
+      "mean_p": 0.2416,
+      "observed": 0.2427,
+      "wilson_low": 0.2237,
+      "wilson_high": 0.2628,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 980,
+      "mean_p": 0.3679,
+      "observed": 0.3224,
+      "wilson_low": 0.2939,
+      "wilson_high": 0.3524,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 77,
+      "mean_p": 0.5586,
+      "observed": 0.4286,
+      "wilson_low": 0.324,
+      "wilson_high": 0.5399,
+      "inside": false
+     }
+    ]
+   },
+   "distance_only": {
+    "n": 65894,
+    "log_loss": 0.2167,
+    "brier": 0.05629,
+    "mean_p": 0.0618,
+    "mean_y": 0.0623,
+    "calibration_slope": 0.944,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 9843,
+      "mean_p": 0.0158,
+      "observed": 0.0195,
+      "wilson_low": 0.017,
+      "wilson_high": 0.0224,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 27228,
+      "mean_p": 0.0323,
+      "observed": 0.0317,
+      "wilson_low": 0.0297,
+      "wilson_high": 0.0338,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 15101,
+      "mean_p": 0.0715,
+      "observed": 0.0785,
+      "wilson_low": 0.0744,
+      "wilson_high": 0.0829,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 13066,
+      "mean_p": 0.1386,
+      "observed": 0.1321,
+      "wilson_low": 0.1264,
+      "wilson_high": 0.138,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 649,
+      "mean_p": 0.2211,
+      "observed": 0.2065,
+      "wilson_low": 0.1771,
+      "wilson_high": 0.2393,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 7,
+      "mean_p": 0.3289,
+      "observed": 0.4286,
+      "wilson_low": 0.1582,
+      "wilson_high": 0.7495,
+      "inside": true
+     }
+    ]
+   },
+   "source_xg": {
+    "n": 65038,
+    "log_loss": 0.20707,
+    "brier": 0.05452,
+    "mean_p": 0.0871,
+    "mean_y": 0.0625,
+    "calibration_slope": 1.102,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 10382,
+      "mean_p": 0.0127,
+      "observed": 0.0092,
+      "wilson_low": 0.0075,
+      "wilson_high": 0.0112,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 17741,
+      "mean_p": 0.0337,
+      "observed": 0.0191,
+      "wilson_low": 0.0172,
+      "wilson_high": 0.0212,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 15723,
+      "mean_p": 0.072,
+      "observed": 0.0481,
+      "wilson_low": 0.0449,
+      "wilson_high": 0.0516,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 15396,
+      "mean_p": 0.1407,
+      "observed": 0.0984,
+      "wilson_low": 0.0938,
+      "wilson_high": 0.1032,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 4032,
+      "mean_p": 0.2405,
+      "observed": 0.1813,
+      "wilson_low": 0.1697,
+      "wilson_high": 0.1935,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1630,
+      "mean_p": 0.3625,
+      "observed": 0.3405,
+      "wilson_low": 0.3179,
+      "wilson_high": 0.3638,
+      "inside": true
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 134,
+      "mean_p": 0.5761,
+      "observed": 0.5373,
+      "wilson_low": 0.453,
+      "wilson_high": 0.6195,
+      "inside": true
+     }
+    ],
+    "note": "the source's own xG (fastRhockey/hockeyR); its training window is not documented per season, so it may be in-sample for earlier seasons"
+   },
+   "model_on_source_rows": {
+    "n": 65038,
+    "log_loss": 0.20561,
+    "brier": 0.05446,
+    "mean_p": 0.0618,
+    "mean_y": 0.0625,
+    "calibration_slope": 0.968,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 18961,
+      "mean_p": 0.0131,
+      "observed": 0.0134,
+      "wilson_low": 0.0119,
+      "wilson_high": 0.0151,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 19312,
+      "mean_p": 0.033,
+      "observed": 0.0345,
+      "wilson_low": 0.0321,
+      "wilson_high": 0.0372,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 14812,
+      "mean_p": 0.072,
+      "observed": 0.0718,
+      "wilson_low": 0.0677,
+      "wilson_high": 0.076,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 9053,
+      "mean_p": 0.1347,
+      "observed": 0.1418,
+      "wilson_low": 0.1348,
+      "wilson_high": 0.1492,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 1843,
+      "mean_p": 0.2416,
+      "observed": 0.2425,
+      "wilson_low": 0.2235,
+      "wilson_high": 0.2626,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 980,
+      "mean_p": 0.3679,
+      "observed": 0.3224,
+      "wilson_low": 0.2939,
+      "wilson_high": 0.3524,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 77,
+      "mean_p": 0.5586,
+      "observed": 0.4286,
+      "wilson_low": 0.324,
+      "wilson_high": 0.5399,
+      "inside": false
+     }
+    ]
+   }
+  },
+  {
+   "season": 2014,
+   "burn_in": false,
+   "train_seasons": [
+    2011,
+    2012,
+    2013
+   ],
+   "n_train": 285356,
+   "fit_seconds": 2.4,
+   "model": {
+    "n": 110316,
+    "log_loss": 0.20455,
+    "brier": 0.05422,
+    "mean_p": 0.0618,
+    "mean_y": 0.062,
+    "calibration_slope": 0.971,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 32102,
+      "mean_p": 0.0132,
+      "observed": 0.0129,
+      "wilson_low": 0.0117,
+      "wilson_high": 0.0142,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 32585,
+      "mean_p": 0.0332,
+      "observed": 0.0327,
+      "wilson_low": 0.0308,
+      "wilson_high": 0.0347,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 25555,
+      "mean_p": 0.0719,
+      "observed": 0.0754,
+      "wilson_low": 0.0722,
+      "wilson_high": 0.0787,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 15074,
+      "mean_p": 0.1349,
+      "observed": 0.1391,
+      "wilson_low": 0.1337,
+      "wilson_high": 0.1447,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 3297,
+      "mean_p": 0.241,
+      "observed": 0.2384,
+      "wilson_low": 0.2242,
+      "wilson_high": 0.2532,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1565,
+      "mean_p": 0.3688,
+      "observed": 0.3195,
+      "wilson_low": 0.2969,
+      "wilson_high": 0.343,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 138,
+      "mean_p": 0.5628,
+      "observed": 0.3841,
+      "wilson_low": 0.3071,
+      "wilson_high": 0.4673,
+      "inside": false
+     }
+    ]
+   },
+   "distance_only": {
+    "n": 110316,
+    "log_loss": 0.21488,
+    "brier": 0.05594,
+    "mean_p": 0.0617,
+    "mean_y": 0.062,
+    "calibration_slope": 0.987,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 15200,
+      "mean_p": 0.0156,
+      "observed": 0.0153,
+      "wilson_low": 0.0135,
+      "wilson_high": 0.0174,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 46842,
+      "mean_p": 0.0323,
+      "observed": 0.0302,
+      "wilson_low": 0.0287,
+      "wilson_high": 0.0318,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 25513,
+      "mean_p": 0.0711,
+      "observed": 0.0791,
+      "wilson_low": 0.0758,
+      "wilson_high": 0.0825,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 21626,
+      "mean_p": 0.1383,
+      "observed": 0.1362,
+      "wilson_low": 0.1317,
+      "wilson_high": 0.1408,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 1119,
+      "mean_p": 0.2215,
+      "observed": 0.1975,
+      "wilson_low": 0.1752,
+      "wilson_high": 0.2218,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 16,
+      "mean_p": 0.3349,
+      "observed": 0.75,
+      "wilson_low": 0.505,
+      "wilson_high": 0.8982,
+      "inside": false
+     }
+    ]
+   },
+   "source_xg": {
+    "n": 108957,
+    "log_loss": 0.20673,
+    "brier": 0.05439,
+    "mean_p": 0.0872,
+    "mean_y": 0.0622,
+    "calibration_slope": 1.127,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 17099,
+      "mean_p": 0.0127,
+      "observed": 0.0085,
+      "wilson_low": 0.0073,
+      "wilson_high": 0.01,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 29445,
+      "mean_p": 0.0336,
+      "observed": 0.0196,
+      "wilson_low": 0.0181,
+      "wilson_high": 0.0212,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 26150,
+      "mean_p": 0.0721,
+      "observed": 0.0454,
+      "wilson_low": 0.0429,
+      "wilson_high": 0.048,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 26639,
+      "mean_p": 0.141,
+      "observed": 0.0991,
+      "wilson_low": 0.0955,
+      "wilson_high": 0.1027,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 7061,
+      "mean_p": 0.2386,
+      "observed": 0.1865,
+      "wilson_low": 0.1776,
+      "wilson_high": 0.1958,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 2375,
+      "mean_p": 0.3592,
+      "observed": 0.3356,
+      "wilson_low": 0.3169,
+      "wilson_high": 0.3548,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 188,
+      "mean_p": 0.5855,
+      "observed": 0.617,
+      "wilson_low": 0.5458,
+      "wilson_high": 0.6835,
+      "inside": true
+     }
+    ],
+    "note": "the source's own xG (fastRhockey/hockeyR); its training window is not documented per season, so it may be in-sample for earlier seasons"
+   },
+   "model_on_source_rows": {
+    "n": 108957,
+    "log_loss": 0.20505,
+    "brier": 0.05438,
+    "mean_p": 0.0621,
+    "mean_y": 0.0622,
+    "calibration_slope": 0.969,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 31585,
+      "mean_p": 0.0132,
+      "observed": 0.0129,
+      "wilson_low": 0.0118,
+      "wilson_high": 0.0143,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 32157,
+      "mean_p": 0.0332,
+      "observed": 0.0328,
+      "wilson_low": 0.0309,
+      "wilson_high": 0.0348,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 25279,
+      "mean_p": 0.0719,
+      "observed": 0.0752,
+      "wilson_low": 0.072,
+      "wilson_high": 0.0785,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 14945,
+      "mean_p": 0.1349,
+      "observed": 0.1392,
+      "wilson_low": 0.1337,
+      "wilson_high": 0.1448,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 3288,
+      "mean_p": 0.2411,
+      "observed": 0.2378,
+      "wilson_low": 0.2236,
+      "wilson_high": 0.2527,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1565,
+      "mean_p": 0.3688,
+      "observed": 0.3195,
+      "wilson_low": 0.2969,
+      "wilson_high": 0.343,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 138,
+      "mean_p": 0.5628,
+      "observed": 0.3841,
+      "wilson_low": 0.3071,
+      "wilson_high": 0.4673,
+      "inside": false
+     }
+    ]
+   }
+  },
+  {
+   "season": 2015,
+   "burn_in": false,
+   "train_seasons": [
+    2012,
+    2013,
+    2014
+   ],
+   "n_train": 284634,
+   "fit_seconds": 2.1,
+   "model": {
+    "n": 109133,
+    "log_loss": 0.20284,
+    "brier": 0.05348,
+    "mean_p": 0.0619,
+    "mean_y": 0.0612,
+    "calibration_slope": 0.98,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 31586,
+      "mean_p": 0.0134,
+      "observed": 0.0126,
+      "wilson_low": 0.0114,
+      "wilson_high": 0.0139,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 31998,
+      "mean_p": 0.0329,
+      "observed": 0.0348,
+      "wilson_low": 0.0328,
+      "wilson_high": 0.0368,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 25240,
+      "mean_p": 0.072,
+      "observed": 0.0698,
+      "wilson_low": 0.0667,
+      "wilson_high": 0.073,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 15500,
+      "mean_p": 0.1348,
+      "observed": 0.1346,
+      "wilson_low": 0.1294,
+      "wilson_high": 0.1401,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 3232,
+      "mean_p": 0.2407,
+      "observed": 0.2447,
+      "wilson_low": 0.2302,
+      "wilson_high": 0.2599,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1462,
+      "mean_p": 0.3645,
+      "observed": 0.3222,
+      "wilson_low": 0.2987,
+      "wilson_high": 0.3466,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 115,
+      "mean_p": 0.554,
+      "observed": 0.5043,
+      "wilson_low": 0.4143,
+      "wilson_high": 0.5941,
+      "inside": true
+     }
+    ]
+   },
+   "distance_only": {
+    "n": 109133,
+    "log_loss": 0.21334,
+    "brier": 0.05529,
+    "mean_p": 0.0616,
+    "mean_y": 0.0612,
+    "calibration_slope": 0.991,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 14780,
+      "mean_p": 0.0156,
+      "observed": 0.0177,
+      "wilson_low": 0.0157,
+      "wilson_high": 0.02,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 45946,
+      "mean_p": 0.0324,
+      "observed": 0.0294,
+      "wilson_low": 0.0279,
+      "wilson_high": 0.031,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 25954,
+      "mean_p": 0.0715,
+      "observed": 0.0788,
+      "wilson_low": 0.0756,
+      "wilson_high": 0.0821,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 21611,
+      "mean_p": 0.1372,
+      "observed": 0.1307,
+      "wilson_low": 0.1262,
+      "wilson_high": 0.1352,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 833,
+      "mean_p": 0.2191,
+      "observed": 0.2317,
+      "wilson_low": 0.2043,
+      "wilson_high": 0.2615,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 9,
+      "mean_p": 0.3281,
+      "observed": 0.6667,
+      "wilson_low": 0.3542,
+      "wilson_high": 0.8794,
+      "inside": false
+     }
+    ]
+   },
+   "source_xg": {
+    "n": 107838,
+    "log_loss": 0.20465,
+    "brier": 0.05361,
+    "mean_p": 0.0872,
+    "mean_y": 0.0613,
+    "calibration_slope": 1.136,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 16974,
+      "mean_p": 0.0126,
+      "observed": 0.0071,
+      "wilson_low": 0.0059,
+      "wilson_high": 0.0084,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 29025,
+      "mean_p": 0.0335,
+      "observed": 0.0203,
+      "wilson_low": 0.0188,
+      "wilson_high": 0.022,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 26026,
+      "mean_p": 0.0722,
+      "observed": 0.0458,
+      "wilson_low": 0.0434,
+      "wilson_high": 0.0484,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 26259,
+      "mean_p": 0.1412,
+      "observed": 0.0937,
+      "wilson_low": 0.0902,
+      "wilson_high": 0.0973,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 7037,
+      "mean_p": 0.2389,
+      "observed": 0.1862,
+      "wilson_low": 0.1772,
+      "wilson_high": 0.1954,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 2321,
+      "mean_p": 0.3618,
+      "observed": 0.3559,
+      "wilson_low": 0.3367,
+      "wilson_high": 0.3756,
+      "inside": true
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 196,
+      "mean_p": 0.5659,
+      "observed": 0.5867,
+      "wilson_low": 0.5168,
+      "wilson_high": 0.6534,
+      "inside": true
+     }
+    ],
+    "note": "the source's own xG (fastRhockey/hockeyR); its training window is not documented per season, so it may be in-sample for earlier seasons"
+   },
+   "model_on_source_rows": {
+    "n": 107838,
+    "log_loss": 0.20305,
+    "brier": 0.05356,
+    "mean_p": 0.0621,
+    "mean_y": 0.0613,
+    "calibration_slope": 0.981,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 31079,
+      "mean_p": 0.0134,
+      "observed": 0.0125,
+      "wilson_low": 0.0114,
+      "wilson_high": 0.0138,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 31608,
+      "mean_p": 0.0329,
+      "observed": 0.0347,
+      "wilson_low": 0.0327,
+      "wilson_high": 0.0367,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 24972,
+      "mean_p": 0.072,
+      "observed": 0.0697,
+      "wilson_low": 0.0666,
+      "wilson_high": 0.0729,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 15378,
+      "mean_p": 0.1348,
+      "observed": 0.1346,
+      "wilson_low": 0.1293,
+      "wilson_high": 0.1401,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 3224,
+      "mean_p": 0.2408,
+      "observed": 0.2447,
+      "wilson_low": 0.2302,
+      "wilson_high": 0.2599,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1462,
+      "mean_p": 0.3645,
+      "observed": 0.3222,
+      "wilson_low": 0.2987,
+      "wilson_high": 0.3466,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 115,
+      "mean_p": 0.554,
+      "observed": 0.5043,
+      "wilson_low": 0.4143,
+      "wilson_high": 0.5941,
+      "inside": true
+     }
+    ]
+   }
+  },
+  {
+   "season": 2016,
+   "burn_in": false,
+   "train_seasons": [
+    2013,
+    2014,
+    2015
+   ],
+   "n_train": 285343,
+   "fit_seconds": 2,
+   "model": {
+    "n": 108881,
+    "log_loss": 0.20252,
+    "brier": 0.05352,
+    "mean_p": 0.0622,
+    "mean_y": 0.0611,
+    "calibration_slope": 0.992,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 30888,
+      "mean_p": 0.0137,
+      "observed": 0.0114,
+      "wilson_low": 0.0103,
+      "wilson_high": 0.0127,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 32184,
+      "mean_p": 0.033,
+      "observed": 0.0343,
+      "wilson_low": 0.0323,
+      "wilson_high": 0.0363,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 25580,
+      "mean_p": 0.0721,
+      "observed": 0.0715,
+      "wilson_low": 0.0684,
+      "wilson_high": 0.0748,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 15428,
+      "mean_p": 0.1351,
+      "observed": 0.1333,
+      "wilson_low": 0.128,
+      "wilson_high": 0.1387,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 3325,
+      "mean_p": 0.2409,
+      "observed": 0.2538,
+      "wilson_low": 0.2393,
+      "wilson_high": 0.2689,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1369,
+      "mean_p": 0.3637,
+      "observed": 0.3112,
+      "wilson_low": 0.2872,
+      "wilson_high": 0.3362,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 107,
+      "mean_p": 0.5653,
+      "observed": 0.3364,
+      "wilson_low": 0.254,
+      "wilson_high": 0.4303,
+      "inside": false
+     }
+    ]
+   },
+   "distance_only": {
+    "n": 108881,
+    "log_loss": 0.21179,
+    "brier": 0.05502,
+    "mean_p": 0.0618,
+    "mean_y": 0.0611,
+    "calibration_slope": 1.044,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 11852,
+      "mean_p": 0.0157,
+      "observed": 0.0137,
+      "wilson_low": 0.0117,
+      "wilson_high": 0.0159,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 48780,
+      "mean_p": 0.0322,
+      "observed": 0.0293,
+      "wilson_low": 0.0278,
+      "wilson_high": 0.0308,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 26027,
+      "mean_p": 0.0709,
+      "observed": 0.0753,
+      "wilson_low": 0.0722,
+      "wilson_high": 0.0786,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 21186,
+      "mean_p": 0.1367,
+      "observed": 0.1352,
+      "wilson_low": 0.1306,
+      "wilson_high": 0.1399,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 1026,
+      "mean_p": 0.2201,
+      "observed": 0.2242,
+      "wilson_low": 0.1997,
+      "wilson_high": 0.2507,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 10,
+      "mean_p": 0.362,
+      "observed": 0.4,
+      "wilson_low": 0.1682,
+      "wilson_high": 0.6873,
+      "inside": true
+     }
+    ]
+   },
+   "source_xg": {
+    "n": 107519,
+    "log_loss": 0.20514,
+    "brier": 0.05378,
+    "mean_p": 0.0881,
+    "mean_y": 0.0613,
+    "calibration_slope": 1.138,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 16809,
+      "mean_p": 0.0127,
+      "observed": 0.0072,
+      "wilson_low": 0.006,
+      "wilson_high": 0.0086,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 28576,
+      "mean_p": 0.0335,
+      "observed": 0.0203,
+      "wilson_low": 0.0187,
+      "wilson_high": 0.022,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 25829,
+      "mean_p": 0.0722,
+      "observed": 0.0448,
+      "wilson_low": 0.0423,
+      "wilson_high": 0.0473,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 26535,
+      "mean_p": 0.1416,
+      "observed": 0.0931,
+      "wilson_low": 0.0897,
+      "wilson_high": 0.0967,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 7236,
+      "mean_p": 0.2385,
+      "observed": 0.1885,
+      "wilson_low": 0.1797,
+      "wilson_high": 0.1977,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 2340,
+      "mean_p": 0.3597,
+      "observed": 0.3359,
+      "wilson_low": 0.317,
+      "wilson_high": 0.3553,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 194,
+      "mean_p": 0.5663,
+      "observed": 0.6082,
+      "wilson_low": 0.5381,
+      "wilson_high": 0.6742,
+      "inside": true
+     }
+    ],
+    "note": "the source's own xG (fastRhockey/hockeyR); its training window is not documented per season, so it may be in-sample for earlier seasons"
+   },
+   "model_on_source_rows": {
+    "n": 107519,
+    "log_loss": 0.20315,
+    "brier": 0.05373,
+    "mean_p": 0.0625,
+    "mean_y": 0.0613,
+    "calibration_slope": 0.992,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 30375,
+      "mean_p": 0.0138,
+      "observed": 0.0115,
+      "wilson_low": 0.0104,
+      "wilson_high": 0.0128,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 31773,
+      "mean_p": 0.033,
+      "observed": 0.0341,
+      "wilson_low": 0.0322,
+      "wilson_high": 0.0362,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 25288,
+      "mean_p": 0.0722,
+      "observed": 0.0718,
+      "wilson_low": 0.0687,
+      "wilson_high": 0.075,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 15289,
+      "mean_p": 0.1351,
+      "observed": 0.1335,
+      "wilson_low": 0.1282,
+      "wilson_high": 0.139,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 3318,
+      "mean_p": 0.2409,
+      "observed": 0.2544,
+      "wilson_low": 0.2398,
+      "wilson_high": 0.2695,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1369,
+      "mean_p": 0.3637,
+      "observed": 0.3112,
+      "wilson_low": 0.2872,
+      "wilson_high": 0.3362,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 107,
+      "mean_p": 0.5653,
+      "observed": 0.3364,
+      "wilson_low": 0.254,
+      "wilson_high": 0.4303,
+      "inside": false
+     }
+    ]
+   }
+  },
+  {
+   "season": 2017,
+   "burn_in": false,
+   "train_seasons": [
+    2014,
+    2015,
+    2016
+   ],
+   "n_train": 328330,
+   "fit_seconds": 2.3,
+   "model": {
+    "n": 110481,
+    "log_loss": 0.20484,
+    "brier": 0.05423,
+    "mean_p": 0.0624,
+    "mean_y": 0.0619,
+    "calibration_slope": 0.973,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 32107,
+      "mean_p": 0.0133,
+      "observed": 0.0125,
+      "wilson_low": 0.0113,
+      "wilson_high": 0.0138,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 31613,
+      "mean_p": 0.0331,
+      "observed": 0.0339,
+      "wilson_low": 0.032,
+      "wilson_high": 0.036,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 25804,
+      "mean_p": 0.0722,
+      "observed": 0.073,
+      "wilson_low": 0.0699,
+      "wilson_high": 0.0763,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 15992,
+      "mean_p": 0.1345,
+      "observed": 0.1358,
+      "wilson_low": 0.1305,
+      "wilson_high": 0.1412,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 3394,
+      "mean_p": 0.2403,
+      "observed": 0.2316,
+      "wilson_low": 0.2177,
+      "wilson_high": 0.2461,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1458,
+      "mean_p": 0.3632,
+      "observed": 0.3313,
+      "wilson_low": 0.3076,
+      "wilson_high": 0.3559,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 113,
+      "mean_p": 0.5574,
+      "observed": 0.3451,
+      "wilson_low": 0.2639,
+      "wilson_high": 0.4366,
+      "inside": false
+     }
+    ]
+   },
+   "distance_only": {
+    "n": 110481,
+    "log_loss": 0.21489,
+    "brier": 0.05588,
+    "mean_p": 0.0621,
+    "mean_y": 0.0619,
+    "calibration_slope": 0.987,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 14038,
+      "mean_p": 0.0159,
+      "observed": 0.0146,
+      "wilson_low": 0.0127,
+      "wilson_high": 0.0167,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 47425,
+      "mean_p": 0.0322,
+      "observed": 0.0314,
+      "wilson_low": 0.0298,
+      "wilson_high": 0.033,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 26260,
+      "mean_p": 0.0709,
+      "observed": 0.0778,
+      "wilson_low": 0.0746,
+      "wilson_high": 0.0811,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 21688,
+      "mean_p": 0.1383,
+      "observed": 0.1315,
+      "wilson_low": 0.127,
+      "wilson_high": 0.136,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 1045,
+      "mean_p": 0.2263,
+      "observed": 0.2297,
+      "wilson_low": 0.2052,
+      "wilson_high": 0.2561,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 25,
+      "mean_p": 0.3468,
+      "observed": 0.4,
+      "wilson_low": 0.234,
+      "wilson_high": 0.5926,
+      "inside": true
+     }
+    ]
+   },
+   "source_xg": {
+    "n": 109061,
+    "log_loss": 0.20696,
+    "brier": 0.05441,
+    "mean_p": 0.089,
+    "mean_y": 0.0621,
+    "calibration_slope": 1.12,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 17439,
+      "mean_p": 0.0127,
+      "observed": 0.0076,
+      "wilson_low": 0.0064,
+      "wilson_high": 0.009,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 28626,
+      "mean_p": 0.0334,
+      "observed": 0.0197,
+      "wilson_low": 0.0182,
+      "wilson_high": 0.0214,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 25573,
+      "mean_p": 0.0723,
+      "observed": 0.0456,
+      "wilson_low": 0.0431,
+      "wilson_high": 0.0483,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 27189,
+      "mean_p": 0.1418,
+      "observed": 0.0946,
+      "wilson_low": 0.0911,
+      "wilson_high": 0.0981,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 7527,
+      "mean_p": 0.2387,
+      "observed": 0.1852,
+      "wilson_low": 0.1766,
+      "wilson_high": 0.1941,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 2485,
+      "mean_p": 0.36,
+      "observed": 0.3243,
+      "wilson_low": 0.3062,
+      "wilson_high": 0.343,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 222,
+      "mean_p": 0.5789,
+      "observed": 0.6081,
+      "wilson_low": 0.5426,
+      "wilson_high": 0.67,
+      "inside": true
+     }
+    ],
+    "note": "the source's own xG (fastRhockey/hockeyR); its training window is not documented per season, so it may be in-sample for earlier seasons"
+   },
+   "model_on_source_rows": {
+    "n": 109061,
+    "log_loss": 0.2053,
+    "brier": 0.05437,
+    "mean_p": 0.0626,
+    "mean_y": 0.0621,
+    "calibration_slope": 0.972,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 31613,
+      "mean_p": 0.0133,
+      "observed": 0.0126,
+      "wilson_low": 0.0114,
+      "wilson_high": 0.0139,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 31157,
+      "mean_p": 0.0331,
+      "observed": 0.0337,
+      "wilson_low": 0.0318,
+      "wilson_high": 0.0358,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 25492,
+      "mean_p": 0.0722,
+      "observed": 0.073,
+      "wilson_low": 0.0699,
+      "wilson_high": 0.0763,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 15840,
+      "mean_p": 0.1345,
+      "observed": 0.1359,
+      "wilson_low": 0.1306,
+      "wilson_high": 0.1413,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 3388,
+      "mean_p": 0.2403,
+      "observed": 0.2317,
+      "wilson_low": 0.2178,
+      "wilson_high": 0.2462,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1458,
+      "mean_p": 0.3632,
+      "observed": 0.3313,
+      "wilson_low": 0.3076,
+      "wilson_high": 0.3559,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 113,
+      "mean_p": 0.5574,
+      "observed": 0.3451,
+      "wilson_low": 0.2639,
+      "wilson_high": 0.4366,
+      "inside": false
+     }
+    ]
+   }
+  },
+  {
+   "season": 2018,
+   "burn_in": false,
+   "train_seasons": [
+    2015,
+    2016,
+    2017
+   ],
+   "n_train": 328495,
+   "fit_seconds": 2.3,
+   "model": {
+    "n": 119154,
+    "log_loss": 0.20924,
+    "brier": 0.05556,
+    "mean_p": 0.0612,
+    "mean_y": 0.0634,
+    "calibration_slope": 0.983,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 34434,
+      "mean_p": 0.0132,
+      "observed": 0.0128,
+      "wilson_low": 0.0117,
+      "wilson_high": 0.0141,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 33743,
+      "mean_p": 0.0332,
+      "observed": 0.0357,
+      "wilson_low": 0.0337,
+      "wilson_high": 0.0377,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 29294,
+      "mean_p": 0.0719,
+      "observed": 0.0747,
+      "wilson_low": 0.0717,
+      "wilson_high": 0.0778,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 16785,
+      "mean_p": 0.1344,
+      "observed": 0.1445,
+      "wilson_low": 0.1393,
+      "wilson_high": 0.1499,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 3526,
+      "mean_p": 0.2397,
+      "observed": 0.2374,
+      "wilson_low": 0.2236,
+      "wilson_high": 0.2517,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1297,
+      "mean_p": 0.3609,
+      "observed": 0.3285,
+      "wilson_low": 0.3034,
+      "wilson_high": 0.3545,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 75,
+      "mean_p": 0.5544,
+      "observed": 0.4667,
+      "wilson_low": 0.3582,
+      "wilson_high": 0.5784,
+      "inside": true
+     }
+    ]
+   },
+   "distance_only": {
+    "n": 119154,
+    "log_loss": 0.21908,
+    "brier": 0.05725,
+    "mean_p": 0.0609,
+    "mean_y": 0.0634,
+    "calibration_slope": 0.971,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 16005,
+      "mean_p": 0.0145,
+      "observed": 0.0127,
+      "wilson_low": 0.0111,
+      "wilson_high": 0.0146,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 50596,
+      "mean_p": 0.0323,
+      "observed": 0.0339,
+      "wilson_low": 0.0323,
+      "wilson_high": 0.0355,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 28632,
+      "mean_p": 0.0711,
+      "observed": 0.0821,
+      "wilson_low": 0.079,
+      "wilson_high": 0.0853,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 22830,
+      "mean_p": 0.1365,
+      "observed": 0.1336,
+      "wilson_low": 0.1292,
+      "wilson_high": 0.138,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 1074,
+      "mean_p": 0.2211,
+      "observed": 0.2123,
+      "wilson_low": 0.1889,
+      "wilson_high": 0.2378,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 17,
+      "mean_p": 0.3432,
+      "observed": 0.7059,
+      "wilson_low": 0.4687,
+      "wilson_high": 0.8672,
+      "inside": false
+     }
+    ]
+   },
+   "source_xg": {
+    "n": 117589,
+    "log_loss": 0.211,
+    "brier": 0.05573,
+    "mean_p": 0.0886,
+    "mean_y": 0.0636,
+    "calibration_slope": 1.094,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 19254,
+      "mean_p": 0.0123,
+      "observed": 0.0066,
+      "wilson_low": 0.0056,
+      "wilson_high": 0.0079,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 29947,
+      "mean_p": 0.0335,
+      "observed": 0.0229,
+      "wilson_low": 0.0213,
+      "wilson_high": 0.0247,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 27988,
+      "mean_p": 0.0724,
+      "observed": 0.0486,
+      "wilson_low": 0.0461,
+      "wilson_high": 0.0512,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 29542,
+      "mean_p": 0.1413,
+      "observed": 0.0957,
+      "wilson_low": 0.0924,
+      "wilson_high": 0.0991,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 7993,
+      "mean_p": 0.2388,
+      "observed": 0.1845,
+      "wilson_low": 0.1762,
+      "wilson_high": 0.1932,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 2645,
+      "mean_p": 0.3581,
+      "observed": 0.3278,
+      "wilson_low": 0.3102,
+      "wilson_high": 0.3459,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 220,
+      "mean_p": 0.5699,
+      "observed": 0.6136,
+      "wilson_low": 0.5479,
+      "wilson_high": 0.6755,
+      "inside": true
+     }
+    ],
+    "note": "the source's own xG (fastRhockey/hockeyR); its training window is not documented per season, so it may be in-sample for earlier seasons"
+   },
+   "model_on_source_rows": {
+    "n": 117589,
+    "log_loss": 0.20965,
+    "brier": 0.0557,
+    "mean_p": 0.0614,
+    "mean_y": 0.0636,
+    "calibration_slope": 0.982,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 33840,
+      "mean_p": 0.0132,
+      "observed": 0.0129,
+      "wilson_low": 0.0118,
+      "wilson_high": 0.0142,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 33292,
+      "mean_p": 0.0332,
+      "observed": 0.0355,
+      "wilson_low": 0.0335,
+      "wilson_high": 0.0375,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 28918,
+      "mean_p": 0.0719,
+      "observed": 0.0747,
+      "wilson_low": 0.0717,
+      "wilson_high": 0.0777,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 16651,
+      "mean_p": 0.1345,
+      "observed": 0.1445,
+      "wilson_low": 0.1392,
+      "wilson_high": 0.1499,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 3518,
+      "mean_p": 0.2397,
+      "observed": 0.2371,
+      "wilson_low": 0.2233,
+      "wilson_high": 0.2514,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1295,
+      "mean_p": 0.3609,
+      "observed": 0.329,
+      "wilson_low": 0.3039,
+      "wilson_high": 0.355,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 75,
+      "mean_p": 0.5544,
+      "observed": 0.4667,
+      "wilson_low": 0.3582,
+      "wilson_high": 0.5784,
+      "inside": true
+     }
+    ]
+   }
+  },
+  {
+   "season": 2019,
+   "burn_in": false,
+   "train_seasons": [
+    2016,
+    2017,
+    2018
+   ],
+   "n_train": 338516,
+   "fit_seconds": 2.5,
+   "model": {
+    "n": 117091,
+    "log_loss": 0.21409,
+    "brier": 0.05726,
+    "mean_p": 0.0625,
+    "mean_y": 0.0651,
+    "calibration_slope": 0.956,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 33650,
+      "mean_p": 0.0127,
+      "observed": 0.0119,
+      "wilson_low": 0.0108,
+      "wilson_high": 0.0131,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 31885,
+      "mean_p": 0.0333,
+      "observed": 0.0369,
+      "wilson_low": 0.0349,
+      "wilson_high": 0.0391,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 29403,
+      "mean_p": 0.0723,
+      "observed": 0.0797,
+      "wilson_low": 0.0766,
+      "wilson_high": 0.0828,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 17112,
+      "mean_p": 0.1349,
+      "observed": 0.1438,
+      "wilson_low": 0.1386,
+      "wilson_high": 0.1491,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 3641,
+      "mean_p": 0.2397,
+      "observed": 0.2249,
+      "wilson_low": 0.2117,
+      "wilson_high": 0.2388,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1324,
+      "mean_p": 0.3599,
+      "observed": 0.2991,
+      "wilson_low": 0.275,
+      "wilson_high": 0.3243,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 76,
+      "mean_p": 0.5521,
+      "observed": 0.3289,
+      "wilson_low": 0.2338,
+      "wilson_high": 0.4406,
+      "inside": false
+     }
+    ]
+   },
+   "distance_only": {
+    "n": 117091,
+    "log_loss": 0.22331,
+    "brier": 0.05873,
+    "mean_p": 0.0625,
+    "mean_y": 0.0651,
+    "calibration_slope": 0.959,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 16950,
+      "mean_p": 0.0143,
+      "observed": 0.0123,
+      "wilson_low": 0.0108,
+      "wilson_high": 0.0141,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 46535,
+      "mean_p": 0.0326,
+      "observed": 0.0341,
+      "wilson_low": 0.0325,
+      "wilson_high": 0.0358,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 28788,
+      "mean_p": 0.0718,
+      "observed": 0.0857,
+      "wilson_low": 0.0826,
+      "wilson_high": 0.089,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 23757,
+      "mean_p": 0.1373,
+      "observed": 0.1315,
+      "wilson_low": 0.1273,
+      "wilson_high": 0.1359,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 1042,
+      "mean_p": 0.2204,
+      "observed": 0.2092,
+      "wilson_low": 0.1856,
+      "wilson_high": 0.235,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 19,
+      "mean_p": 0.3246,
+      "observed": 0.6316,
+      "wilson_low": 0.4104,
+      "wilson_high": 0.8085,
+      "inside": false
+     }
+    ]
+   },
+   "source_xg": {
+    "n": 115652,
+    "log_loss": 0.21591,
+    "brier": 0.05746,
+    "mean_p": 0.0918,
+    "mean_y": 0.0653,
+    "calibration_slope": 1.097,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 18977,
+      "mean_p": 0.0118,
+      "observed": 0.0069,
+      "wilson_low": 0.0058,
+      "wilson_high": 0.0082,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 27457,
+      "mean_p": 0.0333,
+      "observed": 0.0208,
+      "wilson_low": 0.0191,
+      "wilson_high": 0.0225,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 26445,
+      "mean_p": 0.0732,
+      "observed": 0.0471,
+      "wilson_low": 0.0446,
+      "wilson_high": 0.0497,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 31156,
+      "mean_p": 0.1421,
+      "observed": 0.0983,
+      "wilson_low": 0.095,
+      "wilson_high": 0.1016,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 8952,
+      "mean_p": 0.2376,
+      "observed": 0.1833,
+      "wilson_low": 0.1754,
+      "wilson_high": 0.1915,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 2484,
+      "mean_p": 0.3562,
+      "observed": 0.3217,
+      "wilson_low": 0.3036,
+      "wilson_high": 0.3403,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 181,
+      "mean_p": 0.5787,
+      "observed": 0.5691,
+      "wilson_low": 0.4962,
+      "wilson_high": 0.639,
+      "inside": true
+     }
+    ],
+    "note": "the source's own xG (fastRhockey/hockeyR); its training window is not documented per season, so it may be in-sample for earlier seasons"
+   },
+   "model_on_source_rows": {
+    "n": 115652,
+    "log_loss": 0.21455,
+    "brier": 0.05741,
+    "mean_p": 0.0626,
+    "mean_y": 0.0653,
+    "calibration_slope": 0.956,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 33122,
+      "mean_p": 0.0127,
+      "observed": 0.012,
+      "wilson_low": 0.0108,
+      "wilson_high": 0.0132,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 31491,
+      "mean_p": 0.0333,
+      "observed": 0.0369,
+      "wilson_low": 0.0349,
+      "wilson_high": 0.039,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 29052,
+      "mean_p": 0.0723,
+      "observed": 0.0797,
+      "wilson_low": 0.0766,
+      "wilson_high": 0.0828,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 16952,
+      "mean_p": 0.135,
+      "observed": 0.1439,
+      "wilson_low": 0.1387,
+      "wilson_high": 0.1492,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 3636,
+      "mean_p": 0.2397,
+      "observed": 0.2252,
+      "wilson_low": 0.212,
+      "wilson_high": 0.2391,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1323,
+      "mean_p": 0.3599,
+      "observed": 0.2993,
+      "wilson_low": 0.2753,
+      "wilson_high": 0.3245,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 76,
+      "mean_p": 0.5521,
+      "observed": 0.3289,
+      "wilson_low": 0.2338,
+      "wilson_high": 0.4406,
+      "inside": false
+     }
+    ]
+   }
+  },
+  {
+   "season": 2020,
+   "burn_in": false,
+   "train_seasons": [
+    2017,
+    2018,
+    2019
+   ],
+   "n_train": 346726,
+   "fit_seconds": 2.3,
+   "model": {
+    "n": 103786,
+    "log_loss": 0.21325,
+    "brier": 0.05712,
+    "mean_p": 0.0645,
+    "mean_y": 0.0656,
+    "calibration_slope": 0.998,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 28824,
+      "mean_p": 0.0126,
+      "observed": 0.0112,
+      "wilson_low": 0.0101,
+      "wilson_high": 0.0125,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 27475,
+      "mean_p": 0.0333,
+      "observed": 0.0357,
+      "wilson_low": 0.0335,
+      "wilson_high": 0.0379,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 26717,
+      "mean_p": 0.0722,
+      "observed": 0.0716,
+      "wilson_low": 0.0686,
+      "wilson_high": 0.0748,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 15957,
+      "mean_p": 0.1357,
+      "observed": 0.1441,
+      "wilson_low": 0.1387,
+      "wilson_high": 0.1496,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 3532,
+      "mean_p": 0.24,
+      "observed": 0.2477,
+      "wilson_low": 0.2338,
+      "wilson_high": 0.2622,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1217,
+      "mean_p": 0.358,
+      "observed": 0.3106,
+      "wilson_low": 0.2852,
+      "wilson_high": 0.3372,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 64,
+      "mean_p": 0.5556,
+      "observed": 0.5469,
+      "wilson_low": 0.4257,
+      "wilson_high": 0.6627,
+      "inside": true
+     }
+    ]
+   },
+   "distance_only": {
+    "n": 103786,
+    "log_loss": 0.22226,
+    "brier": 0.05877,
+    "mean_p": 0.0642,
+    "mean_y": 0.0656,
+    "calibration_slope": 1.053,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 15083,
+      "mean_p": 0.0156,
+      "observed": 0.0123,
+      "wilson_low": 0.0107,
+      "wilson_high": 0.0142,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 38831,
+      "mean_p": 0.0324,
+      "observed": 0.0312,
+      "wilson_low": 0.0295,
+      "wilson_high": 0.033,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 26389,
+      "mean_p": 0.0714,
+      "observed": 0.08,
+      "wilson_low": 0.0768,
+      "wilson_high": 0.0834,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 22700,
+      "mean_p": 0.137,
+      "observed": 0.1362,
+      "wilson_low": 0.1318,
+      "wilson_high": 0.1407,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 781,
+      "mean_p": 0.2167,
+      "observed": 0.2574,
+      "wilson_low": 0.2279,
+      "wilson_high": 0.2892,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 2,
+      "mean_p": 0.3046,
+      "observed": 1,
+      "wilson_low": 0.3424,
+      "wilson_high": 1,
+      "inside": false
+     }
+    ]
+   },
+   "source_xg": {
+    "n": 102081,
+    "log_loss": 0.21441,
+    "brier": 0.05705,
+    "mean_p": 0.0917,
+    "mean_y": 0.0656,
+    "calibration_slope": 1.133,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 16498,
+      "mean_p": 0.0123,
+      "observed": 0.008,
+      "wilson_low": 0.0068,
+      "wilson_high": 0.0095,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 24968,
+      "mean_p": 0.0333,
+      "observed": 0.0191,
+      "wilson_low": 0.0175,
+      "wilson_high": 0.0209,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 23580,
+      "mean_p": 0.0731,
+      "observed": 0.0474,
+      "wilson_low": 0.0448,
+      "wilson_high": 0.0502,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 26650,
+      "mean_p": 0.1419,
+      "observed": 0.0951,
+      "wilson_low": 0.0917,
+      "wilson_high": 0.0987,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 7879,
+      "mean_p": 0.2382,
+      "observed": 0.1979,
+      "wilson_low": 0.1892,
+      "wilson_high": 0.2068,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 2300,
+      "mean_p": 0.3595,
+      "observed": 0.3252,
+      "wilson_low": 0.3064,
+      "wilson_high": 0.3446,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 206,
+      "mean_p": 0.5791,
+      "observed": 0.6117,
+      "wilson_low": 0.5436,
+      "wilson_high": 0.6756,
+      "inside": true
+     }
+    ],
+    "note": "the source's own xG (fastRhockey/hockeyR); its training window is not documented per season, so it may be in-sample for earlier seasons"
+   },
+   "model_on_source_rows": {
+    "n": 102081,
+    "log_loss": 0.21315,
+    "brier": 0.0571,
+    "mean_p": 0.0647,
+    "mean_y": 0.0656,
+    "calibration_slope": 1,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 28343,
+      "mean_p": 0.0127,
+      "observed": 0.0113,
+      "wilson_low": 0.0101,
+      "wilson_high": 0.0126,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 26995,
+      "mean_p": 0.0333,
+      "observed": 0.0355,
+      "wilson_low": 0.0334,
+      "wilson_high": 0.0378,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 26232,
+      "mean_p": 0.0722,
+      "observed": 0.0712,
+      "wilson_low": 0.0681,
+      "wilson_high": 0.0743,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 15719,
+      "mean_p": 0.1357,
+      "observed": 0.1442,
+      "wilson_low": 0.1388,
+      "wilson_high": 0.1497,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 3515,
+      "mean_p": 0.24,
+      "observed": 0.2481,
+      "wilson_low": 0.2341,
+      "wilson_high": 0.2626,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1213,
+      "mean_p": 0.358,
+      "observed": 0.3108,
+      "wilson_low": 0.2854,
+      "wilson_high": 0.3374,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 64,
+      "mean_p": 0.5556,
+      "observed": 0.5469,
+      "wilson_low": 0.4257,
+      "wilson_high": 0.6627,
+      "inside": true
+     }
+    ]
+   }
+  },
+  {
+   "season": 2021,
+   "burn_in": false,
+   "train_seasons": [
+    2018,
+    2019,
+    2020
+   ],
+   "n_train": 340031,
+   "fit_seconds": 2.2,
+   "model": {
+    "n": 78206,
+    "log_loss": 0.21516,
+    "brier": 0.05784,
+    "mean_p": 0.0653,
+    "mean_y": 0.0665,
+    "calibration_slope": 1.014,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 21043,
+      "mean_p": 0.0125,
+      "observed": 0.012,
+      "wilson_low": 0.0106,
+      "wilson_high": 0.0135,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 20673,
+      "mean_p": 0.0335,
+      "observed": 0.0325,
+      "wilson_low": 0.0301,
+      "wilson_high": 0.035,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 20206,
+      "mean_p": 0.0724,
+      "observed": 0.0723,
+      "wilson_low": 0.0688,
+      "wilson_high": 0.0759,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 12716,
+      "mean_p": 0.1351,
+      "observed": 0.1491,
+      "wilson_low": 0.143,
+      "wilson_high": 0.1554,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 2630,
+      "mean_p": 0.2391,
+      "observed": 0.2327,
+      "wilson_low": 0.2169,
+      "wilson_high": 0.2492,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 900,
+      "mean_p": 0.3603,
+      "observed": 0.3211,
+      "wilson_low": 0.2914,
+      "wilson_high": 0.3523,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 38,
+      "mean_p": 0.5551,
+      "observed": 0.5,
+      "wilson_low": 0.3485,
+      "wilson_high": 0.6515,
+      "inside": true
+     }
+    ]
+   },
+   "distance_only": {
+    "n": 78206,
+    "log_loss": 0.22525,
+    "brier": 0.05964,
+    "mean_p": 0.0659,
+    "mean_y": 0.0665,
+    "calibration_slope": 1.031,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 11744,
+      "mean_p": 0.0154,
+      "observed": 0.0139,
+      "wilson_low": 0.0119,
+      "wilson_high": 0.0162,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 27235,
+      "mean_p": 0.0325,
+      "observed": 0.0308,
+      "wilson_low": 0.0288,
+      "wilson_high": 0.0329,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 20133,
+      "mean_p": 0.0714,
+      "observed": 0.0791,
+      "wilson_low": 0.0754,
+      "wilson_high": 0.0829,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 18842,
+      "mean_p": 0.138,
+      "observed": 0.1346,
+      "wilson_low": 0.1298,
+      "wilson_high": 0.1395,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 252,
+      "mean_p": 0.2171,
+      "observed": 0.2738,
+      "wilson_low": 0.2225,
+      "wilson_high": 0.332,
+      "inside": false
+     }
+    ]
+   },
+   "source_xg": {
+    "n": 76918,
+    "log_loss": 0.21606,
+    "brier": 0.0577,
+    "mean_p": 0.0918,
+    "mean_y": 0.0665,
+    "calibration_slope": 1.163,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 11985,
+      "mean_p": 0.0126,
+      "observed": 0.0077,
+      "wilson_low": 0.0063,
+      "wilson_high": 0.0094,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 18760,
+      "mean_p": 0.0334,
+      "observed": 0.0189,
+      "wilson_low": 0.0171,
+      "wilson_high": 0.021,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 18118,
+      "mean_p": 0.0734,
+      "observed": 0.0459,
+      "wilson_low": 0.043,
+      "wilson_high": 0.0491,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 20521,
+      "mean_p": 0.1421,
+      "observed": 0.0996,
+      "wilson_low": 0.0956,
+      "wilson_high": 0.1038,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 5739,
+      "mean_p": 0.2381,
+      "observed": 0.1999,
+      "wilson_low": 0.1897,
+      "wilson_high": 0.2104,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1668,
+      "mean_p": 0.3593,
+      "observed": 0.3453,
+      "wilson_low": 0.3229,
+      "wilson_high": 0.3685,
+      "inside": true
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 127,
+      "mean_p": 0.5738,
+      "observed": 0.5591,
+      "wilson_low": 0.4722,
+      "wilson_high": 0.6424,
+      "inside": true
+     }
+    ],
+    "note": "the source's own xG (fastRhockey/hockeyR); its training window is not documented per season, so it may be in-sample for earlier seasons"
+   },
+   "model_on_source_rows": {
+    "n": 76918,
+    "log_loss": 0.21519,
+    "brier": 0.05786,
+    "mean_p": 0.0655,
+    "mean_y": 0.0665,
+    "calibration_slope": 1.014,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 20652,
+      "mean_p": 0.0125,
+      "observed": 0.0119,
+      "wilson_low": 0.0105,
+      "wilson_high": 0.0135,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 20317,
+      "mean_p": 0.0335,
+      "observed": 0.0323,
+      "wilson_low": 0.0299,
+      "wilson_high": 0.0348,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 19894,
+      "mean_p": 0.0724,
+      "observed": 0.0721,
+      "wilson_low": 0.0686,
+      "wilson_high": 0.0758,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 12510,
+      "mean_p": 0.1351,
+      "observed": 0.1492,
+      "wilson_low": 0.1431,
+      "wilson_high": 0.1556,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 2611,
+      "mean_p": 0.2392,
+      "observed": 0.2317,
+      "wilson_low": 0.2159,
+      "wilson_high": 0.2483,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 896,
+      "mean_p": 0.3604,
+      "observed": 0.3225,
+      "wilson_low": 0.2928,
+      "wilson_high": 0.3539,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 38,
+      "mean_p": 0.5551,
+      "observed": 0.5,
+      "wilson_low": 0.3485,
+      "wilson_high": 0.6515,
+      "inside": true
+     }
+    ]
+   }
+  },
+  {
+   "season": 2022,
+   "burn_in": false,
+   "train_seasons": [
+    2019,
+    2020,
+    2021
+   ],
+   "n_train": 299083,
+   "fit_seconds": 2.7,
+   "model": {
+    "n": 120805,
+    "log_loss": 0.22148,
+    "brier": 0.05948,
+    "mean_p": 0.0689,
+    "mean_y": 0.0678,
+    "calibration_slope": 0.962,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 30018,
+      "mean_p": 0.0123,
+      "observed": 0.0126,
+      "wilson_low": 0.0114,
+      "wilson_high": 0.0139,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 30538,
+      "mean_p": 0.0334,
+      "observed": 0.0334,
+      "wilson_low": 0.0314,
+      "wilson_high": 0.0354,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 32578,
+      "mean_p": 0.0728,
+      "observed": 0.0715,
+      "wilson_low": 0.0688,
+      "wilson_high": 0.0744,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 21717,
+      "mean_p": 0.1361,
+      "observed": 0.1392,
+      "wilson_low": 0.1347,
+      "wilson_high": 0.1439,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 4524,
+      "mean_p": 0.2387,
+      "observed": 0.2226,
+      "wilson_low": 0.2107,
+      "wilson_high": 0.2349,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1372,
+      "mean_p": 0.3578,
+      "observed": 0.2959,
+      "wilson_low": 0.2724,
+      "wilson_high": 0.3206,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 58,
+      "mean_p": 0.562,
+      "observed": 0.4828,
+      "wilson_low": 0.3593,
+      "wilson_high": 0.6084,
+      "inside": true
+     }
+    ]
+   },
+   "distance_only": {
+    "n": 120805,
+    "log_loss": 0.23101,
+    "brier": 0.06112,
+    "mean_p": 0.0687,
+    "mean_y": 0.0678,
+    "calibration_slope": 0.959,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 18197,
+      "mean_p": 0.0148,
+      "observed": 0.0138,
+      "wilson_low": 0.0123,
+      "wilson_high": 0.0157,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 38413,
+      "mean_p": 0.0331,
+      "observed": 0.0329,
+      "wilson_low": 0.0311,
+      "wilson_high": 0.0347,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 32081,
+      "mean_p": 0.0717,
+      "observed": 0.08,
+      "wilson_low": 0.0771,
+      "wilson_high": 0.0831,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 31826,
+      "mean_p": 0.1381,
+      "observed": 0.1264,
+      "wilson_low": 0.1228,
+      "wilson_high": 0.1301,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 288,
+      "mean_p": 0.2086,
+      "observed": 0.2986,
+      "wilson_low": 0.2487,
+      "wilson_high": 0.3538,
+      "inside": false
+     }
+    ]
+   },
+   "source_xg": {
+    "n": 118852,
+    "log_loss": 0.22183,
+    "brier": 0.05932,
+    "mean_p": 0.0893,
+    "mean_y": 0.0678,
+    "calibration_slope": 1.139,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 18109,
+      "mean_p": 0.0122,
+      "observed": 0.0084,
+      "wilson_low": 0.0072,
+      "wilson_high": 0.0099,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 27713,
+      "mean_p": 0.0335,
+      "observed": 0.0212,
+      "wilson_low": 0.0196,
+      "wilson_high": 0.023,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 29617,
+      "mean_p": 0.0733,
+      "observed": 0.0504,
+      "wilson_low": 0.0479,
+      "wilson_high": 0.0529,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 33735,
+      "mean_p": 0.1414,
+      "observed": 0.1043,
+      "wilson_low": 0.101,
+      "wilson_high": 0.1076,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 7837,
+      "mean_p": 0.2368,
+      "observed": 0.2102,
+      "wilson_low": 0.2013,
+      "wilson_high": 0.2193,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1773,
+      "mean_p": 0.3515,
+      "observed": 0.3519,
+      "wilson_low": 0.3301,
+      "wilson_high": 0.3745,
+      "inside": true
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 68,
+      "mean_p": 0.5721,
+      "observed": 0.6324,
+      "wilson_low": 0.5136,
+      "wilson_high": 0.737,
+      "inside": true
+     }
+    ],
+    "note": "the source's own xG (fastRhockey/hockeyR); its training window is not documented per season, so it may be in-sample for earlier seasons"
+   },
+   "model_on_source_rows": {
+    "n": 118852,
+    "log_loss": 0.22152,
+    "brier": 0.05949,
+    "mean_p": 0.069,
+    "mean_y": 0.0678,
+    "calibration_slope": 0.962,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 29463,
+      "mean_p": 0.0123,
+      "observed": 0.0127,
+      "wilson_low": 0.0114,
+      "wilson_high": 0.014,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 29995,
+      "mean_p": 0.0334,
+      "observed": 0.0331,
+      "wilson_low": 0.0311,
+      "wilson_high": 0.0352,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 32079,
+      "mean_p": 0.0728,
+      "observed": 0.0714,
+      "wilson_low": 0.0686,
+      "wilson_high": 0.0743,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 21398,
+      "mean_p": 0.1361,
+      "observed": 0.139,
+      "wilson_low": 0.1345,
+      "wilson_high": 0.1437,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 4491,
+      "mean_p": 0.2387,
+      "observed": 0.2227,
+      "wilson_low": 0.2107,
+      "wilson_high": 0.2351,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1368,
+      "mean_p": 0.3579,
+      "observed": 0.2961,
+      "wilson_low": 0.2725,
+      "wilson_high": 0.3208,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 58,
+      "mean_p": 0.562,
+      "observed": 0.4828,
+      "wilson_low": 0.3593,
+      "wilson_high": 0.6084,
+      "inside": true
+     }
+    ]
+   }
+  },
+  {
+   "season": 2023,
+   "burn_in": false,
+   "train_seasons": [
+    2020,
+    2021,
+    2022
+   ],
+   "n_train": 302797,
+   "fit_seconds": 2.4,
+   "model": {
+    "n": 121281,
+    "log_loss": 0.2294,
+    "brier": 0.06251,
+    "mean_p": 0.0759,
+    "mean_y": 0.0687,
+    "calibration_slope": 0.773,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 29199,
+      "mean_p": 0.0116,
+      "observed": 0.0117,
+      "wilson_low": 0.0105,
+      "wilson_high": 0.013,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 29370,
+      "mean_p": 0.0335,
+      "observed": 0.0326,
+      "wilson_low": 0.0306,
+      "wilson_high": 0.0347,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 31923,
+      "mean_p": 0.0729,
+      "observed": 0.0736,
+      "wilson_low": 0.0708,
+      "wilson_high": 0.0765,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 23096,
+      "mean_p": 0.1363,
+      "observed": 0.1342,
+      "wilson_low": 0.1298,
+      "wilson_high": 0.1386,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 5084,
+      "mean_p": 0.2395,
+      "observed": 0.1963,
+      "wilson_low": 0.1856,
+      "wilson_high": 0.2074,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1845,
+      "mean_p": 0.3627,
+      "observed": 0.2417,
+      "wilson_low": 0.2227,
+      "wilson_high": 0.2618,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 764,
+      "mean_p": 0.6765,
+      "observed": 0.1924,
+      "wilson_low": 0.166,
+      "wilson_high": 0.2219,
+      "inside": false
+     }
+    ]
+   },
+   "distance_only": {
+    "n": 121281,
+    "log_loss": 0.23356,
+    "brier": 0.06205,
+    "mean_p": 0.0709,
+    "mean_y": 0.0687,
+    "calibration_slope": 0.934,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 19482,
+      "mean_p": 0.014,
+      "observed": 0.0127,
+      "wilson_low": 0.0112,
+      "wilson_high": 0.0144,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 35410,
+      "mean_p": 0.0335,
+      "observed": 0.0324,
+      "wilson_low": 0.0306,
+      "wilson_high": 0.0343,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 31732,
+      "mean_p": 0.0716,
+      "observed": 0.0825,
+      "wilson_low": 0.0795,
+      "wilson_high": 0.0856,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 34478,
+      "mean_p": 0.1402,
+      "observed": 0.1234,
+      "wilson_low": 0.12,
+      "wilson_high": 0.1269,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 179,
+      "mean_p": 0.2069,
+      "observed": 0.3911,
+      "wilson_low": 0.3226,
+      "wilson_high": 0.4641,
+      "inside": false
+     }
+    ]
+   },
+   "source_xg": {
+    "n": 119204,
+    "log_loss": 0.22491,
+    "brier": 0.06036,
+    "mean_p": 0.0923,
+    "mean_y": 0.0688,
+    "calibration_slope": 1.096,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 19383,
+      "mean_p": 0.0117,
+      "observed": 0.0082,
+      "wilson_low": 0.007,
+      "wilson_high": 0.0095,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 25799,
+      "mean_p": 0.0335,
+      "observed": 0.021,
+      "wilson_low": 0.0193,
+      "wilson_high": 0.0228,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 28489,
+      "mean_p": 0.0736,
+      "observed": 0.0502,
+      "wilson_low": 0.0477,
+      "wilson_high": 0.0528,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 34404,
+      "mean_p": 0.1426,
+      "observed": 0.1045,
+      "wilson_low": 0.1013,
+      "wilson_high": 0.1077,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 8986,
+      "mean_p": 0.2374,
+      "observed": 0.1937,
+      "wilson_low": 0.1857,
+      "wilson_high": 0.202,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 2038,
+      "mean_p": 0.351,
+      "observed": 0.3292,
+      "wilson_low": 0.3092,
+      "wilson_high": 0.35,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 105,
+      "mean_p": 0.5902,
+      "observed": 0.619,
+      "wilson_low": 0.5235,
+      "wilson_high": 0.7062,
+      "inside": true
+     }
+    ],
+    "note": "the source's own xG (fastRhockey/hockeyR); its training window is not documented per season, so it may be in-sample for earlier seasons"
+   },
+   "model_on_source_rows": {
+    "n": 119204,
+    "log_loss": 0.22952,
+    "brier": 0.06256,
+    "mean_p": 0.0761,
+    "mean_y": 0.0688,
+    "calibration_slope": 0.773,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 28663,
+      "mean_p": 0.0116,
+      "observed": 0.0117,
+      "wilson_low": 0.0105,
+      "wilson_high": 0.013,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 28848,
+      "mean_p": 0.0335,
+      "observed": 0.0326,
+      "wilson_low": 0.0306,
+      "wilson_high": 0.0347,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 31339,
+      "mean_p": 0.0729,
+      "observed": 0.0736,
+      "wilson_low": 0.0707,
+      "wilson_high": 0.0765,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 22718,
+      "mean_p": 0.1363,
+      "observed": 0.1338,
+      "wilson_low": 0.1294,
+      "wilson_high": 0.1383,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 5043,
+      "mean_p": 0.2396,
+      "observed": 0.1959,
+      "wilson_low": 0.1852,
+      "wilson_high": 0.2071,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1835,
+      "mean_p": 0.3626,
+      "observed": 0.242,
+      "wilson_low": 0.2229,
+      "wilson_high": 0.2621,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 758,
+      "mean_p": 0.6766,
+      "observed": 0.1939,
+      "wilson_low": 0.1674,
+      "wilson_high": 0.2236,
+      "inside": false
+     }
+    ]
+   }
+  },
+  {
+   "season": 2024,
+   "burn_in": false,
+   "train_seasons": [
+    2021,
+    2022,
+    2023
+   ],
+   "n_train": 320292,
+   "fit_seconds": 2.1,
+   "model": {
+    "n": 121686,
+    "log_loss": 0.22008,
+    "brier": 0.05921,
+    "mean_p": 0.0687,
+    "mean_y": 0.0666,
+    "calibration_slope": 0.899,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 31377,
+      "mean_p": 0.0112,
+      "observed": 0.0114,
+      "wilson_low": 0.0103,
+      "wilson_high": 0.0127,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 30708,
+      "mean_p": 0.0335,
+      "observed": 0.0324,
+      "wilson_low": 0.0305,
+      "wilson_high": 0.0344,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 31670,
+      "mean_p": 0.0727,
+      "observed": 0.077,
+      "wilson_low": 0.0741,
+      "wilson_high": 0.08,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 21600,
+      "mean_p": 0.1371,
+      "observed": 0.1396,
+      "wilson_low": 0.1351,
+      "wilson_high": 0.1443,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 4731,
+      "mean_p": 0.2392,
+      "observed": 0.1869,
+      "wilson_low": 0.176,
+      "wilson_high": 0.1982,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1534,
+      "mean_p": 0.3598,
+      "observed": 0.2523,
+      "wilson_low": 0.2312,
+      "wilson_high": 0.2746,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 66,
+      "mean_p": 0.5535,
+      "observed": 0.3939,
+      "wilson_low": 0.285,
+      "wilson_high": 0.5145,
+      "inside": false
+     }
+    ]
+   },
+   "distance_only": {
+    "n": 121686,
+    "log_loss": 0.22732,
+    "brier": 0.06015,
+    "mean_p": 0.0688,
+    "mean_y": 0.0666,
+    "calibration_slope": 0.97,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 21883,
+      "mean_p": 0.0132,
+      "observed": 0.0124,
+      "wilson_low": 0.011,
+      "wilson_high": 0.014,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 34456,
+      "mean_p": 0.0344,
+      "observed": 0.0315,
+      "wilson_low": 0.0297,
+      "wilson_high": 0.0334,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 31239,
+      "mean_p": 0.0715,
+      "observed": 0.0798,
+      "wilson_low": 0.0769,
+      "wilson_high": 0.0829,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 34108,
+      "mean_p": 0.1368,
+      "observed": 0.1248,
+      "wilson_low": 0.1213,
+      "wilson_high": 0.1283,
+      "inside": false
+     }
+    ]
+   },
+   "source_xg": {
+    "n": 119510,
+    "log_loss": 0.21512,
+    "brier": 0.0577,
+    "mean_p": 0.0869,
+    "mean_y": 0.0662,
+    "calibration_slope": 1.102,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 23220,
+      "mean_p": 0.0114,
+      "observed": 0.0062,
+      "wilson_low": 0.0052,
+      "wilson_high": 0.0072,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 26138,
+      "mean_p": 0.0336,
+      "observed": 0.0228,
+      "wilson_low": 0.0211,
+      "wilson_high": 0.0247,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 29154,
+      "mean_p": 0.0732,
+      "observed": 0.0508,
+      "wilson_low": 0.0483,
+      "wilson_high": 0.0533,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 30687,
+      "mean_p": 0.1415,
+      "observed": 0.1076,
+      "wilson_low": 0.1042,
+      "wilson_high": 0.1112,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 8059,
+      "mean_p": 0.238,
+      "observed": 0.2005,
+      "wilson_low": 0.1919,
+      "wilson_high": 0.2094,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 2053,
+      "mean_p": 0.3562,
+      "observed": 0.3195,
+      "wilson_low": 0.2997,
+      "wilson_high": 0.34,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 199,
+      "mean_p": 0.6066,
+      "observed": 0.5879,
+      "wilson_low": 0.5185,
+      "wilson_high": 0.654,
+      "inside": true
+     }
+    ],
+    "note": "the source's own xG (fastRhockey/hockeyR); its training window is not documented per season, so it may be in-sample for earlier seasons"
+   },
+   "model_on_source_rows": {
+    "n": 119510,
+    "log_loss": 0.21919,
+    "brier": 0.05889,
+    "mean_p": 0.0689,
+    "mean_y": 0.0662,
+    "calibration_slope": 0.897,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 30778,
+      "mean_p": 0.0112,
+      "observed": 0.0114,
+      "wilson_low": 0.0103,
+      "wilson_high": 0.0127,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 30164,
+      "mean_p": 0.0335,
+      "observed": 0.0322,
+      "wilson_low": 0.0303,
+      "wilson_high": 0.0343,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 31042,
+      "mean_p": 0.0727,
+      "observed": 0.0763,
+      "wilson_low": 0.0734,
+      "wilson_high": 0.0793,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 21248,
+      "mean_p": 0.1371,
+      "observed": 0.1384,
+      "wilson_low": 0.1338,
+      "wilson_high": 0.1431,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 4685,
+      "mean_p": 0.2392,
+      "observed": 0.1851,
+      "wilson_low": 0.1742,
+      "wilson_high": 0.1964,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1528,
+      "mean_p": 0.3599,
+      "observed": 0.2526,
+      "wilson_low": 0.2315,
+      "wilson_high": 0.275,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 65,
+      "mean_p": 0.5541,
+      "observed": 0.4,
+      "wilson_low": 0.2897,
+      "wilson_high": 0.5214,
+      "inside": false
+     }
+    ]
+   }
+  },
+  {
+   "season": 2025,
+   "burn_in": false,
+   "train_seasons": [
+    2022,
+    2023,
+    2024
+   ],
+   "n_train": 363772,
+   "fit_seconds": 2.4,
+   "model": {
+    "n": 118952,
+    "log_loss": 0.21824,
+    "brier": 0.05853,
+    "mean_p": 0.0667,
+    "mean_y": 0.0661,
+    "calibration_slope": 0.932,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 31351,
+      "mean_p": 0.0113,
+      "observed": 0.0117,
+      "wilson_low": 0.0105,
+      "wilson_high": 0.0129,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 30014,
+      "mean_p": 0.0333,
+      "observed": 0.0335,
+      "wilson_low": 0.0315,
+      "wilson_high": 0.0356,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 30955,
+      "mean_p": 0.0728,
+      "observed": 0.0753,
+      "wilson_low": 0.0724,
+      "wilson_high": 0.0783,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 21399,
+      "mean_p": 0.1368,
+      "observed": 0.1414,
+      "wilson_low": 0.1368,
+      "wilson_high": 0.1461,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 4012,
+      "mean_p": 0.2377,
+      "observed": 0.1944,
+      "wilson_low": 0.1825,
+      "wilson_high": 0.207,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1185,
+      "mean_p": 0.356,
+      "observed": 0.2895,
+      "wilson_low": 0.2643,
+      "wilson_high": 0.3159,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 36,
+      "mean_p": 0.5541,
+      "observed": 0.4167,
+      "wilson_low": 0.2714,
+      "wilson_high": 0.578,
+      "inside": true
+     }
+    ]
+   },
+   "distance_only": {
+    "n": 118952,
+    "log_loss": 0.22673,
+    "brier": 0.05986,
+    "mean_p": 0.0665,
+    "mean_y": 0.0661,
+    "calibration_slope": 0.957,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 22287,
+      "mean_p": 0.0131,
+      "observed": 0.0128,
+      "wilson_low": 0.0114,
+      "wilson_high": 0.0144,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 34120,
+      "mean_p": 0.0345,
+      "observed": 0.0328,
+      "wilson_low": 0.0309,
+      "wilson_high": 0.0347,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 30651,
+      "mean_p": 0.0712,
+      "observed": 0.0825,
+      "wilson_low": 0.0795,
+      "wilson_high": 0.0857,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 31894,
+      "mean_p": 0.1336,
+      "observed": 0.1233,
+      "wilson_low": 0.1198,
+      "wilson_high": 0.127,
+      "inside": false
+     }
+    ]
+   },
+   "source_xg": {
+    "n": 116961,
+    "log_loss": 0.20735,
+    "brier": 0.05592,
+    "mean_p": 0.0706,
+    "mean_y": 0.0656,
+    "calibration_slope": 1.135,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 28941,
+      "mean_p": 0.0106,
+      "observed": 0.0083,
+      "wilson_low": 0.0073,
+      "wilson_high": 0.0094,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 29322,
+      "mean_p": 0.0337,
+      "observed": 0.0263,
+      "wilson_low": 0.0246,
+      "wilson_high": 0.0282,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 29900,
+      "mean_p": 0.0719,
+      "observed": 0.0625,
+      "wilson_low": 0.0598,
+      "wilson_high": 0.0653,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 22494,
+      "mean_p": 0.1393,
+      "observed": 0.1327,
+      "wilson_low": 0.1284,
+      "wilson_high": 0.1372,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 5084,
+      "mean_p": 0.2356,
+      "observed": 0.25,
+      "wilson_low": 0.2383,
+      "wilson_high": 0.2621,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1061,
+      "mean_p": 0.3583,
+      "observed": 0.4062,
+      "wilson_low": 0.3771,
+      "wilson_high": 0.4361,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 159,
+      "mean_p": 0.6138,
+      "observed": 0.6541,
+      "wilson_low": 0.5773,
+      "wilson_high": 0.7236,
+      "inside": true
+     }
+    ],
+    "note": "the source's own xG (fastRhockey/hockeyR); its training window is not documented per season, so it may be in-sample for earlier seasons"
+   },
+   "model_on_source_rows": {
+    "n": 116961,
+    "log_loss": 0.21704,
+    "brier": 0.05811,
+    "mean_p": 0.0667,
+    "mean_y": 0.0656,
+    "calibration_slope": 0.93,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 30860,
+      "mean_p": 0.0113,
+      "observed": 0.0116,
+      "wilson_low": 0.0105,
+      "wilson_high": 0.0129,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 29533,
+      "mean_p": 0.0333,
+      "observed": 0.0333,
+      "wilson_low": 0.0313,
+      "wilson_high": 0.0354,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 30419,
+      "mean_p": 0.0728,
+      "observed": 0.0748,
+      "wilson_low": 0.0719,
+      "wilson_high": 0.0778,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 20985,
+      "mean_p": 0.1368,
+      "observed": 0.1401,
+      "wilson_low": 0.1354,
+      "wilson_high": 0.1448,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 3957,
+      "mean_p": 0.2378,
+      "observed": 0.1933,
+      "wilson_low": 0.1813,
+      "wilson_high": 0.2059,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1171,
+      "mean_p": 0.3561,
+      "observed": 0.2878,
+      "wilson_low": 0.2626,
+      "wilson_high": 0.3144,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 36,
+      "mean_p": 0.5541,
+      "observed": 0.4167,
+      "wilson_low": 0.2714,
+      "wilson_high": 0.578,
+      "inside": true
+     }
+    ]
+   }
+  },
+  {
+   "season": 2026,
+   "burn_in": false,
+   "train_seasons": [
+    2023,
+    2024,
+    2025
+   ],
+   "n_train": 361919,
+   "fit_seconds": 2.6,
+   "model": {
+    "n": 118289,
+    "log_loss": 0.22318,
+    "brier": 0.06007,
+    "mean_p": 0.0715,
+    "mean_y": 0.0678,
+    "calibration_slope": 0.937,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 27906,
+      "mean_p": 0.0113,
+      "observed": 0.0112,
+      "wilson_low": 0.01,
+      "wilson_high": 0.0125,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 29067,
+      "mean_p": 0.0333,
+      "observed": 0.0305,
+      "wilson_low": 0.0286,
+      "wilson_high": 0.0326,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 31086,
+      "mean_p": 0.073,
+      "observed": 0.0737,
+      "wilson_low": 0.0708,
+      "wilson_high": 0.0767,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 24146,
+      "mean_p": 0.1381,
+      "observed": 0.1339,
+      "wilson_low": 0.1296,
+      "wilson_high": 0.1382,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 4974,
+      "mean_p": 0.2361,
+      "observed": 0.2014,
+      "wilson_low": 0.1905,
+      "wilson_high": 0.2128,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1077,
+      "mean_p": 0.3513,
+      "observed": 0.2665,
+      "wilson_low": 0.2409,
+      "wilson_high": 0.2937,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 33,
+      "mean_p": 0.5447,
+      "observed": 0.3939,
+      "wilson_low": 0.2468,
+      "wilson_high": 0.5632,
+      "inside": true
+     }
+    ]
+   },
+   "distance_only": {
+    "n": 118289,
+    "log_loss": 0.23297,
+    "brier": 0.06155,
+    "mean_p": 0.0687,
+    "mean_y": 0.0678,
+    "calibration_slope": 0.915,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 20352,
+      "mean_p": 0.0131,
+      "observed": 0.0136,
+      "wilson_low": 0.0121,
+      "wilson_high": 0.0152,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 32925,
+      "mean_p": 0.0348,
+      "observed": 0.0339,
+      "wilson_low": 0.032,
+      "wilson_high": 0.0359,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 30786,
+      "mean_p": 0.0714,
+      "observed": 0.0838,
+      "wilson_low": 0.0808,
+      "wilson_high": 0.087,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 34226,
+      "mean_p": 0.132,
+      "observed": 0.1184,
+      "wilson_low": 0.115,
+      "wilson_high": 0.1218,
+      "inside": false
+     }
+    ]
+   },
+   "source_xg": {
+    "n": 116188,
+    "log_loss": 0.21545,
+    "brier": 0.05816,
+    "mean_p": 0.0755,
+    "mean_y": 0.0675,
+    "calibration_slope": 1.071,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 26222,
+      "mean_p": 0.0107,
+      "observed": 0.009,
+      "wilson_low": 0.0079,
+      "wilson_high": 0.0102,
+      "inside": false
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 28236,
+      "mean_p": 0.034,
+      "observed": 0.0249,
+      "wilson_low": 0.0231,
+      "wilson_high": 0.0268,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 29928,
+      "mean_p": 0.0722,
+      "observed": 0.0632,
+      "wilson_low": 0.0605,
+      "wilson_high": 0.066,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 24419,
+      "mean_p": 0.1402,
+      "observed": 0.1286,
+      "wilson_low": 0.1244,
+      "wilson_high": 0.1328,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 5995,
+      "mean_p": 0.2364,
+      "observed": 0.2227,
+      "wilson_low": 0.2123,
+      "wilson_high": 0.2334,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1232,
+      "mean_p": 0.3531,
+      "observed": 0.3531,
+      "wilson_low": 0.3269,
+      "wilson_high": 0.3802,
+      "inside": true
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 156,
+      "mean_p": 0.5957,
+      "observed": 0.6346,
+      "wilson_low": 0.5567,
+      "wilson_high": 0.7061,
+      "inside": true
+     }
+    ],
+    "note": "the source's own xG (fastRhockey/hockeyR); its training window is not documented per season, so it may be in-sample for earlier seasons"
+   },
+   "model_on_source_rows": {
+    "n": 116188,
+    "log_loss": 0.22243,
+    "brier": 0.05979,
+    "mean_p": 0.0714,
+    "mean_y": 0.0675,
+    "calibration_slope": 0.934,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 27442,
+      "mean_p": 0.0113,
+      "observed": 0.0113,
+      "wilson_low": 0.0101,
+      "wilson_high": 0.0127,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 28594,
+      "mean_p": 0.0333,
+      "observed": 0.0302,
+      "wilson_low": 0.0283,
+      "wilson_high": 0.0323,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 30497,
+      "mean_p": 0.073,
+      "observed": 0.0735,
+      "wilson_low": 0.0707,
+      "wilson_high": 0.0765,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 23685,
+      "mean_p": 0.138,
+      "observed": 0.133,
+      "wilson_low": 0.1287,
+      "wilson_high": 0.1374,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 4882,
+      "mean_p": 0.2362,
+      "observed": 0.2003,
+      "wilson_low": 0.1893,
+      "wilson_high": 0.2118,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 1055,
+      "mean_p": 0.3514,
+      "observed": 0.2635,
+      "wilson_low": 0.2378,
+      "wilson_high": 0.2909,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 33,
+      "mean_p": 0.5447,
+      "observed": 0.3939,
+      "wilson_low": 0.2468,
+      "wilson_high": 0.5632,
+      "inside": true
+     }
+    ]
+   }
+  },
+  {
+   "season": 2027,
+   "burn_in": false,
+   "train_seasons": [
+    2024,
+    2025,
+    2026
+   ],
+   "n_train": 358927,
+   "fit_seconds": 1.8,
+   "model": {
+    "n": 7023,
+    "log_loss": 0.22731,
+    "brier": 0.06169,
+    "mean_p": 0.0724,
+    "mean_y": 0.0702,
+    "calibration_slope": 0.986,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 1544,
+      "mean_p": 0.0114,
+      "observed": 0.011,
+      "wilson_low": 0.0069,
+      "wilson_high": 0.0176,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 1760,
+      "mean_p": 0.0337,
+      "observed": 0.0307,
+      "wilson_low": 0.0236,
+      "wilson_high": 0.0398,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 1923,
+      "mean_p": 0.0729,
+      "observed": 0.0764,
+      "wilson_low": 0.0654,
+      "wilson_high": 0.0892,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 1434,
+      "mean_p": 0.1389,
+      "observed": 0.1346,
+      "wilson_low": 0.1179,
+      "wilson_high": 0.1532,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 310,
+      "mean_p": 0.2362,
+      "observed": 0.2161,
+      "wilson_low": 0.1739,
+      "wilson_high": 0.2653,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 50,
+      "mean_p": 0.3604,
+      "observed": 0.26,
+      "wilson_low": 0.1587,
+      "wilson_high": 0.3955,
+      "inside": true
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 2,
+      "mean_p": 0.5638,
+      "observed": 1,
+      "wilson_low": 0.3424,
+      "wilson_high": 1,
+      "inside": true
+     }
+    ]
+   },
+   "distance_only": {
+    "n": 7023,
+    "log_loss": 0.23891,
+    "brier": 0.06347,
+    "mean_p": 0.0693,
+    "mean_y": 0.0702,
+    "calibration_slope": 0.966,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 1025,
+      "mean_p": 0.0134,
+      "observed": 0.0146,
+      "wilson_low": 0.0089,
+      "wilson_high": 0.024,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 1986,
+      "mean_p": 0.035,
+      "observed": 0.0297,
+      "wilson_low": 0.0231,
+      "wilson_high": 0.0381,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 1972,
+      "mean_p": 0.0716,
+      "observed": 0.0867,
+      "wilson_low": 0.0751,
+      "wilson_high": 0.1,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 2040,
+      "mean_p": 0.1285,
+      "observed": 0.1216,
+      "wilson_low": 0.1081,
+      "wilson_high": 0.1365,
+      "inside": true
+     }
+    ]
+   },
+   "source_xg": {
+    "n": 6896,
+    "log_loss": 0.22206,
+    "brier": 0.06043,
+    "mean_p": 0.0774,
+    "mean_y": 0.0702,
+    "calibration_slope": 1.084,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 1449,
+      "mean_p": 0.0105,
+      "observed": 0.0083,
+      "wilson_low": 0.0047,
+      "wilson_high": 0.0144,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 1673,
+      "mean_p": 0.0345,
+      "observed": 0.0245,
+      "wilson_low": 0.0181,
+      "wilson_high": 0.0331,
+      "inside": false
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 1816,
+      "mean_p": 0.0727,
+      "observed": 0.0655,
+      "wilson_low": 0.055,
+      "wilson_high": 0.0779,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 1512,
+      "mean_p": 0.1403,
+      "observed": 0.1263,
+      "wilson_low": 0.1105,
+      "wilson_high": 0.144,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 364,
+      "mean_p": 0.2342,
+      "observed": 0.2335,
+      "wilson_low": 0.193,
+      "wilson_high": 0.2796,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 75,
+      "mean_p": 0.3581,
+      "observed": 0.4133,
+      "wilson_low": 0.3088,
+      "wilson_high": 0.5263,
+      "inside": true
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 7,
+      "mean_p": 0.6127,
+      "observed": 0.7143,
+      "wilson_low": 0.3589,
+      "wilson_high": 0.9178,
+      "inside": true
+     }
+    ],
+    "note": "the source's own xG (fastRhockey/hockeyR); its training window is not documented per season, so it may be in-sample for earlier seasons"
+   },
+   "model_on_source_rows": {
+    "n": 6896,
+    "log_loss": 0.22692,
+    "brier": 0.06157,
+    "mean_p": 0.0722,
+    "mean_y": 0.0702,
+    "calibration_slope": 0.995,
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.02,
+      "n": 1520,
+      "mean_p": 0.0114,
+      "observed": 0.0112,
+      "wilson_low": 0.007,
+      "wilson_high": 0.0178,
+      "inside": true
+     },
+     {
+      "lo": 0.02,
+      "hi": 0.05,
+      "n": 1732,
+      "mean_p": 0.0337,
+      "observed": 0.0306,
+      "wilson_low": 0.0235,
+      "wilson_high": 0.0398,
+      "inside": true
+     },
+     {
+      "lo": 0.05,
+      "hi": 0.1,
+      "n": 1893,
+      "mean_p": 0.0728,
+      "observed": 0.0766,
+      "wilson_low": 0.0655,
+      "wilson_high": 0.0895,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 1397,
+      "mean_p": 0.139,
+      "observed": 0.1339,
+      "wilson_low": 0.117,
+      "wilson_high": 0.1527,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 303,
+      "mean_p": 0.2359,
+      "observed": 0.2211,
+      "wilson_low": 0.178,
+      "wilson_high": 0.2712,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.5,
+      "n": 49,
+      "mean_p": 0.3588,
+      "observed": 0.2653,
+      "wilson_low": 0.1621,
+      "wilson_high": 0.4026,
+      "inside": true
+     },
+     {
+      "lo": 0.5,
+      "hi": 1,
+      "n": 2,
+      "mean_p": 0.5638,
+      "observed": 1,
+      "wilson_low": 0.3424,
+      "wilson_high": 1,
+      "inside": true
+     }
+    ]
+   }
+  }
+ ]
+}

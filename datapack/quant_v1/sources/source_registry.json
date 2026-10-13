@@ -1,0 +1,216 @@
+[
+  {
+    "source_id": "nflverse_pbp",
+    "sports": [
+      "nfl"
+    ],
+    "priority": "P0",
+    "url": "https://github.com/nflverse/nflverse-data",
+    "docs": "https://nflreadr.nflverse.com/articles/dictionary_pbp.html",
+    "access": "Public release downloads tested",
+    "rights": "Repository CC-BY-4.0; retain attribution and inspect dataset-specific notices",
+    "included": "2022, 2023, 2024 play-by-play plus derived tables",
+    "refresh": "Completed seasons cache by file hash; revisions recorded",
+    "known_at": "Historical publication/revision times not reconstructed"
+  },
+  {
+    "source_id": "mlb_statsapi",
+    "sports": [
+      "mlb"
+    ],
+    "priority": "P0",
+    "url": "https://statsapi.mlb.com/api/v1/",
+    "docs": "https://baseballsavant.mlb.com/csv-docs",
+    "access": "Public schedule and live-feed endpoints tested; unofficial API stability",
+    "rights": "League terms apply; public accessibility is not an inferred commercial license",
+    "included": "2024 schedule and 30 systematically spaced completed regular-season game feeds",
+    "refresh": "Archive historical feeds; separately ingest revisions",
+    "known_at": "Retrieved now; historical knowledge timestamps unknown"
+  },
+  {
+    "source_id": "espn_public",
+    "sports": [
+      "nhl",
+      "nba",
+      "wnba",
+      "cfb",
+      "cbb_men",
+      "cbb_women",
+      "college_baseball",
+      "soccer",
+      "tennis_atp",
+      "tennis_wta",
+      "ufc"
+    ],
+    "priority": "P0",
+    "url": "https://site.api.espn.com/apis/site/v2/sports/",
+    "docs": "https://www.espn.com/",
+    "access": "Public endpoints tested; undocumented; responses can filter or truncate by sport",
+    "rights": "Research copies; commercial ingestion/redistribution rights not verified. Replace with authorized production feed as needed",
+    "included": "Historical schedules/results and sampled boxscores/events; see COVERAGE.md",
+    "refresh": "Bounded cache-first historical collection; no live service SLA",
+    "known_at": "Known_at absent; do not substitute scheduled start"
+  },
+  {
+    "source_id": "nhl_official",
+    "sports": [
+      "nhl"
+    ],
+    "priority": "P0",
+    "url": "https://api-web.nhle.com/v1/",
+    "docs": "https://www.nhl.com/",
+    "access": "403 in this environment; no direct native data included",
+    "rights": "League terms apply; confirm production rights",
+    "included": "None",
+    "refresh": "Provider approval/access required",
+    "known_at": "Need verified publication and revision capture"
+  },
+  {
+    "source_id": "moneypuck",
+    "sports": [
+      "nhl"
+    ],
+    "priority": "P0",
+    "url": "https://moneypuck.com/data.htm",
+    "docs": "https://www.moneypuck.com/about.htm",
+    "access": "Download documentation verified; commercial permission required",
+    "rights": "Data page permits noncommercial use and ad-hoc journalism; other purposes require inquiry",
+    "included": "None; no commercial permission assumed",
+    "refresh": "Only approved documented downloads",
+    "known_at": "Provider model version and publication timestamp required"
+  },
+  {
+    "source_id": "statcast",
+    "sports": [
+      "mlb"
+    ],
+    "priority": "P0",
+    "url": "https://baseballsavant.mlb.com/statcast_search",
+    "docs": "https://baseballsavant.mlb.com/csv-docs",
+    "access": "Documentation verified; full Statcast backfill not included",
+    "rights": "MLB terms; confirm production rights",
+    "included": "No separate Statcast dataset; MLB feed pitch measurements are included where observed",
+    "refresh": "Small date partitions; preserve newly populated/corrected metrics",
+    "known_at": "Season/model version needed for expected stats"
+  },
+  {
+    "source_id": "cfbd",
+    "sports": [
+      "cfb"
+    ],
+    "priority": "P0",
+    "url": "https://api.collegefootballdata.com",
+    "docs": "https://api.collegefootballdata.com/getting-started",
+    "access": "Bearer API key required; not supplied",
+    "rights": "Commercial terms and plan quota documented by provider; confirm chosen plan",
+    "included": "None from CFBD",
+    "refresh": "Bounded per-season games/plays/player stats calls after user supplies key",
+    "known_at": "Capture response and source report times"
+  },
+  {
+    "source_id": "nba_stats",
+    "sports": [
+      "nba",
+      "wnba"
+    ],
+    "priority": "P1",
+    "url": "https://www.nba.com/stats",
+    "docs": "https://www.nba.com/stats/help/glossary",
+    "access": "Official definitions verified; endpoint contract not implemented here",
+    "rights": "League/vendor terms apply",
+    "included": "None from NBA native tracking; ESPN samples separately included",
+    "refresh": "Use authorized league/feed access",
+    "known_at": "Need archived roster/lineup reports"
+  },
+  {
+    "source_id": "statsbomb",
+    "sports": [
+      "soccer"
+    ],
+    "priority": "P0",
+    "url": "https://github.com/hudl/open-data",
+    "docs": "https://statsbomb.com/articles/soccer/upgrading-expected-goals/",
+    "access": "Open repository verified; commercial approval not assumed",
+    "rights": "Public data user agreement applies; not a general unrestricted commercial feed",
+    "included": "None; avoid presenting limited research competitions as all soccer",
+    "refresh": "Licensed event feed for product coverage",
+    "known_at": "Event feed availability/version required"
+  },
+  {
+    "source_id": "tennis_sackmann",
+    "sports": [
+      "tennis_atp",
+      "tennis_wta"
+    ],
+    "priority": "P0",
+    "url": "https://github.com/JeffSackmann/tennis_atp",
+    "docs": "https://github.com/AngieXuAU/tennis-point-by-point-archive",
+    "access": "Original repository returned 404; archival mirror is a discovery lead only",
+    "rights": "Archived data marked CC-BY-NC-SA; do not use commercially without separate permission",
+    "included": "None; ESPN singles samples separately included",
+    "refresh": "Choose an authorized tour statistics provider",
+    "known_at": "Publication timestamps and retirement rules required"
+  },
+  {
+    "source_id": "ufcstats",
+    "sports": [
+      "ufc"
+    ],
+    "priority": "P0",
+    "url": "https://ufcstats.com/statistics/events/completed?page=all",
+    "docs": "https://ufcstats.com/",
+    "access": "HTTP challenge page/HTTPS error; no factual fight tables returned",
+    "rights": "Confirm authorized access and production use",
+    "included": "None from UFCStats; ESPN bout results separately included",
+    "refresh": "Do not bypass access challenges; use permitted provider",
+    "known_at": "Round stats publication time/version needed"
+  },
+  {
+    "source_id": "odds_api",
+    "sports": [
+      "all_supported"
+    ],
+    "priority": "P0",
+    "url": "https://the-odds-api.com/",
+    "docs": "https://the-odds-api.com/liveapi/guides/v4/",
+    "access": "Key and historical entitlement needed; no paid calls made",
+    "rights": "Plan-specific rights and quotas; use existing EdgeDesk cache first",
+    "included": "No current bookmaker odds; NFL source historical spread/total labels are not timestamped tradable quotes",
+    "refresh": "One deduplicated job per sport/market/time; cache; hard budget before dispatch",
+    "known_at": "Actual quote time <= prediction cutoff; full same-line/rules market only"
+  },
+  {
+    "source_id": "college_baseball_official",
+    "sports": [
+      "college_baseball"
+    ],
+    "priority": "P0",
+    "url": "https://www.ncaa.com/sports/baseball/d1",
+    "docs": "https://www.ncaa.com/sports/baseball/d1",
+    "access": "School/league boxes vary; no uniform public tracking feed established",
+    "rights": "Use authorized source terms; do not infer proprietary tracking",
+    "included": "ESPN explicit-date samples only",
+    "refresh": "Reliable starters, lineups and bullpen use first",
+    "known_at": "Need report-time archive"
+  },
+  {
+    "source_id": "weather",
+    "sports": [
+      "nfl",
+      "cfb",
+      "mlb",
+      "college_baseball",
+      "soccer",
+      "tennis_atp",
+      "tennis_wta"
+    ],
+    "priority": "P1",
+    "url": "https://open-meteo.com/",
+    "docs": "https://open-meteo.com/en/docs",
+    "access": "Not collected in this package",
+    "rights": "Check commercial service terms",
+    "included": "None",
+    "refresh": "Use forecasts issued before event; do not replace with later observed weather",
+    "known_at": "Forecast issuance time required"
+  }
+]

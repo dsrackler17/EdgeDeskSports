@@ -1,0 +1,455 @@
+{
+  "family": "tennis",
+  "table": "matches",
+  "grain": "one singles or doubles match",
+  "priority": "P0",
+  "default_source": "authorized tour results / ESPN",
+  "definition_status": "canonical_contract_not_claim_of_provider_coverage",
+  "keys": [
+    "record_id",
+    "revision"
+  ],
+  "columns": [
+    {
+      "field": "record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "event_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "entity_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "source_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Source registry identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "source_record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Original provider record identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "occurred_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "known_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "retrieved_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "revision",
+      "type": "integer",
+      "unit": "none",
+      "description": "Monotone version of this source record.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "quality_status",
+      "type": "text",
+      "unit": "none",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "player_a_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Player a id.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "player_b_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Player b id.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "tournament_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Tournament id.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "winner_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Winner id.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "surface",
+      "type": "text",
+      "unit": "category",
+      "description": "Surface.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "indoor_outdoor",
+      "type": "text",
+      "unit": "category",
+      "description": "Indoor outdoor.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "tournament_level",
+      "type": "text",
+      "unit": "category",
+      "description": "Tournament level.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "round",
+      "type": "text",
+      "unit": "category",
+      "description": "Round.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "match_status",
+      "type": "text",
+      "unit": "category",
+      "description": "Match status.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "retirement_reason",
+      "type": "text",
+      "unit": "category",
+      "description": "Retirement reason.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "draw_type",
+      "type": "text",
+      "unit": "category",
+      "description": "Draw type.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "best_of",
+      "type": "integer",
+      "unit": "count",
+      "description": "Best of.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "a_sets_won",
+      "type": "integer",
+      "unit": "count",
+      "description": "A sets won.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "b_sets_won",
+      "type": "integer",
+      "unit": "count",
+      "description": "B sets won.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "a_games_won",
+      "type": "integer",
+      "unit": "count",
+      "description": "A games won.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "b_games_won",
+      "type": "integer",
+      "unit": "count",
+      "description": "B games won.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "a_aces",
+      "type": "integer",
+      "unit": "count",
+      "description": "A aces.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "b_aces",
+      "type": "integer",
+      "unit": "count",
+      "description": "B aces.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "a_double_faults",
+      "type": "integer",
+      "unit": "count",
+      "description": "A double faults.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "b_double_faults",
+      "type": "integer",
+      "unit": "count",
+      "description": "B double faults.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "a_service_points",
+      "type": "integer",
+      "unit": "count",
+      "description": "A service points.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "b_service_points",
+      "type": "integer",
+      "unit": "count",
+      "description": "B service points.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "a_first_serves_in",
+      "type": "integer",
+      "unit": "count",
+      "description": "A first serves in.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "b_first_serves_in",
+      "type": "integer",
+      "unit": "count",
+      "description": "B first serves in.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "a_first_serve_points_won",
+      "type": "integer",
+      "unit": "count",
+      "description": "A first serve points won.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "b_first_serve_points_won",
+      "type": "integer",
+      "unit": "count",
+      "description": "B first serve points won.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "a_second_serve_points_won",
+      "type": "integer",
+      "unit": "count",
+      "description": "A second serve points won.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "b_second_serve_points_won",
+      "type": "integer",
+      "unit": "count",
+      "description": "B second serve points won.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "a_break_points_faced",
+      "type": "integer",
+      "unit": "count",
+      "description": "A break points faced.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "b_break_points_faced",
+      "type": "integer",
+      "unit": "count",
+      "description": "B break points faced.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "a_break_points_saved",
+      "type": "integer",
+      "unit": "count",
+      "description": "A break points saved.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "b_break_points_saved",
+      "type": "integer",
+      "unit": "count",
+      "description": "B break points saved.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "a_service_games",
+      "type": "integer",
+      "unit": "count",
+      "description": "A service games.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "b_service_games",
+      "type": "integer",
+      "unit": "count",
+      "description": "B service games.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "a_rank",
+      "type": "integer",
+      "unit": "count",
+      "description": "A rank.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "b_rank",
+      "type": "integer",
+      "unit": "count",
+      "description": "B rank.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "duration_seconds",
+      "type": "integer",
+      "unit": "seconds",
+      "description": "Duration seconds.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "retirement",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Retirement.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "walkover",
+      "type": "boolean",
+      "unit": "boolean",
+      "description": "Walkover.",
+      "priority": "P0",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    }
+  ]
+}
