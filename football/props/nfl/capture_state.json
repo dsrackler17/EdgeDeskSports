@@ -7,13 +7,13 @@
  "reason": "GATEWAY_DEFERRED",
  "why": "The odds gateway deferred the event index (refused): no prop was requested.",
  "error_message": null,
- "started_at": "2026-10-13T00:10:52.541Z",
- "completed_at": "2026-10-13T00:10:52.821Z",
- "updated_at": "2026-10-13T00:10:52.821Z",
- "last_attempt": "2026-10-13T00:10:52.541Z",
- "duration_ms": 280,
+ "started_at": "2026-10-13T00:16:02.950Z",
+ "completed_at": "2026-10-13T00:16:03.156Z",
+ "updated_at": "2026-10-13T00:16:03.156Z",
+ "last_attempt": "2026-10-13T00:16:02.950Z",
+ "duration_ms": 206,
  "run": {
-  "id": "38325887828.1",
+  "id": "38326305534.1",
   "trigger": "supabase_cron",
   "refresh_request_id": null,
   "manual": false
@@ -119,7 +119,7 @@
    "books": 10,
    "markets": 20,
    "quotes": 3043,
-   "next_due_at": "2026-10-13T00:10:52.541Z"
+   "next_due_at": null
   },
   "86457f91112732f21ad4bb7d37bd291c": {
    "polled_ok_at": "2026-10-10T06:05:07.173Z",
@@ -310,18 +310,16 @@
   "requests_remaining": 1709,
   "requests_used": 98291
  },
- "next_due_at": "2026-10-13T00:10:52.541Z",
+ "next_due_at": null,
  "health": {
-  "now": "2026-10-13T00:10:52.541Z",
-  "active_events": 1,
+  "now": "2026-10-13T00:16:02.950Z",
+  "active_events": 0,
   "on_target": 0,
-  "late_events": [
-   "e6d00eedd87d367e510314bd8cab8f6f"
-  ],
+  "late_events": [],
   "failed_events": 0,
-  "share": 0,
+  "share": 1,
   "last_success_at": "2026-10-10T06:05:07.173Z",
-  "last_attempt_at": "2026-10-13T00:10:52.541Z",
+  "last_attempt_at": "2026-10-13T00:16:02.950Z",
   "consecutive_failures": 0,
   "rate_limited_until": null,
   "current_prices": null,
@@ -329,9 +327,9 @@
   "books_current": [],
   "books_delayed": [],
   "error": null,
-  "recovering": true,
-  "state": "DELAYED",
-  "reason": "PRICES_BEHIND",
-  "text": "0 of 1 games were price-checked on schedule."
+  "recovering": false,
+  "state": "HEALTHY",
+  "reason": "NO_EVENTS_IN_WINDOW",
+  "text": "No game is inside the price-capture window."
  }
 }
