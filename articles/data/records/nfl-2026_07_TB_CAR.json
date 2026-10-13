@@ -23,8 +23,8 @@
   "game_time": "2026-10-25T17:00:00.000Z",
   "game_when_label": "2026-10-25 17:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-13T19:51:56.261Z",
-  "generated_at": "2026-10-13T19:51:56.261Z",
+  "updated_at": "2026-10-13T22:38:33.579Z",
+  "generated_at": "2026-10-13T22:38:33.579Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.1-point gap is context only and the game is excluded from research ranking.",
@@ -43,7 +43,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 78 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
+  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 79 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
   "market_source": null,
   "research": {
     "kind": "NFL_GAME",
@@ -117,8 +117,8 @@
         "note": "Quoted from the perspective of Carolina Panthers, off the engine’s own learned margin distribution (conditioned on this spread, so real key-number mass is kept). Eight results in ten land inside p10–p90."
       },
       "confidence_pct": null,
-      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 78 absorbed 2026 games.",
-      "sample_games": 78,
+      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 79 absorbed 2026 games.",
+      "sample_games": 79,
       "seeded": true,
       "status": "STALE MARKET",
       "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 0.1-point gap is context only and the game is excluded from research ranking.",
@@ -414,14 +414,14 @@
               "h": {
                 "v": "−0.0 pp",
                 "n": -0.0003543813866838533,
-                "rank": "#19 of 32",
-                "rank_n": 19,
+                "rank": "#18 of 32",
+                "rank_n": 18,
                 "note": null
               },
               "edge": {
                 "side": "h",
                 "gap": 0.004858251560878636,
-                "rank_gap": 2
+                "rank_gap": 3
               }
             }
           ]
@@ -930,7 +930,7 @@
           "team": "Carolina Panthers",
           "label": "explosive running",
           "v": "−0.0 pp",
-          "rank": "#19 of 32",
+          "rank": "#18 of 32",
           "note": null
         },
         "def": {
@@ -942,7 +942,7 @@
         },
         "complete": true,
         "net": -0.005634381386683853,
-        "read": "Carolina Panthers’ explosive running rates −0.0 pp (#19 of 32) and Tampa Bay Buccaneers’ explosive runs allowed rates −0.5 pp (#15 of 32). Added the way the model adds them, this pairing sits −0.6 pp from the league mean, which favours Tampa Bay Buccaneers."
+        "read": "Carolina Panthers’ explosive running rates −0.0 pp (#18 of 32) and Tampa Bay Buccaneers’ explosive runs allowed rates −0.5 pp (#15 of 32). Added the way the model adds them, this pairing sits −0.6 pp from the league mean, which favours Tampa Bay Buccaneers."
       }
     ],
     "panels": [
@@ -986,15 +986,15 @@
           },
           {
             "k": "Active room",
-            "a": "Easton Stick, Jalon Daniels",
-            "h": "Kenny Pickett, Bryce Young",
+            "a": "Baker Mayfield, Jalon Daniels",
+            "h": "Kenny Pickett, Bryce Young, Haynes King",
             "note": "who is rostered at the position — identity only"
           }
         ],
         "reads": [
           "The quarterback difference is worth 0.0 points of the projected spread — the engine’s own qb_adj_diff term, and the only place a quarterback moves this number.",
-          "Tampa Bay Buccaneers’ starter is not confirmed by the schedule feed. EdgeDesk does NOT carry the last known starter forward here: with no confirmed id the quarterback term for Tampa Bay Buccaneers contributes exactly zero points, which is not the same as saying the position is league average. Its active room is Easton Stick, Jalon Daniels.",
-          "Carolina Panthers’ starter is not confirmed by the schedule feed. EdgeDesk does NOT carry the last known starter forward here: with no confirmed id the quarterback term for Carolina Panthers contributes exactly zero points, which is not the same as saying the position is league average. Its active room is Kenny Pickett, Bryce Young.",
+          "Tampa Bay Buccaneers’ starter is not confirmed by the schedule feed. EdgeDesk does NOT carry the last known starter forward here: with no confirmed id the quarterback term for Tampa Bay Buccaneers contributes exactly zero points, which is not the same as saying the position is league average. Its active room is Baker Mayfield, Jalon Daniels.",
+          "Carolina Panthers’ starter is not confirmed by the schedule feed. EdgeDesk does NOT carry the last known starter forward here: with no confirmed id the quarterback term for Carolina Panthers contributes exactly zero points, which is not the same as saying the position is league average. Its active room is Kenny Pickett, Bryce Young, Haynes King.",
           "The learned QB layer is identity-keyed and value-only: it says how a quarterback has played, never how he is feeling, and it knows nothing about a start nobody has announced."
         ]
       },
@@ -1067,7 +1067,7 @@
         "reads": [
           "Each situational factor is shown with the points the engine’s own context model assigned it, so nothing here is a rule of thumb. A factor with no weight in the fit is worth nothing in this number and says so rather than being quietly rounded up.",
           "No forecast reached this game, so temperature and wind entered the total at their neutral defaults. That is a missing input, not a mild day.",
-          "The ratings behind this projection are the trained seeds plus 78 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
+          "The ratings behind this projection are the trained seeds plus 79 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
         ]
       }
     ],
@@ -1253,7 +1253,7 @@
         {
           "k": "Explosive run rate",
           "a": "−0.5 pp  #21 of 32",
-          "h": "−0.0 pp  #19 of 32",
+          "h": "−0.0 pp  #18 of 32",
           "note": "10+ yard runs per carry"
         },
         {
@@ -1319,11 +1319,11 @@
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
     "context_label": "RESEARCH CONTEXT — every rating below is opponent-adjusted and printed as a deviation from the league mean. The injury report and the quarterback panel explain the matchup and move no priced number.",
-    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 78 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
+    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 79 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-13T19:51:56.261Z"
+    "at": "2026-10-13T22:38:33.579Z"
   }
 }
