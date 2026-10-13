@@ -17,7 +17,7 @@
   - The schedule never touches the odds pipeline.
 - **Live** (`supabase/games_slate.sql`, `tools/slate/live_poll.js`, `games-live.yml`): one poller for every visitor, about every 45 seconds while games are on. `public_slate_live()` is the anonymous read; `slate_markets()` gives entitled subscribers the prices capture already stored.
 - **Signals**: only the CFB decision engine's BET, the NFL pricer's PLAY under a VALIDATED tier, or the engine's BEST_SUPPORTED pick, still re-judged by `EDREADY` against a current price. None is certified today, so no card shows one.
-- **Tests**: 106 kernel and 59 pipeline checks; 23 SQL checks on PostgreSQL with Supabase's default grants; 86 Chromium checks at 390 px and 1280 px.
+- **Tests**: 106 kernel and 59 pipeline checks; 23 SQL checks on PostgreSQL with Supabase's default grants; 88 Chromium checks at 390 px and 1280 px.
 
 ## 2026-10-13 — The Quant Data Pack, integrated: verified history, NHL lineups and a second source, ten new walk-forward fits (four basketball leagues, five soccer leagues, MLB), and a six-rung readiness ladder
 
