@@ -5,7 +5,7 @@
  "season": 2026,
  "model": "EdgeDesk Football Engine · NFL",
  "projection_source": "football/nfl/slate.json",
- "updated_at": "2026-10-13T06:55:11.445Z",
+ "updated_at": "2026-10-13T19:33:05.409Z",
  "conventions": {
   "home_line": "the line the HOME side lays, as a book prints it: negative = home favoured",
   "clv_points": "points the market moved toward the side the model leaned, from the recorded quote to the close; positive = the market came to the model",
@@ -12124,11 +12124,63 @@
     "home_line": 2.1,
     "total": 45.59,
     "home_win_prob": 0.4223,
-    "model_version": "edgedesk_football_v1.0.0"
+    "model_version": "edgedesk_football_v1.0.0",
+    "price_lock": {
+     "schema": "edgedesk_price_lock_v1",
+     "decided_at": "2026-10-12T16:48:50.642Z",
+     "spread": {
+      "status": "price_after_decision",
+      "why": "after_decision",
+      "detail": "EdgeDesk's first stored spread price for this game (2026-10-13T19:33:06.205Z) came after the decision (2026-10-12T16:48:50.642Z)"
+     },
+     "total": {
+      "status": "price_after_decision",
+      "why": "after_decision",
+      "detail": "EdgeDesk's first stored total price for this game (2026-10-13T19:33:06.205Z) came after the decision (2026-10-12T16:48:50.642Z)"
+     },
+     "moneyline": {
+      "status": "price_after_decision",
+      "why": "after_decision",
+      "detail": "EdgeDesk's first stored moneyline price for this game (2026-10-13T19:33:06.205Z) came after the decision (2026-10-12T16:48:50.642Z)"
+     }
+    }
    },
    "revisions": 2,
-   "entry": null,
-   "market_pick": null,
+   "entry": {
+    "model_at": "2026-10-12T16:48:50.642Z",
+    "home_line": 2.1,
+    "total": 45.59,
+    "market": {
+     "home_line": -2.5,
+     "total": 49.5,
+     "source": "nflverse",
+     "book": "consensus",
+     "at": "2026-10-13T19:33:05.409Z",
+     "prices": {
+      "home": -110,
+      "away": -110,
+      "over": -110,
+      "under": -110,
+      "home_ml": -136,
+      "away_ml": 116
+     }
+    }
+   },
+   "market_pick": {
+    "home_line": -2.5,
+    "total": 49.5,
+    "source": "nflverse",
+    "book": "consensus",
+    "at": "2026-10-13T19:33:05.409Z",
+    "prices": {
+     "home": -110,
+     "away": -110,
+     "over": -110,
+     "under": -110,
+     "home_ml": -136,
+     "away_ml": 116
+    }
+   },
    "close": null,
    "final": null,
    "grade": {
