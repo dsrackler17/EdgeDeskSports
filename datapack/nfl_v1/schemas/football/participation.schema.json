@@ -1,0 +1,264 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "football.participation",
+  "type": "object",
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "event_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "entity_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Source registry identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_record_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Original provider record identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "occurred_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "known_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "retrieved_at": {
+      "type": "string",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "description": "Monotone version of this source record.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "quality_status": {
+      "type": "string",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "play_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Play id.",
+      "x-unit": "identifier",
+      "x-priority": "P1"
+    },
+    "player_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Player id.",
+      "x-unit": "identifier",
+      "x-priority": "P1"
+    },
+    "team_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Team id.",
+      "x-unit": "identifier",
+      "x-priority": "P1"
+    },
+    "position": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Position.",
+      "x-unit": "category",
+      "x-priority": "P1"
+    },
+    "assignment": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Assignment.",
+      "x-unit": "category",
+      "x-priority": "P1"
+    },
+    "route_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Route type.",
+      "x-unit": "category",
+      "x-priority": "P1"
+    },
+    "alignment": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Alignment.",
+      "x-unit": "category",
+      "x-priority": "P1"
+    },
+    "coverage_assignment": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Coverage assignment.",
+      "x-unit": "category",
+      "x-priority": "P1"
+    },
+    "on_field": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "On field.",
+      "x-unit": "boolean",
+      "x-priority": "P1"
+    },
+    "ran_route": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Ran route.",
+      "x-unit": "boolean",
+      "x-priority": "P1"
+    },
+    "pass_block": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Pass block.",
+      "x-unit": "boolean",
+      "x-priority": "P1"
+    },
+    "run_block": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Run block.",
+      "x-unit": "boolean",
+      "x-priority": "P1"
+    },
+    "targeted": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Targeted.",
+      "x-unit": "boolean",
+      "x-priority": "P1"
+    },
+    "pressured_passer": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Pressured passer.",
+      "x-unit": "boolean",
+      "x-priority": "P1"
+    },
+    "time_to_throw": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Time to throw.",
+      "x-unit": "seconds",
+      "x-priority": "P1"
+    },
+    "time_to_pressure": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Time to pressure.",
+      "x-unit": "seconds",
+      "x-priority": "P1"
+    },
+    "receiver_separation": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Receiver separation.",
+      "x-unit": "yards",
+      "x-priority": "P1"
+    },
+    "cushion": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Cushion.",
+      "x-unit": "yards",
+      "x-priority": "P1"
+    },
+    "route_depth": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Route depth.",
+      "x-unit": "yards",
+      "x-priority": "P1"
+    }
+  },
+  "required": [
+    "record_id",
+    "source_id",
+    "retrieved_at",
+    "revision",
+    "quality_status"
+  ],
+  "additionalProperties": false
+}

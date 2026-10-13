@@ -370,6 +370,12 @@ const NOW = F.NOW;
         await T.page.waitForSelector('#gamesPage .gm-pread', { timeout: 10000 }).catch(() => null);
         chk('/today/: the public read rides on its game', /Research|Watch|Pass|Data incomplete/i.test(await text(T.page, '#gamesPage .gm-card[data-id="cfb:espn:401871067"] .gm-pread')));
         chk('/today/: it reads public_home_board, and never the subscriber prices', T.seen.board >= 1 && T.seen.markets === 0);
+        chk('/today/: every card ends in the upgrade path, after its research', await T.page.$$eval('#gamesPage .gm-card[data-id]', (cs) => cs.every((c) => { const a = [...c.querySelectorAll('a[data-ed-cta]')].map((x) => x.getAttribute('data-ed-cta')); return a[a.length - 1] === 'today_row_upgrade'; })));
+        await T.page.click('#gamesPage [data-gm-date="2026-10-14"]');
+        await T.page.waitForFunction(() => location.hash === '#games/all/2026-10-14');
+        await T.page.goBack();
+        await T.page.waitForFunction(() => /^#games\/all\/2026-10-13/.test(location.hash) && document.querySelector('#gamesPage [data-gm-date="2026-10-13"]').getAttribute('aria-pressed') === 'true', null, { timeout: 5000 }).catch(() => null);
+        chk('/today/: Back after picking a date returns to the day before (the page follows its own hash)', await T.page.evaluate(() => document.querySelector('#gamesPage [data-gm-date="2026-10-13"]').getAttribute('aria-pressed') === 'true'));
       }
       await T.ctx.close();
     }

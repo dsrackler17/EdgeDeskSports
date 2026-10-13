@@ -230,14 +230,16 @@
      }
     ],
     "inputs": [
-     "nflverse play-by-play EPA",
-     "QB EPA and CPOE",
-     "official injury report",
-     "kickoff forecast"
+     "nflverse team-week EPA per play, pass and rush (aggregated from play-by-play)",
+     "a QB passing-EPA layer (fed the listed starters, the scored replays measure it no different on 2016-2025, so the board keeps it at its trained seeds: football/validation/pricing_nfl.json qb_layer; football/validation/nfl_pack_research.json measures a starting-QB change at about −3 points, of which the layer moves about 0.24)",
+     "official injury report (a ruled-out starting QB swaps to the next starter)",
+     "roof, temperature and wind (context model)"
     ],
     "not_modelled": [
      "offensive line continuity as a priced input (researched, rejected by the feature intake)",
-     "in-season quarterback starts (fed the listed starters, the replayed quarterback layer measured no different on 2016-2025, so the board does not absorb them: football/validation/pricing_nfl.json qb_layer)"
+     "CPOE, snap counts, PFR pressure and NGS measures (in the NFL data pack, not in the game model)",
+     "depth charts and injury reports with publication times (the pack has neither timestamp)",
+     "in-season quarterback starts on the board (the listed starters are recorded after the game; replayed as a confirmed-starter scenario they did not earn a place)"
     ]
    },
    "readiness": {
@@ -295,7 +297,7 @@
     "ladder": {
      "data_loaded": {
       "done": true,
-      "detail": "see the sport's own pipeline"
+      "detail": "nflverse history and the live 2026 season; second source: the NFL data pack, 1218/1218 games 2022-2026 agree with games.csv, live 2026 pass EPA r 0.9846"
      },
      "model_trained": {
       "done": true,
@@ -314,16 +316,26 @@
    },
    "evidence_files": [
     "football/validation/linemaker_nfl.json",
-    "football/validation/pricing_nfl.json"
+    "football/validation/pricing_nfl.json",
+    "datapack/nfl_v1/EDGEDESK_VERIFICATION.json",
+    "football/validation/nfl_pack_crosscheck.json",
+    "football/validation/nfl_pack_research.json"
    ],
    "evidence_generated_at": "2026-10-13T13:39:59.301Z",
    "data": [
     {
      "source": "nflverse (GitHub)",
-     "what": "schedule, consensus close, play-by-play, injuries",
+     "what": "schedule, consensus close, team-week stats, injuries",
      "cadence": "weekly / 6-hourly",
-     "license": "public",
+     "license": "CC-BY-4.0 (upstream terms vary)",
      "cost": "free"
+    },
+    {
+     "source": "EdgeDesk NFL Data Pack (datapack/nfl_v1): nflverse 2025-2026 play-by-play and supplements",
+     "what": "62,613 plays (2026 PARTIAL, through week 5), snaps, rosters, depth charts, injuries, PFR advanced, NGS; every derived table recomputed; reconciled with games.csv and my live team-week table",
+     "cadence": "one-off import",
+     "license": "nflverse CC-BY-4.0; NGS/PFR/ESPN upstream terms not certified",
+     "cost": "free (delivered)"
     },
     {
      "source": "The Odds API via odds_gateway",
@@ -333,7 +345,14 @@
      "cost": "within the existing monthly budget"
     }
    ],
-   "gaps": [],
+   "gaps": [
+    "known_at: never recorded for history; EPA and CPOE are model outputs that can be refit",
+    "injuries: weekly status rows with no publication time: they cannot be placed before a kickoff",
+    "depth_charts: provider snapshots (2025+) or weekly rows (2024), not announcements",
+    "routes_participation: not in any source here: targets and snaps cannot stand in for routes",
+    "current_season: 2026 is partial in the pack (through week 5)",
+    "identity: 7 roster id conflicts (two pairs of players sharing an ESPN id; players with two PFR or two ESPN ids): left out of the crosswalk, never guessed"
+   ],
    "blockers": [
     "Against the close the spread is LEAN (break-even history at 1.5+ points of disagreement), the total and moneyline RESEARCH: no market beats the close."
    ],
@@ -1889,5 +1908,5 @@
   "UNAVAILABLE": "Unavailable",
   "RETIRED": "Retired"
  },
- "generated_at": "2026-10-13T13:46:08.124Z"
+ "generated_at": "2026-10-13T13:51:33.020Z"
 }

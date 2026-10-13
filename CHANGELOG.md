@@ -1,7 +1,6 @@
 # Changelog
 
 
-
 ## 2026-10-13 — The Quant Data Pack, integrated: verified history, NHL lineups and a second source, ten new walk-forward fits (four basketball leagues, five soccer leagues, MLB), and a six-rung readiness ladder
 
 **I imported and verified the EdgeDesk Quant Data Pack, held my NHL history to its time rule, reconciled it against a second source, and measured lineups. I then built separate, walk-forward brains for the NBA, WNBA, men's and women's college basketball, five soccer leagues and MLB, each reconciled with the pack. Basketball validates against outcomes. Soccer is level with Elo and says so. UFC, college baseball and tennis are too thin and say so. Nothing has beaten a closing market, so the board still says PASS.** Docs: `docs/engine/DATAPACK.md`, `README.md`, `METHODS.md`, `DATA.md`, `NHL.md`.
