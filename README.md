@@ -344,9 +344,15 @@ test seasons sealed and every opening of them logged. The chosen model prices
 every market from one distribution: moneyline, spread, total, alternates, team
 totals, first half and first quarter. Player props (minutes × rate, with
 correlated combos) are priced the same way, and "if he sits" scenarios come
-from the same model. NBA prices are not bought and value claims are off until
-a market test passes. Tests: `npm run nba:test`, `npm run nba:sql`,
-`npm run nba:e2e`, `npm run nba:check`.
+from the same model. The test seasons (2017-18 to 2025-26, 11,543 games) were
+opened once and logged: the stacked ensemble beats tuned Elo by 0.006 log loss
+(bootstrap interval clear of zero) and is calibrated (slope 0.999), but plain
+ridge is 0.001 better, so the ensemble did not earn its complexity and the next
+specification starts from ridge. Most player props validate on the same
+seasons; points + rebounds + assists and points + rebounds are still
+provisional. NBA prices are not bought and value claims are off until a market
+test passes. Tests: `npm run nba:test`, `npm run nba:sql`, `npm run nba:e2e`,
+`npm run nba:check`.
 
 ## Men's college basketball research — who is good, why, who makes them good, and how it plays against an opponent
 

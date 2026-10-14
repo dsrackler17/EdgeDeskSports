@@ -296,6 +296,18 @@ if (fs.existsSync(path.join(ROOT, 'nba', 'slate.json'))) {
   ok('every game is PASS with its gates, and the market-test gate fails', s.games.every((g) => g.decision && g.decision.decision === 'PASS' && g.decision.gates.length >= 6 && g.decision.gates[0].pass === false));
   ok('the market block keeps the model market-independent and the no-vig market beside it', s.games.every((g) => !g.market.quotes || !g.market.quotes.length || (g.market.forecast_basis && /MARKET_INDEPENDENT/.test(g.market.forecast_basis.model))));
 }
+/* a build never prices with a season's work tables missing (a cold CI cache once priced the slate on 2025-26 alone) */
+{
+  const D = R('nba/lib/data.js'); const os = require('os'); const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'nba-work-'));
+  try {
+    ok('with no work tables, every completed season is missing and the unplayed one is not', JSON.stringify(D.missingWork([2025, 2026, 2027], tmp)) === '[2025,2026]', D.missingWork([2025, 2026, 2027], tmp));
+    fs.writeFileSync(path.join(tmp, 'player_games_2026.json.gz'), ''); fs.writeFileSync(path.join(tmp, 'stints_2025.json.gz'), '');
+    ok('a season needs both its player-game and its stint table', JSON.stringify(D.missingWork([2025, 2026], tmp)) === '[2025,2026]');
+    fs.writeFileSync(path.join(tmp, 'stints_2026.json.gz'), '');
+    let msg = ''; try { D.requireWork([2025, 2026, 2027], 'nba slate', tmp); } catch (e) { msg = String(e.message); }
+    ok('the builders refuse, naming the missing season', /nba slate: the work tables are missing for season\(s\) 2025;/.test(msg) && !/2026/.test(msg), msg);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
+}
 /* the NBA Data Pack: the committed verification and reconciliation reproduce, and a tampered pack fails */
 if (fs.existsSync(path.join(ROOT, 'datapack', 'nba_v1', 'EDGEDESK_VERIFICATION.json')) && !process.env.NBA_TEST_SKIP_PACK) {
   const r1 = run('node --max-old-space-size=6000 tools/datapack/verify_nba.js --check'); ok('the NBA Data Pack verification reproduces', r1 === true, r1);

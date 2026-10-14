@@ -23,6 +23,20 @@
    Run: node tools/intelligence/quant_host.test.js   (QUANT_PRINT=1 prints every answer)
    =========================================================================== */
 'use strict';
+/* THE CLOCK. The MLB fixture game starts three hours out, on the same New York day, so the questions answered
+   for "today" (the underdog, the audit ids) see it and its four-minute-old quotes stay CURRENT. After 20:30 ET
+   both cannot hold: the game either crosses midnight or starts so soon that its quotes read AGING, and the
+   suite failed every night from about 23:25 ET. A run that starts after 20:30 ET therefore plays on a clock
+   moved back to 20:30 ET the same day. Only this process's Date moves; the handler is not touched. */
+const etMinute = (ms) => { const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour12: false, hour: '2-digit', minute: '2-digit' }).formatToParts(new Date(ms)); return (+p.find((x) => x.type === 'hour').value % 24) * 60 + (+p.find((x) => x.type === 'minute').value); };
+const CLOCK_BACK = Math.max(0, etMinute(Date.now()) - (20 * 60 + 30)) * 60000;
+if (CLOCK_BACK) {
+  const RealDate = Date;
+  globalThis.Date = class extends RealDate {
+    constructor(...a) { if (a.length) super(...a); else super(RealDate.now() - CLOCK_BACK); }
+    static now() { return RealDate.now() - CLOCK_BACK; }
+  };
+}
 const path = require('path');
 const FX = require('./fixtures.js');
 const ROOT = path.join(__dirname, '..', '..');
@@ -73,12 +87,9 @@ const etDate = (ms) => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New
   fx.metrics = JSON.parse(JSON.stringify(fx.metrics));
   fx.metrics.generated_at = ISO(-120);
   Object.keys((fx.metrics.nfl || {}).teams || {}).forEach((k) => { const t = fx.metrics.nfl.teams[k]; if (t.injuries) t.injuries.retrieved_at = ISO(-120); if (t.starter) { t.starter.published_at = ISO(-20 * 60); t.starter.retrieved_at = ISO(-120); } });
-  /* the MLB game starts three hours out — but always before midnight in New York, so the questions answered
-     for "today" (the underdog, "right now") see it whatever hour the suite runs (after 9 pm ET a fixed
-     three hours crossed midnight and those questions found no game) */
-  const etParts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour12: false, hour: '2-digit', minute: '2-digit' }).formatToParts(new Date(NOW));
-  const etMin = (+etParts.find((x) => x.type === 'hour').value % 24) * 60 + (+etParts.find((x) => x.type === 'minute').value);
-  const START_MIN = Math.max(3, Math.min(180, 24 * 60 - etMin - 5));
+  /* the MLB game starts three hours out, before midnight in New York (THE CLOCK, above, keeps a late run at
+     20:30 ET), so the questions answered for "today" (the underdog, "right now") see it whatever hour the suite runs */
+  const START_MIN = 180;
   const START = ISO(START_MIN);
   /* ---- the MLB fixture: Rays (away) @ Guardians (home) ------------------ */
   const MLB_GAME = { game_id: '776655', game_date: etDate(NOW + START_MIN * 60000), home_team: 'Cleveland Guardians', away_team: 'Tampa Bay Rays', start_time: START, status: 'Scheduled', park_id: 5 };
