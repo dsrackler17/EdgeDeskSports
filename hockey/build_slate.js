@@ -4,7 +4,7 @@
    EdgeDesk NHL — the slate: a fair price for every market of every upcoming
    game, with the evidence, the uncertainty and the record behind it.
 
-     node hockey/build_slate.js [--offline] [--hours 72] [--now 2026-10-13T16:00:00Z]
+     node hockey/build_slate.js [--offline] [--hours 120] [--now 2026-10-13T16:00:00Z]
      node hockey/build_slate.js --check
 
    Reads the committed team-game table, the live parameters
@@ -365,7 +365,7 @@ async function main() {
   if (flag('check')) return check();
   const offline = flag('offline');
   const now = arg('now') ? Date.parse(arg('now')) : Date.now();
-  const hours = Number(arg('hours', 72));
+  const hours = Number(arg('hours', C.SLATE_HORIZON_HOURS)); /* every day Today's Games lists (hockey/config.js) */
   const { games: schedule, source } = await loadSchedule(offline);
   const api = await refreshFromApi(schedule, now, hours, offline);
   const slate = build({ now, hours, schedule, scheduleSource: source, api });

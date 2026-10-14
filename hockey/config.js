@@ -20,6 +20,14 @@ function currentSeason(now) {
 }
 const CURRENT_SEASON = currentSeason();
 
+/* How far ahead the slate prices games (hockey/build_slate.js --hours). It
+   must cover every day Today's Games lists: today and the next three days,
+   US Eastern (tools/slate/build.js WINDOW.to = 3). That is at most four
+   Eastern days from any moment of today, plus up to three hours between NHL
+   builds: 99 hours. 120 leaves a day's margin for a late build.
+   tools/hockey/hockey.test.js holds this to the slate's window. */
+const SLATE_HORIZON_HOURS = 120;
+
 const SOURCES = {
   /* sportsdataverse/fastRhockey-nhl-data: season datasets compiled from the NHL's
      own api-web.nhle.com game feeds. Public, keyless; refreshed daily in season. */
@@ -86,4 +94,4 @@ const GOALIE_BOX_COLUMNS = ['game_id', 'game_date', 'home_away', 'team_abbrev', 
 const TEAM_BOX_COLUMNS = ['game_id', 'game_date', 'home_away', 'team_abbrev', 'goals', 'shots_on_goal', 'power_play_goals', 'pim', 'hits', 'blocked_shots', 'saves', 'goals_against'];
 const SCHEDULE_COLUMNS = ['game_id', 'season_full', 'game_type', 'game_date', 'game_time', 'home_team_abbr', 'away_team_abbr', 'home_score', 'away_score', 'game_state', 'venue'];
 
-module.exports = { ROOT, HOCKEY, FIRST_SEASON, CURRENT_SEASON, currentSeason, SOURCES, LICENSE, PATHS, SCHEMA, PBP_COLUMNS, GOALIE_COLUMNS, SKATER_COLUMNS, SCHEDULE_COLUMNS, SKATER_BOX_COLUMNS, GOALIE_BOX_COLUMNS, TEAM_BOX_COLUMNS };
+module.exports = { ROOT, HOCKEY, FIRST_SEASON, CURRENT_SEASON, currentSeason, SLATE_HORIZON_HOURS, SOURCES, LICENSE, PATHS, SCHEMA, PBP_COLUMNS, GOALIE_COLUMNS, SKATER_COLUMNS, SCHEDULE_COLUMNS, SKATER_BOX_COLUMNS, GOALIE_BOX_COLUMNS, TEAM_BOX_COLUMNS };
