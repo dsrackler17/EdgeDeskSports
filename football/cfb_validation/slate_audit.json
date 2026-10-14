@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-14T10:07:57.824Z",
- "board_generated_at": "2026-10-14T10:07:53.026Z",
+ "generated_at": "2026-10-14T11:07:55.975Z",
+ "board_generated_at": "2026-10-14T11:07:51.371Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -36,19 +36,19 @@
    "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
-   "game_id": "401869934",
-   "game": "Arkansas State @ Southern Miss",
-   "kickoff": "2026-10-17T23:00:00.000Z",
+   "game_id": "401856831",
+   "game": "Oklahoma State @ Houston",
+   "kickoff": "2026-10-17T23:30:00.000Z",
    "named": false,
-   "edgedesk": "Arkansas State -2.8",
-   "market": "Arkansas State -7.0",
+   "edgedesk": "Houston -10.9",
+   "market": "Houston -4.8",
    "books": 1,
-   "gap": 4.2,
+   "gap": 6.1,
    "gap_class": "MODERATE",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
    "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
+   "decision_status": "NO_DECISION",
    "gate_status": "NOT REQUIRED (under 7 pts)",
    "root_cause": null,
    "requirements": null,
@@ -56,14 +56,34 @@
    "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
-   "game_id": "401871054",
-   "game": "Kennesaw State @ Missouri State",
-   "kickoff": "2026-10-14T23:30:00.000Z",
+   "game_id": "401860923",
+   "game": "Colorado State @ Texas State",
+   "kickoff": "2026-10-16T00:00:00.000Z",
    "named": false,
-   "edgedesk": "Missouri State -0.2",
-   "market": "Kennesaw State -3.0",
+   "edgedesk": "Texas State -20.3",
+   "market": "Texas State -14.3",
    "books": 1,
-   "gap": 3.2,
+   "gap": 6,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "NO_DECISION",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
+   "game_id": "401862801",
+   "game": "Memphis @ Tulane",
+   "kickoff": "2026-10-16T23:30:00.000Z",
+   "named": false,
+   "edgedesk": "Memphis -4.8",
+   "market": "Memphis -7.0",
+   "books": 2,
+   "gap": 2.2,
    "gap_class": "MODERATE",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -82,15 +102,15 @@
    "named": false,
    "edgedesk": "Notre Dame -3.2",
    "market": "Notre Dame -10.5",
-   "books": 1,
+   "books": 2,
    "gap": 7.3,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
    "research_label": "INVESTIGATE",
    "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
+   "gate_status": "INVESTIGATE",
+   "root_cause": "PLAYER_AVAILABILITY_ERROR",
    "requirements": [
     {
      "requirement": "correct game",
@@ -104,8 +124,8 @@
     },
     {
      "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+     "result": "PASS",
+     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 0.3 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 0"
     },
     {
      "requirement": "current team states",
@@ -139,7 +159,7 @@
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; no abnormal availability fail; submodel support fail; football-only calibration preserves the major gap fail."
+   "verdict": "INVESTIGATE is correct: no abnormal availability fail; submodel support fail; football-only calibration preserves the major gap fail."
   },
   {
    "game_id": "401856833",
@@ -147,16 +167,16 @@
    "kickoff": "2026-10-18T02:15:00.000Z",
    "named": false,
    "edgedesk": "Utah -23.0",
-   "market": "Utah -15.5",
-   "books": 1,
-   "gap": 7.5,
+   "market": "Utah -15.6",
+   "books": 2,
+   "gap": 7.4,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
    "research_label": "INVESTIGATE",
    "decision_status": "PASS",
-   "gate_status": "MARKET_FAULT",
-   "root_cause": "THIN_MARKET",
+   "gate_status": "INVESTIGATE",
+   "root_cause": "TEAM_RATING_ERROR",
    "requirements": [
     {
      "requirement": "correct game",
@@ -170,8 +190,8 @@
     },
     {
      "requirement": "fresh multi-book consensus",
-     "result": "FAIL",
-     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+     "result": "PASS",
+     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 0.3 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 0.25"
     },
     {
      "requirement": "current team states",
@@ -191,21 +211,81 @@
     {
      "requirement": "component adjustments within historical bounds",
      "result": "PASS",
-     "detail": "WARN: the matchup term alone (-4.5 pts) lifts the gap over 7: without it the gap is 3 — historically informative, flagged for scrutiny"
+     "detail": "WARN: the matchup term alone (-4.5 pts) lifts the gap over 7: without it the gap is 2.8 — historically informative, flagged for scrutiny"
     },
     {
      "requirement": "submodel support",
      "result": "FAIL",
-     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · FAIL: the independent ensemble is 0.4 pts on the market’s side"
+     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · FAIL: the independent ensemble is 0.5 pts on the market’s side"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
      "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 8"
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7.9"
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; submodel support fail."
+   "verdict": "INVESTIGATE is correct: submodel support fail."
+  },
+  {
+   "game_id": "401858494",
+   "game": "Wisconsin @ UCLA",
+   "kickoff": "2026-10-17T23:30:00.000Z",
+   "named": false,
+   "edgedesk": "UCLA -6.3",
+   "market": "UCLA -2.5",
+   "books": 1,
+   "gap": 3.8,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "NO_DECISION",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
+   "game_id": "401864522",
+   "game": "Northern Illinois @ Wyoming",
+   "kickoff": "2026-10-17T19:30:00.000Z",
+   "named": false,
+   "edgedesk": "Wyoming -11.6",
+   "market": "Wyoming -7.6",
+   "books": 2,
+   "gap": 4,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
+   "game_id": "401871054",
+   "game": "Kennesaw State @ Missouri State",
+   "kickoff": "2026-10-14T23:30:00.000Z",
+   "named": false,
+   "edgedesk": "Missouri State -0.2",
+   "market": "Kennesaw State -3.0",
+   "books": 1,
+   "gap": 3.2,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "NO_DECISION",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
    "game_id": "401856724",
