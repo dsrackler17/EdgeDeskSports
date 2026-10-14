@@ -70,7 +70,7 @@ chk('dropRetired keeps every current row and nothing else',
 chk('the PostgREST rule keeps NULL keys and drops every retired prefix',
   S.postgrestKeep('sport_key') === 'or=(sport_key.is.null,sport_key.not.like.tennis_*)', S.postgrestKeep('sport_key'));
 chk('old research modules land on the default', JSON.stringify(S.retiredModuleRoutes()) === JSON.stringify({ tennis: 'football', wta: 'football' }));
-chk('the boundary sentence', S.unsupportedAnswer(TENNIS) === 'Tennis is not currently supported by EdgeDesk Research. Current research coverage includes Football, UFC, Baseball and NHL.');
+chk('the boundary sentence', S.unsupportedAnswer(TENNIS) === 'Tennis is not currently supported by EdgeDesk Research. Current research coverage includes Football, UFC, Baseball, NHL and NBA.');
 [['Who has value in this ATP match?', true], ['Best WTA bets today?', true], ['Research Alcaraz vs Sinner', false],
  ['Any tennis edges?', true], ['Why did you stop covering tennis?', false], ['How does Texas State look?', false],
  ['Is Deshaun Watson starting?', false]].forEach(([q, want]) => {

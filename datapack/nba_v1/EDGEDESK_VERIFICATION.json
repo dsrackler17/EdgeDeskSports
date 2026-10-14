@@ -1,0 +1,658 @@
+{
+ "schema": "edgedesk_datapack_verification_v1",
+ "pack": "datapack/nba_v1",
+ "verified_at": "2026-10-14T02:10:50.793Z",
+ "status": "PASSED",
+ "summary": {
+  "datasets": 18,
+  "verified": 18,
+  "games": 1322,
+  "detail_games": 1318,
+  "play_by_play": 640462,
+  "player_game_rows": 34697,
+  "checks": 30,
+  "checks_passed": 30
+ },
+ "datasets": [
+  {
+   "table": "team_boxscores",
+   "expected_rows": 2636,
+   "sha_ok": true,
+   "rows": 2636,
+   "columns": 29,
+   "columns_ok": true,
+   "all_strings": true,
+   "null_typed": [],
+   "coverage_ok": true,
+   "state": "VERIFIED"
+  },
+  {
+   "table": "player_boxscores",
+   "expected_rows": 34697,
+   "sha_ok": true,
+   "rows": 34697,
+   "columns": 22,
+   "columns_ok": true,
+   "all_strings": true,
+   "null_typed": [],
+   "coverage_ok": true,
+   "state": "VERIFIED"
+  },
+  {
+   "table": "officials",
+   "expected_rows": 4028,
+   "sha_ok": true,
+   "rows": 4028,
+   "columns": 5,
+   "columns_ok": true,
+   "all_strings": true,
+   "null_typed": [],
+   "coverage_ok": true,
+   "state": "VERIFIED"
+  },
+  {
+   "table": "period_scores",
+   "expected_rows": 10714,
+   "sha_ok": true,
+   "rows": 10714,
+   "columns": 4,
+   "columns_ok": true,
+   "all_strings": true,
+   "null_typed": [],
+   "coverage_ok": true,
+   "state": "VERIFIED"
+  },
+  {
+   "table": "play_by_play",
+   "expected_rows": 640462,
+   "sha_ok": true,
+   "rows": 640462,
+   "columns": 20,
+   "columns_ok": true,
+   "all_strings": true,
+   "null_typed": [
+    "known_at"
+   ],
+   "coverage_ok": true,
+   "state": "VERIFIED"
+  },
+  {
+   "table": "shots_and_free_throws",
+   "expected_rows": 297474,
+   "sha_ok": true,
+   "rows": 297474,
+   "columns": 20,
+   "columns_ok": true,
+   "all_strings": true,
+   "null_typed": [
+    "known_at"
+   ],
+   "coverage_ok": true,
+   "state": "VERIFIED"
+  },
+  {
+   "table": "substitutions",
+   "expected_rows": 82403,
+   "sha_ok": true,
+   "rows": 82403,
+   "columns": 20,
+   "columns_ok": true,
+   "all_strings": true,
+   "null_typed": [
+    "known_at",
+    "x_native",
+    "y_native"
+   ],
+   "coverage_ok": true,
+   "state": "VERIFIED"
+  },
+  {
+   "table": "games",
+   "expected_rows": 1322,
+   "sha_ok": true,
+   "rows": 1322,
+   "columns": 15,
+   "columns_ok": true,
+   "all_strings": true,
+   "null_typed": [
+    "known_at"
+   ],
+   "coverage_ok": true,
+   "state": "VERIFIED"
+  },
+  {
+   "table": "team_measured_features",
+   "expected_rows": 2636,
+   "sha_ok": true,
+   "rows": 2636,
+   "columns": 30,
+   "columns_ok": true,
+   "all_strings": true,
+   "null_typed": [],
+   "coverage_ok": true,
+   "state": "VERIFIED"
+  },
+  {
+   "table": "team_pregame_lags",
+   "expected_rows": 2636,
+   "sha_ok": true,
+   "rows": 2636,
+   "columns": 44,
+   "columns_ok": true,
+   "all_strings": true,
+   "null_typed": [],
+   "coverage_ok": true,
+   "state": "VERIFIED"
+  },
+  {
+   "table": "unresolved_player_identity_records",
+   "expected_rows": 33,
+   "sha_ok": true,
+   "rows": 33,
+   "columns": 7,
+   "columns_ok": true,
+   "all_strings": true,
+   "null_typed": [],
+   "coverage_ok": true,
+   "state": "VERIFIED"
+  },
+  {
+   "table": "player_measured_features",
+   "expected_rows": 34697,
+   "sha_ok": true,
+   "rows": 34697,
+   "columns": 37,
+   "columns_ok": true,
+   "all_strings": true,
+   "null_typed": [],
+   "coverage_ok": true,
+   "state": "VERIFIED"
+  },
+  {
+   "table": "player_pregame_lags",
+   "expected_rows": 34697,
+   "sha_ok": true,
+   "rows": 34697,
+   "columns": 40,
+   "columns_ok": true,
+   "all_strings": true,
+   "null_typed": [],
+   "coverage_ok": true,
+   "state": "VERIFIED"
+  },
+  {
+   "table": "core_supplement_plays",
+   "expected_rows": 1892,
+   "sha_ok": true,
+   "rows": 1892,
+   "columns": 19,
+   "columns_ok": true,
+   "all_strings": true,
+   "null_typed": [
+    "known_at"
+   ],
+   "coverage_ok": true,
+   "state": "VERIFIED"
+  },
+  {
+   "table": "core_supplement_shots",
+   "expected_rows": 866,
+   "sha_ok": true,
+   "rows": 866,
+   "columns": 19,
+   "columns_ok": true,
+   "all_strings": true,
+   "null_typed": [
+    "known_at"
+   ],
+   "coverage_ok": true,
+   "state": "VERIFIED"
+  },
+  {
+   "table": "core_supplement_team_stats",
+   "expected_rows": 800,
+   "sha_ok": true,
+   "rows": 800,
+   "columns": 9,
+   "columns_ok": true,
+   "all_strings": true,
+   "null_typed": [
+    "player_id"
+   ],
+   "coverage_ok": true,
+   "state": "VERIFIED"
+  },
+  {
+   "table": "core_supplement_player_stats",
+   "expected_rows": 7425,
+   "sha_ok": true,
+   "rows": 7425,
+   "columns": 9,
+   "columns_ok": true,
+   "all_strings": true,
+   "null_typed": [],
+   "coverage_ok": true,
+   "state": "VERIFIED"
+  },
+  {
+   "table": "core_supplement_rosters",
+   "expected_rows": 113,
+   "sha_ok": true,
+   "rows": 113,
+   "columns": 10,
+   "columns_ok": true,
+   "all_strings": true,
+   "null_typed": [],
+   "coverage_ok": true,
+   "state": "VERIFIED"
+  }
+ ],
+ "checks": [
+  {
+   "id": "inventory_sha256_rows_columns_strings",
+   "pass": true,
+   "detail": []
+  },
+  {
+   "id": "no_unlisted_tables",
+   "pass": true,
+   "detail": []
+  },
+  {
+   "id": "coverage_lists_every_table",
+   "pass": true,
+   "detail": {
+    "coverage": 18,
+    "inventory": 18
+   }
+  },
+  {
+   "id": "known_at_null_everywhere",
+   "pass": true,
+   "detail": {}
+  },
+  {
+   "id": "scope_counts",
+   "pass": true,
+   "detail": {
+    "types": {
+     "2": 1231,
+     "3": 85,
+     "5": 6
+    },
+    "scopes": {
+     "regular_season": 1230,
+     "nba_cup_final": 1,
+     "play_in": 6,
+     "playoffs": 85
+    }
+   }
+  },
+  {
+   "id": "scope_30_clubs_82_each",
+   "pass": true,
+   "detail": {
+    "clubs": 30,
+    "per_club": {
+     "82": 30
+    }
+   }
+  },
+  {
+   "id": "cup_final_identified_and_kept_out_of_the_regular_season",
+   "pass": true,
+   "detail": [
+    {
+     "game_id": "401809839",
+     "scope": "nba_cup_final",
+     "competition_type": "{\"id\":\"39\",\"abbreviation\":\"CC\"}"
+    }
+   ]
+  },
+  {
+   "id": "scope_matches_native_type",
+   "pass": true,
+   "detail": null
+  },
+  {
+   "id": "games_unique_with_finals",
+   "pass": true,
+   "detail": null
+  },
+  {
+   "id": "missing_details_exactly_as_listed",
+   "pass": true,
+   "detail": {
+    "listed": [
+     "401869402",
+     "401871334",
+     "401871337",
+     "401873343"
+    ],
+    "no_summary": [
+     "401869402",
+     "401871334",
+     "401871337",
+     "401873343"
+    ]
+   }
+  },
+  {
+   "id": "every_detail_game_has_boxes",
+   "pass": true,
+   "detail": {
+    "detail": 1318,
+    "team_box_games": 1318,
+    "player_box_games": 1318
+   }
+  },
+  {
+   "id": "team_box_two_per_game_unique",
+   "pass": true,
+   "detail": {
+    "rows": 2636
+   }
+  },
+  {
+   "id": "player_box_unique_where_identified",
+   "pass": true,
+   "detail": {
+    "rows": 34697,
+    "with_source_id": 34664
+   }
+  },
+  {
+   "id": "rows_without_source_id_listed_apart",
+   "pass": true,
+   "detail": {
+    "null_id_rows": 33,
+    "unresolved_rows": 33
+   }
+  },
+  {
+   "id": "period_scores_sum_to_finals",
+   "pass": true,
+   "detail": []
+  },
+  {
+   "id": "last_scoring_period_as_stated",
+   "pass": true,
+   "detail": null
+  },
+  {
+   "id": "team_box_points_equal_finals",
+   "pass": true,
+   "detail": []
+  },
+  {
+   "id": "player_points_equal_finals_except_unidentified_rows",
+   "pass": true,
+   "detail": []
+  },
+  {
+   "id": "pbp_event_keys_unique",
+   "pass": true,
+   "detail": {
+    "rows": 640462,
+    "duplicate_event_ids": 0
+   }
+  },
+  {
+   "id": "pbp_present_for_every_detail_game",
+   "pass": true,
+   "detail": {
+    "games_with_pbp": 1318
+   }
+  },
+  {
+   "id": "shots_and_free_throws_is_exactly_a_pbp_subset",
+   "pass": true,
+   "detail": {
+    "rows": 297474,
+    "expected": 297474,
+    "not_in_pbp": 0,
+    "differs": 0,
+    "wrong_kind": 0
+   }
+  },
+  {
+   "id": "substitutions_is_exactly_a_pbp_subset",
+   "pass": true,
+   "detail": {
+    "rows": 82403,
+    "expected": 82403,
+    "not_in_pbp": 0,
+    "differs": 0,
+    "wrong_kind": 0
+   }
+  },
+  {
+   "id": "team_measured_features_recomputed",
+   "pass": true,
+   "detail": []
+  },
+  {
+   "id": "team_pregame_lags_recomputed_strictly_prior",
+   "pass": true,
+   "detail": []
+  },
+  {
+   "id": "player_measured_features_recomputed",
+   "pass": true,
+   "detail": []
+  },
+  {
+   "id": "player_pregame_lags_recomputed_positive_minutes_only",
+   "pass": true,
+   "detail": []
+  },
+  {
+   "id": "core_supplement_covers_exactly_the_missing_games",
+   "pass": true,
+   "detail": {
+    "core_supplement_plays": [
+     "401869402",
+     "401871334",
+     "401871337",
+     "401873343"
+    ],
+    "core_supplement_shots": [
+     "401869402",
+     "401871334",
+     "401871337",
+     "401873343"
+    ],
+    "core_supplement_team_stats": [
+     "401869402",
+     "401871334",
+     "401871337",
+     "401873343"
+    ],
+    "core_supplement_player_stats": [
+     "401869402",
+     "401871334",
+     "401871337",
+     "401873343"
+    ],
+    "core_supplement_rosters": [
+     "401869402",
+     "401871334",
+     "401871337",
+     "401873343"
+    ]
+   }
+  },
+  {
+   "id": "officials_only_on_detail_games",
+   "pass": true,
+   "detail": null
+  },
+  {
+   "id": "contracts_identical_to_quant_v1",
+   "pass": true,
+   "detail": []
+  },
+  {
+   "id": "templates_match_schema_properties",
+   "pass": true,
+   "detail": []
+  }
+ ],
+ "findings": {
+  "cup_final": [
+   {
+    "game_id": "401809839",
+    "date": "2025-12-17T01:30Z",
+    "home_id": "18",
+    "away_id": "24",
+    "venue": "T-Mobile Arena",
+    "competition_type": {
+     "id": "39",
+     "abbreviation": "CC"
+    }
+   }
+  ],
+  "competition_types": {
+   "CC": 1,
+   "FINAL": 5,
+   "QTR": 21,
+   "RD16": 48,
+   "SEMI": 11,
+   "STD": 1236
+  },
+  "rows_without_source_id": {
+   "rows": 33,
+   "team_games": {
+    "4": 33
+   },
+   "note": "never joined by name; a null id is not a player"
+  },
+  "player_points_short_of_final": [
+   {
+    "game_id": "401810150",
+    "team_id": "4",
+    "players_sum": 99,
+    "final": 101,
+    "note": "the team-game carries a player row without a source id; the source box loses that line"
+   },
+   {
+    "game_id": "401810372",
+    "team_id": "4",
+    "players_sum": 91,
+    "final": 93,
+    "note": "the team-game carries a player row without a source id; the source box loses that line"
+   },
+   {
+    "game_id": "401810547",
+    "team_id": "4",
+    "players_sum": 123,
+    "final": 125,
+    "note": "the team-game carries a player row without a source id; the source box loses that line"
+   },
+   {
+    "game_id": "401810560",
+    "team_id": "4",
+    "players_sum": 82,
+    "final": 91,
+    "note": "the team-game carries a player row without a source id; the source box loses that line"
+   },
+   {
+    "game_id": "401810577",
+    "team_id": "4",
+    "players_sum": 113,
+    "final": 115,
+    "note": "the team-game carries a player row without a source id; the source box loses that line"
+   },
+   {
+    "game_id": "401810633",
+    "team_id": "4",
+    "players_sum": 98,
+    "final": 105,
+    "note": "the team-game carries a player row without a source id; the source box loses that line"
+   },
+   {
+    "game_id": "401810760",
+    "team_id": "4",
+    "players_sum": 101,
+    "final": 105,
+    "note": "the team-game carries a player row without a source id; the source box loses that line"
+   }
+  ],
+  "player_rows": {
+   "did_not_play_by_category": {
+    "COACH": 4845,
+    "ILLNESS": 66,
+    "INJURY": 1031,
+    "PERSONAL": 31,
+    "REST": 26,
+    "SUSPENSION": 35
+   },
+   "distinct_dnp_reasons": 228,
+   "minutes_formats": {
+    "null": 6034,
+    "whole": 28663
+   },
+   "starters": 13180
+  },
+  "pbp_sequence_numbers": {
+   "duplicate_game_sequences": 2,
+   "note": "sequence numbers repeat inside a game twice; (game_id, event_id) is the key, and order must be rebuilt from period and clock, not sequence alone"
+  },
+  "pbp_scoring_incomplete": {
+   "games_end_game_score_differs": 11,
+   "games_highest_score_short_of_final": 10,
+   "games_without_end_game_event": 1,
+   "share_of_detail_games": 0.0076,
+   "points_missing": {
+    "1": 4,
+    "2": 3,
+    "3": 1,
+    "6": 1,
+    "12": 1
+   },
+   "games": [
+    "401809980",
+    "401809511",
+    "401810102",
+    "401810203",
+    "401810234",
+    "401809242",
+    "401810469",
+    "401858694",
+    "401810990",
+    "401871335"
+   ],
+   "note": "the box score and the scoreboard agree with the final; the play-by-play does not always: possessions or points rebuilt from these events must be reconciled to the box, never trusted alone"
+  },
+  "events_sequenced_after_end_game": {
+   "games": 249,
+   "note": "events recorded after the End Game event carry earlier clocks (late entries / corrections): possessions and stints must be ordered by period and clock, then sequence"
+  },
+  "coordinates": {
+   "sampled": 400000,
+   "x_range": [
+    0,
+    50
+   ],
+   "y_range": [
+    -5,
+    87
+   ],
+   "note": "native units and orientation unverified (the pack says so); large sentinels were nulled by the pack"
+  },
+  "officials": {
+   "games": 1318,
+   "per_game": {
+    "3": 1244,
+    "4": 74
+   },
+   "note": "officials who worked the game, from the final summary; never proof of a pregame assignment"
+  }
+ },
+ "not_executed": [
+  "scripts/collect.py",
+  "scripts/core_supplement.py",
+  "scripts/player_features.py",
+  "scripts/package.py"
+ ]
+}

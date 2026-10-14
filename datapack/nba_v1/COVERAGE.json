@@ -1,0 +1,162 @@
+{
+  "season": "2025-26",
+  "games": 1322,
+  "detail_games": 1318,
+  "missing_detail_games": [
+    {
+      "game_id": "401869402",
+      "error": "HTTP Error 404: Not Found",
+      "url": "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401869402"
+    },
+    {
+      "game_id": "401871334",
+      "error": "HTTP Error 404: Not Found",
+      "url": "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401871334"
+    },
+    {
+      "game_id": "401871337",
+      "error": "HTTP Error 404: Not Found",
+      "url": "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401871337"
+    },
+    {
+      "game_id": "401873343",
+      "error": "HTTP Error 404: Not Found",
+      "url": "https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=401873343"
+    }
+  ],
+  "tables": [
+    {
+      "table": "team_boxscores",
+      "rows": 2636,
+      "sha256": "f74e34babdae0f86cf3bf77b932a853434759d0c962c47f164ea253d1558bbad"
+    },
+    {
+      "table": "player_boxscores",
+      "rows": 34697,
+      "sha256": "e946ca4a1121049f468b60af50c5490d18c53dd8bbc4aa8dd97dd85b6974001a"
+    },
+    {
+      "table": "officials",
+      "rows": 4028,
+      "sha256": "7b5fa02d65c1943be55ecb1ac078b0a47626fe980c81224a6f4b4cb319b427c9"
+    },
+    {
+      "table": "period_scores",
+      "rows": 10714,
+      "sha256": "5fed6a093b20cbb382dc8ff4c59485102e0b4c73d1317f00a56b0517c5e71f49"
+    },
+    {
+      "table": "play_by_play",
+      "rows": 640462,
+      "sha256": "726086f0753bc546828b24855b2ad2909d7441099a4db845db95aa9a621ae7a3"
+    },
+    {
+      "table": "shots_and_free_throws",
+      "rows": 297474,
+      "sha256": "e506ca933f16cc2dd3b12a90b17a680b023099dd84084ae41bf3ab991afe2774"
+    },
+    {
+      "table": "substitutions",
+      "rows": 82403,
+      "sha256": "12738c55d6be149032db00809dd3bf1174783feba08d2a7dfebbe4f8f0fb85c4"
+    },
+    {
+      "table": "games",
+      "rows": 1322,
+      "sha256": "db2a65716d8e2f1766019f62da99e279b9742912b2152291cbb62fcc2bc831b9"
+    },
+    {
+      "table": "team_measured_features",
+      "rows": 2636,
+      "sha256": "21e331ba1bb967aa3693e06f95489c9e8af52f0f9c509298eb4188f091eb06f8"
+    },
+    {
+      "table": "team_pregame_lags",
+      "rows": 2636,
+      "sha256": "eb78304d3a109e9c87be6c13893cb107d40cb4acd84c5d104fd884fbca07f941"
+    },
+    {
+      "table": "unresolved_player_identity_records",
+      "rows": 33,
+      "sha256": "90469d79ec9c18e948bbd987790e23b9d067fc3b540b21bea50c8da4e40ea373"
+    },
+    {
+      "table": "player_measured_features",
+      "rows": 34697,
+      "sha256": "90e2cb3ed1cc6758c7a4ca6591a775efcd0f5a329ab98d2821acda0d09aa5bed"
+    },
+    {
+      "table": "player_pregame_lags",
+      "rows": 34697,
+      "sha256": "6a9a61cb40bffca401dfd27e86a242c50096a19e6581048ecc50589db1e0fba9"
+    },
+    {
+      "table": "core_supplement_plays",
+      "rows": 1892,
+      "sha256": "3be5388f734e76b7252311fa2b7b950af5d07d102b43cdfe5968069c3f83ff4d"
+    },
+    {
+      "table": "core_supplement_shots",
+      "rows": 866,
+      "sha256": "dbc1b0d5db78b12ef475b75aa76ec627d8a5c6b23795333a409efb781c5a985f"
+    },
+    {
+      "table": "core_supplement_team_stats",
+      "rows": 800,
+      "sha256": "ac4b084fc3dae3d3f80ff69fea5eba92919d5a021d7cf8997ec39df7757ed5ab"
+    },
+    {
+      "table": "core_supplement_player_stats",
+      "rows": 7425,
+      "sha256": "4c7d8529230ebbd348de0bb6d5ad27e6e3aaa515b7134aa8efe44fae44fa8dc5"
+    },
+    {
+      "table": "core_supplement_rosters",
+      "rows": 113,
+      "sha256": "1e698b235d2b3d9efd39a559e8fde7da35b0a59264f6739e507f119c2f680401"
+    }
+  ],
+  "checks": [
+    "unique game and play keys",
+    "box-score scoring reconciliation",
+    "strictly earlier-game lags",
+    "exact Parquet roundtrip equality",
+    "player lags exclude current/future/zero-minute rows",
+    "1230 regular-season games; 82 per club",
+    "all period score sums equal final scoreboard scores",
+    "1230 regular-season games; 82 per club",
+    "all period score sums equal final scoreboard scores",
+    "1230 regular-season games; 82 per club",
+    "all period score sums equal final scoreboard scores"
+  ],
+  "primary_player_rows_missing_source_id": 33,
+  "native_season_type_counts": {
+    "2": 1231,
+    "5": 6,
+    "3": 85
+  },
+  "competition_scope_counts": {
+    "regular_season": 1230,
+    "nba_cup_final": 1,
+    "play_in": 6,
+    "playoffs": 85
+  },
+  "games_with_play_by_play_including_supplement": 1322,
+  "game_ids_without_play_by_play": [],
+  "limitations": [
+    "No historical odds or availability feed",
+    "No historical publication timestamps",
+    "Native shot coordinate frame unverified",
+    "Possessions and true shooting are .44-FTA proxies",
+    "Extended schemas are unpopulated specifications",
+    "Missing detailed game records listed explicitly",
+    "Single season only; no model profitability claim"
+  ],
+  "core_supplement_game_ids": [
+    "401869402",
+    "401871334",
+    "401871337",
+    "401873343"
+  ],
+  "core_supplement_errors": []
+}
