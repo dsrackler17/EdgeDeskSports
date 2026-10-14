@@ -1,27 +1,27 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-14T05:09:34.133Z",
+ "generated_at": "2026-10-14T08:38:29.879Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-14T05:09:34.133Z",
-  "reliability_generated_at": "2026-10-14T05:09:34.133Z",
-  "enrichment_generated_at": "2026-10-14T05:09:15.900Z",
+  "at": "2026-10-14T08:38:29.879Z",
+  "reliability_generated_at": "2026-10-14T08:38:29.879Z",
+  "enrichment_generated_at": "2026-10-14T08:38:20.260Z",
   "counts": {
-   "games": 109,
+   "games": 108,
    "mean": 85.9,
    "median": 89,
    "by_band": {
-    "STRONG": 88,
+    "STRONG": 87,
     "LOW": 3,
     "ADEQUATE": 18
    },
-   "missing_qb_status": 216,
+   "missing_qb_status": 214,
    "qb_conflicts_open": 3,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 20,
+   "games_lacking_injury_information": 19,
    "unrated_meaningful_absences": 33,
    "fcs_games_thin_data": 3,
-   "games_under_two_market_sources": 109,
+   "games_under_two_market_sources": 108,
    "stale_evidence_records": 74,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
@@ -2201,26 +2201,6 @@
      "away": "PROVIDER_FAILED"
     }
    },
-   "401871053": {
-    "game": "Florida International @ Jacksonville State",
-    "score": 88,
-    "grade": "STRONG",
-    "fam": {
-     "availability": 6,
-     "qb_status": 4,
-     "qb_identity": 1.1,
-     "rating_sample": 0.3,
-     "transfer_turnover": 0.3
-    },
-    "qb": {
-     "home": "EXPECTED",
-     "away": "EXPECTED"
-    },
-    "avail": {
-     "home": "PROVIDER_FAILED",
-     "away": "PROVIDER_FAILED"
-    }
-   },
    "401871054": {
     "game": "Kennesaw State @ Missouri State",
     "score": 77,
@@ -2445,23 +2425,23 @@
   }
  },
  "previous": {
-  "at": "2026-10-14T03:20:39.368Z",
+  "at": "2026-10-14T05:09:34.133Z",
   "counts": {
-   "games": 74,
-   "mean": 85.6,
+   "games": 109,
+   "mean": 85.9,
    "median": 89,
    "by_band": {
-    "STRONG": 59,
+    "STRONG": 88,
     "LOW": 3,
-    "ADEQUATE": 12
+    "ADEQUATE": 18
    },
-   "missing_qb_status": 146,
+   "missing_qb_status": 216,
    "qb_conflicts_open": 3,
    "qb_confirmed": 0,
-   "games_lacking_injury_information": 18,
-   "unrated_meaningful_absences": 32,
+   "games_lacking_injury_information": 20,
+   "unrated_meaningful_absences": 33,
    "fcs_games_thin_data": 3,
-   "games_under_two_market_sources": 74,
+   "games_under_two_market_sources": 109,
    "stale_evidence_records": 74,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
@@ -2469,43 +2449,15 @@
   "baseline_of": null
  },
  "what_improved": [
-  "+0.3 mean reliability (85.6 → 85.9)"
+  "-2 QB statuses missing (216 → 214)",
+  "-1 games lacking injury information (20 → 19)",
+  "-1 games under two market sources (109 → 108)"
  ],
- "what_degraded": [
-  "+70 QB statuses missing (146 → 216)",
-  "+2 games lacking injury information (18 → 20)",
-  "+1 unrated meaningful absences (32 → 33)",
-  "+35 games under two market sources (74 → 109)"
- ],
+ "what_degraded": [],
  "why": [
-  "the slate itself changed: 36 games entered the window, 1 left it (kicked off or rolled out)"
+  "the slate itself changed: 0 games entered the window, 1 left it (kicked off or rolled out)"
  ],
  "history": [
-  {
-   "at": "2026-10-07T13:40:54.483Z",
-   "counts": {
-    "games": 110,
-    "mean": 85.9,
-    "median": 88,
-    "by_band": {
-     "STRONG": 87,
-     "ADEQUATE": 18,
-     "VERY_STRONG": 2,
-     "LOW": 1,
-     "CAUTION": 2
-    },
-    "missing_qb_status": 216,
-    "qb_conflicts_open": 6,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 22,
-    "unrated_meaningful_absences": 30,
-    "fcs_games_thin_data": 1,
-    "games_under_two_market_sources": 110,
-    "stale_evidence_records": 76,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-10-07T15:05:30.260Z",
    "counts": {
@@ -3937,6 +3889,29 @@
     "unrated_meaningful_absences": 33,
     "fcs_games_thin_data": 3,
     "games_under_two_market_sources": 109,
+    "stale_evidence_records": 74,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-14T08:38:29.879Z",
+   "counts": {
+    "games": 108,
+    "mean": 85.9,
+    "median": 89,
+    "by_band": {
+     "STRONG": 87,
+     "LOW": 3,
+     "ADEQUATE": 18
+    },
+    "missing_qb_status": 214,
+    "qb_conflicts_open": 3,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 19,
+    "unrated_meaningful_absences": 33,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 108,
     "stale_evidence_records": 74,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
