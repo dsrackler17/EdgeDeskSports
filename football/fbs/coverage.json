@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-14T05:09:34.133Z",
+ "generated_at": "2026-10-14T08:38:29.879Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,19 +119,19 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 109,
+  "total": 108,
   "by_group": {
-   "other": 52,
+   "other": 51,
    "p4": 57,
    "independent": 2
   },
   "by_matchup": {
-   "conference": 103,
+   "conference": 102,
    "fbs_fcs": 3,
    "non_conference": 3
   },
   "by_conference": {
-   "cusa": 7,
+   "cusa": 6,
    "american": 11,
    "sunbelt": 11,
    "pac12": 3,
@@ -196,11 +196,11 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 109
+  "PREDICTED": 108
  },
  "weather": {
-  "requested": 106,
-  "answered": 106,
+  "requested": 105,
+  "answered": 105,
   "dome": 3,
   "no_venue": 0,
   "failed": 0,
@@ -208,10 +208,10 @@
   "carry_dropped": 0,
   "failures": {},
   "host": "api.open-meteo.com",
-  "summary": "106 of 106 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "105 of 105 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
  },
  "spread_recommendation": {
-  "NO_MARKET": 109
+  "NO_MARKET": 108
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
@@ -280,12 +280,12 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 52,
-    "total": 109,
+    "non_power_games": 51,
+    "total": 108,
     "example": [
-     "Florida International @ Jacksonville State",
      "Kennesaw State @ Missouri State",
-     "Western Kentucky @ Sam Houston"
+     "Western Kentucky @ Sam Houston",
+     "East Carolina @ UAB"
     ]
    }
   },
@@ -300,7 +300,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 103,
+    "conference_games": 102,
     "wrong": 0
    }
   },
@@ -334,8 +334,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 109,
-    "audit_total": 109
+    "slate": 108,
+    "audit_total": 108
    }
   },
   {
