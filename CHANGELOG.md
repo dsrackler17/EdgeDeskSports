@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-14 — Server-only functions: lock the Collective, `edge_call` and three financial views away from the browser
+
+**The August ship-gate audit (PR #14) found that anyone holding the public anon key could call `public.edge_call`, which runs any Edge Function with the service-role key. They could also call every function in the `collective` schema, including the admin-id leak and the unchecked `billing_*` writers. Its fix never reached the repository. It would also have left all of them open, because it did not revoke the default `PUBLIC` grant.** `supabase/server_only_lockdown.sql` is the corrected fix. Paste it into the SQL editor; every report row should read `ok`.
+
+- **What it locks:** every routine in `collective`, `public.edge_call`, `guarantee_sweep` and the four `research_*` helpers lose EXECUTE for `PUBLIC`, `anon` and `authenticated`. The three financial views lose SELECT for `anon` and `authenticated`.
+- **What keeps working:** `service_role` is granted explicitly before `PUBLIC` is revoked, so the Collective edge functions and `settle-finals.yml` keep every call. `has_active_sub` and the browser's `collective_model_ensure` / `collective_my_models` wrappers are untouched. No page or admin console calls any locked function (checked against every rpc in the repository).
+- **Tests** (`tools/app/server_only_lockdown_sql.test.js`, in `games-sql.yml`): 79 checks on a real PostgreSQL against a rebuild of the audited catalog, in which `service_role` holds nothing explicit. It runs each attack as `anon` and as a signed-in user, and each server call as `service_role`. It runs the file a second time as the SQL editor would (same grants after), shows the report catching a function added later, and applies the file to an empty database.
+
 ## 2026-10-14 — The NHL research engine: a model lab with a written promotion rule, a full market sheet with exact explanations, player-prop research, box-score reconciliation, a source registry and an optional warehouse
 
 **I scored seven model families against my NHL production model with its own walk-forward, under a promotion rule written before any of them ran. None earned promotion: the incumbent stays, slimmed to `xg_core`. The game page now prices the full sheet, explains every win probability exactly, re-prices goalie and what-if scenarios in place, and says why a price is or isn't actionable. Player props are researched and validated against outcomes, but no prop is called value: no prop price has been captured. Value claims stay off everywhere until a licensed closing archive passes the market test.** Docs: `docs/engine/NHL_AUDIT.md`, `NHL_LAB.md`, `NHL_PROPS.md`, `NHL_SOURCES.md`, `NHL_OPERATIONS.md`, `NHL.md`, `DATA.md`.
