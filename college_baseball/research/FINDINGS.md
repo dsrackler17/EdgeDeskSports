@@ -30,4 +30,5 @@ results (log loss, calibration, holdout) live in the registry and
 | F-22 | First-five probabilities from the simulator are too extreme | slope 0.72 (level right: −0.001); ties calibrated in level | validation/simulator.json |
 | F-23 | Rating-uncertainty integration does not help the RAW model | removing it improves raw `hier` by 0.0003 (95% 0.0001 to 0.0004); the calibration map, fitted through it, keeps `hier_cal` calibrated | validation/ablations.json |
 | F-24 | Confirmed starters would be worth about 0.0007 log loss | oracle (actual starter) vs projected, 2025 (95% −0.0012 to −0.0002) — the measured value of a confirmed-starter feed | validation/pitcher_walkforward.json |
-
+| F-25 | Re-weighting the run model's own distribution beats the calibrated expectations on totals, run lines and team runs | total −0.0008, team runs −0.0037, home −1.5 −0.0008 (all 95% intervals below 0); home −1.5 still over-predicted (+0.025) | validation/simulator.json construction, CBX-PRICE-CONSTRUCTION |
+| F-26 | The negative binomial's right tail is slightly too heavy for one side | P(side ≥ 15) 7.7% predicted vs 6.6% observed; P(total ≥ 20) 17.1% vs 16.8% and shutouts 3.6% vs 3.6% are right | validation/audit.json TAILS |

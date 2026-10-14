@@ -5,7 +5,7 @@ what is in progress, the next dependency, and the exact commands that rebuild
 each artifact. Update it at every milestone; never rely on conversation
 history.
 
-Branch: `claude/charming-albattani-amtoze` · draft PR dsrackler17/EdgeDeskSports#566
+Branch: `claude/charming-albattani-amtoze` · warehouse merged in dsrackler17/EdgeDeskSports#566; engine in dsrackler17/EdgeDeskSports#569
 
 ## Environment notes (re-check on resume)
 
@@ -29,21 +29,23 @@ Branch: `claude/charming-albattani-amtoze` · draft PR dsrackler17/EdgeDeskSport
 | M5 | Rules evidence | DONE | `node college_baseball/rules_evidence.js` |
 | M6 | Team quality engine + baselines | DONE | lib/team_quality.js, lib/baselines.js, lib/models.js |
 | M7 | Run distribution engine + study | DONE | lib/distribution.js, run_distribution.js (fit 2014–18, choose 2019–22) |
-| M8 | Walk-forward harness, tuning rounds 1–2 | DONE | walkforward.js; round 3 (time-boxed, last) IN PROGRESS |
+| M8 | Walk-forward harness, tuning rounds 1–3 | DONE | walkforward.js; round 3 time-boxed (edges: U-12) |
 | M9 | Starter / bullpen / workload / projection engines | DONE | lib/pitchers.js |
-| M10 | Pitcher-aware walk-forward | DONE (smoke) | pitcher_walkforward.js |
-| M11 | Simulator + evaluation | DONE (code) | lib/simulator.js, sim_eval.js |
-| M12 | ML + ensemble + feature research + ablations | DONE (code) | ml_ensemble.js, feature_research.js, ablations.js |
-| M13 | Pricing + readiness + batch inference | DONE (code) | lib/pricing.js, lib/readiness.js, build_slate.js |
-| M14 | Auditor + release gates | DONE (code) | audit.js, release_gates.js |
-| M15 | Terminal UI (Research → Baseball → NCAA engine) | DONE (code) | lib/edgedesk_cbase_ui.js, lib/edgedesk_cbase.css, app.html segment |
-| M16 | CI workflow + registry wiring | DONE (code) | .github/workflows/college-baseball-research.yml, lib/edgedesk_sport_brains.js, engine/build_registry.js |
-| M17 | Final pipeline run, holdout once, docs, report, PR | TODO | research/REPRODUCE.md order |
+| M10 | Pitcher-aware walk-forward | DONE, HOLDOUT LOOKED | pitcher_walkforward.js (hybrid not significant) |
+| M11 | Pricing engine study: closed form vs simulator, construction | DONE | sim_eval.js (closed form prices full game; simulator first five, research only) |
+| M12 | ML + ensemble + feature research + ablations | DONE | ml_ensemble.js, feature_research.js, ablations.js |
+| M13 | Pricing + readiness + batch inference | DONE | lib/pricing.js, lib/readiness.js, build_slate.js |
+| M14 | Auditor + release gates | DONE | audit.js, release_gates.js |
+| M15 | Terminal (Research → Baseball → NCAA engine) | DONE, TESTED | lib/edgedesk_cbase_ui.js, lib/edgedesk_cbase.css, app.html segment |
+| M16 | CI workflow + registry wiring | DONE | .github/workflows/college-baseball-research.yml, lib/edgedesk_sport_brains.js, engine/build_registry.js |
+| M17 | Final pipeline, holdout once, docs, report, PR | DONE | PR dsrackler17/EdgeDeskSports#569; report: `node college_baseball/report.js` |
 
 ## Next dependency
 
-Round-3 tuning → `walkforward.js` → `run_distribution.js` → `walkforward.js`
-→ the rest of REPRODUCE.md §3–5 → `--holdout` once → report.
+The engine is complete for model version cbase_v1.0.0. Next work, each a new
+model version with its own holdout look: U-14 (home −1.5 margin shape),
+U-13 (first-five calibration), U-12 (wider tuning grids). Owner decisions:
+G1 (data rights), G12 (market feed).
 
 ## Decisions taken during the build (also in DECISIONS.md)
 
@@ -67,3 +69,9 @@ Round-3 tuning → `walkforward.js` → `run_distribution.js` → `walkforward.j
 - 2026-10-14: tuning rounds 1–2; first walk-forward: hier_cal beats calibrated
   Elo on VALIDATION (Δ −0.0054, 95% −0.0087 to −0.0024); pitcher hybrid not
   significant on 2025 (Δ −0.0003, interval includes 0).
+- 2026-10-14: round-3 tuning; final walk-forward: hier_cal chosen and pricing;
+  ensemble and rest layer not adopted. Simulator found double-counting the home
+  side's last inning; full-game markets moved to the closed form (re-weighted
+  construction). HOLDOUT 2025–26 looked at once: hier_cal 0.6026, vs calibrated
+  Elo −0.0055 (95% −0.0074 to −0.0035), OUTCOME_VALIDATED on outcomes.
+

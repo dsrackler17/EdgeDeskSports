@@ -9,7 +9,7 @@ SHA-256 fingerprint of the evidence files.
 
 | Version | Date | What it is | Promotion evidence |
 |---|---|---|---|
-| cbase_v1.0.0 | 2026-10-14 | First version. Hierarchical team model (tuning round 3), negative-binomial runs, run-space calibration, rest challenger, stacked ensemble when it beats the single model, inning simulator, pitcher engines as scenarios only. | `params/production.json` and `research/audit_log.jsonl` (fingerprint of walkforward, pitcher, distribution and simulator evaluations, tuning and constants) |
+| cbase_v1.0.0 | 2026-10-14 | First version. Hierarchical team model (tuning round 3) with run-space calibration (`hier_cal` prices; the ensemble and rest layer stay challengers); full-game prices from the negative-binomial closed form re-weighted to the validated P(home); the inning simulator for the first five only (research only); pitcher engines as scenarios only. | Promotion REFUSED by the auditor (critical TAILS check: P(side ≥ 15) over-predicted; U-15). `params/production.json` stays empty; the refusal, with its evidence fingerprint, is in `research/audit_log.jsonl`. Holdout looked at once: moneyline OUTCOME_VALIDATED on outcomes. |
 
 ## Rules for a new version
 

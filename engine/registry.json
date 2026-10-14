@@ -745,23 +745,23 @@
     ]
    },
    "readiness": {
-    "state": "EXPERIMENTAL",
-    "label": "Experimental",
+    "state": "OUTCOME_VALIDATED",
+    "label": "Validated vs outcomes — moneyline",
     "scope": [
      "moneyline"
     ],
     "primary": "moneyline",
-    "primary_state": "EXPERIMENTAL",
+    "primary_state": "OUTCOME_VALIDATED",
     "partial": false,
     "markets": {
      "moneyline": {
-      "state": "EXPERIMENTAL",
+      "state": "OUTCOME_VALIDATED",
       "value_claims": false,
       "reason": "never tested against the closing market",
-      "outcome": "PROVISIONAL",
+      "outcome": "VALIDATED",
       "market": "NOT_TESTED",
-      "n": 11950,
-      "headline": "outcomes (VALIDATION): PROVISIONAL (the HOLDOUT has not been evaluated for this model version); log loss 0.59375; vs elo_cal Δ -0.005612 (95% -0.008445 to -0.002949); vs close: not tested",
+      "n": 16696,
+      "headline": "outcomes (HOLDOUT): OUTCOME_VALIDATED; log loss 0.60257; vs elo_cal Δ -0.005471 (95% -0.007445 to -0.003488); vs close: not tested",
       "file": "college_baseball/validation/walkforward.json"
      }
     },
@@ -776,9 +776,9 @@
       "detail": "hier_cal"
      },
      "validation_passed": {
-      "done": false,
+      "done": true,
       "partial": false,
-      "detail": "no market passed (1 scored); primary market (moneyline): experimental"
+      "detail": "1 of 1 markets validated vs outcomes; primary market (moneyline): outcome validated"
      },
      "market_tested": {
       "done": false,
@@ -792,7 +792,7 @@
     "college_baseball/validation/audit.json",
     "college_baseball/validation/release_gates.json"
    ],
-   "evidence_generated_at": "2026-10-14T02:33:06.132Z",
+   "evidence_generated_at": "2026-10-14T02:56:24.029Z",
    "data": [
     {
      "source": "sportsdataverse/baseballr-data (stats.ncaa.org)",
@@ -1935,8 +1935,7 @@
   }
  ],
  "summary": {
-  "OUTCOME_VALIDATED": 9,
-  "EXPERIMENTAL": 1,
+  "OUTCOME_VALIDATED": 10,
   "RETIRED": 1,
   "RESEARCH_ONLY": 1
  },
@@ -1986,5 +1985,5 @@
   "UNAVAILABLE": "Unavailable",
   "RETIRED": "Retired"
  },
- "generated_at": "2026-10-14T02:35:14.775Z"
+ "generated_at": "2026-10-14T03:08:37.388Z"
 }
