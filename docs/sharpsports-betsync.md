@@ -1,5 +1,7 @@
 # SharpSports BetSync — sportsbook history through an approved aggregator
 
+> **RETIRED 2026-10-14.** SharpSports' plan starts at $500/month, above EdgeDesk's budget. It is switched off: no provider is active unless `SPORTSBOOK_SYNC_PROVIDER` names one, and none does. The adapter stays registered (RETIRED) as the reference for the next provider, and anything it synced stays readable. The webhook answers 200 and reads nothing. Why, what was kept, what replaced it (CSV and on-device screenshot import) and the alternatives researched: [`sportsbook-sync-providers.md`](sportsbook-sync-providers.md). The rest of this page describes the adapter as built.
+
 **Status (2026-10-14): built and tested in this repository, in SANDBOX mode only. Not yet deployed, and not yet run against SharpSports' sandbox.**
 
 - Every part runs here against a real PostgreSQL and in Chromium:
@@ -39,12 +41,13 @@ https://iattxbkbufslbauoumga.supabase.co/functions/v1/sharpsports-webhook
 
 All of it is in **Portfolio → Accounts**, in the existing components.
 
-- **Connect a sportsbook · BetSync by SharpSports**:
-  - the books SharpSports lists, from its `/books`;
-  - books that need SharpSports' mobile SDK are shown as "app only" and disabled.
-- **Connect \<book>** asks EdgeDesk's server for a fresh SharpSports context. The browser then goes to SharpSports' own linking page (`ui.sharpsports.io/link/<cid>`), where the reader chooses the book and their state and signs in.
+- **Set up → a tile per sportsbook** (DraftKings, FanDuel, BetMGM, Caesars, bet365, BetRivers, Fanatics, theScore Bet, plus any other book SharpSports lists in its `/books`). Each tile says where that book stands: Connect, Import, Connected ✓, or its bet count.
+  - Tapping a tile opens **that book's card** under the row: **Connect \<book>** where BetSync is available to the reader, with **Import a file instead**; otherwise **Import \<book> history**. A book not yet added also offers **Add it, no file yet**.
+  - A book SharpSports links only through its mobile SDK reads "app only": its card offers the import, and a book EdgeDesk cannot import is a disabled tile.
+  - A sportsbook already imported from files offers **Connect automatically** on its account card; the link upgrades that account in place.
+- **Connect \<book>** asks EdgeDesk's server for a fresh SharpSports context. The browser then goes to SharpSports' own linking page (`ui.sharpsports.io/link/<cid>`), where the reader confirms the book and their state and signs in.
   - EdgeDesk never shows a username or password field. Chromium checks this.
-- **Back on EdgeDesk** (`?betsync=return#portfolio/accounts`), the page asks the server what was linked. The server reads it from SharpSports' API, not from anything in the URL. The page then shows, for example, "DraftKings — verified · first sync succeeded: 3 new bets".
+- **Back on EdgeDesk** (`?betsync=return#portfolio/accounts`), the page asks the server what was linked. The server reads it from SharpSports' API, not from anything in the URL. A **Sportsbook connection** section at the top of Accounts then shows, for example, "DraftKings — verified · first sync succeeded: 3 new bets".
 - **A linked book's card** shows:
   - **BetSync (SharpSports)**, with `· sandbox` in sandbox;
   - Connected / Syncing / Action required / Sync failing / Disconnected;
@@ -66,7 +69,7 @@ All of it is in **Portfolio → Accounts**, in the existing components.
     - CLV, where a close was recorded.
   - **Import**: unchanged; the fallback for every book.
 - **Decision Record → "EdgeDesk's model at the time"** (§ 3.6).
-- **Where BetSync is not available to the reader, the page is exactly as before:** "Sportsbooks · import", "no sportsbook offers customers an API". In sandbox, it is available to operators only.
+- **Where BetSync is not available to the reader, no Connect appears for a sportsbook:** every sportsbook tile reads Import and its card offers the import ("Sportsbooks · import", "no sportsbook offers customers an API"). In sandbox, BetSync is available to operators only.
 
 ## 3. How it works
 

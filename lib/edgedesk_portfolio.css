@@ -293,7 +293,26 @@
 /* ---- accounts: automatic / quick import / manual, setup, the sync log ---- */
 .pfo-status.SYNCING{color:var(--f-acc);border-color:rgba(47,167,154,.5)}
 .pfo-status.DISCONNECTED{color:var(--f-dim)}
+.pfo-status.SYNC_OFF{color:var(--f-dim);border-style:dashed}
 .pfo-acct-group{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--f-dim);font-weight:700;margin:14px 0 4px}
+/* setup: a tile per place; tapping one opens its card under the row */
+.pfo-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px;margin:6px 0 0}
+.pfo-tile{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-height:56px;padding:10px 12px;border:1px solid var(--f-bd);border-radius:12px;background:var(--f-s2);color:var(--f-tx);font:600 14px 'Inter',sans-serif;text-align:left;cursor:pointer}
+.pfo-tile b{font-weight:700;overflow-wrap:anywhere}
+.pfo-tile small{color:var(--f-dim);font-size:11.5px;font-weight:600}
+.pfo-tile.have small{color:var(--f-pos)}
+.pfo-tile:hover{border-color:var(--f-acc)}
+.pfo-tile[aria-pressed="true"]{border-color:var(--f-acc);background:rgba(47,167,154,.12)}
+.pfo-tile:disabled{opacity:.5;cursor:default}
+.pfo-tile:focus-visible{outline:2px solid var(--f-acc);outline-offset:2px}
+.pfo-pick{margin:8px 0 4px;padding:12px 14px;border:1px solid var(--f-acc);border-radius:12px;background:rgba(47,167,154,.06)}
+.pfo-pick-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;font-weight:700;font-size:15px}
+.pfo-pick-h .pfo-mut{font-weight:500;font-size:12.5px}
+.pfo-pick .pfo-btns{margin-top:10px}
+.pfo-pick .pfo-issue{margin-top:8px}
+.pfo-file{position:relative;display:inline-flex;align-items:center;overflow:hidden}
+.pfo-file input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.pfo-file:focus-within{outline:2px solid var(--f-acc);outline-offset:2px}
 .pfo-runs{margin:6px 0 0;padding-left:18px;font-size:12px;line-height:1.55;color:var(--f-tx)}
 .pfo-runs li{margin:3px 0}
 .pfo-setup{border-color:rgba(47,167,154,.45)}

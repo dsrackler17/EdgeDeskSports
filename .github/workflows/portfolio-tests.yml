@@ -20,6 +20,7 @@ on:
     paths:
       - 'lib/edgedesk_portfolio*.js'
       - 'lib/edgedesk_bet_history.js'
+      - 'lib/edgedesk_slip_reader.js'
       - 'lib/edgedesk_portfolio.css'
       - 'lib/edgedesk_decision_record.js'
       - 'lib/edgedesk_decision_ui.js'
@@ -53,6 +54,7 @@ on:
     paths:
       - 'lib/edgedesk_portfolio*.js'
       - 'lib/edgedesk_bet_history.js'
+      - 'lib/edgedesk_slip_reader.js'
       - 'lib/edgedesk_decision_record.js'
       - 'tools/portfolio/**'
       - 'supabase/portfolio.sql'
@@ -129,10 +131,14 @@ jobs:
         env:
           PORTFOLIO_SQL_REQUIRED: '1'
         run: node tools/portfolio/connect_function.test.js
-      - name: SharpSports BetSync end to end — both shipped functions (portfolio_connect, sharpsports-webhook) over the real migrations, against a fake SharpSports
+      - name: Sportsbook sync — off by default (no provider switched on), and the retired SharpSports adapter end to end with it switched on, both shipped functions over the real migrations, against a fake SharpSports
         env:
           PORTFOLIO_SQL_REQUIRED: '1'
         run: node tools/portfolio/sharpsports.test.js
+      - name: Bet slip screenshots — the reader's rules on OCR text, the filled-in form, and the bet id refusing the same bet twice (slip or CSV)
+        env:
+          PORTFOLIO_SQL_REQUIRED: '1'
+        run: node tools/portfolio/slip_reader.test.js
       - name: supabase/portfolio_model_context.sql — EdgeDesk's model on a bet, only as recorded before it was placed
         env:
           PORTFOLIO_SQL_REQUIRED: '1'

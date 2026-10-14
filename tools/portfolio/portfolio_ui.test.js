@@ -125,8 +125,13 @@ chk('once switched on: Reconnect for a disconnected account, Connect automatical
 const fresh = Object.assign(U.defaults(), { positions: [], accounts: [], tz: 'UTC' });
 let su = strip(U.render.accounts(fresh));
 chk('a new reader sees setup: where do you bet or trade, every platform to choose', U.setupVisible(fresh) && /Set up your portfolio/.test(su) && /Where do you bet or trade\?/.test(su) && /DraftKings/.test(su) && /Polymarket/.test(su) && !/Portfolio ready/.test(su));
-const picked = Object.assign(U.defaults(), { positions: [], accounts: [], tz: 'UTC' }); picked.setup.selected = { draftkings: true, kalshi: true };
-chk('choosing platforms offers to add them, all at once', /data-act="setup-add">Add 2 platforms/.test(U.render.accounts(picked)));
+const picked = Object.assign(U.defaults(), { positions: [], accounts: [], tz: 'UTC' }); picked.setup.pick = 'draftkings';
+const pickedH = U.render.accounts(picked);
+chk('tapping a sportsbook opens its card: import its history, or add it with no file yet (no Connect while that is off)',
+  /data-r="setup-card"/.test(pickedH) && /data-act="tab" data-v="import" data-platform="draftkings">Import DraftKings history/.test(pickedH)
+  && /data-act="setup-add" data-platform="draftkings">Add it, no file yet/.test(pickedH) && !/data-act="ss-link"/.test(pickedH)
+  && /Automatic sportsbook connection is not switched on yet/.test(strip(pickedH)), strip(pickedH).slice(0, 600));
+chk('no card until a place is tapped', !/data-r="setup-card"/.test(U.render.accounts(fresh)));
 const half = Object.assign(U.defaults(), { tz: 'UTC', positions: [pos({})], accounts: [Object.assign({}, accts[0], { positions: 1 }), Object.assign({}, accts[1], { positions: 0 })] });
 su = strip(U.render.accounts(half));
 chk('progress: each platform says where its history stands, with a total; the rest wait for a file', /1 of 2 platforms with history/.test(su) && /DraftKings\s*Recorded ✓ · 1 position/.test(su)
@@ -146,8 +151,10 @@ chk('setup groups: prediction markets (import now, automatic once switched on), 
 chk('the five major sportsbooks, then BetRivers, Fanatics and theScore Bet (ESPN BET) are offered', ['DraftKings', 'FanDuel', 'BetMGM', 'Caesars', 'bet365', 'BetRivers', 'Fanatics', 'theScore Bet']
   .every((x) => g0.indexOf(x) >= 0) && /data-v="espnbet"/.test(U.render.accounts(fresh)));
 chk('setup offers no Connect while automatic connection is off', !/data-act="acct-connect"/.test(U.render.accounts(fresh)));
-const g1 = U.render.accounts(Object.assign(U.defaults(), { positions: [], accounts: [], tz: 'UTC', registry: { kalshi: { automatic_enabled: true, automatic_method: 'API_KEY' } } }));
-chk('once one is switched on, setup offers Connect for it alone, and says the other is imported for now', /data-act="acct-connect" data-platform="kalshi">Connect Kalshi/.test(g1) && !/data-platform="polymarket">Connect/.test(g1)
+const g1s = (pick) => { const x = Object.assign(U.defaults(), { positions: [], accounts: [], tz: 'UTC', registry: { kalshi: { automatic_enabled: true, automatic_method: 'API_KEY' } } }); x.setup.pick = pick; return U.render.accounts(x); };
+const g1 = g1s('kalshi'), g1p = g1s('polymarket');
+chk('once one is switched on, its card offers Connect for it alone, and setup says the other is imported for now', /data-act="acct-connect" data-platform="kalshi">Connect Kalshi/.test(g1)
+  && /read access only/.test(g1) && !/data-act="acct-connect" data-platform="polymarket"/.test(g1p) && /Import Polymarket history/.test(g1p)
   && /Kalshi connects automatically and read-only; the other is imported from a file for now/.test(strip(g1)));
 const live2 = (o) => strip(U.render.accounts(Object.assign(U.defaults(), { tz: 'UTC', now: Date.parse('2026-10-04T12:00:00Z'), positions: [pos({})],
   accounts: [autoAcct(Object.assign({ positions: 143 }, o)), Object.assign({}, accts[1], { positions: 0 })] })));

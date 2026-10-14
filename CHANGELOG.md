@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-10-14 — Portfolio: SharpSports retired, a replaceable sportsbook-sync seam, one-tap sportsbook tiles, bet slip screenshots
+
+**SharpSports BetSync is switched off** (its plan starts at $500/month). Sportsbook bets now come in through CSV import, a **bet slip screenshot read on the reader's own device**, or manual entry. All three land in the same Portfolio, analytics and dedupe. Why, what was kept, and the alternatives researched: `docs/sportsbook-sync-providers.md` (research: `docs/sportsbook-sync-research-2026-10-14.md`).
+
+- **Off by default.**
+  - `SPORTSBOOK_SYNC_PROVIDER` names the one sportsbook sync provider a server uses; unset means none.
+  - With none, `portfolio_connect`'s `sb_*` / `ss_*` actions say `SYNC_OFF`, and the sweep skips linked sportsbooks.
+  - `sharpsports-webhook` answers every POST 200 `{ignored:'sync_off'}` without reading it.
+  - No table, row or synced history was removed.
+- **A provider seam.** The connector core's sportsbook provider registry (`defineSportsbookProvider`, `SPORTSBOOK_PROVIDER_CONTRACT`) holds the SharpSports adapter as RETIRED.
+  - The function routes generic `sb_*` actions through a handler table.
+  - The Accounts page names no provider: labels, wording and the linking page's origin come from the registry.
+  - A new provider is one adapter plus one handler row; no table, analytics or screen changes.
+- **Accounts → a tile per sportsbook.** Tap one and its card offers:
+  - the CSV import;
+  - "Read a bet slip screenshot";
+  - "Add it, no file yet";
+  - Connect, only where a provider is switched on.
+  A book a retired provider once linked reads "Sync off", with its history kept.
+- **Bet slip screenshots** (`lib/edgedesk_slip_reader.js`):
+  - Tesseract.js reads the image in the browser, and the image is never uploaded. Cost: $0.
+  - Each field is filled only where the slip states it: amounts only beside a label; "To Win" is not a win; a Cash Out offer is not a cash-out.
+  - The ordinary bet form opens filled in, saying what was not found. Nothing is saved until Save.
+  - The slip's bet ID becomes the position's external ID, so the same bet from a second screenshot or from the book's CSV is refused as a duplicate.
+- **Page scripts and styles** carry new version tags, so browsers load the current code.
+- **Tests:**
+  - `tools/portfolio/sharpsports.test.js` (97): the off switch, end to end.
+  - `tools/portfolio/slip_reader.test.js` (22, new): the reading rules and the dedupe against PostgreSQL.
+  - `tools/portfolio/portfolio_ui.e2e.js` (133) and `sharpsports_ui.e2e.js` (21): the screenshot flow, and sync off and on, in Chromium.
+
 ## 2026-10-14 — Portfolio: sportsbook history through SharpSports BetSync (sandbox), the 404 webhook, bankroll trend and drawdown, EdgeDesk's model beside a bet
 
 **Sportsbooks can now be connected to the Portfolio through SharpSports BetSync, an approved aggregator. The reader signs in to their book on SharpSports' own page; EdgeDesk never sees a sportsbook password and reads SharpSports server-side, read-only. It is built, tested here and in sandbox only, for operators. It has NOT yet been deployed or run against SharpSports' sandbox: the build environment could not reach `*.sharpsports.io` or `*.supabase.co`. The five SharpSports webhook subscriptions answered 404 because no function named `sharpsports-webhook` existed; it does now. Production stays off behind the existing registry guard until a PRODUCTION smoke test passes and the terms review is cleared.** Docs: `docs/sharpsports-betsync.md`.
