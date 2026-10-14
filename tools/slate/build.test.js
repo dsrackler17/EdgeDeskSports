@@ -74,7 +74,8 @@ function eq(name, got, want) { chk(name, JSON.stringify(got) === JSON.stringify(
   chk('late West Coast games remember the Eastern scoreboard day they were read from', s.events.find((e) => e.id === 'nhl:espn:401802005').sb_day === '2026-10-13');
   eq('Upcoming carries the next games of sports with few ahead: the neutral-site NFL game and the NBA opener', s.upcoming.map((e) => e.id).sort(), ['nba:espn:401900001', 'nfl:espn:401880002']);
   chk('the neutral site survives', s.upcoming.find((e) => e.id === 'nfl:espn:401880002').neutral === true);
-  eq('markets: only pregame, only named books, both sides', Object.keys(s.markets).sort(), ['mlb:espn:401803002', 'nfl:espn:401880001', 'nhl:espn:401802002', 'soccer:espn:701002']);
+  eq('markets: only pregame, only named books, both sides — the upcoming games’ posted lines too', Object.keys(s.markets).sort(), ['mlb:espn:401803002', 'nfl:espn:401880001', 'nfl:espn:401880002', 'nhl:espn:401802002', 'soccer:espn:701002']);
+  chk('an upcoming game past the window keeps the line its book posted (the Card prices next week’s slate)', s.markets['nfl:espn:401880002'] && s.markets['nfl:espn:401880002'].spread && s.markets['nfl:espn:401880002'].spread.home.point === 1.5);
   chk('the refused consensus quote is counted, not shown', s.run.odds_rejected === 1 && !s.markets['cfb:espn:401871067']);
   chk('every market carries its book and its capture time', Object.values(s.markets).every((m) => m.book && m.captured_at && m.source === 'espn_scoreboard'));
 

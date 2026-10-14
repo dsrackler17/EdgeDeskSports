@@ -19,6 +19,7 @@ on:
       - 'lib/edgedesk_explain.js'
       - 'lib/edgedesk_vocab.js'
       - 'lib/edgedesk_decision*.js'
+      - 'lib/edgedesk_card_feed.js'
       - 'lib/edgedesk_decision.css'
       - 'lib/edgedesk_bankroll.js'
       - 'lib/edgedesk_quote_ev.js'
@@ -44,6 +45,7 @@ on:
       - 'lib/edgedesk_validation.js'
       - 'lib/edgedesk_explain.js'
       - 'lib/edgedesk_decision*.js'
+      - 'lib/edgedesk_card_feed.js'
       - 'tools/validation/**'
       - 'supabase/decision_validation.sql'
       - '.github/workflows/decision-quality.yml'
@@ -79,6 +81,8 @@ jobs:
         run: node tools/validation/model_health.js --check
       - name: The bettor decision layer, the unified football engine and one meaning per state still hold
         run: node tools/bettor/decision.test.js && node tools/bettor/football_decision.test.js && node tools/bettor/consistency.test.js
+      - name: The Card never goes dark — every sport from the free price feed, a live NO MARKET never erases a priced decision
+        run: node tools/bettor/card_feed.test.js
 
   migrations:
     runs-on: ubuntu-latest

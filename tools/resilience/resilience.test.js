@@ -343,6 +343,24 @@ section('heartbeats confirm, manual entries, the committed build');
   chk('a heartbeat with the same values confirms the change row (one quote, confirmed 25 min ago)', qs.length === 1 && qs[0].confirmed_at === ago(25) && qs[0].observed_at === ago(3 * 24 * 60), qs);
   const s = MKS.classify({ game: { game_id: 'G', kickoff: new Date(NOW + 3600e3).toISOString(), home: 'H', away: 'A' }, now: NOW, quotes: qs });
   chk('a heartbeat-confirmed line is LIVE, and keeps its first-seen time', s.state === 'LIVE' && s.spread.first_seen_at === ago(3 * 24 * 60), [s.state, s.spread.first_seen_at]);
+  /* a Lab CONFIRMATION (a capture that saw the row unchanged between heartbeats) is read as a heartbeat of that row */
+  const B = require(path.join(ROOT, 'football', 'cfb_terminal', 'build.js'));
+  const KO = new Date(NOW + 2 * 864e5).toISOString();
+  const row = { quote_id: 'cfbq_row', game_id: 'G', source: 'espn', book: 'draftkings', market_type: 'spread', home_line: -10.5, price_home: -112, price_away: -108, fingerprint: 'fp1', observed_at: ago(4 * 60), kickoff_ts: KO };
+  const alt = Object.assign({}, row, { quote_id: 'cfbq_alt', market_type: 'alternate_spread', home_line: -7.5 });
+  const opn = Object.assign({}, row, { quote_id: 'cfbq_open', is_provider_open: true });
+  const C = (id, at, fp) => ({ quote_id: id, confirmed_at: at, fingerprint: fp === undefined ? 'fp1' : fp });
+  const conf = { schema: 'cfb_lab_quote_confirmations/1', confirmations: { cfbq_row: C('cfbq_row', ago(20)), cfbq_alt: C('cfbq_alt', ago(20)), cfbq_open: C('cfbq_open', ago(20)) } };
+  const cr = B.confirmationRows([row, alt, opn], conf);
+  chk('a confirmation 20 min ago makes a 4 h old row a heartbeat at that time: same quote, same values', cr.length === 1 && cr[0].quote_id === 'cfbq_row' && cr[0].is_heartbeat === true && cr[0].observed_at === ago(20) && cr[0].home_line === -10.5, cr);
+  chk('…never for an alternate or a provider-declared open', !cr.some((q) => q.quote_id !== 'cfbq_row'));
+  chk('…never when the values differ (fingerprint), the time is not after the row, or it is at kickoff', B.confirmationRows([row], { confirmations: { cfbq_row: C('cfbq_row', ago(20), 'fp2') } }).length === 0
+    && B.confirmationRows([row], { confirmations: { cfbq_row: C('cfbq_row', ago(5 * 60)) } }).length === 0
+    && B.confirmationRows([row], { confirmations: { cfbq_row: C('cfbq_row', KO) } }).length === 0);
+  chk('…and none without a file', B.confirmationRows([row], null).length === 0);
+  const cq = RES.quotesFor({ quotes: new Map([['G', [row].concat(cr)]]), totals: new Map() }, 'G', null, NOW);
+  const cs = MKS.classify({ game: { game_id: 'G', kickoff: KO, home: 'H', away: 'A' }, now: NOW, quotes: cq });
+  chk('a confirmed steady line is LIVE (confirmed 20 min ago), not CACHED at 4 h', cq.length === 1 && cq[0].confirmed_at === ago(20) && cs.state === 'LIVE', [cs.state, cq]);
   const prev = process.env.TERMINAL_HEARTBEATS_CONFIRM; process.env.TERMINAL_HEARTBEATS_CONFIRM = '0';
   chk('TERMINAL_HEARTBEATS_CONFIRM=0 restores the old rule', RES.heartbeatsConfirm() === false);
   if (prev == null) delete process.env.TERMINAL_HEARTBEATS_CONFIRM; else process.env.TERMINAL_HEARTBEATS_CONFIRM = prev;

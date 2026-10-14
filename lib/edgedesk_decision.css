@@ -270,3 +270,60 @@ details>.edd-sech{cursor:pointer}.edd-sech small{color:var(--edd-faint);margin-l
 .edd-corrx details{margin-top:4px}
 .edd-corrx summary{cursor:pointer;font-size:11px;color:var(--edd-dim)}
 .edd-corrx ul{margin:4px 0 0 16px;padding:0;font-size:11.5px;line-height:1.5}
+
+/* ---- EVERY SPORT ON THE CARD (lib/edgedesk_card_feed.js): the free price
+   feed strip, TOP OF THE CARD, the sport row, feed rows, MARKET BOARD and
+   AWAITING LINES. One accent per decision, as everywhere else. */
+.edc-feed{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:10px;padding:7px 10px;border:1px solid var(--edd-line);border-radius:9px;background:var(--edd-bg2);font-size:11.5px;color:var(--edd-dim);line-height:1.45}
+.edc-feed>b{font-family:var(--edd-mono);font-size:9.5px;letter-spacing:.12em;color:var(--edd-faint)}
+.edc-feed span b{font-family:var(--edd-mono);color:var(--edd-text)}
+.edc-dot{width:8px;height:8px;border-radius:50%;background:var(--edd-faint);flex:0 0 auto}
+.edc-dot.ok{background:var(--edd-bet);box-shadow:0 0 0 3px rgba(118,189,62,.18)}
+.edc-dot.warn{background:var(--edd-wait);box-shadow:0 0 0 3px rgba(217,154,43,.18)}
+.edc-ndwhy{margin-left:6px;color:var(--edd-faint)}
+.edc-hero{margin-top:12px}
+.edc-hero-h{font-family:var(--edd-mono);font-size:11px;letter-spacing:.14em;font-weight:800;color:var(--edd-text);margin-bottom:6px}
+.edc-hero-h small{font-family:Inter,system-ui,sans-serif;letter-spacing:0;font-weight:500;font-size:11px;color:var(--edd-faint);margin-left:6px}
+.edc-hero-empty{border:1px dashed var(--edd-line);border-radius:12px;padding:12px 14px}
+.edc-hero-empty p{margin:0;font-size:12.5px;color:var(--edd-dim);line-height:1.5}.edc-hero-empty b{font-family:var(--edd-mono);color:var(--edd-text)}
+.edc-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.edc-tile{display:flex;flex-direction:column;gap:3px;text-align:left;font-family:inherit;color:var(--edd-text);background:var(--edd-bg);border:1px solid var(--edd-line);border-top:3px solid var(--edd-none);border-radius:12px;padding:10px 12px 11px;cursor:pointer;min-width:0;transition:border-color .12s,transform .12s}
+.edc-tile:hover{border-color:var(--edd-dim);transform:translateY(-1px)}
+.edc-tile:focus-visible{outline:2px solid var(--accent,#2fa79a);outline-offset:2px}
+.edc-tile>span{display:block;min-width:0}
+.edc-t-bet{border-top-color:var(--edd-bet);background:linear-gradient(180deg,rgba(118,189,62,.12),rgba(118,189,62,0) 70%),var(--edd-bg)}
+.edc-t-lean{border-top-color:var(--edd-lean);background:linear-gradient(180deg,rgba(47,167,154,.10),rgba(47,167,154,0) 70%),var(--edd-bg)}
+.edc-t-watch{border-top-color:var(--edd-wait);background:linear-gradient(180deg,rgba(217,154,43,.09),rgba(217,154,43,0) 70%),var(--edd-bg)}
+.edc-t-top{display:flex!important;align-items:center;gap:6px}
+.edc-t-top .edd-badge{font-size:10.5px;padding:1px 6px}
+.edc-t-when{margin-left:auto;font-size:10.5px;color:var(--edd-faint);white-space:nowrap}
+.edc-t-sel{font-size:17px;font-weight:800;line-height:1.2;margin-top:4px;overflow-wrap:anywhere}
+.edc-t-px b{font-family:var(--edd-mono);font-size:24px;font-weight:800;letter-spacing:.01em}
+.edc-t-bet .edc-t-px b{color:var(--edd-bet)}.edc-t-lean .edc-t-px b{color:var(--edd-lean)}.edc-t-watch .edc-t-px b{color:var(--edd-wait)}
+.edc-t-px small{font-size:11px;color:var(--edd-faint)}
+.edc-t-units{font-family:var(--edd-mono);font-size:13px;font-weight:800;color:var(--edd-bet)}
+.edc-t-stats{font-family:var(--edd-mono);font-size:11.5px;color:var(--edd-dim)}
+.edc-t-mu{font-size:11.5px;color:var(--edd-faint);margin-top:2px}
+.edc-t-q{font-family:var(--edd-mono);font-size:9.5px;letter-spacing:.08em;color:var(--edd-faint);margin-top:2px}
+.edc-sp{display:inline-block;font-family:var(--edd-mono);font-size:9.5px;font-weight:800;letter-spacing:.08em;color:var(--edd-text);border:1px solid var(--edd-line);background:var(--edd-bg2);border-radius:4px;padding:1px 5px;vertical-align:1px}
+.edc-sports{margin-top:12px}
+.edc-spf small{font-family:var(--edd-mono);font-size:10px;color:var(--edd-faint);margin-left:2px}
+.edc-spf.on small{color:var(--edd-text)}
+.edc-mu{display:inline-flex;align-items:center;gap:4px;flex-wrap:wrap}
+.edc-mu i{font-style:normal;color:var(--edd-faint)}
+.edc-logo{width:18px;height:18px;object-fit:contain;flex:0 0 auto}
+.edc-row{border:1px solid var(--edd-line);border-left:3px solid var(--edd-line);border-radius:9px;padding:8px 10px;margin-top:6px;background:var(--edd-bg);cursor:pointer}
+.edc-row:hover{border-color:var(--edd-dim)}
+.edc-row:focus-visible,.edc-line:focus-visible{outline:2px solid var(--accent,#2fa79a);outline-offset:1px}
+.edc-row.edd-r-lean{border-left-color:var(--edd-lean)}.edc-row.edd-r-watch{border-left-color:var(--edd-wait)}.edc-row.edd-r-pass{opacity:.85}
+.edc-sech-board,.edc-sech-await{color:var(--edd-dim)}
+.edc-line{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1.6fr) auto;gap:4px 12px;align-items:center;padding:6px 4px;border-bottom:1px solid var(--edd-line);font-size:12px;cursor:pointer}
+.edc-line:hover{background:var(--edd-bg2)}
+.edc-mk{font-family:var(--edd-mono);font-size:11.5px;color:var(--edd-text);overflow-wrap:anywhere}
+.edc-when{font-size:11px;color:var(--edd-faint);white-space:nowrap;text-align:right}
+@media(max-width:560px){
+  .edc-tiles{grid-template-columns:1fr}
+  .edc-line{grid-template-columns:minmax(0,1fr) auto}
+  .edc-line .edc-mk{grid-column:1/-1;order:3}
+  .edc-t-px b{font-size:22px}
+}

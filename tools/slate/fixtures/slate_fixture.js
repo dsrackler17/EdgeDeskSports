@@ -71,7 +71,8 @@ function table() {
       odds: E.odds({ book: 'DraftKings', homeAbbr: 'DEN', awayAbbr: 'SEA', home: { ml: 125, line: 2.5, price: -110 }, away: { ml: -145, price: -110 }, total: 39.5, over: -110, under: -110 }) })
   ]);
   t['football/nfl|20261018'] = E.board([
-    E.event({ id: 401880002, date: '2026-10-18T13:30Z', home: T.JAX, away: T.HOUf, neutral: true, venue: 'Wembley Stadium', city: 'London', state: 'England', week: 6, status: E.status('pre') })
+    E.event({ id: 401880002, date: '2026-10-18T13:30Z', home: T.JAX, away: T.HOUf, neutral: true, venue: 'Wembley Stadium', city: 'London', state: 'England', week: 6, status: E.status('pre'),
+      odds: E.odds({ book: 'DraftKings', homeAbbr: 'JAX', awayAbbr: 'HOU', home: { ml: 110, line: 1.5, price: -110 }, away: { ml: -130, price: -110 }, total: 44.5, over: -110, under: -110 }) })
   ]);
   t['soccer/eng.1|20261012'] = E.board([
     E.event({ id: 701001, date: '2026-10-12T19:00Z', home: T.ARS, away: T.CHE, hs: 2, as: 2, status: E.status('final', { name: 'STATUS_FULL_TIME', detail: 'FT' }) })

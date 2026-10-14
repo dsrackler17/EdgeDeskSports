@@ -1,13 +1,5 @@
 # Changelog
 
-## 2026-10-14 — NHL: research for every day Today's Games lists
-
-**Saturday's NHL games (and every game through three days ahead) now have research.** The NHL slate priced only the next 72 hours, but Today's Games lists today and the next three days, so later games said "Research not available yet".
-
-- The slate now prices the next 120 hours (`hockey/config.js` `SLATE_HORIZON_HOURS`). Covering the Today's Games window from any build needs at most 99 hours: four Eastern days, plus up to three hours between NHL builds.
-- `tools/hockey/hockey.test.js` holds the horizon to the Today's Games window (`tools/slate/build.js` `WINDOW`). Set back to 72 hours, it fails.
-- Measured on today's schedule: 31 games instead of 16, all 12 of Saturday's included. The build takes 16.5 s instead of 14.6 s, and `hockey/slate.json` grows from about 400 KB to 760 KB. The ledger grades the last price before puck drop, so the record is unchanged.
-- It takes effect at the next scheduled NHL build after merge, or at once with a manual `nhl.yml` build.
 
 ## 2026-10-14 — NHL: EdgeDesk's own lines against the market, and who is better where
 

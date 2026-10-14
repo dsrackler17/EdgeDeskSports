@@ -202,7 +202,11 @@ function resolveEvent(q, eventMap) {
    A quote that can never be stored is refused. Provider-declared rows are
    kept once per key and flag (their value is a fact about the provider, not an
    observation). Ordinary rows are compared only with the latest ORDINARY row
-   of their key. */
+   of their key.
+   An unchanged quote the rule drops is still an OBSERVATION — the book still
+   deals that number — so it is returned as a CONFIRMATION of the stored row
+   (`confirmations`), never as a ledger row. writeConfirmations keeps the
+   latest one per row, and the terminal build reads it as a heartbeat. */
 function selectNew(stored, candidates, opts) {
   opts = opts || {};
   const latest = new Map(), provOpen = new Set(), provClose = new Set();
@@ -213,27 +217,65 @@ function selectNew(stored, candidates, opts) {
     if (q.is_provider_close) { provClose.add(keyOf(q)); continue; }
     latest.set(keyOf(q), q);
   }
-  const out = [], stats = { received: candidates.length, written: 0, duplicates: 0, refused: 0, refusals: {} };
+  const out = [], confirmations = [], stats = { received: candidates.length, written: 0, duplicates: 0, refused: 0, refusals: {} };
   const ids = new Set(stored.map((q) => q.quote_id));
   const sorted = candidates.map((q) => resolveEvent(q, opts.eventMap)).sort((a, b) => U.ms(a.observed_at) - U.ms(b.observed_at));
   for (const q of sorted) {
     const k = keyOf(q);
     const why = L.quoteRefusal(q);
-    let d;
+    let d, unchanged = false;
     if (why) { d = 'refused'; stats.refusals[why] = (stats.refusals[why] || 0) + 1; }
     else if (ids.has(q.quote_id)) d = 'duplicate';
     else if (q.is_provider_open) d = provOpen.has(k) ? 'duplicate' : 'written';
     else if (q.is_provider_close) d = provClose.has(k) ? 'duplicate' : 'written';
-    else d = L.dedupeDecision(latest.get(k) || null, q);
+    else { d = L.dedupeDecision(latest.get(k) || null, q); unchanged = d === 'duplicate'; }
     if (d === 'written') {
       const prev = latest.get(k);
       const row = Object.assign({}, q, { is_heartbeat: !!(prev && !q.is_provider_open && !q.is_provider_close && prev.fingerprint === q.fingerprint) });
       out.push(row); ids.add(row.quote_id);
       if (q.is_provider_open) provOpen.add(k); else if (q.is_provider_close) provClose.add(k); else latest.set(k, row);
       stats.written++;
-    } else if (d === 'duplicate') stats.duplicates++; else stats.refused++;
+    } else if (d === 'duplicate') {
+      stats.duplicates++;
+      const prev = unchanged ? latest.get(k) : null;
+      if (prev && prev.quote_id && q.is_pregame !== false) confirmations.push({ quote_id: prev.quote_id, game_id: prev.game_id || null, source: prev.source || null, book: prev.book || null,
+        market_type: prev.market_type || null, fingerprint: prev.fingerprint || null, kickoff_ts: prev.kickoff_ts || q.kickoff_ts || null, confirmed_at: U.iso(q.observed_at) });
+    } else stats.refused++;
   }
-  return { rows: out, stats };
+  stats.confirmed = confirmations.length;
+  return { rows: out, stats, confirmations };
+}
+
+/* ------------------------------------------------ confirmations
+   reports/<season>/quote_confirmations.json, beside the ledger and never in
+   it (the ledger is append-only; this file is current state, rewritten):
+   for each stored quote row, the latest time a capture saw the same values
+   again. A row a later capture changed keeps its last confirmation, which is
+   older than the change row that replaced it, so it can never win. Entries
+   leave the file two days after their kickoff. Deterministic: the same run
+   twice writes the same bytes, and a run with nothing new writes nothing. */
+const CONF_SCHEMA = 'cfb_lab_quote_confirmations/1';
+function confirmationsFile(season, storeOpts) {
+  const root = (storeOpts && storeOpts.root) || path.join(G.LAB, 'ledger');
+  return path.join(path.dirname(root), 'reports', String(season), 'quote_confirmations.json');
+}
+function readConfirmations(season, storeOpts) {
+  try { const j = JSON.parse(fs.readFileSync(confirmationsFile(season, storeOpts), 'utf8')); return j && j.schema === CONF_SCHEMA ? j : null; } catch (e) { return null; }
+}
+function writeConfirmations(season, now, list, storeOpts) {
+  const f = confirmationsFile(season, storeOpts), prev = readConfirmations(season, storeOpts);
+  const by = Object.assign({}, (prev && prev.confirmations) || {});
+  (list || []).forEach((c) => { const p = by[c.quote_id]; if (!p || U.ms(c.confirmed_at) > U.ms(p.confirmed_at)) by[c.quote_id] = c; });
+  const cut = U.ms(now) - 48 * 3600000;
+  Object.keys(by).forEach((id) => { const ko = U.ms(by[id].kickoff_ts); if (ko !== null && ko < cut) delete by[id]; });
+  const out = {};
+  Object.keys(by).sort().forEach((id) => { out[id] = by[id]; });
+  if (prev ? JSON.stringify(prev.confirmations) === JSON.stringify(out) : !Object.keys(out).length) return { file: f, confirmed: 0, kept: Object.keys(out).length, written: false };
+  fs.mkdirSync(path.dirname(f), { recursive: true });
+  fs.writeFileSync(f, JSON.stringify({ schema: CONF_SCHEMA, season: season, generated_at: U.iso(now),
+    rule: 'the latest capture that saw each stored quote row unchanged (de-duplicated between heartbeats); read by football/cfb_terminal/build.js as a heartbeat of that row',
+    confirmations: out }) + '\n');
+  return { file: f, confirmed: (list || []).length, kept: Object.keys(out).length, written: true };
 }
 
 /* ------------------------------------------------ integrity screen */
@@ -467,6 +509,8 @@ async function capture(season, now, opts) {
   /* an Odds API quote whose event is still unmapped is kept (keyed by its
      provider event) but cannot enter a game's market until it is mapped */
   const res = store.appendQuotes(sel.rows);
+  const conf = writeConfirmations(season, now, sel.confirmations, opts.storeOpts);
+  log.confirmations = { confirmed: conf.confirmed, kept: conf.kept, written: conf.written };
   return { log, dedupe: sel.stats, written: res.written, conflicts: res.conflicts, schedule };
 }
 /* The kickoff a close is anchored to (MARKET_INTEGRITY.md §7): the one ESPN
@@ -536,6 +580,7 @@ function correctLine(season, o, opts) {
 }
 
 module.exports = { mapOddsEvents, scheduleGames, resolveEvent, bookKey, american, baseQuote, espnMarkets, quotesFromEspn, quotesFromCfbd, selectNew, deriveLines, gameIndex, fetchEspn, capture, lines,
+  CONF_SCHEMA, confirmationsFile, readConfirmations, writeConfirmations,
   screenCandidates, dedupeQuarantine, espnSchedule, authoritativeKickoffs, correctLine };
 
 if (require.main === module) {
