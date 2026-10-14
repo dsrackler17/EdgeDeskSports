@@ -85,8 +85,8 @@ on conflict (key) do nothing;
 -- statement is idempotent), so the revision is how a caller knows the
 -- database carries the functions it expects.
 insert into collective.fg2_config (key, value, note) values
-  ('install_revision', '3'::jsonb,
-   'Revision of supabase/migrations/20260928120000_football_grading_v2.sql installed here. 2: window-bounded, index-driven snapshot import; breadth tie-break; fg2_refresh. 3: every UPDATE/DELETE qualified, so grade_game / fg2_refresh run through PostgREST (pg-safeupdate); fg2_compute_close''s scratch table is per transaction, so callers of different roles can share a pooled session.')
+  ('install_revision', '4'::jsonb,
+   'Revision of supabase/migrations/20260928120000_football_grading_v2.sql installed here. 2: window-bounded, index-driven snapshot import; breadth tie-break; fg2_refresh. 3: every UPDATE/DELETE qualified, so grade_game / fg2_refresh run through PostgREST (pg-safeupdate); fg2_compute_close''s scratch table is per transaction, so callers of different roles can share a pooled session. 4: fg2_sync_legacy casts the ATS result to the legacy grade column''s own type (an enum in production, collective.grade_result).')
 on conflict (key) do update set value = excluded.value, note = excluded.note;
 
 create or replace function collective.fg2_cfg(p_key text) returns jsonb
@@ -2156,7 +2156,7 @@ declare
   gr regclass := to_regclass('collective.grades');
   pr regclass := to_regclass('collective.projections');
   n_close int := 0; n_grade int := 0; n_clear int := 0; n_ins int := 0;
-  c_res text; c_me text; c_br text; c_at text; ptype text;
+  c_res text; c_me text; c_br text; c_at text; ptype text; rtype text;
   target text; key text;
 begin
   perform set_config('collective.maintenance', 'on', true);
@@ -2193,6 +2193,13 @@ begin
     end if;
     select format_type(a.atttypid, a.atttypmod) into ptype from pg_attribute a
      where a.attrelid = target::regclass and a.attname = key and not a.attisdropped;
+    -- (revision 4) the settlement's ats_result is text; the legacy column is
+    -- an enum in production (collective.grade_result), and text has no
+    -- assignment cast to an enum, so it is cast to the column's own type
+    if c_res is not null then
+      select format_type(a.atttypid, a.atttypmod) into rtype from pg_attribute a
+       where a.attrelid = target::regclass and a.attname = c_res and not a.attisdropped;
+    end if;
     -- the graded version takes the settlement's values
     execute format($q$
       update %1$s t set %2$s
@@ -2202,7 +2209,7 @@ begin
          and (%7$s)
     $q$, target,
       concat_ws(', ',
-        case when c_res is not null then format('%I = s.ats_result', c_res) end,
+        case when c_res is not null then format('%I = s.ats_result::%s', c_res, rtype) end,
         case when c_me is not null then format('%I = s.margin_error', c_me) end,
         case when c_br is not null then format('%I = s.brier', c_br) end,
         case when c_at is not null then format('%I = now()', c_at) end),
@@ -2226,7 +2233,7 @@ begin
         concat(case when c_res is not null then ', ' || quote_ident(c_res) end,
                case when c_me is not null then ', ' || quote_ident(c_me) end,
                case when c_br is not null then ', ' || quote_ident(c_br) end),
-        concat(case when c_res is not null then ', s.ats_result' end,
+        concat(case when c_res is not null then ', s.ats_result::' || rtype end,
                case when c_me is not null then ', s.margin_error' end,
                case when c_br is not null then ', s.brier' end),
         gv, p_league, p_season, ptype);

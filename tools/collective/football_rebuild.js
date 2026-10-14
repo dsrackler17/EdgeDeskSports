@@ -50,8 +50,13 @@ const MIGRATION = path.join(ROOT, 'supabase', 'migrations', '20260928120000_foot
    Revision 3 qualified the one bare UPDATE (fg2_compute_close), which
    Supabase's pg-safeupdate refuses on every call through the API: below 3,
    grade_game and the hourly fg2_refresh fail with 21000 "UPDATE requires a
-   WHERE clause" even though this tool's psql path still runs. */
-const REQUIRED_REVISION = 3;
+   WHERE clause" even though this tool's psql path still runs.
+   Revision 4 casts the ATS result fg2_sync_legacy writes to the legacy grade
+   column's own type: in production that column is an enum, and below 4 every
+   committing call (this tool's --commit, grade_game, fg2_refresh) fails with
+   42804 "pick_result is of type collective.grade_result but expression is of
+   type text". */
+const REQUIRED_REVISION = 4;
 
 const CLASS_TEXT = {
   A: 'valid captured close already linked to the game',

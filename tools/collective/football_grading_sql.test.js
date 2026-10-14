@@ -451,7 +451,7 @@ chk('legacy sync: a close the repair wrote is recorded, so the next run never mi
   q(`select count(*) from collective.fg2_results_writes w join public.fx_games f on f.game_id::text = w.game_id where f.tag in ('N2','N3','N4','N8','N10');`) === 5);
 chk('legacy sync: the grade row of every graded version equals its settlement',
   q(`select count(*) from collective.fg2_settlements s join collective.grades g on g.projection_id::text = s.prediction_id
-      where g.pick_result is distinct from s.ats_result or g.margin_error is distinct from s.margin_error or g.brier is distinct from s.brier;`) === 0);
+      where g.pick_result::text is distinct from s.ats_result or g.margin_error is distinct from s.margin_error or g.brier is distinct from s.brier;`) === 0);
 chk('legacy sync: the version the legacy grader graded (moose N1, first upload) no longer carries a grade',
   q(`select count(*) from collective.grades g join collective.projections p on p.id = g.projection_id join public.fx_games f on f.game_id = p.game_id
       where f.tag = 'N1' and p.projected_spread = -1 and (g.pick_result is not null or g.margin_error is not null);`) === 0);
@@ -487,7 +487,7 @@ chk('legacy sync: game_detail now serves the recovered close', Number(q(`select 
   const s2 = snap();
   chk('refresh: a finished game with no official close is back in scope and gets the same close', JSON.stringify(s1) === JSON.stringify(s2), { s1, s2 });
   chk('refresh: it commits, says its scope, and audits nothing when nothing changed',
-    r && r.committed === true && /^games from /.test(r.scope) && r.audit_rows_this_run === 0 && r.install_revision === 3, r && { scope: r.scope, a: r.audit_rows_this_run });
+    r && r.committed === true && /^games from /.test(r.scope) && r.audit_rows_this_run === 0 && r.install_revision === 4, r && { scope: r.scope, a: r.audit_rows_this_run });
   let bad = null;
   try { q(`select collective.fg2_refresh('NFL', 2026, 0);`); } catch (e) { bad = String(e.message); }
   chk('refresh: a zero-day refresh is refused', /at least 1/.test(bad || ''), bad);
@@ -495,7 +495,7 @@ chk('legacy sync: game_detail now serves the recovered close', Number(q(`select 
     q(`select has_function_privilege('service_role', 'collective.fg2_refresh(text, integer, integer)', 'execute')
         and not has_function_privilege('anon', 'collective.fg2_refresh(text, integer, integer)', 'execute');`) === 't');
 })();
-chk('revision: the installed revision is 3', q(`select collective.fg2_install_revision();`) === 3);
+chk('revision: the installed revision is 4', q(`select collective.fg2_install_revision();`) === 4);
 chk('lookups: per-game reads have indexes on the id casts the views use',
   q(`select count(*) from pg_indexes where schemaname = 'collective' and indexname in ('fg2_games_id_text_idx', 'fg2_projections_game_text_idx', 'fg2_grades_projection_text_idx');`) === 3);
 chk('lookups: one signature per importer (no ambiguous overloads)',
@@ -620,9 +620,9 @@ chk('lookups: one signature per importer (no ambiguous overloads)',
   const old = tool([]);
   chk('tool: a database on an older revision is refused with the way out',
     old.status === 1 && /revision 1/.test(old.stderr) && /apply_migration: true/.test(old.stderr), (old.stderr || '').slice(-300));
-  q(`update collective.fg2_config set value = '3' where key = 'install_revision'; alter database fg2 reset statement_timeout;`);
+  q(`update collective.fg2_config set value = '4' where key = 'install_revision'; alter database fg2 reset statement_timeout;`);
   chk('tool: the revision the tool needs is the revision the migration installs',
-    RB.REQUIRED_REVISION === 3 && /\('install_revision', '3'::jsonb/.test(SQL));
+    RB.REQUIRED_REVISION === 4 && /\('install_revision', '4'::jsonb/.test(SQL));
   try { fs.rmSync(out, { recursive: true, force: true }); } catch (_) {}
 })();
 
