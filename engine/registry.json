@@ -664,50 +664,86 @@
    ],
    "product": "ACTIVE",
    "brain": {
-    "status": "NOT_BUILT",
-    "id": null,
-    "approach": "Designed: opponent-adjusted run ratings (a ridge-regularised attack/defence run model, as for soccer goals) with weekend-rotation starters and park effects.",
-    "why": "Hundreds of teams with few common opponents: shrinkage and opponent adjustment matter more than pitch-level detail, which is not available.",
+    "status": "BUILT",
+    "id": "cbase_v1.0.0 (college_baseball/)",
+    "approach": "Opponent-adjusted runs for and against, partially pooled team within conference within division (quasi-Poisson MAP with carried priors, realignment-aware), shrunk park effects and connectivity-aware rating uncertainty; a fitted run distribution and an inning-level simulator (seven-inning doubleheaders, measured run rule, walk-offs, extra innings) price every market; starter projections and bullpen availability are tested as a pitcher-aware hybrid.",
+    "why": "Hundreds of teams with very unequal schedules and few common opponents: shrinkage toward the conference and opponent adjustment matter most, and conference strength is identified only by non-conference games. Rules (seven-inning games, run rule) are measured, not assumed.",
     "candidates": [
      {
-      "name": "attack/defence run ratings",
-      "role": "designed",
+      "name": "hierarchical opponent-adjusted run model",
+      "role": "built, walk-forward",
       "sources": [
        "maher1982"
       ]
+     },
+     {
+      "name": "flat run model, Massey, Bradley-Terry",
+      "role": "built, walk-forward",
+      "sources": [
+       "maher1982"
+      ]
+     },
+     {
+      "name": "Elo, Pythagenpat, home rate",
+      "role": "baselines"
+     },
+     {
+      "name": "pitcher-aware hybrid (projected starter, bullpen availability)",
+      "role": "built, walk-forward 2024-2026",
+      "sources": [
+       "tango2007"
+      ]
+     },
+     {
+      "name": "GLM, gradient boosting, stacked ensemble",
+      "role": "built, adopted only if validated"
      }
     ],
     "inputs": [
-     "ESPN results union (tools/cbb)",
-     "data pack: 313-game explicit-date sample"
+     "NCAA results 2012-2026, box scores 2024-2026, play-by-play 2017-2026 (sportsdataverse/baseballr-data, stats.ncaa.org derived)"
     ],
     "not_modelled": [
-     "starters",
-     "weather"
+     "weather",
+     "lineups and injuries",
+     "pitcher handedness",
+     "confirmed starters (projected only)"
     ]
    },
    "readiness": {
-    "state": "RESEARCH_ONLY",
-    "label": "Research only",
-    "scope": [],
+    "state": "EXPERIMENTAL",
+    "label": "Experimental",
+    "scope": [
+     "moneyline"
+    ],
     "primary": "moneyline",
-    "primary_state": null,
+    "primary_state": "EXPERIMENTAL",
     "partial": false,
-    "markets": {},
+    "markets": {
+     "moneyline": {
+      "state": "EXPERIMENTAL",
+      "value_claims": false,
+      "reason": "never tested against the closing market",
+      "outcome": "PROVISIONAL",
+      "market": "NOT_TESTED",
+      "n": 11950,
+      "headline": "outcomes (VALIDATION): PROVISIONAL (the HOLDOUT has not been evaluated for this model version); log loss 0.5938; vs elo_cal Δ -0.00544 (95% -0.008702 to -0.002363); vs close: not tested",
+      "file": "college_baseball/validation/walkforward.json"
+     }
+    },
     "value_claims_any": false,
     "ladder": {
      "data_loaded": {
       "done": true,
-      "detail": "a 313-game sample (data pack) and the live ESPN results union: too sparse for a validated model"
+      "detail": "111108 games (2012-2026), retrospective"
      },
      "model_trained": {
-      "done": false,
-      "detail": null
+      "done": true,
+      "detail": "hier_cal"
      },
      "validation_passed": {
       "done": false,
       "partial": false,
-      "detail": "nothing scored; primary market (moneyline): none"
+      "detail": "no market passed (1 scored); primary market (moneyline): experimental"
      },
      "market_tested": {
       "done": false,
@@ -715,31 +751,37 @@
      }
     }
    },
-   "evidence_files": [],
-   "evidence_generated_at": null,
+   "evidence_files": [
+    "college_baseball/validation/walkforward.json",
+    "college_baseball/validation/pitcher_walkforward.json",
+    "college_baseball/validation/audit.json",
+    "college_baseball/validation/release_gates.json"
+   ],
+   "evidence_generated_at": "2026-10-14T01:54:14.148Z",
    "data": [
     {
-     "source": "ESPN public endpoints (tools/cbb, college-baseball.yml)",
-     "what": "schedules and results",
-     "cadence": "daily",
-     "license": "public endpoints",
+     "source": "sportsdataverse/baseballr-data (stats.ncaa.org)",
+     "what": "schedules and results 2012-2026, box scores 2024-2026, play-by-play 2017-2026, rosters",
+     "cadence": "daily in season",
+     "license": "MIT repo; NCAA terms govern the data (commercial use not verified)",
      "cost": "free"
     },
     {
-     "source": "Data pack",
-     "what": "313 games sampled on explicit dates (monthly queries returned nothing)",
-     "cadence": "one-off",
-     "license": "research copy",
+     "source": "ESPN public endpoints (tools/cbb, college-baseball.yml)",
+     "what": "schedules and results (the existing cbb union)",
+     "cadence": "daily",
+     "license": "public endpoints",
      "cost": "free"
     }
    ],
    "gaps": [],
    "blockers": [
-    "No multi-season results archive: the pack sample (313 games) cannot validate a model.",
-    "No captured prices."
+    "No authorised college-baseball price feed (baseball_ncaa is not in the odds gateway): the market is NOT_TESTED and no value is claimed.",
+    "Commercial rights to the NCAA-derived data are not verified (release gate G1).",
+    "2023 results end on 2023-03-28 in the source."
    ],
    "enable": [
-    "Wire a complete multi-season college results archive, then build and validate the run-ratings brain."
+    "Owner: sign off the NCAA data terms (college_baseball/research/LICENSING.md) and authorise baseball_ncaa price capture; then run the market test on captured closes."
    ]
   },
   {
@@ -1859,8 +1901,9 @@
  ],
  "summary": {
   "OUTCOME_VALIDATED": 9,
-  "RESEARCH_ONLY": 2,
-  "RETIRED": 1
+  "EXPERIMENTAL": 1,
+  "RETIRED": 1,
+  "RESEARCH_ONLY": 1
  },
  "partial_validation": [
   "cfb",
@@ -1908,5 +1951,5 @@
   "UNAVAILABLE": "Unavailable",
   "RETIRED": "Retired"
  },
- "generated_at": "2026-10-14T00:36:17.177Z"
+ "generated_at": "2026-10-14T02:29:20.307Z"
 }
