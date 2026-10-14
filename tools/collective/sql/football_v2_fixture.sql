@@ -119,9 +119,14 @@ end $$;
 create trigger projections_block_mutation before update or delete on collective.projections
   for each row execute function collective.block_mutation();
 
+-- pick_result is an enum in production (the 2026-10-14 NFL regrade was
+-- refused: "column pick_result is of type collective.grade_result but
+-- expression is of type text"), so it is one here: a text value written to it
+-- without a cast fails this suite the way it fails the real database.
+create type collective.grade_result as enum ('win', 'loss', 'push');
 create table collective.grades (
   projection_id uuid primary key references collective.projections(id),
-  pick_result text, margin_error numeric, brier numeric,
+  pick_result collective.grade_result, margin_error numeric, brier numeric,
   graded_at timestamptz not null default now()
 );
 
@@ -136,9 +141,9 @@ begin
   m := r.home_score - r.away_score; cl := r.closing_spread;
   insert into collective.grades (projection_id, pick_result, margin_error, brier)
   select p.id,
-         case when cl is null or p.pick_side is null then null
+         (case when cl is null or p.pick_side is null then null
               when m + cl = 0 then 'push'
-              when (p.pick_side = 'home') = (m + cl > 0) then 'win' else 'loss' end,
+              when (p.pick_side = 'home') = (m + cl > 0) then 'win' else 'loss' end)::collective.grade_result,
          case when p.projected_spread is not null then abs(-p.projected_spread - m) end,
          case when p.home_win_prob is not null and m <> 0 then power(p.home_win_prob - case when m > 0 then 1 else 0 end, 2) end
     from collective.projections p
