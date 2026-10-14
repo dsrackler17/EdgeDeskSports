@@ -377,8 +377,14 @@ lacks(RESET, "p.get('access_token')", 'rather than the single hash form it used 
 has(GAMESAUTH, 'grant_type=refresh_token', 'Games can renew a lapsed session');
 has(GAMESAUTH, 'function ensure()', 'and does it on boot rather than demoting the player');
 has(GAMESJS, 'consumeAuthLink', 'a confirmation link that lands in Games is finished there');
-chk('the landing nav no longer hides the free half of the product on a phone',
-  /<a class="nlink" href="\/games\/">Games<\/a>/.test(LANDING));
+/* The header is the site's one primary nav now (lib/edgedesk_nav.js: Free
+   Research, Today's Games, Tools, Research Terminal, Pricing), held on every
+   page and at every width by tools/site/nav.test.js. Games lives in the
+   landing page's "Free" footer list, so that is where it must stay reachable,
+   and no rule may hide that footer on a phone. */
+chk('the landing page keeps the free half of the product reachable on a phone',
+  /<h4>Free<\/h4>\s*<ul>[\s\S]*?<li><a href="\/games\/">EdgeDesk Games<\/a><\/li>[\s\S]*?<\/ul>/.test(LANDING)
+    && !/(?:^|[{};,\s])(?:footer|\.foot)\s*\{[^}]*display\s*:\s*none/.test(LANDING));
 
 /* ======================================================================== */
 /* 6. THE SQL SAYS WHAT THE CLIENT ASSUMES                                  */
