@@ -1,0 +1,24 @@
+{
+  "schema": "edgedesk_datapack_import_v1",
+  "pack": "EdgeDesk men's college basketball quantitative data pack",
+  "scope": "NCAA men's basketball, end-year seasons 2024-2026 (2023-24 to 2025-26): ESPN schedules, team and player boxes, 2026 shots; publisher-derived NCAA team/player boxes, 2026 possessions, lineups and matchup stints; publisher RAPM; name-based participation rosters; team identity bridge; EdgeDesk measured and lagged features; cross-source discrepancy audit",
+  "imported_at": "2026-10-14",
+  "imported_into": "datapack/ncaam_v1",
+  "source_archives": [
+    { "name": "EdgeDesk_College_Basketball_01.zip", "bytes": 29445373, "sha256": "b2634c0f8be93158350cee371f0fa0399fb2cc4e3855cfd97210c60598297d9a", "contents": "shared documentation and 11 tables (PARTS.json part 1)" },
+    { "name": "EdgeDesk_College_Basketball_02.zip", "bytes": 29428687, "sha256": "1b21a6c51c05710370d78d52e6d8e4710ea211aa411a279374eb3a1013036ab1", "contents": "shared documentation and 12 tables (PARTS.json part 2)" },
+    { "name": "EdgeDesk_College_Basketball_03.zip", "bytes": 29430317, "sha256": "3fcf8165d49104da0ae2ae6f20cfed6a0f34dfea2c134d8343b951d534e1e28c", "contents": "shared documentation and 11 tables (PARTS.json part 3)" }
+  ],
+  "extraction": "all three archives extracted into one parent; the shared documentation is identical across parts and the 34 tables are partitioned, not duplicated (PARTS.json)",
+  "verification": "every table's SHA-256 and row count are checked against sources/inventory.json each time the research engine reads it (basketball/ncaam_research/lib/pack.js); a mismatch stops the run",
+  "stored_gzipped": [],
+  "excluded_from_git": [],
+  "modified_after_import": [],
+  "not_executed": [
+    "scripts/compact_sources.py",
+    "scripts/build_features.py",
+    "scripts/audit_and_package.py"
+  ],
+  "not_executed_reason": "the pack is data, not code this repository runs; the research engine reads the Parquet files through hockey/tools/parquet_select.py (pyarrow) and re-derives what it needs",
+  "known_at": "blank: first publication of each game record is not in the pack and is never backdated"
+}

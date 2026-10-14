@@ -1,0 +1,76 @@
+name: Men's college basketball research
+run-name: NCAAM research · ${{ github.event_name }}
+
+# The research engine (basketball/ncaam_research), its pages (research/ncaam),
+# its shared math (lib/ncaam_research.js) and its data pack (datapack/ncaam_v1).
+# Everything here is free and offline: the pack is committed and hash-verified,
+# and nothing calls an odds source (tools/odds/no_bypass.test.js section 10).
+
+on:
+  pull_request:
+    paths:
+      - 'basketball/ncaam_research/**'
+      - 'lib/ncaam_research.js'
+      - 'research/ncaam/**'
+      - 'datapack/ncaam_v1/**'
+      - 'hockey/tools/parquet_select.py'
+      - '.github/workflows/ncaam-research.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'basketball/ncaam_research/**'
+      - 'lib/ncaam_research.js'
+      - 'research/ncaam/**'
+      - 'datapack/ncaam_v1/**'
+  schedule:
+    - cron: '41 10 * * 1'   # weekly: the committed records still rebuild
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: pyarrow (the pack is Parquet; read by hockey/tools/parquet_select.py, never the pack's scripts)
+        run: pip install --quiet pyarrow
+      - name: Offline research tests (synthetic data)
+        run: node basketball/ncaam_research/tests/research.test.js
+      - name: The real pack (hashes, identity, clocks, leakage, published documents)
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: node basketball/ncaam_research/tests/pack.test.js
+      - name: Playwright
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: The research pages in a browser
+        run: node basketball/ncaam_research/tests/research_ui.e2e.js
+      - name: No odds path (the engine's files are in section 10)
+        run: node tools/odds/no_bypass.test.js
+
+  records:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet pyarrow
+      - name: The frozen team-model holdout rebuilds exactly
+        run: node --max-old-space-size=6144 basketball/ncaam_research/walkforward.js --check
+      - name: The published research rebuilds
+        run: node --max-old-space-size=6144 basketball/ncaam_research/build.js --check

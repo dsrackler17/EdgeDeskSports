@@ -1,0 +1,801 @@
+{
+ "schema": "edgedesk_ncaam_audit_v1",
+ "games": {
+  "stats": {
+   "2024": {
+    "rows": 6249,
+    "final": 6243,
+    "postponed": 4,
+    "canceled": 2,
+    "scheduled": 0,
+    "other_status": 0,
+    "duplicate_ids": 0
+   },
+   "2025": {
+    "rows": 6299,
+    "final": 6292,
+    "postponed": 5,
+    "canceled": 1,
+    "scheduled": 1,
+    "other_status": 0,
+    "duplicate_ids": 0
+   },
+   "2026": {
+    "rows": 6318,
+    "final": 6300,
+    "postponed": 14,
+    "canceled": 4,
+    "scheduled": 0,
+    "other_status": 0,
+    "duplicate_ids": 0
+   }
+  },
+  "overtime_by_season": {
+   "2024:0": 5897,
+   "2024:1": 296,
+   "2024:2": 41,
+   "2024:3": 9,
+   "2025:0": 5967,
+   "2025:1": 268,
+   "2025:2": 46,
+   "2025:3": 10,
+   "2025:4": 1,
+   "2026:0": 5973,
+   "2026:1": 276,
+   "2026:2": 42,
+   "2026:3": 9
+  },
+  "ncaa_minutes_vs_period_count": {
+   "team_games": 35818,
+   "within_1": 29199,
+   "share": 0.8152
+  },
+  "regulation": "2 x 20-minute halves; overtime 5 minutes; periods 3+ are overtimes"
+ },
+ "membership": {
+  "bridge_rows": 1084,
+  "overrides": 7,
+  "conflicts": [],
+  "d1_reference_unmapped": {
+   "2024": [],
+   "2025": [],
+   "2026": []
+  },
+  "reference_counts": {
+   "2024": 362,
+   "2025": 364,
+   "2026": 365
+  }
+ },
+ "boxes": {
+  "by_season": {
+   "2024": {
+    "espn_rows": 12480,
+    "ncaa_rows": 12486,
+    "ncaa_without_espn_ids": 650,
+    "ncaa_duplicate_keys": 0,
+    "joined": 11830,
+    "discrepant": 5,
+    "discrepancy_fields": {
+     "pts": 3,
+     "fga": 2,
+     "tpa": 1
+    },
+    "schedule_score_mismatch": 0,
+    "not_in_schedule": 0
+   },
+   "2025": {
+    "espn_rows": 12572,
+    "ncaa_rows": 12586,
+    "ncaa_without_espn_ids": 632,
+    "ncaa_duplicate_keys": 0,
+    "joined": 11942,
+    "discrepant": 18,
+    "discrepancy_fields": {
+     "pts": 16,
+     "tpa": 6,
+     "tpm": 4,
+     "fgm": 2,
+     "fga": 3,
+     "ftm": 2,
+     "fta": 2
+    },
+    "schedule_score_mismatch": 2,
+    "not_in_schedule": 0
+   },
+   "2026": {
+    "espn_rows": 12598,
+    "ncaa_rows": 12594,
+    "ncaa_without_espn_ids": 547,
+    "ncaa_duplicate_keys": 0,
+    "joined": 12046,
+    "discrepant": 11,
+    "discrepancy_fields": {
+     "pts": 10,
+     "fga": 1,
+     "tpa": 1
+    },
+    "schedule_score_mismatch": 0,
+    "not_in_schedule": 0
+   }
+  },
+  "pairs": 18825,
+  "broken_pairs": 0,
+  "pack_discrepancy_table": {
+   "rows": 34,
+   "ours": 34,
+   "in_both": 34
+  },
+  "rule": "ESPN box is the official count; an NCAA detail row that disagrees is quarantined, never substituted"
+ },
+ "player_boxes": {
+  "espn": {
+   "2024": {
+    "rows": 198586,
+    "missing_athlete_id": 32,
+    "duplicate_identity": 0,
+    "dnp": 72636,
+    "zero_minutes_played": 984,
+    "null_minutes": 72636,
+    "not_in_schedule": 0
+   },
+   "2025": {
+    "rows": 207613,
+    "missing_athlete_id": 1,
+    "duplicate_identity": 0,
+    "dnp": 80191,
+    "zero_minutes_played": 819,
+    "null_minutes": 80191,
+    "not_in_schedule": 0
+   },
+   "2026": {
+    "rows": 196876,
+    "missing_athlete_id": 11,
+    "duplicate_identity": 0,
+    "dnp": 69333,
+    "zero_minutes_played": 728,
+    "null_minutes": 69333,
+    "not_in_schedule": 0
+   }
+  },
+  "ncaa_2026": {
+   "rows": 127465,
+   "missing_player_id": 7290,
+   "missing_espn_ids": 1,
+   "duplicate_identity": 0
+  }
+ },
+ "possessions": {
+  "slots": {
+   "possessions": 878168,
+   "any_unidentified": 89678,
+   "duplicate_player": 1140,
+   "unknown_offense": 41110,
+   "garbage": 29944,
+   "transition": 186868
+  },
+  "reconciliation": {
+   "games": 6291,
+   "exact": 4944,
+   "within_3": 777,
+   "larger": 29,
+   "no_box": 541,
+   "swapped_two": 445
+  },
+  "name_conflicts": 0,
+  "rule": "possession points that disagree with the official final keep their flag; player models are refitted without them as a sensitivity"
+ },
+ "lineups": {
+  "opening_five_vs_espn_starters": {
+   "possession_table": {
+    "team_games": 12040,
+    "all_five": 11953,
+    "overlap_sum": 60111,
+    "unmapped_slots": 72,
+    "all_five_share": 0.9928,
+    "mean_overlap": 4.993
+   },
+   "publisher_lineup_table": {
+    "team_games": 12040,
+    "all_five": 150,
+    "overlap_sum": 30412,
+    "team_unmapped": 527,
+    "all_five_share": 0.0125,
+    "mean_overlap": 2.526
+   }
+  },
+  "publisher_lineup_table": {
+   "rows": 288918,
+   "player_count_error_null": 288918,
+   "rows_without_five_distinct_names": 2,
+   "zero_or_negative_duration": 87,
+   "team_year_values": {
+    "2025": 288918
+   },
+   "note": "team_year is the publisher's calendar-year label (2025 for the 2025-26 season); the season field is the end year"
+  }
+ },
+ "shots": {
+  "counts": {
+   "rows": 991836,
+   "missed_with_positive_score_value": 478588,
+   "made": 513248,
+   "free_throw_type_on_miss": 70414,
+   "primary_actor_missing": 911,
+   "by_type": {
+    "JumpShot": 452659,
+    "LayUpShot": 237730,
+    "MadeFreeThrow": 253589,
+    "TipShot": 19481,
+    "DunkShot": 28375,
+    "Shot": 2
+   }
+  },
+  "team_box_agreement": {
+   "team_games": 12548,
+   "fgm_equal": 12514,
+   "ftm_equal": 12524,
+   "tpa_equal": 12441,
+   "fgm_rate": 0.9973,
+   "ftm_rate": 0.9981,
+   "three_attempt_rate": 0.9915
+  },
+  "player_box_agreement": {
+   "player_games": 126968,
+   "fgm_equal": 126304,
+   "fgm_rate": 0.9948
+  },
+  "second_actor": {
+   "made_fg_with_second_actor": 170686,
+   "made_fg": 330073,
+   "share": 0.5171
+  },
+  "rules": [
+   "score_value is the value of the attempt, not points scored: positive on misses",
+   "type_text \"MadeFreeThrow\" labels missed free throws too; scoring_play is the only made/missed gate",
+   "athlete_id_2 is present on some made field goals only; it is not established as the assister and is not used as one",
+   "coordinates are not used: the transform and raw court frames are unverified"
+  ]
+ },
+ "possession_estimator": {
+  "fitted_on": "2024-2025 team-games, target = publisher-parsed offensive possessions (NCAA o_poss)",
+  "c_fitted": 0.4906,
+  "compare": {
+   "0.44": {
+    "vs_publisher_2026": {
+     "n": 12035,
+     "rmse": 1.905,
+     "mae": 1.486
+    },
+    "vs_possession_table_2026": {
+     "n": 9887,
+     "rmse": 1.931,
+     "mae": 1.507
+    }
+   },
+   "0.475": {
+    "vs_publisher_2026": {
+     "n": 12035,
+     "rmse": 1.586,
+     "mae": 1.219
+    },
+    "vs_possession_table_2026": {
+     "n": 9887,
+     "rmse": 1.585,
+     "mae": 1.214
+    }
+   },
+   "0.4906": {
+    "vs_publisher_2026": {
+     "n": 12035,
+     "rmse": 1.548,
+     "mae": 1.199
+    },
+    "vs_possession_table_2026": {
+     "n": 9887,
+     "rmse": 1.527,
+     "mae": 1.179
+    }
+   }
+  }
+ },
+ "rapm_tables": {
+  "2024": {
+   "rows": 4919,
+   "zero_possession_rows": 7,
+   "estimands": [
+    "league"
+   ],
+   "net_sd": 2.603
+  },
+  "2025": {
+   "rows": 4960,
+   "zero_possession_rows": 16,
+   "estimands": [
+    "league"
+   ],
+   "net_sd": 2.604
+  },
+  "2026": {
+   "rows": 4974,
+   "zero_possession_rows": 5,
+   "estimands": [
+    "league"
+   ],
+   "net_sd": 2.776
+  },
+  "year_over_year": {
+   "2024_to_2025_min500": {
+    "n": 1604,
+    "corr": 0.4
+   },
+   "2025_to_2026_min500": {
+    "n": 1416,
+    "corr": 0.417
+   },
+   "2025_to_2026_min1000": {
+    "n": 745,
+    "corr": 0.445
+   }
+  },
+  "rule": "full-season fits include every game of the season: never a predictor for a game of the same season; a prior only for the next season, after identity checks"
+ },
+ "identity": {
+  "player_crosswalk_2026": {
+   "groups": 12047,
+   "groups_without_espn": 0,
+   "ncaa_lines": 120174,
+   "informative": 116267,
+   "unique_matches": 115928,
+   "ambiguous_lines": 255,
+   "unmatched_lines": 84,
+   "ncaa_players": 5011,
+   "linked": 4889,
+   "quarantined": 94,
+   "without_any_fingerprint": 28,
+   "linked_name_agreement": 0.982
+  },
+  "quarantine_reasons": {
+   "ONE_FINGERPRINT_ONLY": 93,
+   "CONFLICTING_FINGERPRINTS": 1
+  },
+  "name_based_person_links_2026": {
+   "rows": 4974,
+   "team_unmapped": 0,
+   "no_name_match": 249,
+   "ambiguous": 2,
+   "linked": 4723,
+   "verified_against_fingerprints": {
+    "agree": 4637,
+    "disagree": 0,
+    "unverifiable": 86,
+    "error_rate": 0
+   }
+  }
+ },
+ "provenance": [
+  {
+   "table": "team_season_identity_bridge",
+   "file": "datapack/ncaam_v1/data/team_season_identity_bridge.parquet",
+   "rows": 1084,
+   "sha256": "1590df1ee11008c628025c3b192f702d6104fb65474363212c754e06df5ae8aa",
+   "source": {
+    "derived_by": "data pack (measured, lagged, bridge or audit table built by the pack author)",
+    "url": null
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "ncaa_mbb_team_ids_2024",
+   "file": "datapack/ncaam_v1/data/ncaa_mbb_team_ids_2024.parquet",
+   "rows": 362,
+   "sha256": "16aea0f9f17bdb929d2fa9d5eb162b9210d30fb44c3a05115c35f9eb67d3ce79",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/ncaa_mbb_team_ids/ncaa_mbb_team_ids_2024.parquet",
+    "release_tag": "ncaa_mbb_team_ids",
+    "release_asset_sha256": "3c8df3f2e10dd11cecab8a45ed2035eff4d626c500fac889d03037da8683f788",
+    "published_updated_at": "2026-08-12T03:36:17Z",
+    "retrieved_at": "2026-10-14T01:41:12.154850+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "ncaa_mbb_team_ids_2025",
+   "file": "datapack/ncaam_v1/data/ncaa_mbb_team_ids_2025.parquet",
+   "rows": 364,
+   "sha256": "3925f2eb23d80ac405aa9c23dc5bbcfad13bebcd96a5efd217b737c2a9331dcc",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/ncaa_mbb_team_ids/ncaa_mbb_team_ids_2025.parquet",
+    "release_tag": "ncaa_mbb_team_ids",
+    "release_asset_sha256": "53c0e639dfa7b6c11d4244556f9ea531af5130f91fa7e5b201797958380cf162",
+    "published_updated_at": "2026-08-12T03:14:56Z",
+    "retrieved_at": "2026-10-14T01:41:12.155080+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "ncaa_mbb_team_ids_2026",
+   "file": "datapack/ncaam_v1/data/ncaa_mbb_team_ids_2026.parquet",
+   "rows": 365,
+   "sha256": "88987006bde89084eeb392431b56a25fe70febfbace4dbf69b6b3374d9ae2f65",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/ncaa_mbb_team_ids/ncaa_mbb_team_ids_2026.parquet",
+    "release_tag": "ncaa_mbb_team_ids",
+    "release_asset_sha256": "7b7f6a77cda7676ed81147875642e6abd93666f013f83838353fa7caa60c875b",
+    "published_updated_at": "2026-08-12T02:54:23Z",
+    "retrieved_at": "2026-10-14T01:41:12.155143+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "espn_mbb_schedule_2024",
+   "file": "datapack/ncaam_v1/data/espn_mbb_schedule_2024.parquet",
+   "rows": 6249,
+   "sha256": "cd19cd148c006db30ec73361e3832b059496f6c8b8cb4c3145161c9e4e83b32a",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_mens_college_basketball_schedules/mbb_schedule_2024.parquet",
+    "release_tag": "espn_mens_college_basketball_schedules",
+    "release_asset_sha256": "27889ecf392a9a6281e7898dc39d51a2f4a4576f689533dda0d67c4d57d52602",
+    "published_updated_at": "2024-10-31T08:06:33Z",
+    "retrieved_at": "2026-10-14T01:41:12.136766+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "espn_mbb_schedule_2025",
+   "file": "datapack/ncaam_v1/data/espn_mbb_schedule_2025.parquet",
+   "rows": 6299,
+   "sha256": "355521d00f4141bb5bc1966ee6184617db14887f4f73c65f379aeea3713cbd7b",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_mens_college_basketball_schedules/mbb_schedule_2025.parquet",
+    "release_tag": "espn_mens_college_basketball_schedules",
+    "release_asset_sha256": "e01bf54b51c8d71b00cd8144e9a022ed170af2c2e57787b1cef672340891c45b",
+    "published_updated_at": "2026-07-14T04:16:21Z",
+    "retrieved_at": "2026-10-14T01:41:12.137075+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "espn_mbb_schedule_2026",
+   "file": "datapack/ncaam_v1/data/espn_mbb_schedule_2026.parquet",
+   "rows": 6318,
+   "sha256": "77f9a8ba453f9f9ab9fa1574452ca1909c8a2639a91deeda92d2935fa5830f11",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_mens_college_basketball_schedules/mbb_schedule_2026.parquet",
+    "release_tag": "espn_mens_college_basketball_schedules",
+    "release_asset_sha256": "480896940f9502e537513386efa1ece6ed9cac0bcd8bd30f3493aa6254912aec",
+    "published_updated_at": "2026-09-01T20:00:38Z",
+    "retrieved_at": "2026-10-14T01:41:12.138059+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "espn_team_box_2024",
+   "file": "datapack/ncaam_v1/data/espn_team_box_2024.parquet",
+   "rows": 12480,
+   "sha256": "f1b2aa4d7084df4a5d9c39a942ee0b14ad116ef7abe82e11dbc401b5fc724d57",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_mens_college_basketball_team_boxscores/team_box_2024.parquet",
+    "release_tag": "espn_mens_college_basketball_team_boxscores",
+    "release_asset_sha256": "b9137f1cb2b8bc94836c63842de8c587df197bf7bd7746727593e1301a819b2d",
+    "published_updated_at": "2024-10-31T07:52:39Z",
+    "retrieved_at": "2026-10-14T01:41:12.134610+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "ncaa_mbb_team_box_2024",
+   "file": "datapack/ncaam_v1/data/ncaa_mbb_team_box_2024.parquet",
+   "rows": 12486,
+   "sha256": "520c018ac3110f020dd1ab199ca1c3dd4e06c3103ff115b475aedcd9ef205ba7",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/ncaa_mbb_team_box/ncaa_mbb_team_box_2024.parquet",
+    "release_tag": "ncaa_mbb_team_box",
+    "release_asset_sha256": "25f4ff903393cc40ec03a2ab7edea25e15cae076feb473c09836ff1ca1240583",
+    "published_updated_at": "2026-08-12T03:47:10Z",
+    "retrieved_at": "2026-10-14T01:41:22.499331+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "espn_team_box_2025",
+   "file": "datapack/ncaam_v1/data/espn_team_box_2025.parquet",
+   "rows": 12572,
+   "sha256": "af8264f4c43c0be86a3793ecb119a85175a7902ffc604981ba77012163e97307",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_mens_college_basketball_team_boxscores/team_box_2025.parquet",
+    "release_tag": "espn_mens_college_basketball_team_boxscores",
+    "release_asset_sha256": "571f7ab5c4dd5c4332544f27a0e9d32d131f6f20c4527884a7e180084ae887c9",
+    "published_updated_at": "2026-07-14T04:15:02Z",
+    "retrieved_at": "2026-10-14T01:41:12.134696+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "ncaa_mbb_team_box_2025",
+   "file": "datapack/ncaam_v1/data/ncaa_mbb_team_box_2025.parquet",
+   "rows": 12586,
+   "sha256": "3c00a94727a8de8b1bfdbba00a3917e2105c8a5bdc5c1425edcde669137613e9",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/ncaa_mbb_team_box/ncaa_mbb_team_box_2025.parquet",
+    "release_tag": "ncaa_mbb_team_box",
+    "release_asset_sha256": "880c15eb4adde6569ecc70ab70a7d80d45c8ee457fee7ae902c5ba11b9d6be75",
+    "published_updated_at": "2026-08-12T03:27:18Z",
+    "retrieved_at": "2026-10-14T01:41:22.355522+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "espn_team_box_2026",
+   "file": "datapack/ncaam_v1/data/espn_team_box_2026.parquet",
+   "rows": 12598,
+   "sha256": "51ce1d0901e26dcccb33845af02f50bfa23d72923be92e09456ad6a7dc62aa5e",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_mens_college_basketball_team_boxscores/team_box_2026.parquet",
+    "release_tag": "espn_mens_college_basketball_team_boxscores",
+    "release_asset_sha256": "db58650c1a9b2a1b6c8735507b8e922580ea514bb9f2ccbc1d91ae6588a27f42",
+    "published_updated_at": "2026-09-01T19:44:46Z",
+    "retrieved_at": "2026-10-14T01:41:12.135134+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "ncaa_mbb_team_box_2026",
+   "file": "datapack/ncaam_v1/data/ncaa_mbb_team_box_2026.parquet",
+   "rows": 12594,
+   "sha256": "895e8661686d062c5002af94f14cb4aead5912bb84034a3f383da924af20c2b4",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/ncaa_mbb_team_box/ncaa_mbb_team_box_2026.parquet",
+    "release_tag": "ncaa_mbb_team_box",
+    "release_asset_sha256": "2b8071504344d90d0e4fd30a7a2e8330475c07583e344a808482a804ae41fe44",
+    "published_updated_at": "2026-10-12T06:59:46Z",
+    "retrieved_at": "2026-10-14T01:41:12.141187+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "espn_player_box_2024",
+   "file": "datapack/ncaam_v1/data/espn_player_box_2024.parquet",
+   "rows": 198586,
+   "sha256": "41cb80f304dfa25930d5177d82e84b9f9de4fbe5e991153f9d96e4419f600c37",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_mens_college_basketball_player_boxscores/player_box_2024.parquet",
+    "release_tag": "espn_mens_college_basketball_player_boxscores",
+    "release_asset_sha256": "5a0953a8199af746873f9a5cb48d31d327f489e220e65f9c6878830bf550de2a",
+    "published_updated_at": "2024-10-31T08:06:08Z",
+    "retrieved_at": "2026-10-14T01:41:12.138700+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "espn_player_box_2025",
+   "file": "datapack/ncaam_v1/data/espn_player_box_2025.parquet",
+   "rows": 207613,
+   "sha256": "f208842807d76f04089c9029c302858b494f8dbbc3524f3217093b5f5b8e503d",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_mens_college_basketball_player_boxscores/player_box_2025.parquet",
+    "release_tag": "espn_mens_college_basketball_player_boxscores",
+    "release_asset_sha256": "68c59c2367ea17d08112d294b9974cec060e24d086bc25d3136edf8aaaf8fad3",
+    "published_updated_at": "2026-08-26T06:30:59Z",
+    "retrieved_at": "2026-10-14T01:41:12.138322+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "espn_player_box_2026",
+   "file": "datapack/ncaam_v1/data/espn_player_box_2026.parquet",
+   "rows": 196876,
+   "sha256": "8578e858bc06223fe9c883e70672f16ec3bf9a608df7103cdbc37848de617802",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_mens_college_basketball_player_boxscores/player_box_2026.parquet",
+    "release_tag": "espn_mens_college_basketball_player_boxscores",
+    "release_asset_sha256": "62505219f40b4a83d9a89883620b927a336e6c78c4cea1d711db086641e2b810",
+    "published_updated_at": "2026-09-01T19:46:20Z",
+    "retrieved_at": "2026-10-14T01:41:12.140113+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "ncaa_mbb_player_box_2026",
+   "file": "datapack/ncaam_v1/data/ncaa_mbb_player_box_2026.parquet",
+   "rows": 127465,
+   "sha256": "032c77aceabadbb4b38e3ca40d1396a0aeafdb735e4802ce9ba9c61d61b3afb4",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/ncaa_mbb_player_box/ncaa_mbb_player_box_2026.parquet",
+    "release_tag": "ncaa_mbb_player_box",
+    "release_asset_sha256": "462bf8ba96b796768902b27fc91eee0681faef834c98d7c5b1d774631fd2ce11",
+    "published_updated_at": "2026-08-12T03:04:02Z",
+    "retrieved_at": "2026-10-14T01:41:12.151819+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "ncaa_mbb_possessions_2026",
+   "file": "datapack/ncaam_v1/data/ncaa_mbb_possessions_2026.parquet",
+   "rows": 878168,
+   "sha256": "08c52d3ddded57ddc5cf938434f8f82f401f9cd4eb654975c34c48bf975ab8d8",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/ncaa_mbb_possessions/ncaa_mbb_possessions_2026.parquet",
+    "release_tag": "ncaa_mbb_possessions",
+    "release_asset_sha256": "f9746d7f4e6b30d78b60f2285ab4bc937c269cb244e493aec499b633b5f0cc18",
+    "published_updated_at": "2026-08-12T03:12:21Z",
+    "retrieved_at": "2026-10-14T01:41:12.167028+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "ncaa_mbb_lineups_2026",
+   "file": "datapack/ncaam_v1/data/ncaa_mbb_lineups_2026.parquet",
+   "rows": 288918,
+   "sha256": "153fdde2d84ff4a6e01cb91d7c1846d49a488a75f554efc6264a8728c10d26db",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/ncaa_mbb_lineups/ncaa_mbb_lineups_2026.parquet",
+    "release_tag": "ncaa_mbb_lineups",
+    "release_asset_sha256": "49de782982fbf8e808671f7d2a4c4b92ea322c1efd2d21517c7be5bb393fd3c9",
+    "published_updated_at": "2026-08-20T00:25:08Z",
+    "retrieved_at": "2026-10-14T01:41:12.156873+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "espn_shots_2026",
+   "file": "datapack/ncaam_v1/data/espn_shots_2026.parquet",
+   "rows": 991836,
+   "sha256": "4b7c108cf68df9ed272cd67b50b392f1e58712dd7d0c0c65d969d0d04c0dc32f",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/espn_mens_college_basketball_shots/shots_2026.parquet",
+    "release_tag": "espn_mens_college_basketball_shots",
+    "release_asset_sha256": "82e4cb03f3f9c1089094f0638b713e426274b722bfa94dd90e584c0e6a40672c",
+    "published_updated_at": "2026-09-01T20:01:36Z",
+    "retrieved_at": "2026-10-14T01:41:12.153370+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "ncaa_mbb_rapm_2024",
+   "file": "datapack/ncaam_v1/data/ncaa_mbb_rapm_2024.parquet",
+   "rows": 4919,
+   "sha256": "67d8b9bdc78c01eac8ac13c1247947befc98f881f46246a0fb6aece362019a92",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/ncaa_mbb_rapm/ncaa_mbb_rapm_2024.parquet",
+    "release_tag": "ncaa_mbb_rapm",
+    "release_asset_sha256": "a6e4e511096a3cb4a5ac18e88c724a3c209587efefb6e1fd6fa19be29c5a1714",
+    "published_updated_at": "2026-08-24T08:32:11Z",
+    "retrieved_at": "2026-10-14T01:41:12.153743+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "ncaa_mbb_rapm_2025",
+   "file": "datapack/ncaam_v1/data/ncaa_mbb_rapm_2025.parquet",
+   "rows": 4960,
+   "sha256": "7cb9fe75b3d2c0dafc4f0b4e9e1aceeb67a6777dd95aa8d17847601e5f5c2d0b",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/ncaa_mbb_rapm/ncaa_mbb_rapm_2025.parquet",
+    "release_tag": "ncaa_mbb_rapm",
+    "release_asset_sha256": "72492fa643f090ef094430165ed2dab901f16bccb6ad30577d4bfe523e0e8527",
+    "published_updated_at": "2026-08-24T08:32:26Z",
+    "retrieved_at": "2026-10-14T01:41:12.153860+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "ncaa_mbb_rapm_2026",
+   "file": "datapack/ncaam_v1/data/ncaa_mbb_rapm_2026.parquet",
+   "rows": 4974,
+   "sha256": "cb57b76724bc013b6f8099d89a74dc790099036fecb3c0842594db8c1de48b45",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/ncaa_mbb_rapm/ncaa_mbb_rapm_2026.parquet",
+    "release_tag": "ncaa_mbb_rapm",
+    "release_asset_sha256": "cd9e549fc7332eb9429c831accb7cfbc234b7cacace6c9beaccca77744891a31",
+    "published_updated_at": "2026-08-24T08:32:42Z",
+    "retrieved_at": "2026-10-14T01:41:12.154111+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "audit_source_discrepancies",
+   "file": "datapack/ncaam_v1/data/audit_source_discrepancies.parquet",
+   "rows": 34,
+   "sha256": "26bd253984034233959afd18558a5224cae98a22f3f53cbba0cba73748ed67d6",
+   "source": {
+    "derived_by": "data pack (measured, lagged, bridge or audit table built by the pack author)",
+    "url": null
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  },
+  {
+   "table": "ncaa_mbb_matchup_stints_2026",
+   "file": "datapack/ncaam_v1/data/ncaa_mbb_matchup_stints_2026.parquet",
+   "rows": 210508,
+   "sha256": "7fe12a62110c402a1038c066afbed9bbc344a6cde66e670546069562a387d3a9",
+   "source": {
+    "url": "https://github.com/sportsdataverse/sportsdataverse-data/releases/download/ncaa_mbb_matchup_stints/ncaa_mbb_matchup_stints_2026.parquet",
+    "release_tag": "ncaa_mbb_matchup_stints",
+    "release_asset_sha256": "7cb57c3d73addd98870e46be1cbfb7c062e7af0b49b2aedf6c785921423ebce5",
+    "published_updated_at": "2026-08-20T00:32:45Z",
+    "retrieved_at": "2026-10-14T01:41:12.153243+00:00"
+   },
+   "observed_at": "2026-10-14",
+   "known_at": null
+  }
+ ],
+ "lineups_validation": {
+  "pooling": {
+   "tau_per_100": 0,
+   "lineups_used": 3651
+  },
+  "persistence": {
+   "lineups": 459,
+   "corr_residual_first_vs_second_half": -0.091,
+   "note": "a correlation near zero means a lineup's result beyond its players' impacts did not repeat"
+  },
+  "role_composition": {
+   "lineups": 3782,
+   "coefficients": {
+    "no_creator": {
+     "points_per_100": -0.34,
+     "se": 0.92,
+     "z": -0.37,
+     "supported": false
+    },
+    "two_plus_shooters": {
+     "points_per_100": 0.24,
+     "se": 0.51,
+     "z": 0.47,
+     "supported": false
+    },
+    "no_rebounder": {
+     "points_per_100": -1.37,
+     "se": 0.58,
+     "z": -2.34,
+     "supported": false
+    },
+    "no_disruptor": {
+     "points_per_100": -0.58,
+     "se": 0.54,
+     "z": -1.08,
+     "supported": false
+    }
+   },
+   "multiple_testing": "four role tests: supported requires |z| > 2.50 (Bonferroni, 5% family-wise); in-sample only, so even a supported effect would remain a hypothesis until it holds on later games",
+   "note": "residual = adjusted lineup net minus its players' impact sum; a supported role effect would mean lineups play better or worse than their players add up to"
+  },
+  "stint_mapping": {
+   "mapped": 401565,
+   "unmapped": 19451,
+   "ambiguous_name_keys": 0
+  }
+ },
+ "market_layer": {
+  "status": "UNAVAILABLE",
+  "reason": "No men's college basketball odds source is configured: EdgeDesk's odds gateway does not capture basketball, and no quotes file in the market_quotes contract is present.",
+  "source": null,
+  "quotes": 0,
+  "refused": null
+ }
+}

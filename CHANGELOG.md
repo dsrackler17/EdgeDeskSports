@@ -1,5 +1,47 @@
 # Changelog
 
+## 2026-10-14 — Men's college basketball research engine: team strength, player impact, lineups, matchups and scenarios, validated without odds
+
+**EdgeDesk now has an independent research model for men's college basketball that runs without any sportsbook price. It explains who is good, why they are good, who makes them good, and how those strengths meet a particular opponent. On the held-out 2025-26 season its team ratings beat the incumbent points model. The player, lineup, scenario and style layers are each labelled by what their validation showed. A market comparison is a separate, optional layer; today it says "market comparison unavailable".** Docs: `docs/ncaam/README.md`, `VALIDATION.md`, `METHODOLOGY.md`, `METHODOLOGY_SOURCES.md`.
+
+- **The pack** (`datapack/ncaam_v1`): three uploaded archives, 34 tables.
+  - Each table's SHA-256 and row count is checked on every read.
+  - The pack's own scripts are never run.
+- **Audit** (`published/audit.json`):
+  - **The publisher's lineup table is quarantined.** Its opening fives match ESPN starters in 1.25% of team-games; the possession table's match in 99.3%.
+  - **Possession points match official finals exactly in 4,944 of 5,750 games.** 445 mismatches are a basket credited to the wrong team.
+  - **The shot archive's labels need care.** `score_value` is positive on 478,588 misses, and "MadeFreeThrow" labels missed free throws, so only `scoring_play` decides made or missed.
+  - **The FTA possession coefficient is fitted at 0.49,** not 0.44.
+- **Identity:**
+  - NCAA player ids are linked to ESPN athletes by box-score fingerprints: 4,889 of 5,011 players, with conflicts quarantined. These links catch nicknames that names would miss.
+  - D1 membership is set per season, with 7 reviewed overrides. Unknown membership is a separate regime.
+- **Team model:** additive opponent adjustment and tempo, with a prior from last season and transfer adjustments.
+  - Tuned on 2025 and frozen before 2026.
+  - On 2026 it beats the incumbent: margin CRPS −0.147 [−0.213, −0.088], log loss −0.0086 [−0.0130, −0.0036].
+  - The transfer prior is not confirmed on 2026, so it is experimental. Rest showed no effect.
+- **Style:** every factor is opponent-adjusted, and split-half reliability separates observed from sustainable. For example, 3P% allowed has reliability 0.24.
+- **Players:** possession-level RAPM with box-score and prior-season priors, plus team-block posterior SDs and separability flags.
+  - Held-out possessions are predicted better than by team ratings alone: −3.68 [−7.30, −0.09].
+  - Pure RAPM is not better than team ratings.
+- **Scenarios:** minutes are redistributed, never points subtracted.
+  - With availability known after the fact, scenarios did not improve game predictions (+0.016 CRPS [−0.026, +0.057]).
+  - Naive PPG subtraction was far worse (+3.53).
+  - Scenarios are conditional and experimental.
+  - The tool covers a player out, a minutes cap (foul trouble or a restriction), starter minutes to the bench, the five who close, and a player added from another team (a transfer). The matchup tool applies them to either team and shows the game with and without the scenario.
+- **Lineups and interactions:**
+  - Lineup results beyond player impacts did not persist (r = −0.09), so lineups pool to their players.
+  - No style interaction passed 2025 → 2026, so they are shown as hypotheses and add no points.
+- **Market layer:**
+  - It is an adapter for the pack's `market_quotes` contract: exact moneyline, spread and total, pushes, overtime rules and de-vig.
+  - It returns PASS on any failed gate: stale, suspended, unsupported, unknown rules, unconfirmed availability, or not market-validated.
+  - No odds source exists for basketball, so no quote is committed or fabricated.
+- **Pages** (`/research/ncaam/`): teams, team, player, scenario tool, matchup, as-of 2026 Final Four reports, 2026-27 openers (preseason carry-forward, clearly labelled), validation, data and method.
+- **Registry:** the ncaab_m entry links the research engine. The board's betting brain is unchanged.
+- **Tests and CI:** `.github/workflows/ncaam-research.yml` runs:
+  - 82 offline checks, 20 real-pack checks and 26 browser checks;
+  - a check that the frozen holdout and the published research rebuild exactly;
+  - the no-bypass guard, which covers the new files.
+
 ## 2026-10-14 — Server-only functions: lock the Collective, `edge_call` and three financial views away from the browser
 
 **The August ship-gate audit (PR #14) found that anyone holding the public anon key could call `public.edge_call`, which runs any Edge Function with the service-role key. They could also call every function in the `collective` schema, including the admin-id leak and the unchecked `billing_*` writers. Its fix never reached the repository. It would also have left all of them open, because it did not revoke the default `PUBLIC` grant.** `supabase/server_only_lockdown.sql` is the corrected fix. Paste it into the SQL editor; every report row should read `ok`.

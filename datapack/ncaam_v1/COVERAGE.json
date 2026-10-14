@@ -1,0 +1,315 @@
+{
+  "scope": "Men\u2019s NCAA Division I-oriented public archives; includes games against opponents outside the D1 reference. Not an assertion that every source row is D1-v-D1.",
+  "seasons": [
+    2024,
+    2025,
+    2026
+  ],
+  "source_tables": {
+    "espn_player_box_2024": {
+      "rows": 198586,
+      "fields": 55,
+      "bytes": 3359162
+    },
+    "espn_player_box_2025": {
+      "rows": 207613,
+      "fields": 55,
+      "bytes": 3517043
+    },
+    "espn_player_box_2026": {
+      "rows": 196876,
+      "fields": 55,
+      "bytes": 3423760
+    },
+    "espn_mbb_schedule_2024": {
+      "rows": 6249,
+      "fields": 84,
+      "bytes": 581580
+    },
+    "espn_mbb_schedule_2025": {
+      "rows": 6299,
+      "fields": 87,
+      "bytes": 1201558
+    },
+    "espn_mbb_schedule_2026": {
+      "rows": 6318,
+      "fields": 86,
+      "bytes": 1426930
+    },
+    "espn_shots_2026": {
+      "rows": 991836,
+      "fields": 20,
+      "bytes": 10463914
+    },
+    "espn_team_box_2024": {
+      "rows": 12480,
+      "fields": 57,
+      "bytes": 681393
+    },
+    "espn_team_box_2025": {
+      "rows": 12572,
+      "fields": 57,
+      "bytes": 666127
+    },
+    "espn_team_box_2026": {
+      "rows": 12598,
+      "fields": 59,
+      "bytes": 683004
+    },
+    "ncaa_mbb_lineups_2026": {
+      "rows": 288918,
+      "fields": 77,
+      "bytes": 13568726
+    },
+    "ncaa_mbb_matchup_stints_2026": {
+      "rows": 210508,
+      "fields": 33,
+      "bytes": 8348490
+    },
+    "ncaa_mbb_player_box_2026": {
+      "rows": 127465,
+      "fields": 125,
+      "bytes": 5799512
+    },
+    "ncaa_mbb_possessions_2026": {
+      "rows": 878168,
+      "fields": 56,
+      "bytes": 12331361
+    },
+    "ncaa_mbb_rapm_2024": {
+      "rows": 4919,
+      "fields": 11,
+      "bytes": 267212
+    },
+    "ncaa_mbb_rapm_2025": {
+      "rows": 4960,
+      "fields": 11,
+      "bytes": 269941
+    },
+    "ncaa_mbb_rapm_2026": {
+      "rows": 4974,
+      "fields": 11,
+      "bytes": 271775
+    },
+    "ncaa_mbb_rosters_2024": {
+      "rows": 9906,
+      "fields": 4,
+      "bytes": 92466
+    },
+    "ncaa_mbb_rosters_2025": {
+      "rows": 9848,
+      "fields": 4,
+      "bytes": 92687
+    },
+    "ncaa_mbb_rosters_2026": {
+      "rows": 10228,
+      "fields": 4,
+      "bytes": 95814
+    },
+    "ncaa_mbb_schedule_2024": {
+      "rows": 6243,
+      "fields": 7,
+      "bytes": 52061
+    },
+    "ncaa_mbb_schedule_2025": {
+      "rows": 6293,
+      "fields": 7,
+      "bytes": 55461
+    },
+    "ncaa_mbb_schedule_2026": {
+      "rows": 6297,
+      "fields": 7,
+      "bytes": 56366
+    },
+    "ncaa_mbb_team_box_2024": {
+      "rows": 12486,
+      "fields": 81,
+      "bytes": 1121932
+    },
+    "ncaa_mbb_team_box_2025": {
+      "rows": 12586,
+      "fields": 81,
+      "bytes": 1123597
+    },
+    "ncaa_mbb_team_box_2026": {
+      "rows": 12594,
+      "fields": 81,
+      "bytes": 1123346
+    },
+    "ncaa_mbb_team_ids_2024": {
+      "rows": 362,
+      "fields": 4,
+      "bytes": 5396
+    },
+    "ncaa_mbb_team_ids_2025": {
+      "rows": 364,
+      "fields": 4,
+      "bytes": 5337
+    },
+    "ncaa_mbb_team_ids_2026": {
+      "rows": 365,
+      "fields": 4,
+      "bytes": 5302
+    },
+    "team_season_identity_bridge": {
+      "rows": 1084,
+      "fields": 7,
+      "bytes": 12327
+    },
+    "team_game_measured_features": {
+      "rows": 37650,
+      "fields": 40,
+      "bytes": 1705614
+    },
+    "team_pregame_features": {
+      "rows": 37650,
+      "fields": 52,
+      "bytes": 9257519
+    },
+    "player_pregame_features_2026": {
+      "rows": 196876,
+      "fields": 36,
+      "bytes": 8319610
+    },
+    "audit_source_discrepancies": {
+      "rows": 34,
+      "fields": 11,
+      "bytes": 4175
+    }
+  },
+  "checks": [
+    "Release bytes checked against source sizes/hashes",
+    "Native source tables preserved by exact-value Parquet recompression",
+    "Delivered file hashes/row counts checked",
+    "Prior team/player windows assert target/future exclusion",
+    "DNP and zero-minute/ambiguous-player rows excluded from rate history",
+    "Native coverage, missingness and reconstructed-source QA reported",
+    "Each final ZIP CRC-tested and smaller than 30,000,000 bytes"
+  ],
+  "limitations": [
+    "No executable odds feed or bet settlement archive",
+    "Historical first-publication timestamps absent",
+    "No confirmed historical injury/availability/starting-lineup feed",
+    "Roster tables are name-based observed-participation summaries, not verified registration or current eligibility",
+    "NCAA detailed tables and RAPM are publisher-derived; use discrepancy and QA gates",
+    "Final-season RAPM/rankings/records may leak future games if used as historical pregame predictors",
+    "No guaranteed D1-v-D1 coverage; reference matches and source coverage are explicit",
+    "No full play-by-play event-text archive in this bundle; detailed shots, possessions and stints are supplied",
+    "No independent model profit/calibration claim"
+  ],
+  "seasons_coverage": {
+    "2024": {
+      "schedule_games": 6249,
+      "completed_schedule_games": 6243,
+      "team_box_games": 6240,
+      "team_box_rows": 12480,
+      "player_box_rows": 198586,
+      "player_box_games": 6241,
+      "schedule_duplicate_keys": 0,
+      "team_duplicate_keys": 0,
+      "completed_schedule_ids_without_team_boxes": [
+        401587235,
+        401594319,
+        401603093
+      ],
+      "team_game_rows_missing_datetime": 0,
+      "player_rows_missing_athlete_id": 32,
+      "player_duplicate_known_identity_rows": 0,
+      "team_game_group_size_counts": {
+        "2": 6240
+      },
+      "ncaa_team_rows": 12486,
+      "ncaa_team_rows_with_espn_match": 11830,
+      "ncaa_vs_espn_scoring_shooting_discrepant_rows": 5
+    },
+    "2025": {
+      "schedule_games": 6299,
+      "completed_schedule_games": 6292,
+      "team_box_games": 6286,
+      "team_box_rows": 12572,
+      "player_box_rows": 207613,
+      "player_box_games": 6290,
+      "schedule_duplicate_keys": 0,
+      "team_duplicate_keys": 0,
+      "completed_schedule_ids_without_team_boxes": [
+        401706980,
+        401711714,
+        401714520,
+        401720999,
+        401722003,
+        401725735,
+        401729957
+      ],
+      "team_game_rows_missing_datetime": 0,
+      "player_rows_missing_athlete_id": 1,
+      "player_duplicate_known_identity_rows": 0,
+      "team_game_group_size_counts": {
+        "2": 6286
+      },
+      "ncaa_team_rows": 12586,
+      "ncaa_team_rows_with_espn_match": 11942,
+      "ncaa_vs_espn_scoring_shooting_discrepant_rows": 18
+    },
+    "2026": {
+      "schedule_games": 6318,
+      "completed_schedule_games": 6300,
+      "team_box_games": 6299,
+      "team_box_rows": 12598,
+      "player_box_rows": 196876,
+      "player_box_games": 6300,
+      "schedule_duplicate_keys": 0,
+      "team_duplicate_keys": 0,
+      "completed_schedule_ids_without_team_boxes": [
+        401823003
+      ],
+      "team_game_rows_missing_datetime": 0,
+      "player_rows_missing_athlete_id": 11,
+      "player_duplicate_known_identity_rows": 0,
+      "team_game_group_size_counts": {
+        "2": 6299
+      },
+      "ncaa_team_rows": 12594,
+      "ncaa_team_rows_with_espn_match": 12046,
+      "ncaa_vs_espn_scoring_shooting_discrepant_rows": 11
+    }
+  },
+  "lineup_quality": {
+    "rows": 288918,
+    "contests": 6297,
+    "publisher_player_count_error_null_rows": 288918,
+    "rows_without_five_distinct_nonnull_names": 2,
+    "negative_duration_rows": 0,
+    "zero_duration_rows": 87,
+    "end_start_duration_discrepancy_rows": 0,
+    "warning": "Name/clock checks do not independently establish correct player identity, inferred substitutions or true exposure. Null QA flags are unknown, not passes."
+  },
+  "matchup_stint_quality": {
+    "rows": 210508,
+    "contests": 6291,
+    "duplicate_contest_stint_keys": 0,
+    "negative_duration_rows": 0,
+    "duration_reconciliation_failure_rows": 0
+  },
+  "possession_quality": {
+    "rows": 878168,
+    "contests": 6291,
+    "duplicate_contest_period_possession_keys": 0,
+    "missing_espn_crosswalk_rows": 0,
+    "period_counts": {
+      "2": 440792,
+      "1": 430355,
+      "3": 5946,
+      "4": 910,
+      "5": 165
+    },
+    "warning": "Periods 1 and 2 are halves; 3+ are overtime. Publisher reconstructed possessions are not independently certified official counts."
+  },
+  "shot_quality": {
+    "rows": 991836,
+    "games": 6275,
+    "nonscoring_rows_with_positive_score_value": 478588,
+    "coordinate_missing_rows": 0,
+    "primary_actor_missing_rows": 911,
+    "warning": "score_value can be positive on missed shots: never sum it as actual scored points without scoring_play and event validation. Transformed and raw coordinate systems require verification."
+  }
+}

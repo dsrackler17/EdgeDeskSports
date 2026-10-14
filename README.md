@@ -348,6 +348,42 @@ from the same model. NBA prices are not bought and value claims are off until
 a market test passes. Tests: `npm run nba:test`, `npm run nba:sql`,
 `npm run nba:e2e`, `npm run nba:check`.
 
+## Men's college basketball research — who is good, why, who makes them good, and how it plays against an opponent
+
+`/research/ncaam/` is an independent research engine for NCAA men's
+basketball that needs no sportsbook price. It is built from the college
+basketball data pack (`datapack/ncaam_v1`, hash-verified on every read) by
+`basketball/ncaam_research/` and the shared math in `lib/ncaam_research.js`.
+The pages cover:
+
+- **Teams:** opponent-adjusted offense, defense and tempo with uncertainty;
+  current form beside the season.
+- **What makes a team effective:** four factors, shot mix, rebounding, ball
+  security, free throws, transition and possession length. Each is observed
+  vs reliability-shrunk "sustainable".
+- **Players:** impact per possession (RAPM with box-score and prior-season
+  priors), minutes, role, separability, total contribution and replacement
+  cost.
+- **Lineups:** pooled toward their players.
+- **Conditional minutes scenarios.**
+- **Matchups:** any two teams.
+- **As-of pregame reports** and **2026-27 openers.**
+
+Every number is labelled descriptive, estimated, projected or conditional.
+
+On the held-out 2025-26 season the team model beats the incumbent points
+model on margin and win probability (log loss 0.529 vs 0.538), with
+day-clustered intervals excluding zero. The player layer adds a small,
+measurable signal only with its priors. Absence scenarios, lineup synergy
+and style interactions did not improve held-out predictions, so they are
+labelled experimental or hypotheses. The market comparison is a separate
+layer that says "market comparison unavailable" today; no basketball odds
+source is configured. See [`docs/ncaam/README.md`](docs/ncaam/README.md) and
+[`docs/ncaam/VALIDATION.md`](docs/ncaam/VALIDATION.md).
+
+Tests: `npm run ncaam:test`, `npm run ncaam:test:pack`, `npm run ncaam:e2e`,
+`npm run ncaam:check`. Refresh: `npm run ncaam:refresh`.
+
 ## The quant desk — the best verified bet across every sport, contract prices, and an independent audit
 
 "What's the best bet right now?" with no league named is now a scan of **every

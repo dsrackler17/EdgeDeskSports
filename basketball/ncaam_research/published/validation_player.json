@@ -1,0 +1,423 @@
+{
+ "schema": "edgedesk_ncaam_player_validation_v1",
+ "checkpoints": {
+  "tuning": [
+   "2026-01-15",
+   "2026-02-15"
+  ],
+  "holdout_from": "2026-02-15"
+ },
+ "possession_level": {
+  "tuning": {
+   "team_only": {
+    "mse": 13557.104574486311,
+    "possessions": 207581
+   },
+   "rapm_zero@1000": {
+    "mse": 13556.205183806376,
+    "possessions": 207581,
+    "box_prior_r2": null
+   },
+   "rapm_zero@2000": {
+    "mse": 13558.593002850566,
+    "possessions": 207581,
+    "box_prior_r2": null
+   },
+   "rapm_zero@4000": {
+    "mse": 13568.002397756265,
+    "possessions": 207581,
+    "box_prior_r2": null
+   },
+   "rapm_zero@8000": {
+    "mse": 13580.220849139278,
+    "possessions": 207581,
+    "box_prior_r2": null
+   },
+   "rapm_box@1000": {
+    "mse": 13552.340266665147,
+    "possessions": 207581,
+    "box_prior_r2": {
+     "o": 0.307,
+     "d": 0.103
+    }
+   },
+   "rapm_box@2000": {
+    "mse": 13551.769506705516,
+    "possessions": 207581,
+    "box_prior_r2": {
+     "o": 0.331,
+     "d": 0.112
+    }
+   },
+   "rapm_box@4000": {
+    "mse": 13559.76221615666,
+    "possessions": 207581,
+    "box_prior_r2": {
+     "o": 0.339,
+     "d": 0.115
+    }
+   },
+   "rapm_box@8000": {
+    "mse": 13572.614739783143,
+    "possessions": 207581,
+    "box_prior_r2": {
+     "o": 0.338,
+     "d": 0.114
+    }
+   },
+   "rapm_box_prev@1000": {
+    "mse": 13551.164119094854,
+    "possessions": 207581,
+    "box_prior_r2": {
+     "o": 0.327,
+     "d": 0.13
+    }
+   },
+   "rapm_box_prev@2000": {
+    "mse": 13550.446755501896,
+    "possessions": 207581,
+    "box_prior_r2": {
+     "o": 0.357,
+     "d": 0.144
+    }
+   },
+   "rapm_box_prev@4000": {
+    "mse": 13558.487172510397,
+    "possessions": 207581,
+    "box_prior_r2": {
+     "o": 0.368,
+     "d": 0.149
+    }
+   },
+   "rapm_box_prev@8000": {
+    "mse": 13571.598439042487,
+    "possessions": 207581,
+    "box_prior_r2": {
+     "o": 0.368,
+     "d": 0.147
+    }
+   }
+  },
+  "chosen": {
+   "variant": "rapm_box_prev",
+   "lambda": 2000,
+   "mse": 13550.446755501896
+  },
+  "holdout": {
+   "team_only": {
+    "mse": 13558.452588412301,
+    "possessions": 178717
+   },
+   "rapm_zero@1000": {
+    "mse": 13561.345432897246,
+    "possessions": 178717,
+    "box_prior_r2": null
+   },
+   "rapm_box@2000": {
+    "mse": 13555.368500315395,
+    "possessions": 178717,
+    "box_prior_r2": {
+     "o": 0.338,
+     "d": 0.118
+    }
+   },
+   "rapm_box_prev@2000": {
+    "mse": 13554.770560072919,
+    "possessions": 178717,
+    "box_prior_r2": {
+     "o": 0.367,
+     "d": 0.153
+    }
+   }
+  },
+  "holdout_comparisons": {
+   "rapm_zero_minus_team_only": {
+    "games": 1317,
+    "mean_diff_per_possession": 2.893,
+    "ci95": [
+     -1.23,
+     6.938
+    ]
+   },
+   "rapm_box_minus_team_only": {
+    "games": 1317,
+    "mean_diff_per_possession": -3.084,
+    "ci95": [
+     -6.815,
+     0.577
+    ]
+   },
+   "rapm_box_prev_minus_team_only": {
+    "games": 1317,
+    "mean_diff_per_possession": -3.682,
+    "ci95": [
+     -7.3,
+     -0.087
+    ]
+   },
+   "rapm_box_minus_rapm_zero": {
+    "games": 1317,
+    "mean_diff_per_possession": -5.977,
+    "ci95": [
+     -7.917,
+     -3.956
+    ]
+   },
+   "rapm_box_prev_minus_rapm_box": {
+    "games": 1317,
+    "mean_diff_per_possession": -0.598,
+    "ci95": [
+     -1.081,
+     -0.116
+    ]
+   }
+  },
+  "train_possessions": {
+   "tuning": 397060,
+   "holdout": 604641
+  },
+  "test_possessions": {
+   "tuning": 207581,
+   "holdout": 178717
+  },
+  "note": "squared error per possession on the points-per-100 scale; lineups on the floor are known after the fact"
+ },
+ "game_level_availability": {
+  "games_scored": 1326,
+  "all_games": {
+   "n": 1326,
+   "team_model": {
+    "mae": 8.858,
+    "crps": 6.2736,
+    "cov80": 0.825
+   },
+   "with_scenario_adjustment": {
+    "mae": 8.867,
+    "crps": 6.2896,
+    "cov80": 0.8288
+   },
+   "naive_ppg_subtraction": {
+    "mae": 13.537,
+    "crps": 9.8041,
+    "cov80": 0.6252
+   },
+   "scenario_minus_team_crps": {
+    "n": 1326,
+    "clusters": 47,
+    "mean_diff": 0.01601,
+    "ci95": [
+     -0.02597,
+     0.05722
+    ]
+   },
+   "naive_minus_team_crps": {
+    "n": 1326,
+    "clusters": 47,
+    "mean_diff": 3.5305,
+    "ci95": [
+     3.11595,
+     3.9208
+    ]
+   },
+   "mean_abs_adjustment": 0.833
+  },
+  "games_with_absent_rotation_player": {
+   "n": 748,
+   "team_model": {
+    "mae": 8.798,
+    "crps": 6.217,
+    "cov80": 0.8329
+   },
+   "with_scenario_adjustment": {
+    "mae": 8.794,
+    "crps": 6.2212,
+    "cov80": 0.8342
+   },
+   "naive_ppg_subtraction": {
+    "mae": 14.993,
+    "crps": 10.9548,
+    "cov80": 0.5695
+   },
+   "scenario_minus_team_crps": {
+    "n": 748,
+    "clusters": 45,
+    "mean_diff": 0.00413,
+    "ci95": [
+     -0.04775,
+     0.06032
+    ]
+   },
+   "naive_minus_team_crps": {
+    "n": 748,
+    "clusters": 45,
+    "mean_diff": 4.73778,
+    "ci95": [
+     4.14856,
+     5.3993
+    ]
+   },
+   "mean_abs_adjustment": 0.984
+  },
+  "redistribution_minutes": {
+   "teammates_scored": 8102,
+   "mae_redistribute_with_positions": 4.796,
+   "mae_redistribute_without_positions": 4.8,
+   "mae_no_redistribution": 5.019
+  },
+  "caveat": "availability is read from the box score after the game (oracle). No pregame availability feed exists, so this measures what correct availability would be worth, not what EdgeDesk could have known."
+ },
+ "stability": {
+  "rapm_zero": {
+   "players": 2017,
+   "split_half_r_net": 0.55
+  },
+  "rapm_box": {
+   "players": 2017,
+   "split_half_r_net": 0.558
+  }
+ },
+ "sensitivity": [
+  {
+   "name": "exact_reconciled_games_only",
+   "players": 3032,
+   "corr_net_with_primary": 0.9704,
+   "top50_overlap": 40
+  },
+  {
+   "name": "garbage_time_removed",
+   "players": 3032,
+   "corr_net_with_primary": 0.9876,
+   "top50_overlap": 43
+  },
+  {
+   "name": "half_penalty",
+   "players": 3032,
+   "corr_net_with_primary": 0.979,
+   "top50_overlap": 39
+  },
+  {
+   "name": "double_penalty",
+   "players": 3032,
+   "corr_net_with_primary": 0.9796,
+   "top50_overlap": 44
+  }
+ ],
+ "minutes_and_rates": {
+  "chosen_on_2025": {
+   "half_life_games": 2,
+   "k_position_minutes": 50,
+   "k_previous_season_minutes": 100
+  },
+  "scores": {
+   "selection_2025": {
+    "minutes:ewma": {
+     "n": 105077,
+     "mae": 4.8846,
+     "rmse": 6.3093
+    },
+    "minutes:season_mean": {
+     "n": 105077,
+     "mae": 5.2463,
+     "rmse": 6.679
+    },
+    "minutes:last5": {
+     "n": 105077,
+     "mae": 4.9858,
+     "rmse": 6.4597
+    },
+    "minutes:last_game": {
+     "n": 105077,
+     "mae": 5.7837,
+     "rmse": 7.6043
+    },
+    "pts:raw_season_rate": {
+     "n": 105077,
+     "mae": 3.2947,
+     "rmse": 4.4504
+    },
+    "pts:shrunk_rate": {
+     "n": 105077,
+     "mae": 3.2427,
+     "rmse": 4.3625
+    },
+    "reb:raw_season_rate": {
+     "n": 105077,
+     "mae": 1.4879,
+     "rmse": 2.0044
+    },
+    "reb:shrunk_rate": {
+     "n": 105077,
+     "mae": 1.4556,
+     "rmse": 1.9579
+    },
+    "ast:raw_season_rate": {
+     "n": 105077,
+     "mae": 0.9355,
+     "rmse": 1.3245
+    },
+    "ast:shrunk_rate": {
+     "n": 105077,
+     "mae": 0.9199,
+     "rmse": 1.2948
+    }
+   },
+   "holdout_2026": {
+    "minutes:ewma": {
+     "n": 105201,
+     "mae": 4.9076,
+     "rmse": 6.3088
+    },
+    "minutes:season_mean": {
+     "n": 105201,
+     "mae": 5.2721,
+     "rmse": 6.6789
+    },
+    "minutes:last5": {
+     "n": 105201,
+     "mae": 5.0089,
+     "rmse": 6.4592
+    },
+    "minutes:last_game": {
+     "n": 105201,
+     "mae": 5.8208,
+     "rmse": 7.6333
+    },
+    "pts:raw_season_rate": {
+     "n": 105201,
+     "mae": 3.3233,
+     "rmse": 4.4862
+    },
+    "pts:shrunk_rate": {
+     "n": 105201,
+     "mae": 3.267,
+     "rmse": 4.3999
+    },
+    "reb:raw_season_rate": {
+     "n": 105201,
+     "mae": 1.4955,
+     "rmse": 2.0117
+    },
+    "reb:shrunk_rate": {
+     "n": 105201,
+     "mae": 1.4627,
+     "rmse": 1.9633
+    },
+    "ast:raw_season_rate": {
+     "n": 105201,
+     "mae": 0.9515,
+     "rmse": 1.3479
+    },
+    "ast:shrunk_rate": {
+     "n": 105201,
+     "mae": 0.9363,
+     "rmse": 1.3192
+    }
+   }
+  }
+ },
+ "publisher_rapm_2026_correlation": {
+  "players": 3032,
+  "corr_net": 0.945,
+  "note": "descriptive: the publisher fit uses the same possessions (full season)"
+ }
+}

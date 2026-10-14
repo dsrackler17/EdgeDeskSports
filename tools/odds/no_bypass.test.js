@@ -157,7 +157,9 @@ chk('7 · the prop capture asks for the core markets only by default', JSON.stri
     'tools/datapack/verify_nfl.js', 'tools/datapack/parquet.js', 'football/nfl/pack_crosscheck.js', 'football/nfl/research/pack_research.js',
     /* the college baseball research engine (college_baseball/): free sources only, no market feed */
     'college_baseball/ingest/sources.js', 'college_baseball/ingest/build.js', 'college_baseball/walkforward.js', 'college_baseball/pitcher_walkforward.js', 'college_baseball/build_slate.js',
-    'college_baseball/lib/pricing.js', 'college_baseball/lib/readiness.js', 'college_baseball/release_gates.js', 'lib/edgedesk_cbase_ui.js'].forEach((f) => {
+    'college_baseball/lib/pricing.js', 'college_baseball/lib/readiness.js', 'college_baseball/release_gates.js', 'lib/edgedesk_cbase_ui.js',
+    /* the men's college basketball research engine (datapack/ncaam_v1): research without odds; its market layer reads a local quotes file only */
+    'basketball/ncaam_research/ingest.js', 'basketball/ncaam_research/build.js', 'basketball/ncaam_research/walkforward.js', 'basketball/ncaam_research/player_eval.js', 'basketball/ncaam_research/market.js', 'lib/ncaam_research.js', 'research/ncaam/research.js'].forEach((f) => {
     const t = read(f);
     /* a CALL is a URL to a spending function, a require of the gateway client, or the provider host — prose naming the gateway is fine */
     chk('10 · ' + f + ' calls no odds gateway, capture or provider', !/functions\/v1\/(odds_gateway|capture|odds|close)\b|require\([^)]*odds_gateway|api\.the-odds-api\.com|oddsblaze/.test(t));

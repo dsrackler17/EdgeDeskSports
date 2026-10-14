@@ -1,0 +1,59 @@
+{
+ "schema": "edgedesk_ncaam_interactions_v1",
+ "fitted_on": 2025,
+ "scored_on": 2026,
+ "sides": {
+  "2025": 10308,
+  "2026": 10280
+ },
+ "coefficients_2025": {
+  "three_rate": {
+   "label": "3-point attempt share (offense) x 3PA share allowed (defense)",
+   "points_per_100_per_sd2": 0.107,
+   "se": 0.136,
+   "significant_2025": false
+  },
+  "orb_pct": {
+   "label": "offensive rebounding x offensive rebounds allowed",
+   "points_per_100_per_sd2": 0.082,
+   "se": 0.136,
+   "significant_2025": false
+  },
+  "tov_pct": {
+   "label": "turnover rate x turnovers forced",
+   "points_per_100_per_sd2": -0.147,
+   "se": 0.132,
+   "significant_2025": false
+  },
+  "ftr": {
+   "label": "free-throw rate x free throws allowed",
+   "points_per_100_per_sd2": -0.061,
+   "se": 0.136,
+   "significant_2025": false
+  },
+  "rim_rate": {
+   "label": "rim attempt share x rim attempts allowed",
+   "points_per_100_per_sd2": 0.106,
+   "se": 0.136,
+   "significant_2025": false
+  }
+ },
+ "holdout_2026_squared_error_with_minus_without": {
+  "n": 10280,
+  "clusters": 134,
+  "mean_diff": 0.01295,
+  "ci95": [
+   -0.11516,
+   0.14196
+  ]
+ },
+ "improves_holdout": false,
+ "status": {
+  "three_rate": "HYPOTHESIS_NOT_SUPPORTED",
+  "orb_pct": "HYPOTHESIS_NOT_SUPPORTED",
+  "tov_pct": "HYPOTHESIS_NOT_SUPPORTED",
+  "ftr": "HYPOTHESIS_NOT_SUPPORTED",
+  "rim_rate": "HYPOTHESIS_NOT_SUPPORTED"
+ },
+ "rule": "MODEL_SUPPORTED requires a 2025 coefficient beyond 1.96 SE and a 2026 improvement whose 95% interval excludes zero; otherwise the matchup page adds no points for it"
+}
