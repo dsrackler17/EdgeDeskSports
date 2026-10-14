@@ -1,11 +1,25 @@
 {
  "schema": "edgedesk_nba_holdout_log_v1",
+ "rule": "every scoring of the sealed test window is appended here with the hash of the frozen specification; more than one entry means the test was looked at more than once",
  "unsealings": [
   {
    "at": "2026-10-14T04:18:01.052Z",
    "scope": "props",
    "reason": "final report: the frozen props specification scored once on the 2018-2026 test window",
    "spec_hash": "6740bc075970596b56250a5224d397ad864d4ba2adf427b8baf99be40f70c43d"
+  },
+  {
+   "at": "2026-10-14T04:50:59.139Z",
+   "spec_hash": "f055ac1b132505026311b48f3a9d16878c85894a791afee05b54d9c822e646de",
+   "reason": "final report: the frozen specification (selection-window choice and tuning, final data) scored once on the 2018-2026 test window",
+   "test_window": [
+    2018,
+    2026
+   ],
+   "chosen": {
+    "P": "G_stack_P",
+    "C": "G_stack_C"
+   }
   }
  ]
 }
