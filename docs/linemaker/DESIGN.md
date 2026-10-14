@@ -32,7 +32,7 @@ Everything else it uses already existed and is reused unchanged:
 | AI allowance | `supabase/ai_usage.sql` (+ `_rollback.sql`), `usageClaim` / `usageSettle` / `routeTier` in `edgedesk_ai/index.ts` |
 | Saved research | `supabase/saved_research.sql` (+ `_rollback.sql`), `lib/edgedesk_saved_research.js` (`EDSaved`) |
 | View RLS fix | `supabase/research_packets_views_rls.sql` (+ `_rollback.sql`); the same change is in `research_packets.sql` |
-| CI and schedules | `.github/workflows/linemaker.yml` |
+| CI and schedules | `.github/workflows/linemaker.yml` (tests), `linemaker-build.yml` (sheets, every three hours), `linemaker-calibrate.yml` (record, weekly) |
 
 ## 2. The calibration record
 

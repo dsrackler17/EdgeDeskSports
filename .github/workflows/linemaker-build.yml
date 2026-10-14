@@ -1,0 +1,59 @@
+# EdgeDesk — the linemaker's fair-line sheets (docs/linemaker/DESIGN.md).
+#
+#   build      every three hours: rebuild football/linemaker/fair_lines.json
+#              from the committed slates, append changed pregame sheets to the
+#              ledger, regrade, and commit only when something changed. No
+#              network, no odds credit, no secret.
+#
+# Its own workflow so a push never shows it as Skipped. The tests are in
+# linemaker.yml; the weekly calibration is in linemaker-calibrate.yml and
+# shares the linemaker-artifacts concurrency group, so the two never write at
+# the same time.
+name: Linemaker build
+run-name: Linemaker build · ${{ github.event_name }}
+
+on:
+  schedule:
+    - cron: '23 */3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    concurrency:
+      group: linemaker-artifacts
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The suites pass before anything is written
+        run: node tools/football/linemaker.test.js
+      - name: Build the sheets, append the ledger, grade
+        run: node tools/football/build_fair_lines.js && node tools/football/linemaker_grade.js --write && node tools/football/build_fair_lines.js --check
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A -- football/linemaker/
+          if git diff --cached --quiet; then
+            echo 'fair lines unchanged — nothing to commit'
+            exit 0
+          fi
+          git commit -m 'linemaker: fair-line sheets, ledger and grades'
+          for i in 1 2 3 4; do
+            git push origin main && exit 0
+            git pull --rebase origin main || true
+            sleep $((2 ** i))
+          done
+          echo 'could not push the fair-line sheets after 4 attempts'
+          exit 1
