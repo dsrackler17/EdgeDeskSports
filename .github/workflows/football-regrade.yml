@@ -22,9 +22,10 @@
 #
 # CFB IS THE LONG ONE. NFL 2026 rebuilds in ~20 s; CFB 2026 ran past 25 min
 # (2026-10-14) and was cancelled. Run CFB on its own (sport: CFB) with a
-# longer statement_timeout. Until it finishes, the run holds the CFB rebuild
-# lock and the rows it has touched, so the settle job's CFB grading through
-# the API may wait out its own limit and be retried on a later hour.
+# longer statement_timeout. Until a CFB rebuild is committed, the settle
+# job's hourly refresh covers only its own few days and warns that the season
+# is left to this workflow; while this runs it holds the CFB rebuild lock, and
+# the hourly refresh skips CFB for that hour rather than wait it out.
 #
 # SECRET: SB_DB_URL (the pooled Postgres connection string the deploy
 # workflow already uses to apply SQL). Nothing here deploys an edge function;

@@ -55,8 +55,13 @@ const MIGRATION = path.join(ROOT, 'supabase', 'migrations', '20260928120000_foot
    column's own type: in production that column is an enum, and below 4 every
    committing call (this tool's --commit, grade_game, fg2_refresh) fails with
    42804 "pick_result is of type collective.grade_result but expression is of
-   type text". */
-const REQUIRED_REVISION = 4;
+   type text".
+   Revision 5 writes a new legacy grade row with its projection's game_id and
+   model_id: in production game_id is NOT NULL, and below 5 every committing
+   call fails with 23502 "null value in column game_id of relation grades".
+   It also caps the backlog the hourly refresh takes on, so a season whose
+   rebuild was never committed is left to this tool, not retried every hour. */
+const REQUIRED_REVISION = 5;
 
 const CLASS_TEXT = {
   A: 'valid captured close already linked to the game',
@@ -98,10 +103,12 @@ function parseArgs(argv) {
 /* ---- the database doors ------------------------------------------------- */
 /* One statement, in its own transaction, with the time limit raised for
    that transaction only (SET LOCAL: nothing leaks into a pooled connection). */
-function pgStatement(sql, statementTimeout) {
+function pgStatement(sql, statementTimeout, lockTimeout) {
   if (!/^\d+\s*(ms|s|min|h)?$/.test(String(statementTimeout))) throw new Error('bad --statement-timeout: ' + statementTimeout);
+  lockTimeout = lockTimeout || '2min';
+  if (!/^\d+\s*(ms|s|min|h)?$/.test(String(lockTimeout))) throw new Error('bad lock timeout: ' + lockTimeout);
   return `set client_min_messages = warning; begin; set local statement_timeout = '${statementTimeout}'; ` +
-    `set local lock_timeout = '2min'; ${sql} commit;`;
+    `set local lock_timeout = '${lockTimeout}'; ${sql} commit;`;
 }
 function pgRunner(url, statementTimeout) {
   if (!url) throw new Error('--pg needs a connection string ($SB_DB_URL or --pg-url).');

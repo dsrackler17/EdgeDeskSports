@@ -455,6 +455,22 @@ chk('legacy sync: the grade row of every graded version equals its settlement',
 chk('legacy sync: the version the legacy grader graded (moose N1, first upload) no longer carries a grade',
   q(`select count(*) from collective.grades g join collective.projections p on p.id = g.projection_id join public.fx_games f on f.game_id = p.game_id
       where f.tag = 'N1' and p.projected_spread = -1 and (g.pick_result is not null or g.margin_error is not null);`) === 0);
+chk('legacy sync: a grade row the repair inserted carries its projection\'s game and model (NOT NULL in production)',
+  q(`select count(*) from collective.grades g join collective.projections p on p.id = g.projection_id
+      where g.game_id is distinct from p.game_id or g.model_id is distinct from p.model_id;`) === 0 &&
+  q(`select count(*) from collective.grades g join collective.fg2_settlements s on s.prediction_id = g.projection_id::text;`) > 0);
+(() => {
+  // a NOT NULL column the projection cannot fill is named, not left to a bare 23502
+  let bad = null;
+  try {
+    q(`alter table collective.grades add column fg2_test_unfillable integer not null default 0;
+       alter table collective.grades alter column fg2_test_unfillable drop default;
+       select collective.fg2_sync_legacy('NFL', 2026, gen_random_uuid());`);
+  } catch (e) { bad = String(e.message); }
+  q(`alter table collective.grades drop column if exists fg2_test_unfillable;`);
+  chk('legacy sync: a NOT NULL grade column with no source on the projection is named in the error',
+    /fg2_test_unfillable is NOT NULL with no default/.test(bad || ''), (bad || '').slice(0, 300));
+})();
 chk('legacy sync: game_detail now serves the recovered close', Number(q(`select d.closing_spread from collective.game_detail d join public.fx_games f on f.game_id = d.game_id where f.tag = 'N3';`)) === -2.5);
 
 /* ---- rerun: nothing moves -------------------------------------------------------------------- */
@@ -483,11 +499,21 @@ chk('legacy sync: game_detail now serves the recovered close', Number(q(`select 
   const s1 = snap();
   // N1 kicked off weeks ago; take its official close away and the refresh must find it again
   q(`delete from collective.fg2_official_closes c using public.fx_games f where f.game_id::text = c.canonical_game_id and f.tag = 'N1';`);
+  // ... unless the season holds more never-processed games than the hourly
+  // path may take on: then it is the regrade's, and the refresh says so
+  q(`update collective.fg2_config set value = '0' where key = 'refresh_max_backlog_games';`);
+  const capped = q(`select collective.fg2_refresh('NFL', 2026, 1);`);
+  chk('refresh: a backlog over refresh_max_backlog_games is left to the regrade and reported, its window still refreshed',
+    capped && capped.committed === true && capped.backlog && capped.backlog.taken === false && capped.backlog.unprocessed_games >= 1 &&
+    capped.backlog.max === 0 && q(`select count(*) from collective.fg2_official_closes c join public.fx_games f on f.game_id::text = c.canonical_game_id where f.tag = 'N1';`) === 0,
+    capped && capped.backlog);
+  q(`update collective.fg2_config set value = '25' where key = 'refresh_max_backlog_games';`);
   const r = q(`select collective.fg2_refresh('NFL', 2026, 1);`);
   const s2 = snap();
   chk('refresh: a finished game with no official close is back in scope and gets the same close', JSON.stringify(s1) === JSON.stringify(s2), { s1, s2 });
   chk('refresh: it commits, says its scope, and audits nothing when nothing changed',
-    r && r.committed === true && /^games from /.test(r.scope) && r.audit_rows_this_run === 0 && r.install_revision === 4, r && { scope: r.scope, a: r.audit_rows_this_run });
+    r && r.committed === true && /^games from /.test(r.scope) && r.audit_rows_this_run === 0 && r.install_revision === 5 &&
+    r.backlog && r.backlog.taken === true, r && { scope: r.scope, a: r.audit_rows_this_run, b: r.backlog });
   let bad = null;
   try { q(`select collective.fg2_refresh('NFL', 2026, 0);`); } catch (e) { bad = String(e.message); }
   chk('refresh: a zero-day refresh is refused', /at least 1/.test(bad || ''), bad);
@@ -495,7 +521,7 @@ chk('legacy sync: game_detail now serves the recovered close', Number(q(`select 
     q(`select has_function_privilege('service_role', 'collective.fg2_refresh(text, integer, integer)', 'execute')
         and not has_function_privilege('anon', 'collective.fg2_refresh(text, integer, integer)', 'execute');`) === 't');
 })();
-chk('revision: the installed revision is 4', q(`select collective.fg2_install_revision();`) === 4);
+chk('revision: the installed revision is 5', q(`select collective.fg2_install_revision();`) === 5);
 chk('lookups: per-game reads have indexes on the id casts the views use',
   q(`select count(*) from pg_indexes where schemaname = 'collective' and indexname in ('fg2_games_id_text_idx', 'fg2_projections_game_text_idx', 'fg2_grades_projection_text_idx');`) === 3);
 chk('lookups: one signature per importer (no ambiguous overloads)',
@@ -616,13 +642,23 @@ chk('lookups: one signature per importer (no ambiguous overloads)',
   chk('tool: a committed NFL regrade runs end to end and writes its reconciliation',
     ok.status !== 1 && files.some(f => /^football-v2-2026-.*\.md$/.test(f)) && /football-v2 reconciliation/.test(ok.stdout),
     { status: ok.status, err: (ok.stderr || '').slice(-400), files });
+  // the settle job's hourly door: the same psql, its own limit, against this database
+  const S = require(path.join(ROOT, 'tools', 'collective', 'settle_finals.js'));
+  const savedPath = process.env.PATH;
+  process.env.PATH = env.PATH;
+  let direct = null, derr = null;
+  try { direct = S.pgRefresher(url).refresh('NFL', 2026, 1); } catch (e) { derr = String(e.message); }
+  process.env.PATH = savedPath;
+  chk('tool: the settle job\'s direct refresh runs fg2_refresh over psql and reads its report',
+    direct && direct.committed === true && direct.sport === 'NFL' && /^games from /.test(direct.scope) && direct.backlog,
+    derr || (direct && { scope: direct.scope, backlog: direct.backlog }));
   q(`update collective.fg2_config set value = '1' where key = 'install_revision';`);
   const old = tool([]);
   chk('tool: a database on an older revision is refused with the way out',
     old.status === 1 && /revision 1/.test(old.stderr) && /apply_migration: true/.test(old.stderr), (old.stderr || '').slice(-300));
-  q(`update collective.fg2_config set value = '4' where key = 'install_revision'; alter database fg2 reset statement_timeout;`);
+  q(`update collective.fg2_config set value = '5' where key = 'install_revision'; alter database fg2 reset statement_timeout;`);
   chk('tool: the revision the tool needs is the revision the migration installs',
-    RB.REQUIRED_REVISION === 4 && /\('install_revision', '4'::jsonb/.test(SQL));
+    RB.REQUIRED_REVISION === 5 && /\('install_revision', '5'::jsonb/.test(SQL));
   try { fs.rmSync(out, { recursive: true, force: true }); } catch (_) {}
 })();
 

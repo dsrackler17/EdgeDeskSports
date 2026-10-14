@@ -78,15 +78,17 @@ insert into collective.fg2_config (key, value, note) values
   ('snapshot_relations', '[]'::jsonb,
    'Operator-declared snapshot relations, used before discovery: [{"relation":"odds.x","source":"collective_odds","event_col":"event_id","time_col":"captured_at","line_col":"point","line_kind":"side","side_col":"outcome","market_col":"market","book_col":"book","id_col":"id"}]. line_kind is home | away | side.'),
   ('snapshot_import_margin_minutes', '120'::jsonb,
-   'Timed price history is copied from [kickoff - (close window + margin), kickoff + margin] of its own event. Nothing outside the close window can ever be a close; the margin keeps the in-game and just-stale rows a game''s close class is read from. Widen the window and re-run the rebuild to copy older rows.')
+   'Timed price history is copied from [kickoff - (close window + margin), kickoff + margin] of its own event. Nothing outside the close window can ever be a close; the margin keeps the in-game and just-stale rows a game''s close class is read from. Widen the window and re-run the rebuild to copy older rows.'),
+  ('refresh_max_backlog_games', '25'::jsonb,
+   'The hourly refresh (fg2_refresh) also takes every finished game older than its window that the settlement has never processed, up to this many. More than that is a season whose rebuild has not been committed: the refresh then covers its own window only and reports the backlog, which is the Football regrade''s job (a whole season through the hourly path is more than an hour.)')
 on conflict (key) do nothing;
 
 -- Which revision of THIS file is installed. It is re-applied in place (every
 -- statement is idempotent), so the revision is how a caller knows the
 -- database carries the functions it expects.
 insert into collective.fg2_config (key, value, note) values
-  ('install_revision', '4'::jsonb,
-   'Revision of supabase/migrations/20260928120000_football_grading_v2.sql installed here. 2: window-bounded, index-driven snapshot import; breadth tie-break; fg2_refresh. 3: every UPDATE/DELETE qualified, so grade_game / fg2_refresh run through PostgREST (pg-safeupdate); fg2_compute_close''s scratch table is per transaction, so callers of different roles can share a pooled session. 4: fg2_sync_legacy casts the ATS result to the legacy grade column''s own type (an enum in production, collective.grade_result).')
+  ('install_revision', '5'::jsonb,
+   'Revision of supabase/migrations/20260928120000_football_grading_v2.sql installed here. 2: window-bounded, index-driven snapshot import; breadth tie-break; fg2_refresh. 3: every UPDATE/DELETE qualified, so grade_game / fg2_refresh run through PostgREST (pg-safeupdate); fg2_compute_close''s scratch table is per transaction, so callers of different roles can share a pooled session. 4: fg2_sync_legacy casts the ATS result to the legacy grade column''s own type (an enum in production, collective.grade_result). 5: a new legacy grade row carries its projection''s game_id / model_id (NOT NULL in production); the hourly refresh never grows into a whole-season rebuild (refresh_max_backlog_games).')
 on conflict (key) do update set value = excluded.value, note = excluded.note;
 
 create or replace function collective.fg2_cfg(p_key text) returns jsonb
@@ -2158,6 +2160,7 @@ declare
   n_close int := 0; n_grade int := 0; n_clear int := 0; n_ins int := 0;
   c_res text; c_me text; c_br text; c_at text; ptype text; rtype text;
   target text; key text;
+  c_fill text; c_from text; c_unfilled text;
 begin
   perform set_config('collective.maintenance', 'on', true);
   if rr is not null and collective.fg2_col(rr, array['closing_spread']) is not null then
@@ -2221,10 +2224,33 @@ begin
     get diagnostics n_grade = row_count;
     -- a graded version with no grade row yet gets one (grades table only)
     if key = 'projection_id' then
+      -- (revision 5) the grade row also carries its projection's identity: in
+      -- production collective.grades.game_id is NOT NULL with no default, and
+      -- below 5 every committing call failed with 23502 "null value in column
+      -- game_id of relation grades". game_id and model_id, and any other
+      -- column the row cannot be written without, are copied from the
+      -- projection by name; one with no column of that name on the projection
+      -- is named here rather than left to a bare not-null error.
+      select string_agg(', ' || quote_ident(a.attname), '' order by a.attnum) filter (where pa.attname is not null),
+             string_agg(', p.' || quote_ident(a.attname) || '::' || format_type(a.atttypid, a.atttypmod), '' order by a.attnum)
+               filter (where pa.attname is not null),
+             string_agg(a.attname::text, ', ' order by a.attnum) filter (where pa.attname is null)
+        into c_fill, c_from, c_unfilled
+        from pg_attribute a
+        left join pg_attribute pa on pa.attrelid = pr and pa.attname = a.attname and pa.attnum > 0 and not pa.attisdropped
+       where a.attrelid = target::regclass and a.attnum > 0 and not a.attisdropped
+         and a.attname::text <> all (array_remove(array['projection_id', c_res, c_me, c_br, c_at], null))
+         and ((a.attname in ('game_id', 'model_id') and pa.attname is not null)
+              or (a.attnotnull and not a.atthasdef and a.attidentity = '' and a.attgenerated = ''));
+      if c_unfilled is not null then
+        raise exception 'fg2_sync_legacy: %.% is NOT NULL with no default and collective.projections has no column of that name to fill it from',
+          target, c_unfilled;
+      end if;
       execute format($q$
-        insert into %1$s (projection_id%2$s)
-        select s.prediction_id::%7$s%3$s
+        insert into %1$s (projection_id%2$s%8$s)
+        select s.prediction_id::%7$s%3$s%9$s
           from collective.fg2_settlements s
+          join collective.projections p on p.id::text = s.prediction_id
          where s.grading_version = %4$L and collective.fg2_league(s.sport) = %5$L and s.season = %6$s
            and s.prediction_id is not null
            and (s.ats_result is not null or s.margin_error is not null or s.brier is not null)
@@ -2236,7 +2262,7 @@ begin
         concat(case when c_res is not null then ', s.ats_result::' || rtype end,
                case when c_me is not null then ', s.margin_error' end,
                case when c_br is not null then ', s.brier' end),
-        gv, p_league, p_season, ptype);
+        gv, p_league, p_season, ptype, coalesce(c_fill, ''), coalesce(c_from, ''));
       get diagnostics n_ins = row_count;
     end if;
     -- every OTHER version of a settled model/game carries no grade: exactly
@@ -2280,8 +2306,10 @@ insert into fg2_install_report (step, outcome, detail) values
 -- The ordered rebuild. p_recent_days null = the whole season (what the
 -- regrade runs); a number = the hourly refresh: the games that kicked off in
 -- the last p_recent_days days, plus every finished game the settlement has
--- never processed, and only the market rows that can bear on them. Same
--- functions, same order, same audit; the scope is in the report.
+-- never processed (up to refresh_max_backlog_games of them; a larger backlog
+-- is left to the regrade and reported), and only the market rows that can
+-- bear on them. Same functions, same order, same audit; the scope is in the
+-- report.
 create or replace function collective.fg2_rebuild_run(p_sport text, p_season integer, p_commit boolean,
   p_recent_days numeric) returns jsonb
 language plpgsql as $fn$
@@ -2293,21 +2321,34 @@ declare
   diag jsonb;
   scope_from timestamptz;
   import_from timestamptz;
+  backlog_n int := 0; backlog_from timestamptz; backlog_max int; backlog_taken boolean;
 begin
   if lg not in ('NFL', 'CFB') then raise exception 'fg2_rebuild: % is not a football sport', p_sport; end if;
   perform pg_advisory_xact_lock(hashtext('fg2_rebuild:' || lg || ':' || p_season));
   if p_recent_days is not null then
-    select least(now() - make_interval(secs => p_recent_days * 86400), min(g.kickoff_at)) into scope_from
+    scope_from := now() - make_interval(secs => p_recent_days * 86400);
+    -- the never-processed games older than the window
+    select count(*), min(g.kickoff_at) into backlog_n, backlog_from
       from collective.fg2_src_games g
-     where collective.fg2_league(g.sport) = lg and g.season = p_season and g.kickoff_at <= now()
+     where collective.fg2_league(g.sport) = lg and g.season = p_season and g.kickoff_at < scope_from
        and not exists (select 1 from collective.fg2_game_alias a where a.game_id = g.game_id)
        and not exists (select 1 from collective.fg2_official_closes c where c.canonical_game_id = g.game_id);
+    -- (revision 5) a few are a late final, taken here; a season of them is a
+    -- rebuild never committed, and through this path it is a whole-season
+    -- rebuild every hour that no time limit lets finish: left to the regrade
+    backlog_max := coalesce((collective.fg2_cfg('refresh_max_backlog_games') #>> '{}')::int, 25);
+    backlog_taken := backlog_n <= backlog_max;
+    if backlog_taken then scope_from := least(scope_from, backlog_from); end if;
     -- a market event may list the game up to the kickoff tolerance away
     import_from := scope_from - make_interval(secs => collective.fg2_tolerance_minutes() * 60);
   end if;
   rep := jsonb_build_object('run_id', run, 'sport', lg, 'season', p_season, 'grading_version', collective.fg2_version(),
     'install_revision', collective.fg2_install_revision(), 'committed', p_commit, 'started_at', now(),
     'scope', case when scope_from is null then 'season' else 'games from ' || scope_from end);
+  if p_recent_days is not null then
+    rep := rep || jsonb_build_object('backlog', jsonb_build_object('unprocessed_games', backlog_n,
+      'oldest_kickoff', backlog_from, 'max', backlog_max, 'taken', backlog_taken));
+  end if;
   insert into collective.fg2_rebuild_runs (run_id, sport, season, committed) values (run, lg, p_season, p_commit);
   rep := rep || jsonb_build_object('1_duplicates_aliased', collective.fg2_detect_duplicates(lg, p_season));
   rep := rep || jsonb_build_object('registry', collective.fg2_build_registry(lg));
@@ -2358,8 +2399,9 @@ begin
   return collective.fg2_rebuild_run(p_sport, p_season, p_commit, null);
 end $fn$;
 
--- The hourly refresh the settle job calls through the API: always commits,
--- bounded to recent and never-processed games.
+-- The hourly refresh the settle job calls (over a direct connection with its
+-- own time limit, or through the API): always commits, bounded to recent and
+-- never-processed games.
 create or replace function collective.fg2_refresh(p_sport text, p_season integer, p_recent_days integer default 4) returns jsonb
 language plpgsql as $fn$
 begin

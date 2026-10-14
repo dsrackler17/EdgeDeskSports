@@ -124,9 +124,18 @@ create trigger projections_block_mutation before update or delete on collective.
 -- expression is of type text"), so it is one here: a text value written to it
 -- without a cast fails this suite the way it fails the real database.
 create type collective.grade_result as enum ('win', 'loss', 'push');
+-- The grade row carries its projection's game in production, NOT NULL with no
+-- default (the next 2026-10-14 NFL regrade was refused: "null value in column
+-- game_id of relation grades violates not-null constraint"), so it does here.
+-- model_id NOT NULL is a guess about SHAPE that holds the insert to the same
+-- rule: every NOT NULL column without a default must be filled.
 create table collective.grades (
   projection_id uuid primary key references collective.projections(id),
+  game_id uuid not null references collective.games(id),
+  model_id uuid not null references collective.models(id),
   pick_result collective.grade_result, margin_error numeric, brier numeric,
+  note text,
+  grader_revision integer not null default 1,
   graded_at timestamptz not null default now()
 );
 
@@ -139,8 +148,8 @@ begin
   select home_score, away_score, closing_spread into r from collective.results where game_id = p_game_id;
   if r.home_score is null then return jsonb_build_object('graded', 0); end if;
   m := r.home_score - r.away_score; cl := r.closing_spread;
-  insert into collective.grades (projection_id, pick_result, margin_error, brier)
-  select p.id,
+  insert into collective.grades (projection_id, game_id, model_id, pick_result, margin_error, brier)
+  select p.id, p.game_id, p.model_id,
          (case when cl is null or p.pick_side is null then null
               when m + cl = 0 then 'push'
               when (p.pick_side = 'home') = (m + cl > 0) then 'win' else 'loss' end)::collective.grade_result,
