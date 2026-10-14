@@ -1,7 +1,14 @@
-# NHL — model card (`edgedesk_nhl_v1`)
+# NHL — model card (`edgedesk_nhl_v1`, production candidate `xg_core`)
 
 > Status: **validated against outcomes, not tested against the market.**
 > Fair lines are published; value claims are off.
+>
+> Since 2026-10-13 the engine also has a model lab (`NHL_LAB.md`), player-prop
+> research (`NHL_PROPS.md`), a data-source registry and a box-score
+> reconciliation (`NHL_SOURCES.md`), a Supabase warehouse and operations
+> notes (`NHL_OPERATIONS.md`), and the audit that preceded them
+> (`NHL_AUDIT.md`). Two amendments changed the production model; both are
+> in §3.
 
 ## 1. Data
 
@@ -137,6 +144,8 @@ penalised team on penalties; a goal row's score already includes the goal;
    goalie goals saved above expected shrunk toward a replacement-level prior;
    projected starters (recent usage, the league's measured back-to-back
    rule). Half-life 180 days, a 32-game prior (tuned on the selection window).
+   Special-teams ratings are still computed and shown, but since 2026-10-13
+   they are not in the price (§3, amendment 2).
 3. **Goal model** (`hockey/model/glm.js`). Poisson regression of each team's
    regulation goals on the ratings (log ratios), home ice and back-to-backs,
    with the league's running scoring level as an offset; refitted each season
@@ -146,13 +155,29 @@ penalised team on penalties; a goal row's score already includes the goal;
 4. **Score distribution** (`hockey/model/distribution.js`, browser + Node).
    An exact 30-second dynamic programme over regulation with empirical
    score-effect multipliers by lead and time (they encode leaders sitting back,
-   trailers pressing and goalie pulls), 3-on-3 overtime with a fitted rate,
-   the shootout at its observed home rate, and sudden death in the playoffs.
-5. **Markets**: 2-way moneyline (incl. OT/SO), 60-minute 3-way, puck line
-   ±1.5 (an OT/SO win is a one-goal win), totals 5–7 (incl. OT; shootout
-   winner credited one goal; whole lines push), team totals.
+   trailers pressing and goalie pulls). Since 2026-10-13 the first period is
+   its own time bucket (§3, amendment 1). Overtime is 3-on-3 at a fitted rate,
+   the shootout is at its observed home rate, and playoffs are sudden death.
+   The same code re-prices any goalie or lineup scenario in the reader's
+   browser.
+5. **Markets** (`distribution.fullSheet`), each with its own settlement and
+   held-out status:
+   - 2-way moneyline (incl. OT/SO);
+   - 60-minute 3-way;
+   - puck lines ±1, ±1.5, ±2.5, ±3.5 (an OT/SO win is a one-goal win);
+   - totals 4.5–8.5 (incl. OT; shootout winner credited one goal; whole lines
+     push, with fair odds on the conditional ratio);
+   - regulation totals;
+   - team totals 1.5–4.5;
+   - first-period 3-way and totals.
+6. **Why the number** (`hockey/model/explain.js`). Each price is decomposed
+   into its factors: home ice, and each club's 5v5 creation, 5v5 suppression,
+   results beyond chances, and rest. The values are exact Shapley values
+   through the whole chain and add up to the published probability. The
+   narrative is a fixed template over these numbers; no language model
+   writes it.
 
-6. **Lineups** (`hockey/model/lineups.js`), point in time: a skater's value
+7. **Lineups** (`hockey/model/lineups.js`), point in time: a skater's value
    is his recent time on ice per game (his last 20 games, any team, shrunk
    toward 10 minutes); a lineup's value is the sum over the dressed skaters;
    the feature is the log ratio of tonight's lineup to the club's typical one
@@ -184,6 +209,25 @@ Moneyline log loss (lower is better):
 | xG + projected lineup | 0.6745 | 0.6625 | 0.6574 |
 | xG + confirmed lineup | 0.6746 | 0.6618 | 0.6565 |
 | xG + confirmed goalie and lineup | 0.6743 | 0.6617 | 0.6558 |
+| **xG core (special-teams block removed): production since 2026-10-13** | **0.6746** | **0.6629** | 0.6541 (n 89) |
+
+**Amendments on 2026-10-13** (`hockey/model/walkforward.js` header; full
+evidence in `NHL_LAB.md`):
+
+1. **The period profile.** Score effects separate the first period from the
+   second. First-period prices had run 3–5 points too high. The moneyline is
+   unchanged (−0.000006); the first-period score likelihood improves by
+   +0.0036 per game on selection and +0.0087 on confirmation.
+2. **Parsimony.** `xg_core` drops the four special-teams features. As a
+   block they were indistinguishable from noise (selection −0.00007,
+   confirmation +0.00015). Rule 4 already prefers the simpler model unless a
+   richer one wins by 0.001 on selection. On confirmation it is not
+   significantly worse (+0.00015, 95% −0.00048 to +0.00087), and it beats Elo
+   by 0.0037 (95% −0.0054 to −0.0021).
+
+Both amendments were declared after the confirmation window had been read.
+The 2026-27 season is the clean test. The rows above the amendments are the
+record as first published, kept for reference.
 
 (Rescored after the blocked-shot fix: every selection and confirmation figure
 is unchanged to four decimals, give or take one in the last digit, and so is
@@ -213,11 +257,13 @@ best baseline):
 
 | Market | Status | Notes |
 |---|---|---|
-| Moneyline | OUTCOME_VALIDATED | Brier 0.2353, slope 1.08, mean p − y +0.008 |
-| Puck line home −1.5 / away −1.5 | OUTCOME_VALIDATED | slopes 0.94 / 0.99 |
-| Total 5.5 / 6.5 | PROVISIONAL | calibration slopes 0.81 / 0.80 (over-confident) |
-| 60-minute 3-way | PROVISIONAL | the draw is under-priced: 20.5% predicted vs 22.4% observed |
-| Team totals | PROVISIONAL | not separately scored |
+| Moneyline | OUTCOME_VALIDATED | Brier 0.2353, slope 1.06, mean p − y +0.009 (`xg_core`) |
+| Puck line home −1.5 / away −1.5 | OUTCOME_VALIDATED | slopes 0.94 / 0.98 |
+| Alternate puck lines −2.5, +2.5, +3.5 | OUTCOME_VALIDATED | scored in the lab; −3.5 is PROVISIONAL (slope 0.77) |
+| Team totals 1.5 / 2.5 / 3.5, both sides | OUTCOME_VALIDATED | scored in the lab; slopes 0.87–1.10 |
+| First-period total 1.5 | OUTCOME_VALIDATED | scored in the lab; other first-period lines PROVISIONAL |
+| Totals 4.5–8.5, regulation totals | PROVISIONAL | calibration slopes 0.69–0.82 (over-confident); neither a shape term nor a longer calibration window fixes it (lab, Model F) |
+| 60-minute 3-way | PROVISIONAL | the draw is under-priced (20.3% vs 22.4%; slope 0.68) |
 | **Against the close** | **NOT_TESTED** | no licensed closing archive (`hockey/model/market_test.js` is ready) |
 
 xG (`hockey/xg/report.json`): beats a distance-only model in every season and
@@ -236,8 +282,9 @@ undocumented, so possibly in-sample) is better calibrated than mine.
   out-of-sample test; the ledger (`hockey/ledger/`) freezes every published
   price before the puck drops so that test is honest.
 - Lineups are measured but not in the price: confirmed lineups help, and only
-  arrive at warmups; no injury or line-rush feed is wired. Line combinations,
-  travel and time zones are not modelled.
+  arrive at warmups; no injury or line-rush feed is wired. Line combinations
+  are not modelled. Travel and time zones are measured and shown, and add
+  nothing out of sample.
 - Retrospective data: `known_at` is unknown for every historical row; the
   walk-forward assumes a game is known four hours after its start.
 - Starters are projected unless confirmed by hand with a source.
@@ -246,4 +293,11 @@ undocumented, so possibly in-sample) is better calibrated than mine.
 - Referees are not modelled: one season of assignments, no assignment times,
   and no repeatable effect found.
 - Totals are over-confident and the 60-minute draw is under-priced; both are
-  labelled PROVISIONAL in every view.
+  labelled PROVISIONAL in every view. Overdispersion, draw inflation and a
+  longer calibration window were each tested and rejected (`NHL_LAB.md` §4).
+- Machine-learning challengers, ensembles, travel, time zones, congestion,
+  recent form and luck regression were tested out of sample and do not clear
+  the bar (`NHL_LAB.md`). They appear as research, never in the price.
+- The starter projection is right about two times in three
+  (`nhl_diagnostics.json`). A licensed confirmed-starter feed is the most
+  valuable missing input.

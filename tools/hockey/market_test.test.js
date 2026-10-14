@@ -46,13 +46,13 @@ function world(seed, modelNoise, marketNoise, n) {
 }
 
 let w = world(11, 0.0, 0.12, 2500);
-let r = MT.run({ closing: w.closing, predictions: w.pf });
+let r = MT.run({ closing: w.closing, predictions: w.pf, model: 'xg_no_goalie' /* the model the synthetic predictions are keyed by */ });
 chk('a model that knows the truth beats a noisy close: TESTED_AHEAD', r.markets.moneyline && r.markets.moneyline.status === 'TESTED_AHEAD', r.markets.moneyline && r.markets.moneyline.why);
 chk('the strategy report prints its bets, ROI and interval, and a profit claim only by the rule', r.markets.moneyline.strategy_at_close.bets > 0 && 'roi_after_fees' in r.markets.moneyline.strategy_at_close && /ALLOWED|NOT_SUPPORTED/.test(r.markets.moneyline.strategy_at_close.profit_claim));
 fs.rmSync(w.dir, { recursive: true, force: true });
 
 w = world(12, 0.12, 0.0, 2500);
-r = MT.run({ closing: w.closing, predictions: w.pf });
+r = MT.run({ closing: w.closing, predictions: w.pf, model: 'xg_no_goalie' /* the model the synthetic predictions are keyed by */ });
 chk('a noisy model against a close that knows the truth: TESTED_BEHIND', r.markets.moneyline.status === 'TESTED_BEHIND', r.markets.moneyline.why);
 fs.rmSync(w.dir, { recursive: true, force: true });
 
@@ -62,7 +62,7 @@ const lines = fs.readFileSync(csvPath, 'utf8').trim().split('\n');
 lines[1] = lines[1].replace(/T22:55:00Z/, 'T23:10:00Z');            /* captured after the start */
 lines[2] = lines[2].replace(/^(\d+),[^,]*,/, '$1,,');                 /* no source */
 fs.writeFileSync(csvPath, lines.join('\n') + '\n');
-r = MT.run({ closing: w.closing, predictions: w.pf });
+r = MT.run({ closing: w.closing, predictions: w.pf, model: 'xg_no_goalie' /* the model the synthetic predictions are keyed by */ });
 chk('a closing price captured after the start is rejected, never scored', r.rejected.CAPTURED_AT_OR_AFTER_START === 1, r.rejected);
 chk('a row with no source is rejected', r.rejected.MISSING_PROVENANCE === 1, r.rejected);
 chk('a small sample cannot be TESTED_AHEAD', r.markets.moneyline.status !== 'TESTED_AHEAD', r.markets.moneyline.status);
@@ -70,6 +70,7 @@ fs.rmSync(w.dir, { recursive: true, force: true });
 
 const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'nhlmt-'));
 r = MT.run({ closing: path.join(empty, 'nothing'), predictions: path.join(empty, 'p.jsonl') });
+chk('without a model named, the market test scores the production model the record chose', r.model === JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'hockey', 'validation', 'nhl_walkforward.json'), 'utf8')).selection.chosen, r.model);
 chk('with no archive the answer is NO_ARCHIVE', r.status === 'NO_ARCHIVE' && Object.keys(r.markets).length === 0);
 fs.rmSync(empty, { recursive: true, force: true });
 

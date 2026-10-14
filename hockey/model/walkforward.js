@@ -35,6 +35,23 @@
      7. Leakage: every scored prediction is audited (engine/validation.js);
         one violation fails --check.
 
+   AMENDMENT 2026-10-13 (hockey/lab/run.js, docs/engine/NHL_LAB.md): the
+   score-effect time profile separates the first period from the second
+   (distribution.T_BUCKETS_FINE). The coarse profile treated 0-40 minutes as
+   one rate, so first-period prices ran 3-5 points too high. Adopted because it
+   improves the 60-minute and first-period score likelihood on SELECTION and
+   leaves the moneyline unchanged (−0.000006). The rule was written after an
+   exploratory run on both windows; the lab report says so.
+
+   AMENDMENT 2026-10-13 (parsimony): a candidate `xg_core` (the expected-goals
+   GLM without the special-teams block) joins the selection chain BEFORE
+   xg_no_goalie. The lab's block ablation found the four special-teams
+   features together indistinguishable from noise (selection −0.00007,
+   confirmation +0.00015, totals unchanged). Rule 4 already prefers the
+   simpler model unless a richer one beats it by 0.001 on SELECTION; listing
+   the simpler model first applies that rule to it. Declared after both
+   windows had been read; the 2026-27 season is the clean test.
+
    Writes hockey/validation/nhl_walkforward.json and hockey/model/params/live.json.
    =========================================================================== */
 const fs = require('fs');
@@ -84,7 +101,7 @@ function effectsFor(season, cacheOk) {
       try { for (const r of readSeason(s)) games.push({ goals: r.shots.filter((x) => x.goal && x.gs < 3600).map((x) => ({ t: x.gs, side: x.side })) }); } catch (_) { /* season not cached */ }
     }
     if (games.length >= 1000) {
-      const e = DIST.estimateScoreEffects(games);
+      const e = DIST.estimateScoreEffects(games, { t_buckets: DIST.T_BUCKETS_FINE });
       delete e.cells;
       e.for_season = season; e.games = games.length;
       fs.mkdirSync(PARAMS_DIR, { recursive: true });
@@ -111,6 +128,8 @@ function eloPass(games, k, hfa, revert) {
     const d = k * mult * (y - p);
     R.set(g.home, get(g.home) + d); R.set(g.away, get(g.away) - d);
   }
+  /* the ratings after the last game, for pricing games not yet played (the slate's model comparison) */
+  out.ratings = R; out.last_season = season;
   return out;
 }
 
@@ -324,7 +343,7 @@ function main() {
   /* per-game predictions for the market test (hockey/model/market_test.js); cache only */
   try {
     fs.mkdirSync(C.PATHS.cacheWork, { recursive: true });
-    const chosenNow = 'xg_no_goalie';
+    const chosenNow = null; /* the market test reads the chosen model from the record */
     fs.writeFileSync(path.join(C.PATHS.cacheWork, 'predictions.jsonl'), preds.map((r) => JSON.stringify({ game_id: r.game_id, season: r.season, type: r.type, date: r.date, start_utc: r.start_utc, predicted_at: new Date(r.predicted_at).toISOString(), home: r.home, away: r.away,
       p: Object.fromEntries(Object.entries(r.p).filter(([c]) => c !== 'elo').map(([c, v]) => [c, { ml: v.ml, pl_home: v.pl_home, pl_away: v.pl_away, o55: v.o55, o65: v.o65, exp_total: v.exp_total }])), y: r.y })).join('\n') + '\n');
     void chosenNow;
@@ -374,7 +393,7 @@ function main() {
   const selLL = (c) => windows.selection.by_candidate[c].moneyline.log_loss;
   const simplest = 'goals_only';
   let chosen = simplest;
-  for (const c of ['xg_no_goalie', 'xg_goalie_projected'].concat(lineupOk ? ['xg_lineup_projected'] : [])) if (selLL(c) <= selLL(chosen) - 0.001) chosen = c;
+  for (const c of ['xg_core', 'xg_no_goalie', 'xg_goalie_projected'].concat(lineupOk ? ['xg_lineup_projected'] : [])) if (selLL(c) <= selLL(chosen) - 0.001) chosen = c;
   /* the confirmed-starter variant is the same model with the announced goalie; it is reported, and used when a starter is confirmed */
   const selection = { rule: 'lowest selection-window moneyline log loss; a challenger must beat the incumbent by >= 0.001', ll: Object.fromEntries(allC.map((c) => [c, selLL(c)])), chosen, confirmed_variant: 'xg_goalie_confirmed' };
 
@@ -385,6 +404,7 @@ function main() {
   for (const b of BASELINES) comparisons[chosen + '_vs_' + b] = pair(chosen, b);
   comparisons.xg_goalie_confirmed_vs_xg_goalie_projected = pair('xg_goalie_confirmed', 'xg_goalie_projected');
   comparisons.xg_goalie_projected_vs_xg_no_goalie = pair('xg_goalie_projected', 'xg_no_goalie');
+  comparisons.xg_core_vs_xg_no_goalie = pair('xg_core', 'xg_no_goalie');
   if (lineupOk) {
     comparisons.xg_lineup_projected_vs_xg_no_goalie = pair('xg_lineup_projected', 'xg_no_goalie');
     comparisons.xg_lineup_confirmed_vs_xg_no_goalie = pair('xg_lineup_confirmed', 'xg_no_goalie');
@@ -413,8 +433,16 @@ function main() {
   /* rule 6: a market test, when a licensed closing archive has been evaluated */
   const mt = (() => { try { return JSON.parse(fs.readFileSync(path.join(C.PATHS.validation, 'nhl_market.json'), 'utf8')); } catch (_) { return null; } })();
   if (mt && mt.markets) for (const [k, v] of Object.entries(mt.markets)) if (markets[k] && v.status) { markets[k].market_status = v.status; markets[k].market_reason = v.why; markets[k].market_n = v.n; }
-  markets.regulation_3way = { market: 'regulation 3-way', status: 'PROVISIONAL', failed: ['no binary calibration rule defined for a 3-way market yet; log loss reported'], log_loss: windows.confirmation.by_candidate[chosen].regulation_3way.log_loss, market_status: 'NOT_TESTED' };
-  markets.team_total = { market: 'team total', status: 'PROVISIONAL', failed: ['not separately scored in this record'], market_status: 'NOT_TESTED' };
+  /* the 3-way and team totals are scored on the same held-out games by the lab (hockey/lab/run.js
+     markets_extended); this record carries the lab's last status so the two files never disagree */
+  const labRec = (() => { try { return JSON.parse(fs.readFileSync(path.join(C.PATHS.validation, 'nhl_lab.json'), 'utf8')); } catch (_) { return null; } })();
+  const ext = labRec && labRec.markets_extended;
+  const r3 = ext && ext.regulation_3way;
+  markets.regulation_3way = { market: 'regulation 3-way', status: r3 ? r3.status : 'PROVISIONAL', failed: r3 ? r3.failed : ['not yet scored per outcome (hockey/lab/run.js)'], log_loss: windows.confirmation.by_candidate[chosen].regulation_3way.log_loss, market_status: 'NOT_TESTED', basis: r3 ? 'each outcome one-vs-rest, hockey/validation/nhl_lab.json' : null };
+  const tt = ext ? ['team_total_home_over_2.5', 'team_total_away_over_2.5'].map((k) => ext[k]).filter(Boolean) : [];
+  markets.team_total = tt.length === 2
+    ? { market: 'team total', status: tt.every((m) => m.status === 'OUTCOME_VALIDATED') ? 'OUTCOME_VALIDATED' : 'PROVISIONAL', failed: [].concat(...tt.map((m) => m.failed)), n: tt[0].n, calibration_slope: tt.map((m) => m.calibration_slope), market_status: 'NOT_TESTED', basis: 'team totals 2.5, both sides, hockey/validation/nhl_lab.json' }
+    : { market: 'team total', status: 'PROVISIONAL', failed: ['not yet scored (hockey/lab/run.js)'], market_status: 'NOT_TESTED' };
 
   /* ---------- live parameters for the slate ---------- */
   const liveS = C.CURRENT_SEASON;
