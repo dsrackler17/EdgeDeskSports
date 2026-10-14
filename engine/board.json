@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_engine_board_v1",
  "version": "edgedesk_xboard_v2",
- "evaluated_at": "2026-10-14T01:54:31.164Z",
+ "evaluated_at": "2026-10-14T05:21:47.785Z",
  "verdict": "PASS",
  "best": null,
  "why": [
-  "No market had a fresh executable price: 384 without a price, 0 stale."
+  "No market had a fresh executable price: 378 without a price, 0 stale."
  ],
  "strongest_candidate": {
   "sport_id": "nfl",
@@ -91,13 +91,13 @@
   "disagreement": 0.0133
  },
  "counts": {
-  "RESEARCH": 384
+  "RESEARCH": 378
  },
  "gate_failures": {
-  "NO_PRICE": 384,
-  "NEEDS_PRICE": 384
+  "NO_PRICE": 378,
+  "NEEDS_PRICE": 378
  },
- "n_candidates": 384,
+ "n_candidates": 378,
  "n_priced": 0,
  "selection_z": 1.2816,
  "rules": {
@@ -3655,894 +3655,6 @@
    "model_id": "soccer/bundesliga:poisson"
   },
   {
-   "id": "26892fcd",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020104",
-   "event": {
-    "home": "LAK",
-    "away": "EDM",
-    "start_utc": "2026-10-14T02:30:00Z",
-    "label": "EDM @ LAK"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "LAK",
-    "line": 1.5,
-    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
-   },
-   "label": "EDM @ LAK — LAK +1.5",
-   "quote": null,
-   "fair_american": -226,
-   "break_even": null,
-   "prob": {
-    "model": 0.6937,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.6937,
-    "sd": 0.0199,
-    "conservative": 0.6682,
-    "components": {
-     "model_sd": 0.0051,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -190,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -190 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.9479 (LAK) vs 3.0488 (EDM) regulation goals",
-    "LAK 5v5 xG for 0.9701× league, EDM 5v5 xG for 1.048×",
-    "goalies: projected uncertain (D. Kuemper 50% / D. Levi 41%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "03612ce8",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020104",
-   "event": {
-    "home": "LAK",
-    "away": "EDM",
-    "start_utc": "2026-10-14T02:30:00Z",
-    "label": "EDM @ LAK"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "EDM",
-    "line": null,
-    "settles": "includes overtime and shootout"
-   },
-   "label": "EDM @ LAK — EDM moneyline",
-   "quote": null,
-   "fair_american": -106,
-   "break_even": null,
-   "prob": {
-    "model": 0.5151,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.5151,
-    "sd": 0.0198,
-    "conservative": 0.4898,
-    "components": {
-     "model_sd": 0.0046,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 108,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +108 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.9479 (LAK) vs 3.0488 (EDM) regulation goals",
-    "LAK 5v5 xG for 0.9701× league, EDM 5v5 xG for 1.048×",
-    "goalies: projected uncertain (D. Kuemper 50% / D. Levi 41%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "2e4d66b0",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020104",
-   "event": {
-    "home": "LAK",
-    "away": "EDM",
-    "start_utc": "2026-10-14T02:30:00Z",
-    "label": "EDM @ LAK"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "LAK",
-    "line": null,
-    "settles": "includes overtime and shootout"
-   },
-   "label": "EDM @ LAK — LAK moneyline",
-   "quote": null,
-   "fair_american": 106,
-   "break_even": null,
-   "prob": {
-    "model": 0.4849,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4849,
-    "sd": 0.017,
-    "conservative": 0.4631,
-    "components": {
-     "model_sd": 0.0046,
-     "calibration_sd": 0.0112,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 120,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +120 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.9479 (LAK) vs 3.0488 (EDM) regulation goals",
-    "LAK 5v5 xG for 0.9701× league, EDM 5v5 xG for 1.048×",
-    "goalies: projected uncertain (D. Kuemper 50% / D. Levi 41%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "677d5390",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020104",
-   "event": {
-    "home": "LAK",
-    "away": "EDM",
-    "start_utc": "2026-10-14T02:30:00Z",
-    "label": "EDM @ LAK"
-   },
-   "market": {
-    "kind": "total",
-    "side": "over",
-    "line": 6,
-    "settles": "includes overtime; the shootout winner is credited one goal"
-   },
-   "label": "EDM @ LAK — over 6",
-   "quote": null,
-   "fair_american": -104,
-   "break_even": null,
-   "prob": {
-    "model": 0.4549,
-    "push": 0.1097,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4549,
-    "sd": 0.0277,
-    "conservative": 0.4194,
-    "components": {
-     "model_sd": 0.02,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 117,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +117 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.9479 (LAK) vs 3.0488 (EDM) regulation goals",
-    "LAK 5v5 xG for 0.9701× league, EDM 5v5 xG for 1.048×",
-    "goalies: projected uncertain (D. Kuemper 50% / D. Levi 41%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "6fb36f7c",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020104",
-   "event": {
-    "home": "LAK",
-    "away": "EDM",
-    "start_utc": "2026-10-14T02:30:00Z",
-    "label": "EDM @ LAK"
-   },
-   "market": {
-    "kind": "total",
-    "side": "under",
-    "line": 6,
-    "settles": "includes overtime; the shootout winner is credited one goal"
-   },
-   "label": "EDM @ LAK — under 6",
-   "quote": null,
-   "fair_american": 104,
-   "break_even": null,
-   "prob": {
-    "model": 0.4354,
-    "push": 0.1097,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4354,
-    "sd": 0.0277,
-    "conservative": 0.3999,
-    "components": {
-     "model_sd": 0.02,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 128,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +128 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.9479 (LAK) vs 3.0488 (EDM) regulation goals",
-    "LAK 5v5 xG for 0.9701× league, EDM 5v5 xG for 1.048×",
-    "goalies: projected uncertain (D. Kuemper 50% / D. Levi 41%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "bc7c1940",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020104",
-   "event": {
-    "home": "LAK",
-    "away": "EDM",
-    "start_utc": "2026-10-14T02:30:00Z",
-    "label": "EDM @ LAK"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "EDM",
-    "line": -1.5,
-    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
-   },
-   "label": "EDM @ LAK — EDM -1.5",
-   "quote": null,
-   "fair_american": 226,
-   "break_even": null,
-   "prob": {
-    "model": 0.3063,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.3063,
-    "sd": 0.0199,
-    "conservative": 0.2808,
-    "components": {
-     "model_sd": 0.0051,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 263,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +263 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.9479 (LAK) vs 3.0488 (EDM) regulation goals",
-    "LAK 5v5 xG for 0.9701× league, EDM 5v5 xG for 1.048×",
-    "goalies: projected uncertain (D. Kuemper 50% / D. Levi 41%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "f6cbc2b8",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020105",
-   "event": {
-    "home": "SJS",
-    "away": "BOS",
-    "start_utc": "2026-10-14T03:00:00Z",
-    "label": "BOS @ SJS"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "SJS",
-    "line": 1.5,
-    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
-   },
-   "label": "BOS @ SJS — SJS +1.5",
-   "quote": null,
-   "fair_american": -190,
-   "break_even": null,
-   "prob": {
-    "model": 0.6549,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.6549,
-    "sd": 0.0232,
-    "conservative": 0.6251,
-    "components": {
-     "model_sd": 0.0131,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -158,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -158 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.8648 (SJS) vs 3.2255 (BOS) regulation goals",
-    "SJS 5v5 xG for 0.9263× league, BOS 5v5 xG for 0.9883×",
-    "goalies: projected uncertain (Y. Askarov 70% / J. Swayman 89%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "fc7dd06f",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020105",
-   "event": {
-    "home": "SJS",
-    "away": "BOS",
-    "start_utc": "2026-10-14T03:00:00Z",
-    "label": "BOS @ SJS"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "BOS",
-    "line": null,
-    "settles": "includes overtime and shootout"
-   },
-   "label": "BOS @ SJS — BOS moneyline",
-   "quote": null,
-   "fair_american": -125,
-   "break_even": null,
-   "prob": {
-    "model": 0.5563,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.5563,
-    "sd": 0.0226,
-    "conservative": 0.5273,
-    "components": {
-     "model_sd": 0.0119,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -107,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -107 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.8648 (SJS) vs 3.2255 (BOS) regulation goals",
-    "SJS 5v5 xG for 0.9263× league, BOS 5v5 xG for 0.9883×",
-    "goalies: projected uncertain (Y. Askarov 70% / J. Swayman 89%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "e7cfcc03",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020105",
-   "event": {
-    "home": "SJS",
-    "away": "BOS",
-    "start_utc": "2026-10-14T03:00:00Z",
-    "label": "BOS @ SJS"
-   },
-   "market": {
-    "kind": "total",
-    "side": "over",
-    "line": 6,
-    "settles": "includes overtime; the shootout winner is credited one goal"
-   },
-   "label": "BOS @ SJS — over 6",
-   "quote": null,
-   "fair_american": -112,
-   "break_even": null,
-   "prob": {
-    "model": 0.4701,
-    "push": 0.1098,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4701,
-    "sd": 0.0277,
-    "conservative": 0.4346,
-    "components": {
-     "model_sd": 0.02,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 109,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +109 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.8648 (SJS) vs 3.2255 (BOS) regulation goals",
-    "SJS 5v5 xG for 0.9263× league, BOS 5v5 xG for 0.9883×",
-    "goalies: projected uncertain (Y. Askarov 70% / J. Swayman 89%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "0828de29",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020105",
-   "event": {
-    "home": "SJS",
-    "away": "BOS",
-    "start_utc": "2026-10-14T03:00:00Z",
-    "label": "BOS @ SJS"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "SJS",
-    "line": null,
-    "settles": "includes overtime and shootout"
-   },
-   "label": "BOS @ SJS — SJS moneyline",
-   "quote": null,
-   "fair_american": 125,
-   "break_even": null,
-   "prob": {
-    "model": 0.4437,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4437,
-    "sd": 0.0203,
-    "conservative": 0.4177,
-    "components": {
-     "model_sd": 0.0119,
-     "calibration_sd": 0.0112,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 144,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +144 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.8648 (SJS) vs 3.2255 (BOS) regulation goals",
-    "SJS 5v5 xG for 0.9263× league, BOS 5v5 xG for 0.9883×",
-    "goalies: projected uncertain (Y. Askarov 70% / J. Swayman 89%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "df65bb69",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020105",
-   "event": {
-    "home": "SJS",
-    "away": "BOS",
-    "start_utc": "2026-10-14T03:00:00Z",
-    "label": "BOS @ SJS"
-   },
-   "market": {
-    "kind": "total",
-    "side": "under",
-    "line": 6,
-    "settles": "includes overtime; the shootout winner is credited one goal"
-   },
-   "label": "BOS @ SJS — under 6",
-   "quote": null,
-   "fair_american": 112,
-   "break_even": null,
-   "prob": {
-    "model": 0.4201,
-    "push": 0.1098,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4201,
-    "sd": 0.0277,
-    "conservative": 0.3846,
-    "components": {
-     "model_sd": 0.02,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 137,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +137 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.8648 (SJS) vs 3.2255 (BOS) regulation goals",
-    "SJS 5v5 xG for 0.9263× league, BOS 5v5 xG for 0.9883×",
-    "goalies: projected uncertain (Y. Askarov 70% / J. Swayman 89%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "fa798021",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020105",
-   "event": {
-    "home": "SJS",
-    "away": "BOS",
-    "start_utc": "2026-10-14T03:00:00Z",
-    "label": "BOS @ SJS"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "BOS",
-    "line": -1.5,
-    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
-   },
-   "label": "BOS @ SJS — BOS -1.5",
-   "quote": null,
-   "fair_american": 190,
-   "break_even": null,
-   "prob": {
-    "model": 0.3451,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.3451,
-    "sd": 0.0232,
-    "conservative": 0.3153,
-    "components": {
-     "model_sd": 0.0131,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 223,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +223 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.8648 (SJS) vs 3.2255 (BOS) regulation goals",
-    "SJS 5v5 xG for 0.9263× league, BOS 5v5 xG for 0.9883×",
-    "goalies: projected uncertain (Y. Askarov 70% / J. Swayman 89%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
    "id": "512dfcae",
    "status": "RESEARCH",
    "sport_id": "nhl",
@@ -5441,6 +4553,894 @@
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "e706f9b9",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020113",
+   "event": {
+    "home": "NJD",
+    "away": "NYR",
+    "start_utc": "2026-10-15T23:00:00Z",
+    "label": "NYR @ NJD"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "NJD",
+    "line": 1.5,
+    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
+   },
+   "label": "NYR @ NJD — NJD +1.5",
+   "quote": null,
+   "fair_american": -241,
+   "break_even": null,
+   "prob": {
+    "model": 0.7069,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.7069,
+    "sd": 0.0229,
+    "conservative": 0.6776,
+    "components": {
+     "model_sd": 0.0124,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -198,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -198 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.9134 (NJD) vs 2.941 (NYR) regulation goals",
+    "NJD 5v5 xG for 1.0097× league, NYR 5v5 xG for 0.954×",
+    "goalies: projected uncertain (J. Allen 50% / I. Shesterkin 61%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "293f3b66",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020108",
+   "event": {
+    "home": "TOR",
+    "away": "BUF",
+    "start_utc": "2026-10-15T23:00:00Z",
+    "label": "BUF @ TOR"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "TOR",
+    "line": 1.5,
+    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
+   },
+   "label": "BUF @ TOR — TOR +1.5",
+   "quote": null,
+   "fair_american": -201,
+   "break_even": null,
+   "prob": {
+    "model": 0.6673,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.6673,
+    "sd": 0.0205,
+    "conservative": 0.641,
+    "components": {
+     "model_sd": 0.0073,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -169,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -169 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.9916 (TOR) vs 3.2475 (BUF) regulation goals",
+    "TOR 5v5 xG for 0.9635× league, BUF 5v5 xG for 1.0306×",
+    "goalies: projected uncertain (S. Bobrovsky 54% / U. Luukkonen 48%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "8a9d9812",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020112",
+   "event": {
+    "home": "FLA",
+    "away": "VAN",
+    "start_utc": "2026-10-15T23:00:00Z",
+    "label": "VAN @ FLA"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "FLA",
+    "line": null,
+    "settles": "includes overtime and shootout"
+   },
+   "label": "VAN @ FLA — FLA moneyline",
+   "quote": null,
+   "fair_american": -175,
+   "break_even": null,
+   "prob": {
+    "model": 0.6367,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.6367,
+    "sd": 0.0218,
+    "conservative": 0.6087,
+    "components": {
+     "model_sd": 0.0144,
+     "calibration_sd": 0.0112,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -148,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -148 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 3.5037 (FLA) vs 2.6356 (VAN) regulation goals",
+    "FLA 5v5 xG for 1.0066× league, VAN 5v5 xG for 0.9155×",
+    "goalies: projected uncertain (J. Markstrom 68% / K. Lankinen 70%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "0765294e",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020109",
+   "event": {
+    "home": "OTT",
+    "away": "NYI",
+    "start_utc": "2026-10-15T23:00:00Z",
+    "label": "NYI @ OTT"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "NYI",
+    "line": 1.5,
+    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
+   },
+   "label": "NYI @ OTT — NYI +1.5",
+   "quote": null,
+   "fair_american": -170,
+   "break_even": null,
+   "prob": {
+    "model": 0.629,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.629,
+    "sd": 0.0226,
+    "conservative": 0.6,
+    "components": {
+     "model_sd": 0.012,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -143,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -143 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 3.2141 (OTT) vs 2.653 (NYI) regulation goals",
+    "OTT 5v5 xG for 1.0102× league, NYI 5v5 xG for 0.9991×",
+    "goalies: projected uncertain (L. Ullmark 89% / I. Sorokin 78%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "142b7c88",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020111",
+   "event": {
+    "home": "TBL",
+    "away": "SEA",
+    "start_utc": "2026-10-15T23:00:00Z",
+    "label": "SEA @ TBL"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "TBL",
+    "line": null,
+    "settles": "includes overtime and shootout"
+   },
+   "label": "SEA @ TBL — TBL moneyline",
+   "quote": null,
+   "fair_american": -165,
+   "break_even": null,
+   "prob": {
+    "model": 0.6231,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.6231,
+    "sd": 0.0181,
+    "conservative": 0.5999,
+    "components": {
+     "model_sd": 0.0077,
+     "calibration_sd": 0.0112,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -143,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -143 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 3.391 (TBL) vs 2.6206 (SEA) regulation goals",
+    "TBL 5v5 xG for 1.0414× league, SEA 5v5 xG for 0.9383×",
+    "goalies: projected uncertain (A. Vasilevskiy 84% / J. Daccord 52%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "e18820ea",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020111",
+   "event": {
+    "home": "TBL",
+    "away": "SEA",
+    "start_utc": "2026-10-15T23:00:00Z",
+    "label": "SEA @ TBL"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "SEA",
+    "line": 1.5,
+    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
+   },
+   "label": "SEA @ TBL — SEA +1.5",
+   "quote": null,
+   "fair_american": -147,
+   "break_even": null,
+   "prob": {
+    "model": 0.5948,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.5948,
+    "sd": 0.021,
+    "conservative": 0.5679,
+    "components": {
+     "model_sd": 0.0085,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -126,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -126 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 3.391 (TBL) vs 2.6206 (SEA) regulation goals",
+    "TBL 5v5 xG for 1.0414× league, SEA 5v5 xG for 0.9383×",
+    "goalies: projected uncertain (A. Vasilevskiy 84% / J. Daccord 52%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "efce9812",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020109",
+   "event": {
+    "home": "OTT",
+    "away": "NYI",
+    "start_utc": "2026-10-15T23:00:00Z",
+    "label": "NYI @ OTT"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "OTT",
+    "line": null,
+    "settles": "includes overtime and shootout"
+   },
+   "label": "NYI @ OTT — OTT moneyline",
+   "quote": null,
+   "fair_american": -145,
+   "break_even": null,
+   "prob": {
+    "model": 0.5916,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.5916,
+    "sd": 0.0188,
+    "conservative": 0.5675,
+    "components": {
+     "model_sd": 0.0109,
+     "calibration_sd": 0.0095,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -125,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -125 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 3.2141 (OTT) vs 2.653 (NYI) regulation goals",
+    "OTT 5v5 xG for 1.0102× league, NYI 5v5 xG for 0.9991×",
+    "goalies: projected uncertain (L. Ullmark 89% / I. Sorokin 78%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "3d9e5799",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020112",
+   "event": {
+    "home": "FLA",
+    "away": "VAN",
+    "start_utc": "2026-10-15T23:00:00Z",
+    "label": "VAN @ FLA"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "VAN",
+    "line": 1.5,
+    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
+   },
+   "label": "VAN @ FLA — VAN +1.5",
+   "quote": null,
+   "fair_american": -137,
+   "break_even": null,
+   "prob": {
+    "model": 0.5782,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.5782,
+    "sd": 0.0249,
+    "conservative": 0.5463,
+    "components": {
+     "model_sd": 0.0158,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -115,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -115 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 3.5037 (FLA) vs 2.6356 (VAN) regulation goals",
+    "FLA 5v5 xG for 1.0066× league, VAN 5v5 xG for 0.9155×",
+    "goalies: projected uncertain (J. Markstrom 68% / K. Lankinen 70%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "8cda371d",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020108",
+   "event": {
+    "home": "TOR",
+    "away": "BUF",
+    "start_utc": "2026-10-15T23:00:00Z",
+    "label": "BUF @ TOR"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "BUF",
+    "line": null,
+    "settles": "includes overtime and shootout"
+   },
+   "label": "BUF @ TOR — BUF moneyline",
+   "quote": null,
+   "fair_american": -117,
+   "break_even": null,
+   "prob": {
+    "model": 0.5392,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.5392,
+    "sd": 0.0203,
+    "conservative": 0.5132,
+    "components": {
+     "model_sd": 0.0066,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -101,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -101 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.9916 (TOR) vs 3.2475 (BUF) regulation goals",
+    "TOR 5v5 xG for 0.9635× league, BUF 5v5 xG for 1.0306×",
+    "goalies: projected uncertain (S. Bobrovsky 54% / U. Luukkonen 48%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "ede3990a",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020112",
+   "event": {
+    "home": "FLA",
+    "away": "VAN",
+    "start_utc": "2026-10-15T23:00:00Z",
+    "label": "VAN @ FLA"
+   },
+   "market": {
+    "kind": "total",
+    "side": "under",
+    "line": 6.5,
+    "settles": "includes overtime; the shootout winner is credited one goal"
+   },
+   "label": "VAN @ FLA — under 6.5",
+   "quote": null,
+   "fair_american": -110,
+   "break_even": null,
+   "prob": {
+    "model": 0.5241,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.5241,
+    "sd": 0.0277,
+    "conservative": 0.4886,
+    "components": {
+     "model_sd": 0.02,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 109,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +109 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 3.5037 (FLA) vs 2.6356 (VAN) regulation goals",
+    "FLA 5v5 xG for 1.0066× league, VAN 5v5 xG for 0.9155×",
+    "goalies: projected uncertain (J. Markstrom 68% / K. Lankinen 70%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "d4c8ffd5",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020113",
+   "event": {
+    "home": "NJD",
+    "away": "NYR",
+    "start_utc": "2026-10-15T23:00:00Z",
+    "label": "NYR @ NJD"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "NYR",
+    "line": null,
+    "settles": "includes overtime and shootout"
+   },
+   "label": "NYR @ NJD — NYR moneyline",
+   "quote": null,
+   "fair_american": -101,
+   "break_even": null,
+   "prob": {
+    "model": 0.5034,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.5034,
+    "sd": 0.0223,
+    "conservative": 0.4748,
+    "components": {
+     "model_sd": 0.0113,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 115,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +115 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.9134 (NJD) vs 2.941 (NYR) regulation goals",
+    "NJD 5v5 xG for 1.0097× league, NYR 5v5 xG for 0.954×",
+    "goalies: projected uncertain (J. Allen 50% / I. Shesterkin 61%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "3200a678",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020113",
+   "event": {
+    "home": "NJD",
+    "away": "NYR",
+    "start_utc": "2026-10-15T23:00:00Z",
+    "label": "NYR @ NJD"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "NJD",
+    "line": null,
+    "settles": "includes overtime and shootout"
+   },
+   "label": "NYR @ NJD — NJD moneyline",
+   "quote": null,
+   "fair_american": 101,
+   "break_even": null,
+   "prob": {
+    "model": 0.4966,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4966,
+    "sd": 0.0199,
+    "conservative": 0.4711,
+    "components": {
+     "model_sd": 0.0113,
+     "calibration_sd": 0.0112,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 117,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +117 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 2.9134 (NJD) vs 2.941 (NYR) regulation goals",
+    "NJD 5v5 xG for 1.0097× league, NYR 5v5 xG for 0.954×",
+    "goalies: projected uncertain (J. Allen 50% / I. Shesterkin 61%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
   }
  ],
  "disclaimer": "Research, not picks. A qualified opportunity is a price that cleared EdgeDesk's published rules at the time shown; it is not a prediction that it will win, and nothing here is a recommendation to bet.",
@@ -5450,9 +5450,9 @@
    "label": "NHL",
    "state": "OUTCOME_VALIDATED",
    "value_claims": false,
-   "candidates": 96,
+   "candidates": 90,
    "priced": 0,
-   "note": "16 upcoming games priced by the model; book prices: DISABLED",
+   "note": "15 upcoming games priced by the model; book prices: DISABLED",
    "ladder": {
     "data_loaded": {
      "done": true,
@@ -5592,7 +5592,7 @@
   {
    "id": "college_baseball",
    "label": "College baseball",
-   "state": "RESEARCH_ONLY",
+   "state": "OUTCOME_VALIDATED",
    "value_claims": false,
    "candidates": 0,
    "priced": 0,
@@ -5600,16 +5600,16 @@
    "ladder": {
     "data_loaded": {
      "done": true,
-     "detail": "a 313-game sample (data pack) and the live ESPN results union: too sparse for a validated model"
+     "detail": "111108 games (2012-2026), retrospective"
     },
     "model_trained": {
-     "done": false,
-     "detail": null
+     "done": true,
+     "detail": "hier_cal"
     },
     "validation_passed": {
-     "done": false,
+     "done": true,
      "partial": false,
-     "detail": "nothing scored; primary market (moneyline): none"
+     "detail": "1 of 1 markets validated vs outcomes; primary market (moneyline): outcome validated"
     },
     "market_tested": {
      "done": false,
@@ -5879,20 +5879,20 @@
   }
  ],
  "inputs": {
-  "registry_generated_at": "2026-10-14T01:54:31.129Z",
-  "nhl_slate_generated_at": "2026-10-14T01:54:16.636Z",
+  "registry_generated_at": "2026-10-14T05:21:47.754Z",
+  "nhl_slate_generated_at": "2026-10-14T05:21:43.459Z",
   "basketball_slate_generated_at": "2026-10-13T06:41:26.560Z",
   "soccer_slate_generated_at": "2026-10-13T06:41:26.796Z",
   "nhl_quotes": {
    "status": "DISABLED",
-   "generated_at": "2026-10-14T00:36:15.078Z",
+   "generated_at": "2026-10-14T05:21:43.406Z",
    "reason": "NHL price capture is not authorised: the repository variable NHL_PRICES is not \"on\" (and odds_api_sports.icehockey_nhl must be enabled in the gateway)"
   },
   "football_sheets_generated_at": "2026-10-14T00:23:31.806Z",
   "manual_quotes_applied": 0
  },
  "candidates_trimmed": {
-  "research_total": 384,
+  "research_total": 378,
   "research_kept": 72,
   "rule": "all non-research rows; per sport, 24 research rows by conservative disagreement with the market reference, then by start time"
  }

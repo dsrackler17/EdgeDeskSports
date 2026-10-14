@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-14T00:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-13. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1933,92 +1933,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 6, built 2026-10-13. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1y4pem21839om0",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can Florida International’s pass rush get to Caden Creel?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 1.7 points.",
-    "gap": {
-      "points": 1.7,
-      "toward": "Jacksonville State",
-      "other": "Florida International"
-    },
-    "supporting": [
-      "When Florida International has the ball (the red zone): Florida International’s offense succeeds on 26.0% of its red-zone plays, and Jacksonville State’s defense allows success on 45.7% of opponent red-zone plays (FBS average 43.8%).",
-      "When Florida International has the ball (big plays on the ground): Florida International’s offense turns 3.9% of its runs into explosive gains, and Jacksonville State’s defense gives up explosive gains on 4.7% of opponent runs (FBS average 6.6%).",
-      "When Florida International has the ball (pass protection against the pass rush): Florida International’s offense has allowed a sack on 4.3% of its dropbacks, and Jacksonville State’s defense sacks the quarterback on 7.0% of opponent dropbacks (FBS average 5.6%).",
-      "When Florida International has the ball (the run game against the run defense): Florida International’s offense averages 3.5 yards per carry, and Jacksonville State’s defense allows 4.8 yards per carry (FBS average 5.1)."
-    ],
-    "contradicting": [
-      "When Jacksonville State has the ball (big plays on the ground): Jacksonville State’s offense turns 5.0% of its runs into explosive gains, and Florida International’s defense gives up explosive gains on 2.0% of opponent runs (FBS average 6.6%).",
-      "When Jacksonville State has the ball (pass protection against the pass rush): Jacksonville State’s offense has allowed a sack on 3.3% of its dropbacks, and Florida International’s defense sacks the quarterback on 9.6% of opponent dropbacks (FBS average 5.6%).",
-      "When Jacksonville State has the ball (the run game against the run defense): Jacksonville State’s offense averages 4.9 yards per carry, and Florida International’s defense allows 3.7 yards per carry (FBS average 5.1).",
-      "EdgeDesk’s position-group ratings put Florida International’s defense No. 35 nationally and Jacksonville State’s No. 105."
-    ],
-    "quarterbacks": [
-      "Caden Creel has completed 113 of 170 passes (66.5%) for 1,423 yards, 8.4 yards per attempt, 10 touchdowns and 5 interceptions in six games for Jacksonville State, and has been sacked on 6 of 176 dropbacks.",
-      "JJ Kohl has completed 92 of 163 passes (56.4%) for 1,180 yards, 7.2 yards per attempt, 5 touchdowns and 7 interceptions in five games for Florida International, and has been sacked on 6 of 169 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Jacksonville State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.3% of its dropbacks, and Florida International’s defense sacks the quarterback on 9.6% of opponent dropbacks.",
-        "Jacksonville State’s offense has to hold its own on long runs against a defense that gives up explosive gains on 2.0% of opponent runs.",
-        "Jacksonville State’s defense has to come out ahead on long runs: it gives up explosive gains on 4.7% of opponent runs, against an offense that turns 3.9% of its runs into explosive gains.",
-        "Jacksonville State’s defense has to come out ahead in the red zone: it allows success on 45.7% of opponent red-zone plays, against an offense that succeeds on 26.0% of its red-zone plays."
-      ],
-      "market": [
-        "Florida International’s defense has to come out ahead on long runs: it gives up explosive gains on 2.0% of opponent runs, against an offense that turns 5.0% of its runs into explosive gains.",
-        "Florida International’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 9.6% of opponent dropbacks, against an offense that has allowed a sack on 3.3% of its dropbacks.",
-        "Kohl keeps producing at his season rate (56.4% completions, 7.2 yards per attempt, 5 TD, 7 INT)."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Jacksonville State and Florida International.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Jacksonville State), sack rate (Jacksonville State) and sack rate (Florida International); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "HFA_CONSTANT",
-        "severity": "medium",
-        "text": "EdgeDesk’s model gives Jacksonville State 4.1 points for playing at home — a league-wide value, not one measured for this stadium; historically, the closing market has priced about 61% of EdgeDesk’s home-field number."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-13T22:48:16.104Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-13T17:08:49.839Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-11T02:30:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-13T23:29:02.911Z"
+    "at": "2026-10-14T04:44:29.222Z"
   }
 }

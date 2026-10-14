@@ -181,7 +181,13 @@ jobs:
       - name: The SEALED walk-forward record (selection window), the props record, the live parameters
         run: |
           node --max-old-space-size=12000 nba/model/walkforward.js
-          node --max-old-space-size=12000 nba/props/walkforward.js
+          # the props record keeps its scored test window while its specification (state.js, model.js,
+          # walkforward.js) is the one logged at the unsealing; a changed specification is re-run sealed
+          if node -e "const fs=require('fs'),c=require('crypto'),p=require('path');const h=c.createHash('sha256').update(['state.js','model.js','walkforward.js'].map((f)=>fs.readFileSync(p.join('nba/props',f),'utf8')).join('\n')).digest('hex');let l=null;try{l=JSON.parse(fs.readFileSync('nba/validation/holdout_log.json','utf8')).unsealings.filter((u)=>u.scope==='props').pop();}catch(_){}process.exit(l&&l.spec_hash===h?0:1)"; then
+            echo "props specification unchanged since its logged unsealing: the props record is kept"
+          else
+            node --max-old-space-size=12000 nba/props/walkforward.js
+          fi
           node --max-old-space-size=12000 nba/model/live.js
       - name: Rebuild the slate and the props on the new parameters
         run: node --max-old-space-size=12000 nba/build_slate.js && node --max-old-space-size=12000 nba/props/build_props.js && node nba/grade_ledger.js
