@@ -450,7 +450,7 @@ The full account is in [`platform-connections.md`](platform-connections.md). In 
 
 1. **Apply the schema**, in this order: `supabase/portfolio.sql`, then `portfolio_journal.sql`, then `portfolio_connect.sql`. Either way:
    - *Actions → Deploy Portfolio schema* (`.github/workflows/deploy-portfolio.yml`). It runs each file's SQL suite against a throwaway PostgreSQL, then applies each file in one transaction with the `SB_DB_URL` secret, and fails on any `CHECK THIS`.
-   - Or paste `supabase/parts/portfolio.part*-of-9.sql`, then `portfolio_journal.part*-of-8.sql`, then `portfolio_connect.part*-of-5.sql` into the Supabase SQL editor, in order. The last part of each prints its report; every row should read `ok`.
+   - Or paste `supabase/parts/portfolio.part*-of-9.sql`, then `portfolio_journal.part*-of-9.sql`, then `portfolio_connect.part*-of-5.sql` (and, for SharpSports BetSync, `portfolio_aggregator.part*-of-5.sql`) into the Supabase SQL editor, in order. The last part of each prints its report; every row should read `ok`.
    - Also apply `supabase/funnel.sql` so the time-to-value events are accepted.
 2. **Do not expose `portfolio_private`** in *Settings → API → Exposed schemas*.
 3. **The connector function** (optional until a connector is switched on):

@@ -119,6 +119,57 @@ chk('the registry still offers no sportsbook a direct connection (books reach Ed
       && JSON.stringify(refs.refresh_response_ids) === '["RRES_ab12cd34"]', refs);
 }());
 
+/* the Accounts tab, rendered in Node: BetSync appears only where the server
+   says it is available, never asks for a credential, and says plainly what
+   SharpSports reports */
+(function accountsUi() {
+  const UI = require(path.join(PG.ROOT, 'lib', 'edgedesk_portfolio_ui.js'));
+  const base = Object.assign(UI.defaults(), { tab: 'accounts', positions: [{ id: 'p1' }], registry: {}, runs: [], now: Date.parse('2026-10-14T18:00:00Z'),
+    setup: { selected: {}, open: true } });
+  const acct = { id: 'a1', platform: 'draftkings', platform_label: 'DraftKings', platform_type: 'SPORTSBOOK', connection_type: 'AGGREGATOR', ingestion_method: 'AUTHORIZED_API',
+    status: 'CONNECTED', positions: 6, open_positions: 1, last_success_at: '2026-10-14T17:58:00Z' };
+  const off = UI.render.accounts(Object.assign({}, base, { accounts: [], betsync: null }));
+  chk('Accounts without BetSync available: no BetSync panel, and the sportsbook copy is unchanged (Import, never Connect)',
+    off.indexOf('data-r="betsync"') < 0 && /Sportsbooks · import/.test(off) && /no sportsbook offers customers an API/.test(off) && !/ss-link/.test(off));
+  const S = Object.assign({}, base, { accounts: [acct], betsync: { ok: true, available: true, environment: 'sandbox', operator: true,
+      provider: { what_the_reader_gives: K.SHARPSPORTS.what_the_reader_gives } },
+    ssBooks: [{ name: 'DraftKings', platform: 'draftkings', label: 'DraftKings', status: 'active', sdk_required: false },
+      { name: 'Ohio Super Book', platform: 'custom_ohio_super_book', label: 'Ohio Super Book', status: 'active', sdk_required: true }], ssPick: 'draftkings',
+    connections: { a1: { id: 'a1', metadata: { provider: 'sharpsports', environment: 'sandbox', provider_state: { verified: true, access: true, book: { name: 'DraftKings' }, region: { name: 'DraftKings Ohio' } } } } },
+    refreshes: [{ platform_account_id: 'a1', status: 'ACCEPTED', requested_at: '2026-10-14T17:57:00Z' }] });
+  const on = UI.render.accounts(S);
+  chk('BetSync available (sandbox, operator): the panel, the sandbox warning, the books (an app-only book disabled), Connect <book>, and no field for a password',
+    /data-r="betsync"/.test(on) && /data-r="betsync-sandbox"/.test(on) && /Connect DraftKings/.test(on) && /app only/.test(on)
+      && /never sees your sportsbook password/.test(on) && !/type="password"|name="password"|name="username"/.test(on) && /Sportsbooks · connect or import/.test(on));
+  chk('a linked book\'s card: BetSync (SharpSports) · sandbox, verified with its book and region, the refresh waiting, and Refresh from book / Sync now / Disconnect',
+    /BetSync \(SharpSports\) · sandbox/.test(on) && /SharpSports: verified · DraftKings · DraftKings Ohio/.test(on) && /Book refresh requested 3 min ago, waiting for SharpSports/.test(on)
+      && /data-act="ss-refresh" data-id="a1"/.test(on) && /data-act="acct-sync" data-id="a1"/.test(on) && /data-act="acct-disconnect" data-id="a1"/.test(on));
+  const need = UI.render.accounts(Object.assign({}, S, { accounts: [Object.assign({}, acct, { status: 'ACTION_REQUIRED', last_error: K.ERRORS.RELINK_REQUIRED })],
+    connections: { a1: { id: 'a1', metadata: { provider: 'sharpsports', environment: 'sandbox', provider_state: { verified: false, access: true } } } }, refreshes: [] }));
+  chk('an expired link: Action required, the reason in plain words, Reconnect through SharpSports, no Sync now',
+    /Action required/.test(need) && /Reconnect it to resume syncing/.test(need) && /SharpSports: signing in to this book failed/.test(need)
+      && /data-act="ss-link">Reconnect/.test(need) && !/data-act="acct-sync" data-id="a1"/.test(need));
+}());
+
+/* PHASE 5 in Node: a synced parlay's legs on its Open card; units only where a unit size exists; the bankroll path */
+(function tabsUi() {
+  const UI = require(path.join(PG.ROOT, 'lib', 'edgedesk_portfolio_ui.js'));
+  const J = require(path.join(PG.ROOT, 'lib', 'edgedesk_portfolio_journal_ui.js'));
+  const norm = K.sharpsportsNormalize([{ id: 'SLIP_ui001', type: 'parlay', oddsAmerican: 264, atRisk: 1000, toWin: 2640, status: 'pending', timePlaced: '2026-10-14T15:00:00Z',
+    bets: [{ proposition: 'moneyline', position: 'Kansas City Chiefs', oddsAmerican: -150, status: 'completed', outcome: 'win', event: { league: 'NFL', contestantHome: { fullName: 'Kansas City Chiefs' }, contestantAway: { fullName: 'Miami Dolphins' } } },
+      { proposition: 'total', position: 'Over', line: 47.5, oddsAmerican: -110, status: 'pending', event: { league: 'NFL', contestantHome: { fullName: 'Buffalo Bills' }, contestantAway: { fullName: 'New York Jets' } } }] }],
+    { platform: 'draftkings' }).positions[0];
+  const pos = Object.assign({ id: 'p9', platform_label: 'DraftKings', platform_type: 'SPORTSBOOK', source: 'SYNC', open_cost_basis: '10', potential_profit: '26.4', potential_payout: '36.4' }, norm);
+  const S = Object.assign(UI.defaults(), { tab: 'open', positions: [pos], accounts: [], now: Date.parse('2026-10-14T18:00:00Z') });
+  const open = UI.render.open(S);
+  chk('Open: a synced parlay shows each leg with the book\'s state for it (won, pending)', /data-r="legs"/.test(open) && /Kansas City Chiefs/.test(open) && /Over 47\.5/.test(open)
+    && /pfo-leg-st WON">won/.test(open) && /pfo-leg-st OPEN">pending/.test(open) && /Details/.test(open), open.slice(0, 300));
+  const sm = { settled: { n: 5, pnl: 90, staked: 165, roi: 0.5, wins: 2, losses: 1, pushes: 1, cashouts: 1, units_pnl: null, units_n: 0 }, open: { n: 1, exposure: 25 }, placed: { n: 6 } };
+  chk('Overview: no Units figure claimed when no position was recorded with a unit size', !/Units/.test(J.hero(sm, 'all time')));
+  const sm2 = JSON.parse(JSON.stringify(sm)); sm2.settled.units_pnl = 4.5; sm2.settled.units_n = 3;
+  chk('Overview: units won or lost, with how many positions carry a unit size', /Units/.test(J.hero(sm2, 'all time')) && /\+4\.50u/.test(J.hero(sm2, 'all time')) && /on 3 with a unit size/.test(J.hero(sm2, 'all time')));
+}());
+
 const db = PG.start('ssb');
 if (db.skip) {
   if (process.env.PORTFOLIO_SQL_REQUIRED === '1') chk('a PostgreSQL cluster starts (required in CI)', false, db.skip);
@@ -387,6 +438,15 @@ const slip = (id, o) => Object.assign({ id, type: 'single', oddsAmerican: -110, 
     const n7 = JSON.parse(one(db.sql(`select row_to_json(p) from (select status, profit_loss::text, settled_at from public.portfolio_positions where external_position_id = 'sharpsports:SLIP_n0007') p;`)));
     const s7 = one(db.sql(`select string_agg(coalesce(p.previous_status, '-') || '>' || p.status, ',' order by p.id) from public.portfolio_position_settlements p join public.portfolio_positions x on x.id = p.position_id where x.external_position_id = 'sharpsports:SLIP_n0007';`));
     chk('a settled wager updates in place: OPEN → LOST, its settlement appended to the history', n7.status === 'LOST' && n7.profit_loss === '-25' && s7 === 'OPEN>LOST', { n7, s7 });
+    /* PHASE 5 · the synced bets in the Portfolio's own analytics */
+    const path5 = JSON.parse(one(db.as(ADMIN, `select public.portfolio_pnl_path(null, null, 'UTC', null);`)));
+    chk('the bankroll path over the synced history: cumulative by settlement day, and the drawdown the loss opened',
+      path5.days.map((d) => d.date + ':' + d.cumulative).join(',') === '2026-09-14:100,2026-09-16:110,2026-09-20:115,2026-09-21:115,2026-10-18:90'
+        && +path5.max_drawdown === 25 && path5.max_drawdown_on === '2026-10-18' && +path5.current_drawdown === 25 && +path5.peak === 115, path5);
+    const sum5 = JSON.parse(one(db.as(ADMIN, `select public.portfolio_summary(null, null, 'UTC', null);`)));
+    chk('the Overview\'s summary counts the synced bets: 5 settled, +$90, the platform breakdown names DraftKings, no units claimed without a unit size',
+      +sum5.settled.n === 5 && +sum5.settled.pnl === 90 && sum5.platforms.some((x) => x.platform === 'draftkings') && sum5.settled.units_pnl === null && +sum5.settled.units_n === 0, sum5.settled);
+    chk('reader B\'s bankroll path is empty (the function runs as the caller)', JSON.parse(one(db.as(B, `select public.portfolio_pnl_path(null, null, 'UTC', null);`))).days.length === 0);
 
     /* ── paging ── */
     SS.pageSize = 2;

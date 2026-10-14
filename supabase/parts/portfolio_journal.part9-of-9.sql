@@ -1,38 +1,7 @@
--- portfolio_journal -- part 8 of 8.
+-- portfolio_journal -- part 9 of 9.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 -- This last part prints the report: every row should read ok.
-
-create policy portfolio_facts_cache_own on public.portfolio_facts_cache for all to authenticated
-  using (user_id = auth.uid()) with check (user_id = auth.uid());
-drop policy if exists portfolio_facts_cache_state_own on public.portfolio_facts_cache_state;
-create policy portfolio_facts_cache_state_own on public.portfolio_facts_cache_state for all to authenticated
-  using (user_id = auth.uid()) with check (user_id = auth.uid());
-revoke all on public.portfolio_facts_cache, public.portfolio_facts_cache_state from anon, authenticated;
-grant select, insert, delete on public.portfolio_facts_cache to authenticated;
-grant select, insert, update on public.portfolio_facts_cache_state to authenticated;
-grant select, insert, update, delete on public.portfolio_facts_cache, public.portfolio_facts_cache_state to service_role;
--- re-running this file changes the arithmetic the cache was built with
-delete from public.portfolio_facts_cache_state;
-
-revoke all on public.portfolio_journal_entries, public.portfolio_rules, public.portfolio_experiments from anon;
-revoke all on public.portfolio_journal_entries from authenticated;
-grant select, insert, update on public.portfolio_journal_entries to authenticated;
-grant select, insert, update, delete on public.portfolio_rules, public.portfolio_experiments to authenticated;
-grant select, insert, update, delete on public.portfolio_journal_entries, public.portfolio_rules, public.portfolio_experiments to service_role;
-
-do $$
-declare f record;
-begin
-  for f in select p.oid::regprocedure as sig from pg_proc p join pg_namespace s on s.oid = p.pronamespace
-            where s.nspname = 'public' and p.proname like 'portfolio\_%' and p.proname not like 'portfolio\_svc\_%' loop
-    execute format('revoke all on function %s from public', f.sig);
-    execute format('revoke all on function %s from anon', f.sig);
-    execute format('grant execute on function %s to authenticated, service_role', f.sig);
-  end loop;
-end $$;
-
-notify pgrst, 'reload schema';
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- THE REPORT. Every row should read ok.
@@ -60,9 +29,9 @@ select step, item, outcome from (
       then 'ok' else 'CHECK THIS — run this file again' end
   union all select 7, 'the grade never reads profit or loss (the analytics run as the caller)',
     case when not exists (select 1 from pg_proc p join pg_namespace s on s.oid = p.pronamespace where s.nspname = 'public'
-      and p.proname in ('portfolio_facts', 'portfolio_summary', 'portfolio_cells', 'portfolio_calendar', 'portfolio_periods', 'portfolio_list', 'portfolio_pre_bet')
+      and p.proname in ('portfolio_facts', 'portfolio_summary', 'portfolio_cells', 'portfolio_calendar', 'portfolio_periods', 'portfolio_list', 'portfolio_pre_bet', 'portfolio_pnl_path')
       and p.prosecdef) and (select count(*) from pg_proc p join pg_namespace s on s.oid = p.pronamespace where s.nspname = 'public'
-      and p.proname in ('portfolio_facts', 'portfolio_summary', 'portfolio_cells', 'portfolio_calendar', 'portfolio_periods', 'portfolio_list', 'portfolio_pre_bet')) = 7
+      and p.proname in ('portfolio_facts', 'portfolio_summary', 'portfolio_cells', 'portfolio_calendar', 'portfolio_periods', 'portfolio_list', 'portfolio_pre_bet', 'portfolio_pnl_path')) = 8
       then 'ok' else 'CHECK THIS — an analytics function is missing or runs as its owner' end
   union all select 8, 'the grade arithmetic: CLV 80 alone grades 80 (A-); a sizing score alone is not a grade',
     case when public.portfolio_process_score(80, null, null, null, null, null, null) = 80 and public.portfolio_grade_letter(80) = 'A-'

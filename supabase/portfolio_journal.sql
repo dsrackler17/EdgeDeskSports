@@ -1050,7 +1050,11 @@ returns jsonb language sql volatile
           'staked', coalesce(sum(stake_amt) filter (where platform_type = 'SPORTSBOOK'), 0)),
         'prediction', jsonb_build_object('n', count(*) filter (where platform_type = 'PREDICTION_MARKET'), 'pnl', coalesce(sum(pnl) filter (where platform_type = 'PREDICTION_MARKET'), 0),
           'staked', coalesce(sum(stake_amt) filter (where platform_type = 'PREDICTION_MARKET'), 0)),
-        'ret_n', count(ret), 'ret_sum', coalesce(sum(ret), 0), 'ret_sq', coalesce(sum(ret * ret), 0)) from st),
+        'ret_n', count(ret), 'ret_sum', coalesce(sum(ret), 0), 'ret_sq', coalesce(sum(ret * ret), 0),
+        -- units won or lost: P&L in the unit size recorded with each position; only
+        -- where one was recorded (never a unit size applied after the fact)
+        'units_pnl', round(sum(pnl * units / stake_amt) filter (where units is not null and stake_amt > 0), 4),
+        'units_n', count(*) filter (where units is not null and stake_amt > 0)) from st),
     'placed', (select jsonb_build_object('n', count(*), 'staked', coalesce(sum(stake_amt), 0), 'days', count(distinct placed_day),
         'units', sum(units), 'units_n', count(units)) from pl),
     'process', (select jsonb_build_object('n', count(*), 'graded', count(process_score), 'score', round(avg(process_score), 1),
@@ -1100,6 +1104,28 @@ $$;
 -- (h1, h2) and the most recent 30% (ho, the holdout) — what the coach's
 -- stability tests read. The statistics run on these few hundred rows, never
 -- on the positions themselves.
+-- The bankroll path: settled P&L by settlement day (the reader's zone),
+-- cumulative, and the drawdown from the running peak — the largest, and the
+-- one standing now. Reads the same cached facts as the summary, as the
+-- caller, so it is the reader's own rows and nothing else; no position list
+-- is sent to the page to draw it.
+create or replace function public.portfolio_pnl_path(p_from timestamptz, p_to timestamptz, p_tz text default null, p_platform text default null)
+returns jsonb language sql volatile set jit = off as $$
+  select public.portfolio_facts_fresh(p_tz);
+  with z as materialized (select public.portfolio_tz(p_tz) as tz),
+  d as (select f.settled_day as day, sum(f.pnl) as pnl, count(*) as n
+          from z, public.portfolio_facts_cached(p_from, p_to, z.tz, p_platform) f where f.in_settled and f.pnl is not null group by f.settled_day),
+  c as (select day, pnl, n, sum(pnl) over (order by day) as cum from d),
+  k as (select day, pnl, n, cum, greatest(0, max(cum) over (order by day)) as peak from c),
+  w as (select day, pnl, n, cum, peak, peak - cum as dd from k)
+  select jsonb_build_object(
+    'days', (select coalesce(jsonb_agg(jsonb_build_object('date', day, 'pnl', pnl, 'cumulative', cum, 'drawdown', dd, 'n', n) order by day), '[]'::jsonb) from w),
+    'max_drawdown', (select coalesce(max(dd), 0) from w),
+    'max_drawdown_on', (select day from w where dd > 0 order by dd desc, day limit 1),
+    'peak', (select coalesce(max(peak), 0) from w),
+    'current_drawdown', (select dd from w order by day desc limit 1))
+$$;
+
 create or replace function public.portfolio_cells(p_from timestamptz, p_to timestamptz, p_tz text default null, p_platform text default null,
     p_segments boolean default true)
 returns table (dim text, key text, n bigint, settled bigint, wins bigint, losses bigint, staked numeric, pnl numeric,
@@ -1453,9 +1479,9 @@ select step, item, outcome from (
       then 'ok' else 'CHECK THIS — run this file again' end
   union all select 7, 'the grade never reads profit or loss (the analytics run as the caller)',
     case when not exists (select 1 from pg_proc p join pg_namespace s on s.oid = p.pronamespace where s.nspname = 'public'
-      and p.proname in ('portfolio_facts', 'portfolio_summary', 'portfolio_cells', 'portfolio_calendar', 'portfolio_periods', 'portfolio_list', 'portfolio_pre_bet')
+      and p.proname in ('portfolio_facts', 'portfolio_summary', 'portfolio_cells', 'portfolio_calendar', 'portfolio_periods', 'portfolio_list', 'portfolio_pre_bet', 'portfolio_pnl_path')
       and p.prosecdef) and (select count(*) from pg_proc p join pg_namespace s on s.oid = p.pronamespace where s.nspname = 'public'
-      and p.proname in ('portfolio_facts', 'portfolio_summary', 'portfolio_cells', 'portfolio_calendar', 'portfolio_periods', 'portfolio_list', 'portfolio_pre_bet')) = 7
+      and p.proname in ('portfolio_facts', 'portfolio_summary', 'portfolio_cells', 'portfolio_calendar', 'portfolio_periods', 'portfolio_list', 'portfolio_pre_bet', 'portfolio_pnl_path')) = 8
       then 'ok' else 'CHECK THIS — an analytics function is missing or runs as its owner' end
   union all select 8, 'the grade arithmetic: CLV 80 alone grades 80 (A-); a sizing score alone is not a grade',
     case when public.portfolio_process_score(80, null, null, null, null, null, null) = 80 and public.portfolio_grade_letter(80) = 'A-'
