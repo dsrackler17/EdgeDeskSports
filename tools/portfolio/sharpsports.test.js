@@ -263,6 +263,10 @@ const slip = (id, o) => Object.assign({ id, type: 'single', oddsAmerican: -110, 
 (async function main() {
   try {
     for (const f of ['portfolio.sql', 'portfolio_journal.sql', 'portfolio_connect.sql', 'portfolio_aggregator.sql']) db.applyFileAtomic(path.join(PG.ROOT, 'supabase', f));
+    /* the deploy workflow run a second time: every file in order on a database that has all of them */
+    const again = ['portfolio.sql', 'portfolio_journal.sql', 'portfolio_connect.sql', 'portfolio_aggregator.sql']
+      .filter((f) => /CHECK THIS/.test(db.applyFileAtomic(path.join(PG.ROOT, 'supabase', f))));
+    chk('a second deploy reports ok in every file (portfolio.sql counts only its own tables\' policies)', again.length === 0, again.join(', '));
     db.sql(`insert into auth.users (id, email) values (${L(ADMIN)}, 'op@example.com'), (${L(B)}, 'b@example.com');`);
     const rest = REST.make(db, { tokens: Object.assign({ [SERVICE]: 'service_role' }, TOKENS) });
 
