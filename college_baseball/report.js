@@ -309,6 +309,7 @@ function build() {
     const ex = tests.suites.existing_sports;
     p(table(['Suite', 'Result', 'Checks'], [['college baseball engine', st(tests.suites.college_baseball), cnt(tests.suites.college_baseball)], ['college baseball terminal (Chromium)', st(tests.suites.ui), cnt(tests.suites.ui)]]
       .concat(ex ? ex.results.map((r) => [r.file, st(r), cnt(r)]) : [])));
+    if (ex && ex.results.some((r) => r.skipped)) { p(); p('SKIPPED: the suite\'s own assertions passed but a phase needs a service this container does not run (the cbb archive suite\'s SQL phase needs PostgreSQL). Against a plain PostgreSQL that phase fails on main too: `supabase/college_baseball.sql` grants to the Supabase role `service_role`, which the suite\'s setup does not create (it creates `anon` and `authenticated`). Gate G15 counts the skip as not passing.'); }
     p();
   } else p('Test results not recorded yet.');
 
