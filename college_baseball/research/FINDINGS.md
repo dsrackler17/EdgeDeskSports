@@ -23,5 +23,5 @@ results (log loss, calibration, holdout) live in the registry and
 | F-15 | Share of runs by inning | innings 1–8 ≈ 10.6–12.1% each; 9th 7.1% (unplayed bottom halves) | params/constants.json |
 | F-16 | College pitching linear weights (2024 team-games) | fitted per batter faced in validation/pitcher_walkforward.json | pitcher_walkforward.js |
 | F-17 | College batting linear weights (2024) | 1B 0.61 · 2B 0.90 · 3B 1.22 · HR 1.43 · BB+HBP 0.49 · SB +0.20 · CS −0.35 · out −0.14 (R² 0.82) | validation/feature_research.json |
-| F-18 | Season-to-season persistence | tuned carryover of team strength 0.9–0.95 (Elo: no regression at all) — college programs are far more stable year to year than roster turnover suggests | params/team_tuning.json |
+| F-18 | Season-to-season persistence | tuned carryover of team strength at the top of every grid (1.0 for the hierarchical model, flat Poisson and Elo; 0.95 for Massey and Bradley-Terry) — college programs are far more stable year to year than roster turnover suggests | params/team_tuning.json |
 | F-19 | Starter projection from rotation patterns | ~53% top-1 accuracy; 66% when projected with ≥ 50% confidence (stated 66%: calibrated); ~20% of starts by someone not in the recent rotation | validation/pitcher_walkforward.json |
