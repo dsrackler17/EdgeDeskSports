@@ -7,11 +7,12 @@ its label.
 
 ## 1. What "a prediction" is
 
-- A game is predicted at **16:00 UTC on its date** (noon Eastern). First-pitch
-  times are not carried by the source, so this is the latest instant that is
-  safely before every game on a date, including West-coast noon starts on the
-  East-coast clock only approximately. Games on the same date never inform each
-  other.
+- A game is predicted at **14:00 UTC on its date** (10:00 Eastern, 07:00
+  Pacific). First-pitch times are not carried by the source; the earliest
+  plausible start is taken as 15:00 UTC (11:00 Eastern), and the prediction
+  must precede it. Games on the same date never inform each other.
+  *(Amended 2026-10-14 from 16:00 UTC, before the first walk-forward run: an
+  11:00 Eastern start would have preceded a 16:00 UTC prediction.)*
 - A completed game's facts become available at **06:00 UTC the next day**.
   `assumed_available_at` is written on every row; `known_at` is blank because
   no row in this source carries a true publication timestamp. Nothing is

@@ -1,0 +1,435 @@
+{
+ "schema": "edgedesk_cbase_release_gates_v1",
+ "model_version": "cbase_v1.0.0",
+ "generated_at": "2026-10-14T03:10:21.724Z",
+ "gates": [
+  {
+   "id": "G1",
+   "name": "Source authorisation verified",
+   "status": "FAIL",
+   "why": "commercial use of NCAA-derived data is not verified; the owner has not signed research/authorizations.json (research/LICENSING.md)",
+   "evidence": null
+  },
+  {
+   "id": "G2",
+   "name": "Identifier reconciliation complete",
+   "status": "PASS",
+   "why": "lookup conflicts 0; box teams unresolved 0; unidentified opponents are non-NCAA programs and are listed, never rated",
+   "evidence": {
+    "lookup_conflicts": [],
+    "box_unresolved": 0
+   }
+  },
+  {
+   "id": "G3",
+   "name": "Dataset coverage audited",
+   "status": "PASS",
+   "why": "119938 contests audited; gaps listed in research/COVERAGE.md",
+   "evidence": {
+    "scheduled": 119938,
+    "identified": 118680,
+    "d1_vs_d1": 117675,
+    "vs_non_d1": 2263,
+    "final_results": 112432,
+    "canceled": 649,
+    "postponed": 143,
+    "no_result": 6714,
+    "quarantined": 201,
+    "verified_multi_source": 67035,
+    "single_source": 45197,
+    "with_innings_lines": 60916,
+    "with_play_by_play": 63649,
+    "with_basic_box": 25498,
+    "with_complete_player_stats": 25359,
+    "with_starting_pitchers": 25498,
+    "with_historical_weather": 0,
+    "with_verified_market_prices": 0,
+    "eligible_for_rating": 111108,
+    "d1_programs": 4540
+   }
+  },
+  {
+   "id": "G4",
+   "name": "Critical data-quality tests pass",
+   "status": "PASS",
+   "why": "conflict rate <= 2%, box total mismatches <= 1%, impossible pitching outs <= 1% in every season",
+   "evidence": [
+    {
+     "season": 2012,
+     "conflict": 0.0001,
+     "box": 0,
+     "outs": 0
+    },
+    {
+     "season": 2013,
+     "conflict": 0.0001,
+     "box": 0,
+     "outs": 0
+    },
+    {
+     "season": 2014,
+     "conflict": 0,
+     "box": 0,
+     "outs": 0
+    },
+    {
+     "season": 2015,
+     "conflict": 0,
+     "box": 0,
+     "outs": 0
+    },
+    {
+     "season": 2016,
+     "conflict": 0,
+     "box": 0,
+     "outs": 0
+    },
+    {
+     "season": 2017,
+     "conflict": 0,
+     "box": 0,
+     "outs": 0
+    },
+    {
+     "season": 2018,
+     "conflict": 0,
+     "box": 0,
+     "outs": 0
+    },
+    {
+     "season": 2019,
+     "conflict": 0.008,
+     "box": 0,
+     "outs": 0
+    },
+    {
+     "season": 2020,
+     "conflict": 0.0004,
+     "box": 0,
+     "outs": 0
+    },
+    {
+     "season": 2021,
+     "conflict": 0.0077,
+     "box": 0,
+     "outs": 0
+    },
+    {
+     "season": 2022,
+     "conflict": 0.0088,
+     "box": 0,
+     "outs": 0
+    },
+    {
+     "season": 2023,
+     "conflict": 0,
+     "box": 0,
+     "outs": 0
+    },
+    {
+     "season": 2024,
+     "conflict": 0.0002,
+     "box": 0.0026,
+     "outs": 0.0001
+    },
+    {
+     "season": 2025,
+     "conflict": 0,
+     "box": 0.0021,
+     "outs": 0.0002
+    },
+    {
+     "season": 2026,
+     "conflict": 0,
+     "box": 0.0038,
+     "outs": 0.0009
+    }
+   ]
+  },
+  {
+   "id": "G5",
+   "name": "Zero known look-ahead leakage",
+   "status": "PASS",
+   "why": "audit LEAKAGE PASS, TIMESTAMPS PASS",
+   "evidence": null
+  },
+  {
+   "id": "G6",
+   "name": "Starter and bullpen handling validated",
+   "status": "PASS",
+   "why": "starter projection, availability calibration and the hybrid test exist; audit STARTERS PASS, BULLPEN PASS",
+   "evidence": {
+    "chosen": "team",
+    "starter_projection": {
+     "n": 16722,
+     "top1_accuracy": 0.5336,
+     "mean_top_p": 0.5152,
+     "log_loss": 1.1019,
+     "unseen_share": 0.1991
+    }
+   }
+  },
+  {
+   "id": "G7",
+   "name": "Season-specific game rules tested",
+   "status": "PASS",
+   "why": "audit GAME_RULES PASS; rules unit tests pass",
+   "evidence": null
+  },
+  {
+   "id": "G8",
+   "name": "Chronological evaluation complete",
+   "status": "PASS",
+   "why": "SELECTION, VALIDATION and HOLDOUT scored",
+   "evidence": null
+  },
+  {
+   "id": "G9",
+   "name": "Models compared against baselines",
+   "status": "PASS",
+   "why": "chosen vs best baseline: VALIDATION [-0.008444,-0.002949], HOLDOUT [-0.007445,-0.003488] (95% interval of the log-loss difference must be below 0 in both)",
+   "evidence": {
+    "validation": {
+     "n": 11950,
+     "blocks": 158,
+     "mean_diff": -0.005612,
+     "ci95": [
+      -0.008444,
+      -0.002949
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "holdout": {
+     "n": 16696,
+     "blocks": 234,
+     "mean_diff": -0.005471,
+     "ci95": [
+      -0.007445,
+      -0.003488
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   }
+  },
+  {
+   "id": "G10",
+   "name": "Probability calibration verified",
+   "status": "PASS",
+   "why": "moneyline OUTCOME_VALIDATED",
+   "evidence": null
+  },
+  {
+   "id": "G11",
+   "name": "Scoring distribution consistency verified",
+   "status": "FAIL",
+   "why": "audit TAILS FAIL; 80% total interval coverage 0.8295",
+   "evidence": null
+  },
+  {
+   "id": "G12",
+   "name": "Market settlement verified",
+   "status": "FAIL",
+   "why": "no sportsbook settlement rules verified and no authorised baseball_ncaa feed; pushes and conditional prices are unit-tested, but settlement against a real book is unverified",
+   "evidence": {
+    "profiles": [
+     "action_full_game",
+     "regulation_required",
+     "listed_pitchers"
+    ]
+   }
+  },
+  {
+   "id": "G13",
+   "name": "Stress tests",
+   "status": "PASS",
+   "why": "400 synthetic games priced coherently, 11 ms each; degenerate games blocked",
+   "evidence": {
+    "games": 400,
+    "failures": 0,
+    "examples": [],
+    "seconds": 4.3,
+    "per_game_ms": 11,
+    "degenerate_blocked": true,
+    "ok": true
+   }
+  },
+  {
+   "id": "G14",
+   "name": "Frontend and API tests",
+   "status": "PASS",
+   "why": "college-baseball suite pass; UI pass (at 2026-10-14T03:09:54.485Z)",
+   "evidence": null
+  },
+  {
+   "id": "G15",
+   "name": "Existing EdgeDesk sports still work",
+   "status": "FAIL",
+   "why": "13/14 existing suites pass",
+   "evidence": {
+    "ok": false,
+    "total": 14,
+    "passed": 13,
+    "skipped": 1,
+    "results": [
+     {
+      "file": "tools/lab/lab.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 65,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "ALL GREEN lab — 65 passed, 0 failed"
+     },
+     {
+      "file": "tools/engine/engine.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 37,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "ALL GREEN multi-sport engine — 37 passed, 0 failed"
+     },
+     {
+      "file": "tools/hockey/hockey.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 97,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "ALL GREEN NHL brain — 97 passed, 0 failed"
+     },
+     {
+      "file": "mlb/tests.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 140,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "— college: the projection —\n— the guard against a silent NaN, everywhere —\nALL GREEN 140 passed, 0 failed\nPASS | baseball run model | 140 self-consistency assertions. NOT a validation: this model has no graded closing-line record."
+     },
+     {
+      "file": "tools/cbb/ingest.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 28,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "  ok   an unset start time is flagged, not invented\n  ok   …and no time is carried\nALL GREEN 28 passed, 0 failed\nPASS | cbb ingest shaping and union | 28 assertions"
+     },
+     {
+      "file": "tools/cbb/stats.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 57,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "  ok   an unparseable pair is two unknowns\n  ok   an absent pair likewise\nALL GREEN 57 passed, 0 failed\nPASS | cbb stats shaping | 57 assertions"
+     },
+     {
+      "file": "tools/cbb/ncaa_archive.test.js",
+      "ok": false,
+      "skipped": true,
+      "status": 0,
+      "passed": 72,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "  ok   the upstream project is credited by name and licence\nSKIP the SQL phase | no reachable PostgreSQL\nALL GREEN 72 passed, 0 failed\nPASS | cbb ncaa archive | 72 assertions"
+     },
+     {
+      "file": "tools/cbb/team_aliases.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 42,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "a collision is detected rather than shipped\n  ok   two codes on one club is reported\nALL GREEN 42 passed, 0 failed\nPASS | cbb club aliases | 42 assertions"
+     },
+     {
+      "file": "tools/cbb/refresh.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 38,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "  ok   …and the pace is a real delay by default\n  ok   the union is empty-checked before anything is written\nALL GREEN 38 passed, 0 failed\nPASS | cbb refresh path | 38 assertions"
+     },
+     {
+      "file": "tools/app/sports_config.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 67,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "sports config: 67 passed, 0 failed"
+     },
+     {
+      "file": "tools/site/nav.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 571,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "ALL GREEN site navigation — 571 passed, 0 failed"
+     },
+     {
+      "file": "tools/odds/no_bypass.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 91,
+      "failed": 0,
+      "seconds": 1,
+      "tail": "ALL GREEN no path around the odds gateway — 91 passed, 0 failed"
+     },
+     {
+      "file": "tools/intelligence/support_boundary.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 40,
+      "failed": 0,
+      "seconds": 1,
+      "tail": "ALL GREEN 40 passed, 0 failed"
+     },
+     {
+      "file": "tools/engine/engine_ui.e2e.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 106,
+      "failed": 0,
+      "seconds": 8,
+      "tail": "desktop\nphone\nALL GREEN engine UI — 106 passed, 0 failed"
+     }
+    ]
+   }
+  },
+  {
+   "id": "G16",
+   "name": "Deployment and rollback documented",
+   "status": "PASS",
+   "why": "docs/college-baseball/DEPLOYMENT.md has Deploy and Rollback sections",
+   "evidence": null
+  }
+ ],
+ "release_allowed": false,
+ "failing": [
+  "G1",
+  "G11",
+  "G12",
+  "G15"
+ ],
+ "summary": "RELEASE BLOCKED: 4 of 16 gates fail (G1, G11, G12, G15). Provisional research only."
+}

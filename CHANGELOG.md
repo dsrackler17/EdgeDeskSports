@@ -8,6 +8,30 @@
 - **What keeps working:** `service_role` is granted explicitly before `PUBLIC` is revoked, so the Collective edge functions and `settle-finals.yml` keep every call. `has_active_sub` and the browser's `collective_model_ensure` / `collective_my_models` wrappers are untouched. No page or admin console calls any locked function (checked against every rpc in the repository).
 - **Tests** (`tools/app/server_only_lockdown_sql.test.js`, in `games-sql.yml`): 79 checks on a real PostgreSQL against a rebuild of the audited catalog, in which `service_role` holds nothing explicit. It runs each attack as `anon` and as a signed-in user, and each server call as `service_role`. It runs the file a second time as the SQL editor would (same grants after), shows the report catching a function added later, and applies the file to an empty database.
 
+## 2026-10-14 — The college baseball research engine: every Division I game on the board, validated on a holdout it never saw, research not picks
+
+**I built an NCAA Division I baseball engine on the warehouse: an opponent-adjusted, conference-pooled run model with run-space calibration. On 2025–26, seasons it never saw, it beats calibrated Elo (−0.0055 log loss, 95% −0.0074 to −0.0035) and is calibrated (in-the-large 0.002, slope 1.015). The moneyline is OUTCOME_VALIDATED on outcomes. Nothing has been tested against a market, because no authorised college-baseball feed exists, so the board shows prices and never a bet.** Docs: `docs/college-baseball/REPORT.md` (generated from the evidence), `college_baseball/research/`.
+
+- **Models:**
+  - Hierarchical quasi-Poisson team strength (team within conference within division), with parks, carryover and rating uncertainty, tuned on 2014–22 only.
+  - Five baselines: home rate, Elo, Pythagenpat, Massey and Bradley-Terry.
+  - Calibration moves the run expectations, not a probability, so every market of a game stays coherent.
+  - The ensemble, GLM, boosting, rest layer, defence features and pitcher hybrid were all tested. None beat `hier_cal` under the written protocol, and all are recorded in a hash-chained registry.
+- **Pricing:**
+  - Every full-game market comes from one negative-binomial distribution, mixed over rating uncertainty and the seven-inning chance. It uses the run model's own expectations, re-weighted to the validated P(home).
+  - The inning simulator was measured worse than the closed form on the moneyline and totals, so it prices only the first five innings, and those are research only (too extreme, slope 0.72).
+- **Found and fixed during validation:**
+  - The simulator, fed the calibrated expectations, double-counted the home side's last inning (+3.7 points to the home side).
+  - A 20-inning cap left a few games tied, which made their moneylines incoherent.
+  - A board test passed on an empty set.
+  - The weekly refit would have erased the holdout record.
+- **Open:**
+  - The auditor refused to promote this version, because the critical TAILS check fails by 0.1 point: one side scoring 15+ is predicted at 7.7% vs 6.6% observed (U-15). Prices are shown, labelled provisional research.
+  - Home −1.5 is over-predicted by about 2.5 points (U-14).
+  - Tuned values sit on grid edges (U-12).
+  - Commercial data rights (gate G1) and a market feed (G12) are owner decisions.
+- **Terminal:** Research → Baseball → NCAA engine, with an all-games board, a game research page with seven readiness states, and advanced views (ratings, calibration, audit and the 16 release gates, the experiment registry).
+
 ## 2026-10-14 — The NHL research engine: a model lab with a written promotion rule, a full market sheet with exact explanations, player-prop research, box-score reconciliation, a source registry and an optional warehouse
 
 **I scored seven model families against my NHL production model with its own walk-forward, under a promotion rule written before any of them ran. None earned promotion: the incumbent stays, slimmed to `xg_core`. The game page now prices the full sheet, explains every win probability exactly, re-prices goalie and what-if scenarios in place, and says why a price is or isn't actionable. Player props are researched and validated against outcomes, but no prop is called value: no prop price has been captured. Value claims stay off everywhere until a licensed closing archive passes the market test.** Docs: `docs/engine/NHL_AUDIT.md`, `NHL_LAB.md`, `NHL_PROPS.md`, `NHL_SOURCES.md`, `NHL_OPERATIONS.md`, `NHL.md`, `DATA.md`.

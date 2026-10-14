@@ -185,6 +185,13 @@ const LIBS = [
     start: '/*__EDNHLDESK_START__*/', end: '/*__EDNHLDESK_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* The NBA on the desk (nba/desk.js): NBA questions answered from nba/slate.json. */
+  {
+    name: 'EDNBADESK',
+    src: path.join(ROOT, 'nba', 'desk.js'),
+    start: '/*__EDNBADESK_START__*/', end: '/*__EDNBADESK_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
   /* The desk layer: the sport-aware typed-evidence contract, the price
      verdict and ladder, the deterministic board ranking, intent, the
      conversation state, Similar Situations' gate and the short answer.

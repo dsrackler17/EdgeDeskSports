@@ -1,0 +1,273 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "basketball.tracking",
+  "type": "object",
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "event_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "entity_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Source registry identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_record_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Original provider record identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "occurred_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "known_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "retrieved_at": {
+      "type": "string",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "description": "Monotone version of this source record.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "quality_status": {
+      "type": "string",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "touches": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Touches.",
+      "x-unit": "count",
+      "x-priority": "P2"
+    },
+    "frontcourt_touches": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Frontcourt touches.",
+      "x-unit": "count",
+      "x-priority": "P2"
+    },
+    "passes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Passes.",
+      "x-unit": "count",
+      "x-priority": "P2"
+    },
+    "potential_assists": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Potential assists.",
+      "x-unit": "count",
+      "x-priority": "P2"
+    },
+    "rebound_chances": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Rebound chances.",
+      "x-unit": "count",
+      "x-priority": "P2"
+    },
+    "contested_rebound_chances": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Contested rebound chances.",
+      "x-unit": "count",
+      "x-priority": "P2"
+    },
+    "drives": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Drives.",
+      "x-unit": "count",
+      "x-priority": "P2"
+    },
+    "paint_touches": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Paint touches.",
+      "x-unit": "count",
+      "x-priority": "P2"
+    },
+    "elbow_touches": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Elbow touches.",
+      "x-unit": "count",
+      "x-priority": "P2"
+    },
+    "post_touches": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Post touches.",
+      "x-unit": "count",
+      "x-priority": "P2"
+    },
+    "catch_shoot_attempts": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Catch shoot attempts.",
+      "x-unit": "count",
+      "x-priority": "P2"
+    },
+    "pullup_attempts": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Pullup attempts.",
+      "x-unit": "count",
+      "x-priority": "P2"
+    },
+    "pick_roll_ballhandler_possessions": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Pick roll ballhandler possessions.",
+      "x-unit": "count",
+      "x-priority": "P2"
+    },
+    "pick_roll_rollman_possessions": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Pick roll rollman possessions.",
+      "x-unit": "count",
+      "x-priority": "P2"
+    },
+    "isolation_possessions": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Isolation possessions.",
+      "x-unit": "count",
+      "x-priority": "P2"
+    },
+    "spotup_possessions": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Spotup possessions.",
+      "x-unit": "count",
+      "x-priority": "P2"
+    },
+    "handoff_possessions": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Handoff possessions.",
+      "x-unit": "count",
+      "x-priority": "P2"
+    },
+    "average_defender_distance": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Average defender distance.",
+      "x-unit": "feet",
+      "x-priority": "P2"
+    },
+    "touch_time_seconds": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Touch time seconds.",
+      "x-unit": "seconds",
+      "x-priority": "P2"
+    },
+    "distance_travelled_miles": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Distance travelled miles.",
+      "x-unit": "miles",
+      "x-priority": "P2"
+    }
+  },
+  "required": [
+    "record_id",
+    "source_id",
+    "retrieved_at",
+    "revision",
+    "quality_status"
+  ],
+  "additionalProperties": false
+}

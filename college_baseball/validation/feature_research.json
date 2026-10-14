@@ -1,0 +1,124 @@
+{
+ "schema": "edgedesk_cbase_feature_research_v1",
+ "point_in_time": "RETROSPECTIVE",
+ "distribution": {
+  "family": "nb",
+  "r": 3.256
+ },
+ "hypotheses": {
+  "H-OFF-1": {
+   "fit_season": 2024,
+   "test_season": 2025,
+   "n_test": 15022,
+   "blend_weight_fit_2024": 0.3,
+   "test_log_score": {
+    "team": 2.78177,
+    "component": 2.80523,
+    "blend": 2.78037
+   },
+   "blend_vs_team": {
+    "n": 15022,
+    "blocks": 114,
+    "mean_diff": -0.001407,
+    "ci95": [
+     -0.002708,
+     -0.000034
+    ],
+    "a_better": true,
+    "b_better": false
+   },
+   "component_vs_team": {
+    "n": 15022,
+    "blocks": 114,
+    "mean_diff": 0.023462,
+    "ci95": [
+     0.019069,
+     0.029037
+    ],
+    "a_better": false,
+    "b_better": true
+   },
+   "decision": "ACCEPT"
+  },
+  "H-DEF-1": {
+   "fit_season": 2024,
+   "test_season": 2025,
+   "n_test": 15022,
+   "coefficients": {
+    "intercept": 0.0157,
+    "errors_per_game": -0.0046,
+    "unearned_share": 0.0071,
+    "double_plays_per_game": -0.0026,
+    "sb_success_allowed": 0.0082,
+    "defensive_efficiency": 0.0388
+   },
+   "test_log_score": {
+    "team": 2.78177,
+    "team_plus_defence": 2.78163
+   },
+   "defence_vs_team": {
+    "n": 15022,
+    "blocks": 114,
+    "mean_diff": -0.000147,
+    "ci95": [
+     -0.001234,
+     0.000812
+    ],
+    "a_better": false,
+    "b_better": false
+   },
+   "decision": "REJECT"
+  },
+  "H-ENV-1": {
+   "fit": "SELECTION",
+   "test": "VALIDATION",
+   "n_test": 23900,
+   "coefficients": {
+    "intercept": -0.013,
+    "batting_side_played_yesterday": -0.004,
+    "pitching_side_played_yesterday": 0.0607,
+    "doubleheader_game_2": 0
+   },
+   "test_log_score": {
+    "team": 2.77512,
+    "team_plus_rest": 2.77364
+   },
+   "rest_vs_team": {
+    "n": 23900,
+    "blocks": 158,
+    "mean_diff": -0.001484,
+    "ci95": [
+     -0.00245,
+     -0.000626
+    ],
+    "a_better": true,
+    "b_better": false
+   },
+   "decision": "ACCEPT"
+  }
+ },
+ "linear_weights_2024": {
+  "weights": {
+   "1B": 0.6067,
+   "2B": 0.8996,
+   "3B": 1.2176,
+   "HR": 1.4301,
+   "BB+HBP": 0.4869,
+   "SB": 0.1957,
+   "CS": -0.3454,
+   "out": -0.141
+  },
+  "beta": [
+   0.6067099391821941,
+   0.8996187521096878,
+   1.2176417015752272,
+   1.4301022123482234,
+   0.48685504071550234,
+   0.19573204638987404,
+   -0.34535257180951257,
+   -0.14100019873913466
+  ],
+  "r2": 0.8216,
+  "n": 16900
+ }
+}

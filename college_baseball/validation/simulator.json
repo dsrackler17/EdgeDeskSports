@@ -1,0 +1,298 @@
+{
+ "schema": "edgedesk_cbase_simulator_eval_v2",
+ "point_in_time": "RETROSPECTIVE",
+ "window": "VALIDATION 2023-2024 (every second game with a reconciled inning line)",
+ "sims_per_game": 2000,
+ "seconds": 106,
+ "n": 4240,
+ "inputs": {
+  "closed_form": "the pricing model's run-space calibrated expectations, mixed over rating uncertainty and scheduled length (distribution.closedForm)",
+  "simulator": "the run model's own expectations (level-unbiased), rating uncertainty drawn per simulated game",
+  "simulator_on_calibrated_inputs": "the calibrated expectations (the first version; double-counts the home side's last-inning effect)"
+ },
+ "level_check": {
+  "actual_home": 7.356,
+  "actual_away": 6.202,
+  "raw_lh": 7.333,
+  "raw_la": 6.085,
+  "cal_lh": 7.711,
+  "cal_la": 5.829
+ },
+ "frailty": {
+  "team_k": 12,
+  "shared_k": 16
+ },
+ "construction": {
+  "n": 11950,
+  "candidates": {
+   "calibrated_expectations": "closed form at the run-space calibrated expectations",
+   "reweighted_raw": "closed form at the run model's own expectations, re-weighted so P(home) is the validated probability"
+  },
+  "moneyline_log_loss": {
+   "calibrated_expectations": 0.59375,
+   "reweighted_raw": 0.59375
+  },
+  "total_log_score": {
+   "calibrated_expectations": 3.21178,
+   "reweighted_raw": 3.21098
+  },
+  "team_runs_log_score": {
+   "calibrated_expectations": 2.77682,
+   "reweighted_raw": 2.77309
+  },
+  "expected_runs": {
+   "home": {
+    "calibrated_expectations": 7.7779,
+    "reweighted_raw": 7.57528,
+    "observed": 7.40444
+   },
+   "away": {
+    "calibrated_expectations": 5.77601,
+    "reweighted_raw": 5.8848,
+    "observed": 6.07615
+   }
+  },
+  "home_minus_1_5": {
+   "calibrated_expectations": {
+    "n": 11950,
+    "log_loss": 0.62324,
+    "citl": 0.0317,
+    "slope": 0.994
+   },
+   "reweighted_raw": {
+    "n": 11950,
+    "log_loss": 0.62248,
+    "citl": 0.0252,
+    "slope": 1.018
+   }
+  },
+  "home_plus_1_5": {
+   "calibrated_expectations": {
+    "n": 11950,
+    "log_loss": 0.56301,
+    "citl": 0.0035,
+    "slope": 0.981
+   },
+   "reweighted_raw": {
+    "n": 11950,
+    "log_loss": 0.56297,
+    "citl": 0.0003,
+    "slope": 0.986
+   }
+  },
+  "comparisons": {
+   "total": {
+    "n": 11950,
+    "blocks": 158,
+    "mean_diff": -0.000794,
+    "ci95": [
+     -0.00121,
+     -0.000362
+    ],
+    "a_better": true,
+    "b_better": false
+   },
+   "team_runs": {
+    "n": 11950,
+    "blocks": 158,
+    "mean_diff": -0.003722,
+    "ci95": [
+     -0.004243,
+     -0.003245
+    ],
+    "a_better": true,
+    "b_better": false
+   },
+   "run_line_minus": {
+    "n": 11950,
+    "blocks": 158,
+    "mean_diff": -0.000759,
+    "ci95": [
+     -0.001064,
+     -0.00046
+    ],
+    "a_better": true,
+    "b_better": false
+   },
+   "run_line_plus": {
+    "n": 11950,
+    "blocks": 158,
+    "mean_diff": -0.000037,
+    "ci95": [
+     -0.000181,
+     0.000097
+    ],
+    "a_better": false,
+    "b_better": false
+   }
+  },
+  "decision": "reweighted_raw"
+ },
+ "full_game": {
+  "moneyline": {
+   "closed_form": {
+    "n": 4240,
+    "log_loss": 0.6082,
+    "brier": 0.21069,
+    "citl": 0.005,
+    "slope": 0.975
+   },
+   "simulator": {
+    "n": 4240,
+    "log_loss": 0.61139,
+    "brier": 0.21174,
+    "citl": 0.0064,
+    "slope": 0.845
+   },
+   "simulator_on_calibrated_inputs": {
+    "n": 4240,
+    "log_loss": 0.61703,
+    "brier": 0.21327,
+    "citl": 0.0414,
+    "slope": 0.787
+   }
+  },
+  "moneyline_log_loss": {
+   "closed_form": 0.6082,
+   "simulator": 0.61139,
+   "simulator_on_calibrated_inputs": 0.61703
+  },
+  "total_log_score": {
+   "closed_form": 3.21974,
+   "simulator": 3.28399,
+   "simulator_on_calibrated_inputs": 3.27063
+  },
+  "home_minus_1_5": {
+   "closed_form": {
+    "n": 4240,
+    "log_loss": 0.63264,
+    "brier": 0.22122,
+    "citl": 0.0296,
+    "slope": 0.959
+   },
+   "simulator": {
+    "n": 4240,
+    "log_loss": 0.63409,
+    "brier": 0.22124,
+    "citl": -0.0014,
+    "slope": 0.809
+   },
+   "simulator_on_calibrated_inputs": {
+    "n": 4240,
+    "log_loss": 0.63957,
+    "brier": 0.22306,
+    "citl": 0.036,
+    "slope": 0.751
+   }
+  },
+  "comparisons": {
+   "moneyline_cf_vs_sim": {
+    "n": 4240,
+    "blocks": 119,
+    "mean_diff": -0.003191,
+    "ci95": [
+     -0.005035,
+     -0.001591
+    ],
+    "a_better": true,
+    "b_better": false
+   },
+   "total_cf_vs_sim": {
+    "n": 4240,
+    "blocks": 119,
+    "mean_diff": -0.064257,
+    "ci95": [
+     -0.097296,
+     -0.03445
+    ],
+    "a_better": true,
+    "b_better": false
+   },
+   "run_line_cf_vs_sim": {
+    "n": 4240,
+    "blocks": 119,
+    "mean_diff": -0.001451,
+    "ci95": [
+     -0.004447,
+     0.001382
+    ],
+    "a_better": false,
+    "b_better": false
+   },
+   "moneyline_sim_vs_sim_on_calibrated_inputs": {
+    "n": 4240,
+    "blocks": 119,
+    "mean_diff": -0.005643,
+    "ci95": [
+     -0.008798,
+     -0.002565
+    ],
+    "a_better": true,
+    "b_better": false
+   }
+  },
+  "mean_p_home": {
+   "closed_form": 0.5993,
+   "simulator": 0.60072,
+   "simulator_on_calibrated_inputs": 0.63572,
+   "observed": 0.59434
+  }
+ },
+ "first_five": {
+  "home_win": {
+   "n": 4240,
+   "log_loss": 0.65943,
+   "brier": 0.23281,
+   "citl": 0.0011,
+   "slope": 0.724
+  },
+  "tie": {
+   "n": 4240,
+   "log_loss": 0.33604,
+   "brier": 0.09376,
+   "citl": -0.0021,
+   "slope": 0.355
+  },
+  "max_mc_se": 0.0112
+ },
+ "walkoff_share": {
+  "predicted": 0.0786,
+  "observed": 0.0757
+ },
+ "run_rule_share": {
+  "predicted": 0.0991,
+  "observed": 0.0903
+ },
+ "coherence_failures": 0,
+ "convergence": [
+  {
+   "n": 1000,
+   "mean_f5_home": 0.514,
+   "seed_spread": 0.018,
+   "theoretical_se": 0.0158
+  },
+  {
+   "n": 5000,
+   "mean_f5_home": 0.5301,
+   "seed_spread": 0.0176,
+   "theoretical_se": 0.0071
+  },
+  {
+   "n": 20000,
+   "mean_f5_home": 0.5261,
+   "seed_spread": 0.0084,
+   "theoretical_se": 0.0035
+  },
+  {
+   "n": 50000,
+   "mean_f5_home": 0.5201,
+   "seed_spread": 0.0064,
+   "theoretical_se": 0.0022
+  }
+ ],
+ "decision": {
+  "full_game_engine": "closed form",
+  "full_game_construction": "reweighted_raw",
+  "first_five_engine": "simulator, calibration outside tolerance: first-five prices are research only"
+ }
+}

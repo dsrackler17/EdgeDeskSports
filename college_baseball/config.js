@@ -77,10 +77,12 @@ const WINDOWS = {
 };
 
 /* the game's prediction time: first pitch is rarely published, so a game is
-   predicted at 12:00 local (16:00 UTC) on its date, and a game's result is
-   assumed available from 06:00 UTC the next day. Results of earlier dates
-   only ever enter a prediction (audited: lib/audit.js LEAKAGE). */
-const TIME = { predict_hour_utc: 16, available_next_day_hour_utc: 6 };
+   predicted at 14:00 UTC on its date (10:00 Eastern, 07:00 Pacific) — before
+   the earliest plausible first pitch (taken as 15:00 UTC, an 11:00 Eastern
+   start) — and a game's result is assumed available from 06:00 UTC the next
+   day. Results of earlier dates only ever enter a prediction (audited:
+   lib/audit.js LEAKAGE). */
+const TIME = { predict_hour_utc: 14, earliest_start_hour_utc: 15, available_next_day_hour_utc: 6 };
 
 const PATHS = {
   ROOT, BASE: __dirname,

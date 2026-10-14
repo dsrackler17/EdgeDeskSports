@@ -1,0 +1,175 @@
+{
+ "schema": "edgedesk_cbase_test_results_v1",
+ "ran_at": "2026-10-14T03:09:54.485Z",
+ "commit": "69489091d0ec167fea2adb67b74b59a0f7ea01fd",
+ "suites": {
+  "college_baseball": {
+   "file": "tools/college_baseball/college_baseball.test.js",
+   "ok": true,
+   "skipped": false,
+   "status": 0,
+   "passed": 120,
+   "failed": 0,
+   "seconds": 5,
+   "tail": "ALL GREEN 120 passed, 0 failed"
+  },
+  "ui": {
+   "file": "tools/college_baseball/cbase_ui.e2e.js",
+   "ok": true,
+   "skipped": false,
+   "status": 0,
+   "passed": 41,
+   "failed": 0,
+   "seconds": 6,
+   "tail": "ALL GREEN college baseball UI — 41 passed, 0 failed"
+  },
+  "existing_sports": {
+   "ok": false,
+   "total": 14,
+   "passed": 13,
+   "skipped": 1,
+   "results": [
+    {
+     "file": "tools/lab/lab.test.js",
+     "ok": true,
+     "skipped": false,
+     "status": 0,
+     "passed": 65,
+     "failed": 0,
+     "seconds": 0,
+     "tail": "ALL GREEN lab — 65 passed, 0 failed"
+    },
+    {
+     "file": "tools/engine/engine.test.js",
+     "ok": true,
+     "skipped": false,
+     "status": 0,
+     "passed": 37,
+     "failed": 0,
+     "seconds": 0,
+     "tail": "ALL GREEN multi-sport engine — 37 passed, 0 failed"
+    },
+    {
+     "file": "tools/hockey/hockey.test.js",
+     "ok": true,
+     "skipped": false,
+     "status": 0,
+     "passed": 97,
+     "failed": 0,
+     "seconds": 0,
+     "tail": "ALL GREEN NHL brain — 97 passed, 0 failed"
+    },
+    {
+     "file": "mlb/tests.js",
+     "ok": true,
+     "skipped": false,
+     "status": 0,
+     "passed": 140,
+     "failed": 0,
+     "seconds": 0,
+     "tail": "— college: the projection —\n— the guard against a silent NaN, everywhere —\nALL GREEN 140 passed, 0 failed\nPASS | baseball run model | 140 self-consistency assertions. NOT a validation: this model has no graded closing-line record."
+    },
+    {
+     "file": "tools/cbb/ingest.test.js",
+     "ok": true,
+     "skipped": false,
+     "status": 0,
+     "passed": 28,
+     "failed": 0,
+     "seconds": 0,
+     "tail": "  ok   an unset start time is flagged, not invented\n  ok   …and no time is carried\nALL GREEN 28 passed, 0 failed\nPASS | cbb ingest shaping and union | 28 assertions"
+    },
+    {
+     "file": "tools/cbb/stats.test.js",
+     "ok": true,
+     "skipped": false,
+     "status": 0,
+     "passed": 57,
+     "failed": 0,
+     "seconds": 0,
+     "tail": "  ok   an unparseable pair is two unknowns\n  ok   an absent pair likewise\nALL GREEN 57 passed, 0 failed\nPASS | cbb stats shaping | 57 assertions"
+    },
+    {
+     "file": "tools/cbb/ncaa_archive.test.js",
+     "ok": false,
+     "skipped": true,
+     "status": 0,
+     "passed": 72,
+     "failed": 0,
+     "seconds": 0,
+     "tail": "  ok   the upstream project is credited by name and licence\nSKIP the SQL phase | no reachable PostgreSQL\nALL GREEN 72 passed, 0 failed\nPASS | cbb ncaa archive | 72 assertions"
+    },
+    {
+     "file": "tools/cbb/team_aliases.test.js",
+     "ok": true,
+     "skipped": false,
+     "status": 0,
+     "passed": 42,
+     "failed": 0,
+     "seconds": 0,
+     "tail": "a collision is detected rather than shipped\n  ok   two codes on one club is reported\nALL GREEN 42 passed, 0 failed\nPASS | cbb club aliases | 42 assertions"
+    },
+    {
+     "file": "tools/cbb/refresh.test.js",
+     "ok": true,
+     "skipped": false,
+     "status": 0,
+     "passed": 38,
+     "failed": 0,
+     "seconds": 0,
+     "tail": "  ok   …and the pace is a real delay by default\n  ok   the union is empty-checked before anything is written\nALL GREEN 38 passed, 0 failed\nPASS | cbb refresh path | 38 assertions"
+    },
+    {
+     "file": "tools/app/sports_config.test.js",
+     "ok": true,
+     "skipped": false,
+     "status": 0,
+     "passed": 67,
+     "failed": 0,
+     "seconds": 0,
+     "tail": "sports config: 67 passed, 0 failed"
+    },
+    {
+     "file": "tools/site/nav.test.js",
+     "ok": true,
+     "skipped": false,
+     "status": 0,
+     "passed": 571,
+     "failed": 0,
+     "seconds": 0,
+     "tail": "ALL GREEN site navigation — 571 passed, 0 failed"
+    },
+    {
+     "file": "tools/odds/no_bypass.test.js",
+     "ok": true,
+     "skipped": false,
+     "status": 0,
+     "passed": 91,
+     "failed": 0,
+     "seconds": 1,
+     "tail": "ALL GREEN no path around the odds gateway — 91 passed, 0 failed"
+    },
+    {
+     "file": "tools/intelligence/support_boundary.test.js",
+     "ok": true,
+     "skipped": false,
+     "status": 0,
+     "passed": 40,
+     "failed": 0,
+     "seconds": 1,
+     "tail": "ALL GREEN 40 passed, 0 failed"
+    },
+    {
+     "file": "tools/engine/engine_ui.e2e.js",
+     "ok": true,
+     "skipped": false,
+     "status": 0,
+     "passed": 106,
+     "failed": 0,
+     "seconds": 8,
+     "tail": "desktop\nphone\nALL GREEN engine UI — 106 passed, 0 failed"
+    }
+   ]
+  }
+ }
+}

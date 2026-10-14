@@ -1,0 +1,31 @@
+/* ===========================================================================
+   EDGEDESK NBA — the research panel's own marks (nb- prefix), on top of the
+   engine panel's xe- system (lib/edgedesk_engine.css). Same tokens; wide
+   tables scroll in their own box; nothing scrolls sideways at 390 px.
+   =========================================================================== */
+.nb-win{display:flex;width:100%;height:22px;border-radius:6px;overflow:hidden;margin:8px 0 4px;font-size:10.5px;font-weight:800;font-family:var(--xe-mono);line-height:22px}
+.nb-wa,.nb-wh{white-space:nowrap;overflow:hidden;padding:0 6px}
+.nb-wa{background:var(--surface2,#221c15);color:var(--dim);text-align:left}
+.nb-wh{background:color-mix(in srgb,var(--accent) 22%,transparent);color:var(--accent);text-align:right}
+.nb-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin:10px 0}
+.nb-kpi{border:1px solid var(--xe-line);border-radius:10px;padding:8px 10px;background:var(--surface);min-width:0}
+.nb-kpi .xe-k{margin:0 0 3px}
+.nb-kv{font-size:14px;font-weight:800;overflow-wrap:anywhere}
+.nb-dev{display:inline-block;position:relative;width:52px;height:6px;margin-left:8px;vertical-align:middle;background:var(--surface2,#221c15);border-radius:3px}
+.nb-devb{position:absolute;top:0;bottom:0;border-radius:3px}
+.nb-devb.up,.nb-cb.up{background:var(--pos,#2fbf71)}
+.nb-devb.dn,.nb-cb.dn{background:var(--neg,#e5484d)}
+.nb-contrib{display:grid;gap:4px;margin:6px 0}
+.nb-crow{display:grid;grid-template-columns:minmax(120px,1.4fr) 2fr 52px;gap:8px;align-items:center;font-size:12px}
+.nb-cl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dim)}
+.nb-cbar{position:relative;height:10px;background:var(--surface2,#221c15);border-radius:4px}
+.nb-cbar:after{content:'';position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--xe-line)}
+.nb-cb{position:absolute;top:0;bottom:0;border-radius:4px}
+.nb-cv{text-align:right}
+.nb-up{color:var(--pos,#2fbf71)}
+.nb-dn{color:var(--neg,#e5484d)}
+.nb-pass li{margin:3px 0}
+@media (max-width:760px){
+  .nb-kpis{grid-template-columns:1fr 1fr}
+  .nb-crow{grid-template-columns:1fr 1.4fr 48px}
+}
