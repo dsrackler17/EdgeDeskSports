@@ -31,14 +31,23 @@
 # close it recovered for a game the database graded without one to the
 # settlement -- it used to go into the committed JSON only, which is how all
 # of NFL week 2, 2026 kept closes on the site and none in the database -- and
-# (2) rebuilds the settlement (collective.fg2_rebuild: idempotent, audited,
-# a no-op when nothing moved). An ERROR-level diagnostic -- a model-game with
-# a prediction, a close, a side and a final but no grade -- fails the run, so
-# it is seen within the hour rather than on the rankings page.
+# (2) refreshes the settlement (collective.fg2_refresh: recent and
+# never-processed games; idempotent, audited, a no-op when nothing moved). The
+# refresh runs over a direct Postgres connection (SB_DB_URL, psql) with its own
+# 10-minute limit: through the API it gets 8 s, which it outran every hour on
+# 2026-10-14. An ERROR-level diagnostic -- a model-game with a prediction, a
+# close, a side and a final but no grade -- fails the run, so it is seen
+# within the hour rather than on the rankings page. A season whose rebuild was
+# never committed is a warning naming the Football regrade, not an hourly
+# whole-season rebuild.
 #
 # SECRETS (GitHub Actions repository secrets, not Supabase dashboard secrets):
 #   SB_SERVICE_ROLE  the project's service-role key   } the door this job
 #   SB_URL           the project URL                   } is written for
+#   SB_DB_URL        the pooled Postgres connection string (the one the
+#                    Football regrade uses): the settlement refresh's door.
+#                    Without it the refresh goes through the API and can
+#                    outrun the API's statement limit.
 #   COLLECTIVE_ADMIN_REFRESH_TOKEN  optional fallback: with no service
 #     credential the job settles through collective_admin instead, as before.
 #   With none of them the job still runs --verify, still builds the
@@ -78,7 +87,9 @@ permissions:
 jobs:
   settle:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # the settle and backfill take ~5 min; each sport's refresh may take up
+    # to its own 10-min limit
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
         with:
@@ -87,6 +98,8 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
+      - name: Add postgres to PATH
+        run: ls -d /usr/lib/postgresql/*/bin | tail -1 >> "$GITHUB_PATH"
 
       - name: Matching and grading logic must pass before it is allowed to write
         run: |
@@ -105,7 +118,14 @@ jobs:
           EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
           EDGD_SB_URL: ${{ secrets.SB_URL }}
           COLLECTIVE_ADMIN_REFRESH_TOKEN: ${{ secrets.COLLECTIVE_ADMIN_REFRESH_TOKEN }}
+          SB_DB_URL: ${{ secrets.SB_DB_URL }}
         run: |
+          if [ -n "$SB_DB_URL" ]; then
+            echo '- Settlement refresh: **direct connection** (`SB_DB_URL`, psql, 10-min limit).' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '::warning::SB_DB_URL is empty in this run; the football-v2 refresh goes through the API, whose 8 s statement limit it can outrun. Add SB_DB_URL as a GitHub Actions repository secret.' >&2
+            echo '- Settlement refresh: **API** (fallback) — `SB_DB_URL` is empty, so the refresh gets the API'"'"'s 8 s limit.' >> "$GITHUB_STEP_SUMMARY"
+          fi
           if [ -n "$EDGD_SB_SERVICE" ] && [ -n "$EDGD_SB_URL" ]; then
             echo "::notice::Supabase service credential present: settling and grading directly in the database." >&2
             echo '- Credential: **service role** — the database is written directly; no edge function in the path.' >> "$GITHUB_STEP_SUMMARY"
@@ -126,6 +146,7 @@ jobs:
           EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
           EDGD_SB_URL: ${{ secrets.SB_URL }}
           COLLECTIVE_ADMIN_REFRESH_TOKEN: ${{ secrets.COLLECTIVE_ADMIN_REFRESH_TOKEN }}
+          SB_DB_URL: ${{ secrets.SB_DB_URL }}
         run: |
           ARGS="--record collective/settled"
           # A scheduled run commits. A manual run commits only when asked, so

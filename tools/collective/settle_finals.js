@@ -50,6 +50,9 @@
      1. THE DATABASE ITSELF (preferred; how GitHub runs this by itself)
           EDGD_SB_SERVICE   the service-role key   (secrets.SB_SERVICE_ROLE)
           EDGD_SB_URL       the project URL        (secrets.SB_URL)
+          SB_DB_URL         the pooled Postgres connection string
+                            (secrets.SB_DB_URL): the football-v2 refresh's
+                            door, with its own time limit (see fg2Refresh)
         The same credential and the same names the games workflows already
         use. The run reads the schedule off the game_detail view, writes the
         score and the close onto collective.games, and grades every counting
@@ -1211,15 +1214,64 @@ async function fg2Rebuild(db, sport, season, commit) {
     throw e;
   }
 }
+/* THE DOOR THE REFRESH GOES THROUGH. Through the API every statement gets
+   the API's own limit (8 s on Supabase), and the refresh is more than that:
+   on 2026-10-14 both sports were cancelled every hour with 57014 "canceling
+   statement due to statement timeout". With SB_DB_URL (the pooled connection
+   string the Football regrade already uses) it runs over psql instead, in its
+   own transaction with its own limit (SET LOCAL: nothing outlives the call),
+   the regrade's door with an hour-sized limit. A refresh that cannot get the
+   sport's rebuild lock within REFRESH_LOCK_TIMEOUT is waiting on a regrade
+   that holds it: skipped for this hour, not failed. Without SB_DB_URL, or
+   without psql, the API as before. */
+const REFRESH_STATEMENT_TIMEOUT = '10min';
+const REFRESH_LOCK_TIMEOUT = '1min';
+function pgRefresher(url, opts) {
+  opts = opts || {};
+  url = String(url || '').trim();
+  if (!url) return null;
+  const cp = require('child_process');
+  const exec = opts.exec || ((args) => cp.execFileSync('psql', args,
+    { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, stdio: ['ignore', 'pipe', 'pipe'] }));
+  if (!opts.exec) {
+    try { exec(['--version']); } catch (_) { return null; }
+  }
+  const { pgStatement } = require('./football_rebuild.js');
+  return {
+    door: 'psql',
+    refresh(sport, season, days) {
+      if (!/^[A-Za-z0-9-]+$/.test(String(sport)) || !Number.isInteger(Number(season)) || !Number.isInteger(Number(days))) {
+        throw new Error(`fg2_refresh: refusing arguments ${JSON.stringify([sport, season, days])}`);
+      }
+      const sql = pgStatement(`select collective.fg2_refresh('${sport}', ${Number(season)}, ${Number(days)});`,
+        REFRESH_STATEMENT_TIMEOUT, REFRESH_LOCK_TIMEOUT);
+      let out;
+      try {
+        out = exec([url, '-v', 'ON_ERROR_STOP=1', '-qAt', '-c', sql]);
+      } catch (e) {
+        // psql's own words only: the failed command line carries the connection string
+        throw new Error('psql fg2_refresh: ' + String((e && e.stderr) || (e && e.code) || 'failed').trim().slice(0, 600));
+      }
+      const line = String(out || '').split('\n').filter(Boolean).pop();
+      return line ? JSON.parse(line) : null;
+    },
+  };
+}
+function isLockTimeout(e) {
+  return /55P03|lock timeout/i.test(String(e && e.message));
+}
 /* The hourly refresh (recent and never-processed games; always commits).
    A database on revision 1 of the migration has fg2_rebuild but no
    fg2_refresh: that is said as a stale install, not a crash. */
 const REFRESH_DAYS = 4;
-async function fg2Refresh(db, sport, season, days) {
+async function fg2Refresh(db, sport, season, days, pg) {
   try {
-    const rep = await db.rpc('fg2_refresh', { p_sport: sport, p_season: Number(season), p_recent_days: days || REFRESH_DAYS });
+    const rep = pg
+      ? pg.refresh(sport, Number(season), days || REFRESH_DAYS)
+      : await db.rpc('fg2_refresh', { p_sport: sport, p_season: Number(season), p_recent_days: days || REFRESH_DAYS });
     return rep || {};
   } catch (e) {
+    if (pg && isLockTimeout(e)) return { skipped: 'locked', sport, season: Number(season), detail: String(e.message).slice(0, 300) };
     if (!isFg2Missing(e)) throw e;
     let stale = false;
     try { stale = !!(await db.rpc('fg2_version', {})); } catch (_) { stale = false; }
@@ -1238,6 +1290,17 @@ function describeRebuild(rep, log) {
   if (!rep || rep.installed === false) {
     log('  [fg2] football-v2 is not installed in this database: apply supabase/migrations/20260928120000_football_grading_v2.sql');
     return errors;
+  }
+  if (rep.skipped === 'locked') {
+    log(`::warning::[fg2] ${rep.sport} ${rep.season}: the rebuild lock is held (usually a Football regrade is running); ` +
+      `this hour's refresh is skipped and the next hour retries (${REFRESH_LOCK_TIMEOUT} lock wait)`);
+    return errors;
+  }
+  const bl = rep.backlog;
+  if (bl && bl.taken === false) {
+    log(`::warning::[fg2] ${rep.sport} ${rep.season}: ${bl.unprocessed_games} finished game(s) the settlement has never processed ` +
+      `(oldest kickoff ${bl.oldest_kickoff}) are more than the hourly refresh takes on (${bl.max}); this refresh covered its own window. ` +
+      `Run the Football regrade workflow (sport: ${rep.sport}, commit: true) to settle the season.`);
   }
   const cls = rep.close_classes || {};
   log(`  [fg2] ${rep.sport} ${rep.season} ${rep.dry_run ? '(dry run) ' : ''}${rep.scope ? '(' + rep.scope + ') ' : ''}grading ${rep.grading_version}: ` +
@@ -1898,10 +1961,13 @@ async function main() {
      happens rather than a season later on the rankings page. */
   if (db && args.commit && !args.verify) {
     report.rebuild = [];
+    const pg = pgRefresher(process.env.SB_DB_URL);
+    log(pg ? `  [fg2] refreshing over a direct connection (psql; statement limit ${REFRESH_STATEMENT_TIMEOUT})`
+           : '::warning::[fg2] SB_DB_URL is not set (or psql is missing): refreshing through the API, whose statement limit a refresh can outrun');
     for (const sp of sports) {
       if (['NFL', 'CFB', 'CFB-P4', 'NCAAF'].indexOf(String(sp.code).toUpperCase()) < 0) continue;
       try {
-        const rep = await fg2Refresh(db, sp.code, sp.season, REFRESH_DAYS);
+        const rep = await fg2Refresh(db, sp.code, sp.season, REFRESH_DAYS, pg);
         report.rebuild.push(rep);
         describeRebuild(rep, log).forEach(x =>
           report.failed.push({ sport: sp.code, reason: 'fg2_diagnostic_error', detail: x }));
@@ -1921,6 +1987,7 @@ async function main() {
 
 module.exports = {
   closeSnapshotsFor, handClosesToSettlement, fg2Rebuild, fg2Refresh, REFRESH_DAYS, describeRebuild, isFg2Missing, safeUpdateHint,
+  pgRefresher, isLockTimeout, REFRESH_STATEMENT_TIMEOUT, REFRESH_LOCK_TIMEOUT,
   oddsBoard, closeFromBoardRow, findBoardRow, closesFromBoard, backfillCloses, CLOSE_FIELDS,
   teamKey, teamsAgree, teamsAgreeAny, namesOf, gameMatches, datesAgree, ymd, isFinalScore,
   isPlaceholderResult, espnCompleted,

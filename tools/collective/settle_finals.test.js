@@ -946,6 +946,45 @@ DRIVES.push((async () => {
   const sl = [];
   chk('fg2: a database on the first revision (no fg2_refresh) is a warning to re-apply the migration, not a failed run',
     sr.stale_revision === true && S.describeRebuild(sr, l => sl.push(l)).length === 0 && /re-apply/.test(sl[0]), { sr, sl });
+  // the direct door: psql, its own limit, never the API's 8 s
+  const pcalls = [];
+  const pdb = { rpc: async fn => { throw new Error('the API must not be called when the direct door is open: ' + fn); } };
+  const pg = S.pgRefresher('postgresql://u:SECRETPW@db.example:6543/postgres', { exec: args => {
+    pcalls.push(args);
+    return '\n' + JSON.stringify({ sport: 'NFL', season: 2026, grading_version: 'football-v2', scope: 'games from 2026-10-10',
+      backlog: { unprocessed_games: 0, oldest_kickoff: null, max: 25, taken: true }, diagnostics: [], standings: [] }) + '\n';
+  } });
+  const pr = await S.fg2Refresh(pdb, 'NFL', 2026, 4, pg);
+  const psql = pcalls[0] || [];
+  const stmt = psql[psql.length - 1] || '';
+  chk('fg2: with SB_DB_URL the refresh runs over psql in its own transaction with its own limit, not through the API',
+    pcalls.length === 1 && psql[0] === 'postgresql://u:SECRETPW@db.example:6543/postgres' &&
+    /select collective\.fg2_refresh\('NFL', 2026, 4\);/.test(stmt) &&
+    /begin; set local statement_timeout = '10min'; set local lock_timeout = '1min';/.test(stmt) && /commit;$/.test(stmt) &&
+    pr.sport === 'NFL' && /games from 2026-10-10/.test(pr.scope), { pcalls, pr });
+  chk('fg2: no SB_DB_URL, no direct door', S.pgRefresher('') === null && S.pgRefresher(undefined) === null);
+  let refused = null;
+  try { pg.refresh("NFL'); drop table x; --", 2026, 4); } catch (e) { refused = String(e.message); }
+  chk('fg2: the direct door refuses anything but a sport code, a season and a day count', /refusing arguments/.test(refused || '') && pcalls.length === 1, refused);
+  const failing = S.pgRefresher('postgresql://u:SECRETPW@db.example:6543/postgres', { exec: () => {
+    const e = new Error('Command failed: psql postgresql://u:SECRETPW@db.example:6543/postgres -c ...');
+    e.stderr = 'ERROR:  canceling statement due to statement timeout\n'; throw e; } });
+  let ferr = null;
+  try { await S.fg2Refresh(pdb, 'CFB', 2026, 4, failing); } catch (e) { ferr = String(e.message); }
+  chk('fg2: a failed direct refresh is a failure that says why, without the connection string',
+    /statement timeout/.test(ferr || '') && !/SECRETPW/.test(ferr || ''), ferr);
+  const locked = S.pgRefresher('postgresql://x', { exec: () => {
+    const e = new Error('Command failed'); e.stderr = 'ERROR:  canceling statement due to lock timeout\nCONTEXT:  PL/pgSQL function collective.fg2_rebuild_run'; throw e; } });
+  const lr = await S.fg2Refresh(pdb, 'CFB', 2026, 4, locked);
+  const ll = [];
+  chk('fg2: a refresh waiting on a running regrade\'s lock is skipped with a warning, not a failed run',
+    lr.skipped === 'locked' && S.describeRebuild(lr, l => ll.push(l)).length === 0 && /^::warning::.*regrade is running/.test(ll[0]), { lr, ll });
+  const bl = [];
+  const berr = S.describeRebuild({ sport: 'CFB', season: 2026, grading_version: 'football-v2', scope: 'games from 2026-10-10',
+    backlog: { unprocessed_games: 288, oldest_kickoff: '2026-08-29T16:00:00+00:00', max: 25, taken: false }, diagnostics: [], standings: [] },
+    l => bl.push(l));
+  chk('fg2: a season backlog the refresh left to the regrade is a warning that names the workflow, not a failed run',
+    berr.length === 0 && bl.some(l => /^::warning::.*288 finished game\(s\).*Football regrade workflow \(sport: CFB, commit: true\)/.test(l)), bl);
   const none = await S.fg2Refresh(missing, 'NFL', 2026);
   chk('fg2: with no football-v2 at all the refresh is "not installed"', none.installed === false && !none.stale_revision, none);
   chk('--rebuild is a flag of its own and does not imply --commit',
