@@ -2915,14 +2915,14 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20261014cf1">
 <link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929calm1">
 <link rel="stylesheet" href="/lib/edgedesk_linemaker.css?v=20261011lm1">
-<link rel="stylesheet" href="/lib/edgedesk_engine.css?v=20261014nhl2">
+<link rel="stylesheet" href="/lib/edgedesk_engine.css?v=20261014nhl3">
 <link rel="stylesheet" href="/lib/edgedesk_nba.css?v=20261014nb1">
 <link rel="stylesheet" href="/lib/edgedesk_first_run.css?v=20260930a">
 <link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261003y">
 <link rel="stylesheet" href="/lib/edgedesk_workspace.css?v=20261004b">
 <link rel="stylesheet" href="/lib/edgedesk_portfolio.css?v=20261012bh1">
 <link rel="stylesheet" href="/lib/edgedesk_intel.css?v=20261012ia8">
-<link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261013gm1">
+<link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261014vs1">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -4054,8 +4054,11 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_bet_history.js?v=20261012bh1"></script>
 <script src="/lib/edgedesk_readiness.js?v=20261012ia2"></script>
 <!-- TODAY'S GAMES: the slate kernel (dates, statuses, markets, research links), then the strip and page -->
+<!-- EdgeDesk vs the market for NHL games (the matchup view and Research → NHL) -->
+<script src="/lib/edgedesk_nhl_market.js?v=20261014vs1"></script>
+<script src="/lib/edgedesk_nhl_compare.js?v=20261014vs1"></script>
 <script src="/lib/edgedesk_games.js?v=20261013gm1"></script>
-<script src="/lib/edgedesk_games_ui.js?v=20261014cf1"></script>
+<script src="/lib/edgedesk_games_ui.js?v=20261014vs2"></script>
 <script>
 /* THE FREE PRICE FEED loads at boot and every 10 minutes the tab is open: the
    football boards price on it whenever the paid capture is not current, and
@@ -5825,7 +5828,7 @@ researchRegister({id:'lines',label:'Lines',schema:'public',cadenceMs:null,
 /* NHL and ENGINE — the multi-sport engine's two panels share one script
    (lib/edgedesk_engine_ui.js), loaded on first open. A script that fails to
    load is an error state on the panel, never a blank one. */
-var XE_SCRIPT='/lib/edgedesk_engine_ui.js?v=20261014nhl2';
+var XE_SCRIPT='/lib/edgedesk_engine_ui.js?v=20261014nhl3';
 function xeReady(){if(window.EDEngineUI)return Promise.resolve();return lmScript(XE_SCRIPT);}
 function xeFail(id){return function(e){var h=$(id);if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The engine could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';};}
 researchRegister({id:'nhl',label:'NHL',schema:'public',cadenceMs:null,

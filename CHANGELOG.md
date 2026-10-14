@@ -25,6 +25,20 @@
 - **The slate keeps upcoming games' lines** (`tools/slate/build.js`). Prices ESPN posts for games past the window, such as Sunday's NFL slate read on a Wednesday, used to be dropped. They are now kept, so the Card can price next week's games.
 - Tests: `tools/bettor/card_feed.test.js` (new, 45 checks). The slate pipeline adds a check for an upcoming game's price. `football/cfb_lab/chaos.test.js` adds 3 checks: a confirmation is recorded, it sits outside the ledger, and the same hour run twice writes nothing. `tools/resilience/resilience.test.js` adds 5 checks on how the build reads confirmations. The existing decision, football decision, consistency, opportunity, navigation and slate suites are unchanged and green.
 
+## 2026-10-14 — NHL: EdgeDesk's own lines against the market, and who is better where
+
+**Research → Other → NHL now says which side EdgeDesk rates higher than the book, game by game, and whether the book's price pays enough to matter.**
+
+- **EdgeDesk vs the market** (`lib/edgedesk_nhl_compare.js`):
+  - The book's price is the one Today's Games already captures: DraftKings via ESPN's public scoreboard, or the games strip's live prices when newer. NHL capture through the gateway stays off.
+  - Per market (moneyline, total, puck line when priced): EdgeDesk's probability and fair price, the book's price and no-vig probability, the gap, EV at the book's price, and the label.
+  - The gap and the price are separate answers. A gap inside the model's own spread is called agreement. When nothing pays, the sentence gives the price it would take.
+  - A republished price is a reference and fails the price-verified gate (`lib/edgedesk_nhl_market.js` now names it). No NHL price can be VERIFIED VALUE until the model is tested against closing prices.
+- **The NHL list** opens with a board: EdgeDesk's likelier winner, the book's number, the side EdgeDesk rates higher, and whether any price pays. Each row opens its game.
+- **Each game's Overview** adds the full comparison and **Who is better where**: both clubs' ratings against league average on one scale, the projected goalie, rest, and EdgeDesk's projected goals.
+- **The Today's Games matchup view** for an NHL game adds one paragraph: EdgeDesk against the captured price. The slate now carries EdgeDesk's probabilities for each NHL game (`tools/slate/research.js`).
+- Tests: `tools/hockey/nhl_compare.test.js` (new), and the NHL and Today's Games browser suites extended.
+
 ## 2026-10-14 — Men's college basketball research engine: team strength, player impact, lineups, matchups and scenarios, validated without odds
 
 **EdgeDesk now has an independent research model for men's college basketball that runs without any sportsbook price. It explains who is good, why they are good, who makes them good, and how those strengths meet a particular opponent. On the held-out 2025-26 season its team ratings beat the incumbent points model. The player, lineup, scenario and style layers are each labelled by what their validation showed. A market comparison is a separate, optional layer; today it says "market comparison unavailable".** Docs: `docs/ncaam/README.md`, `VALIDATION.md`, `METHODOLOGY.md`, `METHODOLOGY_SOURCES.md`.
