@@ -1,64 +1,6 @@
--- portfolio_journal -- part 7 of 8.
+-- portfolio_journal -- part 8 of 9.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
-
--- Three different questions, kept apart: what did I ENTER on a day (placed),
--- what EVENTS did I have exposure to that day (event start), and what
--- SETTLED that day (P&L).
-create or replace function public.portfolio_calendar(p_from date, p_to date, p_tz text default null, p_platform text default null)
-returns table (day date, placed bigint, placed_staked numeric, events bigint, event_exposure numeric, settled bigint, pnl numeric,
-  wins bigint, losses bigint, pushes bigint, graded bigint, process numeric)
-language sql volatile
-  -- JIT would spend seconds compiling these expressions to save milliseconds,
-  -- and a long history sorts in memory rather than on disk
-  set jit = off set work_mem = '64MB' as $$
-  select public.portfolio_facts_fresh(p_tz);
-  with z as materialized (select public.portfolio_tz(p_tz) as tz),
-  f as (select f.* from z, public.portfolio_facts_cached((p_from::timestamp at time zone z.tz), (least(p_to, p_from + 400)::timestamp at time zone z.tz), z.tz, p_platform) f),
-  ev as (select f.placed_day as day, 1 as placed, f.stake_amt as placed_staked, 0 as events, null::numeric as exposure, 0 as settled,
-                null::numeric as pnl, null::text as result, f.process_score
-           from f where f.in_placed
-         union all
-         select f.event_day, 0, null, 1, f.stake_amt, 0, null, null, null from f where f.in_event
-         union all
-         select f.settled_day, 0, null, 0, null, 1, f.pnl, f.result, null from f where f.in_settled)
-  select ev.day, sum(ev.placed)::bigint, coalesce(sum(ev.placed_staked), 0), sum(ev.events)::bigint, coalesce(sum(ev.exposure), 0),
-         sum(ev.settled)::bigint, sum(ev.pnl),
-         count(*) filter (where ev.result = 'WIN'), count(*) filter (where ev.result = 'LOSS'), count(*) filter (where ev.result in ('PUSH', 'VOID')),
-         count(ev.process_score), round(avg(ev.process_score), 1)
-    from ev group by ev.day order by ev.day
-$$;
-
--- The history folders: year → month → week → day, each with its summary.
--- Without a year: the years and their months. With one: that year to the
--- day. A week is Monday-based and, inside a month folder, holds only that
--- month's days.
-create or replace function public.portfolio_periods(p_tz text default null, p_year int default null, p_platform text default null)
-returns table (level text, year int, month int, week date, day date, placed bigint, staked numeric, settled bigint, pnl numeric,
-  wins bigint, losses bigint, graded bigint, process numeric)
-language sql volatile
-  -- JIT would spend seconds compiling these expressions to save milliseconds,
-  -- and a long history sorts in memory rather than on disk
-  set jit = off set work_mem = '64MB' as $$
-  select public.portfolio_facts_fresh(p_tz);
-  with z as materialized (select public.portfolio_tz(p_tz) as tz),
-  f as (select f.* from z, public.portfolio_facts_cached(
-          case when p_year is null then null else (make_date(p_year, 1, 1)::timestamp at time zone z.tz) end,
-          case when p_year is null then null else (make_date(p_year + 1, 1, 1)::timestamp at time zone z.tz) end, z.tz, p_platform) f),
-  ev as (select f.placed_day as d, 1 as placed, f.stake_amt as staked, 0 as settled, null::numeric as pnl, null::text as result, f.process_score
-           from f where f.in_placed
-         union all
-         select f.settled_day, 0, null, 1, f.pnl, f.result, null from f where f.in_settled),
-  k as (select extract(year from ev.d)::int as y, extract(month from ev.d)::int as m, date_trunc('week', ev.d)::date as w, ev.* from ev),
-  g as (select case when grouping(k.m) = 1 then 'year' when grouping(k.w) = 1 then 'month' when grouping(k.d) = 1 then 'week' else 'day' end as level,
-               k.y, k.m, k.w, k.d, sum(k.placed)::bigint as placed, coalesce(sum(k.staked), 0) as staked, sum(k.settled)::bigint as settled,
-               sum(k.pnl) as pnl, count(*) filter (where k.result = 'WIN') as wins, count(*) filter (where k.result = 'LOSS') as losses,
-               count(k.process_score) as graded, round(avg(k.process_score), 1) as process
-          from k group by grouping sets ((k.y), (k.y, k.m), (k.y, k.m, k.w), (k.y, k.m, k.w, k.d)))
-  select g.level, g.y, g.m, g.w, g.d, g.placed, g.staked, g.settled, g.pnl, g.wins, g.losses, g.graded, g.process
-    from g where p_year is not null or g.level in ('year', 'month')
-   order by g.y desc, g.m desc nulls first, g.w desc nulls first, g.d desc nulls first
-$$;
 
 -- At most 200 positions, filtered: one day's journal, one matrix cell, one
 -- breakdown cell, the Mistake or Strength Library, the positions that broke
@@ -220,3 +162,33 @@ drop policy if exists portfolio_experiments_delete_own on public.portfolio_exper
 create policy portfolio_experiments_delete_own on public.portfolio_experiments for delete to authenticated using (user_id = auth.uid());
 
 drop policy if exists portfolio_facts_cache_own on public.portfolio_facts_cache;
+create policy portfolio_facts_cache_own on public.portfolio_facts_cache for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists portfolio_facts_cache_state_own on public.portfolio_facts_cache_state;
+create policy portfolio_facts_cache_state_own on public.portfolio_facts_cache_state for all to authenticated
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+revoke all on public.portfolio_facts_cache, public.portfolio_facts_cache_state from anon, authenticated;
+grant select, insert, delete on public.portfolio_facts_cache to authenticated;
+grant select, insert, update on public.portfolio_facts_cache_state to authenticated;
+grant select, insert, update, delete on public.portfolio_facts_cache, public.portfolio_facts_cache_state to service_role;
+-- re-running this file changes the arithmetic the cache was built with
+delete from public.portfolio_facts_cache_state;
+
+revoke all on public.portfolio_journal_entries, public.portfolio_rules, public.portfolio_experiments from anon;
+revoke all on public.portfolio_journal_entries from authenticated;
+grant select, insert, update on public.portfolio_journal_entries to authenticated;
+grant select, insert, update, delete on public.portfolio_rules, public.portfolio_experiments to authenticated;
+grant select, insert, update, delete on public.portfolio_journal_entries, public.portfolio_rules, public.portfolio_experiments to service_role;
+
+do $$
+declare f record;
+begin
+  for f in select p.oid::regprocedure as sig from pg_proc p join pg_namespace s on s.oid = p.pronamespace
+            where s.nspname = 'public' and p.proname like 'portfolio\_%' and p.proname not like 'portfolio\_svc\_%' loop
+    execute format('revoke all on function %s from public', f.sig);
+    execute format('revoke all on function %s from anon', f.sig);
+    execute format('grant execute on function %s to authenticated, service_role', f.sig);
+  end loop;
+end $$;
+
+notify pgrst, 'reload schema';

@@ -1,10 +1,12 @@
 # Portfolio — platform connections
 
-**As of 2026-10-05, no platform connects automatically in production.**
+**As of 2026-10-14, no platform connects automatically in production.**
 
 - The Kalshi and Polymarket connectors are built and tested against recorded responses.
 - Both are **switched off**. A database guard keeps them off until a live smoke test has passed (below).
-- Sportsbooks have no automatic method at all. They are imported from a file the reader downloads, or recorded by hand.
+- Sportsbooks have no direct automatic method.
+  - **SharpSports BetSync** (an approved aggregator) is built and runs in **sandbox, for operators only**. Its whole story — linking, the webhook, sync, what was verified, the production checklist — is in [`sharpsports-betsync.md`](sharpsports-betsync.md).
+  - Otherwise sportsbooks are imported from a file the reader downloads, or recorded by hand.
 
 This page is the source of truth for **how** each platform's history reaches EdgeDesk, what was verified and how, and what must happen before anything is switched on. `docs/platform-support.md` is the short matrix.
 
@@ -55,6 +57,7 @@ A quick-import account is **upgraded in place** when the reader later connects t
 | bet365 | Sportsbook | none | — | — | `bet365` (unverified) | — |
 | BetRivers, Fanatics, theScore Bet (ESPN BET) | Sportsbook | none | — | — | `betrivers`, `fanatics`, `espnbet` (unverified) | — |
 | Any other | Either | none | — | — | the generic importers | — |
+| **Sportsbooks via SharpSports BetSync** | Sportsbook | `AUTHORIZED_API` through an aggregator, tier 1 | ✅ `sharpsports_v1` | ❌ sandbox only (operators); production awaits a PRODUCTION smoke test + terms review | — | SharpSports docs as quoted in search excerpts, 2026-10-14; three read paths INFERRED (see `sharpsports-betsync.md` § 4) |
 
 **What was verified, and what was not.**
 
@@ -106,9 +109,17 @@ A quick-import account is **upgraded in place** when the reader later connects t
 - Polymarket's terms for third-party display of a user's public activity.
 - Regional availability: a US reader's exchange account may differ from the international wallet product.
 
+### Sportsbooks through SharpSports BetSync (tier 1, aggregator; sandbox)
+
+See [`sharpsports-betsync.md`](sharpsports-betsync.md).
+
+- A linked book is a `platform_accounts` row of `connection_type = 'AGGREGATOR'` under the book's own key; a quick-import account for that book is upgraded in place.
+- Bets arrive through `portfolio_svc_ingest_wagers` (`supabase/portfolio_aggregator.sql`): upserted by SharpSports' slip id, adopting the reader's own matching record, never touching notes, journal or attribution.
+- Webhooks are hints; every change is re-read from SharpSports' API. The switch-on procedure is that document's § 8 (the same registry guard as below, with `tools/portfolio/sharpsports_smoke.js` as the smoke test).
+
 ### Sportsbooks (tier 3, file import)
 
-**No US sportsbook offers customers an API or authorized connection for their bet history.**
+**No US sportsbook offers customers an API or authorized connection for their bet history.** (SharpSports BetSync, above, is an aggregator in between, not the book's own API.)
 
 - EdgeDesk never asks for a sportsbook username or password.
 - It never reads a sportsbook site on the reader's behalf.
@@ -256,6 +267,6 @@ These come from the funnel events `portfolio_onboarding_started`, `platform_sele
 | Kalshi automatic connection | Live smoke test and terms review pending; docs re-read pending |
 | Polymarket automatic connection | Same |
 | Polymarket signature challenge in the page | Not needed to read public activity; schema ready |
-| Every sportsbook "connect" | No authorized method exists |
+| Every sportsbook "connect" for readers | SharpSports BetSync is built; it is sandbox-only until its agreement, terms review and PRODUCTION smoke test (`sharpsports-betsync.md` § 7–8) |
 | Import profiles "verified" | No real export from any book has been imported end to end yet |
 | Landing-page connection claims | The landing page keeps "importing and connecting are in development" until the import is deployed and a connector is switched on (pinned by `tools/presentation/landing_positioning.test.js`) |

@@ -152,6 +152,30 @@ The Portfolio's whole database in one file (pasted as `parts/portfolio.part1-of-
 - **Re-running it on a live site cannot deadlock a reader's save.** It takes its tables with `NOWAIT` and retries without holding any.
 - **The report** has 15 rows. Tested against a real PostgreSQL by `tools/portfolio/portfolio_sql.test.js`, and in Chromium by `tools/portfolio/portfolio_ui.e2e.js`.
 
+### `portfolio_aggregator.sql` — sportsbook history through SharpSports BetSync (sandbox)
+
+Run after `portfolio.sql`, `portfolio_journal.sql` and `portfolio_connect.sql` (its guard checks that `portfolio_connect.sql` is current). It is applied by the **Deploy Portfolio schema** workflow, or pasted as `parts/portfolio_aggregator.part*-of-*.sql`.
+
+- The `sharpsports` registry row, **off**. Production linking takes a PASSED PRODUCTION smoke test and a cleared terms review; a sandbox rehearsal is recorded as DEMO and can never be that evidence.
+- `portfolio_private.aggregator_bettors`: an opaque internal id per reader and environment, and the bettor id SharpSports' API confirmed for it.
+- `portfolio_private.aggregator_webhook_events` and `_rejections`: each delivery once (a dedupe key), the ids it named, how it was authenticated, what became of it; refusals are counts only.
+- `public.portfolio_refresh_requests` (the reader reads their own) and `public.portfolio_position_settlements` (append-only, the reader reads their own).
+- `portfolio_svc_ingest_wagers`: the sportsbook ingest. It upserts by the platform's id, writes nothing when nothing changed, and adopts the reader's own matching record. It never touches notes, the journal or attribution.
+- `portfolio_admin_aggregator_health` for operators.
+
+The report has 8 rows. Tested end to end with both shipped functions by `tools/portfolio/sharpsports.test.js`; see `docs/sharpsports-betsync.md`.
+
+### `portfolio_model_context.sql` — EdgeDesk's model on a reader's bet, as it stood before the bet
+
+Run after `portfolio.sql` and the Record P&L schema (`model_pnl_analytics.sql`: `model_pnl_public`).
+
+- `portfolio_model_context(position)` runs as the caller and changes nothing.
+- It matches a football single to the one game both teams name, and returns EdgeDesk's probability recorded **before** the bet: for the bettor's side, and only at the line the model priced.
+- Alongside that: the implied probability, the difference, CLV from the reader's close, and the outcome.
+- Anything else is refused by name, including `MODEL_AFTER_PLACEMENT`.
+
+Tested by `tools/portfolio/model_context_sql.test.js`.
+
 ### `personal_research.sql` — the reader's watchlist, alerts, journal and preferences
 Everything personal used to live in one browser. This gives each reader rows on
 their account, under row level security on `auth.uid()`, and nothing takes a

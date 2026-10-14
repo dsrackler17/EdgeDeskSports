@@ -1,86 +1,7 @@
--- portfolio_journal -- part 6 of 8.
+-- portfolio_journal -- part 7 of 9.
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
--- ─────────────────────────────────────────────────────────────────────────────
--- 6. THE AGGREGATES THE PAGE ASKS FOR — never a lifetime of rows
--- ─────────────────────────────────────────────────────────────────────────────
--- One window's headline: P&L by SETTLEMENT date, activity and the Decision
--- Grade by PLACED date, open exposure as it stands now. Each figure carries
--- its sample size.
-create or replace function public.portfolio_summary(p_from timestamptz, p_to timestamptz, p_tz text default null, p_platform text default null)
-returns jsonb language sql volatile
-  -- JIT would spend seconds compiling these expressions to save milliseconds,
-  -- and a long history sorts in memory rather than on disk
-  set jit = off set work_mem = '64MB' as $$
-  select public.portfolio_facts_fresh(p_tz);
-  with z as materialized (select public.portfolio_tz(p_tz) as tz),
-  f as (select f.* from z, public.portfolio_facts_cached(p_from, p_to, z.tz, p_platform) f),
-  st as (select * from f where in_settled),
-  pl as (select * from f where in_placed),
-  band as (select case when process_score is null then 'UNGRADED' when process_score >= 66 then 'GOOD' when process_score >= 45 then 'AVERAGE' else 'POOR' end as b,
-                  case when status = 'OPEN' then 'OPEN' when result in ('WIN', 'LOSS') then result else 'OTHER' end as o, pnl from pl),
-  cells as (select b, o, count(*) as n, sum(pnl) as pnl from band group by b, o)
-  select jsonb_build_object(
-    'tz', (select tz from z), 'from', p_from, 'to', p_to,
-    'settled', (select jsonb_build_object('n', count(*), 'pnl', coalesce(sum(pnl), 0), 'staked', coalesce(sum(stake_amt), 0),
-        'roi', case when sum(stake_amt) > 0 then round(sum(pnl) / sum(stake_amt), 6) end,
-        'wins', count(*) filter (where result = 'WIN'), 'losses', count(*) filter (where result = 'LOSS'),
-        'pushes', count(*) filter (where result in ('PUSH', 'VOID')), 'cashouts', count(*) filter (where result = 'CASHOUT'),
-        'sportsbook', jsonb_build_object('n', count(*) filter (where platform_type = 'SPORTSBOOK'), 'pnl', coalesce(sum(pnl) filter (where platform_type = 'SPORTSBOOK'), 0),
-          'staked', coalesce(sum(stake_amt) filter (where platform_type = 'SPORTSBOOK'), 0)),
-        'prediction', jsonb_build_object('n', count(*) filter (where platform_type = 'PREDICTION_MARKET'), 'pnl', coalesce(sum(pnl) filter (where platform_type = 'PREDICTION_MARKET'), 0),
-          'staked', coalesce(sum(stake_amt) filter (where platform_type = 'PREDICTION_MARKET'), 0)),
-        'ret_n', count(ret), 'ret_sum', coalesce(sum(ret), 0), 'ret_sq', coalesce(sum(ret * ret), 0)) from st),
-    'placed', (select jsonb_build_object('n', count(*), 'staked', coalesce(sum(stake_amt), 0), 'days', count(distinct placed_day),
-        'units', sum(units), 'units_n', count(units)) from pl),
-    'process', (select jsonb_build_object('n', count(*), 'graded', count(process_score), 'score', round(avg(process_score), 1),
-        'letter', public.portfolio_grade_letter(round(avg(process_score), 1)), 'confidence', public.portfolio_confidence(count(process_score)),
-        'coverage', round(avg(process_weight) filter (where process_score is not null), 1),
-        'ps_sum', coalesce(sum(process_score), 0), 'ps_sq', coalesce(sum(process_score * process_score), 0),
-        'components', jsonb_build_object(
-          'clv', jsonb_build_object('n', count(s_clv), 'avg', round(avg(s_clv), 1)),
-          'model', jsonb_build_object('n', count(s_model), 'avg', round(avg(s_model), 1)),
-          'price', jsonb_build_object('n', count(s_price), 'avg', round(avg(s_price), 1)),
-          'sizing', jsonb_build_object('n', count(s_sizing), 'avg', round(avg(s_sizing), 1)),
-          'timing', jsonb_build_object('n', count(s_timing), 'avg', round(avg(s_timing), 1)),
-          'rules', jsonb_build_object('n', count(s_rules), 'avg', round(avg(s_rules), 1)),
-          'market', jsonb_build_object('n', count(s_market), 'avg', round(avg(s_market), 1))),
-        'clv', jsonb_build_object('n', count(clv_pct), 'avg_pct', round(avg(clv_pct), 6), 'sum', coalesce(sum(clv_pct), 0), 'sq', coalesce(sum(clv_pct * clv_pct), 0),
-          'beat', count(*) filter (where clv_pct > 0 or clv_points > 0), 'with_close', count(*) filter (where clv_pct is not null or clv_points is not null),
-          'points_n', count(clv_points), 'avg_points', round(avg(clv_points), 2)),
-        'model_ev', jsonb_build_object('n', count(model_ev), 'avg', round(avg(model_ev), 6)),
-        'price_slip', jsonb_build_object('n', count(price_slip), 'avg', round(avg(price_slip), 6),
-          'given_up', coalesce(sum(case when price_slip < 0 then stake_amt * (-price_slip) end), 0)),
-        'rules', jsonb_build_object('applicable', coalesce(sum(rules_applicable), 0), 'followed', coalesce(sum(rules_followed), 0),
-          'positions_broken', count(*) filter (where rules_followed < rules_applicable)),
-        'tagged', count(*) filter (where planned is not null or decision_tags is not null),
-        'reviewed', count(would_repeat),
-        'variance', jsonb_build_object('n', count(*) filter (where result in ('WIN', 'LOSS') and entry_dec > 1),
-          'wins', count(*) filter (where result = 'WIN' and entry_dec > 1),
-          'expected_wins', coalesce(sum(round(1 / entry_dec, 6)) filter (where result in ('WIN', 'LOSS') and entry_dec > 1), 0),
-          'var', coalesce(sum(round(1 / entry_dec, 6) * (1 - round(1 / entry_dec, 6))) filter (where result in ('WIN', 'LOSS') and entry_dec > 1), 0))
-      ) from pl),
-    'matrix', (select coalesce(jsonb_object_agg(b || ':' || o, jsonb_build_object('n', n, 'pnl', pnl)), '{}'::jsonb) from cells),
-    'open', (select jsonb_build_object('n', count(*),
-        'exposure', coalesce(sum(case when p.platform_type = 'SPORTSBOOK' then p.stake else p.open_cost_basis end), 0),
-        'unrealized', sum(p.unrealized_profit_loss), 'marked', count(p.unrealized_profit_loss))
-       from public.portfolio_positions p where p.status = 'OPEN'
-        and (p_platform is null or p.platform = p_platform or ('type:' || p.platform_type) = p_platform)),
-    'evidence', (select jsonb_build_object('full', count(*) filter (where evidence = 'FULL_CONTEXT'),
-        'partial', count(*) filter (where evidence = 'PARTIAL_CONTEXT'), 'result_only', count(*) filter (where evidence = 'RESULT_ONLY')) from pl),
-    'platforms', (select coalesce(jsonb_agg(jsonb_build_object('platform', x.platform, 'label', x.label, 'type', x.platform_type, 'n', x.n, 'pnl', x.pnl,
-        'staked', x.staked) order by x.pnl desc nulls last), '[]'::jsonb)
-        from (select platform, max(platform_label) as label, platform_type, count(*) as n, coalesce(sum(pnl), 0) as pnl, coalesce(sum(stake_amt), 0) as staked
-                from st group by platform, platform_type) x))
-$$;
-
--- Breakdown cells: per dimension and value, the counts, sums and sums of
--- squares of per-position return, CLV and process score over the positions
--- PLACED in the window. With p_segments, also for the chronological halves
--- (h1, h2) and the most recent 30% (ho, the holdout) — what the coach's
--- stability tests read. The statistics run on these few hundred rows, never
--- on the positions themselves.
 create or replace function public.portfolio_cells(p_from timestamptz, p_to timestamptz, p_tz text default null, p_platform text default null,
     p_segments boolean default true)
 returns table (dim text, key text, n bigint, settled bigint, wins bigint, losses bigint, staked numeric, pnl numeric,
@@ -157,4 +78,62 @@ language sql volatile
       from (select f.*, tg.tag from f cross join lateral unnest(coalesce(f.decision_tags, array['UNTAGGED']::text[])) tg(tag)) x
      group by x.tag)
   select * from g union all select * from t
+$$;
+
+-- Three different questions, kept apart: what did I ENTER on a day (placed),
+-- what EVENTS did I have exposure to that day (event start), and what
+-- SETTLED that day (P&L).
+create or replace function public.portfolio_calendar(p_from date, p_to date, p_tz text default null, p_platform text default null)
+returns table (day date, placed bigint, placed_staked numeric, events bigint, event_exposure numeric, settled bigint, pnl numeric,
+  wins bigint, losses bigint, pushes bigint, graded bigint, process numeric)
+language sql volatile
+  -- JIT would spend seconds compiling these expressions to save milliseconds,
+  -- and a long history sorts in memory rather than on disk
+  set jit = off set work_mem = '64MB' as $$
+  select public.portfolio_facts_fresh(p_tz);
+  with z as materialized (select public.portfolio_tz(p_tz) as tz),
+  f as (select f.* from z, public.portfolio_facts_cached((p_from::timestamp at time zone z.tz), (least(p_to, p_from + 400)::timestamp at time zone z.tz), z.tz, p_platform) f),
+  ev as (select f.placed_day as day, 1 as placed, f.stake_amt as placed_staked, 0 as events, null::numeric as exposure, 0 as settled,
+                null::numeric as pnl, null::text as result, f.process_score
+           from f where f.in_placed
+         union all
+         select f.event_day, 0, null, 1, f.stake_amt, 0, null, null, null from f where f.in_event
+         union all
+         select f.settled_day, 0, null, 0, null, 1, f.pnl, f.result, null from f where f.in_settled)
+  select ev.day, sum(ev.placed)::bigint, coalesce(sum(ev.placed_staked), 0), sum(ev.events)::bigint, coalesce(sum(ev.exposure), 0),
+         sum(ev.settled)::bigint, sum(ev.pnl),
+         count(*) filter (where ev.result = 'WIN'), count(*) filter (where ev.result = 'LOSS'), count(*) filter (where ev.result in ('PUSH', 'VOID')),
+         count(ev.process_score), round(avg(ev.process_score), 1)
+    from ev group by ev.day order by ev.day
+$$;
+
+-- The history folders: year → month → week → day, each with its summary.
+-- Without a year: the years and their months. With one: that year to the
+-- day. A week is Monday-based and, inside a month folder, holds only that
+-- month's days.
+create or replace function public.portfolio_periods(p_tz text default null, p_year int default null, p_platform text default null)
+returns table (level text, year int, month int, week date, day date, placed bigint, staked numeric, settled bigint, pnl numeric,
+  wins bigint, losses bigint, graded bigint, process numeric)
+language sql volatile
+  -- JIT would spend seconds compiling these expressions to save milliseconds,
+  -- and a long history sorts in memory rather than on disk
+  set jit = off set work_mem = '64MB' as $$
+  select public.portfolio_facts_fresh(p_tz);
+  with z as materialized (select public.portfolio_tz(p_tz) as tz),
+  f as (select f.* from z, public.portfolio_facts_cached(
+          case when p_year is null then null else (make_date(p_year, 1, 1)::timestamp at time zone z.tz) end,
+          case when p_year is null then null else (make_date(p_year + 1, 1, 1)::timestamp at time zone z.tz) end, z.tz, p_platform) f),
+  ev as (select f.placed_day as d, 1 as placed, f.stake_amt as staked, 0 as settled, null::numeric as pnl, null::text as result, f.process_score
+           from f where f.in_placed
+         union all
+         select f.settled_day, 0, null, 1, f.pnl, f.result, null from f where f.in_settled),
+  k as (select extract(year from ev.d)::int as y, extract(month from ev.d)::int as m, date_trunc('week', ev.d)::date as w, ev.* from ev),
+  g as (select case when grouping(k.m) = 1 then 'year' when grouping(k.w) = 1 then 'month' when grouping(k.d) = 1 then 'week' else 'day' end as level,
+               k.y, k.m, k.w, k.d, sum(k.placed)::bigint as placed, coalesce(sum(k.staked), 0) as staked, sum(k.settled)::bigint as settled,
+               sum(k.pnl) as pnl, count(*) filter (where k.result = 'WIN') as wins, count(*) filter (where k.result = 'LOSS') as losses,
+               count(k.process_score) as graded, round(avg(k.process_score), 1) as process
+          from k group by grouping sets ((k.y), (k.y, k.m), (k.y, k.m, k.w), (k.y, k.m, k.w, k.d)))
+  select g.level, g.y, g.m, g.w, g.d, g.placed, g.staked, g.settled, g.pnl, g.wins, g.losses, g.graded, g.process
+    from g where p_year is not null or g.level in ('year', 'month')
+   order by g.y desc, g.m desc nulls first, g.w desc nulls first, g.d desc nulls first
 $$;

@@ -3,6 +3,7 @@
 **As of 2026-10-05, no platform syncs automatically in production.** Every platform below works through **manual entry** and **file import**, and its positions count exactly like any other.
 
 - The Kalshi (read-only API key) and Polymarket (public wallet) connectors are **built and switched off**. A database guard keeps them off until a live ten-stage smoke test passes and the platform's terms review is cleared.
+- **Sportsbooks through SharpSports BetSync** (class C, an approved aggregator) are **built and in SANDBOX only**, for operators. The same guard keeps production off until a PRODUCTION smoke test passes and the terms review is cleared. See [`sharpsports-betsync.md`](sharpsports-betsync.md).
 - How each one works, what was verified and how, and the switch-on procedure: [`platform-connections.md`](platform-connections.md).
 
 Nothing here is marked supported until it works end to end. The *Candidate method* column is research, not a capability.
@@ -26,12 +27,12 @@ Nothing here is marked supported until it works end to end. The *Candidate metho
 
 | Platform | Type | Manual | CSV | Auto sync | Status | Candidate method (unverified until built) | Limitations |
 |---|---|---|---|---|---|---|---|
-| DraftKings | Sportsbook | ✅ | ✅ profile (unverified) | ❌ | Manual / import | C (aggregator), else E/G | No public customer bet-history API known to us. The `draftkings` profile knows likely column names and status words; it stays marked unverified until a real export has been imported end to end. |
-| FanDuel | Sportsbook | ✅ | ✅ profile (unverified) | ❌ | Manual / import | C, else E/G | Same as DraftKings. |
-| BetMGM | Sportsbook | ✅ | ✅ profile (unverified) | ❌ | Manual / import | C, else E/G | Same. |
-| Caesars (`williamhill_us`) | Sportsbook | ✅ | ✅ profile (unverified) | ❌ | Manual / import | C, else E/G | Same. |
+| DraftKings | Sportsbook | ✅ | ✅ profile (unverified) | Built (BetSync), **sandbox** | Manual / import · BetSync for operators in sandbox | **C** — SharpSports BetSync, else E/G | No public customer bet-history API known to us. The `draftkings` profile knows likely column names and status words; it stays marked unverified until a real export has been imported end to end. |
+| FanDuel | Sportsbook | ✅ | ✅ profile (unverified) | Built (BetSync), **sandbox** | Manual / import · BetSync for operators in sandbox | **C** — SharpSports BetSync, else E/G | Same as DraftKings. |
+| BetMGM | Sportsbook | ✅ | ✅ profile (unverified) | Built (BetSync), **sandbox** | Manual / import · BetSync for operators in sandbox | **C** — SharpSports BetSync, else E/G | Same. |
+| Caesars (`williamhill_us`) | Sportsbook | ✅ | ✅ profile (unverified) | Built (BetSync), **sandbox** | Manual / import · BetSync for operators in sandbox | **C** — SharpSports BetSync, else E/G | Same. |
 | bet365 | Sportsbook | ✅ | ✅ profile (unverified) | ❌ | Manual / import | E/G | Same. |
-| BetRivers | Sportsbook | ✅ | ✅ profile (unverified) | ❌ | Manual / import | C, else E/G | Same. |
+| BetRivers | Sportsbook | ✅ | ✅ profile (unverified) | Built (BetSync), **sandbox** | Manual / import · BetSync for operators in sandbox | **C** — SharpSports BetSync, else E/G | Same. |
 | theScore Bet (formerly ESPN BET; key `espnbet`) | Sportsbook | ✅ | ✅ profile (unverified) | ❌ | Manual / import | E/G | Same. The key is kept for continuity with EdgeDesk's captured odds. |
 | Fanatics | Sportsbook | ✅ | ✅ profile (unverified) | ❌ | Manual / import | E/G | Same. |
 | Hard Rock Bet | Sportsbook | ✅ | ✅ generic | ❌ | Manual / CSV | E/G | Same. |
@@ -73,11 +74,22 @@ These details were taken from Kalshi's own published API client source on 2026-1
 - **Polymarket's US app** (the regulated exchange) may expose accounts differently. To verify before building.
 - Endpoint paths and response fields were taken from Polymarket's published client source. They are to be re-verified against docs.polymarket.com, which was also unreachable from the build environment, before the connector is switched on.
 
-### Sportsbooks — no direct path known
+### Sportsbooks — through SharpSports BetSync (sandbox)
 
 We know of no traditional sportsbook that publishes a customer-authorized bet-history API.
 
-The documented commercial route is a **sportsbook-linking aggregator** (for example SharpSports, which offers "BetSync" / "BetLink" account linking to bet-tracking apps). That would be class **C**, and it requires a commercial agreement and a review of how the aggregator obtains its data before EdgeDesk would use it. Until then sportsbooks are manual and file import, and the page says **Import**, never **Connect**, for every one.
+The route is a **sportsbook-linking aggregator**, class **C**. **SharpSports BetSync** is built ([`sharpsports-betsync.md`](sharpsports-betsync.md)):
+
+- The reader links their book on SharpSports' own page. EdgeDesk never sees, asks for or stores a sportsbook password.
+- EdgeDesk reads SharpSports server-side, read-only.
+
+It runs in **sandbox, for operators only**, until three things are true:
+
+- a commercial agreement and live plan exist;
+- the review of how SharpSports obtains each book's data is cleared;
+- a PRODUCTION ten-stage smoke test has passed.
+
+Until then the page says **Import**, never **Connect**, for every sportsbook, to every reader. The exceptions are operators testing in sandbox, and the books SharpSports lists that BetSync can reach once switched on. Books needing SharpSports' mobile SDK cannot be linked on the web. Books SharpSports does not list stay file import and manual.
 
 ## Changing this table
 

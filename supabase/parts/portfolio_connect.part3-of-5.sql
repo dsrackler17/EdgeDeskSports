@@ -155,9 +155,11 @@ begin
 end $$;
 
 -- A sync run ends. Success: CONNECTED, the cursor kept, the next run in 30
--- minutes. A credential the platform refused: ACTION_REQUIRED (the reader must
--- reconnect; no retry storm). Anything else: retried with backoff (5 min,
--- 10, 20 … capped at 6 hours), ERROR after five failures in a row.
+-- minutes. A credential the platform refused, or an aggregator's link that
+-- needs the reader again (RELINK_REQUIRED, BOOK_INACCESSIBLE):
+-- ACTION_REQUIRED (the reader must reconnect; no retry storm). Anything else:
+-- retried with backoff (5 min, 10, 20 … capped at 6 hours), ERROR after five
+-- failures in a row. API and AGGREGATOR accounts alike.
 create or replace function public.portfolio_svc_run_finish(p_run uuid, p_status text, p_error_code text default null, p_error_message text default null,
     p_cursor text default null, p_reconcile jsonb default null)
 returns void language plpgsql set search_path = public, pg_temp as $$
@@ -173,10 +175,10 @@ begin
   if p_status in ('SUCCEEDED', 'PARTIAL') then
     update public.platform_accounts set status = 'CONNECTED', last_success_at = now(), last_error = null, consecutive_failures = 0,
            sync_cursor = coalesce(left(p_cursor, 2000), sync_cursor), next_sync_at = now() + interval '30 minutes'
-     where id = r.platform_account_id and connection_type = 'API';
-  elsif p_error_code in ('BAD_CREDENTIAL', 'WRITE_SCOPE', 'SCOPE_UNKNOWN') then
+     where id = r.platform_account_id and connection_type in ('API', 'AGGREGATOR');
+  elsif p_error_code in ('BAD_CREDENTIAL', 'WRITE_SCOPE', 'SCOPE_UNKNOWN', 'RELINK_REQUIRED', 'BOOK_INACCESSIBLE') then
     update public.platform_accounts set status = 'ACTION_REQUIRED', last_error = left(p_error_message, 500), next_sync_at = null
-     where id = r.platform_account_id and connection_type = 'API';
+     where id = r.platform_account_id and connection_type in ('API', 'AGGREGATOR');
   else
     update public.platform_accounts set consecutive_failures = consecutive_failures + 1 where id = r.platform_account_id returning consecutive_failures into fails;
     -- connected only once something has synced: a first sync that failed is still SYNCING
@@ -184,7 +186,7 @@ begin
            last_error = left(p_error_message, 500),
            next_sync_at = now() + least(interval '6 hours', interval '5 minutes' * power(2, least(fails - 1, 10)))
                                  + case when p_error_code = 'RATE_LIMITED' then interval '10 minutes' else interval '0' end
-     where id = r.platform_account_id and connection_type = 'API';
+     where id = r.platform_account_id and connection_type in ('API', 'AGGREGATOR');
   end if;
 end $$;
 
