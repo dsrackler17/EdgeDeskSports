@@ -152,7 +152,9 @@ The Portfolio's whole database in one file (pasted as `parts/portfolio.part1-of-
 - **Re-running it on a live site cannot deadlock a reader's save.** It takes its tables with `NOWAIT` and retries without holding any.
 - **The report** has 15 rows. Tested against a real PostgreSQL by `tools/portfolio/portfolio_sql.test.js`, and in Chromium by `tools/portfolio/portfolio_ui.e2e.js`.
 
-### `portfolio_aggregator.sql` — sportsbook history through SharpSports BetSync (sandbox)
+### `portfolio_aggregator.sql` — sportsbook history through a sync provider (SharpSports BetSync retired; tables kept)
+
+**SharpSports was retired on 2026-10-14 (cost).** This file is unchanged and stays applied. Its ingest, settlement history and refresh records are provider-independent and are what the next provider uses. Its webhook and bettor tables keep whatever was recorded. See `docs/sportsbook-sync-providers.md`.
 
 Run after `portfolio.sql`, `portfolio_journal.sql` and `portfolio_connect.sql` (its guard checks that `portfolio_connect.sql` is current). It is applied by the **Deploy Portfolio schema** workflow, or pasted as `parts/portfolio_aggregator.part*-of-*.sql`.
 

@@ -198,9 +198,13 @@ const CSV = [
     await tab(page, 'accounts');
     await waitText(page, /Set up your portfolio/i);
     chk('a new reader is offered setup: where do you bet or trade?', /Where do you bet or trade\?/.test(await text(page)));
+    /* tap a place, its card opens; "Add it, no file yet" adds it */
     await page.click('#pfoHost [data-act="setup-pick"][data-v="draftkings"]');
+    chk('tapping DraftKings opens its card, offering its import', /Import DraftKings history/.test(await page.$eval('#pfoHost [data-r="setup-card"]', (e) => e.innerText)));
+    await page.click('#pfoHost [data-r="setup-card"] [data-act="setup-add"]');
+    await waitText(page, /0 of 1 platform with history/i);
     await page.click('#pfoHost [data-act="setup-pick"][data-v="kalshi"]');
-    await page.click('#pfoHost [data-act="setup-add"]');
+    await page.click('#pfoHost [data-r="setup-card"] [data-act="setup-add"]');
     await waitText(page, /0 of 2 platforms with history/i);
     chk('the chosen platforms are added as accounts, each waiting for its history',
       db.sql(`select string_agg(platform || ':' || connection_type, ',' order by platform) from public.platform_accounts where user_id = '${A}';`) === 'draftkings:CSV,kalshi:CSV'
@@ -622,8 +626,44 @@ const CSV = [
     chk('…and the key is kept nowhere in the page or the browser afterwards', await page.evaluate((k) => !document.documentElement.innerHTML.includes(k)
       && !JSON.stringify(Object.keys(localStorage).map((x) => localStorage.getItem(x))).includes(k) && !JSON.stringify(window.EDPortfolioUI ? (document.getElementById('pfoHost').__pfo || {}).state || {} : {}).includes(k), FAKE_KEY));
     db.sql(`update public.portfolio_platform_registry set automatic_enabled = false where platform_key in ('kalshi', 'polymarket');`);
+
+    /* a bet slip screenshot (lib/edgedesk_slip_reader.js): read on this device — the OCR
+       library is stubbed with the text it would return, the rest is the shipped path —
+       then the ordinary bet form, filled in, checked, saved; the same slip twice is refused */
+    const SLIP_TEXT = ['BetRivers', 'Rangers', 'MONEYLINE', 'Rangers @ Devils', '+105', 'Wager $40.00', 'Open', 'Placed 10/12/2026 7:10 PM', 'Bet ID: BR-77001'].join('\n');
+    const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+    await page.evaluate((txt) => { window.Tesseract = { recognize: async () => ({ data: { text: txt, confidence: 91 } }) }; }, SLIP_TEXT);
+    const slipOnce = async () => {
+      await tab(page, 'overview'); await tab(page, 'accounts');
+      if (!(await page.$('#pfoHost [data-r="setup"]'))) await page.click('#pfoHost [data-act="setup-open"]');
+      if (!(await page.$('#pfoHost [data-r="setup-card"] input[data-f="slip"][data-platform="betrivers"]'))) await page.click('#pfoHost [data-act="setup-pick"][data-v="betrivers"]');
+      await page.setInputFiles('#pfoHost [data-r="setup-card"] input[data-f="slip"]', { name: 'slip.png', mimeType: 'image/png', buffer: PNG });
+      await page.waitForSelector('.pfo-sheet form[data-form="wager"] [name="external_position_id"]', { timeout: 15000 });
+    };
+    await slipOnce();
+    const sv = await page.evaluate(() => {
+      const q = (n) => (document.querySelector('.pfo-sheet [name="' + n + '"]') || {}).value;
+      return { title: document.querySelector('.pfo-sheet .pfo-panel-t').innerText, review: (document.querySelector('.pfo-sheet [data-r="slip-review"]') || {}).innerText || '',
+        platform: q('platform'), event: q('event_name'), selection: q('selection'), odds: q('odds'), stake: q('stake'), status: q('status'), placed: q('placed_at'), id: q('external_position_id') };
+    });
+    chk('a screenshot opens the bet form filled in from the slip, says it was read on this device, and asks for a check before saving',
+      /Check the bet from your screenshot/.test(sv.title) && /nothing is saved until you press Save/.test(sv.review) && sv.platform === 'betrivers' && sv.event === 'Rangers @ Devils'
+        && sv.selection === 'Rangers' && sv.odds === '+105' && sv.stake === '40.00' && sv.status === 'OPEN' && sv.placed === '2026-10-12T19:10' && sv.id === 'BR-77001', sv);
+    chk('nothing is saved before the reader saves', +db.sql(`select count(*) from public.portfolio_positions where user_id = '${A}' and external_position_id = 'BR-77001';`) === 0);
+    await page.click('.pfo-sheet [data-act="save"]');
+    let savedSlip = 0;
+    for (let i = 0; i < 50 && !savedSlip; i++) { await page.waitForTimeout(200); savedSlip = +db.sql(`select count(*) from public.portfolio_positions where user_id = '${A}' and external_position_id = 'BR-77001';`); }
+    chk('saved as an ordinary manual position, with the book\'s bet id kept', savedSlip === 1
+      && db.sql(`select source || ':' || status || ':' || stake::text from public.portfolio_positions where user_id = '${A}' and external_position_id = 'BR-77001';`) === 'MANUAL:OPEN:40');
+    await slipOnce();
+    await page.click('.pfo-sheet [data-act="save"]');
+    await page.waitForSelector('.pfo-sheet .pfo-err', { timeout: 10000 });
+    chk('the same slip a second time is refused by its bet id, and nothing is added', /same platform bet id/.test(await page.$eval('.pfo-sheet .pfo-err', (e) => e.innerText))
+      && +db.sql(`select count(*) from public.portfolio_positions where user_id = '${A}' and external_position_id = 'BR-77001';`) === 1);
+    await page.click('.pfo-sheet [data-act="close"]');
+
     const ls = await page.evaluate(() => JSON.stringify(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)])));
-    chk('nothing financial is written to localStorage', !/Chiefs|Kalshi|90\.91|portfolio_positions/.test(ls));
+    chk('nothing financial is written to localStorage', !/Chiefs|Kalshi|90\.91|portfolio_positions|BR-77001|Rangers @ Devils/.test(ls));
     chk('no page errors on desktop', errors.length === 0, errors);
     await ctx.close();
 

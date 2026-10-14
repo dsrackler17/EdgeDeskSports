@@ -119,36 +119,71 @@ chk('the registry still offers no sportsbook a direct connection (books reach Ed
       && JSON.stringify(refs.refresh_response_ids) === '["RRES_ab12cd34"]', refs);
 }());
 
-/* the Accounts tab, rendered in Node: BetSync appears only where the server
-   says it is available, never asks for a credential, and says plainly what
-   SharpSports reports */
+/* the Accounts tab, rendered in Node: a sportsbook sync provider appears only
+   where the server says one is available (none by default), never asks for a
+   credential, and says plainly what the provider reports — in the provider's
+   name from the core's registry, never one hard-coded in the page */
 (function accountsUi() {
   const UI = require(path.join(PG.ROOT, 'lib', 'edgedesk_portfolio_ui.js'));
   const base = Object.assign(UI.defaults(), { tab: 'accounts', positions: [{ id: 'p1' }], registry: {}, runs: [], now: Date.parse('2026-10-14T18:00:00Z'),
-    setup: { selected: {}, open: true } });
+    setup: { pick: '', open: true } });
   const acct = { id: 'a1', platform: 'draftkings', platform_label: 'DraftKings', platform_type: 'SPORTSBOOK', connection_type: 'AGGREGATOR', ingestion_method: 'AUTHORIZED_API',
     status: 'CONNECTED', positions: 6, open_positions: 1, last_success_at: '2026-10-14T17:58:00Z' };
-  const off = UI.render.accounts(Object.assign({}, base, { accounts: [], betsync: null }));
-  chk('Accounts without BetSync available: no BetSync panel, and the sportsbook copy is unchanged (Import, never Connect)',
-    off.indexOf('data-r="betsync"') < 0 && /Sportsbooks · import/.test(off) && /no sportsbook offers customers an API/.test(off) && !/ss-link/.test(off));
-  const S = Object.assign({}, base, { accounts: [acct], betsync: { ok: true, available: true, environment: 'sandbox', operator: true,
-      provider: { what_the_reader_gives: K.SHARPSPORTS.what_the_reader_gives } },
-    ssBooks: [{ name: 'DraftKings', platform: 'draftkings', label: 'DraftKings', status: 'active', sdk_required: false },
-      { name: 'Ohio Super Book', platform: 'custom_ohio_super_book', label: 'Ohio Super Book', status: 'active', sdk_required: true }], ssPick: 'draftkings',
-    connections: { a1: { id: 'a1', metadata: { provider: 'sharpsports', environment: 'sandbox', provider_state: { verified: true, access: true, book: { name: 'DraftKings' }, region: { name: 'DraftKings Ohio' } } } } },
-    refreshes: [{ platform_account_id: 'a1', status: 'ACCEPTED', requested_at: '2026-10-14T17:57:00Z' }] });
+  const meta = { a1: { id: 'a1', metadata: { provider: 'sharpsports', environment: 'sandbox', provider_state: { verified: true, access: true, book: { name: 'DraftKings' }, region: { name: 'DraftKings Ohio' } } } } };
+  const offStatus = { ok: true, available: false, reason: 'SYNC_OFF', provider: null };
+  const off = UI.render.accounts(Object.assign({}, base, { accounts: [], sbSync: offStatus }));
+  const offPick = UI.render.accounts(Object.assign({}, base, { accounts: [], sbSync: offStatus, setup: { pick: 'draftkings', open: true } }));
+  chk('sportsbook sync off (the default): sportsbooks read Import, a book\'s card offers its import, never Connect, and SharpSports is named nowhere',
+    off.indexOf('data-r="sync-return"') < 0 && /Sportsbooks · import/.test(off) && /no sportsbook offers customers an API/.test(off) && !/sb-link/.test(off + offPick)
+      && /Import DraftKings history/.test(offPick) && !/SharpSports|BetSync/.test(off + offPick));
+  const retired = UI.render.accounts(Object.assign({}, base, { accounts: [acct], sbSync: offStatus, connections: meta }));
+  chk('an account a retired provider linked: its history is shown, sync is said to be off, no Sync now / Refresh / Reconnect; Disconnect stays',
+    /Automatic sportsbook sync is off; this account&#39;s history is kept/.test(retired) && /pfo-status SYNC_OFF">Sync off/.test(retired) && !/data-act="(acct-sync|sb-refresh|sb-link)"/.test(retired)
+      && /data-act="acct-disconnect" data-id="a1"/.test(retired) && /6 positions/.test(retired));
+  const S = Object.assign({}, base, { accounts: [acct], sbSync: { ok: true, available: true, environment: 'sandbox', operator: true,
+      provider: { key: 'sharpsports', what_the_reader_gives: K.SHARPSPORTS.what_the_reader_gives } },
+    sbBooks: [{ name: 'DraftKings', platform: 'draftkings', label: 'DraftKings', status: 'active', sdk_required: false },
+      { name: 'Ohio Super Book', platform: 'custom_ohio_super_book', label: 'Ohio Super Book', status: 'active', sdk_required: true }],
+    connections: meta, refreshes: [{ platform_account_id: 'a1', status: 'ACCEPTED', requested_at: '2026-10-14T17:57:00Z' }] });
   const on = UI.render.accounts(S);
-  chk('BetSync available (sandbox, operator): the panel, the sandbox warning, the books (an app-only book disabled), Connect <book>, and no field for a password',
-    /data-r="betsync"/.test(on) && /data-r="betsync-sandbox"/.test(on) && /Connect DraftKings/.test(on) && /app only/.test(on)
-      && /never sees your sportsbook password/.test(on) && !/type="password"|name="password"|name="username"/.test(on) && /Sportsbooks · connect or import/.test(on));
-  chk('a linked book\'s card: BetSync (SharpSports) · sandbox, verified with its book and region, the refresh waiting, and Refresh from book / Sync now / Disconnect',
-    /BetSync \(SharpSports\) · sandbox/.test(on) && /SharpSports: verified · DraftKings · DraftKings Ohio/.test(on) && /Book refresh requested 3 min ago, waiting for SharpSports/.test(on)
-      && /data-act="ss-refresh" data-id="a1"/.test(on) && /data-act="acct-sync" data-id="a1"/.test(on) && /data-act="acct-disconnect" data-id="a1"/.test(on));
+  const pickOn = (k) => UI.render.accounts(Object.assign({}, S, { setup: { pick: k, open: true } }));
+  const fd = pickOn('fanduel');
+  chk('a provider switched on (sandbox, operator): tap a book and its card says Connect <book>, with the sandbox warning; an app-only book is a disabled tile; no field for a password',
+    /data-r="setup-card"/.test(fd) && /data-r="sync-sandbox"/.test(fd) && /data-act="sb-link" data-platform="fanduel">Connect FanDuel/.test(fd) && /Import a file instead/.test(fd)
+      && /never sees your sportsbook password/.test(fd) && /data-act="setup-pick" data-v="custom_ohio_super_book" aria-pressed="false" disabled><b>Ohio Super Book<\/b><small>app only/.test(on)
+      && !/type="password"|name="password"|name="username"/.test(fd) && /Sportsbooks · connect or import/.test(on) && !/data-r="setup-card"/.test(on));
+  chk('a book already linked: its tile reads Connected, and its card sends the reader to Your platforms instead of a second Connect',
+    /data-v="draftkings" aria-pressed="false"><b>DraftKings<\/b><small>Connected ✓/.test(on) && /Connected — it syncs on its own/.test(pickOn('draftkings'))
+      && !/data-act="sb-link" data-platform="draftkings"/.test(pickOn('draftkings')));
+  chk('the provider\'s section appears only on the way back from its page',
+    !/data-r="sync-return"/.test(on) && /data-r="sync-return-status"/.test(UI.render.accounts(Object.assign({}, S, { sbReturn: { busy: true } }))));
+  const csv = UI.render.accounts(Object.assign({}, S, { accounts: [Object.assign({}, acct, { id: 'c1', connection_type: 'CSV', ingestion_method: 'FILE_IMPORT', status: 'IMPORT_ONLY', positions: 40 })] }));
+  chk('a sportsbook imported from files offers Connect automatically (upgraded in place)', /data-act="sb-link" data-platform="draftkings">Connect automatically/.test(csv));
+  chk('a linked book\'s card: the provider\'s label · sandbox, verified with its book and region, the refresh waiting, and Refresh from book / Sync now / Disconnect',
+    /SharpSports BetSync · sandbox/.test(on) && /SharpSports: verified · DraftKings · DraftKings Ohio/.test(on) && /Book refresh requested 3 min ago, waiting for SharpSports/.test(on)
+      && /data-act="sb-refresh" data-id="a1"/.test(on) && /data-act="acct-sync" data-id="a1"/.test(on) && /data-act="acct-disconnect" data-id="a1"/.test(on));
   const need = UI.render.accounts(Object.assign({}, S, { accounts: [Object.assign({}, acct, { status: 'ACTION_REQUIRED', last_error: K.ERRORS.RELINK_REQUIRED })],
     connections: { a1: { id: 'a1', metadata: { provider: 'sharpsports', environment: 'sandbox', provider_state: { verified: false, access: true } } } }, refreshes: [] }));
-  chk('an expired link: Action required, the reason in plain words, Reconnect through SharpSports, no Sync now',
+  chk('an expired link: Action required, the reason in plain words, Reconnect through the provider, no Sync now',
     /Action required/.test(need) && /Reconnect it to resume syncing/.test(need) && /SharpSports: signing in to this book failed/.test(need)
-      && /data-act="ss-link">Reconnect/.test(need) && !/data-act="acct-sync" data-id="a1"/.test(need));
+      && /data-act="sb-link">Reconnect/.test(need) && !/data-act="acct-sync" data-id="a1"/.test(need));
+}());
+
+/* THE PROVIDER SEAM: a provider is one registered adapter; the registry refuses an incomplete one */
+(function providerSeam() {
+  const p = K.sportsbookProvider('sharpsports');
+  chk('SharpSports is registered as a sportsbook provider, RETIRED, with every contract method, its linking origin and a reason',
+    p && p.status === 'RETIRED' && /\$500\/month/.test(p.status_note) && p.link_origin === 'https://ui.sharpsports.io'
+      && K.SPORTSBOOK_PROVIDER_CONTRACT.every((m) => typeof p[m] === 'function'));
+  chk('a provider is active only where the server names it', K.activeSportsbookProvider({ sportsbook: 'sharpsports' }, 'sharpsports') === p
+    && K.activeSportsbookProvider({ sportsbook: null }, 'sharpsports') === null && K.activeSportsbookProvider({}, 'sharpsports') === null
+    && K.activeSportsbookProvider({ sportsbook: 'other' }, 'sharpsports') === null && K.sportsbookProvider('constructor') === null);
+  let refusal = '';
+  try { K.defineSportsbookProvider({ key: 'halfdone', label: 'Half', short: 'Half', status: 'ACTIVE', link_origin: 'https://x.example', link() {} }); } catch (e) { refusal = String(e.message); }
+  chk('an incomplete provider is refused, naming what is missing', /incomplete/.test(refusal) && /discover/.test(refusal) && /normalize/.test(refusal) && !K.sportsbookProvider('halfdone'));
+  let trade = '';
+  try { K.defineSportsbookProvider(Object.assign({}, p, { key: 'trader', places_orders: true })); } catch (e) { trade = String(e.message); }
+  chk('a provider that would place bets is refused', /read-only/.test(trade) && !K.sportsbookProvider('trader'));
 }());
 
 /* PHASE 5 in Node: a synced parlay's legs on its Open card; units only where a unit size exists; the bankroll path */
@@ -317,6 +352,32 @@ const slip = (id, o) => Object.assign({ id, type: 'single', oddsAmerican: -110, 
     const accountRow = (where) => jq(db.sql(`select coalesce(json_agg(a), '[]') from (select id, platform, connection_type, ingestion_method, connection_tier, status,
         external_account_id, last_error, next_sync_at, metadata from public.platform_accounts where ${where} order by created_at) a;`)) || [];
 
+    /* ── RETIRED BY DEFAULT: the deployed state on 2026-10-14 — SharpSports' keys still
+       set, SPORTSBOOK_SYNC_PROVIDER unset. Nothing links, syncs or reads a delivery. */
+    {
+      const before = SS.keyUse.length, hooks0 = count(`select count(*) from portfolio_private.aggregator_webhook_events;`);
+      let o = await call({ action: 'sb_status' }, 'tok-admin');
+      chk('no provider switched on (the default): sportsbook sync is off, even for an operator, even with SharpSports\' keys set',
+        o.status === 200 && o.body.ok === true && o.body.available === false && o.body.reason === 'SYNC_OFF' && o.body.provider === null, o.body);
+      o = await call({ action: 'ss_status' }, 'tok-admin');
+      chk('…and the pre-2026-10-14 action names say the same', o.status === 200 && o.body.available === false && o.body.reason === 'SYNC_OFF');
+      const refused = [];
+      for (const a of ['sb_books', 'sb_link', 'sb_discover', 'ss_link', 'ss_books']) { o = await call({ action: a }, 'tok-admin'); if (!(o.status === 403 && o.body.reason === 'SYNC_OFF')) refused.push(a + ':' + o.status); }
+      o = await call({ action: 'sb_refresh', account_id: '00000000-0000-4000-8000-000000000001' }, 'tok-admin');
+      if (!(o.status === 403 && o.body.reason === 'SYNC_OFF')) refused.push('sb_refresh:' + o.status);
+      chk('books, link, discover and refresh are refused with SYNC_OFF, and SharpSports is never called', refused.length === 0 && SS.keyUse.length === before, { refused, calls: SS.keyUse.slice(before) });
+      const hh = await (await connect(new Request('https://fn.local/portfolio_connect', { method: 'GET' }))).json();
+      chk('portfolio_connect health: no sportsbook provider, SharpSports inactive', hh.configured.sportsbook_sync.provider === null && hh.configured.sharpsports.active === false);
+      const wg = await (await hook(new Request('https://fn.local/sharpsports-webhook', { method: 'GET' }))).json();
+      o = await deliver({ event: 'bettorAccount.verified', bettorAccount: { id: 'BACT_off1' } });
+      chk('the webhook answers a delivery 200 {ignored: sync_off} and records nothing', wg.active === false && o.status === 200 && o.body.ignored === 'sync_off'
+        && count(`select count(*) from portfolio_private.aggregator_webhook_events;`) === hooks0);
+      o = await deliver('not json at all', { secret: false });
+      chk('…even a malformed one: it is not read', o.status === 200 && o.body.ignored === 'sync_off');
+    }
+    connectEnv.SPORTSBOOK_SYNC_PROVIDER = 'sharpsports';
+    hookEnv.SPORTSBOOK_SYNC_PROVIDER = 'SharpSports ';
+
     /* ── health ── */
     let hr = await hook(new Request('https://fn.local/sharpsports-webhook', { method: 'GET' }));
     let hb = await hr.json();
@@ -453,6 +514,20 @@ const slip = (id, o) => Object.assign({ id, type: 'single', oddsAmerican: -110, 
     const n7 = JSON.parse(one(db.sql(`select row_to_json(p) from (select status, profit_loss::text, settled_at from public.portfolio_positions where external_position_id = 'sharpsports:SLIP_n0007') p;`)));
     const s7 = one(db.sql(`select string_agg(coalesce(p.previous_status, '-') || '>' || p.status, ',' order by p.id) from public.portfolio_position_settlements p join public.portfolio_positions x on x.id = p.position_id where x.external_position_id = 'sharpsports:SLIP_n0007';`));
     chk('a settled wager updates in place: OPEN → LOST, its settlement appended to the history', n7.status === 'LOST' && n7.profit_loss === '-25' && s7 === 'OPEN>LOST', { n7, s7 });
+    /* switched off again (how it ships): the linked account keeps its history, and nothing reaches SharpSports */
+    {
+      delete connectEnv.SPORTSBOOK_SYNC_PROVIDER; delete hookEnv.SPORTSBOOK_SYNC_PROVIDER;
+      const calls0 = SS.keyUse.length, held = count(`select count(*) from public.portfolio_positions where platform_account_id = ${L(dk.id)};`);
+      db.sql(`update public.platform_accounts set next_sync_at = now() - interval '1 minute', last_sync_at = now() - interval '1 hour' where id = ${L(dk.id)};`);
+      const sw = await call({ action: 'sweep' });
+      const sn = await call({ action: 'sync', account_id: dk.id }, 'tok-admin');
+      const rf = await call({ action: 'sb_refresh', account_id: dk.id }, 'tok-admin');
+      chk('switched off: the sweep skips the linked account, Sync now and Refresh say SYNC_OFF, SharpSports is not called, the synced history stays',
+        sw.status === 200 && sw.body.due === 0 && sn.status === 403 && sn.body.reason === 'SYNC_OFF' && rf.status === 403 && rf.body.reason === 'SYNC_OFF'
+          && SS.keyUse.length === calls0 && count(`select count(*) from public.portfolio_positions where platform_account_id = ${L(dk.id)};`) === held && held > 0,
+        { sw: sw.body, sn: sn.body, calls: SS.keyUse.slice(calls0) });
+      connectEnv.SPORTSBOOK_SYNC_PROVIDER = 'sharpsports'; hookEnv.SPORTSBOOK_SYNC_PROVIDER = 'sharpsports';
+    }
     /* PHASE 5 · the synced bets in the Portfolio's own analytics */
     const path5 = JSON.parse(one(db.as(ADMIN, `select public.portfolio_pnl_path(null, null, 'UTC', null);`)));
     chk('the bankroll path over the synced history: cumulative by settlement day, and the drawdown the loss opened',

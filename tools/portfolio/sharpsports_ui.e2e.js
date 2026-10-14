@@ -13,17 +13,22 @@
    redirect URL, as SharpSports documents. Neither is SharpSports' sandbox;
    that run is the live smoke test (docs/platform-connections.md).
 
-   An operator:
-     opens Accounts and sees "Connect a sportsbook", with the sandbox warning
-     and the books SharpSports lists (an app-only book disabled);
-     picks DraftKings and presses Connect DraftKings — the browser goes to
+   As it ships (no sync provider switched on): DraftKings' card offers its
+   import and nothing else; no provider is named and none is asked.
+
+   With the provider switched on, an operator:
+     opens Accounts and sees a tile per sportsbook, a book SharpSports adds
+     included (an app-only one disabled);
+     taps DraftKings, and its card offers Connect DraftKings with the sandbox
+     warning; presses it — the browser goes to
      ui.sharpsports.io, never asked for a password by EdgeDesk;
      comes back (?betsync=return) and sees DraftKings verified with its first
      sync; the address no longer carries the return marker;
-     sees the account as BetSync (SharpSports) · sandbox, Connected,
+     sees the account as SharpSports BetSync · sandbox, Connected,
      verified, and its bets in Open and History;
      asks for a refresh and is told SharpSports is reading the book;
-   at 1280 px and at 390 px, with no sideways scroll and no page error.
+   at 1280 px and at 390 px (Add platforms → FanDuel's card), with no
+   sideways scroll and no page error.
 
    Run: node tools/portfolio/sharpsports_ui.e2e.js
    (PORTFOLIO_UI_REQUIRED=1 makes a missing Playwright or PostgreSQL a failure.)
@@ -95,14 +100,18 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
     return { ok: true, environment: 'sandbox', accounts: [{ account_id: up.account_id, platform: 'draftkings', label: 'DraftKings', created: up.created, verified: true, access: true }],
       issues: [], synced: [{ account_id: up.account_id, status: 'SUCCEEDED', totals: tot }] };
   }
+  /* the server's switch: none (how it ships) until the test turns the provider on */
+  let providerOn = false;
   function fn(body) {
-    if (body.action === 'ss_status') return { ok: true, available: true, environment: 'sandbox', operator: true, provider: { what_the_reader_gives: K.SHARPSPORTS.what_the_reader_gives } };
-    if (body.action === 'ss_books') return { ok: true, environment: 'sandbox', books: [{ name: 'DraftKings', abbr: 'dk', status: 'active', sdk_required: false, platform: 'draftkings', label: 'DraftKings' },
+    if (body.action === 'sb_status') return providerOn ? { ok: true, available: true, environment: 'sandbox', operator: true, provider: { key: 'sharpsports', what_the_reader_gives: K.SHARPSPORTS.what_the_reader_gives } }
+      : { ok: true, available: false, reason: 'SYNC_OFF', message: K.ERRORS.SYNC_OFF, provider: null };
+    if (/^sb_/.test(body.action) && !providerOn) return { ok: false, reason: 'SYNC_OFF', message: K.ERRORS.SYNC_OFF };
+    if (body.action === 'sb_books') return { ok: true, environment: 'sandbox', books: [{ name: 'DraftKings', abbr: 'dk', status: 'active', sdk_required: false, platform: 'draftkings', label: 'DraftKings' },
       { name: 'FanDuel', abbr: 'fd', status: 'active', sdk_required: false, platform: 'fanduel', label: 'FanDuel' },
       { name: 'Ohio Super Book', abbr: 'zz', status: 'active', sdk_required: true, platform: 'custom_ohio_super_book', label: 'Ohio Super Book' }] };
-    if (body.action === 'ss_link') return { ok: true, url: 'https://ui.sharpsports.io/link/CTX_e2e1', environment: 'sandbox' };
-    if (body.action === 'ss_discover') return linkBook();
-    if (body.action === 'ss_refresh') return { ok: true, status: 'ACCEPTED', message: 'SharpSports is reading your book now. New bets appear here when it finishes — usually within a few minutes.' };
+    if (body.action === 'sb_link') return { ok: true, url: 'https://ui.sharpsports.io/link/CTX_e2e1', environment: 'sandbox' };
+    if (body.action === 'sb_discover') return linkBook();
+    if (body.action === 'sb_refresh') return { ok: true, status: 'ACCEPTED', message: 'SharpSports is reading your book now. New bets appear here when it finishes — usually within a few minutes.' };
     if (body.action === 'sync') return { ok: true, status: 'SUCCEEDED', totals: { positions_inserted: 0, positions_updated: 0 } };
     return { ok: false, reason: 'unknown_action' };
   }
@@ -162,35 +171,49 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
   }
 
   try {
+    /* how it ships: no provider switched on */
     let { ctx, page, errors } = await open({ width: 1280, height: 900 });
     await tab(page, 'accounts');
-    await waitText(page, /Connect a sportsbook/i);
-    await waitText(page, /Ohio Super Book/);
+    await waitText(page, /Sportsbooks · import/i);
+    await page.click('#pfoHost [data-act="setup-pick"][data-v="draftkings"]');
+    await page.waitForSelector('#pfoHost [data-r="setup-card"]');
     let t = await text(page);
-    chk('Accounts offers "Connect a sportsbook" through BetSync, with the sandbox warning', /Connect a sportsbook/i.test(t) && /Sandbox: SharpSports test accounts only/.test(t));
-    chk('the books SharpSports lists, an app-only book disabled', /DraftKings/.test(t) && /FanDuel/.test(t)
-      && await page.$eval('#pfoHost [data-act="ss-pick"][data-v="custom_ohio_super_book"]', (b) => b.disabled));
+    chk('sync off (the default): DraftKings\' card offers its import, no Connect, and no provider is named',
+      /Import DraftKings history/.test(t) && !/SharpSports|BetSync/.test(t) && !(await page.$('#pfoHost [data-act="sb-link"]'))
+        && !fnCalls.some((c) => /^sb_(books|link|discover|refresh)$/.test(c.action)), t.slice(0, 500));
+    chk('no page errors (sync off)', errors.length === 0, errors);
+    await ctx.close();
+
+    providerOn = true;
+    ({ ctx, page, errors } = await open({ width: 1280, height: 900 }));
+    await tab(page, 'accounts');
+    await waitText(page, /Sportsbooks · connect or import/i);
+    await waitText(page, /Ohio Super Book/);
+    t = await text(page);
+    chk('Accounts offers the sportsbooks as tiles to connect or import, a book SharpSports adds included', /Sportsbooks · connect or import/i.test(t) && /DraftKings/.test(t) && /FanDuel/.test(t) && /Ohio Super Book/.test(t));
+    chk('an app-only book is a disabled tile', await page.$eval('#pfoHost [data-act="setup-pick"][data-v="custom_ohio_super_book"]', (b) => b.disabled));
     chk('EdgeDesk shows no field for a sportsbook username or password', await page.evaluate(() => !document.querySelector('#pfoHost input[type="password"], #pfoHost [name="password"], #pfoHost [name="username"]')));
-    await page.click('#pfoHost [data-act="ss-pick"][data-v="draftkings"]');
-    await page.waitForTimeout(100);
-    chk('picking a book names it on the button', /Connect DraftKings/.test(await page.$eval('#pfoHost [data-r="betsync"] [data-act="ss-link"]', (b) => b.innerText)));
+    await page.click('#pfoHost [data-act="setup-pick"][data-v="draftkings"]');
+    await page.waitForSelector('#pfoHost [data-r="setup-card"] [data-act="sb-link"]');
+    const card = await page.$eval('#pfoHost [data-r="setup-card"]', (e) => e.innerText);
+    chk('tapping DraftKings opens its card: Connect DraftKings, with the sandbox warning', /Connect DraftKings/.test(card) && /Test mode: the SharpSports sandbox links its test accounts only/.test(card), card);
     await Promise.all([page.waitForRequest(/^https:\/\/ui\.sharpsports\.io\//, { timeout: 20000 }).catch(() => null),
-      page.click('#pfoHost [data-r="betsync"] [data-act="ss-link"]')]);
+      page.click('#pfoHost [data-r="setup-card"] [data-act="sb-link"]')]);
     await page.waitForURL(/betsync=return/, { timeout: 20000 }).catch(() => null);
     chk('Connect asks EdgeDesk\'s server for a link (with the way back to this app), and the browser goes to SharpSports\' own page',
-      fnCalls.some((c) => c.action === 'ss_link' && /^http:\/\/127\.0\.0\.1:\d+\/app\.html$/.test(c.return_to || '')) && ssPages[0] === 'https://ui.sharpsports.io/link/CTX_e2e1', { fnCalls, ssPages });
+      fnCalls.some((c) => c.action === 'sb_link' && /^http:\/\/127\.0\.0\.1:\d+\/app\.html$/.test(c.return_to || '')) && ssPages[0] === 'https://ui.sharpsports.io/link/CTX_e2e1', { fnCalls, ssPages });
     await page.waitForFunction(() => !!(window.EDPortfolioUI && document.querySelector('#pfoHost.pfo-root')), null, { timeout: 40000 });
     await waitText(page, /DraftKings — verified/, 20000);
     t = await text(page);
     chk('back from SharpSports: DraftKings verified, with its first sync', /DraftKings — verified · first sync succeeded: 3 new bets/.test(t), t.slice(0, 600));
     chk('the return marker is gone from the address', await page.evaluate(() => !/betsync=return/.test(location.search) && /portfolio\/accounts/.test(location.hash)));
-    await waitText(page, /BetSync \(SharpSports\) · sandbox/);
+    await waitText(page, /SharpSports BetSync · sandbox/);
     t = await text(page);
-    chk('the account: BetSync (SharpSports) · sandbox, Connected, verified with its book and region, last synced',
-      /BetSync \(SharpSports\) · sandbox/.test(t) && /\bConnected\b/i.test(t) && /SharpSports: verified · DraftKings · DraftKings Ohio/.test(t) && /Last synced/i.test(t),
+    chk('the account: SharpSports BetSync · sandbox, Connected, verified with its book and region, last synced',
+      /SharpSports BetSync · sandbox/.test(t) && /\bConnected\b/i.test(t) && /SharpSports: verified · DraftKings · DraftKings Ohio/.test(t) && /Last synced/i.test(t),
       t.slice(Math.max(0, t.search(/your platforms/i)), Math.max(0, t.search(/your platforms/i)) + 700));
-    chk('it offers Refresh from book, Sync now and Disconnect', await page.evaluate(() => ['ss-refresh', 'acct-sync', 'acct-disconnect'].every((a) => !!document.querySelector('#pfoHost [data-act="' + a + '"]'))));
-    await page.click('#pfoHost [data-act="ss-refresh"]');
+    chk('it offers Refresh from book, Sync now and Disconnect', await page.evaluate(() => ['sb-refresh', 'acct-sync', 'acct-disconnect'].every((a) => !!document.querySelector('#pfoHost [data-act="' + a + '"]'))));
+    await page.click('#pfoHost [data-act="sb-refresh"]');
     await page.waitForTimeout(400);
     chk('a refresh says SharpSports is reading the book', /SharpSports is reading your book now/.test(await page.evaluate(() => document.body.innerText)));
     await tab(page, 'open');
@@ -214,9 +237,13 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
 
     ({ ctx, page, errors } = await open({ width: 390, height: 844 }));
     await tab(page, 'accounts');
-    await waitText(page, /Connect a sportsbook/i);
-    await waitText(page, /BetSync \(SharpSports\)/);
-    await noSideways(page, '390px Accounts with BetSync');
+    await waitText(page, /SharpSports BetSync/);
+    await page.click('#pfoHost [data-act="setup-open"]');
+    await page.click('#pfoHost [data-act="setup-pick"][data-v="fanduel"]');
+    await page.waitForSelector('#pfoHost [data-r="setup-card"] [data-act="sb-link"]');
+    chk('on a phone: Add platforms, tap FanDuel, and its card offers Connect FanDuel',
+      /Connect FanDuel/.test(await page.$eval('#pfoHost [data-r="setup-card"]', (e) => e.innerText)));
+    await noSideways(page, '390px Accounts with BetSync and a book\'s card open');
     chk('no page errors (phone)', errors.length === 0, errors);
     await ctx.close();
   } catch (e) {

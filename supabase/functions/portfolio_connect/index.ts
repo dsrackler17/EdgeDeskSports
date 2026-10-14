@@ -24,8 +24,19 @@
 //    PORTFOLIO_CREDENTIAL_KEY_VERSION the version new credentials are sealed
 //                                     under (rotation re-seals on next use)
 //
-//  SHARPSPORTS BETSYNC (sportsbook history through an approved aggregator;
-//  docs/platform-connections.md § SharpSports). Two environments, two sets
+//  SPORTSBOOK SYNC PROVIDER (docs/sportsbook-sync-providers.md):
+//    SPORTSBOOK_SYNC_PROVIDER         the ONE sportsbook sync provider this
+//                                     server uses, by its key in the connector
+//                                     core's provider registry. UNSET (the
+//                                     default) = none: no sportsbook links,
+//                                     syncs, refreshes or sweeps; linked
+//                                     accounts and their history stay readable.
+//                                     'sharpsports' is registered but RETIRED
+//                                     (2026-10-14, cost) — leave this unset.
+//
+//  SHARPSPORTS BETSYNC — RETIRED, read only when SPORTSBOOK_SYNC_PROVIDER is
+//  'sharpsports' (docs/sharpsports-betsync.md). Its secrets can be deleted
+//  from Supabase; nothing reads them while the provider is off. Two environments, two sets
 //  of keys under DIFFERENT names, so a sandbox key can never be read as a
 //  live one or the reverse:
 //    SHARPSPORTS_ENV                  'sandbox' (the default, and anything
@@ -66,23 +77,26 @@
 //   POST {action:'disconnect', account_id, delete_history}
 //                                                    (signed in) delete the
 //        credential; keep or delete the synced history
-//   POST {action:'ss_status'}                        (signed in) is BetSync
-//        linking available to this reader, in which environment
-//   POST {action:'ss_books'}                         (signed in) the books
-//        SharpSports lists, mapped to EdgeDesk's platforms
-//   POST {action:'ss_link'}                          (signed in) a fresh
-//        SharpSports context → the URL of SharpSports' own linking page
-//        (also how an expired link is re-authenticated)
-//   POST {action:'ss_discover'}                      (signed in) after the
-//        reader returns: their linked books, as SharpSports' API lists them
-//   POST {action:'ss_refresh', account_id, reverify} (signed in, own account,
-//        at most once every 15 minutes) ask SharpSports to read the book now
+//   POST {action:'sb_status'}                        (signed in) is sportsbook
+//        linking available to this reader: the active provider (or none), in
+//        which environment
+//   POST {action:'sb_books'}                         (signed in) the books the
+//        active provider lists, mapped to EdgeDesk's platforms
+//   POST {action:'sb_link'}                          (signed in) the URL of the
+//        active provider's own linking page (also how an expired link is
+//        re-authenticated)
+//   POST {action:'sb_discover'}                      (signed in) after the
+//        reader returns: their linked books, as the provider's API lists them
+//   POST {action:'sb_refresh', account_id, reverify} (signed in, own account,
+//        at most once every 15 minutes) ask the provider to read the book now
+//   (ss_status / ss_books / ss_link / ss_discover / ss_refresh: the same, the
+//   names pages built before 2026-10-14 send)
 //   POST {action:'sweep'}                            (pg_cron, and the
 //        sharpsports-webhook function) sync what is due
 //   GET                                              health: build and what is
 //        configured, never a value
 
-const BUILD = 'portfolio_connect-2026-10-14-1';
+const BUILD = 'portfolio_connect-2026-10-14-2';
 
 const CORS = {
   'access-control-allow-origin': '*',
@@ -106,8 +120,14 @@ function config() {
     serviceKey: env('SB_SERVICE_ROLE') || env('SUPABASE_SERVICE_ROLE_KEY'),
     anonKey: env('SUPABASE_ANON_KEY') || env('SB_ANON_KEY'),
     keyring: { current: env('PORTFOLIO_CREDENTIAL_KEY_VERSION') || '1', keys },
+    sportsbook: sportsbookConfig(env),
     sharpsports: sharpsportsConfig(env),
   };
+}
+/* the one sportsbook sync provider this server uses: a registered key, or none */
+function sportsbookConfig(env) {
+  const key = env('SPORTSBOOK_SYNC_PROVIDER').trim().toLowerCase();
+  return { key: key && K.sportsbookProvider(key) ? key : null, unknown: key && !K.sportsbookProvider(key) ? true : false };
 }
 /* the SharpSports environment this server reads, and only that one's keys */
 function sharpsportsConfig(env) {
@@ -161,6 +181,11 @@ function sharpsportsConfig(env) {
         teasers, round robins, pushes, voids, cash-outs) and the webhook's
         hint extraction and signature check. The reader links on
         SharpSports' own page; EdgeDesk reads SharpSports server-side.
+        RETIRED 2026-10-14 (cost): registered below, active on no server;
+    11. SPORTSBOOK SYNC PROVIDERS: the registry every sportsbook provider
+        joins (link, discover, sync, refresh, account state, webhook hints,
+        normalize). The server switches at most one on
+        (SPORTSBOOK_SYNC_PROVIDER); none is the default.
 
    WHAT IS NOT HERE: anything that asks for a sportsbook password, scrapes a
    site, bypasses MFA / CAPTCHA / geolocation, or places, cancels or changes
@@ -297,6 +322,7 @@ function sharpsportsConfig(env) {
     RATE_LIMITED: 'The platform asked EdgeDesk to slow down. The sync resumes automatically.',
     PLATFORM_DOWN: 'The platform did not answer. The sync retries automatically.',
     DISABLED: 'Automatic connection for this platform is not switched on yet. Import a file or record by hand.',
+    SYNC_OFF: 'Automatic sportsbook sync is switched off. Import a file or a screenshot, or record bets by hand; your history is kept.',
     TIMEOUT: 'This history is larger than one sync can read in time. EdgeDesk retries automatically; a very long history may need a file import first.',
     MALFORMED: 'Some records from the platform could not be read; they are listed with the sync and were not guessed at.',
     /* an aggregator's link (SharpSports BetSync) */
@@ -1368,8 +1394,9 @@ function sharpsportsConfig(env) {
     var runId = await ctx.rpc('portfolio_svc_run_begin', { p_account: account.account_id, p_kind: kind || 'INCREMENTAL' });
     if (!runId) return { skipped: 'A sync for this account is already running.' };
     try {
-      var r = account.provider === 'sharpsports' ? await syncSharpSportsRun(ctx, account, runId, started, kind || 'INCREMENTAL')
-        : account.provider ? (function () { throw codedError('DISABLED'); }())
+      var prov = account.provider ? activeSportsbookProvider(ctx, account.provider) : null;
+      var r = prov ? await prov.sync(ctx, account, runId, started, kind || 'INCREMENTAL')
+        : account.provider ? (function () { throw codedError('SYNC_OFF'); }())
         : account.platform === 'kalshi' ? await syncKalshiRun(ctx, account, runId, started)
         : account.platform === 'polymarket' ? await syncPolymarketRun(ctx, account, runId, started)
         : (function () { throw codedError('DISABLED'); }());
@@ -1399,20 +1426,20 @@ function sharpsportsConfig(env) {
       var res = await syncAccount(left(), a, a.has_run ? 'INCREMENTAL' : 'INITIAL');
       done.push({ platform: a.platform, status: res.status || 'SKIPPED' });
     }
-    var n = due.length, cfg = ctx.sharpsports;
-    if (cfg && cfg.privateKey && cfg.env) {
-      var ag = (await ctx.rpc('portfolio_svc_ag_due', { p_provider: 'sharpsports', p_env: cfg.env, p_limit: limit || 10 })) || [];
+    var n = due.length, prov = activeSportsbookProvider(ctx, ctx.sportsbook), cfg = prov ? ctx[prov.key] : null;
+    if (prov && cfg && cfg.privateKey && cfg.env) {
+      var ag = (await ctx.rpc('portfolio_svc_ag_due', { p_provider: prov.key, p_env: cfg.env, p_limit: limit || 10 })) || [];
       n += ag.length;
       for (var j = 0; j < ag.length; j++) {
         if (overBudget(ctx, started)) break;
         var g = ag[j];
         if (g.kind === 'BETTOR') {
-          try { var d = await sharpsportsDiscover(left(), cfg, { userId: g.user_id }); done.push({ platform: 'sharpsports', status: 'DISCOVERED', accounts: d.accounts.length }); }
-          catch (e) { logSafe(ctx, 'sharpsports.discover_failed', { code: e && e.code || 'UNKNOWN' }); done.push({ platform: 'sharpsports', status: 'FAILED' }); }
+          try { var d = await prov.discover(left(), cfg, { userId: g.user_id }); done.push({ platform: prov.key, status: 'DISCOVERED', accounts: d.accounts.length }); }
+          catch (e) { logSafe(ctx, prov.key + '.discover_failed', { code: e && e.code || 'UNKNOWN' }); done.push({ platform: prov.key, status: 'FAILED' }); }
           continue;
         }
         var acct = { account_id: g.account_id, user_id: g.user_id, platform: g.platform, external_account_id: g.external_account_id, sync_cursor: g.sync_cursor,
-          provider: 'sharpsports', environment: cfg.env };
+          provider: prov.key, environment: cfg.env };
         var res2 = await syncAccount(left(), acct, g.has_run ? 'INCREMENTAL' : 'INITIAL');
         done.push({ platform: g.platform, status: res2.status || 'SKIPPED' });
       }
@@ -1420,8 +1447,51 @@ function sharpsportsConfig(env) {
     return { due: n, done: done };
   }
 
+  /* ── 11. SPORTSBOOK SYNC PROVIDERS ─────────────────────────────────────
+     The seam that keeps a provider replaceable. A provider links a reader's
+     sportsbook accounts on its OWN page (EdgeDesk never sees a sportsbook
+     password), lists them, and returns their bets in EdgeDesk's normalized
+     wager shape. Everything after that is shared by every provider and by
+     CSV, screenshot and manual entry alike: portfolio_svc_ingest_wagers
+     (dedupe by the provider's bet id, adoption of an imported twin, the
+     settlement history), the derived P&L, analytics and the Portfolio UI.
+     Replacing a provider = one adapter here + its rows in the function's
+     handler table; no table, view or screen changes.
+
+     At most ONE provider is active on a server: the one the
+     SPORTSBOOK_SYNC_PROVIDER secret names (none by default). A provider that
+     is not active syncs nothing, links nothing and answers no webhook; its
+     linked accounts and their synced history stay readable. */
+  var SPORTSBOOK_PROVIDER_CONTRACT = ['link', 'discover', 'sync', 'refresh', 'accountState', 'webhookRefs', 'normalize'];
+  var SPORTSBOOK_PROVIDERS = {};
+  function defineSportsbookProvider(spec) {
+    var missing = SPORTSBOOK_PROVIDER_CONTRACT.filter(function (m) { return !spec || typeof spec[m] !== 'function'; });
+    if (!spec || !/^[a-z][a-z0-9_]{1,30}$/.test(String(spec.key || ''))) missing.push('key');
+    if (!spec || !spec.label || !spec.short) missing.push('label and short');
+    if (!spec || !/^https:\/\/[a-z0-9.-]+$/.test(String(spec.link_origin || ''))) missing.push('link_origin (the https origin of its linking page)');
+    if (!spec || ['ACTIVE', 'RETIRED'].indexOf(spec.status) < 0) missing.push('status');
+    if (spec && spec.places_orders) missing.push('read-only (a provider never bets)');
+    if (missing.length) throw new Error('sportsbook provider "' + (spec && spec.key) + '" is incomplete: ' + missing.join(', '));
+    SPORTSBOOK_PROVIDERS[spec.key] = Object.freeze(Object.assign({}, spec));
+    return SPORTSBOOK_PROVIDERS[spec.key];
+  }
+  function sportsbookProvider(key) { return Object.prototype.hasOwnProperty.call(SPORTSBOOK_PROVIDERS, key) ? SPORTSBOOK_PROVIDERS[key] : null; }
+  /* the provider a request may use: registered, and the one this server switched on */
+  function activeSportsbookProvider(ctx, key) {
+    var on = ctx && ctx.sportsbook;
+    return key && on && key === on ? sportsbookProvider(key) : null;
+  }
+  defineSportsbookProvider({
+    key: 'sharpsports', label: SHARPSPORTS.label, short: 'SharpSports', link_origin: SHARPSPORTS.ui, what_the_reader_gives: SHARPSPORTS.what_the_reader_gives,
+    status: 'RETIRED', status_note: 'Off since 2026-10-14: its $500/month minimum is above EdgeDesk\'s budget. The adapter stays so its synced history stays readable, and as the reference for the next provider.',
+    link: sharpsportsLink, discover: sharpsportsDiscover, sync: syncSharpSportsRun, refresh: sharpsportsRefresh,
+    accountState: ssAccountState, webhookRefs: sharpsportsWebhookRefs, normalize: sharpsportsNormalize
+  });
+
   return {
     VERSION: VERSION, dec: dec,
+    SPORTSBOOK_PROVIDER_CONTRACT: SPORTSBOOK_PROVIDER_CONTRACT, SPORTSBOOK_PROVIDERS: SPORTSBOOK_PROVIDERS, defineSportsbookProvider: defineSportsbookProvider,
+    sportsbookProvider: sportsbookProvider, activeSportsbookProvider: activeSportsbookProvider,
     SOURCE_TYPES: SOURCE_TYPES, INGESTION_METHODS: INGESTION_METHODS, TIER: TIER, TIER_LABEL: TIER_LABEL, SMOKE_STAGES: SMOKE_STAGES,
     REGISTRY: REGISTRY, platformInfo: platformInfo, connectionOffer: connectionOffer, NO_SPORTSBOOK_API: NO_SPORTSBOOK_API,
     CONTRACT: CONTRACT, defineAdapter: defineAdapter, ERRORS: ERRORS, readerError: readerError, redact: redact,
@@ -1491,7 +1561,9 @@ async function getUser(c, req) {
 }
 function ctxFor(c, budgetMs) {
   return { fetch: (url, init) => fetchWithTimeout(url, init, 15000), rpc: serviceRpc(c), now: () => Date.now(), budgetMs: budgetMs || 45000,
-    keyring: c.keyring, log: (event, fields) => logLine('info', event, fields), sharpsports: c.sharpsports };
+    keyring: c.keyring, log: (event, fields) => logLine('info', event, fields),
+    /* a provider's configuration reaches the core only while it is the active one */
+    sportsbook: c.sportsbook.key, sharpsports: c.sportsbook.key === 'sharpsports' ? c.sharpsports : null };
 }
 async function runtimeRegistry(c) {
   const rows = await serviceSelect(c, 'portfolio_platform_registry?select=platform_key,automatic_enabled,connector_version,tos_review');
@@ -1565,6 +1637,7 @@ async function connect(c, user, body) {
 async function syncNow(c, user, body) {
   const account = await ownAccount(c, user, body.account_id);
   if (!account || (account.connection_type !== 'API' && account.connection_type !== 'AGGREGATOR')) return json({ ok: false, reason: 'no_account' }, 404);
+  if (account.connection_type === 'AGGREGATOR' && (!account.provider || account.provider !== c.sportsbook.key)) return json({ ok: false, reason: 'SYNC_OFF', message: K.ERRORS.SYNC_OFF }, 403);
   if (account.status === 'DISCONNECTED') return json({ ok: false, reason: 'disconnected', message: 'Reconnect this account to sync it.' }, 409);
   const recent = await serviceSelect(c, 'portfolio_sync_runs?select=started_at&platform_account_id=eq.' + encodeURIComponent(account.account_id) + '&order=started_at.desc&limit=1');
   if (recent && recent[0] && Date.now() - Date.parse(recent[0].started_at) < 120000) {
@@ -1604,6 +1677,7 @@ async function disconnect(c, user, body) {
    the registry's switch, or an operator running the live smoke test. */
 async function ssGate(c, user, body) {
   const cfg = c.sharpsports;
+  if (c.sportsbook.key !== 'sharpsports') return { ok: false, status: 403, reason: 'SYNC_OFF', message: K.ERRORS.SYNC_OFF, cfg };
   if (!cfg.privateKey || !cfg.publicKey) return { ok: false, status: 503, reason: 'not_configured', message: K.ERRORS.NOT_CONFIGURED, cfg };
   let operator = false;
   try { operator = await rpcAsCaller(c, user.authz, 'portfolio_is_admin', {}) === true; } catch (_) { operator = false; }
@@ -1619,7 +1693,7 @@ async function ssGate(c, user, body) {
 async function ssStatus(c, user, body) {
   const g = await ssGate(c, user, body);
   return json({ ok: true, available: g.ok, environment: g.cfg.env, operator: !!g.operator, reason: g.ok ? null : g.reason, message: g.ok ? null : g.message,
-    provider: { key: K.SHARPSPORTS.key, label: K.SHARPSPORTS.label, what_the_reader_gives: K.SHARPSPORTS.what_the_reader_gives } });
+    provider: providerInfo('sharpsports') });
 }
 /* the books SharpSports lists (cached for ten minutes per environment) */
 let ssBooksCache = { at: 0, env: null, list: null };
@@ -1696,6 +1770,26 @@ async function ssRefresh(c, user, body) {
       : (r.error && r.error.message) || 'SharpSports did not start a refresh. Try again later.' }, r.status === 'ACCEPTED' ? 200 : 502);
 }
 
+/* ── THE SPORTSBOOK SYNC SEAM ────────────────────────────────────────────
+   One handler table per provider; the reader-facing actions (sb_*) reach the
+   active provider's, or say plainly that sportsbook sync is off. A new
+   provider adds its adapter to the core's registry and its row here. */
+const SPORTSBOOK_HANDLERS = {
+  sharpsports: { status: ssStatus, books: ssBooks, link: ssLink, discover: ssDiscover, refresh: ssRefresh },
+};
+function providerInfo(key) {
+  const p = K.sportsbookProvider(key);
+  return p ? { key: p.key, label: p.label, short: p.short, link_origin: p.link_origin, what_the_reader_gives: p.what_the_reader_gives || null } : null;
+}
+async function sportsbookAction(c, user, body, verb) {
+  const h = c.sportsbook.key ? SPORTSBOOK_HANDLERS[c.sportsbook.key] : null;
+  if (!h) {
+    if (verb === 'status') return json({ ok: true, available: false, environment: null, operator: false, reason: 'SYNC_OFF', message: K.ERRORS.SYNC_OFF, provider: null });
+    return json({ ok: false, reason: 'SYNC_OFF', message: K.ERRORS.SYNC_OFF }, 403);
+  }
+  return await h[verb](c, user, body);
+}
+
 async function handle(req) {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   const c = config();
@@ -1703,7 +1797,8 @@ async function handle(req) {
     return json({ ok: true, service: 'portfolio_connect', core: K.VERSION,
       configured: { database: !!(c.url && c.serviceKey), auth: !!c.anonKey, credential_keys: Object.keys(c.keyring.keys || {}).length,
         current_key_version: c.keyring.keys && c.keyring.keys[c.keyring.current] ? c.keyring.current : null,
-        sharpsports: { environment: c.sharpsports.env, private_key: !!c.sharpsports.privateKey, public_key: !!c.sharpsports.publicKey,
+        sportsbook_sync: { provider: c.sportsbook.key, unknown_provider_named: c.sportsbook.unknown },
+        sharpsports: { active: c.sportsbook.key === 'sharpsports', environment: c.sharpsports.env, private_key: !!c.sharpsports.privateKey, public_key: !!c.sharpsports.publicKey,
           scheduled_refresh_minutes: c.sharpsports.scheduledRefreshMinutes } } });
   }
   if (req.method !== 'POST') return json({ ok: false, reason: 'method' }, 405);
@@ -1729,11 +1824,8 @@ async function handle(req) {
     if (body.action === 'connect') return await connect(c, user, body);
     if (body.action === 'sync') return await syncNow(c, user, body);
     if (body.action === 'disconnect') return await disconnect(c, user, body);
-    if (body.action === 'ss_status') return await ssStatus(c, user, body);
-    if (body.action === 'ss_books') return await ssBooks(c, user, body);
-    if (body.action === 'ss_link') return await ssLink(c, user, body);
-    if (body.action === 'ss_discover') return await ssDiscover(c, user, body);
-    if (body.action === 'ss_refresh') return await ssRefresh(c, user, body);
+    const sb = /^(?:sb|ss)_(status|books|link|discover|refresh)$/.exec(String(body.action || ''));
+    if (sb) return await sportsbookAction(c, user, body, sb[1]);
     return json({ ok: false, reason: 'unknown_action' }, 400);
   } catch (e) {
     logLine('error', 'failed', { action: body.action || null, error: String((e && e.message) || e).slice(0, 200) });

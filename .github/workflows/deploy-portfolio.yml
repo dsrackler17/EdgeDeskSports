@@ -30,11 +30,11 @@
 #      supabase/personal_research.sql has been re-applied as well; until
 #      then a settlement simply sends none (it is never blocked).
 #   6. the same for supabase/portfolio_aggregator.sql (tools/portfolio/
-#      sharpsports.test.js): SharpSports BetSync — the sharpsports registry
-#      row (OFF), bettor references, webhook deliveries, refresh requests,
-#      the settlement history and the sportsbook ingest. It switches nothing
-#      on: production linking takes a passing PRODUCTION smoke test
-#      (tools/portfolio/sharpsports_smoke.js) and a cleared terms review.
+#      sharpsports.test.js): the sportsbook ingest, the settlement history,
+#      refresh requests, bettor references and webhook deliveries, and the
+#      sharpsports registry row (OFF). SharpSports is RETIRED (2026-10-14):
+#      no sportsbook sync provider runs unless SPORTSBOOK_SYNC_PROVIDER names
+#      one (docs/sportsbook-sync-providers.md). It switches nothing on.
 #   7. the same for supabase/portfolio_model_context.sql (tools/portfolio/
 #      model_context_sql.test.js): EdgeDesk's model on a bet, only as recorded
 #      before it was placed. Reads model_pnl_public (the Record P&L schema).
