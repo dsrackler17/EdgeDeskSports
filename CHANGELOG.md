@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-10-14 — The EdgeDesk Card stays populated without The Odds API, and covers every sport
+
+**The Card showed 135 games and 135 NO DECISION after the paid odds credits ran out. Three things caused it, and each is fixed: the football boards' live overlay replaced the build's priced decisions with NO MARKET, the football boards priced only from the paused capture, and no other sport was on the Card at all. The Card now prices from the free DraftKings feed the slate already captures from ESPN's public scoreboard, every 30 minutes, at no credit cost.**
+
+- **A live NO MARKET never erases a priced decision** (`lib/edgedesk_decision_ui.js` `liveWins`). When the live overlay can't evaluate a game only because it has no price (no market or a stale quote), and the build already priced that game, the build's BET / LEAN / WATCH / PASS stays on the Card. A held BET is shown as WATCH · QUOTE REFRESH PENDING with no stake until a current price confirms it, because a stale quote never BETs. A real fault (no model, a data fault) still replaces the build's decision, and a newer decision that can evaluate still wins.
+- **The football boards fall back to the free feed** (`app.html` `fbQevFeed`). When the paid capture has no fresh spread, total or moneyline for an NFL or CFB game, the slate's DraftKings price is priced instead. It runs through the same freshness ladder and the same decision engine, and is labelled with its source. A fresh paid quote is never replaced.
+- **Every sport on the Card** (`lib/edgedesk_card_feed.js`, new). NBA, NHL, MLB, soccer, UFC and any football game the engine hasn't reached now appear on the Card, priced from `today/slate.json`.
+  - Where EdgeDesk has a model, the model probability is pulled toward the book's no-vig probability, by how far that sport's model has been validated. Edge and EV are then taken at the actual DraftKings price.
+  - None of these models is validated against closing prices, so a feed row is **never a BET and never carries units**. The best it can be is LEAN, the same cap the football engine puts on totals, moneylines and props.
+  - When a price reads as value but the raw model gap is 25% EV or more, the row is WATCH · CHECK THE NUMBER instead. A stale price caps a row at WATCH.
+  - Games with a price but no model go in **MARKET BOARD** (every line in one place). Games with a model but no posted line go in **AWAITING LINES** (EdgeDesk's fair number). Neither is counted as a decision.
+- **The Card page:**
+  - **TOP OF THE CARD:** the six strongest answers across every sport, as tiles. BETs come first, then LEAN, then the WATCH calls on the right side of the price.
+  - **A price-feed strip:** the source, its age, how many upcoming games are priced across how many sports, and how many football games are still waiting on a line.
+  - **A sport row** with counts: All sports, NFL, CFB, NBA, NHL, MLB, Soccer and the rest.
+  - The NO DECISION line now says why, for example "74 no line posted yet".
+  - A row for any sport opens its game: the football game page, or the game's detail on the Games page (`EDGamesUI.openDetail`).
+- **The slate keeps upcoming games' lines** (`tools/slate/build.js`). Prices ESPN posts for games past the window, such as Sunday's NFL slate read on a Wednesday, used to be dropped. They are now kept, so the Card can price next week's games.
+- Tests: `tools/bettor/card_feed.test.js` (new, 45 checks). The slate pipeline adds a check for an upcoming game's price. The existing decision, football decision, consistency, opportunity, navigation and slate suites are unchanged and green.
+
 ## 2026-10-14 — Men's college basketball research engine: team strength, player impact, lineups, matchups and scenarios, validated without odds
 
 **EdgeDesk now has an independent research model for men's college basketball that runs without any sportsbook price. It explains who is good, why they are good, who makes them good, and how those strengths meet a particular opponent. On the held-out 2025-26 season its team ratings beat the incumbent points model. The player, lineup, scenario and style layers are each labelled by what their validation showed. A market comparison is a separate, optional layer; today it says "market comparison unavailable".** Docs: `docs/ncaam/README.md`, `VALIDATION.md`, `METHODOLOGY.md`, `METHODOLOGY_SOURCES.md`.

@@ -174,7 +174,7 @@ async function build(o) {
     for (let d = WINDOW.to + 1; d <= UPCOMING.through && found.length < UPCOMING.per_sport; d++) {
       const day = G.addDays(today, d);
       const got2 = await pool(sp.espn.map((f) => Object.assign({ sport: sp.id, key: sp.id + ':' + f.path }, f)), 4, (f) => bucket(f, day, 'upcoming'));
-      got2.forEach((g) => { buckets[g.key] = g.b; g.evs.forEach((e) => { if (e.status === 'SCHEDULED' && G.toMs(e.start_utc) > now) found.push(e); }); });
+      got2.forEach((g) => { buckets[g.key] = g.b; Object.assign(markets, g.mkts); g.evs.forEach((e) => { if (e.status === 'SCHEDULED' && G.toMs(e.start_utc) > now) found.push(e); }); });
       /* the sport's source is down: scanning further days would only repeat it */
       if (got2.every((g) => !g.b.ok)) break;
     }
@@ -186,9 +186,11 @@ async function build(o) {
   const all = G.dedupe(events);
   const up = G.dedupe(upcoming).filter((e) => !all.some((x) => x.id === e.id));
   RES.join(all.concat(up), o.research || RES.loadSources(), { now });
-  /* markets only for games the slate holds, and only pregame */
+  /* markets only for games the slate holds, and only pregame — the upcoming
+     games too: ESPN posts next week's lines (Sunday's NFL slate on a
+     Wednesday), and the EdgeDesk Card prices them (lib/edgedesk_card_feed.js) */
   const mk = {};
-  all.forEach((e) => { if (markets[e.id]) mk[e.id] = markets[e.id]; });
+  all.concat(up).forEach((e) => { if (markets[e.id]) mk[e.id] = markets[e.id]; });
 
   /* per sport: what a reader is told about where the slate came from */
   const sports = {};

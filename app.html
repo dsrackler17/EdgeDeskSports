@@ -2912,7 +2912,7 @@ body.focus .dk-focusnote{display:block}
 </style>
 
 <link rel="stylesheet" href="/lib/edgedesk_personal.css?v=20260929e">
-<link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20261005dr1">
+<link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20261014cf1">
 <link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929calm1">
 <link rel="stylesheet" href="/lib/edgedesk_linemaker.css?v=20261011lm1">
 <link rel="stylesheet" href="/lib/edgedesk_engine.css?v=20261014nhl2">
@@ -4034,7 +4034,10 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_decision_track.js?v=20260929b"></script>
 <script src="/lib/edgedesk_decision_inputs.js?v=20261002a"></script>
 <script src="/lib/edgedesk_explain.js?v=20260929a"></script>
-<script src="/lib/edgedesk_decision_ui.js?v=20261005dr1"></script>
+<!-- THE FREE PRICE FEED: today/slate.json's DraftKings prices (ESPN's public scoreboard) for every
+     sport — the Card's multi-sport rows, and the football boards' price when the paid capture is not current -->
+<script src="/lib/edgedesk_card_feed.js?v=20261014cf1"></script>
+<script src="/lib/edgedesk_decision_ui.js?v=20261014cf1"></script>
 <!-- PLAYER PROPS: the kernel (distributions, price shopping, EV, decision — the SAME
      file the Node build prices with) and the terminal that renders it -->
 <script src="/lib/edgedesk_props.js?v=20260929fr1"></script>
@@ -4052,7 +4055,18 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_readiness.js?v=20261012ia2"></script>
 <!-- TODAY'S GAMES: the slate kernel (dates, statuses, markets, research links), then the strip and page -->
 <script src="/lib/edgedesk_games.js?v=20261013gm1"></script>
-<script src="/lib/edgedesk_games_ui.js?v=20261013gm1"></script>
+<script src="/lib/edgedesk_games_ui.js?v=20261014cf1"></script>
+<script>
+/* THE FREE PRICE FEED loads at boot and every 10 minutes the tab is open: the
+   football boards price on it whenever the paid capture is not current, and
+   re-render when it lands (lib/edgedesk_card_feed.js). */
+(function(){
+  var F=window.EDCardFeed;if(!F)return;
+  F.onUpdate(function(){try{if(typeof fbQevRepaint==='function')fbQevRepaint();}catch(_){}});
+  function pull(){try{if(!document.hidden)F.ensure({url:'/today/slate.json',maxAgeMs:9*60000});}catch(_){}}
+  pull();setInterval(pull,10*60000);
+})();
+</script>
 <script>
 /* Today's Games in the terminal. The strip mounts once the page's own scripts
    have defined SB_URL and edToken; the page mounts on its first #games visit.
@@ -55814,7 +55828,7 @@ function fbGxAgoText(iso){var h=(Date.now()-Date.parse(iso))/36e5;if(!isFinite(h
    its book at each number), and each book's own alternate quotes */
 function fbQevQuotes(ev,gid,kick,sport){
   var out=[],I=window.EDINTEL;
-  if(!ev)return out;
+  if(!ev)return fbQevFeed(out,gid,kick,sport);
   var hN=fbNorm(ev.home),aN=fbNorm(ev.away);
   function sideOf(sel){var s=fbNorm(sel);return s===hN?'home':(s===aN?'away':null);}
   function st(at,mk){var q=null;try{q=(I&&I.quoteState)?I.quoteState({captured_at:at,market:mk,kickoff:kick}):null;}catch(_){q=null;}return q;}
@@ -55833,6 +55847,27 @@ function fbQevQuotes(ev,gid,kick,sport){
     var at=a.observed_at||AS.observed_at||null,q=st(at,'spreads');
     out.push({game_id:gid,side:sd,market_type:'alternate_spread',line:fbNum(a.point),american:fbNum(a.price_american),book:a.book||null,n_books:1,
       captured_at:at,fresh:q?!!q.actionable:null,freshness_state:q?q.status:null,provider_market_key:'alternate_spreads',quote_id:a.quote_id||null});
+  });
+  return fbQevFeed(out,gid,kick,sport);
+}
+/* THE FREE FEED (lib/edgedesk_card_feed.js): when the paid capture holds no
+   fresh quote for a market of this game — The Odds API paused, or a game it
+   never reached — the slate's DraftKings price (ESPN's public scoreboard,
+   today/slate.json) is priced instead, on the same freshness ladder and
+   labelled with its source. A fresh paid quote is never displaced. */
+function fbQevFeed(out,gid,kick,sport){
+  var F=window.EDCardFeed,sl=null;try{sl=F&&F.current?F.current():null;}catch(_){sl=null;}
+  if(!sl)return out;
+  var add=[];try{add=F.footballQuotes(sl,sport,gid);}catch(_){add=[];}
+  if(!add.length)return out;
+  var I=window.EDINTEL,MK={spread:'spreads',total:'totals',moneyline:'h2h'};
+  ['spread','total','moneyline'].forEach(function(mt){
+    if(out.some(function(q){return q.market_type===mt&&q.fresh;}))return;
+    add.forEach(function(q){
+      if(q.market_type!==mt)return;
+      var s=null;try{s=(I&&I.quoteState)?I.quoteState({captured_at:q.captured_at,market:MK[mt],kickoff:kick}):null;}catch(_){s=null;}
+      out.push(Object.assign({},q,{fresh:s?!!s.actionable:null,freshness_state:s?s.status:null}));
+    });
   });
   return out;
 }
