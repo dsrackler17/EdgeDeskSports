@@ -22,6 +22,7 @@
 const fs = require('fs');
 const path = require('path');
 const G = require(path.join(__dirname, '..', '..', 'lib', 'edgedesk_games.js'));
+const NHLC = require(path.join(__dirname, '..', '..', 'lib', 'edgedesk_nhl_compare.js'));
 const ROOT = path.join(__dirname, '..', '..');
 
 function readJson(rel) {
@@ -115,14 +116,18 @@ function modelFromCfb(row) {
     fair: { spread_home: m != null ? (m === 0 ? 0 : -m) : null, total: num(row.fair_total), home_win: num(row.win_prob && (row.win_prob.home != null ? row.win_prob.home : row.win_prob)) }
   };
 }
-function modelFromNhl(row, val) {
+/* `view` is EdgeDesk's NHL probabilities in the compact shape
+   lib/edgedesk_nhl_compare.js reads, so the matchup view can set them against
+   the captured price without loading the NHL slate */
+function modelFromNhl(row, val, slate) {
   if (!row || !row.prices) return null;
   const ml = row.prices.moneyline || {}, pl = row.prices.puck_line || {}, tot = row.prices.total || {};
   const mlStatus = val.moneyline && val.moneyline.status ? val.moneyline.status : null;
   return {
     status: 'PREDICTED', tier: mlStatus, data_quality: 'OK', home_line: num(ml.fair_home), source: 'hockey/slate.json',
     fair: { ml_home: num(ml.fair_home), ml_away: num(ml.fair_away), total: num(tot.fair_line), puck_home_minus_1_5: num(pl.fair_home_minus_1_5), puck_away_plus_1_5: num(pl.fair_away_plus_1_5) },
-    note: 'value claims are off until the NHL model is tested against the closing market'
+    note: 'value claims are off until the NHL model is tested against the closing market',
+    view: NHLC.view(row, slate, { compact: true })
   };
 }
 function modelFromLab(g, L, src) {
@@ -201,8 +206,15 @@ function join(events, src, o) {
       }
     } else if (e.sport === 'nhl') {
       let hit = e.provider === 'nhl' ? nhl.find((x) => String(x.g.game_id) === e.provider_id) : null;
+      const byId = !!hit;
       if (!hit) { const c = nhl.filter((x) => G.sameEvent(e, x.ev, 6)); if (c.length === 1) hit = c[0]; }
-      if (hit) { r.module = 'nhl'; r.entity = String(hit.g.game_id); r.model = modelFromNhl(hit.g, hit.val); r.metrics = true; }
+      if (hit) {
+        r.module = 'nhl'; r.entity = String(hit.g.game_id); r.model = modelFromNhl(hit.g, hit.val, src.nhl); r.metrics = true;
+        /* a match by teams that the two sources list the other way round
+           keeps its research link, but EdgeDesk's numbers are never set
+           against this event's prices: the comparison is refused, not repaired */
+        if (!byId && !(G.sameSide('nhl', e.home, hit.ev.home) && G.sameSide('nhl', e.away, hit.ev.away))) { r.sides_swapped = true; if (r.model) r.model.view = null; }
+      }
     } else if (e.sport === 'mlb') {
       /* the MLB card keys a game by its Eastern date, both clubs and the game
          number (app.html mlbbKey); the card holds today and tomorrow */

@@ -38,8 +38,10 @@ on:
       - 'lib/edgedesk_engine.css'
       - 'lib/edgedesk_sports.js'
       - 'lib/edgedesk_nhl_market.js'
+      - 'lib/edgedesk_nhl_compare.js'
       - 'tools/hockey/**'
       - 'tools/engine/**'
+      - 'tools/slate/build.js'
       - 'supabase/nhl_odds_sport.sql'
       - 'supabase/nhl_warehouse.sql'
       - 'supabase/functions/edgedesk_ai/index.ts'
@@ -56,6 +58,7 @@ on:
       - 'lib/edgedesk_sport_brains.js'
       - 'lib/edgedesk_engine_ui.js'
       - 'lib/edgedesk_nhl_market.js'
+      - 'lib/edgedesk_nhl_compare.js'
       - 'tools/hockey/**'
       - 'tools/engine/**'
   schedule:
@@ -89,6 +92,8 @@ jobs:
         run: node tools/hockey/nhl_desk.test.js
       - name: The research engine's second layer (markets, explanation, market labels, lab, props, warehouse sync, registry, artifacts)
         run: node tools/hockey/nhl_v2.test.js
+      - name: EdgeDesk vs the market (no-vig, gaps, EV, labels, who is better where, the view Today's Games carries)
+        run: node tools/hockey/nhl_compare.test.js
       - name: The cross-sport board's rules and the readiness registry
         run: node tools/engine/engine.test.js
       - name: The committed record, slate, registry and board pass their checks

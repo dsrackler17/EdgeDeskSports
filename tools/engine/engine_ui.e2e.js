@@ -5,7 +5,9 @@
    (hockey/slate.json, engine/board.json, engine/registry.json and the NHL
    walk-forward record) with the clock pinned to the slate's build time.
 
-   NHL: the list, a game's seven tabs (the exact decomposition of its price,
+   NHL: the list and its EdgeDesk-vs-the-market board, a game's seven tabs
+   (EdgeDesk against the book's price and who is better where, the exact
+   decomposition of its price,
    every market table incl. alternates and the first period, the price check
    with a valid and a malformed price, in-page scenario re-pricing, player
    research, model comparison, the per-market record and drift), the URL it
@@ -36,6 +38,30 @@ function done(note) {
 const SLATE = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'slate.json'), 'utf8'));
 const BOARD = JSON.parse(fs.readFileSync(path.join(ROOT, 'engine', 'board.json'), 'utf8'));
 const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
+/* Today's Games as the NHL panel reads it: the committed slate with its NHL
+   games replaced by the hockey slate's first two, each with a DraftKings price
+   captured ten minutes before NOW. The first is priced 6% above EdgeDesk's
+   fair home moneyline (it pays on paper), the second with a 4.5% margin
+   around EdgeDesk's own numbers (nothing pays). Every other game has no price. */
+const MK = require(path.join(ROOT, 'lib', 'edgedesk_nhl_market.js'));
+const TODAY = (() => {
+  const T = JSON.parse(fs.readFileSync(path.join(ROOT, 'today', 'slate.json'), 'utf8'));
+  const tpl = T.events.filter((e) => e.sport === 'nhl')[0] || {};
+  const nhlIds = new Set(T.events.concat(T.upcoming || []).filter((e) => e.sport === 'nhl').map((e) => e.id));
+  T.events = T.events.filter((e) => !nhlIds.has(e.id)); T.upcoming = (T.upcoming || []).filter((e) => !nhlIds.has(e.id));
+  nhlIds.forEach((id) => { delete T.markets[id]; });
+  const cap = new Date(Date.parse(NOW) - 10 * 60000).toISOString();
+  const price = (p, boost, margin) => { const d = (1 / p) * boost; const o = 1 / (1 - 1 / d + margin); return [MK.decToAm(d), MK.decToAm(o)]; };
+  SLATE.games.slice(0, 2).forEach((g, i) => {
+    const id = 'nhl:espn:e2e' + g.game_id;
+    T.events.push(Object.assign({}, tpl, { id, sport: 'nhl', league: 'NHL', provider: 'espn', provider_id: 'e2e' + g.game_id, start_utc: g.start_utc, status: 'SCHEDULED', time_tbd: false,
+      home: Object.assign({}, tpl.home, { name: g.home, short: g.home, abbr: g.home, score: null }), away: Object.assign({}, tpl.away, { name: g.away, short: g.away, abbr: g.away, score: null }),
+      research: { module: 'nhl', entity: String(g.game_id), model: null, metrics: true, read: null, signal: null, article: null } }));
+    const [h, a] = i === 0 ? price(g.prices.moneyline.home, 1.06, 0.045) : price(g.prices.moneyline.home, 1 / 1.0225, 0.045);
+    T.markets[id] = { book: 'Draft Kings', source: 'espn_scoreboard', captured_at: cap, moneyline: { home: h, away: a }, total: { point: g.prices.total.fair_line, over: -110, under: -110 }, partial: ['puck line not priced on both sides'] };
+  });
+  return T;
+})();
 
 (async function main() {
   if (!SLATE.games.length) done('SKIP | the committed slate has no games to exercise');
@@ -53,6 +79,7 @@ const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
   function siteHandler(req, res) {
     let p = decodeURIComponent(req.url.split('?')[0]);
     if (p === '/') p = '/app.html';
+    if (p === '/today/slate.json') { res.writeHead(200, { 'content-type': TYPES['.json'], 'cache-control': 'no-store' }); res.end(JSON.stringify(TODAY)); return; }
     if (p === '/engine/board.json') {
       if (boardMode === 'down') { res.writeHead(503, { 'content-type': 'text/plain' }); res.end('unavailable'); return; }
       res.writeHead(200, { 'content-type': TYPES['.json'], 'cache-control': 'no-store' }); res.end(boardBody()); return;
@@ -114,6 +141,15 @@ const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
       chk(label + ': readiness says value claims are disabled and why', await page.evaluate(() => /value claims/i.test(document.querySelector('.xe-ready').textContent) && /disabled/i.test(document.querySelector('.xe-ready').textContent) && /closing/i.test(document.querySelector('.xe-ready').textContent)));
       chk(label + ': each card shows a fair moneyline and a total', await page.evaluate(() => Array.from(document.querySelectorAll('.xe-game')).every((c) => /ML/.test(c.textContent) && /Total/.test(c.textContent))));
       chk(label + ': no horizontal scroll on the NHL list', await noHScroll(page));
+      /* EdgeDesk vs the market, the slate at a glance */
+      await page.waitForSelector('#nhlHost table.xe-vs', { timeout: 20000 });
+      const board = await page.$$eval('#nhlHost table.xe-vs tr', (rows) => rows.slice(1).map((r) => ({ id: (r.querySelector('[data-game]') || {}).dataset ? r.querySelector('[data-game]').dataset.game : null, cells: Array.from(r.children).map((c) => c.textContent.trim()) })));
+      chk(label + ': the board lists every game with EdgeDesk\'s likelier winner', board.length === SLATE.games.length && board.every((r, i) => r.id === String(SLATE.games[i].game_id) && /\d+\.\d%/.test(r.cells[1])), board.slice(0, 3));
+      chk(label + ': a game with a captured price shows the book\'s number beside EdgeDesk\'s, and where they differ', /\d+\.\d%/.test(board[0].cells[2]) && /pp/.test(board[0].cells[3]), board[0]);
+      chk(label + ': a price above EdgeDesk\'s fair is provisional, never verified value', /provisional/.test(board[0].cells[4]) && /EV \+/.test(board[0].cells[4]) && (await page.$$eval('#nhlHost .xe-chip', (x) => x.filter((c) => /verified value/i.test(c.textContent)).length)) === 0, board[0].cells[4]);
+      chk(label + ': a price inside the book\'s margin pays nothing', /pass/.test(board[1].cells[4]) && /none/.test(board[1].cells[4]), board[1].cells[4]);
+      if (board.length > 2) chk(label + ': a game without a price says so, and is not called a pass', /no price yet/.test(board[2].cells[2]) && board[2].cells[4] === '—', board[2]);
+      chk(label + ': the board names the source as a reference, not a verified quote', /DraftKings via ESPN/.test(await page.textContent('#nhlHost')) && /reference price/.test(await page.textContent('#nhlHost')));
       chk(label + ': the record names its second source and calls it a check of past data, not a forecast', await page.evaluate(() => { const e = document.querySelector('#nhlHost .xe-2nd'); return !!e && /Second source/.test(e.textContent) && /2024-25/.test(e.textContent) && /not a forecast/.test(e.textContent); }));
       await shot(page, label + '_nhl_list');
       const g = SLATE.games[0];
@@ -132,6 +168,12 @@ const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
         chk(label + ': the decomposition adds up exactly to the published probability', ex.check && ex.check.exact === true && /exact/.test(overview));
       }
       chk(label + ': Overview says whether a price is actionable and why not', /Is a price actionable\?/.test(overview) && /No\./.test(overview));
+      chk(label + ': Overview sets EdgeDesk against the book: the favourite, the largest difference, the price that pays', /EdgeDesk vs the market/.test(overview) && /EdgeDesk makes \w+ the likelier winner/.test(overview) && /Largest difference/.test(overview) && /pays above EdgeDesk’s fair/.test(overview), overview.slice(0, 600));
+      const vsRows = await page.$$eval('#nhlHost .xe-tabp table.xe-vs tr', (x) => x.length - 1);
+      chk(label + ': the comparison table has both sides of the moneyline and the total', vsRows === 4, vsRows);
+      chk(label + ': the actionable answer says the compared price is a reference', /a reference, not a quote EdgeDesk captured/.test(overview));
+      const tape = await page.$$eval('#nhlHost .xe-tabp table.xe-tape tr', (rows) => rows.map((r) => Array.from(r.children).map((c) => c.textContent.trim())));
+      chk(label + ': Who is better where rates both clubs area by area and ends with the projected goals', /Who is better where/.test(overview) && tape.length >= 8 && tape.slice(1).every((r) => r.length === 4 && r[3]) && /Projected goals tonight/.test(tape[tape.length - 1][0]), tape);
       chk(label + ': no horizontal scroll on Overview', await noHScroll(page), await overflowers(page));
       const caps = [];
       for (const t of ['markets', 'evidence']) { await page.click('#nhlHost .xe-tabs button[data-tab="' + t + '"]'); await page.waitForSelector('#nhlHost .xe-tabs button.on[data-tab="' + t + '"]'); caps.push(...await page.$$eval('#nhlHost .xe-t caption', (x) => x.map((c) => c.textContent))); chk(label + ': no horizontal scroll on ' + t, await noHScroll(page), await overflowers(page)); }
@@ -141,6 +183,7 @@ const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
       await page.click('#nhlHost .xe-tabs button[data-tab="markets"]');
       chk(label + ': the fair home moneyline matches the slate', await page.evaluate((fh) => document.querySelector('.xe-detail').textContent.indexOf((fh > 0 ? '+' : '') + fh) >= 0, g.prices.moneyline.fair_home));
       chk(label + ': uncaptured prices are said to be uncaptured, not shown as missing value', /not captured|not authorised|No captured prices/i.test(await page.textContent('#nhlHost .xe-tabp')));
+      chk(label + ': Markets shows the Today\'s Games price as a reference beside EdgeDesk\'s', /The price Today’s Games captured instead, as a reference/.test(await page.textContent('#nhlHost .xe-tabp')) && (await page.$$('#nhlHost .xe-tabp table.xe-vs')).length === 1);
       await page.waitForFunction(() => !!window.EDNHLMarket, null, { timeout: 15000 }).catch(() => {});
       await page.fill('.xe-pc input[name="price"]', '-110');
       await page.click('.xe-pc button[type="submit"]');
@@ -182,6 +225,16 @@ const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
       await page.click('[data-act="back"]');
       await page.waitForSelector('#nhlHost .xe-game');
       chk(label + ': Back returns to the list', (await page.$$eval('#nhlHost .xe-game', (x) => x.length)) === SLATE.games.length);
+      if (SLATE.games.length > 2) {
+        const g2 = SLATE.games[2];
+        await page.click('#nhlHost table.xe-vs .xe-lnk[data-game="' + g2.game_id + '"]');
+        await page.waitForSelector('#nhlHost .xe-detail');
+        const ov2 = await page.textContent('#nhlHost .xe-tabp');
+        chk(label + ': the board opens a game; one without a price says there is none yet and still rates the clubs', await page.evaluate(() => location.hash) === '#research/nhl/' + g2.game_id && /No sportsbook price for this game yet/.test(ov2) && /Who is better where/.test(ov2), ov2.slice(0, 300));
+        chk(label + ': no horizontal scroll on an unpriced game', await noHScroll(page), await overflowers(page));
+        await page.click('[data-act="back"]');
+        await page.waitForSelector('#nhlHost .xe-game');
+      }
       await page.click('[data-act="record"]');
       await page.waitForSelector('#nhlHost .xe-t caption', { timeout: 20000 });
       chk(label + ': the full record shows held-out log loss by model', await page.evaluate(() => Array.from(document.querySelectorAll('#nhlHost .xe-t caption')).some((c) => /Moneyline log loss/.test(c.textContent))));

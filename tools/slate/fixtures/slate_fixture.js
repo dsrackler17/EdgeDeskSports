@@ -71,7 +71,8 @@ function table() {
       odds: E.odds({ book: 'DraftKings', homeAbbr: 'DEN', awayAbbr: 'SEA', home: { ml: 125, line: 2.5, price: -110 }, away: { ml: -145, price: -110 }, total: 39.5, over: -110, under: -110 }) })
   ]);
   t['football/nfl|20261018'] = E.board([
-    E.event({ id: 401880002, date: '2026-10-18T13:30Z', home: T.JAX, away: T.HOUf, neutral: true, venue: 'Wembley Stadium', city: 'London', state: 'England', week: 6, status: E.status('pre') })
+    E.event({ id: 401880002, date: '2026-10-18T13:30Z', home: T.JAX, away: T.HOUf, neutral: true, venue: 'Wembley Stadium', city: 'London', state: 'England', week: 6, status: E.status('pre'),
+      odds: E.odds({ book: 'DraftKings', homeAbbr: 'JAX', awayAbbr: 'HOU', home: { ml: 110, line: 1.5, price: -110 }, away: { ml: -130, price: -110 }, total: 44.5, over: -110, under: -110 }) })
   ]);
   t['soccer/eng.1|20261012'] = E.board([
     E.event({ id: 701001, date: '2026-10-12T19:00Z', home: T.ARS, away: T.CHE, hs: 2, as: 2, status: E.status('final', { name: 'STATUS_FULL_TIME', detail: 'FT' }) })
@@ -104,7 +105,10 @@ function research() {
     home: { games: [{ key: 'cfb|401871067' }] },
     nhl: { games: [
       { game_id: 2026020090, start_utc: '2026-10-13T22:00:00Z', home: 'DET', away: 'NJD', prices: { moneyline: { fair_home: -135, fair_away: 135 }, total: { fair_line: 6 }, puck_line: { fair_home_minus_1_5: 181, fair_away_plus_1_5: -181 } } },
-      { game_id: 2026020091, start_utc: '2026-10-13T23:00:00Z', home: 'CBJ', away: 'FLA', prices: { moneyline: { fair_home: 112, fair_away: -112 }, total: { fair_line: 6.5 }, puck_line: { fair_home_minus_1_5: 260, fair_away_plus_1_5: -260 } } }],
+      /* this one carries the probabilities behind its fair prices, so the matchup view can set them against the captured price */
+      { game_id: 2026020091, start_utc: '2026-10-13T23:00:00Z', home: 'CBJ', away: 'FLA', uncertainty: { moneyline_sd_pp: 1.2 },
+        prices: { moneyline: { home: 0.4717, away: 0.5283, fair_home: 112, fair_away: -112 }, total: { expected: 6.3, fair_line: 6.5, lines: { '6.5': { over: 0.46, under: 0.54, push: 0 } } },
+          puck_line: { home_minus_1_5: 0.2778, away_plus_1_5: 0.7222, home_plus_1_5: 0.66, away_minus_1_5: 0.34, fair_home_minus_1_5: 260, fair_away_plus_1_5: -260 } } }],
       readiness: { model: { moneyline: { status: 'OUTCOME_VALIDATED' } } } },
     nhlTeams: real.nhlTeams,
     basketball: { leagues: { nba: { games: [] } } },

@@ -325,6 +325,16 @@ requests drafted, not sent). An optional Supabase warehouse
 ([`docs/engine/NHL_OPERATIONS.md`](docs/engine/NHL_OPERATIONS.md)).
 Props: [`docs/engine/NHL_PROPS.md`](docs/engine/NHL_PROPS.md).
 
+The NHL list now opens with **EdgeDesk vs the market**: for every game,
+EdgeDesk's likelier winner, the book's number with its margin removed, the
+side EdgeDesk rates higher and by how much, and whether any price pays above
+EdgeDesk's fair line. Each game's Overview adds the full comparison
+(moneyline, total and puck line when priced, with EV and the gates each price
+fails) and **Who is better where**, a club-by-club table of the ratings
+behind the price. The book's price is the DraftKings line Today's Games
+already captures from ESPN: a reference, never a verified quote, so nothing
+is called value (`lib/edgedesk_nhl_compare.js`, docs/engine/NHL.md §3a).
+
 The EdgeDesk Quant Data Pack is imported and verified (`datapack/quant_v1`,
 [`docs/engine/DATAPACK.md`](docs/engine/DATAPACK.md)). On it and on free
 multi-season sources I built and validated walk-forward brains for the NBA,

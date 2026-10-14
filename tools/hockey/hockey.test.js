@@ -14,7 +14,8 @@
                  provider spends nothing by default, an unknown host is refused
      sources     the NHL API schedule parser; sportsbook names → clubs
      spend       the quote job spends nothing without NHL_PRICES=on
-     artifacts   the committed team-game table, walk-forward record and slate
+     artifacts   the committed team-game table, walk-forward record and slate;
+                 the slate's horizon covers every day Today's Games lists
 
    Run: node tools/hockey/hockey.test.js
    =========================================================================== */
@@ -317,6 +318,12 @@ const near = (a, b, e) => Math.abs(a - b) <= (e == null ? 1e-6 : e);
     chk('record: the chosen model was chosen on the selection window', wf.selection && wf.selection.ll[wf.selection.chosen] <= wf.selection.ll.goals_only);
     chk('record: it says it is retrospective, with its availability assumption', wf.data.temporal && wf.data.temporal.point_in_time === 'RETROSPECTIVE' && /start \+ 4 h/.test(wf.leakage.basis));
     chk('record: lineup candidates are scored and reported, and a challenger was adopted only by the selection rule', wf.lineups && wf.lineups.available === true && wf.lineups.coverage.with_box_score === wf.lineups.coverage.scored_games && (wf.selection.chosen !== 'xg_lineup_projected' || wf.selection.ll.xg_lineup_projected <= wf.selection.ll.xg_no_goalie - 0.001) && wf.comparisons.xg_lineup_confirmed_vs_xg_no_goalie);
+    /* every day Today's Games lists (today and WINDOW.to days ahead, Eastern) is at most WINDOW.to + 1
+       Eastern days from any moment of today, and the NHL slate is rebuilt every three hours */
+    const HC = require(path.join(ROOT, 'hockey', 'config.js'));
+    const SW = require(path.join(ROOT, 'tools', 'slate', 'build.js')).WINDOW;
+    chk('slate: the horizon covers every day Today\'s Games lists, from any build', HC.SLATE_HORIZON_HOURS >= (SW.to + 1) * 24 + 3, [HC.SLATE_HORIZON_HOURS, SW]);
+    chk('slate: the builder prices that horizon by default', /arg\('hours', C\.SLATE_HORIZON_HOURS\)/.test(fs.readFileSync(path.join(ROOT, 'hockey', 'build_slate.js'), 'utf8')));
     const slate = JSON.parse(fs.readFileSync(path.join(ROOT, 'hockey', 'slate.json'), 'utf8'));
     chk('slate: value claims are disabled and say why', slate.readiness.value_claims.state === 'DISABLED' && slate.readiness.value_claims.reasons.length > 0);
     chk('slate: every game has prices, goalies, evidence, uncertainty and invalidators', slate.games.every((g) => g.prices.moneyline && g.prices.puck_line && g.prices.total && g.goalies && g.evidence && g.uncertainty && g.invalidators.length));
