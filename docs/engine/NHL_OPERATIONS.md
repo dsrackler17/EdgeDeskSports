@@ -5,7 +5,7 @@
 | Job | Trigger | What it does | Runner time |
 |---|---|---|---|
 | tests | every PR and push touching the NHL | brain, market test, desk, v2 suite (pricing, explanation, market labels, lab, props, warehouse sync, registry, artifacts), registry/board, both SQL suites on a real PostgreSQL, gateway guard, navigation, the panels in Chromium (desktop + 390 px) | ≈ 6 min |
-| build | every 3 h | ingests the season in progress; refreshes lineups, periods and box scores; requests prices only if authorised; prices the slate (explanations, full sheet, re-pricing inputs, challengers, market check); grades the ledger; builds player research, diagnostics/drift and the source registry; runs the suites; syncs the warehouse only if `NHL_WAREHOUSE=on`; commits only on change | ≈ 4–5 min (was ≈ 2) |
+| build | every 3 h | ingests the season in progress; refreshes lineups, periods and box scores; requests prices only if authorised; prices the slate for the next 120 hours, so every day Today's Games lists has research (explanations, full sheet, re-pricing inputs, challengers, market check); grades the ledger; builds player research, diagnostics/drift and the source registry; runs the suites; syncs the warehouse only if `NHL_WAREHOUSE=on`; commits only on change | ≈ 4–5 min (was ≈ 2) |
 | validate | weekly (Tue 10:23 UTC) | every season since 2010-11: xG refit, the production record, the market test, the lab (A–G, ablation, promotion rule), the prop record, the box-score reconciliation; rebuilds everything; commits only if every suite passes | ≈ 35–45 min (timeout raised to 120) |
 
 **Cost.** No paid service was added. GitHub Actions use rises by roughly
