@@ -21,6 +21,11 @@ and the artifact-commit procedure (`tools/ci/push_generated.sh`).
 | [`METHODS.md`](METHODS.md) | Every sport's researched method, with sources and why it fits |
 | [`DATA.md`](DATA.md) | Schemas, sources, licensing, update cadence, cost, quotas, provenance |
 | [`DATAPACK.md`](DATAPACK.md) | How the EdgeDesk Quant Data Pack was integrated, step by step, and what it could not supply |
+| [`NHL_AUDIT.md`](NHL_AUDIT.md) | The NHL audit and dependency map that preceded the research-engine build (2026-10-13) |
+| [`NHL_LAB.md`](NHL_LAB.md) | Every NHL challenger (A–G) against production, the feature ablation, the score-distribution tests, two amendments, every market's held-out status, diagnostics |
+| [`NHL_PROPS.md`](NHL_PROPS.md) | NHL player-prop research: model, record, disclosures |
+| [`NHL_SOURCES.md`](NHL_SOURCES.md) | The data-source registry, authorisation, the box-score reconciliation, what each dataset adds |
+| [`NHL_OPERATIONS.md`](NHL_OPERATIONS.md) | Jobs, switches, costs, deployment, model versioning, rollback, monitoring |
 
 ## Implementation checklist
 
@@ -47,7 +52,8 @@ and the artifact-commit procedure (`tools/ci/push_generated.sh`).
 | 18 | Missingness diagnostics; CI for the lab (`.github/workflows/lab.yml`) | done |
 | 19 | The NHL Data Pack (ESPN, full 2024-25) imported and verified (11/11 tables, 34/34 checks); reconciled event by event against my feed; the blocked-shot attribution error it exposed fixed across every season; officials and the pack's lagged features measured | done (`datapack/nhl_v1`, `tools/datapack/verify_nhl.js`, `hockey/crosscheck/`, `hockey/research/`) |
 | 20 | The NFL Data Pack (nflverse 2025-2026, 2026 partial) imported and verified (42/42 files, 18/18 checks, every derived table recomputed from play-by-play); reconciled with games.csv and my live team-week input; GSIS↔PFR↔ESPN crosswalk; offseason carryover and QB-change research | done (`datapack/nfl_v1`, `tools/datapack/verify_nfl.js`, `football/nfl/pack_crosscheck.js`, `football/nfl/research/`) |
-| 21 | The dedicated NBA engine (`nba/`): warehouse 2002-03 → today, lineups and shots from play-by-play, seventeen candidates on a sealed walk-forward, one distribution for every market, props, scenarios, the panel, the desk, the `nbahist` schema, CI | done (docs/engine/NBA.md); prices and value **need authorisation and a market archive** |
+| 21 | NHL research engine: audit; box scores, periods and reconciliation; model lab (logistic, trees, ensembles, distribution shape, ablation, promotion rule); two amendments (period profile, parsimony); full market sheet incl. alternates and the first period; exact explanation of every price; market-comparison labels; diagnostics and drift; player-prop research; source registry and access requests; Supabase warehouse (off until authorised); tabbed game page with in-browser scenarios | done (`NHL_LAB.md`, `NHL_PROPS.md`, `NHL_SOURCES.md`, `NHL_OPERATIONS.md`) |
+| 22 | The dedicated NBA engine (`nba/`): warehouse 2002-03 → today, lineups and shots from play-by-play, seventeen candidates on a sealed walk-forward, one distribution for every market, props, scenarios, the panel, the desk, the `nbahist` schema, CI | done (docs/engine/NBA.md); prices and value **need authorisation and a market archive** |
 
 ## What I found in the repository first
 

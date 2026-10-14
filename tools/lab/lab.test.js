@@ -126,7 +126,13 @@ const reg2 = JSON.parse(fs.readFileSync(path.join(ROOT, 'engine', 'registry.json
 ok('registry: all 12 sports carry the computed ladder', reg2.sports.length === 12 && reg2.sports.every((s) => s.readiness.ladder && ['data_loaded', 'model_trained', 'validation_passed', 'market_tested'].every((k) => typeof s.readiness.ladder[k].done === 'boolean')));
 ok('registry: no value claim is on anywhere (nothing beat a close)', reg2.value_claims_enabled.length === 0 && reg2.sports.every((s) => !s.readiness.value_claims_any));
 ok('registry: a validated headline names the markets it covers', reg2.sports.filter((s) => s.readiness.state === 'OUTCOME_VALIDATED').every((s) => s.readiness.scope.length > 0 && s.readiness.label.indexOf(s.readiness.scope[0]) > 0));
-ok('registry: a sport without a model is never validated (UFC, college baseball)', ['mma', 'college_baseball'].every((id) => reg2.sports.find((s) => s.id === id).readiness.state === 'RESEARCH_ONLY'));
+ok('registry: a sport without a model is never validated (UFC)', ['mma'].every((id) => reg2.sports.find((s) => s.id === id).readiness.state === 'RESEARCH_ONLY'));
+{
+  /* college baseball has a brain (college_baseball/); it is validated only if its own holdout record says so */
+  const cb = reg2.sports.find((s) => s.id === 'college_baseball'); const wfCb = fs.existsSync(path.join(ROOT, 'college_baseball/validation/walkforward.json')) ? JSON.parse(fs.readFileSync(path.join(ROOT, 'college_baseball/validation/walkforward.json'), 'utf8')) : null;
+  const held = wfCb && wfCb.status && wfCb.status.moneyline.status === 'OUTCOME_VALIDATED';
+  ok('registry: college baseball is validated only by its own holdout record, and never claims value', (held || cb.readiness.state !== 'OUTCOME_VALIDATED') && !cb.readiness.value_claims_any, cb.readiness.state);
+}
 const board = JSON.parse(fs.readFileSync(path.join(ROOT, 'engine', 'board.json'), 'utf8'));
 ok('board: PASS with no fresh price, and every soccer row is held on stale data or research', board.verdict === 'PASS' && board.candidates.filter((c) => c.sport_id === 'soccer').every((c) => c.status === 'RESEARCH'));
 

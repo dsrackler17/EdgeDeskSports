@@ -92,4 +92,22 @@ for (const sport of ['nfl', 'cfb']) {
 const nfl = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'validation', 'pricing_nfl.json'), 'utf8'));
 chk('the NFL spread tier is stated with the model and the close MAE side by side', nfl.markets.spread.pooled.model_mae > nfl.markets.spread.pooled.close_mae && nfl.markets.spread.blend.holdouts.length >= 5);
 chk('the NFL frame discards the shipped seeds', /seeds discarded/.test(nfl.frame.replay));
+
+/* ---- the quarterback layer ---------------------------------------------- */
+const qRows = ctxRows.map((r, i) => Object.assign({}, r, { id: 'g' + i, model_total: 44, close_total: 44, points: 44 + (i % 9) - 4, p_home: 0.5, ml_home: -110, ml_away: -110, ctx: Object.assign({}, r.ctx, { qb_change_home: i % 7 === 0, qb_change_away: false }) }));
+const qArc = { scenario: 'CONFIRMED_STARTER', scenario_basis: 'synthetic', counts: { first_season: 2016, last_season: 2025 } };
+const qSame = V.qbLayer({ rows: qRows }, { rows: qRows, qb: { starts_with_pass_dev: 1, games_without_record: 0 }, absorbed: 1 }, { rows: qRows }, qArc);
+chk('an arm that moves nothing is NO_DIFFERENCE, fails the intake and stays off the live board', qSame.verdict === 'NO_DIFFERENCE' && qSame.status === 'REJECTED' && qSame.spread.raw.improvement === 0 && qSame.total.identical === true && /not wired/.test(qSame.live), { v: qSame.verdict, s: qSame.status, r: qSame.reasons });
+const qPerfect = qRows.map((r) => Object.assign({}, r, { model: r.margin }));
+const qBetter = V.qbLayer({ rows: qRows }, { rows: qPerfect, qb: { starts_with_pass_dev: 1, games_without_record: 0 }, absorbed: 1 }, { rows: qRows }, qArc);
+chk('an arm that clears the intake on the held-out blend is BETTER and only then eligible for the live board', qBetter.verdict === 'BETTER' && qBetter.status === 'VALIDATED' && /eligible/.test(qBetter.live), { v: qBetter.verdict, s: qBetter.status, r: qBetter.reasons });
+const qWorse = V.qbLayer({ rows: qPerfect }, { rows: qRows, qb: { starts_with_pass_dev: 1, games_without_record: 0 }, absorbed: 1 }, { rows: qPerfect }, qArc);
+chk('an arm that is measurably worse says so', qWorse.verdict === 'WORSE' && qWorse.status === 'REJECTED', { v: qWorse.verdict, s: qWorse.status });
+const ql = nfl.qb_layer;
+chk('the committed NFL record measures the quarterback layer, labelled a confirmed-starter scenario, never a pregame fact', ql && ql.scenario === 'CONFIRMED_STARTER' && /no announcement time/.test(ql.scenario_basis) && ['BETTER', 'WORSE', 'NO_DIFFERENCE'].includes(ql.verdict) && (ql.verdict === 'BETTER') === (ql.status === 'VALIDATED'), ql && { v: ql.verdict, s: ql.status });
+chk('the committed comparison covers the frozen window with the starters actually absorbed, and the total cannot move', ql && ql.spread.raw.window === '2016-2025' && ql.spread.raw.n > 2000 && ql.coverage.starts_with_pass_dev > 9000 && ql.total.identical === true, ql && ql.coverage);
+/* the live board absorbs quarterback starts only once the record says the layer earned it */
+const appSrc = fs.readFileSync(path.join(ROOT, 'app.html'), 'utf8');
+const liveAbsorb = appSrc.match(/E\.nfl\.absorbGame\(st,\[\[g\.home_team,hr\],\[g\.away_team,ar\]\],([^)]*)\)/);
+chk('the live board’s NFL absorb matches the record: no quarterback starts unless the layer is BETTER', liveAbsorb && (ql.verdict === 'BETTER' || liveAbsorb[1].trim() === '[]'), liveAbsorb && liveAbsorb[1]);
 done();

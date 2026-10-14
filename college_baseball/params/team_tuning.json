@@ -1,0 +1,96 @@
+{
+ "models": {
+  "elo": {
+   "cfg": {
+    "k": 16,
+    "home": 45,
+    "carry": 1
+   },
+   "selection_log_loss": 0.61597,
+   "n": 66710,
+   "evaluated": 24,
+   "window": [
+    2014,
+    2022
+   ]
+  },
+  "pythag": {
+   "cfg": {
+    "prior_games": 20,
+    "carry": 0.6,
+    "home_logit": 0.3
+   },
+   "selection_log_loss": 0.62746,
+   "n": 66710,
+   "evaluated": 27,
+   "window": [
+    2014,
+    2022
+   ]
+  },
+  "hier": {
+   "cfg": {
+    "sigma_team": 0.12,
+    "sigma_conf": 0.05,
+    "carry_team": 1,
+    "phi": 1.25,
+    "halflife_days": 180
+   },
+   "selection_log_loss": 0.6111,
+   "n": 66710,
+   "evaluated": 21,
+   "window": [
+    2014,
+    2022
+   ]
+  },
+  "poisson_flat": {
+   "cfg": {
+    "sigma_team": 0.15,
+    "carry_team": 1,
+    "phi": 1.8
+   },
+   "selection_log_loss": 0.61231,
+   "n": 66710,
+   "evaluated": 12,
+   "window": [
+    2014,
+    2022
+   ]
+  },
+  "massey": {
+   "cfg": {
+    "sigma": 1.2,
+    "carry": 0.95
+   },
+   "selection_log_loss": 0.61184,
+   "n": 66710,
+   "evaluated": 8,
+   "window": [
+    2014,
+    2022
+   ]
+  },
+  "bt": {
+   "cfg": {
+    "sigma": 0.45,
+    "carry": 0.95
+   },
+   "selection_log_loss": 0.61459,
+   "n": 66710,
+   "evaluated": 8,
+   "window": [
+    2014,
+    2022
+   ]
+  }
+ },
+ "dist": {
+  "family": "nb",
+  "r": 3.256
+ },
+ "sim_frailty": {
+  "team_k": 12,
+  "shared_k": 16
+ }
+}

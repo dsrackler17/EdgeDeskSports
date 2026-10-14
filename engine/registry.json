@@ -17,7 +17,7 @@
    "brain": {
     "status": "BUILT",
     "id": "edgedesk_nhl_v1",
-    "approach": "Score- and opponent-adjusted 5v5 expected-goals ratings, special-teams xG and penalty rates, goalie goals-saved-above-expected, rest and back-to-backs → a Poisson regression for each team's regulation goals → an exact score distribution with empirical score effects and goalie-pull dynamics, 3-on-3 overtime and the shootout → every market's fair price.",
+    "approach": "Score- and opponent-adjusted 5v5 expected-goals ratings, goals-for/against and finishing ratings, rest and back-to-backs → a Poisson regression for each team's regulation goals → an exact score distribution with empirical score effects by period and lead, goalie-pull dynamics, 3-on-3 overtime and the shootout → every market's fair price, decomposed exactly into its factors. Goalie GSAx drives the goalie scenarios; special-teams ratings are measured and shown but left the price on 2026-10-13 (no out-of-sample benefit).",
     "why": "Hockey is low-scoring and noisy: goals are a weak signal, shot quality (xG) is a stronger and more stable one (macdonald2012). Leaders sit back and trailing teams pull the goalie, so margins and totals are not plain Poisson (tulsky2012, beaudoin2010). A full distribution, not a single number, is what the moneyline, the puck line and the total all need.",
     "candidates": [
      {
@@ -51,19 +51,42 @@
       "sources": [
        "karlis2003"
       ]
+     },
+     {
+      "name": "Regularised logistic regression and gradient-boosted trees on the same point-in-time features (+ travel, form, luck)",
+      "role": "challengers, rejected (worse by 0.0013 and 0.0045 log loss on selection; hockey/validation/nhl_lab.json)",
+      "sources": []
+     },
+     {
+      "name": "Stacked and equal-weight ensembles of every model",
+      "role": "challengers, rejected (not better by 0.001 on selection)",
+      "sources": []
+     },
+     {
+      "name": "Pace overdispersion and 60-minute draw inflation in the score distribution",
+      "role": "tested, rejected (no likelihood gain on selection)",
+      "sources": [
+       "karlis2003"
+      ]
+     },
+     {
+      "name": "Score effects by period (the first period apart from the second)",
+      "role": "adopted 2026-10-13 (first-period prices were 3-5 points too high)",
+      "sources": [
+       "beaudoin2010"
+      ]
      }
     ],
     "inputs": [
      "5v5 xG for/against (score-adjusted, opponent-adjusted)",
-     "goals for/against",
-     "power-play xG, penalty-kill xG against, penalty minutes drawn/taken",
-     "goalie GSAx (projected starter; confirmed when recorded)",
+     "goals for/against and finishing",
      "rest days, back-to-backs",
-     "league scoring level"
+     "league scoring level",
+     "goalie GSAx (scenarios: projected starter; confirmed when recorded)"
     ],
     "not_modelled": [
      "skater injuries and late scratches",
-     "travel distance and time zones (not tested yet)",
+     "travel distance, time zones, schedule congestion, recent form (tested 2026-10-13: no out-of-sample benefit, shown as context)",
      "line combinations",
      "referees (screened on 2024-25: no repeatable effect on penalties, power-play time or goals; no assignment timestamps)",
      "neutral-site games (priced with home ice: my feed has no neutral flag; 4 such games in 2024-25)"
@@ -71,10 +94,11 @@
    },
    "readiness": {
     "state": "OUTCOME_VALIDATED",
-    "label": "Validated vs outcomes — moneyline, spread",
+    "label": "Validated vs outcomes — moneyline, spread, team_total",
     "scope": [
      "moneyline",
-     "spread"
+     "spread",
+     "team_total"
     ],
     "primary": "moneyline",
     "primary_state": "OUTCOME_VALIDATED",
@@ -87,7 +111,7 @@
       "outcome": "VALIDATED",
       "market": "NOT_TESTED",
       "n": 7945,
-      "headline": "outcomes: OUTCOME_VALIDATED; held-out log loss 0.66271; vs close: not tested; vs Elo Δ log loss -0.003833 (95% -0.005648 to -0.00212)",
+      "headline": "outcomes: OUTCOME_VALIDATED; held-out log loss 0.66286; vs close: not tested; vs Elo Δ log loss -0.003687 (95% -0.005417 to -0.002134)",
       "file": "hockey/validation/nhl_walkforward.json"
      },
      "spread": {
@@ -97,7 +121,7 @@
       "outcome": "VALIDATED",
       "market": "NOT_TESTED",
       "n": 7945,
-      "headline": "outcomes: OUTCOME_VALIDATED; held-out log loss 0.61255; vs close: not tested",
+      "headline": "outcomes: OUTCOME_VALIDATED; held-out log loss 0.61247; vs close: not tested",
       "file": "hockey/validation/nhl_walkforward.json"
      },
      "total": {
@@ -107,7 +131,7 @@
       "outcome": "PROVISIONAL",
       "market": "NOT_TESTED",
       "n": 7945,
-      "headline": "outcomes: PROVISIONAL (calibration slope 0.81); held-out log loss 0.68168; vs close: not tested",
+      "headline": "outcomes: PROVISIONAL (calibration slope 0.779); held-out log loss 0.68144; vs close: not tested",
       "file": "hockey/validation/nhl_walkforward.json"
      },
      "regulation_3way": {
@@ -117,24 +141,34 @@
       "outcome": "PROVISIONAL",
       "market": "NOT_TESTED",
       "n": null,
-      "headline": "outcomes: PROVISIONAL (no binary calibration rule defined for a 3-way market yet; log loss reported); held-out log loss 1.03847; vs close: not tested",
-      "file": "hockey/validation/nhl_walkforward.json"
+      "headline": "outcomes: PROVISIONAL (home: mean p off by 0.0203; draw: mean p off by -0.0211; draw: calibration slope 0.681); vs close: not tested",
+      "file": "hockey/validation/nhl_lab.json"
+     },
+     "team_total": {
+      "state": "OUTCOME_VALIDATED",
+      "value_claims": false,
+      "reason": "never tested against the closing market",
+      "outcome": "VALIDATED",
+      "market": "NOT_TESTED",
+      "n": 7945,
+      "headline": "outcomes: OUTCOME_VALIDATED (team totals 2.5, both sides; slopes 0.946, 1.082); vs close: not tested",
+      "file": "hockey/validation/nhl_lab.json"
      }
     },
     "value_claims_any": false,
     "ladder": {
      "data_loaded": {
       "done": true,
-      "detail": "17236 games (2011-2027), retrospective; second source 2024-25: 1398/1398 matched, every final agrees"
+      "detail": "17239 games (2011-2027), retrospective; second source 2024-25: 1398/1398 matched, every final agrees"
      },
      "model_trained": {
       "done": true,
-      "detail": "xg_no_goalie"
+      "detail": "xg_core"
      },
      "validation_passed": {
       "done": true,
       "partial": false,
-      "detail": "2 of 4 markets validated vs outcomes; primary market (moneyline): outcome validated"
+      "detail": "3 of 5 markets validated vs outcomes; primary market (moneyline): outcome validated"
      },
      "market_tested": {
       "done": false,
@@ -144,12 +178,13 @@
    },
    "evidence_files": [
     "hockey/validation/nhl_walkforward.json",
+    "hockey/validation/nhl_lab.json",
     "hockey/xg/report.json",
     "hockey/validation/nhl_crosscheck_espn.json",
     "hockey/validation/nhl_blocked_attribution.json",
     "datapack/nhl_v1/EDGEDESK_VERIFICATION.json"
    ],
-   "evidence_generated_at": "2026-10-13T12:49:14.617Z",
+   "evidence_generated_at": "2026-10-14T01:42:12.428Z",
    "data": [
     {
      "source": "sportsdataverse fastRhockey-nhl-data (play-by-play, goalie box, game info)",
@@ -217,7 +252,7 @@
    "brain": {
     "status": "BUILT",
     "id": "edgedesk_football NFL engine (football/engine.js)",
-    "approach": "Opponent-adjusted EPA per play and success rate, a quarterback layer, rest/roof/surface/weather context → projected margin and total → linemaker distributions (football/linemaker) and the validated market blend (football/validation/pricing_nfl.json).",
+    "approach": "Opponent-adjusted EPA per play and success rate, a quarterback layer (on the board, held at its end-of-training seeds), rest/roof/surface/weather context → projected margin and total → linemaker distributions (football/linemaker) and the validated market blend (football/validation/pricing_nfl.json).",
     "why": "EPA (yurko2019) measures play value against down, distance and field position; scores are near-normal around the projection with key-number structure (glickman1998).",
     "candidates": [
      {
@@ -231,14 +266,15 @@
     ],
     "inputs": [
      "nflverse team-week EPA per play, pass and rush (aggregated from play-by-play)",
-     "a QB passing-EPA layer (the scored replays pass no QB starts, so the layer is not yet tested; football/validation/nfl_pack_research.json measures a starting-QB change at about −3 points)",
+     "a QB passing-EPA layer (fed the listed starters, the scored replays measure it no different on 2016-2025, so the board keeps it at its trained seeds: football/validation/pricing_nfl.json qb_layer; football/validation/nfl_pack_research.json measures a starting-QB change at about −3 points, of which the layer moves about 0.24)",
      "official injury report (a ruled-out starting QB swaps to the next starter)",
      "roof, temperature and wind (context model)"
     ],
     "not_modelled": [
      "offensive line continuity as a priced input (researched, rejected by the feature intake)",
      "CPOE, snap counts, PFR pressure and NGS measures (in the NFL data pack, not in the game model)",
-     "depth charts and injury reports with publication times (the pack has neither timestamp)"
+     "depth charts and injury reports with publication times (the pack has neither timestamp)",
+     "in-season quarterback starts on the board (the listed starters are recorded after the game; replayed as a confirmed-starter scenario they did not earn a place)"
     ]
    },
    "readiness": {
@@ -320,7 +356,7 @@
     "football/validation/nfl_pack_crosscheck.json",
     "football/validation/nfl_pack_research.json"
    ],
-   "evidence_generated_at": "2026-10-11T05:27:06.998Z",
+   "evidence_generated_at": "2026-10-13T16:59:12.899Z",
    "data": [
     {
      "source": "nflverse (GitHub)",
@@ -470,7 +506,7 @@
     "football/validation/linemaker_cfb.json",
     "football/validation/pricing_cfb.json"
    ],
-   "evidence_generated_at": "2026-10-11T05:27:31.955Z",
+   "evidence_generated_at": "2026-10-13T16:59:31.480Z",
    "data": [
     {
      "source": "cfbfastR-data / sportsdataverse",
@@ -663,50 +699,86 @@
    ],
    "product": "ACTIVE",
    "brain": {
-    "status": "NOT_BUILT",
-    "id": null,
-    "approach": "Designed: opponent-adjusted run ratings (a ridge-regularised attack/defence run model, as for soccer goals) with weekend-rotation starters and park effects.",
-    "why": "Hundreds of teams with few common opponents: shrinkage and opponent adjustment matter more than pitch-level detail, which is not available.",
+    "status": "BUILT",
+    "id": "cbase_v1.0.0 (college_baseball/)",
+    "approach": "Opponent-adjusted runs for and against, partially pooled team within conference within division (quasi-Poisson MAP with carried priors, realignment-aware), shrunk park effects and connectivity-aware rating uncertainty; a fitted run distribution and an inning-level simulator (seven-inning doubleheaders, measured run rule, walk-offs, extra innings) price every market; starter projections and bullpen availability are tested as a pitcher-aware hybrid.",
+    "why": "Hundreds of teams with very unequal schedules and few common opponents: shrinkage toward the conference and opponent adjustment matter most, and conference strength is identified only by non-conference games. Rules (seven-inning games, run rule) are measured, not assumed.",
     "candidates": [
      {
-      "name": "attack/defence run ratings",
-      "role": "designed",
+      "name": "hierarchical opponent-adjusted run model",
+      "role": "built, walk-forward",
       "sources": [
        "maher1982"
       ]
+     },
+     {
+      "name": "flat run model, Massey, Bradley-Terry",
+      "role": "built, walk-forward",
+      "sources": [
+       "maher1982"
+      ]
+     },
+     {
+      "name": "Elo, Pythagenpat, home rate",
+      "role": "baselines"
+     },
+     {
+      "name": "pitcher-aware hybrid (projected starter, bullpen availability)",
+      "role": "built, walk-forward 2024-2026",
+      "sources": [
+       "tango2007"
+      ]
+     },
+     {
+      "name": "GLM, gradient boosting, stacked ensemble",
+      "role": "built, adopted only if validated"
      }
     ],
     "inputs": [
-     "ESPN results union (tools/cbb)",
-     "data pack: 313-game explicit-date sample"
+     "NCAA results 2012-2026, box scores 2024-2026, play-by-play 2017-2026 (sportsdataverse/baseballr-data, stats.ncaa.org derived)"
     ],
     "not_modelled": [
-     "starters",
-     "weather"
+     "weather",
+     "lineups and injuries",
+     "pitcher handedness",
+     "confirmed starters (projected only)"
     ]
    },
    "readiness": {
-    "state": "RESEARCH_ONLY",
-    "label": "Research only",
-    "scope": [],
+    "state": "OUTCOME_VALIDATED",
+    "label": "Validated vs outcomes — moneyline",
+    "scope": [
+     "moneyline"
+    ],
     "primary": "moneyline",
-    "primary_state": null,
+    "primary_state": "OUTCOME_VALIDATED",
     "partial": false,
-    "markets": {},
+    "markets": {
+     "moneyline": {
+      "state": "OUTCOME_VALIDATED",
+      "value_claims": false,
+      "reason": "never tested against the closing market",
+      "outcome": "VALIDATED",
+      "market": "NOT_TESTED",
+      "n": 16696,
+      "headline": "outcomes (HOLDOUT): OUTCOME_VALIDATED; log loss 0.60257; vs elo_cal Δ -0.005471 (95% -0.007445 to -0.003488); vs close: not tested",
+      "file": "college_baseball/validation/walkforward.json"
+     }
+    },
     "value_claims_any": false,
     "ladder": {
      "data_loaded": {
       "done": true,
-      "detail": "a 313-game sample (data pack) and the live ESPN results union: too sparse for a validated model"
+      "detail": "111108 games (2012-2026), retrospective"
      },
      "model_trained": {
-      "done": false,
-      "detail": null
+      "done": true,
+      "detail": "hier_cal"
      },
      "validation_passed": {
-      "done": false,
+      "done": true,
       "partial": false,
-      "detail": "nothing scored; primary market (moneyline): none"
+      "detail": "1 of 1 markets validated vs outcomes; primary market (moneyline): outcome validated"
      },
      "market_tested": {
       "done": false,
@@ -714,31 +786,37 @@
      }
     }
    },
-   "evidence_files": [],
-   "evidence_generated_at": null,
+   "evidence_files": [
+    "college_baseball/validation/walkforward.json",
+    "college_baseball/validation/pitcher_walkforward.json",
+    "college_baseball/validation/audit.json",
+    "college_baseball/validation/release_gates.json"
+   ],
+   "evidence_generated_at": "2026-10-14T02:56:24.029Z",
    "data": [
     {
-     "source": "ESPN public endpoints (tools/cbb, college-baseball.yml)",
-     "what": "schedules and results",
-     "cadence": "daily",
-     "license": "public endpoints",
+     "source": "sportsdataverse/baseballr-data (stats.ncaa.org)",
+     "what": "schedules and results 2012-2026, box scores 2024-2026, play-by-play 2017-2026, rosters",
+     "cadence": "daily in season",
+     "license": "MIT repo; NCAA terms govern the data (commercial use not verified)",
      "cost": "free"
     },
     {
-     "source": "Data pack",
-     "what": "313 games sampled on explicit dates (monthly queries returned nothing)",
-     "cadence": "one-off",
-     "license": "research copy",
+     "source": "ESPN public endpoints (tools/cbb, college-baseball.yml)",
+     "what": "schedules and results (the existing cbb union)",
+     "cadence": "daily",
+     "license": "public endpoints",
      "cost": "free"
     }
    ],
    "gaps": [],
    "blockers": [
-    "No multi-season results archive: the pack sample (313 games) cannot validate a model.",
-    "No captured prices."
+    "No authorised college-baseball price feed (baseball_ncaa is not in the odds gateway): the market is NOT_TESTED and no value is claimed.",
+    "Commercial rights to the NCAA-derived data are not verified (release gate G1).",
+    "2023 results end on 2023-03-28 in the source."
    ],
    "enable": [
-    "Wire a complete multi-season college results archive, then build and validate the run-ratings brain."
+    "Owner: sign off the NCAA data terms (college_baseball/research/LICENSING.md) and authorise baseball_ncaa price capture; then run the market test on captured closes."
    ]
   },
   {
@@ -1857,9 +1935,9 @@
   }
  ],
  "summary": {
-  "OUTCOME_VALIDATED": 9,
-  "RESEARCH_ONLY": 2,
-  "RETIRED": 1
+  "OUTCOME_VALIDATED": 10,
+  "RETIRED": 1,
+  "RESEARCH_ONLY": 1
  },
  "partial_validation": [
   "cfb",
@@ -1907,5 +1985,5 @@
   "UNAVAILABLE": "Unavailable",
   "RETIRED": "Retired"
  },
- "generated_at": "2026-10-13T13:20:17.878Z"
+ "generated_at": "2026-10-14T03:08:37.388Z"
 }

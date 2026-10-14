@@ -28,6 +28,8 @@ const SOURCES = {
   game_info: (season) => `https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/game_info/parquet/game_info_${season}.parquet`,
   /* per-game skater box scores: who dressed, and their time on ice (the lineup input) */
   skater_box: (season) => `https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_${season}.parquet`,
+  /* per-game team box score (goals, shots on goal, power-play goals, PIM, saves): the reconciliation's second view */
+  team_box: (season) => `https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_${season}.parquet`,
   /* sportsdataverse/fastRhockey-nhl-raw: the season schedule (api-web club-schedule-season union), incl. future games */
   schedule: (season) => `https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-raw/main/nhl/schedules/parquet/nhl_schedule_${season}.parquet`,
   /* the NHL's own public web API — primary for today's schedule and game state in CI */
@@ -73,11 +75,15 @@ const PBP_COLUMNS = [
   'period', 'period_type', 'period_seconds', 'game_seconds', 'home_score', 'away_score',
   'strength_state', 'home_skaters', 'away_skaters', 'empty_net', 'extra_attacker',
   'home_goalie_in', 'away_goalie_in', 'x_fixed', 'y_fixed',
-  'event_player_1_id', 'event_goalie_id', 'home_goalie_id', 'away_goalie_id',
+  'event_player_1_id', 'event_player_2_id', 'event_player_3_id', 'event_goalie_id', 'home_goalie_id', 'away_goalie_id',
   'penalty_minutes', 'penalty_severity', 'xg',
 ];
 const GOALIE_COLUMNS = ['game_id', 'home_away', 'team_abbrev', 'player_id', 'player_name', 'starter', 'toi', 'shots_against', 'goals_against', 'decision'];
 const SKATER_COLUMNS = ['game_id', 'game_date', 'home_away', 'team_abbrev', 'player_id', 'player_name', 'position', 'toi'];
+/* official box scores, for the reconciliation (hockey/crosscheck/boxscore.js) and the player research (hockey/props/) */
+const SKATER_BOX_COLUMNS = ['game_id', 'game_date', 'home_away', 'team_abbrev', 'player_id', 'player_name', 'position', 'goals', 'assists', 'points', 'shots_on_goal', 'power_play_goals', 'pim', 'hits', 'blocked_shots', 'toi', 'shifts'];
+const GOALIE_BOX_COLUMNS = ['game_id', 'game_date', 'home_away', 'team_abbrev', 'player_id', 'player_name', 'starter', 'toi', 'shots_against', 'saves', 'goals_against', 'even_strength_shots_against', 'power_play_shots_against', 'shorthanded_shots_against', 'decision'];
+const TEAM_BOX_COLUMNS = ['game_id', 'game_date', 'home_away', 'team_abbrev', 'goals', 'shots_on_goal', 'power_play_goals', 'pim', 'hits', 'blocked_shots', 'saves', 'goals_against'];
 const SCHEDULE_COLUMNS = ['game_id', 'season_full', 'game_type', 'game_date', 'game_time', 'home_team_abbr', 'away_team_abbr', 'home_score', 'away_score', 'game_state', 'venue'];
 
-module.exports = { ROOT, HOCKEY, FIRST_SEASON, CURRENT_SEASON, currentSeason, SOURCES, LICENSE, PATHS, SCHEMA, PBP_COLUMNS, GOALIE_COLUMNS, SKATER_COLUMNS, SCHEDULE_COLUMNS };
+module.exports = { ROOT, HOCKEY, FIRST_SEASON, CURRENT_SEASON, currentSeason, SOURCES, LICENSE, PATHS, SCHEMA, PBP_COLUMNS, GOALIE_COLUMNS, SKATER_COLUMNS, SCHEDULE_COLUMNS, SKATER_BOX_COLUMNS, GOALIE_BOX_COLUMNS, TEAM_BOX_COLUMNS };

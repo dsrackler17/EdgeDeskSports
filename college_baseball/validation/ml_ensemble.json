@@ -1,0 +1,321 @@
+{
+ "schema": "edgedesk_cbase_ml_ensemble_v1",
+ "point_in_time": "RETROSPECTIVE",
+ "features": [
+  "logit_hier",
+  "logit_elo",
+  "logit_massey",
+  "logit_pythag",
+  "log_run_ratio",
+  "hier_sd",
+  "min_info",
+  "neutral",
+  "conf_game",
+  "weekend",
+  "dh",
+  "tourney",
+  "days_into_season"
+ ],
+ "fitted_on": "SELECTION 2014-2022",
+ "scored_on": "VALIDATION 2023-2024",
+ "glm": {
+  "beta": [
+   0.4382,
+   1.2579,
+   0.1164,
+   0.1535,
+   -0.0868,
+   -0.5942,
+   0.0543,
+   -0.008,
+   -0.0279,
+   -0.037,
+   0.009,
+   0,
+   -0.0308,
+   0.0523
+  ],
+  "l2": 1
+ },
+ "gbm": {
+  "trees": 150,
+  "depth": 2,
+  "lr": 0.05,
+  "min_leaf": 300,
+  "seconds": 12.094,
+  "split_importance": {
+   "logit_hier": 94,
+   "logit_elo": 80,
+   "logit_massey": 62,
+   "logit_pythag": 52,
+   "log_run_ratio": 61,
+   "hier_sd": 6,
+   "min_info": 25,
+   "neutral": 16,
+   "conf_game": 17,
+   "weekend": 0,
+   "dh": 0,
+   "tourney": 6,
+   "days_into_season": 31
+  }
+ },
+ "ensemble": {
+  "members": [
+   "hier_cal",
+   "elo_cal",
+   "massey_cal",
+   "pythag_cal"
+  ],
+  "weights": [
+   0.0195,
+   0.8112,
+   0.1365,
+   0.1757,
+   -0.1274
+  ],
+  "block_weights": [
+   {
+    "seasons": [
+     2014,
+     2016
+    ],
+    "n": 24412,
+    "weights": [
+     0.039,
+     1.014,
+     0.062,
+     0.027,
+     -0.091
+    ]
+   },
+   {
+    "seasons": [
+     2017,
+     2019
+    ],
+    "n": 24603,
+    "weights": [
+     0.013,
+     0.817,
+     0.115,
+     0.186,
+     -0.126
+    ]
+   },
+   {
+    "seasons": [
+     2020,
+     2022
+    ],
+    "n": 17695,
+    "weights": [
+     0,
+     0.588,
+     0.247,
+     0.305,
+     -0.146
+    ]
+   }
+  ],
+  "weight_spread_across_blocks": {
+   "hier_cal": 0.426,
+   "elo_cal": 0.185,
+   "massey_cal": 0.278,
+   "pythag_cal": 0.055
+  }
+ },
+ "windows": {
+  "SELECTION": {
+   "n": 66710,
+   "models": {
+    "chosen": {
+     "n": 66710,
+     "log_loss": 0.60922,
+     "brier": 0.21144,
+     "citl": -0.0043,
+     "slope": 1.006
+    },
+    "hier": {
+     "n": 66710,
+     "log_loss": 0.61111,
+     "brier": 0.21215,
+     "citl": -0.0283,
+     "slope": 1.068
+    },
+    "elo": {
+     "n": 66710,
+     "log_loss": 0.61586,
+     "brier": 0.21422,
+     "citl": 0.0009,
+     "slope": 0.995
+    },
+    "glm": {
+     "n": 66710,
+     "log_loss": 0.60832,
+     "brier": 0.21104,
+     "citl": 0,
+     "slope": 1
+    },
+    "gbm": {
+     "n": 66710,
+     "log_loss": 0.60764,
+     "brier": 0.21069,
+     "citl": 0,
+     "slope": 1.033
+    },
+    "ens": {
+     "n": 66710,
+     "log_loss": 0.60885,
+     "brier": 0.21129,
+     "citl": 0,
+     "slope": 1
+    }
+   },
+   "comparisons": {
+    "glm_vs_chosen": {
+     "n": 66710,
+     "blocks": 1006,
+     "mean_diff": -0.000899,
+     "ci95": [
+      -0.001255,
+      -0.000587
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "gbm_vs_glm": {
+     "n": 66710,
+     "blocks": 1006,
+     "mean_diff": -0.000675,
+     "ci95": [
+      -0.001016,
+      -0.000332
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "gbm_vs_chosen": {
+     "n": 66710,
+     "blocks": 1006,
+     "mean_diff": -0.001574,
+     "ci95": [
+      -0.002008,
+      -0.001163
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "ens_vs_chosen": {
+     "n": 66710,
+     "blocks": 1006,
+     "mean_diff": -0.000363,
+     "ci95": [
+      -0.00059,
+      -0.00014
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   }
+  },
+  "VALIDATION": {
+   "n": 11950,
+   "models": {
+    "chosen": {
+     "n": 11950,
+     "log_loss": 0.59375,
+     "brier": 0.20471,
+     "citl": -0.0021,
+     "slope": 1.008
+    },
+    "hier": {
+     "n": 11950,
+     "log_loss": 0.59705,
+     "brier": 0.206,
+     "citl": -0.0335,
+     "slope": 1.069
+    },
+    "elo": {
+     "n": 11950,
+     "log_loss": 0.59937,
+     "brier": 0.20716,
+     "citl": -0.0028,
+     "slope": 0.95
+    },
+    "glm": {
+     "n": 11950,
+     "log_loss": 0.59367,
+     "brier": 0.20475,
+     "citl": 0.0015,
+     "slope": 0.984
+    },
+    "gbm": {
+     "n": 11950,
+     "log_loss": 0.59424,
+     "brier": 0.2049,
+     "citl": 0.0007,
+     "slope": 1.023
+    },
+    "ens": {
+     "n": 11950,
+     "log_loss": 0.59346,
+     "brier": 0.20466,
+     "citl": 0.0018,
+     "slope": 0.984
+    }
+   },
+   "comparisons": {
+    "glm_vs_chosen": {
+     "n": 11950,
+     "blocks": 158,
+     "mean_diff": -0.000082,
+     "ci95": [
+      -0.000821,
+      0.000676
+     ],
+     "a_better": false,
+     "b_better": false
+    },
+    "gbm_vs_glm": {
+     "n": 11950,
+     "blocks": 158,
+     "mean_diff": 0.000564,
+     "ci95": [
+      -0.0003,
+      0.001385
+     ],
+     "a_better": false,
+     "b_better": false
+    },
+    "gbm_vs_chosen": {
+     "n": 11950,
+     "blocks": 158,
+     "mean_diff": 0.000482,
+     "ci95": [
+      -0.000536,
+      0.001567
+     ],
+     "a_better": false,
+     "b_better": false
+    },
+    "ens_vs_chosen": {
+     "n": 11950,
+     "blocks": 158,
+     "mean_diff": -0.000292,
+     "ci95": [
+      -0.000871,
+      0.000297
+     ],
+     "a_better": false,
+     "b_better": false
+    }
+   }
+  }
+ },
+ "decisions": {
+  "glm": "REJECT",
+  "gbm": "REJECT",
+  "ensemble": "REJECT",
+  "rule": "a learner is adopted only if its VALIDATION log loss beats the chosen single model with a block-bootstrap 95% interval wholly below zero; boosting must also beat the GLM"
+ }
+}

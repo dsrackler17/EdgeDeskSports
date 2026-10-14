@@ -2915,7 +2915,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_decision.css?v=20261005dr1">
 <link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929calm1">
 <link rel="stylesheet" href="/lib/edgedesk_linemaker.css?v=20261011lm1">
-<link rel="stylesheet" href="/lib/edgedesk_engine.css?v=20261013xe3">
+<link rel="stylesheet" href="/lib/edgedesk_engine.css?v=20261014nhl2">
 <link rel="stylesheet" href="/lib/edgedesk_nba.css?v=20261014nb1">
 <link rel="stylesheet" href="/lib/edgedesk_first_run.css?v=20260930a">
 <link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261003y">
@@ -3308,7 +3308,7 @@ body.focus .dk-focusnote{display:block}
     <div id="mlbOverview" class="fb-ov"></div>
     <div id="mlbModules">
     <div class="fb-sechd"><span>Research modules</span><span class="r">MLB &middot; college &middot; archive</span></div>
-    <div class="stseg fb-seg" id="mlbhSeg" style="margin-bottom:12px"><button data-seg="games" class="on" onclick="mlbhSetSeg('games')"><b>MLB card</b><small>Tonight&rsquo;s games</small></button><button data-seg="cbb" onclick="mlbhSetSeg('cbb')"><b>College</b><small>Division I card</small></button><button data-seg="board" onclick="mlbhSetSeg('board')"><b>Pitching board</b><small>2016&ndash;2025</small></button><button data-seg="hitters" onclick="mlbhSetSeg('hitters')"><b>Hitters</b><small>Archive</small></button><button data-seg="offense" onclick="mlbhSetSeg('offense')"><b>Club offense</b><small>Archive</small></button><button data-seg="teams" onclick="mlbhSetSeg('teams')"><b>Pitching clubs</b><small>Archive</small></button><button data-seg="compare" onclick="mlbhSetSeg('compare')"><b>Compare</b><small>Two pitchers</small></button></div>
+    <div class="stseg fb-seg" id="mlbhSeg" style="margin-bottom:12px"><button data-seg="games" class="on" onclick="mlbhSetSeg('games')"><b>MLB card</b><small>Tonight&rsquo;s games</small></button><button data-seg="cbb" onclick="mlbhSetSeg('cbb')"><b>College</b><small>Division I card</small></button><button data-seg="ncaa" onclick="mlbhSetSeg('ncaa')"><b>NCAA engine</b><small>D-I research prices</small></button><button data-seg="board" onclick="mlbhSetSeg('board')"><b>Pitching board</b><small>2016&ndash;2025</small></button><button data-seg="hitters" onclick="mlbhSetSeg('hitters')"><b>Hitters</b><small>Archive</small></button><button data-seg="offense" onclick="mlbhSetSeg('offense')"><b>Club offense</b><small>Archive</small></button><button data-seg="teams" onclick="mlbhSetSeg('teams')"><b>Pitching clubs</b><small>Archive</small></button><button data-seg="compare" onclick="mlbhSetSeg('compare')"><b>Compare</b><small>Two pitchers</small></button></div>
     <div id="mlbhBody"><div class="empty">Loading&hellip;</div></div>
     </div>
     <div id="mlbSystem"></div>
@@ -5811,7 +5811,7 @@ researchRegister({id:'lines',label:'Lines',schema:'public',cadenceMs:null,
 /* NHL and ENGINE — the multi-sport engine's two panels share one script
    (lib/edgedesk_engine_ui.js), loaded on first open. A script that fails to
    load is an error state on the panel, never a blank one. */
-var XE_SCRIPT='/lib/edgedesk_engine_ui.js?v=20261013xe3';
+var XE_SCRIPT='/lib/edgedesk_engine_ui.js?v=20261014nhl2';
 function xeReady(){if(window.EDEngineUI)return Promise.resolve();return lmScript(XE_SCRIPT);}
 function xeFail(id){return function(e){var h=$(id);if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The engine could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';};}
 researchRegister({id:'nhl',label:'NHL',schema:'public',cadenceMs:null,
@@ -5837,6 +5837,14 @@ researchRegister({id:'nba',label:'NBA',schema:'public',cadenceMs:null,
   entityKey:function(){return window.EDNbaUI?window.EDNbaUI.entityKey():null;},
   freshness:function(){return window.EDNbaUI?window.EDNbaUI.freshness():{loadedAt:null,builtAt:null};},
   availability:function(){return null;},limitations:function(){return ['NBA value claims are off: no captured NBA prices and no market test yet.','No injury report or confirmed lineup is in the published price.'];},provenance:{}});
+/* NCAA ENGINE — the college baseball research terminal (college_baseball/,
+   lib/edgedesk_cbase_ui.js), a segment of Research → Baseball. Loaded on first
+   open; it reads committed board files only. A script that fails to load is an
+   error state, never a blank segment. Value claims stay disabled until the
+   release gates pass (docs/college-baseball/REPORT.md). */
+var CB_SCRIPT='/lib/edgedesk_cbase_ui.js?v=20261014cb1';
+function cbReady(){if(window.EDCbaseUI)return Promise.resolve();return lmScript(CB_SCRIPT);}
+function cbFail(e){var h=document.getElementById('cbaseHost');if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The college baseball engine could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';}
 researchRegister({id:'engine',label:'Engine',schema:'public',cadenceMs:null,
   load:function(force,signal){this._opened=true;return xeReady().then(function(){if(force)return window.EDEngineUI.show($('engineHost'),{view:'engine'}).then(function(){return window.EDEngineUI.refresh();});return window.EDEngineUI.show($('engineHost'),{view:'engine'});}).catch(xeFail('engineHost'));},
   render:function(){},hasData:function(){return !!(window.EDEngineUI&&window.EDEngineUI.hasData());},search:function(q){return [];},
@@ -14110,6 +14118,8 @@ async function mlbhLoadSeg(force){
   if(MLBH.seg!=='games'&&!MLBB.at&&!MLBB.loading){
     try{ window.mlbBriefEnsure(false).then(function(){ try{renderBaseball();}catch(_){} },function(){}); }catch(_){}
   }
+  /* the NCAA engine loads its own committed files */
+  if(MLBH.seg==='ncaa')return;
   /* COLLEGE BASEBALL has its own archive, its own schema and its own season.
      It loads here rather than beside the MLB card because a reader who never
      opens the segment should never pay for the reads. */
@@ -14297,6 +14307,9 @@ function renderBaseball(){
      career line inside a brief is missing then, and the brief says so. */
   if(MLBH.seg==='games'){ host.innerHTML=mlbhGamesHTML(); return; }
   if(MLBH.seg==='cbb'){ host.innerHTML=cbbBoardHTML(); return; }
+  /* THE NCAA ENGINE draws itself (lib/edgedesk_cbase_ui.js) into a host it
+     keeps across repaints; the board files it reads are committed artifacts. */
+  if(MLBH.seg==='ncaa'){ if(!document.getElementById('cbaseHost'))host.innerHTML='<div id="cbaseHost"><div class="empty">Loading the college baseball engine&hellip;</div></div>'; cbReady().then(function(){ var h=document.getElementById('cbaseHost'); if(h&&MLBH.seg==='ncaa')return window.EDCbaseUI.show(h,{}); }).catch(cbFail); return; }
   /* THE OFFENSIVE SEGMENTS READ A DIFFERENT ARCHIVE. They are drawn before the
      pitching gates below so a database carrying only one of the two still
      shows the half it has, with the other saying why it is absent. */
@@ -49989,6 +50002,9 @@ function fbLoadNfl(signal){
         var hr=E.nfl.teamGameFromStw(hRow),ar=E.nfl.teamGameFromStw(aRow);
         hr.pts_for=fbNum(g.home_score);hr.pts_against=fbNum(g.away_score);
         ar.pts_for=fbNum(g.away_score);ar.pts_against=fbNum(g.home_score);
+        /* no quarterback starts: the quarterback layer stays at its trained
+           seeds. Fed the listed starters, the replayed layer measured no
+           different on 2016-2025 (football/validation/pricing_nfl.json qb_layer) */
         E.nfl.absorbGame(st,[[g.home_team,hr],[g.away_team,ar]],[]);
         absorbed++;
       });

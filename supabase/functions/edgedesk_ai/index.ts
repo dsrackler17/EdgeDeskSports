@@ -24833,13 +24833,20 @@ const EDSPORTS: any = (globalThis as any).EDSPORTS;
     lines.push(g.away + ' at ' + g.home + ', ' + when(g.start_utc) + '. My fair moneyline: ' + g[fav] + ' ' + am(m['fair_' + fav]) + ' (' + pct(m[fav]) + '), ' + g[dog] + ' ' + am(m['fair_' + dog]) + '.');
     lines.push('Puck line: ' + g[fav] + ' −1.5 ' + am(plFav) + ' (' + pct(plFavP) + '). Total: fair line ' + t.fair_line + ', expected ' + t.expected + ' goals; over ' + nearL + ' ' + am(tl.fair_over) + ' (' + pct(tl.over) + '). Overtime ' + pct(g.prices.p_overtime) + '.');
     lines.push('Goalies are ' + String(g.goalies.certainty).replace(/_/g, ' ').toLowerCase() + (gH && gA ? ' (' + (gH.name || 'unknown') + ' ' + Math.round(gH.p_start * 100) + '% for ' + g.home + ', ' + (gA.name || 'unknown') + ' ' + Math.round(gA.p_start * 100) + '% for ' + g.away + ')' : '') + '; the realistic pairings move ' + g.home + '\'s chance by up to ' + spread + ' points.');
+    /* why the number is what it is: the slate's exact decomposition (hockey/model/explain.js), never paraphrased into new numbers */
+    var ex = g.explanation, why = null;
+    if (ex && ex.factors && ex.factors.length) {
+      var top = ex.factors.filter(function (f) { return Math.abs(f.pp) >= 0.3; }).slice(0, 3);
+      why = top.map(function (f) { return (f.team ? f.team + '\'s ' : '') + f.label.split(' (')[0] + ' ' + (f.pp > 0 ? '+' : '−') + Math.abs(f.pp).toFixed(1) + ' pts for ' + g.home; });
+      if (why.length) lines.push('Why: two league-average clubs at a neutral rink would put ' + g.home + ' at ' + pct(ex.baseline.p_home) + '; the biggest factors in my model are ' + why.join(', ') + ' (an exact decomposition; the factors add up to ' + pct(ex.published.p_home) + ').');
+    }
     var named = cls.clubs.length ? (cls.clubs[0].abbr === g.home ? 'home' : cls.clubs[0].abbr === g.away ? 'away' : null) : null;
     var pc = priceCheck(g, cls.quote, cls.clubs.length === 1 || (cls.quote && cls.clubs.length >= 1) ? named : null);
     if (pc && !pc.error) lines.push('At ' + am(pc.american) + ' on ' + pc.label + ' the break-even is ' + pct(pc.break_even) + ' and my number is ' + pct(pc.probability) + ', so ' + (pc.ev > 0 ? 'the EV at that price would be +' : 'the EV at that price is ') + pct(pc.ev) + ' per unit — but NHL value claims are off, so I am not calling it a bet.');
     else if (pc && pc.error) lines.push('I could not read that price (' + pc.error + ').');
     lines.push(recordLine(slate));
     lines.push('What could change it: ' + g.invalidators.slice(0, 2).join(' ').replace(/\.\s*$/, '') + '.');
-    return { text: lines.join(' '), block: { intent: 'NHL_GAME', game_id: g.game_id, home: g.home, away: g.away, start_utc: g.start_utc, source: 'hockey/slate.json', slate_generated_at: slate.generated_at, resolved_via: res.via, prices: { moneyline: m, puck_line: pl, total: { expected: t.expected, fair_line: t.fair_line } }, goalies: g.goalies.certainty, price_check: pc || null, value_claims: slate.readiness && slate.readiness.value_claims } };
+    return { text: lines.join(' '), block: { intent: 'NHL_GAME', game_id: g.game_id, home: g.home, away: g.away, start_utc: g.start_utc, source: 'hockey/slate.json', slate_generated_at: slate.generated_at, resolved_via: res.via, prices: { moneyline: m, puck_line: pl, total: { expected: t.expected, fair_line: t.fair_line } }, goalies: g.goalies.certainty, price_check: pc || null, explanation: ex ? { baseline_p_home: ex.baseline.p_home, factors: ex.factors.slice(0, 6).map(function (f) { return { team: f.team, factor: f.label, pp: f.pp }; }), exact: !!(ex.check && ex.check.exact) } : null, value_claims: slate.readiness && slate.readiness.value_claims } };
   }
 
   function answerSlate(slate, now) {

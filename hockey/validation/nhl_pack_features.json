@@ -2,7 +2,7 @@
  "schema": "edgedesk_nhl_pack_features_v1",
  "season": 2025,
  "question": "Given my model's out-of-sample moneyline probability, does a data-pack lagged feature still predict the result?",
- "chosen_model": "xg_no_goalie",
+ "chosen_model": "xg_core",
  "games": 1143,
  "fit_games": 578,
  "score_games": 565,
@@ -14,79 +14,79 @@
   "2025-01-21",
   "2025-04-17"
  ],
- "baseline_score_log_loss": 0.657149,
+ "baseline_score_log_loss": 0.65556,
  "baseline_recalibration": {
-  "intercept": 0.076985,
-  "slope": 0.835871
+  "intercept": 0.079923,
+  "slope": 0.799897
  },
  "tests": {
   "corsi_share_prior_10": {
-   "log_loss_change": -0.001845,
+   "log_loss_change": -0.001371,
    "ci95": [
-    -0.008662,
-    0.005177
+    -0.008289,
+    0.005874
    ],
    "coefficients_per_sd": {
-    "corsi_share_prior_10": 0.174241
+    "corsi_share_prior_10": 0.176004
    },
    "adds_information": false
   },
   "fenwick_share_prior_10": {
-   "log_loss_change": -0.002771,
+   "log_loss_change": -0.002028,
    "ci95": [
-    -0.009958,
-    0.004983
+    -0.009134,
+    0.005672
    ],
    "coefficients_per_sd": {
-    "fenwick_share_prior_10": 0.206736
+    "fenwick_share_prior_10": 0.206598
    },
    "adds_information": false
   },
   "regulation_goal_diff_prior_10": {
-   "log_loss_change": -0.000166,
+   "log_loss_change": -0.000536,
    "ci95": [
-    -0.002755,
-    0.002174
+    -0.003443,
+    0.002129
    ],
    "coefficients_per_sd": {
-    "regulation_goal_diff_prior_10": -0.06802
+    "regulation_goal_diff_prior_10": -0.079487
    },
    "adds_information": false
   },
   "hours_since_previous_start": {
-   "log_loss_change": 0.003873,
+   "log_loss_change": 0.004015,
    "ci95": [
-    -0.004007,
-    0.011247
+    -0.004067,
+    0.011555
    ],
    "coefficients_per_sd": {
-    "hours_since_previous_start": 0.211211
+    "hours_since_previous_start": 0.214386
    },
    "adds_information": false
   },
   "games_in_prior_7_days": {
-   "log_loss_change": 0.004093,
+   "log_loss_change": 0.004254,
    "ci95": [
-    -0.002932,
-    0.01231
+    -0.002894,
+    0.012587
    ],
    "coefficients_per_sd": {
-    "games_in_prior_7_days": -0.179216
+    "games_in_prior_7_days": -0.18328
    },
    "adds_information": false
   },
   "all_five": {
-   "log_loss_change": 0.003461,
+   "log_loss_change": 0.004258,
    "ci95": [
-    -0.01,
-    0.017461
+    -0.009427,
+    0.018483
    ],
    "coefficients_per_sd": {
-    "corsi_share_prior_10": -0.23291,
-    "fenwick_share_prior_10": 0.485578,
-    "regulation_goal_diff_prior_10": -0.09798,
-    "hours_since_previous_start": 0.184445,
-    "games_in_prior_7_days": -0.122426
+    "corsi_share_prior_10": -0.215679,
+    "fenwick_share_prior_10": 0.467873,
+    "regulation_goal_diff_prior_10": -0.102342,
+    "hours_since_previous_start": 0.185273,
+    "games_in_prior_7_days": -0.124419
    },
    "adds_information": false
   }

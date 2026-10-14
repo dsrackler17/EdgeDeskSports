@@ -1,0 +1,3046 @@
+{
+ "schema": "edgedesk_nhl_props_walkforward_v1",
+ "generated_at": "2026-10-14T01:37:42.354Z",
+ "protocol": {
+  "selection": [
+   2014,
+   2020
+  ],
+  "confirmation": [
+   2021,
+   2026
+  ],
+  "live": [
+   2027,
+   2027
+  ],
+  "participation": "priced and scored only for skaters who dressed and goalies who started (a prop is void otherwise)",
+  "baseline": "the player's season-to-date average per game shrunk by 10 games of his position's league average (else last season's, shrunk the same way; else the position average), as a Poisson mean",
+  "model": "hockey/props/model.js (settings fixed before the first run, not tuned on this record)"
+ },
+ "sizes": {
+  "2011": {
+   "sog": {
+    "r": 8,
+    "n": 0,
+    "basis": "default: fewer than 2000 earlier predictions"
+   },
+   "shots_against": {
+    "r": 45,
+    "n": 0,
+    "basis": "default: fewer than 2000 earlier predictions"
+   }
+  },
+  "2012": {
+   "sog": {
+    "r": 12,
+    "n": 47256,
+    "basis": "maximum likelihood on the three seasons before"
+   },
+   "shots_against": {
+    "r": 30,
+    "n": 2636,
+    "basis": "maximum likelihood on the three seasons before"
+   }
+  },
+  "2013": {
+   "sog": {
+    "r": 20,
+    "n": 94631,
+    "basis": "maximum likelihood on the three seasons before"
+   },
+   "shots_against": {
+    "r": 30,
+    "n": 5268,
+    "basis": "maximum likelihood on the three seasons before"
+   }
+  },
+  "2014": {
+   "sog": {
+    "r": 20,
+    "n": 123646,
+    "basis": "maximum likelihood on the three seasons before"
+   },
+   "shots_against": {
+    "r": 30,
+    "n": 6880,
+    "basis": "maximum likelihood on the three seasons before"
+   }
+  },
+  "2015": {
+   "sog": {
+    "r": 20,
+    "n": 124014,
+    "basis": "maximum likelihood on the three seasons before"
+   },
+   "shots_against": {
+    "r": 30,
+    "n": 6890,
+    "basis": "maximum likelihood on the three seasons before"
+   }
+  },
+  "2016": {
+   "sog": {
+    "r": 20,
+    "n": 124120,
+    "basis": "maximum likelihood on the three seasons before"
+   },
+   "shots_against": {
+    "r": 30,
+    "n": 6896,
+    "basis": "maximum likelihood on the three seasons before"
+   }
+  },
+  "2017": {
+   "sog": {
+    "r": 20,
+    "n": 142661,
+    "basis": "maximum likelihood on the three seasons before"
+   },
+   "shots_against": {
+    "r": 30,
+    "n": 7926,
+    "basis": "maximum likelihood on the three seasons before"
+   }
+  },
+  "2018": {
+   "sog": {
+    "r": 20,
+    "n": 142446,
+    "basis": "maximum likelihood on the three seasons before"
+   },
+   "shots_against": {
+    "r": 30,
+    "n": 7914,
+    "basis": "maximum likelihood on the three seasons before"
+   }
+  },
+  "2019": {
+   "sog": {
+    "r": 20,
+    "n": 143745,
+    "basis": "maximum likelihood on the three seasons before"
+   },
+   "shots_against": {
+    "r": 30,
+    "n": 7986,
+    "basis": "maximum likelihood on the three seasons before"
+   }
+  },
+  "2020": {
+   "sog": {
+    "r": 20,
+    "n": 145077,
+    "basis": "maximum likelihood on the three seasons before"
+   },
+   "shots_against": {
+    "r": 30,
+    "n": 8060,
+    "basis": "maximum likelihood on the three seasons before"
+   }
+  },
+  "2021": {
+   "sog": {
+    "r": 20,
+    "n": 141300,
+    "basis": "maximum likelihood on the three seasons before"
+   },
+   "shots_against": {
+    "r": 30,
+    "n": 7850,
+    "basis": "maximum likelihood on the three seasons before"
+   }
+  },
+  "2022": {
+   "sog": {
+    "r": 20,
+    "n": 126772,
+    "basis": "maximum likelihood on the three seasons before"
+   },
+   "shots_against": {
+    "r": 30,
+    "n": 7044,
+    "basis": "maximum likelihood on the three seasons before"
+   }
+  },
+  "2023": {
+   "sog": {
+    "r": 20,
+    "n": 128299,
+    "basis": "maximum likelihood on the three seasons before"
+   },
+   "shots_against": {
+    "r": 30,
+    "n": 7130,
+    "basis": "maximum likelihood on the three seasons before"
+   }
+  },
+  "2024": {
+   "sog": {
+    "r": 20,
+    "n": 135048,
+    "basis": "maximum likelihood on the three seasons before"
+   },
+   "shots_against": {
+    "r": 30,
+    "n": 7506,
+    "basis": "maximum likelihood on the three seasons before"
+   }
+  },
+  "2025": {
+   "sog": {
+    "r": 20,
+    "n": 151185,
+    "basis": "maximum likelihood on the three seasons before"
+   },
+   "shots_against": {
+    "r": 30,
+    "n": 8402,
+    "basis": "maximum likelihood on the three seasons before"
+   }
+  },
+  "2026": {
+   "sog": {
+    "r": 20,
+    "n": 151091,
+    "basis": "maximum likelihood on the three seasons before"
+   },
+   "shots_against": {
+    "r": 30,
+    "n": 8396,
+    "basis": "maximum likelihood on the three seasons before"
+   }
+  },
+  "2027": {
+   "sog": {
+    "r": 20,
+    "n": 150893,
+    "basis": "maximum likelihood on the three seasons before"
+   },
+   "shots_against": {
+    "r": 30,
+    "n": 8384,
+    "basis": "maximum likelihood on the three seasons before"
+   }
+  }
+ },
+ "coverage": {
+  "seasons": {
+   "2011": {
+    "skater_games": 47436,
+    "goalie_games": 2852,
+    "ixg_available": true
+   },
+   "2012": {
+    "skater_games": 47375,
+    "goalie_games": 2828,
+    "ixg_available": true
+   },
+   "2013": {
+    "skater_games": 29015,
+    "goalie_games": 1747,
+    "ixg_available": true
+   },
+   "2014": {
+    "skater_games": 47624,
+    "goalie_games": 2850,
+    "ixg_available": true
+   },
+   "2015": {
+    "skater_games": 47481,
+    "goalie_games": 2834,
+    "ixg_available": true
+   },
+   "2016": {
+    "skater_games": 47556,
+    "goalie_games": 2842,
+    "ixg_available": true
+   },
+   "2017": {
+    "skater_games": 47409,
+    "goalie_games": 2842,
+    "ixg_available": true
+   },
+   "2018": {
+    "skater_games": 48780,
+    "goalie_games": 2944,
+    "ixg_available": true
+   },
+   "2019": {
+    "skater_games": 48888,
+    "goalie_games": 2901,
+    "ixg_available": true
+   },
+   "2020": {
+    "skater_games": 43632,
+    "goalie_games": 2582,
+    "ixg_available": true
+   },
+   "2021": {
+    "skater_games": 34252,
+    "goalie_games": 2026,
+    "ixg_available": true
+   },
+   "2022": {
+    "skater_games": 50415,
+    "goalie_games": 3014,
+    "ixg_available": true
+   },
+   "2023": {
+    "skater_games": 50381,
+    "goalie_games": 2983,
+    "ixg_available": true
+   },
+   "2024": {
+    "skater_games": 50389,
+    "goalie_games": 2979,
+    "ixg_available": true
+   },
+   "2025": {
+    "skater_games": 50321,
+    "goalie_games": 2953,
+    "ixg_available": true
+   },
+   "2026": {
+    "skater_games": 50183,
+    "goalie_games": 2942,
+    "ixg_available": true
+   },
+   "2027": {
+    "skater_games": 3204,
+    "goalie_games": 189,
+    "ixg_available": true
+   }
+  }
+ },
+ "markets": {
+  "sog_over_0.5": {
+   "selection": {
+    "n": 331370,
+    "log_loss": 0.50208,
+    "brier": 0.16514,
+    "mean_p": 0.7657,
+    "mean_y": 0.7615,
+    "calibration_in_the_large": 0.0042,
+    "calibration_slope": 1.032,
+    "baseline": {
+     "log_loss": 0.51367,
+     "mean_p": 0.7946,
+     "calibration_slope": 1.086,
+     "brier": 0.16953
+    },
+    "baseline_log_loss": 0.51367,
+    "vs_baseline": {
+     "n": 331370,
+     "blocks": 1544,
+     "mean_diff": -0.011594,
+     "ci95": [
+      -0.01221,
+      -0.010985
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "confirmation": {
+    "n": 285941,
+    "log_loss": 0.51187,
+    "brier": 0.16947,
+    "mean_p": 0.7576,
+    "mean_y": 0.752,
+    "calibration_in_the_large": 0.0056,
+    "calibration_slope": 1.023,
+    "baseline": {
+     "log_loss": 0.52514,
+     "mean_p": 0.7909,
+     "calibration_slope": 1.079,
+     "brier": 0.17455
+    },
+    "baseline_log_loss": 0.52514,
+    "vs_baseline": {
+     "n": 285941,
+     "blocks": 1288,
+     "mean_diff": -0.013266,
+     "ci95": [
+      -0.01409,
+      -0.01246
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "bins": [
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 61,
+      "mean_p": 0.2823,
+      "observed": 0.3115,
+      "wilson_low": 0.2094,
+      "wilson_high": 0.4359,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.4,
+      "n": 782,
+      "mean_p": 0.3709,
+      "observed": 0.3798,
+      "wilson_low": 0.3464,
+      "wilson_high": 0.4143,
+      "inside": true
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.5,
+      "n": 6235,
+      "mean_p": 0.4634,
+      "observed": 0.4566,
+      "wilson_low": 0.4443,
+      "wilson_high": 0.469,
+      "inside": true
+     },
+     {
+      "lo": 0.5,
+      "hi": 0.6,
+      "n": 27530,
+      "mean_p": 0.5603,
+      "observed": 0.5541,
+      "wilson_low": 0.5482,
+      "wilson_high": 0.56,
+      "inside": false
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.7,
+      "n": 61525,
+      "mean_p": 0.6534,
+      "observed": 0.6398,
+      "wilson_low": 0.636,
+      "wilson_high": 0.6436,
+      "inside": false
+     },
+     {
+      "lo": 0.7,
+      "hi": 0.8,
+      "n": 70799,
+      "mean_p": 0.7501,
+      "observed": 0.7415,
+      "wilson_low": 0.7382,
+      "wilson_high": 0.7447,
+      "inside": false
+     },
+     {
+      "lo": 0.8,
+      "hi": 0.9,
+      "n": 76813,
+      "mean_p": 0.85,
+      "observed": 0.8501,
+      "wilson_low": 0.8476,
+      "wilson_high": 0.8526,
+      "inside": true
+     },
+     {
+      "lo": 0.9,
+      "hi": 1,
+      "n": 42196,
+      "mean_p": 0.9337,
+      "observed": 0.9348,
+      "wilson_low": 0.9324,
+      "wilson_high": 0.9371,
+      "inside": true
+     }
+    ]
+   },
+   "live": {
+    "n": 3204,
+    "log_loss": 0.54855,
+    "brier": 0.18496,
+    "mean_p": 0.7281,
+    "mean_y": 0.7125,
+    "calibration_in_the_large": 0.0156,
+    "calibration_slope": 1.04,
+    "baseline": {
+     "log_loss": 0.59202,
+     "mean_p": 0.7956,
+     "calibration_slope": 1.272,
+     "brier": 0.20161
+    },
+    "baseline_log_loss": 0.59202,
+    "vs_baseline": {
+     "n": 3204,
+     "blocks": 14,
+     "mean_diff": -0.043477,
+     "ci95": [
+      -0.055841,
+      -0.03089
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "status": "OUTCOME_VALIDATED",
+   "failed": [],
+   "market_status": "NOT_TESTED"
+  },
+  "sog_over_1.5": {
+   "selection": {
+    "n": 331370,
+    "log_loss": 0.61943,
+    "brier": 0.21519,
+    "mean_p": 0.4707,
+    "mean_y": 0.4728,
+    "calibration_in_the_large": -0.0021,
+    "calibration_slope": 1.009,
+    "baseline": {
+     "log_loss": 0.63139,
+     "mean_p": 0.4938,
+     "calibration_slope": 1.111,
+     "brier": 0.22058
+    },
+    "baseline_log_loss": 0.63139,
+    "vs_baseline": {
+     "n": 331370,
+     "blocks": 1544,
+     "mean_diff": -0.011966,
+     "ci95": [
+      -0.012782,
+      -0.011124
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "confirmation": {
+    "n": 285941,
+    "log_loss": 0.61334,
+    "brier": 0.21237,
+    "mean_p": 0.4599,
+    "mean_y": 0.4569,
+    "calibration_in_the_large": 0.003,
+    "calibration_slope": 1.01,
+    "baseline": {
+     "log_loss": 0.62735,
+     "mean_p": 0.4882,
+     "calibration_slope": 1.128,
+     "brier": 0.21866
+    },
+    "baseline_log_loss": 0.62735,
+    "vs_baseline": {
+     "n": 285941,
+     "blocks": 1288,
+     "mean_diff": -0.014006,
+     "ci95": [
+      -0.014842,
+      -0.013076
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.1,
+      "n": 948,
+      "mean_p": 0.0825,
+      "observed": 0.0728,
+      "wilson_low": 0.0579,
+      "wilson_high": 0.0911,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 16382,
+      "mean_p": 0.1646,
+      "observed": 0.1663,
+      "wilson_low": 0.1607,
+      "wilson_high": 0.1721,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 49581,
+      "mean_p": 0.2546,
+      "observed": 0.2512,
+      "wilson_low": 0.2474,
+      "wilson_high": 0.255,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.4,
+      "n": 56802,
+      "mean_p": 0.3486,
+      "observed": 0.3406,
+      "wilson_low": 0.3368,
+      "wilson_high": 0.3445,
+      "inside": false
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.5,
+      "n": 47389,
+      "mean_p": 0.4488,
+      "observed": 0.4417,
+      "wilson_low": 0.4372,
+      "wilson_high": 0.4462,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 0.6,
+      "n": 42892,
+      "mean_p": 0.5487,
+      "observed": 0.5485,
+      "wilson_low": 0.5438,
+      "wilson_high": 0.5532,
+      "inside": true
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.7,
+      "n": 35223,
+      "mean_p": 0.6478,
+      "observed": 0.6502,
+      "wilson_low": 0.6452,
+      "wilson_high": 0.6551,
+      "inside": true
+     },
+     {
+      "lo": 0.7,
+      "hi": 0.8,
+      "n": 24359,
+      "mean_p": 0.7461,
+      "observed": 0.7472,
+      "wilson_low": 0.7417,
+      "wilson_high": 0.7526,
+      "inside": true
+     },
+     {
+      "lo": 0.8,
+      "hi": 0.9,
+      "n": 10748,
+      "mean_p": 0.8382,
+      "observed": 0.8357,
+      "wilson_low": 0.8286,
+      "wilson_high": 0.8426,
+      "inside": true
+     },
+     {
+      "lo": 0.9,
+      "hi": 1,
+      "n": 1617,
+      "mean_p": 0.9245,
+      "observed": 0.927,
+      "wilson_low": 0.9133,
+      "wilson_high": 0.9387,
+      "inside": true
+     }
+    ]
+   },
+   "live": {
+    "n": 3204,
+    "log_loss": 0.60262,
+    "brier": 0.20767,
+    "mean_p": 0.419,
+    "mean_y": 0.4104,
+    "calibration_in_the_large": 0.0086,
+    "calibration_slope": 1.014,
+    "baseline": {
+     "log_loss": 0.65208,
+     "mean_p": 0.4829,
+     "calibration_slope": 1.286,
+     "brier": 0.23017
+    },
+    "baseline_log_loss": 0.65208,
+    "vs_baseline": {
+     "n": 3204,
+     "blocks": 14,
+     "mean_diff": -0.049462,
+     "ci95": [
+      -0.058655,
+      -0.036997
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "status": "OUTCOME_VALIDATED",
+   "failed": [],
+   "market_status": "NOT_TESTED"
+  },
+  "sog_over_2.5": {
+   "selection": {
+    "n": 331370,
+    "log_loss": 0.49846,
+    "brier": 0.16382,
+    "mean_p": 0.25,
+    "mean_y": 0.2542,
+    "calibration_in_the_large": -0.0042,
+    "calibration_slope": 0.974,
+    "baseline": {
+     "log_loss": 0.50824,
+     "mean_p": 0.2525,
+     "calibration_slope": 1.077,
+     "brier": 0.16723
+    },
+    "baseline_log_loss": 0.50824,
+    "vs_baseline": {
+     "n": 331370,
+     "blocks": 1544,
+     "mean_diff": -0.009787,
+     "ci95": [
+      -0.010581,
+      -0.00893
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "confirmation": {
+    "n": 285941,
+    "log_loss": 0.48032,
+    "brier": 0.15653,
+    "mean_p": 0.2426,
+    "mean_y": 0.243,
+    "calibration_in_the_large": -0.0004,
+    "calibration_slope": 0.988,
+    "baseline": {
+     "log_loss": 0.49085,
+     "mean_p": 0.2484,
+     "calibration_slope": 1.119,
+     "brier": 0.16004
+    },
+    "baseline_log_loss": 0.49085,
+    "vs_baseline": {
+     "n": 285941,
+     "blocks": 1288,
+     "mean_diff": -0.010529,
+     "ci95": [
+      -0.011273,
+      -0.009785
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.1,
+      "n": 62390,
+      "mean_p": 0.0671,
+      "observed": 0.0682,
+      "wilson_low": 0.0663,
+      "wilson_high": 0.0703,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 81984,
+      "mean_p": 0.1451,
+      "observed": 0.1446,
+      "wilson_low": 0.1422,
+      "wilson_high": 0.147,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 52239,
+      "mean_p": 0.2475,
+      "observed": 0.2493,
+      "wilson_low": 0.2456,
+      "wilson_high": 0.2531,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.4,
+      "n": 37380,
+      "mean_p": 0.3472,
+      "observed": 0.3519,
+      "wilson_low": 0.3471,
+      "wilson_high": 0.3568,
+      "inside": true
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.5,
+      "n": 25043,
+      "mean_p": 0.4464,
+      "observed": 0.4474,
+      "wilson_low": 0.4412,
+      "wilson_high": 0.4536,
+      "inside": true
+     },
+     {
+      "lo": 0.5,
+      "hi": 0.6,
+      "n": 15603,
+      "mean_p": 0.5457,
+      "observed": 0.5439,
+      "wilson_low": 0.536,
+      "wilson_high": 0.5517,
+      "inside": true
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.7,
+      "n": 7797,
+      "mean_p": 0.6421,
+      "observed": 0.6281,
+      "wilson_low": 0.6173,
+      "wilson_high": 0.6387,
+      "inside": false
+     },
+     {
+      "lo": 0.7,
+      "hi": 0.8,
+      "n": 2702,
+      "mean_p": 0.7411,
+      "observed": 0.7232,
+      "wilson_low": 0.706,
+      "wilson_high": 0.7397,
+      "inside": false
+     },
+     {
+      "lo": 0.8,
+      "hi": 0.9,
+      "n": 770,
+      "mean_p": 0.8364,
+      "observed": 0.8156,
+      "wilson_low": 0.7866,
+      "wilson_high": 0.8414,
+      "inside": true
+     },
+     {
+      "lo": 0.9,
+      "hi": 1,
+      "n": 33,
+      "mean_p": 0.9112,
+      "observed": 0.8788,
+      "wilson_low": 0.7267,
+      "wilson_high": 0.9518,
+      "inside": true
+     }
+    ]
+   },
+   "live": {
+    "n": 3204,
+    "log_loss": 0.44359,
+    "brier": 0.14144,
+    "mean_p": 0.2091,
+    "mean_y": 0.2094,
+    "calibration_in_the_large": -0.0003,
+    "calibration_slope": 0.994,
+    "baseline": {
+     "log_loss": 0.47936,
+     "mean_p": 0.2326,
+     "calibration_slope": 1.339,
+     "brier": 0.15357
+    },
+    "baseline_log_loss": 0.47936,
+    "vs_baseline": {
+     "n": 3204,
+     "blocks": 14,
+     "mean_diff": -0.035776,
+     "ci95": [
+      -0.042947,
+      -0.026918
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "status": "OUTCOME_VALIDATED",
+   "failed": [],
+   "market_status": "NOT_TESTED"
+  },
+  "sog_over_3.5": {
+   "selection": {
+    "n": 331370,
+    "log_loss": 0.32081,
+    "brier": 0.09552,
+    "mean_p": 0.1206,
+    "mean_y": 0.1225,
+    "calibration_in_the_large": -0.0019,
+    "calibration_slope": 0.949,
+    "baseline": {
+     "log_loss": 0.32819,
+     "mean_p": 0.1113,
+     "calibration_slope": 1.032,
+     "brier": 0.09725
+    },
+    "baseline_log_loss": 0.32819,
+    "vs_baseline": {
+     "n": 331370,
+     "blocks": 1544,
+     "mean_diff": -0.007377,
+     "ci95": [
+      -0.008073,
+      -0.006706
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "confirmation": {
+    "n": 285941,
+    "log_loss": 0.30624,
+    "brier": 0.09068,
+    "mean_p": 0.1173,
+    "mean_y": 0.1174,
+    "calibration_in_the_large": -0.0001,
+    "calibration_slope": 0.956,
+    "baseline": {
+     "log_loss": 0.31336,
+     "mean_p": 0.1096,
+     "calibration_slope": 1.07,
+     "brier": 0.09234
+    },
+    "baseline_log_loss": 0.31336,
+    "vs_baseline": {
+     "n": 285941,
+     "blocks": 1288,
+     "mean_diff": -0.007117,
+     "ci95": [
+      -0.007885,
+      -0.006419
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.1,
+      "n": 169349,
+      "mean_p": 0.042,
+      "observed": 0.0439,
+      "wilson_low": 0.0429,
+      "wilson_high": 0.0449,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 61227,
+      "mean_p": 0.1437,
+      "observed": 0.145,
+      "wilson_low": 0.1422,
+      "wilson_high": 0.1478,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 29780,
+      "mean_p": 0.2442,
+      "observed": 0.2443,
+      "wilson_low": 0.2394,
+      "wilson_high": 0.2492,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.4,
+      "n": 15158,
+      "mean_p": 0.3445,
+      "observed": 0.3348,
+      "wilson_low": 0.3273,
+      "wilson_high": 0.3424,
+      "inside": false
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.5,
+      "n": 6695,
+      "mean_p": 0.442,
+      "observed": 0.4272,
+      "wilson_low": 0.4154,
+      "wilson_high": 0.4391,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 0.6,
+      "n": 2458,
+      "mean_p": 0.5411,
+      "observed": 0.5122,
+      "wilson_low": 0.4924,
+      "wilson_high": 0.5319,
+      "inside": false
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.7,
+      "n": 966,
+      "mean_p": 0.6421,
+      "observed": 0.5994,
+      "wilson_low": 0.5681,
+      "wilson_high": 0.6298,
+      "inside": false
+     },
+     {
+      "lo": 0.7,
+      "hi": 0.8,
+      "n": 287,
+      "mean_p": 0.7391,
+      "observed": 0.6899,
+      "wilson_low": 0.6342,
+      "wilson_high": 0.7406,
+      "inside": true
+     },
+     {
+      "lo": 0.8,
+      "hi": 0.9,
+      "n": 21,
+      "mean_p": 0.8211,
+      "observed": 0.7143,
+      "wilson_low": 0.5004,
+      "wilson_high": 0.8619,
+      "inside": true
+     }
+    ]
+   },
+   "live": {
+    "n": 3204,
+    "log_loss": 0.265,
+    "brier": 0.07596,
+    "mean_p": 0.0957,
+    "mean_y": 0.0964,
+    "calibration_in_the_large": -0.0007,
+    "calibration_slope": 0.994,
+    "baseline": {
+     "log_loss": 0.28996,
+     "mean_p": 0.0931,
+     "calibration_slope": 1.302,
+     "brier": 0.08164
+    },
+    "baseline_log_loss": 0.28996,
+    "vs_baseline": {
+     "n": 3204,
+     "blocks": 14,
+     "mean_diff": -0.024957,
+     "ci95": [
+      -0.032456,
+      -0.015472
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "status": "OUTCOME_VALIDATED",
+   "failed": [],
+   "market_status": "NOT_TESTED"
+  },
+  "sog_over_4.5": {
+   "selection": {
+    "n": 331370,
+    "log_loss": 0.18144,
+    "brier": 0.04798,
+    "mean_p": 0.0544,
+    "mean_y": 0.0552,
+    "calibration_in_the_large": -0.0008,
+    "calibration_slope": 0.918,
+    "baseline": {
+     "log_loss": 0.18692,
+     "mean_p": 0.0439,
+     "calibration_slope": 0.972,
+     "brier": 0.04875
+    },
+    "baseline_log_loss": 0.18692,
+    "vs_baseline": {
+     "n": 331370,
+     "blocks": 1544,
+     "mean_diff": -0.005484,
+     "ci95": [
+      -0.006125,
+      -0.004918
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "confirmation": {
+    "n": 285941,
+    "log_loss": 0.17227,
+    "brier": 0.04578,
+    "mean_p": 0.0536,
+    "mean_y": 0.0533,
+    "calibration_in_the_large": 0.0004,
+    "calibration_slope": 0.934,
+    "baseline": {
+     "log_loss": 0.17771,
+     "mean_p": 0.0435,
+     "calibration_slope": 1.011,
+     "brier": 0.04656
+    },
+    "baseline_log_loss": 0.17771,
+    "vs_baseline": {
+     "n": 285941,
+     "blocks": 1288,
+     "mean_diff": -0.005433,
+     "ci95": [
+      -0.005998,
+      -0.004761
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.1,
+      "n": 237343,
+      "mean_p": 0.0263,
+      "observed": 0.0278,
+      "wilson_low": 0.0271,
+      "wilson_high": 0.0284,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 33006,
+      "mean_p": 0.1406,
+      "observed": 0.1366,
+      "wilson_low": 0.1329,
+      "wilson_high": 0.1403,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 10754,
+      "mean_p": 0.2404,
+      "observed": 0.2278,
+      "wilson_low": 0.22,
+      "wilson_high": 0.2358,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.4,
+      "n": 3176,
+      "mean_p": 0.3392,
+      "observed": 0.3057,
+      "wilson_low": 0.29,
+      "wilson_high": 0.322,
+      "inside": false
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.5,
+      "n": 1155,
+      "mean_p": 0.4423,
+      "observed": 0.4121,
+      "wilson_low": 0.3841,
+      "wilson_high": 0.4408,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 0.6,
+      "n": 393,
+      "mean_p": 0.54,
+      "observed": 0.4529,
+      "wilson_low": 0.4044,
+      "wilson_high": 0.5024,
+      "inside": false
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.7,
+      "n": 107,
+      "mean_p": 0.6328,
+      "observed": 0.4953,
+      "wilson_low": 0.4024,
+      "wilson_high": 0.5886,
+      "inside": false
+     },
+     {
+      "lo": 0.7,
+      "hi": 0.8,
+      "n": 7,
+      "mean_p": 0.7178,
+      "observed": 0.5714,
+      "wilson_low": 0.2505,
+      "wilson_high": 0.8418,
+      "inside": true
+     }
+    ]
+   },
+   "live": {
+    "n": 3204,
+    "log_loss": 0.12156,
+    "brier": 0.0305,
+    "mean_p": 0.0415,
+    "mean_y": 0.034,
+    "calibration_in_the_large": 0.0074,
+    "calibration_slope": 1.007,
+    "baseline": {
+     "log_loss": 0.13172,
+     "mean_p": 0.0322,
+     "calibration_slope": 1.311,
+     "brier": 0.03131
+    },
+    "baseline_log_loss": 0.13172,
+    "vs_baseline": {
+     "n": 3204,
+     "blocks": 14,
+     "mean_diff": -0.010156,
+     "ci95": [
+      -0.015171,
+      -0.003404
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "status": "OUTCOME_VALIDATED",
+   "failed": [],
+   "market_status": "NOT_TESTED"
+  },
+  "goal_anytime": {
+   "selection": {
+    "n": 331370,
+    "log_loss": 0.37632,
+    "brier": 0.11321,
+    "mean_p": 0.1377,
+    "mean_y": 0.1394,
+    "calibration_in_the_large": -0.0016,
+    "calibration_slope": 1.006,
+    "baseline": {
+     "log_loss": 0.38239,
+     "mean_p": 0.1422,
+     "calibration_slope": 0.844,
+     "brier": 0.1146
+    },
+    "baseline_log_loss": 0.38239,
+    "vs_baseline": {
+     "n": 331370,
+     "blocks": 1544,
+     "mean_diff": -0.006078,
+     "ci95": [
+      -0.006525,
+      -0.005545
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "confirmation": {
+    "n": 285941,
+    "log_loss": 0.39134,
+    "brier": 0.11941,
+    "mean_p": 0.1537,
+    "mean_y": 0.1508,
+    "calibration_in_the_large": 0.0029,
+    "calibration_slope": 0.99,
+    "baseline": {
+     "log_loss": 0.39761,
+     "mean_p": 0.1515,
+     "calibration_slope": 0.882,
+     "brier": 0.12092
+    },
+    "baseline_log_loss": 0.39761,
+    "vs_baseline": {
+     "n": 285941,
+     "blocks": 1288,
+     "mean_diff": -0.006269,
+     "ci95": [
+      -0.006783,
+      -0.00573
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.1,
+      "n": 94941,
+      "mean_p": 0.053,
+      "observed": 0.0623,
+      "wilson_low": 0.0608,
+      "wilson_high": 0.0638,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 104060,
+      "mean_p": 0.1508,
+      "observed": 0.1298,
+      "wilson_low": 0.1278,
+      "wilson_high": 0.1319,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 66127,
+      "mean_p": 0.2436,
+      "observed": 0.2452,
+      "wilson_low": 0.242,
+      "wilson_high": 0.2485,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.4,
+      "n": 18943,
+      "mean_p": 0.3333,
+      "observed": 0.3497,
+      "wilson_low": 0.343,
+      "wilson_high": 0.3566,
+      "inside": false
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.5,
+      "n": 1834,
+      "mean_p": 0.4284,
+      "observed": 0.4531,
+      "wilson_low": 0.4304,
+      "wilson_high": 0.476,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 0.6,
+      "n": 36,
+      "mean_p": 0.5164,
+      "observed": 0.6111,
+      "wilson_low": 0.4486,
+      "wilson_high": 0.7522,
+      "inside": true
+     }
+    ]
+   },
+   "live": {
+    "n": 3204,
+    "log_loss": 0.38986,
+    "brier": 0.11908,
+    "mean_p": 0.1517,
+    "mean_y": 0.1479,
+    "calibration_in_the_large": 0.0038,
+    "calibration_slope": 0.949,
+    "baseline": {
+     "log_loss": 0.40442,
+     "mean_p": 0.1487,
+     "calibration_slope": 0.8,
+     "brier": 0.12291
+    },
+    "baseline_log_loss": 0.40442,
+    "vs_baseline": {
+     "n": 3204,
+     "blocks": 14,
+     "mean_diff": -0.014564,
+     "ci95": [
+      -0.020368,
+      -0.006721
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "status": "OUTCOME_VALIDATED",
+   "failed": [],
+   "market_status": "NOT_TESTED"
+  },
+  "assists_over_0.5": {
+   "selection": {
+    "n": 331370,
+    "log_loss": 0.50312,
+    "brier": 0.16357,
+    "mean_p": 0.2238,
+    "mean_y": 0.2232,
+    "calibration_in_the_large": 0.0006,
+    "calibration_slope": 1.007,
+    "baseline": {
+     "log_loss": 0.50974,
+     "mean_p": 0.2284,
+     "calibration_slope": 0.952,
+     "brier": 0.16572
+    },
+    "baseline_log_loss": 0.50974,
+    "vs_baseline": {
+     "n": 331370,
+     "blocks": 1544,
+     "mean_diff": -0.006621,
+     "ci95": [
+      -0.007144,
+      -0.00612
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "confirmation": {
+    "n": 285941,
+    "log_loss": 0.51737,
+    "brier": 0.16964,
+    "mean_p": 0.2415,
+    "mean_y": 0.2389,
+    "calibration_in_the_large": 0.0025,
+    "calibration_slope": 1.025,
+    "baseline": {
+     "log_loss": 0.52421,
+     "mean_p": 0.2424,
+     "calibration_slope": 0.982,
+     "brier": 0.17198
+    },
+    "baseline_log_loss": 0.52421,
+    "vs_baseline": {
+     "n": 285941,
+     "blocks": 1288,
+     "mean_diff": -0.006839,
+     "ci95": [
+      -0.007414,
+      -0.006282
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.1,
+      "n": 5421,
+      "mean_p": 0.0901,
+      "observed": 0.0917,
+      "wilson_low": 0.0843,
+      "wilson_high": 0.0997,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 121001,
+      "mean_p": 0.1553,
+      "observed": 0.147,
+      "wilson_low": 0.145,
+      "wilson_high": 0.149,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 88720,
+      "mean_p": 0.2436,
+      "observed": 0.2451,
+      "wilson_low": 0.2423,
+      "wilson_high": 0.248,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.4,
+      "n": 43726,
+      "mean_p": 0.3435,
+      "observed": 0.3532,
+      "wilson_low": 0.3488,
+      "wilson_high": 0.3577,
+      "inside": false
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.5,
+      "n": 18558,
+      "mean_p": 0.4432,
+      "observed": 0.4438,
+      "wilson_low": 0.4367,
+      "wilson_high": 0.451,
+      "inside": true
+     },
+     {
+      "lo": 0.5,
+      "hi": 0.6,
+      "n": 5964,
+      "mean_p": 0.5393,
+      "observed": 0.5158,
+      "wilson_low": 0.5031,
+      "wilson_high": 0.5284,
+      "inside": false
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.7,
+      "n": 1960,
+      "mean_p": 0.6382,
+      "observed": 0.5811,
+      "wilson_low": 0.5591,
+      "wilson_high": 0.6028,
+      "inside": false
+     },
+     {
+      "lo": 0.7,
+      "hi": 0.8,
+      "n": 590,
+      "mean_p": 0.7351,
+      "observed": 0.678,
+      "wilson_low": 0.6392,
+      "wilson_high": 0.7144,
+      "inside": false
+     },
+     {
+      "lo": 0.8,
+      "hi": 0.9,
+      "n": 1,
+      "mean_p": 0.801,
+      "observed": 0,
+      "wilson_low": 0,
+      "wilson_high": 0.7935,
+      "inside": false
+     }
+    ]
+   },
+   "live": {
+    "n": 3204,
+    "log_loss": 0.51409,
+    "brier": 0.1681,
+    "mean_p": 0.2405,
+    "mean_y": 0.2372,
+    "calibration_in_the_large": 0.0033,
+    "calibration_slope": 1.046,
+    "baseline": {
+     "log_loss": 0.53906,
+     "mean_p": 0.2403,
+     "calibration_slope": 0.859,
+     "brier": 0.17767
+    },
+    "baseline_log_loss": 0.53906,
+    "vs_baseline": {
+     "n": 3204,
+     "blocks": 14,
+     "mean_diff": -0.024977,
+     "ci95": [
+      -0.034848,
+      -0.013263
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "status": "OUTCOME_VALIDATED",
+   "failed": [],
+   "market_status": "NOT_TESTED"
+  },
+  "points_over_0.5": {
+   "selection": {
+    "n": 331370,
+    "log_loss": 0.58767,
+    "brier": 0.2007,
+    "mean_p": 0.326,
+    "mean_y": 0.3249,
+    "calibration_in_the_large": 0.0011,
+    "calibration_slope": 1.075,
+    "baseline": {
+     "log_loss": 0.59465,
+     "mean_p": 0.3343,
+     "calibration_slope": 1.043,
+     "brier": 0.20357
+    },
+    "baseline_log_loss": 0.59465,
+    "vs_baseline": {
+     "n": 331370,
+     "blocks": 1544,
+     "mean_diff": -0.00698,
+     "ci95": [
+      -0.007581,
+      -0.006394
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "confirmation": {
+    "n": 285941,
+    "log_loss": 0.59478,
+    "brier": 0.20371,
+    "mean_p": 0.352,
+    "mean_y": 0.3452,
+    "calibration_in_the_large": 0.0068,
+    "calibration_slope": 1.086,
+    "baseline": {
+     "log_loss": 0.60197,
+     "mean_p": 0.3525,
+     "calibration_slope": 1.078,
+     "brier": 0.20676
+    },
+    "baseline_log_loss": 0.60197,
+    "vs_baseline": {
+     "n": 285941,
+     "blocks": 1288,
+     "mean_diff": -0.00719,
+     "ci95": [
+      -0.007854,
+      -0.006559
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.1,
+      "n": 156,
+      "mean_p": 0.0906,
+      "observed": 0.1282,
+      "wilson_low": 0.0845,
+      "wilson_high": 0.1897,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 37028,
+      "mean_p": 0.167,
+      "observed": 0.1647,
+      "wilson_low": 0.161,
+      "wilson_high": 0.1686,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 83408,
+      "mean_p": 0.2513,
+      "observed": 0.227,
+      "wilson_low": 0.2242,
+      "wilson_high": 0.2298,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.4,
+      "n": 70431,
+      "mean_p": 0.3474,
+      "observed": 0.334,
+      "wilson_low": 0.3305,
+      "wilson_high": 0.3375,
+      "inside": false
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.5,
+      "n": 47867,
+      "mean_p": 0.4459,
+      "observed": 0.4553,
+      "wilson_low": 0.4508,
+      "wilson_high": 0.4597,
+      "inside": false
+     },
+     {
+      "lo": 0.5,
+      "hi": 0.6,
+      "n": 30501,
+      "mean_p": 0.5453,
+      "observed": 0.5653,
+      "wilson_low": 0.5597,
+      "wilson_high": 0.5708,
+      "inside": false
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.7,
+      "n": 12828,
+      "mean_p": 0.6403,
+      "observed": 0.6451,
+      "wilson_low": 0.6368,
+      "wilson_high": 0.6533,
+      "inside": true
+     },
+     {
+      "lo": 0.7,
+      "hi": 0.8,
+      "n": 2919,
+      "mean_p": 0.7403,
+      "observed": 0.7396,
+      "wilson_low": 0.7234,
+      "wilson_high": 0.7552,
+      "inside": true
+     },
+     {
+      "lo": 0.8,
+      "hi": 0.9,
+      "n": 803,
+      "mean_p": 0.8302,
+      "observed": 0.8132,
+      "wilson_low": 0.7848,
+      "wilson_high": 0.8386,
+      "inside": true
+     }
+    ]
+   },
+   "live": {
+    "n": 3204,
+    "log_loss": 0.59171,
+    "brier": 0.2027,
+    "mean_p": 0.3497,
+    "mean_y": 0.3374,
+    "calibration_in_the_large": 0.0123,
+    "calibration_slope": 1.065,
+    "baseline": {
+     "log_loss": 0.62006,
+     "mean_p": 0.3514,
+     "calibration_slope": 1.016,
+     "brier": 0.2152
+    },
+    "baseline_log_loss": 0.62006,
+    "vs_baseline": {
+     "n": 3204,
+     "blocks": 14,
+     "mean_diff": -0.02835,
+     "ci95": [
+      -0.040074,
+      -0.014777
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "status": "OUTCOME_VALIDATED",
+   "failed": [],
+   "market_status": "NOT_TESTED"
+  },
+  "points_over_1.5": {
+   "selection": {
+    "n": 331370,
+    "log_loss": 0.23977,
+    "brier": 0.06538,
+    "mean_p": 0.0734,
+    "mean_y": 0.0753,
+    "calibration_in_the_large": -0.0019,
+    "calibration_slope": 1.038,
+    "baseline": {
+     "log_loss": 0.24385,
+     "mean_p": 0.0752,
+     "calibration_slope": 1.017,
+     "brier": 0.066
+    },
+    "baseline_log_loss": 0.24385,
+    "vs_baseline": {
+     "n": 331370,
+     "blocks": 1544,
+     "mean_diff": -0.004082,
+     "ci95": [
+      -0.004571,
+      -0.003667
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "confirmation": {
+    "n": 285941,
+    "log_loss": 0.26431,
+    "brier": 0.07427,
+    "mean_p": 0.0877,
+    "mean_y": 0.0886,
+    "calibration_in_the_large": -0.001,
+    "calibration_slope": 1.039,
+    "baseline": {
+     "log_loss": 0.26917,
+     "mean_p": 0.085,
+     "calibration_slope": 1.04,
+     "brier": 0.07518
+    },
+    "baseline_log_loss": 0.26917,
+    "vs_baseline": {
+     "n": 285941,
+     "blocks": 1288,
+     "mean_diff": -0.00486,
+     "ci95": [
+      -0.005408,
+      -0.004323
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.1,
+      "n": 197792,
+      "mean_p": 0.046,
+      "observed": 0.0441,
+      "wilson_low": 0.0432,
+      "wilson_high": 0.045,
+      "inside": false
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 61612,
+      "mean_p": 0.1414,
+      "observed": 0.151,
+      "wilson_low": 0.1482,
+      "wilson_high": 0.1539,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 20041,
+      "mean_p": 0.2396,
+      "observed": 0.2463,
+      "wilson_low": 0.2404,
+      "wilson_high": 0.2524,
+      "inside": false
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.4,
+      "n": 4557,
+      "mean_p": 0.3364,
+      "observed": 0.3375,
+      "wilson_low": 0.3239,
+      "wilson_high": 0.3514,
+      "inside": true
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.5,
+      "n": 1340,
+      "mean_p": 0.4438,
+      "observed": 0.4187,
+      "wilson_low": 0.3925,
+      "wilson_high": 0.4453,
+      "inside": true
+     },
+     {
+      "lo": 0.5,
+      "hi": 0.6,
+      "n": 544,
+      "mean_p": 0.5386,
+      "observed": 0.4761,
+      "wilson_low": 0.4344,
+      "wilson_high": 0.5181,
+      "inside": false
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.7,
+      "n": 55,
+      "mean_p": 0.6188,
+      "observed": 0.5273,
+      "wilson_low": 0.3979,
+      "wilson_high": 0.6531,
+      "inside": true
+     }
+    ]
+   },
+   "live": {
+    "n": 3204,
+    "log_loss": 0.27356,
+    "brier": 0.07612,
+    "mean_p": 0.0866,
+    "mean_y": 0.0908,
+    "calibration_in_the_large": -0.0043,
+    "calibration_slope": 0.955,
+    "baseline": {
+     "log_loss": 0.29304,
+     "mean_p": 0.0776,
+     "calibration_slope": 0.902,
+     "brier": 0.0805
+    },
+    "baseline_log_loss": 0.29304,
+    "vs_baseline": {
+     "n": 3204,
+     "blocks": 14,
+     "mean_diff": -0.019479,
+     "ci95": [
+      -0.029025,
+      -0.008738
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "status": "OUTCOME_VALIDATED",
+   "failed": [],
+   "market_status": "NOT_TESTED"
+  },
+  "saves_over_22.5": {
+   "selection": {
+    "n": 18410,
+    "log_loss": 0.56111,
+    "brier": 0.18776,
+    "mean_p": 0.7113,
+    "mean_y": 0.7398,
+    "calibration_in_the_large": -0.0285,
+    "calibration_slope": 0.943,
+    "baseline": {
+     "log_loss": 0.58039,
+     "mean_p": 0.7869,
+     "calibration_slope": 0.479,
+     "brier": 0.19379
+    },
+    "baseline_log_loss": 0.58039,
+    "vs_baseline": {
+     "n": 18410,
+     "blocks": 1544,
+     "mean_diff": -0.019275,
+     "ci95": [
+      -0.022887,
+      -0.015189
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "confirmation": {
+    "n": 15890,
+    "log_loss": 0.58898,
+    "brier": 0.20095,
+    "mean_p": 0.6775,
+    "mean_y": 0.6917,
+    "calibration_in_the_large": -0.0142,
+    "calibration_slope": 0.99,
+    "baseline": {
+     "log_loss": 0.62438,
+     "mean_p": 0.7686,
+     "calibration_slope": 0.668,
+     "brier": 0.21411
+    },
+    "baseline_log_loss": 0.62438,
+    "vs_baseline": {
+     "n": 15890,
+     "blocks": 1288,
+     "mean_diff": -0.035395,
+     "ci95": [
+      -0.039991,
+      -0.030594
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "bins": [
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 15,
+      "mean_p": 0.2734,
+      "observed": 0.3333,
+      "wilson_low": 0.1518,
+      "wilson_high": 0.5829,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.4,
+      "n": 203,
+      "mean_p": 0.3646,
+      "observed": 0.3399,
+      "wilson_low": 0.2783,
+      "wilson_high": 0.4075,
+      "inside": true
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.5,
+      "n": 1062,
+      "mean_p": 0.4593,
+      "observed": 0.467,
+      "wilson_low": 0.4372,
+      "wilson_high": 0.4971,
+      "inside": true
+     },
+     {
+      "lo": 0.5,
+      "hi": 0.6,
+      "n": 2533,
+      "mean_p": 0.555,
+      "observed": 0.5839,
+      "wilson_low": 0.5646,
+      "wilson_high": 0.6029,
+      "inside": false
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.7,
+      "n": 4590,
+      "mean_p": 0.6528,
+      "observed": 0.6634,
+      "wilson_low": 0.6496,
+      "wilson_high": 0.6769,
+      "inside": true
+     },
+     {
+      "lo": 0.7,
+      "hi": 0.8,
+      "n": 5258,
+      "mean_p": 0.7476,
+      "observed": 0.7647,
+      "wilson_low": 0.7531,
+      "wilson_high": 0.776,
+      "inside": false
+     },
+     {
+      "lo": 0.8,
+      "hi": 0.9,
+      "n": 2161,
+      "mean_p": 0.8348,
+      "observed": 0.8417,
+      "wilson_low": 0.8257,
+      "wilson_high": 0.8565,
+      "inside": true
+     },
+     {
+      "lo": 0.9,
+      "hi": 1,
+      "n": 68,
+      "mean_p": 0.9135,
+      "observed": 0.8382,
+      "wilson_low": 0.7331,
+      "wilson_high": 0.9072,
+      "inside": false
+     }
+    ]
+   },
+   "live": {
+    "n": 178,
+    "log_loss": 0.65113,
+    "brier": 0.2295,
+    "mean_p": 0.547,
+    "mean_y": 0.5449,
+    "calibration_in_the_large": 0.0021,
+    "calibration_slope": 1.387,
+    "baseline": {
+     "log_loss": 0.773,
+     "mean_p": 0.7361,
+     "calibration_slope": 0.582,
+     "brier": 0.28332
+    },
+    "baseline_log_loss": 0.773,
+    "vs_baseline": {
+     "n": 178,
+     "blocks": 14,
+     "mean_diff": -0.121864,
+     "ci95": [
+      -0.189256,
+      -0.07245
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "status": "OUTCOME_VALIDATED",
+   "failed": [],
+   "market_status": "NOT_TESTED"
+  },
+  "saves_over_25.5": {
+   "selection": {
+    "n": 18410,
+    "log_loss": 0.66188,
+    "brier": 0.23472,
+    "mean_p": 0.5503,
+    "mean_y": 0.587,
+    "calibration_in_the_large": -0.0367,
+    "calibration_slope": 0.99,
+    "baseline": {
+     "log_loss": 0.67704,
+     "mean_p": 0.5857,
+     "calibration_slope": 0.512,
+     "brier": 0.24165
+    },
+    "baseline_log_loss": 0.67704,
+    "vs_baseline": {
+     "n": 18410,
+     "blocks": 1544,
+     "mean_diff": -0.015165,
+     "ci95": [
+      -0.018538,
+      -0.01205
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "confirmation": {
+    "n": 15890,
+    "log_loss": 0.65507,
+    "brier": 0.23156,
+    "mean_p": 0.5148,
+    "mean_y": 0.5301,
+    "calibration_in_the_large": -0.0153,
+    "calibration_slope": 1.039,
+    "baseline": {
+     "log_loss": 0.68147,
+     "mean_p": 0.5629,
+     "calibration_slope": 0.701,
+     "brier": 0.24397
+    },
+    "baseline_log_loss": 0.68147,
+    "vs_baseline": {
+     "n": 15890,
+     "blocks": 1288,
+     "mean_diff": -0.026401,
+     "ci95": [
+      -0.030438,
+      -0.022742
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "bins": [
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 80,
+      "mean_p": 0.1742,
+      "observed": 0.175,
+      "wilson_low": 0.1072,
+      "wilson_high": 0.2726,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 831,
+      "mean_p": 0.2634,
+      "observed": 0.2575,
+      "wilson_low": 0.229,
+      "wilson_high": 0.2883,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.4,
+      "n": 2274,
+      "mean_p": 0.3555,
+      "observed": 0.3703,
+      "wilson_low": 0.3507,
+      "wilson_high": 0.3903,
+      "inside": true
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.5,
+      "n": 3792,
+      "mean_p": 0.4528,
+      "observed": 0.462,
+      "wilson_low": 0.4462,
+      "wilson_high": 0.4779,
+      "inside": true
+     },
+     {
+      "lo": 0.5,
+      "hi": 0.6,
+      "n": 4556,
+      "mean_p": 0.55,
+      "observed": 0.5722,
+      "wilson_low": 0.5578,
+      "wilson_high": 0.5865,
+      "inside": false
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.7,
+      "n": 3220,
+      "mean_p": 0.6438,
+      "observed": 0.664,
+      "wilson_low": 0.6475,
+      "wilson_high": 0.6801,
+      "inside": false
+     },
+     {
+      "lo": 0.7,
+      "hi": 0.8,
+      "n": 1053,
+      "mean_p": 0.7355,
+      "observed": 0.7512,
+      "wilson_low": 0.7242,
+      "wilson_high": 0.7764,
+      "inside": true
+     },
+     {
+      "lo": 0.8,
+      "hi": 0.9,
+      "n": 84,
+      "mean_p": 0.8225,
+      "observed": 0.7857,
+      "wilson_low": 0.6865,
+      "wilson_high": 0.8599,
+      "inside": true
+     }
+    ]
+   },
+   "live": {
+    "n": 178,
+    "log_loss": 0.62191,
+    "brier": 0.21725,
+    "mean_p": 0.3737,
+    "mean_y": 0.3764,
+    "calibration_in_the_large": -0.0027,
+    "calibration_slope": 1.445,
+    "baseline": {
+     "log_loss": 0.70022,
+     "mean_p": 0.515,
+     "calibration_slope": 0.574,
+     "brier": 0.25332
+    },
+    "baseline_log_loss": 0.70022,
+    "vs_baseline": {
+     "n": 178,
+     "blocks": 14,
+     "mean_diff": -0.078312,
+     "ci95": [
+      -0.101129,
+      -0.0564
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "status": "OUTCOME_VALIDATED",
+   "failed": [],
+   "market_status": "NOT_TESTED"
+  },
+  "saves_over_28.5": {
+   "selection": {
+    "n": 18410,
+    "log_loss": 0.66036,
+    "brier": 0.23419,
+    "mean_p": 0.3901,
+    "mean_y": 0.4175,
+    "calibration_in_the_large": -0.0275,
+    "calibration_slope": 1.014,
+    "baseline": {
+     "log_loss": 0.68417,
+     "mean_p": 0.3673,
+     "calibration_slope": 0.511,
+     "brier": 0.24472
+    },
+    "baseline_log_loss": 0.68417,
+    "vs_baseline": {
+     "n": 18410,
+     "blocks": 1544,
+     "mean_diff": -0.023804,
+     "ci95": [
+      -0.02674,
+      -0.020698
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "confirmation": {
+    "n": 15890,
+    "log_loss": 0.61896,
+    "brier": 0.21506,
+    "mean_p": 0.3592,
+    "mean_y": 0.3678,
+    "calibration_in_the_large": -0.0087,
+    "calibration_slope": 1.075,
+    "baseline": {
+     "log_loss": 0.64706,
+     "mean_p": 0.3468,
+     "calibration_slope": 0.694,
+     "brier": 0.22728
+    },
+    "baseline_log_loss": 0.64706,
+    "vs_baseline": {
+     "n": 15890,
+     "blocks": 1288,
+     "mean_diff": -0.028102,
+     "ci95": [
+      -0.032026,
+      -0.024255
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.1,
+      "n": 84,
+      "mean_p": 0.0838,
+      "observed": 0.0833,
+      "wilson_low": 0.041,
+      "wilson_high": 0.1622,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 1586,
+      "mean_p": 0.1626,
+      "observed": 0.1633,
+      "wilson_low": 0.1459,
+      "wilson_high": 0.1823,
+      "inside": true
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 3701,
+      "mean_p": 0.2545,
+      "observed": 0.2575,
+      "wilson_low": 0.2437,
+      "wilson_high": 0.2718,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.4,
+      "n": 4606,
+      "mean_p": 0.3508,
+      "observed": 0.3532,
+      "wilson_low": 0.3396,
+      "wilson_high": 0.3672,
+      "inside": true
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.5,
+      "n": 3738,
+      "mean_p": 0.4451,
+      "observed": 0.4543,
+      "wilson_low": 0.4383,
+      "wilson_high": 0.4703,
+      "inside": true
+     },
+     {
+      "lo": 0.5,
+      "hi": 0.6,
+      "n": 1743,
+      "mean_p": 0.5412,
+      "observed": 0.5772,
+      "wilson_low": 0.5538,
+      "wilson_high": 0.6002,
+      "inside": false
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.7,
+      "n": 400,
+      "mean_p": 0.6348,
+      "observed": 0.6775,
+      "wilson_low": 0.6302,
+      "wilson_high": 0.7214,
+      "inside": true
+     },
+     {
+      "lo": 0.7,
+      "hi": 0.8,
+      "n": 32,
+      "mean_p": 0.734,
+      "observed": 0.75,
+      "wilson_low": 0.5789,
+      "wilson_high": 0.8675,
+      "inside": true
+     }
+    ]
+   },
+   "live": {
+    "n": 178,
+    "log_loss": 0.48312,
+    "brier": 0.15676,
+    "mean_p": 0.2307,
+    "mean_y": 0.2135,
+    "calibration_in_the_large": 0.0172,
+    "calibration_slope": 1.535,
+    "baseline": {
+     "log_loss": 0.53344,
+     "mean_p": 0.297,
+     "calibration_slope": 0.69,
+     "brier": 0.17425
+    },
+    "baseline_log_loss": 0.53344,
+    "vs_baseline": {
+     "n": 178,
+     "blocks": 14,
+     "mean_diff": -0.050317,
+     "ci95": [
+      -0.072397,
+      -0.020221
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "status": "OUTCOME_VALIDATED",
+   "failed": [],
+   "market_status": "NOT_TESTED"
+  },
+  "saves_over_31.5": {
+   "selection": {
+    "n": 18410,
+    "log_loss": 0.56368,
+    "brier": 0.18963,
+    "mean_p": 0.2536,
+    "mean_y": 0.2696,
+    "calibration_in_the_large": -0.016,
+    "calibration_slope": 1.041,
+    "baseline": {
+     "log_loss": 0.60325,
+     "mean_p": 0.1911,
+     "calibration_slope": 0.464,
+     "brier": 0.20193
+    },
+    "baseline_log_loss": 0.60325,
+    "vs_baseline": {
+     "n": 18410,
+     "blocks": 1544,
+     "mean_diff": -0.039561,
+     "ci95": [
+      -0.043672,
+      -0.035629
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "confirmation": {
+    "n": 15890,
+    "log_loss": 0.50251,
+    "brier": 0.16399,
+    "mean_p": 0.2307,
+    "mean_y": 0.2276,
+    "calibration_in_the_large": 0.0031,
+    "calibration_slope": 1.079,
+    "baseline": {
+     "log_loss": 0.53643,
+     "mean_p": 0.1772,
+     "calibration_slope": 0.648,
+     "brier": 0.17475
+    },
+    "baseline_log_loss": 0.53643,
+    "vs_baseline": {
+     "n": 15890,
+     "blocks": 1288,
+     "mean_diff": -0.033921,
+     "ci95": [
+      -0.038141,
+      -0.02923
+     ],
+     "a_better": true,
+     "b_better": false
+    },
+    "bins": [
+     {
+      "lo": 0,
+      "hi": 0.1,
+      "n": 1479,
+      "mean_p": 0.0759,
+      "observed": 0.0737,
+      "wilson_low": 0.0615,
+      "wilson_high": 0.0881,
+      "inside": true
+     },
+     {
+      "lo": 0.1,
+      "hi": 0.2,
+      "n": 5226,
+      "mean_p": 0.1533,
+      "observed": 0.1429,
+      "wilson_low": 0.1337,
+      "wilson_high": 0.1527,
+      "inside": false
+     },
+     {
+      "lo": 0.2,
+      "hi": 0.3,
+      "n": 5338,
+      "mean_p": 0.248,
+      "observed": 0.243,
+      "wilson_low": 0.2317,
+      "wilson_high": 0.2547,
+      "inside": true
+     },
+     {
+      "lo": 0.3,
+      "hi": 0.4,
+      "n": 2819,
+      "mean_p": 0.3422,
+      "observed": 0.3491,
+      "wilson_low": 0.3317,
+      "wilson_high": 0.3669,
+      "inside": true
+     },
+     {
+      "lo": 0.4,
+      "hi": 0.5,
+      "n": 880,
+      "mean_p": 0.4369,
+      "observed": 0.4466,
+      "wilson_low": 0.414,
+      "wilson_high": 0.4796,
+      "inside": true
+     },
+     {
+      "lo": 0.5,
+      "hi": 0.6,
+      "n": 136,
+      "mean_p": 0.5324,
+      "observed": 0.5662,
+      "wilson_low": 0.4822,
+      "wilson_high": 0.6465,
+      "inside": true
+     },
+     {
+      "lo": 0.6,
+      "hi": 0.7,
+      "n": 12,
+      "mean_p": 0.6298,
+      "observed": 0.8333,
+      "wilson_low": 0.552,
+      "wilson_high": 0.953,
+      "inside": true
+     }
+    ]
+   },
+   "live": {
+    "n": 178,
+    "log_loss": 0.31962,
+    "brier": 0.09208,
+    "mean_p": 0.1296,
+    "mean_y": 0.1067,
+    "calibration_in_the_large": 0.0228,
+    "calibration_slope": 1.391,
+    "baseline": {
+     "log_loss": 0.33306,
+     "mean_p": 0.1393,
+     "calibration_slope": 1.517,
+     "brier": 0.09432
+    },
+    "baseline_log_loss": 0.33306,
+    "vs_baseline": {
+     "n": 178,
+     "blocks": 14,
+     "mean_diff": -0.01344,
+     "ci95": [
+      -0.038681,
+      0.011311
+     ],
+     "a_better": false,
+     "b_better": false
+    }
+   },
+   "status": "OUTCOME_VALIDATED",
+   "failed": [],
+   "market_status": "NOT_TESTED"
+  }
+ },
+ "value_claims": {
+  "state": "DISABLED",
+  "reasons": [
+   "no NHL player-prop prices are captured",
+   "no prop market has been tested against closing prices"
+  ]
+ },
+ "scored_skater_games": 620515,
+ "mean_recalibration_by_season": {
+  "2011": {
+   "sog": {
+    "b": 1,
+    "c": 1,
+    "n": 0,
+    "basis": "identity: fewer than 2000 earlier predictions"
+   },
+   "g": {
+    "b": 1,
+    "c": 1,
+    "n": 0,
+    "basis": "identity: fewer than 2000 earlier predictions"
+   },
+   "a": {
+    "b": 1,
+    "c": 1,
+    "n": 0,
+    "basis": "identity: fewer than 2000 earlier predictions"
+   },
+   "sa": {
+    "b": 1,
+    "c": 1,
+    "n": 0,
+    "basis": "identity: fewer than 2000 earlier predictions"
+   }
+  },
+  "2012": {
+   "sog": {
+    "b": 1.2,
+    "c": 0.86918,
+    "n": 47256,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "g": {
+    "b": 1.25,
+    "c": 1.52566,
+    "n": 47256,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "a": {
+    "b": 1.4,
+    "c": 1.59028,
+    "n": 47256,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "sa": {
+    "b": 0.9,
+    "c": 1.34912,
+    "n": 2636,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   }
+  },
+  "2013": {
+   "sog": {
+    "b": 1.15,
+    "c": 0.89217,
+    "n": 94631,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "g": {
+    "b": 1.25,
+    "c": 1.51037,
+    "n": 94631,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "a": {
+    "b": 1.35,
+    "c": 1.48019,
+    "n": 94631,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "sa": {
+    "b": 0.9,
+    "c": 1.34566,
+    "n": 5268,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   }
+  },
+  "2014": {
+   "sog": {
+    "b": 1.15,
+    "c": 0.8921,
+    "n": 123646,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "g": {
+    "b": 1.25,
+    "c": 1.51433,
+    "n": 123646,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "a": {
+    "b": 1.35,
+    "c": 1.48153,
+    "n": 123646,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "sa": {
+    "b": 0.95,
+    "c": 1.13447,
+    "n": 6880,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   }
+  },
+  "2015": {
+   "sog": {
+    "b": 1.15,
+    "c": 0.89509,
+    "n": 124014,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "g": {
+    "b": 1.25,
+    "c": 1.52623,
+    "n": 124014,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "a": {
+    "b": 1.3,
+    "c": 1.40015,
+    "n": 124014,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "sa": {
+    "b": 1,
+    "c": 0.96146,
+    "n": 6890,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   }
+  },
+  "2016": {
+   "sog": {
+    "b": 1.15,
+    "c": 0.89968,
+    "n": 124120,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "g": {
+    "b": 1.25,
+    "c": 1.53836,
+    "n": 124120,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "a": {
+    "b": 1.3,
+    "c": 1.40857,
+    "n": 124120,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "sa": {
+    "b": 1.05,
+    "c": 0.81397,
+    "n": 6896,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   }
+  },
+  "2017": {
+   "sog": {
+    "b": 1.15,
+    "c": 0.89922,
+    "n": 142661,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "g": {
+    "b": 1.25,
+    "c": 1.54571,
+    "n": 142661,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "a": {
+    "b": 1.3,
+    "c": 1.40998,
+    "n": 142661,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "sa": {
+    "b": 0.95,
+    "c": 1.1433,
+    "n": 7926,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   }
+  },
+  "2018": {
+   "sog": {
+    "b": 1.15,
+    "c": 0.89735,
+    "n": 142446,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "g": {
+    "b": 1.25,
+    "c": 1.54157,
+    "n": 142446,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "a": {
+    "b": 1.3,
+    "c": 1.40508,
+    "n": 142446,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "sa": {
+    "b": 0.9,
+    "c": 1.35614,
+    "n": 7914,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   }
+  },
+  "2019": {
+   "sog": {
+    "b": 1.15,
+    "c": 0.90405,
+    "n": 143745,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "g": {
+    "b": 1.25,
+    "c": 1.57141,
+    "n": 143745,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "a": {
+    "b": 1.35,
+    "c": 1.51378,
+    "n": 143745,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "sa": {
+    "b": 0.85,
+    "c": 1.62034,
+    "n": 7986,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   }
+  },
+  "2020": {
+   "sog": {
+    "b": 1.15,
+    "c": 0.9039,
+    "n": 145077,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "g": {
+    "b": 1.25,
+    "c": 1.58217,
+    "n": 145077,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "a": {
+    "b": 1.3,
+    "c": 1.41524,
+    "n": 145077,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "sa": {
+    "b": 0.9,
+    "c": 1.36925,
+    "n": 8060,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   }
+  },
+  "2021": {
+   "sog": {
+    "b": 1.15,
+    "c": 0.90253,
+    "n": 141300,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "g": {
+    "b": 1.25,
+    "c": 1.59117,
+    "n": 141300,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "a": {
+    "b": 1.3,
+    "c": 1.40179,
+    "n": 141300,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "sa": {
+    "b": 0.85,
+    "c": 1.62611,
+    "n": 7850,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   }
+  },
+  "2022": {
+   "sog": {
+    "b": 1.15,
+    "c": 0.89051,
+    "n": 126772,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "g": {
+    "b": 1.25,
+    "c": 1.57364,
+    "n": 126772,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "a": {
+    "b": 1.3,
+    "c": 1.3737,
+    "n": 126772,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "sa": {
+    "b": 0.95,
+    "c": 1.13937,
+    "n": 7044,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   }
+  },
+  "2023": {
+   "sog": {
+    "b": 1.15,
+    "c": 0.90074,
+    "n": 128299,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "g": {
+    "b": 1.3,
+    "c": 1.72499,
+    "n": 128299,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "a": {
+    "b": 1.3,
+    "c": 1.39107,
+    "n": 128299,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "sa": {
+    "b": 0.95,
+    "c": 1.14795,
+    "n": 7130,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   }
+  },
+  "2024": {
+   "sog": {
+    "b": 1.2,
+    "c": 0.87191,
+    "n": 135048,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "g": {
+    "b": 1.3,
+    "c": 1.68973,
+    "n": 135048,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "a": {
+    "b": 1.25,
+    "c": 1.31467,
+    "n": 135048,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "sa": {
+    "b": 1.05,
+    "c": 0.81247,
+    "n": 7506,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   }
+  },
+  "2025": {
+   "sog": {
+    "b": 1.2,
+    "c": 0.86768,
+    "n": 151185,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "g": {
+    "b": 1.25,
+    "c": 1.51505,
+    "n": 151185,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "a": {
+    "b": 1.3,
+    "c": 1.37129,
+    "n": 151185,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "sa": {
+    "b": 1.05,
+    "c": 0.81069,
+    "n": 8402,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   }
+  },
+  "2026": {
+   "sog": {
+    "b": 1.15,
+    "c": 0.87894,
+    "n": 151091,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "g": {
+    "b": 1.25,
+    "c": 1.47043,
+    "n": 151091,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "a": {
+    "b": 1.25,
+    "c": 1.27655,
+    "n": 151091,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "sa": {
+    "b": 1,
+    "c": 0.94984,
+    "n": 8396,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   }
+  },
+  "2027": {
+   "sog": {
+    "b": 1.15,
+    "c": 0.87711,
+    "n": 150893,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "g": {
+    "b": 1.25,
+    "c": 1.47092,
+    "n": 150893,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "a": {
+    "b": 1.3,
+    "c": 1.34658,
+    "n": 150893,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "sa": {
+    "b": 0.9,
+    "c": 1.33118,
+    "n": 8384,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   }
+  }
+ },
+ "live_params": {
+  "for_season": 2027,
+  "sizes": {
+   "sog": {
+    "r": 20,
+    "n": 150893,
+    "basis": "maximum likelihood on the three seasons before"
+   },
+   "shots_against": {
+    "r": 30,
+    "n": 8384,
+    "basis": "maximum likelihood on the three seasons before"
+   }
+  },
+  "mean_recalibration": {
+   "sog": {
+    "b": 1.15,
+    "c": 0.87711,
+    "n": 150893,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "g": {
+    "b": 1.25,
+    "c": 1.47092,
+    "n": 150893,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "a": {
+    "b": 1.3,
+    "c": 1.34658,
+    "n": 150893,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   },
+   "sa": {
+    "b": 0.9,
+    "c": 1.33118,
+    "n": 8384,
+    "basis": "Poisson maximum likelihood on the three seasons before"
+   }
+  },
+  "defaults": {
+   "decay_games": 60,
+   "toi_half_life": 6,
+   "prior_s": {
+    "sog": 18000,
+    "xg": 60000,
+    "g": 90000,
+    "a": 60000
+   },
+   "toi_prior_s": {
+    "F": 900,
+    "D": 1260
+   },
+   "toi_prior_games": 2,
+   "team_prior_games": 10,
+   "team_decay_games": 40,
+   "goalie_prior_shots": 1500,
+   "goalie_decay_shots": 2500,
+   "xg_weight": 0.6,
+   "league_half_life_dates": 150
+  }
+ }
+}

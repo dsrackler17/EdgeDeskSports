@@ -1,5 +1,57 @@
 # Changelog
 
+## 2026-10-14 — The college baseball research engine: every Division I game on the board, validated on a holdout it never saw, research not picks
+
+**I built an NCAA Division I baseball engine on the warehouse: an opponent-adjusted, conference-pooled run model with run-space calibration. On 2025–26, seasons it never saw, it beats calibrated Elo (−0.0055 log loss, 95% −0.0074 to −0.0035) and is calibrated (in-the-large 0.002, slope 1.015). The moneyline is OUTCOME_VALIDATED on outcomes. Nothing has been tested against a market, because no authorised college-baseball feed exists, so the board shows prices and never a bet.** Docs: `docs/college-baseball/REPORT.md` (generated from the evidence), `college_baseball/research/`.
+
+- **Models:**
+  - Hierarchical quasi-Poisson team strength (team within conference within division), with parks, carryover and rating uncertainty, tuned on 2014–22 only.
+  - Five baselines: home rate, Elo, Pythagenpat, Massey and Bradley-Terry.
+  - Calibration moves the run expectations, not a probability, so every market of a game stays coherent.
+  - The ensemble, GLM, boosting, rest layer, defence features and pitcher hybrid were all tested. None beat `hier_cal` under the written protocol, and all are recorded in a hash-chained registry.
+- **Pricing:**
+  - Every full-game market comes from one negative-binomial distribution, mixed over rating uncertainty and the seven-inning chance. It uses the run model's own expectations, re-weighted to the validated P(home).
+  - The inning simulator was measured worse than the closed form on the moneyline and totals, so it prices only the first five innings, and those are research only (too extreme, slope 0.72).
+- **Found and fixed during validation:**
+  - The simulator, fed the calibrated expectations, double-counted the home side's last inning (+3.7 points to the home side).
+  - A 20-inning cap left a few games tied, which made their moneylines incoherent.
+  - A board test passed on an empty set.
+  - The weekly refit would have erased the holdout record.
+- **Open:**
+  - The auditor refused to promote this version, because the critical TAILS check fails by 0.1 point: one side scoring 15+ is predicted at 7.7% vs 6.6% observed (U-15). Prices are shown, labelled provisional research.
+  - Home −1.5 is over-predicted by about 2.5 points (U-14).
+  - Tuned values sit on grid edges (U-12).
+  - Commercial data rights (gate G1) and a market feed (G12) are owner decisions.
+- **Terminal:** Research → Baseball → NCAA engine, with an all-games board, a game research page with seven readiness states, and advanced views (ratings, calibration, audit and the 16 release gates, the experiment registry).
+
+## 2026-10-14 — The NHL research engine: a model lab with a written promotion rule, a full market sheet with exact explanations, player-prop research, box-score reconciliation, a source registry and an optional warehouse
+
+**I scored seven model families against my NHL production model with its own walk-forward, under a promotion rule written before any of them ran. None earned promotion: the incumbent stays, slimmed to `xg_core`. The game page now prices the full sheet, explains every win probability exactly, re-prices goalie and what-if scenarios in place, and says why a price is or isn't actionable. Player props are researched and validated against outcomes, but no prop is called value: no prop price has been captured. Value claims stay off everywhere until a licensed closing archive passes the market test.** Docs: `docs/engine/NHL_AUDIT.md`, `NHL_LAB.md`, `NHL_PROPS.md`, `NHL_SOURCES.md`, `NHL_OPERATIONS.md`, `NHL.md`, `DATA.md`.
+
+- **Audit** (`NHL_AUDIT.md`): the committed data and record reproduce exactly. The audit lists what existed, what was validated and what was missing.
+- **Data**:
+  - **Period goals** for every game since 2010-11 (`hockey/data/game_periods/`), with 0 mismatches against the finals.
+  - **Box scores** (`hockey/ingest/boxscores.js`), reconciled against the play-by-play every season (`hockey/validation/nhl_crosscheck_box.json`). Agreement: team goals 99.995%, shots on goal 99.32%, power-play goals 98.20%, goalie shots against 99.49%, starters 100%, skater goals and assists 99.999%. Penalty minutes reach 97.48% once bench minors that name no player are excluded.
+  - **Arenas and the schedule:** travel, time zones and congestion.
+- **The lab** (`hockey/lab/`, `hockey/validation/nhl_lab.json`): goals-only ratings, a tuned Elo, the xG GLM, goalie and lineup terms, an L2 logistic regression, gradient-boosted trees (dependency-free, seeded), pair recalibration, a stacked ensemble and an equal-weight average. The lab's incumbent reproduces production to the last digit.
+  - Decision: **RETAIN_INCUMBENT**. The trees are the worst model in the lab (+0.0047 log loss on confirmation), and the stack is worse than its best component.
+  - **Ablation:** home ice, 5v5 xG, goals and finishing, and rest earn their places. Special teams, travel, time zones, congestion and form do not.
+  - **Two amendments, each chosen by the existing selection rule:** a finer late-game period profile, and `xg_core`, which drops the special-teams block. On confirmation `xg_core` is level with the previous model (−0.00015, 95% −0.00087 to +0.00048). It still beats the tuned Elo by 0.0037 (95% −0.0054 to −0.0021). Rollback is one line (`NHL_OPERATIONS.md`).
+  - **Model F:** shape terms (pace frailty, draw inflation) were rejected.
+- **Extended markets** (confirmation, n 7,945):
+  - OUTCOME_VALIDATED: puck lines −2.5 to +3.5, every team total, the regulation 3-way away side, the first-period 3-way sides and first period over 1.5.
+  - PROVISIONAL: puck line −3.5, full-game totals (slopes 0.72–0.78), regulation totals (0.69–0.82), the regulation home side and draw (draw slope 0.68), the first-period draw, and first period over 0.5 and 2.5.
+  - Pushes and no-push lines are settled explicitly.
+- **Explanations** (`hockey/model/explain.js`): an exact Shapley split of each win probability over the model's factor groups, measured against a league-average club. The parts sum to the price, and the suite checks that. The desk's "Why:" sentence comes from the split.
+- **Market check** (`lib/edgedesk_nhl_market.js`): VERIFIED VALUE / PROVISIONAL / RESEARCH ONLY / PASS, decided by seven gates: model validated, market tested, price captured, price under 30 minutes old, settlement, edge survives −1 sd and the worst goalie scenario, and fresh data. Each gate prints its reason. It matches `lib/edgedesk_quote_ev.js` on EV.
+- **Player props** (`hockey/props/`): shots on goal, goals as a thinning of shots, assists, points and goalie saves. All 13 markets beat a fair shrunk baseline on 2020-21 to 2025-26. Defects found on the first run are disclosed in `NHL_PROPS.md`. `value_claims` is DISABLED, and `--check` fails if that changes.
+- **Diagnostics and drift** (`hockey/model/diagnostics.js`): results by season, phase, month, club and starter, plus total coverage. A CUSUM and z drift monitor on the live season reads OK.
+- **The game page** (`lib/edgedesk_engine_ui.js`): Overview, Markets, Scenarios, Players, Evidence, Models and Record tabs, with the source registry, at desktop and 390 px. The e2e suite walks every tab.
+- **Sources** (`hockey/sources/registry.json`, `NHL_SOURCES.md`): 12 providers, each with its authorisation status, coverage, freshness, cost and measured contribution. No provider is wired on an unverified reading of its terms. Access requests to MoneyPuck, Natural Stat Trick, Evolving-Hockey, HockeyViz, Sports Reference and the NHL are drafted, not sent (`docs/engine/access-requests/`).
+- **Warehouse** (`supabase/nhl_warehouse.sql`, `hockey/warehouse/sync.js`): the `nhl` schema has RLS, append-only predictions and public reads on outputs only. It is tested on a real PostgreSQL, and nothing writes until `NHL_WAREHOUSE=on`.
+- **Fixes:** the slate's data freshness always read STALE (it looked up a field the games do not carry). The market test now defaults to the production model.
+- **CI** (`.github/workflows/nhl.yml`): the build refreshes periods, box scores, props, diagnostics and the registry. The weekly job runs the reconciliation, the lab and the prop record. Spend is zero: no paid feed is switched on.
+
 
 ## 2026-10-13 — The Quant Data Pack, integrated: verified history, NHL lineups and a second source, ten new walk-forward fits (four basketball leagues, five soccer leagues, MLB), and a six-rung readiness ladder
 

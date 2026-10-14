@@ -1,0 +1,5466 @@
+{
+ "schema": "edgedesk_nhl_crosscheck_box_v1",
+ "generated_at": "2026-10-13T14:06:48.490Z",
+ "sources": {
+  "play_by_play": "sportsdataverse fastRhockey pbp_lite (the NHL play-by-play feed)",
+  "box": "sportsdataverse fastRhockey skater_box / goalie_box / team_box (the NHL boxscore feed)"
+ },
+ "rule": "neither source is overwritten: both values are kept and every disagreement counted; goals and goals against must agree in ≥ 99.5% of rows, every other count in ≥ 97%",
+ "overall": {
+  "team.goals": {
+   "rows": 41358,
+   "agree": 41356,
+   "rate": 0.99995,
+   "bar": 0.995,
+   "status": "OK"
+  },
+  "team.shots_on_goal": {
+   "rows": 41358,
+   "agree": 41078,
+   "rate": 0.99323,
+   "bar": 0.97,
+   "status": "OK"
+  },
+  "team.power_play_goals": {
+   "rows": 41358,
+   "agree": 40615,
+   "rate": 0.98203,
+   "bar": 0.97,
+   "status": "OK"
+  },
+  "team.pim": {
+   "rows": 41358,
+   "agree": 40314,
+   "rate": 0.97476,
+   "bar": 0.97,
+   "status": "OK"
+  },
+  "goalie.shots_against": {
+   "rows": 44308,
+   "agree": 44081,
+   "rate": 0.99488,
+   "bar": 0.97,
+   "status": "OK"
+  },
+  "goalie.goals_against": {
+   "rows": 44308,
+   "agree": 44303,
+   "rate": 0.99989,
+   "bar": 0.995,
+   "status": "OK"
+  },
+  "goalie.starter": {
+   "rows": 41358,
+   "agree": 41358,
+   "rate": 1,
+   "bar": 0.97,
+   "status": "OK"
+  },
+  "skater.goals": {
+   "rows": 744341,
+   "agree": 744335,
+   "rate": 0.99999,
+   "bar": 0.995,
+   "status": "OK"
+  },
+  "skater.assists": {
+   "rows": 744341,
+   "agree": 744337,
+   "rate": 0.99999,
+   "bar": 0.97,
+   "status": "OK"
+  },
+  "skater.shots_on_goal": {
+   "rows": 744341,
+   "agree": 744053,
+   "rate": 0.99961,
+   "bar": 0.97,
+   "status": "OK"
+  }
+ },
+ "by_season": {
+  "2011": {
+   "games_pbp": 1318,
+   "games_matched": 1318,
+   "games_without_box": 0,
+   "box_source": {
+    "skater_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2011.parquet",
+     "sha256": "6af1d3376f04206887a43d7345c53cae591d416774fb4afaddf0191228c20941",
+     "bytes": 353409,
+     "fetched_at": "2026-10-13T13:40:36.464Z",
+     "missing_columns": []
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2011.parquet",
+     "sha256": "fe526250eb45b8b4da4343eb6260e4dee1c336773307624184e805393fbb540e",
+     "bytes": 75258,
+     "fetched_at": "2026-10-13T13:38:08.769Z",
+     "missing_columns": []
+    },
+    "team_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2011.parquet",
+     "sha256": "b0e5433899e4d80cc1b800ea4cfb6d99bb8a63d0b58f6e6b925839cf27d59ca7",
+     "bytes": 49283,
+     "fetched_at": "2026-10-13T14:02:22.150Z",
+     "missing_columns": []
+    }
+   },
+   "team": {
+    "goals": {
+     "rows": 2636,
+     "agree": 2636,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 2636,
+     "agree": 2631,
+     "rate": 0.9981,
+     "examples": [
+      {
+       "play_by_play": 26,
+       "box": 25,
+       "team": "EDM",
+       "game_id": 2010020296,
+       "date": "2010-11-21"
+      },
+      {
+       "play_by_play": 21,
+       "box": 20,
+       "team": "CGY",
+       "game_id": 2010020748,
+       "date": "2011-01-26"
+      },
+      {
+       "play_by_play": 42,
+       "box": 41,
+       "team": "NYI",
+       "game_id": 2010021015,
+       "date": "2011-03-11"
+      },
+      {
+       "play_by_play": 34,
+       "box": 33,
+       "team": "TBL",
+       "game_id": 2010021209,
+       "date": "2011-04-08"
+      },
+      {
+       "play_by_play": 40,
+       "box": 39,
+       "team": "DET",
+       "game_id": 2010030174,
+       "date": "2011-04-20"
+      }
+     ]
+    },
+    "power_play_goals": {
+     "rows": 2636,
+     "agree": 2580,
+     "rate": 0.97876,
+     "examples": [
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "team": "DAL",
+       "game_id": 2010020015,
+       "date": "2010-10-09"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "CGY",
+       "game_id": 2010020025,
+       "date": "2010-10-10"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "TBL",
+       "game_id": 2010020038,
+       "date": "2010-10-13"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "COL",
+       "game_id": 2010020090,
+       "date": "2010-10-21"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "OTT",
+       "game_id": 2010020094,
+       "date": "2010-10-22"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "team": "ANA",
+       "game_id": 2010020121,
+       "date": "2010-10-26"
+      }
+     ]
+    },
+    "pim": {
+     "rows": 2636,
+     "agree": 2541,
+     "rate": 0.96396,
+     "examples": [
+      {
+       "play_by_play": 10,
+       "box": 8,
+       "team": "COL",
+       "game_id": 2010020031,
+       "date": "2010-10-11"
+      },
+      {
+       "play_by_play": 11,
+       "box": 9,
+       "team": "STL",
+       "game_id": 2010020073,
+       "date": "2010-10-18"
+      },
+      {
+       "play_by_play": 12,
+       "box": 10,
+       "team": "ATL",
+       "game_id": 2010020078,
+       "date": "2010-10-20"
+      },
+      {
+       "play_by_play": 8,
+       "box": 6,
+       "team": "CHI",
+       "game_id": 2010020080,
+       "date": "2010-10-20"
+      },
+      {
+       "play_by_play": 17,
+       "box": 15,
+       "team": "NSH",
+       "game_id": 2010020089,
+       "date": "2010-10-21"
+      },
+      {
+       "play_by_play": 30,
+       "box": 28,
+       "team": "TBL",
+       "game_id": 2010020095,
+       "date": "2010-10-22"
+      }
+     ]
+    }
+   },
+   "goalie": {
+    "shots_against": {
+     "rows": 2852,
+     "agree": 2849,
+     "rate": 0.99895,
+     "examples": [
+      {
+       "play_by_play": 20,
+       "box": 19,
+       "goalie": 8469152,
+       "team": "STL",
+       "game_id": 2010020748,
+       "date": "2011-01-26"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "goalie": 8474690,
+       "team": "NYI",
+       "game_id": 2010020765,
+       "date": "2011-02-02"
+      },
+      {
+       "play_by_play": 34,
+       "box": 33,
+       "goalie": 8466339,
+       "team": "FLA",
+       "game_id": 2010021209,
+       "date": "2011-04-08"
+      }
+     ]
+    },
+    "goals_against": {
+     "rows": 2852,
+     "agree": 2852,
+     "rate": 1,
+     "examples": []
+    },
+    "starter": {
+     "rows": 2636,
+     "agree": 2636,
+     "rate": 1,
+     "examples": []
+    }
+   },
+   "skater": {
+    "goals": {
+     "rows": 47436,
+     "agree": 47436,
+     "rate": 1,
+     "examples": []
+    },
+    "assists": {
+     "rows": 47436,
+     "agree": 47436,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 47436,
+     "agree": 47427,
+     "rate": 0.99981,
+     "examples": [
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8466035,
+       "team": "CAR",
+       "game_id": 2010020124,
+       "date": "2010-10-27"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "player": 8474137,
+       "team": "CAR",
+       "game_id": 2010020124,
+       "date": "2010-10-27"
+      },
+      {
+       "play_by_play": 3,
+       "box": 4,
+       "player": 8473563,
+       "team": "WSH",
+       "game_id": 2010020124,
+       "date": "2010-10-27"
+      },
+      {
+       "play_by_play": 5,
+       "box": 4,
+       "player": 8469639,
+       "team": "WSH",
+       "game_id": 2010020124,
+       "date": "2010-10-27"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8470104,
+       "team": "EDM",
+       "game_id": 2010020296,
+       "date": "2010-11-21"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8469664,
+       "team": "CGY",
+       "game_id": 2010020748,
+       "date": "2011-01-26"
+      }
+     ]
+    }
+   }
+  },
+  "2012": {
+   "games_pbp": 1316,
+   "games_matched": 1316,
+   "games_without_box": 0,
+   "box_source": {
+    "skater_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2012.parquet",
+     "sha256": "94ab08499641bdaf9388227d268a49d0bd5a162a1deae71ad0ddc5c1cb261ba4",
+     "bytes": 350167,
+     "fetched_at": "2026-10-13T13:40:37.265Z",
+     "missing_columns": []
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2012.parquet",
+     "sha256": "c7ee6d54c69b31f37d8a8ac2c02b11345904d644c561db1d14a1ae61b4671650",
+     "bytes": 74551,
+     "fetched_at": "2026-10-13T13:38:19.221Z",
+     "missing_columns": []
+    },
+    "team_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2012.parquet",
+     "sha256": "a29d2bf4403d56ef5b2ca96863ba87695250e1c20ee508295896028506b29303",
+     "bytes": 48829,
+     "fetched_at": "2026-10-13T14:02:23.703Z",
+     "missing_columns": []
+    }
+   },
+   "team": {
+    "goals": {
+     "rows": 2632,
+     "agree": 2632,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 2632,
+     "agree": 2624,
+     "rate": 0.99696,
+     "examples": [
+      {
+       "play_by_play": 35,
+       "box": 34,
+       "team": "CGY",
+       "game_id": 2011020123,
+       "date": "2011-10-26"
+      },
+      {
+       "play_by_play": 34,
+       "box": 33,
+       "team": "CAR",
+       "game_id": 2011020522,
+       "date": "2011-12-26"
+      },
+      {
+       "play_by_play": 29,
+       "box": 28,
+       "team": "NYR",
+       "game_id": 2011020672,
+       "date": "2012-01-17"
+      },
+      {
+       "play_by_play": 30,
+       "box": 29,
+       "team": "WSH",
+       "game_id": 2011020742,
+       "date": "2012-01-31"
+      },
+      {
+       "play_by_play": 28,
+       "box": 27,
+       "team": "ANA",
+       "game_id": 2011021153,
+       "date": "2012-03-28"
+      },
+      {
+       "play_by_play": 25,
+       "box": 24,
+       "team": "COL",
+       "game_id": 2011021166,
+       "date": "2012-03-30"
+      }
+     ]
+    },
+    "power_play_goals": {
+     "rows": 2632,
+     "agree": 2580,
+     "rate": 0.98024,
+     "examples": [
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "BUF",
+       "game_id": 2011020022,
+       "date": "2011-10-08"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "NJD",
+       "game_id": 2011020026,
+       "date": "2011-10-10"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "team": "CAR",
+       "game_id": 2011020047,
+       "date": "2011-10-14"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "team": "ANA",
+       "game_id": 2011020063,
+       "date": "2011-10-16"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "PHI",
+       "game_id": 2011020100,
+       "date": "2011-10-22"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "NSH",
+       "game_id": 2011020117,
+       "date": "2011-10-25"
+      }
+     ]
+    },
+    "pim": {
+     "rows": 2632,
+     "agree": 2564,
+     "rate": 0.97416,
+     "examples": [
+      {
+       "play_by_play": 8,
+       "box": 10,
+       "team": "WSH",
+       "game_id": 2011020013,
+       "date": "2011-10-08"
+      },
+      {
+       "play_by_play": 70,
+       "box": 68,
+       "team": "BOS",
+       "game_id": 2011020069,
+       "date": "2011-10-18"
+      },
+      {
+       "play_by_play": 23,
+       "box": 21,
+       "team": "VAN",
+       "game_id": 2011020076,
+       "date": "2011-10-18"
+      },
+      {
+       "play_by_play": 10,
+       "box": 8,
+       "team": "MTL",
+       "game_id": 2011020082,
+       "date": "2011-10-20"
+      },
+      {
+       "play_by_play": 10,
+       "box": 8,
+       "team": "MTL",
+       "game_id": 2011020098,
+       "date": "2011-10-22"
+      },
+      {
+       "play_by_play": 10,
+       "box": 8,
+       "team": "SJS",
+       "game_id": 2011020137,
+       "date": "2011-10-28"
+      }
+     ]
+    }
+   },
+   "goalie": {
+    "shots_against": {
+     "rows": 2828,
+     "agree": 2825,
+     "rate": 0.99894,
+     "examples": [
+      {
+       "play_by_play": 30,
+       "box": 29,
+       "goalie": 8464999,
+       "team": "TBL",
+       "game_id": 2011020742,
+       "date": "2012-01-31"
+      },
+      {
+       "play_by_play": 24,
+       "box": 23,
+       "goalie": 8462147,
+       "team": "CGY",
+       "game_id": 2011021166,
+       "date": "2012-03-30"
+      },
+      {
+       "play_by_play": 33,
+       "box": 32,
+       "goalie": 8474550,
+       "team": "SJS",
+       "game_id": 2011030162,
+       "date": "2012-04-14"
+      }
+     ]
+    },
+    "goals_against": {
+     "rows": 2828,
+     "agree": 2828,
+     "rate": 1,
+     "examples": []
+    },
+    "starter": {
+     "rows": 2632,
+     "agree": 2632,
+     "rate": 1,
+     "examples": []
+    }
+   },
+   "skater": {
+    "goals": {
+     "rows": 47375,
+     "agree": 47375,
+     "rate": 1,
+     "examples": []
+    },
+    "assists": {
+     "rows": 47375,
+     "agree": 47375,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 47375,
+     "agree": 47368,
+     "rate": 0.99985,
+     "examples": [
+      {
+       "play_by_play": 7,
+       "box": 6,
+       "player": 8471504,
+       "team": "CGY",
+       "game_id": 2011020123,
+       "date": "2011-10-26"
+      },
+      {
+       "play_by_play": 4,
+       "box": 3,
+       "player": 8471339,
+       "team": "NYR",
+       "game_id": 2011020672,
+       "date": "2012-01-17"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8473618,
+       "team": "WSH",
+       "game_id": 2011020742,
+       "date": "2012-01-31"
+      },
+      {
+       "play_by_play": 4,
+       "box": 3,
+       "player": 8470621,
+       "team": "ANA",
+       "game_id": 2011021153,
+       "date": "2012-03-28"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8474705,
+       "team": "COL",
+       "game_id": 2011021166,
+       "date": "2012-03-30"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "player": 8468518,
+       "team": "FLA",
+       "game_id": 2011030135,
+       "date": "2012-04-21"
+      }
+     ]
+    }
+   }
+  },
+  "2013": {
+   "games_pbp": 806,
+   "games_matched": 806,
+   "games_without_box": 0,
+   "box_source": {
+    "skater_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2013.parquet",
+     "sha256": "c41e26be69ba44af8fdbe7b9ad1016fd35e9da68e1282b1fccdc5a41144e78ba",
+     "bytes": 227082,
+     "fetched_at": "2026-10-13T13:40:38.052Z",
+     "missing_columns": []
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2013.parquet",
+     "sha256": "e60b3bb9803c96e7d3494ec518e5b40b2fae4d0b0ba86fc18e3dcf67c1285248",
+     "bytes": 50633,
+     "fetched_at": "2026-10-13T13:38:28.923Z",
+     "missing_columns": []
+    },
+    "team_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2013.parquet",
+     "sha256": "30d4adc6254cc080e5dd844516e9b08990c53d3c210f9a211e6255a6b20dd5b7",
+     "bytes": 34136,
+     "fetched_at": "2026-10-13T14:02:25.088Z",
+     "missing_columns": []
+    }
+   },
+   "team": {
+    "goals": {
+     "rows": 1612,
+     "agree": 1612,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 1612,
+     "agree": 1604,
+     "rate": 0.99504,
+     "examples": [
+      {
+       "play_by_play": 28,
+       "box": 27,
+       "team": "PHX",
+       "game_id": 2012020268,
+       "date": "2013-02-24"
+      },
+      {
+       "play_by_play": 17,
+       "box": 16,
+       "team": "FLA",
+       "game_id": 2012020367,
+       "date": "2013-03-10"
+      },
+      {
+       "play_by_play": 29,
+       "box": 28,
+       "team": "DET",
+       "game_id": 2012020404,
+       "date": "2013-03-15"
+      },
+      {
+       "play_by_play": 23,
+       "box": 22,
+       "team": "NJD",
+       "game_id": 2012020446,
+       "date": "2013-03-21"
+      },
+      {
+       "play_by_play": 36,
+       "box": 35,
+       "team": "WPG",
+       "game_id": 2012020482,
+       "date": "2013-03-26"
+      },
+      {
+       "play_by_play": 42,
+       "box": 41,
+       "team": "VAN",
+       "game_id": 2012020580,
+       "date": "2013-04-08"
+      }
+     ]
+    },
+    "power_play_goals": {
+     "rows": 1612,
+     "agree": 1588,
+     "rate": 0.98511,
+     "examples": [
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "PIT",
+       "game_id": 2012020001,
+       "date": "2013-01-19"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "TOR",
+       "game_id": 2012020023,
+       "date": "2013-01-21"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "SJS",
+       "game_id": 2012020049,
+       "date": "2013-01-24"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "CAR",
+       "game_id": 2012020051,
+       "date": "2013-01-25"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "BOS",
+       "game_id": 2012020073,
+       "date": "2013-01-28"
+      },
+      {
+       "play_by_play": 3,
+       "box": 4,
+       "team": "EDM",
+       "game_id": 2012020076,
+       "date": "2013-01-28"
+      }
+     ]
+    },
+    "pim": {
+     "rows": 1612,
+     "agree": 1573,
+     "rate": 0.97581,
+     "examples": [
+      {
+       "play_by_play": 26,
+       "box": 28,
+       "team": "TBL",
+       "game_id": 2012020021,
+       "date": "2013-01-21"
+      },
+      {
+       "play_by_play": 17,
+       "box": 15,
+       "team": "BOS",
+       "game_id": 2012020073,
+       "date": "2013-01-28"
+      },
+      {
+       "play_by_play": 13,
+       "box": 11,
+       "team": "NYI",
+       "game_id": 2012020094,
+       "date": "2013-01-31"
+      },
+      {
+       "play_by_play": 23,
+       "box": 21,
+       "team": "SJS",
+       "game_id": 2012020137,
+       "date": "2013-02-05"
+      },
+      {
+       "play_by_play": 11,
+       "box": 9,
+       "team": "FLA",
+       "game_id": 2012020162,
+       "date": "2013-02-09"
+      },
+      {
+       "play_by_play": 16,
+       "box": 14,
+       "team": "MIN",
+       "game_id": 2012020164,
+       "date": "2013-02-09"
+      }
+     ]
+    }
+   },
+   "goalie": {
+    "shots_against": {
+     "rows": 1747,
+     "agree": 1740,
+     "rate": 0.99599,
+     "examples": [
+      {
+       "play_by_play": 28,
+       "box": 27,
+       "goalie": 8469732,
+       "team": "CGY",
+       "game_id": 2012020268,
+       "date": "2013-02-24"
+      },
+      {
+       "play_by_play": 17,
+       "box": 16,
+       "goalie": 8469514,
+       "team": "MTL",
+       "game_id": 2012020367,
+       "date": "2013-03-10"
+      },
+      {
+       "play_by_play": 29,
+       "box": 28,
+       "goalie": 8471227,
+       "team": "EDM",
+       "game_id": 2012020404,
+       "date": "2013-03-15"
+      },
+      {
+       "play_by_play": 23,
+       "box": 22,
+       "goalie": 8468540,
+       "team": "CAR",
+       "game_id": 2012020446,
+       "date": "2013-03-21"
+      },
+      {
+       "play_by_play": 36,
+       "box": 35,
+       "goalie": 8471251,
+       "team": "CAR",
+       "game_id": 2012020482,
+       "date": "2013-03-26"
+      },
+      {
+       "play_by_play": 17,
+       "box": 16,
+       "goalie": 8471418,
+       "team": "BOS",
+       "game_id": 2012020684,
+       "date": "2013-04-23"
+      }
+     ]
+    },
+    "goals_against": {
+     "rows": 1747,
+     "agree": 1747,
+     "rate": 1,
+     "examples": []
+    },
+    "starter": {
+     "rows": 1612,
+     "agree": 1612,
+     "rate": 1,
+     "examples": []
+    }
+   },
+   "skater": {
+    "goals": {
+     "rows": 29015,
+     "agree": 29015,
+     "rate": 1,
+     "examples": []
+    },
+    "assists": {
+     "rows": 29015,
+     "agree": 29015,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 29015,
+     "agree": 29008,
+     "rate": 0.99976,
+     "examples": [
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8474628,
+       "team": "PHX",
+       "game_id": 2012020268,
+       "date": "2013-02-24"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8468518,
+       "team": "FLA",
+       "game_id": 2012020367,
+       "date": "2013-03-10"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "player": 8468509,
+       "team": "DET",
+       "game_id": 2012020404,
+       "date": "2013-03-15"
+      },
+      {
+       "play_by_play": 7,
+       "box": 6,
+       "player": 8475169,
+       "team": "WPG",
+       "game_id": 2012020482,
+       "date": "2013-03-26"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "player": 8469465,
+       "team": "VAN",
+       "game_id": 2012020580,
+       "date": "2013-04-08"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "player": 8475342,
+       "team": "PHI",
+       "game_id": 2012020684,
+       "date": "2013-04-23"
+      }
+     ]
+    }
+   }
+  },
+  "2014": {
+   "games_pbp": 1323,
+   "games_matched": 1323,
+   "games_without_box": 0,
+   "box_source": {
+    "skater_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2014.parquet",
+     "sha256": "dd47bf632ca99797a441c2c0f29eb2085dad7d7aa48f4084d406d4e621a1f487",
+     "bytes": 355083,
+     "fetched_at": "2026-10-13T13:40:38.750Z",
+     "missing_columns": []
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2014.parquet",
+     "sha256": "4bfaa0a543333e0826afea69ef55ccfe53ee4d0768045dbafa9d5f6f38137e90",
+     "bytes": 76931,
+     "fetched_at": "2026-10-13T13:38:34.483Z",
+     "missing_columns": []
+    },
+    "team_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2014.parquet",
+     "sha256": "b1b6297c81dbe6df23dccc08d8f0a37ded2383599dc731cb7dcbf683bad79121",
+     "bytes": 49017,
+     "fetched_at": "2026-10-13T14:02:26.474Z",
+     "missing_columns": []
+    }
+   },
+   "team": {
+    "goals": {
+     "rows": 2646,
+     "agree": 2646,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 2646,
+     "agree": 2630,
+     "rate": 0.99395,
+     "examples": [
+      {
+       "play_by_play": 35,
+       "box": 34,
+       "team": "CHI",
+       "game_id": 2013020002,
+       "date": "2013-10-01"
+      },
+      {
+       "play_by_play": 39,
+       "box": 38,
+       "team": "MTL",
+       "game_id": 2013020073,
+       "date": "2013-10-12"
+      },
+      {
+       "play_by_play": 44,
+       "box": 43,
+       "team": "CHI",
+       "game_id": 2013020143,
+       "date": "2013-10-24"
+      },
+      {
+       "play_by_play": 39,
+       "box": 38,
+       "team": "DAL",
+       "game_id": 2013020212,
+       "date": "2013-11-03"
+      },
+      {
+       "play_by_play": 24,
+       "box": 23,
+       "team": "EDM",
+       "game_id": 2013020302,
+       "date": "2013-11-16"
+      },
+      {
+       "play_by_play": 26,
+       "box": 25,
+       "team": "NJD",
+       "game_id": 2013020325,
+       "date": "2013-11-20"
+      }
+     ]
+    },
+    "power_play_goals": {
+     "rows": 2646,
+     "agree": 2612,
+     "rate": 0.98715,
+     "examples": [
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "MTL",
+       "game_id": 2013020091,
+       "date": "2013-10-15"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "MIN",
+       "game_id": 2013020145,
+       "date": "2013-10-24"
+      },
+      {
+       "play_by_play": 3,
+       "box": 4,
+       "team": "NJD",
+       "game_id": 2013020155,
+       "date": "2013-10-26"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "DAL",
+       "game_id": 2013020236,
+       "date": "2013-11-07"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "team": "ANA",
+       "game_id": 2013020279,
+       "date": "2013-11-14"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "LAK",
+       "game_id": 2013020285,
+       "date": "2013-11-15"
+      }
+     ]
+    },
+    "pim": {
+     "rows": 2646,
+     "agree": 2570,
+     "rate": 0.97128,
+     "examples": [
+      {
+       "play_by_play": 32,
+       "box": 30,
+       "team": "PHI",
+       "game_id": 2013020023,
+       "date": "2013-10-05"
+      },
+      {
+       "play_by_play": 8,
+       "box": 6,
+       "team": "PHX",
+       "game_id": 2013020031,
+       "date": "2013-10-05"
+      },
+      {
+       "play_by_play": 16,
+       "box": 18,
+       "team": "PHX",
+       "game_id": 2013020038,
+       "date": "2013-10-08"
+      },
+      {
+       "play_by_play": 17,
+       "box": 13,
+       "team": "OTT",
+       "game_id": 2013020074,
+       "date": "2013-10-12"
+      },
+      {
+       "play_by_play": 10,
+       "box": 8,
+       "team": "COL",
+       "game_id": 2013020092,
+       "date": "2013-10-15"
+      },
+      {
+       "play_by_play": 4,
+       "box": 2,
+       "team": "PHX",
+       "game_id": 2013020093,
+       "date": "2013-10-15"
+      }
+     ]
+    }
+   },
+   "goalie": {
+    "shots_against": {
+     "rows": 2850,
+     "agree": 2843,
+     "rate": 0.99754,
+     "examples": [
+      {
+       "play_by_play": 39,
+       "box": 38,
+       "goalie": 8466141,
+       "team": "VAN",
+       "game_id": 2013020073,
+       "date": "2013-10-12"
+      },
+      {
+       "play_by_play": 44,
+       "box": 43,
+       "goalie": 8471750,
+       "team": "TBL",
+       "game_id": 2013020143,
+       "date": "2013-10-24"
+      },
+      {
+       "play_by_play": 37,
+       "box": 36,
+       "goalie": 8467950,
+       "team": "OTT",
+       "game_id": 2013020212,
+       "date": "2013-11-03"
+      },
+      {
+       "play_by_play": 26,
+       "box": 25,
+       "goalie": 8473972,
+       "team": "ANA",
+       "game_id": 2013020325,
+       "date": "2013-11-20"
+      },
+      {
+       "play_by_play": 29,
+       "box": 30,
+       "goalie": 8471695,
+       "team": "BOS",
+       "game_id": 2013020438,
+       "date": "2013-12-07"
+      },
+      {
+       "play_by_play": 26,
+       "box": 25,
+       "goalie": 8474550,
+       "team": "SJS",
+       "game_id": 2013021065,
+       "date": "2014-03-22"
+      }
+     ]
+    },
+    "goals_against": {
+     "rows": 2850,
+     "agree": 2850,
+     "rate": 1,
+     "examples": []
+    },
+    "starter": {
+     "rows": 2646,
+     "agree": 2646,
+     "rate": 1,
+     "examples": []
+    }
+   },
+   "skater": {
+    "goals": {
+     "rows": 47624,
+     "agree": 47624,
+     "rate": 1,
+     "examples": []
+    },
+    "assists": {
+     "rows": 47624,
+     "agree": 47624,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 47624,
+     "agree": 47609,
+     "rate": 0.99969,
+     "examples": [
+      {
+       "play_by_play": 6,
+       "box": 5,
+       "player": 8466148,
+       "team": "CHI",
+       "game_id": 2013020002,
+       "date": "2013-10-01"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "player": 8474189,
+       "team": "MTL",
+       "game_id": 2013020073,
+       "date": "2013-10-12"
+      },
+      {
+       "play_by_play": 8,
+       "box": 7,
+       "player": 8473604,
+       "team": "CHI",
+       "game_id": 2013020143,
+       "date": "2013-10-24"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8474849,
+       "team": "DAL",
+       "game_id": 2013020212,
+       "date": "2013-11-03"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8470159,
+       "team": "EDM",
+       "game_id": 2013020302,
+       "date": "2013-11-16"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8471233,
+       "team": "NJD",
+       "game_id": 2013020325,
+       "date": "2013-11-20"
+      }
+     ]
+    }
+   }
+  },
+  "2015": {
+   "games_pbp": 1319,
+   "games_matched": 1319,
+   "games_without_box": 0,
+   "box_source": {
+    "skater_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2015.parquet",
+     "sha256": "95cf4c89e7478b746f40d805b47f3b23ca0061aa096762c2ff84ba804e2bc790",
+     "bytes": 351003,
+     "fetched_at": "2026-10-13T13:40:39.497Z",
+     "missing_columns": []
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2015.parquet",
+     "sha256": "7df788eeb8fb0c10ac565ee73a6816e9412fb6ff41170e1bfdc58283d0011396",
+     "bytes": 76075,
+     "fetched_at": "2026-10-13T13:38:42.466Z",
+     "missing_columns": []
+    },
+    "team_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2015.parquet",
+     "sha256": "d42ba7d8fd4aeedf2646fc4ddd1aeb4853642344b701929d89107d5147ef0527",
+     "bytes": 48928,
+     "fetched_at": "2026-10-13T14:02:28.052Z",
+     "missing_columns": []
+    }
+   },
+   "team": {
+    "goals": {
+     "rows": 2638,
+     "agree": 2638,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 2638,
+     "agree": 2631,
+     "rate": 0.99735,
+     "examples": [
+      {
+       "play_by_play": 40,
+       "box": 39,
+       "team": "WSH",
+       "game_id": 2014020209,
+       "date": "2014-11-08"
+      },
+      {
+       "play_by_play": 33,
+       "box": 32,
+       "team": "VAN",
+       "game_id": 2014020489,
+       "date": "2014-12-20"
+      },
+      {
+       "play_by_play": 36,
+       "box": 35,
+       "team": "OTT",
+       "game_id": 2014020533,
+       "date": "2014-12-29"
+      },
+      {
+       "play_by_play": 31,
+       "box": 30,
+       "team": "FLA",
+       "game_id": 2014020606,
+       "date": "2015-01-08"
+      },
+      {
+       "play_by_play": 25,
+       "box": 24,
+       "team": "SJS",
+       "game_id": 2014020696,
+       "date": "2015-01-21"
+      },
+      {
+       "play_by_play": 24,
+       "box": 23,
+       "team": "NJD",
+       "game_id": 2014020942,
+       "date": "2015-03-03"
+      }
+     ]
+    },
+    "power_play_goals": {
+     "rows": 2638,
+     "agree": 2597,
+     "rate": 0.98446,
+     "examples": [
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "MTL",
+       "game_id": 2014020053,
+       "date": "2014-10-16"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "VAN",
+       "game_id": 2014020121,
+       "date": "2014-10-26"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "WSH",
+       "game_id": 2014020167,
+       "date": "2014-11-02"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "DET",
+       "game_id": 2014020185,
+       "date": "2014-11-05"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "CGY",
+       "game_id": 2014020202,
+       "date": "2014-11-08"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "NJD",
+       "game_id": 2014020220,
+       "date": "2014-11-11"
+      }
+     ]
+    },
+    "pim": {
+     "rows": 2638,
+     "agree": 2572,
+     "rate": 0.97498,
+     "examples": [
+      {
+       "play_by_play": 13,
+       "box": 11,
+       "team": "DAL",
+       "game_id": 2014020042,
+       "date": "2014-10-14"
+      },
+      {
+       "play_by_play": 8,
+       "box": 6,
+       "team": "TOR",
+       "game_id": 2014020043,
+       "date": "2014-10-14"
+      },
+      {
+       "play_by_play": 8,
+       "box": 6,
+       "team": "MTL",
+       "game_id": 2014020053,
+       "date": "2014-10-16"
+      },
+      {
+       "play_by_play": 8,
+       "box": 6,
+       "team": "LAK",
+       "game_id": 2014020055,
+       "date": "2014-10-16"
+      },
+      {
+       "play_by_play": 13,
+       "box": 11,
+       "team": "COL",
+       "game_id": 2014020103,
+       "date": "2014-10-24"
+      },
+      {
+       "play_by_play": 14,
+       "box": 16,
+       "team": "OTT",
+       "game_id": 2014020119,
+       "date": "2014-10-26"
+      }
+     ]
+    }
+   },
+   "goalie": {
+    "shots_against": {
+     "rows": 2834,
+     "agree": 2830,
+     "rate": 0.99859,
+     "examples": [
+      {
+       "play_by_play": 40,
+       "box": 39,
+       "goalie": 8471418,
+       "team": "CAR",
+       "game_id": 2014020209,
+       "date": "2014-11-08"
+      },
+      {
+       "play_by_play": 28,
+       "box": 29,
+       "goalie": 8468011,
+       "team": "VAN",
+       "game_id": 2014020356,
+       "date": "2014-11-30"
+      },
+      {
+       "play_by_play": 31,
+       "box": 30,
+       "goalie": 8468011,
+       "team": "VAN",
+       "game_id": 2014020606,
+       "date": "2015-01-08"
+      },
+      {
+       "play_by_play": 10,
+       "box": 9,
+       "goalie": 8475311,
+       "team": "MIN",
+       "game_id": 2014021226,
+       "date": "2015-04-11"
+      }
+     ]
+    },
+    "goals_against": {
+     "rows": 2834,
+     "agree": 2834,
+     "rate": 1,
+     "examples": []
+    },
+    "starter": {
+     "rows": 2638,
+     "agree": 2638,
+     "rate": 1,
+     "examples": []
+    }
+   },
+   "skater": {
+    "goals": {
+     "rows": 47481,
+     "agree": 47481,
+     "rate": 1,
+     "examples": []
+    },
+    "assists": {
+     "rows": 47481,
+     "agree": 47481,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 47481,
+     "agree": 47474,
+     "rate": 0.99985,
+     "examples": [
+      {
+       "play_by_play": 4,
+       "box": 3,
+       "player": 8471426,
+       "team": "WSH",
+       "game_id": 2014020209,
+       "date": "2014-11-08"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8474134,
+       "team": "VAN",
+       "game_id": 2014020489,
+       "date": "2014-12-20"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8471862,
+       "team": "OTT",
+       "game_id": 2014020533,
+       "date": "2014-12-29"
+      },
+      {
+       "play_by_play": 4,
+       "box": 3,
+       "player": 8476456,
+       "team": "FLA",
+       "game_id": 2014020606,
+       "date": "2015-01-08"
+      },
+      {
+       "play_by_play": 5,
+       "box": 4,
+       "player": 8474053,
+       "team": "SJS",
+       "game_id": 2014020696,
+       "date": "2015-01-21"
+      },
+      {
+       "play_by_play": 7,
+       "box": 6,
+       "player": 8469500,
+       "team": "NJD",
+       "game_id": 2014020942,
+       "date": "2015-03-03"
+      }
+     ]
+    }
+   }
+  },
+  "2016": {
+   "games_pbp": 1321,
+   "games_matched": 1321,
+   "games_without_box": 0,
+   "box_source": {
+    "skater_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2016.parquet",
+     "sha256": "beab4776cc40653d60f172868989609c51f35b5ab0ee61be190aadfd076c5747",
+     "bytes": 345844,
+     "fetched_at": "2026-10-13T13:40:40.310Z",
+     "missing_columns": []
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2016.parquet",
+     "sha256": "44b8460299d6d27cc2b9211b21eab38a052322f5b310f2cc2931d9584aa341ea",
+     "bytes": 75269,
+     "fetched_at": "2026-10-13T13:38:51.745Z",
+     "missing_columns": []
+    },
+    "team_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2016.parquet",
+     "sha256": "f11a8bc2b178fadd2b81b5a656c4eb07b3256d5e3d27c24624201e11d813522d",
+     "bytes": 48810,
+     "fetched_at": "2026-10-13T14:02:29.592Z",
+     "missing_columns": []
+    }
+   },
+   "team": {
+    "goals": {
+     "rows": 2642,
+     "agree": 2642,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 2642,
+     "agree": 2621,
+     "rate": 0.99205,
+     "examples": [
+      {
+       "play_by_play": 25,
+       "box": 24,
+       "team": "EDM",
+       "game_id": 2015020008,
+       "date": "2015-10-08"
+      },
+      {
+       "play_by_play": 25,
+       "box": 24,
+       "team": "NJD",
+       "game_id": 2015020022,
+       "date": "2015-10-10"
+      },
+      {
+       "play_by_play": 23,
+       "box": 22,
+       "team": "COL",
+       "game_id": 2015020048,
+       "date": "2015-10-14"
+      },
+      {
+       "play_by_play": 24,
+       "box": 23,
+       "team": "ARI",
+       "game_id": 2015020074,
+       "date": "2015-10-17"
+      },
+      {
+       "play_by_play": 28,
+       "box": 27,
+       "team": "NYR",
+       "game_id": 2015020092,
+       "date": "2015-10-22"
+      },
+      {
+       "play_by_play": 19,
+       "box": 18,
+       "team": "FLA",
+       "game_id": 2015020097,
+       "date": "2015-10-22"
+      }
+     ]
+    },
+    "power_play_goals": {
+     "rows": 2642,
+     "agree": 2587,
+     "rate": 0.97918,
+     "examples": [
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "WSH",
+       "game_id": 2015020022,
+       "date": "2015-10-10"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "CAR",
+       "game_id": 2015020023,
+       "date": "2015-10-10"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "NJD",
+       "game_id": 2015020037,
+       "date": "2015-10-13"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "BUF",
+       "game_id": 2015020107,
+       "date": "2015-10-24"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "NJD",
+       "game_id": 2015020125,
+       "date": "2015-10-27"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "DAL",
+       "game_id": 2015020155,
+       "date": "2015-10-31"
+      }
+     ]
+    },
+    "pim": {
+     "rows": 2642,
+     "agree": 2582,
+     "rate": 0.97729,
+     "examples": [
+      {
+       "play_by_play": 13,
+       "box": 11,
+       "team": "DAL",
+       "game_id": 2015020027,
+       "date": "2015-10-10"
+      },
+      {
+       "play_by_play": 16,
+       "box": 18,
+       "team": "MIN",
+       "game_id": 2015020057,
+       "date": "2015-10-15"
+      },
+      {
+       "play_by_play": 6,
+       "box": 4,
+       "team": "TBL",
+       "game_id": 2015020086,
+       "date": "2015-10-20"
+      },
+      {
+       "play_by_play": 25,
+       "box": 23,
+       "team": "ANA",
+       "game_id": 2015020123,
+       "date": "2015-10-26"
+      },
+      {
+       "play_by_play": 10,
+       "box": 8,
+       "team": "PIT",
+       "game_id": 2015020157,
+       "date": "2015-10-31"
+      },
+      {
+       "play_by_play": 9,
+       "box": 7,
+       "team": "COL",
+       "game_id": 2015020164,
+       "date": "2015-11-01"
+      }
+     ]
+    }
+   },
+   "goalie": {
+    "shots_against": {
+     "rows": 2842,
+     "agree": 2827,
+     "rate": 0.99472,
+     "examples": [
+      {
+       "play_by_play": 25,
+       "box": 24,
+       "goalie": 8470880,
+       "team": "STL",
+       "game_id": 2015020008,
+       "date": "2015-10-08"
+      },
+      {
+       "play_by_play": 25,
+       "box": 24,
+       "goalie": 8474651,
+       "team": "WSH",
+       "game_id": 2015020022,
+       "date": "2015-10-10"
+      },
+      {
+       "play_by_play": 23,
+       "box": 22,
+       "goalie": 8475361,
+       "team": "BOS",
+       "game_id": 2015020048,
+       "date": "2015-10-14"
+      },
+      {
+       "play_by_play": 24,
+       "box": 23,
+       "goalie": 8471695,
+       "team": "BOS",
+       "game_id": 2015020074,
+       "date": "2015-10-17"
+      },
+      {
+       "play_by_play": 19,
+       "box": 18,
+       "goalie": 8470645,
+       "team": "CHI",
+       "game_id": 2015020097,
+       "date": "2015-10-22"
+      },
+      {
+       "play_by_play": 23,
+       "box": 22,
+       "goalie": 8475839,
+       "team": "ARI",
+       "game_id": 2015020550,
+       "date": "2015-12-29"
+      }
+     ]
+    },
+    "goals_against": {
+     "rows": 2842,
+     "agree": 2842,
+     "rate": 1,
+     "examples": []
+    },
+    "starter": {
+     "rows": 2642,
+     "agree": 2642,
+     "rate": 1,
+     "examples": []
+    }
+   },
+   "skater": {
+    "goals": {
+     "rows": 47556,
+     "agree": 47556,
+     "rate": 1,
+     "examples": []
+    },
+    "assists": {
+     "rows": 47556,
+     "agree": 47556,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 47556,
+     "agree": 47535,
+     "rate": 0.99956,
+     "examples": [
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8476454,
+       "team": "EDM",
+       "game_id": 2015020008,
+       "date": "2015-10-08"
+      },
+      {
+       "play_by_play": 4,
+       "box": 3,
+       "player": 8469500,
+       "team": "NJD",
+       "game_id": 2015020022,
+       "date": "2015-10-10"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8476455,
+       "team": "COL",
+       "game_id": 2015020048,
+       "date": "2015-10-14"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8462038,
+       "team": "ARI",
+       "game_id": 2015020074,
+       "date": "2015-10-17"
+      },
+      {
+       "play_by_play": 5,
+       "box": 4,
+       "player": 8470041,
+       "team": "NYR",
+       "game_id": 2015020092,
+       "date": "2015-10-22"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8476389,
+       "team": "FLA",
+       "game_id": 2015020097,
+       "date": "2015-10-22"
+      }
+     ]
+    }
+   }
+  },
+  "2017": {
+   "games_pbp": 1317,
+   "games_matched": 1317,
+   "games_without_box": 0,
+   "box_source": {
+    "skater_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2017.parquet",
+     "sha256": "5a5df6d1e2823d4cfb95b807d2076e5906d3e45f84eceec5566d06a6d0a9d9a9",
+     "bytes": 348234,
+     "fetched_at": "2026-10-13T13:40:41.040Z",
+     "missing_columns": []
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2017.parquet",
+     "sha256": "301195c57c47098e84e579ce3dcc36b6baf2b1a4f0b12374388dfd04bc6ffd39",
+     "bytes": 74627,
+     "fetched_at": "2026-10-13T13:39:00.265Z",
+     "missing_columns": []
+    },
+    "team_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2017.parquet",
+     "sha256": "faa256627c7d0ae3038a97614158727863142ba93f7ed4372bf744cabe48b259",
+     "bytes": 48855,
+     "fetched_at": "2026-10-13T14:02:31.038Z",
+     "missing_columns": []
+    }
+   },
+   "team": {
+    "goals": {
+     "rows": 2634,
+     "agree": 2634,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 2634,
+     "agree": 2606,
+     "rate": 0.98937,
+     "examples": [
+      {
+       "play_by_play": 34,
+       "box": 33,
+       "team": "STL",
+       "game_id": 2016020002,
+       "date": "2016-10-12"
+      },
+      {
+       "play_by_play": 26,
+       "box": 25,
+       "team": "CGY",
+       "game_id": 2016020029,
+       "date": "2016-10-15"
+      },
+      {
+       "play_by_play": 28,
+       "box": 27,
+       "team": "BUF",
+       "game_id": 2016020061,
+       "date": "2016-10-20"
+      },
+      {
+       "play_by_play": 34,
+       "box": 33,
+       "team": "CHI",
+       "game_id": 2016020082,
+       "date": "2016-10-24"
+      },
+      {
+       "play_by_play": 27,
+       "box": 26,
+       "team": "SJS",
+       "game_id": 2016020122,
+       "date": "2016-10-29"
+      },
+      {
+       "play_by_play": 22,
+       "box": 21,
+       "team": "MTL",
+       "game_id": 2016020143,
+       "date": "2016-11-02"
+      }
+     ]
+    },
+    "power_play_goals": {
+     "rows": 2634,
+     "agree": 2598,
+     "rate": 0.98633,
+     "examples": [
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "SJS",
+       "game_id": 2016020023,
+       "date": "2016-10-15"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "WPG",
+       "game_id": 2016020050,
+       "date": "2016-10-19"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "DET",
+       "game_id": 2016020064,
+       "date": "2016-10-21"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "VAN",
+       "game_id": 2016020076,
+       "date": "2016-10-22"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "WPG",
+       "game_id": 2016020090,
+       "date": "2016-10-25"
+      },
+      {
+       "play_by_play": 2,
+       "box": 3,
+       "team": "ANA",
+       "game_id": 2016020097,
+       "date": "2016-10-26"
+      }
+     ]
+    },
+    "pim": {
+     "rows": 2634,
+     "agree": 2567,
+     "rate": 0.97456,
+     "examples": [
+      {
+       "play_by_play": 8,
+       "box": 6,
+       "team": "LAK",
+       "game_id": 2016020004,
+       "date": "2016-10-12"
+      },
+      {
+       "play_by_play": 18,
+       "box": 16,
+       "team": "BOS",
+       "game_id": 2016020017,
+       "date": "2016-10-15"
+      },
+      {
+       "play_by_play": 8,
+       "box": 6,
+       "team": "PIT",
+       "game_id": 2016020073,
+       "date": "2016-10-22"
+      },
+      {
+       "play_by_play": 4,
+       "box": 2,
+       "team": "CAR",
+       "game_id": 2016020088,
+       "date": "2016-10-25"
+      },
+      {
+       "play_by_play": 8,
+       "box": 6,
+       "team": "EDM",
+       "game_id": 2016020096,
+       "date": "2016-10-26"
+      },
+      {
+       "play_by_play": 12,
+       "box": 10,
+       "team": "PIT",
+       "game_id": 2016020100,
+       "date": "2016-10-27"
+      }
+     ]
+    }
+   },
+   "goalie": {
+    "shots_against": {
+     "rows": 2842,
+     "agree": 2820,
+     "rate": 0.99226,
+     "examples": [
+      {
+       "play_by_play": 28,
+       "box": 27,
+       "goalie": 8474593,
+       "team": "VAN",
+       "game_id": 2016020061,
+       "date": "2016-10-20"
+      },
+      {
+       "play_by_play": 34,
+       "box": 33,
+       "goalie": 8470880,
+       "team": "CGY",
+       "game_id": 2016020082,
+       "date": "2016-10-24"
+      },
+      {
+       "play_by_play": 32,
+       "box": 31,
+       "goalie": 8475660,
+       "team": "EDM",
+       "game_id": 2016020186,
+       "date": "2016-11-08"
+      },
+      {
+       "play_by_play": 18,
+       "box": 17,
+       "goalie": 8471695,
+       "team": "BOS",
+       "game_id": 2016020196,
+       "date": "2016-11-10"
+      },
+      {
+       "play_by_play": 29,
+       "box": 28,
+       "goalie": 8474636,
+       "team": "WPG",
+       "game_id": 2016020210,
+       "date": "2016-11-11"
+      },
+      {
+       "play_by_play": 35,
+       "box": 34,
+       "goalie": 8476434,
+       "team": "ANA",
+       "game_id": 2016020242,
+       "date": "2016-11-15"
+      }
+     ]
+    },
+    "goals_against": {
+     "rows": 2842,
+     "agree": 2842,
+     "rate": 1,
+     "examples": []
+    },
+    "starter": {
+     "rows": 2634,
+     "agree": 2634,
+     "rate": 1,
+     "examples": []
+    }
+   },
+   "skater": {
+    "goals": {
+     "rows": 47409,
+     "agree": 47407,
+     "rate": 0.99996,
+     "examples": [
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8475727,
+       "team": "BOS",
+       "game_id": 2016021165,
+       "date": "2017-04-02"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "player": 8465009,
+       "team": "BOS",
+       "game_id": 2016021165,
+       "date": "2017-04-02"
+      }
+     ]
+    },
+    "assists": {
+     "rows": 47409,
+     "agree": 47405,
+     "rate": 0.99992,
+     "examples": [
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "player": 8475209,
+       "team": "CHI",
+       "game_id": 2016021152,
+       "date": "2017-03-31"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8473604,
+       "team": "CHI",
+       "game_id": 2016021152,
+       "date": "2017-03-31"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "player": 8476374,
+       "team": "BOS",
+       "game_id": 2016021165,
+       "date": "2017-04-02"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8465009,
+       "team": "BOS",
+       "game_id": 2016021165,
+       "date": "2017-04-02"
+      }
+     ]
+    },
+    "shots_on_goal": {
+     "rows": 47409,
+     "agree": 47379,
+     "rate": 0.99937,
+     "examples": [
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8470105,
+       "team": "STL",
+       "game_id": 2016020002,
+       "date": "2016-10-12"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8471426,
+       "team": "CGY",
+       "game_id": 2016020029,
+       "date": "2016-10-15"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8477491,
+       "team": "BUF",
+       "game_id": 2016020061,
+       "date": "2016-10-20"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "player": 8466285,
+       "team": "CHI",
+       "game_id": 2016020082,
+       "date": "2016-10-24"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8466138,
+       "team": "SJS",
+       "game_id": 2016020122,
+       "date": "2016-10-29"
+      },
+      {
+       "play_by_play": 4,
+       "box": 3,
+       "player": 8471228,
+       "team": "MTL",
+       "game_id": 2016020143,
+       "date": "2016-11-02"
+      }
+     ]
+    }
+   }
+  },
+  "2018": {
+   "games_pbp": 1355,
+   "games_matched": 1355,
+   "games_without_box": 0,
+   "box_source": {
+    "skater_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2018.parquet",
+     "sha256": "12c6095e8583f27917d0910188aa2c4c6cf3241ca9704ab7e7b3a03351646e98",
+     "bytes": 357560,
+     "fetched_at": "2026-10-13T13:40:41.671Z",
+     "missing_columns": []
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2018.parquet",
+     "sha256": "0830d7f93ecbbcd0b2dca8417c78b8875d023695c1628013ceb168a79d1a4e1f",
+     "bytes": 78401,
+     "fetched_at": "2026-10-13T13:39:09.013Z",
+     "missing_columns": []
+    },
+    "team_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2018.parquet",
+     "sha256": "125fa15cc881e7d407250e6fe373db5a6f9167f82fd48bd364def7ff9e029a86",
+     "bytes": 49954,
+     "fetched_at": "2026-10-13T14:02:32.554Z",
+     "missing_columns": []
+    }
+   },
+   "team": {
+    "goals": {
+     "rows": 2710,
+     "agree": 2710,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 2710,
+     "agree": 2689,
+     "rate": 0.99225,
+     "examples": [
+      {
+       "play_by_play": 42,
+       "box": 41,
+       "team": "TOR",
+       "game_id": 2017020016,
+       "date": "2017-10-07"
+      },
+      {
+       "play_by_play": 39,
+       "box": 38,
+       "team": "LAK",
+       "game_id": 2017020030,
+       "date": "2017-10-07"
+      },
+      {
+       "play_by_play": 39,
+       "box": 38,
+       "team": "PHI",
+       "game_id": 2017020083,
+       "date": "2017-10-17"
+      },
+      {
+       "play_by_play": 31,
+       "box": 30,
+       "team": "DAL",
+       "game_id": 2017020103,
+       "date": "2017-10-19"
+      },
+      {
+       "play_by_play": 30,
+       "box": 29,
+       "team": "DET",
+       "game_id": 2017020222,
+       "date": "2017-11-06"
+      },
+      {
+       "play_by_play": 32,
+       "box": 31,
+       "team": "EDM",
+       "game_id": 2017020273,
+       "date": "2017-11-14"
+      }
+     ]
+    },
+    "power_play_goals": {
+     "rows": 2710,
+     "agree": 2668,
+     "rate": 0.9845,
+     "examples": [
+      {
+       "play_by_play": 0,
+       "box": 2,
+       "team": "NSH",
+       "game_id": 2017020005,
+       "date": "2017-10-05"
+      },
+      {
+       "play_by_play": 2,
+       "box": 3,
+       "team": "NSH",
+       "game_id": 2017020042,
+       "date": "2017-10-10"
+      },
+      {
+       "play_by_play": 2,
+       "box": 3,
+       "team": "BUF",
+       "game_id": 2017020090,
+       "date": "2017-10-17"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "CHI",
+       "game_id": 2017020093,
+       "date": "2017-10-18"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "WSH",
+       "game_id": 2017020106,
+       "date": "2017-10-20"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "DET",
+       "game_id": 2017020144,
+       "date": "2017-10-26"
+      }
+     ]
+    },
+    "pim": {
+     "rows": 2710,
+     "agree": 2629,
+     "rate": 0.97011,
+     "examples": [
+      {
+       "play_by_play": 18,
+       "box": 8,
+       "team": "ANA",
+       "game_id": 2017020011,
+       "date": "2017-10-05"
+      },
+      {
+       "play_by_play": 8,
+       "box": 6,
+       "team": "OTT",
+       "game_id": 2017020044,
+       "date": "2017-10-10"
+      },
+      {
+       "play_by_play": 12,
+       "box": 10,
+       "team": "WSH",
+       "game_id": 2017020047,
+       "date": "2017-10-11"
+      },
+      {
+       "play_by_play": 12,
+       "box": 10,
+       "team": "CGY",
+       "game_id": 2017020050,
+       "date": "2017-10-11"
+      },
+      {
+       "play_by_play": 7,
+       "box": 5,
+       "team": "NSH",
+       "game_id": 2017020053,
+       "date": "2017-10-12"
+      },
+      {
+       "play_by_play": 17,
+       "box": 15,
+       "team": "DET",
+       "game_id": 2017020056,
+       "date": "2017-10-12"
+      }
+     ]
+    }
+   },
+   "goalie": {
+    "shots_against": {
+     "rows": 2944,
+     "agree": 2928,
+     "rate": 0.99457,
+     "examples": [
+      {
+       "play_by_play": 18,
+       "box": 17,
+       "goalie": 8468685,
+       "team": "NYR",
+       "game_id": 2017020016,
+       "date": "2017-10-07"
+      },
+      {
+       "play_by_play": 30,
+       "box": 29,
+       "goalie": 8474889,
+       "team": "SJS",
+       "game_id": 2017020030,
+       "date": "2017-10-07"
+      },
+      {
+       "play_by_play": 31,
+       "box": 30,
+       "goalie": 8478499,
+       "team": "ARI",
+       "game_id": 2017020103,
+       "date": "2017-10-19"
+      },
+      {
+       "play_by_play": 30,
+       "box": 29,
+       "goalie": 8474593,
+       "team": "VAN",
+       "game_id": 2017020222,
+       "date": "2017-11-06"
+      },
+      {
+       "play_by_play": 30,
+       "box": 29,
+       "goalie": 8476509,
+       "team": "VGK",
+       "game_id": 2017020273,
+       "date": "2017-11-14"
+      },
+      {
+       "play_by_play": 36,
+       "box": 35,
+       "goalie": 8476316,
+       "team": "EDM",
+       "game_id": 2017020387,
+       "date": "2017-11-30"
+      }
+     ]
+    },
+    "goals_against": {
+     "rows": 2944,
+     "agree": 2944,
+     "rate": 1,
+     "examples": []
+    },
+    "starter": {
+     "rows": 2710,
+     "agree": 2710,
+     "rate": 1,
+     "examples": []
+    }
+   },
+   "skater": {
+    "goals": {
+     "rows": 48780,
+     "agree": 48780,
+     "rate": 1,
+     "examples": []
+    },
+    "assists": {
+     "rows": 48780,
+     "agree": 48780,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 48780,
+     "agree": 48759,
+     "rate": 0.99957,
+     "examples": [
+      {
+       "play_by_play": 5,
+       "box": 4,
+       "player": 8475786,
+       "team": "TOR",
+       "game_id": 2017020016,
+       "date": "2017-10-07"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8476406,
+       "team": "LAK",
+       "game_id": 2017020030,
+       "date": "2017-10-07"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "player": 8470047,
+       "team": "PHI",
+       "game_id": 2017020083,
+       "date": "2017-10-17"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8476889,
+       "team": "DAL",
+       "game_id": 2017020103,
+       "date": "2017-10-19"
+      },
+      {
+       "play_by_play": 4,
+       "box": 3,
+       "player": 8476924,
+       "team": "DET",
+       "game_id": 2017020222,
+       "date": "2017-11-06"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8478402,
+       "team": "EDM",
+       "game_id": 2017020273,
+       "date": "2017-11-14"
+      }
+     ]
+    }
+   }
+  },
+  "2019": {
+   "games_pbp": 1358,
+   "games_matched": 1358,
+   "games_without_box": 0,
+   "box_source": {
+    "skater_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2019.parquet",
+     "sha256": "42c6bd262976d6525c3cbad99e125137703f8ce08cf2c964ce5aca1d4fffbf6f",
+     "bytes": 358552,
+     "fetched_at": "2026-10-13T13:40:42.469Z",
+     "missing_columns": []
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2019.parquet",
+     "sha256": "8954b75ead8733b7c4c3c6aad2469bcc1f66b8f239b1b8df105bc7c70242e124",
+     "bytes": 79095,
+     "fetched_at": "2026-10-13T13:39:19.410Z",
+     "missing_columns": []
+    },
+    "team_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2019.parquet",
+     "sha256": "0d416628ae47bee9bed7d67af4c5710766a0a191560d43737638975481f46f36",
+     "bytes": 50208,
+     "fetched_at": "2026-10-13T14:02:34.051Z",
+     "missing_columns": []
+    }
+   },
+   "team": {
+    "goals": {
+     "rows": 2716,
+     "agree": 2716,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 2716,
+     "agree": 2704,
+     "rate": 0.99558,
+     "examples": [
+      {
+       "play_by_play": 39,
+       "box": 38,
+       "team": "PIT",
+       "game_id": 2018020090,
+       "date": "2018-10-18"
+      },
+      {
+       "play_by_play": 29,
+       "box": 28,
+       "team": "NSH",
+       "game_id": 2018020173,
+       "date": "2018-10-30"
+      },
+      {
+       "play_by_play": 26,
+       "box": 25,
+       "team": "VGK",
+       "game_id": 2018020276,
+       "date": "2018-11-14"
+      },
+      {
+       "play_by_play": 36,
+       "box": 35,
+       "team": "TBL",
+       "game_id": 2018020359,
+       "date": "2018-11-25"
+      },
+      {
+       "play_by_play": 23,
+       "box": 22,
+       "team": "BUF",
+       "game_id": 2018020414,
+       "date": "2018-12-03"
+      },
+      {
+       "play_by_play": 38,
+       "box": 37,
+       "team": "ANA",
+       "game_id": 2018020458,
+       "date": "2018-12-09"
+      }
+     ]
+    },
+    "power_play_goals": {
+     "rows": 2716,
+     "agree": 2681,
+     "rate": 0.98711,
+     "examples": [
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "COL",
+       "game_id": 2018020013,
+       "date": "2018-10-04"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "CAR",
+       "game_id": 2018020029,
+       "date": "2018-10-07"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "WSH",
+       "game_id": 2018020099,
+       "date": "2018-10-19"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "CHI",
+       "game_id": 2018020116,
+       "date": "2018-10-21"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "BOS",
+       "game_id": 2018020134,
+       "date": "2018-10-25"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "NSH",
+       "game_id": 2018020150,
+       "date": "2018-10-27"
+      }
+     ]
+    },
+    "pim": {
+     "rows": 2716,
+     "agree": 2652,
+     "rate": 0.97644,
+     "examples": [
+      {
+       "play_by_play": 6,
+       "box": 4,
+       "team": "CHI",
+       "game_id": 2018020009,
+       "date": "2018-10-04"
+      },
+      {
+       "play_by_play": 10,
+       "box": 8,
+       "team": "NYR",
+       "game_id": 2018020029,
+       "date": "2018-10-07"
+      },
+      {
+       "play_by_play": 8,
+       "box": 6,
+       "team": "BUF",
+       "game_id": 2018020046,
+       "date": "2018-10-11"
+      },
+      {
+       "play_by_play": 6,
+       "box": 4,
+       "team": "ANA",
+       "game_id": 2018020067,
+       "date": "2018-10-13"
+      },
+      {
+       "play_by_play": 2,
+       "box": 0,
+       "team": "PIT",
+       "game_id": 2018020090,
+       "date": "2018-10-18"
+      },
+      {
+       "play_by_play": 6,
+       "box": 4,
+       "team": "LAK",
+       "game_id": 2018020097,
+       "date": "2018-10-18"
+      }
+     ]
+    }
+   },
+   "goalie": {
+    "shots_against": {
+     "rows": 2901,
+     "agree": 2895,
+     "rate": 0.99793,
+     "examples": [
+      {
+       "play_by_play": 13,
+       "box": 12,
+       "goalie": 8476434,
+       "team": "ANA",
+       "game_id": 2018020276,
+       "date": "2018-11-14"
+      },
+      {
+       "play_by_play": 36,
+       "box": 35,
+       "goalie": 8471239,
+       "team": "NJD",
+       "game_id": 2018020359,
+       "date": "2018-11-25"
+      },
+      {
+       "play_by_play": 23,
+       "box": 22,
+       "goalie": 8471469,
+       "team": "NSH",
+       "game_id": 2018020414,
+       "date": "2018-12-03"
+      },
+      {
+       "play_by_play": 38,
+       "box": 37,
+       "goalie": 8471239,
+       "team": "NJD",
+       "game_id": 2018020458,
+       "date": "2018-12-09"
+      },
+      {
+       "play_by_play": 12,
+       "box": 11,
+       "goalie": 8474651,
+       "team": "WSH",
+       "game_id": 2018020751,
+       "date": "2019-01-20"
+      },
+      {
+       "play_by_play": 47,
+       "box": 46,
+       "goalie": 8476434,
+       "team": "ANA",
+       "game_id": 2018021256,
+       "date": "2019-04-05"
+      }
+     ]
+    },
+    "goals_against": {
+     "rows": 2901,
+     "agree": 2901,
+     "rate": 1,
+     "examples": []
+    },
+    "starter": {
+     "rows": 2716,
+     "agree": 2716,
+     "rate": 1,
+     "examples": []
+    }
+   },
+   "skater": {
+    "goals": {
+     "rows": 48888,
+     "agree": 48888,
+     "rate": 1,
+     "examples": []
+    },
+    "assists": {
+     "rows": 48888,
+     "agree": 48888,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 48888,
+     "agree": 48875,
+     "rate": 0.99973,
+     "examples": [
+      {
+       "play_by_play": 5,
+       "box": 4,
+       "player": 8471215,
+       "team": "PIT",
+       "game_id": 2018020090,
+       "date": "2018-10-18"
+      },
+      {
+       "play_by_play": 5,
+       "box": 4,
+       "player": 8478042,
+       "team": "NSH",
+       "game_id": 2018020173,
+       "date": "2018-10-30"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "player": 8474207,
+       "team": "VGK",
+       "game_id": 2018020276,
+       "date": "2018-11-14"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8478010,
+       "team": "TBL",
+       "game_id": 2018020359,
+       "date": "2018-11-25"
+      },
+      {
+       "play_by_play": 4,
+       "box": 3,
+       "player": 8477933,
+       "team": "BUF",
+       "game_id": 2018020414,
+       "date": "2018-12-03"
+      },
+      {
+       "play_by_play": 4,
+       "box": 3,
+       "player": 8478131,
+       "team": "ANA",
+       "game_id": 2018020458,
+       "date": "2018-12-09"
+      }
+     ]
+    }
+   }
+  },
+  "2020": {
+   "games_pbp": 1212,
+   "games_matched": 1212,
+   "games_without_box": 0,
+   "box_source": {
+    "skater_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2020.parquet",
+     "sha256": "4fbacb2fa534e8b63add01e1c0af66731646229a72e54dd9d25aab83f7c15269",
+     "bytes": 333952,
+     "fetched_at": "2026-10-13T13:40:43.144Z",
+     "missing_columns": []
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2020.parquet",
+     "sha256": "876193c46f9ab517d35d53d50f3d02689e87ebda0e77a43c05ad992e0bc1e4a0",
+     "bytes": 69833,
+     "fetched_at": "2026-10-13T13:39:27.403Z",
+     "missing_columns": []
+    },
+    "team_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2020.parquet",
+     "sha256": "81fbeedce146aaacc4a1e204d56ef59e549f85f7dd792c9cacacc7f3f9a49b0a",
+     "bytes": 45967,
+     "fetched_at": "2026-10-13T14:02:35.627Z",
+     "missing_columns": []
+    }
+   },
+   "team": {
+    "goals": {
+     "rows": 2424,
+     "agree": 2422,
+     "rate": 0.99917,
+     "examples": [
+      {
+       "play_by_play": 4,
+       "box": 3,
+       "team": "TBL",
+       "game_id": 2019030002,
+       "date": "2020-08-03"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "team": "WSH",
+       "game_id": 2019030002,
+       "date": "2020-08-03"
+      }
+     ]
+    },
+    "shots_on_goal": {
+     "rows": 2424,
+     "agree": 2400,
+     "rate": 0.9901,
+     "examples": [
+      {
+       "play_by_play": 39,
+       "box": 38,
+       "team": "PHI",
+       "game_id": 2019020016,
+       "date": "2019-10-04"
+      },
+      {
+       "play_by_play": 30,
+       "box": 29,
+       "team": "DAL",
+       "game_id": 2019020024,
+       "date": "2019-10-05"
+      },
+      {
+       "play_by_play": 33,
+       "box": 32,
+       "team": "PIT",
+       "game_id": 2019020092,
+       "date": "2019-10-16"
+      },
+      {
+       "play_by_play": 37,
+       "box": 36,
+       "team": "CGY",
+       "game_id": 2019020103,
+       "date": "2019-10-17"
+      },
+      {
+       "play_by_play": 35,
+       "box": 34,
+       "team": "WSH",
+       "game_id": 2019020109,
+       "date": "2019-10-18"
+      },
+      {
+       "play_by_play": 50,
+       "box": 49,
+       "team": "VGK",
+       "game_id": 2019020176,
+       "date": "2019-10-27"
+      }
+     ]
+    },
+    "power_play_goals": {
+     "rows": 2424,
+     "agree": 2293,
+     "rate": 0.94596,
+     "examples": [
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "TOR",
+       "game_id": 2019020019,
+       "date": "2019-10-05"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "MTL",
+       "game_id": 2019020019,
+       "date": "2019-10-05"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "team": "ANA",
+       "game_id": 2019020030,
+       "date": "2019-10-05"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "BUF",
+       "game_id": 2019020035,
+       "date": "2019-10-07"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "FLA",
+       "game_id": 2019020036,
+       "date": "2019-10-08"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "EDM",
+       "game_id": 2019020049,
+       "date": "2019-10-10"
+      }
+     ]
+    },
+    "pim": {
+     "rows": 2424,
+     "agree": 2365,
+     "rate": 0.97566,
+     "examples": [
+      {
+       "play_by_play": 6,
+       "box": 4,
+       "team": "DAL",
+       "game_id": 2019020055,
+       "date": "2019-10-10"
+      },
+      {
+       "play_by_play": 10,
+       "box": 8,
+       "team": "MIN",
+       "game_id": 2019020071,
+       "date": "2019-10-12"
+      },
+      {
+       "play_by_play": 18,
+       "box": 16,
+       "team": "BUF",
+       "game_id": 2019020096,
+       "date": "2019-10-16"
+      },
+      {
+       "play_by_play": 13,
+       "box": 11,
+       "team": "VGK",
+       "game_id": 2019020105,
+       "date": "2019-10-17"
+      },
+      {
+       "play_by_play": 8,
+       "box": 6,
+       "team": "CHI",
+       "game_id": 2019020110,
+       "date": "2019-10-18"
+      },
+      {
+       "play_by_play": 30,
+       "box": 26,
+       "team": "CGY",
+       "game_id": 2019020122,
+       "date": "2019-10-19"
+      }
+     ]
+    }
+   },
+   "goalie": {
+    "shots_against": {
+     "rows": 2582,
+     "agree": 2544,
+     "rate": 0.98528,
+     "examples": [
+      {
+       "play_by_play": 39,
+       "box": 38,
+       "goalie": 8470645,
+       "team": "CHI",
+       "game_id": 2019020016,
+       "date": "2019-10-04"
+      },
+      {
+       "play_by_play": 30,
+       "box": 29,
+       "goalie": 8476412,
+       "team": "STL",
+       "game_id": 2019020024,
+       "date": "2019-10-05"
+      },
+      {
+       "play_by_play": 31,
+       "box": 32,
+       "goalie": 8476434,
+       "team": "ANA",
+       "game_id": 2019020040,
+       "date": "2019-10-08"
+      },
+      {
+       "play_by_play": 33,
+       "box": 32,
+       "goalie": 8475831,
+       "team": "COL",
+       "game_id": 2019020092,
+       "date": "2019-10-16"
+      },
+      {
+       "play_by_play": 37,
+       "box": 36,
+       "goalie": 8470657,
+       "team": "DET",
+       "game_id": 2019020103,
+       "date": "2019-10-17"
+      },
+      {
+       "play_by_play": 34,
+       "box": 33,
+       "goalie": 8468685,
+       "team": "NYR",
+       "game_id": 2019020109,
+       "date": "2019-10-18"
+      }
+     ]
+    },
+    "goals_against": {
+     "rows": 2582,
+     "agree": 2578,
+     "rate": 0.99845,
+     "examples": [
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "goalie": 8478406,
+       "team": "NJD",
+       "game_id": 2019020535,
+       "date": "2019-12-18"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "goalie": 8476883,
+       "team": "TBL",
+       "game_id": 2019030002,
+       "date": "2020-08-03"
+      },
+      {
+       "play_by_play": 4,
+       "box": 2,
+       "goalie": 8474651,
+       "team": "WSH",
+       "game_id": 2019030002,
+       "date": "2020-08-03"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "goalie": 8474596,
+       "team": "STL",
+       "game_id": 2019030016,
+       "date": "2020-08-09"
+      }
+     ]
+    },
+    "starter": {
+     "rows": 2424,
+     "agree": 2424,
+     "rate": 1,
+     "examples": []
+    }
+   },
+   "skater": {
+    "goals": {
+     "rows": 43632,
+     "agree": 43628,
+     "rate": 0.99991,
+     "examples": [
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8478010,
+       "team": "TBL",
+       "game_id": 2019030002,
+       "date": "2020-08-03"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "player": 8476453,
+       "team": "TBL",
+       "game_id": 2019030002,
+       "date": "2020-08-03"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8471698,
+       "team": "WSH",
+       "game_id": 2019030002,
+       "date": "2020-08-03"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8478495,
+       "team": "DAL",
+       "game_id": 2019030016,
+       "date": "2020-08-09"
+      }
+     ]
+    },
+    "assists": {
+     "rows": 43632,
+     "agree": 43632,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 43632,
+     "agree": 43603,
+     "rate": 0.99934,
+     "examples": [
+      {
+       "play_by_play": 6,
+       "box": 5,
+       "player": 8478067,
+       "team": "PHI",
+       "game_id": 2019020016,
+       "date": "2019-10-04"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8477406,
+       "team": "DAL",
+       "game_id": 2019020024,
+       "date": "2019-10-05"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "player": 8479293,
+       "team": "PIT",
+       "game_id": 2019020092,
+       "date": "2019-10-16"
+      },
+      {
+       "play_by_play": 4,
+       "box": 3,
+       "player": 8478585,
+       "team": "CGY",
+       "game_id": 2019020103,
+       "date": "2019-10-17"
+      },
+      {
+       "play_by_play": 5,
+       "box": 4,
+       "player": 8471698,
+       "team": "WSH",
+       "game_id": 2019020109,
+       "date": "2019-10-18"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8475913,
+       "team": "VGK",
+       "game_id": 2019020176,
+       "date": "2019-10-27"
+      }
+     ]
+    }
+   }
+  },
+  "2021": {
+   "games_pbp": 952,
+   "games_matched": 952,
+   "games_without_box": 0,
+   "box_source": {
+    "skater_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2021.parquet",
+     "sha256": "24b45b43cbdca70f969db979cbf25079ff0fe5292e99447fe4c8af70ba2dca76",
+     "bytes": 264968,
+     "fetched_at": "2026-10-13T13:40:43.862Z",
+     "missing_columns": []
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2021.parquet",
+     "sha256": "c68536928d1a5ad6c92ebd8b5c5adaa114ae0cbf6ace7400df0b1fe87a655e94",
+     "bytes": 56820,
+     "fetched_at": "2026-10-13T13:39:34.522Z",
+     "missing_columns": []
+    },
+    "team_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2021.parquet",
+     "sha256": "7c3f4ff8b36d1fa37f53e4b0a8c406fa0495d74a5e2c00393230a0761df6a88a",
+     "bytes": 38526,
+     "fetched_at": "2026-10-13T14:02:37.190Z",
+     "missing_columns": []
+    }
+   },
+   "team": {
+    "goals": {
+     "rows": 1904,
+     "agree": 1904,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 1904,
+     "agree": 1892,
+     "rate": 0.9937,
+     "examples": [
+      {
+       "play_by_play": 30,
+       "box": 29,
+       "team": "DAL",
+       "game_id": 2020020020,
+       "date": "2021-05-03"
+      },
+      {
+       "play_by_play": 23,
+       "box": 22,
+       "team": "EDM",
+       "game_id": 2020020056,
+       "date": "2021-01-20"
+      },
+      {
+       "play_by_play": 29,
+       "box": 28,
+       "team": "PIT",
+       "game_id": 2020020068,
+       "date": "2021-01-22"
+      },
+      {
+       "play_by_play": 32,
+       "box": 31,
+       "team": "EDM",
+       "game_id": 2020020220,
+       "date": "2021-02-11"
+      },
+      {
+       "play_by_play": 22,
+       "box": 21,
+       "team": "MIN",
+       "game_id": 2020020398,
+       "date": "2021-03-08"
+      },
+      {
+       "play_by_play": 38,
+       "box": 37,
+       "team": "LAK",
+       "game_id": 2020020414,
+       "date": "2021-03-10"
+      }
+     ]
+    },
+    "power_play_goals": {
+     "rows": 1904,
+     "agree": 1875,
+     "rate": 0.98477,
+     "examples": [
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "SJS",
+       "game_id": 2020020030,
+       "date": "2021-01-16"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "CAR",
+       "game_id": 2020020052,
+       "date": "2021-03-02"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "ARI",
+       "game_id": 2020020073,
+       "date": "2021-01-22"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "WSH",
+       "game_id": 2020020112,
+       "date": "2021-01-28"
+      },
+      {
+       "play_by_play": 2,
+       "box": 3,
+       "team": "BOS",
+       "game_id": 2020020159,
+       "date": "2021-02-03"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "NSH",
+       "game_id": 2020020165,
+       "date": "2021-02-04"
+      }
+     ]
+    },
+    "pim": {
+     "rows": 1904,
+     "agree": 1874,
+     "rate": 0.98424,
+     "examples": [
+      {
+       "play_by_play": 8,
+       "box": 6,
+       "team": "PHI",
+       "game_id": 2020020037,
+       "date": "2021-01-18"
+      },
+      {
+       "play_by_play": 4,
+       "box": 2,
+       "team": "PIT",
+       "game_id": 2020020109,
+       "date": "2021-01-28"
+      },
+      {
+       "play_by_play": 32,
+       "box": 30,
+       "team": "MIN",
+       "game_id": 2020020118,
+       "date": "2021-01-28"
+      },
+      {
+       "play_by_play": 10,
+       "box": 8,
+       "team": "ANA",
+       "game_id": 2020020121,
+       "date": "2021-01-28"
+      },
+      {
+       "play_by_play": 8,
+       "box": 6,
+       "team": "PIT",
+       "game_id": 2020020166,
+       "date": "2021-04-20"
+      },
+      {
+       "play_by_play": 9,
+       "box": 7,
+       "team": "VGK",
+       "game_id": 2020020210,
+       "date": "2021-02-09"
+      }
+     ]
+    }
+   },
+   "goalie": {
+    "shots_against": {
+     "rows": 2026,
+     "agree": 2018,
+     "rate": 0.99605,
+     "examples": [
+      {
+       "play_by_play": 30,
+       "box": 29,
+       "goalie": 8481519,
+       "team": "FLA",
+       "game_id": 2020020020,
+       "date": "2021-05-03"
+      },
+      {
+       "play_by_play": 22,
+       "box": 21,
+       "goalie": 8475883,
+       "team": "TOR",
+       "game_id": 2020020056,
+       "date": "2021-01-20"
+      },
+      {
+       "play_by_play": 29,
+       "box": 28,
+       "goalie": 8478048,
+       "team": "NYR",
+       "game_id": 2020020068,
+       "date": "2021-01-22"
+      },
+      {
+       "play_by_play": 32,
+       "box": 31,
+       "goalie": 8474596,
+       "team": "MTL",
+       "game_id": 2020020220,
+       "date": "2021-02-11"
+      },
+      {
+       "play_by_play": 38,
+       "box": 37,
+       "goalie": 8476434,
+       "team": "ANA",
+       "game_id": 2020020414,
+       "date": "2021-03-10"
+      },
+      {
+       "play_by_play": 34,
+       "box": 33,
+       "goalie": 8478406,
+       "team": "NJD",
+       "game_id": 2020020417,
+       "date": "2021-03-11"
+      }
+     ]
+    },
+    "goals_against": {
+     "rows": 2026,
+     "agree": 2026,
+     "rate": 1,
+     "examples": []
+    },
+    "starter": {
+     "rows": 1904,
+     "agree": 1904,
+     "rate": 1,
+     "examples": []
+    }
+   },
+   "skater": {
+    "goals": {
+     "rows": 34252,
+     "agree": 34252,
+     "rate": 1,
+     "examples": []
+    },
+    "assists": {
+     "rows": 34252,
+     "agree": 34252,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 34252,
+     "agree": 34240,
+     "rate": 0.99965,
+     "examples": [
+      {
+       "play_by_play": 4,
+       "box": 3,
+       "player": 8480027,
+       "team": "DAL",
+       "game_id": 2020020020,
+       "date": "2021-05-03"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8479977,
+       "team": "EDM",
+       "game_id": 2020020056,
+       "date": "2021-01-20"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8477955,
+       "team": "PIT",
+       "game_id": 2020020068,
+       "date": "2021-01-22"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "player": 8477498,
+       "team": "EDM",
+       "game_id": 2020020220,
+       "date": "2021-02-11"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8476463,
+       "team": "MIN",
+       "game_id": 2020020398,
+       "date": "2021-03-08"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "player": 8480113,
+       "team": "LAK",
+       "game_id": 2020020414,
+       "date": "2021-03-10"
+      }
+     ]
+    }
+   }
+  },
+  "2022": {
+   "games_pbp": 1401,
+   "games_matched": 1401,
+   "games_without_box": 0,
+   "box_source": {
+    "skater_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2022.parquet",
+     "sha256": "2d8a402ead4c4396b7634dc072d30b282d445eca96a32ea5ecd6d6407f9e98e2",
+     "bytes": 382784,
+     "fetched_at": "2026-10-13T13:40:44.489Z",
+     "missing_columns": []
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2022.parquet",
+     "sha256": "258efd9dbfb4415937699240e3a891856216e080ac8e3133c3fffe86ba508809",
+     "bytes": 78790,
+     "fetched_at": "2026-10-13T13:39:40.842Z",
+     "missing_columns": []
+    },
+    "team_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2022.parquet",
+     "sha256": "a08aa657372a97c83bb0305c218c74ce4c20ef672b02d0e74b39176269c36a3d",
+     "bytes": 51848,
+     "fetched_at": "2026-10-13T14:02:38.729Z",
+     "missing_columns": []
+    }
+   },
+   "team": {
+    "goals": {
+     "rows": 2802,
+     "agree": 2802,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 2802,
+     "agree": 2781,
+     "rate": 0.99251,
+     "examples": [
+      {
+       "play_by_play": 34,
+       "box": 33,
+       "team": "PHI",
+       "game_id": 2021020219,
+       "date": "2021-11-13"
+      },
+      {
+       "play_by_play": 34,
+       "box": 33,
+       "team": "MTL",
+       "game_id": 2021020319,
+       "date": "2021-11-27"
+      },
+      {
+       "play_by_play": 37,
+       "box": 36,
+       "team": "ANA",
+       "game_id": 2021020345,
+       "date": "2021-11-30"
+      },
+      {
+       "play_by_play": 35,
+       "box": 34,
+       "team": "OTT",
+       "game_id": 2021020368,
+       "date": "2021-12-04"
+      },
+      {
+       "play_by_play": 28,
+       "box": 27,
+       "team": "NSH",
+       "game_id": 2021020443,
+       "date": "2022-04-19"
+      },
+      {
+       "play_by_play": 42,
+       "box": 41,
+       "team": "CGY",
+       "game_id": 2021020478,
+       "date": "2022-02-15"
+      }
+     ]
+    },
+    "power_play_goals": {
+     "rows": 2802,
+     "agree": 2763,
+     "rate": 0.98608,
+     "examples": [
+      {
+       "play_by_play": 2,
+       "box": 3,
+       "team": "TBL",
+       "game_id": 2021020009,
+       "date": "2021-10-14"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "CAR",
+       "game_id": 2021020012,
+       "date": "2021-10-14"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "CHI",
+       "game_id": 2021020017,
+       "date": "2021-10-15"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "PHI",
+       "game_id": 2021020018,
+       "date": "2021-10-15"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "COL",
+       "game_id": 2021020045,
+       "date": "2021-10-19"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "PHI",
+       "game_id": 2021020050,
+       "date": "2021-10-20"
+      }
+     ]
+    },
+    "pim": {
+     "rows": 2802,
+     "agree": 2737,
+     "rate": 0.9768,
+     "examples": [
+      {
+       "play_by_play": 18,
+       "box": 16,
+       "team": "FLA",
+       "game_id": 2021020010,
+       "date": "2021-10-14"
+      },
+      {
+       "play_by_play": 22,
+       "box": 18,
+       "team": "ANA",
+       "game_id": 2021020015,
+       "date": "2021-10-13"
+      },
+      {
+       "play_by_play": 14,
+       "box": 12,
+       "team": "TBL",
+       "game_id": 2021020068,
+       "date": "2021-10-23"
+      },
+      {
+       "play_by_play": 37,
+       "box": 27,
+       "team": "STL",
+       "game_id": 2021020105,
+       "date": "2021-10-28"
+      },
+      {
+       "play_by_play": 8,
+       "box": 6,
+       "team": "CGY",
+       "game_id": 2021020154,
+       "date": "2021-11-04"
+      },
+      {
+       "play_by_play": 8,
+       "box": 6,
+       "team": "CHI",
+       "game_id": 2021020187,
+       "date": "2021-11-09"
+      }
+     ]
+    }
+   },
+   "goalie": {
+    "shots_against": {
+     "rows": 3014,
+     "agree": 2996,
+     "rate": 0.99403,
+     "examples": [
+      {
+       "play_by_play": 34,
+       "box": 33,
+       "goalie": 8471418,
+       "team": "DAL",
+       "game_id": 2021020219,
+       "date": "2021-11-13"
+      },
+      {
+       "play_by_play": 37,
+       "box": 36,
+       "goalie": 8471734,
+       "team": "LAK",
+       "game_id": 2021020345,
+       "date": "2021-11-30"
+      },
+      {
+       "play_by_play": 16,
+       "box": 15,
+       "goalie": 8477992,
+       "team": "COL",
+       "game_id": 2021020368,
+       "date": "2021-12-04"
+      },
+      {
+       "play_by_play": 28,
+       "box": 27,
+       "goalie": 8478435,
+       "team": "CGY",
+       "game_id": 2021020443,
+       "date": "2022-04-19"
+      },
+      {
+       "play_by_play": 42,
+       "box": 41,
+       "goalie": 8478007,
+       "team": "CBJ",
+       "game_id": 2021020478,
+       "date": "2022-02-15"
+      },
+      {
+       "play_by_play": 34,
+       "box": 33,
+       "goalie": 8477970,
+       "team": "WSH",
+       "game_id": 2021020704,
+       "date": "2022-01-20"
+      }
+     ]
+    },
+    "goals_against": {
+     "rows": 3014,
+     "agree": 3013,
+     "rate": 0.99967,
+     "examples": [
+      {
+       "play_by_play": 4,
+       "box": 3,
+       "goalie": 8477992,
+       "team": "COL",
+       "game_id": 2021020368,
+       "date": "2021-12-04"
+      }
+     ]
+    },
+    "starter": {
+     "rows": 2802,
+     "agree": 2802,
+     "rate": 1,
+     "examples": []
+    }
+   },
+   "skater": {
+    "goals": {
+     "rows": 50415,
+     "agree": 50415,
+     "rate": 1,
+     "examples": []
+    },
+    "assists": {
+     "rows": 50415,
+     "agree": 50415,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 50415,
+     "agree": 50394,
+     "rate": 0.99958,
+     "examples": [
+      {
+       "play_by_play": 4,
+       "box": 3,
+       "player": 8474037,
+       "team": "PHI",
+       "game_id": 2021020219,
+       "date": "2021-11-13"
+      },
+      {
+       "play_by_play": 7,
+       "box": 6,
+       "player": 8476981,
+       "team": "MTL",
+       "game_id": 2021020319,
+       "date": "2021-11-27"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8480806,
+       "team": "ANA",
+       "game_id": 2021020345,
+       "date": "2021-11-30"
+      },
+      {
+       "play_by_play": 4,
+       "box": 3,
+       "player": 8482116,
+       "team": "OTT",
+       "game_id": 2021020368,
+       "date": "2021-12-04"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8475168,
+       "team": "NSH",
+       "game_id": 2021020443,
+       "date": "2022-04-19"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8477496,
+       "team": "CGY",
+       "game_id": 2021020478,
+       "date": "2022-02-15"
+      }
+     ]
+    }
+   }
+  },
+  "2023": {
+   "games_pbp": 1400,
+   "games_matched": 1400,
+   "games_without_box": 0,
+   "box_source": {
+    "skater_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2023.parquet",
+     "sha256": "7e651f9225124ec7e01212ea1ba5b746c188d8aff5f5f67343330eda026c0cba",
+     "bytes": 376973,
+     "fetched_at": "2026-10-13T13:40:45.322Z",
+     "missing_columns": []
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2023.parquet",
+     "sha256": "266785b0e7f1e995bd446338d172ae7c2e999f109a8ba8c7c60d97007f42606d",
+     "bytes": 80530,
+     "fetched_at": "2026-10-13T13:39:49.816Z",
+     "missing_columns": []
+    },
+    "team_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2023.parquet",
+     "sha256": "e25d9a613bdafb118eb0d2da7eb390ced29723db78071700fbf7527af9691daa",
+     "bytes": 51510,
+     "fetched_at": "2026-10-13T14:02:40.165Z",
+     "missing_columns": []
+    }
+   },
+   "team": {
+    "goals": {
+     "rows": 2800,
+     "agree": 2800,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 2800,
+     "agree": 2778,
+     "rate": 0.99214,
+     "examples": [
+      {
+       "play_by_play": 45,
+       "box": 44,
+       "team": "SJS",
+       "game_id": 2022020158,
+       "date": "2022-11-01"
+      },
+      {
+       "play_by_play": 24,
+       "box": 23,
+       "team": "TOR",
+       "game_id": 2022020276,
+       "date": "2022-11-19"
+      },
+      {
+       "play_by_play": 35,
+       "box": 34,
+       "team": "NYR",
+       "game_id": 2022020489,
+       "date": "2022-12-17"
+      },
+      {
+       "play_by_play": 36,
+       "box": 35,
+       "team": "BUF",
+       "game_id": 2022020547,
+       "date": "2023-04-14"
+      },
+      {
+       "play_by_play": 23,
+       "box": 22,
+       "team": "NJD",
+       "game_id": 2022020650,
+       "date": "2023-01-10"
+      },
+      {
+       "play_by_play": 38,
+       "box": 37,
+       "team": "FLA",
+       "game_id": 2022020656,
+       "date": "2023-01-10"
+      }
+     ]
+    },
+    "power_play_goals": {
+     "rows": 2800,
+     "agree": 2752,
+     "rate": 0.98286,
+     "examples": [
+      {
+       "play_by_play": 2,
+       "box": 3,
+       "team": "EDM",
+       "game_id": 2022020010,
+       "date": "2022-10-12"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "NSH",
+       "game_id": 2022020083,
+       "date": "2022-10-22"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "SEA",
+       "game_id": 2022020118,
+       "date": "2022-10-27"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "WPG",
+       "game_id": 2022020120,
+       "date": "2022-10-27"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "NSH",
+       "game_id": 2022020154,
+       "date": "2022-11-01"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "VAN",
+       "game_id": 2022020157,
+       "date": "2022-11-01"
+      }
+     ]
+    },
+    "pim": {
+     "rows": 2800,
+     "agree": 2746,
+     "rate": 0.98071,
+     "examples": [
+      {
+       "play_by_play": 19,
+       "box": 17,
+       "team": "LAK",
+       "game_id": 2022020020,
+       "date": "2022-10-13"
+      },
+      {
+       "play_by_play": 2,
+       "box": 0,
+       "team": "VGK",
+       "game_id": 2022020070,
+       "date": "2022-10-20"
+      },
+      {
+       "play_by_play": 14,
+       "box": 12,
+       "team": "CHI",
+       "game_id": 2022020072,
+       "date": "2022-10-21"
+      },
+      {
+       "play_by_play": 12,
+       "box": 8,
+       "team": "ANA",
+       "game_id": 2022020088,
+       "date": "2022-10-23"
+      },
+      {
+       "play_by_play": 6,
+       "box": 4,
+       "team": "PIT",
+       "game_id": 2022020094,
+       "date": "2022-10-24"
+      },
+      {
+       "play_by_play": 20,
+       "box": 18,
+       "team": "EDM",
+       "game_id": 2022020116,
+       "date": "2022-10-27"
+      }
+     ]
+    }
+   },
+   "goalie": {
+    "shots_against": {
+     "rows": 2983,
+     "agree": 2964,
+     "rate": 0.99363,
+     "examples": [
+      {
+       "play_by_play": 45,
+       "box": 44,
+       "goalie": 8476932,
+       "team": "ANA",
+       "game_id": 2022020158,
+       "date": "2022-11-01"
+      },
+      {
+       "play_by_play": 24,
+       "box": 23,
+       "goalie": 8480045,
+       "team": "BUF",
+       "game_id": 2022020276,
+       "date": "2022-11-19"
+      },
+      {
+       "play_by_play": 23,
+       "box": 24,
+       "goalie": 8480280,
+       "team": "BOS",
+       "game_id": 2022020399,
+       "date": "2022-12-05"
+      },
+      {
+       "play_by_play": 9,
+       "box": 8,
+       "goalie": 8474636,
+       "team": "CBJ",
+       "game_id": 2022020547,
+       "date": "2023-04-14"
+      },
+      {
+       "play_by_play": 38,
+       "box": 37,
+       "goalie": 8480382,
+       "team": "COL",
+       "game_id": 2022020656,
+       "date": "2023-01-10"
+      },
+      {
+       "play_by_play": 40,
+       "box": 39,
+       "goalie": 8478499,
+       "team": "VGK",
+       "game_id": 2022020673,
+       "date": "2023-01-12"
+      }
+     ]
+    },
+    "goals_against": {
+     "rows": 2983,
+     "agree": 2983,
+     "rate": 1,
+     "examples": []
+    },
+    "starter": {
+     "rows": 2800,
+     "agree": 2800,
+     "rate": 1,
+     "examples": []
+    }
+   },
+   "skater": {
+    "goals": {
+     "rows": 50381,
+     "agree": 50381,
+     "rate": 1,
+     "examples": []
+    },
+    "assists": {
+     "rows": 50381,
+     "agree": 50381,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 50381,
+     "agree": 50359,
+     "rate": 0.99956,
+     "examples": [
+      {
+       "play_by_play": 10,
+       "box": 9,
+       "player": 8478414,
+       "team": "SJS",
+       "game_id": 2022020158,
+       "date": "2022-11-01"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "player": 8470966,
+       "team": "TOR",
+       "game_id": 2022020276,
+       "date": "2022-11-19"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "player": 8481554,
+       "team": "NYR",
+       "game_id": 2022020489,
+       "date": "2022-12-17"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "player": 8481522,
+       "team": "BUF",
+       "game_id": 2022020547,
+       "date": "2023-04-14"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8480002,
+       "team": "NJD",
+       "game_id": 2022020650,
+       "date": "2023-01-10"
+      },
+      {
+       "play_by_play": 8,
+       "box": 7,
+       "player": 8479314,
+       "team": "FLA",
+       "game_id": 2022020656,
+       "date": "2023-01-10"
+      }
+     ]
+    }
+   }
+  },
+  "2024": {
+   "games_pbp": 1400,
+   "games_matched": 1400,
+   "games_without_box": 0,
+   "box_source": {
+    "skater_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2024.parquet",
+     "sha256": "6cafbbb90577bb3db70667b21aed10a79b7bc638a911ccc548e5f34bd8a697a5",
+     "bytes": 372926,
+     "fetched_at": "2026-10-13T13:40:45.969Z",
+     "missing_columns": []
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2024.parquet",
+     "sha256": "298555a6c8b3acd294fb6a4cb2588bc2fa72f72f139a9601058be41be262f639",
+     "bytes": 78923,
+     "fetched_at": "2026-10-13T13:39:59.043Z",
+     "missing_columns": []
+    },
+    "team_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2024.parquet",
+     "sha256": "01d868a7b28e267cba091a8ef4183562285e60abd5fda3821b7df3edca8628bf",
+     "bytes": 51362,
+     "fetched_at": "2026-10-13T14:02:41.646Z",
+     "missing_columns": []
+    }
+   },
+   "team": {
+    "goals": {
+     "rows": 2800,
+     "agree": 2800,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 2800,
+     "agree": 2782,
+     "rate": 0.99357,
+     "examples": [
+      {
+       "play_by_play": 37,
+       "box": 36,
+       "team": "FLA",
+       "game_id": 2023020068,
+       "date": "2023-10-21"
+      },
+      {
+       "play_by_play": 39,
+       "box": 38,
+       "team": "COL",
+       "game_id": 2023020090,
+       "date": "2023-10-24"
+      },
+      {
+       "play_by_play": 33,
+       "box": 32,
+       "team": "ARI",
+       "game_id": 2023020350,
+       "date": "2023-11-30"
+      },
+      {
+       "play_by_play": 25,
+       "box": 24,
+       "team": "CGY",
+       "game_id": 2023020483,
+       "date": "2023-12-18"
+      },
+      {
+       "play_by_play": 36,
+       "box": 35,
+       "team": "MIN",
+       "game_id": 2023020518,
+       "date": "2023-12-23"
+      },
+      {
+       "play_by_play": 39,
+       "box": 38,
+       "team": "FLA",
+       "game_id": 2023020581,
+       "date": "2024-01-02"
+      }
+     ]
+    },
+    "power_play_goals": {
+     "rows": 2800,
+     "agree": 2760,
+     "rate": 0.98571,
+     "examples": [
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "DET",
+       "game_id": 2023020012,
+       "date": "2023-10-12"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "WPG",
+       "game_id": 2023020020,
+       "date": "2023-10-14"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "NYR",
+       "game_id": 2023020022,
+       "date": "2023-10-14"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "NJD",
+       "game_id": 2023020036,
+       "date": "2023-10-16"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "DET",
+       "game_id": 2023020050,
+       "date": "2023-10-18"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "CAR",
+       "game_id": 2023020060,
+       "date": "2023-10-19"
+      }
+     ]
+    },
+    "pim": {
+     "rows": 2800,
+     "agree": 2733,
+     "rate": 0.97607,
+     "examples": [
+      {
+       "play_by_play": 38,
+       "box": 36,
+       "team": "NYR",
+       "game_id": 2023020037,
+       "date": "2023-10-16"
+      },
+      {
+       "play_by_play": 17,
+       "box": 15,
+       "team": "LAK",
+       "game_id": 2023020045,
+       "date": "2023-10-17"
+      },
+      {
+       "play_by_play": 15,
+       "box": 13,
+       "team": "SJS",
+       "game_id": 2023020074,
+       "date": "2023-10-21"
+      },
+      {
+       "play_by_play": 4,
+       "box": 2,
+       "team": "DET",
+       "game_id": 2023020080,
+       "date": "2023-10-22"
+      },
+      {
+       "play_by_play": 8,
+       "box": 6,
+       "team": "CBJ",
+       "game_id": 2023020084,
+       "date": "2023-10-24"
+      },
+      {
+       "play_by_play": 26,
+       "box": 24,
+       "team": "BUF",
+       "game_id": 2023020113,
+       "date": "2023-10-27"
+      }
+     ]
+    }
+   },
+   "goalie": {
+    "shots_against": {
+     "rows": 2979,
+     "agree": 2964,
+     "rate": 0.99496,
+     "examples": [
+      {
+       "play_by_play": 37,
+       "box": 36,
+       "goalie": 8479193,
+       "team": "VAN",
+       "game_id": 2023020068,
+       "date": "2023-10-21"
+      },
+      {
+       "play_by_play": 33,
+       "box": 32,
+       "goalie": 8480382,
+       "team": "COL",
+       "game_id": 2023020350,
+       "date": "2023-11-30"
+      },
+      {
+       "play_by_play": 36,
+       "box": 35,
+       "goalie": 8476999,
+       "team": "BOS",
+       "game_id": 2023020518,
+       "date": "2023-12-23"
+      },
+      {
+       "play_by_play": 38,
+       "box": 37,
+       "goalie": 8478872,
+       "team": "ARI",
+       "game_id": 2023020581,
+       "date": "2024-01-02"
+      },
+      {
+       "play_by_play": 36,
+       "box": 35,
+       "goalie": 8478872,
+       "team": "ARI",
+       "game_id": 2023020619,
+       "date": "2024-01-07"
+      },
+      {
+       "play_by_play": 29,
+       "box": 28,
+       "goalie": 8482821,
+       "team": "CHI",
+       "game_id": 2023020743,
+       "date": "2024-01-24"
+      }
+     ]
+    },
+    "goals_against": {
+     "rows": 2979,
+     "agree": 2979,
+     "rate": 1,
+     "examples": []
+    },
+    "starter": {
+     "rows": 2800,
+     "agree": 2800,
+     "rate": 1,
+     "examples": []
+    }
+   },
+   "skater": {
+    "goals": {
+     "rows": 50389,
+     "agree": 50389,
+     "rate": 1,
+     "examples": []
+    },
+    "assists": {
+     "rows": 50389,
+     "agree": 50389,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 50389,
+     "agree": 50371,
+     "rate": 0.99964,
+     "examples": [
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "player": 8477493,
+       "team": "FLA",
+       "game_id": 2023020068,
+       "date": "2023-10-21"
+      },
+      {
+       "play_by_play": 5,
+       "box": 4,
+       "player": 8479525,
+       "team": "COL",
+       "game_id": 2023020090,
+       "date": "2023-10-24"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "player": 8475760,
+       "team": "ARI",
+       "game_id": 2023020350,
+       "date": "2023-11-30"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8476399,
+       "team": "CGY",
+       "game_id": 2023020483,
+       "date": "2023-12-18"
+      },
+      {
+       "play_by_play": 6,
+       "box": 5,
+       "player": 8478493,
+       "team": "MIN",
+       "game_id": 2023020518,
+       "date": "2023-12-23"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8479314,
+       "team": "FLA",
+       "game_id": 2023020581,
+       "date": "2024-01-02"
+      }
+     ]
+    }
+   }
+  },
+  "2025": {
+   "games_pbp": 1398,
+   "games_matched": 1398,
+   "games_without_box": 0,
+   "box_source": {
+    "skater_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2025.parquet",
+     "sha256": "72750d3beece47ae293eb798de22c80e7c8c0e35148695c22b199254d8d433e5",
+     "bytes": 372340,
+     "fetched_at": "2026-10-13T13:40:46.700Z",
+     "missing_columns": []
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2025.parquet",
+     "sha256": "f0059f79374cdf71892320fd449d123534b7b242a53c1b0cea46731495fcb3ad",
+     "bytes": 78242,
+     "fetched_at": "2026-10-13T13:40:09.534Z",
+     "missing_columns": []
+    },
+    "team_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2025.parquet",
+     "sha256": "12374c84ac5c1385526ada81e431e3cd008197957cb1a823ff83e6663b5ce173",
+     "bytes": 51137,
+     "fetched_at": "2026-10-13T14:02:43.212Z",
+     "missing_columns": []
+    }
+   },
+   "team": {
+    "goals": {
+     "rows": 2796,
+     "agree": 2796,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 2796,
+     "agree": 2772,
+     "rate": 0.99142,
+     "examples": [
+      {
+       "play_by_play": 24,
+       "box": 23,
+       "team": "VAN",
+       "game_id": 2024020218,
+       "date": "2024-11-07"
+      },
+      {
+       "play_by_play": 27,
+       "box": 26,
+       "team": "TBL",
+       "game_id": 2024020276,
+       "date": "2024-11-16"
+      },
+      {
+       "play_by_play": 21,
+       "box": 20,
+       "team": "DET",
+       "game_id": 2024020293,
+       "date": "2024-11-18"
+      },
+      {
+       "play_by_play": 33,
+       "box": 32,
+       "team": "BUF",
+       "game_id": 2024020317,
+       "date": "2024-11-22"
+      },
+      {
+       "play_by_play": 26,
+       "box": 25,
+       "team": "WSH",
+       "game_id": 2024020327,
+       "date": "2024-11-23"
+      },
+      {
+       "play_by_play": 29,
+       "box": 28,
+       "team": "TBL",
+       "game_id": 2024020351,
+       "date": "2024-11-27"
+      }
+     ]
+    },
+    "power_play_goals": {
+     "rows": 2796,
+     "agree": 2754,
+     "rate": 0.98498,
+     "examples": [
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "CBJ",
+       "game_id": 2024020034,
+       "date": "2024-10-12"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "PHI",
+       "game_id": 2024020035,
+       "date": "2024-10-12"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "CGY",
+       "game_id": 2024020055,
+       "date": "2024-10-15"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "OTT",
+       "game_id": 2024020062,
+       "date": "2024-10-17"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "SEA",
+       "game_id": 2024020106,
+       "date": "2024-10-22"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "SJS",
+       "game_id": 2024020117,
+       "date": "2024-10-24"
+      }
+     ]
+    },
+    "pim": {
+     "rows": 2796,
+     "agree": 2738,
+     "rate": 0.97926,
+     "examples": [
+      {
+       "play_by_play": 10,
+       "box": 8,
+       "team": "MTL",
+       "game_id": 2024020011,
+       "date": "2024-10-10"
+      },
+      {
+       "play_by_play": 26,
+       "box": 24,
+       "team": "UTA",
+       "game_id": 2024020030,
+       "date": "2024-10-12"
+      },
+      {
+       "play_by_play": 10,
+       "box": 8,
+       "team": "DET",
+       "game_id": 2024020045,
+       "date": "2024-10-14"
+      },
+      {
+       "play_by_play": 10,
+       "box": 8,
+       "team": "DAL",
+       "game_id": 2024020066,
+       "date": "2024-10-17"
+      },
+      {
+       "play_by_play": 17,
+       "box": 15,
+       "team": "TBL",
+       "game_id": 2024020157,
+       "date": "2024-10-30"
+      },
+      {
+       "play_by_play": 8,
+       "box": 6,
+       "team": "CGY",
+       "game_id": 2024020208,
+       "date": "2024-11-07"
+      }
+     ]
+    }
+   },
+   "goalie": {
+    "shots_against": {
+     "rows": 2953,
+     "agree": 2933,
+     "rate": 0.99323,
+     "examples": [
+      {
+       "play_by_play": 23,
+       "box": 22,
+       "goalie": 8475311,
+       "team": "LAK",
+       "game_id": 2024020218,
+       "date": "2024-11-07"
+      },
+      {
+       "play_by_play": 21,
+       "box": 20,
+       "goalie": 8478406,
+       "team": "SJS",
+       "game_id": 2024020293,
+       "date": "2024-11-18"
+      },
+      {
+       "play_by_play": 33,
+       "box": 32,
+       "goalie": 8476434,
+       "team": "ANA",
+       "game_id": 2024020317,
+       "date": "2024-11-22"
+      },
+      {
+       "play_by_play": 26,
+       "box": 25,
+       "goalie": 8474596,
+       "team": "NJD",
+       "game_id": 2024020327,
+       "date": "2024-11-23"
+      },
+      {
+       "play_by_play": 29,
+       "box": 28,
+       "goalie": 8479292,
+       "team": "WSH",
+       "game_id": 2024020351,
+       "date": "2024-11-27"
+      },
+      {
+       "play_by_play": 26,
+       "box": 25,
+       "goalie": 8476883,
+       "team": "TBL",
+       "game_id": 2024020453,
+       "date": "2024-12-10"
+      }
+     ]
+    },
+    "goals_against": {
+     "rows": 2953,
+     "agree": 2953,
+     "rate": 1,
+     "examples": []
+    },
+    "starter": {
+     "rows": 2796,
+     "agree": 2796,
+     "rate": 1,
+     "examples": []
+    }
+   },
+   "skater": {
+    "goals": {
+     "rows": 50321,
+     "agree": 50321,
+     "rate": 1,
+     "examples": []
+    },
+    "assists": {
+     "rows": 50321,
+     "agree": 50321,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 50321,
+     "agree": 50298,
+     "rate": 0.99954,
+     "examples": [
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8478856,
+       "team": "VAN",
+       "game_id": 2024020218,
+       "date": "2024-11-07"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8478519,
+       "team": "TBL",
+       "game_id": 2024020276,
+       "date": "2024-11-16"
+      },
+      {
+       "play_by_play": 2,
+       "box": 1,
+       "player": 8479992,
+       "team": "DET",
+       "game_id": 2024020293,
+       "date": "2024-11-18"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8477949,
+       "team": "BUF",
+       "game_id": 2024020317,
+       "date": "2024-11-22"
+      },
+      {
+       "play_by_play": 3,
+       "box": 2,
+       "player": 8481580,
+       "team": "WSH",
+       "game_id": 2024020327,
+       "date": "2024-11-23"
+      },
+      {
+       "play_by_play": 5,
+       "box": 4,
+       "player": 8478010,
+       "team": "TBL",
+       "game_id": 2024020351,
+       "date": "2024-11-27"
+      }
+     ]
+    }
+   }
+  },
+  "2026": {
+   "games_pbp": 1394,
+   "games_matched": 1394,
+   "games_without_box": 0,
+   "box_source": {
+    "skater_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2026.parquet",
+     "sha256": "a802ecf217de46ec850630e9805011c8f070b2e178af53f5513c08a43e00367e",
+     "bytes": 369744,
+     "fetched_at": "2026-10-13T13:40:47.406Z",
+     "missing_columns": []
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2026.parquet",
+     "sha256": "7ce8fd512f14e7c990bb430f3ba89a09c2fb091752134ae6cd7de3dc95565323",
+     "bytes": 78221,
+     "fetched_at": "2026-10-13T13:40:19.738Z",
+     "missing_columns": []
+    },
+    "team_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2026.parquet",
+     "sha256": "7406c64301697c7617de2fb30908e304d554b87de2b2e497c90780e2e4283e66",
+     "bytes": 50202,
+     "fetched_at": "2026-10-13T14:02:45.021Z",
+     "missing_columns": []
+    }
+   },
+   "team": {
+    "goals": {
+     "rows": 2788,
+     "agree": 2788,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 2788,
+     "agree": 2756,
+     "rate": 0.98852,
+     "examples": [
+      {
+       "play_by_play": 39,
+       "box": 38,
+       "team": "COL",
+       "game_id": 2025020184,
+       "date": "2025-11-01"
+      },
+      {
+       "play_by_play": 25,
+       "box": 24,
+       "team": "MIN",
+       "game_id": 2025020208,
+       "date": "2025-11-04"
+      },
+      {
+       "play_by_play": 31,
+       "box": 30,
+       "team": "WSH",
+       "game_id": 2025020236,
+       "date": "2025-11-08"
+      },
+      {
+       "play_by_play": 22,
+       "box": 21,
+       "team": "NYI",
+       "game_id": 2025020282,
+       "date": "2025-11-14"
+      },
+      {
+       "play_by_play": 30,
+       "box": 29,
+       "team": "STL",
+       "game_id": 2025020307,
+       "date": "2025-11-18"
+      },
+      {
+       "play_by_play": 32,
+       "box": 31,
+       "team": "PHI",
+       "game_id": 2025020395,
+       "date": "2025-11-29"
+      }
+     ]
+    },
+    "power_play_goals": {
+     "rows": 2788,
+     "agree": 2752,
+     "rate": 0.98709,
+     "examples": [
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "OTT",
+       "game_id": 2025020041,
+       "date": "2025-10-13"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "DAL",
+       "game_id": 2025020068,
+       "date": "2025-10-16"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "ANA",
+       "game_id": 2025020091,
+       "date": "2025-10-19"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "PHI",
+       "game_id": 2025020188,
+       "date": "2025-11-01"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "CGY",
+       "game_id": 2025020294,
+       "date": "2025-11-15"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "TOR",
+       "game_id": 2025020337,
+       "date": "2025-11-22"
+      }
+     ]
+    },
+    "pim": {
+     "rows": 2788,
+     "agree": 2698,
+     "rate": 0.96772,
+     "examples": [
+      {
+       "play_by_play": 6,
+       "box": 4,
+       "team": "NJD",
+       "game_id": 2025020026,
+       "date": "2025-10-11"
+      },
+      {
+       "play_by_play": 17,
+       "box": 15,
+       "team": "UTA",
+       "game_id": 2025020060,
+       "date": "2025-10-15"
+      },
+      {
+       "play_by_play": 10,
+       "box": 8,
+       "team": "ANA",
+       "game_id": 2025020070,
+       "date": "2025-10-16"
+      },
+      {
+       "play_by_play": 14,
+       "box": 12,
+       "team": "CAR",
+       "game_id": 2025020070,
+       "date": "2025-10-16"
+      },
+      {
+       "play_by_play": 19,
+       "box": 17,
+       "team": "FLA",
+       "game_id": 2025020103,
+       "date": "2025-10-21"
+      },
+      {
+       "play_by_play": 11,
+       "box": 9,
+       "team": "LAK",
+       "game_id": 2025020104,
+       "date": "2025-10-21"
+      }
+     ]
+    }
+   },
+   "goalie": {
+    "shots_against": {
+     "rows": 2942,
+     "agree": 2917,
+     "rate": 0.9915,
+     "examples": [
+      {
+       "play_by_play": 39,
+       "box": 38,
+       "goalie": 8482137,
+       "team": "SJS",
+       "game_id": 2025020184,
+       "date": "2025-11-01"
+      },
+      {
+       "play_by_play": 25,
+       "box": 24,
+       "goalie": 8481020,
+       "team": "NSH",
+       "game_id": 2025020208,
+       "date": "2025-11-04"
+      },
+      {
+       "play_by_play": 31,
+       "box": 30,
+       "goalie": 8476883,
+       "team": "TBL",
+       "game_id": 2025020236,
+       "date": "2025-11-08"
+      },
+      {
+       "play_by_play": 22,
+       "box": 21,
+       "goalie": 8478872,
+       "team": "UTA",
+       "game_id": 2025020282,
+       "date": "2025-11-14"
+      },
+      {
+       "play_by_play": 30,
+       "box": 29,
+       "goalie": 8479361,
+       "team": "TOR",
+       "game_id": 2025020307,
+       "date": "2025-11-18"
+      },
+      {
+       "play_by_play": 29,
+       "box": 28,
+       "goalie": 8481668,
+       "team": "PIT",
+       "game_id": 2025020470,
+       "date": "2025-12-09"
+      }
+     ]
+    },
+    "goals_against": {
+     "rows": 2942,
+     "agree": 2942,
+     "rate": 1,
+     "examples": []
+    },
+    "starter": {
+     "rows": 2788,
+     "agree": 2788,
+     "rate": 1,
+     "examples": []
+    }
+   },
+   "skater": {
+    "goals": {
+     "rows": 50183,
+     "agree": 50183,
+     "rate": 1,
+     "examples": []
+    },
+    "assists": {
+     "rows": 50183,
+     "agree": 50183,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 50183,
+     "agree": 50151,
+     "rate": 0.99936,
+     "examples": [
+      {
+       "play_by_play": 5,
+       "box": 4,
+       "player": 8477492,
+       "team": "COL",
+       "game_id": 2025020184,
+       "date": "2025-11-01"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8475149,
+       "team": "MIN",
+       "game_id": 2025020208,
+       "date": "2025-11-04"
+      },
+      {
+       "play_by_play": 4,
+       "box": 3,
+       "player": 8474590,
+       "team": "WSH",
+       "game_id": 2025020236,
+       "date": "2025-11-08"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8477494,
+       "team": "NYI",
+       "game_id": 2025020282,
+       "date": "2025-11-14"
+      },
+      {
+       "play_by_play": 1,
+       "box": 0,
+       "player": 8477573,
+       "team": "STL",
+       "game_id": 2025020307,
+       "date": "2025-11-18"
+      },
+      {
+       "play_by_play": 5,
+       "box": 4,
+       "player": 8480015,
+       "team": "PHI",
+       "game_id": 2025020395,
+       "date": "2025-11-29"
+      }
+     ]
+    }
+   }
+  },
+  "2027": {
+   "games_pbp": 89,
+   "games_matched": 89,
+   "games_without_box": 0,
+   "box_source": {
+    "skater_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/skater_box/parquet/skater_box_2027.parquet",
+     "sha256": "97ea426f7eaf42b7c05974da32449f5672645d45006ec0b60c7695c81341f74b",
+     "bytes": 44144,
+     "fetched_at": "2026-10-13T13:40:48.068Z",
+     "missing_columns": []
+    },
+    "goalie_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/goalie_box/parquet/goalie_box_2027.parquet",
+     "sha256": "23564a7f3937a19844b7b48b6e73fd475134fbc569ff3855f9d794e48c19916c",
+     "bytes": 16717,
+     "fetched_at": "2026-10-13T13:40:28.255Z",
+     "missing_columns": []
+    },
+    "team_box": {
+     "url": "https://raw.githubusercontent.com/sportsdataverse/fastRhockey-nhl-data/main/nhl/team_box/parquet/team_box_2027.parquet",
+     "sha256": "aed96650f311f8101fa4d726e0d0e2930fad775947deab59b385a75f76bf9db0",
+     "bytes": 11891,
+     "fetched_at": "2026-10-13T14:02:46.375Z",
+     "missing_columns": []
+    }
+   },
+   "team": {
+    "goals": {
+     "rows": 178,
+     "agree": 178,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 178,
+     "agree": 177,
+     "rate": 0.99438,
+     "examples": [
+      {
+       "play_by_play": 32,
+       "box": 31,
+       "team": "EDM",
+       "game_id": 2026020015,
+       "date": "2026-10-01"
+      }
+     ]
+    },
+    "power_play_goals": {
+     "rows": 178,
+     "agree": 175,
+     "rate": 0.98315,
+     "examples": [
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "EDM",
+       "game_id": 2026020004,
+       "date": "2026-09-29"
+      },
+      {
+       "play_by_play": 1,
+       "box": 2,
+       "team": "DET",
+       "game_id": 2026020046,
+       "date": "2026-10-06"
+      },
+      {
+       "play_by_play": 0,
+       "box": 1,
+       "team": "STL",
+       "game_id": 2026020050,
+       "date": "2026-10-06"
+      }
+     ]
+    },
+    "pim": {
+     "rows": 178,
+     "agree": 173,
+     "rate": 0.97191,
+     "examples": [
+      {
+       "play_by_play": 25,
+       "box": 23,
+       "team": "SEA",
+       "game_id": 2026020028,
+       "date": "2026-10-03"
+      },
+      {
+       "play_by_play": 21,
+       "box": 31,
+       "team": "CHI",
+       "game_id": 2026020062,
+       "date": "2026-10-08"
+      },
+      {
+       "play_by_play": 8,
+       "box": 6,
+       "team": "STL",
+       "game_id": 2026020063,
+       "date": "2026-10-08"
+      },
+      {
+       "play_by_play": 23,
+       "box": 13,
+       "team": "UTA",
+       "game_id": 2026020074,
+       "date": "2026-10-10"
+      },
+      {
+       "play_by_play": 15,
+       "box": 13,
+       "team": "MIN",
+       "game_id": 2026020089,
+       "date": "2026-10-12"
+      }
+     ]
+    }
+   },
+   "goalie": {
+    "shots_against": {
+     "rows": 189,
+     "agree": 188,
+     "rate": 0.99471,
+     "examples": [
+      {
+       "play_by_play": 21,
+       "box": 20,
+       "goalie": 8480947,
+       "team": "VAN",
+       "game_id": 2026020015,
+       "date": "2026-10-01"
+      }
+     ]
+    },
+    "goals_against": {
+     "rows": 189,
+     "agree": 189,
+     "rate": 1,
+     "examples": []
+    },
+    "starter": {
+     "rows": 178,
+     "agree": 178,
+     "rate": 1,
+     "examples": []
+    }
+   },
+   "skater": {
+    "goals": {
+     "rows": 3204,
+     "agree": 3204,
+     "rate": 1,
+     "examples": []
+    },
+    "assists": {
+     "rows": 3204,
+     "agree": 3204,
+     "rate": 1,
+     "examples": []
+    },
+    "shots_on_goal": {
+     "rows": 3204,
+     "agree": 3203,
+     "rate": 0.99969,
+     "examples": [
+      {
+       "play_by_play": 5,
+       "box": 4,
+       "player": 8480803,
+       "team": "EDM",
+       "game_id": 2026020015,
+       "date": "2026-10-01"
+      }
+     ]
+    }
+   }
+  }
+ }
+}

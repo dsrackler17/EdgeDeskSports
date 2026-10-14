@@ -82,12 +82,20 @@ const READERS = {
       out[key] = { outcome: m.status === 'OUTCOME_VALIDATED' ? 'VALIDATED' : 'PROVISIONAL', market: m.market_status === 'TESTED_AHEAD' ? 'TESTED_AHEAD' : 'NOT_TESTED', n: m.n || null,
         headline: 'outcomes: ' + m.status + (m.failed && m.failed.length ? ' (' + m.failed.join('; ') + ')' : '') + (m.log_loss != null ? '; held-out log loss ' + m.log_loss : '') + '; vs close: not tested', file: 'hockey/validation/nhl_walkforward.json' };
     }
-    if (v.comparisons) { const c = Object.entries(v.comparisons).find(([k]) => /_vs_elo$/.test(k)); if (c && out.moneyline) out.moneyline.headline += '; vs Elo Δ log loss ' + c[1].mean_diff + ' (95% ' + c[1].ci95.join(' to ') + ')'; }
+    if (v.comparisons) { const c = (v.selection && v.comparisons[v.selection.chosen + '_vs_elo']) ? [null, v.comparisons[v.selection.chosen + '_vs_elo']] : Object.entries(v.comparisons).find(([k]) => /_vs_elo$/.test(k)); if (c && out.moneyline) out.moneyline.headline += '; vs Elo Δ log loss ' + c[1].mean_diff + ' (95% ' + c[1].ci95.join(' to ') + ')'; }
+    /* the lab's extended markets (hockey/lab/run.js): team totals and the 3-way scored on the same held-out games */
+    const labRec = read('hockey/validation/nhl_lab.json');
+    const ext = labRec && labRec.markets_extended;
+    if (ext) {
+      const tt = ['team_total_home_over_2.5', 'team_total_away_over_2.5'].map((k) => ext[k]).filter(Boolean);
+      if (tt.length === 2) { const ok = tt.every((m) => m.status === 'OUTCOME_VALIDATED'); out.team_total = { outcome: ok ? 'VALIDATED' : 'PROVISIONAL', market: 'NOT_TESTED', n: tt[0].n, headline: 'outcomes: ' + (ok ? 'OUTCOME_VALIDATED' : 'PROVISIONAL') + ' (team totals 2.5, both sides; slopes ' + tt.map((m) => m.calibration_slope).join(', ') + '); vs close: not tested', file: 'hockey/validation/nhl_lab.json' }; }
+      if (ext.regulation_3way && out.regulation_3way) { out.regulation_3way.outcome = ext.regulation_3way.status === 'OUTCOME_VALIDATED' ? 'VALIDATED' : 'PROVISIONAL'; out.regulation_3way.headline = 'outcomes: ' + ext.regulation_3way.status + (ext.regulation_3way.failed.length ? ' (' + ext.regulation_3way.failed.join('; ') + ')' : '') + '; vs close: not tested'; out.regulation_3way.file = 'hockey/validation/nhl_lab.json'; }
+    }
     /* the second source: the NHL data pack's ESPN season, reconciled event by event */
     const xc = read('hockey/validation/nhl_crosscheck_espn.json');
     const second = xc && xc.schema === 'edgedesk_nhl_crosscheck_v2' ? { season: xc.season_label, games: xc.results.compared + '/' + xc.games.espn_club_games + ' matched, every final agrees', attempts: xc.events.matched + '/' + xc.events.espn_attempts + ' matched; blocked attempts credited to the shooter ' + xc.events.blocked.espn_shooter_team_is_shooter_view_team + '/' + xc.events.blocked.matched, file: 'hockey/validation/nhl_crosscheck_espn.json' } : null;
     const d = v.data || {};
-    return { markets: out, files: ['hockey/validation/nhl_walkforward.json', 'hockey/xg/report.json', 'hockey/validation/nhl_crosscheck_espn.json', 'hockey/validation/nhl_blocked_attribution.json', 'datapack/nhl_v1/EDGEDESK_VERIFICATION.json'], generated_at: v.generated_at,
+    return { markets: out, files: ['hockey/validation/nhl_walkforward.json', 'hockey/validation/nhl_lab.json', 'hockey/xg/report.json', 'hockey/validation/nhl_crosscheck_espn.json', 'hockey/validation/nhl_blocked_attribution.json', 'datapack/nhl_v1/EDGEDESK_VERIFICATION.json'], generated_at: v.generated_at,
       data: { loaded: true, games: d.games_scored || null, seasons: d.seasons || null, source: d.source || null, point_in_time: d.temporal ? d.temporal.point_in_time : null, second_source: second },
       model: { trained: true, chosen: v.selection ? v.selection.chosen : null } };
   },
@@ -130,6 +138,17 @@ const READERS = {
     if (!m) return { markets: {}, files: [] };
     return { markets: { moneyline: { outcome: 'VALIDATED', market: 'NOT_TESTED', n: Number(m[1].replace(/,/g, '')), headline: 'held-out log loss ' + m[2] + ', Brier ' + m[3] + ' (beats overall Elo, surface Elo and ranking); market comparison not possible', file: 'docs/tennis-lab-implementation-report.md' } }, files: ['docs/tennis-lab-implementation-report.md'] };
   },
+  college_baseball() {
+    const f = 'college_baseball/validation/walkforward.json'; const v = read(f);
+    if (!v || !v.markets) return { markets: {}, files: [] };
+    const m = v.markets.moneyline; const cov = read('college_baseball/validation/coverage.json');
+    const vb = v.comparisons && (v.comparisons.HOLDOUT || v.comparisons.VALIDATION); const c = vb && vb.chosen_vs_best_baseline;
+    return { markets: { moneyline: { outcome: m.status === 'OUTCOME_VALIDATED' ? 'VALIDATED' : 'PROVISIONAL', market: 'NOT_TESTED', n: m.n,
+      headline: 'outcomes (' + m.window + '): ' + m.status + (m.failed && m.failed.length ? ' (' + m.failed.join('; ') + ')' : '') + '; log loss ' + m.log_loss + (c ? '; vs ' + v.selection.best_baseline + ' Δ ' + c.mean_diff + ' (95% ' + c.ci95.join(' to ') + ')' : '') + '; vs close: not tested', file: f } },
+      files: [f, 'college_baseball/validation/pitcher_walkforward.json', 'college_baseball/validation/audit.json', 'college_baseball/validation/release_gates.json'], generated_at: v.generated_at,
+      data: { loaded: true, games: cov ? cov.totals.eligible_for_rating : null, seasons: [2012, 2026], point_in_time: 'RETROSPECTIVE', source: 'sportsdataverse/baseballr-data' },
+      model: { trained: true, chosen: v.selection.chosen } };
+  },
   none_research() { return { markets: {}, files: [] }; },
   none() { return { markets: {}, files: [] }; },
 };
@@ -141,7 +160,6 @@ function ladder(s, ev, rd) {
   const validated = mk.filter((m) => m.state === 'OUTCOME_VALIDATED' || m.state === 'MARKET_VALIDATED');
   const data = ev.data || (s.data && s.data.length ? { loaded: s.brain.status !== 'NOT_BUILT', note: 'see the sport\'s own pipeline' } : { loaded: false });
   if (!ev.data && (s.id === 'nhl' || s.id === 'nfl' || s.id === 'cfb' || s.id === 'tennis')) data.loaded = !!(ev.files && ev.files.length);
-  if (s.id === 'college_baseball') { data.loaded = true; data.note = 'a 313-game sample (data pack) and the live ESPN results union: too sparse for a validated model'; }
   return {
     data_loaded: { done: !!data.loaded, detail: data.games ? data.games + ' games' + (data.seasons ? ' (' + data.seasons.join('-') + ')' : '') + (data.point_in_time ? ', ' + data.point_in_time.toLowerCase() : '') + (data.second_source ? '; second source ' + data.second_source.season + ': ' + data.second_source.games : '') : (data.note || null) },
     model_trained: { done: ev.model ? !!ev.model.trained : (s.brain.status === 'BUILT' || s.brain.status === 'PARTIAL') && mk.length > 0, detail: ev.model ? (ev.model.note || (typeof ev.model.chosen === 'string' ? ev.model.chosen : ev.model.chosen ? JSON.stringify(ev.model.chosen) : null)) : s.brain.id },
