@@ -1,0 +1,581 @@
+{
+ "schema": "edgedesk_cbase_pitcher_walkforward_v1",
+ "model_version": "cbase_v1.0.0",
+ "point_in_time": "RETROSPECTIVE",
+ "protocol": "college_baseball/research/PROTOCOL.md",
+ "windows": {
+  "burn_in": [
+   2024,
+   2024
+  ],
+  "selection": [
+   2025,
+   2025
+  ],
+  "holdout": [
+   2026,
+   2026
+  ]
+ },
+ "fitted_on_fit_season": {
+  "pitching_linear_weights": {
+   "per_bf": -0.1342748436337344,
+   "so": -0.034175047595172516,
+   "bb_hbp": 0.6470353353381166,
+   "hr": 1.57165430163428,
+   "h_non_hr": 0.8264470024253926,
+   "n": 16900
+  },
+  "availability": {
+   "beta": [
+    -0.9404,
+    -2.3575,
+    -2.1515,
+    0.6362,
+    -0.8792,
+    9.4778
+   ],
+   "n": 217979,
+   "base_rate": 0.2381,
+   "features": [
+    "intercept",
+    "BF yesterday/10",
+    "BF last 3 days/20",
+    "2+ consecutive days",
+    "days since last (cap 7)/7",
+    "usage share"
+   ]
+  },
+  "starter_projection": {
+   "beta": [
+    1.4527,
+    -2.6583,
+    0.6561,
+    1.0192,
+    1.1431,
+    -2.324
+   ],
+   "unseen": 1.2893,
+   "n": 16830,
+   "features": [
+    "rest 5-9 days",
+    "rest <= 3 days",
+    "started exactly 7 days ago",
+    "started on this weekday",
+    "share of recent starts",
+    "light relief work in last 2 days"
+   ]
+  },
+  "elasticity": {
+   "starter": 0.5
+  },
+  "elasticity_fit_ll": 0.60704
+ },
+ "availability_calibration": {
+  "season": 2025,
+  "n": 219837,
+  "mean_p": 0.2362,
+  "mean_y": 0.2327,
+  "citl": 0.0035,
+  "slope": 1.019,
+  "log_loss": 0.50214,
+  "climatology_log_loss": 0.54246
+ },
+ "distribution": {
+  "family": "nb",
+  "r": 3.263
+ },
+ "variants": [
+  "team",
+  "bullpen",
+  "starter_proj",
+  "hybrid_proj",
+  "hybrid_oracle"
+ ],
+ "pregame_variants": [
+  "team",
+  "bullpen",
+  "starter_proj",
+  "hybrid_proj"
+ ],
+ "windows_report": {
+  "FIT": {
+   "seasons": [
+    2024
+   ],
+   "n": 8418,
+   "models": {
+    "team": {
+     "n": 8418,
+     "log_loss": 0.60749,
+     "brier": 0.2103,
+     "citl": -0.03,
+     "slope": 1.172,
+     "team_runs_log_score": 2.7803
+    },
+    "bullpen": {
+     "n": 8418,
+     "log_loss": 0.60737,
+     "brier": 0.21023,
+     "citl": -0.03,
+     "slope": 1.173,
+     "team_runs_log_score": 2.78009
+    },
+    "starter_proj": {
+     "n": 8418,
+     "log_loss": 0.60743,
+     "brier": 0.21027,
+     "citl": -0.0301,
+     "slope": 1.17,
+     "team_runs_log_score": 2.77982
+    },
+    "hybrid_proj": {
+     "n": 8418,
+     "log_loss": 0.60732,
+     "brier": 0.21022,
+     "citl": -0.0301,
+     "slope": 1.171,
+     "team_runs_log_score": 2.77966
+    },
+    "hybrid_oracle": {
+     "n": 8418,
+     "log_loss": 0.60704,
+     "brier": 0.21009,
+     "citl": -0.0303,
+     "slope": 1.172,
+     "team_runs_log_score": 2.77864
+    }
+   },
+   "comparisons": {
+    "hybrid_proj_vs_team": {
+     "n": 8418,
+     "blocks": 117,
+     "mean_diff": -0.000167,
+     "ci95": [
+      -0.00055,
+      0.000207
+     ],
+     "a_better": false,
+     "b_better": false
+    },
+    "bullpen_vs_team": {
+     "n": 8418,
+     "blocks": 117,
+     "mean_diff": -0.000118,
+     "ci95": [
+      -0.000264,
+      0.000023
+     ],
+     "a_better": false,
+     "b_better": false
+    },
+    "starter_proj_vs_team": {
+     "n": 8418,
+     "blocks": 117,
+     "mean_diff": -0.000055,
+     "ci95": [
+      -0.000419,
+      0.000285
+     ],
+     "a_better": false,
+     "b_better": false
+    },
+    "oracle_vs_proj": {
+     "n": 8418,
+     "blocks": 117,
+     "mean_diff": -0.000277,
+     "ci95": [
+      -0.000743,
+      0.000191
+     ],
+     "a_better": false,
+     "b_better": false
+    }
+   },
+   "by_starter_status": {
+    "both_PROJECTED": {
+     "team": {
+      "n": 3642,
+      "log_loss": 0.61473
+     },
+     "hybrid_proj": {
+      "n": 3642,
+      "log_loss": 0.61464
+     },
+     "hybrid_oracle": {
+      "n": 3642,
+      "log_loss": 0.61451
+     }
+    },
+    "both_UNKNOWN": {
+     "team": {
+      "n": 2001,
+      "log_loss": 0.59946
+     },
+     "hybrid_proj": {
+      "n": 2001,
+      "log_loss": 0.59953
+     },
+     "hybrid_oracle": {
+      "n": 2001,
+      "log_loss": 0.59875
+     }
+    }
+   },
+   "by_day": {
+    "weekend": {
+     "team": {
+      "n": 6257,
+      "log_loss": 0.61686
+     },
+     "hybrid_proj": {
+      "n": 6257,
+      "log_loss": 0.61674
+     },
+     "hybrid_oracle": {
+      "n": 6257,
+      "log_loss": 0.61654
+     }
+    },
+    "midweek": {
+     "team": {
+      "n": 2161,
+      "log_loss": 0.58034
+     },
+     "hybrid_proj": {
+      "n": 2161,
+      "log_loss": 0.58004
+     },
+     "hybrid_oracle": {
+      "n": 2161,
+      "log_loss": 0.57955
+     }
+    }
+   }
+  },
+  "SELECTION": {
+   "seasons": [
+    2025
+   ],
+   "n": 8363,
+   "models": {
+    "team": {
+     "n": 8363,
+     "log_loss": 0.59962,
+     "brier": 0.20701,
+     "citl": -0.0281,
+     "slope": 1.255,
+     "team_runs_log_score": 2.77982
+    },
+    "bullpen": {
+     "n": 8363,
+     "log_loss": 0.59958,
+     "brier": 0.207,
+     "citl": -0.0281,
+     "slope": 1.253,
+     "team_runs_log_score": 2.7798
+    },
+    "starter_proj": {
+     "n": 8363,
+     "log_loss": 0.59935,
+     "brier": 0.20689,
+     "citl": -0.0281,
+     "slope": 1.256,
+     "team_runs_log_score": 2.7793
+    },
+    "hybrid_proj": {
+     "n": 8363,
+     "log_loss": 0.59931,
+     "brier": 0.20688,
+     "citl": -0.0282,
+     "slope": 1.255,
+     "team_runs_log_score": 2.77931
+    },
+    "hybrid_oracle": {
+     "n": 8363,
+     "log_loss": 0.59869,
+     "brier": 0.20658,
+     "citl": -0.0285,
+     "slope": 1.261,
+     "team_runs_log_score": 2.77804
+    }
+   },
+   "comparisons": {
+    "hybrid_proj_vs_team": {
+     "n": 8363,
+     "blocks": 117,
+     "mean_diff": -0.000311,
+     "ci95": [
+      -0.000703,
+      0.000065
+     ],
+     "a_better": false,
+     "b_better": false
+    },
+    "bullpen_vs_team": {
+     "n": 8363,
+     "blocks": 117,
+     "mean_diff": -0.00004,
+     "ci95": [
+      -0.000161,
+      0.000072
+     ],
+     "a_better": false,
+     "b_better": false
+    },
+    "starter_proj_vs_team": {
+     "n": 8363,
+     "blocks": 117,
+     "mean_diff": -0.000266,
+     "ci95": [
+      -0.000614,
+      0.000112
+     ],
+     "a_better": false,
+     "b_better": false
+    },
+    "oracle_vs_proj": {
+     "n": 8363,
+     "blocks": 117,
+     "mean_diff": -0.000614,
+     "ci95": [
+      -0.001134,
+      -0.000137
+     ],
+     "a_better": true,
+     "b_better": false
+    }
+   },
+   "by_starter_status": {
+    "both_PROJECTED": {
+     "team": {
+      "n": 3527,
+      "log_loss": 0.61203
+     },
+     "hybrid_proj": {
+      "n": 3527,
+      "log_loss": 0.61201
+     },
+     "hybrid_oracle": {
+      "n": 3527,
+      "log_loss": 0.61125
+     }
+    },
+    "both_UNKNOWN": {
+     "team": {
+      "n": 1893,
+      "log_loss": 0.5787
+     },
+     "hybrid_proj": {
+      "n": 1893,
+      "log_loss": 0.57853
+     },
+     "hybrid_oracle": {
+      "n": 1893,
+      "log_loss": 0.57919
+     }
+    }
+   },
+   "by_day": {
+    "weekend": {
+     "team": {
+      "n": 6188,
+      "log_loss": 0.61142
+     },
+     "hybrid_proj": {
+      "n": 6188,
+      "log_loss": 0.61118
+     },
+     "hybrid_oracle": {
+      "n": 6188,
+      "log_loss": 0.61042
+     }
+    },
+    "midweek": {
+     "team": {
+      "n": 2175,
+      "log_loss": 0.56604
+     },
+     "hybrid_proj": {
+      "n": 2175,
+      "log_loss": 0.56554
+     },
+     "hybrid_oracle": {
+      "n": 2175,
+      "log_loss": 0.56533
+     }
+    }
+   }
+  }
+ },
+ "starter_projection": {
+  "FIT": {
+   "all": {
+    "n": 16830,
+    "top1_accuracy": 0.5405,
+    "mean_top_p": 0.5173,
+    "log_loss": 1.1013,
+    "unseen_share": 0.198
+   },
+   "by_status": {
+    "UNKNOWN": {
+     "n": 6777,
+     "top1_accuracy": 0.3502,
+     "mean_top_p": 0.2993,
+     "log_loss": 1.1995,
+     "unseen_share": 0.3361
+    },
+    "PROJECTED": {
+     "n": 10053,
+     "top1_accuracy": 0.6689,
+     "mean_top_p": 0.6643,
+     "log_loss": 1.0352,
+     "unseen_share": 0.1049
+    }
+   },
+   "by_day": {
+    "Fri": {
+     "n": 4264,
+     "top1_accuracy": 0.6388,
+     "mean_top_p": 0.4995,
+     "log_loss": 0.9842,
+     "unseen_share": 0.1252
+    },
+    "Sat": {
+     "n": 4628,
+     "top1_accuracy": 0.5672,
+     "mean_top_p": 0.5404,
+     "log_loss": 1.0582,
+     "unseen_share": 0.132
+    },
+    "Sun": {
+     "n": 3616,
+     "top1_accuracy": 0.6106,
+     "mean_top_p": 0.5854,
+     "log_loss": 0.9053,
+     "unseen_share": 0.1878
+    },
+    "Mon": {
+     "n": 184,
+     "top1_accuracy": 0.3533,
+     "mean_top_p": 0.3076,
+     "log_loss": 0.9929,
+     "unseen_share": 0.4239
+    },
+    "Tue": {
+     "n": 2334,
+     "top1_accuracy": 0.3488,
+     "mean_top_p": 0.5104,
+     "log_loss": 1.3846,
+     "unseen_share": 0.3972
+    },
+    "Wed": {
+     "n": 1012,
+     "top1_accuracy": 0.2125,
+     "mean_top_p": 0.4175,
+     "log_loss": 1.6286,
+     "unseen_share": 0.4298
+    },
+    "Thu": {
+     "n": 792,
+     "top1_accuracy": 0.5631,
+     "mean_top_p": 0.3635,
+     "log_loss": 1.3958,
+     "unseen_share": 0.0871
+    }
+   }
+  },
+  "SELECTION": {
+   "all": {
+    "n": 16722,
+    "top1_accuracy": 0.5336,
+    "mean_top_p": 0.5152,
+    "log_loss": 1.1019,
+    "unseen_share": 0.1991
+   },
+   "by_status": {
+    "UNKNOWN": {
+     "n": 6728,
+     "top1_accuracy": 0.3401,
+     "mean_top_p": 0.3006,
+     "log_loss": 1.1856,
+     "unseen_share": 0.338
+    },
+    "PROJECTED": {
+     "n": 9994,
+     "top1_accuracy": 0.6639,
+     "mean_top_p": 0.6596,
+     "log_loss": 1.0456,
+     "unseen_share": 0.1057
+    }
+   },
+   "by_day": {
+    "Fri": {
+     "n": 4394,
+     "top1_accuracy": 0.6363,
+     "mean_top_p": 0.495,
+     "log_loss": 0.944,
+     "unseen_share": 0.135
+    },
+    "Sat": {
+     "n": 4562,
+     "top1_accuracy": 0.5658,
+     "mean_top_p": 0.5398,
+     "log_loss": 1.0499,
+     "unseen_share": 0.1311
+    },
+    "Sun": {
+     "n": 3416,
+     "top1_accuracy": 0.591,
+     "mean_top_p": 0.577,
+     "log_loss": 0.9534,
+     "unseen_share": 0.1733
+    },
+    "Mon": {
+     "n": 276,
+     "top1_accuracy": 0.3659,
+     "mean_top_p": 0.3328,
+     "log_loss": 1.023,
+     "unseen_share": 0.413
+    },
+    "Tue": {
+     "n": 2330,
+     "top1_accuracy": 0.3506,
+     "mean_top_p": 0.5186,
+     "log_loss": 1.3934,
+     "unseen_share": 0.415
+    },
+    "Wed": {
+     "n": 978,
+     "top1_accuracy": 0.1912,
+     "mean_top_p": 0.4076,
+     "log_loss": 1.6639,
+     "unseen_share": 0.4029
+    },
+    "Thu": {
+     "n": 766,
+     "top1_accuracy": 0.5509,
+     "mean_top_p": 0.4009,
+     "log_loss": 1.4031,
+     "unseen_share": 0.094
+    }
+   }
+  }
+ },
+ "market": {
+  "market_status": "NOT_TESTED",
+  "market_reason": "no licensed archive of timestamped closing prices is on file; archived untimestamped lines are not a market test"
+ },
+ "selection": {
+  "log_loss": {
+   "team": 0.59962,
+   "bullpen": 0.59958,
+   "starter_proj": 0.59935,
+   "hybrid_proj": 0.59931
+  },
+  "chosen": "team",
+  "rule": "pregame variants only; the oracle is a measurement, never a candidate"
+ },
+ "generated_at": "2026-10-14T02:00:39.434Z",
+ "seconds": 53
+}

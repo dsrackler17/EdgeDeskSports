@@ -130,6 +130,17 @@ const READERS = {
     if (!m) return { markets: {}, files: [] };
     return { markets: { moneyline: { outcome: 'VALIDATED', market: 'NOT_TESTED', n: Number(m[1].replace(/,/g, '')), headline: 'held-out log loss ' + m[2] + ', Brier ' + m[3] + ' (beats overall Elo, surface Elo and ranking); market comparison not possible', file: 'docs/tennis-lab-implementation-report.md' } }, files: ['docs/tennis-lab-implementation-report.md'] };
   },
+  college_baseball() {
+    const f = 'college_baseball/validation/walkforward.json'; const v = read(f);
+    if (!v || !v.markets) return { markets: {}, files: [] };
+    const m = v.markets.moneyline; const cov = read('college_baseball/validation/coverage.json');
+    const vb = v.comparisons && (v.comparisons.HOLDOUT || v.comparisons.VALIDATION); const c = vb && vb.chosen_vs_best_baseline;
+    return { markets: { moneyline: { outcome: m.status === 'OUTCOME_VALIDATED' ? 'VALIDATED' : 'PROVISIONAL', market: 'NOT_TESTED', n: m.n,
+      headline: 'outcomes (' + m.window + '): ' + m.status + (m.failed && m.failed.length ? ' (' + m.failed.join('; ') + ')' : '') + '; log loss ' + m.log_loss + (c ? '; vs ' + v.selection.best_baseline + ' Δ ' + c.mean_diff + ' (95% ' + c.ci95.join(' to ') + ')' : '') + '; vs close: not tested', file: f } },
+      files: [f, 'college_baseball/validation/pitcher_walkforward.json', 'college_baseball/validation/audit.json', 'college_baseball/validation/release_gates.json'], generated_at: v.generated_at,
+      data: { loaded: true, games: cov ? cov.totals.eligible_for_rating : null, seasons: [2012, 2026], point_in_time: 'RETROSPECTIVE', source: 'sportsdataverse/baseballr-data' },
+      model: { trained: true, chosen: v.selection.chosen } };
+  },
   none_research() { return { markets: {}, files: [] }; },
   none() { return { markets: {}, files: [] }; },
 };
@@ -141,7 +152,6 @@ function ladder(s, ev, rd) {
   const validated = mk.filter((m) => m.state === 'OUTCOME_VALIDATED' || m.state === 'MARKET_VALIDATED');
   const data = ev.data || (s.data && s.data.length ? { loaded: s.brain.status !== 'NOT_BUILT', note: 'see the sport\'s own pipeline' } : { loaded: false });
   if (!ev.data && (s.id === 'nhl' || s.id === 'nfl' || s.id === 'cfb' || s.id === 'tennis')) data.loaded = !!(ev.files && ev.files.length);
-  if (s.id === 'college_baseball') { data.loaded = true; data.note = 'a 313-game sample (data pack) and the live ESPN results union: too sparse for a validated model'; }
   return {
     data_loaded: { done: !!data.loaded, detail: data.games ? data.games + ' games' + (data.seasons ? ' (' + data.seasons.join('-') + ')' : '') + (data.point_in_time ? ', ' + data.point_in_time.toLowerCase() : '') + (data.second_source ? '; second source ' + data.second_source.season + ': ' + data.second_source.games : '') : (data.note || null) },
     model_trained: { done: ev.model ? !!ev.model.trained : (s.brain.status === 'BUILT' || s.brain.status === 'PARTIAL') && mk.length > 0, detail: ev.model ? (ev.model.note || (typeof ev.model.chosen === 'string' ? ev.model.chosen : ev.model.chosen ? JSON.stringify(ev.model.chosen) : null)) : s.brain.id },
