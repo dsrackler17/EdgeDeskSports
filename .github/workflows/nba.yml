@@ -73,6 +73,8 @@ jobs:
           python-version: '3.12'
       - name: pyarrow (the NBA Data Pack is Parquet; read by nba/tools/parquet_select.py)
         run: pip install --quiet pyarrow
+      - name: Rebuild the 2025-26 work tables the tests read (player games, stints, shots — rebuilt, never committed; ≈30 MB public parquet)
+        run: node --max-old-space-size=6144 nba/ingest/season.js --season 2026
       - name: The NBA engine offline (parsers, lineups, distribution, markets, learners, ledger, quotes, desk, loader, the data pack's verification, reconciliation and tamper test)
         run: node tools/nba/nba.test.js
       - name: The NBA on the desk (module and the real edge handler, no model)
