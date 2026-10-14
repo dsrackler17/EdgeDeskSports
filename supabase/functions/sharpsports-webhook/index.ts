@@ -135,6 +135,16 @@ function config() {
         joins (link, discover, sync, refresh, account state, webhook hints,
         normalize). The server switches at most one on
         (SPORTSBOOK_SYNC_PROVIDER); none is the default.
+    12. JUICE REEL: sportsbook history through Juice Reel's OAuth 2.0 API —
+        authorization code + PKCE (S256) with server-side state, the token
+        exchange, single-use rotating refresh tokens under a lease (a
+        consumed refresh token is never sent twice), revocation, the open /
+        settled / changed bet lists with their opaque cursors, the Bet
+        normalizer (singles, parlays, teasers, round robins, pushes,
+        cancellations, cash-outs, sub-cent amounts) and the grant-level sync
+        with its updatedAt checkpoint and daily reconciliation. Bet history
+        only: no subscriber endpoint, checkout or subscription webhook.
+        Registered as a sportsbook sync provider (section 11).
 
    WHAT IS NOT HERE: anything that asks for a sportsbook password, scrapes a
    site, bypasses MFA / CAPTCHA / geolocation, or places, cancels or changes
@@ -283,12 +293,27 @@ function config() {
     PROVIDER_CONTRACT: 'SharpSports answered in a form EdgeDesk does not recognise, so nothing was stored. EdgeDesk retries automatically.',
     NOT_CONFIGURED: 'Sportsbook linking is not configured on this server yet.',
     ENV_MISMATCH: 'This account was linked in a different SharpSports environment (test or live) from the one this server reads, so it is not synced here.',
+    /* Juice Reel (OAuth 2.0) */
+    JR_AWAITING_APPROVAL: 'Connecting Juice Reel is not open yet: EdgeDesk\'s Juice Reel application is awaiting Juice Reel\'s approval. Import a file or record bets by hand meanwhile.',
+    JR_STATE_INVALID: 'This Juice Reel sign-in could not be matched to one started here (it expired after 15 minutes, was already used, or was started from another EdgeDesk account). '
+      + 'Nothing was connected; start again from Portfolio → Accounts.',
+    JR_CONSENT_DENIED: 'You did not authorize EdgeDesk on Juice Reel, so nothing was connected.',
+    JR_CODE_INVALID: 'Juice Reel did not accept the sign-in (its code expired or was already used). Nothing was connected; start again.',
+    JR_CLIENT_REFUSED: 'Juice Reel refused EdgeDesk\'s application credentials — EdgeDesk\'s Juice Reel application may still be awaiting approval. '
+      + 'This is on EdgeDesk\'s side; nothing was stored, and syncing resumes once it is fixed.',
+    JR_SCOPE_MISSING: 'Juice Reel did not give EdgeDesk access to both your open and your settled bets, so nothing can be synced. Reconnect Juice Reel and allow both.',
+    JR_ACCOUNT_IN_USE: 'That Juice Reel account is already connected to another EdgeDesk account. Disconnect it there first.',
+    GRANT_EXPIRED: 'Your Juice Reel authorization expired or was revoked, so EdgeDesk can no longer read your bets. Reconnect Juice Reel to resume syncing; your history is kept.',
+    JR_CONTRACT: 'Juice Reel answered in a form EdgeDesk does not recognise, so nothing was stored. EdgeDesk retries automatically.',
+    JR_TOKEN_BUSY: 'EdgeDesk was renewing your Juice Reel authorization at the same moment; the sync resumes shortly.',
+    JR_DISCONNECTED: 'Juice Reel was disconnected while this sync ran; nothing more was stored.',
+    JR_CURSOR_INVALID: 'Juice Reel did not accept EdgeDesk\'s place in your history; the next sync reads it again from the start.',
     UNKNOWN: 'Something went wrong. Nothing was changed.'
   };
   function readerError(code) { return { code: ERRORS[code] ? code : 'UNKNOWN', message: ERRORS[code] || ERRORS.UNKNOWN }; }
   /* anything about to be logged passes through this: secrets become [redacted] */
-  var SECRET_KEYS = /^(private_?key|secret|password|passphrase|seed|mnemonic|token|access_token|refresh_token|authorization|signature|kalshi-access-signature|ciphertext|plaintext|cookie)$/i;
-  var SECRET_TEXT = /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(-----END [A-Z ]*PRIVATE KEY-----|$)|\b(?:[a-z]{3,8}\s+){11,23}[a-z]{3,8}\b|\b0x[0-9a-fA-F]{64}\b|\bBearer\s+[A-Za-z0-9._~+/=-]{8,}/g;
+  var SECRET_KEYS = /^(private_?key|secret|client_?secret|password|passphrase|seed|mnemonic|token|access_token|refresh_token|authorization|signature|kalshi-access-signature|ciphertext|plaintext|cookie|code_verifier|verifier|authorization_code)$/i;
+  var SECRET_TEXT = /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(-----END [A-Z ]*PRIVATE KEY-----|$)|\b(?:[a-z]{3,8}\s+){11,23}[a-z]{3,8}\b|\b0x[0-9a-fA-F]{64}\b|\b(?:Bearer|Basic)\s+[A-Za-z0-9._~+/=-]{8,}|\bjr[a-z]{0,2}_[A-Za-z0-9._~+/=-]{8,}/g;
   function redact(x, depth) {
     depth = depth || 0;
     if (depth > 6) return '[deep]';
@@ -1337,9 +1362,811 @@ function config() {
     return { ok: false, header: null };
   }
 
+  /* ═══ 11. JUICE REEL — sportsbook history through Juice Reel's OAuth API ═══
+     Juice Reel is a bet tracker that syncs a bettor's sportsbook accounts.
+     The reader signs in on Juice Reel's own page and approves EdgeDesk
+     (OAuth 2.0 authorization code + PKCE); EdgeDesk's server exchanges the
+     code and reads the reader's bets with the bearer token. One grant covers
+     every sportsbook Juice Reel tracks for the reader: each bet names its
+     book (Site), and each book becomes the reader's own Portfolio account
+     under the book's key, so sportsbook-level figures stay true.
+
+     HOW THE FACTS WERE VERIFIED. From Juice Reel's developer documentation
+     (juicereel.com/api-docs, the full reference as supplied by EdgeDesk's
+     account owner on 2026-10-14; the site itself was unreachable from the
+     build environment) and Juice Reel's official example server
+     (github.com/juiceintegration/oauth-setup-example, read 2026-10-14).
+     Every request below is DOCUMENTED. What the docs do not pin down is in
+     JUICEREEL.verified.unverified, and the live smoke test settles it.
+
+     WHAT IS DELIBERATELY NOT USED. subscribers.read, /oauth2/subscribers/*,
+     /checkout/sessions and the SUBSCRIPTION_EVENTS webhook concern people
+     who buy a subscription FROM the OAuth app's owner through Juice Reel.
+     EdgeDesk sells its own research through Stripe and never asks Juice Reel
+     who is subscribed, so it requests only the two bet scopes. */
+  var JUICEREEL = {
+    key: 'juicereel', label: 'Juice Reel', source_type: 'SPORTSBOOK', method: 'AUTHORIZED_API', connector_version: 'juicereel_v1', environment: 'production',
+    authorize: 'https://www.juicereel.com/oauth2/authorize', api: 'https://external-api.juicereel.com',
+    redirect: 'https://edgedesksports.com/oauth/juicereel-callback.html',
+    scopes: ['bets.open.read', 'bets.settled.read'],
+    what_the_reader_gives: 'You sign in on Juice Reel\'s own page and allow EdgeDesk to read your open and settled bets — nothing else. '
+      + 'EdgeDesk never sees your Juice Reel or sportsbook password, and can never place, change or cancel a bet.',
+    contract: {
+      authorize: { method: 'GET', url: 'https://www.juicereel.com/oauth2/authorize', auth: 'browser', seen: 'DOCUMENTED' },
+      token: { method: 'POST', path: '/oauth2/token', auth: 'basic', seen: 'DOCUMENTED' },
+      revoke: { method: 'POST', path: '/oauth2/revoke', auth: 'basic', seen: 'DOCUMENTED' },
+      me: { method: 'GET', path: '/oauth2/me', auth: 'bearer', scope: null, seen: 'DOCUMENTED' },
+      open: { method: 'GET', path: '/oauth2/bets/open', auth: 'bearer', scope: 'bets.open.read', seen: 'DOCUMENTED' },
+      settled: { method: 'GET', path: '/oauth2/bets/settled', auth: 'bearer', scope: 'bets.settled.read', seen: 'DOCUMENTED' },
+      changed: { method: 'GET', path: '/oauth2/bets/changed', auth: 'bearer', scope: 'bets.open.read bets.settled.read', seen: 'DOCUMENTED' }
+    },
+    not_used: ['subscribers.read and /oauth2/subscribers/current, /oauth2/subscribers/status: subscriptions to the app owner; EdgeDesk bills through Stripe',
+      '/checkout/sessions: Juice Reel-hosted purchases; EdgeDesk does not sell through Juice Reel',
+      'The SUBSCRIPTION_EVENTS webhook bucket (X-Juice-Reel-Signature): subscription purchases, renewals, cancellations and expiries only — never bet updates'],
+    verified: { on: '2026-10-14', from: 'juicereel.com/api-docs (the full reference, supplied by the account owner) and github.com/juiceintegration/oauth-setup-example',
+      docs: 'https://www.juicereel.com/api-docs',
+      facts: ['Authorize: GET https://www.juicereel.com/oauth2/authorize?client_id&redirect_uri (exact, registered)&response_type=code&scope (space-delimited)&state&code_challenge&code_challenge_method=S256 (the example also sends response_mode=query); returns ?code&state',
+        'Token: POST https://external-api.juicereel.com/oauth2/token, HTTP Basic client id:secret plus X-OAuth-Client-Id, form-encoded grant_type=authorization_code&code&redirect_uri&code_verifier → access_token, refresh_token, token_type Bearer, expires_in (3600), scope',
+        'Refresh: grant_type=refresh_token&refresh_token; the refresh token is single-use and replaced on every refresh; reusing a consumed one revokes the token family and the grant',
+        'Revoke: POST /oauth2/revoke, Basic + X-OAuth-Client-Id, form token & token_type_hint (access_token | refresh_token); 200 {} whether or not the token existed',
+        'Every external request carries X-OAuth-Client-Id; resource requests Authorization: Bearer <access token>',
+        'GET /oauth2/me → { id (integer, stable for the grant), displayName }',
+        'GET /oauth2/bets/open (bets.open.read; datePlacedAfter/Before) and /oauth2/bets/settled (bets.settled.read; dateClosedAfter/Before): descending bet id; { bets, nextCursor (opaque; null when done), hasMore }',
+        'GET /oauth2/bets/changed (both scopes): open, closed and cancelled bets by updatedAt descending (bet id breaks ties); updatedAtAfter is an inclusive lower bound; keep the newest updatedAt as the checkpoint',
+        'Bet: id, userId, oddsAmerican, amountRisked and toWin (in currencyCode), netResult (+profit / −loss), result (Won, Lost, Push, Cancelled), datePlaced, dateClosed, isAdjustedOdds, isAdjustedLine, adjustedRisk, clvPct, createdAt, updatedAt, currencyCode, BetType {typeName: Straight, Parlay …}, BetStatus {statusName: Closed …}, Site {id, name}, Subbets[]',
+        'Subbet: subbetType (Moneyline …), position, value, oddsAmerican, startDate, wasLiveBet, description, metric, Player, Event {name, startDate, HomeTeam, AwayTeam, Sport, League}, BetResult {name}, Sport, League',
+        'Rate limits: 1,000 requests per IP and 25,000 per client id per five-minute bucket; 429 means wait for the bucket to reset',
+        'Errors: 400 "cursor is invalid"; 400 invalid_request / invalid_grant; 401 "Invalid OAuth access token"; 401 invalid_client; 403 missing scope; 429; 5xx (retry idempotent GETs with backoff)'],
+      unverified: ['Amounts with more than two decimal places (the docs\' own example risks 0.5886): the stake is rounded UP to the cent and the payout is stake + netResult, so the stored P&L equals Juice Reel\'s netResult exactly',
+        'The full set of result and status words (only Won, Lost, Push, Cancelled and Closed are shown): an unknown word with a netResult is stored as SETTLED at that exact P&L; without one it is listed, not guessed',
+        'Subbet.value as the line for spreads, totals and props (the example shows 0 on a moneyline); subbetType words other than Moneyline',
+        'Whether a refused authorization comes back as error=access_denied or status=cancelled (the checkout flow\'s form): both are read as a refusal',
+        'Which of amountRisked and adjustedRisk is the cash at risk when a user adjusted it in Juice Reel: amountRisked is stored and the bet is listed for review'] },
+    tos_review: ['Juice Reel\'s approval of the EdgeDesk application and of EdgeDesk\'s commercial use (EdgeDesk\'s own research subscriptions are billed through Stripe, outside Juice Reel)',
+      'Reader consent wording beside Connect: what EdgeDesk reads (open and settled bets), what it stores, retention and deletion',
+      'Rate limits for a background sync across many readers (the per-IP bucket is shared by every request leaving Supabase\'s edge)'],
+    pageCap: 400, bodyMs: 15000, accessSkewMs: 120000, overlapMs: 120000, rateWindowMs: 300000, reconcileEveryMs: 24 * 3600 * 1000, refreshLeaseSeconds: 60
+  };
+  AGGREGATORS.push(JUICEREEL);
+  function b64url(bytes) { return b64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+  async function sha256Bytes(text) { return new Uint8Array(await cryptoApi().subtle.digest('SHA-256', enc.encode(String(text)))); }
+  var JR_STATE_RE = /^[A-Za-z0-9_-]{43}$/;
+  /* PKCE (RFC 7636, S256) and state: 32 random bytes each, base64url — the
+     shapes Juice Reel's own example uses. Only the challenge leaves EdgeDesk's
+     server in a URL; the verifier never does. */
+  async function jrPkce() {
+    var c = cryptoApi();
+    var verifier = b64url(c.getRandomValues(new Uint8Array(32))), state = b64url(c.getRandomValues(new Uint8Array(32)));
+    return { verifier: verifier, challenge: b64url(await sha256Bytes(verifier)), state: state, state_hash: hexOf(await sha256Bytes(state)) };
+  }
+  /* what the database keeps of a state: its SHA-256, never the state itself */
+  async function jrStateHash(state) { return hexOf(await sha256Bytes(state)); }
+  function jrAuthorizeUrl(cfg, p) {
+    var q = new URLSearchParams();
+    q.set('client_id', cfg.clientId); q.set('redirect_uri', cfg.redirectUri); q.set('response_type', 'code'); q.set('response_mode', 'query');
+    q.set('scope', JUICEREEL.scopes.join(' ')); q.set('state', p.state); q.set('code_challenge', p.challenge); q.set('code_challenge_method', 'S256');
+    return (cfg.authorize || JUICEREEL.authorize) + '?' + q.toString();
+  }
+  /* the one-time connect session: its PKCE verifier (and the smoke test it
+     belongs to) sealed under the vault key, bound to the reader and the state */
+  async function jrSealSession(ctx, userId, stateHash, payload) {
+    var v = String(ctx.keyring.current), key = ctx.keyring.keys[v];
+    if (!key) throw codedError('NOT_CONFIGURED');
+    var s = await sealCredential(payload, { keyB64: key, keyVersion: +v, userId: userId, accountId: stateHash, kind: 'PKCE_SESSION' });
+    return ['v1', v, s.nonce_b64, s.ciphertext_b64].join('.');
+  }
+  async function jrOpenSession(ctx, userId, stateHash, text) {
+    var m = /^v1\.(\d{1,4})\.([A-Za-z0-9+/=]{8,40})\.([A-Za-z0-9+/=]{8,900})$/.exec(String(text || ''));
+    if (!m || !ctx.keyring.keys[m[1]]) throw codedError('JR_STATE_INVALID');
+    try { return await openCredential({ ciphertext_b64: m[3], nonce_b64: m[2], credential_kind: 'PKCE_SESSION' }, { keyB64: ctx.keyring.keys[m[1]], userId: userId, accountId: stateHash }); }
+    catch (_) { throw codedError('JR_STATE_INVALID'); }
+  }
+  /* one request to Juice Reel. The client secret travels only in the Basic
+     header of the token and revoke calls, a bearer token only in its own
+     header; neither, nor any response body, ever reaches a log or an error */
+  async function jrCall(ctx, cfg, name, o) {
+    var c = JUICEREEL.contract[name];
+    o = o || {};
+    if (!cfg || !cfg.clientId || !cfg.clientSecret) throw codedError('NOT_CONFIGURED');
+    var headers = { accept: 'application/json', 'x-oauth-client-id': cfg.clientId };
+    headers.authorization = c.auth === 'basic' ? 'Basic ' + b64(enc.encode(cfg.clientId + ':' + cfg.clientSecret)) : 'Bearer ' + o.token;
+    var q = new URLSearchParams();
+    Object.keys(o.query || {}).forEach(function (k) { if (o.query[k] != null && o.query[k] !== '') q.set(k, String(o.query[k])); });
+    var url = (cfg.api || JUICEREEL.api) + c.path + (q.toString() ? '?' + q.toString() : '');
+    var init = { method: c.method, headers: headers };
+    if (o.form) {
+      headers['content-type'] = 'application/x-www-form-urlencoded';
+      var f = new URLSearchParams();
+      Object.keys(o.form).forEach(function (k) { f.set(k, String(o.form[k])); });
+      init.body = f.toString();
+    }
+    var r;
+    try { r = await ctx.fetch(url, init); } catch (_) { throw codedError('PLATFORM_DOWN'); }
+    var body = null, t;
+    /* the body is bounded as well as the headers: an answer that stalls part-way is a failure, not a wait */
+    t = await jrWithin(r.text(), JUICEREEL.bodyMs);
+    try { body = t ? JSON.parse(t) : null; } catch (_) { body = undefined; }
+    return { status: r.status, body: body };
+  }
+  function jrWithin(p, ms) {
+    var timer = null;
+    var late = new Promise(function (_, no) { timer = setTimeout(function () { no(codedError('PLATFORM_DOWN', { note: 'the answer stalled' })); }, ms); });
+    return Promise.race([Promise.resolve(p).catch(function () { throw codedError('PLATFORM_DOWN'); }), late])
+      .then(function (v) { clearTimeout(timer); return v; }, function (e) { clearTimeout(timer); throw e; });
+  }
+  function jrSleep(ctx, ms) { return ctx.sleep ? ctx.sleep(ms) : new Promise(function (ok) { setTimeout(ok, ms); }); }
+  function jrErrorWord(body) { return body && typeof body === 'object' && typeof body.error === 'string' ? body.error.toLowerCase().slice(0, 80) : ''; }
+  /* a token answer → the pair EdgeDesk keeps (sealed) and when the access token lapses */
+  function jrTokenSet(body, now) {
+    var b = body && typeof body === 'object' ? body : {};
+    var good = function (x) { return typeof x === 'string' && x.length >= 8 && x.length <= 4096 && !/\s/.test(x); };
+    if (!good(b.access_token) || !good(b.refresh_token) || (b.token_type != null && String(b.token_type).toLowerCase() !== 'bearer')) throw codedError('JR_CONTRACT', { note: 'token response' });
+    var exp = Number.isInteger(b.expires_in) && b.expires_in > 0 && b.expires_in <= 30 * 86400 ? b.expires_in : 3600;
+    var scopes = typeof b.scope === 'string' ? b.scope.split(/\s+/).filter(Boolean).slice(0, 20) : null;
+    return { access_token: b.access_token, refresh_token: b.refresh_token, expires_at: new Date(now + exp * 1000).toISOString(), scopes: scopes };
+  }
+  /* POST /oauth2/token. Never retried here: a refresh that reached Juice Reel
+     may already have consumed its single-use token, and sending it twice
+     revokes the whole grant */
+  async function jrToken(ctx, cfg, form, kind) {
+    var r = await jrCall(ctx, cfg, 'token', { form: form });
+    if (r.status >= 200 && r.status < 300) return jrTokenSet(r.body, ctx.now());
+    var err = jrErrorWord(r.body);
+    if (r.status === 401 || err === 'invalid_client' || err === 'unauthorized_client') throw codedError('JR_CLIENT_REFUSED', { status: r.status });
+    if (r.status === 429) throw codedError('RATE_LIMITED', { retryAfterMs: JUICEREEL.rateWindowMs });
+    if (r.status >= 500) throw codedError('PLATFORM_DOWN', { status: r.status });
+    if (err === 'invalid_scope') throw codedError('JR_SCOPE_MISSING');
+    /* the docs group invalid_request with invalid_grant: a code expired or used, PKCE failed, or a refresh token no longer valid */
+    if (err === 'invalid_grant' || err === 'invalid_request' || r.status === 400) throw codedError(kind === 'refresh' ? 'GRANT_EXPIRED' : 'JR_CODE_INVALID', { status: r.status });
+    throw codedError('JR_CONTRACT', { status: r.status });
+  }
+  /* revoke a pair (best effort, idempotent at Juice Reel): the refresh token
+     first — that ends the grant — then the access token */
+  async function jrRevokeAll(ctx, cfg, t) {
+    var ok = true;
+    var list = [[t && t.refresh_token, 'refresh_token'], [t && t.access_token, 'access_token']];
+    for (var i = 0; i < list.length; i++) {
+      if (typeof list[i][0] !== 'string' || !list[i][0]) continue;
+      try { var r = await jrCall(ctx, cfg, 'revoke', { form: { token: list[i][0], token_type_hint: list[i][1] } }); if (!(r.status >= 200 && r.status < 300)) ok = false; }
+      catch (_) { ok = false; }
+    }
+    return ok;
+  }
+  /* a resource answer that is not 2xx → a coded error */
+  function jrCheck(r) {
+    if (r.status >= 200 && r.status < 300 && r.body !== undefined) return;
+    var said = r.body && typeof r.body === 'object' ? String(r.body.error || r.body.message || '').slice(0, 120) : '';
+    if (r.status === 401) throw codedError('JR_TOKEN_REJECTED', { status: 401 });
+    if (r.status === 403) throw codedError('JR_SCOPE_MISSING', { status: 403 });
+    if (r.status === 429) throw codedError('RATE_LIMITED', { retryAfterMs: JUICEREEL.rateWindowMs });
+    if (r.status >= 500) throw codedError('PLATFORM_DOWN', { status: r.status });
+    if (r.status === 400 && /cursor/i.test(said)) throw codedError('JR_CURSOR_INVALID');
+    throw codedError('JR_CONTRACT', { status: r.status });
+  }
+  /* an idempotent GET: a transient failure (network, 5xx) is retried twice
+     with backoff, as the docs advise; 429 is not (the bucket is five minutes) */
+  async function jrGet(ctx, cfg, name, token, query) {
+    var waits = [400, 1500];
+    for (var attempt = 0; ; attempt++) {
+      var r;
+      try { r = await jrCall(ctx, cfg, name, { token: token, query: query }); }
+      catch (e) { if (e.code === 'PLATFORM_DOWN' && attempt < waits.length) { await jrSleep(ctx, waits[attempt]); continue; } throw e; }
+      if (r.status >= 500 && attempt < waits.length) { await jrSleep(ctx, waits[attempt]); continue; }
+      jrCheck(r);
+      return r.body;
+    }
+  }
+  async function jrMe(ctx, cfg, token) {
+    var b = await jrGet(ctx, cfg, 'me', token, null);
+    var id = b && typeof b === 'object' ? b.id : null;
+    if (!(Number.isInteger(id) && id > 0) && !(typeof id === 'string' && /^[0-9]{1,18}$/.test(id))) throw codedError('JR_CONTRACT', { note: 'me' });
+    return { id: String(id), display_name: ssText(b.displayName, 60) };
+  }
+
+  /* ── the token store (portfolio_private.oauth_grants, sealed) ── */
+  async function jrSealTokens(ctx, userId, grantId, t) {
+    var v = String(ctx.keyring.current), key = ctx.keyring.keys[v];
+    if (!key) throw codedError('NOT_CONFIGURED');
+    return sealCredential({ access_token: t.access_token, refresh_token: t.refresh_token }, { keyB64: key, keyVersion: +v, userId: userId, accountId: grantId, kind: 'OAUTH_TOKENS' });
+  }
+  async function jrOpenTokens(ctx, grantId) {
+    var rows = await ctx.rpc('portfolio_svc_jr_grant_tokens', { p_grant: grantId });
+    var row = Array.isArray(rows) ? rows[0] : rows;
+    if (!row) throw codedError('GRANT_EXPIRED');
+    if (row.status === 'DISCONNECTED') throw codedError('JR_DISCONNECTED');
+    if (!row.ciphertext_b64) throw codedError('GRANT_EXPIRED');
+    var key = ctx.keyring.keys[String(row.key_version)];
+    if (!key) throw codedError('NOT_CONFIGURED', { note: 'no key for version ' + row.key_version });
+    var sec = await openCredential({ ciphertext_b64: row.ciphertext_b64, nonce_b64: row.nonce_b64, credential_kind: 'OAUTH_TOKENS' },
+      { keyB64: key, userId: row.user_id, accountId: grantId });
+    return { row: row, sec: sec };
+  }
+  async function jrStoredIs(ctx, grantId, sealed) {
+    try {
+      var rows = await ctx.rpc('portfolio_svc_jr_grant_tokens', { p_grant: grantId }), row = Array.isArray(rows) ? rows[0] : rows;
+      var bare = function (x) { return String(x || '').replace(/\s+/g, ''); };
+      return !!(row && row.ciphertext_b64 && bare(row.ciphertext_b64) === bare(sealed.ciphertext_b64));
+    } catch (_) { return false; }
+  }
+  /* AN ACCESS TOKEN TO USE NOW. Within its life (less two minutes) it is used
+     as stored. Otherwise it is refreshed — under a lease, so that of any
+     number of syncs running at once exactly one sends the single-use refresh
+     token, and the pair it gets back replaces the old one in one statement
+     (portfolio_svc_jr_rotate: only the lease holder, only from the generation
+     it read). A worker that finds the lease taken waits for the new pair. */
+  async function jrAccessToken(ctx, cfg, grant, force) {
+    for (var round = 0; round < 4; round++) {
+      var o = await jrOpenTokens(ctx, grant.grant_id);
+      var fresh = Date.parse(o.row.access_expires_at) - ctx.now() > JUICEREEL.accessSkewMs;
+      /* a forced refresh after a 401 is not needed if someone else already rotated */
+      if (fresh && (!force || String(o.row.generation) !== String(grant.generation))) { grant.generation = o.row.generation; return o.sec.access_token; }
+      var lease = await ctx.rpc('portfolio_svc_jr_refresh_lease', { p_grant: grant.grant_id, p_generation: o.row.generation, p_seconds: JUICEREEL.refreshLeaseSeconds });
+      /* another worker holds the lease: wait for the pair it stores (the generation moves on) */
+      if (!lease) { await jrSleep(ctx, 1000); continue; }
+      var t;
+      try { t = await jrToken(ctx, cfg, { grant_type: 'refresh_token', refresh_token: o.sec.refresh_token }, 'refresh'); }
+      catch (e) {
+        if (e.code === 'GRANT_EXPIRED') {
+          /* refused for THIS pair only: a reconnect that stored a newer one meanwhile is left alone */
+          await ctx.rpc('portfolio_svc_jr_grant_failed', { p_grant: grant.grant_id, p_code: 'GRANT_EXPIRED', p_message: ERRORS.GRANT_EXPIRED, p_drop_tokens: true,
+            p_generation: o.row.generation });
+        } else {
+          /* not refused, but not answered either (a timeout, a 5xx, an answer that could not be read): Juice Reel may or may not
+             have used the refresh token. The next attempt sends it again ON PURPOSE. If Juice Reel never used it, that refresh
+             succeeds; if it did, Juice Reel revokes the whole token family — including the pair EdgeDesk never received — and the
+             reader is asked to reconnect. Either way no live pair is left that nobody holds. */
+          await ctx.rpc('portfolio_svc_jr_refresh_release', { p_grant: grant.grant_id, p_lease: lease });
+        }
+        throw e;
+      }
+      var sealed = await jrSealTokens(ctx, o.row.user_id, grant.grant_id, t);
+      /* the old refresh token is spent now: the new pair is stored (a database hiccup is retried), or revoked */
+      var ok = null;
+      for (var a = 0; a < 3 && ok === null; a++) {
+        try {
+          ok = (await ctx.rpc('portfolio_svc_jr_rotate', { p_grant: grant.grant_id, p_lease: lease, p_generation: o.row.generation, p_ciphertext_b64: sealed.ciphertext_b64,
+            p_nonce_b64: sealed.nonce_b64, p_key_version: sealed.key_version, p_access_expires_at: t.expires_at, p_scopes: t.scopes })) === true;
+        } catch (_) { if (a < 2) await jrSleep(ctx, 400 * (a + 1)); }
+      }
+      /* an answer lost after the rotation committed: what is stored is this very pair */
+      if (ok !== true && await jrStoredIs(ctx, grant.grant_id, sealed)) ok = true;
+      if (ok !== true) {
+        /* not stored — disconnected meanwhile, or the database would not take it: the pair just issued must not outlive it */
+        await jrRevokeAll(ctx, cfg, t);
+        if (ok === null) {
+          try {
+            await ctx.rpc('portfolio_svc_jr_grant_failed', { p_grant: grant.grant_id, p_code: 'GRANT_EXPIRED', p_message: ERRORS.GRANT_EXPIRED, p_drop_tokens: true,
+              p_generation: o.row.generation });
+          } catch (_) { /* the spent refresh token fails on its own next time */ }
+          throw codedError('GRANT_EXPIRED');
+        }
+        throw codedError('JR_DISCONNECTED');
+      }
+      grant.generation = +o.row.generation + 1;
+      logSafe(ctx, 'juicereel.refresh', { grant: grant.grant_id });
+      return t.access_token;
+    }
+    throw codedError('JR_TOKEN_BUSY');
+  }
+  /* reads for one sync: a 401 refreshes once and retries once; a second 401
+     means the grant itself is gone */
+  function jrReader(ctx, cfg, grant) {
+    var tok = null;
+    return async function get(name, query) {
+      if (!tok) tok = await jrAccessToken(ctx, cfg, grant, false);
+      try { return await jrGet(ctx, cfg, name, tok, query); }
+      catch (e) {
+        if (e.code !== 'JR_TOKEN_REJECTED') throw e;
+        tok = await jrAccessToken(ctx, cfg, grant, true);
+        try { return await jrGet(ctx, cfg, name, tok, query); }
+        catch (e2) { throw e2.code === 'JR_TOKEN_REJECTED' ? codedError('GRANT_EXPIRED') : e2; }
+      }
+    };
+  }
+  /* every page of one list, following the opaque nextCursor (never decoded or
+     edited) until hasMore is false. Out of time or pages, it stops where it is
+     and says so, with the cursor to resume from. stopBefore: the changed
+     feed's checkpoint — a bet older than it ends the read. partial: a
+     transient failure part-way returns what was read instead of throwing */
+  async function jrPages(ctx, get, name, query, opts) {
+    opts = opts || {};
+    var out = [], cursor = opts.cursor || null, seen = {};
+    for (var i = 0; i < JUICEREEL.pageCap; i++) {
+      if (opts.started != null && i > 0 && overBudget(ctx, opts.started)) return { bets: out, done: false, cursor: cursor };
+      var q = Object.assign({}, query || {});
+      if (cursor) q.cursor = cursor;
+      var page;
+      try { page = await get(name, q); }
+      catch (e) {
+        /* partial: a 429, a 5xx or a refused cursor part-way keeps the pages already read, and where to resume
+           (a refused cursor: nowhere — that list starts again) */
+        if (!opts.partial || ['RATE_LIMITED', 'PLATFORM_DOWN', 'JR_CURSOR_INVALID'].indexOf(e && e.code) < 0) throw e;
+        return { bets: out, done: false, cursor: e.code === 'JR_CURSOR_INVALID' ? null : cursor, error: e };
+      }
+      if (!page || typeof page !== 'object' || !Array.isArray(page.bets)) throw codedError('JR_CONTRACT', { note: 'not a page of bets' });
+      out = out.concat(page.bets);
+      var next = typeof page.nextCursor === 'string' && page.nextCursor && page.hasMore !== false ? page.nextCursor : null;
+      if (opts.stopBefore && page.bets.length) {
+        var last = iso(page.bets[page.bets.length - 1] && page.bets[page.bets.length - 1].updatedAt);
+        if (last && last < opts.stopBefore) return { bets: out, done: true, cursor: null };
+      }
+      if (!next) return { bets: out, done: true, cursor: null };
+      if (seen[next] || next.length > 2000) throw codedError('JR_CONTRACT', { note: 'a cursor came back twice' });
+      seen[next] = 1; cursor = next;
+    }
+    return { bets: out, done: false, cursor: cursor };
+  }
+
+  /* ── the Bet normalizer ── */
+  function jrWord(x) { return x == null || typeof x === 'object' ? '' : String(x).toLowerCase().replace(/[^a-z]/g, ''); }
+  function jrObj(x) { return x && typeof x === 'object' && !Array.isArray(x) ? x : {}; }
+  function jrName(o) { return o && typeof o === 'object' ? ssText(o.displayName || o.name, 90) : null; }
+  /* an amount as Juice Reel sends it (a JSON number in currencyCode) → micro-units, exactly */
+  function jrMicro(x) {
+    if (x == null || x === '' || typeof x === 'boolean' || typeof x === 'object') return null;
+    if (typeof x === 'number') { if (!isFinite(x)) return null; x = /e/i.test(String(x)) ? x.toFixed(6) : String(x); }
+    return toMicro(String(x));
+  }
+  function jrNum(x) { var v = jrMicro(x); return v == null ? null : fromMicro(v); }
+  var JR_RESULT = { won: 'WON', win: 'WON', lost: 'LOST', loss: 'LOST', push: 'PUSH', cancelled: 'VOID', canceled: 'VOID', void: 'VOID', voided: 'VOID',
+    cashedout: 'CASHED_OUT', cashout: 'CASHED_OUT', halfwon: 'WON', halfwin: 'WON', halflost: 'LOST', halfloss: 'LOST' };
+  var JR_PENDING = { '': 1, open: 1, pending: 1, ungraded: 1 };
+  function jrLegType(sb) {
+    var t = jrWord(sb.subbetType);
+    if (/^(moneyline|ml|money)$/.test(t)) return 'MONEYLINE';
+    if (/(spread|runline|puckline|handicap)/.test(t)) return 'SPREAD';
+    if (/prop/.test(t) || (sb.Player && typeof sb.Player === 'object')) return 'PLAYER_PROP';
+    if (/(total|overunder)/.test(t)) return 'TOTAL';
+    if (/(future|outright)/.test(t)) return 'FUTURE';
+    return 'OTHER';
+  }
+  /* "Atlanta Braves vs New York Mets - NYM" → the event, when nothing better is given */
+  function jrDescEvent(d) { if (!d) return null; var i = d.lastIndexOf(' - '); return i > 0 ? d.slice(0, i).slice(0, 200) : null; }
+  /* one Subbet (a leg) → EdgeDesk's leg shape (as ssLeg) */
+  function jrLeg(sb, i) {
+    sb = jrObj(sb);
+    var ev = jrObj(sb.Event), home = jrName(ev.HomeTeam), away = jrName(ev.AwayTeam);
+    var ptype = jrLegType(sb), desc = ssText(sb.description, 200), pos = ssText(sb.position, 120), player = jrName(sb.Player), metric = ssText(sb.metric, 60);
+    var line = (ptype === 'SPREAD' || ptype === 'TOTAL' || ptype === 'PLAYER_PROP') ? jrNum(sb.value) : null;
+    var sel;
+    if (ptype === 'SPREAD' && pos) sel = pos + (line != null ? ' ' + (toMicro(line) > 0n ? '+' : '') + line : '');
+    else if ((ptype === 'TOTAL' || ptype === 'PLAYER_PROP') && pos) sel = [player, pos, line, metric].filter(function (x) { return x != null && x !== ''; }).join(' ');
+    else sel = pos || desc;
+    var kind = ssText(sb.subbetType, 60);
+    var market = kind ? kind + (ptype === 'PLAYER_PROP' && metric && kind.toLowerCase().indexOf(metric.toLowerCase()) < 0 ? ' · ' + metric : '') : null;
+    var lg = jrName(sb.League) || jrName(ev.League), sp = jrName(sb.Sport) || jrName(ev.Sport);
+    var rw = jrWord(sb.BetResult && sb.BetResult.name);
+    return { leg_number: String(i + 1), selection: sel ? sel.slice(0, 200) : null, event_name: ssText(ev.name, 200) || (home && away ? away + ' at ' + home : null) || jrDescEvent(desc),
+      market_name: market || (desc ? null : 'Wager'), position_type: ptype, line: line, odds_american: ssAmerican(sb.oddsAmerican),
+      result: JR_RESULT[rw] || (JR_PENDING[rw] ? 'OPEN' : null), sport: ssSport({ league: lg, sport: sp }), league: lg ? lg.slice(0, 30) : null,
+      event_start_at: iso(ev.startDate || sb.startDate) || null, home: home || null, away: away || null, description: desc,
+      position: pos ? pos.slice(0, 80) : null, event_ref: ev.id != null && /^[A-Za-z0-9_-]{1,60}$/.test(String(ev.id)) ? String(ev.id) : null, live: sb.wasLiveBet === true };
+  }
+  /* the book a bet was placed at → the reader's Portfolio account for it */
+  function jrSite(b) {
+    var s = b.Site && typeof b.Site === 'object' ? b.Site : null;
+    var name = s ? ssText(s.name, 60) : null;
+    var id = s && s.id != null && /^[A-Za-z0-9_-]{1,40}$/.test(String(s.id)) ? String(s.id) : null;
+    var map = name ? ssBookPlatform({ name: name }) : null;
+    if (!map) return { key: 'none', platform: 'custom_juicereel', label: 'Juice Reel (no sportsbook named)', site: null };
+    return { key: id ? 'id:' + id : 'name:' + map.platform, platform: map.platform, label: map.label, site: { id: id, name: name } };
+  }
+  function jrRaw(b) {
+    var r = redact(b), s = JSON.stringify(r);
+    if (s.length <= 60000) return r;
+    var o = {}; Object.keys(r).forEach(function (k) { if (k !== 'Subbets') o[k] = r[k]; });
+    o.subbets_omitted = Array.isArray(b.Subbets) ? b.Subbets.length : null;
+    return JSON.stringify(o).length <= 60000 ? o : { id: r.id, note: 'raw record too large to keep' };
+  }
+  var CENT = 10000n;   /* one cent in micro-units */
+  /* Bets → normalized wagers, grouped by the book they were placed at.
+     MONEY. amountRisked is the stake; the stored stake is whole cents
+     (portfolio.sql), so a sub-cent amount is rounded UP to the cent, and a
+     settled bet's payout is that stake + netResult (Juice Reel's own figure:
+     it carries pushed legs, boosts and cash-outs). The stored P&L therefore
+     equals netResult exactly. Without a netResult a win, loss, push or void
+     is derived from the price by the database, as for every other bet.
+     NOTHING GUESSED. A bet without its stake, placement time, price, a known
+     result (or a netResult), or in a currency other than USD is skipped and
+     listed. The same bet twice in one read keeps its newest version. */
+  function juicereelNormalize(bets, o) {
+    o = o || {};
+    var books = {}, order = [], issues = [], skipped = 0, stats = { rounded: 0, closed_before_placed: 0, live_legs: 0, adjusted_risk: 0 }, maxUpdated = null;
+    var latest = {}, list = [];
+    (bets || []).forEach(function (b, idx) {
+      if (!b || typeof b !== 'object') { list.push({ bad: '#' + idx }); return; }
+      var u = iso(b.updatedAt);
+      if (u && (!maxUpdated || u > maxUpdated)) maxUpdated = u;
+      var id = b.id != null && /^[0-9]{1,18}$/.test(String(b.id)) ? String(b.id) : null;
+      if (!id) { list.push({ bad: '#' + idx }); return; }
+      if (latest[id] && (latest[id].u || '') >= (u || '')) return;
+      if (!latest[id]) list.push({ id: id });
+      latest[id] = { b: b, u: u };
+    });
+    function book(site) {
+      if (!books[site.key]) { books[site.key] = { site_key: site.key, platform: site.platform, label: site.label, site: site.site, positions: [], issues: [], skipped: 0 }; order.push(site.key); }
+      return books[site.key];
+    }
+    list.forEach(function (x) {
+      if (x.bad) { skipped++; if (issues.length < 200) issues.push(bad('MALFORMED_BET', x.bad, 'A Juice Reel bet had no id.')); return; }
+      var b = latest[x.id].b, ref = x.id, site = jrSite(b), bk = book(site);
+      function skip(code, msg) { skipped++; bk.skipped++; if (bk.issues.length < 200) bk.issues.push(bad(code, ref, msg)); }
+      if (o.providerUserId != null && b.userId != null && String(b.userId) !== String(o.providerUserId)) return skip('NOT_THIS_USER', 'Juice Reel returned a bet of another user; it was ignored.');
+      var cur = b.currencyCode == null || b.currencyCode === '' ? 'USD' : String(b.currencyCode).toUpperCase();
+      if (cur !== 'USD') return skip('CURRENCY_UNSUPPORTED', 'A bet in ' + cur.slice(0, 3) + ' was not stored: Portfolio keeps one currency (USD) and never converts amounts.');
+      var risk = jrMicro(b.amountRisked);
+      if (risk == null) return skip('MALFORMED_BET', 'A bet\'s stake was not a number.');
+      if (risk <= 0n) return skip('NO_STAKE', 'A bet with no cash stake was not stored: its stake is not known.');
+      var rem = risk % CENT, stake = rem === 0n ? risk : risk - rem + CENT;
+      if (rem !== 0n) stats.rounded++;
+      var placed = iso(b.datePlaced);
+      if (!placed) return skip('NO_PLACED_TIME', 'Juice Reel did not report when this bet was placed, so it was not stored (EdgeDesk does not guess the time).');
+      var american = ssAmerican(b.oddsAmerican), decimal = null, toWin = jrMicro(b.toWin);
+      if (american == null) {
+        if (toWin == null || toWin <= 0n) return skip('NO_PRICE', 'A bet had neither American odds nor a to-win amount.');
+        decimal = fromMicro(SCALE + mulDiv(toWin, SCALE, risk));
+      }
+      var net = jrMicro(b.netResult), rw = jrWord(b.result), sw = jrWord(b.BetStatus && b.BetStatus.statusName);
+      var status = JR_RESULT[rw] || null;
+      if (!status && rw && !JR_PENDING[rw]) {
+        if (net == null) return skip('UNKNOWN_RESULT', 'A bet reported a result EdgeDesk does not know (' + String(b.result).slice(0, 20) + ') and no net result; it was not guessed at.');
+        status = 'SETTLED';
+      }
+      if (!status) {
+        if (sw === 'cancelled' || sw === 'canceled' || sw === 'void' || sw === 'voided') status = 'VOID';
+        else if (sw === 'open' || sw === 'pending' || (!sw && !b.dateClosed)) status = 'OPEN';
+        else if (net != null) status = 'SETTLED';
+        else return skip('UNKNOWN_RESULT', 'A closed bet came with no result and no net result; it was not guessed at.');
+      }
+      var payout = null, settled = null;
+      if (status !== 'OPEN') {
+        settled = iso(b.dateClosed);
+        if (!settled) return skip('NO_SETTLED_TIME', 'Juice Reel did not report when this bet settled, so it was not stored (EdgeDesk does not guess the time).');
+        if (settled < placed) { settled = placed; stats.closed_before_placed++; }
+        if (net != null) {
+          if (stake + net < 0n) return skip('MALFORMED_BET', 'A bet reported losing more than its stake.');
+          payout = fromMicro(stake + net);
+        } else if (status === 'CASHED_OUT' || status === 'SETTLED') return skip('NO_PAYOUT', 'A cashed-out bet without the amount paid was not stored.');
+      }
+      var adj = jrMicro(b.adjustedRisk);
+      if (adj != null && adj !== risk) { stats.adjusted_risk++; if (bk.issues.length < 200) bk.issues.push(bad('ADJUSTED_RISK', ref, 'This bet\'s risk was adjusted in Juice Reel; EdgeDesk stored the amount risked as reported. Check it against your book.')); }
+      var legs = (Array.isArray(b.Subbets) ? b.Subbets : []).map(jrLeg);
+      legs.forEach(function (l) { if (l.live) stats.live_legs++; });
+      var tn = jrWord(b.BetType && b.BetType.typeName);
+      var kind = /teaser/.test(tn) ? 'teaser' : /roundrobin/.test(tn) ? 'roundrobin' : /(samegame|sgp)/.test(tn) ? 'sgp' : /parlay/.test(tn) ? 'parlay' : 'straight';
+      var multi = kind !== 'straight' || legs.length > 1;
+      var events = []; legs.forEach(function (l) { if (l.event_name && events.indexOf(l.event_name) < 0) events.push(l.event_name); });
+      var first = legs[0] || {};
+      var p = { platform: site.platform, platform_label: site.label, external_position_id: 'juicereel:' + ref, odds_american: american, odds_decimal: decimal,
+        stake: fromMicro(stake), stake_type: 'CASH', currency: 'USD', status: status, reported_payout: payout, placed_at: placed, settled_at: settled };
+      if (!multi) {
+        p.position_type = /future/.test(tn) && first.position_type === 'OTHER' ? 'FUTURE' : (first.position_type || 'OTHER');
+        p.event_name = first.event_name || first.description || 'Wager';
+        p.market_name = first.market_name || 'Wager';
+        p.selection = first.selection || first.description || 'As placed';
+        p.side = first.position || null;
+        p.line = first.line != null ? first.line : null;
+        p.sport = first.sport || null; p.league = first.league || null;
+        p.event_start_at = first.event_start_at || null;
+        p.event_id = first.event_ref ? 'juicereel:event:' + first.event_ref : null;
+      } else {
+        var oneEvent = events.length === 1, n = legs.length;
+        p.position_type = kind === 'roundrobin' ? 'OTHER' : kind === 'sgp' || (oneEvent && n > 1) ? 'SAME_GAME_PARLAY' : 'PARLAY';
+        p.market_name = (kind === 'roundrobin' ? 'Round robin' : kind === 'teaser' ? 'Teaser' : p.position_type === 'SAME_GAME_PARLAY' ? 'Same-game parlay' : 'Parlay')
+          + ' (' + n + ' leg' + (n === 1 ? '' : 's') + ')';
+        p.event_name = oneEvent ? events[0] : events.length ? ('Parlay: ' + events.slice(0, 2).join(' · ') + (events.length > 2 ? ' +' + (events.length - 2) : '')).slice(0, 200) : 'Parlay';
+        p.selection = legs.map(function (l) { return l.selection || '?'; }).join(' + ').slice(0, 200) || 'As placed';
+        var sports = []; legs.forEach(function (l) { if (l.sport && sports.indexOf(l.sport) < 0) sports.push(l.sport); });
+        p.sport = sports.length === 1 ? sports[0] : null;
+        var lgs = []; legs.forEach(function (l) { if (l.league && lgs.indexOf(l.league) < 0) lgs.push(l.league); });
+        p.league = lgs.length === 1 ? lgs[0] : null;
+        p.event_start_at = legs.map(function (l) { return l.event_start_at; }).filter(Boolean).sort()[0] || null;
+        if (n > 30 && bk.issues.length < 200) bk.issues.push(bad('LEGS_TRUNCATED', ref, 'A bet had ' + n + ' legs; the first 30 are kept with it.'));
+      }
+      p.legs = multi && legs.length ? legs.slice(0, 30).map(function (l) {
+        return ssCompact({ leg_number: l.leg_number, selection: l.selection, event_name: l.event_name, market_name: l.market_name, position_type: l.position_type,
+          line: l.line, odds_american: l.odds_american, result: l.result, sport: l.sport, league: l.league, event_start_at: l.event_start_at, home: l.home, away: l.away });
+      }) : null;
+      p.raw = jrRaw(b);
+      bk.positions.push(p);
+    });
+    return { books: order.map(function (k) { return books[k]; }), issues: issues, skipped: skipped, stats: stats, max_updated_at: maxUpdated,
+      ids: list.filter(function (x) { return x.id; }).map(function (x) { return 'juicereel:' + x.id; }) };
+  }
+
+  /* ── connect, sync, reconcile, disconnect (server; the database injected) ── */
+  /* CONNECT: the code from the callback, exchanged with the verifier the
+     connect session sealed; both bet scopes required; the reader's Juice Reel
+     id read from /oauth2/me; the pair sealed and stored. Anything that fails
+     after Juice Reel issued tokens revokes them: no orphan grant is left. */
+  async function juicereelConnect(ctx, cfg, o) {
+    var t = await jrToken(ctx, cfg, { grant_type: 'authorization_code', code: o.code, redirect_uri: cfg.redirectUri, code_verifier: o.verifier }, 'exchange');
+    var missing = t.scopes ? JUICEREEL.scopes.filter(function (s) { return t.scopes.indexOf(s) < 0; }) : [];
+    if (missing.length) { await jrRevokeAll(ctx, cfg, t); throw codedError('JR_SCOPE_MISSING', { missing: missing }); }
+    var me, grantId, stored;
+    try {
+      me = await jrMe(ctx, cfg, t.access_token);
+      grantId = await ctx.rpc('portfolio_svc_jr_grant_prepare', { p_user: o.userId, p_env: cfg.env, p_smoke_test: o.smokeTestId || null });
+      /* a different Juice Reel account replacing an earlier one: the earlier grant is revoked too */
+      var prev = null;
+      try { prev = await jrOpenTokens(ctx, grantId); } catch (_) { prev = null; }
+      if (prev && prev.row.provider_user_id && prev.row.provider_user_id !== me.id) await jrRevokeAll(ctx, cfg, prev.sec);
+      var sealed = await jrSealTokens(ctx, o.userId, grantId, t);
+      stored = await ctx.rpc('portfolio_svc_jr_grant_store', { p_grant: grantId, p_provider_user_id: me.id, p_display_name: me.display_name,
+        p_ciphertext_b64: sealed.ciphertext_b64, p_nonce_b64: sealed.nonce_b64, p_key_version: sealed.key_version, p_access_expires_at: t.expires_at,
+        p_scopes: t.scopes || JUICEREEL.scopes, p_smoke_test: o.smokeTestId || null }) || {};
+    } catch (e) {
+      await jrRevokeAll(ctx, cfg, t);
+      if (e && e.code && ERRORS[e.code]) throw e;
+      var said = String((e && (e.body || e.message)) || '');
+      throw codedError(/JR_ACCOUNT_IN_USE/.test(said) ? 'JR_ACCOUNT_IN_USE' : /not enabled/.test(said) ? 'DISABLED' : 'UNKNOWN');
+    }
+    logSafe(ctx, 'juicereel.connect', { grant: grantId, scopes: t.scopes, reconnected: !!stored.reconnected, same_account: !!stored.same_account });
+    return { grant_id: grantId, display_name: me.display_name, scopes: t.scopes || JUICEREEL.scopes, reconnected: !!stored.reconnected };
+  }
+  /* the bets of one normalized read, book by book: the book's account (made
+     or upgraded in place), bets moved here from another book first (one
+     whose sportsbook was edited in Juice Reel), then the wager ingest under a
+     run of that account — the same ingest and settlement history as every
+     other synced sportsbook */
+  async function jrIngest(ctx, grant, normal, kind) {
+    var tot = { positions_inserted: 0, positions_updated: 0, positions_unchanged: 0, positions_settled: 0, positions_adopted: 0, rejected: 0,
+      transactions_inserted: 0, transactions_unchanged: 0, healed: 0 }, issues = [], books = [], busy = [];
+    for (var i = 0; i < normal.books.length; i++) {
+      var b = normal.books[i];
+      if (!b.positions.length && !b.issues.length) continue;
+      var acct = await ctx.rpc('portfolio_svc_jr_book_account', { p_grant: grant.grant_id, p_lease: grant.lease, p_site_key: b.site_key, p_platform: b.platform,
+        p_label: b.label, p_detail: ssCompact({ provider: 'juicereel', site: b.site ? ssCompact(b.site) : null }) }) || {};
+      if (!acct.account_id) throw codedError('JR_DISCONNECTED');
+      for (var c0 = 0; c0 < b.positions.length; c0 += 500) {
+        await ctx.rpc('portfolio_svc_jr_rehome', { p_account: acct.account_id, p_ids: b.positions.slice(c0, c0 + 500).map(function (p) { return p.external_position_id; }) });
+      }
+      var runId = await ctx.rpc('portfolio_svc_run_begin', { p_account: acct.account_id, p_kind: kind });
+      if (!runId) { busy.push(b.platform); issues.push(bad('BOOK_BUSY', b.platform, 'Another sync of this book was running; its bets are read again next time.')); continue; }
+      var r;
+      try { r = await ingestWagerChunks(ctx, acct.account_id, runId, { positions: b.positions, issues: b.issues, fetched: b.positions.length + b.skipped }); }
+      catch (e) {
+        await ctx.rpc('portfolio_svc_run_finish', { p_run: runId, p_status: 'FAILED', p_error_code: 'UNKNOWN', p_error_message: ERRORS.UNKNOWN, p_cursor: null, p_reconcile: null });
+        throw e;
+      }
+      var st = r.totals.rejected || r.issues.length ? 'PARTIAL' : 'SUCCEEDED';
+      await ctx.rpc('portfolio_svc_run_finish', { p_run: runId, p_status: st, p_error_code: null, p_error_message: null, p_cursor: null,
+        p_reconcile: { ok: r.totals.rejected === 0 && b.skipped === 0, provider: 'juicereel', fetched: b.positions.length + b.skipped, skipped: b.skipped } });
+      Object.keys(tot).forEach(function (k) { tot[k] += +r.totals[k] || 0; });
+      r.issues.forEach(function (x) { if (issues.length < 200) issues.push(x); });
+      books.push({ account_id: acct.account_id, platform: b.platform, label: b.label, created: !!acct.created, status: st, inserted: r.totals.positions_inserted,
+        updated: r.totals.positions_updated, settled: r.totals.positions_settled });
+    }
+    return { totals: tot, issues: issues, books: books, busy: busy };
+  }
+  /* RECONCILIATION. The bets EdgeDesk holds as open against Juice Reel's own
+     open list. One open here but not there was settled, cancelled or deleted
+     in Juice Reel: its settled list is read back to the oldest such bet's
+     placement, and what it finds is applied. A bet still not found is
+     reported, never changed or removed on a guess. */
+  async function jrReconcile(ctx, get, grant, started, seenIds) {
+    var mine = (await ctx.rpc('portfolio_svc_jr_open_positions', { p_grant: grant.grant_id })) || [];
+    /* a 429 or 5xx here ends the reconciliation, not the sync: the changed bets already read are still stored */
+    var open = await jrPages(ctx, get, 'open', null, { started: started, partial: true });
+    if (!open.done) return { bets: open.bets, report: { ok: false, note: 'not finished in time; tried again next run' }, done: false };
+    var listed = {}; open.bets.forEach(function (b) { if (b && b.id != null) listed['juicereel:' + b.id] = 1; });
+    var seen = {}; (seenIds || []).forEach(function (k) { seen[k] = 1; });
+    var missing = mine.filter(function (m) { return !listed[m.id] && !seen[m.id]; });
+    var extra = [], found = {};
+    if (missing.length) {
+      /* ISO 8601, as the docs ask (the database's own format is not) */
+      var since = missing.map(function (m) { return iso(m.placed_at); }).filter(Boolean).sort()[0];
+      var s = await jrPages(ctx, get, 'settled', since ? { dateClosedAfter: since } : null, { started: started, partial: true });
+      var want = {}; missing.forEach(function (m) { want[m.id] = 1; });
+      s.bets.forEach(function (b) { if (b && want['juicereel:' + b.id]) { extra.push(b); found['juicereel:' + b.id] = 1; } });
+      /* read only part-way: what it found is applied, but nothing is called missing on a partial read */
+      if (!s.done) return { bets: open.bets.concat(extra), done: false, report: { ok: false, note: 'the settled history was not read to the end in time; tried again next run' } };
+    }
+    var still = missing.filter(function (m) { return !found[m.id]; });
+    return { bets: open.bets.concat(extra), done: true, still: still,
+      report: { ok: still.length === 0, open_held: mine.length, open_listed: open.bets.length, recovered: extra.length, not_found: still.length } };
+  }
+  /* the newest updatedAt among bets (and an earlier high-water mark) */
+  function jrNewest(bets, prev) {
+    var top = prev || null;
+    (bets || []).forEach(function (b) { var u = b && iso(b.updatedAt); if (u && (!top || u > top)) top = u; });
+    return top;
+  }
+  /* ONE SYNC OF ONE GRANT, under the grant's sync lease (one at a time).
+     INITIAL: every open bet, then every settled bet — resumable across runs
+     from Juice Reel's own cursors; the checkpoint becomes the moment that
+     first read began (less two minutes), so a bet changed while it ran is
+     read again. INCREMENTAL: a PASS over /bets/changed, newest first, down to
+     the checkpoint (less two minutes; re-reading is harmless — the ingest is
+     idempotent). A pass too long for one run is resumed from its cursor by
+     the next; the checkpoint moves to the newest change the pass read — the
+     changed feed's own bets, nothing else — only once the pass is read to its
+     end. Once a day (or on request) it reconciles.
+     Nothing moves past a bet that was not stored: a run cut short (429, 5xx,
+     a refused cursor) stores what it read and keeps its place; a book whose
+     run was still open (BOOK_BUSY) keeps the whole sync where it was. */
+  async function juicereelSync(ctx, cfg, grantId, kind) {
+    var started = ctx.now();
+    if (!cfg || !cfg.clientId || !cfg.clientSecret) return { status: 'FAILED', error: readerError('NOT_CONFIGURED') };
+    var b = await ctx.rpc('portfolio_svc_jr_sync_begin', { p_grant: grantId, p_kind: kind || 'INCREMENTAL' });
+    if (!b || !b.lease) return { skipped: 'A Juice Reel sync is already running for this connection, or it is not connected.' };
+    var grant = { grant_id: grantId, user_id: b.user_id, generation: b.generation, lease: b.lease, provider_user_id: b.provider_user_id || null };
+    var cur = parseCursor(b.cursor), next = Object.assign({}, cur, { v: 1 }), fetched = [], complete = true, rec = null, still = [], cut = null;
+    var get = jrReader(ctx, cfg, grant), nowIso = new Date(started).toISOString();
+    try {
+      if (!cur.initial_done) {
+        if (!cur.initial_started_at) next.initial_started_at = nowIso;
+        var lists = [['open', 'open_done', 'open_cursor'], ['settled', 'settled_done', 'settled_cursor']];
+        for (var i = 0; i < lists.length; i++) {
+          var L = lists[i];
+          if (next[L[1]]) continue;
+          if (i > 0 && overBudget(ctx, started)) { complete = false; break; }
+          var pg = await jrPages(ctx, get, L[0], null, { cursor: next[L[2]] || null, started: started, partial: true });
+          if (!pg.done && pg.error && pg.error.code === 'JR_CURSOR_INVALID' && next[L[2]] && !pg.bets.length) {
+            /* a stored cursor Juice Reel no longer accepts: that list again from its start (idempotent) */
+            pg = await jrPages(ctx, get, L[0], null, { started: started, partial: true });
+          }
+          fetched = fetched.concat(pg.bets);
+          if (pg.done) { next[L[1]] = true; delete next[L[2]]; continue; }
+          if (pg.cursor) next[L[2]] = pg.cursor; else delete next[L[2]];
+          complete = false; cut = pg.error || null;
+          break;
+        }
+        if (next.open_done && next.settled_done) {
+          next.initial_done = true;
+          next.checkpoint = new Date(Date.parse(next.initial_started_at) - JUICEREEL.overlapMs).toISOString();
+          delete next.open_done; delete next.settled_done; delete next.initial_started_at;
+        }
+      } else {
+        var pass = cur.pass && typeof cur.pass === 'object' ? cur.pass : null;
+        var from = pass && pass.from ? pass.from : new Date(Date.parse(cur.checkpoint) - JUICEREEL.overlapMs).toISOString();
+        var ch = await jrPages(ctx, get, 'changed', { updatedAtAfter: from }, { cursor: pass && pass.cursor ? pass.cursor : null, started: started, stopBefore: from, partial: true });
+        if (!ch.done && ch.error && ch.error.code === 'JR_CURSOR_INVALID' && pass && pass.cursor && !ch.bets.length) {
+          /* the pass's cursor is no longer accepted: the pass again from the newest change */
+          ch = await jrPages(ctx, get, 'changed', { updatedAtAfter: from }, { started: started, stopBefore: from, partial: true });
+        }
+        fetched = ch.bets;
+        var hw = jrNewest(ch.bets, pass ? pass.hw : null);
+        if (ch.done) {
+          delete next.pass;
+          if (hw && hw > cur.checkpoint) next.checkpoint = hw;
+        } else {
+          next.pass = { from: from, cursor: ch.cursor || null, hw: hw };
+          complete = false; cut = ch.error || null;
+        }
+        var due = kind === 'RECONCILE' || !cur.reconciled_at || ctx.now() - Date.parse(cur.reconciled_at) > JUICEREEL.reconcileEveryMs;
+        if (ch.done && due && !overBudget(ctx, started)) {
+          var seenIds = fetched.map(function (x) { return x && x.id != null ? 'juicereel:' + x.id : null; }).filter(Boolean);
+          var rr = await jrReconcile(ctx, get, grant, started, seenIds);
+          fetched = fetched.concat(rr.bets);
+          if (rr.done) { next.reconciled_at = nowIso; rec = rr.report; still = rr.still || []; }
+        }
+      }
+      var normal = juicereelNormalize(fetched, { providerUserId: grant.provider_user_id });
+      var ing = await jrIngest(ctx, grant, normal, kind === 'MANUAL' ? 'MANUAL' : kind === 'RECONCILE' ? 'RECONCILE' : next.initial_done && cur.initial_done ? 'INCREMENTAL' : 'INITIAL');
+      if (ing.busy.length) {
+        /* their bets were not stored, so nothing moves past them: the next run reads the same again */
+        next = Object.assign({}, cur, { v: 1 }); complete = false; still = []; rec = null;
+      }
+      var issues = normal.issues.concat(ing.issues).concat(still.slice(0, 20).map(function (m) {
+        return bad('NOT_AT_JUICE_REEL', m.id, 'A bet EdgeDesk holds as open is no longer listed by Juice Reel as open or settled (deleted there?). It was left as it is.');
+      })).slice(0, 200);
+      if (cut) {
+        /* cut short: what was read is stored and the place kept, and the grant backs off like any failure */
+        var cc = ERRORS[cut.code] ? cut.code : 'UNKNOWN';
+        await ctx.rpc('portfolio_svc_jr_sync_finish', { p_grant: grantId, p_lease: grant.lease, p_ok: false, p_cursor: JSON.stringify(next), p_code: cc, p_message: ERRORS[cc],
+          p_open: null, p_more: false, p_issues: null });
+        logSafe(ctx, 'juicereel.sync_cut', { grant: grantId, kind: kind, code: cc, fetched: fetched.length, totals: ing.totals, ms: ctx.now() - started });
+        return { status: 'PARTIAL', complete: false, fetched: fetched.length, totals: ing.totals, books: ing.books, bets_skipped: normal.skipped,
+          stats: normal.stats, reconcile: null, issues: issues.slice(0, 20), error: readerError(cc) };
+      }
+      var openNow = await ctx.rpc('portfolio_svc_jr_open_positions', { p_grant: grantId }) || [];
+      var partial = ing.totals.rejected > 0 || normal.skipped > 0 || issues.length > 0;
+      /* part-way (an import or a pass): the next run in a minute — but not while a book's run is still open */
+      await ctx.rpc('portfolio_svc_jr_sync_finish', { p_grant: grantId, p_lease: grant.lease, p_ok: true, p_cursor: JSON.stringify(next), p_code: null, p_message: null,
+        p_open: openNow.length, p_more: !complete && !ing.busy.length, p_issues: issues.slice(0, 50) });
+      logSafe(ctx, 'juicereel.sync', { grant: grantId, kind: kind, fetched: fetched.length, totals: ing.totals, bets_skipped: normal.skipped, complete: complete, ms: ctx.now() - started });
+      return { status: partial ? 'PARTIAL' : 'SUCCEEDED', complete: complete, fetched: fetched.length, totals: ing.totals, books: ing.books, bets_skipped: normal.skipped,
+        stats: normal.stats, reconcile: rec, issues: issues.slice(0, 20) };
+    } catch (e) {
+      var code = e && e.code && ERRORS[e.code] ? e.code : e && e.code === 'JR_TOKEN_REJECTED' ? 'GRANT_EXPIRED' : 'UNKNOWN';
+      try {
+        await ctx.rpc('portfolio_svc_jr_sync_finish', { p_grant: grantId, p_lease: grant.lease, p_ok: false, p_cursor: null, p_code: code, p_message: ERRORS[code],
+          p_open: null, p_more: false, p_issues: null });
+      } catch (_) { /* the lease lapses after five minutes */ }
+      logSafe(ctx, 'juicereel.sync_failed', { grant: grantId, kind: kind, code: code, error: String(e && e.message || e).slice(0, 200) });
+      return { status: 'FAILED', error: readerError(code) };
+    }
+  }
+  /* DISCONNECT: EdgeDesk's copy of the pair is deleted first (nothing can use
+     it from then on), then both tokens are revoked at Juice Reel — exactly
+     the pair the database cleared, read under its row lock, so a rotation a
+     moment earlier cannot leave a live pair behind. History is kept unless
+     the reader asks otherwise. */
+  async function juicereelDisconnect(ctx, cfg, o) {
+    var out = (await ctx.rpc('portfolio_svc_jr_disconnect', { p_user: o.userId, p_env: cfg.env, p_delete_history: o.deleteHistory === true })) || {};
+    var tokens = null, revoked = null;
+    if (out.grant_id && out.sealed) {
+      try {
+        var key = ctx.keyring.keys[String(out.sealed.key_version)];
+        if (key) tokens = await openCredential({ ciphertext_b64: out.sealed.ciphertext_b64, nonce_b64: out.sealed.nonce_b64, credential_kind: 'OAUTH_TOKENS' },
+          { keyB64: key, userId: o.userId, accountId: out.grant_id });
+      } catch (_) { tokens = null; }
+    }
+    if (tokens) revoked = cfg.clientId && cfg.clientSecret ? await jrRevokeAll(ctx, cfg, tokens) : false;
+    logSafe(ctx, 'juicereel.disconnect', { grant: out.grant_id || null, revoked: revoked, deleted_history: o.deleteHistory === true });
+    return { provider_revoked: revoked, grant_disconnected: !!out.grant_disconnected, accounts: out.accounts || 0, positions_deleted: out.positions_deleted || 0 };
+  }
+  /* ── Juice Reel as a sportsbook sync provider (section 11) ──
+     LINK: a state and a PKCE verifier made here; the verifier sealed into a
+     one-time session for THIS reader (15 minutes); Juice Reel's consent URL */
+  async function juicereelLink(ctx, cfg, o) {
+    var p = await jrPkce();
+    var sealed = await jrSealSession(ctx, o.userId, p.state_hash, { verifier: p.verifier, smoke_test: o.smokeTestId || null });
+    await ctx.rpc('portfolio_svc_session_begin', { p_user: o.userId, p_platform: JUICEREEL.key, p_method: JUICEREEL.method, p_state_hash: p.state_hash, p_challenge: sealed });
+    logSafe(ctx, 'juicereel.link', { env: cfg.env, smoke: !!o.smokeTestId });
+    return { url: jrAuthorizeUrl(cfg, p) };
+  }
+  /* the reader's grant, or a coded refusal */
+  async function jrGrantOf(ctx, cfg, userId) {
+    var g = await ctx.rpc('portfolio_svc_jr_grant_for_user', { p_user: userId, p_env: cfg.env });
+    if (!g || !g.grant_id || g.status === 'DISCONNECTED') throw codedError('JR_DISCONNECTED');
+    if (g.status === 'ACTION_REQUIRED') throw codedError(g.last_error_code && ERRORS[g.last_error_code] ? g.last_error_code : 'GRANT_EXPIRED');
+    return g;
+  }
+  /* DISCOVER: Juice Reel names a reader's books only on their bets, so the
+     books are found by reading the bets — one sync of the whole grant */
+  async function juicereelDiscover(ctx, cfg, o) {
+    var g = await jrGrantOf(ctx, cfg, o.userId);
+    var r = await juicereelSync(ctx, cfg, g.grant_id, 'MANUAL');
+    if (r.skipped) return { accounts: [], issues: [], listed: false, busy: true };
+    return { accounts: r.books || [], issues: r.issues || [], listed: r.status !== 'FAILED' };
+  }
+  /* SYNC: one grant covers every book, so a book's sync is its grant's sync
+     (each book gets its own run row inside it; syncAccount opens none) */
+  async function juicereelAccountSync(ctx, account, runId, started, kind) {
+    var cfg = ctx.juicereel;
+    if (!cfg || !cfg.clientId || !cfg.clientSecret) throw codedError('NOT_CONFIGURED');
+    var g = await jrGrantOf(ctx, cfg, account.user_id);
+    return await juicereelSync(ctx, cfg, g.grant_id, kind === 'INITIAL' ? 'INITIAL' : kind === 'MANUAL' ? 'MANUAL' : 'INCREMENTAL');
+  }
+  /* REFRESH: Juice Reel keeps the books current itself and has no "read the
+     book now" call; a refresh is a fresh read of Juice Reel */
+  async function juicereelRefresh(ctx, cfg, account, by) {
+    var g = await jrGrantOf(ctx, cfg, account.user_id);
+    var r = await juicereelSync(ctx, cfg, g.grant_id, by === 'SCHEDULER' ? 'INCREMENTAL' : 'MANUAL');
+    return { status: r.skipped ? 'BUSY' : r.status, totals: r.totals || null, error: r.error || null };
+  }
+  /* what a reader may see of their grant: state and times — never a token, an id or a lease */
+  function jrAccountState(g, o) {
+    if (!g) return null;
+    var out = {};
+    ['status', 'display_name', 'scopes', 'connected_at', 'last_sync_at', 'last_success_at', 'next_sync_at', 'last_error_code', 'last_error',
+      'consecutive_failures', 'syncing', 'imported', 'issues', 'revoked_at', 'books', 'open_bets'].forEach(function (k) { if (g[k] !== undefined) out[k] = g[k]; });
+    if (o && o.operator && g.smoke_test) out.smoke_test = g.smoke_test;
+    return out;
+  }
+  /* WEBHOOK: Juice Reel sends no bet webhooks (its only bucket is subscription
+     events, which EdgeDesk does not use); the scheduler reads /bets/changed */
+  function juicereelWebhookRefs() { return { none: true }; }
+  /* SWEEP: one sync per due grant, every book it covers at once */
+  async function juicereelSweep(ctx, cfg, limit, left, started) {
+    var done = [];
+    if (!cfg || !cfg.clientId || !cfg.clientSecret || !cfg.env) return { due: 0, done: done };
+    var grants = (await ctx.rpc('portfolio_svc_jr_due', { p_env: cfg.env, p_limit: limit || 10 })) || [];
+    for (var k = 0; k < grants.length; k++) {
+      if (overBudget(ctx, started)) break;
+      var r = await juicereelSync(left(), cfg, grants[k].grant_id, grants[k].has_success ? 'INCREMENTAL' : 'INITIAL');
+      done.push({ platform: JUICEREEL.key, status: r.status || 'SKIPPED' });
+    }
+    return { due: grants.length, done: done };
+  }
+
   /* one sync of one account: a run row, the platform's work, an honest finish */
   async function syncAccount(ctx, account, kind) {
     var started = ctx.now();
+    var whole = account.provider ? activeSportsbookProvider(ctx, account.provider) : null;
+    if (whole && whole.grant_level) return await whole.sync(ctx, account, null, started, kind || 'INCREMENTAL');
     var runId = await ctx.rpc('portfolio_svc_run_begin', { p_account: account.account_id, p_kind: kind || 'INCREMENTAL' });
     if (!runId) return { skipped: 'A sync for this account is already running.' };
     try {
@@ -1376,7 +2203,10 @@ function config() {
       done.push({ platform: a.platform, status: res.status || 'SKIPPED' });
     }
     var n = due.length, prov = activeSportsbookProvider(ctx, ctx.sportsbook), cfg = prov ? ctx[prov.key] : null;
-    if (prov && cfg && cfg.privateKey && cfg.env) {
+    if (prov && cfg && prov.sweep) {
+      var own = await prov.sweep(ctx, cfg, limit, left, started);
+      n += own.due; done = done.concat(own.done);
+    } else if (prov && cfg && cfg.privateKey && cfg.env) {
       var ag = (await ctx.rpc('portfolio_svc_ag_due', { p_provider: prov.key, p_env: cfg.env, p_limit: limit || 10 })) || [];
       n += ag.length;
       for (var j = 0; j < ag.length; j++) {
@@ -1436,6 +2266,15 @@ function config() {
     link: sharpsportsLink, discover: sharpsportsDiscover, sync: syncSharpSportsRun, refresh: sharpsportsRefresh,
     accountState: ssAccountState, webhookRefs: sharpsportsWebhookRefs, normalize: sharpsportsNormalize
   });
+  defineSportsbookProvider({
+    key: JUICEREEL.key, label: JUICEREEL.label, short: 'Juice Reel', link_origin: 'https://www.juicereel.com', what_the_reader_gives: JUICEREEL.what_the_reader_gives,
+    status: 'ACTIVE', status_note: 'Built 2026-10-14 to replace SharpSports: OAuth 2.0 (authorization code + PKCE), one grant per reader covering every book Juice Reel tracks. '
+      + 'Links no reader until Juice Reel approves EdgeDesk\'s application and the registry row is switched on (docs/juicereel.md).',
+    /* one OAuth grant serves all of a reader's books: it syncs, is swept and is disconnected as a whole */
+    grant_level: true,
+    link: juicereelLink, discover: juicereelDiscover, sync: juicereelAccountSync, refresh: juicereelRefresh,
+    accountState: jrAccountState, webhookRefs: juicereelWebhookRefs, normalize: juicereelNormalize, sweep: juicereelSweep
+  });
 
   return {
     VERSION: VERSION, dec: dec,
@@ -1453,7 +2292,11 @@ function config() {
     connectKalshi: connectKalshi, connectPolymarket: connectPolymarket, syncAccount: syncAccount, sweep: sweep, parseCursor: parseCursor,
     SHARPSPORTS: SHARPSPORTS, AGGREGATORS: AGGREGATORS, aggregatorInfo: aggregatorInfo, ssBookPlatform: ssBookPlatform, ssAccountState: ssAccountState,
     sharpsportsNormalize: sharpsportsNormalize, sharpsportsLink: sharpsportsLink, sharpsportsDiscover: sharpsportsDiscover, sharpsportsRefresh: sharpsportsRefresh,
-    sharpsportsWebhookRefs: sharpsportsWebhookRefs, webhookSignature: webhookSignature, ssCall: ssCall, hexOf: hexOf
+    sharpsportsWebhookRefs: sharpsportsWebhookRefs, webhookSignature: webhookSignature, ssCall: ssCall, hexOf: hexOf,
+    JUICEREEL: JUICEREEL, b64url: b64url, jrPkce: jrPkce, jrStateHash: jrStateHash, JR_STATE_RE: JR_STATE_RE, jrAuthorizeUrl: jrAuthorizeUrl,
+    jrSealSession: jrSealSession, jrOpenSession: jrOpenSession, jrTokenSet: jrTokenSet, jrToken: jrToken, jrRevokeAll: jrRevokeAll,
+    jrAccessToken: jrAccessToken, jrPages: jrPages, jrLeg: jrLeg, jrSite: jrSite, juicereelNormalize: juicereelNormalize,
+    juicereelConnect: juicereelConnect, juicereelSync: juicereelSync, juicereelDisconnect: juicereelDisconnect, juicereelLink: juicereelLink, juicereelDiscover: juicereelDiscover, juicereelRefresh: juicereelRefresh, jrAccountState: jrAccountState, juicereelSweep: juicereelSweep
   };
 }));
 // ── END CONNECT CORE ────────────────────────────────────────────────────

@@ -167,6 +167,17 @@ Run after `portfolio.sql`, `portfolio_journal.sql` and `portfolio_connect.sql` (
 
 The report has 8 rows. Tested end to end with both shipped functions by `tools/portfolio/sharpsports.test.js`; see `docs/sharpsports-betsync.md`.
 
+### `portfolio_juicereel.sql` — sportsbook history through Juice Reel (OAuth 2.0; off until approved)
+
+Run after `portfolio_aggregator.sql` (and `portfolio_decision.sql` if installed). It is applied by the **Deploy Portfolio schema** workflow, or pasted as `parts/portfolio_juicereel.part*-of-*.sql`.
+
+- The `juicereel` registry row, **off**. Reader linking takes `SPORTSBOOK_SYNC_PROVIDER=juicereel` on `portfolio_connect`, Juice Reel's approval, a PASSED PRODUCTION smoke test (`tools/portfolio/juicereel_smoke.js`) and a cleared terms review.
+- `portfolio_private.oauth_grants`: one per reader and environment — the access / refresh pair as AES-256-GCM ciphertext only, the token generation, the refresh lease (a single-use refresh token is sent once, the new pair stored in one statement), the sync lease, the checkpoint and the schedule. No client grant, RLS on with no policy, cascades from `auth.users`.
+- `portfolio_svc_jr_*`: the service role's only, each asserting its caller. Juice Reel's books are ordinary AGGREGATOR accounts and its bets go through `portfolio_svc_ingest_wagers` (`portfolio_aggregator.sql`), so there is no second ledger.
+- `portfolio_admin_juicereel_health()` for operators.
+
+The report has 8 rows. Tested end to end with the shipped function by `tools/portfolio/juicereel.test.js`; see `docs/juicereel.md`.
+
 ### `portfolio_model_context.sql` — EdgeDesk's model on a reader's bet, as it stood before the bet
 
 Run after `portfolio.sql` and the Record P&L schema (`model_pnl_analytics.sql`: `model_pnl_public`).

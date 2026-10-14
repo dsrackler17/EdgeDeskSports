@@ -18,6 +18,8 @@ The research behind §2 is in [`sportsbook-sync-research-2026-10-14.md`](sportsb
 
 Nothing was signed up for, purchased or switched on.
 
+> **Update, later on 2026-10-14: the `juicereel` adapter is built** ([`juicereel.md`](juicereel.md)), at the account owner's request after they registered EdgeDesk's Juice Reel OAuth application. It sits in this seam (registered ACTIVE, grant-level) and is **not switched on**: Juice Reel has not yet approved the application. Naming it in `SPORTSBOOK_SYNC_PROVIDER` shows readers *Awaiting provider approval*; linking opens only after Juice Reel's approval, a PASSED PRODUCTION smoke test and a cleared terms review (the existing registry guard). Question 4 below is answered by Juice Reel's documentation: there are no bet webhooks (its only webhook bucket is subscription events, which EdgeDesk does not use), so bets are read from `/oauth2/bets/changed` on the existing schedule. Questions 1–3, 5 and 6 still need Juice Reel's written answers before switching it on.
+
 ## 1. Audit: what SharpSports touched, and what happened to each part
 
 The Portfolio's pipeline has one shape for every source:
@@ -170,13 +172,13 @@ The code is `lib/edgedesk_slip_reader.js`. It is reached from a sportsbook's car
 5. What does their data-licensing clause mean for bets synced on EdgeDesk's behalf?
 6. Can EdgeDesk display or store the data after a user disconnects?
 
-If the answers fit the budget and the terms are acceptable, the work is:
+If the answers fit the budget and the terms are acceptable, the work was:
 
-- a `juicereel` adapter: OAuth with PKCE, the token sealed in the existing credential vault, polling `bets/open` and `bets/settled`;
-- its fake for the test suite;
-- a production smoke test.
+- a `juicereel` adapter: OAuth with PKCE, the token sealed in the existing credential vault, `bets/open` and `bets/settled` for the import, `bets/changed` from then on — **built** ([`juicereel.md`](juicereel.md));
+- its fake for the test suite — **built** (`tools/portfolio/_fake_juicereel.js`);
+- a production smoke test — **built** (`tools/portfolio/juicereel_smoke.js`), to be run once Juice Reel approves the application.
 
-Then switch it on with `SPORTSBOOK_SYNC_PROVIDER`.
+Then switch it on with `SPORTSBOOK_SYNC_PROVIDER=juicereel` and the registry row ([`juicereel.md`](juicereel.md) § 9).
 
 **Later, if useful:**
 

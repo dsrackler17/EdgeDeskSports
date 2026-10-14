@@ -1451,6 +1451,10 @@ begin
   perform set_config('request.jwt.claim.sub', '', true);
   perform set_config('request.jwt.claims', '', true);
   delete from portfolio_private.platform_credentials where user_id = me; get diagnostics k = row_count; out := out || jsonb_build_object('credentials', k);
+  /* an OAuth connection's sealed tokens (supabase/portfolio_juicereel.sql), when that file is installed */
+  if to_regclass('portfolio_private.oauth_grants') is not null then
+    execute 'delete from portfolio_private.oauth_grants where user_id = $1' using me; get diagnostics k = row_count; out := out || jsonb_build_object('connections', k);
+  end if;
   delete from public.portfolio_positions where user_id = me; get diagnostics k = row_count; out := out || jsonb_build_object('positions', k);
   delete from public.portfolio_transactions where user_id = me; get diagnostics k = row_count; out := out || jsonb_build_object('transactions', k);
   delete from public.portfolio_import_rows where user_id = me;

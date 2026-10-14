@@ -5,7 +5,8 @@
 - The Kalshi and Polymarket connectors are built and tested against recorded responses.
 - Both are **switched off**. A database guard keeps them off until a live smoke test has passed (below).
 - Sportsbooks have no direct automatic method.
-  - **No sportsbook sync provider is active.** SharpSports BetSync (an aggregator) was built and is **retired** (2026-10-14, cost); the provider seam it now sits behind, and the alternatives researched, are in [`sportsbook-sync-providers.md`](sportsbook-sync-providers.md). Its own story is in [`sharpsports-betsync.md`](sharpsports-betsync.md).
+  - **No sportsbook sync provider is active by default.** SharpSports BetSync (an aggregator) was built and is **retired** (2026-10-14, cost); the provider seam it now sits behind, and the alternatives researched, are in [`sportsbook-sync-providers.md`](sportsbook-sync-providers.md). Its own story is in [`sharpsports-betsync.md`](sharpsports-betsync.md).
+  - **Juice Reel** (a bet tracker with an OAuth 2.0 API that syncs the reader's books) is built into that seam and tested, **awaiting Juice Reel's approval of EdgeDesk's application**. With `SPORTSBOOK_SYNC_PROVIDER=juicereel`, readers see "Awaiting provider approval" until it is approved and switched on (below). Everything about it — the redirect URI to register, OAuth, tokens, sync, the switch-on procedure — is in [`juicereel.md`](juicereel.md).
   - Sportsbooks are imported from a file the reader downloads, read from a bet slip screenshot on the reader's device, or recorded by hand.
 
 This page is the source of truth for **how** each platform's history reaches EdgeDesk, what was verified and how, and what must happen before anything is switched on. `docs/platform-support.md` is the short matrix.
@@ -57,6 +58,7 @@ A quick-import account is **upgraded in place** when the reader later connects t
 | bet365 | Sportsbook | none | — | — | `bet365` (unverified) | — |
 | BetRivers, Fanatics, theScore Bet (ESPN BET) | Sportsbook | none | — | — | `betrivers`, `fanatics`, `espnbet` (unverified) | — |
 | Any other | Either | none | — | — | the generic importers | — |
+| **Sportsbooks via Juice Reel** | Sportsbook | `AUTHORIZED_API` — the reader's Juice Reel account by OAuth 2.0 + PKCE, tier 1 | ✅ `juicereel_v1` | ❌ awaiting Juice Reel's approval, then a PRODUCTION smoke test + terms review | — | Juice Reel's full API reference (supplied by the account owner) and its official example server, 2026-10-14; every request DOCUMENTED (`juicereel.md` § 10) |
 | **Sportsbooks via SharpSports BetSync** | Sportsbook | `AUTHORIZED_API` through an aggregator, tier 1 | ✅ `sharpsports_v1` | ❌ retired 2026-10-14 (cost); active nowhere unless `SPORTSBOOK_SYNC_PROVIDER` names it | — | SharpSports docs as quoted in search excerpts, 2026-10-14; three read paths INFERRED (see `sharpsports-betsync.md` § 4) |
 
 **What was verified, and what was not.**
@@ -109,9 +111,20 @@ A quick-import account is **upgraded in place** when the reader later connects t
 - Polymarket's terms for third-party display of a user's public activity.
 - Regional availability: a US reader's exchange account may differ from the international wallet product.
 
-### Sportsbooks through a sync provider (tier 1, aggregator) — none active; SharpSports BetSync retired
+### Sportsbooks through a sync provider (tier 1, aggregator) — Juice Reel built; SharpSports BetSync retired
 
 See [`sportsbook-sync-providers.md`](sportsbook-sync-providers.md) for the provider seam (`SPORTSBOOK_PROVIDER_CONTRACT`, `SPORTSBOOK_SYNC_PROVIDER`) and [`sharpsports-betsync.md`](sharpsports-betsync.md) for the retired adapter.
+
+#### Juice Reel (tier 1, OAuth; awaiting approval)
+
+See [`juicereel.md`](juicereel.md). It runs only where `SPORTSBOOK_SYNC_PROVIDER=juicereel`.
+
+- One Juice Reel authorization covers every book Juice Reel tracks for the reader. Each bet names its book (`Site`), and each book is a `platform_accounts` row of `connection_type = 'AGGREGATOR'` under the book's own key. A quick-import account for that book is upgraded in place.
+- Bets arrive through the same `portfolio_svc_ingest_wagers` as SharpSports': upserted by Juice Reel's bet id, adopting the reader's own matching record, never touching notes, journal or attribution.
+- The tokens are sealed in `portfolio_private.oauth_grants`; refresh-token rotation is atomic under a lease (Juice Reel's refresh tokens are single-use).
+- No webhook: Juice Reel's only webhook bucket is subscription events, which EdgeDesk does not use. Bets are read from `/oauth2/bets/changed` on the existing 10-minute schedule.
+
+#### SharpSports BetSync (retired)
 
 - A linked book is a `platform_accounts` row of `connection_type = 'AGGREGATOR'` under the book's own key; a quick-import account for that book is upgraded in place.
 - Bets arrive through `portfolio_svc_ingest_wagers` (`supabase/portfolio_aggregator.sql`): upserted by SharpSports' slip id, adopting the reader's own matching record, never touching notes, journal or attribution.
@@ -267,6 +280,6 @@ These come from the funnel events `portfolio_onboarding_started`, `platform_sele
 | Kalshi automatic connection | Live smoke test and terms review pending; docs re-read pending |
 | Polymarket automatic connection | Same |
 | Polymarket signature challenge in the page | Not needed to read public activity; schema ready |
-| Every sportsbook "connect" for readers | No affordable provider is verified; SharpSports BetSync is retired. Sportsbooks are CSV, screenshot or manual (`sportsbook-sync-providers.md`) |
+| Every sportsbook "connect" for readers | Juice Reel is built; it stays off until `SPORTSBOOK_SYNC_PROVIDER=juicereel`, Juice Reel approves EdgeDesk's application and commercial use, a PRODUCTION smoke test passes and the terms review clears (`juicereel.md` § 9). SharpSports BetSync is retired (cost). Meanwhile sportsbooks are CSV, screenshot or manual (`sportsbook-sync-providers.md`) |
 | Import profiles "verified" | No real export from any book has been imported end to end yet |
 | Landing-page connection claims | The landing page keeps "importing and connecting are in development" until the import is deployed and a connector is switched on (pinned by `tools/presentation/landing_positioning.test.js`) |
