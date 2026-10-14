@@ -21,8 +21,8 @@
   "game_time": "2026-10-17T19:30:00.000Z",
   "game_when_label": "2026-10-17 19:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-14T17:03:31.489Z",
-  "generated_at": "2026-10-14T17:03:31.489Z",
+  "updated_at": "2026-10-14T21:36:16.857Z",
+  "generated_at": "2026-10-14T21:36:16.857Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "AGREEMENT",
   "model_status_note": null,
@@ -129,9 +129,9 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -139,6 +139,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Michigan and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Big Ten Conference requires an availability report for this game: four filings a week for conference games — three days, two days and the night before at 8pm ET, then two hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Penn State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Big Ten Conference requires an availability report for this game: four filings a week for conference games — three days, two days and the night before at 8pm ET, then two hours before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Big Ten Conference requires an availability report for this game: four filings a week for conference games — three days, two days and the night before at 8pm ET, then two hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Big Ten Conference requires an availability report for this game: four filings a week for conference games — three days, two days and the night before at 8pm ET, then two hours before kickoff"
           },
           {
             "field": "off_field",
@@ -243,7 +267,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-10T23:30:00.000Z",
-        "retrieved_at": "2026-10-14T14:40:52.944Z"
+        "retrieved_at": "2026-10-14T18:41:00.555Z"
       },
       "home": {
         "team": "Michigan",
@@ -321,9 +345,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-03T16:00:00.000Z",
-        "retrieved_at": "2026-10-14T14:40:52.944Z"
+        "retrieved_at": "2026-10-14T18:41:00.555Z"
       },
-      "generated_at": "2026-10-14T14:41:36.840Z",
+      "generated_at": "2026-10-14T18:41:47.673Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1433,7 +1457,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 99h old",
+          "text": "odds is 104h old",
           "widening": null
         },
         {
@@ -1556,7 +1580,7 @@
       "total_market_held": null,
       "book": "captured consensus (stale) · 1 book · best at DraftKings",
       "captured": "2026-10-10T14:00:01.583+00:00",
-      "capture_age": "99 hours old",
+      "capture_age": "104 hours old",
       "stale": false,
       "classification": "AGREEMENT",
       "classification_note": null,
@@ -1606,11 +1630,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 86,
+        "pct": 81,
         "tier": "STRONG",
-        "text": "86 · STRONG",
-        "sub": "main deduction: the projected spread moves ±2.19 pts (1 SD) across 64 perturbation scenarios (largest source",
-        "score": 86,
+        "text": "81 · STRONG",
+        "sub": "main deduction: Penn State’s availability sources refused",
+        "score": 81,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1624,7 +1648,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.8,
+            "score": 9.3,
             "max": 20
           },
           {
@@ -1636,7 +1660,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.3,
+            "score": 11.6,
             "max": 15
           },
           {
@@ -1652,23 +1676,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "the projected spread moves ±2.19 pts (1 SD) across 64 perturbation scenarios (largest source: away team rating, ±1.43 pts)",
+        "main_deduction": "Penn State’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Penn State’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
         "next_actions": [
           {
-            "action": "Re-read availability inside the filing window (Penn State)",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "action": "Restore an injury/availability source for Penn State",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Re-read availability inside the filing window (Michigan)",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "action": "Restore an injury/availability source for Michigan",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
             "action": "Refresh the market quote",
-            "potential_gain": 2,
-            "text": "up to +2"
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1921,7 +1945,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "gy2d0p12pz0uj",
+    "packet_hash": "1fdtw8d1yk9z7z",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can Michigan contain Penn State’s explosive runs?",
@@ -1992,21 +2016,21 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-14T14:41:45.875Z",
+        "observed_at": "2026-10-14T18:41:54.995Z",
         "verification": "VERIFIED_DATA"
       },
       {
         "label": "EdgeDesk position-group ratings",
         "url": null,
         "path": "football/rankings/current.json",
-        "observed_at": "2026-10-14T14:41:16.459Z",
+        "observed_at": "2026-10-14T18:41:22.803Z",
         "verification": "RATING"
       },
       {
         "label": "EdgeDesk play-by-play quarterback logs (2026)",
         "url": null,
         "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-11T02:30:00.000Z",
+        "observed_at": "2026-10-14T00:00:00.000Z",
         "verification": "VERIFIED_DATA"
       }
     ],
@@ -2015,6 +2039,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-14T17:03:31.489Z"
+    "at": "2026-10-14T21:36:16.857Z"
   }
 }
