@@ -74,9 +74,9 @@ const PATHS = {
 };
 
 const SCHEMA = {
-  games: 'edgedesk_nba_games_v1',
+  games: 'edgedesk_nba_games_v2', /* v2 (2026-10-14): + scope (the NBA Cup final apart from the regular season) */
   team_games: 'edgedesk_nba_team_games_v1',
-  player_games: 'edgedesk_nba_player_games_v1',
+  player_games: 'edgedesk_nba_player_games_v2', /* v2: a 0-minute entry the play-by-play puts on court is an appearance */
   stints: 'edgedesk_nba_stints_v1',
   shots: 'edgedesk_nba_shots_v1',
   validation: 'edgedesk_nba_walkforward_v1',
@@ -90,7 +90,7 @@ const SCHEMA = {
 const COLUMNS = {
   schedule: ['game_id', 'season', 'season_type', 'date', 'neutral_site', 'status_type_name', 'status_type_completed', 'status_period', 'format_regulation_periods',
     'home_id', 'home_display_name', 'home_abbreviation', 'home_score', 'home_linescores', 'away_id', 'away_display_name', 'away_abbreviation', 'away_score', 'away_linescores',
-    'venue_id', 'venue_full_name', 'venue_address_city', 'venue_address_state', 'attendance', 'notes_headline', 'time_valid'],
+    'venue_id', 'venue_full_name', 'venue_address_city', 'venue_address_state', 'attendance', 'notes_headline', 'time_valid', 'type_id', 'type_abbreviation'],
   team_box: ['game_id', 'team_id', 'team_home_away', 'team_score', 'field_goals_made', 'field_goals_attempted', 'three_point_field_goals_made', 'three_point_field_goals_attempted',
     'free_throws_made', 'free_throws_attempted', 'offensive_rebounds', 'defensive_rebounds', 'total_rebounds', 'assists', 'steals', 'blocks', 'turnovers', 'total_turnovers', 'team_turnovers',
     'fouls', 'points_in_paint', 'fast_break_points', 'turnover_points', 'largest_lead', 'opponent_team_id'],

@@ -255,6 +255,8 @@
     "nba:test": "node tools/nba/nba.test.js && node tools/nba/nba_desk.test.js",
     "nba:sql": "node tools/nba/nba_sql.test.js",
     "nba:e2e": "node tools/nba/nba_ui.e2e.js",
+    "nba:pack": "node --max-old-space-size=6000 tools/datapack/verify_nba.js && node --max-old-space-size=6000 nba/crosscheck/pack.js",
+    "nba:pack:check": "node --max-old-space-size=6000 tools/datapack/verify_nba.js --check && node --max-old-space-size=6000 nba/crosscheck/pack.js --check",
     "engine:registry": "node engine/build_registry.js",
     "engine:board": "node engine/build_registry.js && node engine/build_board.js",
     "engine:check": "node engine/build_registry.js --check && node engine/build_board.js --check",

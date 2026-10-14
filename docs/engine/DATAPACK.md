@@ -375,3 +375,229 @@ season-week.
 - A fully reconciled identity bridge (the 7 conflicts above).
 - First-publication times and frozen EPA/CPOE model versions.
 - The rest of the 2026 season.
+
+# The EdgeDesk NBA Data Pack — how it was integrated
+
+A third pack arrived during the NBA build: `EdgeDesk_NBA_Data_Pack.zip`
+(21.1 MB, SHA-256 `524893e9…`). It is ESPN's site API read directly for the
+**whole 2025-26 NBA season**. It is imported as shipped into `datapack/nba_v1/`
+(`IMPORT.json`).
+
+I read `CLAUDE_NBA_START_HERE.md`, `README.md`, `COVERAGE.json`,
+`sources/inventory.json` and `MISSING_DATA.md` first. The pack calls itself a
+dataset foundation, not a trained or validated model, and it is used as
+exactly that. Two facts about it matter:
+
+- **Its contracts add nothing new.** The `schemas/` are byte-identical to the
+  Quant Data Pack's contracts.
+- **It is not independent of my NBA engine's history.** That history,
+  sportsdataverse `hoopR-nba-data`, is compiled from the same ESPN feeds. The
+  pack's value is that it is a *second retrieval and a second parser*: where the
+  two agree, neither parser erred; where they differ, one of them did.
+
+| Table | Rows |
+|---|---:|
+| games | 1,322: 1,230 regular season, 1 NBA Cup final, 6 Play-In, 85 playoffs |
+| team_boxscores / team_measured_features / team_pregame_lags | 2,636 each |
+| player_boxscores / player_measured_features / player_pregame_lags | 34,697 each, 33 of them without a source id |
+| play_by_play | 640,462 |
+| shots_and_free_throws / substitutions | 297,474 / 82,403 (subsets of play_by_play) |
+| period_scores / officials | 10,714 / 4,028 |
+| core_supplement_* | the four games whose summaries returned 404 |
+
+## Verification (`tools/datapack/verify_nba.js` → `EDGEDESK_VERIFICATION.json`)
+
+**PASSED, 30 of 30 checks**, in Node. The pack's Python is never run. Its
+Parquet is read by the engine's own reader, `nba/tools/parquet_select.py`
+(pyarrow), and every value is parsed explicitly: null stays null, never zero.
+The checks:
+
+- **Integrity.**
+  - SHA-256, rows and column names for all 18 tables, matching both
+    `inventory.json` and `COVERAGE.json`.
+  - Every column a string, except an all-null `known_at`.
+  - `known_at` null everywhere.
+- **Scope.**
+  - The NBA Cup final is identified by its native competition type (CC / 39)
+    and kept out of the regular season.
+  - 1,230 regular-season games, 82 per club.
+- **Coverage.**
+  - Exactly the four listed games lack a summary, and the core supplement
+    covers exactly those four.
+  - Keys are unique.
+  - The 33 player rows without an id are listed apart and never joined.
+- **Scores.**
+  - Period scores sum to every final.
+  - Team box points equal every final.
+  - Shots and substitutions are exact, row-for-row subsets of the
+    play-by-play.
+- **Recomputed features.** Every team and player measured feature, and every
+  prior-5/10/20 lag, is recomputed from the boxes, with the target game
+  excluded and only earlier games used.
+
+**Facts it measured that the pack does not state** (`findings`):
+
+- **Incomplete play-by-play.** The play-by-play misses scoring in 10 of
+  1,318 games: its highest running score ends 1–12 points short of the
+  final, and one game has no End Game event.
+- **Late-sequenced events.** In 249 games, events were recorded *after*
+  End Game, with earlier clocks.
+- **Repeated sequence numbers.** Sequence numbers repeat in 2 games.
+
+So possessions or points rebuilt from these events must be reconciled to the
+box, and ordered by period and clock, never by sequence alone.
+
+The players' points fall short of the final on 7 Chicago team-games. Each
+carries the athlete the source gave no id ("Olbrich"), whose line it loses.
+
+## Against my 2025-26 feed (`nba/crosscheck/pack.js` → `nba/validation/nba_crosscheck_pack.json`)
+
+**Games**
+
+- All 1,322 games match.
+- Finals, teams, starts and overtimes agree in every game.
+- All 13,220 team-period scores agree.
+
+**Team boxes**
+
+- Every shooting and rebounding count agrees in all 2,636 team-games.
+- Assists and fouls differ on 8 Chicago team-games. All 8 are the
+  unidentified-athlete games: my feed's team totals leave his line out, while
+  ESPN's team statistics keep it.
+
+**Player boxes**
+
+- 34,664 rows matched on (game, player).
+- Every counted stat, minutes, starters and the DNP reason category agree on
+  every played row (28,617).
+- My 113 extra rows are the four games the pack could not fetch.
+
+**Possessions.** My Basketball-Reference estimator runs 2.7 below the pack's
+0.44-FTA proxy (correlation 0.99). Both are estimators, and the engine keeps
+one canonical estimator.
+
+**Lineups.** My stint reconstruction reproduces the box's minutes with a mean
+absolute error of 0.25 minutes. 99.99% are within one minute (the box rounds
+to whole minutes).
+
+**Shots.** Both play-by-plays log the same attempts (2,632 of 2,634
+team-games). Both log about one more attempt than the box in roughly a third of
+team-games while made shots agree. That is an upstream definitional gap, not a
+parser error.
+
+**Three errors in my own ingest, all fixed and re-ingested for every season:**
+
+1. **The NBA Cup final.** My ingest counted it as a regular-season game. Games
+   now carry `scope` (`regular_season · nba_cup_final · play_in · playoffs`;
+   schema `edgedesk_nba_games_v2`). The `nbahist` views aggregate per scope,
+   so official regular-season figures exclude the Cup final, the Play-In and
+   the playoffs. Every scope is still a real game for the ratings.
+2. **Zero-minute appearances.** Players the box lists with 0 minutes who
+   entered for seconds were marked as not having played. All 104 were on court
+   in my own stints, for 0.8 to 21 seconds. An appearance is now any minutes, a
+   counted stat, or time on court in the play-by-play
+   (`edgedesk_nba_player_games_v2`). After the fix, "played" agrees in
+   34,640 of 34,664 rows. The rest are rows with minutes "--" that never
+   entered (no stint has them on court), where the pack leaves the DNP flag
+   unset.
+3. **Club games only.** Applying the pack's scope rule to my whole history
+   turned up two problems:
+   - the 2003 All-Star game (East vs West) had been ingested as a
+     regular-season final, because its schedule row carried no note;
+   - six Cup knockout placeholders for December 2026 carry "TBD" teams.
+
+   Both teams must now be franchises 1–30. The placeholders return under the
+   same game id once ESPN fills in the clubs. The team files hold exactly the
+   30 franchises.
+
+## What the pack's instructions asked, and what was done
+
+1. **Read the docs and inspect the Parquet with code; parse strings
+   explicitly; null is missing; join only on native ids.** Done (above).
+   Joins use game, team and player ids only. The 33 id-less rows are never
+   joined, by name or otherwise.
+2. **Ingest with provenance, idempotent writes, dedupe, quality checks and an
+   update command; `observed_at` apart from `known_at`.**
+   - **Already the engine's own ingest:**
+     - per-source SHA-256 and fetch time in the manifest;
+     - the time rule (`known_at` blank, `assumed_available_at` = start +
+       4 h, `pit = RETRO`);
+     - `npm run nba:ingest` as the update command.
+   - **The pack itself:** verified and reconciled, not re-ingested. My feed
+     covers 2002-03 → today; the pack covers one season.
+3. **Separate the regular season, Cup final, Play-In and playoffs from
+   native metadata; an endpoint failure is not a zero-stat game.** Done
+   (scope, above). My feed covers the four games whose summaries the pack
+   could not fetch.
+4. **Possession and team-scoring projections with opponent strength, home
+   court, rest, availability and projected minutes; regularised baselines
+   first; the 0.44 proxy is a proxy.** This is the engine (`NBA.md` §3–4):
+   - adjusted efficiency and pace;
+   - a Kalman model;
+   - RAPM × projected minutes;
+   - regularised learners before the ensemble.
+
+   Possessions come from one canonical estimator. My stints already reconcile
+   to the box (0.25-minute error). True event-level possession counting is
+   **not** built, because the play-by-play is incomplete in ~0.8% of games
+   (above).
+5. **A separately validated opportunity model for minutes, attempts,
+   rebounds, assists and threes; DNPs out of rate denominators but their
+   probability modelled; no win model labelled as props.** Done in the props
+   engine (`nba/props/`):
+   - ridge minutes, then per-minute rates, then the count;
+   - field-goal and three-point attempts added as their own families;
+   - rates absorb appearances only;
+   - a new, separately validated **P(plays)** model (`NBA.md` §9).
+6. **Walk-forward comparison of regularised baselines, hierarchical
+   player/team effects, Elo and boosted trees; transforms and calibrators
+   inside training folds; an untouched final period; log loss, Brier,
+   calibration, n, stability; count scores for props; multiple testing.**
+   Done:
+   - the sealed walk-forward of seventeen candidates;
+   - the ≥ 0.001 challenger margin;
+   - date-blocked bootstrap intervals;
+   - per-season stability;
+   - CRPS and randomised-PIT coverage for counts.
+
+   The pack's lags are recomputed and verified, but are not model inputs. The
+   engine builds its own point-in-time features from 23 seasons.
+7. **A separate executable-price adapter.** Done (`nba/market/`, the slate's
+   market block):
+   - timestamped quotes with book, line, side and freshness;
+   - provider-default settlement stated;
+   - de-vig by four methods (multiplicative, additive, power, Shin) with
+     their spread as the sensitivity;
+   - EV at the exact price with push probabilities;
+   - the model labelled MARKET_INDEPENDENT and the no-vig market
+     MARKET_DERIVED, never blended;
+   - duplicate books and events dropped and reported.
+
+   Same-market closing comparison waits for a licensed closing archive.
+8. **PASS until calibration, fresh odds, availability, market rules,
+   identity and sample thresholds pass; no forced pick; no wagers.** Done:
+   - every slate game carries its gates and a decision;
+   - today every decision is PASS, because the market-test gate fails;
+   - nothing is staked or placed.
+9. **Meaningful tests and a CLI.** `tools/nba/nba.test.js` covers:
+   - parsing, joins and scope;
+   - no future leakage;
+   - probability normalisation and price conversion;
+   - pushes and duplicate quotes;
+   - stale and started quotes;
+   - PASS gates;
+   - the streamed caches;
+   - the pack's verification, reconciliation and a tamper test.
+
+   `npm run nba:pack` reruns the verification and the reconciliation.
+
+## Still missing (the pack's P0 list)
+
+- **Executable odds history and live quotes.** Capture is wired but not
+  authorised. There is no licensed closing archive.
+- **Historical publication chronology** (`known_at`).
+- **Confirmed availability, starting fives and minute projections.** The
+  P(plays) model is the stand-in; no injury report is in it.
+- **Settlement rules per book.**
+- **More seasons in the pack's own format.** My feed has 23 seasons; the pack
+  has one.

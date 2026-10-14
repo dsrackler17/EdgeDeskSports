@@ -7,7 +7,8 @@
 -- any research screen can read the NBA warehouse through the same anon/RLS door
 -- as every other EdgeDesk research table:
 --
---   nbahist.games             one row per game (2002-03 →): period scores, venue,
+--   nbahist.games             one row per game (2002-03 →): scope (regular_season ·
+--                             nba_cup_final · play_in · playoffs), period scores, venue,
 --                             neutral/bubble flags, provenance, and ESPN's displayed
 --                             spread (ref_line_home) — UNTIMESTAMPED, no book, no
 --                             price: a diagnostic, never a market record
@@ -57,6 +58,7 @@ create table if not exists nbahist.games (
   game_id               text primary key,
   season                smallint not null,
   game_type             text not null check (game_type in ('R','P','I')),
+  scope                 text check (scope in ('regular_season','nba_cup_final','play_in','playoffs')),
   game_date             date not null,
   start_utc             timestamptz not null,
   neutral               boolean not null default false,
@@ -87,6 +89,9 @@ create table if not exists nbahist.games (
 create index if not exists nbahist_games_season_idx on nbahist.games (season, game_date);
 create index if not exists nbahist_games_home_idx on nbahist.games (home_id, start_utc);
 create index if not exists nbahist_games_away_idx on nbahist.games (away_id, start_utc);
+
+-- added 2026-10-14 (the NBA Data Pack's scope rule); a no-op where the table was created with it
+alter table nbahist.games add column if not exists scope text check (scope in ('regular_season','nba_cup_final','play_in','playoffs'));
 
 create table if not exists nbahist.team_games (
   game_id        text not null references nbahist.games(game_id) on delete cascade,
@@ -223,8 +228,10 @@ create table if not exists nbahist.import_runs (
 );
 
 -- analytical aggregates ------------------------------------------------------
+-- per season AND scope: official regular-season aggregates exclude the NBA Cup
+-- final, the Play-In and the playoffs (read them with scope = 'regular_season').
 create or replace view nbahist.team_season_summary as
-select tg.season, tg.team_id,
+select tg.season, coalesce(g.scope, 'regular_season') as scope, tg.team_id,
        count(*)                                                            as games,
        round(100.0 * sum(tg.pts) / nullif(sum(tg.possessions), 0), 1)      as off_rating,
        round(100.0 * sum(tg.opp_pts) / nullif(sum(tg.possessions), 0), 1)  as def_rating,
@@ -237,11 +244,12 @@ select tg.season, tg.team_id,
        round(sum(tg.fg3a)::numeric / nullif(sum(tg.fga), 0), 4)            as three_rate,
        round(sum(tg.rim_a)::numeric / nullif(sum(tg.rim_a + tg.paint_a + tg.mid_a + tg.c3_a + tg.ab3_a), 0), 4) as rim_share
 from nbahist.team_games tg
+join nbahist.games g on g.game_id = tg.game_id
 where tg.pts is not null
-group by tg.season, tg.team_id;
+group by tg.season, coalesce(g.scope, 'regular_season'), tg.team_id;
 
 create or replace view nbahist.player_season_summary as
-select pg.season, pg.player_id, max(pg.team_id) as team_id,
+select pg.season, coalesce(g.scope, 'regular_season') as scope, pg.player_id, max(pg.team_id) as team_id,
        count(*) filter (where pg.played)                 as games,
        sum(pg.minutes)                                   as minutes,
        round(avg(pg.minutes) filter (where pg.played), 1) as mpg,
@@ -251,7 +259,8 @@ select pg.season, pg.player_id, max(pg.team_id) as team_id,
        round(sum(pg.pts)::numeric / nullif(2 * (sum(pg.fga) + 0.44 * sum(pg.fta)), 0), 4) as ts,
        count(*) filter (where not pg.played and pg.dnp_reason in ('INJURY','ILLNESS')) as games_missed_injury
 from nbahist.player_games pg
-group by pg.season, pg.player_id;
+join nbahist.games g on g.game_id = pg.game_id
+group by pg.season, coalesce(g.scope, 'regular_season'), pg.player_id;
 
 create or replace view nbahist.latest_predictions as
 select distinct on (p.game_id) p.*

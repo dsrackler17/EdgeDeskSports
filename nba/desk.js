@@ -67,6 +67,8 @@
   }
 
   /** is this an NBA question? → { intent: 'NBA_GAME'|'NBA_SLATE', teams, quote } or null */
+  var FUTURES = /\bwin(s|ning)?\s+(the\s+)?(\d{4}\s+)?(nba\s+)?(finals|championship|title|cup|ring|(eastern|western|east|west)(\s+conference)?|conference|division)\b|\b(mvp|rookie of the year|defensive player of the year|sixth man|most improved|coach of the year|futures?|win totals?|season wins|make the playoffs|playoff odds|seeding)\b/i;
+  var CERTAINTY = /\b(guaranteed?|sure thing|can'?t lose|cannot lose|lock)\b/i;
   function classify(q, ctx) {
     q = String(q || '');
     if (!q || q.length > 400) return null;
@@ -77,6 +79,9 @@
     if (/\b(all sports|across (all )?sports|every sport|any sport|all leagues)\b/i.test(q)) return null;
     /* another league named outright is not ours (college basketball included) */
     if (/\b(nfl|football|nhl|hockey|mlb|baseball|ufc|mma|soccer|tennis|wnba|ncaa|college|march madness)\b/i.test(q)) return null;
+    /* a season-long future (a champion, a conference, an award, a win total) and a request for certainty are not a game price:
+       the research plan answers them (UNSUPPORTED). A price on one Finals GAME is still ours. */
+    if (FUTURES.test(q) || CERTAINTY.test(q)) return null;
     var quote = null;
     var spreadM = /([+\-−–])\s?(\d{1,2}(?:\.5)?)\s+([+\-−–]\s?\d{3,4})\b/.exec(q);
     var totalM = /\b(over|under|o|u)\s*(\d{3}(?:\.5)?)\b(?:\s+([+\-−–]\s?\d{3,4}))?/i.exec(q);

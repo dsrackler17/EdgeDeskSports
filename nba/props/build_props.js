@@ -42,34 +42,38 @@ async function build() {
   const tuning = readJson(WF.TUNING, { pass: {} });
   const gameRows = await WF.buildRows(tuning);
   const ctx = new Map(gameRows.map((r) => [r.id, r]));
-  const res = ST.run({ seasons: D.seasonList(C.FIRST_SEASON, season), gameRows: ctx, upcoming });
+  const res = ST.run({ seasons: D.seasonList(C.FIRST_SEASON, season), gameRows: ctx, upcoming, avail: true });
   const train = res.rows.filter((r) => PW.eligible(r) && r.season >= season - 4 && r.season < season);
   const model = PM.fit(train, 'P');
+  const availModel = PM.fitAvail(res.avail.filter((r) => r.season >= season - 4 && r.season < season));
   const rec = readJson(PW.RECORD, null);
   const win = rec && rec.windows ? (rec.windows.test && rec.windows.test.status !== 'SEALED' ? rec.windows.test.P : rec.windows.selection && rec.windows.selection.P) : null;
   const status = {}; if (win) for (const k of PW.FAMILIES) if (win[k]) status[k] = { status: win[k].status, failed: win[k].failed, n: win[k].n, crps: win[k].crps, baseline_crps: win[k].baselines.season_average.crps, coverage_80: win[k].coverage_80 };
+  const aw = rec && rec.windows ? (rec.windows.test && rec.windows.test.status !== 'SEALED' ? rec.windows.test.availability : rec.windows.selection && rec.windows.selection.availability) : null;
+  if (aw) status.availability = { status: aw.status, failed: aw.failed, n: aw.n, log_loss: aw.model.log_loss, baseline_log_loss: aw.baseline_played_last_game.log_loss, calibration_slope: aw.model.calibration_slope };
   const players = D.playersMap();
   const byGame = new Map();
   for (const r of res.upcoming) {
     if (r.f.min_ew < 8) continue;
     const pred = PM.predict(model, r.f);
     const stats = {};
-    const one = (mu, size) => {
-      const max = Math.max(20, Math.ceil(mu + 12 * Math.sqrt(mu + mu * mu / size))); const pmf = PM.nbPmf(mu, size, max); const d = { lo: 0, pmf };
+    const one = (mu, d) => {
       const line = Math.floor(mu) + 0.5; const over = DIST.pGreater(d, line);
-      return { mean: r2(mu), line, over: r4(over), fair_over: DIST.probToAmerican(over), fair_under: DIST.probToAmerican(1 - over), p10_p90: [quantile(pmf, 0.1), quantile(pmf, 0.9)] };
+      return { mean: r2(mu), line, over: r4(over), fair_over: DIST.probToAmerican(over), fair_under: DIST.probToAmerican(1 - over), p10_p90: [quantile(d.pmf, 0.1), quantile(d.pmf, 0.9)] };
     };
-    for (const k of ST.STATS) stats[k] = one(pred.stat[k].mu, pred.stat[k].r);
-    for (const [k, keys] of Object.entries(PM.COMBOS)) { const c = PM.combo(model, pred, keys); stats[k] = one(c.mu, c.r); }
+    for (const k of ST.STATS) stats[k] = one(pred.stat[k].mu, PM.statDist(pred, k));
+    for (const [k, keys] of Object.entries(PM.COMBOS)) stats[k] = one(PM.combo(model, pred, keys).mu, PM.comboDist(model, pred, keys));
     const md = PM.multiDouble(model, pred, 2000, Number(r.p) % 100000);
     if (!byGame.has(r.g)) byGame.set(r.g, []);
-    byGame.get(r.g).push({ id: r.p, name: (players[r.p] || {}).name || r.p, team: r.tm, minutes: r2(pred.min.mu), minutes_sd: r2(pred.min.sd), stats, double_double: r4(md.dd), triple_double: r4(md.td) });
+    byGame.get(r.g).push({ id: r.p, name: (players[r.p] || {}).name || r.p, team: r.tm, played_last_game: !!r.f.in_last, p_plays: r.avail_f ? r4(PM.predictAvail(availModel, r.avail_f)) : null,
+      minutes: r2(pred.min.mu), minutes_sd: r2(pred.min.sd), stats, double_double: r4(md.dd), triple_double: r4(md.td) });
   }
   const games = slate.games.map((g) => ({ game_id: g.game_id, start_utc: g.start_utc, label: (g.away.abbr || g.away.name) + ' @ ' + (g.home.abbr || g.home.name),
     players: (byGame.get(g.game_id) || []).map((p) => Object.assign(p, { team: p.team === String(g.home.id) ? g.home.abbr : g.away.abbr })).sort((a, b) => b.minutes - a.minutes) }));
   const out = { schema: 'edgedesk_nba_props_slate_v1', generated_at: new Date().toISOString(), season, slate_generated_at: slate.generated_at,
     model: { track: 'P (projected: the previous game\'s rotation)', trained_seasons: [season - 4, season - 1], n_train: model.n, record: rec ? (rec.windows.test && rec.windows.test.status !== 'SEALED' ? 'test window' : 'selection window (test sealed)') : 'no record' },
-    note: 'Fair lines from the validated count distributions — expected minutes × per-minute production, opponent and pace adjusted, teammates\' absences redistributed. No prop prices are captured, so nothing here is a value call; a prop is void if the player does not play.',
+    note: 'Fair lines from the validated count distributions — expected minutes × per-minute production, opponent and pace adjusted, teammates\' absences redistributed — priced as if the player plays (a prop is void if he does not); P(plays) is the separately validated probability that he does. No prop prices are captured, so nothing here is a value call.',
+    availability_model: availModel ? { n_train: availModel.n, base_rate: r4(availModel.base) } : null,
     value_claims: 'DISABLED', status, games };
   fs.writeFileSync(OUT, JSON.stringify(out) + '\n');
   return out;

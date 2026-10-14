@@ -6,7 +6,7 @@
   "odds": "No historical odds archive is licensed here. ESPN's displayed spread (play-by-play game_spread) is untimestamped and names no book: it is kept only as a labelled diagnostic, never a market test and never an ROI basis."
  },
  "tables": {
-  "games": "edgedesk_nba_games_v1 (game_id, season, type, date, start_utc, neutral, bubble, home_id, away_id, hs, as, ot, h_q1, h_q2, h_q3, h_q4, h_ot, a_q1, a_q2, a_q3, a_q4, a_ot, venue, city, state, attendance, ref_line_home, pbp, status, src, known_at, assumed_available_at, pit)",
+  "games": "edgedesk_nba_games_v2 (game_id, season, type, date, start_utc, neutral, bubble, home_id, away_id, hs, as, ot, h_q1, h_q2, h_q3, h_q4, h_ot, a_q1, a_q2, a_q3, a_q4, a_ot, venue, city, state, attendance, ref_line_home, pbp, status, src, known_at, assumed_available_at, pit, scope)",
   "team_games": "edgedesk_nba_team_games_v1 (game_id, season, date, start_utc, team_id, opp_id, home, neutral, pts, opp_pts, min, fgm, fga, fg3m, fg3a, ftm, fta, oreb, dreb, ast, stl, blk, tov, pf, paint_pts, fb_pts, pts_off_tov, poss, rim_a, rim_m, paint_a, paint_m, mid_a, mid_m, c3_a, c3_m, ab3_a, ab3_m, tr_a, tr_pts, heave, city, travel_km, tz_shift, alt, rest_days, b2b, games_7d, road_streak, home_streak, assumed_available_at)"
  },
  "temporal": {
@@ -16,7 +16,7 @@
  },
  "seasons": {
   "2003": {
-   "updated_at": "2026-10-13T14:08:58.469Z",
+   "updated_at": "2026-10-14T02:30:33.911Z",
    "season": 2003,
    "sources": {
     "schedule": {
@@ -49,14 +49,20 @@
     }
    },
    "counts": {
-    "games_final": 1278,
+    "games_final": 1277,
     "games_scheduled": 0,
-    "team_games": 2556,
+    "by_scope": {
+     "regular_season": 1189,
+     "nba_cup_final": 0,
+     "play_in": 0,
+     "playoffs": 88
+    },
+    "team_games": 2554,
     "player_games": 30870,
     "player_games_played": 25704,
-    "stint_games": 1052,
-    "stints": 30348,
-    "shots": 164858,
+    "stint_games": 1051,
+    "stints": 30318,
+    "shots": 164617,
     "ref_line_games": 0
    },
    "dropped": {
@@ -65,11 +71,12 @@
     "exhibition": 0,
     "not_played": 0,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 1
    },
    "integrity": {
-    "pbp_games": 1052,
-    "pbp_final_mismatch": 380,
+    "pbp_games": 1051,
+    "pbp_final_mismatch": 379,
     "pbp_final_examples": [
      {
       "game_id": "230613017",
@@ -128,23 +135,24 @@
      }
     ],
     "stint_seconds_off": 29,
-    "bad_lineup_seconds": 39652.1,
-    "total_seconds": 3031440,
-    "sub_errors": 289,
-    "starters_bad": 14,
+    "bad_lineup_seconds": 37628.100000000006,
+    "total_seconds": 3027960,
+    "sub_errors": 268,
+    "starters_bad": 12,
     "minutes_n": 21262,
     "fragmented": 0,
+    "zero_minute_appearances": 0,
     "period_scores": {
      "schedule": 0,
-     "pbp": 1027,
+     "pbp": 1026,
      "none": 251,
-     "sum_mismatch_dropped": 355
+     "sum_mismatch_dropped": 354
     },
     "team_box_points_mismatch": 0,
-    "team_box_missing": 2,
+    "team_box_missing": 0,
     "minutes_mae": 0.811,
     "minutes_share_off_3": 0.0615,
-    "valid_lineup_share": 0.9869
+    "valid_lineup_share": 0.9876
    },
    "missing_columns": {
     "schedule": [
@@ -159,7 +167,7 @@
    }
   },
   "2004": {
-   "updated_at": "2026-10-13T14:09:09.539Z",
+   "updated_at": "2026-10-14T02:30:43.409Z",
    "season": 2004,
    "sources": {
     "schedule": {
@@ -194,6 +202,12 @@
    "counts": {
     "games_final": 1271,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1189,
+     "nba_cup_final": 0,
+     "play_in": 0,
+     "playoffs": 82
+    },
     "team_games": 2542,
     "player_games": 30606,
     "player_games_played": 25547,
@@ -208,7 +222,8 @@
     "exhibition": 1,
     "not_played": 0,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1256,
@@ -277,6 +292,7 @@
     "starters_bad": 2,
     "minutes_n": 25246,
     "fragmented": 0,
+    "zero_minute_appearances": 0,
     "period_scores": {
      "schedule": 0,
      "pbp": 1253,
@@ -302,7 +318,7 @@
    }
   },
   "2005": {
-   "updated_at": "2026-10-13T14:09:20.673Z",
+   "updated_at": "2026-10-14T02:30:53.617Z",
    "season": 2005,
    "sources": {
     "schedule": {
@@ -337,6 +353,12 @@
    "counts": {
     "games_final": 1314,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1230,
+     "nba_cup_final": 0,
+     "play_in": 0,
+     "playoffs": 84
+    },
     "team_games": 2628,
     "player_games": 31552,
     "player_games_played": 26562,
@@ -351,7 +373,8 @@
     "exhibition": 1,
     "not_played": 0,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1293,
@@ -420,6 +443,7 @@
     "starters_bad": 187,
     "minutes_n": 26167,
     "fragmented": 0,
+    "zero_minute_appearances": 0,
     "period_scores": {
      "schedule": 0,
      "pbp": 1292,
@@ -445,7 +469,7 @@
    }
   },
   "2006": {
-   "updated_at": "2026-10-13T14:09:32.523Z",
+   "updated_at": "2026-10-14T02:31:03.794Z",
    "season": 2006,
    "sources": {
     "schedule": {
@@ -480,6 +504,12 @@
    "counts": {
     "games_final": 1319,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1230,
+     "nba_cup_final": 0,
+     "play_in": 0,
+     "playoffs": 89
+    },
     "team_games": 2638,
     "player_games": 37691,
     "player_games_played": 26175,
@@ -494,7 +524,8 @@
     "exhibition": 1,
     "not_played": 0,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1302,
@@ -563,6 +594,7 @@
     "starters_bad": 247,
     "minutes_n": 26082,
     "fragmented": 0,
+    "zero_minute_appearances": 0,
     "period_scores": {
      "schedule": 0,
      "pbp": 1302,
@@ -588,7 +620,7 @@
    }
   },
   "2007": {
-   "updated_at": "2026-10-13T14:09:44.519Z",
+   "updated_at": "2026-10-14T02:31:14.535Z",
    "season": 2007,
    "sources": {
     "schedule": {
@@ -623,6 +655,12 @@
    "counts": {
     "games_final": 1309,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1230,
+     "nba_cup_final": 0,
+     "play_in": 0,
+     "playoffs": 79
+    },
     "team_games": 2618,
     "player_games": 38234,
     "player_games_played": 26392,
@@ -637,7 +675,8 @@
     "exhibition": 1,
     "not_played": 0,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1293,
@@ -706,6 +745,7 @@
     "starters_bad": 10,
     "minutes_n": 26270,
     "fragmented": 0,
+    "zero_minute_appearances": 0,
     "period_scores": {
      "schedule": 0,
      "pbp": 1293,
@@ -731,7 +771,7 @@
    }
   },
   "2008": {
-   "updated_at": "2026-10-13T14:09:57.767Z",
+   "updated_at": "2026-10-14T02:31:24.709Z",
    "season": 2008,
    "sources": {
     "schedule": {
@@ -766,6 +806,12 @@
    "counts": {
     "games_final": 1316,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1230,
+     "nba_cup_final": 0,
+     "play_in": 0,
+     "playoffs": 86
+    },
     "team_games": 2632,
     "player_games": 37973,
     "player_games_played": 26502,
@@ -780,7 +826,8 @@
     "exhibition": 1,
     "not_played": 0,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1301,
@@ -849,6 +896,7 @@
     "starters_bad": 0,
     "minutes_n": 26337,
     "fragmented": 0,
+    "zero_minute_appearances": 0,
     "period_scores": {
      "schedule": 0,
      "pbp": 1301,
@@ -874,7 +922,7 @@
    }
   },
   "2009": {
-   "updated_at": "2026-10-13T14:10:09.424Z",
+   "updated_at": "2026-10-14T02:31:35.041Z",
    "season": 2009,
    "sources": {
     "schedule": {
@@ -909,6 +957,12 @@
    "counts": {
     "games_final": 1315,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1230,
+     "nba_cup_final": 0,
+     "play_in": 0,
+     "playoffs": 85
+    },
     "team_games": 2630,
     "player_games": 37453,
     "player_games_played": 26235,
@@ -923,7 +977,8 @@
     "exhibition": 1,
     "not_played": 0,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1312,
@@ -992,6 +1047,7 @@
     "starters_bad": 1,
     "minutes_n": 26312,
     "fragmented": 0,
+    "zero_minute_appearances": 0,
     "period_scores": {
      "schedule": 0,
      "pbp": 1312,
@@ -1017,7 +1073,7 @@
    }
   },
   "2010": {
-   "updated_at": "2026-10-13T14:10:20.007Z",
+   "updated_at": "2026-10-14T02:31:44.967Z",
    "season": 2010,
    "sources": {
     "schedule": {
@@ -1052,6 +1108,12 @@
    "counts": {
     "games_final": 1312,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1230,
+     "nba_cup_final": 0,
+     "play_in": 0,
+     "playoffs": 82
+    },
     "team_games": 2624,
     "player_games": 37079,
     "player_games_played": 26312,
@@ -1066,7 +1128,8 @@
     "exhibition": 1,
     "not_played": 0,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1307,
@@ -1135,6 +1198,7 @@
     "starters_bad": 1,
     "minutes_n": 26376,
     "fragmented": 0,
+    "zero_minute_appearances": 0,
     "period_scores": {
      "schedule": 0,
      "pbp": 1307,
@@ -1160,7 +1224,7 @@
    }
   },
   "2011": {
-   "updated_at": "2026-10-13T14:10:31.293Z",
+   "updated_at": "2026-10-14T02:31:54.980Z",
    "season": 2011,
    "sources": {
     "schedule": {
@@ -1195,6 +1259,12 @@
    "counts": {
     "games_final": 1311,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1230,
+     "nba_cup_final": 0,
+     "play_in": 0,
+     "playoffs": 81
+    },
     "team_games": 2622,
     "player_games": 37717,
     "player_games_played": 26607,
@@ -1209,7 +1279,8 @@
     "exhibition": 1,
     "not_played": 0,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1306,
@@ -1278,6 +1349,7 @@
     "starters_bad": 0,
     "minutes_n": 26670,
     "fragmented": 0,
+    "zero_minute_appearances": 0,
     "period_scores": {
      "schedule": 0,
      "pbp": 1306,
@@ -1303,7 +1375,7 @@
    }
   },
   "2012": {
-   "updated_at": "2026-10-13T14:10:40.388Z",
+   "updated_at": "2026-10-14T02:32:04.025Z",
    "season": 2012,
    "sources": {
     "schedule": {
@@ -1338,6 +1410,12 @@
    "counts": {
     "games_final": 1074,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 990,
+     "nba_cup_final": 0,
+     "play_in": 0,
+     "playoffs": 84
+    },
     "team_games": 2148,
     "player_games": 31014,
     "player_games_played": 22379,
@@ -1352,7 +1430,8 @@
     "exhibition": 1,
     "not_played": 0,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1074,
@@ -1421,6 +1500,7 @@
     "starters_bad": 3,
     "minutes_n": 22502,
     "fragmented": 0,
+    "zero_minute_appearances": 0,
     "period_scores": {
      "schedule": 0,
      "pbp": 1074,
@@ -1446,7 +1526,7 @@
    }
   },
   "2013": {
-   "updated_at": "2026-10-13T14:10:50.754Z",
+   "updated_at": "2026-10-14T02:32:14.267Z",
    "season": 2013,
    "sources": {
     "schedule": {
@@ -1481,9 +1561,15 @@
    "counts": {
     "games_final": 1314,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1229,
+     "nba_cup_final": 0,
+     "play_in": 0,
+     "playoffs": 85
+    },
     "team_games": 2628,
     "player_games": 33423,
-    "player_games_played": 27262,
+    "player_games_played": 27429,
     "stint_games": 1311,
     "stints": 38690,
     "shots": 213968,
@@ -1495,7 +1581,8 @@
     "exhibition": 1,
     "not_played": 0,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1311,
@@ -1564,6 +1651,7 @@
     "starters_bad": 10,
     "minutes_n": 27362,
     "fragmented": 0,
+    "zero_minute_appearances": 138,
     "period_scores": {
      "schedule": 0,
      "pbp": 1311,
@@ -1587,7 +1675,7 @@
    }
   },
   "2014": {
-   "updated_at": "2026-10-13T14:11:01.433Z",
+   "updated_at": "2026-10-14T02:32:24.236Z",
    "season": 2014,
    "sources": {
     "schedule": {
@@ -1622,9 +1710,15 @@
    "counts": {
     "games_final": 1319,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1230,
+     "nba_cup_final": 0,
+     "play_in": 0,
+     "playoffs": 89
+    },
     "team_games": 2638,
     "player_games": 33705,
-    "player_games_played": 27305,
+    "player_games_played": 27484,
     "stint_games": 1314,
     "stints": 39277,
     "shots": 217492,
@@ -1636,7 +1730,8 @@
     "exhibition": 1,
     "not_played": 0,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1314,
@@ -1672,6 +1767,7 @@
     "starters_bad": 2,
     "minutes_n": 27384,
     "fragmented": 0,
+    "zero_minute_appearances": 150,
     "period_scores": {
      "schedule": 0,
      "pbp": 1314,
@@ -1695,7 +1791,7 @@
    }
   },
   "2015": {
-   "updated_at": "2026-10-13T14:11:12.058Z",
+   "updated_at": "2026-10-14T02:32:34.266Z",
    "season": 2015,
    "sources": {
     "schedule": {
@@ -1730,9 +1826,15 @@
    "counts": {
     "games_final": 1311,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1230,
+     "nba_cup_final": 0,
+     "play_in": 0,
+     "playoffs": 81
+    },
     "team_games": 2622,
     "player_games": 33554,
-    "player_games_played": 27456,
+    "player_games_played": 27625,
     "stint_games": 1307,
     "stints": 40487,
     "shots": 218590,
@@ -1744,7 +1846,8 @@
     "exhibition": 1,
     "not_played": 0,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1307,
@@ -1813,6 +1916,7 @@
     "starters_bad": 0,
     "minutes_n": 27539,
     "fragmented": 0,
+    "zero_minute_appearances": 133,
     "period_scores": {
      "schedule": 0,
      "pbp": 1307,
@@ -1836,7 +1940,7 @@
    }
   },
   "2016": {
-   "updated_at": "2026-10-13T14:11:23.024Z",
+   "updated_at": "2026-10-14T02:32:44.804Z",
    "season": 2016,
    "sources": {
     "schedule": {
@@ -1871,9 +1975,15 @@
    "counts": {
     "games_final": 1316,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1230,
+     "nba_cup_final": 0,
+     "play_in": 0,
+     "playoffs": 86
+    },
     "team_games": 2632,
     "player_games": 33691,
-    "player_games_played": 27860,
+    "player_games_played": 27967,
     "stint_games": 1313,
     "stints": 40888,
     "shots": 218198,
@@ -1885,7 +1995,8 @@
     "exhibition": 1,
     "not_played": 0,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1313,
@@ -1940,9 +2051,10 @@
     "bad_lineup_seconds": 1183,
     "total_seconds": 3809640,
     "sub_errors": 8,
-    "starters_bad": 2,
+    "starters_bad": 0,
     "minutes_n": 27899,
     "fragmented": 0,
+    "zero_minute_appearances": 87,
     "period_scores": {
      "schedule": 0,
      "pbp": 1313,
@@ -1966,7 +2078,7 @@
    }
   },
   "2017": {
-   "updated_at": "2026-10-13T14:11:34.429Z",
+   "updated_at": "2026-10-14T02:32:55.297Z",
    "season": 2017,
    "sources": {
     "schedule": {
@@ -2001,9 +2113,15 @@
    "counts": {
     "games_final": 1309,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1230,
+     "nba_cup_final": 0,
+     "play_in": 0,
+     "playoffs": 79
+    },
     "team_games": 2618,
     "player_games": 33606,
-    "player_games_played": 27744,
+    "player_games_played": 27850,
     "stint_games": 1309,
     "stints": 40326,
     "shots": 223275,
@@ -2015,7 +2133,8 @@
     "exhibition": 1,
     "not_played": 0,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1309,
@@ -2062,6 +2181,7 @@
     "starters_bad": 3,
     "minutes_n": 27851,
     "fragmented": 0,
+    "zero_minute_appearances": 91,
     "period_scores": {
      "schedule": 0,
      "pbp": 1309,
@@ -2085,7 +2205,7 @@
    }
   },
   "2018": {
-   "updated_at": "2026-10-13T14:11:45.851Z",
+   "updated_at": "2026-10-14T02:33:05.581Z",
    "season": 2018,
    "sources": {
     "schedule": {
@@ -2120,9 +2240,15 @@
    "counts": {
     "games_final": 1312,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1230,
+     "nba_cup_final": 0,
+     "play_in": 0,
+     "playoffs": 82
+    },
     "team_games": 2624,
     "player_games": 33075,
-    "player_games_played": 27697,
+    "player_games_played": 27805,
     "stint_games": 1308,
     "stints": 39987,
     "shots": 224719,
@@ -2134,7 +2260,8 @@
     "exhibition": 2,
     "not_played": 0,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1308,
@@ -2178,9 +2305,10 @@
     "bad_lineup_seconds": 76430.79999999999,
     "total_seconds": 3788640,
     "sub_errors": 910,
-    "starters_bad": 6,
+    "starters_bad": 5,
     "minutes_n": 27739,
     "fragmented": 0,
+    "zero_minute_appearances": 94,
     "period_scores": {
      "schedule": 0,
      "pbp": 1308,
@@ -2204,7 +2332,7 @@
    }
   },
   "2019": {
-   "updated_at": "2026-10-13T14:11:57.251Z",
+   "updated_at": "2026-10-14T02:33:16.651Z",
    "season": 2019,
    "sources": {
     "schedule": {
@@ -2239,9 +2367,15 @@
    "counts": {
     "games_final": 1312,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1230,
+     "nba_cup_final": 0,
+     "play_in": 0,
+     "playoffs": 82
+    },
     "team_games": 2624,
     "player_games": 32938,
-    "player_games_played": 27758,
+    "player_games_played": 27860,
     "stint_games": 1312,
     "stints": 40864,
     "shots": 233707,
@@ -2253,7 +2387,8 @@
     "exhibition": 2,
     "not_played": 0,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1312,
@@ -2289,6 +2424,7 @@
     "starters_bad": 20,
     "minutes_n": 27878,
     "fragmented": 0,
+    "zero_minute_appearances": 88,
     "period_scores": {
      "schedule": 0,
      "pbp": 1312,
@@ -2312,7 +2448,7 @@
    }
   },
   "2020": {
-   "updated_at": "2026-10-13T14:12:07.556Z",
+   "updated_at": "2026-10-14T02:33:26.358Z",
    "season": 2020,
    "sources": {
     "schedule": {
@@ -2347,9 +2483,15 @@
    "counts": {
     "games_final": 1143,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1059,
+     "nba_cup_final": 0,
+     "play_in": 1,
+     "playoffs": 83
+    },
     "team_games": 2286,
     "player_games": 28716,
-    "player_games_played": 24007,
+    "player_games_played": 24106,
     "stint_games": 1137,
     "stints": 36640,
     "shots": 201379,
@@ -2361,7 +2503,8 @@
     "exhibition": 2,
     "not_played": 12,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1137,
@@ -2383,9 +2526,10 @@
     "bad_lineup_seconds": 80790.7,
     "total_seconds": 3299160,
     "sub_errors": 794,
-    "starters_bad": 2,
+    "starters_bad": 1,
     "minutes_n": 23990,
     "fragmented": 0,
+    "zero_minute_appearances": 84,
     "period_scores": {
      "schedule": 1143,
      "pbp": 0,
@@ -2406,7 +2550,7 @@
    }
   },
   "2021": {
-   "updated_at": "2026-10-13T14:12:18.436Z",
+   "updated_at": "2026-10-14T02:33:35.397Z",
    "season": 2021,
    "sources": {
     "schedule": {
@@ -2441,9 +2585,15 @@
    "counts": {
     "games_final": 1171,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1080,
+     "nba_cup_final": 0,
+     "play_in": 6,
+     "playoffs": 85
+    },
     "team_games": 2342,
     "player_games": 31571,
-    "player_games_played": 24815,
+    "player_games_played": 24915,
     "stint_games": 1171,
     "stints": 35327,
     "shots": 206871,
@@ -2455,7 +2605,8 @@
     "exhibition": 1,
     "not_played": 32,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1171,
@@ -2477,9 +2628,10 @@
     "bad_lineup_seconds": 204,
     "total_seconds": 3392580,
     "sub_errors": 7,
-    "starters_bad": 13,
+    "starters_bad": 12,
     "minutes_n": 25053,
     "fragmented": 0,
+    "zero_minute_appearances": 81,
     "period_scores": {
      "schedule": 1171,
      "pbp": 0,
@@ -2500,7 +2652,7 @@
    }
   },
   "2022": {
-   "updated_at": "2026-10-13T14:12:30.196Z",
+   "updated_at": "2026-10-14T02:33:45.801Z",
    "season": 2022,
    "sources": {
     "schedule": {
@@ -2535,9 +2687,15 @@
    "counts": {
     "games_final": 1323,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1230,
+     "nba_cup_final": 0,
+     "play_in": 6,
+     "playoffs": 87
+    },
     "team_games": 2646,
     "player_games": 33857,
-    "player_games_played": 27942,
+    "player_games_played": 28047,
     "stint_games": 1323,
     "stints": 40352,
     "shots": 232311,
@@ -2549,7 +2707,8 @@
     "exhibition": 1,
     "not_played": 11,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1323,
@@ -2582,9 +2741,10 @@
     "bad_lineup_seconds": 168,
     "total_seconds": 3830640,
     "sub_errors": 15,
-    "starters_bad": 4,
+    "starters_bad": 1,
     "minutes_n": 28048,
     "fragmented": 0,
+    "zero_minute_appearances": 83,
     "period_scores": {
      "schedule": 1323,
      "pbp": 0,
@@ -2605,7 +2765,7 @@
    }
   },
   "2023": {
-   "updated_at": "2026-10-13T14:12:41.629Z",
+   "updated_at": "2026-10-14T02:33:56.765Z",
    "season": 2023,
    "sources": {
     "schedule": {
@@ -2640,9 +2800,15 @@
    "counts": {
     "games_final": 1320,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1230,
+     "nba_cup_final": 0,
+     "play_in": 6,
+     "playoffs": 84
+    },
     "team_games": 2640,
     "player_games": 34033,
-    "player_games_played": 27637,
+    "player_games_played": 27736,
     "stint_games": 1320,
     "stints": 40054,
     "shots": 232853,
@@ -2654,7 +2820,8 @@
     "exhibition": 1,
     "not_played": 1,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1320,
@@ -2698,9 +2865,10 @@
     "bad_lineup_seconds": 3.199999999999818,
     "total_seconds": 3829080,
     "sub_errors": 14,
-    "starters_bad": 1,
+    "starters_bad": 0,
     "minutes_n": 27737,
     "fragmented": 0,
+    "zero_minute_appearances": 86,
     "period_scores": {
      "schedule": 1320,
      "pbp": 0,
@@ -2721,7 +2889,7 @@
    }
   },
   "2024": {
-   "updated_at": "2026-10-13T14:12:54.303Z",
+   "updated_at": "2026-10-14T02:34:07.844Z",
    "season": 2024,
    "sources": {
     "schedule": {
@@ -2756,9 +2924,15 @@
    "counts": {
     "games_final": 1319,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1230,
+     "nba_cup_final": 1,
+     "play_in": 6,
+     "playoffs": 82
+    },
     "team_games": 2638,
     "player_games": 35004,
-    "player_games_played": 28098,
+    "player_games_played": 28226,
     "stint_games": 1319,
     "stints": 39483,
     "shots": 233769,
@@ -2770,7 +2944,8 @@
     "exhibition": 1,
     "not_played": 2,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1319,
@@ -2839,6 +3014,7 @@
     "starters_bad": 0,
     "minutes_n": 28226,
     "fragmented": 0,
+    "zero_minute_appearances": 113,
     "period_scores": {
      "schedule": 1319,
      "pbp": 0,
@@ -2859,7 +3035,7 @@
    }
   },
   "2025": {
-   "updated_at": "2026-10-13T14:13:06.116Z",
+   "updated_at": "2026-10-14T02:34:18.758Z",
    "season": 2025,
    "sources": {
     "schedule": {
@@ -2894,9 +3070,15 @@
    "counts": {
     "games_final": 1321,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1230,
+     "nba_cup_final": 1,
+     "play_in": 6,
+     "playoffs": 84
+    },
     "team_games": 2642,
     "player_games": 35198,
-    "player_games_played": 28154,
+    "player_games_played": 28262,
     "stint_games": 1321,
     "stints": 40609,
     "shots": 235136,
@@ -2908,7 +3090,8 @@
     "exhibition": 3,
     "not_played": 5,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1321,
@@ -2963,9 +3146,10 @@
     "bad_lineup_seconds": 131.0999999999999,
     "total_seconds": 3825480,
     "sub_errors": 12,
-    "starters_bad": 1,
+    "starters_bad": 0,
     "minutes_n": 28260,
     "fragmented": 0,
+    "zero_minute_appearances": 86,
     "period_scores": {
      "schedule": 1321,
      "pbp": 0,
@@ -2986,7 +3170,7 @@
    }
   },
   "2026": {
-   "updated_at": "2026-10-14T01:23:49.163Z",
+   "updated_at": "2026-10-14T02:34:30.451Z",
    "season": 2026,
    "sources": {
     "schedule": {
@@ -3021,9 +3205,15 @@
    "counts": {
     "games_final": 1322,
     "games_scheduled": 0,
+    "by_scope": {
+     "regular_season": 1230,
+     "nba_cup_final": 1,
+     "play_in": 6,
+     "playoffs": 85
+    },
     "team_games": 2644,
     "player_games": 34777,
-    "player_games_played": 28588,
+    "player_games_played": 28692,
     "stint_games": 1321,
     "stints": 43307,
     "shots": 235861,
@@ -3035,7 +3225,8 @@
     "exhibition": 4,
     "not_played": 4,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 0
    },
    "integrity": {
     "pbp_games": 1321,
@@ -3101,9 +3292,10 @@
     "bad_lineup_seconds": 0,
     "total_seconds": 3825180,
     "sub_errors": 17,
-    "starters_bad": 1,
+    "starters_bad": 0,
     "minutes_n": 28668,
     "fragmented": 0,
+    "zero_minute_appearances": 93,
     "period_scores": {
      "schedule": 1322,
      "pbp": 0,
@@ -3124,7 +3316,7 @@
    }
   },
   "2027": {
-   "updated_at": "2026-10-14T01:23:49.576Z",
+   "updated_at": "2026-10-14T02:34:46.399Z",
    "season": 2027,
    "sources": {
     "schedule": {
@@ -3137,7 +3329,13 @@
    },
    "counts": {
     "games_final": 0,
-    "games_scheduled": 1206,
+    "games_scheduled": 1200,
+    "by_scope": {
+     "regular_season": 0,
+     "nba_cup_final": 0,
+     "play_in": 0,
+     "playoffs": 0
+    },
     "team_games": 0,
     "player_games": 0,
     "player_games_played": 0,
@@ -3152,7 +3350,8 @@
     "exhibition": 0,
     "not_played": 0,
     "missing_score": 0,
-    "duplicates": 0
+    "duplicates": 0,
+    "non_club": 6
    },
    "integrity": {
     "period_scores": {

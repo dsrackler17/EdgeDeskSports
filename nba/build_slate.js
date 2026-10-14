@@ -89,25 +89,43 @@ function marketBlock(ev, pc, quotes, now) {
   const ev_ = (p, push, am) => DIST.evAt(p, push, am);
   for (const b of ev.books) {
     const age = b.last_update ? Math.round((now - Date.parse(b.last_update)) / 60000) : null;
-    const fresh = age != null && age <= 60 ? 'FRESH' : 'STALE';
+    const fresh = ev.commence_time && now >= Date.parse(ev.commence_time) ? 'STARTED' : age != null && age <= 60 ? 'FRESH' : 'STALE';
+    const nvm = (x, y, first) => { const m = Q.noVigMethods(x, y); if (!m) return null; const f = (v) => r4(first ? v : 1 - v); return { multiplicative: f(m.multiplicative), additive: f(m.additive), power: f(m.power), shin: f(m.shin), method_spread: r4(m.spread) }; };
     if (b.h2h) {
       const nv = Q.noVig(b.h2h.home, b.h2h.away);
       for (const [sideK, am, p] of [['home', b.h2h.home, mg.p_home], ['away', b.h2h.away, 1 - mg.p_home]]) rows.push({ book: b.book, market: 'moneyline', side: sideK, line: null, american: am, quote_time: b.last_update, age_min: age, freshness: fresh,
-        break_even: r4(DIST.americanToProb(am)), model_p: r4(p), model_push: 0, market_novig_p: nv ? r4(sideK === 'home' ? nv.a : nv.b) : null, ev_vs_model: ev_(p, 0, am) });
+        break_even: r4(DIST.americanToProb(am)), model_p: r4(p), model_push: 0, market_novig_p: nv ? r4(sideK === 'home' ? nv.a : nv.b) : null, market_novig_methods: nvm(b.h2h.home, b.h2h.away, sideK === 'home'), ev_vs_model: ev_(p, 0, am) });
     }
     for (const sp of b.spreads) {
       const h = DIST.spread(mg.margin, sp.home_line); const nv = Q.noVig(sp.home, sp.away);
-      rows.push({ book: b.book, market: 'spread', side: 'home', line: sp.home_line, american: sp.home, quote_time: b.last_update, age_min: age, freshness: fresh, break_even: r4(DIST.americanToProb(sp.home)), model_p: h.win, model_push: h.push, market_novig_p: nv ? r4(nv.a) : null, ev_vs_model: ev_(h.win, h.push, sp.home) });
-      rows.push({ book: b.book, market: 'spread', side: 'away', line: -sp.home_line, american: sp.away, quote_time: b.last_update, age_min: age, freshness: fresh, break_even: r4(DIST.americanToProb(sp.away)), model_p: h.lose, model_push: h.push, market_novig_p: nv ? r4(nv.b) : null, ev_vs_model: ev_(h.lose, h.push, sp.away) });
+      rows.push({ book: b.book, market: 'spread', side: 'home', line: sp.home_line, american: sp.home, quote_time: b.last_update, age_min: age, freshness: fresh, break_even: r4(DIST.americanToProb(sp.home)), model_p: h.win, model_push: h.push, market_novig_p: nv ? r4(nv.a) : null, market_novig_methods: nvm(sp.home, sp.away, true), ev_vs_model: ev_(h.win, h.push, sp.home) });
+      rows.push({ book: b.book, market: 'spread', side: 'away', line: -sp.home_line, american: sp.away, quote_time: b.last_update, age_min: age, freshness: fresh, break_even: r4(DIST.americanToProb(sp.away)), model_p: h.lose, model_push: h.push, market_novig_p: nv ? r4(nv.b) : null, market_novig_methods: nvm(sp.home, sp.away, false), ev_vs_model: ev_(h.lose, h.push, sp.away) });
     }
     for (const t of b.totals) {
       const tt = DIST.total(mg.total, t.line); const nv = Q.noVig(t.over, t.under);
-      rows.push({ book: b.book, market: 'total', side: 'over', line: t.line, american: t.over, quote_time: b.last_update, age_min: age, freshness: fresh, break_even: r4(DIST.americanToProb(t.over)), model_p: tt.over.win, model_push: tt.over.push, market_novig_p: nv ? r4(nv.a) : null, ev_vs_model: ev_(tt.over.win, tt.over.push, t.over) });
-      rows.push({ book: b.book, market: 'total', side: 'under', line: t.line, american: t.under, quote_time: b.last_update, age_min: age, freshness: fresh, break_even: r4(DIST.americanToProb(t.under)), model_p: tt.under.win, model_push: tt.under.push, market_novig_p: nv ? r4(nv.b) : null, ev_vs_model: ev_(tt.under.win, tt.under.push, t.under) });
+      rows.push({ book: b.book, market: 'total', side: 'over', line: t.line, american: t.over, quote_time: b.last_update, age_min: age, freshness: fresh, break_even: r4(DIST.americanToProb(t.over)), model_p: tt.over.win, model_push: tt.over.push, market_novig_p: nv ? r4(nv.a) : null, market_novig_methods: nvm(t.over, t.under, true), ev_vs_model: ev_(tt.over.win, tt.over.push, t.over) });
+      rows.push({ book: b.book, market: 'total', side: 'under', line: t.line, american: t.under, quote_time: b.last_update, age_min: age, freshness: fresh, break_even: r4(DIST.americanToProb(t.under)), model_p: tt.under.win, model_push: tt.under.push, market_novig_p: nv ? r4(nv.b) : null, market_novig_methods: nvm(t.over, t.under, false), ev_vs_model: ev_(tt.under.win, tt.under.push, t.under) });
     }
   }
   return Object.assign(base, { status: quotes.status, captured_at: quotes.gateway ? quotes.gateway.fetched_at : null, model_version: pc ? 'edgedesk_nba_v1' : null, quotes: rows,
-    note: 'Model probability at each book\'s own line (pushes priced), the book\'s break-even, and the no-vig market probability kept separate. A positive EV versus an unvalidated model is not an edge.' });
+    forecast_basis: { model: 'MARKET_INDEPENDENT (no price enters the model)', market_novig: 'MARKET_DERIVED (shown beside the model, never blended into it)' },
+    note: 'Model probability at each book\'s own line (pushes priced), the book\'s break-even, and the no-vig market probability kept separate (multiplicative is the reference; additive, power and Shin beside it, with their spread as the method sensitivity). A positive EV versus an unvalidated model is not an edge. STARTED quotes are never compared.' });
+}
+
+/* THE PASS GATES. A game could be called only when every gate passes; today
+   the first one fails for every game, so every decision is PASS and the gates
+   say exactly why. Nothing ranks a failed game, and no game is forced. */
+function gatesFor(o) {
+  const g = [];
+  g.push({ gate: 'probabilities validated against a closing market', pass: false, why: 'no licensed archive of timestamped NBA closing prices: market_status NOT_TESTED' });
+  g.push({ gate: 'outcome record', pass: !!o.outcomeValidated, why: o.outcomeValidated ? 'the chosen model passed the sealed test window' : 'the chosen model has not passed the sealed test window' });
+  const freshQ = (o.market.quotes || []).filter((q) => q.freshness === 'FRESH');
+  g.push({ gate: 'fresh executable prices', pass: freshQ.length > 0, why: freshQ.length ? freshQ.length + ' quotes under 60 minutes old' : (o.market.status === 'NOT_CAPTURED' || o.market.status === 'DISABLED' ? 'NBA prices are not captured (not authorised)' : 'no quote under 60 minutes old') });
+  g.push({ gate: 'confirmed availability', pass: false, why: 'no injury report or confirmed lineup feed: the price uses the projected rotation' });
+  g.push({ gate: 'settlement rules per book', pass: false, why: 'provider defaults assumed (incl. overtime); no per-book rule source' });
+  g.push({ gate: 'identity mapping', pass: (o.market.quotes || []).length > 0, why: (o.market.quotes || []).length ? 'quotes matched by both team ids and a start within 6 h' : 'no quotes to map' });
+  g.push({ gate: 'sample threshold', pass: !!o.sampleOk, why: o.sampleOk ? 'test window n ≥ 500' : 'no unsealed test window with n ≥ 500' });
+  return { gates: g, decision: g.every((x) => x.pass) ? 'ELIGIBLE' : 'PASS', failed: g.filter((x) => !x.pass).map((x) => x.gate) };
 }
 
 function sheetHash(o) { return crypto.createHash('sha256').update(JSON.stringify(o)).digest('hex').slice(0, 16); }
@@ -119,6 +137,9 @@ async function build(o) {
   const live = readJson(WF.LIVE, null); const mlLive = readJson(WF.ML_LIVE, null);
   if (!live || !mlLive) throw new Error('nba/params/live.json or ml_live.json is missing: run node nba/model/live.js');
   const record = readJson(WF.RECORD, null);
+  const recP = record && record.markets && record.markets.P;
+  const testN = record && record.windows && record.windows.test && record.windows.test.status !== 'SEALED' && record.choice && record.choice.P ? (record.windows.test[record.choice.P.chosen] || {}).n || 0 : 0;
+  const recStatus = { validated: !!(recP && recP.moneyline && recP.moneyline.status === 'OUTCOME_VALIDATED' && !/sealed/.test(recP.window || '')), sampleOk: testN >= 500 };
   const season = C.currentSeason(now);
   const tuning = live.tuning;
   const pass = await PASS.run(tuning.pass, { includeScheduled: true, now });
@@ -223,12 +244,14 @@ async function build(o) {
     if (f.proj_stale) reasons.push('Availability is last season\'s closing rotation; no injury report or confirmed lineup is in the price.');
     if (sdP >= 0.04) reasons.push('Models disagree (win-probability sd ' + (100 * sdP).toFixed(1) + ' pts): the answer depends on which signal you trust.');
     if (scenarios.some((s) => Math.abs(s.delta_p_home || 0) >= 0.05)) reasons.push('One player\'s status moves the win probability by 5+ points: wait for the inactive list.');
+    const mkt = marketBlock(quotesBy.get(String(row.id)), pc, quotes, now);
     const gameOut = {
       game_id: row.id, start_utc: new Date(row.start).toISOString().replace(/\.000Z$/, 'Z'), date: row.date, type: row.type, neutral: !!row.neutral,
       home: { id: row.home, name: teams[row.home] || row.home, abbr: abbr[row.home] || null }, away: { id: row.away, name: teams[row.away] || row.away, abbr: abbr[row.away] || null },
       model: chosen, price, models, disagreement: { sd_p_home: r4(sdP), range_p_home: ps.length ? [r4(Math.min(...ps)), r4(Math.max(...ps))] : null },
       matchup, availability: { home: strip(H), away: strip(A) }, scenarios, roster_scenario: rosterScenario, explanation: contrib, uncertainty, reasons_to_pass: reasons,
-      market: marketBlock(quotesBy.get(String(row.id)), pc, quotes, now),
+      market: mkt,
+      decision: gatesFor({ market: mkt, outcomeValidated: recStatus.validated, sampleOk: recStatus.sampleOk }),
       inputs_known_at: row.inputs_known_at ? new Date(row.inputs_known_at).toISOString() : null, predicted_at: new Date(now).toISOString(),
       context: { pace: r4(f.pace), kal_m: r4(f.kal_m), kal_t: r4(f.kal_t), b2b_h: f.b2b_h || 0, b2b_a: f.b2b_a || 0 },
     };
@@ -267,6 +290,8 @@ function check() {
       const m = g.price.moneyline; if (Math.abs(m.home + m.away - 1) > 1e-4) fails.push(g.game_id + ' moneyline does not sum to 1');
       const sp = g.price.spread.main; if (Math.abs(sp.win + sp.push + sp.lose - 1) > 1e-4) fails.push(g.game_id + ' spread outcomes do not sum to 1');
       if (g.market.value_claims !== 'DISABLED') fails.push(g.game_id + ' claims value');
+      if (!g.decision || !Array.isArray(g.decision.gates) || (g.decision.decision !== 'PASS' && g.decision.gates.some((x) => !x.pass))) fails.push(g.game_id + ' decision does not follow its gates');
+      if (g.decision && g.decision.decision !== 'PASS' && g.market.value_claims === 'DISABLED') fails.push(g.game_id + ' is not PASS while value claims are disabled');
       /* one distribution: the favourite on the moneyline is the favourite on the spread */
       if ((m.home - 0.5) * (-g.price.spread.fair_line_home) < -0.02) fails.push(g.game_id + ' moneyline and spread disagree on the favourite');
     }

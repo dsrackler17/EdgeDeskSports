@@ -96,6 +96,25 @@ const C = R('nba/config.js');
   const s25 = man.seasons['2025'];
   ok('the manifest carries provenance and integrity', s25.sources.pbp && /^[0-9a-f]{64}$/.test(s25.sources.pbp.sha256) && s25.integrity.minutes_mae < 0.35 && s25.integrity.valid_lineup_share > 0.99, s25.integrity);
   ok('the ESPN spread is labelled untimestamped in the licence', /untimestamped/i.test(C.LICENSE.odds) && /never a market test/i.test(C.LICENSE.odds));
+  /* the NBA Data Pack's scope rule: the Cup final is season type 2 but not a regular-season game */
+  for (const season of [2024, 2025, 2026]) {
+    const fin = D.games([season]).filter((x) => x.status === 'FINAL'); const reg = fin.filter((x) => x.scope === 'regular_season');
+    const per = {}; for (const x of reg) { per[x.home_id] = (per[x.home_id] || 0) + 1; per[x.away_id] = (per[x.away_id] || 0) + 1; }
+    ok(season + ': one NBA Cup final, kept out of the regular season (1,230 games, 82 a club)', fin.filter((x) => x.scope === 'nba_cup_final').length === 1 && fin.filter((x) => x.scope === 'nba_cup_final').every((x) => x.type === 'R' && x.neutral === 1) && reg.length === 1230 && Object.values(per).every((n) => n === 82), { reg: reg.length });
+  }
+  ok('club games only: every team id is one of the 30 franchises, and so are the team files', D.games(D.seasonList(2003, 2027)).every((x) => +x.home_id >= 1 && +x.home_id <= 30 && +x.away_id >= 1 && +x.away_id <= 30)
+    && Object.keys(JSON.parse(fs.readFileSync(path.join(ROOT, 'nba', 'data', 'teams.json'), 'utf8'))).length === 30);
+  ok('every final game carries a scope that matches its type', D.games([2008, 2016, 2026]).filter((x) => x.status === 'FINAL').every((x) => (x.type === 'P' ? x.scope === 'playoffs' : x.type === 'I' ? x.scope === 'play_in' : x.scope === 'regular_season' || x.scope === 'nba_cup_final')));
+  const pg26 = D.playerGames(2026);
+  ok('a zero-minute entry the play-by-play puts on court is an appearance', pg26.some((r) => r.pl === 1 && r.min === 0) && pg26.every((r) => !(r.pl === 1 && r.dnp === 1)));
+}
+/* the streamed work cache round-trips rows a single JSON string could not hold */
+{
+  const io = R('nba/lib/io.js');
+  io.writeWorkLines('test_roundtrip.jsonl.gz', { key: 'k1' }, [{ a: 1 }, { b: [2, null] }, { c: 'x\ny' }]).then(() => io.readWorkLines('test_roundtrip.jsonl.gz')).then((r) => {
+    ok('the line-streamed work cache round-trips its head and rows', r.head.key === 'k1' && JSON.stringify(r.rows) === JSON.stringify([{ a: 1 }, { b: [2, null] }, { c: 'x\ny' }]));
+    fs.unlinkSync(path.join(C.PATHS.cacheWork, 'test_roundtrip.jsonl.gz'));
+  }).catch((e) => ok('the line-streamed work cache round-trips', false, String(e)));
 }
 
 /* ---------------------------------------------------------------- 3. learners */
@@ -185,10 +204,31 @@ const PM = R('nba/props/model.js');
 {
   const pmf = PM.nbPmf(12.4, 6, 120);
   ok('the negative-binomial pmf has mass 1 and the right mean', near(Array.from(pmf).reduce((a, v) => a + v, 0), 1, 1e-9) && near(Array.from(pmf).reduce((a, v, i) => a + i * v, 0), 12.4, 0.02));
+  /* one minutes node: the combination is exact (mean sum, correlated variance) */
   const model = { corr: { pts: { pts: 1, reb: 0.2, ast: 0.3 }, reb: { pts: 0.2, reb: 1, ast: 0.1 }, ast: { pts: 0.3, reb: 0.1, ast: 1 }, stl: {}, blk: {} } };
-  const pred = { stat: { pts: { mu: 20, var: 40, r: 20 }, reb: { mu: 6, var: 9, r: 12 }, ast: { mu: 5, var: 8, r: 8 } } };
+  const st = (mu, a, b) => ({ mu, lam: mu / 30, a, b, var: a * mu + b * mu * mu });
+  const pred = { min: { nodes: [30] }, stat: { pts: st(20, 2, 0.05), reb: st(6, 1, 0.08), ast: st(5, 1, 0.1) } };
+  const v = (x) => x.a * x.mu + x.b * x.mu * x.mu; const P_ = pred.stat;
   const c = PM.combo(model, pred, ['pts', 'reb', 'ast']);
-  ok('a combined prop adds its means and its correlated variance', near(c.mu, 31) && c.var > 40 + 9 + 8 && near(c.var, 57 + 2 * (0.2 * Math.sqrt(360) + 0.3 * Math.sqrt(320) + 0.1 * Math.sqrt(72)), 1e-6));
+  ok('a combined prop adds its means and its correlated variance (given minutes)', near(c.mu, 31) && near(c.var, v(P_.pts) + v(P_.reb) + v(P_.ast) + 2 * (0.2 * Math.sqrt(v(P_.pts) * v(P_.reb)) + 0.3 * Math.sqrt(v(P_.pts) * v(P_.ast)) + 0.1 * Math.sqrt(v(P_.reb) * v(P_.ast))), 1e-6));
+  /* minutes nodes widen it: the same rates over 20 and 40 minutes */
+  const pred2 = { min: { nodes: [20, 40] }, stat: { pts: st(20, 2, 0.05), reb: st(6, 1, 0.08), ast: st(5, 1, 0.1) } };
+  ok('mixing over minutes adds the minutes variance to a combination', PM.combo(model, pred2, ['pts', 'reb', 'ast']).var > c.var + 50);
+  /* the lattice negative binomial: mass 1, the mean, Var = a·μ + b·μ² (the uniform spread adds about a²/12), no empty integer */
+  const sp = Array.from(PM.scaledPmf(6, 2.3, 0.05, 80)); const m1 = sp.reduce((a, x, i) => a + i * x, 0); const v1 = sp.reduce((a, x, i) => a + (i - m1) * (i - m1) * x, 0);
+  ok('a points-like count (step 2.3) keeps its mass, mean and variance', near(sp.reduce((a, x) => a + x, 0), 1, 1e-9) && near(m1, 6, 0.01) && Math.abs(v1 - (2.3 * 6 + 0.05 * 36)) < 2.3 * 2.3 / 12 + 0.1, { m1, v1 });
+  ok('...and leaves no integer between lattice points empty', sp.slice(1, 20).every((x) => x > 0));
+  ok('a step of 1 is the negative binomial itself', near(Array.from(PM.scaledPmf(4, 1, 0.1, 60)).reduce((a, x, i) => a + i * x, 0), 4, 0.01));
+  /* the variance function is recovered from data drawn from it */
+  const rng = S.rng(5); const mus = [], ys = [];
+  for (let i = 0; i < 20000; i++) { const mu = 1 + 25 * rng(); const pm = PM.scaledPmf(mu, 2.2, 0.03, 200); let u = rng(), y = 0; while (y < pm.length - 1 && u > pm[y]) { u -= pm[y]; y++; } mus.push(mu); ys.push(y); }
+  const vf = PM.fitVarFn(mus, ys);
+  ok('the variance function a·μ + b·μ² is recovered', Math.abs(vf.a - 2.2) < 0.35 && Math.abs(vf.b - 0.03) < 0.02, vf);
+  /* the availability model learns that a player who missed the last game, injured, is less likely to play */
+  const av = []; const r2 = S.rng(9);
+  for (let i = 0; i < 6000; i++) { const inj = r2() < 0.2 ? 1 : 0; const f = { in_last: inj ? 0 : 1, out: inj ? 1 + Math.floor(r2() * 5) : 0, ew: 0.8, min_ew: 25, start_rate: 0.5, g_ss: 20, b2b: 0 }; for (const k of R('nba/props/state.js').RC) f['rc_' + k] = 0; if (inj) f.rc_INJURY = 1; av.push({ f, y: r2() < (inj ? 0.25 : 0.95) ? 1 : 0 }); }
+  const am = PM.fitAvail(av); const fx = (inj) => Object.assign({}, av.find((x) => x.f.rc_INJURY === inj).f);
+  ok('the availability model separates a recent injury from a healthy regular', am && PM.predictAvail(am, fx(1)) < 0.4 && PM.predictAvail(am, fx(0)) > 0.9, am && [PM.predictAvail(am, fx(1)), PM.predictAvail(am, fx(0))]);
 }
 
 /* ---------------------------------------------------------------- 7. the market */
@@ -204,6 +244,11 @@ const Q = R('nba/market/quotes.js');
   ok('a quote is matched to its game by both teams and the start', n.events.length === 1 && n.events[0].game_id === 'G1' && n.events[0].books[0].h2h.home === -180 && n.events[0].books[0].spreads[0].home_line === -4.5);
   ok('an unmatched event is kept with its reason, never guessed', n.unmatched.length === 1 && /teams\.json/.test(n.unmatched[0].reason));
   const nv = Q.noVig(-180, 150); ok('the no-vig probability is normalised', near(nv.a + nv.b, 1) && nv.overround > 0);
+  const nm = Q.noVigMethods(-400, 320);
+  ok('four de-vig methods agree at a pick\'em and their spread is reported', near(Q.noVigMethods(-110, -110).spread, 0) && nm.spread > 0.01 && nm.multiplicative < nm.shin && nm.shin <= nm.power + 1e-9);
+  ok('two-way Shin equals the additive method (a known identity)', near(nm.shin, nm.additive, 1e-6));
+  const dup = Q.normaliseEvents([Object.assign({}, evs[0], { bookmakers: [evs[0].bookmakers[0], Object.assign({}, evs[0].bookmakers[0], { last_update: '2026-10-21T21:00:00Z', markets: [{ key: 'h2h', outcomes: [{ name: 'Boston Celtics', price: -170 }, { name: 'New York Knicks', price: 145 }] }] })] }), Object.assign({}, evs[0], { id: 'e1b', bookmakers: [] })], sched);
+  ok('a book listed twice keeps its latest update; a second event for the game is reported, never merged', dup.events.length === 1 && dup.events[0].books.length === 1 && dup.events[0].books[0].h2h.home === -170 && dup.events[0].duplicate_books_dropped === 1 && dup.unmatched.some((u) => /duplicate provider event/.test(u.reason)));
   const FQ = R('nba/market/fetch_quotes.js');
   FQ.run({ env: {}, dryRun: true }).then((r) => ok('without NBA_PRICES=on nothing is requested', r.status === 'DISABLED' && /not authorised/.test(r.reason)));
 }
@@ -248,6 +293,21 @@ if (fs.existsSync(path.join(ROOT, 'nba', 'slate.json'))) {
   ok('every slate game has reasons to pass and its distribution\'s prices', s.games.every((g) => g.reasons_to_pass.length >= 1 && g.price && g.price.spread.ladder.length > 5));
   const DK = R('nba/desk.js');
   ok('the desk reads the slate schema it was written for', DK.SLATE_SCHEMA === s.schema);
+  ok('every game is PASS with its gates, and the market-test gate fails', s.games.every((g) => g.decision && g.decision.decision === 'PASS' && g.decision.gates.length >= 6 && g.decision.gates[0].pass === false));
+  ok('the market block keeps the model market-independent and the no-vig market beside it', s.games.every((g) => !g.market.quotes || !g.market.quotes.length || (g.market.forecast_basis && /MARKET_INDEPENDENT/.test(g.market.forecast_basis.model))));
+}
+/* the NBA Data Pack: the committed verification and reconciliation reproduce, and a tampered pack fails */
+if (fs.existsSync(path.join(ROOT, 'datapack', 'nba_v1', 'EDGEDESK_VERIFICATION.json')) && !process.env.NBA_TEST_SKIP_PACK) {
+  const r1 = run('node --max-old-space-size=6000 tools/datapack/verify_nba.js --check'); ok('the NBA Data Pack verification reproduces', r1 === true, r1);
+  const r2 = run('node --max-old-space-size=6000 nba/crosscheck/pack.js --check'); ok('the pack reconciliation reproduces', r2 === true, r2);
+  const os = require('os'); const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'nba-pack-'));
+  try {
+    fs.cpSync(path.join(ROOT, 'datapack', 'nba_v1'), tmp, { recursive: true });
+    const inv = JSON.parse(fs.readFileSync(path.join(tmp, 'sources', 'inventory.json'), 'utf8')); inv.find((t) => t.table === 'games').rows += 1;
+    fs.writeFileSync(path.join(tmp, 'sources', 'inventory.json'), JSON.stringify(inv));
+    let failed = false; try { require('child_process').execSync('node --max-old-space-size=6000 tools/datapack/verify_nba.js', { cwd: ROOT, stdio: 'pipe', env: Object.assign({}, process.env, { EDGEDESK_NBA_PACK: tmp }) }); } catch (_) { failed = true; }
+    ok('a pack whose inventory disagrees with its tables fails verification', failed);
+  } finally { fs.rmSync(tmp, { recursive: true, force: true }); }
 }
 if (fs.existsSync(path.join(ROOT, 'nba', 'validation', 'nba_props_walkforward.json'))) { const r = run('node nba/props/walkforward.js --check'); ok('the props record passes its check', r === true, r); }
 

@@ -2,7 +2,9 @@
 #
 #   tests     on every pull request and push that touches this work: the NBA
 #             engine offline (ingest parser, lineups, distribution, markets,
-#             learners, ledger, quotes, desk, loader), the committed record and
+#             learners, ledger, quotes, desk, loader; the NBA Data Pack's
+#             verification and reconciliation reproduce, a tampered copy
+#             fails), the committed record and
 #             slate checks, the warehouse contract and the odds row on a
 #             throwaway PostgreSQL, the navigation and sports list, the no-bypass
 #             guard, and the panel in Chromium (desktop + 390 px).
@@ -34,6 +36,8 @@ on:
       - 'supabase/nba_odds_sport.sql'
       - 'supabase/functions/edgedesk_ai/index.ts'
       - 'app.html'
+      - 'datapack/nba_v1/**'
+      - 'tools/datapack/verify_nba.js'
       - '.github/workflows/nba.yml'
   push:
     branches: [main]
@@ -64,7 +68,12 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
-      - name: The NBA engine offline (parsers, lineups, distribution, markets, learners, ledger, quotes, desk, loader)
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: pyarrow (the NBA Data Pack is Parquet; read by nba/tools/parquet_select.py)
+        run: pip install --quiet pyarrow
+      - name: The NBA engine offline (parsers, lineups, distribution, markets, learners, ledger, quotes, desk, loader, the data pack's verification, reconciliation and tamper test)
         run: node tools/nba/nba.test.js
       - name: The NBA on the desk (module and the real edge handler, no model)
         run: node tools/nba/nba_desk.test.js

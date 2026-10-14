@@ -8,6 +8,13 @@
    (the inactive list and starters are public ~30 minutes before tip). The
    projected regime's features use only the team's previous game.
 
+   AVAILABILITY (o.avail): one row per player recently with a team (appeared
+   for it within its last 10 games) per team-game, target = he played. A DNP
+   or an absence never enters a rate's denominator (rates absorb appearances
+   only); its PROBABILITY is modelled here instead, from what was knowable the
+   night before: did he play the team's last game, how many in a row he has
+   missed, why he sat last time, his appearance rate, role and minutes.
+
    STATE per player (updated when a game becomes available, start + 4 h):
      ewm      exponentially weighted per-game means (half-life 10 games) of
               minutes, the seven counted stats, FGA, FTA, fouls and starts
@@ -26,8 +33,10 @@
    =========================================================================== */
 const D = require('../lib/data');
 
-const STATS = ['pts', 'reb', 'ast', 'fg3m', 'stl', 'blk', 'tov'];
-const RAW = { pts: (r) => r.pts, reb: (r) => r.or + r.dr, ast: (r) => r.ast, fg3m: (r) => r.f3m, stl: (r) => r.stl, blk: (r) => r.blk, tov: (r) => r.tov };
+const STATS = ['pts', 'reb', 'ast', 'fg3m', 'stl', 'blk', 'tov', 'fga', 'fg3a'];
+const RAW = { pts: (r) => r.pts, reb: (r) => r.or + r.dr, ast: (r) => r.ast, fg3m: (r) => r.f3m, stl: (r) => r.stl, blk: (r) => r.blk, tov: (r) => r.tov, fga: (r) => r.fga, fg3a: (r) => r.f3a };
+/* why a listed player did not play last time (nba/ingest/season.js reasonCat); ABSENT = not in the box at all */
+const RC = ['COACH', 'INJURY', 'ILLNESS', 'REST', 'PERSONAL', 'SUSPENSION', 'ASSIGNMENT', 'ABSENT'];
 const POSG = (pos) => { const p = String(pos || '').toUpperCase(); if (/C/.test(p)) return 'C'; if (/F/.test(p)) return 'F'; return 'G'; };
 
 function newPlayer(pos) {
@@ -46,6 +55,9 @@ function run(o) {
   const P = new Map(); const Tm = new Map(); const league = { w: 0, s48: Object.fromEntries(STATS.map((k) => [k, 0])) };
   const posRate = { G: {}, F: {}, C: {} }; for (const g of Object.keys(posRate)) for (const k of STATS) posRate[g][k] = { m: 0, x: 0 };
   const lastTeamGame = new Map(); /* team → [pids who played] */
+  const TA = new Map();           /* team → Map(pid → { ew, out, rc }) availability history over team games */
+  const AAV = Math.pow(0.5, 1 / 10);
+  const avail = [];
   const usual = new Map();        /* team → Map(pid → ewm usage per game) */
   const out = [];
   let pgBy = new Map(), curSeason = null;
@@ -74,6 +86,20 @@ function run(o) {
       T.w = T.w * AOPP + 1; for (const k of STATS) T.allow[k] = T.allow[k] * AOPP + t[k] * 48 / mins;
       league.w += 1; for (const k of STATS) league.s48[k] += t[k] * 48 / mins;
     }
+    for (const tm of [g.home_id, g.away_id]) {
+      const listed = new Map(rows.filter((r) => r.tm === tm).map((r) => [r.p, r]));
+      if (!listed.size) continue; /* no box for this team: its history is not advanced on a missing record */
+      const A = TA.get(tm) || new Map();
+      for (const [pid, h] of A) if (!listed.has(pid)) { h.ew *= AAV; h.out++; h.rc = 'ABSENT'; }
+      for (const [pid, r] of listed) {
+        const h = A.get(pid) || { ew: 0, out: 0, rc: null };
+        h.ew = h.ew * AAV + (r.pl ? 1 - AAV : 0);
+        if (r.pl) { h.out = 0; h.rc = null; } else { h.out++; h.rc = RC.includes(r.rc) ? r.rc : 'COACH'; }
+        A.set(pid, h);
+      }
+      for (const [pid, h] of A) if (h.out > 10) A.delete(pid);
+      TA.set(tm, A);
+    }
     for (const [tm, list] of Object.entries(usage)) {
       lastTeamGame.set(tm, list.map((x) => x[0]));
       const u = usual.get(tm) || new Map(); for (const [pid, v] of u) u.set(pid, v * AEW);
@@ -86,6 +112,14 @@ function run(o) {
     if (which === 'ew') return (p.ew.s[k] + pr * M0) / (p.ew.min + M0);
     if (which === 'ss') return (p.ss.s[k] + pr * M0) / (p.ss.min + M0);
     return (p.lg.s[k] + pr * M0) / (p.lg.min + M0);
+  }
+
+  function availRow(g, tm, side, pid, h, f, y) {
+    const p = P.get(pid);
+    const x = { in_last: h.out === 0 ? 1 : 0, out: Math.min(h.out, 10), ew: h.ew, min_ew: p ? p.ew.min / Math.max(1e-9, p.ew.w) : 0,
+      start_rate: p ? p.ew.st / Math.max(1e-9, p.ew.w) : 0, g_ss: p && p.season === g.season ? p.ss.g : 0, b2b: f ? (side === 'h' ? f.b2b_h : f.b2b_a) || 0 : 0 };
+    for (const c of RC) x['rc_' + c] = h.rc === c ? 1 : 0;
+    return { g: g.game_id, p: pid, tm, season: g.season, date: g.date, start: g.start_ms, f: x, y };
   }
 
   for (const g of games) {
@@ -108,6 +142,7 @@ function run(o) {
       const U = usual.get(tm) || new Map(); let uTot = 0; for (const v of U.values()) uTot += v;
       let missConf = 0, missProj = 0; for (const [pid, v] of U) { if (v < 0.5) continue; if (!playedSet.has(pid)) missConf += v; if (!lastSet.has(pid)) missProj += v; }
       const OT = Tm.get(opp);
+      if (o.avail && rows.some((r) => r.tm === tm)) for (const [pid, h] of TA.get(tm) || []) avail.push(availRow(g, tm, side, pid, h, f, playedSet.has(pid) ? 1 : 0));
       for (const r of played) {
         const p = P.get(r.p); if (!p || p.games < 3) continue;
         const ew = (k) => rate(p, k, 'ew'), ss = (k) => rate(p, k, 'ss'), lgr = (k) => rate(p, k, 'lg');
@@ -144,21 +179,25 @@ function run(o) {
         const U = usual.get(tm) || new Map(); let uTot = 0; for (const v of U.values()) uTot += v;
         let missProj = 0; for (const [pid, v] of U) { if (v >= 0.5 && !lastSet.has(pid)) missProj += v; }
         const OT = Tm.get(opp); const f0 = u.f || {};
-        for (const pid of lastSet) {
+        /* the previous game's rotation, plus anyone who sat or was absent for at most three games (with his probability of playing) */
+        const cands = new Set(lastSet); for (const [pid, h] of TA.get(tm) || []) if (h.out <= 3) cands.add(pid);
+        for (const pid of cands) {
           const p = P.get(pid); if (!p || p.games < 3) continue;
           const minEw = p.ew.min / Math.max(1e-9, p.ew.w);
           const feat = { min_ew: minEw, min_ss: p.ss.g ? p.ss.min / p.ss.g : minEw, start_rate: p.ew.st / Math.max(1e-9, p.ew.w), starter: null,
             g_ss: p.season === u.season ? p.ss.g : 0, rest: p.last_ms ? Math.min(5, (u.start - p.last_ms) / 864e5) : 5, pf_rate: p.ew.pf / Math.max(1, p.ew.min),
-            usage_share: uTot > 0 ? (U.get(pid) || 0) / uTot : 0, miss_conf: uTot > 0 ? missProj / uTot : 0, miss_proj: uTot > 0 ? missProj / uTot : 0, in_last: 1,
+            usage_share: uTot > 0 ? (U.get(pid) || 0) / uTot : 0, miss_conf: uTot > 0 ? missProj / uTot : 0, miss_proj: uTot > 0 ? missProj / uTot : 0, in_last: lastSet.has(pid) ? 1 : 0,
             home: side === 'h' && !u.neutral ? 1 : 0, pace: f0.pace == null ? null : f0.pace, margin: f0.kal_m == null ? null : (side === 'h' ? f0.kal_m : -f0.kal_m), total: f0.kal_t, b2b: side === 'h' ? f0.b2b_h || 0 : f0.b2b_a || 0, pos: p.pos };
           for (const k of STATS) { feat['r_ew_' + k] = rate(p, k, 'ew'); feat['r_ss_' + k] = rate(p, k, 'ss'); feat['r_lg_' + k] = rate(p, k, 'lg'); feat['opp_' + k] = OT && OT.w > 3 && lg48 && lg48[k] > 0 ? (OT.allow[k] / OT.w) / lg48[k] : 1; feat['avg10_' + k] = p.ew.s[k] / Math.max(1e-9, p.ew.w); feat['avgss_' + k] = p.ss.g ? p.ss.s[k] / p.ss.g : null; }
-          upcoming.push({ g: u.game_id, p: pid, tm, opp, season: u.season, start: u.start, f: feat });
+          const h = (TA.get(tm) || new Map()).get(pid);
+          const av = h ? availRow({ game_id: u.game_id, season: u.season, date: null, start_ms: u.start }, tm, side, pid, h, { b2b_h: f0.b2b_h, b2b_a: f0.b2b_a }, null).f : null;
+          upcoming.push({ g: u.game_id, p: pid, tm, opp, season: u.season, start: u.start, f: feat, avail_f: av });
         }
       }
     }
   }
-  if (o.upcoming) return { rows: out, upcoming };
+  if (o.upcoming || o.avail) return { rows: out, upcoming, avail };
   return out;
 }
 
-module.exports = { run, STATS, RAW };
+module.exports = { run, STATS, RAW, RC };

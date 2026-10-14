@@ -10,6 +10,7 @@ have is written empty and reported on stderr ("missing columns: ...") so the
 caller records it as missing, never as observed.
 
   python3 parquet_select.py <file.parquet> <out.csv|-> col1,col2,...
+  python3 parquet_select.py --meta <file.parquet>     JSON: rows and each column's name and type
 
 Exit codes: 0 ok · 2 usage · 3 pyarrow missing · 4 unreadable file.
 """
@@ -21,7 +22,24 @@ except (AttributeError, ValueError):
     pass
 
 
+def meta(src):
+    import json
+    import pyarrow.parquet as pq
+    pf = pq.ParquetFile(src)
+    print(json.dumps({'rows': pf.metadata.num_rows, 'columns': [{'name': f.name, 'type': str(f.type)} for f in pf.schema_arrow]}))
+    return 0
+
+
 def main():
+    if len(sys.argv) == 3 and sys.argv[1] == '--meta':
+        try:
+            return meta(sys.argv[2])
+        except ImportError:
+            print('pyarrow is not installed (pip install pyarrow)', file=sys.stderr)
+            return 3
+        except Exception as exc:  # noqa: BLE001
+            print('could not read %s: %s' % (sys.argv[2], exc), file=sys.stderr)
+            return 4
     if len(sys.argv) < 4:
         print('usage: parquet_select.py <file.parquet> <out.csv|-> col1,col2,...', file=sys.stderr)
         return 2

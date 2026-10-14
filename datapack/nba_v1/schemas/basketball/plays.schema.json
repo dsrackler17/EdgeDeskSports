@@ -1,0 +1,399 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "basketball.plays",
+  "type": "object",
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "event_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "entity_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Source registry identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_record_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Original provider record identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "occurred_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "known_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "retrieved_at": {
+      "type": "string",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "description": "Monotone version of this source record.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "quality_status": {
+      "type": "string",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "period": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Period.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "home_score_before": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Home score before.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "away_score_before": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Away score before.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "home_score_after": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Home score after.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "away_score_after": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Away score after.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "shot_value": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Shot value.",
+      "x-unit": "count",
+      "x-priority": "P0"
+    },
+    "period_seconds_remaining": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Period seconds remaining.",
+      "x-unit": "seconds",
+      "x-priority": "P0"
+    },
+    "game_seconds_remaining": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Game seconds remaining.",
+      "x-unit": "seconds",
+      "x-priority": "P0"
+    },
+    "shot_clock_seconds": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Shot clock seconds.",
+      "x-unit": "seconds",
+      "x-priority": "P0"
+    },
+    "team_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Team id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "player_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Player id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "assisted_by_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Assisted by id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "blocked_by_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Blocked by id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "stolen_by_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Stolen by id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "possession_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Possession id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "lineup_home_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Lineup home id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "lineup_away_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Lineup away id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "event_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Event type.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "shot_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Shot type.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "shot_zone": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Shot zone.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "foul_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Foul type.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "rebound_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Rebound type.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "coordinate_convention": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Coordinate convention.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "x": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "X.",
+      "x-unit": "feet",
+      "x-priority": "P0"
+    },
+    "y": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Y.",
+      "x-unit": "feet",
+      "x-priority": "P0"
+    },
+    "shot_distance": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Shot distance.",
+      "x-unit": "feet",
+      "x-priority": "P0"
+    },
+    "shot_made": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Shot made.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "free_throw_made": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Free throw made.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "is_transition": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Is transition.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "is_putback": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Is putback.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "is_heave": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Is heave.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "is_and_one": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Is and one.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "technical_free_throw": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Technical free throw.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "possession_ending": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Possession ending.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    }
+  },
+  "required": [
+    "record_id",
+    "source_id",
+    "retrieved_at",
+    "revision",
+    "quality_status"
+  ],
+  "additionalProperties": false
+}

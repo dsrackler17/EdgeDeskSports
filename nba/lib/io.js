@@ -99,5 +99,27 @@ function readWork(name, dflt) {
   return JSON.parse(zlib.gunzipSync(fs.readFileSync(f)).toString('utf8'));
 }
 function hasWork(name) { return fs.existsSync(path.join(C.PATHS.cacheWork, name)); }
+/* the same, one JSON value per line, streamed: for row sets larger than one
+   JavaScript string can hold (the props rows are ~10^6 player-games) */
+async function writeWorkLines(name, head, rows) {
+  fs.mkdirSync(C.PATHS.cacheWork, { recursive: true });
+  const file = path.join(C.PATHS.cacheWork, name), tmp = file + '.tmp';
+  const gz = zlib.createGzip(), out = fs.createWriteStream(tmp); gz.pipe(out);
+  const done = new Promise((res, rej) => { out.on('finish', res); out.on('error', rej); gz.on('error', rej); });
+  const write = (s) => new Promise((res) => (gz.write(s) ? res() : gz.once('drain', res)));
+  await write(JSON.stringify(head) + '\n');
+  let buf = [];
+  for (const r of rows) { buf.push(JSON.stringify(r)); if (buf.length >= 2000) { await write(buf.join('\n') + '\n'); buf = []; } }
+  if (buf.length) await write(buf.join('\n') + '\n');
+  gz.end(); await done; fs.renameSync(tmp, file);
+}
+async function readWorkLines(name) {
+  const f = path.join(C.PATHS.cacheWork, name);
+  if (!fs.existsSync(f)) return null;
+  const rl = require('readline').createInterface({ input: fs.createReadStream(f).pipe(zlib.createGunzip()), crlfDelay: Infinity });
+  let head = null; const rows = [];
+  for await (const line of rl) { if (!line) continue; if (head === null) head = JSON.parse(line); else rows.push(JSON.parse(line)); }
+  return { head, rows };
+}
 
-module.exports = { http, setClient, fetchSource, parquetRows, parquetAll, num, bool, writeWork, readWork, hasWork };
+module.exports = { http, setClient, fetchSource, parquetRows, parquetAll, num, bool, writeWork, readWork, hasWork, writeWorkLines, readWorkLines };

@@ -10,14 +10,14 @@
    play-by-play. Output:
 
      COMMITTED (small, read by the slate and the record)
-       nba/data/games/<season>.csv        edgedesk_nba_games_v1, one row per game
+       nba/data/games/<season>.csv        edgedesk_nba_games_v2, one row per game (scope: regular_season · nba_cup_final · play_in · playoffs)
        nba/data/team_games/<season>.csv   edgedesk_nba_team_games_v1, two rows per game
        nba/data/manifest.json             per season: provenance (url, sha256,
                                           bytes, fetched_at), counts, drops and
                                           every integrity check below
        nba/data/players.json              id → name, position, last team/season
      REBUILT, NOT COMMITTED (.cache/nba_work, large)
-       player_games_<season>.json.gz      edgedesk_nba_player_games_v1
+       player_games_<season>.json.gz      edgedesk_nba_player_games_v2
        stints_<season>.json.gz            edgedesk_nba_stints_v1 (lineup stints)
        shots_<season>.json.gz             edgedesk_nba_shots_v1
 
@@ -57,7 +57,7 @@ const BUBBLE_FROM = Date.parse('2020-07-29T00:00:00Z');
 
 const GAME_COLS = ['game_id', 'season', 'type', 'date', 'start_utc', 'neutral', 'bubble', 'home_id', 'away_id', 'hs', 'as', 'ot',
   'h_q1', 'h_q2', 'h_q3', 'h_q4', 'h_ot', 'a_q1', 'a_q2', 'a_q3', 'a_q4', 'a_ot', 'venue', 'city', 'state', 'attendance',
-  'ref_line_home', 'pbp', 'status', 'src', 'known_at', 'assumed_available_at', 'pit'];
+  'ref_line_home', 'pbp', 'status', 'src', 'known_at', 'assumed_available_at', 'pit', 'scope'];
 const TG_COLS = ['game_id', 'season', 'date', 'start_utc', 'team_id', 'opp_id', 'home', 'neutral', 'pts', 'opp_pts', 'min',
   'fgm', 'fga', 'fg3m', 'fg3a', 'ftm', 'fta', 'oreb', 'dreb', 'ast', 'stl', 'blk', 'tov', 'pf', 'paint_pts', 'fb_pts', 'pts_off_tov', 'poss',
   'rim_a', 'rim_m', 'paint_a', 'paint_m', 'mid_a', 'mid_m', 'c3_a', 'c3_m', 'ab3_a', 'ab3_m', 'tr_a', 'tr_pts', 'heave',
@@ -112,13 +112,18 @@ async function ingest(season, o) {
   if (!sch.ok) return { season, ok: false, report };
   const { rows: srows, missing: smiss } = await io.parquetAll(sch.file, C.COLUMNS.schedule);
   report.missing_columns.schedule = smiss;
-  const drop = { preseason: 0, other_type: 0, exhibition: 0, not_played: 0, missing_score: 0, duplicates: 0 };
+  const drop = { preseason: 0, other_type: 0, exhibition: 0, not_played: 0, missing_score: 0, duplicates: 0, non_club: 0 };
   const games = new Map(); const names = {}; const abbrs = {};
   for (const r of srows) {
     const st = num(r.season_type);
     if (st === 1) { drop.preseason++; continue; }
     if (st !== 2 && st !== 3 && st !== 5) { drop.other_type++; continue; }
     if (EXHIBITION.test(String(r.notes_headline || '')) || /^Team /.test(String(r.home_display_name || ''))) { drop.exhibition++; continue; }
+    /* club games only (the NBA Data Pack's rule): both team ids are franchises 1-30. This drops an All-Star game the
+       source left without a note (2003: East vs West) and the Cup knockout placeholders whose teams are TBD (−1/−2;
+       they return under the same game id once ESPN fills in the clubs). */
+    const club = (id) => { const n = Number(id); return Number.isInteger(n) && n >= 1 && n <= 30; };
+    if (!club(r.home_id) || !club(r.away_id)) { drop.non_club++; continue; }
     const start = String(r.date || '').replace(/Z$/, ':00Z').replace(/:00:00Z$/, ':00Z');
     const t = Date.parse(start);
     const done = truthy(r.status_type_completed), nm = String(r.status_type_name || '');
@@ -139,6 +144,9 @@ async function ingest(season, o) {
       hs: status === 'FINAL' ? hs : '', as: status === 'FINAL' ? as : '', ot: status === 'FINAL' && per != null ? Math.max(0, per - reg) : '',
       _hl: hl, _al: al, venue: r.venue_full_name || '', city: r.venue_address_city || '', state: r.venue_address_state || '', attendance: num(r.attendance) == null ? '' : num(r.attendance),
       ref_line_home: '', pbp: 0, status, src: 'S', known_at: '', assumed_available_at: status === 'FINAL' && isFinite(t) ? isoS(t + 4 * 3600e3) : '', pit: 'RETRO',
+      /* the competition scope (the NBA Data Pack's rule): the NBA Cup final is season type 2 but its native competition type is CC (id 39) and it does not
+         count toward the regular season; Cup group, quarter- and semi-final games do. Every scope is a real game for the ratings. */
+      scope: st === 3 ? 'playoffs' : st === 5 ? 'play_in' : (String(r.type_abbreviation || '') === 'CC' || String(r.type_id || '') === '39') ? 'nba_cup_final' : 'regular_season',
     });
     names[String(r.home_id)] = r.home_display_name || names[String(r.home_id)];
     names[String(r.away_id)] = r.away_display_name || names[String(r.away_id)];
@@ -150,6 +158,7 @@ async function ingest(season, o) {
   const finals = [...games.values()].filter((g) => g.status === 'FINAL');
   report.counts.games_final = finals.length;
   report.counts.games_scheduled = games.size - finals.length;
+  report.counts.by_scope = Object.fromEntries(['regular_season', 'nba_cup_final', 'play_in', 'playoffs'].map((k) => [k, finals.filter((g) => g.scope === k).length]));
   if (!finals.length) {
     /* the season in progress before its first game: schedule only */
     return finish(season, games, [], [], [], [], {}, names, report, o, null, abbrs);
@@ -176,6 +185,7 @@ async function ingest(season, o) {
   /* ---------- player box */
   const pb = await readSource('player_box', season, o.offline); prov('player_box', pb);
   const pgames = []; const roster = new Map(); /* game → Map(pid → team) */ const startersBy = new Map(); const minsBy = new Map();
+  const zeroMin = new Map(); /* game|player → pgames index: listed with 0 minutes, not flagged DNP, no stat — the play-by-play decides */
   const players = {};
   if (pb.ok) {
     const { rows, missing } = await io.parquetAll(pb.file, C.COLUMNS.player_box);
@@ -186,12 +196,16 @@ async function ingest(season, o) {
       if (!pid || pid === 'null') continue;
       const mins = num(r.minutes);
       const dnp = truthy(r.did_not_play) || mins == null || mins === 0;
-      const played = mins != null && mins > 0 ? 1 : 0;
+      /* played: minutes, or (listed with 0 minutes and not flagged DNP) a counted stat; the play-by-play below adds the
+         zero-minute entries it finds on court. A 0:10 garbage-time appearance is an appearance (a prop on him has action). */
+      const anyStat = ['points', 'field_goals_attempted', 'free_throws_attempted', 'offensive_rebounds', 'defensive_rebounds', 'assists', 'steals', 'blocks', 'turnovers', 'fouls'].some((k) => (num(r[k]) || 0) > 0);
+      const played = (mins != null && mins > 0) || (mins === 0 && !truthy(r.did_not_play) && anyStat) ? 1 : 0;
       if (!roster.has(gid)) { roster.set(gid, new Map()); startersBy.set(gid, {}); minsBy.set(gid, new Map()); }
       roster.get(gid).set(pid, tid);
       minsBy.get(gid).set(pid, mins || 0);
       const st = truthy(r.starter) && played ? 1 : 0;
       if (st) { const s = startersBy.get(gid); (s[tid] = s[tid] || []).push(pid); }
+      if (mins === 0 && !played && !truthy(r.did_not_play)) zeroMin.set(gid + '|' + pid, pgames.length);
       pgames.push({ g: gid, tm: tid, p: pid, st, pl: played, dnp: dnp && !played ? 1 : 0, rc: dnp && !played && truthy(r.did_not_play) ? reasonCat(r.reason) : (played ? '' : 'UNLISTED'),
         min: mins || 0, pts: num(r.points) || 0, fgm: num(r.field_goals_made) || 0, fga: num(r.field_goals_attempted) || 0, f3m: num(r.three_point_field_goals_made) || 0, f3a: num(r.three_point_field_goals_attempted) || 0,
         ftm: num(r.free_throws_made) || 0, fta: num(r.free_throws_attempted) || 0, or: num(r.offensive_rebounds) || 0, dr: num(r.defensive_rebounds) || 0,
@@ -205,7 +219,7 @@ async function ingest(season, o) {
   const pp = await readSource('pbp', season, o.offline); prov('pbp', pp);
   const stints = [], shots = [], pteam = {};
   const integ = { pbp_games: 0, pbp_final_mismatch: 0, pbp_final_examples: [], stint_seconds_off: 0, bad_lineup_seconds: 0, total_seconds: 0, sub_errors: 0, starters_bad: 0,
-    minutes_abs_err: 0, minutes_n: 0, minutes_big_err: 0, fragmented: 0 };
+    minutes_abs_err: 0, minutes_n: 0, minutes_big_err: 0, fragmented: 0, zero_minute_appearances: 0 };
   if (pp.ok) {
     let curId = null, buf = [];
     const done = new Set();
@@ -227,6 +241,8 @@ async function ingest(season, o) {
         if (Math.abs(r.issues.total_seconds - len) > 1) integ.stint_seconds_off++;
         for (const [pid, m] of minsBy.get(curId) || new Map()) {
           const sec = r.onCourt.get(pid) || 0;
+          const zi = zeroMin.get(curId + '|' + pid);
+          if (zi != null && sec > 0) { const x = pgames[zi]; x.pl = 1; x.dnp = 0; x.rc = ''; integ.zero_minute_appearances++; }
           if (m > 0 || sec > 0) { const e = Math.abs(sec / 60 - m); integ.minutes_abs_err += e; integ.minutes_n++; if (e > 3) integ.minutes_big_err++; }
         }
         stints.push({ g: curId, s: r.stints.map((s) => [s.t0, s.t1, s.h5.join(' '), s.a5.join(' '), s.hp, s.ap, s.hfga, s.afga, s.hfta, s.afta, s.hor, s.aor, s.htov, s.atov, s.ok]) });
@@ -342,10 +358,13 @@ function finish(season, games, box, pgames, stints, shots, pteam, names, report,
     /* team names and players (merged across seasons) */
     let teams = {}; try { teams = JSON.parse(fs.readFileSync(C.PATHS.teams, 'utf8')); } catch (_) {}
     for (const [k, v] of Object.entries(names)) if (v && !/^Team /.test(v)) teams[k] = v;
+    /* the 30 franchises only: an All-Star side or a TBD placeholder is never a team */
+    for (const k of Object.keys(teams)) if (!(Number(k) >= 1 && Number(k) <= 30)) delete teams[k];
     fs.writeFileSync(C.PATHS.teams, JSON.stringify(teams, Object.keys(teams).sort((a, b) => a - b), 0) + '\n');
     const af = path.join(C.NBA, 'data', 'team_abbr.json');
     let ab = {}; try { ab = JSON.parse(fs.readFileSync(af, 'utf8')); } catch (_) {}
     for (const [k, v] of Object.entries(abbrs || {})) if (v && teams[k]) ab[k] = v;
+    for (const k of Object.keys(ab)) if (!teams[k]) delete ab[k];
     fs.writeFileSync(af, JSON.stringify(ab, Object.keys(ab).sort((a, b) => a - b), 0) + '\n');
     if (players) {
       const pf = path.join(C.NBA, 'data', 'players.json');

@@ -1,0 +1,669 @@
+{
+ "schema": "edgedesk_nba_crosscheck_pack_v1",
+ "generated_at": "2026-10-14T02:34:57.496Z",
+ "season": "2025-26",
+ "sources": {
+  "mine": "nba/data + .cache/nba_work (sportsdataverse hoopR-nba-data, from ESPN)",
+  "pack": "datapack/nba_v1 (ESPN site API, collected 2026-10-14)",
+  "independence": "two retrievals of one provider: agreement rules out parsing and retrieval errors, not an upstream error"
+ },
+ "pack_verification": {
+  "status": "PASSED",
+  "checks": "30/30"
+ },
+ "games": {
+  "pack": 1322,
+  "mine": 1322,
+  "matched": 1322,
+  "only_pack": [],
+  "only_mine": [],
+  "finals": {
+   "compared": 1322,
+   "agree": 1322,
+   "rate": 1
+  },
+  "teams": {
+   "compared": 1322,
+   "agree": 1322,
+   "rate": 1
+  },
+  "start": {
+   "compared": 1322,
+   "agree": 1322,
+   "rate": 1
+  },
+  "overtimes": {
+   "compared": 1322,
+   "agree": 1322,
+   "rate": 1
+  },
+  "scope": {
+   "agree": {
+    "compared": 1322,
+    "agree": 1322,
+    "rate": 1
+   },
+   "mine_vs_pack": {}
+  },
+  "neutral_site": {
+   "las_vegas_games": 3,
+   "flagged_neutral_by_me": 3,
+   "my_other_neutral": [
+    {
+     "game_id": "401810002",
+     "city": "Mexico City"
+    },
+    {
+     "game_id": "401810433",
+     "city": "Berlin"
+    },
+    {
+     "game_id": "401810457",
+     "city": "London"
+    }
+   ]
+  }
+ },
+ "period_scores": {
+  "compared": 13220,
+  "agree": 13220,
+  "rate": 1
+ },
+ "team_box": {
+  "team_games": 2636,
+  "pack_only": 0,
+  "mine_only": 8,
+  "by_stat": {
+   "fgm": {
+    "compared": 2636,
+    "agree": 2636,
+    "rate": 1
+   },
+   "fga": {
+    "compared": 2636,
+    "agree": 2636,
+    "rate": 1
+   },
+   "fg3m": {
+    "compared": 2636,
+    "agree": 2636,
+    "rate": 1
+   },
+   "fg3a": {
+    "compared": 2636,
+    "agree": 2636,
+    "rate": 1
+   },
+   "ftm": {
+    "compared": 2636,
+    "agree": 2636,
+    "rate": 1
+   },
+   "fta": {
+    "compared": 2636,
+    "agree": 2636,
+    "rate": 1
+   },
+   "oreb": {
+    "compared": 2636,
+    "agree": 2636,
+    "rate": 1
+   },
+   "dreb": {
+    "compared": 2636,
+    "agree": 2636,
+    "rate": 1
+   },
+   "ast": {
+    "compared": 2636,
+    "agree": 2628,
+    "rate": 0.997
+   },
+   "stl": {
+    "compared": 2636,
+    "agree": 2636,
+    "rate": 1
+   },
+   "blk": {
+    "compared": 2636,
+    "agree": 2636,
+    "rate": 1
+   },
+   "pf": {
+    "compared": 2636,
+    "agree": 2632,
+    "rate": 0.9985
+   },
+   "paint_pts": {
+    "compared": 2636,
+    "agree": 2635,
+    "rate": 0.9996
+   },
+   "fb_pts": {
+    "compared": 2636,
+    "agree": 2635,
+    "rate": 0.9996
+   },
+   "pts_off_tov": {
+    "compared": 2636,
+    "agree": 2635,
+    "rate": 0.9996
+   },
+   "tov (vs pack turnovers)": {
+    "compared": 2636,
+    "agree": 1257,
+    "rate": 0.4769
+   },
+   "tov (vs pack totalTurnovers)": {
+    "compared": 2636,
+    "agree": 2635,
+    "rate": 0.9996
+   }
+  },
+  "disagreements": [
+   {
+    "game_id": "401810169",
+    "team_id": "4",
+    "stat": "ast",
+    "mine": 28,
+    "pack": 30
+   },
+   {
+    "game_id": "401810169",
+    "team_id": "4",
+    "stat": "pf",
+    "mine": 19,
+    "pack": 23
+   },
+   {
+    "game_id": "401810169",
+    "team_id": "4",
+    "stat": "paint_pts",
+    "mine": null,
+    "pack": 54
+   },
+   {
+    "game_id": "401810169",
+    "team_id": "4",
+    "stat": "fb_pts",
+    "mine": null,
+    "pack": 7
+   },
+   {
+    "game_id": "401810169",
+    "team_id": "4",
+    "stat": "pts_off_tov",
+    "mine": null,
+    "pack": 25
+   },
+   {
+    "game_id": "401810184",
+    "team_id": "4",
+    "stat": "ast",
+    "mine": 19,
+    "pack": 20
+   },
+   {
+    "game_id": "401810184",
+    "team_id": "4",
+    "stat": "pf",
+    "mine": 13,
+    "pack": 15
+   },
+   {
+    "game_id": "401810358",
+    "team_id": "4",
+    "stat": "ast",
+    "mine": 23,
+    "pack": 25
+   },
+   {
+    "game_id": "401810358",
+    "team_id": "4",
+    "stat": "pf",
+    "mine": 11,
+    "pack": 13
+   },
+   {
+    "game_id": "401810401",
+    "team_id": "4",
+    "stat": "ast",
+    "mine": 30,
+    "pack": 31
+   },
+   {
+    "game_id": "401810458",
+    "team_id": "4",
+    "stat": "ast",
+    "mine": 40,
+    "pack": 41
+   },
+   {
+    "game_id": "401810469",
+    "team_id": "4",
+    "stat": "ast",
+    "mine": 39,
+    "pack": 40
+   },
+   {
+    "game_id": "401810469",
+    "team_id": "4",
+    "stat": "pf",
+    "mine": 14,
+    "pack": 15
+   },
+   {
+    "game_id": "401810591",
+    "team_id": "4",
+    "stat": "ast",
+    "mine": 27,
+    "pack": 28
+   },
+   {
+    "game_id": "401810744",
+    "team_id": "4",
+    "stat": "ast",
+    "mine": 25,
+    "pack": 27
+   }
+  ],
+  "note": "my tov is the team total (players + team turnovers), the pack's totalTurnovers; its `turnovers` excludes team turnovers.",
+  "disagreements_on_unidentified_team_games": "8 of 8",
+  "disagreement_note": "every disagreement is on a team-game where the source listed an athlete without an id: my feed's team totals leave his line out, the pack's (ESPN's team statistics) keep it — the team statistics are the complete record there"
+ },
+ "possessions": {
+  "team_games": 2636,
+  "mine_bbref_mean": 99.6172,
+  "pack_044_proxy_mean": 102.3411,
+  "mean_difference": -2.7239,
+  "correlation": 0.99,
+  "mean_abs_difference": 2.7239,
+  "note": "mine: Basketball-Reference (0.4·FTA, the offensive-rebound share applied to misses, both teams averaged); pack: FGA − ORB + TOV + 0.44·FTA averaged. Both are estimators, not counted possessions."
+ },
+ "player_box": {
+  "played_disagreements": {
+   "pack MIN --, did_not_play False | mine played 0": 24
+  },
+  "played_note": "a box row with minutes \"--\" and no DNP flag never entered the game (my stints never put him on court): mine reads it as not played, the pack leaves it unflagged",
+  "pack_rows_with_id": 34664,
+  "pack_rows_without_id": 33,
+  "mine": 34777,
+  "matched": 34664,
+  "only_mine": {
+   "rows": 113,
+   "in_the_four_games_the_pack_lacks": 113,
+   "elsewhere": []
+  },
+  "only_pack": [],
+  "only_pack_rows": 0,
+  "by_field": {
+   "listed_team": {
+    "compared": 34664,
+    "agree": 34664,
+    "rate": 1
+   },
+   "played": {
+    "compared": 34664,
+    "agree": 34640,
+    "rate": 0.9993
+   },
+   "starter": {
+    "compared": 34664,
+    "agree": 34664,
+    "rate": 1
+   },
+   "minutes": {
+    "compared": 28617,
+    "agree": 28617,
+    "rate": 1
+   },
+   "pts": {
+    "compared": 28617,
+    "agree": 28617,
+    "rate": 1
+   },
+   "fgm": {
+    "compared": 28617,
+    "agree": 28617,
+    "rate": 1
+   },
+   "fga": {
+    "compared": 28617,
+    "agree": 28617,
+    "rate": 1
+   },
+   "fg3m": {
+    "compared": 28617,
+    "agree": 28617,
+    "rate": 1
+   },
+   "fg3a": {
+    "compared": 28617,
+    "agree": 28617,
+    "rate": 1
+   },
+   "ftm": {
+    "compared": 28617,
+    "agree": 28617,
+    "rate": 1
+   },
+   "fta": {
+    "compared": 28617,
+    "agree": 28617,
+    "rate": 1
+   },
+   "oreb": {
+    "compared": 28617,
+    "agree": 28617,
+    "rate": 1
+   },
+   "dreb": {
+    "compared": 28617,
+    "agree": 28617,
+    "rate": 1
+   },
+   "ast": {
+    "compared": 28617,
+    "agree": 28617,
+    "rate": 1
+   },
+   "stl": {
+    "compared": 28617,
+    "agree": 28617,
+    "rate": 1
+   },
+   "blk": {
+    "compared": 28617,
+    "agree": 28617,
+    "rate": 1
+   },
+   "tov": {
+    "compared": 28617,
+    "agree": 28617,
+    "rate": 1
+   },
+   "pf": {
+    "compared": 28617,
+    "agree": 28617,
+    "rate": 1
+   },
+   "plus_minus": {
+    "compared": 28617,
+    "agree": 28617,
+    "rate": 1
+   },
+   "dnp_reason_category": {
+    "compared": 6023,
+    "agree": 6023,
+    "rate": 1
+   }
+  }
+ },
+ "unidentified_rows": [
+  {
+   "game_id": "401810126",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810144",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810150",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810169",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810184",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810200",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810216",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810344",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810358",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810372",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810401",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810458",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810469",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810486",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810502",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810516",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810527",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810547",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810560",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810577",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810591",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810607",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810617",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810633",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810652",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810680",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810691",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810708",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810725",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810744",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810760",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401810785",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  },
+  {
+   "game_id": "401850920",
+   "team_id": "4",
+   "pack_short_name": "Olbrich",
+   "my_rows_absent_from_pack": []
+  }
+ ],
+ "unidentified_summary": {
+  "rows": 33,
+  "one_candidate_in_my_feed": 0,
+  "candidate_ids": {},
+  "note": "my feed carries an id for the athlete the pack lost; the pack is still never joined by name — this only says which record the pack is missing"
+ },
+ "shots": {
+  "team_games": 2636,
+  "mine": {
+   "source": "my play-by-play (hoopR)",
+   "team_games": 2634,
+   "fga_equal_box": 1634,
+   "fga_minus_box": {
+    "0": 1634,
+    "1": 822,
+    "2": 147,
+    "3": 20,
+    "4": 1,
+    "-1": 9,
+    "-3": 1
+   },
+   "fg_points_equal_box": 2630,
+   "fg_points_differ_games": [
+    "401810087",
+    "401810102",
+    "401810665"
+   ]
+  },
+  "pack": {
+   "source": "the pack's shooting plays (ESPN site API)",
+   "team_games": 2636,
+   "fga_equal_box": 1634,
+   "fga_minus_box": {
+    "0": 1634,
+    "1": 823,
+    "2": 147,
+    "3": 20,
+    "4": 1,
+    "-1": 10,
+    "-3": 1
+   },
+   "fg_points_equal_box": 2631,
+   "fg_points_differ_games": [
+    "401810087",
+    "401810102",
+    "401810469"
+   ]
+  },
+  "both_pbp_fga_equal": {
+   "compared": 2634,
+   "agree": 2632,
+   "rate": 0.9992
+  },
+  "note": "Both retrievals log the same attempts (the play-by-play is one upstream record). The play-by-play counts about one attempt more than the box in roughly a third of team-games while made field goals agree: an upstream definitional gap (a shot the box does not count as an attempt), not a parser error. Where field-goal points differ, the play-by-play is missing a made shot (the incomplete games under the pack verification's findings). Shot-zone features use shares of logged attempts, so a uniform extra attempt barely moves them."
+ },
+ "stint_minutes": {
+  "player_games": 28593,
+  "mae_minutes": 0.2498,
+  "within_1_minute": 0.9999,
+  "over_3_minutes": 0,
+  "note": "the box reports whole minutes, so a reconstruction exact to the second differs by up to one minute from rounding alone"
+ },
+ "summary": [
+  "1322 of 1322 games matched; finals agree in 1322, teams in 1322, overtimes in 1322.",
+  "Scope: 1322 of 1322 agree.",
+  "Player rows: 34664 matched on (game, player); 113 of my rows sit in the four games whose summaries the pack could not fetch."
+ ]
+}

@@ -45,18 +45,19 @@ try {
 
   /* the loader's real rows for a sample of 2025-26 games */
   const SY = require(path.join(ROOT, 'nba', 'tools', 'sync_supabase.js'));
-  const games = SY.gameRows([2026]).filter((g) => g.status === 'FINAL').slice(0, 40);
+  const finals = SY.gameRows([2026]).filter((g) => g.status === 'FINAL');
+  const games = finals.slice(0, 40).concat(finals.filter((g) => g.scope === 'nba_cup_final')); /* the first 40, and the Cup final */
   const ids = new Set(games.map((g) => g.game_id));
   const tg = SY.teamGameRows([2026]).filter((r) => ids.has(r.game_id));
   const pg = SY.playerGameRows(2026).filter((r) => ids.has(r.game_id));
-  T.chk('the sample has games, team games and player games', games.length === 40 && tg.length === 80 && pg.length > 400, { g: games.length, tg: tg.length, pg: pg.length });
+  T.chk('the sample has games, team games and player games', games.length === 41 && tg.length === 2 * games.length && pg.length > 400, { g: games.length, tg: tg.length, pg: pg.length });
   /* only the columns the loader sends, as PostgREST does (a column it omits keeps its default) */
   const load = (table, rows) => { const cols = Object.keys(rows[0]).join(', '); return db.service(`insert into nbahist.${table} (${cols}) select ${cols} from json_populate_recordset(null::nbahist.${table}, ${lit(JSON.stringify(rows))}::json) on conflict do nothing;`); };
   let ok = true; try { load('games', games); load('team_games', tg); load('player_games', pg); } catch (e) { ok = false; T.chk('the loader\'s rows fit the schema', false, String(e.message).slice(0, 400)); }
   if (ok) T.chk('the loader\'s rows fit the schema (types, checks, keys)', db.sql('select count(*) from nbahist.player_games') === String(pg.length));
 
   /* reads and writes by role */
-  T.chk('anon can read games', Number(db.anon('select count(*) from nbahist.games;').split('\n').pop()) === 40);
+  T.chk('anon can read games', Number(db.anon('select count(*) from nbahist.games;').split('\n').pop()) === games.length);
   T.mustFail ? T.mustFail('anon cannot insert a game', () => db.anon("insert into nbahist.games (game_id, season, game_type, game_date, start_utc, home_id, away_id, status) values ('x', 2026, 'R', '2026-01-01', now(), '1', '2', 'FINAL');"))
     : T.chk('anon cannot insert a game', (() => { try { db.anon("insert into nbahist.games (game_id, season, game_type, game_date, start_utc, home_id, away_id, status) values ('x', 2026, 'R', '2026-01-01', now(), '1', '2', 'FINAL');"); return false; } catch (_) { return true; } })());
   const fails = (fn) => { try { fn(); return false; } catch (_) { return true; } };
@@ -72,10 +73,15 @@ try {
   T.chk('a prediction recorded after tip is refused', fails(() => db.service(`insert into nbahist.predictions (id, game_id, start_utc, recorded_at, model, p_home) values ('a2', ${lit(g0.game_id)}, ${lit(g0.start_utc)}, (${lit(g0.start_utc)}::timestamptz + interval '1 minute'), 'm', 0.6);`)));
 
   /* the aggregate view against hand arithmetic */
-  const t0 = tg[0].team_id; const mine = tg.filter((r) => r.team_id === t0);
+  const regular = new Set(games.filter((g) => (g.scope || 'regular_season') === 'regular_season').map((g) => g.game_id));
+  const t0 = tg[0].team_id; const mine = tg.filter((r) => r.team_id === t0 && regular.has(r.game_id));
   const ortg = Math.round(1000 * mine.reduce((a, r) => a + r.pts, 0) / mine.reduce((a, r) => a + r.possessions, 0)) / 10;
-  const got = Number(db.sql(`select off_rating from nbahist.team_season_summary where season = 2026 and team_id = ${lit(t0)}`));
-  T.chk('team_season_summary off_rating matches hand arithmetic', Math.abs(got - ortg) < 0.051, { got, want: ortg });
+  const got = Number(db.sql(`select off_rating from nbahist.team_season_summary where season = 2026 and scope = 'regular_season' and team_id = ${lit(t0)}`));
+  T.chk('team_season_summary off_rating (regular season only) matches hand arithmetic', Math.abs(got - ortg) < 0.051, { got, want: ortg });
+  /* the NBA Cup final is its own scope: it never enters a regular-season aggregate */
+  const cupFinal = games.find((g) => g.scope === 'nba_cup_final');
+  T.chk('the NBA Cup final is stored with its own scope', !!cupFinal && db.sql(`select scope from nbahist.games where game_id = ${lit(cupFinal.game_id)}`).trim() === 'nba_cup_final', cupFinal && cupFinal.game_id);
+  T.chk('a scope outside the four is refused', fails(() => db.service(`update nbahist.games set scope = 'preseason' where game_id = ${lit(g0.game_id)}`)));
 
   /* rollback */
   db.applyFile(path.join(ROOT, 'supabase', 'nba_engine_rollback.sql'));

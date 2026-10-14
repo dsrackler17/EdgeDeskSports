@@ -1,0 +1,303 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "shared.market_quotes",
+  "type": "object",
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "event_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "entity_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_id": {
+      "type": "string",
+      "description": "Source registry identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "source_record_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Original provider record identifier.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "occurred_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "known_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "retrieved_at": {
+      "type": "string",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "revision": {
+      "type": "integer",
+      "description": "Monotone version of this source record.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "quality_status": {
+      "type": "string",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "x-unit": "none",
+      "x-priority": "P0"
+    },
+    "bookmaker_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Bookmaker id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "market_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Market id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "selection_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Selection id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "player_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Player id.",
+      "x-unit": "identifier",
+      "x-priority": "P0"
+    },
+    "quote_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Quote at.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "captured_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Captured at.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "expires_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Expires at.",
+      "x-unit": "UTC",
+      "x-priority": "P0",
+      "format": "date-time"
+    },
+    "market_type": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Market type.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "period": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Period.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "settlement_scope": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Settlement scope.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "selection": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Selection.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "currency": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Currency.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "jurisdiction": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Jurisdiction.",
+      "x-unit": "category",
+      "x-priority": "P0"
+    },
+    "line": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Line.",
+      "x-unit": "number",
+      "x-priority": "P0"
+    },
+    "odds_decimal": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Odds decimal.",
+      "x-unit": "number",
+      "x-priority": "P0"
+    },
+    "odds_american": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Odds american.",
+      "x-unit": "number",
+      "x-priority": "P0"
+    },
+    "max_stake": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Max stake.",
+      "x-unit": "number",
+      "x-priority": "P0"
+    },
+    "reported_limit": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "description": "Reported limit.",
+      "x-unit": "number",
+      "x-priority": "P0"
+    },
+    "is_live": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Is live.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "suspended": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Suspended.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "overtime_included": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Overtime included.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "push_possible": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Push possible.",
+      "x-unit": "boolean",
+      "x-priority": "P0"
+    },
+    "rules_version": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Rules version.",
+      "x-unit": "text",
+      "x-priority": "P0"
+    }
+  },
+  "required": [
+    "record_id",
+    "source_id",
+    "retrieved_at",
+    "revision",
+    "quality_status"
+  ],
+  "additionalProperties": false
+}

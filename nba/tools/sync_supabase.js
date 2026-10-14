@@ -33,7 +33,7 @@ const iso = (v) => (v ? new Date(v).toISOString() : null);
 
 function gameRows(seasons) {
   return D.games(seasons).map((g) => ({
-    game_id: g.game_id, season: g.season, game_type: g.type, game_date: g.date, start_utc: g.start_utc, neutral: !!g.neutral, bubble: !!g.bubble,
+    game_id: g.game_id, season: g.season, game_type: g.type, scope: g.scope || null, game_date: g.date, start_utc: g.start_utc, neutral: !!g.neutral, bubble: !!g.bubble,
     home_id: g.home_id, away_id: g.away_id, home_score: nn(g.hs), away_score: nn(g.as), overtimes: nn(g.ot),
     home_q: g.h_q1 == null ? null : [g.h_q1, g.h_q2, g.h_q3, g.h_q4], away_q: g.a_q1 == null ? null : [g.a_q1, g.a_q2, g.a_q3, g.a_q4],
     home_ot_points: nn(g.h_ot), away_ot_points: nn(g.a_ot), venue: g.venue || null, city: g.city || null, state: g.state || null, attendance: nn(g.attendance),

@@ -38,6 +38,8 @@ ok('...and counts with it', D.classify('Kings moneyline in the NBA').teams[0].id
 ok('a city counts only with basketball context (Boston is also the Bruins)', D.classify('Boston -5') === null && D.classify('Boston -5 nba').teams[0].id === '2');
 ok('another league named outright is not ours', D.classify('Kings vs Ducks NHL') === null && D.classify('Celtics college basketball line') === null && D.classify('Texas Rangers baseball line') === null);
 ok('a cross-sport question is left to the all-sports scan', D.classify('best bets across all sports, NBA included?') === null);
+ok('a season-long future or a certainty request is not a game price (the research plan answers it)', D.classify('Who will win the NBA Finals?') === null && D.classify('Celtics to win the East?') === null && D.classify('NBA MVP odds?') === null && D.classify('Lakers a lock tonight?') === null && D.classify('Can you guarantee the Knicks cover?') === null);
+ok('...while a Finals game is still priced', D.classify('Celtics vs Mavericks Finals game 3 spread').intent === 'NBA_GAME');
 ok('the NBA game on screen makes a bare price question ours', SLATE.games.length === 0 || D.classify('what is the fair line?', { screen_panel: 'nba', game_id: String(SLATE.games[0].game_id) }).intent === 'NBA_GAME');
 ok('a quoted moneyline, spread and total are read', JSON.stringify(D.classify('Lakers +140').quote) === JSON.stringify({ market: 'moneyline', american: 140 })
   && JSON.stringify(D.classify('Denver -6.5 -110 nba').quote) === JSON.stringify({ market: 'spread', line: -6.5, american: -110 })
