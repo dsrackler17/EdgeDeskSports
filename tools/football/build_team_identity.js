@@ -87,11 +87,18 @@ function r4(v) { const n = num(v); return n == null ? null : Math.round(n * 1000
    so say the other half of the sentence at four and above rather than
    nothing. The count is in the sentence either way, which is what makes the
    claim auditable: a reader never has to know the threshold to see how much
-   is standing under it. */
+   is standing under it.
+
+   The NFL trend is read off per-game team rates (the team-week feed), not
+   weekly snapshots, so it counts games, and its line has always been six of
+   them. It had the same defect: "A hypothesis at this sample." under six
+   games, nothing from six on, and never the count. It says the same sentence
+   now, in games. */
 const SAMPLE_MIN_TREND = 4;
-function SAMPLE_READ(n) {
-  const s = ' snapshot' + (n === 1 ? '' : 's');
-  return n < SAMPLE_MIN_TREND
+const SAMPLE_MIN_TREND_GAMES = 6;
+function SAMPLE_READ(n, unit, min) {
+  const s = ' ' + (unit || 'snapshot') + (n === 1 ? '' : 's');
+  return n < (min == null ? SAMPLE_MIN_TREND : min)
     ? 'Over ' + n + s + ' this is a hypothesis, not a trend.'
     : 'Over ' + n + s + ' this reads as a trend.';
 }
@@ -330,7 +337,7 @@ function nflTeams(inputs, season) {
     const gameRows = gs.map((g) => ({ week: g.week, game_id: g.game_id, opponent: g.opponent, plays: g.plays, off_epa_play: r3(g.off_epa_play), pass_epa_db: r3(g.pass_epa_db), rush_epa_att: r3(g.rush_epa_att), def_epa_play: r3(g.def_epa_play), sack_rate_all: r3(g.sack_rate_all), sack_rate_made: r3(g.sack_rate_made), giveaways: g.giveaways }));
     const half = Math.floor(gs.length / 2);
     const early = gs.slice(0, half), recent = gs.slice(half);
-    const evr = gs.length >= 3 ? (() => { const m1 = mean(early.map((g) => g.off_epa_play)), m2 = mean(recent.map((g) => g.off_epa_play)), d1 = mean(early.map((g) => g.def_epa_play)), d2 = mean(recent.map((g) => g.def_epa_play)); return { from: 'weeks ' + early[0].week + '-' + early[early.length - 1].week, to: 'weeks ' + recent[0].week + '-' + recent[recent.length - 1].week, off_epa_delta: r3(m2 - m1), def_epa_delta: r3(d2 - d1), summary: 'offence EPA/play ' + (m2 - m1 >= 0 ? 'up ' : 'down ') + Math.abs(r3(m2 - m1)) + ', defence EPA/play allowed ' + (d2 - d1 >= 0 ? 'up ' : 'down ') + Math.abs(r3(d2 - d1)) + ' from the first ' + early.length + ' game' + (early.length > 1 ? 's' : '') + ' to the last ' + recent.length + (gs.length < 6 ? '. A hypothesis at this sample.' : '.'), sample_games: gs.length }; })() : null;
+    const evr = gs.length >= 3 ? (() => { const m1 = mean(early.map((g) => g.off_epa_play)), m2 = mean(recent.map((g) => g.off_epa_play)), d1 = mean(early.map((g) => g.def_epa_play)), d2 = mean(recent.map((g) => g.def_epa_play)); return { from: 'weeks ' + early[0].week + '-' + early[early.length - 1].week, to: 'weeks ' + recent[0].week + '-' + recent[recent.length - 1].week, off_epa_delta: r3(m2 - m1), def_epa_delta: r3(d2 - d1), summary: 'offence EPA/play ' + (m2 - m1 >= 0 ? 'up ' : 'down ') + Math.abs(r3(m2 - m1)) + ', defence EPA/play allowed ' + (d2 - d1 >= 0 ? 'up ' : 'down ') + Math.abs(r3(d2 - d1)) + ' from the first ' + early.length + ' game' + (early.length > 1 ? 's' : '') + ' to the last ' + recent.length + '. ' + SAMPLE_READ(gs.length, 'game', SAMPLE_MIN_TREND_GAMES), sample_games: gs.length }; })() : null;
     const profile = sr ? { games: sr.games, plays_per_game: r1(sr.rates.plays), pass_rate: r4(sr.rates.pass_rate), explosive_pass_rate: r4(sr.rates.expl_pass), explosive_rush_rate: r4(sr.rates.expl_rush), sack_taken_rate: r4(sr.rates.sack_rate_all), giveaways: sr.giveaways, takeaways: null, red_zone_td_rate: null, third_down_rate: null, excluding_garbage_time: null, allowed: { explosive_pass_rate: r4(sr.rates.def_expl_pass), explosive_rush_rate: r4(sr.rates.def_expl_rush), sack_rate: r4(sr.rates.sack_rate_made) }, basis: 'raw season rates from the team-week feed; no garbage-time split, no red-zone or third-down columns', source: 'nflverse stats_team_week_' + season + '.csv (cached feed)', as_of: asOf } : null;
     const rec = { key, code, team: names[code] || code, league: 'NFL', conference: null, season, effective_from: season + '-09-01', effective_to: null,
       verified_at: maxIso([asOf, N.data && N.data.generated_at, SN.data && SN.data.generated_at, INJ.data && INJ.data.retrieved_at]),
@@ -437,5 +444,5 @@ function main() {
   console.log('wrote football/identity/index.json and football/identity/teams/*.json');
 }
 
-module.exports = { build, split, inferencesFor, SCHEMA, OUT, OUT_DIR, NFL_UNITS, SAMPLE_READ, SAMPLE_MIN_TREND };
+module.exports = { build, split, inferencesFor, SCHEMA, OUT, OUT_DIR, NFL_UNITS, SAMPLE_READ, SAMPLE_MIN_TREND, SAMPLE_MIN_TREND_GAMES };
 if (require.main === module) main();
