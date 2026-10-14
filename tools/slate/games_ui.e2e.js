@@ -201,6 +201,8 @@ const NOW = F.NOW;
     const dlg = await text(page, '#gmDetail');
     chk('Details opens a dialog with the market, the research, the model and the five readiness answers',
       /Market/i.test(dlg) && /Research/i.test(dlg) && /EdgeDesk model/i.test(dlg) && /Fair puck line/.test(dlg) && /Games available/.test(dlg) && /Actionable signal/.test(dlg), dlg.slice(0, 500));
+    chk('the NHL matchup sets EdgeDesk against the captured price: the favourite, the gap, the price that pays, never verified',
+      /EdgeDesk vs the market\. EdgeDesk makes FLA the likelier winner, 52\.8% \(fair −112\)/.test(dlg) && /Largest difference: EdgeDesk rates CBJ to win 5\.2 pp higher than the book/.test(dlg) && /CBJ at \+130 pays above EdgeDesk’s fair \+112/.test(dlg) && /not a verified edge/.test(dlg) && !/verified value/i.test(dlg), dlg.slice(0, 1400));
     chk('the model is labelled as an estimate, with its validation and why value claims are off', /not a recommendation/.test(dlg) && /outcome validated/i.test(dlg) && /value claims are off/i.test(dlg));
     chk('focus moves into the dialog', await page.evaluate(() => document.activeElement && document.activeElement.hasAttribute('data-gm-close')));
     await page.keyboard.press('Escape');

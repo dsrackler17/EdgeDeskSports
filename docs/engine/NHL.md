@@ -271,6 +271,50 @@ matches or beats the source's own xG through 2021-22; from 2022-23 the source
 records shot locations differently and its own xG (whose training seasons are
 undocumented, so possibly in-sample) is better calibrated than mine.
 
+## 3a. EdgeDesk vs the market (`lib/edgedesk_nhl_compare.js`)
+
+Since 2026-10-14, Research → Other → NHL sets EdgeDesk's own line beside a
+book's price, game by game, and says which side EdgeDesk rates higher. The
+same comparison appears in the Today's Games matchup view for an NHL game.
+
+**The price.** NHL capture through the odds gateway stays off (`NHL_PRICES`).
+The comparison uses the price Today's Games already captured: DraftKings as
+republished by ESPN's public scoreboard (`today/slate.json`), or the games
+strip's live merged prices when they are newer. ESPN posts NHL odds on game
+day, so later games show "no price yet". A republished price is a
+**reference**: it is named "DraftKings via ESPN", its age is shown, it is a
+past price after the slate's 90-minute limit, and it never passes the
+`price_verified` gate of `lib/edgedesk_nhl_market.js`.
+
+**Two questions, answered apart.**
+
+1. *Which side does EdgeDesk rate higher than the book?* EdgeDesk's
+   probability minus the book's no-vig probability, both from the raw numbers,
+   each rounded once to 0.1 %, so the gap is the difference of the two shown
+   numbers. On a whole-number line both exclude the push. On the moneyline a
+   gap inside the model's own variant spread (`uncertainty.moneyline_sd_pp`)
+   is called agreement.
+2. *Does the book's price pay enough?* EV at the book's price and EdgeDesk's
+   probability, labelled by `EDNHLMarket.evaluate` with every failing gate
+   listed: PASS, RESEARCH ONLY (a market the record has not validated, such as
+   totals), or PROVISIONAL. VERIFIED VALUE cannot appear until the NHL is
+   tested against closing prices. When nothing pays, the sentence gives the
+   price it would take to clear the 2 % bar.
+
+Like for like only: the book's 2-way moneyline, puck line and total include
+overtime and the shootout, as EdgeDesk's do. A line EdgeDesk has no
+probability for is listed as not compared, never interpolated.
+
+**Who is better where.** Each game's Overview also lays out the slate's
+evidence block on one scale (+ is better than league average): 5v5 chances
+created and allowed, goals scored and allowed, power play, penalty kill, the
+likeliest starter's goals saved above expected, and rest. Within one point is
+even. It ends with EdgeDesk's projected goals for each club, the bottom line
+that already weighs every row with home ice.
+
+Tests: `node tools/hockey/nhl_compare.test.js`, the NHL and Today's Games
+browser suites (`tools/engine/engine_ui.e2e.js`, `tools/slate/games_ui.e2e.js`).
+
 ## 4. Honest limits
 
 - **Not tested against the market.** Beating Elo is not beating a sportsbook.

@@ -122,6 +122,22 @@
 .xe-scn input[type=range]{width:160px;max-width:100%;accent-color:var(--accent)}
 .xe-scn-out{min-height:40px}
 .xe-lab.xe-inl{flex-direction:row;align-items:center;gap:6px;min-height:34px}
+/* EdgeDesk vs the market, and who is better where */
+.xe-vsum{border:1px solid var(--xe-line);border-left:4px solid var(--dim);border-radius:10px;padding:10px 12px;margin:6px 0;background:var(--surface);font-size:13px;line-height:1.5}
+.xe-vsum.pays{border-left-color:var(--warn,#e0a526)}
+.xe-vsum p{margin:0}
+.xe-vline{font-size:12.5px;line-height:1.5;margin:6px 0}
+.xe-t tr.lean td{background:var(--xe-bg2)}
+.xe-t td.xe-win{color:var(--pos,#2fbf71);font-weight:700}
+.xe-t tr.xe-tot td{font-weight:800;border-top-width:2px}
+.xe-t.xe-tape{min-width:0;table-layout:fixed}
+.xe-t.xe-tape th,.xe-t.xe-tape td{white-space:normal;overflow-wrap:break-word}
+.xe-t.xe-tape th:first-child,.xe-t.xe-tape td:first-child{width:34%}
+.xe-t.xe-tape th:last-child,.xe-t.xe-tape td:last-child{width:16%}
+.xe-t.xe-tape caption{white-space:normal}
+.xe-lnk{background:none;border:0;padding:0;margin:0;color:var(--accent);font:inherit;font-weight:700;cursor:pointer;text-align:left;min-height:28px}
+.xe-lnk:hover{text-decoration:underline}
+.xe-lnk:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 @media (max-width:760px){
   .xe-why2 li{grid-template-columns:minmax(0,1fr) 56px;grid-template-areas:"l v" "b b"}
   .xe-why2 .xe-wl{grid-area:l}.xe-why2 .xe-wv{grid-area:v}.xe-why2 .xe-wb{grid-area:b}
