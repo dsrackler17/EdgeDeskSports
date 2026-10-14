@@ -25,3 +25,9 @@ results (log loss, calibration, holdout) live in the registry and
 | F-17 | College batting linear weights (2024) | 1B 0.61 · 2B 0.90 · 3B 1.22 · HR 1.43 · BB+HBP 0.49 · SB +0.20 · CS −0.35 · out −0.14 (R² 0.82) | validation/feature_research.json |
 | F-18 | Season-to-season persistence | tuned carryover of team strength at the top of every grid (1.0 for the hierarchical model, flat Poisson and Elo; 0.95 for Massey and Bradley-Terry) — college programs are far more stable year to year than roster turnover suggests | params/team_tuning.json |
 | F-19 | Starter projection from rotation patterns | ~53% top-1 accuracy; 66% when projected with ≥ 50% confidence (stated 66%: calibrated); ~20% of starts by someone not in the recent rotation | validation/pitcher_walkforward.json |
+| F-20 | Calibrated run expectations are biased in level | run-space calibration fixes the closed form's P(home) by moving the run ratio: home 7.71 vs 7.36 scored, away 5.83 vs 6.20 (VALIDATION, games with lines); the raw model is close (7.33, 6.09) | validation/simulator.json level_check |
+| F-21 | The closed form beats the inning simulator on full-game markets | moneyline −0.0032, totals −0.064 log score, run line level (VALIDATION) | validation/simulator.json, CBX-PRICING-ENGINE |
+| F-22 | First-five probabilities from the simulator are too extreme | slope 0.72 (level right: −0.001); ties calibrated in level | validation/simulator.json |
+| F-23 | Rating-uncertainty integration does not help the RAW model | removing it improves raw `hier` by 0.0003 (95% 0.0001 to 0.0004); the calibration map, fitted through it, keeps `hier_cal` calibrated | validation/ablations.json |
+| F-24 | Confirmed starters would be worth about 0.0007 log loss | oracle (actual starter) vs projected, 2025 (95% −0.0012 to −0.0002) — the measured value of a confirmed-starter feed | validation/pitcher_walkforward.json |
+

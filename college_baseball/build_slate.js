@@ -120,6 +120,7 @@ function build(season, o) {
   const CAL = require('./lib/calibration'); const ENS = require('./lib/ensemble');
   /* the first five are priced by the simulator; whether they are more than research is decided by its calibration (sim_eval.js) */
   const simEval = readJson(C.PATHS.simEval); const f5Cal = simEval && simEval.first_five ? simEval.first_five.home_win : null;
+  const construction = simEval && simEval.decision && simEval.decision.full_game_construction ? simEval.decision.full_game_construction : 'calibrated_expectations';
   const f5Status = simEval && simEval.decision && /PROVISIONAL/.test(simEval.decision.first_five_engine) ? { status: 'PROVISIONAL', reason: 'calibrated on VALIDATION; never tested against a market' }
     : { status: 'RESEARCH_ONLY', reason: f5Cal ? `the simulator's first-five probabilities are too extreme on VALIDATION (calibration slope ${f5Cal.slope}; tolerance 0.75-1.33)` : 'the simulator has not been evaluated on the first five innings' };
   const pricingModel = wf && wf.pricing ? wf.pricing.model : 'hier_cal';
@@ -182,8 +183,10 @@ function build(season, o) {
           const p7 = p7c.fn(g);
           const flags = { home_yday: recOf(g.home_id).last === K.addDays(date, -1) ? 1 : 0, away_yday: recOf(g.away_id).last === K.addDays(date, -1) ? 1 : 0, dh2: g.dh === 2 ? 1 : 0 };
           let lh; let la; let pEns = null; let ensShift = null;
-          if (pricingModel === 'hier_rest_cal') { const [rh0, ra0] = CAL.restApply(pr.lh, pr.la, flags, restLayer); [lh, la] = CAL.apply(rh0, ra0, restCal, g.neutral); }
+          let lhLevel = pr.lh; let laLevel = pr.la;
+          if (pricingModel === 'hier_rest_cal') { const [rh0, ra0] = CAL.restApply(pr.lh, pr.la, flags, restLayer); lhLevel = rh0; laLevel = ra0; [lh, la] = CAL.apply(rh0, ra0, restCal, g.neutral); }
           else [lh, la] = CAL.apply(pr.lh, pr.la, runCal, g.neutral);
+          const lhBase = lh; const laBase = la;     // later factors (ensemble shift, pitchers) are carried to the level-unbiased expectations as ratios
           if (pricingModel === 'ens') {
             /* the ensemble's probability, then the runs shifted along their ratio until they agree with it */
             const pp = { hier_cal: CAL.pOf({ lh: pr.lh, la: pr.la, sd: pr.sd_delta, neutral: g.neutral, p7 }, runCal, table, constants.seven_inning_factor) };
@@ -224,7 +227,11 @@ function build(season, o) {
           /* every full-game market from the closed form's mixture (rating uncertainty x scheduled length): its
              P(home) is the validated probability; the simulator, fed the run model's own (level-unbiased)
              expectations, prices only the first five innings (lib/simulator.js, validation/simulator.json) */
-          const cf = D.closedForm(lh, la, pr.sd_delta, p7, spec, constants);
+          const cfCal = D.closedForm(lh, la, pr.sd_delta, p7, spec, constants);
+          /* the construction the pricing study chose (sim_eval.js, CBX-PRICE-CONSTRUCTION): the run model's own
+             expectations (level-unbiased; the rest layer and the pitcher factors applied as in the price),
+             re-weighted so P(home) is the validated probability */
+          const cf = construction === 'reweighted_raw' ? D.closedForm(lhLevel * (lh / lhBase), laLevel * (la / laBase), pr.sd_delta, p7, spec, constants, { p_home_target: cfCal.p_home }) : cfCal;
           const sim = SIM.simulate({ lh: pr.lh, la: pr.la, sd: pr.sd_delta, p7, run_rule_p: rrP(g), frailty, home_staff: homeStaff, away_staff: awayStaff }, constants, { n: o.sims || 4000, seed: 1 + counts.games });
           const dist = PR.fromClosedForm(cf); const prices = PR.price(dist, { f5: sim.f5_joint });
           /* the board keeps the useful part of each ladder (the full ladders are one call away in lib/pricing.js) */
@@ -291,7 +298,7 @@ function build(season, o) {
     K.writeJson(path.join(outDir, 'pitchers.json'), { schema: 'edgedesk_cbase_pitchers_v1', season, method: 'shrunk components per batter faced (K 63, BB 53, HBP 113, HR 334, H 195 BF of prior), college pitching linear weights fitted on 2024', pitching_linear_weights: pm.lw, starters: starters.slice(0, 150), elasticity: pm.beta, pitcher_adjustment_in_price: pm.accepted });
   }
   const lat = latency.slice().sort((a, b) => a - b);
-  return { season, dates: dateIndex, counts, failures, coherence_failures: coherenceFailures, latency_ms: { p50: lat[Math.floor(lat.length / 2)] || 0, p95: lat[Math.floor(lat.length * 0.95)] || 0, total_s: Math.round((Date.now() - t0) / 1000) }, audit_summary: audit ? audit.summary : null };
+  return { season, dates: dateIndex, counts, failures, coherence_failures: coherenceFailures, construction, latency_ms: { p50: lat[Math.floor(lat.length / 2)] || 0, p95: lat[Math.floor(lat.length * 0.95)] || 0, total_s: Math.round((Date.now() - t0) / 1000) }, audit_summary: audit ? audit.summary : null };
 }
 
 /* ---------------------------------------------------------------- research.json for the advanced view */
@@ -344,7 +351,7 @@ function main() {
   const idx = { schema: 'edgedesk_cbase_board_index_v1', generated_at: now.toISOString(), mode, season, point_in_time: mode === 'LIVE' ? 'PREGAME' : 'RETROSPECTIVE',
     mode_note: mode === 'LIVE' ? 'Upcoming games priced before first pitch.' : `No upcoming Division I games are published by the source (the ${cur} schedule is not out). This is a RETROSPECTIVE replay of ${season}: each price is what the model would have said before the game, from final data; results are shown as postgame information.`,
     model_version: C.MODEL_VERSION, value_claims: 'DISABLED', value_reason: 'no authorised college-baseball market feed; release gates not passed',
-    counts: res.counts, failures: res.failures, coherence_failures: res.coherence_failures, sims: Number(arg('sims', 4000)), pricing_engine: { full_game: 'closed form', first_five: 'simulator' }, latency_ms: res.latency_ms, dates: res.dates,
+    counts: res.counts, failures: res.failures, coherence_failures: res.coherence_failures, sims: Number(arg('sims', 4000)), pricing_engine: { full_game: 'closed form', first_five: 'simulator', construction: res.construction }, latency_ms: res.latency_ms, dates: res.dates,
     freshness: { warehouse_built: (W.report(season) || {}).built_at || null, source: C.SOURCE.name } };
   K.writeJson(path.join(BOARD, 'index.json'), idx);
   K.writeJson(path.join(BOARD, 'research.json'), research());

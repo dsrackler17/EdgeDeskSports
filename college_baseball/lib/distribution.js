@@ -209,50 +209,67 @@ function pHomeTable(spec, constants) {
 
 /* ---------------------------------------------------------------- the pricing distribution */
 /**
- * closedForm(lh, la, sd, p7, spec, constants) -> the distribution every full-game market is priced from.
+ * closedForm(lh, la, sd, p7, spec, constants, opts) -> the distribution every full-game market is priced from.
  *
- * A mixture of outcomes(): over the rating uncertainty (the same three-point Gauss-Hermite rule on the
- * log run ratio as team_quality.integrate, weights 2/3, 1/6, 1/6 at 0 and +/- sqrt(3) sd) and over the
- * scheduled length (seven innings with probability p7, the expectations scaled by the measured
- * seven-inning factor). Its P(home) is therefore the validated probability (calibration.pOf computes the
- * same mixture through the P(home) table).
+ * A mixture of the negative-binomial joint (ties resolved by the measured extra innings, as in outcomes()):
+ * over the rating uncertainty (the same three-point Gauss-Hermite rule on the log run ratio as
+ * team_quality.integrate, weights 2/3, 1/6, 1/6 at 0 and +/- sqrt(3) sd) and over the scheduled length
+ * (seven innings with probability p7, the expectations scaled by the measured seven-inning factor).
  *
  * Each side's final-runs pmf is built too, so team totals agree with the game total: a tied regulation
- * score s:s gets the measured extra-inning runs, split by expected shares (the winner (added + margin)/2,
- * the loser (added - margin)/2) and placed on the two nearest integers, so each side's mean is exact and
- * E[home] + E[away] = E[total].
+ * score s:s gets the measured extra-inning runs, the loser (added - margin)/2 (never below zero) and the
+ * winner the rest in expectation, placed on the two nearest integers, so E[home] + E[away] = E[total].
+ *
+ * opts.p_home_target: re-weight the home-win and away-win outcomes so P(home) is exactly the target
+ * (the validated probability), keeping the shape of each class. This is how the board prices: the run
+ * model's own expectations give the level and the margin, the validated model gives P(home).
  */
-function closedForm(lh, la, sd, p7, spec, constants) {
+function closedForm(lh, la, sd, p7, spec, constants, opts) {
+  opts = opts || {};
   const ex = resolution(constants);
   const mean = (a) => a.reduce((x, v, i) => x + v * i, 0);
   const eAdded = mean(ex.added); const eMh = mean(ex.home); const eMa = mean(ex.away);
+  /* the extra runs of a tie split between winner and loser: the loser (added - margin)/2, never below zero
+     (the measured added runs pool every extra-inning game, so for away wins they can fall short of the
+     margin), the winner the rest, so the two sides always add to the measured added runs */
+  const split = (eM) => { const lose = Math.max(0, (eAdded - eM) / 2); return [eAdded - lose, lose]; };
+  const [winH, loseH] = split(eMh); const [winA, loseA] = split(eMa);
   const s3 = Math.sqrt(3) * (sd > 0 ? sd : 0);
   const nodes = s3 > 0 ? [[2 / 3, 0], [1 / 6, s3], [1 / 6, -s3]] : [[1, 0]];
   const f7 = constants.seven_inning_factor || 0.77;
   const lens = p7 > 0 ? [[1 - p7, 1], [p7, f7]] : [[1, 1]];
   const KM = K_MAX + 30;
-  const out = { p_home: 0, total_pmf: new Float64Array(2 * KM + 1), margin_pmf: new Float64Array(2 * KM + 1), margin_offset: KM, home_pmf: new Float64Array(KM + 1), away_pmf: new Float64Array(KM + 1), components: [] };
+  const part = () => ({ p: 0, total: new Float64Array(2 * KM + 1), margin: new Float64Array(2 * KM + 1), home: new Float64Array(KM + 1), away: new Float64Array(KM + 1) });
+  const H = part(); const A = part();     // the home-win and the away-win outcomes
   const spread = (arr, x, p) => { const lo = Math.floor(x); const f = x - lo; arr[Math.min(KM, lo)] += p * (1 - f); arr[Math.min(KM, lo + 1)] += p * f; };
+  const components = [];
   for (const [wn, d] of nodes) for (const [wl, len] of lens) {
     const w = wn * wl; if (!(w > 0)) continue;
     const ch = lh * len * Math.exp(d / 2); const ca = la * len * Math.exp(-d / 2);
-    const o = outcomes(ch, ca, spec, constants);
-    out.p_home += w * o.p_home; out.components.push({ w, lh: ch, la: ca, p_home: o.p_home });
-    for (let t = 0; t < o.total_pmf.length; t++) if (o.total_pmf[t]) out.total_pmf[Math.min(2 * KM, t)] += w * o.total_pmf[t];
-    for (let i = 0; i < o.margin_pmf.length; i++) if (o.margin_pmf[i]) { const m = i - o.margin_offset; out.margin_pmf[Math.max(0, Math.min(2 * KM, m + KM))] += w * o.margin_pmf[i]; }
-    /* each side's final runs: decided regulation scores as they are, ties resolved by expected extra-inning shares */
     const { P, K } = joint(ch, ca, spec); const n = K + 1;
-    const pHx = o.p_home_extra;
-    const addH = eAdded / 2 + (pHx * eMh - (1 - pHx) * eMa) / 2; const addA = eAdded - addH;
+    const pHx = extraInningsHomeWin(ch / constants.runs_per_team_game, ca / constants.runs_per_team_game, constants);
+    let mass = 0; for (let k = 0; k < P.length; k++) mass += P[k];
+    const pw = w / mass;      // each component's joint renormalised over the K cut-off, as outcomes() is in effect
+    let ph = 0;
     for (let h = 0; h < n; h++) for (let a = 0; a < n; a++) {
-      const p = P[h * n + a]; if (p === 0) continue;
-      if (h !== a) { out.home_pmf[h] += w * p; out.away_pmf[a] += w * p; } else { spread(out.home_pmf, h + addH, w * p); spread(out.away_pmf, a + addA, w * p); }
+      const p = P[h * n + a] * pw; if (p === 0) continue;
+      if (h > a) { H.p += p; ph += p; H.total[h + a] += p; H.margin[h - a + KM] += p; H.home[h] += p; H.away[a] += p; continue; }
+      if (a > h) { A.p += p; A.total[h + a] += p; A.margin[h - a + KM] += p; A.home[h] += p; A.away[a] += p; continue; }
+      /* tied after regulation: extra innings, home wins with pHx */
+      const pw1 = p * pHx; const pw0 = p - pw1; H.p += pw1; A.p += pw0; ph += pw1;
+      for (let add = 0; add < ex.added.length; add++) if (ex.added[add]) { H.total[Math.min(2 * KM, 2 * h + add)] += pw1 * ex.added[add]; A.total[Math.min(2 * KM, 2 * h + add)] += pw0 * ex.added[add]; }
+      for (let m = 1; m < ex.home.length; m++) H.margin[Math.min(2 * KM, m + KM)] += pw1 * ex.home[m];
+      for (let m = 1; m < ex.away.length; m++) A.margin[Math.max(0, -m + KM)] += pw0 * ex.away[m];
+      spread(H.home, h + winH, pw1); spread(H.away, a + loseH, pw1);
+      spread(A.away, a + winA, pw0); spread(A.home, h + loseA, pw0);
     }
+    components.push({ w, lh: ch, la: ca, p_home: ph / w });
   }
-  /* outcomes() renormalises the stored extra-inning shapes, so every pmf sums to one up to the K cut-off */
-  const norm = (a) => { const t = a.reduce((x, y) => x + y, 0); if (t > 0) for (let i = 0; i < a.length; i++) a[i] /= t; };
-  norm(out.total_pmf); norm(out.margin_pmf); norm(out.home_pmf); norm(out.away_pmf);
-  out.p_away = 1 - out.p_home;
+  const pModel = H.p / (H.p + A.p);
+  const target = opts.p_home_target != null && opts.p_home_target > 0 && opts.p_home_target < 1 ? opts.p_home_target : pModel;
+  const w1 = target / H.p; const w0 = (1 - target) / A.p;
+  const mix = (k) => { const out = new Float64Array(H[k].length); for (let i = 0; i < out.length; i++) out[i] = w1 * H[k][i] + w0 * A[k][i]; return out; };
+  const out = { p_home: target, p_away: 1 - target, p_home_model: pModel, reweighted: target !== pModel, total_pmf: mix('total'), margin_pmf: mix('margin'), margin_offset: KM, home_pmf: mix('home'), away_pmf: mix('away'), components };
   out.exp_home = mean(out.home_pmf); out.exp_away = mean(out.away_pmf); out.exp_total = mean(out.total_pmf);
   return out;
 }

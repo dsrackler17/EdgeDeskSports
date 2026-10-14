@@ -191,6 +191,22 @@ function build() {
       ['Moneyline calibration-in-the-large', f4(fg.moneyline.closed_form.citl), f4(fg.moneyline.simulator.citl), f4(fg.moneyline.simulator_on_calibrated_inputs.citl), '', ''],
     ]));
     p();
+    const k = sim.construction;
+    if (k) {
+      const kc = k.comparisons; const lab = { calibrated_expectations: 'the calibrated expectations', reweighted_raw: 'the run model\'s own expectations re-weighted to the validated P(home)' };
+      p(`Which expectations the closed form uses (every VALIDATION game, n ${int(k.n)}; same moneyline either way). Chosen: **${lab[k.decision]}**. Differences are re-weighted minus calibrated; negative favours re-weighting.`);
+      p();
+      p(table(['Market', 'Calibrated expectations', 'Re-weighted own expectations', 'Difference', 'Verdict'], [
+        ['Total-runs log score', f5(k.total_log_score.calibrated_expectations), f5(k.total_log_score.reweighted_raw), ci(kc.total), verdict(kc.total)],
+        ['Team-runs log score', f5(k.team_runs_log_score.calibrated_expectations), f5(k.team_runs_log_score.reweighted_raw), ci(kc.team_runs), verdict(kc.team_runs)],
+        ['Home −1.5 log loss', f5(k.home_minus_1_5.calibrated_expectations.log_loss), f5(k.home_minus_1_5.reweighted_raw.log_loss), ci(kc.run_line_minus), verdict(kc.run_line_minus)],
+        ['Home −1.5 calibration-in-the-large', f4(k.home_minus_1_5.calibrated_expectations.citl), f4(k.home_minus_1_5.reweighted_raw.citl), '', ''],
+        ['Home +1.5 log loss', f5(k.home_plus_1_5.calibrated_expectations.log_loss), f5(k.home_plus_1_5.reweighted_raw.log_loss), ci(kc.run_line_plus), verdict(kc.run_line_plus)],
+        ['Expected home runs (observed ' + k.expected_runs.home.observed + ')', String(k.expected_runs.home.calibrated_expectations), String(k.expected_runs.home.reweighted_raw), '', ''],
+        ['Expected away runs (observed ' + k.expected_runs.away.observed + ')', String(k.expected_runs.away.calibrated_expectations), String(k.expected_runs.away.reweighted_raw), '', ''],
+      ]));
+      p();
+    }
     p(`Why the simulator is fed the run model's own expectations: the run-space calibration moves the expectations so the closed form's P(home) is right, which leaves them biased in level (home ${lv.cal_lh} vs ${lv.actual_home} scored, away ${lv.cal_la} vs ${lv.actual_away}; the raw model: ${lv.raw_lh} and ${lv.raw_la}). The simulator models the home side's unplayed or cut-short last inning itself, so the calibrated inputs count that effect twice: on them it favours the home side (calibration-in-the-large ${f4(fg.moneyline.simulator_on_calibrated_inputs.citl)}), and on the raw ones it is better by ${ci(c.moneyline_sim_vs_sim_on_calibrated_inputs)}.`);
     p();
     p(`First five innings (simulator only): home-win log loss ${f5(sim.first_five.home_win.log_loss)}, calibration-in-the-large ${f4(sim.first_five.home_win.citl)}, slope ${f4(sim.first_five.home_win.slope)}; tie calibration-in-the-large ${f4(sim.first_five.tie.citl)}. Walk-off share predicted ${sim.walkoff_share.predicted} vs observed ${sim.walkoff_share.observed}; run-rule share predicted ${sim.run_rule_share.predicted} vs observed ${sim.run_rule_share.observed}. Coherence failures of the combined price: ${sim.coherence_failures}.`);
@@ -310,6 +326,8 @@ function build() {
     'No weather, lineups, injuries or travel. A college game can turn on all of them.',
     'Tuning stopped after a time-boxed third round with some values on grid edges; the optimum may lie beyond them (research/UNRESOLVED.md).',
     'Settlement profiles are unverified templates; extra innings, suspended games and run-rule settlement differ by book and are not confirmed.',
+    'First-five prices are research only: the inning simulator gets their level right but makes them too extreme, and no calibration map for them has been fitted yet (U-13).',
+    sim && sim.decision && sim.decision.full_game_construction === 'reweighted_raw' ? 'The run-space calibration fixes P(home) by moving the run ratio, which biases each side\'s expected runs in level; the board therefore prices from the run model\'s own expectations re-weighted to the validated P(home) (section 6), which is measured, not assumed, to be better.' : 'The run-space calibration fixes P(home) by moving the run ratio, which leaves each side\'s expected runs biased in level (home too high, away too low); team totals and run lines inherit that bias.',
   ].forEach((s) => p('- ' + s));
   p();
   p('## 15. Reproduce');
