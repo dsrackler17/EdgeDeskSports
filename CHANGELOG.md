@@ -1,5 +1,34 @@
 # Changelog
 
+## 2026-10-14 — Portfolio: sportsbook history through SharpSports BetSync (sandbox), the 404 webhook, bankroll trend and drawdown, EdgeDesk's model beside a bet
+
+**Sportsbooks can now be connected to the Portfolio through SharpSports BetSync, an approved aggregator. The reader signs in to their book on SharpSports' own page; EdgeDesk never sees a sportsbook password and reads SharpSports server-side, read-only. It is built, tested here and in sandbox only, for operators. It has NOT yet been deployed or run against SharpSports' sandbox: the build environment could not reach `*.sharpsports.io` or `*.supabase.co`. The five SharpSports webhook subscriptions answered 404 because no function named `sharpsports-webhook` existed; it does now. Production stays off behind the existing registry guard until a PRODUCTION smoke test passes and the terms review is cleared.** Docs: `docs/sharpsports-betsync.md`.
+
+- **The webhook** (`supabase/functions/sharpsports-webhook`, deploy `--no-verify-jwt`).
+  - A delivery is a hint, never data: it is recorded once, the accounts and bettors it names are made due, and everything is re-read from SharpSports' API.
+  - HMAC-SHA256 under each subscription's secret. In `observe` mode until a genuine delivery verifies; in `required` mode, unsigned or wrongly signed deliveries get 401.
+- **Linking and sync** (`portfolio_connect`: `ss_status`, `ss_books`, `ss_link`, `ss_discover`, `ss_refresh`).
+  - A linked book is an AGGREGATOR account under the book's own key, and a quick-import account is upgraded in place.
+  - Slips are normalized exactly from cents: singles, parlays with legs, teasers, round robins, pushes, voids, half results and cash-outs.
+  - A slip that cannot be read without guessing — no stake, no placed time, no cash-out amount, an unknown outcome — is listed, never invented.
+- **The database** (`supabase/portfolio_aggregator.sql`): bettor references with an opaque id, the webhook log, refresh requests, an append-only settlement history, and `portfolio_svc_ingest_wagers`.
+  - The ingest is idempotent, and adopts a reader's matching file or manual bet so the journal is kept.
+  - Sandbox and production use separate keys. A sandbox rehearsal is recorded DEMO and can never switch production on.
+- **Every tab:**
+  - **Analytics:** a bankroll trend and drawdown from the server (`portfolio_pnl_path`), and a by-bet-type breakdown.
+  - **Overview:** units won or lost, only where a unit size was recorded.
+  - **Open:** parlay legs with each one's state.
+- **EdgeDesk's model at the time** (`supabase/portfolio_model_context.sql`).
+  - For a football single matched to one game: EdgeDesk's probability recorded before the bet, only at the line the model priced, beside the price's implied probability.
+  - A record made after the bet is refused by name.
+  - It is kept apart from the bettor's results.
+- **Tests:**
+  - `tools/portfolio/sharpsports.test.js`: both shipped functions over the real migrations, against a fake SharpSports.
+  - `tools/portfolio/sharpsports_ui.e2e.js`: Chromium.
+  - `tools/portfolio/model_context_sql.test.js`.
+  - The existing Portfolio suites are unchanged and green.
+- **Live checks:** `tools/portfolio/sharpsports_smoke.js` (probe, webhooks, the ten stages).
+
 ## 2026-10-14 — Men's college basketball research engine: team strength, player impact, lineups, matchups and scenarios, validated without odds
 
 **EdgeDesk now has an independent research model for men's college basketball that runs without any sportsbook price. It explains who is good, why they are good, who makes them good, and how those strengths meet a particular opponent. On the held-out 2025-26 season its team ratings beat the incumbent points model. The player, lineup, scenario and style layers are each labelled by what their validation showed. A market comparison is a separate, optional layer; today it says "market comparison unavailable".** Docs: `docs/ncaam/README.md`, `VALIDATION.md`, `METHODOLOGY.md`, `METHODOLOGY_SOURCES.md`.
