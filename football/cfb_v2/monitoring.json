@@ -85,27 +85,56 @@
    "week": 6
   },
   {
+   "ats_at_close": 1.0,
+   "ats_at_freeze_line": 1.0,
+   "bias": 0.714,
+   "brier": 0.172,
+   "clv_mean": 0.0,
    "disagreement_c_d_mean": 1.463,
-   "final": 0,
+   "final": 2,
    "frozen_games": 59,
+   "largest_misses": [
+    {
+     "abs_error": 3.7,
+     "final": 3.0,
+     "game": "Florida International @ Jacksonville State",
+     "v2": 6.7
+    },
+    {
+     "abs_error": 2.3,
+     "final": 3.0,
+     "game": "Delaware @ Middle Tennessee",
+     "v2": 0.7
+    }
+   ],
+   "mae": 2.996,
+   "mae_candidate_001_same_games": 2.94,
+   "mae_close": 2.125,
+   "mae_line_at_freeze": 2.125,
+   "mae_v1_same_games": 2.73,
+   "mae_v2_same_close_games": 2.996,
+   "mae_v2_same_line_at_freeze_games": 2.996,
+   "mae_v2_vs_candidate_001_games": 2.996,
+   "mae_v2_vs_v1_games": 2.996,
+   "rmse": 3.08,
    "week": 7
   }
  ],
  "current_json_age_hours": 0.0,
  "feature_drift_psi": {
-  "ens_pred": 0.079,
-  "ens_pred_noise_q99": 0.322,
-  "ens_sd": 0.076,
-  "ens_sd_noise_q99": 0.322,
-  "pred_total": 0.107,
-  "pred_total_noise_q99": 0.322,
+  "ens_pred": 0.088,
+  "ens_pred_noise_q99": 0.266,
+  "ens_sd": 0.13,
+  "ens_sd_noise_q99": 0.266,
+  "pred_total": 0.118,
+  "pred_total_noise_q99": 0.266,
   "reference_weeks": "week6",
-  "sigma": 0.227,
-  "sigma_noise_q99": 0.322
+  "sigma": 0.188,
+  "sigma_noise_q99": 0.266
  },
- "generated_at": "2026-10-13T12:09:52Z",
+ "generated_at": "2026-10-14T10:49:29Z",
  "learning": {
-  "bias": -0.9979473684210529,
+  "bias": -0.9684396551724141,
   "by_model_version": {
    "edgedesk_cfb_v2.0.0": {
     "bias": -0.448646511627907,
@@ -118,20 +147,20 @@
     }
    },
    "edgedesk_cfb_v2.1.0": {
-    "bias": -0.9979473684210529,
+    "bias": -0.9684396551724141,
     "fcs_not_priced_games": 3,
-    "games_scored": 114,
-    "mae": 12.38943859649123,
-    "major_miss_share": 0.14912280701754385,
+    "games_scored": 116,
+    "mae": 12.227491379310345,
+    "major_miss_share": 0.14655172413793102,
     "sources": {
-     "FROZEN": 114
+     "FROZEN": 116
     }
    }
   },
   "expected_major_miss_share_if_calibrated": 0.134,
-  "games_scored": 114,
-  "mae": 12.38943859649123,
-  "major_miss_share": 0.14912280701754385,
+  "games_scored": 116,
+  "mae": 12.227491379310345,
+  "major_miss_share": 0.14655172413793102,
   "miss_classes": {
    "explosive_variance": 2,
    "garbage_time": 3,
@@ -143,7 +172,7 @@
   },
   "model_version": "edgedesk_cfb_v2.1.0",
   "sources": {
-   "FROZEN": 114
+   "FROZEN": 116
   }
  },
  "model_version": "edgedesk_cfb_v2.1.0",
@@ -1825,8 +1854,8 @@
  "scope": "FROZEN shadow projections only (replays excluded); priced games (FBS-vs-FBS) unless noted",
  "season": 2026,
  "season_to_date": {
-  "final": 114,
+  "final": 116,
   "frozen_games": 173,
-  "mae": 12.389
+  "mae": 12.227
  }
 }
