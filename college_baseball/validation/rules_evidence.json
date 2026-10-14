@@ -1,0 +1,601 @@
+{
+ "schema": "edgedesk_cbase_rules_evidence_v1",
+ "rules_version": "cbase_rules_v1",
+ "registry": [
+  {
+   "id": "R01",
+   "rule": "Home team bats last",
+   "status": "STRUCTURAL",
+   "applies": "all"
+  },
+  {
+   "id": "R02",
+   "rule": "Home team does not bat in the bottom of the final scheduled inning when leading",
+   "status": "STRUCTURAL",
+   "applies": "all",
+   "check": "validation/rules_evidence.json home_not_batting_when_leading"
+  },
+  {
+   "id": "R03",
+   "rule": "A game tied after the scheduled innings continues by full innings until one side leads after a complete inning, or the home side takes the lead (walk-off)",
+   "status": "STRUCTURAL",
+   "applies": "all"
+  },
+  {
+   "id": "R04",
+   "rule": "Regulation length is nine innings",
+   "status": "DOMAIN",
+   "applies": "default",
+   "evidence": "innings-played distribution, 2017-2026"
+  },
+  {
+   "id": "R05",
+   "rule": "Doubleheader games may be scheduled for seven innings (by conference rule or agreement)",
+   "status": "MEASURED",
+   "applies": "doubleheaders",
+   "evidence": "share of DH games ending after 7 with a margin < 10, by DH game number and season"
+  },
+  {
+   "id": "R06",
+   "rule": "A ten-run lead after seven innings (by conference rule or agreement) may end a game",
+   "status": "MEASURED",
+   "applies": "context-specific probability",
+   "evidence": "share of games with a 10+ margin after 7 complete that stopped, by context"
+  },
+  {
+   "id": "R07",
+   "rule": "Extra innings start with the bases empty (no automatic runner)",
+   "status": "MEASURED",
+   "applies": "all",
+   "evidence": "mean runs per extra half-inning vs innings 1-9; an automatic runner on second would raise it by roughly 0.5 runs"
+  },
+  {
+   "id": "R08",
+   "rule": "A game called for weather after five innings (4.5 with the home side ahead) is official",
+   "status": "DOMAIN",
+   "applies": "history only; never priced",
+   "evidence": "games ending before the 7th with a margin < 10"
+  },
+  {
+   "id": "R09",
+   "rule": "Suspended games are resumed from the point of suspension",
+   "status": "UNVERIFIED",
+   "applies": "not priced: the source does not mark suspensions"
+  }
+ ],
+ "games_with_lines": 60179,
+ "scheduled_basis": {
+  "PLAYED_9": 49778,
+  "ENDED_AFTER_7": 1970,
+  "RUN_RULE_AFTER_7": 2864,
+  "SHORTENED": 67,
+  "EXTRA_AFTER_9": 3514,
+  "EXTRA_AFTER_7": 150,
+  "PLAYED_10_PLUS_UNTIED": 144,
+  "RUN_RULE_AFTER_8": 1102,
+  "RUN_RULE_EARLY": 14,
+  "ENDED_AFTER_8_UNCLEAR": 104,
+  "AMBIGUOUS_9_OR_7_PLUS_2": 147,
+  "SEVEN_OR_RUN_RULE_DH": 325
+ },
+ "by_context": {
+  "single:2017": {
+   "n": 7570,
+   "seven": 342
+  },
+  "single": {
+   "n": 56879,
+   "seven": 1795
+  },
+  "single:2018": {
+   "n": 7838,
+   "seven": 262
+  },
+  "single:2019": {
+   "n": 4290,
+   "seven": 106
+  },
+  "single:2020": {
+   "n": 2324,
+   "seven": 44
+  },
+  "single:2021": {
+   "n": 6054,
+   "seven": 720
+  },
+  "single:2022": {
+   "n": 6881,
+   "seven": 293
+  },
+  "single:2023": {
+   "n": 65,
+   "seven": 1
+  },
+  "single:2024": {
+   "n": 7244,
+   "seven": 9
+  },
+  "dh2:2024": {
+   "n": 548,
+   "seven": 84
+  },
+  "dh2": {
+   "n": 1536,
+   "seven": 274
+  },
+  "dh": {
+   "n": 3072,
+   "seven": 650
+  },
+  "dh1:2024": {
+   "n": 552,
+   "seven": 128
+  },
+  "dh1": {
+   "n": 1536,
+   "seven": 376
+  },
+  "single:2025": {
+   "n": 7165,
+   "seven": 12
+  },
+  "dh1:2025": {
+   "n": 560,
+   "seven": 148
+  },
+  "dh2:2025": {
+   "n": 561,
+   "seven": 109
+  },
+  "single:2026": {
+   "n": 7448,
+   "seven": 6
+  },
+  "dh1:2026": {
+   "n": 424,
+   "seven": 100
+  },
+  "dh2:2026": {
+   "n": 427,
+   "seven": 81
+  }
+ },
+ "seven_inning_share": {
+  "single:2017": {
+   "n": 7570,
+   "seven": 342,
+   "share": 0.045
+  },
+  "single": {
+   "n": 56879,
+   "seven": 1795,
+   "share": 0.032
+  },
+  "single:2018": {
+   "n": 7838,
+   "seven": 262,
+   "share": 0.033
+  },
+  "single:2019": {
+   "n": 4290,
+   "seven": 106,
+   "share": 0.025
+  },
+  "single:2020": {
+   "n": 2324,
+   "seven": 44,
+   "share": 0.019
+  },
+  "single:2021": {
+   "n": 6054,
+   "seven": 720,
+   "share": 0.119
+  },
+  "single:2022": {
+   "n": 6881,
+   "seven": 293,
+   "share": 0.043
+  },
+  "single:2023": {
+   "n": 65,
+   "seven": 1,
+   "share": 0.015
+  },
+  "single:2024": {
+   "n": 7244,
+   "seven": 9,
+   "share": 0.001
+  },
+  "dh2:2024": {
+   "n": 548,
+   "seven": 84,
+   "share": 0.153
+  },
+  "dh2": {
+   "n": 1536,
+   "seven": 274,
+   "share": 0.178
+  },
+  "dh": {
+   "n": 3072,
+   "seven": 650,
+   "share": 0.212
+  },
+  "dh1:2024": {
+   "n": 552,
+   "seven": 128,
+   "share": 0.232
+  },
+  "dh1": {
+   "n": 1536,
+   "seven": 376,
+   "share": 0.245
+  },
+  "single:2025": {
+   "n": 7165,
+   "seven": 12,
+   "share": 0.002
+  },
+  "dh1:2025": {
+   "n": 560,
+   "seven": 148,
+   "share": 0.264
+  },
+  "dh2:2025": {
+   "n": 561,
+   "seven": 109,
+   "share": 0.194
+  },
+  "single:2026": {
+   "n": 7448,
+   "seven": 6,
+   "share": 0.001
+  },
+  "dh1:2026": {
+   "n": 424,
+   "seven": 100,
+   "share": 0.236
+  },
+  "dh2:2026": {
+   "n": 427,
+   "seven": 81,
+   "share": 0.19
+  }
+ },
+ "run_rule": {
+  "nonconf": {
+   "eligible": 3485,
+   "stopped": 1106
+  },
+  "all": {
+   "eligible": 4934,
+   "stopped": 1468
+  },
+  "conf": {
+   "eligible": 1355,
+   "stopped": 362
+  },
+  "ncaa_tourney": {
+   "eligible": 94,
+   "stopped": 0
+  }
+ },
+ "home_not_batting_when_leading": {
+  "leading_after_top_of_last": 28156,
+  "recorded_x": 27398,
+  "recorded_zero_convention": 646,
+  "runs_scored_violation": 112
+ },
+ "extra_inning_runs": {
+  "half_innings": 13787,
+  "mean": 0.523,
+  "regulation_mean": 0.717
+ },
+ "run_share_by_inning": [
+  0.1182,
+  0.1065,
+  0.1195,
+  0.1167,
+  0.1191,
+  0.1177,
+  0.1174,
+  0.1111,
+  0.0736
+ ],
+ "per_season": {
+  "2017": {
+   "run_rule": {
+    "nonconf": {
+     "eligible": 352,
+     "stopped": 26
+    },
+    "all": {
+     "eligible": 591,
+     "stopped": 78
+    },
+    "conf": {
+     "eligible": 239,
+     "stopped": 52
+    }
+   },
+   "extra_inning_runs": {
+    "half_innings": 1929,
+    "mean": 0.468,
+    "regulation_mean": 0.658
+   },
+   "home_not_batting_when_leading": {
+    "leading_after_top_of_last": 3765,
+    "recorded_x": 3714,
+    "recorded_zero_convention": 49,
+    "runs_scored_violation": 2
+   }
+  },
+  "2018": {
+   "run_rule": {
+    "nonconf": {
+     "eligible": 339,
+     "stopped": 14
+    },
+    "all": {
+     "eligible": 609,
+     "stopped": 60
+    },
+    "conf": {
+     "eligible": 261,
+     "stopped": 46
+    },
+    "ncaa_tourney": {
+     "eligible": 9,
+     "stopped": 0
+    }
+   },
+   "extra_inning_runs": {
+    "half_innings": 2108,
+    "mean": 0.48,
+    "regulation_mean": 0.641
+   },
+   "home_not_batting_when_leading": {
+    "leading_after_top_of_last": 3890,
+    "recorded_x": 3843,
+    "recorded_zero_convention": 46,
+    "runs_scored_violation": 1
+   }
+  },
+  "2019": {
+   "run_rule": {
+    "nonconf": {
+     "eligible": 139,
+     "stopped": 9
+    },
+    "all": {
+     "eligible": 362,
+     "stopped": 47
+    },
+    "conf": {
+     "eligible": 207,
+     "stopped": 38
+    },
+    "ncaa_tourney": {
+     "eligible": 16,
+     "stopped": 0
+    }
+   },
+   "extra_inning_runs": {
+    "half_innings": 1195,
+    "mean": 0.454,
+    "regulation_mean": 0.666
+   },
+   "home_not_batting_when_leading": {
+    "leading_after_top_of_last": 2095,
+    "recorded_x": 2070,
+    "recorded_zero_convention": 25,
+    "runs_scored_violation": 0
+   }
+  },
+  "2020": {
+   "run_rule": {
+    "nonconf": {
+     "eligible": 212,
+     "stopped": 11
+    },
+    "all": {
+     "eligible": 219,
+     "stopped": 13
+    },
+    "conf": {
+     "eligible": 7,
+     "stopped": 2
+    }
+   },
+   "extra_inning_runs": {
+    "half_innings": 576,
+    "mean": 0.476,
+    "regulation_mean": 0.633
+   },
+   "home_not_batting_when_leading": {
+    "leading_after_top_of_last": 1344,
+    "recorded_x": 1322,
+    "recorded_zero_convention": 21,
+    "runs_scored_violation": 1
+   }
+  },
+  "2021": {
+   "run_rule": {
+    "nonconf": {
+     "eligible": 189,
+     "stopped": 22
+    },
+    "all": {
+     "eligible": 496,
+     "stopped": 150
+    },
+    "conf": {
+     "eligible": 293,
+     "stopped": 128
+    },
+    "ncaa_tourney": {
+     "eligible": 14,
+     "stopped": 0
+    }
+   },
+   "extra_inning_runs": {
+    "half_innings": 1269,
+    "mean": 0.6,
+    "regulation_mean": 0.674
+   },
+   "home_not_batting_when_leading": {
+    "leading_after_top_of_last": 2829,
+    "recorded_x": 2667,
+    "recorded_zero_convention": 162,
+    "runs_scored_violation": 0
+   }
+  },
+  "2022": {
+   "run_rule": {
+    "nonconf": {
+     "eligible": 383,
+     "stopped": 34
+    },
+    "all": {
+     "eligible": 745,
+     "stopped": 130
+    },
+    "conf": {
+     "eligible": 348,
+     "stopped": 96
+    },
+    "ncaa_tourney": {
+     "eligible": 14,
+     "stopped": 0
+    }
+   },
+   "extra_inning_runs": {
+    "half_innings": 1475,
+    "mean": 0.471,
+    "regulation_mean": 0.733
+   },
+   "home_not_batting_when_leading": {
+    "leading_after_top_of_last": 3276,
+    "recorded_x": 3075,
+    "recorded_zero_convention": 200,
+    "runs_scored_violation": 1
+   }
+  },
+  "2023": {
+   "run_rule": {
+    "nonconf": {
+     "eligible": 9,
+     "stopped": 0
+    },
+    "all": {
+     "eligible": 9,
+     "stopped": 0
+    }
+   },
+   "extra_inning_runs": {
+    "half_innings": 2,
+    "mean": 0.5,
+    "regulation_mean": 0.727
+   },
+   "home_not_batting_when_leading": {
+    "leading_after_top_of_last": 36,
+    "recorded_x": 35,
+    "recorded_zero_convention": 1,
+    "runs_scored_violation": 0
+   }
+  },
+  "2024": {
+   "run_rule": {
+    "nonconf": {
+     "eligible": 675,
+     "stopped": 259
+    },
+    "all": {
+     "eligible": 686,
+     "stopped": 259
+    },
+    "ncaa_tourney": {
+     "eligible": 11,
+     "stopped": 0
+    }
+   },
+   "extra_inning_runs": {
+    "half_innings": 1799,
+    "mean": 0.591,
+    "regulation_mean": 0.787
+   },
+   "home_not_batting_when_leading": {
+    "leading_after_top_of_last": 3808,
+    "recorded_x": 3706,
+    "recorded_zero_convention": 69,
+    "runs_scored_violation": 33
+   }
+  },
+  "2025": {
+   "run_rule": {
+    "nonconf": {
+     "eligible": 649,
+     "stopped": 390
+    },
+    "all": {
+     "eligible": 663,
+     "stopped": 390
+    },
+    "ncaa_tourney": {
+     "eligible": 14,
+     "stopped": 0
+    }
+   },
+   "extra_inning_runs": {
+    "half_innings": 1584,
+    "mean": 0.604,
+    "regulation_mean": 0.792
+   },
+   "home_not_batting_when_leading": {
+    "leading_after_top_of_last": 3579,
+    "recorded_x": 3488,
+    "recorded_zero_convention": 42,
+    "runs_scored_violation": 49
+   }
+  },
+  "2026": {
+   "run_rule": {
+    "nonconf": {
+     "eligible": 538,
+     "stopped": 341
+    },
+    "all": {
+     "eligible": 554,
+     "stopped": 341
+    },
+    "ncaa_tourney": {
+     "eligible": 16,
+     "stopped": 0
+    }
+   },
+   "extra_inning_runs": {
+    "half_innings": 1850,
+    "mean": 0.538,
+    "regulation_mean": 0.768
+   },
+   "home_not_batting_when_leading": {
+    "leading_after_top_of_last": 3534,
+    "recorded_x": 3478,
+    "recorded_zero_convention": 31,
+    "runs_scored_violation": 25
+   }
+  }
+ },
+ "findings": [
+  "R07: extra half-innings average 0.523 runs vs 0.717 in innings 1-9 (n=13787); no sign of an automatic runner — R07 supported",
+  "R02: home led after the top of the final scheduled inning in 28156 games; bottom half recorded x 27398, recorded 0 (source convention) 646, runs scored anyway (violation) 112",
+  "R06 nonconf: a 10+ lead after 7 complete ended the game in 1106/3485 (31.7%)",
+  "R06 all: a 10+ lead after 7 complete ended the game in 1468/4934 (29.8%)",
+  "R06 conf: a 10+ lead after 7 complete ended the game in 362/1355 (26.7%)",
+  "R06 ncaa_tourney: a 10+ lead after 7 complete ended the game in 0/94 (0%)",
+  "R05 single: scheduled seven in 1795/56879 (3.2%)",
+  "R05 dh: scheduled seven in 650/3072 (21.2%)",
+  "R05 dh1: scheduled seven in 376/1536 (24.5%)",
+  "R05 dh2: scheduled seven in 274/1536 (17.8%)"
+ ]
+}

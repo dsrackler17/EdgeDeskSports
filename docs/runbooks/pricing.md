@@ -11,6 +11,14 @@ artifacts and one kernel:
   record: tiers, the blend coefficients, the held-out sigma, the required
   edge (`npm run football:pricing:validate`)
 - `football/validation/feature-status-nfl.json` — the feature intake verdicts
+- `football/pricing/qb_starts_nfl.json` — who started each NFL game and his
+  passing line (`node tools/football/build_qb_starts_archive.js`). The replay
+  runs twice, without and with these starts, and `pricing_nfl.json`
+  `qb_layer` records whether the engine's quarterback layer earns its place.
+  The listed starters are recorded after the game with no announcement time,
+  so this is a confirmed-starter scenario, not a pregame fact. Every tier,
+  coefficient and sigma above comes from the arm without starts, which is the
+  arm the live board runs.
 - `supabase/functions/edgedesk_ai/_pricing.js` — the kernel (`EDPRICE`)
 
 ## Rebuild
@@ -18,6 +26,7 @@ artifacts and one kernel:
 ```
 node tools/football/fetch_nfl_feeds.js            # games, team-week, player-week into the cache
 node tools/football/build_lines_archive.js        # the archive
+node tools/football/build_qb_starts_archive.js    # who started (past seasons stay as committed)
 node tools/football/validate_pricing.js           # NFL replay (fetches 2006-2025 team-week once)
 node tools/football/validate_pricing.js --sport cfb
 node tools/football/build_nfl_slate.js            # the slate with its priced board

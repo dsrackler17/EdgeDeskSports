@@ -123,6 +123,14 @@
     chk('stw expl_pass', near(tgf.expl_pass, 6 / 30, 1e-12));
     chk('stw sack_rate', near(tgf.sack_rate_all, 2 / 32, 1e-12));
 
+    /* ---- the QB pass deviation, as research/train_nfl.py sequential_pass ---- */
+    var qst = { lmean: { pass_epa_db: 0.02 } };
+    chk('qbPassDev = EPA per dropback minus the league mean', near(E.nfl.qbPassDev(qst, 6.4, 32), 6.4 / 32 - 0.02, 1e-15));
+    chk('qbPassDev counts a start of exactly 10 dropbacks', near(E.nfl.qbPassDev(qst, 1, 10), 0.1 - 0.02, 1e-15));
+    chk('qbPassDev records no start under 10 dropbacks', E.nfl.qbPassDev(qst, 3, 9) === null);
+    chk('qbPassDev records no start without a league mean', E.nfl.qbPassDev({ lmean: {} }, 3, 20) === null);
+    chk('qbPassDev records no start without an EPA', E.nfl.qbPassDev(qst, NaN, 20) === null && E.nfl.qbPassDev(qst, null, 20) === null);
+
     /* ---- CFB recursion golden ---- */
     var cst = { hp: JSON.parse(JSON.stringify(P.cfb.hyperparams)),
       r: {}, n: {}, off: {}, lmeanPts: null };

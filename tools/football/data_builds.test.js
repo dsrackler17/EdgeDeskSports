@@ -128,6 +128,39 @@ chk('open-to-close toward the fair line is counted where an opener exists', card
 chk('the postmortem, the tiers by market and the movement tier ride on the card, and the note refuses to promote', card.postmortem.counts.graded === 2 && card.tiers.pricing.nfl.spread === 'LEAN' && card.tiers.movement.cfb.tier === 'LEAN' && /promotes/.test(card.note) && card.by_model_version.v1.packets === 2);
 chk('without database access the card says so instead of pretending', LL.build([], llArch, {}, { rows_status: 'NO_DATABASE_ACCESS', rows_detail: 'no env' }).inputs.rows_status === 'NO_DATABASE_ACCESS');
 
+/* ---- the quarterback-start archive ---------------------------------------- */
+const Q = require(path.join(ROOT, 'tools', 'football', 'build_qb_starts_archive.js'));
+const FE = require(path.join(ROOT, 'football', 'engine.js'));
+const qGames = ['game_id,season,game_type,week,away_team,away_score,home_team,home_score,away_qb_id,home_qb_id',
+  '2019_01_OAK_DEN,2019,REG,1,OAK,16,DEN,24,O1,D1',
+  '2019_02_KC_OAK,2019,REG,2,KC,28,OAK,10,K1,O2',
+  '2019_03_NO_KC,2019,REG,3,NO,20,KC,27,N1,K1',
+  '2019_17_KC_DEN,2019,REG,17,KC,,DEN,,K1,D1'].join('\n');
+/* the player feed carries today's code (LV) for every season, games.csv the code of the day (OAK) */
+const qSpw = ['player_id,player_name,position,game_id,team,attempts,sacks_suffered,passing_epa',
+  'D1,d,QB,2019_01_OAK_DEN,DEN,30,2,6.4', 'O1,o,QB,2019_01_OAK_DEN,LV,8,1,-2', 'O9,o,QB,2019_01_OAK_DEN,LV,20,1,1',
+  'O2,o,QB,2019_02_KC_OAK,LV,12,0,0.6', 'O1,o,QB,2019_02_KC_OAK,LV,25,3,2.8', 'K1,k,QB,2019_02_KC_OAK,KC,35,1,7.2', 'W1,w,WR,2019_02_KC_OAK,KC,40,0,3',
+  'N1,n,TE,2019_03_NO_KC,NO,14,1,1.5', 'K1,k,QB,2019_03_NO_KC,KC,33,2,4'].join('\n');
+const qa = Q.build(qGames, { 2019: qSpw }, { now: '2026-10-13T00:00:00Z' });
+chk('a side carries the listed starter’s own line: [id, attempts, sacks, passing EPA]', JSON.stringify(qa.games['2019_01_OAK_DEN'].h) === JSON.stringify(['D1', 30, 2, 6.4]) && JSON.stringify(qa.games['2019_01_OAK_DEN'].a) === JSON.stringify(['O1', 8, 1, -2]), qa.games['2019_01_OAK_DEN']);
+chk('the top passer is matched across a relocation (OAK in games.csv, LV in the player feed) and kept only when it is someone else', JSON.stringify(qa.games['2019_01_OAK_DEN'].at) === JSON.stringify(['O9', 20, 1, 1]) && !qa.games['2019_01_OAK_DEN'].ht && JSON.stringify(qa.games['2019_02_KC_OAK'].ht) === JSON.stringify(['O1', 25, 3, 2.8]), qa.games);
+chk('a non-QB row is never the top passer, and a listed starter without a QB line keeps his id alone', !qa.games['2019_02_KC_OAK'].at && JSON.stringify(qa.games['2019_03_NO_KC'].a) === JSON.stringify(['N1']), qa.games['2019_03_NO_KC']);
+chk('an unplayed game is not in the archive', !qa.games['2019_17_KC_DEN'] && qa.counts.games === 3 && qa.counts.under_10_dropbacks === 1 && qa.counts.not_top_passer === 2, qa.counts);
+chk('the archive is labelled a confirmed-starter scenario recorded after the fact, not a pregame certification', qa.scenario === 'CONFIRMED_STARTER' && /after the game/.test(qa.scenario_basis) && /no announcement time/.test(qa.scenario_basis) && /does not certify/.test(qa.scenario_basis));
+const qst = FE.nfl.newState(); qst.lmean.pass_epa_db = 0.05;
+const qs = Q.startsFor(FE, qst, qa.games['2019_01_OAK_DEN'], 'DEN', 'OAK');
+chk('startsFor hands absorbGame the listed starters, home first, with the engine’s pass deviation (none under 10 dropbacks)', qs.length === 2 && qs[0][0] === 'DEN' && qs[0][1] === 'D1' && Math.abs(qs[0][2] - (6.4 / 32 - 0.05)) < 1e-15 && qs[1][0] === 'OAK' && qs[1][1] === 'O1' && qs[1][2] === null, qs);
+const qt = Q.startsFor(FE, qst, qa.games['2019_01_OAK_DEN'], 'DEN', 'OAK', 'top_passer');
+chk('the top_passer rule credits train_nfl.py’s passer where the listed starter was not it', qt[1][1] === 'O9' && Math.abs(qt[1][2] - (1 / 21 - 0.05)) < 1e-15 && qt[0][1] === 'D1', qt);
+chk('a season kept from the committed copy is copied untouched', JSON.stringify(Q.build(qGames, {}, { prev: qa, keep: [2019] }).games) === JSON.stringify(qa.games));
+const qCommitted = Q.readArchive();
+if (qCommitted) {
+  const lines = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'pricing', 'lines_nfl.json'), 'utf8'));
+  let both = 0, agree = 0, played = 0, covered = 0;
+  lines.games.forEach((g) => { if (g.season < 2006 || g.season > 2025 || g.margin == null) return; played++; const r = qCommitted.games[g.id]; if (!r) return; covered++; if (r.h && r.a) { both++; if (r.h[0] === g.ctx.home_qb_id && r.a[0] === g.ctx.away_qb_id) agree++; } });
+  chk('the committed archive covers the 2006-2025 replay and names the same starters as the lines archive', played > 5000 && covered / played > 0.99 && agree === both, { played, covered, both, agree });
+}
+
 /* ---- desk notes ------------------------------------------------------------- */
 const now = Date.parse('2026-09-16T12:00:00Z');
 const bad = N.validate({ sport: 'nfl', team: 'BUF', kind: 'starting_qb', text: 'Josh Allen starts', source: 'Bills' }, now);

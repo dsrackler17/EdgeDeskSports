@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_pnl_ledger_v1",
  "season": 2026,
- "generated_at": "2026-10-13T13:08:45.216Z",
+ "generated_at": "2026-10-14T01:09:19.070Z",
  "what": "Every EdgeDesk recommendation with a side, one row each, with its settlement and its profit and loss at the price recorded when it was made. Written by tools/record/pnl_ledger.js; nobody edits it by hand.",
  "sources": [
   {
@@ -23,8 +23,8 @@
   {
    "source": "bettor_decision",
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "snapshots": 3174,
-   "rows": 225,
+   "snapshots": 3395,
+   "rows": 226,
    "evaluations_file": "football/cfb_terminal/decisions/2026/evaluations.jsonl"
   },
   {
@@ -584325,7 +584325,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "UPCOMING"
+   "pending_reason": "IN_PROGRESS"
   },
   {
    "recommendation_id": "bd:bds_a9de897c",
@@ -584400,7 +584400,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "UPCOMING"
+   "pending_reason": "IN_PROGRESS"
   },
   {
    "recommendation_id": "bd:bds_fef3e5aa",
@@ -584475,7 +584475,7 @@
    "state_reason": null,
    "pnl_verified": false,
    "pnl_exclusion_reason": "missing_settlement",
-   "pending_reason": "UPCOMING"
+   "pending_reason": "IN_PROGRESS"
   },
   {
    "recommendation_id": "bd:bds_3c66426d",
@@ -587691,6 +587691,81 @@
    "flat_stake_units": 1,
    "missing_entry_odds": false,
    "implied_prob": 0.505,
+   "profit_units": null,
+   "flat_profit_units": null,
+   "pnl_status": "PENDING",
+   "pnl_eligible": false,
+   "pnl_note": "Pending",
+   "record_state": "PENDING",
+   "state_reason": null,
+   "pnl_verified": false,
+   "pnl_exclusion_reason": "missing_settlement",
+   "pending_reason": "UPCOMING"
+  },
+  {
+   "recommendation_id": "bd:bds_0b19ee31",
+   "source": "bettor_decision",
+   "source_ref": {
+    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
+    "id": "bds_0b19ee31"
+   },
+   "sport": "football",
+   "league": "CFB",
+   "season": 2026,
+   "week": 7,
+   "event_id": "401866444",
+   "home": "Eastern Michigan",
+   "away": "Toledo",
+   "event_label": "Toledo @ Eastern Michigan",
+   "game_date": "2026-10-17T19:30:00.000Z",
+   "model_version": "edgedesk_cfb_p4_v1.0.0",
+   "engine_version": "edgedesk_football_decision_v2",
+   "market_group": "game",
+   "market_type": "spread",
+   "prop_market": null,
+   "player_id": null,
+   "player_name": null,
+   "team": "Eastern Michigan",
+   "opponent": "Toledo",
+   "position": null,
+   "side": "home",
+   "selection": "Eastern Michigan +6.5",
+   "model_line": 1.65,
+   "entry_line": 6.5,
+   "entry_odds": -110,
+   "entry_book": "draftkings",
+   "entry_book_name": "DraftKings",
+   "price_assumed": false,
+   "model_prob": 0.5035,
+   "model_edge_pct": -2.04,
+   "ev_pct": -3.89,
+   "rec_class": "WATCH",
+   "confidence": 88,
+   "stage": "CONSERVATIVE_DEFAULT_UNVALIDATED",
+   "stake_units": 0,
+   "stake_source": null,
+   "price_source": "decision",
+   "price_ref": null,
+   "recommended_at": "2026-10-13T15:07:45.117Z",
+   "odds_captured_at": "2026-10-13T15:07:34.000Z",
+   "odds_captured_basis": "quote capture",
+   "evaluation_mode": "LIVE",
+   "result": "pending",
+   "result_value": null,
+   "result_detail": null,
+   "final_score": null,
+   "closing_line": null,
+   "closing_odds": null,
+   "clv_points": null,
+   "clv_prob_pp": null,
+   "beat_close": null,
+   "settled_at": null,
+   "first_recorded_at": "2026-10-13T15:09:22.856Z",
+   "corrections": [],
+   "corrected": false,
+   "flat_stake_units": 1,
+   "missing_entry_odds": false,
+   "implied_prob": 0.5238,
    "profit_units": null,
    "flat_profit_units": null,
    "pnl_status": "PENDING",

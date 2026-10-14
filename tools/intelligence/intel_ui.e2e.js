@@ -64,6 +64,18 @@ const FX = require('./fixtures.js');
 const NOW = Date.parse('2026-10-12T16:00:00Z');
 const fx = FX.build(NOW);
 const ISO = (min) => new Date(NOW + min * 60000).toISOString();
+/* Today's Games, the multi-sport strip above the Ask card, reads today/slate.json,
+   which a bot rebuilds every few hours over a rolling window. At this suite's
+   pinned clock that file's day held no games one week and fifteen the next, and
+   the card's place on the first screen moved with it. The strip is not under test
+   here (tools/slate/games_ui.e2e.js drives it), so it reads a slate pinned to the
+   handler's day: the NFL read for it succeeded and found no games. */
+const SLATE_DAY = '2026-10-12';
+const PINNED_SLATE = { schema: 'edgedesk_slate/1', generated_at: ISO(-20), builder: 'tools/intelligence/intel_ui.e2e.js (pinned)',
+  window: { from_day: SLATE_DAY, to_day: SLATE_DAY, zone: 'America/New_York', upcoming_through: SLATE_DAY },
+  sports: { nfl: { state: 'ok', last_success_at: ISO(-20), days_fresh: 1, days_carried: 0, days_fallback: 0, days_failed: 0, note: null } },
+  counts: { events: 0, upcoming: 0, markets: 0 }, events: [], upcoming: [], markets: {},
+  buckets: { ['nfl:football/nfl|' + SLATE_DAY]: { ok: true, source: 'espn', fetched_at: ISO(-20), checked_at: ISO(-20), count: 0, all_final: false, ids: [], kind: 'window' } } };
 const et = (iso) => {
   const p = {}; new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date(iso)).forEach((x) => { p[x.type] = x.value; });
   return { day: p.year + '-' + p.month + '-' + p.day, time: (p.hour === '24' ? '00' : p.hour) + ':' + p.minute };
@@ -140,6 +152,7 @@ function siteHandler(req, res) {
   let p = decodeURIComponent(req.url.split('?')[0]);
   if (p === '/__ai' && req.method === 'POST') { aiHandler(req, res).catch((e) => { try { res.end(); } catch (_) { /* gone */ } console.log('replay threw ' + e.message); }); return; }
   if (p === '/') p = '/app.html';
+  if (p === '/today/slate.json') { res.writeHead(200, { 'content-type': TYPES['.json'], 'cache-control': 'no-store' }); res.end(JSON.stringify(PINNED_SLATE)); return; }
   if (p === '/football/nfl/slate.json') { res.writeHead(200, { 'content-type': TYPES['.json'], 'cache-control': 'no-store' }); res.end(JSON.stringify(fx.nfl)); return; }
   if (p === '/football/matchup/metrics.json') { res.writeHead(200, { 'content-type': TYPES['.json'], 'cache-control': 'no-store' }); res.end(JSON.stringify(metrics())); return; }
   const file = path.join(ROOT, path.normalize(p).replace(/^(\.\.[/\\])+/, ''));

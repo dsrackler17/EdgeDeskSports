@@ -1,28 +1,28 @@
 {
  "schema": "edgedesk_engine_board_v1",
  "version": "edgedesk_xboard_v2",
- "evaluated_at": "2026-10-14T01:42:27.143Z",
+ "evaluated_at": "2026-10-14T01:54:31.164Z",
  "verdict": "PASS",
  "best": null,
  "why": [
-  "No market had a fresh executable price: 324 without a price, 0 stale."
+  "No market had a fresh executable price: 384 without a price, 0 stale."
  ],
  "strongest_candidate": {
   "sport_id": "nfl",
   "sport_label": "NFL",
-  "event_key": "NFL|2026_06_NYJ_NE",
+  "event_key": "NFL|2026_07_MIA_NYJ",
   "event": {
-   "home": "New England Patriots",
-   "away": "New York Jets",
-   "start_utc": "2026-10-18T17:00:00.000Z",
-   "label": "New York Jets @ New England Patriots"
+   "home": "New York Jets",
+   "away": "Miami Dolphins",
+   "start_utc": "2026-10-25T17:00:00.000Z",
+   "label": "Miami Dolphins @ New York Jets"
   },
   "data": {
    "state": "FRESH",
    "lineup_certainty": "UNKNOWN"
   },
   "evidence": [
-   "fair spread -14.8 vs consensus -7.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+   "fair spread 2.4 vs consensus -4.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
    "spread CALIBRATED vs outcomes, LEAN vs close"
   ],
   "invalidators": [
@@ -30,21 +30,21 @@
    "The consensus line is a reference, not an executable price: a real quote may differ."
   ],
   "market": {
-   "kind": "spread",
-   "side": "New England Patriots",
-   "line": -7.5,
-   "settles": "includes overtime; a landed number pushes"
+   "kind": "moneyline",
+   "side": "Miami Dolphins",
+   "line": null,
+   "settles": "includes overtime"
   },
   "quote": null,
   "model": {
-   "p_win": 0.7154,
+   "p_win": 0.5855,
    "p_push": 0,
    "method": "MODEL",
    "model_id": "edgedesk_football_v1.0.0",
    "sd": 0.03
   },
   "market_ref": {
-   "p_novig": 0.5,
+   "p_novig": 0.3425,
    "method": "consensus_reference",
    "book": null,
    "books": null,
@@ -61,21 +61,21 @@
     "gate": "VALUE",
     "ok": false,
     "code": "NEEDS_PRICE",
-    "reason": "needs a price of +100 or better to clear the bar (if value claims were enabled)"
+    "reason": "needs a price of +187 or better to clear the bar (if value claims were enabled)"
    }
   ],
-  "id": "bf4e53df",
-  "label": "New York Jets @ New England Patriots — New England Patriots -7.5",
-  "fair_american": -251,
+  "id": "5a0f3859",
+  "label": "Miami Dolphins @ New York Jets — Miami Dolphins moneyline",
+  "fair_american": -141,
   "priced": false,
   "prob": {
-   "model": 0.7154,
+   "model": 0.5855,
    "push": 0,
-   "market_novig": 0.5,
+   "market_novig": 0.3425,
    "shrink_k": 0.1286,
-   "posterior": 0.5277,
+   "posterior": 0.3737,
    "sd": 0.014,
-   "conservative": 0.5097,
+   "conservative": 0.3558,
    "components": {
     "model_sd": 0.03,
     "calibration_sd": 0.015,
@@ -86,18 +86,18 @@
   "ev_raw": null,
   "ev_posterior": null,
   "ev_conservative": null,
-  "min_acceptable_american": 100,
+  "min_acceptable_american": 187,
   "status": "RESEARCH",
-  "disagreement": 0.0097
+  "disagreement": 0.0133
  },
  "counts": {
-  "RESEARCH": 324
+  "RESEARCH": 384
  },
  "gate_failures": {
-  "NO_PRICE": 324,
-  "NEEDS_PRICE": 324
+  "NO_PRICE": 384,
+  "NEEDS_PRICE": 384
  },
- "n_candidates": 324,
+ "n_candidates": 384,
  "n_priced": 0,
  "selection_z": 1.2816,
  "rules": {
@@ -130,6 +130,1710 @@
   }
  },
  "candidates": [
+  {
+   "id": "5a0f3859",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_07_MIA_NYJ",
+   "event": {
+    "home": "New York Jets",
+    "away": "Miami Dolphins",
+    "start_utc": "2026-10-25T17:00:00.000Z",
+    "label": "Miami Dolphins @ New York Jets"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Miami Dolphins",
+    "line": null,
+    "settles": "includes overtime"
+   },
+   "label": "Miami Dolphins @ New York Jets — Miami Dolphins moneyline",
+   "quote": null,
+   "fair_american": -141,
+   "break_even": null,
+   "prob": {
+    "model": 0.5855,
+    "push": 0,
+    "market_novig": 0.3425,
+    "shrink_k": 0.1286,
+    "posterior": 0.3737,
+    "sd": 0.014,
+    "conservative": 0.3558,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 187,
+   "disagreement": 0.0133,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +187 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread 2.4 vs consensus -4.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "7aa26724",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_06_CHI_ATL",
+   "event": {
+    "home": "Atlanta Falcons",
+    "away": "Chicago Bears",
+    "start_utc": "2026-10-18T17:00:00.000Z",
+    "label": "Chicago Bears @ Atlanta Falcons"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Atlanta Falcons",
+    "line": null,
+    "settles": "includes overtime"
+   },
+   "label": "Chicago Bears @ Atlanta Falcons — Atlanta Falcons moneyline",
+   "quote": null,
+   "fair_american": -151,
+   "break_even": null,
+   "prob": {
+    "model": 0.6018,
+    "push": 0,
+    "market_novig": 0.3836,
+    "shrink_k": 0.1286,
+    "posterior": 0.4117,
+    "sd": 0.014,
+    "conservative": 0.3937,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 159,
+   "disagreement": 0.0101,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +159 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -2.8 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "bf4e53df",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_06_NYJ_NE",
+   "event": {
+    "home": "New England Patriots",
+    "away": "New York Jets",
+    "start_utc": "2026-10-18T17:00:00.000Z",
+    "label": "New York Jets @ New England Patriots"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "New England Patriots",
+    "line": -7.5,
+    "settles": "includes overtime; a landed number pushes"
+   },
+   "label": "New York Jets @ New England Patriots — New England Patriots -7.5",
+   "quote": null,
+   "fair_american": -251,
+   "break_even": null,
+   "prob": {
+    "model": 0.7154,
+    "push": 0,
+    "market_novig": 0.5,
+    "shrink_k": 0.1286,
+    "posterior": 0.5277,
+    "sd": 0.014,
+    "conservative": 0.5097,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 100,
+   "disagreement": 0.0097,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +100 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -14.8 vs consensus -7.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "df364bdb",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_07_MIA_NYJ",
+   "event": {
+    "home": "New York Jets",
+    "away": "Miami Dolphins",
+    "start_utc": "2026-10-25T17:00:00.000Z",
+    "label": "Miami Dolphins @ New York Jets"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Miami Dolphins",
+    "line": 4.5,
+    "settles": "includes overtime; a landed number pushes"
+   },
+   "label": "Miami Dolphins @ New York Jets — Miami Dolphins +4.5",
+   "quote": null,
+   "fair_american": -224,
+   "break_even": null,
+   "prob": {
+    "model": 0.6911,
+    "push": 0,
+    "market_novig": 0.5,
+    "shrink_k": 0.1286,
+    "posterior": 0.5246,
+    "sd": 0.014,
+    "conservative": 0.5066,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 101,
+   "disagreement": 0.0066,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +101 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread 2.4 vs consensus -4.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "07fcc668",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_07_SF_ATL",
+   "event": {
+    "home": "Atlanta Falcons",
+    "away": "San Francisco 49ers",
+    "start_utc": "2026-10-25T17:00:00.000Z",
+    "label": "San Francisco 49ers @ Atlanta Falcons"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Atlanta Falcons",
+    "line": null,
+    "settles": "includes overtime"
+   },
+   "label": "San Francisco 49ers @ Atlanta Falcons — Atlanta Falcons moneyline",
+   "quote": null,
+   "fair_american": -105,
+   "break_even": null,
+   "prob": {
+    "model": 0.513,
+    "push": 0,
+    "market_novig": 0.3425,
+    "shrink_k": 0.1286,
+    "posterior": 0.3644,
+    "sd": 0.014,
+    "conservative": 0.3465,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 194,
+   "disagreement": 0.004,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +194 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -0.4 vs consensus 4.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "437b89a3",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_06_NYJ_NE",
+   "event": {
+    "home": "New England Patriots",
+    "away": "New York Jets",
+    "start_utc": "2026-10-18T17:00:00.000Z",
+    "label": "New York Jets @ New England Patriots"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "New England Patriots",
+    "line": null,
+    "settles": "includes overtime"
+   },
+   "label": "New York Jets @ New England Patriots — New England Patriots moneyline",
+   "quote": null,
+   "fair_american": -1066,
+   "break_even": null,
+   "prob": {
+    "model": 0.9142,
+    "push": 0,
+    "market_novig": 0.76,
+    "shrink_k": 0.1286,
+    "posterior": 0.7798,
+    "sd": 0.014,
+    "conservative": 0.7619,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -295,
+   "disagreement": 0.0019,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -295 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -14.8 vs consensus -7.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "fded72ce",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_06_CHI_ATL",
+   "event": {
+    "home": "Atlanta Falcons",
+    "away": "Chicago Bears",
+    "start_utc": "2026-10-18T17:00:00.000Z",
+    "label": "Chicago Bears @ Atlanta Falcons"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Atlanta Falcons",
+    "line": 3,
+    "settles": "includes overtime; a landed number pushes"
+   },
+   "label": "Chicago Bears @ Atlanta Falcons — Atlanta Falcons +3",
+   "quote": null,
+   "fair_american": -199,
+   "break_even": null,
+   "prob": {
+    "model": 0.6189,
+    "push": 0.0699,
+    "market_novig": 0.4651,
+    "shrink_k": 0.1286,
+    "posterior": 0.4848,
+    "sd": 0.014,
+    "conservative": 0.4669,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 103,
+   "disagreement": 0.0018,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +103 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -2.8 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "6edd19de",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_07_SF_ATL",
+   "event": {
+    "home": "Atlanta Falcons",
+    "away": "San Francisco 49ers",
+    "start_utc": "2026-10-25T17:00:00.000Z",
+    "label": "San Francisco 49ers @ Atlanta Falcons"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Atlanta Falcons",
+    "line": 4.5,
+    "settles": "includes overtime; a landed number pushes"
+   },
+   "label": "San Francisco 49ers @ Atlanta Falcons — Atlanta Falcons +4.5",
+   "quote": null,
+   "fair_american": -188,
+   "break_even": null,
+   "prob": {
+    "model": 0.6533,
+    "push": 0,
+    "market_novig": 0.5,
+    "shrink_k": 0.1286,
+    "posterior": 0.5197,
+    "sd": 0.014,
+    "conservative": 0.5018,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 103,
+   "disagreement": 0.0018,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +103 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -0.4 vs consensus 4.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "0f4bf8ea",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_06_LAC_KC",
+   "event": {
+    "home": "Kansas City Chiefs",
+    "away": "Los Angeles Chargers",
+    "start_utc": "2026-10-18T20:25:00.000Z",
+    "label": "Los Angeles Chargers @ Kansas City Chiefs"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Los Angeles Chargers",
+    "line": 8.5,
+    "settles": "includes overtime; a landed number pushes"
+   },
+   "label": "Los Angeles Chargers @ Kansas City Chiefs — Los Angeles Chargers +8.5",
+   "quote": null,
+   "fair_american": -178,
+   "break_even": null,
+   "prob": {
+    "model": 0.6398,
+    "push": 0,
+    "market_novig": 0.5,
+    "shrink_k": 0.1286,
+    "posterior": 0.518,
+    "sd": 0.014,
+    "conservative": 0.5,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 104,
+   "disagreement": 0,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +104 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -4.7 vs consensus -8.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "4aac0281",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_06_BUF_LV",
+   "event": {
+    "home": "Las Vegas Raiders",
+    "away": "Buffalo Bills",
+    "start_utc": "2026-10-18T20:25:00.000Z",
+    "label": "Buffalo Bills @ Las Vegas Raiders"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Buffalo Bills",
+    "line": -4.5,
+    "settles": "includes overtime; a landed number pushes"
+   },
+   "label": "Buffalo Bills @ Las Vegas Raiders — Buffalo Bills -4.5",
+   "quote": null,
+   "fair_american": -169,
+   "break_even": null,
+   "prob": {
+    "model": 0.6287,
+    "push": 0,
+    "market_novig": 0.5,
+    "shrink_k": 0.1286,
+    "posterior": 0.5165,
+    "sd": 0.014,
+    "conservative": 0.4986,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 105,
+   "disagreement": -0.0014,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +105 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread 7.9 vs consensus 4.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "5ed50dac",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_06_LAC_KC",
+   "event": {
+    "home": "Kansas City Chiefs",
+    "away": "Los Angeles Chargers",
+    "start_utc": "2026-10-18T20:25:00.000Z",
+    "label": "Los Angeles Chargers @ Kansas City Chiefs"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Los Angeles Chargers",
+    "line": null,
+    "settles": "includes overtime"
+   },
+   "label": "Los Angeles Chargers @ Kansas City Chiefs — Los Angeles Chargers moneyline",
+   "quote": null,
+   "fair_american": 204,
+   "break_even": null,
+   "prob": {
+    "model": 0.3286,
+    "push": 0,
+    "market_novig": 0.2,
+    "shrink_k": 0.1286,
+    "posterior": 0.2165,
+    "sd": 0.014,
+    "conservative": 0.1986,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 414,
+   "disagreement": -0.0014,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +414 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -4.7 vs consensus -8.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "103d4f80",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_06_BUF_LV",
+   "event": {
+    "home": "Las Vegas Raiders",
+    "away": "Buffalo Bills",
+    "start_utc": "2026-10-18T20:25:00.000Z",
+    "label": "Buffalo Bills @ Las Vegas Raiders"
+   },
+   "market": {
+    "kind": "total",
+    "side": "under",
+    "line": 53.5,
+    "settles": "includes overtime"
+   },
+   "label": "Buffalo Bills @ Las Vegas Raiders — under 53.5",
+   "quote": null,
+   "fair_american": -161,
+   "break_even": null,
+   "prob": {
+    "model": 0.6172,
+    "push": 0,
+    "market_novig": 0.5,
+    "shrink_k": 0.1286,
+    "posterior": 0.5151,
+    "sd": 0.014,
+    "conservative": 0.4971,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 105,
+   "disagreement": -0.0029,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +105 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread 7.9 vs consensus 4.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "3cbe71f2",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_06_PIT_TB",
+   "event": {
+    "home": "Tampa Bay Buccaneers",
+    "away": "Pittsburgh Steelers",
+    "start_utc": "2026-10-18T17:00:00.000Z",
+    "label": "Pittsburgh Steelers @ Tampa Bay Buccaneers"
+   },
+   "market": {
+    "kind": "total",
+    "side": "over",
+    "line": 40.5,
+    "settles": "includes overtime"
+   },
+   "label": "Pittsburgh Steelers @ Tampa Bay Buccaneers — over 40.5",
+   "quote": null,
+   "fair_american": -152,
+   "break_even": null,
+   "prob": {
+    "model": 0.6033,
+    "push": 0,
+    "market_novig": 0.5,
+    "shrink_k": 0.1286,
+    "posterior": 0.5133,
+    "sd": 0.014,
+    "conservative": 0.4953,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 106,
+   "disagreement": -0.0047,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +106 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -1.4 vs consensus 2.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "228227f9",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_07_NE_CHI",
+   "event": {
+    "home": "Chicago Bears",
+    "away": "New England Patriots",
+    "start_utc": "2026-10-23T00:15:00.000Z",
+    "label": "New England Patriots @ Chicago Bears"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "New England Patriots",
+    "line": null,
+    "settles": "includes overtime"
+   },
+   "label": "New England Patriots @ Chicago Bears — New England Patriots moneyline",
+   "quote": null,
+   "fair_american": -136,
+   "break_even": null,
+   "prob": {
+    "model": 0.5761,
+    "push": 0,
+    "market_novig": 0.4739,
+    "shrink_k": 0.1286,
+    "posterior": 0.487,
+    "sd": 0.014,
+    "conservative": 0.4691,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 117,
+   "disagreement": -0.0048,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +117 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread 2.1 vs consensus -1.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "4bf21f11",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_06_PIT_TB",
+   "event": {
+    "home": "Tampa Bay Buccaneers",
+    "away": "Pittsburgh Steelers",
+    "start_utc": "2026-10-18T17:00:00.000Z",
+    "label": "Pittsburgh Steelers @ Tampa Bay Buccaneers"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Tampa Bay Buccaneers",
+    "line": null,
+    "settles": "includes overtime"
+   },
+   "label": "Pittsburgh Steelers @ Tampa Bay Buccaneers — Tampa Bay Buccaneers moneyline",
+   "quote": null,
+   "fair_american": -122,
+   "break_even": null,
+   "prob": {
+    "model": 0.5497,
+    "push": 0,
+    "market_novig": 0.4486,
+    "shrink_k": 0.1286,
+    "posterior": 0.4616,
+    "sd": 0.014,
+    "conservative": 0.4437,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 130,
+   "disagreement": -0.0049,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +130 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -1.4 vs consensus 2.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "644f0431",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_07_MIA_NYJ",
+   "event": {
+    "home": "New York Jets",
+    "away": "Miami Dolphins",
+    "start_utc": "2026-10-25T17:00:00.000Z",
+    "label": "Miami Dolphins @ New York Jets"
+   },
+   "market": {
+    "kind": "total",
+    "side": "over",
+    "line": 38.5,
+    "settles": "includes overtime"
+   },
+   "label": "Miami Dolphins @ New York Jets — over 38.5",
+   "quote": null,
+   "fair_american": -145,
+   "break_even": null,
+   "prob": {
+    "model": 0.5915,
+    "push": 0,
+    "market_novig": 0.5,
+    "shrink_k": 0.1286,
+    "posterior": 0.5118,
+    "sd": 0.014,
+    "conservative": 0.4938,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 107,
+   "disagreement": -0.0062,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +107 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread 2.4 vs consensus -4.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "120082d9",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_06_ARI_LA",
+   "event": {
+    "home": "Los Angeles Rams",
+    "away": "Arizona Cardinals",
+    "start_utc": "2026-10-18T20:05:00.000Z",
+    "label": "Arizona Cardinals @ Los Angeles Rams"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Arizona Cardinals",
+    "line": 12.5,
+    "settles": "includes overtime; a landed number pushes"
+   },
+   "label": "Arizona Cardinals @ Los Angeles Rams — Arizona Cardinals +12.5",
+   "quote": null,
+   "fair_american": -143,
+   "break_even": null,
+   "prob": {
+    "model": 0.5882,
+    "push": 0,
+    "market_novig": 0.5,
+    "shrink_k": 0.1286,
+    "posterior": 0.5113,
+    "sd": 0.014,
+    "conservative": 0.4934,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 107,
+   "disagreement": -0.0066,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +107 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -8.4 vs consensus -12.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "c1eaf4d5",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_07_PIT_NO",
+   "event": {
+    "home": "New Orleans Saints",
+    "away": "Pittsburgh Steelers",
+    "start_utc": "2026-10-25T13:30:00.000Z",
+    "label": "Pittsburgh Steelers @ New Orleans Saints"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "New Orleans Saints",
+    "line": null,
+    "settles": "includes overtime"
+   },
+   "label": "Pittsburgh Steelers @ New Orleans Saints — New Orleans Saints moneyline",
+   "quote": null,
+   "fair_american": -110,
+   "break_even": null,
+   "prob": {
+    "model": 0.523,
+    "push": 0,
+    "market_novig": 0.4365,
+    "shrink_k": 0.1286,
+    "posterior": 0.4476,
+    "sd": 0.014,
+    "conservative": 0.4297,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 137,
+   "disagreement": -0.0068,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +137 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -0.7 vs consensus 2.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "288c3c4e",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_06_BUF_LV",
+   "event": {
+    "home": "Las Vegas Raiders",
+    "away": "Buffalo Bills",
+    "start_utc": "2026-10-18T20:25:00.000Z",
+    "label": "Buffalo Bills @ Las Vegas Raiders"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Buffalo Bills",
+    "line": null,
+    "settles": "includes overtime"
+   },
+   "label": "Buffalo Bills @ Las Vegas Raiders — Buffalo Bills moneyline",
+   "quote": null,
+   "fair_american": -330,
+   "break_even": null,
+   "prob": {
+    "model": 0.7675,
+    "push": 0,
+    "market_novig": 0.6854,
+    "shrink_k": 0.1286,
+    "posterior": 0.696,
+    "sd": 0.014,
+    "conservative": 0.678,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -198,
+   "disagreement": -0.0074,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -198 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread 7.9 vs consensus 4.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "9ffd2814",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_06_NYJ_NE",
+   "event": {
+    "home": "New England Patriots",
+    "away": "New York Jets",
+    "start_utc": "2026-10-18T17:00:00.000Z",
+    "label": "New York Jets @ New England Patriots"
+   },
+   "market": {
+    "kind": "total",
+    "side": "over",
+    "line": 43.5,
+    "settles": "includes overtime"
+   },
+   "label": "New York Jets @ New England Patriots — over 43.5",
+   "quote": null,
+   "fair_american": -139,
+   "break_even": null,
+   "prob": {
+    "model": 0.5811,
+    "push": 0,
+    "market_novig": 0.5,
+    "shrink_k": 0.1286,
+    "posterior": 0.5104,
+    "sd": 0.014,
+    "conservative": 0.4925,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 107,
+   "disagreement": -0.0075,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +107 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -14.8 vs consensus -7.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "57734584",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_06_ARI_LA",
+   "event": {
+    "home": "Los Angeles Rams",
+    "away": "Arizona Cardinals",
+    "start_utc": "2026-10-18T20:05:00.000Z",
+    "label": "Arizona Cardinals @ Los Angeles Rams"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Arizona Cardinals",
+    "line": null,
+    "settles": "includes overtime"
+   },
+   "label": "Arizona Cardinals @ Los Angeles Rams — Arizona Cardinals moneyline",
+   "quote": null,
+   "fair_american": 364,
+   "break_even": null,
+   "prob": {
+    "model": 0.2156,
+    "push": 0,
+    "market_novig": 0.137,
+    "shrink_k": 0.1286,
+    "posterior": 0.1471,
+    "sd": 0.014,
+    "conservative": 0.1292,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 690,
+   "disagreement": -0.0078,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +690 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -8.4 vs consensus -12.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "6d91c7e5",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_07_NE_CHI",
+   "event": {
+    "home": "Chicago Bears",
+    "away": "New England Patriots",
+    "start_utc": "2026-10-23T00:15:00.000Z",
+    "label": "New England Patriots @ Chicago Bears"
+   },
+   "market": {
+    "kind": "total",
+    "side": "under",
+    "line": 48.5,
+    "settles": "includes overtime"
+   },
+   "label": "New England Patriots @ Chicago Bears — under 48.5",
+   "quote": null,
+   "fair_american": -137,
+   "break_even": null,
+   "prob": {
+    "model": 0.5786,
+    "push": 0,
+    "market_novig": 0.5,
+    "shrink_k": 0.1286,
+    "posterior": 0.5101,
+    "sd": 0.014,
+    "conservative": 0.4922,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 107,
+   "disagreement": -0.0078,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +107 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread 2.1 vs consensus -1.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "93fcf1a1",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_06_ARI_LA",
+   "event": {
+    "home": "Los Angeles Rams",
+    "away": "Arizona Cardinals",
+    "start_utc": "2026-10-18T20:05:00.000Z",
+    "label": "Arizona Cardinals @ Los Angeles Rams"
+   },
+   "market": {
+    "kind": "total",
+    "side": "under",
+    "line": 52.5,
+    "settles": "includes overtime"
+   },
+   "label": "Arizona Cardinals @ Los Angeles Rams — under 52.5",
+   "quote": null,
+   "fair_american": -136,
+   "break_even": null,
+   "prob": {
+    "model": 0.5755,
+    "push": 0,
+    "market_novig": 0.5,
+    "shrink_k": 0.1286,
+    "posterior": 0.5097,
+    "sd": 0.014,
+    "conservative": 0.4918,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 107,
+   "disagreement": -0.0082,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +107 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -8.4 vs consensus -12.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
+  {
+   "id": "5958c3d2",
+   "status": "RESEARCH",
+   "sport_id": "nfl",
+   "sport_label": "NFL",
+   "event_key": "NFL|2026_06_CAR_PHI",
+   "event": {
+    "home": "Philadelphia Eagles",
+    "away": "Carolina Panthers",
+    "start_utc": "2026-10-18T17:00:00.000Z",
+    "label": "Carolina Panthers @ Philadelphia Eagles"
+   },
+   "market": {
+    "kind": "total",
+    "side": "over",
+    "line": 40.5,
+    "settles": "includes overtime"
+   },
+   "label": "Carolina Panthers @ Philadelphia Eagles — over 40.5",
+   "quote": null,
+   "fair_american": -133,
+   "break_even": null,
+   "prob": {
+    "model": 0.5699,
+    "push": 0,
+    "market_novig": 0.5,
+    "shrink_k": 0.1286,
+    "posterior": 0.509,
+    "sd": 0.014,
+    "conservative": 0.491,
+    "components": {
+     "model_sd": 0.03,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 108,
+   "disagreement": -0.009,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +108 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "fair spread -1.2 vs consensus -1.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
+    "spread CALIBRATED vs outcomes, LEAN vs close"
+   ],
+   "invalidators": [
+    "A quarterback change.",
+    "The consensus line is a reference, not an executable price: a real quote may differ."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "edgedesk_football_v1.0.0"
+  },
   {
    "id": "b97477d5",
    "status": "RESEARCH",
@@ -1951,2154 +3655,6 @@
    "model_id": "soccer/bundesliga:poisson"
   },
   {
-   "id": "bf4e53df",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_NYJ_NE",
-   "event": {
-    "home": "New England Patriots",
-    "away": "New York Jets",
-    "start_utc": "2026-10-18T17:00:00.000Z",
-    "label": "New York Jets @ New England Patriots"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "New England Patriots",
-    "line": -7.5,
-    "settles": "includes overtime; a landed number pushes"
-   },
-   "label": "New York Jets @ New England Patriots — New England Patriots -7.5",
-   "quote": null,
-   "fair_american": -251,
-   "break_even": null,
-   "prob": {
-    "model": 0.7154,
-    "push": 0,
-    "market_novig": 0.5,
-    "shrink_k": 0.1286,
-    "posterior": 0.5277,
-    "sd": 0.014,
-    "conservative": 0.5097,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 100,
-   "disagreement": 0.0097,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +100 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -14.8 vs consensus -7.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "7aa26724",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_CHI_ATL",
-   "event": {
-    "home": "Atlanta Falcons",
-    "away": "Chicago Bears",
-    "start_utc": "2026-10-18T17:00:00.000Z",
-    "label": "Chicago Bears @ Atlanta Falcons"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "Atlanta Falcons",
-    "line": null,
-    "settles": "includes overtime"
-   },
-   "label": "Chicago Bears @ Atlanta Falcons — Atlanta Falcons moneyline",
-   "quote": null,
-   "fair_american": -151,
-   "break_even": null,
-   "prob": {
-    "model": 0.6018,
-    "push": 0,
-    "market_novig": 0.3908,
-    "shrink_k": 0.1286,
-    "posterior": 0.4179,
-    "sd": 0.014,
-    "conservative": 0.4,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 155,
-   "disagreement": 0.0092,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +155 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -2.8 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "437b89a3",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_NYJ_NE",
-   "event": {
-    "home": "New England Patriots",
-    "away": "New York Jets",
-    "start_utc": "2026-10-18T17:00:00.000Z",
-    "label": "New York Jets @ New England Patriots"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "New England Patriots",
-    "line": null,
-    "settles": "includes overtime"
-   },
-   "label": "New York Jets @ New England Patriots — New England Patriots moneyline",
-   "quote": null,
-   "fair_american": -1066,
-   "break_even": null,
-   "prob": {
-    "model": 0.9142,
-    "push": 0,
-    "market_novig": 0.7478,
-    "shrink_k": 0.1286,
-    "posterior": 0.7692,
-    "sd": 0.014,
-    "conservative": 0.7512,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -280,
-   "disagreement": 0.0034,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -280 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -14.8 vs consensus -7.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "fded72ce",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_CHI_ATL",
-   "event": {
-    "home": "Atlanta Falcons",
-    "away": "Chicago Bears",
-    "start_utc": "2026-10-18T17:00:00.000Z",
-    "label": "Chicago Bears @ Atlanta Falcons"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "Atlanta Falcons",
-    "line": 3,
-    "settles": "includes overtime; a landed number pushes"
-   },
-   "label": "Chicago Bears @ Atlanta Falcons — Atlanta Falcons +3",
-   "quote": null,
-   "fair_american": -199,
-   "break_even": null,
-   "prob": {
-    "model": 0.6189,
-    "push": 0.0699,
-    "market_novig": 0.4651,
-    "shrink_k": 0.1286,
-    "posterior": 0.4848,
-    "sd": 0.014,
-    "conservative": 0.4669,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 103,
-   "disagreement": 0.0018,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +103 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -2.8 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "0f4bf8ea",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_LAC_KC",
-   "event": {
-    "home": "Kansas City Chiefs",
-    "away": "Los Angeles Chargers",
-    "start_utc": "2026-10-18T20:25:00.000Z",
-    "label": "Los Angeles Chargers @ Kansas City Chiefs"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "Los Angeles Chargers",
-    "line": 8.5,
-    "settles": "includes overtime; a landed number pushes"
-   },
-   "label": "Los Angeles Chargers @ Kansas City Chiefs — Los Angeles Chargers +8.5",
-   "quote": null,
-   "fair_american": -178,
-   "break_even": null,
-   "prob": {
-    "model": 0.6398,
-    "push": 0,
-    "market_novig": 0.5,
-    "shrink_k": 0.1286,
-    "posterior": 0.518,
-    "sd": 0.014,
-    "conservative": 0.5,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 104,
-   "disagreement": 0,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +104 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -4.7 vs consensus -8.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "4bf21f11",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_PIT_TB",
-   "event": {
-    "home": "Tampa Bay Buccaneers",
-    "away": "Pittsburgh Steelers",
-    "start_utc": "2026-10-18T17:00:00.000Z",
-    "label": "Pittsburgh Steelers @ Tampa Bay Buccaneers"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "Tampa Bay Buccaneers",
-    "line": null,
-    "settles": "includes overtime"
-   },
-   "label": "Pittsburgh Steelers @ Tampa Bay Buccaneers — Tampa Bay Buccaneers moneyline",
-   "quote": null,
-   "fair_american": -122,
-   "break_even": null,
-   "prob": {
-    "model": 0.5497,
-    "push": 0,
-    "market_novig": 0.417,
-    "shrink_k": 0.1286,
-    "posterior": 0.4341,
-    "sd": 0.014,
-    "conservative": 0.4161,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 145,
-   "disagreement": -0.0009,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +145 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -1.4 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "5ed50dac",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_LAC_KC",
-   "event": {
-    "home": "Kansas City Chiefs",
-    "away": "Los Angeles Chargers",
-    "start_utc": "2026-10-18T20:25:00.000Z",
-    "label": "Los Angeles Chargers @ Kansas City Chiefs"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "Los Angeles Chargers",
-    "line": null,
-    "settles": "includes overtime"
-   },
-   "label": "Los Angeles Chargers @ Kansas City Chiefs — Los Angeles Chargers moneyline",
-   "quote": null,
-   "fair_american": 204,
-   "break_even": null,
-   "prob": {
-    "model": 0.3286,
-    "push": 0,
-    "market_novig": 0.2181,
-    "shrink_k": 0.1286,
-    "posterior": 0.2323,
-    "sd": 0.014,
-    "conservative": 0.2144,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 376,
-   "disagreement": -0.0037,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +376 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -4.7 vs consensus -8.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "c5b7a9a3",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_PIT_TB",
-   "event": {
-    "home": "Tampa Bay Buccaneers",
-    "away": "Pittsburgh Steelers",
-    "start_utc": "2026-10-18T17:00:00.000Z",
-    "label": "Pittsburgh Steelers @ Tampa Bay Buccaneers"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "Tampa Bay Buccaneers",
-    "line": 3,
-    "settles": "includes overtime; a landed number pushes"
-   },
-   "label": "Pittsburgh Steelers @ Tampa Bay Buccaneers — Tampa Bay Buccaneers +3",
-   "quote": null,
-   "fair_american": -158,
-   "break_even": null,
-   "prob": {
-    "model": 0.5668,
-    "push": 0.0734,
-    "market_novig": 0.4633,
-    "shrink_k": 0.1286,
-    "posterior": 0.4766,
-    "sd": 0.014,
-    "conservative": 0.4587,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 106,
-   "disagreement": -0.0046,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +106 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -1.4 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "3cbe71f2",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_PIT_TB",
-   "event": {
-    "home": "Tampa Bay Buccaneers",
-    "away": "Pittsburgh Steelers",
-    "start_utc": "2026-10-18T17:00:00.000Z",
-    "label": "Pittsburgh Steelers @ Tampa Bay Buccaneers"
-   },
-   "market": {
-    "kind": "total",
-    "side": "over",
-    "line": 40.5,
-    "settles": "includes overtime"
-   },
-   "label": "Pittsburgh Steelers @ Tampa Bay Buccaneers — over 40.5",
-   "quote": null,
-   "fair_american": -152,
-   "break_even": null,
-   "prob": {
-    "model": 0.6033,
-    "push": 0,
-    "market_novig": 0.5,
-    "shrink_k": 0.1286,
-    "posterior": 0.5133,
-    "sd": 0.014,
-    "conservative": 0.4953,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 106,
-   "disagreement": -0.0047,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +106 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -1.4 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "56776f86",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_SEA_DEN",
-   "event": {
-    "home": "Denver Broncos",
-    "away": "Seattle Seahawks",
-    "start_utc": "2026-10-16T00:15:00.000Z",
-    "label": "Seattle Seahawks @ Denver Broncos"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "Denver Broncos",
-    "line": 3,
-    "settles": "includes overtime; a landed number pushes"
-   },
-   "label": "Seattle Seahawks @ Denver Broncos — Denver Broncos +3",
-   "quote": null,
-   "fair_american": -144,
-   "break_even": null,
-   "prob": {
-    "model": 0.5459,
-    "push": 0.075,
-    "market_novig": 0.4625,
-    "shrink_k": 0.1286,
-    "posterior": 0.4732,
-    "sd": 0.014,
-    "conservative": 0.4553,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 108,
-   "disagreement": -0.0072,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +108 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread 0.1 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "9ffd2814",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_NYJ_NE",
-   "event": {
-    "home": "New England Patriots",
-    "away": "New York Jets",
-    "start_utc": "2026-10-18T17:00:00.000Z",
-    "label": "New York Jets @ New England Patriots"
-   },
-   "market": {
-    "kind": "total",
-    "side": "over",
-    "line": 43.5,
-    "settles": "includes overtime"
-   },
-   "label": "New York Jets @ New England Patriots — over 43.5",
-   "quote": null,
-   "fair_american": -139,
-   "break_even": null,
-   "prob": {
-    "model": 0.5811,
-    "push": 0,
-    "market_novig": 0.5,
-    "shrink_k": 0.1286,
-    "posterior": 0.5104,
-    "sd": 0.014,
-    "conservative": 0.4925,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 107,
-   "disagreement": -0.0075,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +107 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -14.8 vs consensus -7.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "40b5c091",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_CHI_ATL",
-   "event": {
-    "home": "Atlanta Falcons",
-    "away": "Chicago Bears",
-    "start_utc": "2026-10-18T17:00:00.000Z",
-    "label": "Chicago Bears @ Atlanta Falcons"
-   },
-   "market": {
-    "kind": "total",
-    "side": "under",
-    "line": 49.5,
-    "settles": "includes overtime"
-   },
-   "label": "Chicago Bears @ Atlanta Falcons — under 49.5",
-   "quote": null,
-   "fair_american": -132,
-   "break_even": null,
-   "prob": {
-    "model": 0.5696,
-    "push": 0,
-    "market_novig": 0.5,
-    "shrink_k": 0.1286,
-    "posterior": 0.5089,
-    "sd": 0.014,
-    "conservative": 0.491,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 108,
-   "disagreement": -0.009,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +108 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -2.8 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "8f3fd082",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_DAL_GB",
-   "event": {
-    "home": "Green Bay Packers",
-    "away": "Dallas Cowboys",
-    "start_utc": "2026-10-19T00:20:00.000Z",
-    "label": "Dallas Cowboys @ Green Bay Packers"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "Green Bay Packers",
-    "line": null,
-    "settles": "includes overtime"
-   },
-   "label": "Dallas Cowboys @ Green Bay Packers — Green Bay Packers moneyline",
-   "quote": null,
-   "fair_american": -138,
-   "break_even": null,
-   "prob": {
-    "model": 0.5797,
-    "push": 0,
-    "market_novig": 0.5108,
-    "shrink_k": 0.1286,
-    "posterior": 0.5197,
-    "sd": 0.014,
-    "conservative": 0.5017,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 103,
-   "disagreement": -0.0091,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +103 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -2.2 vs consensus -1.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "3702a56f",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_TEN_IND",
-   "event": {
-    "home": "Indianapolis Colts",
-    "away": "Tennessee Titans",
-    "start_utc": "2026-10-18T17:00:00.000Z",
-    "label": "Tennessee Titans @ Indianapolis Colts"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "Indianapolis Colts",
-    "line": -7,
-    "settles": "includes overtime; a landed number pushes"
-   },
-   "label": "Tennessee Titans @ Indianapolis Colts — Indianapolis Colts -7",
-   "quote": null,
-   "fair_american": -132,
-   "break_even": null,
-   "prob": {
-    "model": 0.5335,
-    "push": 0.0622,
-    "market_novig": 0.4689,
-    "shrink_k": 0.1286,
-    "posterior": 0.4772,
-    "sd": 0.014,
-    "conservative": 0.4593,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 109,
-   "disagreement": -0.0096,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +109 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -9.1 vs consensus -7 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "605f6f2e",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_BAL_CLE",
-   "event": {
-    "home": "Cleveland Browns",
-    "away": "Baltimore Ravens",
-    "start_utc": "2026-10-18T17:00:00.000Z",
-    "label": "Baltimore Ravens @ Cleveland Browns"
-   },
-   "market": {
-    "kind": "total",
-    "side": "over",
-    "line": 40.5,
-    "settles": "includes overtime"
-   },
-   "label": "Baltimore Ravens @ Cleveland Browns — over 40.5",
-   "quote": null,
-   "fair_american": -130,
-   "break_even": null,
-   "prob": {
-    "model": 0.5643,
-    "push": 0,
-    "market_novig": 0.5,
-    "shrink_k": 0.1286,
-    "posterior": 0.5083,
-    "sd": 0.014,
-    "conservative": 0.4903,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 108,
-   "disagreement": -0.0097,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +108 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread 4.7 vs consensus 4.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "e7397ddc",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_SEA_DEN",
-   "event": {
-    "home": "Denver Broncos",
-    "away": "Seattle Seahawks",
-    "start_utc": "2026-10-16T00:15:00.000Z",
-    "label": "Seattle Seahawks @ Denver Broncos"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "Denver Broncos",
-    "line": null,
-    "settles": "includes overtime"
-   },
-   "label": "Seattle Seahawks @ Denver Broncos — Denver Broncos moneyline",
-   "quote": null,
-   "fair_american": 102,
-   "break_even": null,
-   "prob": {
-    "model": 0.4959,
-    "push": 0,
-    "market_novig": 0.4365,
-    "shrink_k": 0.1286,
-    "posterior": 0.4441,
-    "sd": 0.014,
-    "conservative": 0.4262,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 139,
-   "disagreement": -0.0103,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +139 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread 0.1 vs consensus 3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "00bb5cf4",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_TEN_IND",
-   "event": {
-    "home": "Indianapolis Colts",
-    "away": "Tennessee Titans",
-    "start_utc": "2026-10-18T17:00:00.000Z",
-    "label": "Tennessee Titans @ Indianapolis Colts"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "Indianapolis Colts",
-    "line": null,
-    "settles": "includes overtime"
-   },
-   "label": "Tennessee Titans @ Indianapolis Colts — Indianapolis Colts moneyline",
-   "quote": null,
-   "fair_american": -401,
-   "break_even": null,
-   "prob": {
-    "model": 0.8003,
-    "push": 0,
-    "market_novig": 0.7409,
-    "shrink_k": 0.1286,
-    "posterior": 0.7485,
-    "sd": 0.014,
-    "conservative": 0.7306,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -252,
-   "disagreement": -0.0103,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -252 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -9.1 vs consensus -7 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "447ef8fb",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_NO_NYG",
-   "event": {
-    "home": "New York Giants",
-    "away": "New Orleans Saints",
-    "start_utc": "2026-10-18T17:00:00.000Z",
-    "label": "New Orleans Saints @ New York Giants"
-   },
-   "market": {
-    "kind": "total",
-    "side": "under",
-    "line": 45.5,
-    "settles": "includes overtime"
-   },
-   "label": "New Orleans Saints @ New York Giants — under 45.5",
-   "quote": null,
-   "fair_american": -124,
-   "break_even": null,
-   "prob": {
-    "model": 0.5543,
-    "push": 0,
-    "market_novig": 0.5,
-    "shrink_k": 0.1286,
-    "posterior": 0.507,
-    "sd": 0.014,
-    "conservative": 0.489,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 109,
-   "disagreement": -0.011,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +109 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -0.2 vs consensus -1.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "bcaecec8",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_HOU_JAX",
-   "event": {
-    "home": "Jacksonville Jaguars",
-    "away": "Houston Texans",
-    "start_utc": "2026-10-18T13:30:00.000Z",
-    "label": "Houston Texans @ Jacksonville Jaguars"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "Houston Texans",
-    "line": 3,
-    "settles": "includes overtime; a landed number pushes"
-   },
-   "label": "Houston Texans @ Jacksonville Jaguars — Houston Texans +3",
-   "quote": null,
-   "fair_american": -124,
-   "break_even": null,
-   "prob": {
-    "model": 0.5061,
-    "push": 0.0869,
-    "market_novig": 0.4566,
-    "shrink_k": 0.1286,
-    "posterior": 0.4629,
-    "sd": 0.014,
-    "conservative": 0.445,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 110,
-   "disagreement": -0.0116,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +110 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -2.2 vs consensus -3 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "52024222",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_DAL_GB",
-   "event": {
-    "home": "Green Bay Packers",
-    "away": "Dallas Cowboys",
-    "start_utc": "2026-10-19T00:20:00.000Z",
-    "label": "Dallas Cowboys @ Green Bay Packers"
-   },
-   "market": {
-    "kind": "total",
-    "side": "under",
-    "line": 52.5,
-    "settles": "includes overtime"
-   },
-   "label": "Dallas Cowboys @ Green Bay Packers — under 52.5",
-   "quote": null,
-   "fair_american": -121,
-   "break_even": null,
-   "prob": {
-    "model": 0.5482,
-    "push": 0,
-    "market_novig": 0.5,
-    "shrink_k": 0.1286,
-    "posterior": 0.5062,
-    "sd": 0.014,
-    "conservative": 0.4883,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 109,
-   "disagreement": -0.0117,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +109 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -2.2 vs consensus -1.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "c0b63235",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_LAC_KC",
-   "event": {
-    "home": "Kansas City Chiefs",
-    "away": "Los Angeles Chargers",
-    "start_utc": "2026-10-18T20:25:00.000Z",
-    "label": "Los Angeles Chargers @ Kansas City Chiefs"
-   },
-   "market": {
-    "kind": "total",
-    "side": "under",
-    "line": 42.5,
-    "settles": "includes overtime"
-   },
-   "label": "Los Angeles Chargers @ Kansas City Chiefs — under 42.5",
-   "quote": null,
-   "fair_american": -121,
-   "break_even": null,
-   "prob": {
-    "model": 0.5474,
-    "push": 0,
-    "market_novig": 0.5,
-    "shrink_k": 0.1286,
-    "posterior": 0.5061,
-    "sd": 0.014,
-    "conservative": 0.4881,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 109,
-   "disagreement": -0.0119,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +109 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -4.7 vs consensus -8.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "974f5757",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_CAR_PHI",
-   "event": {
-    "home": "Philadelphia Eagles",
-    "away": "Carolina Panthers",
-    "start_utc": "2026-10-18T17:00:00.000Z",
-    "label": "Carolina Panthers @ Philadelphia Eagles"
-   },
-   "market": {
-    "kind": "total",
-    "side": "over",
-    "line": 41.5,
-    "settles": "includes overtime"
-   },
-   "label": "Carolina Panthers @ Philadelphia Eagles — over 41.5",
-   "quote": null,
-   "fair_american": -116,
-   "break_even": null,
-   "prob": {
-    "model": 0.5369,
-    "push": 0,
-    "market_novig": 0.5,
-    "shrink_k": 0.1286,
-    "posterior": 0.5047,
-    "sd": 0.014,
-    "conservative": 0.4868,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 110,
-   "disagreement": -0.0132,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +110 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -1.2 vs consensus -1.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "11edb2e9",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_CAR_PHI",
-   "event": {
-    "home": "Philadelphia Eagles",
-    "away": "Carolina Panthers",
-    "start_utc": "2026-10-18T17:00:00.000Z",
-    "label": "Carolina Panthers @ Philadelphia Eagles"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "Philadelphia Eagles",
-    "line": null,
-    "settles": "includes overtime"
-   },
-   "label": "Carolina Panthers @ Philadelphia Eagles — Philadelphia Eagles moneyline",
-   "quote": null,
-   "fair_american": -118,
-   "break_even": null,
-   "prob": {
-    "model": 0.5419,
-    "push": 0,
-    "market_novig": 0.5108,
-    "shrink_k": 0.1286,
-    "posterior": 0.5148,
-    "sd": 0.014,
-    "conservative": 0.4969,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 105,
-   "disagreement": -0.0139,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +105 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -1.2 vs consensus -1.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "679742dc",
-   "status": "RESEARCH",
-   "sport_id": "nfl",
-   "sport_label": "NFL",
-   "event_key": "NFL|2026_06_WAS_SF",
-   "event": {
-    "home": "San Francisco 49ers",
-    "away": "Washington Commanders",
-    "start_utc": "2026-10-20T00:15:00.000Z",
-    "label": "Washington Commanders @ San Francisco 49ers"
-   },
-   "market": {
-    "kind": "total",
-    "side": "under",
-    "line": 50.5,
-    "settles": "includes overtime"
-   },
-   "label": "Washington Commanders @ San Francisco 49ers — under 50.5",
-   "quote": null,
-   "fair_american": -113,
-   "break_even": null,
-   "prob": {
-    "model": 0.5308,
-    "push": 0,
-    "market_novig": 0.5,
-    "shrink_k": 0.1286,
-    "posterior": 0.504,
-    "sd": 0.014,
-    "conservative": 0.486,
-    "components": {
-     "model_sd": 0.03,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 110,
-   "disagreement": -0.014,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +110 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "fair spread -7.7 vs consensus -7.5 (nflverse games.csv consensus (reference, not a price, no book, no capture time))",
-    "spread CALIBRATED vs outcomes, LEAN vs close"
-   ],
-   "invalidators": [
-    "A quarterback change.",
-    "The consensus line is a reference, not an executable price: a real quote may differ."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "f0fe0e9f",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020103",
-   "event": {
-    "home": "ANA",
-    "away": "CGY",
-    "start_utc": "2026-10-14T01:45:00Z",
-    "label": "CGY @ ANA"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "CGY",
-    "line": 1.5,
-    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
-   },
-   "label": "CGY @ ANA — CGY +1.5",
-   "quote": null,
-   "fair_american": -168,
-   "break_even": null,
-   "prob": {
-    "model": 0.6266,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.6266,
-    "sd": 0.0214,
-    "conservative": 0.5992,
-    "components": {
-     "model_sd": 0.0094,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -142,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -142 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 3.35 (ANA) vs 2.8032 (CGY) regulation goals",
-    "ANA 5v5 xG for 1.047× league, CGY 5v5 xG for 0.958×",
-    "goalies: projected uncertain (L. Dostal 81% / D. Wolf 59%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "ee793dc3",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020103",
-   "event": {
-    "home": "ANA",
-    "away": "CGY",
-    "start_utc": "2026-10-14T01:45:00Z",
-    "label": "CGY @ ANA"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "ANA",
-    "line": null,
-    "settles": "includes overtime and shootout"
-   },
-   "label": "CGY @ ANA — ANA moneyline",
-   "quote": null,
-   "fair_american": -142,
-   "break_even": null,
-   "prob": {
-    "model": 0.5872,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.5872,
-    "sd": 0.0175,
-    "conservative": 0.5648,
-    "components": {
-     "model_sd": 0.0085,
-     "calibration_sd": 0.0095,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -124,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -124 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 3.35 (ANA) vs 2.8032 (CGY) regulation goals",
-    "ANA 5v5 xG for 1.047× league, CGY 5v5 xG for 0.958×",
-    "goalies: projected uncertain (L. Dostal 81% / D. Wolf 59%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "16c0ee70",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020103",
-   "event": {
-    "home": "ANA",
-    "away": "CGY",
-    "start_utc": "2026-10-14T01:45:00Z",
-    "label": "CGY @ ANA"
-   },
-   "market": {
-    "kind": "total",
-    "side": "under",
-    "line": 6.5,
-    "settles": "includes overtime; the shootout winner is credited one goal"
-   },
-   "label": "CGY @ ANA — under 6.5",
-   "quote": null,
-   "fair_american": -108,
-   "break_even": null,
-   "prob": {
-    "model": 0.52,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.52,
-    "sd": 0.0277,
-    "conservative": 0.4845,
-    "components": {
-     "model_sd": 0.02,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 111,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +111 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 3.35 (ANA) vs 2.8032 (CGY) regulation goals",
-    "ANA 5v5 xG for 1.047× league, CGY 5v5 xG for 0.958×",
-    "goalies: projected uncertain (L. Dostal 81% / D. Wolf 59%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "3202b296",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020103",
-   "event": {
-    "home": "ANA",
-    "away": "CGY",
-    "start_utc": "2026-10-14T01:45:00Z",
-    "label": "CGY @ ANA"
-   },
-   "market": {
-    "kind": "total",
-    "side": "over",
-    "line": 6.5,
-    "settles": "includes overtime; the shootout winner is credited one goal"
-   },
-   "label": "CGY @ ANA — over 6.5",
-   "quote": null,
-   "fair_american": 108,
-   "break_even": null,
-   "prob": {
-    "model": 0.48,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.48,
-    "sd": 0.0277,
-    "conservative": 0.4445,
-    "components": {
-     "model_sd": 0.02,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 129,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +129 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 3.35 (ANA) vs 2.8032 (CGY) regulation goals",
-    "ANA 5v5 xG for 1.047× league, CGY 5v5 xG for 0.958×",
-    "goalies: projected uncertain (L. Dostal 81% / D. Wolf 59%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "1783796c",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020103",
-   "event": {
-    "home": "ANA",
-    "away": "CGY",
-    "start_utc": "2026-10-14T01:45:00Z",
-    "label": "CGY @ ANA"
-   },
-   "market": {
-    "kind": "moneyline",
-    "side": "CGY",
-    "line": null,
-    "settles": "includes overtime and shootout"
-   },
-   "label": "CGY @ ANA — CGY moneyline",
-   "quote": null,
-   "fair_american": 142,
-   "break_even": null,
-   "prob": {
-    "model": 0.4128,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4128,
-    "sd": 0.021,
-    "conservative": 0.3859,
-    "components": {
-     "model_sd": 0.0085,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 164,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +164 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 3.35 (ANA) vs 2.8032 (CGY) regulation goals",
-    "ANA 5v5 xG for 1.047× league, CGY 5v5 xG for 0.958×",
-    "goalies: projected uncertain (L. Dostal 81% / D. Wolf 59%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
-   "id": "639b8961",
-   "status": "RESEARCH",
-   "sport_id": "nhl",
-   "sport_label": "NHL",
-   "event_key": "NHL|2026020103",
-   "event": {
-    "home": "ANA",
-    "away": "CGY",
-    "start_utc": "2026-10-14T01:45:00Z",
-    "label": "CGY @ ANA"
-   },
-   "market": {
-    "kind": "spread",
-    "side": "ANA",
-    "line": -1.5,
-    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
-   },
-   "label": "CGY @ ANA — ANA -1.5",
-   "quote": null,
-   "fair_american": 168,
-   "break_even": null,
-   "prob": {
-    "model": 0.3734,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.3734,
-    "sd": 0.0214,
-    "conservative": 0.346,
-    "components": {
-     "model_sd": 0.0094,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.012
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 195,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +195 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 3.35 (ANA) vs 2.8032 (CGY) regulation goals",
-    "ANA 5v5 xG for 1.047× league, CGY 5v5 xG for 0.958×",
-    "goalies: projected uncertain (L. Dostal 81% / D. Wolf 59%)",
-    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
-   ],
-   "invalidators": [
-    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
-    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
-    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline)."
-   ],
-   "data": {
-    "state": "FRESH",
-    "lineup_certainty": "PROJECTED_UNCERTAIN"
-   },
-   "model_id": "edgedesk_nhl_v1:xg_core"
-  },
-  {
    "id": "26892fcd",
    "status": "RESEARCH",
    "sport_id": "nhl",
@@ -5435,6 +4991,456 @@
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "f9d16823",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020107",
+   "event": {
+    "home": "COL",
+    "away": "DAL",
+    "start_utc": "2026-10-15T00:30:00Z",
+    "label": "DAL @ COL"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "DAL",
+    "line": 1.5,
+    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
+   },
+   "label": "DAL @ COL — DAL +1.5",
+   "quote": null,
+   "fair_american": -169,
+   "break_even": null,
+   "prob": {
+    "model": 0.6277,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.6277,
+    "sd": 0.0209,
+    "conservative": 0.6009,
+    "components": {
+     "model_sd": 0.0083,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -143,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -143 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 3.2673 (COL) vs 2.7092 (DAL) regulation goals",
+    "COL 5v5 xG for 1.1056× league, DAL 5v5 xG for 0.9948×",
+    "goalies: projected uncertain (M. Blackwood 66% / J. Oettinger 89%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
+    "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "a93042af",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020107",
+   "event": {
+    "home": "COL",
+    "away": "DAL",
+    "start_utc": "2026-10-15T00:30:00Z",
+    "label": "DAL @ COL"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "COL",
+    "line": null,
+    "settles": "includes overtime and shootout"
+   },
+   "label": "DAL @ COL — COL moneyline",
+   "quote": null,
+   "fair_american": -144,
+   "break_even": null,
+   "prob": {
+    "model": 0.5903,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.5903,
+    "sd": 0.017,
+    "conservative": 0.5685,
+    "components": {
+     "model_sd": 0.0075,
+     "calibration_sd": 0.0095,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -126,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -126 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 3.2673 (COL) vs 2.7092 (DAL) regulation goals",
+    "COL 5v5 xG for 1.1056× league, DAL 5v5 xG for 0.9948×",
+    "goalies: projected uncertain (M. Blackwood 66% / J. Oettinger 89%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
+    "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "4283aa41",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020107",
+   "event": {
+    "home": "COL",
+    "away": "DAL",
+    "start_utc": "2026-10-15T00:30:00Z",
+    "label": "DAL @ COL"
+   },
+   "market": {
+    "kind": "total",
+    "side": "over",
+    "line": 6,
+    "settles": "includes overtime; the shootout winner is credited one goal"
+   },
+   "label": "DAL @ COL — over 6",
+   "quote": null,
+   "fair_american": -103,
+   "break_even": null,
+   "prob": {
+    "model": 0.4502,
+    "push": 0.1107,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4502,
+    "sd": 0.0277,
+    "conservative": 0.4147,
+    "components": {
+     "model_sd": 0.02,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 119,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +119 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 3.2673 (COL) vs 2.7092 (DAL) regulation goals",
+    "COL 5v5 xG for 1.1056× league, DAL 5v5 xG for 0.9948×",
+    "goalies: projected uncertain (M. Blackwood 66% / J. Oettinger 89%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
+    "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "4f17180f",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020107",
+   "event": {
+    "home": "COL",
+    "away": "DAL",
+    "start_utc": "2026-10-15T00:30:00Z",
+    "label": "DAL @ COL"
+   },
+   "market": {
+    "kind": "total",
+    "side": "under",
+    "line": 6,
+    "settles": "includes overtime; the shootout winner is credited one goal"
+   },
+   "label": "DAL @ COL — under 6",
+   "quote": null,
+   "fair_american": 103,
+   "break_even": null,
+   "prob": {
+    "model": 0.439,
+    "push": 0.1107,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.439,
+    "sd": 0.0277,
+    "conservative": 0.4035,
+    "components": {
+     "model_sd": 0.02,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 125,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +125 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 3.2673 (COL) vs 2.7092 (DAL) regulation goals",
+    "COL 5v5 xG for 1.1056× league, DAL 5v5 xG for 0.9948×",
+    "goalies: projected uncertain (M. Blackwood 66% / J. Oettinger 89%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
+    "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "e4aa079c",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020107",
+   "event": {
+    "home": "COL",
+    "away": "DAL",
+    "start_utc": "2026-10-15T00:30:00Z",
+    "label": "DAL @ COL"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "DAL",
+    "line": null,
+    "settles": "includes overtime and shootout"
+   },
+   "label": "DAL @ COL — DAL moneyline",
+   "quote": null,
+   "fair_american": 144,
+   "break_even": null,
+   "prob": {
+    "model": 0.4097,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4097,
+    "sd": 0.0206,
+    "conservative": 0.3833,
+    "components": {
+     "model_sd": 0.0075,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 166,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +166 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 3.2673 (COL) vs 2.7092 (DAL) regulation goals",
+    "COL 5v5 xG for 1.1056× league, DAL 5v5 xG for 0.9948×",
+    "goalies: projected uncertain (M. Blackwood 66% / J. Oettinger 89%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
+    "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "4d5325e9",
+   "status": "RESEARCH",
+   "sport_id": "nhl",
+   "sport_label": "NHL",
+   "event_key": "NHL|2026020107",
+   "event": {
+    "home": "COL",
+    "away": "DAL",
+    "start_utc": "2026-10-15T00:30:00Z",
+    "label": "DAL @ COL"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "COL",
+    "line": -1.5,
+    "settles": "includes overtime and shootout; an OT/SO win is a one-goal win"
+   },
+   "label": "DAL @ COL — COL -1.5",
+   "quote": null,
+   "fair_american": 169,
+   "break_even": null,
+   "prob": {
+    "model": 0.3723,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.3723,
+    "sd": 0.0209,
+    "conservative": 0.3455,
+    "components": {
+     "model_sd": 0.0083,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.012
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 195,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +195 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "λ 3.2673 (COL) vs 2.7092 (DAL) regulation goals",
+    "COL 5v5 xG for 1.1056× league, DAL 5v5 xG for 0.9948×",
+    "goalies: projected uncertain (M. Blackwood 66% / J. Oettinger 89%)",
+    "model edgedesk_nhl_v1:xg_core; record: moneyline OUTCOME_VALIDATED vs outcomes, not tested vs the close"
+   ],
+   "invalidators": [
+    "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+    "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.",
+    "A price posted by a book that settles the market differently (a 60-minute line is not the 2-way moneyline).",
+    "A back-to-back: the second-game effect is in the model, but the rested starter decision is not known yet."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "PROJECTED_UNCERTAIN"
+   },
+   "model_id": "edgedesk_nhl_v1:xg_core"
   }
  ],
  "disclaimer": "Research, not picks. A qualified opportunity is a price that cleared EdgeDesk's published rules at the time shown; it is not a prediction that it will win, and nothing here is a recommendation to bet.",
@@ -5444,9 +5450,9 @@
    "label": "NHL",
    "state": "OUTCOME_VALIDATED",
    "value_claims": false,
-   "candidates": 102,
+   "candidates": 96,
    "priced": 0,
-   "note": "17 upcoming games priced by the model; book prices: DISABLED",
+   "note": "16 upcoming games priced by the model; book prices: DISABLED",
    "ladder": {
     "data_loaded": {
      "done": true,
@@ -5480,9 +5486,9 @@
    "label": "NFL",
    "state": "OUTCOME_VALIDATED",
    "value_claims": false,
-   "candidates": 72,
+   "candidates": 138,
    "priced": 0,
-   "note": "72 sides at the consensus line (a reference, not a price); captured book prices live in the desk (Supabase), not in this static board",
+   "note": "138 sides at the consensus line (a reference, not a price); captured book prices live in the desk (Supabase), not in this static board",
    "ladder": {
     "data_loaded": {
      "done": true,
@@ -5873,20 +5879,20 @@
   }
  ],
  "inputs": {
-  "registry_generated_at": "2026-10-14T01:42:27.108Z",
-  "nhl_slate_generated_at": "2026-10-14T01:42:12.627Z",
+  "registry_generated_at": "2026-10-14T01:54:31.129Z",
+  "nhl_slate_generated_at": "2026-10-14T01:54:16.636Z",
   "basketball_slate_generated_at": "2026-10-13T06:41:26.560Z",
   "soccer_slate_generated_at": "2026-10-13T06:41:26.796Z",
   "nhl_quotes": {
    "status": "DISABLED",
-   "generated_at": "2026-10-13T04:59:46.173Z",
+   "generated_at": "2026-10-14T00:36:15.078Z",
    "reason": "NHL price capture is not authorised: the repository variable NHL_PRICES is not \"on\" (and odds_api_sports.icehockey_nhl must be enabled in the gateway)"
   },
-  "football_sheets_generated_at": "2026-10-13T10:48:37.526Z",
+  "football_sheets_generated_at": "2026-10-14T00:23:31.806Z",
   "manual_quotes_applied": 0
  },
  "candidates_trimmed": {
-  "research_total": 324,
+  "research_total": 384,
   "research_kept": 72,
   "rule": "all non-research rows; per sport, 24 research rows by conservative disagreement with the market reference, then by start time"
  }
