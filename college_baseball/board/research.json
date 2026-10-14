@@ -3568,7 +3568,7 @@
   ]
  },
  "gates": {
-  "summary": "RELEASE BLOCKED: 6 of 16 gates fail (G1, G7, G11, G12, G14, G15). Provisional research only.",
+  "summary": "RELEASE BLOCKED: 4 of 16 gates fail (G1, G11, G12, G15). Provisional research only.",
   "gates": [
    {
     "id": "G1",
@@ -3609,8 +3609,8 @@
    {
     "id": "G7",
     "name": "Season-specific game rules tested",
-    "status": "FAIL",
-    "why": "audit GAME_RULES PASS; rules unit tests not run"
+    "status": "PASS",
+    "why": "audit GAME_RULES PASS; rules unit tests pass"
    },
    {
     "id": "G8",
@@ -3651,14 +3651,14 @@
    {
     "id": "G14",
     "name": "Frontend and API tests",
-    "status": "FAIL",
-    "why": "tests have not been run (tools/college_baseball/run_tests.js)"
+    "status": "PASS",
+    "why": "college-baseball suite pass; UI pass (at 2026-10-14T03:09:54.485Z)"
    },
    {
     "id": "G15",
     "name": "Existing EdgeDesk sports still work",
     "status": "FAIL",
-    "why": "existing suites not run"
+    "why": "13/14 existing suites pass"
    },
    {
     "id": "G16",

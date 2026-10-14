@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cbase_release_gates_v1",
  "model_version": "cbase_v1.0.0",
- "generated_at": "2026-10-14T03:07:25.634Z",
+ "generated_at": "2026-10-14T03:10:21.724Z",
  "gates": [
   {
    "id": "G1",
@@ -172,8 +172,8 @@
   {
    "id": "G7",
    "name": "Season-specific game rules tested",
-   "status": "FAIL",
-   "why": "audit GAME_RULES PASS; rules unit tests not run",
+   "status": "PASS",
+   "why": "audit GAME_RULES PASS; rules unit tests pass",
    "evidence": null
   },
   {
@@ -249,7 +249,7 @@
     "games": 400,
     "failures": 0,
     "examples": [],
-    "seconds": 4.2,
+    "seconds": 4.3,
     "per_game_ms": 11,
     "degenerate_blocked": true,
     "ok": true
@@ -258,16 +258,163 @@
   {
    "id": "G14",
    "name": "Frontend and API tests",
-   "status": "FAIL",
-   "why": "tests have not been run (tools/college_baseball/run_tests.js)",
+   "status": "PASS",
+   "why": "college-baseball suite pass; UI pass (at 2026-10-14T03:09:54.485Z)",
    "evidence": null
   },
   {
    "id": "G15",
    "name": "Existing EdgeDesk sports still work",
    "status": "FAIL",
-   "why": "existing suites not run",
-   "evidence": null
+   "why": "13/14 existing suites pass",
+   "evidence": {
+    "ok": false,
+    "total": 14,
+    "passed": 13,
+    "skipped": 1,
+    "results": [
+     {
+      "file": "tools/lab/lab.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 65,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "ALL GREEN lab — 65 passed, 0 failed"
+     },
+     {
+      "file": "tools/engine/engine.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 37,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "ALL GREEN multi-sport engine — 37 passed, 0 failed"
+     },
+     {
+      "file": "tools/hockey/hockey.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 97,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "ALL GREEN NHL brain — 97 passed, 0 failed"
+     },
+     {
+      "file": "mlb/tests.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 140,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "— college: the projection —\n— the guard against a silent NaN, everywhere —\nALL GREEN 140 passed, 0 failed\nPASS | baseball run model | 140 self-consistency assertions. NOT a validation: this model has no graded closing-line record."
+     },
+     {
+      "file": "tools/cbb/ingest.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 28,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "  ok   an unset start time is flagged, not invented\n  ok   …and no time is carried\nALL GREEN 28 passed, 0 failed\nPASS | cbb ingest shaping and union | 28 assertions"
+     },
+     {
+      "file": "tools/cbb/stats.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 57,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "  ok   an unparseable pair is two unknowns\n  ok   an absent pair likewise\nALL GREEN 57 passed, 0 failed\nPASS | cbb stats shaping | 57 assertions"
+     },
+     {
+      "file": "tools/cbb/ncaa_archive.test.js",
+      "ok": false,
+      "skipped": true,
+      "status": 0,
+      "passed": 72,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "  ok   the upstream project is credited by name and licence\nSKIP the SQL phase | no reachable PostgreSQL\nALL GREEN 72 passed, 0 failed\nPASS | cbb ncaa archive | 72 assertions"
+     },
+     {
+      "file": "tools/cbb/team_aliases.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 42,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "a collision is detected rather than shipped\n  ok   two codes on one club is reported\nALL GREEN 42 passed, 0 failed\nPASS | cbb club aliases | 42 assertions"
+     },
+     {
+      "file": "tools/cbb/refresh.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 38,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "  ok   …and the pace is a real delay by default\n  ok   the union is empty-checked before anything is written\nALL GREEN 38 passed, 0 failed\nPASS | cbb refresh path | 38 assertions"
+     },
+     {
+      "file": "tools/app/sports_config.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 67,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "sports config: 67 passed, 0 failed"
+     },
+     {
+      "file": "tools/site/nav.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 571,
+      "failed": 0,
+      "seconds": 0,
+      "tail": "ALL GREEN site navigation — 571 passed, 0 failed"
+     },
+     {
+      "file": "tools/odds/no_bypass.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 91,
+      "failed": 0,
+      "seconds": 1,
+      "tail": "ALL GREEN no path around the odds gateway — 91 passed, 0 failed"
+     },
+     {
+      "file": "tools/intelligence/support_boundary.test.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 40,
+      "failed": 0,
+      "seconds": 1,
+      "tail": "ALL GREEN 40 passed, 0 failed"
+     },
+     {
+      "file": "tools/engine/engine_ui.e2e.js",
+      "ok": true,
+      "skipped": false,
+      "status": 0,
+      "passed": 106,
+      "failed": 0,
+      "seconds": 8,
+      "tail": "desktop\nphone\nALL GREEN engine UI — 106 passed, 0 failed"
+     }
+    ]
+   }
   },
   {
    "id": "G16",
@@ -280,11 +427,9 @@
  "release_allowed": false,
  "failing": [
   "G1",
-  "G7",
   "G11",
   "G12",
-  "G14",
   "G15"
  ],
- "summary": "RELEASE BLOCKED: 6 of 16 gates fail (G1, G7, G11, G12, G14, G15). Provisional research only."
+ "summary": "RELEASE BLOCKED: 4 of 16 gates fail (G1, G11, G12, G15). Provisional research only."
 }
