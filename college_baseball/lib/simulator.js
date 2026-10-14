@@ -16,9 +16,21 @@
      - a ten-run lead after seven (or eight) complete innings ends the game
        only with the MEASURED probability for the game's context;
      - extra innings start with the bases empty (rule R07, supported by the
-       measured extra-inning scoring) and continue until decided.
+       measured extra-inning scoring) and continue until decided (no inning
+       cap: a game is never left tied);
+     - the rating uncertainty is integrated by drawing, per simulated game, a
+       shift of the log run ratio with the rating gap's posterior sd.
    The per-inning rates are calibrated so the simulated mean of each side's
-   runs equals the run model's expectation (one short pilot run per game).
+   runs equals the run expectations it is given (one short pilot run per game).
+
+   WHAT IT PRICES. Only the first five innings (and the innings, walk-off and
+   run-rule shares shown beside a price). Every full-game market comes from the
+   closed form (distribution.closedForm), which scored better on the moneyline,
+   totals and run line on VALIDATION. Feed it LEVEL-UNBIASED run expectations
+   (the run model's own): the run-space calibration moves the expectations so
+   the closed form's P(home) is right, and the simulator, which models the
+   home side's unplayed or cut-short last inning explicitly, would count that
+   effect twice (it favoured the home side by 3.7 points; simulator.json).
 
    Outputs the joint distribution of final runs, innings, first-five runs and
    starter/bullpen innings; markets are priced from it in lib/pricing.js.
@@ -27,7 +39,8 @@
 const S = require('../../engine/stats');
 const D = require('./distribution');
 
-const MAX_INN = 20;
+const MAX_INN = 20;      // innings histogram cap (the game itself plays on until decided)
+const HARD_INN = 99;
 
 /* the half-inning sampler: a scaled copy of the measured shape, as a CDF */
 function samplerFactory(shape) {
@@ -88,12 +101,13 @@ function simulate(game, constants, opts) {
       /* game-level variation the innings do not carry: a shared factor (park-day, weather, umpire)
          and one per side (lineup, form); their sizes are calibrated to the measured game dispersion */
       const fr = game.frailty || {};
-      const gS = gammaDraw(fr.shared_k, rand); const gH = gammaDraw(fr.team_k, rand) * gS; const gA = gammaDraw(fr.team_k, rand) * gS;
+      const gS = gammaDraw(fr.shared_k, rand); let gH = gammaDraw(fr.team_k, rand) * gS; let gA = gammaDraw(fr.team_k, rand) * gS;
+      if (game.sd > 0) { const dlt = game.sd * normalDraw(rand); gH *= Math.exp(dlt / 2); gA *= Math.exp(-dlt / 2); }
       const sOutsH = Math.max(0, Math.min(3 * sched, Math.round(hs.starter_outs + hs.starter_outs_sd * normalDraw(rand))));   // home starter (pitches to away)
       const sOutsA = Math.max(0, Math.min(3 * sched, Math.round(as.starter_outs + as.starter_outs_sd * normalDraw(rand))));
       let H = 0; let A = 0; let f5h = 0; let f5a = 0; let inn = 0; let outsH = 0; let outsA = 0;
       let ended = false;
-      for (inn = 1; inn <= MAX_INN && !ended; inn++) {
+      for (inn = 1; inn <= HARD_INN && !ended; inn++) {
         const extra = inn > sched;
         const w = extra ? 1 : (sched === 9 ? inningW[inn - 1] : inningW[Math.min(inn - 1, 8)]);
         /* top: away bats against the home staff */
@@ -117,6 +131,8 @@ function simulate(game, constants, opts) {
         if (inn >= sched && H !== A) { ended = true; break; }
         if ((inn === 7 || inn === 8) && inn < sched && Math.abs(H - A) >= 10 && rand() < (game.run_rule_p || 0)) { res.runRule++; ended = true; break; }
       }
+      /* never left tied: past HARD_INN (practically unreachable) a coin flip settles it */
+      if (!ended && H === A) { if (rand() < 0.5) H++; else A++; }
       const played = Math.min(MAX_INN, inn);
       res.innings[played]++;
       res.sumH += H; res.sumA += A;

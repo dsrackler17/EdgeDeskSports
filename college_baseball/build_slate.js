@@ -79,7 +79,7 @@ function summary(g) {
   return { game_id: g.game_id, date: g.date, start_time_local: g.start_time_local, dh: g.dh, neutral: g.neutral, site: g.site, status: g.status, conf_game: g.conf_game,
     home: team(g.home), away: team(g.away), readiness: g.readiness ? { label: g.readiness.label, states: g.readiness.states } : null,
     ml: p ? { p_home: p.moneyline.p_home, fair_home: p.moneyline.fair_home, fair_away: p.moneyline.fair_away } : null,
-    total: tot ? { line: tot.line, over: tot.over } : null, sd: g.model ? g.model.sd_delta : null, se: p ? p.simulator.se_p_home : null,
+    total: tot ? { line: tot.line, over: tot.over } : null, sd: g.model ? g.model.sd_delta : null, se: p && p.first_five ? p.simulator.se_f5_home : null,
     starters: g.starters ? { home: st('home'), away: st('away') } : null, result_postgame: g.result_postgame || null };
 }
 
@@ -118,6 +118,10 @@ function build(season, o) {
      three seasons before it exactly as in the walk-forward: run-space calibration, the rest layer, the logit
      maps of the ensemble's members, and the ensemble's SELECTION-fitted weights */
   const CAL = require('./lib/calibration'); const ENS = require('./lib/ensemble');
+  /* the first five are priced by the simulator; whether they are more than research is decided by its calibration (sim_eval.js) */
+  const simEval = readJson(C.PATHS.simEval); const f5Cal = simEval && simEval.first_five ? simEval.first_five.home_win : null;
+  const f5Status = simEval && simEval.decision && /PROVISIONAL/.test(simEval.decision.first_five_engine) ? { status: 'PROVISIONAL', reason: 'calibrated on VALIDATION; never tested against a market' }
+    : { status: 'RESEARCH_ONLY', reason: f5Cal ? `the simulator's first-five probabilities are too extreme on VALIDATION (calibration slope ${f5Cal.slope}; tolerance 0.75-1.33)` : 'the simulator has not been evaluated on the first five innings' };
   const pricingModel = wf && wf.pricing ? wf.pricing.model : 'hier_cal';
   const prior = [...oos.values()].filter((x) => Number(x.season) >= season - 3 && Number(x.season) < season && x.hier_lh !== '');
   const num = (v) => (v === '' || v == null ? null : Number(v));
@@ -217,8 +221,12 @@ function build(season, o) {
             const st = (S2) => { const top = S2.scenarios[0]; return { starter_outs: top && top.outs != null ? top.outs : 12.5, starter_outs_sd: 5.7 }; };
             homeStaff = st(H); awayStaff = st(A);
           }
-          const sim = SIM.simulate({ lh, la, p7, run_rule_p: rrP(g), frailty, home_staff: homeStaff, away_staff: awayStaff }, constants, { n: o.sims || 4000, seed: 1 + counts.games });
-          const dist = PR.fromJoint(sim.joint); const prices = PR.price(dist, { f5: sim.f5_joint });
+          /* every full-game market from the closed form's mixture (rating uncertainty x scheduled length): its
+             P(home) is the validated probability; the simulator, fed the run model's own (level-unbiased)
+             expectations, prices only the first five innings (lib/simulator.js, validation/simulator.json) */
+          const cf = D.closedForm(lh, la, pr.sd_delta, p7, spec, constants);
+          const sim = SIM.simulate({ lh: pr.lh, la: pr.la, sd: pr.sd_delta, p7, run_rule_p: rrP(g), frailty, home_staff: homeStaff, away_staff: awayStaff }, constants, { n: o.sims || 4000, seed: 1 + counts.games });
+          const dist = PR.fromClosedForm(cf); const prices = PR.price(dist, { f5: sim.f5_joint });
           /* the board keeps the useful part of each ladder (the full ladders are one call away in lib/pricing.js) */
           prices.run_lines = prices.run_lines.filter((l) => [-1.5, 1.5, -2.5, 2.5, -1, 1].includes(l.home_line));
           prices.totals = prices.totals.filter((t) => Math.abs(t.line - prices.main_total_line) <= 3);
@@ -229,7 +237,10 @@ function build(season, o) {
           const pChosen = o2 && o2['p_' + chosen] !== '' && o2['p_' + chosen] != null ? Number(o2['p_' + chosen]) : null;
           item.model = { version: C.MODEL_VERSION, team_model: 'hier', chosen, pricing: pricingModel, p_ensemble: pEns == null ? null : r(pEns), ensemble_shift: ensShift == null ? null : r(ensShift, 4), rest_flags: flags, pitcher_adjusted: !!(pm && pm.accepted), lh_raw: r(pr.lh, 2), la_raw: r(pr.la, 2), lh: r(lh, 2), la: r(la, 2), sd_delta: r(pr.sd_delta), p_home_team: r(pTeam), p_home_chosen_oos: pChosen == null ? null : r(pChosen), park: r(pr.park), home_adv: r(pr.home_adv), p7: r(p7), disagreement };
           item.starters = starters; item.scenarios = scenarioTable;
-          item.prices = Object.assign(prices, { simulator: { n: sim.n, se_p_home: r(sim.se_p_home, 4), walkoff_share: r(sim.walkoff_share), run_rule_share: r(sim.run_rule_share), seven_share: r(sim.seven_share), starter_outs_home: r(sim.starter_outs_home, 1), starter_outs_away: r(sim.starter_outs_away, 1) } });
+          const f5h = prices.first_five ? prices.first_five.three_way.home : null;
+          if (prices.first_five) Object.assign(prices.first_five, f5Status);
+          item.prices = Object.assign(prices, { engine: { full_game: 'closed form (negative binomial mixture over rating uncertainty and scheduled length)', first_five: 'inning simulator' },
+            simulator: { n: sim.n, se_f5_home: f5h == null ? null : r(Math.sqrt(f5h * (1 - f5h) / sim.n), 4), p_home_simulated: r(sim.p_home, 4), walkoff_share: r(sim.walkoff_share), run_rule_share: r(sim.run_rule_share), seven_share: r(sim.seven_share), starter_outs_home: r(sim.starter_outs_home, 1), starter_outs_away: r(sim.starter_outs_away, 1) } });
           item.distribution = { total: pmfArray(dist.total, 26), margin_min: -12, margin: (() => { const a = []; for (let m = -12; m <= 12; m++) a.push(r(dist.margin[m + dist.marginOffset], 4)); return a; })(), innings: sim.innings.map((v) => r(v, 4)).slice(5, 16) };
           item.environment = { park_factor: r(pr.park), home_advantage: r(pr.home_adv), neutral: g.neutral, rest_home: recH.last ? K.daysBetween(recH.last, date) : null, rest_away: recA.last ? K.daysBetween(recA.last, date) : null, weather: 'UNAVAILABLE: no authorised archive of forecasts as of prediction time', altitude: 'not modelled separately; inside the park factor' };
           item.market = { status: 'MARKET_UNAVAILABLE', reason: ctx.market_reason, ev: null };
@@ -237,7 +248,7 @@ function build(season, o) {
           const sNote = starters ? `Projected starters: ${starters.home.candidates[0] ? starters.home.candidates[0].name + ' (' + Math.round(starters.home.candidates[0].p * 100) + '%)' : 'unknown'} for ${g.home_name}, ${starters.away.candidates[0] ? starters.away.candidates[0].name + ' (' + Math.round(starters.away.candidates[0].p * 100) + '%)' : 'unknown'} for ${g.away_name}; ${pm && pm.accepted ? 'the price is weighted across these scenarios' : 'the pitcher adjustment did not pass validation, so it is shown as research and not in the price'}.` : null;
           const penNote = item.bullpen && ((item.bullpen.home.depletion || 0) > 0.25 || (item.bullpen.away.depletion || 0) > 0.25) ? `Bullpen depletion: ${g.home_name} ${Math.round((item.bullpen.home.depletion || 0) * 100)}%, ${g.away_name} ${Math.round((item.bullpen.away.depletion || 0) * 100)}% of usual relief availability used up recently.` : null;
           item.explanation = explain({ p_home: prices.moneyline.p_home, home: g.home_name, away: g.away_name, lh, la, rank_home: rank.get(g.home_id), rank_away: rank.get(g.away_id), d1n: d1.length, sd: pr.sd_delta, conf_note: confNote, starter_note: sNote, pen_note: penNote, park: pr.park, neutral: g.neutral, dh: g.dh, p7 });
-          ctx = Object.assign(ctx, { team: { info_min: Math.min(pr.info_home, pr.info_away), sd_delta: pr.sd_delta, has_prior: true }, model_ok: true, price: prices, coherence: coh, mc_se: sim.se_p_home,
+          ctx = Object.assign(ctx, { team: { info_min: Math.min(pr.info_home, pr.info_away), sd_delta: pr.sd_delta, has_prior: true }, model_ok: true, price: prices, coherence: coh, mc_se: item.prices.simulator.se_f5_home,
             starters: starters ? { home: starters.home.status, away: starters.away.status } : { home: 'NO_PITCHING_DATA', away: 'NO_PITCHING_DATA' } });
         }
         item.readiness = RD.assess(g, ctx);
@@ -333,7 +344,7 @@ function main() {
   const idx = { schema: 'edgedesk_cbase_board_index_v1', generated_at: now.toISOString(), mode, season, point_in_time: mode === 'LIVE' ? 'PREGAME' : 'RETROSPECTIVE',
     mode_note: mode === 'LIVE' ? 'Upcoming games priced before first pitch.' : `No upcoming Division I games are published by the source (the ${cur} schedule is not out). This is a RETROSPECTIVE replay of ${season}: each price is what the model would have said before the game, from final data; results are shown as postgame information.`,
     model_version: C.MODEL_VERSION, value_claims: 'DISABLED', value_reason: 'no authorised college-baseball market feed; release gates not passed',
-    counts: res.counts, failures: res.failures, coherence_failures: res.coherence_failures, latency_ms: res.latency_ms, dates: res.dates,
+    counts: res.counts, failures: res.failures, coherence_failures: res.coherence_failures, sims: Number(arg('sims', 4000)), pricing_engine: { full_game: 'closed form', first_five: 'simulator' }, latency_ms: res.latency_ms, dates: res.dates,
     freshness: { warehouse_built: (W.report(season) || {}).built_at || null, source: C.SOURCE.name } };
   K.writeJson(path.join(BOARD, 'index.json'), idx);
   K.writeJson(path.join(BOARD, 'research.json'), research());

@@ -2,10 +2,13 @@
 /* ===========================================================================
    EdgeDesk college baseball — fair prices from a run distribution (Phase 11).
 
-   A price is a probability with its settlement rules attached. Every market
-   below is computed from ONE joint distribution of final runs (the simulator's,
-   or the closed form's), so the moneyline, run lines, totals and team totals
-   of a game cannot contradict each other; coherence() proves it per game.
+   A price is a probability with its settlement rules attached. Every
+   full-game market is computed from ONE distribution of final runs (the
+   closed form's mixture, distribution.closedForm), so the moneyline, run
+   lines, totals and team totals of a game cannot contradict each other;
+   coherence() proves it per game. The closed form, not the inning simulator,
+   prices them because it scored better on every full-game market on
+   VALIDATION (validation/simulator.json, CBX-PRICING-ENGINE).
 
    PUSHES. A whole-number line can land exactly. Its fair price is the
    CONDITIONAL one, P(win) / (P(win) + P(lose)), and P(push) is shown beside it.
@@ -19,8 +22,9 @@
    quote whose book's profile is VERIFIED and whose timestamp is fresh — today,
    never (no authorised college-baseball feed exists).
 
-   FIRST FIVE INNINGS. Priced only from the simulator (it tracks innings); a
-   three-way (tie possible) and the two-way-with-tie-push version are given.
+   FIRST FIVE INNINGS. Priced only from the simulator (the closed form has no
+   innings); a three-way (tie possible) and the two-way-with-tie-push version
+   are given.
    =========================================================================== */
 const D = require('./distribution');
 
@@ -46,6 +50,11 @@ function fromJoint(joint) {
     if (h > a) pH += p; else if (a > h) pA += p; else pT += p;
   }
   return { total, margin, marginOffset: 40, home, away, pH, pA, pT };
+}
+
+/** from distribution.closedForm(): the pricing distribution of every full-game market */
+function fromClosedForm(cf) {
+  return { total: cf.total_pmf, margin: cf.margin_pmf, marginOffset: cf.margin_offset, home: cf.home_pmf, away: cf.away_pmf, pH: cf.p_home, pA: cf.p_away, pT: 0 };
 }
 
 /** from the closed form's outcomes() */
@@ -93,7 +102,7 @@ function price(dist, opts) {
     const two = f.pH / Math.max(1e-12, f.pH + f.pA);
     const f5Total = median(f.total) + 0.5;
     out.first_five = { three_way: { home: r4(f.pH), tie: r4(f.pT), away: r4(f.pA) }, two_way_tie_push: { p_home: r4(two), fair_home: american(two), fair_away: american(1 - two), push: r4(f.pT) },
-      home_minus_0_5: { home: r4(f.pH), fair_home: american(f.pH), fair_away: american(1 - f.pH) }, totals: [f5Total - 1, f5Total, f5Total + 1].map((l) => overUnder(f.total, l)), status: 'PROVISIONAL', source: 'simulator' };
+      home_minus_0_5: { home: r4(f.pH), fair_home: american(f.pH), fair_away: american(1 - f.pH) }, totals: [f5Total - 1, f5Total, f5Total + 1].map((l) => overUnder(f.total, l)), status: opts.f5_status || 'RESEARCH_ONLY', source: 'simulator' };
   }
   return out;
 }
@@ -124,4 +133,4 @@ function expectedValue(pFair, quote, profileName, now, maxAgeMin) {
   return { status: 'EVALUATED', ev_per_unit: r4(pFair * dec - 1) };
 }
 
-module.exports = { SETTLEMENT_PROFILES, american, decimal, fromJoint, fromOutcomes, price, coherence, overUnder, runLine, expectedValue };
+module.exports = { SETTLEMENT_PROFILES, american, decimal, fromJoint, fromClosedForm, fromOutcomes, price, coherence, overUnder, runLine, expectedValue };

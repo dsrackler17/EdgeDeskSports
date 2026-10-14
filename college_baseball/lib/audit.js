@@ -172,9 +172,14 @@ function run(o) {
   }
   /* 14 simulation */
   {
-    const st = !sim ? 'WARN' : sim.mean_abs_diff_p_home > 0.03 || sim.max_mc_se > 0.01 || (sim.coherence_failures || 0) > 0 ? 'FAIL' : 'PASS';
+    /* full-game markets must come from the engine that scored better against outcomes, the first-five
+       Monte Carlo error must be small at the board's draw count, and no price set may be incoherent */
+    const fg = sim && sim.full_game; const cmp = fg && fg.comparisons;
+    const engineOk = !!cmp && !cmp.moneyline_cf_vs_sim.b_better && !cmp.total_cf_vs_sim.b_better && !cmp.run_line_cf_vs_sim.b_better;
+    const boardSims = board && board.sims; const boardSe = boardSims ? 0.5 / Math.sqrt(boardSims) : null;
+    const st = !sim || !fg ? 'WARN' : !engineOk || (sim.coherence_failures || 0) > 0 || (boardSe != null && boardSe > 0.01) ? 'FAIL' : 'PASS';
     const bc = board && board.coherence_failures;
-    out.push(check('SIMULATION', bc ? 'FAIL' : st, 'simulator vs closed form: mean |dP(home)| <= 0.03; Monte Carlo SE <= 0.01; zero incoherent prices on the board', { simulator: sim && { n: sim.n, mean_abs_diff_p_home: sim.mean_abs_diff_p_home, max_mc_se: sim.max_mc_se, convergence: sim.convergence }, board_coherence_failures: bc == null ? null : bc }, 'recalibrate the simulator frailty; fix the incoherent market'));
+    out.push(check('SIMULATION', bc ? 'FAIL' : st, 'full-game prices from the engine that is not worse on the moneyline, totals or run line (closed form vs simulator, VALIDATION); first-five Monte Carlo SE <= 0.01 at the board\'s draw count; zero incoherent prices in the study and on the board', { engine: sim && sim.decision, comparisons: cmp || null, first_five: sim && sim.first_five, board_sims: boardSims || null, board_first_five_max_se: boardSe == null ? null : Math.round(boardSe * 1e4) / 1e4, study_coherence_failures: sim ? sim.coherence_failures : null, board_coherence_failures: bc == null ? null : bc }, 'price full-game markets from the better engine; raise the draw count; fix the incoherent market'));
   }
   /* 15 staleness */
   {

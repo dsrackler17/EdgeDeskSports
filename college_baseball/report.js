@@ -77,12 +77,13 @@ function build() {
     ['Rules registry with measured evidence', 'IMPLEMENTED, MEASURED', 'validation/rules_evidence.json'],
     ['Team quality, baselines, walk-forward', 'IMPLEMENTED, VALIDATED (retrospective)', 'validation/walkforward.json'],
     ['Run distribution (negative binomial)', 'IMPLEMENTED, VALIDATED (retrospective)', 'validation/run_distribution.json'],
-    ['Inning simulator', 'IMPLEMENTED, VALIDATED (retrospective)', 'validation/simulator.json'],
+    ['Pricing engine: closed form for full-game markets; inning simulator for the first five', 'IMPLEMENTED, VALIDATED (retrospective)', 'validation/simulator.json'],
     ['Starter / bullpen / workload engines, starter projection', 'IMPLEMENTED, TESTED; not in the price (no significant gain)', 'validation/pitcher_walkforward.json'],
     ['Offense, defence, environment features', 'TESTED; offense accepted but not wired, defence rejected, rest a challenger', 'validation/feature_research.json'],
     ['GLM, boosting, stacked ensemble', 'TESTED', 'validation/ml_ensemble.json'],
     ['Ablations', abl ? 'TESTED' : 'not run', 'validation/ablations.json'],
-    ['Fair prices: moneyline, run lines, totals, team totals, first five', 'IMPLEMENTED; PROVISIONAL', 'lib/pricing.js, board/'],
+    ['Fair prices: moneyline, run lines, totals, team totals', 'IMPLEMENTED; PROVISIONAL', 'lib/pricing.js, board/'],
+    ['First-five prices', sim && sim.decision ? (/PROVISIONAL/.test(sim.decision.first_five_engine) ? 'IMPLEMENTED; PROVISIONAL' : 'IMPLEMENTED; RESEARCH ONLY (miscalibrated)') : 'not evaluated', 'validation/simulator.json'],
     ['Settlement profiles', 'TEMPLATES, UNVERIFIED', 'lib/pricing.js SETTLEMENT_PROFILES'],
     ['Seven readiness states per game', 'IMPLEMENTED, TESTED', 'lib/readiness.js'],
     ['Batch inference (every game, failures listed)', idx ? 'IMPLEMENTED, RUN' : 'not run', 'board/index.json'],
@@ -176,22 +177,27 @@ function build() {
     p();
   } else p('Not run.');
 
-  /* ---------------------------------------------------------------- 6 simulator */
-  p('## 6. Simulator');
+  /* ---------------------------------------------------------------- 6 pricing engine and simulator */
+  p('## 6. Pricing engine: closed form and simulator');
   p();
-  if (sim) {
-    p(`${sim.window}; ${int(sim.n)} games, ${sim.sims_per_game} draws each. Mean |P(home) simulator − closed form| = ${sim.mean_abs_diff_p_home}; largest Monte Carlo standard error ${sim.max_mc_se}; coherence failures ${sim.coherence_failures}.`);
+  if (sim && sim.full_game) {
+    const fg = sim.full_game; const c = fg.comparisons; const lv = sim.level_check;
+    p(`${sim.window}; ${int(sim.n)} games, ${sim.sims_per_game} draws each. Every full-game market is priced from the closed form (the negative-binomial distribution mixed over rating uncertainty and scheduled length, at the pricing model's expectations); the inning simulator prices only the first five innings. Decision: full game — **${sim.decision.full_game_engine}**; first five — **${sim.decision.first_five_engine}**.`);
     p();
-    p(table(['Measure', 'Simulator', 'Closed form'], [
-      ['Moneyline log loss', f5(sim.moneyline_log_loss.simulator), f5(sim.moneyline_log_loss.closed_form)],
-      ['Total-runs log score', f5(sim.total_log_score.simulator), f5(sim.total_log_score.closed_form)],
-      ['Home −1.5 log loss', f5(sim.home_minus_1_5.simulator.log_loss), f5(sim.home_minus_1_5.closed_form.log_loss)],
-      ['Home −1.5 calibration slope', f4(sim.home_minus_1_5.simulator.slope), f4(sim.home_minus_1_5.closed_form.slope)],
+    p(table(['Market (VALIDATION)', 'Closed form', 'Simulator', 'Simulator on calibrated inputs', 'Closed form − simulator', 'Verdict'], [
+      ['Moneyline log loss', f5(fg.moneyline_log_loss.closed_form), f5(fg.moneyline_log_loss.simulator), f5(fg.moneyline_log_loss.simulator_on_calibrated_inputs), ci(c.moneyline_cf_vs_sim), verdict(c.moneyline_cf_vs_sim)],
+      ['Total-runs log score', f5(fg.total_log_score.closed_form), f5(fg.total_log_score.simulator), f5(fg.total_log_score.simulator_on_calibrated_inputs), ci(c.total_cf_vs_sim), verdict(c.total_cf_vs_sim)],
+      ['Home −1.5 log loss', f5(fg.home_minus_1_5.closed_form.log_loss), f5(fg.home_minus_1_5.simulator.log_loss), f5(fg.home_minus_1_5.simulator_on_calibrated_inputs.log_loss), ci(c.run_line_cf_vs_sim), verdict(c.run_line_cf_vs_sim)],
+      ['Moneyline calibration-in-the-large', f4(fg.moneyline.closed_form.citl), f4(fg.moneyline.simulator.citl), f4(fg.moneyline.simulator_on_calibrated_inputs.citl), '', ''],
     ]));
     p();
-    p(`First five innings (simulator only): home-win log loss ${f5(sim.first_five.home_win.log_loss)} (slope ${f4(sim.first_five.home_win.slope)}), tie log loss ${f5(sim.first_five.tie.log_loss)} (calibration-in-the-large ${f4(sim.first_five.tie.citl)}). Walk-off share predicted ${sim.walkoff_share.predicted} vs observed ${sim.walkoff_share.observed}; run-rule share predicted ${sim.run_rule_share.predicted} vs observed ${sim.run_rule_share.observed}.`);
+    p(`Why the simulator is fed the run model's own expectations: the run-space calibration moves the expectations so the closed form's P(home) is right, which leaves them biased in level (home ${lv.cal_lh} vs ${lv.actual_home} scored, away ${lv.cal_la} vs ${lv.actual_away}; the raw model: ${lv.raw_lh} and ${lv.raw_la}). The simulator models the home side's unplayed or cut-short last inning itself, so the calibrated inputs count that effect twice: on them it favours the home side (calibration-in-the-large ${f4(fg.moneyline.simulator_on_calibrated_inputs.citl)}), and on the raw ones it is better by ${ci(c.moneyline_sim_vs_sim_on_calibrated_inputs)}.`);
     p();
-    p(table(['Draws', 'Mean P(home)', 'Spread over 4 seeds', 'Theoretical SE'], sim.convergence.map((c) => [int(c.n), f4(c.mean_p_home), f4(c.seed_spread), f4(c.theoretical_se)])));
+    p(`First five innings (simulator only): home-win log loss ${f5(sim.first_five.home_win.log_loss)}, calibration-in-the-large ${f4(sim.first_five.home_win.citl)}, slope ${f4(sim.first_five.home_win.slope)}; tie calibration-in-the-large ${f4(sim.first_five.tie.citl)}. Walk-off share predicted ${sim.walkoff_share.predicted} vs observed ${sim.walkoff_share.observed}; run-rule share predicted ${sim.run_rule_share.predicted} vs observed ${sim.run_rule_share.observed}. Coherence failures of the combined price: ${sim.coherence_failures}.`);
+    p();
+    p(table(['Draws', 'Mean first-five P(home)', 'Spread over 4 seeds', 'Theoretical SE'], sim.convergence.map((x) => [int(x.n), f4(x.mean_f5_home), f4(x.seed_spread), f4(x.theoretical_se)])));
+    p();
+    p('The spread over seeds exceeds the sampling SE because every run also recalibrates its inning rates on its own pilot draws; the full-game prices carry no Monte Carlo error at all.');
     p();
   } else p('Not run.');
 

@@ -176,6 +176,33 @@ for (const spec of [{ family: 'poisson' }, { family: 'nb', r: 5 }, { family: 'nb
   ok('walk-offs exist and are a minority', a.walkoff_share > 0.03 && a.walkoff_share < 0.2, a.walkoff_share);
 }
 
+/* 6b. the pricing distribution: every full-game market from the closed-form mixture */
+{
+  const spec = { family: 'nb', r: 3.3 }; const tbl = D.pHomeTable(spec, constants);
+  const CAL = R('college_baseball/lib/calibration.js');
+  let maxGap = 0;
+  for (const [lh, la, sd, p7] of [[7.7, 5.7, 0.2, 0], [6, 6, 0.3, 0.2], [3, 9, 0.15, 1], [11, 4, 0.25, 0.21]]) {
+    const cf = D.closedForm(lh, la, sd, p7, spec, constants);
+    maxGap = Math.max(maxGap, Math.abs(cf.p_home - CAL.pOf({ lh, la, sd, neutral: 1, p7 }, null, tbl, constants.seven_inning_factor)));
+  }
+  ok('closed form: its P(home) is the validated probability (the same mixture as calibration.pOf)', maxGap < 0.002, maxGap);
+  const cf = D.closedForm(7.2, 5.9, 0.22, 0.21, spec, constants);
+  const sum = (a) => a.reduce((x, y) => x + y, 0);
+  ok('closed form: every pmf sums to one', [cf.total_pmf, cf.margin_pmf, cf.home_pmf, cf.away_pmf].every((a) => near(sum(a), 1, 1e-9)));
+  ok('closed form: team expectations add to the total (extra innings included)', Math.abs(cf.exp_home + cf.exp_away - cf.exp_total) < 1e-6, [cf.exp_home, cf.exp_away, cf.exp_total]);
+  ok('closed form: no tied final score', Math.abs(cf.margin_pmf[cf.margin_offset]) < 1e-12);
+  const pc = PR.price(PR.fromClosedForm(cf), {});
+  ok('closed form: the full-game prices are coherent', PR.coherence(pc).ok, PR.coherence(pc).errors);
+  ok('closed form: the moneyline is the mixture probability exactly', near(pc.moneyline.p_home, Math.round(cf.p_home * 1e4) / 1e4, 1e-9));
+  ok('closed form: uncertainty pulls toward a coin flip', D.closedForm(9, 4, 0.4, 0, spec, constants).p_home < D.closedForm(9, 4, 0, 0, spec, constants).p_home);
+  ok('closed form: a seven-inning game has fewer runs', D.closedForm(6, 6, 0, 1, spec, constants).exp_total < D.closedForm(6, 6, 0, 0, spec, constants).exp_total);
+  /* the simulator never leaves a game tied, even when runs are scarce and extra innings run long */
+  let ties = 0; for (let sd = 1; sd <= 6; sd++) ties += SIM.simulate({ lh: 0.6, la: 0.6, p7: 0, run_rule_p: 0 }, constants, { n: 3000, seed: sd }).joint.filter(([h, a]) => h === a).length;
+  ok('simulator: no game is left tied after long extra innings', ties === 0, ties);
+  const s0 = SIM.simulate({ lh: 7, la: 5, p7: 0, run_rule_p: 0 }, constants, { n: 6000, seed: 4 }); const s1 = SIM.simulate({ lh: 7, la: 5, p7: 0, run_rule_p: 0, sd: 0.5 }, constants, { n: 6000, seed: 4 });
+  ok('simulator: drawing the rating uncertainty pulls toward a coin flip', s1.p_home < s0.p_home, [s0.p_home, s1.p_home]);
+}
+
 /* 7. pricing */
 {
   const s = SIM.simulate({ lh: 6.5, la: 5.5, p7: 0, run_rule_p: 0.3 }, constants, { n: 4000, seed: 2 });
@@ -186,6 +213,7 @@ for (const spec of [{ family: 'poisson' }, { family: 'nb', r: 5 }, { family: 'nb
   ok('the conditional fair price excludes the push', rl1.fair_home === PR.american(rl1.home_cover / (rl1.home_cover + rl1.away_cover)));
   ok('american odds: 0.6 -> -150, 0.4 -> +150', PR.american(0.6) === -150 && PR.american(0.4) === 150);
   ok('first five three-way sums to one', near(p.first_five.three_way.home + p.first_five.three_way.tie + p.first_five.three_way.away, 1, 2e-4));
+  ok('first five is research only unless its calibration says otherwise', p.first_five.status === 'RESEARCH_ONLY' && PR.price(PR.fromJoint(s.joint), { f5: s.f5_joint, f5_status: 'PROVISIONAL' }).first_five.status === 'PROVISIONAL');
   ok('no EV without a quote', PR.expectedValue(0.6, null, 'action_full_game', Date.now()).status === 'MARKET_UNAVAILABLE');
   ok('no EV under an unverified settlement profile', PR.expectedValue(0.6, { american: 120, captured_at: new Date().toISOString() }, 'action_full_game', Date.now()).status === 'SETTLEMENT_UNVERIFIED');
   ok('every settlement profile is an unverified template today', Object.values(PR.SETTLEMENT_PROFILES).every((x) => x.status !== 'VERIFIED'));

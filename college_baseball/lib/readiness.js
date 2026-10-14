@@ -17,7 +17,7 @@
 const THRESHOLDS = {
   min_info: 1.0,              // Fisher information on a team's net strength (about 4-5 games' worth)
   max_sd_delta: 0.30,         // posterior sd of the rating gap (log runs)
-  max_mc_se: 0.01,            // simulator standard error on P(home)
+  max_mc_se: 0.01,            // simulator standard error on the first-five price (full-game prices are exact)
 };
 
 function assess(g, ctx) {

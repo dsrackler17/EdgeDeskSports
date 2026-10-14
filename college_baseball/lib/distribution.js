@@ -207,4 +207,54 @@ function pHomeTable(spec, constants) {
   return f;
 }
 
-module.exports = { K_MAX, pHomeTable, nbPmf, poissonPmf, joint, marginal, outcomes, extraInningsHomeWin, halfInningPmf, logScore, rpsPmf, quantile, cdfAt, fitNbSize, normInv, gammaQuantiles };
+/* ---------------------------------------------------------------- the pricing distribution */
+/**
+ * closedForm(lh, la, sd, p7, spec, constants) -> the distribution every full-game market is priced from.
+ *
+ * A mixture of outcomes(): over the rating uncertainty (the same three-point Gauss-Hermite rule on the
+ * log run ratio as team_quality.integrate, weights 2/3, 1/6, 1/6 at 0 and +/- sqrt(3) sd) and over the
+ * scheduled length (seven innings with probability p7, the expectations scaled by the measured
+ * seven-inning factor). Its P(home) is therefore the validated probability (calibration.pOf computes the
+ * same mixture through the P(home) table).
+ *
+ * Each side's final-runs pmf is built too, so team totals agree with the game total: a tied regulation
+ * score s:s gets the measured extra-inning runs, split by expected shares (the winner (added + margin)/2,
+ * the loser (added - margin)/2) and placed on the two nearest integers, so each side's mean is exact and
+ * E[home] + E[away] = E[total].
+ */
+function closedForm(lh, la, sd, p7, spec, constants) {
+  const ex = resolution(constants);
+  const mean = (a) => a.reduce((x, v, i) => x + v * i, 0);
+  const eAdded = mean(ex.added); const eMh = mean(ex.home); const eMa = mean(ex.away);
+  const s3 = Math.sqrt(3) * (sd > 0 ? sd : 0);
+  const nodes = s3 > 0 ? [[2 / 3, 0], [1 / 6, s3], [1 / 6, -s3]] : [[1, 0]];
+  const f7 = constants.seven_inning_factor || 0.77;
+  const lens = p7 > 0 ? [[1 - p7, 1], [p7, f7]] : [[1, 1]];
+  const KM = K_MAX + 30;
+  const out = { p_home: 0, total_pmf: new Float64Array(2 * KM + 1), margin_pmf: new Float64Array(2 * KM + 1), margin_offset: KM, home_pmf: new Float64Array(KM + 1), away_pmf: new Float64Array(KM + 1), components: [] };
+  const spread = (arr, x, p) => { const lo = Math.floor(x); const f = x - lo; arr[Math.min(KM, lo)] += p * (1 - f); arr[Math.min(KM, lo + 1)] += p * f; };
+  for (const [wn, d] of nodes) for (const [wl, len] of lens) {
+    const w = wn * wl; if (!(w > 0)) continue;
+    const ch = lh * len * Math.exp(d / 2); const ca = la * len * Math.exp(-d / 2);
+    const o = outcomes(ch, ca, spec, constants);
+    out.p_home += w * o.p_home; out.components.push({ w, lh: ch, la: ca, p_home: o.p_home });
+    for (let t = 0; t < o.total_pmf.length; t++) if (o.total_pmf[t]) out.total_pmf[Math.min(2 * KM, t)] += w * o.total_pmf[t];
+    for (let i = 0; i < o.margin_pmf.length; i++) if (o.margin_pmf[i]) { const m = i - o.margin_offset; out.margin_pmf[Math.max(0, Math.min(2 * KM, m + KM))] += w * o.margin_pmf[i]; }
+    /* each side's final runs: decided regulation scores as they are, ties resolved by expected extra-inning shares */
+    const { P, K } = joint(ch, ca, spec); const n = K + 1;
+    const pHx = o.p_home_extra;
+    const addH = eAdded / 2 + (pHx * eMh - (1 - pHx) * eMa) / 2; const addA = eAdded - addH;
+    for (let h = 0; h < n; h++) for (let a = 0; a < n; a++) {
+      const p = P[h * n + a]; if (p === 0) continue;
+      if (h !== a) { out.home_pmf[h] += w * p; out.away_pmf[a] += w * p; } else { spread(out.home_pmf, h + addH, w * p); spread(out.away_pmf, a + addA, w * p); }
+    }
+  }
+  /* outcomes() renormalises the stored extra-inning shapes, so every pmf sums to one up to the K cut-off */
+  const norm = (a) => { const t = a.reduce((x, y) => x + y, 0); if (t > 0) for (let i = 0; i < a.length; i++) a[i] /= t; };
+  norm(out.total_pmf); norm(out.margin_pmf); norm(out.home_pmf); norm(out.away_pmf);
+  out.p_away = 1 - out.p_home;
+  out.exp_home = mean(out.home_pmf); out.exp_away = mean(out.away_pmf); out.exp_total = mean(out.total_pmf);
+  return out;
+}
+
+module.exports = { K_MAX, closedForm, pHomeTable, nbPmf, poissonPmf, joint, marginal, outcomes, extraInningsHomeWin, halfInningPmf, logScore, rpsPmf, quantile, cdfAt, fitNbSize, normInv, gammaQuantiles };
