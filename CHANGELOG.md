@@ -2,7 +2,7 @@
 
 ## 2026-10-14 — The EdgeDesk Card stays populated without The Odds API, and covers every sport
 
-**The Card showed 135 games and 135 NO DECISION after the paid odds credits ran out. Three things caused it, and each is fixed: the football boards' live overlay replaced the build's priced decisions with NO MARKET, the football boards priced only from the paused capture, and no other sport was on the Card at all. The Card now prices from the free DraftKings feed the slate already captures from ESPN's public scoreboard, every 30 minutes, at no credit cost.**
+**The Card showed 135 games and 135 NO DECISION after the paid odds credits ran out. Three things caused it, and each is fixed: the football boards' live overlay replaced the build's priced decisions with NO MARKET, the football boards priced only from the paused capture, and no other sport was on the Card at all. The Card now prices from the free DraftKings feed the slate already captures from ESPN's public scoreboard, every 30 minutes, at no credit cost. An older gap that left CFB build quotes stale between Model Lab heartbeats is closed too.**
 
 - **A live NO MARKET never erases a priced decision** (`lib/edgedesk_decision_ui.js` `liveWins`). When the live overlay can't evaluate a game only because it has no price (no market or a stale quote), and the build already priced that game, the build's BET / LEAN / WATCH / PASS stays on the Card. A held BET is shown as WATCH · QUOTE REFRESH PENDING with no stake until a current price confirms it, because a stale quote never BETs. A real fault (no model, a data fault) still replaces the build's decision, and a newer decision that can evaluate still wins.
 - **The football boards fall back to the free feed** (`app.html` `fbQevFeed`). When the paid capture has no fresh spread, total or moneyline for an NFL or CFB game, the slate's DraftKings price is priced instead. It runs through the same freshness ladder and the same decision engine, and is labelled with its source. A fresh paid quote is never replaced.
@@ -17,8 +17,13 @@
   - **A sport row** with counts: All sports, NFL, CFB, NBA, NHL, MLB, Soccer and the rest.
   - The NO DECISION line now says why, for example "74 no line posted yet".
   - A row for any sport opens its game: the football game page, or the game's detail on the Games page (`EDGamesUI.openDetail`).
+- **CFB build quotes no longer go stale between heartbeats** (`football/cfb_lab/market.js`, `football/cfb_terminal/build.js`). The Model Lab captures ESPN every hour, but it only re-writes an unchanged line every 6 hours, while the build's quote limit is 3 hours (60 minutes near kickoff). A steady DraftKings line therefore read STALE QUOTE, and the game read NO DECISION, even though the book still dealt it.
+  - Each capture now records that it saw the stored row unchanged, in `football/cfb_lab/reports/<season>/quote_confirmations.json`. The file sits outside the append-only ledger, which stays untouched and still verifies.
+  - The build reads each confirmation as a heartbeat of that row at the confirmation time.
+  - Replaying the 2026-10-14 16:07Z build with the 15:04 capture's confirmations: NO DECISION fell from 69 to 51 (the 18 STALE QUOTE games now read PASS or WATCH), and CACHED market states fell from 10 to 0. The remaining 51 are next week's games with no line posted.
+  - `TERMINAL_HEARTBEATS_CONFIRM=0` turns confirmations off together with heartbeats.
 - **The slate keeps upcoming games' lines** (`tools/slate/build.js`). Prices ESPN posts for games past the window, such as Sunday's NFL slate read on a Wednesday, used to be dropped. They are now kept, so the Card can price next week's games.
-- Tests: `tools/bettor/card_feed.test.js` (new, 45 checks). The slate pipeline adds a check for an upcoming game's price. The existing decision, football decision, consistency, opportunity, navigation and slate suites are unchanged and green.
+- Tests: `tools/bettor/card_feed.test.js` (new, 45 checks). The slate pipeline adds a check for an upcoming game's price. `football/cfb_lab/chaos.test.js` adds 3 checks: a confirmation is recorded, it sits outside the ledger, and the same hour run twice writes nothing. `tools/resilience/resilience.test.js` adds 5 checks on how the build reads confirmations. The existing decision, football decision, consistency, opportunity, navigation and slate suites are unchanged and green.
 
 ## 2026-10-14 — Men's college basketball research engine: team strength, player impact, lineups, matchups and scenarios, validated without odds
 

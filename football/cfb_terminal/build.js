@@ -266,13 +266,48 @@ function loadLedger(season) {
      the latest observation of the main spread; TERMINAL_HEARTBEATS_CONFIRM=0
      restores the old rule. */
   const hb = RES.heartbeatsConfirm();
+  /* A CONFIRMATION IS AN OBSERVATION TOO (football/cfb_lab/market.js
+     writeConfirmations). Between heartbeats the Lab de-duplicates an
+     unchanged quote but records the capture that saw it, against the stored
+     row. The 6 h heartbeat is longer than the 3 h quote TTL (60 min inside
+     6 h of kickoff), so without this a steady line went STALE between
+     heartbeats and the game read NO DECISION while the book still dealt it.
+     Each confirmation is read as a heartbeat of its row at the confirmation
+     time: same values, same quote_id (it is that quote), a later
+     observed_at. The heartbeat switch (TERMINAL_HEARTBEATS_CONFIRM=0)
+     turns it off too. */
+  const conf = hb ? readConfirmations(season) : null;
+  const confRows = confirmationRows(quotes, conf);
+  const nConf = confRows.length;
+  confRows.forEach((q) => quotes.push(q));
   const mainSpread = (q) => q.market_type === 'spread' && !isAlt(q) && (hb || !q.is_heartbeat) && q.is_pregame !== false;
   /* main-line totals, read only by the market-state layer (never priced here) */
   const mainTotal = (q) => q.market_type === 'total' && !isAlt(q) && (hb || !q.is_heartbeat) && q.is_pregame !== false;
   return { preds: byGame(preds, 'game_id'), quotes: byGame(quotes.filter(mainSpread), 'game_id'),
     alts: byGame(alts, 'game_id'), ml: byGame(quotes.filter((q) => q.market_type === 'moneyline' && !q.is_heartbeat && q.is_pregame !== false), 'game_id'),
     totals: byGame(quotes.filter(mainTotal), 'game_id'), heartbeats_confirm: hb,
-    lines: byGame(lines, 'game_id'), n_preds: preds.length, n_quotes: quotes.length, n_alts: alts.length };
+    lines: byGame(lines, 'game_id'), n_preds: preds.length, n_quotes: quotes.length - nConf, n_alts: alts.length,
+    n_confirmations: nConf, confirmations_at: conf ? conf.generated_at || null : null };
+}
+/* each confirmation of a stored main-line row, as a heartbeat of that row:
+   never for an alternate, a provider-declared open or close, a row whose
+   values it does not match, a time not after the row, or one at or past kickoff */
+function confirmationRows(quotes, conf) {
+  if (!conf || !conf.confirmations) return [];
+  const byId = new Map((quotes || []).map((q) => [q.quote_id, q])), out = [];
+  Object.keys(conf.confirmations).sort().forEach((id) => {
+    const c = conf.confirmations[id], q = byId.get(id);
+    if (!q || q.alternate || q.market_type === 'alternate_spread' || q.is_provider_open || q.is_provider_close || q.is_pregame === false) return;
+    if (c.fingerprint && q.fingerprint && c.fingerprint !== q.fingerprint) return;
+    if (!(ms(c.confirmed_at) > ms(q.observed_at))) return;
+    if (q.kickoff_ts && !(ms(c.confirmed_at) < ms(q.kickoff_ts))) return;
+    out.push(Object.assign({}, q, { observed_at: new Date(ms(c.confirmed_at)).toISOString(), is_heartbeat: true, confirmation: true }));
+  });
+  return out;
+}
+function readConfirmations(season) {
+  const j = readJson('football/cfb_lab/reports/' + season + '/quote_confirmations.json');
+  return j && j.schema === 'cfb_lab_quote_confirmations/1' && j.confirmations ? j : null;
 }
 
 /* ------------------------------------------------------------- terminal history */
@@ -1146,7 +1181,7 @@ function main() {
     decision: { policy: gov.policy_dir, calibration: gov.calibration_version, calibration_for: gov.artifact ? gov.artifact.base_model_version : null,
       bet_enabled: !!(gov.policy && gov.policy.bet_enabled), calibrated_ev_note: ctx.evNote, wait_enabled: !!(gov.policy && gov.policy.wait && gov.policy.wait.enabled) },
     operations: ctx.degraded, warnings: warnings, config: T.config(cfg), sources: ctx.sources,
-    inputs_sha256: sha([slate.generated_at, v2cur.generated_at, ledger.n_preds, ledger.n_quotes, recordFile.updated_at]).slice(0, 16)
+    inputs_sha256: sha([slate.generated_at, v2cur.generated_at, ledger.n_preds, ledger.n_quotes, recordFile.updated_at].concat(ledger.confirmations_at ? [ledger.confirmations_at] : [])).slice(0, 16)
   };
   const board = Object.assign({ schema: 'edgedesk_cfb_terminal_board_v1' }, meta, {
     counts: T.counts(objs), terms: T.TERMS, statuses: T.STATUS, status_order: T.STATUS_KEYS,
@@ -1370,4 +1405,4 @@ function main() {
 }
 
 if (require.main === module) main();
-module.exports = { buildGame, boardRow, snapshotRow, v1Dist, v2Dist, v1Sigma, loadGovernance, calibratedEvNote, typicalMove, loadEv, evRow, next100Progress, quoteEvOf, quoteEvRow, quoteEvGame, curveCover };
+module.exports = { confirmationRows, buildGame, boardRow, snapshotRow, v1Dist, v2Dist, v1Sigma, loadGovernance, calibratedEvNote, typicalMove, loadEv, evRow, next100Progress, quoteEvOf, quoteEvRow, quoteEvGame, curveCover };

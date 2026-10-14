@@ -496,7 +496,16 @@ Run them: `npm run resilience:test`. CI: `.github/workflows/market-resilience-te
   (`tools/props/props_freshness.test.js` case 8), so it is unchanged here.
   Retrying only connection failures and 5xx would remove the double-billing
   risk.
-- **Freshness window.** Still 180 minutes. Heartbeats arrive every 6 h, so a
-  steady line can still age into CACHED between heartbeats, and is labelled as
-  such. The audit's open question about recording "the last sync that
-  re-confirmed it" is unchanged.
+- **Freshness window.** Still 180 minutes. Heartbeats arrive every 6 h, which
+  used to let a steady line age into CACHED (and the decision into NO DECISION
+  · STALE QUOTE) between heartbeats. **Resolved 2026-10-14:** the audit's open
+  question, "the last sync that re-confirmed it", is now recorded. Each Lab
+  capture that de-duplicates an unchanged quote writes a confirmation of the
+  stored row to `football/cfb_lab/reports/<season>/quote_confirmations.json`
+  (`football/cfb_lab/market.js` `writeConfirmations`). The file sits outside
+  the append-only ledger and holds the latest confirmation per row, rewritten.
+  `loadLedger` reads each confirmation as a heartbeat of its row at the
+  confirmation time (`confirmationRows`): same values, same quote id, a later
+  `observed_at`. `TERMINAL_HEARTBEATS_CONFIRM=0` turns it off together with
+  heartbeats. On the 2026-10-14 16:07Z build, this moved 18 STALE QUOTE games
+  to PASS / WATCH.

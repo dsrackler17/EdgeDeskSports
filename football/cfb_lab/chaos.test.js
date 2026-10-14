@@ -101,6 +101,13 @@ const q = (o) => MK.baseQuote(Object.assign({ game_id: 'g1', season: 2026, week:
     const later = await MK.capture(2026, '2026-10-08T13:00:00.000Z', { espn: true, cfbd: false, espnPayloads: [bad], storeOpts: so(d) });
     chk('an unchanged quote an hour later is a duplicate, not a row (odds de-duplication)', later.written === 0 && later.dedupe.duplicates > 0, later.dedupe);
     chk('... and the same bad number an hour later is one investigation, not two', later.log.integrity.quarantine_written === 0 && later.log.integrity.quarantine_repeats_skipped >= 1, later.log.integrity);
+    const cf = MK.readConfirmations(2026, so(d));
+    chk('... and that unchanged quote is recorded as a CONFIRMATION of the stored row, outside the ledger', later.log.confirmations.written === true && later.log.confirmations.confirmed > 0
+      && cf && Object.values(cf.confirmations).every((c) => c.confirmed_at === '2026-10-08T13:00:00.000Z' && s.quotes().some((q) => q.quote_id === c.quote_id && q.fingerprint === c.fingerprint)), { log: later.log.confirmations, cf });
+    chk('... the confirmations file is not part of the verified ledger, and the ledger still verifies', MK.confirmationsFile(2026, so(d)).indexOf(path.join(d, 'ledger')) !== 0 && G.verify({ roots: [path.join(d, 'ledger')], repo: d }).length === 0);
+    const dc1 = digest(d);
+    const again = await MK.capture(2026, '2026-10-08T13:00:00.000Z', { espn: true, cfbd: false, espnPayloads: [bad], storeOpts: so(d) });
+    chk('... the same confirming hour run twice writes nothing (byte-identical)', again.log.confirmations.written === false && digest(d) === dc1, again.log.confirmations);
     const hb = await MK.capture(2026, '2026-10-08T18:30:00.000Z', { espn: true, cfbd: false, espnPayloads: [bad], storeOpts: so(d) });
     chk('... but after 6 h the unchanged quote is written as a heartbeat (opening/closing reconstruction stays possible)', hb.written > 0 && store(d).quotes().some((x) => x.is_heartbeat), hb.dedupe);
   }
