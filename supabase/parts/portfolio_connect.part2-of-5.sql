@@ -116,7 +116,7 @@ begin
   if exists (select 1 from public.portfolio_sync_runs where platform_account_id = p_account and status = 'RUNNING') then return null; end if;
   insert into public.portfolio_sync_runs (user_id, platform_account_id, platform, kind) values (a.user_id, a.id, a.platform, p_kind) returning id into rid;
   update public.platform_accounts set last_sync_at = now(), status = case when status in ('CONNECTED', 'ERROR') then 'SYNCING' else status end
-   where id = p_account and connection_type = 'API';
+   where id = p_account and connection_type in ('API', 'AGGREGATOR');
   return rid;
 end $$;
 

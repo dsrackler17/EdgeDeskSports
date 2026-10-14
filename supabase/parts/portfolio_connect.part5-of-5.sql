@@ -36,8 +36,12 @@ select step, item, outcome from (
     case when not exists (select 1 from public.portfolio_platform_registry g where g.automatic_enabled and not exists (
       select 1 from portfolio_private.connector_smoke_tests t where t.id = g.enabled_by_smoke_test and t.status = 'PASSED' and t.connector_version = g.connector_version))
       then 'ok' else 'CHECK THIS — a connector is on without its evidence' end
-  union all select 3, 'no sportsbook has an automatic method',
-    case when not exists (select 1 from public.portfolio_platform_registry where source_type = 'SPORTSBOOK' and automatic_method is not null) then 'ok' else 'CHECK THIS' end
+  -- a sportsbook is reached only through an approved aggregator
+  -- (AUTHORIZED_API, supabase/portfolio_aggregator.sql): never by a key,
+  -- a wallet or an OAuth of its own, and never by a password
+  union all select 3, 'no sportsbook has a direct automatic method (only an approved aggregator)',
+    case when not exists (select 1 from public.portfolio_platform_registry where source_type = 'SPORTSBOOK'
+      and automatic_method is not null and automatic_method <> 'AUTHORIZED_API') then 'ok' else 'CHECK THIS' end
   union all select 4, 'readers cannot call a service function, read a credential or a smoke test',
     case when not exists (select 1 from pg_proc p join pg_namespace s on s.oid = p.pronamespace where s.nspname = 'public' and p.proname like 'portfolio\_svc\_%'
            and (has_function_privilege('authenticated', p.oid, 'execute') or has_function_privilege('anon', p.oid, 'execute')))

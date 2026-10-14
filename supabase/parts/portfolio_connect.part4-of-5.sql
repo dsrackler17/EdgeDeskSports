@@ -59,7 +59,7 @@ create or replace function public.portfolio_svc_reset_cursor(p_account uuid)
 returns void language plpgsql set search_path = public, pg_temp as $$
 begin
   perform public.portfolio_svc_assert();
-  update public.platform_accounts set sync_cursor = null, next_sync_at = now() where id = p_account and connection_type = 'API';
+  update public.platform_accounts set sync_cursor = null, next_sync_at = now() where id = p_account and connection_type in ('API', 'AGGREGATOR');
 end $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -155,7 +155,7 @@ begin
     'registry', (select jsonb_agg(jsonb_build_object('platform', g.platform_key, 'automatic_method', g.automatic_method, 'connector_version', g.connector_version,
          'automatic_enabled', g.automatic_enabled, 'enabled_at', g.enabled_at, 'tos_review', g.tos_review, 'docs_verified_on', g.docs_verified_on,
          'import_verified', g.import_verified) order by g.platform_key) from public.portfolio_platform_registry g),
-    'accounts', (select jsonb_object_agg(k, v) from (select status as k, count(*) as v from public.platform_accounts where connection_type = 'API' group by status) q));
+    'accounts', (select jsonb_object_agg(k, v) from (select status as k, count(*) as v from public.platform_accounts where connection_type in ('API', 'AGGREGATOR') group by status) q));
 end $$;
 
 -- Time to value, for the operator: how long readers take from starting setup

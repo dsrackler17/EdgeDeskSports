@@ -360,7 +360,7 @@ begin
   if exists (select 1 from public.portfolio_sync_runs where platform_account_id = p_account and status = 'RUNNING') then return null; end if;
   insert into public.portfolio_sync_runs (user_id, platform_account_id, platform, kind) values (a.user_id, a.id, a.platform, p_kind) returning id into rid;
   update public.platform_accounts set last_sync_at = now(), status = case when status in ('CONNECTED', 'ERROR') then 'SYNCING' else status end
-   where id = p_account and connection_type = 'API';
+   where id = p_account and connection_type in ('API', 'AGGREGATOR');
   return rid;
 end $$;
 
@@ -527,9 +527,11 @@ begin
 end $$;
 
 -- A sync run ends. Success: CONNECTED, the cursor kept, the next run in 30
--- minutes. A credential the platform refused: ACTION_REQUIRED (the reader must
--- reconnect; no retry storm). Anything else: retried with backoff (5 min,
--- 10, 20 … capped at 6 hours), ERROR after five failures in a row.
+-- minutes. A credential the platform refused, or an aggregator's link that
+-- needs the reader again (RELINK_REQUIRED, BOOK_INACCESSIBLE):
+-- ACTION_REQUIRED (the reader must reconnect; no retry storm). Anything else:
+-- retried with backoff (5 min, 10, 20 … capped at 6 hours), ERROR after five
+-- failures in a row. API and AGGREGATOR accounts alike.
 create or replace function public.portfolio_svc_run_finish(p_run uuid, p_status text, p_error_code text default null, p_error_message text default null,
     p_cursor text default null, p_reconcile jsonb default null)
 returns void language plpgsql set search_path = public, pg_temp as $$
@@ -545,10 +547,10 @@ begin
   if p_status in ('SUCCEEDED', 'PARTIAL') then
     update public.platform_accounts set status = 'CONNECTED', last_success_at = now(), last_error = null, consecutive_failures = 0,
            sync_cursor = coalesce(left(p_cursor, 2000), sync_cursor), next_sync_at = now() + interval '30 minutes'
-     where id = r.platform_account_id and connection_type = 'API';
-  elsif p_error_code in ('BAD_CREDENTIAL', 'WRITE_SCOPE', 'SCOPE_UNKNOWN') then
+     where id = r.platform_account_id and connection_type in ('API', 'AGGREGATOR');
+  elsif p_error_code in ('BAD_CREDENTIAL', 'WRITE_SCOPE', 'SCOPE_UNKNOWN', 'RELINK_REQUIRED', 'BOOK_INACCESSIBLE') then
     update public.platform_accounts set status = 'ACTION_REQUIRED', last_error = left(p_error_message, 500), next_sync_at = null
-     where id = r.platform_account_id and connection_type = 'API';
+     where id = r.platform_account_id and connection_type in ('API', 'AGGREGATOR');
   else
     update public.platform_accounts set consecutive_failures = consecutive_failures + 1 where id = r.platform_account_id returning consecutive_failures into fails;
     -- connected only once something has synced: a first sync that failed is still SYNCING
@@ -556,7 +558,7 @@ begin
            last_error = left(p_error_message, 500),
            next_sync_at = now() + least(interval '6 hours', interval '5 minutes' * power(2, least(fails - 1, 10)))
                                  + case when p_error_code = 'RATE_LIMITED' then interval '10 minutes' else interval '0' end
-     where id = r.platform_account_id and connection_type = 'API';
+     where id = r.platform_account_id and connection_type in ('API', 'AGGREGATOR');
   end if;
 end $$;
 
@@ -653,7 +655,7 @@ create or replace function public.portfolio_svc_reset_cursor(p_account uuid)
 returns void language plpgsql set search_path = public, pg_temp as $$
 begin
   perform public.portfolio_svc_assert();
-  update public.platform_accounts set sync_cursor = null, next_sync_at = now() where id = p_account and connection_type = 'API';
+  update public.platform_accounts set sync_cursor = null, next_sync_at = now() where id = p_account and connection_type in ('API', 'AGGREGATOR');
 end $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -749,7 +751,7 @@ begin
     'registry', (select jsonb_agg(jsonb_build_object('platform', g.platform_key, 'automatic_method', g.automatic_method, 'connector_version', g.connector_version,
          'automatic_enabled', g.automatic_enabled, 'enabled_at', g.enabled_at, 'tos_review', g.tos_review, 'docs_verified_on', g.docs_verified_on,
          'import_verified', g.import_verified) order by g.platform_key) from public.portfolio_platform_registry g),
-    'accounts', (select jsonb_object_agg(k, v) from (select status as k, count(*) as v from public.platform_accounts where connection_type = 'API' group by status) q));
+    'accounts', (select jsonb_object_agg(k, v) from (select status as k, count(*) as v from public.platform_accounts where connection_type in ('API', 'AGGREGATOR') group by status) q));
 end $$;
 
 -- Time to value, for the operator: how long readers take from starting setup
@@ -843,8 +845,12 @@ select step, item, outcome from (
     case when not exists (select 1 from public.portfolio_platform_registry g where g.automatic_enabled and not exists (
       select 1 from portfolio_private.connector_smoke_tests t where t.id = g.enabled_by_smoke_test and t.status = 'PASSED' and t.connector_version = g.connector_version))
       then 'ok' else 'CHECK THIS — a connector is on without its evidence' end
-  union all select 3, 'no sportsbook has an automatic method',
-    case when not exists (select 1 from public.portfolio_platform_registry where source_type = 'SPORTSBOOK' and automatic_method is not null) then 'ok' else 'CHECK THIS' end
+  -- a sportsbook is reached only through an approved aggregator
+  -- (AUTHORIZED_API, supabase/portfolio_aggregator.sql): never by a key,
+  -- a wallet or an OAuth of its own, and never by a password
+  union all select 3, 'no sportsbook has a direct automatic method (only an approved aggregator)',
+    case when not exists (select 1 from public.portfolio_platform_registry where source_type = 'SPORTSBOOK'
+      and automatic_method is not null and automatic_method <> 'AUTHORIZED_API') then 'ok' else 'CHECK THIS' end
   union all select 4, 'readers cannot call a service function, read a credential or a smoke test',
     case when not exists (select 1 from pg_proc p join pg_namespace s on s.oid = p.pronamespace where s.nspname = 'public' and p.proname like 'portfolio\_svc\_%'
            and (has_function_privilege('authenticated', p.oid, 'execute') or has_function_privilege('anon', p.oid, 'execute')))
