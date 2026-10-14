@@ -1,0 +1,61 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- THE JUICE REEL OAUTH REDIRECT URI: https://edgedesksports.com/oauth/juicereel-callback.html
+     (registered, exactly, on the Juice Reel application; docs/juicereel.md).
+     Juice Reel sends the reader here with ?code&state (or a refusal). This page
+     does no exchange and holds no secret: it takes code and state OUT of the
+     address at once, hands them to the app in this tab's sessionStorage, and
+     replaces itself with Portfolio → Accounts, where the signed-in app sends
+     them to EdgeDesk's server. The server accepts the state only from the
+     reader who started that sign-in, once, within 15 minutes, and exchanges
+     the single-use code there with the PKCE verifier it kept. No third-party
+     resource loads here, and no referrer leaves it. -->
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">
+<title>Connecting Juice Reel — EdgeDesk</title>
+<style>
+:root{--bg:#100e0a;--surface:#191510;--border:#332a1b;--text:#f1ebdf;--dim:#a29581;--accent:#2fa79a;--accent2:#54c4b7}
+*{box-sizing:border-box;margin:0}body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;color-scheme:dark}
+.mk{width:11px;height:18px;background:linear-gradient(180deg,var(--accent),var(--accent2));border-radius:2px;transform:skewX(-12deg)}
+.logo{font-weight:800;font-size:17px;display:flex;align-items:center;gap:9px;justify-content:center;margin-bottom:20px}
+.sheet{width:100%;max-width:420px;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 24px}
+h1{font-size:19px;font-weight:800;margin-bottom:8px}
+p{color:var(--dim);font-size:14px;line-height:1.5}
+a{color:var(--accent);font-weight:600;text-decoration:none}
+.back{margin-top:16px;font-size:14px}
+</style></head><body>
+<div class="sheet">
+  <div class="logo"><span class="mk"></span>EdgeDesk</div>
+  <h1 id="title">Finishing your Juice Reel connection…</h1>
+  <p id="msg">One moment — taking you back to EdgeDesk.</p>
+  <p class="back"><a id="back" href="/app.html#portfolio/accounts">Back to Portfolio → Accounts</a></p>
+</div>
+<script>
+(function () {
+  'use strict';
+  var KEY = 'edgedesk.jr.callback';
+  var q = null;
+  try { q = new URLSearchParams(window.location.search); } catch (e) { q = null; }
+  var pick = function (k, n) { var v = q && q.get(k); return v ? String(v).slice(0, n) : null; };
+  var out = { at: Date.now(), state: pick('state', 200), code: pick('code', 2048), error: pick('error', 80) };
+  /* a refused authorization: error=… (OAuth), or status=cancelled (the form Juice Reel's checkout documents) */
+  if (!out.error && pick('status', 40) === 'cancelled') out.error = 'cancelled';
+  if (out.error) out.code = null;
+  q = null;
+  /* the code and the state leave the address bar and the history first */
+  try { window.history.replaceState(null, '', window.location.pathname); } catch (e) { /* the next navigation replaces this entry anyway */ }
+  var stored = false;
+  if (out.state && (out.code || out.error)) {
+    try { window.sessionStorage.setItem(KEY, JSON.stringify(out)); stored = true; } catch (e) { stored = false; }
+  }
+  var had = !!out.state;
+  out = null;
+  if (stored) { window.location.replace('/app.html?juicereel=return#portfolio/accounts'); return; }
+  document.getElementById('title').textContent = 'Nothing was connected';
+  document.getElementById('msg').textContent = had
+    ? 'Your browser blocked the storage EdgeDesk needs to finish connecting Juice Reel (site data for this site). Allow it, then start again from Portfolio → Accounts.'
+    : 'This page finishes a Juice Reel connection started from EdgeDesk Portfolio, and there is none to finish. Start from Portfolio → Accounts.';
+}());
+</script>
+</body></html>

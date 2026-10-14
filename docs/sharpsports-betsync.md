@@ -1,6 +1,9 @@
 # SharpSports BetSync — sportsbook history through an approved aggregator
 
 > **RETIRED 2026-10-14.** SharpSports' plan starts at $500/month, above EdgeDesk's budget. It is switched off: no provider is active unless `SPORTSBOOK_SYNC_PROVIDER` names one, and none does. The adapter stays registered (RETIRED) as the reference for the next provider, and anything it synced stays readable. The webhook answers 200 and reads nothing. Why, what was kept, what replaced it (CSV and on-device screenshot import) and the alternatives researched: [`sportsbook-sync-providers.md`](sportsbook-sync-providers.md). The rest of this page describes the adapter as built.
+> **Juice Reel** is the provider built to replace it ([`juicereel.md`](juicereel.md)): switched on with `SPORTSBOOK_SYNC_PROVIDER=juicereel`, it links no reader until Juice Reel approves EdgeDesk's application and the registry row is switched on.
+>
+> **In the SharpSports dashboard:** delete the five webhook subscriptions, and leave no bettor account with `access=true` (billable in live mode).
 
 **Status (2026-10-14): built and tested in this repository, in SANDBOX mode only. Not yet deployed, and not yet run against SharpSports' sandbox.**
 

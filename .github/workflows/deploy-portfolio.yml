@@ -38,7 +38,17 @@
 #   7. the same for supabase/portfolio_model_context.sql (tools/portfolio/
 #      model_context_sql.test.js): EdgeDesk's model on a bet, only as recorded
 #      before it was placed. Reads model_pnl_public (the Record P&L schema).
+#   8. the same for supabase/portfolio_juicereel.sql (tools/portfolio/
+#      juicereel.test.js): Juice Reel — the juicereel registry row (OFF), the
+#      sealed OAuth grants, atomic refresh-token rotation and the grant-level
+#      sync. It switches nothing on: reader linking takes
+#      SPORTSBOOK_SYNC_PROVIDER=juicereel, Juice Reel's approval, a PASSED
+#      PRODUCTION smoke test (tools/portfolio/juicereel_smoke.js) and a
+#      cleared terms review (docs/juicereel.md).
 #   Nothing else is written.
+#
+# No juicereel-webhook is deployed: Juice Reel's only webhook bucket is
+# subscription events, which EdgeDesk does not use (docs/juicereel.md).
 #
 # AFTER IT: Supabase serves the public schema already, so the page works as
 # soon as this is green. portfolio_private is deliberately NOT exposed —
@@ -85,6 +95,7 @@ jobs:
           node tools/portfolio/connect_sql.test.js
           node tools/portfolio/decision_sql.test.js
           node tools/portfolio/sharpsports.test.js
+          node tools/portfolio/juicereel.test.js
           node tools/portfolio/model_context_sql.test.js
 
       - name: Check the credential exists before claiming anything
@@ -166,6 +177,18 @@ jobs:
           echo "$out" | tail -3
           if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/portfolio_model_context.sql: a report row says CHECK THIS (is the Record P&L schema applied?)"; exit 1; fi
 
+      - name: Apply supabase/portfolio_juicereel.sql (one transaction; Juice Reel stays OFF)
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if ! out=$(psql "$PGURL" -X -q -1 -v ON_ERROR_STOP=1 -f supabase/portfolio_juicereel.sql 2>&1); then
+            echo "$out" | tail -20
+            echo "::error::supabase/portfolio_juicereel.sql did not apply (rolled back; nothing changed)"
+            exit 1
+          fi
+          echo "$out" | tail -8
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/portfolio_juicereel.sql: a report row says CHECK THIS"; exit 1; fi
+
       - name: The connector core and the shipped function must pass first
         if: ${{ inputs.deploy_function }}
         run: |
@@ -174,6 +197,7 @@ jobs:
           node tools/portfolio/connect_sync.test.js
           node tools/portfolio/connect_function.test.js
           node tools/portfolio/sharpsports.test.js
+          node tools/portfolio/juicereel.test.js
 
       - name: Install the Supabase CLI
         if: ${{ inputs.deploy_function }}
@@ -194,7 +218,10 @@ jobs:
           # the function authenticates deliveries itself.
           supabase functions deploy sharpsports-webhook --no-verify-jwt --project-ref "$SUPABASE_PROJECT_REF"
           # Presence only: each function's own health check names what is configured, never a value.
-          curl -sS "https://$SUPABASE_PROJECT_REF.supabase.co/functions/v1/portfolio_connect" | head -c 600; echo
+          curl -sS -o /tmp/pc.json "https://$SUPABASE_PROJECT_REF.supabase.co/functions/v1/portfolio_connect" || true
+          head -c 900 /tmp/pc.json; echo
+          # Juice Reel: the redirect URI the function sends must be the one registered on the Juice Reel application.
+          node -e "let h={};try{h=JSON.parse(require('fs').readFileSync('/tmp/pc.json','utf8'))}catch(e){};const j=(h.configured||{}).juicereel||{};console.log('sportsbook sync provider:',((h.configured||{}).sportsbook_sync||{}).provider||'none','· juicereel ready:',!!j.ready,'· redirect URI:',j.redirect_uri)"
           code=$(curl -sS -o /tmp/hook.json -w '%{http_code}' "https://$SUPABASE_PROJECT_REF.supabase.co/functions/v1/sharpsports-webhook")
           head -c 400 /tmp/hook.json; echo
           if [ "$code" != "200" ]; then echo "::error::sharpsports-webhook answered $code to its health check (404 = not deployed under that name; 401 = JWT verification is on)"; exit 1; fi

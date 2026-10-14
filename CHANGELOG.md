@@ -1,5 +1,39 @@
 # Changelog
 
+## 2026-10-14 — Portfolio: sportsbook history through Juice Reel (OAuth 2.0 + PKCE; awaiting Juice Reel's approval)
+
+**Juice Reel is built as the sportsbook sync provider to replace SharpSports. A reader signs in on Juice Reel's own page and allows EdgeDesk to read their open and settled bets. One authorization covers every book Juice Reel tracks for them, and each book becomes their own Portfolio account. It is built and tested here, NOT deployed and NOT yet run against Juice Reel: EdgeDesk's Juice Reel application is awaiting approval, so readers see "Awaiting provider approval" and linking stays off behind the existing registry guard until Juice Reel approves, a PRODUCTION smoke test passes and the terms review clears.** Docs: `docs/juicereel.md`. Redirect URI to register: `https://edgedesksports.com/oauth/juicereel-callback.html`.
+
+- **No subscription webhook.** Juice Reel's only webhook bucket (SUBSCRIPTION_EVENTS) reports subscriptions to the app owner, sold through Juice Reel. EdgeDesk bills through Stripe and never asks Juice Reel who is subscribed, so no `juicereel-webhook` exists and `subscribers.read` is not requested. Bets are read on a schedule from `/oauth2/bets/changed`.
+- **OAuth** (`portfolio_connect`: `jr_status`, `jr_start`, `jr_callback`, `jr_sync`, `jr_disconnect`; `oauth/juicereel-callback.html`).
+  - State and PKCE (S256) are made server-side; the verifier is sealed and the state stored only as its hash, for 15 minutes, one use, bound to the reader who started it (login CSRF is refused).
+  - The callback page strips the code from the address before anything else, and hands it to the app in this tab only.
+  - The code is exchanged server-side; both bet scopes are required.
+- **Tokens** (`supabase/portfolio_juicereel.sql`, `portfolio_private.oauth_grants`).
+  - Stored as AES-256-GCM ciphertext only.
+  - Juice Reel's single-use refresh token is sent once however many syncs race (a lease), and the new pair is stored in one statement.
+  - A refused refresh reads Connection expired, with no retry storm and history kept. Disconnect deletes EdgeDesk's copy, then revokes both tokens at Juice Reel.
+- **Sync.**
+  - The initial import (open, then settled, resumable across runs from Juice Reel's cursors), then incremental passes over `/bets/changed` from an `updatedAt` checkpoint, resumable across runs too.
+  - Nothing moves past a bet that was not stored: a run cut short (429, 5xx) stores what it read and keeps its place; a book whose run is still open keeps the whole sync where it was.
+  - A daily reconciliation that finds a missed settlement and reports a bet no longer at Juice Reel.
+  - Backoff for 429 and 5xx.
+  - Corrections, cancellations and a bet moved between books are applied in place.
+- **Money.** Through the existing ingest and derive trigger, so there is no second ledger.
+  - A sub-cent stake is rounded up to the cent and the payout is stake + `netResult`, so P&L equals Juice Reel's figure exactly (the docs' own −0.5886 example, to the cent).
+  - Parlays keep their legs; a reader's matching file or manual bet is adopted — now also one imported WITH the book's own bet id (`portfolio_aggregator.sql`'s shared ingest; it used to be counted twice).
+  - Anything that cannot be read without guessing (no stake, time or price, an unknown result, non-USD) is listed, never invented.
+- **Accounts tab:** Not connected · Awaiting provider approval · Connecting · Connected (only after a real authorization) · Syncing · Last synchronized · Connection expired · Action required · Sync failing · Disconnected; Sync now; Disconnect, or disconnect and delete synced history.
+- **In the provider seam** (the entry below). Juice Reel is registered in the connector core's sportsbook provider registry (ACTIVE, grant-level: one authorization syncs, sweeps and disconnects as a whole) and answers the generic `sb_*` actions plus its own `jr_*` ones.
+  - It runs only where `SPORTSBOOK_SYNC_PROVIDER=juicereel`; unset, nothing changes from the entry below.
+  - With sync off, a reader who still has a Juice Reel connection sees it as "Sync off" and can still disconnect it (and revoke it at Juice Reel).
+- **An adversarial review** found nine defects in sync and token edge cases; all are fixed or answered (`docs/juicereel.md` § 14).
+- **Tests:**
+  - `tools/portfolio/juicereel.test.js` (140: the shipped function over the real migrations, against a fake Juice Reel enforcing the documented contract; the provider seam and its switch, on and off; a test for each review finding);
+  - `tools/portfolio/juicereel_ui.e2e.js` (22, Chromium, the full browser round trip through the callback page);
+  - The existing Portfolio suites are green.
+- **Live checks:** `tools/portfolio/juicereel_smoke.js` (probe; the ten-stage PRODUCTION smoke test, after approval).
+
 ## 2026-10-14 — Portfolio: SharpSports retired, a replaceable sportsbook-sync seam, one-tap sportsbook tiles, bet slip screenshots
 
 **SharpSports BetSync is switched off** (its plan starts at $500/month). Sportsbook bets now come in through CSV import, a **bet slip screenshot read on the reader's own device**, or manual entry. All three land in the same Portfolio, analytics and dedupe. Why, what was kept, and the alternatives researched: `docs/sportsbook-sync-providers.md` (research: `docs/sportsbook-sync-research-2026-10-14.md`).

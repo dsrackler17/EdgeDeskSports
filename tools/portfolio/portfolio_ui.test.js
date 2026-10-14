@@ -255,7 +255,12 @@ const rendered = [U.render.overview(S), U.render.open(S), U.render.history(S), U
   U.render.wagerForm({}, {}), U.render.predictionForm({}, {})].map(strip).join(' ');
 chk('…nor in anything the page renders', !TOUT.test(rendered), (rendered.match(TOUT) || [])[0]);
 chk('up and down are described the same way: "Up $x" / "Down $x"', /"Up"|'Up'/.test(SRC) && /'Down'/.test(SRC) && !/congrat|celebrat|🎉|🔥/i.test(SRC));
-chk('nothing financial is written to browser storage', !/localStorage|sessionStorage|indexedDB/.test(SRC.replace(/\/\*[\s\S]*?\*\//g, '')));
+/* the one exception, and it is not financial: the Juice Reel sign-in hand-off
+   (oauth/juicereel-callback.html writes it), which the page only READS ONCE
+   AND REMOVES — never writes */
+const storageUses = SRC.replace(/\/\*[\s\S]*?\*\//g, '').match(/\b(localStorage|sessionStorage|indexedDB)\b[^;\n]*/g) || [];
+chk('nothing financial is written to browser storage (only the Juice Reel sign-in hand-off is read once and removed)',
+  storageUses.length === 2 && storageUses.every((u) => /^sessionStorage\.(getItem|removeItem)\(JR_STASH\)/.test(u)), storageUses);
 chk('no password or credential field exists in the page', !/type="password"|name="password"|api[_-]?secret/i.test(SRC));
 
 /* ═══ APP WIRING ════════════════════════════════════════════════════════ */

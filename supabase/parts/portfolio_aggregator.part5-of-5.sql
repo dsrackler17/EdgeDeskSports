@@ -3,6 +3,10 @@
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 -- This last part prints the report: every row should read ok.
 
+drop policy if exists portfolio_position_settlements_own on public.portfolio_position_settlements;
+create policy portfolio_position_settlements_own on public.portfolio_position_settlements for select to authenticated using (user_id = auth.uid());
+
+revoke all on public.portfolio_refresh_requests, public.portfolio_position_settlements from public, anon, authenticated;
 grant select on public.portfolio_refresh_requests, public.portfolio_position_settlements to authenticated;
 grant select, insert, update, delete on public.portfolio_refresh_requests, public.portfolio_position_settlements to service_role;
 grant usage, select on sequence public.portfolio_position_settlements_id_seq to service_role;

@@ -37,6 +37,7 @@ on:
       - 'supabase/portfolio_decision.sql'
       - 'supabase/portfolio_aggregator.sql'
       - 'supabase/portfolio_model_context.sql'
+      - 'supabase/portfolio_juicereel.sql'
       - 'supabase/model_pnl*.sql'
       - 'supabase/personal_research.sql'
       - 'supabase/parts/portfolio.part*.sql'
@@ -44,8 +45,10 @@ on:
       - 'supabase/parts/portfolio_connect.part*.sql'
       - 'supabase/parts/portfolio_decision.part*.sql'
       - 'supabase/parts/portfolio_aggregator.part*.sql'
+      - 'supabase/parts/portfolio_juicereel.part*.sql'
       - 'supabase/functions/portfolio_connect/**'
       - 'supabase/functions/sharpsports-webhook/**'
+      - 'oauth/**'
       - 'app.html'
       - 'package.json'
       - '.github/workflows/portfolio-tests.yml'
@@ -63,8 +66,10 @@ on:
       - 'supabase/portfolio_decision.sql'
       - 'supabase/portfolio_aggregator.sql'
       - 'supabase/portfolio_model_context.sql'
+      - 'supabase/portfolio_juicereel.sql'
       - 'supabase/functions/portfolio_connect/**'
       - 'supabase/functions/sharpsports-webhook/**'
+      - 'oauth/**'
   workflow_dispatch:
 
 permissions:
@@ -139,6 +144,10 @@ jobs:
         env:
           PORTFOLIO_SQL_REQUIRED: '1'
         run: node tools/portfolio/slip_reader.test.js
+      - name: Juice Reel end to end — OAuth (state, PKCE, callback), sealed rotating tokens, the open / settled / changed sync, reconciliation, isolation and the switch, the shipped portfolio_connect over the real migrations against a fake Juice Reel
+        env:
+          PORTFOLIO_SQL_REQUIRED: '1'
+        run: node tools/portfolio/juicereel.test.js
       - name: supabase/portfolio_model_context.sql — EdgeDesk's model on a bet, only as recorded before it was placed
         env:
           PORTFOLIO_SQL_REQUIRED: '1'
@@ -176,3 +185,7 @@ jobs:
         env:
           PORTFOLIO_UI_REQUIRED: '1'
         run: node tools/portfolio/sharpsports_ui.e2e.js
+      - name: Juice Reel in Chromium — awaiting approval for readers; Connect → Juice Reel's page → the callback page → Connected, its books and bets, Sync now, a refusal, Disconnect
+        env:
+          PORTFOLIO_UI_REQUIRED: '1'
+        run: node tools/portfolio/juicereel_ui.e2e.js

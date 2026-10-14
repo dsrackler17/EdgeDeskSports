@@ -459,6 +459,7 @@ The full account is in [`platform-connections.md`](platform-connections.md). In 
    - apply `supabase/portfolio_sync_cron.sql`.
 
    Without them, Accounts simply offers import ("not deployed" is handled).
+   - **Juice Reel** (sportsbooks, OAuth 2.0; [`juicereel.md`](juicereel.md)): also apply `portfolio_juicereel.sql` (last), and set `JUICE_REEL_CLIENT_ID` / `JUICE_REEL_CLIENT_SECRET` and `SPORTSBOOK_SYNC_PROVIDER=juicereel`. Register the redirect URI `https://edgedesksports.com/oauth/juicereel-callback.html` on the Juice Reel application. It stays off for readers ("Awaiting provider approval") until Juice Reel approves and the registry row is switched on with its smoke-test evidence.
 4. **Ship the front end:** merging deploys `app.html` and `lib/edgedesk_portfolio*.{js,css}` with the site (GitHub Pages). The script tags carry `?v=20261005pf3`; bump it when a file changes.
 5. **Check:** sign in, then the *Portfolio* seat (or `/app.html#portfolio`) should show "Build your portfolio", and *Accounts* should offer setup grouped by prediction markets, sportsbook import and other.
 
@@ -478,7 +479,7 @@ CI: `.github/workflows/portfolio-tests.yml` runs all of it on every relevant pul
 
 ## 14. Known limitations (Phase A)
 
-- **No automatic sync is switched on.** The Kalshi and Polymarket connectors are built and off, pending the live smoke test and terms review (`platform-connections.md`). Until then: manual entry and file import.
+- **No automatic sync is switched on.** The Kalshi and Polymarket connectors are built and off, pending the live smoke test and terms review (`platform-connections.md`). Sportsbooks through Juice Reel are built and off, awaiting Juice Reel's approval ([`juicereel.md`](juicereel.md)); SharpSports BetSync is retired. Until then: manual entry and file import.
 - **The sportsbook import profiles are unverified.** They carry likely column names and status words, and the review says they are unchecked until a real export from that book has been imported end to end.
 - **The current price of an open contract** is the reader's own mark. There is no market data feed, so unrealized P&L is labelled as such.
 - **Partial exits** of a still-open contract position join Total P&L when the position closes (they are shown on the position and on the Overview meanwhile).

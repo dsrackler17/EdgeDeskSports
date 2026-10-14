@@ -573,7 +573,8 @@ create trigger portfolio_position_settlements_frozen_trg before update on public
 -- of it replaces the older; the reader owns their notes, the journal and
 -- where the idea came from, and the ingest never touches those.
 -- RECONCILIATION: a wager arriving for the first time that matches EXACTLY
--- ONE record the reader typed or imported (same book, same stake, same price,
+-- ONE record the reader typed or imported — with or without the bet id the
+-- book's own file carried (same book, same stake, same price,
 -- same line where both have one, placed within 15 minutes) — and that record
 -- matches exactly one wager arriving — ADOPTS it: one position, the reader's
 -- journal kept. Two or more candidates stay apart and are reported, never guessed.
@@ -611,7 +612,10 @@ begin
       had := found; did_adopt := false;
       if not had then
         select array_agg(x.id order by x.placed_at) into adopt from public.portfolio_positions x
-         where x.user_id = a.user_id and x.platform = a.platform and x.platform_type = 'SPORTSBOOK' and x.external_position_id is null
+         where x.user_id = a.user_id and x.platform = a.platform and x.platform_type = 'SPORTSBOOK'
+           -- a bet the reader typed or imported, the book's own bet id from its file included; never one a
+           -- provider already adopted (its id now in a provider's namespace: 'juicereel:…', 'sharpsports:…')
+           and (x.external_position_id is null or x.external_position_id !~ '^[a-z][a-z0-9_]{1,30}:')
            and x.source in ('MANUAL', 'CSV', 'EDGEDESK') and x.stake = v_stake
            and ((v_odds is not null and x.odds_american = v_odds) or (v_odds is null and x.odds_american is null and x.odds_decimal = v_dec))
            and (x.line is null or v_line is null or x.line = v_line)

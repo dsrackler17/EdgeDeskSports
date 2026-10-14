@@ -1,9 +1,9 @@
 # Portfolio — platform support
 
-**As of 2026-10-05, no platform syncs automatically in production.** Every platform below works through **manual entry** and **file import**, and its positions count exactly like any other.
+**As of 2026-10-14, no platform syncs automatically in production.** Every platform below works through **manual entry** and **file import**, and its positions count exactly like any other.
 
 - The Kalshi (read-only API key) and Polymarket (public wallet) connectors are **built and switched off**. A database guard keeps them off until a live ten-stage smoke test passes and the platform's terms review is cleared.
-- **Sportsbook sync is off.** The SharpSports BetSync adapter (class C, an aggregator) was built and is **retired** (2026-10-14, cost). Sportsbooks come in by CSV import, an on-device **bet slip screenshot**, or manual entry. Another provider plugs into the same seam once its price and terms are cleared. See [`sportsbook-sync-providers.md`](sportsbook-sync-providers.md).
+- **Sportsbook sync:** the SharpSports BetSync adapter (class C, an aggregator) was built and is **retired** (2026-10-14, cost). **Juice Reel** (class B, the reader's own Juice Reel account by OAuth 2.0) is built into the same seam and **awaiting Juice Reel's approval** of EdgeDesk's application: switched on with `SPORTSBOOK_SYNC_PROVIDER=juicereel`, readers see "Awaiting provider approval" until Juice Reel approves, a PRODUCTION smoke test passes and the terms review is cleared. Until then sportsbooks come in by CSV import, an on-device **bet slip screenshot**, or manual entry. See [`juicereel.md`](juicereel.md) and [`sportsbook-sync-providers.md`](sportsbook-sync-providers.md).
 - How each one works, what was verified and how, and the switch-on procedure: [`platform-connections.md`](platform-connections.md).
 
 Nothing here is marked supported until it works end to end. The *Candidate method* column is research, not a capability.
@@ -27,18 +27,18 @@ Nothing here is marked supported until it works end to end. The *Candidate metho
 
 | Platform | Type | Manual | CSV | Auto sync | Status | Candidate method (unverified until built) | Limitations |
 |---|---|---|---|---|---|---|---|
-| DraftKings | Sportsbook | ✅ | ✅ profile (unverified) | ❌ (BetSync adapter retired) | Manual / import / screenshot | **C** — an aggregator (none affordable verified), else E/G | No public customer bet-history API known to us. The `draftkings` profile knows likely column names and status words; it stays marked unverified until a real export has been imported end to end. |
-| FanDuel | Sportsbook | ✅ | ✅ profile (unverified) | ❌ (BetSync adapter retired) | Manual / import / screenshot | **C** — an aggregator (none affordable verified), else E/G | Same as DraftKings. |
-| BetMGM | Sportsbook | ✅ | ✅ profile (unverified) | ❌ (BetSync adapter retired) | Manual / import / screenshot | **C** — an aggregator (none affordable verified), else E/G | Same. |
-| Caesars (`williamhill_us`) | Sportsbook | ✅ | ✅ profile (unverified) | ❌ (BetSync adapter retired) | Manual / import / screenshot | **C** — an aggregator (none affordable verified), else E/G | Same. |
-| bet365 | Sportsbook | ✅ | ✅ profile (unverified) | ❌ | Manual / import / screenshot | E/G | Same. |
-| BetRivers | Sportsbook | ✅ | ✅ profile (unverified) | ❌ (BetSync adapter retired) | Manual / import / screenshot | **C** — an aggregator (none affordable verified), else E/G | Same. |
-| theScore Bet (formerly ESPN BET; key `espnbet`) | Sportsbook | ✅ | ✅ profile (unverified) | ❌ | Manual / import | E/G | Same. The key is kept for continuity with EdgeDesk's captured odds. |
-| Fanatics | Sportsbook | ✅ | ✅ profile (unverified) | ❌ | Manual / import | E/G | Same. |
-| Hard Rock Bet | Sportsbook | ✅ | ✅ generic | ❌ | Manual / CSV | E/G | Same. |
-| Circa Sports, SuperBook, Pinnacle | Sportsbook | ✅ | ✅ generic | ❌ | Manual / CSV | E/G | Same. |
-| Novig, ProphetX | Sportsbook (exchange) | ✅ | ✅ generic | ❌ | Manual / CSV | To research | Exchange commission is entered as fees. |
-| Any other book ("Other…") | Either | ✅ | ✅ generic | ❌ | Manual / CSV | — | Stored under the reader's own name as `custom_<name>`. |
+| DraftKings | Sportsbook | ✅ | ✅ profile (unverified) | Built (Juice Reel), **awaiting approval** | Manual / import / screenshot · Juice Reel once approved | **B** — Juice Reel OAuth, else E/G | No public customer bet-history API known to us. The `draftkings` profile knows likely column names and status words; it stays marked unverified until a real export has been imported end to end. |
+| FanDuel | Sportsbook | ✅ | ✅ profile (unverified) | Built (Juice Reel), **awaiting approval** | Manual / import / screenshot · Juice Reel once approved | **B** — Juice Reel OAuth, else E/G | Same as DraftKings. |
+| BetMGM | Sportsbook | ✅ | ✅ profile (unverified) | Built (Juice Reel), **awaiting approval** | Manual / import / screenshot · Juice Reel once approved | **B** — Juice Reel OAuth, else E/G | Same. |
+| Caesars (`williamhill_us`) | Sportsbook | ✅ | ✅ profile (unverified) | Built (Juice Reel), **awaiting approval** | Manual / import / screenshot · Juice Reel once approved | **B** — Juice Reel OAuth, else E/G | Same. |
+| bet365 | Sportsbook | ✅ | ✅ profile (unverified) | Built (Juice Reel), **awaiting approval** | Manual / import / screenshot · Juice Reel once approved | **B** — Juice Reel OAuth, else E/G | Same. |
+| BetRivers | Sportsbook | ✅ | ✅ profile (unverified) | Built (Juice Reel), **awaiting approval** | Manual / import / screenshot · Juice Reel once approved | **B** — Juice Reel OAuth, else E/G | Same. |
+| theScore Bet (formerly ESPN BET; key `espnbet`) | Sportsbook | ✅ | ✅ profile (unverified) | Built (Juice Reel), **awaiting approval** | Manual / import · Juice Reel once approved | **B** — Juice Reel OAuth, else E/G | Same. The key is kept for continuity with EdgeDesk's captured odds. |
+| Fanatics | Sportsbook | ✅ | ✅ profile (unverified) | Built (Juice Reel), **awaiting approval** | Manual / import · Juice Reel once approved | **B** — Juice Reel OAuth, else E/G | Same. |
+| Hard Rock Bet | Sportsbook | ✅ | ✅ generic | Built (Juice Reel), **awaiting approval** | Manual / CSV · Juice Reel once approved | **B** — Juice Reel OAuth, else E/G | Same. |
+| Circa Sports, SuperBook, Pinnacle | Sportsbook | ✅ | ✅ generic | Built (Juice Reel), **awaiting approval** | Manual / CSV · Juice Reel once approved | **B** — Juice Reel OAuth, else E/G | Same. |
+| Novig, ProphetX | Sportsbook (exchange) | ✅ | ✅ generic | Built (Juice Reel), **awaiting approval** | Manual / CSV · Juice Reel once approved | **B** — Juice Reel OAuth (books Juice Reel tracks) | Exchange commission is entered as fees. |
+| Any other book ("Other…") | Either | ✅ | ✅ generic | Juice Reel, if Juice Reel tracks it (awaiting approval) | Manual / CSV | — | Stored under the reader's own name as `custom_<name>`. |
 | **Kalshi** | Prediction market | ✅ | ✅ `kalshi_csv` profile (cents detected) | Built, **off** | Manual / import · connector awaiting smoke test + terms review | **D** — the reader's own read-only API key | See below. |
 | **Polymarket** | Prediction market | ✅ | ✅ `polymarket_csv` profile | Built, **off** | Manual / import · connector awaiting smoke test + terms review | **A** — public data API by wallet address | See below. |
 | DraftKings Predictions | Prediction market | ✅ | ✅ generic | ❌ | Manual / CSV | To research | No public account API known to us. |
