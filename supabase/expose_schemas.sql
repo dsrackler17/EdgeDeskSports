@@ -1,5 +1,8 @@
 /* ===========================================================================
-   EXPOSE mlbhist, cbb AND props TO THE API.
+   EXPOSE mlbhist, cbb, props AND nbahist TO THE API.
+
+   nbahist (supabase/nba_engine.sql, the NBA engine's warehouse and ledger) joins
+   the list the same way.
 
    props (supabase/props_factory.sql, the CFB + NFL player-prop data factory) joins
    the list the same way: its readable views (v_player_props_board,
@@ -45,7 +48,7 @@
 
 -- The complete set of schemas PostgREST will serve.
 alter role authenticator set pgrst.db_schemas =
-  'public, graphql_public, ufc, cfb, wta, tennis, collective, mlbhist, cbb, props';
+  'public, graphql_public, ufc, cfb, wta, tennis, collective, mlbhist, cbb, props, nbahist';
 
 -- Pick it up now rather than at the next restart.
 notify pgrst, 'reload config';
@@ -116,5 +119,12 @@ with checks as (
          then 'ok (props is not installed yet: run supabase/props_factory.sql, then this file again)'
          when has_schema_privilege('anon', 'props', 'usage')
          then 'ok' else 'CHECK THIS — re-run supabase/props_factory.sql; it grants this' end
+
+  union all select 8,
+    'a reader may reach the NBA warehouse (nbahist)',
+    case when not exists (select 1 from pg_namespace where nspname = 'nbahist')
+         then 'ok (nbahist is not installed yet: run supabase/nba_engine.sql, then this file again)'
+         when has_schema_privilege('anon', 'nbahist', 'usage')
+         then 'ok' else 'CHECK THIS — re-run supabase/nba_engine.sql; it grants this' end
 )
 select n, guarantee, result from checks order by n;

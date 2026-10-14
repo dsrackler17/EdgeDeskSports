@@ -16,6 +16,8 @@ and the artifact-commit procedure (`tools/ci/push_generated.sh`).
 | Document | What it covers |
 |---|---|
 | [`NHL.md`](NHL.md) | The NHL model card: data, method, the walk-forward record, limits |
+| [`NBA.md`](NBA.md) | The dedicated NBA engine: model card and build report (data, seventeen candidates, the sealed walk-forward, props, pricing, panel, limits) |
+| [`NBA_RESEARCH.md`](NBA_RESEARCH.md) | The NBA source review: Rithmm, the AnzaAbbasi repository as anti-patterns, nba_api and data rights, formulas, literature |
 | [`METHODS.md`](METHODS.md) | Every sport's researched method, with sources and why it fits |
 | [`DATA.md`](DATA.md) | Schemas, sources, licensing, update cadence, cost, quotas, provenance |
 | [`DATAPACK.md`](DATAPACK.md) | How the EdgeDesk Quant Data Pack was integrated, step by step, and what it could not supply |
@@ -45,6 +47,7 @@ and the artifact-commit procedure (`tools/ci/push_generated.sh`).
 | 18 | Missingness diagnostics; CI for the lab (`.github/workflows/lab.yml`) | done |
 | 19 | The NHL Data Pack (ESPN, full 2024-25) imported and verified (11/11 tables, 34/34 checks); reconciled event by event against my feed; the blocked-shot attribution error it exposed fixed across every season; officials and the pack's lagged features measured | done (`datapack/nhl_v1`, `tools/datapack/verify_nhl.js`, `hockey/crosscheck/`, `hockey/research/`) |
 | 20 | The NFL Data Pack (nflverse 2025-2026, 2026 partial) imported and verified (42/42 files, 18/18 checks, every derived table recomputed from play-by-play); reconciled with games.csv and my live team-week input; GSIS↔PFR↔ESPN crosswalk; offseason carryover and QB-change research | done (`datapack/nfl_v1`, `tools/datapack/verify_nfl.js`, `football/nfl/pack_crosscheck.js`, `football/nfl/research/`) |
+| 21 | The dedicated NBA engine (`nba/`): warehouse 2002-03 → today, lineups and shots from play-by-play, seventeen candidates on a sealed walk-forward, one distribution for every market, props, scenarios, the panel, the desk, the `nbahist` schema, CI | done (docs/engine/NBA.md); prices and value **need authorisation and a market archive** |
 
 ## What I found in the repository first
 
@@ -107,6 +110,13 @@ npm run lab:slates       # basketball and soccer fair prices, missingness, regis
 npm run lab:test         # the lab suite (protocol, brains, settlement, ladder)
 npm run nhl:test && npm run engine:test && npm run nhl:sql && npm run engine:e2e   # nhl:test includes the desk through the real handler
 npm run nhl:check && npm run engine:check
+npm run nba:backfill     # every NBA season since 2002-03 (≈545 MB parquet, pyarrow), lineups
+npm run nba:tune         # ratings, players and ML hyperparameters, SELECTION window only
+npm run nba:validate     # the sealed walk-forward record, the props record, the live parameters
+npm run nba:ingest       # the season in progress only
+npm run nba:quotes       # NBA prices — spends nothing unless NBA_PRICES=on
+npm run nba:slate        # fair prices, props, ledger, grades
+npm run nba:test && npm run nba:sql && npm run nba:e2e && npm run nba:check
 ```
 
 ## Blocked, and the exact steps to unblock

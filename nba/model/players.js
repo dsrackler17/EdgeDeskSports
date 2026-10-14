@@ -154,7 +154,10 @@ class PlayerModel {
 
   value(pid) {
     const k = this.pidx.get(pid);
-    if (k == null || 2 * k + 1 >= this.x.length) return { o: this.p.prior_o, d: this.p.prior_d, known: false };
+    /* a player first seen after the last fit has no estimate yet: the prior, never
+       a neighbouring entry of the solution vector (the season levels follow the
+       players in it) */
+    if (k == null || this.lastNp == null || k >= this.lastNp) return { o: this.p.prior_o, d: this.p.prior_d, known: false };
     return { o: this.x[2 * k], d: this.x[2 * k + 1], known: true };
   }
   homeEdge() { return this.hIdx != null && this.hIdx < this.x.length ? this.x[this.hIdx] : 1.5; }

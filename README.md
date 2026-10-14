@@ -315,6 +315,20 @@ tennis are measured as too thin for a model. The Engine's readiness ladder
 keeps apart what is loaded, trained, validated, market-tested, priced now and
 actionable. Tests: `npm run datapack:test`, `npm run lab:test`, `npm run lab:check`.
 
+Research → Other → **NBA** is the dedicated NBA engine (`nba/`,
+[`docs/engine/NBA.md`](docs/engine/NBA.md)). It is built on every game since
+2002-03 with reconstructed lineups and shots. Seventeen candidates (Elo,
+Glicko, adjusted efficiency, a Kalman model, player impact (RAPM), a
+possession simulation, ridge, logistic and boosted trees, and a stacked
+ensemble) are scored walk-forward against the existing lab model, with the
+test seasons sealed and every opening of them logged. The chosen model prices
+every market from one distribution: moneyline, spread, total, alternates, team
+totals, first half and first quarter. Player props (minutes × rate, with
+correlated combos) are priced the same way, and "if he sits" scenarios come
+from the same model. NBA prices are not bought and value claims are off until
+a market test passes. Tests: `npm run nba:test`, `npm run nba:sql`,
+`npm run nba:e2e`, `npm run nba:check`.
+
 ## The quant desk — the best verified bet across every sport, contract prices, and an independent audit
 
 "What's the best bet right now?" with no league named is now a scan of **every

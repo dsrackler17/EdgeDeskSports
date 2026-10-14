@@ -1,0 +1,184 @@
+# EdgeDesk — the NBA engine (docs/engine/NBA.md).
+#
+#   tests     on every pull request and push that touches this work: the NBA
+#             engine offline (ingest parser, lineups, distribution, markets,
+#             learners, ledger, quotes, desk, loader), the committed record and
+#             slate checks, the warehouse contract and the odds row on a
+#             throwaway PostgreSQL, the navigation and sports list, the no-bypass
+#             guard, and the panel in Chromium (desktop + 390 px).
+#   build     every three hours: ingest the season in progress (sportsdataverse
+#             hoopR, public, keyless), rebuild lineups, price the slate and the
+#             props, grade the ledger, and commit only on change.
+#             NBA book prices are requested ONLY when the repository variable
+#             NBA_PRICES is "on" AND the gateway row basketball_nba is enabled
+#             (supabase/nba_odds_sport.sql creates it disabled). Default spend: 0.
+#             The Supabase copy (nbahist) is written ONLY when NBA_SUPABASE is
+#             "on" and the service-role secrets exist.
+#   validate  weekly (Wednesday, 12:37 UTC): ingest every season (cached),
+#             rerun the SEALED walk-forward (selection window; the test window
+#             is never unsealed by a scheduled job), the props record, refit the
+#             live parameters, rebuild the slate, and commit only if the checks
+#             pass on the new record.
+name: NBA engine
+run-name: NBA engine · ${{ inputs.mode || github.event_name }}
+
+on:
+  pull_request:
+    paths:
+      - 'nba/**'
+      - 'lib/edgedesk_nba_ui.js'
+      - 'lib/edgedesk_nba.css'
+      - 'lib/edgedesk_sports.js'
+      - 'tools/nba/**'
+      - 'supabase/nba_engine.sql'
+      - 'supabase/nba_odds_sport.sql'
+      - 'supabase/functions/edgedesk_ai/index.ts'
+      - 'app.html'
+      - '.github/workflows/nba.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'nba/**'
+      - 'lib/edgedesk_nba_ui.js'
+      - 'tools/nba/**'
+  schedule:
+    - cron: '23 */3 * * *'   # build
+    - cron: '37 12 * * 3'    # validate
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'build or validate'
+        required: false
+        default: 'build'
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The NBA engine offline (parsers, lineups, distribution, markets, learners, ledger, quotes, desk, loader)
+        run: node tools/nba/nba.test.js
+      - name: The NBA on the desk (module and the real edge handler, no model)
+        run: node tools/nba/nba_desk.test.js
+      - name: The committed record, props record and slate pass their checks
+        run: node nba/model/walkforward.js --check && node nba/props/walkforward.js --check && node nba/build_slate.js --check
+      - name: The warehouse contract and the NBA odds row on a real PostgreSQL (disabled until authorised)
+        env: { NBA_SQL_REQUIRED: '1' }
+        run: node tools/nba/nba_sql.test.js
+      - name: No path around the odds gateway; the navigation and the sports list name the NBA
+        run: node tools/odds/no_bypass.test.js && node tools/app/navigation.test.js && node tools/app/sports_config.test.js && node tools/presentation/presentation_sync.test.js
+      - name: Install Chromium for the panel
+        continue-on-error: true
+        run: npm install --no-save playwright@1.49.1 && npx playwright install --with-deps chromium
+      - name: The NBA panel in Chromium, desktop and a 390 px phone
+        run: node tools/nba/nba_ui.e2e.js
+
+  build:
+    if: (github.event_name == 'schedule' && github.event.schedule == '23 */3 * * *') || (github.event_name == 'workflow_dispatch' && (inputs.mode == '' || inputs.mode == 'build'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    concurrency:
+      group: nba-artifacts
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet pyarrow
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .cache/nba_src
+            .cache/nba_work
+          key: nba-work-${{ github.run_id }}
+          restore-keys: nba-work-
+      - name: Ingest the season in progress and the one before (completed seasons come from the cache)
+        run: |
+          S=$(node -e "console.log(require('./nba/config.js').CURRENT_SEASON)")
+          node --max-old-space-size=6144 nba/ingest/season.js --season "$((S-1)),$S"
+          node --max-old-space-size=4096 nba/tools/lineups.js --season "$((S-1)),$S"
+      - name: The full history for the pass (cached; only a cold cache downloads it)
+        run: node --max-old-space-size=6144 nba/ingest/season.js --season all --offline || node --max-old-space-size=6144 nba/ingest/season.js --season all
+      - name: NBA book prices (spends nothing unless NBA_PRICES is on and the gateway row is enabled)
+        env:
+          NBA_PRICES: ${{ vars.NBA_PRICES }}
+          EDGD_SB_URL: ${{ vars.NBA_PRICES == 'on' && secrets.SB_URL || '' }}
+          EDGD_SB_SERVICE: ${{ vars.NBA_PRICES == 'on' && secrets.SB_SERVICE_ROLE || '' }}
+        run: node nba/market/fetch_quotes.js
+      - name: Price the slate and the props, grade the ledger
+        run: node --max-old-space-size=12000 nba/build_slate.js && node --max-old-space-size=12000 nba/props/build_props.js && node nba/grade_ledger.js
+      - name: The checks pass before anything is written
+        run: node tools/nba/nba.test.js && node nba/build_slate.js --check
+      - name: The Supabase copy (only when NBA_SUPABASE is on)
+        if: vars.NBA_SUPABASE == 'on'
+        env:
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: node --max-old-space-size=6144 nba/tools/sync_supabase.js --season current
+      - name: Commit via tools/ci/push_generated.sh (our paths on top of the remote tip, never a rebase)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "nba: slate, props, ledger and grades" -- \
+            nba/data nba/slate.json nba/props_slate.json nba/ledger nba/market/quotes.json
+
+  validate:
+    if: (github.event_name == 'schedule' && github.event.schedule == '37 12 * * 3') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'validate')
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    permissions:
+      contents: write
+    concurrency:
+      group: nba-artifacts
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet pyarrow
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .cache/nba_src
+            .cache/nba_work
+          key: nba-work-${{ github.run_id }}
+          restore-keys: nba-work-
+      - name: Every season since 2002-03 (≈550 MB of public parquet; cached between runs)
+        run: node --max-old-space-size=6144 nba/ingest/season.js --season all
+      - name: The SEALED walk-forward record (selection window), the props record, the live parameters
+        run: |
+          node --max-old-space-size=12000 nba/model/walkforward.js
+          node --max-old-space-size=12000 nba/props/walkforward.js
+          node --max-old-space-size=12000 nba/model/live.js
+      - name: Rebuild the slate and the props on the new parameters
+        run: node --max-old-space-size=12000 nba/build_slate.js && node --max-old-space-size=12000 nba/props/build_props.js && node nba/grade_ledger.js
+      - name: The checks pass on the new record before anything commits
+        run: node nba/model/walkforward.js --check && node nba/props/walkforward.js --check && node nba/build_slate.js --check && node tools/nba/nba.test.js
+      - name: Commit (tools/ci/push_generated.sh)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "nba: weekly walk-forward record and live parameters" -- \
+            nba/data nba/params nba/validation nba/slate.json nba/props_slate.json nba/ledger

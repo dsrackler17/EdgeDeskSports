@@ -2916,6 +2916,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_props.css?v=20260929calm1">
 <link rel="stylesheet" href="/lib/edgedesk_linemaker.css?v=20261011lm1">
 <link rel="stylesheet" href="/lib/edgedesk_engine.css?v=20261013xe3">
+<link rel="stylesheet" href="/lib/edgedesk_nba.css?v=20261014nb1">
 <link rel="stylesheet" href="/lib/edgedesk_first_run.css?v=20260930a">
 <link rel="stylesheet" href="/lib/edgedesk_pnl.css?v=20261003y">
 <link rel="stylesheet" href="/lib/edgedesk_workspace.css?v=20261004b">
@@ -3229,7 +3230,7 @@ body.focus .dk-focusnote{display:block}
          The fourth seat names the module that is open, so a reader on UFC sees
          "UFC" lit rather than a vague "Other". -->
     <nav class="stseg research-sub" aria-label="Research"><button data-sub="football" class="on" aria-current="page" onclick="researchGo('football')">Football</button><button data-sub="pprops" onclick="researchGo('pprops')">Props</button><button data-sub="edges" onclick="researchGo('edges')">Edges</button><button data-sub="other" class="rs-oth" id="rsOtherBtn" aria-expanded="false" aria-controls="rsOther" onclick="rsOtherToggle()"><span id="rsOtherLbl">Other</span><svg class="rs-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button></nav>
-    <div class="rs-oth-row hide" id="rsOther" role="group" aria-label="Other sports and research tools"><span class="k">Sports</span><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="baseball" onclick="researchGo('baseball')">Baseball</button><button data-sub="nhl" onclick="researchGo('nhl')">NHL</button><span class="k">Tools</span><button data-sub="lines" onclick="researchGo('lines')">Lines</button><button data-sub="engine" onclick="researchGo('engine')">Engine</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button><button data-sub="rdesk" onclick="researchGo('rdesk')">Desk</button></div>
+    <div class="rs-oth-row hide" id="rsOther" role="group" aria-label="Other sports and research tools"><span class="k">Sports</span><button data-sub="ufc" onclick="researchGo('ufc')">UFC</button><button data-sub="baseball" onclick="researchGo('baseball')">Baseball</button><button data-sub="nhl" onclick="researchGo('nhl')">NHL</button><button data-sub="nba" onclick="researchGo('nba')">NBA</button><span class="k">Tools</span><button data-sub="lines" onclick="researchGo('lines')">Lines</button><button data-sub="engine" onclick="researchGo('engine')">Engine</button><button data-sub="stats" onclick="researchGo('stats')">Stats</button><button data-sub="lab" onclick="researchGo('lab')">Lab</button><button data-sub="rdesk" onclick="researchGo('rdesk')">Desk</button></div>
     <!-- RESEARCH DESK — the landing state of the Research shell. Answers
          "where should I research?" from the football engine's own today-items,
          the board's model/market disagreements and the data warnings the
@@ -3367,6 +3368,12 @@ body.focus .dk-focusnote{display:block}
          #research/nhl[/<game>]. Value claims stay off until the model is tested against the close.
          docs/engine/NHL.md. -->
     <div id="v-nhl" class="rpanel hide"><div id="nhlHost"></div></div>
+    <!-- NBA — the NBA engine (nba/, lib/edgedesk_nba_ui.js): EdgeDesk's own fair price for every market
+         of every upcoming game from one predictive distribution, the seven model families side by side,
+         the matchup, availability with player impact, "if he sits" scenarios, the walk-forward record
+         and the props. Research → Other → NBA, #research/nba[/<game>]. Value claims stay off until the
+         model is tested against the close. docs/engine/NBA.md. -->
+    <div id="v-nba" class="rpanel hide"><div id="nbaHost"></div></div>
     <!-- ENGINE — the cross-sport opportunity board (or PASS, with why), every sport's readiness
          computed from its validation files, and the methods with their sources. Research → Other →
          Engine, #research/engine. docs/engine/README.md. -->
@@ -4135,7 +4142,8 @@ window.mcRefresh=function(){
     { id: 'football', label: 'Football' },
     { id: 'ufc', label: 'UFC' },
     { id: 'baseball', label: 'Baseball' },
-    { id: 'nhl', label: 'NHL' }
+    { id: 'nhl', label: 'NHL' },
+    { id: 'nba', label: 'NBA' }
   ];
   /* Where a retired research module's old route lands: the shell's default. */
   var RESEARCH_DEFAULT = 'football';
@@ -5531,7 +5539,7 @@ var RS_RETIRED=EDSPORTS.retiredModuleRoutes();
    second row — the other sports, then the research tools — and, while one of
    them is open, carries its name ("UFC ▾"), so the lit seat always says where
    the reader is. */
-var RS_OTHER={ufc:'UFC',baseball:'Baseball',nhl:'NHL',lines:'Lines',engine:'Engine',stats:'Stats',lab:'Lab',rdesk:'Desk'};
+var RS_OTHER={ufc:'UFC',baseball:'Baseball',nhl:'NHL',nba:'NBA',lines:'Lines',engine:'Engine',stats:'Stats',lab:'Lab',rdesk:'Desk'};
 var RS_OTHER_OPEN=false,RS_OTHER_FOLDED=false;
 /* THE SCREEN THE DESK SEES. A research panel says what is open on it (the
    Lines panel: the game and the market tab); the shell resets it when the
@@ -5815,6 +5823,20 @@ researchRegister({id:'nhl',label:'NHL',schema:'public',cadenceMs:null,
   entityKey:function(){return window.EDEngineUI?window.EDEngineUI.entityKey():null;},
   freshness:function(){return window.EDEngineUI?window.EDEngineUI.freshness():{loadedAt:null,builtAt:null};},
   availability:function(){return null;},limitations:function(){return ['NHL value claims are off: no captured NHL prices and no market test yet.'];},provenance:{}});
+/* NBA — its own script (lib/edgedesk_nba_ui.js), loaded on first open; a script
+   that fails to load is an error state on the panel, never a blank one. */
+var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261014nb1';
+function nbReady(){if(window.EDNbaUI)return Promise.resolve();return lmScript(NB_SCRIPT);}
+function nbFail(e){var h=$('nbaHost');if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The NBA research could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';}
+researchRegister({id:'nba',label:'NBA',schema:'public',cadenceMs:null,
+  load:function(force,signal){this._opened=true;var ent=(researchParseHash()||{}).entity||null;return nbReady().then(function(){if(force)return window.EDNbaUI.show($('nbaHost'),{}).then(function(){return window.EDNbaUI.refresh();});return window.EDNbaUI.show($('nbaHost'),{game:ent});}).catch(nbFail);},
+  render:function(){},hasData:function(){return !!(window.EDNbaUI&&window.EDNbaUI.hasData());},search:function(q){return [];},
+  openEntity:function(id){nbReady().then(function(){window.EDNbaUI.show($('nbaHost'),{game:id});}).catch(nbFail);},
+  closeEntity:function(){if(window.EDNbaUI)window.EDNbaUI.closeGame();},
+  entityOpen:function(){return !!(window.EDNbaUI&&window.EDNbaUI.entityOpen());},
+  entityKey:function(){return window.EDNbaUI?window.EDNbaUI.entityKey():null;},
+  freshness:function(){return window.EDNbaUI?window.EDNbaUI.freshness():{loadedAt:null,builtAt:null};},
+  availability:function(){return null;},limitations:function(){return ['NBA value claims are off: no captured NBA prices and no market test yet.','No injury report or confirmed lineup is in the published price.'];},provenance:{}});
 researchRegister({id:'engine',label:'Engine',schema:'public',cadenceMs:null,
   load:function(force,signal){this._opened=true;return xeReady().then(function(){if(force)return window.EDEngineUI.show($('engineHost'),{view:'engine'}).then(function(){return window.EDEngineUI.refresh();});return window.EDEngineUI.show($('engineHost'),{view:'engine'});}).catch(xeFail('engineHost'));},
   render:function(){},hasData:function(){return !!(window.EDEngineUI&&window.EDEngineUI.hasData());},search:function(q){return [];},

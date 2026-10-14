@@ -113,7 +113,7 @@ async function ingest(season, o) {
   const { rows: srows, missing: smiss } = await io.parquetAll(sch.file, C.COLUMNS.schedule);
   report.missing_columns.schedule = smiss;
   const drop = { preseason: 0, other_type: 0, exhibition: 0, not_played: 0, missing_score: 0, duplicates: 0 };
-  const games = new Map(); const names = {};
+  const games = new Map(); const names = {}; const abbrs = {};
   for (const r of srows) {
     const st = num(r.season_type);
     if (st === 1) { drop.preseason++; continue; }
@@ -142,6 +142,8 @@ async function ingest(season, o) {
     });
     names[String(r.home_id)] = r.home_display_name || names[String(r.home_id)];
     names[String(r.away_id)] = r.away_display_name || names[String(r.away_id)];
+    if (r.home_abbreviation) abbrs[String(r.home_id)] = r.home_abbreviation;
+    if (r.away_abbreviation) abbrs[String(r.away_id)] = r.away_abbreviation;
   }
   report.dropped = drop;
 
@@ -150,7 +152,7 @@ async function ingest(season, o) {
   report.counts.games_scheduled = games.size - finals.length;
   if (!finals.length) {
     /* the season in progress before its first game: schedule only */
-    return finish(season, games, [], [], [], [], {}, names, report, o);
+    return finish(season, games, [], [], [], [], {}, names, report, o, null, abbrs);
   }
 
   /* ---------- team box */
@@ -243,10 +245,10 @@ async function ingest(season, o) {
     report.missing_columns.pbp = missingP;
   }
   report.integrity = integ;
-  return finish(season, games, box, pgames, stints, shots, pteam, names, report, o, players);
+  return finish(season, games, box, pgames, stints, shots, pteam, names, report, o, players, abbrs);
 }
 
-function finish(season, games, box, pgames, stints, shots, pteam, names, report, o, players) {
+function finish(season, games, box, pgames, stints, shots, pteam, names, report, o, players, abbrs) {
   const list = [...games.values()].filter((g) => g.date).sort((a, b) => (a.start_utc < b.start_utc ? -1 : a.start_utc > b.start_utc ? 1 : a.game_id < b.game_id ? -1 : 1));
   /* period scores: the schedule's linescores (2019-20 on), else the play-by-play's */
   let lsrc = { schedule: 0, pbp: 0, none: 0 }, lsMismatch = 0;
@@ -341,6 +343,10 @@ function finish(season, games, box, pgames, stints, shots, pteam, names, report,
     let teams = {}; try { teams = JSON.parse(fs.readFileSync(C.PATHS.teams, 'utf8')); } catch (_) {}
     for (const [k, v] of Object.entries(names)) if (v && !/^Team /.test(v)) teams[k] = v;
     fs.writeFileSync(C.PATHS.teams, JSON.stringify(teams, Object.keys(teams).sort((a, b) => a - b), 0) + '\n');
+    const af = path.join(C.NBA, 'data', 'team_abbr.json');
+    let ab = {}; try { ab = JSON.parse(fs.readFileSync(af, 'utf8')); } catch (_) {}
+    for (const [k, v] of Object.entries(abbrs || {})) if (v && teams[k]) ab[k] = v;
+    fs.writeFileSync(af, JSON.stringify(ab, Object.keys(ab).sort((a, b) => a - b), 0) + '\n');
     if (players) {
       const pf = path.join(C.NBA, 'data', 'players.json');
       let all = {}; try { all = JSON.parse(fs.readFileSync(pf, 'utf8')); } catch (_) {}

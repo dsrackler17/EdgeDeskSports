@@ -72,6 +72,8 @@ async function run(params, o) {
     tpar: new Adjusted('tpar', 'offdef', P.adj), luck: new Adjusted('luck', 'offdef', P.adj),
   };
   const pm = P.use_players ? new PlayerModel(P.players) : null;
+  /* o.only: a subset of states for a tuning run ('elo', 'glicko', 'kalman', 'adj', 'players') */
+  const want = (k) => !o.only || o.only.includes(k);
   const pgBySeason = new Map(), stBySeason = new Map();
   const loadSeasonWork = (s) => {
     if (!P.use_players || pgBySeason.has(s)) return;
@@ -96,11 +98,13 @@ async function run(params, o) {
       elo.absorb(g); gl.absorb(g, gd);
       const th = tg.get(g.game_id + '|' + g.home_id), ta = tg.get(g.game_id + '|' + g.away_id);
       const hsign = g.neutral ? 0 : 1;
-      if (th && ta && th.poss > 0 && th.fga != null) {
+      if (th && ta && th.poss > 0 && th.fga != null && (want('kalman') || want('adj'))) {
         const poss = th.poss, mins = th.min || 48;
-        kal.advance(gd);
-        kal.update(g.home_id, g.away_id, hsign, 100 * g.hs / poss, poss);
-        kal.update(g.away_id, g.home_id, -hsign, 100 * g.as / poss, poss);
+        if (want('kalman')) {
+          kal.advance(gd);
+          kal.update(g.home_id, g.away_id, hsign, 100 * g.hs / poss, poss);
+          kal.update(g.away_id, g.home_id, -hsign, 100 * g.as / poss, poss);
+        }
         const z = zones.get(g.season - 1) || zones.get(g.season);
         const side = (t, op, home) => ({
           eff: { t: t.team_id, o: op.team_id, y: 100 * t.pts / poss, home },
@@ -112,7 +116,8 @@ async function run(params, o) {
           luck: z && t.rim_a != null && t.fga > 0 ? { t: t.team_id, o: op.team_id, y: (t.fgm + 0.5 * t.fg3m) / t.fga - (z.rim * t.rim_a + z.paint * t.paint_a + z.mid * t.mid_a + z.c3 * t.c3_a + z.ab3 * t.ab3_a) / Math.max(1, t.rim_a + t.paint_a + t.mid_a + t.c3_a + t.ab3_a), home } : null,
         });
         const sh = side(th, ta, hsign), sa = side(ta, th, -hsign);
-        for (const k of ['eff', 'efg', 'tov', 'orb', 'ftr', 'tpar', 'luck']) A[k].add(day, [sh[k], sa[k]].filter(Boolean));
+        const keys = want('adj') ? ['eff', 'efg', 'tov', 'orb', 'ftr', 'tpar', 'luck'] : [];
+        for (const k of keys) A[k].add(day, [sh[k], sa[k]].filter(Boolean));
         A.pace.add(day, [{ t: g.home_id, o: g.away_id, y: poss * 48 / mins }]);
       }
       if (pm) {
@@ -123,7 +128,7 @@ async function run(params, o) {
       lastTeam.set(g.home_id, { ms: g.start_ms, season: g.season }); lastTeam.set(g.away_id, { ms: g.start_ms, season: g.season });
       if (maxKnown == null || g.avail_ms > maxKnown) maxKnown = g.avail_ms;
     }
-    for (const a of Object.values(A)) a.refit(day);
+    if (want('adj')) { for (const a of Object.values(A)) a.refit(day); } else if (want('kalman')) A.pace.refit(day);
     if (pm) pm.maybeRefit(day);
   }
   function flush(beforeMs) {
@@ -168,19 +173,25 @@ async function run(params, o) {
       const pr = (pgBySeason.get(g.season) || new Map()).get(g.game_id) || [];
       const conf = { [h]: pr.filter((r) => r.tm === h && r.pl).map((r) => r.p), [a]: pr.filter((r) => r.tm === a && r.pl).map((r) => r.p) };
       const firstOfSeason = (t) => { const L = lastTeam.get(t); return !L || L.season !== g.season; };
-      const proj = {}; const projFromConfirmed = {};
-      for (const t of [h, a]) { const lg = pm.lastGamePlayers(t); if (!firstOfSeason(t) && lg && lg.length >= 5) { proj[t] = lg; projFromConfirmed[t] = 0; } else { proj[t] = conf[t]; projFromConfirmed[t] = 1; } }
+      /* projected: the team's previous game — for its first game of a season that is
+         last season's closing game (no roster feed is licensed; this is what is
+         knowable without one). It never reads this game's box. */
+      const proj = {}; const projStale = {};
+      for (const t of [h, a]) { const lg = pm.lastGamePlayers(t); proj[t] = lg && lg.length >= 5 ? lg : []; projStale[t] = firstOfSeason(t) ? 1 : 0; }
       const full = { [h]: pm.regulars(h), [a]: pm.regulars(a) };
-      const S = (t, set) => pm.strength(set && set.length ? set : (full[t].length ? full[t] : []));
-      const sc = { h: S(h, conf[h]), a: S(a, conf[a]) }, sp = { h: S(h, proj[h]), a: S(a, proj[a]) };
-      const sf = { h: firstOfSeason(h) ? sc.h : S(h, full[h]), a: firstOfSeason(a) ? sc.a : S(a, full[a]) };
+      const S = (set) => pm.strength(set || []);
+      const sc = { h: S(conf[h]), a: S(conf[a]) }, sp = { h: S(proj[h]), a: S(proj[a]) };
+      const fullS = { h: S(full[h]), a: S(full[a]) };
+      /* confirmed adjustment: tonight against the team's recent full strength; a
+         team's first game has no in-season reference, so its adjustment is 0 */
+      const sfC = { h: firstOfSeason(h) ? sc.h : fullS.h, a: firstOfSeason(a) ? sc.a : fullS.a };
       const he = pm.homeEdge() * hs;
       const cont = (t, s) => { let m = 0; for (const x of s.minutes) if (prevSeasonTeam.has(x.pid + '|' + t)) m += x.min; return m / 240; };
       plr = {
         m_conf: pace * (2 * he + sc.h.net - sc.a.net) / 100, m_proj: pace * (2 * he + sp.h.net - sp.a.net) / 100,
-        adj_conf: pace * ((sc.h.net - sf.h.net) - (sc.a.net - sf.a.net)) / 100, adj_proj: pace * ((sp.h.net - sf.h.net) - (sp.a.net - sf.a.net)) / 100,
+        adj_conf: pace * ((sc.h.net - sfC.h.net) - (sc.a.net - sfC.a.net)) / 100, adj_proj: pace * ((sp.h.net - fullS.h.net) - (sp.a.net - fullS.a.net)) / 100,
         off_h: sc.h.off, def_h: sc.h.def, off_a: sc.a.off, def_a: sc.a.def,
-        cont_h: cont(h, sc.h), cont_a: cont(a, sc.a), proj_fallback: projFromConfirmed[h] + projFromConfirmed[a],
+        cont_h: cont(h, sc.h), cont_a: cont(a, sc.a), proj_stale: projStale[h] + projStale[a],
         unknown_min_h: sc.h.minutes.filter((x) => !x.known).reduce((s, x) => s + x.min, 0), unknown_min_a: sc.a.minutes.filter((x) => !x.known).reduce((s, x) => s + x.min, 0),
       };
     }
@@ -201,7 +212,7 @@ async function run(params, o) {
       neutral: g.neutral || 0, playoff: g.type === 'R' ? 0 : 1, gp_h: A.eff.games(h), gp_a: A.eff.games(a),
     };
     if (plr) Object.assign(f, { plr_m_conf: plr.m_conf, plr_m_proj: plr.m_proj, adj_conf: plr.adj_conf, adj_proj: plr.adj_proj, cont_h: plr.cont_h, cont_a: plr.cont_a,
-      plr_off_h: plr.off_h, plr_def_h: plr.def_h, plr_off_a: plr.off_a, plr_def_a: plr.def_a, proj_fallback: plr.proj_fallback, unk_min: plr.unknown_min_h + plr.unknown_min_a });
+      plr_off_h: plr.off_h, plr_def_h: plr.def_h, plr_off_a: plr.off_a, plr_def_a: plr.def_a, proj_stale: plr.proj_stale, unk_min: plr.unknown_min_h + plr.unknown_min_a });
     const fin = g.status === 'FINAL';
     const row = { id: g.game_id, season: g.season, type: g.type, date: g.date, start: g.start_ms, neutral: g.neutral || 0, home: h, away: a,
       predicted_at: predAt, inputs_known_at: maxKnown, f,

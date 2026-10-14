@@ -63,13 +63,27 @@
     if (s > 0) for (let i = 0; i < out.length; i++) out[i] /= s;
     return out;
   }
-  function shapeWeight(theta, m) { const k = Math.abs(m); return theta && k < theta.length ? Math.exp(theta[k]) : 1; }
+  /* end-game log-weight of a regulation margin m. A plain array is symmetric in
+     |m|. An oriented shape { zero, fav: [θ1…], dog: [θ1…], blend } weights the
+     favourite's side and the underdog's side separately (the trailing team
+     plays for the tie and fouls; the leader extends late leads), blended by
+     s = Φ(μ/blend) so a pick'em game gets the average and nothing jumps at μ = 0. */
+  function shapeLog(theta, m, mu) {
+    if (!theta) return 0;
+    const k = Math.abs(m);
+    if (Array.isArray(theta)) return k < theta.length ? theta[k] : 0;
+    if (k === 0) return theta.zero || 0;
+    const f = k <= theta.fav.length ? theta.fav[k - 1] : 0, d = k <= theta.dog.length ? theta.dog[k - 1] : 0;
+    const s = Phi(mu / (theta.blend || 2));
+    return m > 0 ? s * f + (1 - s) * d : s * d + (1 - s) * f;
+  }
+  function shapeWeight(theta, m, mu) { return Math.exp(shapeLog(theta, m, mu)); }
 
   /** regulation margin pmf over −MMAX..MMAX */
   function regMargin(p) {
     const out = new Float64Array(2 * MMAX + 1); let s = 0;
     for (let m = -MMAX; m <= MMAX; m++) {
-      const v = (Phi((m + 0.5 - p.mu_m) / p.sd_m) - Phi((m - 0.5 - p.mu_m) / p.sd_m)) * shapeWeight(p.theta, m);
+      const v = (Phi((m + 0.5 - p.mu_m) / p.sd_m) - Phi((m - 0.5 - p.mu_m) / p.sd_m)) * shapeWeight(p.theta, m, p.mu_m);
       out[m + MMAX] = v; s += v;
     }
     for (let i = 0; i < out.length; i++) out[i] /= s;
@@ -106,20 +120,16 @@
     }
     fin[MMAX + 1] += mass / 2; fin[MMAX - 1] += mass / 2;
     let ph = 0; for (let m = 1; m <= MMAX; m++) ph += fin[m + MMAX];
-    /* total: regulation normal + overtime periods */
-    const TLO = 100, THI = 360;
-    const tReg = discNormal(p.mu_t, p.sd_t, TLO, THI, null);
+    /* total: the regulation normal, plus k overtime periods with probability
+       p0·otTie^(k−1)·(1 − otTie); k periods add N(k·τ, k·sτ²), so the total
+       given k overtimes is N(μt + kτ, σt² + k·sτ²) — a normal mixture */
+    const TLO = 100, THI = 380;
     const o = p.ot || {}; const tau = o.total_mean == null ? 20 : o.total_mean, stau = o.total_sd == null ? 5 : o.total_sd;
     const tot = new Float64Array(THI - TLO + 1);
-    for (let i = 0; i < tot.length; i++) tot[i] = tReg[i] * (1 - p0);
-    /* k overtimes add k periods' totals: N(k·τ, √k·sτ), with probability p0·otTie^(k-1)·(1-otTie) */
+    const add = (w, mu, sd) => { if (w < 1e-9) return; const d = discNormal(mu, sd, TLO, THI, null); for (let i = 0; i < tot.length; i++) tot[i] += w * d[i]; };
+    add(1 - p0, p.mu_t, p.sd_t);
     let pk = p0;
-    for (let k = 1; k <= OT_PERIODS; k++) {
-      const share = k === OT_PERIODS ? pk : pk * (1 - otTie);
-      const add = discNormal(k * tau, Math.sqrt(k) * stau, 0, 80, null);
-      for (let i = 0; i < tReg.length; i++) { if (!tReg[i]) continue; for (let a = 0; a < add.length; a++) { const j = i + a; if (j < tot.length) tot[j] += share * tReg[i] * add[a]; } }
-      pk *= otTie;
-    }
+    for (let k = 1; k <= OT_PERIODS; k++) { const share = k === OT_PERIODS ? pk : pk * (1 - otTie); add(share, p.mu_t + k * tau, Math.sqrt(p.sd_t * p.sd_t + k * stau * stau)); pk *= otTie; }
     return { margin: { lo: -MMAX, pmf: fin }, reg: { lo: -MMAX, pmf: reg }, p_ot: p0, total: { lo: TLO, pmf: tot }, p_home: ph };
   }
 
@@ -230,14 +240,14 @@
       expected: { margin: r2(mean(dm)), total: r2(mean(dt)), home: r2((mean(dt) + mean(dm)) / 2), away: r2((mean(dt) - mean(dm)) / 2), regulation_margin: r2(mean(mg.reg)) },
       p_overtime: r6(mg.p_ot),
       margin_interval_80: [quantile(dm, 0.1), quantile(dm, 0.9)], total_interval_80: [quantile(dt, 0.1), quantile(dt, 0.9)],
-      spread: { fair_line_home: fairSpread, main: Object.assign({ line_home: fairSpread }, spread(dm, fairSpread)), ladder: ladder(fairSpread, (L) => Object.assign({ line_home: L }, spread(dm, L)), 1, 8), settles: 'includes overtime; a whole-number line can push' },
-      total: { fair_line: fairTotal, main: total(dt, fairTotal), ladder: ladder(fairTotal, (L) => total(dt, L), 2, 8), settles: 'includes overtime; a whole-number line can push' },
+      spread: { fair_line_home: fairSpread, main: Object.assign({ line_home: fairSpread }, spread(dm, fairSpread)), ladder: ladder(fairSpread, (L) => Object.assign({ line_home: L }, spread(dm, L)), 0.5, 16), settles: 'includes overtime; a whole-number line can push' },
+      total: { fair_line: fairTotal, main: total(dt, fairTotal), ladder: ladder(fairTotal, (L) => total(dt, L), 0.5, 20), settles: 'includes overtime; a whole-number line can push' },
       margin_bands: bands(dm),
     };
     if (jt) {
       const tt = teamTotals(jt);
       const hl = fairHalf(tt.home), al = fairHalf(tt.away);
-      out.team_totals = { home: { fair_line: hl, main: total(tt.home, hl), ladder: ladder(hl, (L) => total(tt.home, L), 1, 5) }, away: { fair_line: al, main: total(tt.away, al), ladder: ladder(al, (L) => total(tt.away, L), 1, 5) }, settles: 'include overtime' };
+      out.team_totals = { home: { fair_line: hl, main: total(tt.home, hl), ladder: ladder(hl, (L) => total(tt.home, L), 0.5, 10) }, away: { fair_line: al, main: total(tt.away, al), ladder: ladder(al, (L) => total(tt.away, L), 0.5, 10) }, settles: 'include overtime' };
     }
     for (const [key, q] of [['first_half', p.half], ['first_quarter', p.quarter]]) {
       if (!q) continue;
@@ -275,5 +285,5 @@
     const lose = 1 - win - push; return r6(win * (d - 1) - lose);
   }
 
-  return { VERSION, fairHalf, Phi, discNormal, regMargin, otMargin, marginals, joint, price, spread, total, teamTotals, periodDist, pGreater, pEqual, mean, quantile, crps, pit, probToAmerican, americanToProb, americanToDecimal, twoWay, evAt, MMAX };
+  return { VERSION, fairHalf, shapeLog, Phi, discNormal, regMargin, otMargin, marginals, joint, price, spread, total, teamTotals, periodDist, pGreater, pEqual, mean, quantile, crps, pit, probToAmerican, americanToProb, americanToDecimal, twoWay, evAt, MMAX };
 });
