@@ -21,8 +21,8 @@
   "game_time": "2026-10-17T16:30:00.000Z",
   "game_when_label": "2026-10-17 16:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-14T11:43:09.416Z",
-  "generated_at": "2026-10-14T11:43:09.416Z",
+  "updated_at": "2026-10-14T17:03:31.489Z",
+  "generated_at": "2026-10-14T17:03:31.489Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -129,9 +129,9 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -139,6 +139,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Maryland and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Big Ten Conference requires an availability report for this game: four filings a week for conference games — three days, two days and the night before at 8pm ET, then two hours before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Rutgers and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Big Ten Conference requires an availability report for this game: four filings a week for conference games — three days, two days and the night before at 8pm ET, then two hours before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Big Ten Conference requires an availability report for this game: four filings a week for conference games — three days, two days and the night before at 8pm ET, then two hours before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Big Ten Conference requires an availability report for this game: four filings a week for conference games — three days, two days and the night before at 8pm ET, then two hours before kickoff"
           },
           {
             "field": "off_field",
@@ -243,7 +267,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-04T00:00:00.000Z",
-        "retrieved_at": "2026-10-14T08:37:00.691Z"
+        "retrieved_at": "2026-10-14T14:40:52.944Z"
       },
       "home": {
         "team": "Maryland",
@@ -321,9 +345,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-10T20:15:00.000Z",
-        "retrieved_at": "2026-10-14T08:37:00.691Z"
+        "retrieved_at": "2026-10-14T14:40:52.944Z"
       },
-      "generated_at": "2026-10-14T08:37:48.240Z",
+      "generated_at": "2026-10-14T14:41:36.840Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1578,11 +1602,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 79,
+        "pct": 78,
         "tier": "ADEQUATE",
-        "text": "79 · ADEQUATE",
-        "sub": "main deduction: the quarterback job is contested for Rutgers",
-        "score": 79,
+        "text": "78 · ADEQUATE",
+        "sub": "main deduction: Rutgers’s availability sources refused",
+        "score": 78,
         "grade": "ADEQUATE",
         "grade_label": "ADEQUATE",
         "gate_label": null,
@@ -1596,7 +1620,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 10.7,
+            "score": 7.2,
             "max": 20
           },
           {
@@ -1608,7 +1632,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.3,
+            "score": 11.6,
             "max": 15
           },
           {
@@ -1624,25 +1648,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "the quarterback job is contested for Rutgers",
-        "capped_by": [
-          "QB_CONTESTED"
-        ],
+        "main_deduction": "Rutgers’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Rutgers’s absences cannot be assessed: no graded availability read",
+        "capped_by": [],
         "next_actions": [
           {
             "action": "Confirm Rutgers’s starting QB (Dylan Lonergan)",
-            "potential_gain": 5,
-            "text": "up to +5"
+            "potential_gain": 2,
+            "text": "up to +2"
           },
           {
-            "action": "Re-read availability inside the filing window (Rutgers)",
-            "potential_gain": 4,
-            "text": "up to +4 once confirm Rutgers’s starting QB (Dylan Lonergan) is done"
+            "action": "Restore an injury/availability source for Rutgers",
+            "potential_gain": 1,
+            "text": "up to +1"
           },
           {
-            "action": "Re-read availability inside the filing window (Maryland)",
-            "potential_gain": 4,
-            "text": "up to +4 once confirm Rutgers’s starting QB (Dylan Lonergan) is done"
+            "action": "Restore an injury/availability source for Maryland",
+            "potential_gain": 1,
+            "text": "up to +1"
           }
         ],
         "stability": {
@@ -1889,7 +1911,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "l91hysidjdee",
+    "packet_hash": "179ej9n101hsbt",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": true,
     "question": "Can Maryland’s pass rush get to Rutgers’ quarterback?",
@@ -1951,7 +1973,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-14T08:37:55.396Z",
+        "observed_at": "2026-10-14T14:41:45.875Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1965,7 +1987,7 @@
         "label": "EdgeDesk position-group ratings",
         "url": null,
         "path": "football/rankings/current.json",
-        "observed_at": "2026-10-14T08:37:22.873Z",
+        "observed_at": "2026-10-14T14:41:16.459Z",
         "verification": "RATING"
       }
     ],
@@ -1974,6 +1996,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-14T11:43:09.416Z"
+    "at": "2026-10-14T17:03:31.489Z"
   }
 }
