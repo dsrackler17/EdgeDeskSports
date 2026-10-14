@@ -1,0 +1,62 @@
+# EdgeDesk — the linemaker's calibration record (docs/linemaker/DESIGN.md).
+#
+#   calibrate  weekly (Tuesday, after the week's results are in): replay both
+#              engines from public history (nflverse, cfbfastR; keyless) and
+#              rewrite football/validation/linemaker_<league>.json. A replay
+#              with a missing season is REFUSED and leaves the record as it is.
+#              The suites run again on the new record before anything commits.
+#
+# Its own workflow so a push never shows it as Skipped. The tests are in
+# linemaker.yml; the three-hourly sheets are in linemaker-build.yml and share
+# the linemaker-artifacts concurrency group, so the two never write at the
+# same time.
+name: Linemaker calibrate
+run-name: Linemaker calibrate · ${{ github.event_name }}
+
+on:
+  schedule:
+    - cron: '17 9 * * 2'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  calibrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    concurrency:
+      group: linemaker-artifacts
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Replay both engines and write the calibration record (public, keyless history)
+        run: node tools/football/linemaker_calibrate.js --sport both --write
+      - name: Rebuild the sheets on the new record
+        run: node tools/football/build_fair_lines.js
+      - name: The suites pass on the new record before anything commits
+        run: node tools/football/linemaker_calibrate.js --check && node tools/football/linemaker.test.js && node tools/football/linemaker_desk.test.js
+      - name: Commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A -- football/validation/ football/linemaker/
+          if git diff --cached --quiet; then
+            echo 'calibration unchanged — nothing to commit'
+            exit 0
+          fi
+          git commit -m 'linemaker: weekly calibration record'
+          for i in 1 2 3 4; do
+            git push origin main && exit 0
+            git pull --rebase origin main || true
+            sleep $((2 ** i))
+          done
+          echo 'could not push the calibration record after 4 attempts'
+          exit 1

@@ -1,6 +1,10 @@
 # Changelog
 
 
+## 2026-10-14 — Linemaker: the scheduled jobs no longer show as Skipped on every push
+
+**`build` and `calibrate` ran on their schedules all along (the sheets every three hours, the record on Tuesdays), but they shared one workflow with the tests, so every push to `main` listed them as Skipped.** Each now has its own workflow: `.github/workflows/linemaker.yml` (tests on PRs and pushes), `linemaker-build.yml` (every three hours, or by hand) and `linemaker-calibrate.yml` (weekly, or by hand). Nothing they run or commit changed, and they still share one concurrency group so they never write at the same time. A manual run is now "Run workflow" on the one you want, instead of `linemaker.yml` with `mode`.
+
 ## 2026-10-14 — NHL: EdgeDesk's own lines against the market, and who is better where
 
 **Research → Other → NHL now says which side EdgeDesk rates higher than the book, game by game, and whether the book's price pays enough to matter.**
