@@ -17,7 +17,7 @@
    "brain": {
     "status": "BUILT",
     "id": "edgedesk_nhl_v1",
-    "approach": "Score- and opponent-adjusted 5v5 expected-goals ratings, special-teams xG and penalty rates, goalie goals-saved-above-expected, rest and back-to-backs → a Poisson regression for each team's regulation goals → an exact score distribution with empirical score effects and goalie-pull dynamics, 3-on-3 overtime and the shootout → every market's fair price.",
+    "approach": "Score- and opponent-adjusted 5v5 expected-goals ratings, goals-for/against and finishing ratings, rest and back-to-backs → a Poisson regression for each team's regulation goals → an exact score distribution with empirical score effects by period and lead, goalie-pull dynamics, 3-on-3 overtime and the shootout → every market's fair price, decomposed exactly into its factors. Goalie GSAx drives the goalie scenarios; special-teams ratings are measured and shown but left the price on 2026-10-13 (no out-of-sample benefit).",
     "why": "Hockey is low-scoring and noisy: goals are a weak signal, shot quality (xG) is a stronger and more stable one (macdonald2012). Leaders sit back and trailing teams pull the goalie, so margins and totals are not plain Poisson (tulsky2012, beaudoin2010). A full distribution, not a single number, is what the moneyline, the puck line and the total all need.",
     "candidates": [
      {
@@ -51,19 +51,42 @@
       "sources": [
        "karlis2003"
       ]
+     },
+     {
+      "name": "Regularised logistic regression and gradient-boosted trees on the same point-in-time features (+ travel, form, luck)",
+      "role": "challengers, rejected (worse by 0.0013 and 0.0045 log loss on selection; hockey/validation/nhl_lab.json)",
+      "sources": []
+     },
+     {
+      "name": "Stacked and equal-weight ensembles of every model",
+      "role": "challengers, rejected (not better by 0.001 on selection)",
+      "sources": []
+     },
+     {
+      "name": "Pace overdispersion and 60-minute draw inflation in the score distribution",
+      "role": "tested, rejected (no likelihood gain on selection)",
+      "sources": [
+       "karlis2003"
+      ]
+     },
+     {
+      "name": "Score effects by period (the first period apart from the second)",
+      "role": "adopted 2026-10-13 (first-period prices were 3-5 points too high)",
+      "sources": [
+       "beaudoin2010"
+      ]
      }
     ],
     "inputs": [
      "5v5 xG for/against (score-adjusted, opponent-adjusted)",
-     "goals for/against",
-     "power-play xG, penalty-kill xG against, penalty minutes drawn/taken",
-     "goalie GSAx (projected starter; confirmed when recorded)",
+     "goals for/against and finishing",
      "rest days, back-to-backs",
-     "league scoring level"
+     "league scoring level",
+     "goalie GSAx (scenarios: projected starter; confirmed when recorded)"
     ],
     "not_modelled": [
      "skater injuries and late scratches",
-     "travel distance and time zones (not tested yet)",
+     "travel distance, time zones, schedule congestion, recent form (tested 2026-10-13: no out-of-sample benefit, shown as context)",
      "line combinations",
      "referees (screened on 2024-25: no repeatable effect on penalties, power-play time or goals; no assignment timestamps)",
      "neutral-site games (priced with home ice: my feed has no neutral flag; 4 such games in 2024-25)"
@@ -71,10 +94,11 @@
    },
    "readiness": {
     "state": "OUTCOME_VALIDATED",
-    "label": "Validated vs outcomes — moneyline, spread",
+    "label": "Validated vs outcomes — moneyline, spread, team_total",
     "scope": [
      "moneyline",
-     "spread"
+     "spread",
+     "team_total"
     ],
     "primary": "moneyline",
     "primary_state": "OUTCOME_VALIDATED",
@@ -87,7 +111,7 @@
       "outcome": "VALIDATED",
       "market": "NOT_TESTED",
       "n": 7945,
-      "headline": "outcomes: OUTCOME_VALIDATED; held-out log loss 0.66271; vs close: not tested; vs Elo Δ log loss -0.003833 (95% -0.005648 to -0.00212)",
+      "headline": "outcomes: OUTCOME_VALIDATED; held-out log loss 0.66286; vs close: not tested; vs Elo Δ log loss -0.003687 (95% -0.005417 to -0.002134)",
       "file": "hockey/validation/nhl_walkforward.json"
      },
      "spread": {
@@ -97,7 +121,7 @@
       "outcome": "VALIDATED",
       "market": "NOT_TESTED",
       "n": 7945,
-      "headline": "outcomes: OUTCOME_VALIDATED; held-out log loss 0.61255; vs close: not tested",
+      "headline": "outcomes: OUTCOME_VALIDATED; held-out log loss 0.61247; vs close: not tested",
       "file": "hockey/validation/nhl_walkforward.json"
      },
      "total": {
@@ -107,7 +131,7 @@
       "outcome": "PROVISIONAL",
       "market": "NOT_TESTED",
       "n": 7945,
-      "headline": "outcomes: PROVISIONAL (calibration slope 0.81); held-out log loss 0.68168; vs close: not tested",
+      "headline": "outcomes: PROVISIONAL (calibration slope 0.779); held-out log loss 0.68144; vs close: not tested",
       "file": "hockey/validation/nhl_walkforward.json"
      },
      "regulation_3way": {
@@ -117,24 +141,34 @@
       "outcome": "PROVISIONAL",
       "market": "NOT_TESTED",
       "n": null,
-      "headline": "outcomes: PROVISIONAL (no binary calibration rule defined for a 3-way market yet; log loss reported); held-out log loss 1.03847; vs close: not tested",
-      "file": "hockey/validation/nhl_walkforward.json"
+      "headline": "outcomes: PROVISIONAL (home: mean p off by 0.0203; draw: mean p off by -0.0211; draw: calibration slope 0.681); vs close: not tested",
+      "file": "hockey/validation/nhl_lab.json"
+     },
+     "team_total": {
+      "state": "OUTCOME_VALIDATED",
+      "value_claims": false,
+      "reason": "never tested against the closing market",
+      "outcome": "VALIDATED",
+      "market": "NOT_TESTED",
+      "n": 7945,
+      "headline": "outcomes: OUTCOME_VALIDATED (team totals 2.5, both sides; slopes 0.946, 1.082); vs close: not tested",
+      "file": "hockey/validation/nhl_lab.json"
      }
     },
     "value_claims_any": false,
     "ladder": {
      "data_loaded": {
       "done": true,
-      "detail": "17236 games (2011-2027), retrospective; second source 2024-25: 1398/1398 matched, every final agrees"
+      "detail": "17239 games (2011-2027), retrospective; second source 2024-25: 1398/1398 matched, every final agrees"
      },
      "model_trained": {
       "done": true,
-      "detail": "xg_no_goalie"
+      "detail": "xg_core"
      },
      "validation_passed": {
       "done": true,
       "partial": false,
-      "detail": "2 of 4 markets validated vs outcomes; primary market (moneyline): outcome validated"
+      "detail": "3 of 5 markets validated vs outcomes; primary market (moneyline): outcome validated"
      },
      "market_tested": {
       "done": false,
@@ -144,12 +178,13 @@
    },
    "evidence_files": [
     "hockey/validation/nhl_walkforward.json",
+    "hockey/validation/nhl_lab.json",
     "hockey/xg/report.json",
     "hockey/validation/nhl_crosscheck_espn.json",
     "hockey/validation/nhl_blocked_attribution.json",
     "datapack/nhl_v1/EDGEDESK_VERIFICATION.json"
    ],
-   "evidence_generated_at": "2026-10-13T12:49:14.617Z",
+   "evidence_generated_at": "2026-10-14T01:42:12.428Z",
    "data": [
     {
      "source": "sportsdataverse fastRhockey-nhl-data (play-by-play, goalie box, game info)",
@@ -1907,5 +1942,5 @@
   "UNAVAILABLE": "Unavailable",
   "RETIRED": "Retired"
  },
- "generated_at": "2026-10-13T13:20:17.878Z"
+ "generated_at": "2026-10-14T01:42:27.108Z"
 }

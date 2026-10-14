@@ -183,3 +183,41 @@ the last two rungs per sport (a fresh verified price now, an actionable
 signal), keeps every actionable row and, per sport, 24 research rows, with
 counts for all; each candidate carries its settlement (split / void) and its
 sensitivity checks.
+
+### NHL research layer (2026-10-13)
+
+- `hockey/data/game_periods/<season>.csv` (`edgedesk_nhl_game_periods_v1`):
+  `game_id, season, type, date, home, away, decided, h1, a1, h2, a2, h3, a3,
+  hot, aot, h_en, a_en, h_late, a_late, check`. These are goals by period,
+  regulation empty-net goals, goals in the last five minutes, and OK or why
+  the periods do not sum to the regulation score (0 such games in 17 seasons).
+- `.cache/nhl_work/box_<season>.json.gz` (`edgedesk_nhl_box_v1`, not
+  committed): the official skater, goalie and team box scores as published,
+  with source URL, sha256 and retrieval time. Feeds the reconciliation and the
+  player research.
+- `hockey/data/arenas.json`: home-arena coordinates and IANA zones, entered
+  by hand (±1 km), used for travel and time-zone change.
+- `hockey/validation/nhl_crosscheck_box.json`: play-by-play against the box
+  score, by season and level.
+- `hockey/validation/nhl_lab.json` + `hockey/model/params/lab_live.json`:
+  every challenger, the ablation, the promotion decision, the extended
+  markets; the live challengers for the slate's model comparison.
+- `hockey/validation/nhl_diagnostics.json`: AUC, season phase, by club,
+  starters, totals coverage, drift.
+- `hockey/validation/nhl_props.json` + `hockey/props/slate.json`: the prop
+  record and the research slate (`value_claims: DISABLED`).
+- `hockey/sources/registry.json` (`edgedesk_nhl_source_registry_v1`): each
+  provider's status, terms (with `verified`), cost, last sync and measured
+  contribution.
+- `hockey/slate.json` gains per game: `explanation`, `markets` (the full
+  sheet with per-line validation), `repricing` (λ pairs), `challengers`,
+  `context`, `market_check`. At slate level it gains `market_statuses`,
+  `challenger_records`, `distribution` (the effects and overtime parameters
+  the page re-prices with) and `lab`. Every addition is additive; the schema
+  name is unchanged.
+- **Supabase `nhl` schema** (`supabase/nhl_warehouse.sql`): sources,
+  sync_state, sync_runs, games, game_periods, team_games, goalie_games,
+  skater_games, players, model_versions, predictions (append-only,
+  pregame-only), quotes, validation_runs, reconciliation. Written only by
+  `hockey/warehouse/sync.js` with `NHL_WAREHOUSE=on`.
+

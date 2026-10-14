@@ -5,8 +5,11 @@
    (hockey/slate.json, engine/board.json, engine/registry.json and the NHL
    walk-forward record) with the clock pinned to the slate's build time.
 
-   NHL: the list, a game's every market table, the URL it writes, the price
-   check (a valid price and a malformed one), Back, the full record.
+   NHL: the list, a game's seven tabs (the exact decomposition of its price,
+   every market table incl. alternates and the first period, the price check
+   with a valid and a malformed price, in-page scenario re-pricing, player
+   research, model comparison, the per-market record and drift), the URL it
+   writes, Back, the full record, the data-source registry.
    Engine: the PASS verdict and its reasons, the sport and market filters,
    a candidate's facts and rules, the readiness and methods sections.
    States: the board failing and coming back on Try again, a stale board, a
@@ -117,18 +120,64 @@ const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
       await page.click('#nhlHost .xe-game[data-game="' + g.game_id + '"]');
       await page.waitForSelector('#nhlHost .xe-detail');
       chk(label + ': opening a game writes its URL', await page.evaluate(() => location.hash) === '#research/nhl/' + g.game_id, await page.evaluate(() => location.hash));
-      const caps = await page.$$eval('#nhlHost .xe-t caption', (x) => x.map((c) => c.textContent));
+      /* the game page is tabbed: walk every tab, collecting what it shows */
+      const tabs = await page.$$eval('#nhlHost .xe-tabs button', (x) => x.map((b) => b.dataset.tab));
+      chk(label + ': the game page has the seven research tabs', ['overview', 'markets', 'scenarios', 'players', 'evidence', 'models', 'record'].every((t) => tabs.indexOf(t) >= 0), tabs);
+      const overview = await page.textContent('#nhlHost .xe-tabp');
+      const ex = g.explanation;
+      if (ex) {
+        chk(label + ': Overview explains the number from the model, and says it is not AI-written', /Why /.test(overview) && /computed from the model — not written by AI/.test(overview) && /no language model/.test(overview), overview.slice(0, 300));
+        const nFactors = await page.$$eval('#nhlHost .xe-why2 li:not(.xe-wsum)', (x) => x.length);
+        chk(label + ': every factor of the decomposition is listed', nFactors === ex.factors.length, [nFactors, ex.factors.length]);
+        chk(label + ': the decomposition adds up exactly to the published probability', ex.check && ex.check.exact === true && /exact/.test(overview));
+      }
+      chk(label + ': Overview says whether a price is actionable and why not', /Is a price actionable\?/.test(overview) && /No\./.test(overview));
+      chk(label + ': no horizontal scroll on Overview', await noHScroll(page), await overflowers(page));
+      const caps = [];
+      for (const t of ['markets', 'evidence']) { await page.click('#nhlHost .xe-tabs button[data-tab="' + t + '"]'); await page.waitForSelector('#nhlHost .xe-tabs button.on[data-tab="' + t + '"]'); caps.push(...await page.$$eval('#nhlHost .xe-t caption', (x) => x.map((c) => c.textContent))); chk(label + ': no horizontal scroll on ' + t, await noHScroll(page), await overflowers(page)); }
       chk(label + ': the game shows moneyline, 3-way, puck line, totals, team totals, goalies, lineups and evidence', ['Moneyline', '60-minute', 'Puck line', 'Total', 'Team totals', 'Goalies', 'Lineups', 'Evidence'].every((k) => caps.some((c) => c.indexOf(k) === 0)), caps);
+      if (g.markets) chk(label + ': alternate lines, regulation totals and the first period are priced, each with its held-out status', ['Regulation total', 'First period', 'First-period total'].every((k) => caps.some((c) => c.indexOf(k) === 0)) && caps.some((c) => /alternates/.test(c)), caps);
       chk(label + ': the lineup block never calls a projection confirmed', caps.filter((c) => c.indexOf('Lineups') === 0).every((c) => !/confirmed/i.test(c.split(' · ')[0])), caps.filter((c) => c.indexOf('Lineups') === 0));
+      await page.click('#nhlHost .xe-tabs button[data-tab="markets"]');
       chk(label + ': the fair home moneyline matches the slate', await page.evaluate((fh) => document.querySelector('.xe-detail').textContent.indexOf((fh > 0 ? '+' : '') + fh) >= 0, g.prices.moneyline.fair_home));
+      chk(label + ': uncaptured prices are said to be uncaptured, not shown as missing value', /not captured|not authorised|No captured prices/i.test(await page.textContent('#nhlHost .xe-tabp')));
+      await page.waitForFunction(() => !!window.EDNHLMarket, null, { timeout: 15000 }).catch(() => {});
       await page.fill('.xe-pc input[name="price"]', '-110');
       await page.click('.xe-pc button[type="submit"]');
       const res = await page.textContent('.xe-pc-res');
-      chk(label + ': the price check prints break-even, EdgeDesk and EV, and refuses a value call', /Break-even 52\.4%/.test(res) && /Not a value call/.test(res), res);
+      chk(label + ': the price check prints break-even, EdgeDesk and EV, and refuses a value call', /Break-even 52\.4%/.test(res) && /Not a value call/.test(res) && !/verified value/i.test(res), res);
       await page.fill('.xe-pc input[name="price"]', 'abc');
       await page.click('.xe-pc button[type="submit"]');
       chk(label + ': a malformed price is refused with a hint', /Enter an American price/.test(await page.textContent('.xe-pc-res')));
-      chk(label + ': no horizontal scroll on a game', await noHScroll(page));
+      /* scenarios: re-priced in the page with the slate's own code */
+      await page.click('#nhlHost .xe-tabs button[data-tab="scenarios"]');
+      await page.waitForSelector('#nhlHost .xe-scn-out .xe-t', { timeout: 15000 });
+      const base0 = await page.textContent('#nhlHost .xe-scn-out caption');
+      chk(label + ': Scenarios start from the published price', /production model/.test(base0), base0);
+      const opts = await page.$$eval('#nhlHost select[data-scn="home"] option', (x) => x.map((o) => o.value).filter(Boolean));
+      if (opts.length) {
+        await page.selectOption('#nhlHost select[data-scn="home"]', opts[opts.length - 1]);
+        const cap = await page.textContent('#nhlHost .xe-scn-out caption');
+        chk(label + ': choosing a goalie re-prices with the goalie-aware variant', /goalie-aware variant/.test(cap), cap);
+      }
+      await page.$eval('#nhlHost input[data-scn="adjH"]', (el) => { el.value = '10'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+      chk(label + ': a what-if is labelled as the reader\'s, not the model\'s', /your what-if/.test(await page.textContent('#nhlHost .xe-scn-out caption')));
+      chk(label + ': no horizontal scroll on Scenarios', await noHScroll(page), await overflowers(page));
+      /* players, models, record */
+      await page.click('#nhlHost .xe-tabs button[data-tab="players"]');
+      await page.waitForSelector('#nhlHost .xe-tabp .xe-t, #nhlHost .xe-tabp .xe-empty', { timeout: 15000 });
+      const players = await page.textContent('#nhlHost .xe-tabp');
+      chk(label + ': Players is research only, says why, and assumes the player dresses', /Research only/.test(players) && /No NHL prop prices are captured/.test(players) && /dresses/.test(players));
+      chk(label + ': no horizontal scroll on Players', await noHScroll(page), await overflowers(page));
+      await page.click('#nhlHost .xe-tabs button[data-tab="models"]');
+      const models = await page.textContent('#nhlHost .xe-tabp');
+      if (g.challengers) chk(label + ': Models compares every challenger on this game with its held-out record, the production model marked', /win probability by model/.test(models) && /production/.test(models) && (await page.$$eval('#nhlHost .xe-tabp .xe-t:first-of-type tr', (x) => x.length)) >= 4, models.slice(0, 200));
+      chk(label + ': no horizontal scroll on Models', await noHScroll(page), await overflowers(page));
+      await page.click('#nhlHost .xe-tabs button[data-tab="record"]');
+      await page.waitForFunction(() => /Drift monitor/.test(document.querySelector('#nhlHost .xe-tabp').textContent), null, { timeout: 15000 }).catch(() => {});
+      const record = await page.textContent('#nhlHost .xe-tabp');
+      chk(label + ': Record lists every market\'s held-out status and the drift monitor', /held-out status/.test(record) && /Drift monitor/.test(record) && /AUC/.test(record), record.slice(0, 200));
+      chk(label + ': no horizontal scroll on Record', await noHScroll(page), await overflowers(page));
       await shot(page, label + '_nhl_game');
       await page.click('[data-act="back"]');
       await page.waitForSelector('#nhlHost .xe-game');
@@ -136,6 +185,11 @@ const NOW = new Date(Date.parse(SLATE.generated_at) + 60000).toISOString();
       await page.click('[data-act="record"]');
       await page.waitForSelector('#nhlHost .xe-t caption', { timeout: 20000 });
       chk(label + ': the full record shows held-out log loss by model', await page.evaluate(() => Array.from(document.querySelectorAll('#nhlHost .xe-t caption')).some((c) => /Moneyline log loss/.test(c.textContent))));
+      await page.click('[data-act="sources"]');
+      await page.waitForSelector('#nhlHost .xe-sport summary', { timeout: 15000 });
+      const src = await page.textContent('#nhlHost');
+      chk(label + ': the data-source registry separates operational, awaiting-permission and methodology-only providers', /MoneyPuck/.test(src) && /methodology only/i.test(src) && /awaiting permission/i.test(src) && /operational|stale/i.test(src));
+      chk(label + ': no horizontal scroll with the registry open', await noHScroll(page), await overflowers(page));
       chk(label + ': no page errors on NHL', errors.length === 0, errors);
       await ctx.close();
 

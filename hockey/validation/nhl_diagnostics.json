@@ -1,0 +1,866 @@
+{
+ "schema": "edgedesk_nhl_diagnostics_v1",
+ "generated_at": "2026-10-14T01:36:27.758Z",
+ "model": "edgedesk_nhl_v1:xg_core (production)",
+ "source": "out-of-sample predictions rebuilt by hockey/lab/base.js (reproduces hockey/validation/nhl_walkforward.json)",
+ "windows": {
+  "selection": {
+   "n": 9205,
+   "log_loss": 0.67459,
+   "brier": 0.2409,
+   "auc": 0.6002,
+   "mean_p": 0.5487,
+   "mean_y": 0.5414,
+   "calibration_in_the_large": 0.0073,
+   "calibration_slope": 1.231
+  },
+  "confirmation": {
+   "n": 7945,
+   "log_loss": 0.66286,
+   "brier": 0.23534,
+   "auc": 0.6335,
+   "mean_p": 0.5451,
+   "mean_y": 0.5363,
+   "calibration_in_the_large": 0.0088,
+   "calibration_slope": 1.064
+  },
+  "live": {
+   "n": 89,
+   "log_loss": 0.65409,
+   "brier": 0.23092,
+   "auc": 0.6592,
+   "mean_p": 0.5322,
+   "mean_y": 0.5506,
+   "calibration_in_the_large": -0.0184,
+   "calibration_slope": 1.937
+  }
+ },
+ "by_season": {
+  "2014": {
+   "n": 1323,
+   "log_loss": 0.67527,
+   "brier": 0.24121,
+   "auc": 0.6002,
+   "mean_p": 0.5456,
+   "mean_y": 0.5412,
+   "calibration_in_the_large": 0.0044,
+   "calibration_slope": 1.11
+  },
+  "2015": {
+   "n": 1319,
+   "log_loss": 0.66882,
+   "brier": 0.23817,
+   "auc": 0.6135,
+   "mean_p": 0.5471,
+   "mean_y": 0.5436,
+   "calibration_in_the_large": 0.0035,
+   "calibration_slope": 1.349
+  },
+  "2016": {
+   "n": 1321,
+   "log_loss": 0.67974,
+   "brier": 0.24342,
+   "auc": 0.5887,
+   "mean_p": 0.5472,
+   "mean_y": 0.5276,
+   "calibration_in_the_large": 0.0196,
+   "calibration_slope": 1.087
+  },
+  "2017": {
+   "n": 1317,
+   "log_loss": 0.67129,
+   "brier": 0.23925,
+   "auc": 0.6019,
+   "mean_p": 0.5471,
+   "mean_y": 0.5581,
+   "calibration_in_the_large": -0.011,
+   "calibration_slope": 1.271
+  },
+  "2018": {
+   "n": 1355,
+   "log_loss": 0.67041,
+   "brier": 0.23877,
+   "auc": 0.6088,
+   "mean_p": 0.5517,
+   "mean_y": 0.5579,
+   "calibration_in_the_large": -0.0063,
+   "calibration_slope": 1.363
+  },
+  "2019": {
+   "n": 1358,
+   "log_loss": 0.67679,
+   "brier": 0.24194,
+   "auc": 0.5992,
+   "mean_p": 0.55,
+   "mean_y": 0.5353,
+   "calibration_in_the_large": 0.0147,
+   "calibration_slope": 1.386
+  },
+  "2020": {
+   "n": 1212,
+   "log_loss": 0.68031,
+   "brier": 0.24376,
+   "auc": 0.5906,
+   "mean_p": 0.5527,
+   "mean_y": 0.5248,
+   "calibration_in_the_large": 0.0279,
+   "calibration_slope": 1.117
+  },
+  "2021": {
+   "n": 952,
+   "log_loss": 0.66262,
+   "brier": 0.23512,
+   "auc": 0.6472,
+   "mean_p": 0.5449,
+   "mean_y": 0.5347,
+   "calibration_in_the_large": 0.0102,
+   "calibration_slope": 1.662
+  },
+  "2022": {
+   "n": 1401,
+   "log_loss": 0.64821,
+   "brier": 0.22814,
+   "auc": 0.6711,
+   "mean_p": 0.5528,
+   "mean_y": 0.541,
+   "calibration_in_the_large": 0.0118,
+   "calibration_slope": 1.318
+  },
+  "2023": {
+   "n": 1400,
+   "log_loss": 0.65932,
+   "brier": 0.23369,
+   "auc": 0.6489,
+   "mean_p": 0.5504,
+   "mean_y": 0.52,
+   "calibration_in_the_large": 0.0304,
+   "calibration_slope": 1.022
+  },
+  "2024": {
+   "n": 1400,
+   "log_loss": 0.6592,
+   "brier": 0.23373,
+   "auc": 0.6395,
+   "mean_p": 0.5438,
+   "mean_y": 0.5371,
+   "calibration_in_the_large": 0.0067,
+   "calibration_slope": 0.955
+  },
+  "2025": {
+   "n": 1398,
+   "log_loss": 0.66255,
+   "brier": 0.23521,
+   "auc": 0.6214,
+   "mean_p": 0.5393,
+   "mean_y": 0.5651,
+   "calibration_in_the_large": -0.0258,
+   "calibration_slope": 0.989
+  },
+  "2026": {
+   "n": 1394,
+   "log_loss": 0.68527,
+   "brier": 0.24611,
+   "auc": 0.5726,
+   "mean_p": 0.5394,
+   "mean_y": 0.5194,
+   "calibration_in_the_large": 0.02,
+   "calibration_slope": 0.783
+  },
+  "2027": {
+   "n": 89,
+   "log_loss": 0.65409,
+   "brier": 0.23092,
+   "auc": 0.6592,
+   "mean_p": 0.5322,
+   "mean_y": 0.5506,
+   "calibration_in_the_large": -0.0184,
+   "calibration_slope": 1.937
+  }
+ },
+ "season_phase": {
+  "selection": {
+   "first_20_games": {
+    "n": 2192,
+    "log_loss": 0.67875,
+    "brier": 0.24289,
+    "auc": 0.5828,
+    "mean_p": 0.5503,
+    "mean_y": 0.5456,
+    "calibration_in_the_large": 0.0047,
+    "calibration_slope": 1.034
+   },
+   "rest": {
+    "n": 7013,
+    "log_loss": 0.67329,
+    "brier": 0.24027,
+    "auc": 0.6055,
+    "mean_p": 0.5483,
+    "mean_y": 0.5401,
+    "calibration_in_the_large": 0.0081,
+    "calibration_slope": 1.287
+   }
+  },
+  "confirmation": {
+   "first_20_games": {
+    "n": 1973,
+    "log_loss": 0.66974,
+    "brier": 0.23851,
+    "auc": 0.6186,
+    "mean_p": 0.5432,
+    "mean_y": 0.5367,
+    "calibration_in_the_large": 0.0064,
+    "calibration_slope": 1.006
+   },
+   "rest": {
+    "n": 5972,
+    "log_loss": 0.66058,
+    "brier": 0.23429,
+    "auc": 0.6382,
+    "mean_p": 0.5458,
+    "mean_y": 0.5362,
+    "calibration_in_the_large": 0.0096,
+    "calibration_slope": 1.08
+   }
+  }
+ },
+ "by_month": {
+  "10": {
+   "n": 763,
+   "log_loss": 0.67116,
+   "brier": 0.23916,
+   "auc": 0.612,
+   "mean_p": 0.5439,
+   "mean_y": 0.536,
+   "calibration_in_the_large": 0.0078,
+   "calibration_slope": 0.917
+  },
+  "11": {
+   "n": 1083,
+   "log_loss": 0.67268,
+   "brier": 0.23995,
+   "auc": 0.6141,
+   "mean_p": 0.5407,
+   "mean_y": 0.5309,
+   "calibration_in_the_large": 0.0097,
+   "calibration_slope": 0.912
+  },
+  "12": {
+   "n": 1034,
+   "log_loss": 0.66148,
+   "brier": 0.2348,
+   "auc": 0.6352,
+   "mean_p": 0.549,
+   "mean_y": 0.5426,
+   "calibration_in_the_large": 0.0065,
+   "calibration_slope": 1.033
+  },
+  "01": {
+   "n": 1225,
+   "log_loss": 0.66485,
+   "brier": 0.23616,
+   "auc": 0.6281,
+   "mean_p": 0.5455,
+   "mean_y": 0.542,
+   "calibration_in_the_large": 0.0035,
+   "calibration_slope": 0.967
+  },
+  "02": {
+   "n": 863,
+   "log_loss": 0.66987,
+   "brier": 0.23864,
+   "auc": 0.6319,
+   "mean_p": 0.5428,
+   "mean_y": 0.4948,
+   "calibration_in_the_large": 0.048,
+   "calibration_slope": 1.062
+  },
+  "03": {
+   "n": 1408,
+   "log_loss": 0.6526,
+   "brier": 0.23064,
+   "auc": 0.648,
+   "mean_p": 0.5469,
+   "mean_y": 0.5526,
+   "calibration_in_the_large": -0.0056,
+   "calibration_slope": 1.16
+  },
+  "04": {
+   "n": 1121,
+   "log_loss": 0.65089,
+   "brier": 0.22962,
+   "auc": 0.6662,
+   "mean_p": 0.5454,
+   "mean_y": 0.5317,
+   "calibration_in_the_large": 0.0137,
+   "calibration_slope": 1.275
+  },
+  "05": {
+   "n": 372,
+   "log_loss": 0.67341,
+   "brier": 0.24044,
+   "auc": 0.5916,
+   "mean_p": 0.5469,
+   "mean_y": 0.5484,
+   "calibration_in_the_large": -0.0014,
+   "calibration_slope": 1.133
+  },
+  "06": {
+   "n": 73,
+   "log_loss": 0.66271,
+   "brier": 0.23495,
+   "auc": 0.6032,
+   "mean_p": 0.546,
+   "mean_y": 0.6164,
+   "calibration_in_the_large": -0.0704,
+   "calibration_slope": 1.703
+  },
+  "07": {
+   "n": 3,
+   "log_loss": 0.61954,
+   "brier": 0.21418,
+   "auc": 0.5,
+   "mean_p": 0.5127,
+   "mean_y": 0.6667,
+   "calibration_in_the_large": -0.154,
+   "calibration_slope": null
+  }
+ },
+ "by_club": {
+  "ANA": {
+   "n": 478,
+   "mean_p": 0.3901,
+   "observed": 0.3808,
+   "wilson95": [
+    0.3383,
+    0.4251
+   ],
+   "outside": false,
+   "log_loss": 0.63936
+  },
+  "ARI": {
+   "n": 302,
+   "mean_p": 0.386,
+   "observed": 0.3742,
+   "wilson95": [
+    0.3215,
+    0.43
+   ],
+   "outside": false,
+   "log_loss": 0.63897
+  },
+  "BOS": {
+   "n": 510,
+   "mean_p": 0.5623,
+   "observed": 0.5765,
+   "wilson95": [
+    0.5332,
+    0.6186
+   ],
+   "outside": false,
+   "log_loss": 0.65629
+  },
+  "BUF": {
+   "n": 479,
+   "mean_p": 0.4484,
+   "observed": 0.4614,
+   "wilson95": [
+    0.4172,
+    0.5062
+   ],
+   "outside": false,
+   "log_loss": 0.68237
+  },
+  "CAR": {
+   "n": 551,
+   "mean_p": 0.5982,
+   "observed": 0.6261,
+   "wilson95": [
+    0.585,
+    0.6655
+   ],
+   "outside": false,
+   "log_loss": 0.64438
+  },
+  "CBJ": {
+   "n": 466,
+   "mean_p": 0.4146,
+   "observed": 0.4013,
+   "wilson95": [
+    0.3578,
+    0.4464
+   ],
+   "outside": false,
+   "log_loss": 0.65004
+  },
+  "CGY": {
+   "n": 478,
+   "mean_p": 0.5262,
+   "observed": 0.4854,
+   "wilson95": [
+    0.4408,
+    0.5301
+   ],
+   "outside": false,
+   "log_loss": 0.68138
+  },
+  "CHI": {
+   "n": 466,
+   "mean_p": 0.3741,
+   "observed": 0.3326,
+   "wilson95": [
+    0.2914,
+    0.3766
+   ],
+   "outside": false,
+   "log_loss": 0.62011
+  },
+  "COL": {
+   "n": 534,
+   "mean_p": 0.6072,
+   "observed": 0.6404,
+   "wilson95": [
+    0.5989,
+    0.68
+   ],
+   "outside": false,
+   "log_loss": 0.64117
+  },
+  "DAL": {
+   "n": 535,
+   "mean_p": 0.5525,
+   "observed": 0.5645,
+   "wilson95": [
+    0.5222,
+    0.6059
+   ],
+   "outside": false,
+   "log_loss": 0.65765
+  },
+  "DET": {
+   "n": 466,
+   "mean_p": 0.4281,
+   "observed": 0.4442,
+   "wilson95": [
+    0.3997,
+    0.4896
+   ],
+   "outside": false,
+   "log_loss": 0.66856
+  },
+  "EDM": {
+   "n": 551,
+   "mean_p": 0.5593,
+   "observed": 0.5753,
+   "wilson95": [
+    0.5337,
+    0.6159
+   ],
+   "outside": false,
+   "log_loss": 0.6637
+  },
+  "FLA": {
+   "n": 550,
+   "mean_p": 0.5681,
+   "observed": 0.5945,
+   "wilson95": [
+    0.553,
+    0.6348
+   ],
+   "outside": false,
+   "log_loss": 0.66296
+  },
+  "LAK": {
+   "n": 494,
+   "mean_p": 0.5199,
+   "observed": 0.5,
+   "wilson95": [
+    0.4561,
+    0.5439
+   ],
+   "outside": false,
+   "log_loss": 0.67637
+  },
+  "MIN": {
+   "n": 502,
+   "mean_p": 0.5365,
+   "observed": 0.5538,
+   "wilson95": [
+    0.5101,
+    0.5967
+   ],
+   "outside": false,
+   "log_loss": 0.65721
+  },
+  "MTL": {
+   "n": 512,
+   "mean_p": 0.4227,
+   "observed": 0.4258,
+   "wilson95": [
+    0.3837,
+    0.469
+   ],
+   "outside": false,
+   "log_loss": 0.67533
+  },
+  "NJD": {
+   "n": 483,
+   "mean_p": 0.49,
+   "observed": 0.4679,
+   "wilson95": [
+    0.4238,
+    0.5125
+   ],
+   "outside": false,
+   "log_loss": 0.67888
+  },
+  "NSH": {
+   "n": 482,
+   "mean_p": 0.4815,
+   "observed": 0.4917,
+   "wilson95": [
+    0.4473,
+    0.5362
+   ],
+   "outside": false,
+   "log_loss": 0.66823
+  },
+  "NYI": {
+   "n": 496,
+   "mean_p": 0.491,
+   "observed": 0.4879,
+   "wilson95": [
+    0.4442,
+    0.5318
+   ],
+   "outside": false,
+   "log_loss": 0.67386
+  },
+  "NYR": {
+   "n": 509,
+   "mean_p": 0.5226,
+   "observed": 0.5442,
+   "wilson95": [
+    0.5008,
+    0.587
+   ],
+   "outside": false,
+   "log_loss": 0.67259
+  },
+  "OTT": {
+   "n": 476,
+   "mean_p": 0.4699,
+   "observed": 0.4685,
+   "wilson95": [
+    0.4241,
+    0.5134
+   ],
+   "outside": false,
+   "log_loss": 0.67151
+  },
+  "PHI": {
+   "n": 476,
+   "mean_p": 0.4422,
+   "observed": 0.4181,
+   "wilson95": [
+    0.3746,
+    0.4629
+   ],
+   "outside": false,
+   "log_loss": 0.65686
+  },
+  "PIT": {
+   "n": 485,
+   "mean_p": 0.5256,
+   "observed": 0.501,
+   "wilson95": [
+    0.4567,
+    0.5453
+   ],
+   "outside": false,
+   "log_loss": 0.66978
+  },
+  "SEA": {
+   "n": 424,
+   "mean_p": 0.4688,
+   "observed": 0.4316,
+   "wilson95": [
+    0.3853,
+    0.4792
+   ],
+   "outside": false,
+   "log_loss": 0.66596
+  },
+  "SJS": {
+   "n": 466,
+   "mean_p": 0.3748,
+   "observed": 0.3283,
+   "wilson95": [
+    0.2872,
+    0.3722
+   ],
+   "outside": true,
+   "log_loss": 0.61933
+  },
+  "STL": {
+   "n": 489,
+   "mean_p": 0.4808,
+   "observed": 0.5031,
+   "wilson95": [
+    0.4589,
+    0.5472
+   ],
+   "outside": false,
+   "log_loss": 0.68493
+  },
+  "TBL": {
+   "n": 535,
+   "mean_p": 0.5704,
+   "observed": 0.5832,
+   "wilson95": [
+    0.541,
+    0.6242
+   ],
+   "outside": false,
+   "log_loss": 0.65656
+  },
+  "TOR": {
+   "n": 511,
+   "mean_p": 0.5594,
+   "observed": 0.5675,
+   "wilson95": [
+    0.5242,
+    0.6098
+   ],
+   "outside": false,
+   "log_loss": 0.67961
+  },
+  "UTA": {
+   "n": 170,
+   "mean_p": 0.4918,
+   "observed": 0.4882,
+   "wilson95": [
+    0.4142,
+    0.5628
+   ],
+   "outside": false,
+   "log_loss": 0.67835
+  },
+  "VAN": {
+   "n": 479,
+   "mean_p": 0.4824,
+   "observed": 0.4614,
+   "wilson95": [
+    0.4172,
+    0.5062
+   ],
+   "outside": false,
+   "log_loss": 0.66349
+  },
+  "VGK": {
+   "n": 547,
+   "mean_p": 0.5654,
+   "observed": 0.5777,
+   "wilson95": [
+    0.5359,
+    0.6184
+   ],
+   "outside": false,
+   "log_loss": 0.67208
+  },
+  "WPG": {
+   "n": 497,
+   "mean_p": 0.5342,
+   "observed": 0.5433,
+   "wilson95": [
+    0.4993,
+    0.5866
+   ],
+   "outside": false,
+   "log_loss": 0.66736
+  },
+  "WSH": {
+   "n": 491,
+   "mean_p": 0.5149,
+   "observed": 0.5234,
+   "wilson95": [
+    0.4792,
+    0.5672
+   ],
+   "outside": false,
+   "log_loss": 0.67915
+  }
+ },
+ "by_club_outside": [
+  "SJS"
+ ],
+ "starters": {
+  "by_season": {
+   "2014": {
+    "team_games": 2646,
+    "projected_started": 1829,
+    "rate": 0.6912
+   },
+   "2015": {
+    "team_games": 2638,
+    "projected_started": 1946,
+    "rate": 0.7377
+   },
+   "2016": {
+    "team_games": 2642,
+    "projected_started": 1877,
+    "rate": 0.7104
+   },
+   "2017": {
+    "team_games": 2634,
+    "projected_started": 1927,
+    "rate": 0.7316
+   },
+   "2018": {
+    "team_games": 2709,
+    "projected_started": 1980,
+    "rate": 0.7309
+   },
+   "2019": {
+    "team_games": 2716,
+    "projected_started": 1892,
+    "rate": 0.6966
+   },
+   "2020": {
+    "team_games": 2424,
+    "projected_started": 1616,
+    "rate": 0.6667
+   },
+   "2021": {
+    "team_games": 1904,
+    "projected_started": 1219,
+    "rate": 0.6402
+   },
+   "2022": {
+    "team_games": 2801,
+    "projected_started": 1833,
+    "rate": 0.6544
+   },
+   "2023": {
+    "team_games": 2800,
+    "projected_started": 1836,
+    "rate": 0.6557
+   },
+   "2024": {
+    "team_games": 2800,
+    "projected_started": 1838,
+    "rate": 0.6564
+   },
+   "2025": {
+    "team_games": 2796,
+    "projected_started": 1898,
+    "rate": 0.6788
+   },
+   "2026": {
+    "team_games": 2788,
+    "projected_started": 1839,
+    "rate": 0.6596
+   },
+   "2027": {
+    "team_games": 178,
+    "projected_started": 109,
+    "rate": 0.6124
+   }
+  },
+  "note": "projected = the most likely starter from recent usage and the league's back-to-back rule (hockey/model/ratings.js); actual = the box score's starter",
+  "selection": {
+   "both_projections_right": {
+    "n": 4710,
+    "log_loss": 0.6763,
+    "brier": 0.24171,
+    "auc": 0.5946,
+    "mean_p": 0.5495,
+    "mean_y": 0.541,
+    "calibration_in_the_large": 0.0086,
+    "calibration_slope": 1.214
+   },
+   "at_least_one_wrong": {
+    "n": 4495,
+    "log_loss": 0.6728,
+    "brier": 0.24004,
+    "auc": 0.6058,
+    "mean_p": 0.5479,
+    "mean_y": 0.5419,
+    "calibration_in_the_large": 0.006,
+    "calibration_slope": 1.247
+   }
+  },
+  "confirmation": {
+   "both_projections_right": {
+    "n": 3492,
+    "log_loss": 0.65918,
+    "brier": 0.23361,
+    "auc": 0.6407,
+    "mean_p": 0.5449,
+    "mean_y": 0.5424,
+    "calibration_in_the_large": 0.0025,
+    "calibration_slope": 1.208
+   },
+   "at_least_one_wrong": {
+    "n": 4453,
+    "log_loss": 0.66573,
+    "brier": 0.23669,
+    "auc": 0.6283,
+    "mean_p": 0.5453,
+    "mean_y": 0.5316,
+    "calibration_in_the_large": 0.0138,
+    "calibration_slope": 0.975
+   }
+  }
+ },
+ "totals": {
+  "selection": {
+   "n": 9205,
+   "coverage_80": 0.8814,
+   "mean_bias_goals": -0.118,
+   "note": "total goals is discrete: the central set holding at least 80% probability covers ≥ 80% by construction when calibrated"
+  },
+  "confirmation": {
+   "n": 7945,
+   "coverage_80": 0.8992,
+   "mean_bias_goals": 0.054,
+   "note": "total goals is discrete: the central set holding at least 80% probability covers ≥ 80% by construction when calibrated"
+  },
+  "live": {
+   "n": 89,
+   "coverage_80": 0.8989,
+   "mean_bias_goals": 0.124,
+   "note": "total goals is discrete: the central set holding at least 80% probability covers ≥ 80% by construction when calibrated"
+  }
+ },
+ "drift": {
+  "n": 89,
+  "live_mean_log_loss": 0.65409,
+  "reference_mean": 0.66286,
+  "reference_sd_per_game": 0.232,
+  "z": -0.36,
+  "rolling_100": 0.65409,
+  "cusum": 0,
+  "cusum_max": 0.411,
+  "decision_interval": 1.16,
+  "status": "OK",
+  "path": [
+   {
+    "n": 25,
+    "cusum": 0
+   },
+   {
+    "n": 50,
+    "cusum": 0.112
+   },
+   {
+    "n": 75,
+    "cusum": 0
+   },
+   {
+    "n": 89,
+    "cusum": 0
+   }
+  ],
+  "rule": "one-sided CUSUM on per-game log loss minus the confirmation mean, allowance half a per-game sd, alarm at 5 sd; WATCH when the season mean sits 2 standard errors above the reference. A monitor: it never retrains or reprices anything."
+ }
+}

@@ -66,7 +66,7 @@ function blankTeam() {
   const t = { toi: { ev5: 0, evo: 0, pp: 0, sh: 0, enf: 0, ena: 0 }, toi_ev5_score: { lead: 0, tie: 0, trail: 0 } };
   for (const s of ['ev5', 'evo', 'pp', 'sh', 'enf', 'ena']) t[s] = { gf: 0, ff: 0, cf: 0, xgf: 0 };
   t.ev5_score = { lead: { xgf: 0, ff: 0 }, tie: { xgf: 0, ff: 0 }, trail: { xgf: 0, ff: 0 } };
-  t.pen_minors = 0; t.pen_majors = 0; t.pim = 0;
+  t.pen_minors = 0; t.pen_majors = 0; t.pim = 0; t.pim_unattributed = 0;
   t.goalies = {}; /* goalie id → { fa (unblocked faced), ga (non-EN goals), xga, first_seen_s } faced while in net */
   return t;
 }
@@ -131,6 +131,8 @@ function processGame(meta, events, opts) {
       const sev = String(e.penalty_severity || '').toLowerCase();
       if (sev === 'minor' || sev === 'bench') T[side].pen_minors++; else if (sev === 'major' || sev === 'match') T[side].pen_majors++;
       T[side].pim += num(e.penalty_minutes) || 0;
+      /* a penalty that names no player (too many men, other bench minors): the box score's PIM sums players and leaves it out */
+      if (num(e.event_player_1_id) == null) T[side].pim_unattributed += num(e.penalty_minutes) || 0;
     }
     if ((UNBLOCKED[type] || type === 'BLOCKED_SHOT') && side) {
       const opp = side === 'home' ? 'away' : 'home';
@@ -165,6 +167,10 @@ function processGame(meta, events, opts) {
           rebound, rush, since_prev: sincePrev, prev_type: prevType, prev_same: prevSame, prev_X: prevX, prev_Y: prevY,
           empty_net: bool(e.empty_net) || (side === 'home' ? ag === 0 : hg === 0) ? 1 : 0,
           goalie: num(e.event_goalie_id), shooter: num(e.event_player_1_id), src_xg: num(e.xg),
+          /* on goal (SHOT or GOAL) vs missed, and the credited assists on a goal: for the box-score
+             reconciliation and the player research only (the xG model reads neither) */
+          on_goal: type === 'MISSED_SHOT' ? 0 : 1,
+          a1: type === 'GOAL' ? num(e.event_player_2_id) : null, a2: type === 'GOAL' ? num(e.event_player_3_id) : null,
         };
         shots.push(shot);
         if (st) { tm[st].ff++; tm[st].gf += isGoal; }

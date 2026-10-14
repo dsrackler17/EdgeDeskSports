@@ -39,6 +39,9 @@ const DIST = require('./model/distribution');
 const V = require('../engine/validation');
 const NHLAPI = require('./sources/nhl_api');
 const { dayNum } = require('./model/ratings');
+const X = require('./slate_extras');
+const EX = require('./model/explain');
+const CTX = require('./lab/context');
 
 function arg(name, dflt) { const i = process.argv.indexOf('--' + name); return i >= 0 ? process.argv[i + 1] : dflt; }
 function flag(name) { return process.argv.includes('--' + name); }
@@ -133,6 +136,17 @@ function build(o) {
   const cal = live.pair_calibration || {};
   const eff = live.effects || DIST.neutralEffects();
   const bins = val.windows && val.windows.confirmation && val.windows.confirmation.by_candidate[chosen] ? val.windows.confirmation.by_candidate[chosen].moneyline.bins : [];
+  /* the research layers (hockey/slate_extras.js): statuses, challengers, schedule context, the league-average club */
+  const lab = readJson(path.join(C.PATHS.validation, 'nhl_lab.json'), null);
+  const labLive = readJson(path.join(C.HOCKEY, 'model', 'params', 'lab_live.json'), null);
+  const statuses = X.marketStatuses(val, lab);
+  const challengers = labLive && labLive.for_season === C.CURRENT_SEASON ? X.challengerSet(labLive, lab, games) : null;
+  const contextOf = X.contextBuilder(games, sched);
+  const active = Object.entries(readJson(path.join(C.HOCKEY, 'data', 'teams.json'), { teams: {} }).teams).filter(([, t]) => !t.inactive_since).map(([k]) => k);
+  const neutralByDay = new Map();
+  const neutralFor = (day) => { if (!neutralByDay.has(day)) neutralByDay.set(day, EX.leagueNeutral(active.map((t) => rs.teamRatings(t, day)))); return neutralByDay.get(day); };
+  const quotesRaw = readJson(path.join(C.PATHS.market, 'quotes.json'), null);
+  const quotesLive = quotesRaw && (quotesRaw.status === 'LIVE' || quotesRaw.status === 'CACHED') ? quotesRaw : null;
   const out = [];
   for (const g of upcoming) {
     const day = dayNum(g.date);
@@ -144,11 +158,15 @@ function build(o) {
       f.rest = pd ? Math.min(5, day - dayNum(pd)) : 5; f.rest_opp = po ? Math.min(5, day - dayNum(po)) : 5;
       f.b2b = f.rest === 1 ? 1 : 0; f.b2b_opp = f.rest_opp === 1 ? 1 : 0;
     }
+    /* schedule context and results form (measured; not in the production price — hockey/lab/run.js) */
+    const cxH = contextOf(g.home, g.home, g.date), cxA = contextOf(g.away, g.home, g.date);
+    Object.assign(fh, CTX.pairFeatures(cxH, cxA), { playoff: g.game_type === 'P' ? 1 : 0 });
+    Object.assign(fa, CTX.pairFeatures(cxA, cxH), { playoff: g.game_type === 'P' ? 1 : 0 });
     const ot = g.game_type === 'P' ? { format: 'PO' } : live.ot;
     const price = (model, calib, sh, sa) => {
       const raw = { lh: GLM.predict(model, sh), la: GLM.predict(model, sa) };
       const c = GLM.applyPairCalibration(raw.lh, raw.la, calib);
-      return DIST.game({ lamH: c.lh, lamA: c.la, effects: eff, ot });
+      return DIST.game({ lamH: c.lh, lamA: c.la, effects: eff, ot, periods: true });
     };
     const D = price(gfit, cal[chosen], fh, fa);
     const sheet = DIST.sheet(D);
@@ -163,13 +181,14 @@ function build(o) {
       const sh = Object.assign({}, fh, { opp_goalie_act: rs.goalieRating(a.goalie, day).rate });
       const sa = Object.assign({}, fa, { opp_goalie_act: rs.goalieRating(h.goalie, day).rate });
       const Dg = price(gGoalie, cal.xg_goalie_confirmed, sh, sa);
-      scen.push({ home_goalie: h.goalie, home_goalie_name: goalieNames[h.goalie] || null, away_goalie: a.goalie, away_goalie_name: goalieNames[a.goalie] || null, p_scenario: r4((h.p / sumH) * (a.p / sumA)), p_home: r4(Dg.p_home), exp_total: r2(DIST.expectedTotal(Dg)) });
+      scen.push({ home_goalie: h.goalie, home_goalie_name: goalieNames[h.goalie] || null, away_goalie: a.goalie, away_goalie_name: goalieNames[a.goalie] || null, p_scenario: r4((h.p / sumH) * (a.p / sumA)), p_home: r4(Dg.p_home), exp_total: r2(DIST.expectedTotal(Dg)), lambda: { home: r4(Dg.lamH), away: r4(Dg.lamA) } });
     }
     const Dgoals = price(gGoals, cal.goals_only, fh, fa);
     /* lineups: the previous game's dressed skaters against each club's typical lineup (projected; confirmed only at warmups) */
     const luH = luOk ? ls.snapshot(g.home, null) : { known: false }, luA = luOk ? ls.snapshot(g.away, null) : { known: false };
     const missing = (team) => (luOk ? ls.missingRegulars(team, null, 900).slice(0, 5).map((m) => ({ player_id: m.player_id, name: LU.names[m.player_id] || null, toi_per_game: Math.floor(m.toi_per_game_s / 60) + ':' + String(m.toi_per_game_s % 60).padStart(2, '0'), dressed_in_last_10: m.dressed_in_window, absent_last_games: m.absent_last_games, reading: m.absent_last_games >= 5 ? 'a long absence: injury or no longer on the roster (no feed says which)' : 'absent from the most recent game(s)' })) : []);
     let Dlu = null;
+    if (luH.known && luA.known) { Object.assign(fh, W.lineupFeatures(luH, luA)); Object.assign(fa, W.lineupFeatures(luA, luH)); }
     if (gLineup && luH.known && luA.known) {
       const sh = Object.assign({}, fh, W.lineupFeatures(luH, luA)), sa = Object.assign({}, fa, W.lineupFeatures(luA, luH));
       Dlu = price(gLineup, cal.xg_lineup_confirmed, sh, sa);
@@ -188,6 +207,15 @@ function build(o) {
     out.push({
       game_id: g.game_id, event_key: 'NHL|' + g.game_id, date: g.date, start_utc: g.start_utc, type: g.game_type, home: g.home, away: g.away, venue: g.venue || null, state: g.state || null, schedule_source: g.source,
       lambda: { home: r4(D.lamH), away: r4(D.lamA) },
+      explanation: (() => { const e = EX.explainGame({ model: gfit, cal: cal[chosen], effects: eff, ot, fh, fa, home: g.home, away: g.away, neutral: neutralFor(day) }); e.narrative = EX.narrative(e, g); return e; })(),
+      markets: X.fullMarkets(D, statuses),
+      repricing: { base: { home: r4(D.lamH), away: r4(D.lamA) }, lineup_variant: Dlu ? { home: r4(Dlu.lamH), away: r4(Dlu.lamA) } : null, ot: g.game_type === 'P' ? 'playoff' : 'regular', basis: 'the expected regulation goals of each variant; the page re-prices every market from them with hockey/model/distribution.js and the slate\'s distribution block' },
+      challengers: challengers ? challengers({ fh, fa, price, season: C.CURRENT_SEASON, home: g.home, away: g.away, production_p: D.p_home }) : null,
+      context: {
+        home: { travel_km: cxH.travel_km, tz_shift: cxH.tz_shift, games_in_prior_3_days: cxH.games_3d, road_trip_game: cxH.road_len, recent_5v5_xg_for_vs_last_40: r4(Math.exp(cxH.form_off)), recent_5v5_xg_against_vs_last_40: r4(Math.exp(cxH.form_def)), goals_vs_xg_last_20: r4(Math.exp(cxH.luck_fin)), goals_against_vs_xg_last_20: r4(Math.exp(cxH.luck_sv)) },
+        away: { travel_km: cxA.travel_km, tz_shift: cxA.tz_shift, games_in_prior_3_days: cxA.games_3d, road_trip_game: cxA.road_len, recent_5v5_xg_for_vs_last_40: r4(Math.exp(cxA.form_off)), recent_5v5_xg_against_vs_last_40: r4(Math.exp(cxA.form_def)), goals_vs_xg_last_20: r4(Math.exp(cxA.luck_fin)), goals_against_vs_xg_last_20: r4(Math.exp(cxA.luck_sv)) },
+        note: 'Measured, not in the price: travel, time zones, congestion, road trips, recent form and finishing luck were each tested out of sample (hockey/validation/nhl_lab.json) and none cleared the bar.',
+      },
       prices: {
         moneyline: { home: pct(sheet.moneyline.home), away: pct(sheet.moneyline.away), fair_home: sheet.moneyline.fair_home, fair_away: sheet.moneyline.fair_away, settles: sheet.moneyline.settles },
         regulation: { home: pct(sheet.regulation.home), draw: pct(sheet.regulation.draw), away: pct(sheet.regulation.away), fair_home: sheet.regulation.fair_home, fair_draw: sheet.regulation.fair_draw, fair_away: sheet.regulation.fair_away, settles: sheet.regulation.settles },
@@ -235,6 +263,12 @@ function build(o) {
     });
   }
 
+  /* each captured price against the model (lib/edgedesk_nhl_market.js) */
+  const dataStateNow = lastCompleted && (now - Date.parse(lastCompleted.available_at)) / 3600e3 <= 48 ? 'FRESH' : 'STALE';
+  for (const gm of out) {
+    const ev = quotesLive ? (quotesLive.events || []).find((e) => e.game_id === gm.game_id) : null;
+    gm.market_check = quotesLive ? X.marketChecks(gm, ev, statuses, { now, data_state: dataStateNow, captured_at: quotesLive.generated_at }) : { state: 'NOT_CAPTURED', checks: [], reason: (quotesRaw && quotesRaw.reason) || 'NHL prices are not captured' };
+  }
   const statusOf = (k) => (val.markets && val.markets[k] ? { status: val.markets[k].status, failed: val.markets[k].failed || [], market_status: val.markets[k].market_status } : null);
   const quotes = readJson(path.join(C.PATHS.market, 'quotes.json'), null);
   const quotesByGame = {};
@@ -249,18 +283,26 @@ function build(o) {
     }
   }
   const latestDate = lastCompleted ? lastCompleted.date : null;
-  const dataAgeH = lastCompleted ? (now - Date.parse(lastCompleted.assumed_available_at)) / 3600e3 : null;
+  const dataAgeH = lastCompleted ? (now - Date.parse(lastCompleted.available_at)) / 3600e3 : null; /* games carry the row's assumed_available_at as available_at (walkforward.loadGames) */
   return {
     schema: C.SCHEMA.slate, sport: 'NHL', sport_key: 'icehockey_nhl', generated_at: new Date(now).toISOString(), horizon_hours: o.hours,
     model: { id: 'edgedesk_nhl_v1:' + chosen, chosen, glm_train_seasons: live.glm_train_seasons, params_generated_at: live.generated_at, validation_generated_at: val.generated_at, pair_calibration: cal[chosen] || null },
     readiness: {
       data: { state: dataAgeH != null && dataAgeH <= 48 ? 'FRESH' : 'STALE', latest_completed_game: latestDate, hours_since_latest_result: r2(dataAgeH), results_lagging: lagging.map((g) => ({ game_id: g.game_id, date: g.date, home: g.home, away: g.away })), schedule: o.scheduleSource, nhl_api: o.api },
-      model: { moneyline: statusOf('moneyline'), puck_line: statusOf('puck_line_home_minus_1_5'), total: statusOf('total_over_5_5'), regulation_3way: statusOf('regulation_3way'), team_total: statusOf('team_total') },
+      model: { moneyline: statusOf('moneyline'), puck_line: statusOf('puck_line_home_minus_1_5'), total: statusOf('total_over_5_5'),
+        regulation_3way: statuses.regulation_3way ? { status: statuses.regulation_3way.status, failed: statuses.regulation_3way.failed, market_status: 'NOT_TESTED' } : statusOf('regulation_3way'),
+        team_total: ['team_total:home:2.5', 'team_total:away:2.5'].every((k) => statuses[k]) ? { status: ['team_total:home:2.5', 'team_total:away:2.5'].every((k) => statuses[k].status === 'OUTCOME_VALIDATED') ? 'OUTCOME_VALIDATED' : 'PROVISIONAL', failed: [].concat(statuses['team_total:home:2.5'].failed, statuses['team_total:away:2.5'].failed), market_status: 'NOT_TESTED', basis: 'hockey/validation/nhl_lab.json markets_extended' } : statusOf('team_total'),
+        first_period: statuses.first_period_3way ? { status: statuses.first_period_3way.status, failed: statuses.first_period_3way.failed, market_status: 'NOT_TESTED' } : null },
       market: quotes && quotes.status === 'LIVE' ? { state: 'CAPTURED', captured_at: quotes.generated_at } : { state: quotes ? quotes.status : 'NOT_CAPTURED', reason: quotes ? quotes.reason : 'NHL prices are not captured: icehockey_nhl is not enabled in the odds gateway (supabase/odds_api_gateway.sql) and the repository variable NHL_PRICES is not on' },
       value_claims: { state: 'DISABLED', reasons: ['the NHL model has not been tested against closing prices (no licensed closing-price archive)'].concat(quotes && quotes.status === 'LIVE' ? [] : ['no verified current NHL prices are captured']) },
     },
     record: { moneyline: val.markets && val.markets.moneyline, comparisons: val.comparisons, leakage: val.leakage, live_games_graded: (val.live_games || []).length, second_source: secondSource() },
     quotes_by_game: quotesByGame,
+    market_statuses: statuses,
+    challenger_records: X.challengerRecords(lab),
+    distribution: { effects: eff, ot: live.ot, ot_playoff: { format: 'PO' }, code: 'hockey/model/distribution.js (EDNHLDist), the same code that priced this file' },
+    lab: lab ? { decision: lab.promotion, period_profile: lab.period_profile ? lab.period_profile.verdict : null, shape: lab.shape ? lab.shape.verdict : null,
+      ablation: (lab.ablation ? [].concat(lab.ablation.dropblock || [], lab.ablation.add || []) : []).map((a) => ({ feature: a.feature, selection_delta: a.selection_ml_delta, confirmation_delta: a.confirmation_ml_delta, verdict: a.verdict })), generated_at: lab.generated_at } : null,
     attribution: 'NHL game data: sportsdataverse fastRhockey (compiled from the NHL\'s public game feeds). ' + C.LICENSE.sportsdataverse,
     games: out,
   };
