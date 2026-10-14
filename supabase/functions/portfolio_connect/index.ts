@@ -1659,7 +1659,7 @@ async function ssLink(c, user, body) {
     const f = readerFailure(e);
     logLine('warn', 'sharpsports.link_failed', { code: f.code });
     await connectorEvent(c, 'sharpsports', 'FAILED', f.code);
-    return json({ ok: false, reason: f.code, message: f.message }, f.code === 'UNKNOWN' ? 500 : 502);
+    return json({ ok: false, reason: f.code, message: f.message }, f.code === 'DISABLED' ? 403 : f.code === 'UNKNOWN' ? 500 : 502);
   }
 }
 async function ssDiscover(c, user, body) {
@@ -1668,7 +1668,7 @@ async function ssDiscover(c, user, body) {
   const ctx = ctxFor(c, 45000), started = Date.now();
   let d;
   try { d = await K.sharpsportsDiscover(ctx, g.cfg, { userId: user.id, smokeTestId: g.smokeTestId }); }
-  catch (e) { const f = readerFailure(e); return json({ ok: false, reason: f.code, message: f.message }, f.code === 'UNKNOWN' ? 500 : 502); }
+  catch (e) { const f = readerFailure(e); return json({ ok: false, reason: f.code, message: f.message }, f.code === 'DISABLED' ? 403 : f.code === 'UNKNOWN' ? 500 : 502); }
   /* the first sync of each newly linked book, while this request's budget lasts; the scheduler does the rest */
   const synced = [];
   for (const a of d.accounts) {

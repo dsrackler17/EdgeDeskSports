@@ -34,12 +34,17 @@ on:
       - 'supabase/portfolio_journal.sql'
       - 'supabase/portfolio_connect.sql'
       - 'supabase/portfolio_decision.sql'
+      - 'supabase/portfolio_aggregator.sql'
+      - 'supabase/portfolio_model_context.sql'
+      - 'supabase/model_pnl*.sql'
       - 'supabase/personal_research.sql'
       - 'supabase/parts/portfolio.part*.sql'
       - 'supabase/parts/portfolio_journal.part*.sql'
       - 'supabase/parts/portfolio_connect.part*.sql'
       - 'supabase/parts/portfolio_decision.part*.sql'
+      - 'supabase/parts/portfolio_aggregator.part*.sql'
       - 'supabase/functions/portfolio_connect/**'
+      - 'supabase/functions/sharpsports-webhook/**'
       - 'app.html'
       - 'package.json'
       - '.github/workflows/portfolio-tests.yml'
@@ -54,7 +59,10 @@ on:
       - 'supabase/portfolio_journal.sql'
       - 'supabase/portfolio_connect.sql'
       - 'supabase/portfolio_decision.sql'
+      - 'supabase/portfolio_aggregator.sql'
+      - 'supabase/portfolio_model_context.sql'
       - 'supabase/functions/portfolio_connect/**'
+      - 'supabase/functions/sharpsports-webhook/**'
   workflow_dispatch:
 
 permissions:
@@ -121,6 +129,14 @@ jobs:
         env:
           PORTFOLIO_SQL_REQUIRED: '1'
         run: node tools/portfolio/connect_function.test.js
+      - name: SharpSports BetSync end to end — both shipped functions (portfolio_connect, sharpsports-webhook) over the real migrations, against a fake SharpSports
+        env:
+          PORTFOLIO_SQL_REQUIRED: '1'
+        run: node tools/portfolio/sharpsports.test.js
+      - name: supabase/portfolio_model_context.sql — EdgeDesk's model on a bet, only as recorded before it was placed
+        env:
+          PORTFOLIO_SQL_REQUIRED: '1'
+        run: node tools/portfolio/model_context_sql.test.js
       - name: supabase/portfolio_decision.sql — immutable snapshots, the market path, lineage, experiments, export and delete, as real readers
         env:
           PORTFOLIO_SQL_REQUIRED: '1'
@@ -150,3 +166,7 @@ jobs:
         env:
           PORTFOLIO_UI_REQUIRED: '1'
         run: node tools/portfolio/bet_history.e2e.js
+      - name: BetSync in Chromium — Connect a sportsbook, SharpSports' page and back, the linked account, its bets, the bankroll trend
+        env:
+          PORTFOLIO_UI_REQUIRED: '1'
+        run: node tools/portfolio/sharpsports_ui.e2e.js

@@ -12,7 +12,11 @@
 -- second poke, or a stray one, syncs nothing extra.
 --
 -- While no connector is switched on (the state this ships in), every tick
--- finds nothing due and does nothing.
+-- finds nothing due and does nothing. The same sweep serves SharpSports
+-- BetSync (supabase/portfolio_aggregator.sql): its linked accounts in the
+-- environment the function reads, and the bettors a webhook named. A
+-- webhook also pokes the sweep at once; this schedule is the safety net
+-- for a delivery that is lost.
 --
 -- OPERATOR STEPS.
 --   1  Enable pg_cron and pg_net (Database → Extensions).
@@ -68,6 +72,15 @@ select cron.unschedule('portfolio_feed_path')
 select cron.schedule('portfolio_feed_path', '*/15 * * * *', $job$ select public.portfolio_svc_attach_feed_path(500); $job$)
   where to_regprocedure('public.portfolio_svc_attach_feed_path(integer)') is not null;
 
+-- SHARPSPORTS WEBHOOK LOG: processed and ignored deliveries, and refused
+-- ones, are kept 90 days, then deleted (a failed delivery stays until an
+-- operator has seen it). Only scheduled once portfolio_aggregator.sql is
+-- applied — re-run this file then.
+select cron.unschedule('portfolio_aggregator_prune')
+  where exists (select 1 from cron.job where jobname = 'portfolio_aggregator_prune');
+select cron.schedule('portfolio_aggregator_prune', '17 4 * * *', $job$ select public.portfolio_svc_ag_prune(90); $job$)
+  where to_regprocedure('public.portfolio_svc_ag_prune(integer)') is not null;
+
 -- THE REPORT. Every row should say ok. Whether ticks ARRIVE is proven ten
 -- minutes later: select * from net._http_response order by created desc limit 5;
 -- a 404 is an undeployed function, a 401 one deployed with JWT verification on.
@@ -80,5 +93,8 @@ with checks as (
   union all select 3, 'the Decision Record price feed runs every fifteen minutes (when portfolio_decision.sql is applied)',
          (select count(*) from cron.job where jobname = 'portfolio_feed_path' and schedule = '*/15 * * * *' and active)::int,
          case when to_regprocedure('public.portfolio_svc_attach_feed_path(integer)') is not null then 1 else 0 end
+  union all select 4, 'the SharpSports webhook log is pruned daily (when portfolio_aggregator.sql is applied)',
+         (select count(*) from cron.job where jobname = 'portfolio_aggregator_prune' and schedule = '17 4 * * *' and active)::int,
+         case when to_regprocedure('public.portfolio_svc_ag_prune(integer)') is not null then 1 else 0 end
 )
 select n, check_name, got, want, case when got = want then 'ok' else 'CHECK THIS' end as status from checks order by 1;

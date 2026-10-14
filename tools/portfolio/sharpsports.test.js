@@ -167,6 +167,12 @@ chk('the registry still offers no sportsbook a direct connection (books reach Ed
   const sm = { settled: { n: 5, pnl: 90, staked: 165, roi: 0.5, wins: 2, losses: 1, pushes: 1, cashouts: 1, units_pnl: null, units_n: 0 }, open: { n: 1, exposure: 25 }, placed: { n: 6 } };
   chk('Overview: no Units figure claimed when no position was recorded with a unit size', !/Units/.test(J.hero(sm, 'all time')));
   const sm2 = JSON.parse(JSON.stringify(sm)); sm2.settled.units_pnl = 4.5; sm2.settled.units_n = 3;
+  const mcOk = UI.modelContextView({ accepted_odds_american: -200, market_implied_probability: 0.666667, matched: true, edgedesk_probability: 0.7, probability_basis: 'THE_MODELS_SIDE',
+    model_market_difference: 0.033333, outcome: 'WIN', status: 'WON', realized_return: 0.5, model: { game: 'MIA @ KC', market: 'moneyline', model_side: 'KC ML', recorded_at: '2026-09-18T12:00:00Z', evidence: 'RECONSTRUCTED' } });
+  chk('Decision Record: EdgeDesk\'s model at the time — price, implied, model, difference, outcome — said to be recorded before the bet, labelled reconstructed, and kept out of the results',
+    /66\.7%/.test(mcOk) && /70\.0%/.test(mcOk) && /\+3\.3 pts/.test(mcOk) && /before you placed the bet/.test(mcOk) && /published history, not captured live/.test(mcOk) && /not counted in your results/.test(mcOk));
+  const mcLate = UI.modelContextView({ accepted_odds_american: -115, market_implied_probability: 0.53, matched: false, reason: 'MODEL_AFTER_PLACEMENT' });
+  chk('Decision Record: a model record made after the bet is refused in plain words, with no model figure', /only after you placed the bet/.test(mcLate) && !/EdgeDesk probability/.test(mcLate));
   chk('Overview: units won or lost, with how many positions carry a unit size', /Units/.test(J.hero(sm2, 'all time')) && /\+4\.50u/.test(J.hero(sm2, 'all time')) && /on 3 with a unit size/.test(J.hero(sm2, 'all time')));
 }());
 
@@ -200,7 +206,12 @@ function ssAccount(id, internalId, book, o) {
 }
 function ssFetch(u, init) {
   const h = init.headers || {}, auth = String(h.authorization || ''), p = u.pathname.replace(/^\/v1/, ''), m = (init.method || 'GET').toUpperCase();
-  const as = (kind) => { SS.keyUse.push(m + ' ' + p.replace(/[A-Z]{4}_[A-Za-z0-9]+|ed_[0-9a-f]{32}/g, '{id}') + ' ' + kind); return auth === 'Token ' + (kind === 'public' ? SS_PUB : SS_PRIV); };
+  /* SharpSports' sandbox and live modes each have their own keys; the fake knows both and records which was used */
+  const as = (kind) => {
+    const live = auth === 'Token ' + (kind === 'public' ? 'live-public' : 'live-private');
+    SS.keyUse.push(m + ' ' + p.replace(/[A-Z]{4}_[A-Za-z0-9]+|ed_[0-9a-f]{32}/g, '{id}') + ' ' + kind + (live ? ' LIVE' : ''));
+    return live || auth === 'Token ' + (kind === 'public' ? SS_PUB : SS_PRIV);
+  };
   let x;
   if (m === 'POST' && p === '/context') {
     if (!as('public')) return res(401, { detail: 'bad key' });
@@ -536,6 +547,23 @@ const slip = (id, o) => Object.assign({ id, type: 'single', oddsAmerican: -110, 
     r = await call({ action: 'ss_link' }, 'tok-admin');
     chk('production while the registry has SharpSports off: refused, even for an operator', r.status === 403 && r.body.reason === 'DISABLED');
     chk('…and the database refuses it too', /not enabled/.test(db.mustFail(() => db.service(`select * from public.portfolio_svc_ag_bettor('sharpsports', 'production', ${L(ADMIN)});`)) || ''));
+    const demo = one(db.service(`select public.portfolio_svc_ag_smoke_begin('sharpsports', 'sandbox', 'test');`));
+    r = await call({ action: 'ss_link', smoke_test: demo }, 'tok-admin');
+    chk('a SANDBOX rehearsal (recorded DEMO) never opens production linking, even for an operator', r.status === 403
+      && one(db.sql(`select environment from portfolio_private.connector_smoke_tests where id = ${L(demo)};`)) === 'DEMO'
+      && /not enabled/.test(db.mustFail(() => db.service(`select * from public.portfolio_svc_ag_bettor('sharpsports', 'production', ${L(ADMIN)}, ${L(demo)});`)) || ''));
+    db.service(`update portfolio_private.connector_smoke_tests set stages = ${L(JSON.stringify(Object.fromEntries(K.SMOKE_STAGES.map((x) => [x, { ok: true }]))))}::jsonb where id = ${L(demo)};`);
+    chk('…and finishing it, all ten stages passed, is not PASSED: it cannot be the evidence that switches production on',
+      one(db.service(`select public.portfolio_svc_smoke_finish(${L(demo)});`)) === 'FAILED'
+      && /cannot be enabled/.test(db.mustFail(() => db.service(`update public.portfolio_platform_registry set automatic_enabled = true, tos_review = 'CLEARED', enabled_by_smoke_test = ${L(demo)} where platform_key = 'sharpsports';`)) || ''));
+    const live = one(db.service(`select public.portfolio_svc_ag_smoke_begin('sharpsports', 'production', 'test');`));
+    r = await call({ action: 'ss_link', smoke_test: live }, 'tok-admin');
+    chk('a PRODUCTION smoke test lets its operator link in production while SharpSports is off for readers — with the LIVE public key',
+      r.status === 200 && /\/link\//.test(r.body.url) && SS.keyUse[SS.keyUse.length - 1] === 'POST /context public LIVE'
+      && one(db.sql(`select environment from portfolio_private.connector_smoke_tests where id = ${L(live)};`)) === 'PRODUCTION', r.body);
+    chk('…its production bettor is a separate reference from the sandbox one', +db.sql(`select count(*) from portfolio_private.aggregator_bettors where user_id = ${L(ADMIN)};`) === 2);
+    r = await call({ action: 'ss_link', smoke_test: live }, 'tok-b');
+    chk('…but not a reader holding its id', r.status === 403);
     chk('…and the switch cannot be thrown without a passing live smoke test', /cannot be enabled/.test(db.mustFail(() => db.service(
       `update public.portfolio_platform_registry set automatic_enabled = true, tos_review = 'CLEARED', enabled_by_smoke_test = gen_random_uuid() where platform_key = 'sharpsports';`)) || ''));
     await new Promise((ok) => setTimeout(ok, 3000));   /* let any sandbox sweep an earlier poke started finish */

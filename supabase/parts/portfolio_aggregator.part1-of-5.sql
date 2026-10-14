@@ -89,8 +89,26 @@ begin
   select * into reg from public.portfolio_platform_registry where platform_key = p_provider and automatic_method = 'AUTHORIZED_API';
   if not found then raise exception 'portfolio: % is not a registered aggregator', p_provider using errcode = '22023'; end if;
   if p_env = 'sandbox' then return true; end if;
+  -- only a PRODUCTION smoke test opens production; a sandbox rehearsal (DEMO) never does
   return reg.automatic_enabled or exists (select 1 from portfolio_private.connector_smoke_tests t
-    where t.id = p_smoke_test and t.platform_key = p_provider and t.status = 'RUNNING' and t.started_at > now() - interval '30 days');
+    where t.id = p_smoke_test and t.platform_key = p_provider and t.status = 'RUNNING' and t.environment = 'PRODUCTION'
+      and t.started_at > now() - interval '30 days');
+end $$;
+
+-- A smoke test of an aggregator, in the environment it really runs in: a
+-- sandbox rehearsal is recorded as DEMO, so it can never be the evidence
+-- that switches production on (the registry guard wants PRODUCTION).
+create or replace function public.portfolio_svc_ag_smoke_begin(p_provider text, p_env text, p_run_by text default null)
+returns uuid language plpgsql set search_path = public, portfolio_private, pg_temp as $$
+declare v text; tid uuid;
+begin
+  perform public.portfolio_svc_assert();
+  if p_env not in ('sandbox', 'production') then raise exception 'portfolio: unknown environment %', p_env using errcode = '22023'; end if;
+  select connector_version into v from public.portfolio_platform_registry where platform_key = p_provider and automatic_method = 'AUTHORIZED_API';
+  if v is null then raise exception 'portfolio: % is not a registered aggregator', p_provider using errcode = '22023'; end if;
+  insert into portfolio_private.connector_smoke_tests (platform_key, connector_version, environment, run_by)
+  values (p_provider, v, case p_env when 'production' then 'PRODUCTION' else 'DEMO' end, left(p_run_by, 120)) returning id into tid;
+  return tid;
 end $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
@@ -172,66 +190,4 @@ begin
   perform public.portfolio_svc_assert();
   update portfolio_private.aggregator_bettors set discover_at = null, last_discovered_at = now()
    where provider = p_provider and environment = p_env and user_id = p_user;
-end $$;
-
--- ─────────────────────────────────────────────────────────────────────────────
--- 3. ACCOUNTS — a linked book is a platform account of connection_type
---    AGGREGATOR (tier 1, AUTHORIZED_API), its platform the BOOK's key
--- ─────────────────────────────────────────────────────────────────────────────
--- Create or refresh the reader's account for one linked book, from what the
--- aggregator's API says about it (p_detail: the provider's own state —
--- verified, access, paused, the book — never a credential). A QUICK IMPORT or
--- manual account for the same book is UPGRADED IN PLACE, so its history stays
--- where it is; a disconnected one is reused, so relinking never duplicates.
-create or replace function public.portfolio_svc_ag_account_upsert(p_provider text, p_env text, p_user uuid, p_external_account_id text,
-    p_platform text, p_platform_label text, p_detail jsonb default '{}'::jsonb, p_smoke_test uuid default null)
-returns jsonb language plpgsql set search_path = public, portfolio_private, pg_temp as $$
-declare acct uuid; prev text; created boolean := false; ext text := nullif(btrim(p_external_account_id), '');
-        meta jsonb; clash record;
-begin
-  perform public.portfolio_svc_assert();
-  if not public.portfolio_svc_ag_allowed(p_provider, p_env, p_smoke_test) then
-    raise exception 'portfolio: automatic connection through % is not enabled', p_provider using errcode = '42501';
-  end if;
-  if ext is null or length(ext) > 200 then raise exception 'portfolio: the linked account''s id is required' using errcode = '22023'; end if;
-  if p_platform !~ '^[a-z0-9][a-z0-9_]{1,47}$' or length(btrim(coalesce(p_platform_label, ''))) not between 1 and 60 then
-    raise exception 'portfolio: a book needs a key and a label' using errcode = '22023';
-  end if;
-  if exists (select 1 from public.platform_accounts where user_id = p_user and platform = p_platform and platform_type <> 'SPORTSBOOK') then
-    raise exception 'portfolio: % is not a sportsbook on this account', p_platform using errcode = '22023';
-  end if;
-  meta := jsonb_build_object('provider', p_provider, 'environment', p_env,
-            'provider_state', coalesce(case when jsonb_typeof(p_detail) = 'object' then p_detail end, '{}'::jsonb), 'provider_state_at', now());
-  -- the same linked account, seen before: it may not change environment or provider
-  select id, status, metadata into clash from public.platform_accounts
-   where user_id = p_user and platform = p_platform and connection_type = 'AGGREGATOR' and external_account_id = ext;
-  if found then
-    if clash.metadata->>'provider' is distinct from p_provider or clash.metadata->>'environment' is distinct from p_env then
-      raise exception 'portfolio: that linked account belongs to another provider or environment' using errcode = '23505';
-    end if;
-    acct := clash.id; prev := clash.status;
-  end if;
-  if acct is null then
-    -- upgrade QUICK IMPORT / manual in place, while this book has no linked account yet
-    select id, status into acct, prev from public.platform_accounts
-     where user_id = p_user and platform = p_platform and connection_type in ('CSV', 'MANUAL')
-       and not exists (select 1 from public.platform_accounts b where b.user_id = p_user and b.platform = p_platform and b.connection_type = 'AGGREGATOR')
-     order by case connection_type when 'CSV' then 0 else 1 end, created_at limit 1;
-  end if;
-  if acct is null then
-    insert into public.platform_accounts (user_id, platform, platform_label, platform_type, connection_type, ingestion_method, external_account_id,
-        status, next_sync_at, metadata)
-    values (p_user, p_platform, btrim(p_platform_label), 'SPORTSBOOK', 'AGGREGATOR', 'AUTHORIZED_API', ext, 'SYNCING', now(), meta)
-    returning id into acct;
-    created := true;
-  else
-    update public.platform_accounts set connection_type = 'AGGREGATOR', ingestion_method = 'AUTHORIZED_API', external_account_id = ext,
-           -- relinking a disconnected account starts it syncing again; any other state is the sync's to decide
-           status = case when status in ('DISCONNECTED', 'IMPORT_ONLY', 'MANUAL') then 'SYNCING' else status end,
-           last_error = case when status in ('DISCONNECTED', 'IMPORT_ONLY', 'MANUAL') then null else last_error end,
-           consecutive_failures = case when status in ('DISCONNECTED', 'IMPORT_ONLY', 'MANUAL') then 0 else consecutive_failures end,
-           next_sync_at = now(), metadata = (metadata - 'credential') || meta
-     where id = acct;
-  end if;
-  return jsonb_build_object('account_id', acct, 'created', created, 'previous_status', prev);
 end $$;

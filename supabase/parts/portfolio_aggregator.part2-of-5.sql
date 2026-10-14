@@ -2,6 +2,68 @@
 -- Run the parts IN ORDER in the Supabase SQL editor. Each part holds a whole
 -- number of statements; nothing is cut in the middle. Re-running a part is safe.
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- 3. ACCOUNTS — a linked book is a platform account of connection_type
+--    AGGREGATOR (tier 1, AUTHORIZED_API), its platform the BOOK's key
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Create or refresh the reader's account for one linked book, from what the
+-- aggregator's API says about it (p_detail: the provider's own state —
+-- verified, access, paused, the book — never a credential). A QUICK IMPORT or
+-- manual account for the same book is UPGRADED IN PLACE, so its history stays
+-- where it is; a disconnected one is reused, so relinking never duplicates.
+create or replace function public.portfolio_svc_ag_account_upsert(p_provider text, p_env text, p_user uuid, p_external_account_id text,
+    p_platform text, p_platform_label text, p_detail jsonb default '{}'::jsonb, p_smoke_test uuid default null)
+returns jsonb language plpgsql set search_path = public, portfolio_private, pg_temp as $$
+declare acct uuid; prev text; created boolean := false; ext text := nullif(btrim(p_external_account_id), '');
+        meta jsonb; clash record;
+begin
+  perform public.portfolio_svc_assert();
+  if not public.portfolio_svc_ag_allowed(p_provider, p_env, p_smoke_test) then
+    raise exception 'portfolio: automatic connection through % is not enabled', p_provider using errcode = '42501';
+  end if;
+  if ext is null or length(ext) > 200 then raise exception 'portfolio: the linked account''s id is required' using errcode = '22023'; end if;
+  if p_platform !~ '^[a-z0-9][a-z0-9_]{1,47}$' or length(btrim(coalesce(p_platform_label, ''))) not between 1 and 60 then
+    raise exception 'portfolio: a book needs a key and a label' using errcode = '22023';
+  end if;
+  if exists (select 1 from public.platform_accounts where user_id = p_user and platform = p_platform and platform_type <> 'SPORTSBOOK') then
+    raise exception 'portfolio: % is not a sportsbook on this account', p_platform using errcode = '22023';
+  end if;
+  meta := jsonb_build_object('provider', p_provider, 'environment', p_env,
+            'provider_state', coalesce(case when jsonb_typeof(p_detail) = 'object' then p_detail end, '{}'::jsonb), 'provider_state_at', now());
+  -- the same linked account, seen before: it may not change environment or provider
+  select id, status, metadata into clash from public.platform_accounts
+   where user_id = p_user and platform = p_platform and connection_type = 'AGGREGATOR' and external_account_id = ext;
+  if found then
+    if clash.metadata->>'provider' is distinct from p_provider or clash.metadata->>'environment' is distinct from p_env then
+      raise exception 'portfolio: that linked account belongs to another provider or environment' using errcode = '23505';
+    end if;
+    acct := clash.id; prev := clash.status;
+  end if;
+  if acct is null then
+    -- upgrade QUICK IMPORT / manual in place, while this book has no linked account yet
+    select id, status into acct, prev from public.platform_accounts
+     where user_id = p_user and platform = p_platform and connection_type in ('CSV', 'MANUAL')
+       and not exists (select 1 from public.platform_accounts b where b.user_id = p_user and b.platform = p_platform and b.connection_type = 'AGGREGATOR')
+     order by case connection_type when 'CSV' then 0 else 1 end, created_at limit 1;
+  end if;
+  if acct is null then
+    insert into public.platform_accounts (user_id, platform, platform_label, platform_type, connection_type, ingestion_method, external_account_id,
+        status, next_sync_at, metadata)
+    values (p_user, p_platform, btrim(p_platform_label), 'SPORTSBOOK', 'AGGREGATOR', 'AUTHORIZED_API', ext, 'SYNCING', now(), meta)
+    returning id into acct;
+    created := true;
+  else
+    update public.platform_accounts set connection_type = 'AGGREGATOR', ingestion_method = 'AUTHORIZED_API', external_account_id = ext,
+           -- relinking a disconnected account starts it syncing again; any other state is the sync's to decide
+           status = case when status in ('DISCONNECTED', 'IMPORT_ONLY', 'MANUAL') then 'SYNCING' else status end,
+           last_error = case when status in ('DISCONNECTED', 'IMPORT_ONLY', 'MANUAL') then null else last_error end,
+           consecutive_failures = case when status in ('DISCONNECTED', 'IMPORT_ONLY', 'MANUAL') then 0 else consecutive_failures end,
+           next_sync_at = now(), metadata = (metadata - 'credential') || meta
+     where id = acct;
+  end if;
+  return jsonb_build_object('account_id', acct, 'created', created, 'previous_status', prev);
+end $$;
+
 -- What the aggregator's API says about a linked account now (verified,
 -- access, paused, the book, the latest refresh): kept on the account for the
 -- reader and the operator to see. Never a credential; never from a webhook.
@@ -184,66 +246,4 @@ returns void language plpgsql set search_path = public, portfolio_private, pg_te
 begin
   perform public.portfolio_svc_assert();
   insert into portfolio_private.aggregator_webhook_rejections (provider, reason) values (left(p_provider, 40), left(p_reason, 40));
-end $$;
-
--- Old deliveries go: processed or ignored ones after p_days, rejections
--- after p_days. A FAILED delivery is kept until an operator has seen it.
-create or replace function public.portfolio_svc_ag_prune(p_days int default 90)
-returns jsonb language plpgsql set search_path = public, portfolio_private, pg_temp as $$
-declare d int := greatest(7, least(coalesce(p_days, 90), 3650)); n1 int; n2 int;
-begin
-  perform public.portfolio_svc_assert();
-  delete from portfolio_private.aggregator_webhook_events where status in ('PROCESSED', 'IGNORED') and received_at < now() - make_interval(days => d);
-  get diagnostics n1 = row_count;
-  delete from portfolio_private.aggregator_webhook_rejections where at < now() - make_interval(days => d);
-  get diagnostics n2 = row_count;
-  return jsonb_build_object('events', n1, 'rejections', n2);
-end $$;
-
--- ─────────────────────────────────────────────────────────────────────────────
--- 5. REFRESH REQUESTS — what EdgeDesk asked the aggregator to fetch, and when
--- ─────────────────────────────────────────────────────────────────────────────
-create table if not exists public.portfolio_refresh_requests (
-  id                   uuid        primary key default gen_random_uuid(),
-  user_id              uuid        not null references auth.users(id) on delete cascade,
-  platform_account_id  uuid        not null,
-  provider             text        not null,
-  requested_by         text        not null,
-  status               text        not null default 'REQUESTED',
-  requested_at         timestamptz not null default now(),
-  responded_at         timestamptz null,
-  provider_request_id  text        null,
-  provider_response_id text        null,
-  provider_code        text        null,
-  message              text        null,
-  constraint portfolio_refresh_account_fk foreign key (platform_account_id, user_id)
-    references public.platform_accounts (id, user_id) on delete cascade,
-  constraint portfolio_refresh_by check (requested_by in ('READER', 'SCHEDULER', 'CONNECT', 'OPERATOR')),
-  constraint portfolio_refresh_status check (status in ('REQUESTED', 'ACCEPTED', 'SUCCEEDED', 'FAILED', 'REFUSED', 'TIMED_OUT')),
-  constraint portfolio_refresh_text check (length(provider) <= 40 and coalesce(length(provider_request_id), 0) <= 120
-    and coalesce(length(provider_response_id), 0) <= 120 and coalesce(length(provider_code), 0) <= 40 and coalesce(length(message), 0) <= 300)
-);
-create index if not exists portfolio_refresh_account on public.portfolio_refresh_requests (platform_account_id, requested_at desc);
-create unique index if not exists portfolio_refresh_response_once
-  on public.portfolio_refresh_requests (platform_account_id, provider_response_id) where provider_response_id is not null;
-
--- Ask for a refresh, unless one was asked for this account within
--- p_min_minutes (then null: too soon). A request still open after two hours
--- is closed as TIMED_OUT first.
-create or replace function public.portfolio_svc_ag_refresh_begin(p_account uuid, p_requested_by text, p_min_minutes int default 15)
-returns uuid language plpgsql set search_path = public, pg_temp as $$
-declare a record; rid uuid;
-begin
-  perform public.portfolio_svc_assert();
-  select id, user_id, metadata->>'provider' as provider into a from public.platform_accounts where id = p_account and connection_type = 'AGGREGATOR' for update;
-  if not found then raise exception 'portfolio: no such linked account' using errcode = 'P0002'; end if;
-  update public.portfolio_refresh_requests set status = 'TIMED_OUT', responded_at = now()
-   where platform_account_id = p_account and status in ('REQUESTED', 'ACCEPTED') and requested_at < now() - interval '2 hours';
-  if exists (select 1 from public.portfolio_refresh_requests where platform_account_id = p_account and status not in ('FAILED', 'REFUSED')
-              and requested_at > now() - make_interval(mins => greatest(1, least(coalesce(p_min_minutes, 15), 10080)))) then
-    return null;
-  end if;
-  insert into public.portfolio_refresh_requests (user_id, platform_account_id, provider, requested_by)
-  values (a.user_id, a.id, a.provider, p_requested_by) returning id into rid;
-  return rid;
 end $$;

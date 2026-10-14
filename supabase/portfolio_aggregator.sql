@@ -85,8 +85,26 @@ begin
   select * into reg from public.portfolio_platform_registry where platform_key = p_provider and automatic_method = 'AUTHORIZED_API';
   if not found then raise exception 'portfolio: % is not a registered aggregator', p_provider using errcode = '22023'; end if;
   if p_env = 'sandbox' then return true; end if;
+  -- only a PRODUCTION smoke test opens production; a sandbox rehearsal (DEMO) never does
   return reg.automatic_enabled or exists (select 1 from portfolio_private.connector_smoke_tests t
-    where t.id = p_smoke_test and t.platform_key = p_provider and t.status = 'RUNNING' and t.started_at > now() - interval '30 days');
+    where t.id = p_smoke_test and t.platform_key = p_provider and t.status = 'RUNNING' and t.environment = 'PRODUCTION'
+      and t.started_at > now() - interval '30 days');
+end $$;
+
+-- A smoke test of an aggregator, in the environment it really runs in: a
+-- sandbox rehearsal is recorded as DEMO, so it can never be the evidence
+-- that switches production on (the registry guard wants PRODUCTION).
+create or replace function public.portfolio_svc_ag_smoke_begin(p_provider text, p_env text, p_run_by text default null)
+returns uuid language plpgsql set search_path = public, portfolio_private, pg_temp as $$
+declare v text; tid uuid;
+begin
+  perform public.portfolio_svc_assert();
+  if p_env not in ('sandbox', 'production') then raise exception 'portfolio: unknown environment %', p_env using errcode = '22023'; end if;
+  select connector_version into v from public.portfolio_platform_registry where platform_key = p_provider and automatic_method = 'AUTHORIZED_API';
+  if v is null then raise exception 'portfolio: % is not a registered aggregator', p_provider using errcode = '22023'; end if;
+  insert into portfolio_private.connector_smoke_tests (platform_key, connector_version, environment, run_by)
+  values (p_provider, v, case p_env when 'production' then 'PRODUCTION' else 'DEMO' end, left(p_run_by, 120)) returning id into tid;
+  return tid;
 end $$;
 
 -- ─────────────────────────────────────────────────────────────────────────────
