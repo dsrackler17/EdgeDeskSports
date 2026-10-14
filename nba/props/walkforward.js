@@ -155,7 +155,7 @@ async function main() {
     const bin = (pairs) => { const b = V.binary(pairs); delete b.bins; return { n: b.n, log_loss: b.log_loss, brier: b.brier, mean_p: b.mean_p, observed: b.mean_y, calibration_in_the_large: b.calibration_in_the_large, calibration_slope: b.calibration_slope }; };
     const main = Object.assign({ line: 'main: the half-point nearest the mean' }, bin(list.map((x) => ({ p: x.lp[0], y: x.lp[1] }))));
     const ladderPairs = []; const perLine = [];
-    for (let i = 1; i < nl; i++) { const pr = list.map((x) => ({ p: x.lp[2 * i], y: x.lp[2 * i + 1] })); ladderPairs.push(...pr); perLine.push(Object.assign({ line: (LADDER[fam] || [])[i - 1] }, bin(pr))); }
+    for (let i = 1; i < nl; i++) { const pr = list.map((x) => ({ p: x.lp[2 * i], y: x.lp[2 * i + 1] })); for (const x of pr) ladderPairs.push(x); perLine.push(Object.assign({ line: (LADDER[fam] || [])[i - 1] }, bin(pr))); }
     const ladder = nl > 1 ? Object.assign({ line: 'the alternate-line ladder, pooled', lines: perLine }, bin(ladderPairs)) : null;
     const lines = [main].concat(ladder ? [ladder] : []);
     const cmpSS = V.pairedBootstrap(list.map((x) => ({ date: x.date, a: x.crps, b: x.base_ss })), { B: 500 });
