@@ -1,0 +1,829 @@
+{
+ "teams": {
+  "home": {
+   "id": 41,
+   "name": "UConn Huskies",
+   "short": "UConn",
+   "nickname": "Huskies",
+   "abbrev": "CONN",
+   "color": "#0c2340",
+   "conference": "Big East",
+   "d1": true,
+   "ncaa_team_season_id": "609549",
+   "membership_mapping": "publisher_bridge_explicit_ids"
+  },
+  "away": {
+   "id": 356,
+   "name": "Illinois Fighting Illini",
+   "short": "Illinois",
+   "nickname": "Fighting Illini",
+   "abbrev": "ILL",
+   "color": "#ff5f05",
+   "conference": "Big Ten",
+   "d1": true,
+   "ncaa_team_season_id": "609554",
+   "membership_mapping": "publisher_bridge_explicit_ids"
+  },
+  "venue": "neutral"
+ },
+ "as_of": "2026-04-04T21:39:00.000Z",
+ "baseline": {
+  "home": {
+   "adj_o": 122.5,
+   "adj_d": 91.4,
+   "net": 31.2,
+   "tempo": 63.1,
+   "sd_net": 2.86,
+   "rank_net": 10,
+   "games": 38
+  },
+  "away": {
+   "adj_o": 131.2,
+   "adj_d": 94.2,
+   "net": 37,
+   "tempo": 65.1,
+   "sd_net": 2.92,
+   "rank_net": 5,
+   "games": 36
+  },
+  "net_difference": -5.800000000000001,
+  "net_difference_sd": 4.087297395590391,
+  "venue_points": 0
+ },
+ "projection": {
+  "possessions": 64.09,
+  "points_home": 70.88949034516997,
+  "points_away": 73.90964561559,
+  "margin_home": {
+   "mean": -3.0201552704200108,
+   "sd": 11.642053740021588,
+   "p10": -17.94061134363168,
+   "p90": 11.900300802791657
+  },
+  "total": {
+   "mean": 144.79913596075997,
+   "sd": 16.94590533558993,
+   "p10": 123.08126368266791,
+   "p90": 166.51700823885201
+  },
+  "win_home": 0.39765653061051154,
+  "win_away": 0.6023434693894885,
+  "fair_spread_home": 3.0201552704200108,
+  "fair_total": 144.79913596075997,
+  "margin_probabilities": {
+   "home_by_10_plus": 0.14109226659287188,
+   "home_by_1_9": 0.25665648005899244,
+   "away_by_1_9": 0.313347290238896,
+   "away_by_10_plus": 0.288903541987029
+  },
+  "scenario_applied": false,
+  "baseline_without_scenario": null
+ },
+ "tempo": {
+  "projected_possessions": 64.09,
+  "home": {
+   "tempo": 63.1,
+   "sec_per_poss_off": 18.556,
+   "sec_per_poss_def": 17.6708
+  },
+  "away": {
+   "tempo": 65.1,
+   "sec_per_poss_off": 18.1788,
+   "sec_per_poss_def": 17.8651
+  }
+ },
+ "home_offense_vs_away_defense": {
+  "offense": "UConn",
+  "defense": "Illinois",
+  "adj_offense": 122.5,
+  "adj_defense_of_opponent": 94.2,
+  "projected_points_per_100": 109.22299999999998,
+  "four_factors": [
+   {
+    "key": "efg",
+    "label": "Effective FG%",
+    "offense": 0.5518,
+    "defense_allows": 0.4745,
+    "league": 0.5136,
+    "projected": 0.5127,
+    "points_per_100_vs_league": -0.13067999999998559
+   },
+   {
+    "key": "tov_pct",
+    "label": "Turnover %",
+    "offense": 0.1661,
+    "defense_allows": 0.1304,
+    "league": 0.1667,
+    "projected": 0.1298,
+    "points_per_100_vs_league": 4.756778999999998
+   },
+   {
+    "key": "orb_pct",
+    "label": "Offensive rebound %",
+    "offense": 0.3602,
+    "defense_allows": 0.2685,
+    "league": 0.3052,
+    "projected": 0.3235,
+    "points_per_100_vs_league": 1.1536319999999989
+   },
+   {
+    "key": "ftr",
+    "label": "Free-throw rate (FTA/FGA)",
+    "offense": 0.3352,
+    "defense_allows": 0.2202,
+    "league": 0.3521,
+    "projected": 0.20329999999999998,
+    "points_per_100_vs_league": -1.8153600000000005
+   }
+  ],
+  "factor_implied_points_per_100_vs_league": 3.964371000000011,
+  "shot_and_style_profile": [
+   {
+    "key": "three_rate",
+    "label": "3-point attempt share",
+    "offense": 0.4205,
+    "defense_allows": 0.4171,
+    "league": 0.3947,
+    "projected": 0.4429,
+    "interaction": "HYPOTHESIS_NOT_SUPPORTED"
+   },
+   {
+    "key": "rim_rate",
+    "label": "Rim attempt share",
+    "offense": 0.4295,
+    "defense_allows": 0.3127,
+    "league": 0.4055,
+    "projected": 0.33669999999999994,
+    "interaction": "HYPOTHESIS_NOT_SUPPORTED"
+   },
+   {
+    "key": "mid_rate",
+    "label": "Mid-range attempt share",
+    "offense": 0.1488,
+    "defense_allows": 0.2669,
+    "league": 0.1998,
+    "projected": 0.2159,
+    "interaction": "UNTESTED"
+   },
+   {
+    "key": "three_pct",
+    "label": "3-point FG%",
+    "offense": 0.3422,
+    "defense_allows": 0.3289,
+    "league": 0.3379,
+    "projected": 0.33320000000000005,
+    "interaction": "UNTESTED"
+   },
+   {
+    "key": "rim_pct",
+    "label": "Rim FG%",
+    "offense": 0.6265,
+    "defense_allows": 0.5729,
+    "league": 0.584,
+    "projected": 0.6153999999999998,
+    "interaction": "UNTESTED"
+   },
+   {
+    "key": "stl_pct",
+    "label": "Steal %",
+    "offense": 0.0868,
+    "defense_allows": 0.065,
+    "league": 0.0946,
+    "projected": 0.05719999999999999,
+    "interaction": "UNTESTED"
+   },
+   {
+    "key": "blk_pct",
+    "label": "Block % of 2PA",
+    "offense": 0.0935,
+    "defense_allows": 0.1254,
+    "league": 0.0949,
+    "projected": 0.12400000000000001,
+    "interaction": "UNTESTED"
+   },
+   {
+    "key": "ast_share",
+    "label": "Assisted share of makes",
+    "offense": 0.639,
+    "defense_allows": 0.492,
+    "league": 0.5231,
+    "projected": 0.6079,
+    "interaction": "UNTESTED"
+   },
+   {
+    "key": "sec_per_poss",
+    "label": "Seconds per possession",
+    "offense": 18.556,
+    "defense_allows": 17.8651,
+    "league": 17.3133,
+    "projected": 19.1078,
+    "interaction": "UNTESTED"
+   }
+  ],
+  "note": "Projected rates are additive (offense + defense - league): a description of the matchup on the scale of each rate. The score projection comes from the efficiency ratings; style terms add no points because no style interaction passed validation."
+ },
+ "away_offense_vs_home_defense": {
+  "offense": "Illinois",
+  "defense": "UConn",
+  "adj_offense": 131.2,
+  "adj_defense_of_opponent": 91.4,
+  "projected_points_per_100": 115.069,
+  "four_factors": [
+   {
+    "key": "efg",
+    "label": "Effective FG%",
+    "offense": 0.5507,
+    "defense_allows": 0.4715,
+    "league": 0.5136,
+    "projected": 0.5086,
+    "points_per_100_vs_league": -0.7259999999999844
+   },
+   {
+    "key": "tov_pct",
+    "label": "Turnover %",
+    "offense": 0.1361,
+    "defense_allows": 0.1838,
+    "league": 0.1667,
+    "projected": 0.15319999999999998,
+    "points_per_100_vs_league": 1.7402850000000014
+   },
+   {
+    "key": "orb_pct",
+    "label": "Offensive rebound %",
+    "offense": 0.392,
+    "defense_allows": 0.2779,
+    "league": 0.3052,
+    "projected": 0.3646999999999999,
+    "points_per_100_vs_league": 3.750879999999993
+   },
+   {
+    "key": "ftr",
+    "label": "Free-throw rate (FTA/FGA)",
+    "offense": 0.3448,
+    "defense_allows": 0.3927,
+    "league": 0.3521,
+    "projected": 0.3854,
+    "points_per_100_vs_league": 0.40625999999999995
+   }
+  ],
+  "factor_implied_points_per_100_vs_league": 5.17142500000001,
+  "shot_and_style_profile": [
+   {
+    "key": "three_rate",
+    "label": "3-point attempt share",
+    "offense": 0.4843,
+    "defense_allows": 0.3614,
+    "league": 0.3947,
+    "projected": 0.451,
+    "interaction": "HYPOTHESIS_NOT_SUPPORTED"
+   },
+   {
+    "key": "rim_rate",
+    "label": "Rim attempt share",
+    "offense": 0.3821,
+    "defense_allows": 0.4229,
+    "league": 0.4055,
+    "projected": 0.3994999999999999,
+    "interaction": "HYPOTHESIS_NOT_SUPPORTED"
+   },
+   {
+    "key": "mid_rate",
+    "label": "Mid-range attempt share",
+    "offense": 0.1348,
+    "defense_allows": 0.2159,
+    "league": 0.1998,
+    "projected": 0.1509,
+    "interaction": "UNTESTED"
+   },
+   {
+    "key": "three_pct",
+    "label": "3-point FG%",
+    "offense": 0.3438,
+    "defense_allows": 0.3311,
+    "league": 0.3379,
+    "projected": 0.3370000000000001,
+    "interaction": "UNTESTED"
+   },
+   {
+    "key": "rim_pct",
+    "label": "Rim FG%",
+    "offense": 0.6427,
+    "defense_allows": 0.5121,
+    "league": 0.584,
+    "projected": 0.5708000000000001,
+    "interaction": "UNTESTED"
+   },
+   {
+    "key": "stl_pct",
+    "label": "Steal %",
+    "offense": 0.0857,
+    "defense_allows": 0.1049,
+    "league": 0.0946,
+    "projected": 0.09599999999999999,
+    "interaction": "UNTESTED"
+   },
+   {
+    "key": "blk_pct",
+    "label": "Block % of 2PA",
+    "offense": 0.085,
+    "defense_allows": 0.147,
+    "league": 0.0949,
+    "projected": 0.1371,
+    "interaction": "UNTESTED"
+   },
+   {
+    "key": "ast_share",
+    "label": "Assisted share of makes",
+    "offense": 0.5005,
+    "defense_allows": 0.4854,
+    "league": 0.5231,
+    "projected": 0.4628,
+    "interaction": "UNTESTED"
+   },
+   {
+    "key": "sec_per_poss",
+    "label": "Seconds per possession",
+    "offense": 18.1788,
+    "defense_allows": 17.6708,
+    "league": 17.3133,
+    "projected": 18.536299999999994,
+    "interaction": "UNTESTED"
+   }
+  ],
+  "note": "Projected rates are additive (offense + defense - league): a description of the matchup on the scale of each rate. The score projection comes from the efficiency ratings; style terms add no points because no style interaction passed validation."
+ },
+ "players": {
+  "home": [
+   {
+    "id": 9324576,
+    "name": "Alex Karaban",
+    "pos": "F",
+    "expected_minutes": 36.8,
+    "impact_net": 7.49,
+    "impact_sd": 3.09,
+    "contribution_ppg": 4.04,
+    "replacement_cost_ppg": -1.34,
+    "separable": true,
+    "roles": [
+     "shooter",
+     "ball_secure"
+    ]
+   },
+   {
+    "id": 10261786,
+    "name": "Silas Demary Jr.",
+    "pos": "G",
+    "expected_minutes": 25.6,
+    "impact_net": 7.16,
+    "impact_sd": 3.11,
+    "contribution_ppg": 3.14,
+    "replacement_cost_ppg": -1.09,
+    "separable": false,
+    "roles": [
+     "creator",
+     "disruptor"
+    ]
+   },
+   {
+    "id": 9324580,
+    "name": "Tarris Reed Jr.",
+    "pos": "C",
+    "expected_minutes": 30.9,
+    "impact_net": 8.11,
+    "impact_sd": 3.16,
+    "contribution_ppg": 3.07,
+    "replacement_cost_ppg": -1.51,
+    "separable": false,
+    "roles": [
+     "rim_pressure",
+     "rebounder",
+     "disruptor"
+    ]
+   },
+   {
+    "id": 9324575,
+    "name": "Jayden Ross",
+    "pos": "F",
+    "expected_minutes": 21,
+    "impact_net": 7.04,
+    "impact_sd": 3.14,
+    "contribution_ppg": 1.82,
+    "replacement_cost_ppg": -0.52,
+    "separable": true,
+    "roles": [
+     "disruptor"
+    ]
+   },
+   {
+    "id": 9324574,
+    "name": "Solo Ball",
+    "pos": "G",
+    "expected_minutes": 26.4,
+    "impact_net": 3.69,
+    "impact_sd": 3.07,
+    "contribution_ppg": 1.62,
+    "replacement_cost_ppg": 0.51,
+    "separable": false,
+    "roles": [
+     "ball_secure"
+    ]
+   }
+  ],
+  "away": [
+   {
+    "id": 10809734,
+    "name": "Keaton Wagler",
+    "pos": "G",
+    "expected_minutes": 36.3,
+    "impact_net": 9.3,
+    "impact_sd": 3.1,
+    "contribution_ppg": 5.13,
+    "replacement_cost_ppg": -2.61,
+    "separable": true,
+    "roles": [
+     "creator",
+     "shooter",
+     "rim_pressure",
+     "ball_secure"
+    ]
+   },
+   {
+    "id": 10809707,
+    "name": "David Mirkovic",
+    "pos": "F",
+    "expected_minutes": 32.8,
+    "impact_net": 6.52,
+    "impact_sd": 3.07,
+    "contribution_ppg": 3.13,
+    "replacement_cost_ppg": -0.55,
+    "separable": false,
+    "roles": [
+     "creator",
+     "rebounder"
+    ]
+   },
+   {
+    "id": 10809718,
+    "name": "Zvonimir Ivisic",
+    "pos": "C",
+    "expected_minutes": 15.3,
+    "impact_net": 8.14,
+    "impact_sd": 3.16,
+    "contribution_ppg": 2.32,
+    "replacement_cost_ppg": -0.68,
+    "separable": true,
+    "roles": [
+     "rebounder",
+     "ball_secure",
+     "disruptor"
+    ]
+   },
+   {
+    "id": 9324632,
+    "name": "Kylan Boswell",
+    "pos": "G",
+    "expected_minutes": 27.7,
+    "impact_net": 4.98,
+    "impact_sd": 3.07,
+    "contribution_ppg": 1.98,
+    "replacement_cost_ppg": 0.26,
+    "separable": true,
+    "roles": [
+     "creator",
+     "ball_secure"
+    ]
+   },
+   {
+    "id": 10809716,
+    "name": "Ben Humrichous",
+    "pos": "F",
+    "expected_minutes": 21.4,
+    "impact_net": 5.41,
+    "impact_sd": 3.07,
+    "contribution_ppg": 1.97,
+    "replacement_cost_ppg": 0.09,
+    "separable": true,
+    "roles": [
+     "shooter"
+    ]
+   }
+  ]
+ },
+ "lineups": {
+  "home": [
+   {
+    "players": [
+     "Solo Ball",
+     "Alex Karaban",
+     "Silas Demary Jr.",
+     "Tarris Reed Jr.",
+     "Braylon Mullins"
+    ],
+    "ids": [
+     9324574,
+     9324576,
+     10261786,
+     9324580,
+     10261818
+    ],
+    "minutes": 311.6,
+    "games": 24,
+    "off_poss": 489,
+    "def_poss": 491,
+    "raw_off": 118.8,
+    "raw_def": 106.3,
+    "raw_net": 12.5,
+    "adjusted_net": 28,
+    "player_sum": 29.6,
+    "pooled_net": 29.6,
+    "weight_on_own_results": 0
+   },
+   {
+    "players": [
+     "Jaylin Stewart",
+     "Solo Ball",
+     "Alex Karaban",
+     "Silas Demary Jr.",
+     "Tarris Reed Jr."
+    ],
+    "ids": [
+     9324573,
+     9324574,
+     9324576,
+     10261786,
+     9324580
+    ],
+    "minutes": 71.3,
+    "games": 15,
+    "off_poss": 128,
+    "def_poss": 140,
+    "raw_off": 125.8,
+    "raw_def": 90.7,
+    "raw_net": 35.1,
+    "adjusted_net": 47.3,
+    "player_sum": 29.2,
+    "pooled_net": 29.2,
+    "weight_on_own_results": 0
+   },
+   {
+    "players": [
+     "Jaylin Stewart",
+     "Solo Ball",
+     "Alex Karaban",
+     "Silas Demary Jr.",
+     "Eric Reibe"
+    ],
+    "ids": [
+     9324573,
+     9324574,
+     9324576,
+     10261786,
+     10261832
+    ],
+    "minutes": 58.9,
+    "games": 16,
+    "off_poss": 110,
+    "def_poss": 106,
+    "raw_off": 101.8,
+    "raw_def": 111.3,
+    "raw_net": -9.5,
+    "adjusted_net": -1.4,
+    "player_sum": 23.7,
+    "pooled_net": 23.7,
+    "weight_on_own_results": 0
+   }
+  ],
+  "away": [
+   {
+    "players": [
+     "Tomislav Ivisic",
+     "Kylan Boswell",
+     "David Mirkovic",
+     "Andrej Stojakovic",
+     "Keaton Wagler"
+    ],
+    "ids": [
+     9324630,
+     9324632,
+     10809707,
+     10809730,
+     10809734
+    ],
+    "minutes": 134.8,
+    "games": 18,
+    "off_poss": 225,
+    "def_poss": 226,
+    "raw_off": 127.1,
+    "raw_def": 112.4,
+    "raw_net": 14.7,
+    "adjusted_net": 28.2,
+    "player_sum": 29.6,
+    "pooled_net": 29.6,
+    "weight_on_own_results": 0
+   },
+   {
+    "players": [
+     "Tomislav Ivisic",
+     "Kylan Boswell",
+     "David Mirkovic",
+     "Keaton Wagler",
+     "Jake Davis"
+    ],
+    "ids": [
+     9324630,
+     9324632,
+     10809707,
+     10809734,
+     9324631
+    ],
+    "minutes": 136.4,
+    "games": 17,
+    "off_poss": 212,
+    "def_poss": 210,
+    "raw_off": 128.3,
+    "raw_def": 101.9,
+    "raw_net": 26.4,
+    "adjusted_net": 40.5,
+    "player_sum": 28.8,
+    "pooled_net": 28.8,
+    "weight_on_own_results": 0
+   },
+   {
+    "players": [
+     "Tomislav Ivisic",
+     "David Mirkovic",
+     "Andrej Stojakovic",
+     "Keaton Wagler",
+     "Jake Davis"
+    ],
+    "ids": [
+     9324630,
+     10809707,
+     10809730,
+     10809734,
+     9324631
+    ],
+    "minutes": 85.1,
+    "games": 12,
+    "off_poss": 148,
+    "def_poss": 138,
+    "raw_off": 125.7,
+    "raw_def": 107.2,
+    "raw_net": 18.4,
+    "adjusted_net": 36.4,
+    "player_sum": 28.5,
+    "pooled_net": 28.5,
+    "weight_on_own_results": 0
+   }
+  ]
+ },
+ "context": {
+  "venue": "neutral site",
+  "rest_days": {
+   "home": 6,
+   "away": 7
+  },
+  "depth": {
+   "home": {
+    "players_10_plus_mpg": 7,
+    "top5_minutes_share": 0.683,
+    "bench_minutes_share": 0.317,
+    "returning_minutes_share": 0.561,
+    "transfers_in": [
+     "Silas Demary Jr.",
+     "Malachi Smith",
+     "Dwayne Koroma",
+     "Alec Millender"
+    ],
+    "top_player_share_of_positive_contribution": 0.237
+   },
+   "away": {
+    "players_10_plus_mpg": 8,
+    "top5_minutes_share": 0.664,
+    "bench_minutes_share": 0.336,
+    "returning_minutes_share": 0.45,
+    "transfers_in": [
+     "Andrej Stojakovic",
+     "Zvonimir Ivisic"
+    ],
+    "top_player_share_of_positive_contribution": 0.266
+   }
+  },
+  "personnel": "No confirmed availability or starting-lineup feed exists: the projection assumes each team's usual rotation as of the data date."
+ },
+ "conditions": [
+  {
+   "kind": "player_out",
+   "team": "UConn",
+   "player": "Alex Karaban",
+   "conditional": true,
+   "margin_change_home": -1.2285711968074722,
+   "win_home_after": 0.35919626146144285,
+   "sd_added": 1.8112993863799958
+  },
+  {
+   "kind": "player_out",
+   "team": "UConn",
+   "player": "Tarris Reed Jr.",
+   "conditional": true,
+   "margin_change_home": -1.3807582776163843,
+   "win_home_after": 0.3539409429725582,
+   "sd_added": 1.5523190186879257
+  },
+  {
+   "kind": "foul_trouble",
+   "team": "UConn",
+   "player": "Silas Demary Jr.",
+   "minutes_cap": 22,
+   "conditional": true,
+   "margin_change_home": -0.07712646762401132,
+   "win_home_after": 0.3951070094826325
+  },
+  {
+   "kind": "player_out",
+   "team": "Illinois",
+   "player": "Keaton Wagler",
+   "conditional": true,
+   "margin_change_home": 2.312258642906338,
+   "win_home_after": 0.4760411864934734,
+   "sd_added": 1.7991393555909136
+  },
+  {
+   "kind": "player_out",
+   "team": "Illinois",
+   "player": "David Mirkovic",
+   "conditional": true,
+   "margin_change_home": 0.4915505063976031,
+   "win_home_after": 0.414807941648915,
+   "sd_added": 1.5915029434683805
+  },
+  {
+   "kind": "foul_trouble",
+   "team": "Illinois",
+   "player": "Keaton Wagler",
+   "minutes_cap": 22,
+   "conditional": true,
+   "margin_change_home": 0.8001816273330311,
+   "win_home_after": 0.4244925230455367
+  },
+  {
+   "kind": "pace",
+   "detail": "four possessions more or fewer than projected",
+   "total_change": 8.97168
+  },
+  {
+   "kind": "three_point_variance",
+   "team": "UConn",
+   "detail": "one game-level standard deviation of its 3-point percentage",
+   "points": 7.763523299999999
+  },
+  {
+   "kind": "three_point_variance",
+   "team": "Illinois",
+   "detail": "one game-level standard deviation of its 3-point percentage",
+   "points": 7.072906077000001
+  }
+ ],
+ "interactions": {
+  "status": {
+   "three_rate": "HYPOTHESIS_NOT_SUPPORTED",
+   "orb_pct": "HYPOTHESIS_NOT_SUPPORTED",
+   "tov_pct": "HYPOTHESIS_NOT_SUPPORTED",
+   "ftr": "HYPOTHESIS_NOT_SUPPORTED",
+   "rim_rate": "HYPOTHESIS_NOT_SUPPORTED"
+  },
+  "holdout": {
+   "n": 10280,
+   "clusters": 134,
+   "mean_diff": 0.01295,
+   "ci95": [
+    -0.11516,
+    0.14196
+   ]
+  },
+  "rule": "MODEL_SUPPORTED requires a 2025 coefficient beyond 1.96 SE and a 2026 improvement whose 95% interval excludes zero; otherwise the matchup page adds no points for it"
+ },
+ "assumptions": [
+  "Ratings are opponent-adjusted points per 100 possessions against an average D1 team; uncertainty is the calibrated out-of-sample spread.",
+  "Win probability includes overtime; margin and total are normal distributions calibrated on earlier out-of-sample games.",
+  "Player scenarios move minutes between players and price them with on-court impact estimates; they are conditional estimates, not confirmed availability, and did not improve game predictions in validation.",
+  "Style comparisons are descriptive; no style interaction is added to the score because none passed validation."
+ ],
+ "market": {
+  "status": "UNAVAILABLE",
+  "message": "market comparison unavailable",
+  "reason": "No men's college basketball odds source is configured: EdgeDesk's odds gateway does not capture basketball, and no quotes file in the market_quotes contract is present.",
+  "rows": []
+ },
+ "result": {
+  "home_points": 71,
+  "away_points": 62,
+  "margin_home": 9,
+  "total": 133,
+  "overtime": 0,
+  "note": "recorded after the report: the report used only games finished before tip"
+ },
+ "event": "NCAA Men's Basketball Championship - Final Four",
+ "game_id": 401856598,
+ "date": "2026-04-04"
+}

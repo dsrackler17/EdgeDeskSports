@@ -1,0 +1,284 @@
+{
+  "family": "basketball",
+  "table": "tracking",
+  "grain": "one player game tracking split",
+  "priority": "P2",
+  "default_source": "authorized tracking / licensed play types",
+  "definition_status": "canonical_contract_not_claim_of_provider_coverage",
+  "keys": [
+    "record_id",
+    "revision"
+  ],
+  "columns": [
+    {
+      "field": "record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical record ID; do not use display names as keys.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "event_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical event identifier with provider mapping maintained separately.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "entity_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Canonical player, team, fighter or lineup identifier appropriate to table grain.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "source_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Source registry identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "source_record_id",
+      "type": "text",
+      "unit": "identifier",
+      "description": "Original provider record identifier.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "occurred_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "When the event or measurement occurred in UTC; not when it became available.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "known_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "First demonstrably available timestamp in UTC; null if historical availability is unknown.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": true
+    },
+    {
+      "field": "retrieved_at",
+      "type": "timestamp",
+      "unit": "UTC",
+      "description": "UTC ingestion time; never backdate this to event time.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "revision",
+      "type": "integer",
+      "unit": "none",
+      "description": "Monotone version of this source record.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "quality_status",
+      "type": "text",
+      "unit": "none",
+      "description": "observed, estimated, missing, conflict, quarantined or restricted.",
+      "priority": "P0",
+      "availability": "metadata",
+      "nullable": false
+    },
+    {
+      "field": "touches",
+      "type": "integer",
+      "unit": "count",
+      "description": "Touches.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "frontcourt_touches",
+      "type": "integer",
+      "unit": "count",
+      "description": "Frontcourt touches.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "passes",
+      "type": "integer",
+      "unit": "count",
+      "description": "Passes.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "potential_assists",
+      "type": "integer",
+      "unit": "count",
+      "description": "Potential assists.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "rebound_chances",
+      "type": "integer",
+      "unit": "count",
+      "description": "Rebound chances.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "contested_rebound_chances",
+      "type": "integer",
+      "unit": "count",
+      "description": "Contested rebound chances.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "drives",
+      "type": "integer",
+      "unit": "count",
+      "description": "Drives.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "paint_touches",
+      "type": "integer",
+      "unit": "count",
+      "description": "Paint touches.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "elbow_touches",
+      "type": "integer",
+      "unit": "count",
+      "description": "Elbow touches.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "post_touches",
+      "type": "integer",
+      "unit": "count",
+      "description": "Post touches.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "catch_shoot_attempts",
+      "type": "integer",
+      "unit": "count",
+      "description": "Catch shoot attempts.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "pullup_attempts",
+      "type": "integer",
+      "unit": "count",
+      "description": "Pullup attempts.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "pick_roll_ballhandler_possessions",
+      "type": "integer",
+      "unit": "count",
+      "description": "Pick roll ballhandler possessions.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "pick_roll_rollman_possessions",
+      "type": "integer",
+      "unit": "count",
+      "description": "Pick roll rollman possessions.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "isolation_possessions",
+      "type": "integer",
+      "unit": "count",
+      "description": "Isolation possessions.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "spotup_possessions",
+      "type": "integer",
+      "unit": "count",
+      "description": "Spotup possessions.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "handoff_possessions",
+      "type": "integer",
+      "unit": "count",
+      "description": "Handoff possessions.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "average_defender_distance",
+      "type": "number",
+      "unit": "feet",
+      "description": "Average defender distance.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "touch_time_seconds",
+      "type": "integer",
+      "unit": "seconds",
+      "description": "Touch time seconds.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    },
+    {
+      "field": "distance_travelled_miles",
+      "type": "number",
+      "unit": "miles",
+      "description": "Distance travelled miles.",
+      "priority": "P2",
+      "availability": "post_event_or_explicit_provider_timestamp",
+      "nullable": true
+    }
+  ]
+}

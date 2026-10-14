@@ -69,6 +69,7 @@
      "neutral-site games (priced with home ice: my feed has no neutral flag; 4 such games in 2024-25)"
     ]
    },
+   "research": null,
    "readiness": {
     "state": "OUTCOME_VALIDATED",
     "label": "Validated vs outcomes — moneyline, spread",
@@ -242,6 +243,7 @@
      "in-season quarterback starts on the board (the listed starters are recorded after the game; replayed as a confirmed-starter scenario they did not earn a place)"
     ]
    },
+   "research": null,
    "readiness": {
     "state": "OUTCOME_VALIDATED",
     "label": "Validated vs outcomes — spread",
@@ -395,6 +397,7 @@
      "an official availability feed (none exists)"
     ]
    },
+   "research": null,
    "readiness": {
     "state": "OUTCOME_VALIDATED",
     "label": "Validated vs outcomes — total only; spread experimental",
@@ -548,6 +551,7 @@
      "late starter changes"
     ]
    },
+   "research": null,
    "readiness": {
     "state": "OUTCOME_VALIDATED",
     "label": "Validated vs outcomes — spread only; moneyline experimental",
@@ -686,6 +690,7 @@
      "weather"
     ]
    },
+   "research": null,
    "readiness": {
     "state": "RESEARCH_ONLY",
     "label": "Research only",
@@ -800,6 +805,7 @@
      "pace (totals come from points ratings, not possessions)"
     ]
    },
+   "research": null,
    "readiness": {
     "state": "OUTCOME_VALIDATED",
     "label": "Validated vs outcomes — moneyline, spread, total",
@@ -939,6 +945,7 @@
      "travel"
     ]
    },
+   "research": null,
    "readiness": {
     "state": "OUTCOME_VALIDATED",
     "label": "Validated vs outcomes — spread, total only; moneyline experimental",
@@ -1065,6 +1072,14 @@
       "sources": [
        "fte_nba"
       ]
+     },
+     {
+      "name": "opponent-adjusted efficiency and tempo with player impact (research engine, basketball/ncaam_research)",
+      "role": "research engine: beats the points ratings on held-out 2025-26 margins and win probability; not wired to the board",
+      "sources": [
+       "massey1997",
+       "kubatko2007"
+      ]
      }
     ],
     "inputs": [
@@ -1075,6 +1090,11 @@
      "travel",
      "tempo"
     ]
+   },
+   "research": {
+    "page": "/research/ncaam/",
+    "engine": "basketball/ncaam_research",
+    "validation": "basketball/ncaam_research/published/validation_team.json"
    },
    "readiness": {
     "state": "OUTCOME_VALIDATED",
@@ -1158,6 +1178,13 @@
      "cadence": "one-off",
      "license": "research copy",
      "cost": "free"
+    },
+    {
+     "source": "College basketball data pack (datapack/ncaam_v1)",
+     "what": "2024-2026 ESPN boxes, 2026 possessions, lineups, shots and publisher RAPM (research engine)",
+     "cadence": "one-off",
+     "license": "CC BY 4.0 per release README; ESPN/NCAA terms",
+     "cost": "free"
     }
    ],
    "gaps": [
@@ -1213,6 +1240,7 @@
      "travel"
     ]
    },
+   "research": null,
    "readiness": {
     "state": "OUTCOME_VALIDATED",
     "label": "Validated vs outcomes — moneyline, spread, total",
@@ -1360,6 +1388,7 @@
      "schedule congestion"
     ]
    },
+   "research": null,
    "readiness": {
     "state": "OUTCOME_VALIDATED",
     "label": "Validated vs outcomes — epl.spread, bundesliga.spread, ligue1.spread only; moneyline experimental",
@@ -1674,6 +1703,7 @@
      "injuries, retirements"
     ]
    },
+   "research": null,
    "readiness": {
     "state": "RETIRED",
     "label": "Retired",
@@ -1775,6 +1805,7 @@
      "everything priced: the only probability today is the market's de-vigged one"
     ]
    },
+   "research": null,
    "readiness": {
     "state": "RESEARCH_ONLY",
     "label": "Research only",
@@ -1908,5 +1939,5 @@
   "UNAVAILABLE": "Unavailable",
   "RETIRED": "Retired"
  },
- "generated_at": "2026-10-14T00:36:17.177Z"
+ "generated_at": "2026-10-14T03:38:56.901Z"
 }

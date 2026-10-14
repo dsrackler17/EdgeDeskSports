@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- not indexed, like the CFB terminal: whether research sits behind the subscription is the owner's call -->
+<meta name="robots" content="noindex">
+<title>NCAAM Research · EdgeDesk</title>
+<meta name="description" content="EdgeDesk's independent men's college basketball research: opponent-adjusted team strength, player impact, lineups, matchups and conditional scenarios, with their validation and uncertainty. Research, not picks.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="/research/ncaam/research.css?v=20261014a">
+</head>
+<body>
+<!-- THE MEN'S COLLEGE BASKETBALL RESEARCH ENGINE.
+     Everything shown is read from basketball/ncaam_research/published/, built by
+     basketball/ncaam_research/build.js from the hash-verified data pack. The
+     matchup tool and the scenario controls recompute in the browser with
+     lib/ncaam_research.js, the same code the build used, so a page and the
+     committed reports cannot disagree. No sportsbook price is needed for any
+     section except "Market comparison". -->
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><b>EDGEDESK</b><span class="sub">Men's college basketball research</span>
+      <a class="back" href="/app.html">Terminal →</a></div>
+    <nav class="nav" id="nav">
+      <a href="#/" data-r="teams">Teams</a>
+      <a href="#/matchup" data-r="matchup">Matchup</a>
+      <a href="#/reports" data-r="reports">Pregame reports</a>
+      <a href="#/upcoming" data-r="upcoming">2026-27 openers</a>
+      <a href="#/validation" data-r="validation">What works</a>
+      <a href="#/data" data-r="data">Data &amp; diagnostics</a>
+      <a href="#/method" data-r="method">Method</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap">
+  <div id="fresh" class="fresh" aria-label="Data freshness"></div>
+  <div id="view"><div class="empty">Loading EdgeDesk research…</div></div>
+  <div class="foot">EdgeDesk is a sports research and decision-support tool. Ratings, impacts and projections are estimates with measured error, and a scenario is a conditional estimate, not confirmed availability. Nothing here is a bet signal. 21+. Bet responsibly — 1-800-GAMBLER.</div>
+</main>
+<div class="tip" id="tip" role="tooltip"></div>
+<script src="/lib/ncaam_research.js?v=20261014a"></script>
+<script src="/research/ncaam/research.js?v=20261014a"></script>
+</body>
+</html>

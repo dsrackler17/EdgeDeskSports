@@ -166,6 +166,7 @@ function build() {
     return {
       id: s.id, label: s.label, odds_keys: s.odds_keys, family: s.family, season_months: s.season, product: s.product,
       brain: { status: s.brain.status, id: s.brain.id, approach: s.brain.approach, why: s.brain.why, candidates: s.brain.candidates, inputs: s.brain.inputs, not_modelled: s.brain.not_modelled },
+      research: s.research || null,
       readiness, evidence_files: ev.files, evidence_generated_at: ev.generated_at || null,
       data: s.data, gaps: gapsFor(s.id), blockers: s.blockers, enable: s.enable,
     };
