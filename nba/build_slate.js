@@ -142,6 +142,7 @@ async function build(o) {
   const recStatus = { validated: !!(recP && recP.moneyline && recP.moneyline.status === 'OUTCOME_VALIDATED' && !/sealed/.test(recP.window || '')), sampleOk: testN >= 500 };
   const season = C.currentSeason(now);
   const tuning = live.tuning;
+  D.requireWork(D.seasonList(C.FIRST_SEASON, season), 'nba slate');
   const pass = await PASS.run(tuning.pass, { includeScheduled: true, now });
   const st = pass.states; const pm = st.pm;
   const teams = D.teamsMap(); const abbr = readJson(path.join(C.NBA, 'data', 'team_abbr.json'), {}); const players = D.playersMap();

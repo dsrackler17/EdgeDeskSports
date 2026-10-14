@@ -389,11 +389,18 @@ module.exports = { ingest, reasonCat, possEst, linescore, GAME_COLS, TG_COLS, se
 
 if (require.main === module) {
   (async () => {
+    const failed = [];
     for (const s of seasons(arg('season', 'current'))) {
       const t0 = Date.now();
       const r = await ingest(s, { offline: flag('offline') });
+      const errs = Object.values((r.report && r.report.sources) || {}).map((x) => x && x.error).filter(Boolean);
+      if (!r.ok && !(errs.length && errs.every((e) => e === 'NOT_PUBLISHED'))) failed.push(s);
       const I = r.report.integrity || {};
       console.log('[nba ingest] ' + s + ': ' + (r.ok ? (r.report.counts.games_final + ' final, ' + (r.report.counts.games_scheduled || 0) + ' scheduled, ' + (r.report.counts.player_games || 0) + ' player-games, ' + (r.report.counts.stints || 0) + ' stints, ' + (r.report.counts.shots || 0) + ' shots | pbp ' + (I.pbp_games || 0) + ' games, final mismatch ' + (I.pbp_final_mismatch || 0) + ', valid lineups ' + (I.valid_lineup_share == null ? '—' : I.valid_lineup_share) + ', minutes MAE ' + (I.minutes_mae == null ? '—' : I.minutes_mae) + ', box mismatch ' + (I.team_box_points_mismatch || 0)) : 'FAILED ' + JSON.stringify(r.report.sources)) + ' (' + ((Date.now() - t0) / 1000).toFixed(1) + ' s)');
     }
+    /* a failed season exits non-zero (a source not yet published upstream is not a failure): CI's
+       `--offline || online` fallback depends on it, and a build must never go on to price with a season
+       silently missing (a cold cache once did exactly that) */
+    if (failed.length) { console.error('[nba ingest] FAILED for season(s) ' + failed.join(', ')); process.exit(1); }
   })().catch((e) => { console.error(e); process.exit(1); });
 }

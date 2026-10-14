@@ -40,6 +40,7 @@ async function build() {
   const season = slate.season;
   const upcoming = slate.games.map((g) => ({ game_id: g.game_id, home: String(g.home.id), away: String(g.away.id), start: Date.parse(g.start_utc), neutral: g.neutral ? 1 : 0, season, f: g.context || {} }));
   const tuning = readJson(WF.TUNING, { pass: {} });
+  D.requireWork(D.seasonList(C.FIRST_SEASON, season), 'nba props');
   const gameRows = await WF.buildRows(tuning);
   const ctx = new Map(gameRows.map((r) => [r.id, r]));
   const res = ST.run({ seasons: D.seasonList(C.FIRST_SEASON, season), gameRows: ctx, upcoming, avail: true });

@@ -498,7 +498,7 @@ The desk (`tools/nba/nba_desk.test.js`, 25/25) runs through the real edge-functi
 
 | Suite | What it proves | Result |
 |---|---|---|
-| `tools/nba/nba.test.js` | Ingest parsers, lineups, distribution, markets, learners, ledger, quotes, desk, loader; scope and club-only data; zero-minute appearances; the streamed caches; props variance functions, lattice, mixture and P(plays); de-vig methods and duplicate quotes; PASS gates; the pack's verification and reconciliation reproduce, and a tampered pack fails | 89 passed |
+| `tools/nba/nba.test.js` | Ingest parsers, lineups, distribution, markets, learners, ledger, quotes, desk, loader; scope and club-only data; zero-minute appearances; the streamed caches; props variance functions, lattice, mixture and P(plays); de-vig methods and duplicate quotes; PASS gates; builders refuse with a season's work tables missing; the pack's verification and reconciliation reproduce, and a tampered pack fails | 92 passed |
 | `tools/nba/nba_desk.test.js` | The desk module, and the real `edgedesk_ai` handler with no model call | 25 passed |
 | `tools/nba/nba_ui.e2e.js` | The panel in Chromium, desktop and 390 px | 52 passed |
 | `tools/nba/nba_sql.test.js` | The `nbahist` schema on a real PostgreSQL: RLS, roles, the before-tip ledger rule, the per-scope views against hand arithmetic, the Cup final's scope, rollback | 25 passed |
@@ -511,7 +511,14 @@ The desk (`tools/nba/nba_desk.test.js`, 25/25) runs through the real edge-functi
 
 The one failure was a real regression. The NBA desk answered "Who will win the NBA Finals?", which the benchmark expects the research plan to decline, and it now passes after the fix. The desk leaves season-long futures and certainty requests alone.
 
-**CI history.** On the first PR, the NBA tests job failed in CI because it read tables the ingest rebuilds and never commits. The tests job now rebuilds 2025-26 first.
+**CI history.**
+
+- **The tests job.** On the first PR, the NBA tests job failed in CI because it read tables the ingest rebuilds and never commits. The tests job now rebuilds 2025-26 first.
+- **The first scheduled build priced on one season of player data.** The first scheduled build after #574 merged started from an empty cache.
+  - The offline ingest of the history failed for 2002-03 to 2024-25 but exited 0, so the online fallback never ran.
+  - The slate and the props were priced with 2025-26 player data only. Against the full-history rebuild, the published home-win probabilities were off by up to 0.015 (0.008 on average), the expected margin by up to 0.52 points and the fair spread by up to 2 points. Team-only ratings were unaffected.
+  - **Fix:** the ingest now exits non-zero when a season fails, so the fallback runs. The slate and props builders refuse to price while any completed season's player-game or stint table is missing.
+  - The 14 sheets that run recorded stay in the append-only ledger. The rebuilt sheets follow them.
 
 ## 14. Deployment and rollback status
 

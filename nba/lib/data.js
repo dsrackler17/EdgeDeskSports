@@ -56,4 +56,20 @@ function shots(season) { return io.readWork('shots_' + season + '.json.gz'); }
 function teamsMap() { try { return JSON.parse(fs.readFileSync(C.PATHS.teams, 'utf8')); } catch (_) { return {}; } }
 function playersMap() { try { return JSON.parse(fs.readFileSync(path.join(C.NBA, 'data', 'players.json'), 'utf8')); } catch (_) { return {}; } }
 
-module.exports = { games, teamGames, playerGames, stints, shots, teamsMap, playersMap, seasonList };
+/* Every completed season with a final game must have its player-game and stint work tables before anything is
+   priced. Without them the pass fits the player layer on whichever seasons happen to be cached, and the price
+   is no longer the validated model's (a cold CI cache once priced the slate on 2025-26 alone). */
+function missingWork(seasons, dir) {
+  const miss = [];
+  for (const s of seasons) {
+    if (!games([s]).some((g) => g.status === 'FINAL')) continue;
+    if (['player_games_', 'stints_'].some((t) => !fs.existsSync(path.join(dir || C.PATHS.cacheWork, t + s + '.json.gz')))) miss.push(s);
+  }
+  return miss;
+}
+function requireWork(seasons, who, dir) {
+  const miss = missingWork(seasons, dir);
+  if (miss.length) throw new Error(who + ': the work tables are missing for season(s) ' + miss.join(', ') + '; run node nba/ingest/season.js --season all');
+}
+
+module.exports = { games, teamGames, playerGames, stints, shots, teamsMap, playersMap, seasonList, missingWork, requireWork };
