@@ -16,9 +16,15 @@
 #
 # A season of captured prices takes longer than a pooled connection's default
 # statement limit (2 min on Supabase): football_rebuild.js runs each rebuild in
-# its own transaction with SET LOCAL statement_timeout (25 min), and refuses to
-# run against a database whose install_revision is older than it needs (the
-# message says to re-run with apply_migration: true).
+# its own transaction with SET LOCAL statement_timeout (25 min by default),
+# and refuses to run against a database whose install_revision is older than
+# it needs (the message says to re-run with apply_migration: true).
+#
+# CFB IS THE LONG ONE. NFL 2026 rebuilds in ~20 s; CFB 2026 ran past 25 min
+# (2026-10-14) and was cancelled. Run CFB on its own (sport: CFB) with a
+# longer statement_timeout. Until it finishes, the run holds the CFB rebuild
+# lock and the rows it has touched, so the settle job's CFB grading through
+# the API may wait out its own limit and be retried on a later hour.
 #
 # SECRET: SB_DB_URL (the pooled Postgres connection string the deploy
 # workflow already uses to apply SQL). Nothing here deploys an edge function;
@@ -47,6 +53,11 @@ on:
         description: 'Season'
         required: false
         default: '2026'
+      statement_timeout:
+        description: 'How long ONE sport''s rebuild may run (raise it for CFB; the job stops at 180 min)'
+        type: choice
+        options: ['25min', '60min', '120min', '170min']
+        default: '25min'
 
 concurrency:
   group: football-regrade
@@ -58,7 +69,7 @@ permissions:
 jobs:
   regrade:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v5
         with:
@@ -80,13 +91,14 @@ jobs:
       - name: Rebuild and reconcile
         env:
           SB_DB_URL: ${{ secrets.SB_DB_URL }}
+          STATEMENT_TIMEOUT: ${{ inputs.statement_timeout }}
         run: |
           set -o pipefail
           if [ -z "$SB_DB_URL" ]; then
             echo "::error::SB_DB_URL is not set as a GitHub Actions repository secret."
             exit 1
           fi
-          ARGS="--pg --season ${{ inputs.season }} --out collective/reports"
+          ARGS="--pg --season ${{ inputs.season }} --out collective/reports --statement-timeout ${STATEMENT_TIMEOUT:-25min}"
           if [ "${{ inputs.sport }}" != "both" ]; then ARGS="$ARGS --sport ${{ inputs.sport }}"; fi
           if [ "${{ inputs.apply_migration }}" = "true" ]; then ARGS="$ARGS --apply-migration"; fi
           if [ "${{ inputs.commit }}" = "true" ]; then ARGS="$ARGS --commit"; fi
