@@ -317,6 +317,10 @@ To be run by someone with access to the Supabase project and the SharpSports das
 - **Model context** covers NFL and college-football single game lines in EdgeDesk's model record. Props, parlays and other sports are not matched. The CLV it shows comes from the reader's recorded close only.
 - **Reconciliation** adopts a reader's own record only on an exact stake, price and line match within 15 minutes. A file read in the wrong time zone will not match: both are kept and flagged.
 - **Sportsbook "Connect" copy on the landing page** is unchanged, and stays so until production is switched on (`tools/presentation/landing_positioning.test.js`).
+- **The webhook is not rate-limited by the function itself.**
+  - In `observe` mode an unsigned delivery is recorded as an IGNORED row, with no payload kept.
+  - In `required` mode it is only a count row.
+  - Either way it can change nothing, and the daily prune removes these rows after 90 days. A flood is limited only by Supabase's own gateway, so move to `required` as soon as a genuine delivery has verified (§ 5 step 6).
 
 ## 7. Production-readiness checklist
 
@@ -389,9 +393,10 @@ Only after every box in § 7 is ticked:
 
 | Suite | What | Result (2026-10-14) |
 |---|---|---|
-| `tools/portfolio/sharpsports.test.js` | both shipped functions in a stub Deno, real migrations, a fake SharpSports: bettor creation; linking; verified / failed verification / lost access / reauth; historical import; a new wager; settlement; refresh and its rate limit; paging; duplicate deliveries; unsigned, wrong, unknown-subscription and wrong-header deliveries (401); forged hints; cross-reader isolation; file-bet adoption; idempotent re-sync; disconnect; sandbox vs production keys; DEMO vs PRODUCTION smoke tests; bankroll path; render checks | see the PR |
-| `tools/portfolio/sharpsports_ui.e2e.js` | Chromium, 1280 px and 390 px: Connect → SharpSports' page (stand-in) → back → verified account, its bets in Open (with legs) and History, the bankroll trend, refresh | see the PR |
-| `tools/portfolio/model_context_sql.test.js` | the model matcher against the real model-record schema | see the PR |
+| `tools/portfolio/sharpsports.test.js` | both shipped functions in a stub Deno, real migrations, a fake SharpSports: bettor creation; linking; verified / failed verification / lost access / reauth; historical import; a new wager; settlement; refresh and its rate limit; paging; duplicate deliveries; unsigned, wrong, unknown-subscription and wrong-header deliveries (401); forged hints; cross-reader isolation; file-bet adoption; idempotent re-sync; disconnect; sandbox vs production keys; DEMO vs PRODUCTION smoke tests; bankroll path; render checks | **81 passed, 0 failed** |
+| `tools/portfolio/sharpsports_ui.e2e.js` | Chromium, 1280 px and 390 px: Connect → SharpSports' page (stand-in) → back → verified account, its bets in Open (with legs) and History, the bankroll trend, refresh | **18 passed, 0 failed** |
+| `tools/portfolio/model_context_sql.test.js` | the model matcher against the real model-record schema | **21 passed, 0 failed** |
+| The existing Portfolio suites | calc 106, import 114, bet history 108, process 38, UI 100, journal UI 126, connect core 67, decision record 29, portfolio SQL 187, journal SQL 73, connect SQL 85, connect sync 33, connect function 18, decision SQL 103, bet history SQL 19; Chromium: portfolio UI 128, bet history 31; navigation 248; landing positioning 466 | all green, unchanged |
 
 - **The fake SharpSports is not SharpSports.** It answers in the shapes this connector expects, so it proves EdgeDesk's side of the wire only.
 - The live checks are § 5.
