@@ -1,10 +1,47 @@
 {
  "schema": "edgedesk_nhl_live_params_v1",
- "generated_at": "2026-10-13T12:49:14.617Z",
+ "generated_at": "2026-10-14T01:42:12.428Z",
  "for_season": 2027,
- "model": "xg_no_goalie",
+ "model": "xg_core",
  "confirmed_variant": "xg_goalie_confirmed",
  "glm": {
+  "xg_core": {
+   "names": [
+    "home",
+    "ev_off",
+    "ev_def_opp",
+    "g_off",
+    "g_def_opp",
+    "fin",
+    "b2b",
+    "b2b_opp"
+   ],
+   "offset": "log(league goals per team-game, running)",
+   "beta": [
+    -0.054991,
+    0.05861,
+    0.470661,
+    0.681093,
+    0.795149,
+    0.836769,
+    0.085829,
+    -0.069115,
+    0.063424
+   ],
+   "se": [
+    0.008609,
+    0.01,
+    0.169472,
+    0.130989,
+    0.169849,
+    0.097327,
+    0.139658,
+    0.014633,
+    0.014004
+   ],
+   "n": 13986,
+   "deviance": 15093.94171134056
+  },
   "xg_no_goalie": {
    "names": [
     "home",
@@ -319,6 +356,13 @@
    "c": 6.0154,
    "n": 4192,
    "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
+  },
+  "xg_core": {
+   "a": 0.5,
+   "b": 0.9,
+   "c": 6.0464,
+   "n": 4192,
+   "basis": "maximum likelihood on earlier seasons' out-of-sample predictions"
   }
  },
  "score_weights": {
@@ -338,6 +382,7 @@
  "effects": {
   "t_buckets": [
    0,
+   1200,
    2400,
    3000,
    3300,
@@ -350,13 +395,22 @@
   "d_max": 3,
   "m": [
    [
-    0.9576,
-    1.0222,
-    1.0019,
-    0.9213,
-    0.9863,
-    0.9759,
-    1.0063
+    0.8412,
+    0.911,
+    0.92,
+    0.8683,
+    0.8951,
+    0.8857,
+    1
+   ],
+   [
+    0.9794,
+    1.065,
+    1.0723,
+    1.0336,
+    1.0647,
+    1.0115,
+    1.0072
    ],
    [
     0.9353,

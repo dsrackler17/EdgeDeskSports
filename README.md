@@ -306,6 +306,25 @@ are not bought until I authorise it. See
 [`docs/engine/README.md`](docs/engine/README.md).
 Tests: `npm run nhl:test`, `npm run engine:test`, `npm run nhl:sql`, `npm run engine:e2e`.
 
+The NHL game page now has tabs: Overview, Markets, Scenarios, Players,
+Evidence, Models and Record. Overview splits each win probability into its
+causes with an exact Shapley decomposition (why a club is at its number, factor by
+factor). Markets prints the full sheet: alternate puck lines, alternate
+totals, regulation totals, team totals and the first period, with a price
+check that says exactly why a price is or isn't actionable. Scenarios
+re-prices in place for a goalie or a what-if. Players holds the research for
+shots on goal, goals, assists, points and saves, with no value claims. Models
+holds the challengers. Record holds the drift monitor. A lab scores seven
+model families with the production model's own walk-forward
+(`hockey/lab/`, [`docs/engine/NHL_LAB.md`](docs/engine/NHL_LAB.md)). None
+passes the promotion rule written before scoring, so the incumbent stays,
+slimmed to `xg_core`. A source registry records which providers may be used
+and why ([`docs/engine/NHL_SOURCES.md`](docs/engine/NHL_SOURCES.md), access
+requests drafted, not sent). An optional Supabase warehouse
+(`supabase/nhl_warehouse.sql`) stays off until `NHL_WAREHOUSE=on`
+([`docs/engine/NHL_OPERATIONS.md`](docs/engine/NHL_OPERATIONS.md)).
+Props: [`docs/engine/NHL_PROPS.md`](docs/engine/NHL_PROPS.md).
+
 The EdgeDesk Quant Data Pack is imported and verified (`datapack/quant_v1`,
 [`docs/engine/DATAPACK.md`](docs/engine/DATAPACK.md)). On it and on free
 multi-season sources I built and validated walk-forward brains for the NBA,
@@ -314,6 +333,20 @@ leagues (`soccer/`) and MLB (`mlb/history/`). UFC, college baseball and
 tennis are measured as too thin for a model. The Engine's readiness ladder
 keeps apart what is loaded, trained, validated, market-tested, priced now and
 actionable. Tests: `npm run datapack:test`, `npm run lab:test`, `npm run lab:check`.
+
+Research → Other → **NBA** is the dedicated NBA engine (`nba/`,
+[`docs/engine/NBA.md`](docs/engine/NBA.md)). It is built on every game since
+2002-03 with reconstructed lineups and shots. Seventeen candidates (Elo,
+Glicko, adjusted efficiency, a Kalman model, player impact (RAPM), a
+possession simulation, ridge, logistic and boosted trees, and a stacked
+ensemble) are scored walk-forward against the existing lab model, with the
+test seasons sealed and every opening of them logged. The chosen model prices
+every market from one distribution: moneyline, spread, total, alternates, team
+totals, first half and first quarter. Player props (minutes × rate, with
+correlated combos) are priced the same way, and "if he sits" scenarios come
+from the same model. NBA prices are not bought and value claims are off until
+a market test passes. Tests: `npm run nba:test`, `npm run nba:sql`,
+`npm run nba:e2e`, `npm run nba:check`.
 
 ## Men's college basketball research — who is good, why, who makes them good, and how it plays against an opponent
 

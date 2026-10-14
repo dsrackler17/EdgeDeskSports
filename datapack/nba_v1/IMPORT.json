@@ -1,0 +1,29 @@
+{
+  "schema": "edgedesk_datapack_import_v1",
+  "pack": "EdgeDesk NBA Data Pack",
+  "scope": "NBA 2025-26 club games (regular season incl. the NBA Cup final, Play-In, playoffs), ESPN public factual responses",
+  "imported_at": "2026-10-14",
+  "imported_into": "datapack/nba_v1",
+  "source_archives": [
+    {
+      "name": "EdgeDesk_NBA_Data_Pack.zip",
+      "bytes": 21089797,
+      "sha256": "524893e94175d754041b79a187b4d6ca35478831f14824544b855572bc3f6b92",
+      "files": 58,
+      "contents": "CLAUDE_NBA_START_HERE.md, README.md, MISSING_DATA.md, COVERAGE.json, 18 Parquet tables, basketball and shared contracts with empty templates, scripts, source manifests"
+    }
+  ],
+  "stored_gzipped": [],
+  "excluded_from_git": [],
+  "modified_after_import": [],
+  "added_after_import": ["IMPORT.json", "EDGEDESK_VERIFICATION.json"],
+  "not_executed": [
+    "scripts/collect.py",
+    "scripts/core_supplement.py",
+    "scripts/player_features.py",
+    "scripts/package.py"
+  ],
+  "verification": "node tools/datapack/verify_nba.js -> EDGEDESK_VERIFICATION.json (Parquet read through nba/tools/parquet_select.py, pyarrow only; the pack's scripts are never run)",
+  "reconciliation": "node nba/crosscheck/pack.js -> nba/validation/nba_crosscheck_pack.json",
+  "secret_scan": "tools/cfb/secret_audit.js --root datapack/nba_v1: no secret in the 40 text files; the manifests and the Parquet participant references name only site.api.espn.com, sports.core.api.espn.com and nba.com (glossary) hosts"
+}

@@ -36,6 +36,27 @@ const FEATURES = {
   lu_opp_proj: (f) => f.lu_opp_proj || 0,
   lu_own_conf: (f) => (f.lu_own_conf != null ? f.lu_own_conf : f.lu_own_proj || 0),
   lu_opp_conf: (f) => (f.lu_opp_conf != null ? f.lu_opp_conf : f.lu_opp_proj || 0),
+  /* lab context features (hockey/lab/context.js), declared 2026-10-13 for the
+     ablation in hockey/lab/run.js. No production candidate uses them unless
+     the lab's promotion rule is met (docs/engine/NHL_LAB.md). */
+  travel: (f) => Math.log1p((f.travel_km || 0) / 1000),
+  travel_opp: (f) => Math.log1p((f.travel_km_opp || 0) / 1000),
+  tz_east: (f) => Math.max(0, f.tz_shift || 0),
+  tz_east_opp: (f) => Math.max(0, f.tz_shift_opp || 0),
+  tz_west: (f) => Math.max(0, -(f.tz_shift || 0)),
+  tz_west_opp: (f) => Math.max(0, -(f.tz_shift_opp || 0)),
+  congest: (f) => ((f.games_3d || 0) >= 2 ? 1 : 0),
+  congest_opp: (f) => ((f.games_3d_opp || 0) >= 2 ? 1 : 0),
+  road_trip: (f) => Math.min(6, f.road_len || 0) / 6,
+  road_trip_opp: (f) => Math.min(6, f.road_len_opp || 0) / 6,
+  form_off: (f) => f.form_off || 0,
+  form_def_opp: (f) => f.form_def_opp || 0,
+  luck_fin: (f) => f.luck_fin || 0,
+  luck_sv_opp: (f) => f.luck_sv_opp || 0,
+  st_x_quality: (f) => ln(f.pp_off) * ln(f.pk_def_opp),
+  st_x_volume: (f) => ln(f.pp_draw) * ln(f.pk_take_opp),
+  early_ev_off: (f) => ln(f.ev_off) * Math.max(0, 1 - (f.season_games || 0) / 20),
+  early_ev_def_opp: (f) => ln(f.ev_def_opp) * Math.max(0, 1 - (f.season_games_opp || 0) / 20),
 };
 
 /* the candidates (fixed before scoring) */
@@ -50,6 +71,9 @@ const CANDIDATES = {
   xg_lineup_projected: ['home', 'ev_off', 'ev_def_opp', 'g_off', 'g_def_opp', 'pp_off', 'pk_def_opp', 'pp_draw', 'pk_take_opp', 'fin', 'b2b', 'b2b_opp', 'lu_own_proj', 'lu_opp_proj'],
   xg_lineup_confirmed: ['home', 'ev_off', 'ev_def_opp', 'g_off', 'g_def_opp', 'pp_off', 'pk_def_opp', 'pp_draw', 'pk_take_opp', 'fin', 'b2b', 'b2b_opp', 'lu_own_conf', 'lu_opp_conf'],
   xg_all_confirmed: ['home', 'ev_off', 'ev_def_opp', 'g_off', 'g_def_opp', 'pp_off', 'pk_def_opp', 'pp_draw', 'pk_take_opp', 'fin', 'goalie_conf', 'b2b', 'b2b_opp', 'lu_own_conf', 'lu_opp_conf'],
+  /* declared 2026-10-13 after the lab's block ablation (hockey/lab/run.js): xg_no_goalie without
+     the special-teams block, whose four features together showed no out-of-sample benefit */
+  xg_core: ['home', 'ev_off', 'ev_def_opp', 'g_off', 'g_def_opp', 'fin', 'b2b', 'b2b_opp'],
 };
 const LINEUP_CANDIDATES = ['xg_lineup_projected', 'xg_lineup_confirmed', 'xg_all_confirmed'];
 

@@ -1266,6 +1266,29 @@ active subscriber") excludes them, because a trial that ran its course is the
 outcome the row was written for and not a stale Stripe row stranding a
 customer. Row 11 counts them on their own.
 
+### `server_only_lockdown.sql` — the functions only the server may call
+The August ship-gate audit (PR #14) read the live catalog and found `anon`
+and `authenticated` holding EXECUTE on `public.edge_call`, which hands its
+caller the service-role key, and on every function in `collective`:
+`get_config` leaks the admin ids, and the `billing_*` writers check nothing.
+It also found three financial views (`ai_cost_per_user`,
+`guarantee_refunds_due`, `partner_rollup`) readable by `anon`. The fix written
+then never reached this folder, and it would not have closed the hole anyway.
+It revoked from `anon` and `authenticated` by name, and PostgreSQL also grants
+every new function to `PUBLIC`, which both roles still reached it through.
+
+This file revokes from `PUBLIC` too, after granting `service_role`
+explicitly, because the Collective edge functions and `settle-finals.yml` may
+also reach these functions only through `PUBLIC`. Functions are found by name,
+every overload, and any that do not exist are skipped. It leaves alone
+`has_active_sub` (RLS calls it as the user), the browser's SECURITY DEFINER
+wrappers `collective_model_ensure` and `collective_my_models`, every table, and
+every other function. **Re-run it after adding a function to `collective`**:
+PostgreSQL's default cannot be revoked per schema, so a new one is
+`PUBLIC`-executable until you do, and report rows 1 and 2 name it. Report rows
+1-8 should say `ok`. Tested by `tools/app/server_only_lockdown_sql.test.js`,
+which rebuilds the audited catalog and makes the attacks as each role.
+
 ### `issue_reports.sql` — how a user tells you something is broken
 The terminal has had a feedback form since it was written. It posted to
 `public.feedback`, and **no file here ever created that table** — the

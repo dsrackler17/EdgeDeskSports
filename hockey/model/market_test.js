@@ -53,7 +53,8 @@ function run(o) {
   o = o || {};
   const dir = o.closing || arg('closing', path.join(C.PATHS.market, 'closing'));
   const predFile = o.predictions || arg('predictions', path.join(C.PATHS.cacheWork, 'predictions.jsonl'));
-  const model = o.model || 'xg_no_goalie';
+  const rec = (() => { try { return JSON.parse(fs.readFileSync(path.join(C.PATHS.validation, 'nhl_walkforward.json'), 'utf8')); } catch (_) { return null; } })();
+  const model = o.model || (rec && rec.selection && rec.selection.chosen) || 'xg_no_goalie';
   const out = { schema: 'edgedesk_nhl_market_test_v1', generated_at: new Date().toISOString(), model, markets: {}, rejected: {}, sources: [] };
   if (!fs.existsSync(dir) || !fs.readdirSync(dir).some((f) => /\.csv$/.test(f))) {
     out.status = 'NO_ARCHIVE';
