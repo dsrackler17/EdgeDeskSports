@@ -1,0 +1,89 @@
+{
+ "schema": "edgedesk_cbase_simulator_eval_v1",
+ "point_in_time": "RETROSPECTIVE",
+ "window": "VALIDATION 2023-2024 (every second game with a reconciled inning line)",
+ "sims_per_game": 2000,
+ "seconds": 52,
+ "n": 4240,
+ "mean_abs_diff_p_home": 0.0398,
+ "max_mc_se": 0.0112,
+ "coherence_failures": 8,
+ "frailty": {
+  "team_k": 12,
+  "shared_k": 16
+ },
+ "moneyline_log_loss": {
+  "simulator": 0.61796,
+  "closed_form": 0.60829
+ },
+ "total_log_score": {
+  "simulator": 3.26999,
+  "closed_form": 3.2219
+ },
+ "home_minus_1_5": {
+  "simulator": {
+   "n": 4240,
+   "log_loss": 0.63958,
+   "brier": 0.22301,
+   "citl": 0.0357,
+   "slope": 0.743
+  },
+  "closed_form": {
+   "n": 4240,
+   "log_loss": 0.63412,
+   "brier": 0.22181,
+   "citl": 0.037,
+   "slope": 0.92
+  }
+ },
+ "first_five": {
+  "home_win": {
+   "n": 4240,
+   "log_loss": 0.66465,
+   "brier": 0.23432,
+   "citl": 0.0335,
+   "slope": 0.667
+  },
+  "tie": {
+   "n": 4240,
+   "log_loss": 0.33586,
+   "brier": 0.09364,
+   "citl": -0.0048,
+   "slope": 0.398
+  }
+ },
+ "walkoff_share": {
+  "predicted": 0.0783,
+  "observed": 0.0757
+ },
+ "run_rule_share": {
+  "predicted": 0.1088,
+  "observed": 0.0903
+ },
+ "convergence": [
+  {
+   "n": 1000,
+   "mean_p_home": 0.5853,
+   "seed_spread": 0.043,
+   "theoretical_se": 0.0156
+  },
+  {
+   "n": 5000,
+   "mean_p_home": 0.5813,
+   "seed_spread": 0.0266,
+   "theoretical_se": 0.007
+  },
+  {
+   "n": 20000,
+   "mean_p_home": 0.6033,
+   "seed_spread": 0.0132,
+   "theoretical_se": 0.0035
+  },
+  {
+   "n": 50000,
+   "mean_p_home": 0.6064,
+   "seed_spread": 0.0107,
+   "theoretical_se": 0.0022
+  }
+ ]
+}

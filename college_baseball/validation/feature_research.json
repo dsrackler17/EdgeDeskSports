@@ -3,26 +3,26 @@
  "point_in_time": "RETROSPECTIVE",
  "distribution": {
   "family": "nb",
-  "r": 3.263
+  "r": 3.256
  },
  "hypotheses": {
   "H-OFF-1": {
    "fit_season": 2024,
    "test_season": 2025,
    "n_test": 15022,
-   "blend_weight_fit_2024": 0.2,
+   "blend_weight_fit_2024": 0.3,
    "test_log_score": {
-    "team": 2.78104,
-    "component": 2.80522,
-    "blend": 2.77995
+    "team": 2.78177,
+    "component": 2.80523,
+    "blend": 2.78037
    },
    "blend_vs_team": {
     "n": 15022,
     "blocks": 114,
-    "mean_diff": -0.001092,
+    "mean_diff": -0.001407,
     "ci95": [
-     -0.001996,
-     -0.000237
+     -0.002708,
+     -0.000034
     ],
     "a_better": true,
     "b_better": false
@@ -30,10 +30,10 @@
    "component_vs_team": {
     "n": 15022,
     "blocks": 114,
-    "mean_diff": 0.024178,
+    "mean_diff": 0.023462,
     "ci95": [
-     0.019699,
-     0.029529
+     0.019069,
+     0.029037
     ],
     "a_better": false,
     "b_better": true
@@ -45,24 +45,24 @@
    "test_season": 2025,
    "n_test": 15022,
    "coefficients": {
-    "intercept": 0.0148,
-    "errors_per_game": -0.0012,
-    "unearned_share": 0.0075,
-    "double_plays_per_game": 0.0004,
-    "sb_success_allowed": 0.0086,
-    "defensive_efficiency": 0.0339
+    "intercept": 0.0157,
+    "errors_per_game": -0.0046,
+    "unearned_share": 0.0071,
+    "double_plays_per_game": -0.0026,
+    "sb_success_allowed": 0.0082,
+    "defensive_efficiency": 0.0388
    },
    "test_log_score": {
-    "team": 2.78104,
-    "team_plus_defence": 2.78093
+    "team": 2.78177,
+    "team_plus_defence": 2.78163
    },
    "defence_vs_team": {
     "n": 15022,
     "blocks": 114,
-    "mean_diff": -0.000112,
+    "mean_diff": -0.000147,
     "ci95": [
-     -0.00107,
-     0.000723
+     -0.001234,
+     0.000812
     ],
     "a_better": false,
     "b_better": false
@@ -74,22 +74,22 @@
    "test": "VALIDATION",
    "n_test": 23900,
    "coefficients": {
-    "intercept": -0.0117,
-    "batting_side_played_yesterday": -0.0048,
+    "intercept": -0.013,
+    "batting_side_played_yesterday": -0.004,
     "pitching_side_played_yesterday": 0.0607,
     "doubleheader_game_2": 0
    },
    "test_log_score": {
-    "team": 2.77308,
-    "team_plus_rest": 2.77176
+    "team": 2.77512,
+    "team_plus_rest": 2.77364
    },
    "rest_vs_team": {
     "n": 23900,
     "blocks": 158,
-    "mean_diff": -0.001325,
+    "mean_diff": -0.001484,
     "ci95": [
-     -0.002282,
-     -0.000469
+     -0.00245,
+     -0.000626
     ],
     "a_better": true,
     "b_better": false
