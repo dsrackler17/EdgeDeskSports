@@ -6,10 +6,12 @@
    Every view renders without a script error: teams, a team (ratings, why
    they are good, style, players, scenarios, lineups, games), a player, the
    matchup tool (any two teams, no market), the as-of pregame reports, the
-   2026-27 openers, validation, data and method. The scenario control changes
-   the team's net rating; the pricing section says "market comparison
-   unavailable" while every research section is present; a phone-width
-   viewport has no horizontal page scroll.
+   2026-27 openers, validation, data and method. The scenario control (out,
+   closers, a player added from another team) changes the team's net rating
+   and clears back to the published one; a scenario in the matchup tool
+   re-projects the game and says so; the pricing section says "market
+   comparison unavailable" while every research section is present; a
+   phone-width viewport has no horizontal page scroll.
 
    Run: node basketball/ncaam_research/tests/research_ui.e2e.js   (SHOTS=dir to save screenshots)
    =========================================================================== */
@@ -66,8 +68,21 @@ function ok(name, cond, detail) { if (cond) { pass++; return; } fail++; console.
   const tv = await pg.textContent('#view');
   ok('team page has ratings, explanation, style, players, scenarios, lineups and games', ['Net rating', 'What makes them effective', 'Style and skill profile', 'Who makes them good', 'Availability and minutes scenarios', 'Lineups', 'Games, with what the model said before tip'].every((s) => tv.includes(s)));
   ok('descriptive, estimated and conditional labels are distinct', tv.includes('DESCRIPTIVE') && tv.includes('ESTIMATED') && tv.includes('CONDITIONAL'));
-  await pg.check('[data-out="0"]');
-  ok('marking the top rotation player out changes the net rating (conditional)', /Conditional change in net rating: [−-]/.test(await pg.textContent('#scenout')), await pg.textContent('#scenout'));
+  const summary = () => pg.textContent('#scen [data-out-summary]');
+  await pg.check('#scen [data-out="0"]');
+  ok('marking the top rotation player out changes the net rating (conditional)', /Conditional change in net rating: [−-]/.test(await summary()), await summary());
+  await pg.uncheck('#scen [data-out="0"]');
+  ok('clearing every change returns the published rating', (await summary()).includes('No change selected'), await summary());
+  for (const i of [5, 6, 7, 8, 9]) await pg.check('#scen [data-close="' + i + '"]');
+  ok('closing with five bench players is a conditional change', /Conditional change in net rating: [−+-]?\d/.test(await summary()) && (await pg.textContent('#scen [data-sm="5"]')) !== '—', await summary());
+  for (const i of [5, 6, 7, 8, 9]) await pg.uncheck('#scen [data-close="' + i + '"]');
+  await pg.selectOption('#scen [data-addteam]', String(second.id));
+  await pg.waitForSelector('#scen [data-addplayer]:not([disabled])', { timeout: 20000 });
+  const addId = await pg.$eval('#scen [data-addplayer]', (s) => s.options[1].value);
+  await pg.selectOption('#scen [data-addplayer]', addId); await pg.fill('#scen [data-addmin]', '20'); await pg.click('#scen [data-add]');
+  ok('a player added from another team takes minutes and is priced', (await pg.textContent('#scen [data-added]')).includes('from ' + second.short) && /Conditional change in net rating/.test(await summary()), await pg.textContent('#scen [data-added]'));
+  await pg.click('#scen [data-remove]');
+  ok('removing the added player clears the scenario', (await summary()).includes('No change selected') && (await pg.textContent('#scen [data-added]')).trim() === '');
 
   const doc = JSON.parse(fs.readFileSync(path.join(ROOT, 'basketball/ncaam_research/published/teams/' + top.id + '.json'), 'utf8'));
   const pl = doc.players[0];
@@ -79,6 +94,14 @@ function ok(name, cond, detail) { if (cond) { pass++; return; } fail++; console.
   const mv = await pg.textContent('#mrep');
   ok('matchup report covers baseline, both directions, players, conditions and assumptions', ['Baseline strength', 'offense vs', 'players who matter most', 'What would change the projection', 'Assumptions'].every((s) => mv.includes(s)));
   ok('without odds only the pricing section is empty', mv.includes('MARKET COMPARISON UNAVAILABLE') && mv.includes('Projected score'));
+  ok('no scenario banner until a scenario is chosen', !mv.includes('Conditional scenario applied'));
+  const margin0 = await pg.textContent('#mbody .tile:nth-child(2) .val');
+  await pg.click('#mscen summary'); await pg.check('#mscenh [data-out="0"]');
+  const mv2 = await pg.textContent('#mbody');
+  ok('a home player out in the matchup re-projects the game and says so', mv2.includes('Conditional scenario applied') && mv2.includes(top.short) && (await pg.textContent('#mbody .tile:nth-child(2) .val')) !== margin0, mv2.slice(0, 300));
+  await pg.uncheck('#mscenh [data-out="0"]');
+  ok('clearing the matchup scenario restores the baseline', !(await pg.textContent('#mbody')).includes('Conditional scenario applied') && (await pg.textContent('#mbody .tile:nth-child(2) .val')) === margin0);
+  if (shots) await pg.screenshot({ path: path.join(shots, 'matchup_scenario.png'), fullPage: true });
 
   await go('#/reports', '#view table');
   ok('pregame reports are listed', (await pg.$$eval('#view tbody tr', (r) => r.length)) === idx.matchups.length);

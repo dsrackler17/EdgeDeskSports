@@ -208,6 +208,11 @@ function synthPossessions(n, effects, seed, together) {
   const capped = NR.scenario(rot, { cap: { a: 22 } }); ok('foul trouble caps minutes and costs less than an absence', near(m(capped, 'a'), 22, 1e-9) && capped.delta.net < 0 && capped.delta.net > out.delta.net);
   const bench = NR.scenario(rot, { bench_share: 0.2 }); ok('shifting starter minutes to the bench keeps 200 and moves value', near(bench.minutes.players.reduce((s, p) => s + p.minutes, 0), 200, 1e-6) && bench.delta.net < 0);
   const add = NR.scenario(rot, { add: [{ id: 'z', name: 'Transfer', pos: 'G', expected: 24, cap: 32, o: 4, d: 1, sd_o: 3, sd_d: 3 }] }); ok('an added transfer takes minutes from others and is priced by his impact', m(add, 'z') > 0 && add.delta.net > 0 && near(add.minutes.players.reduce((s, p) => s + p.minutes, 0), 200, 1e-6));
+  const sum = (sc) => sc.minutes.players.reduce((s, p) => s + p.minutes, 0);
+  const best = NR.scenario(rot, { closing: ['a', 'b', 'c', 'd', 'e'] }); const small = NR.scenario(rot, { closing: ['a', 'b', 'f', 'g', 'h'] });
+  ok('the five who close gain minutes, nobody passes his cap, the team keeps 200', ['a', 'b', 'c', 'd', 'e'].every((id) => m(best, id) > m(none, id)) && ['f', 'g', 'h'].every((id) => m(best, id) < m(none, id)) && best.minutes.players.every((p) => p.minutes <= rot.find((r) => r.id === p.id).cap + 1e-6) && near(sum(best), 200, 1e-6));
+  ok('closing with the best five helps; closing with weaker bench players hurts', best.delta_vs_usual.net > 0 && small.delta_vs_usual.net < 0 && near(sum(small), 200, 1e-6));
+  const closeOut = NR.scenario(rot, { out: ['a'], closing: ['a', 'b', 'c', 'd', 'e'] }); ok('a closer who is out still plays 0', m(closeOut, 'a') === 0 && near(sum(closeOut), 200, 1e-6));
 }
 
 /* 11. the matchup and the exact markets */

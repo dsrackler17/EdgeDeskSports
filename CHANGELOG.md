@@ -27,6 +27,7 @@
   - With availability known after the fact, scenarios did not improve game predictions (+0.016 CRPS [−0.026, +0.057]).
   - Naive PPG subtraction was far worse (+3.53).
   - Scenarios are conditional and experimental.
+  - The tool covers a player out, a minutes cap (foul trouble or a restriction), starter minutes to the bench, the five who close, and a player added from another team (a transfer). The matchup tool applies them to either team and shows the game with and without the scenario.
 - **Lineups and interactions:**
   - Lineup results beyond player impacts did not persist (r = −0.09), so lineups pool to their players.
   - No style interaction passed 2025 → 2026, so they are shown as hypotheses and add no points.
@@ -37,7 +38,7 @@
 - **Pages** (`/research/ncaam/`): teams, team, player, scenario tool, matchup, as-of 2026 Final Four reports, 2026-27 openers (preseason carry-forward, clearly labelled), validation, data and method.
 - **Registry:** the ncaab_m entry links the research engine. The board's betting brain is unchanged.
 - **Tests and CI:** `.github/workflows/ncaam-research.yml` runs:
-  - 79 offline checks, 20 real-pack checks and 19 browser checks;
+  - 82 offline checks, 20 real-pack checks and 26 browser checks;
   - a check that the frozen holdout and the published research rebuild exactly;
   - the no-bypass guard, which covers the new files.
 

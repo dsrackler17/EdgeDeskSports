@@ -126,25 +126,68 @@
   function tile(lab, val, sub) { return '<div class="tile"><div class="lab">' + lab + '</div><div class="val">' + val + '</div><div class="sub">' + (sub || '') + '</div></div>'; }
   function fmtRate(k, v) { if (v == null) return '—'; if (k === 'fast_break_100') return f(v, 1); if (k === 'sec_per_poss') return f(v, 1) + 's'; if (k === 'transition_ppp' || k === 'halfcourt_ppp') return f(v, 3); return pct(v); }
 
-  function scenarioTool(el, d) {
+  /* scenario controls: who is out, minute caps, the five who close, starter minutes to the bench, a player added
+     from another team (a transfer, or anyone) with his own impact and minutes */
+  function scenarioTool(el, d, opts) {
+    opts = opts || {};
     var rot = d.scenario_rotation.slice().sort(function (a, b) { return b.baseline - a.baseline; });
-    if (rot.length < 6) { el.innerHTML = '<p class="mut">Not enough linked rotation players to run scenarios.</p>'; return; }
+    if (rot.length < 6) { el.innerHTML = '<p class="mut">Not enough linked rotation players to run scenarios.</p>'; return null; }
+    var shown = opts.limit ? rot.slice(0, opts.limit) : rot; // every rotation player still takes minutes; only the rows are limited
     var usual = {}; NR.redistribute(rot, {}).players.forEach(function (p) { usual[p.id] = p.minutes; });
-    el.innerHTML = '<p class="note">Choose who is out, cap minutes (foul trouble or a restriction) or shift starter minutes to the bench. Minutes are redistributed to the players who usually take them (positional similarity, each capped at his season high) and priced with on-court impact. These are conditional estimates: there is no confirmed availability feed, and in validation such adjustments did not improve game predictions.</p>' +
-      '<div class="tbl-wrap"><table><thead><tr><th>Player</th><th class="r" title="recent minutes when available, scaled so the rotation plays 200 player-minutes">Usual min</th><th>Out</th><th class="r">Cap</th><th class="r">Scenario min</th><th class="r">Effect /100</th></tr></thead><tbody>' + rot.map(function (p, i) {
-        return '<tr><td>' + esc(p.name) + ' <span class="mut">' + esc(p.pos || '') + '</span></td><td class="r num">' + f(usual[p.id]) + '</td><td><input type="checkbox" data-out="' + i + '" aria-label="' + esc(p.name) + ' out"></td><td class="r"><input type="number" min="0" max="40" step="1" style="width:64px" data-cap="' + i + '" aria-label="' + esc(p.name) + ' minutes cap"></td><td class="r num" id="sm' + i + '">—</td><td class="r num" id="se' + i + '">—</td></tr>';
-      }).join('') + '</tbody></table></div><div class="controls"><label class="ck">Shift starters\' minutes to the bench <input type="range" min="0" max="0.3" step="0.05" value="0" id="bench"> <span id="benchv">0%</span></label></div><div id="scenout" class="banner"></div>';
+    var pre = opts.prefix || 's'; var added = [];
+    el.innerHTML = (opts.compact ? '' : '<p class="note">Choose who is out, cap minutes (foul trouble or a restriction), pick the five who close games, shift starter minutes to the bench, or add a player from another team (a transfer). Minutes are redistributed to the players who usually take them (positional similarity, each capped at his season high) and priced with on-court impact. These are conditional estimates: there is no confirmed availability feed, and in validation such adjustments did not improve game predictions.</p>') +
+      '<div class="tbl-wrap"><table><thead><tr><th>Player</th><th class="r" title="recent minutes when available, scaled so the rotation plays 200 player-minutes">Usual min</th><th>Out</th><th class="r">Cap</th><th title="the five on the floor for the final five minutes">Closer</th><th class="r">Scenario min</th><th class="r">Effect /100</th></tr></thead><tbody id="' + pre + 'rows">' + shown.map(function (p, i) {
+        return '<tr><td>' + esc(p.name) + ' <span class="mut">' + esc(p.pos || '') + '</span></td><td class="r num">' + f(usual[p.id]) + '</td><td><input type="checkbox" data-out="' + i + '" aria-label="' + esc(p.name) + ' out"></td><td class="r"><input type="number" min="0" max="40" step="1" style="width:64px" data-cap="' + i + '" aria-label="' + esc(p.name) + ' minutes cap"></td><td><input type="checkbox" data-close="' + i + '" aria-label="' + esc(p.name) + ' closes"></td><td class="r num" data-sm="' + i + '">—</td><td class="r num" data-se="' + i + '">—</td></tr>';
+      }).join('') + '</tbody></table></div>' + (shown.length < rot.length ? '<p class="note">Showing the ' + shown.length + ' players with the most minutes; the other ' + (rot.length - shown.length) + ' still take minutes.</p>' : '') +
+      '<div class="controls"><label class="ck">Starter minutes to the bench <input type="range" min="0" max="0.3" step="0.05" value="0" data-bench="1"> <span data-benchv="1">0%</span></label></div>' +
+      '<div class="controls"><span class="note">Add a player:</span><select data-addteam="1" aria-label="Team to add a player from"><option value="">team…</option></select><select data-addplayer="1" aria-label="Player to add" disabled><option value="">player…</option></select><input type="number" min="1" max="38" step="1" style="width:70px" placeholder="min" data-addmin="1" aria-label="Minutes for the added player"><button type="button" data-add="1">Add</button><span data-added="1"></span></div>' +
+      '<div class="banner" data-out-summary="1"></div>';
+    var q = function (sel) { return el.querySelector(sel); };
+    get('index.json').then(function (idx) {
+      q('[data-addteam]').innerHTML = '<option value="">team…</option>' + idx.teams.slice().sort(function (a, b) { return a.short < b.short ? -1 : 1; }).filter(function (t) { return t.id !== d.team.id; }).map(function (t) { return '<option value="' + t.id + '">' + esc(t.short) + '</option>'; }).join('');
+    });
+    q('[data-addteam]').addEventListener('change', function () {
+      var tid = this.value; var ps = q('[data-addplayer]'); ps.disabled = true; if (!tid) return;
+      get('teams/' + tid + '.json').then(function (td) {
+        ps.innerHTML = '<option value="">player…</option>' + td.players.filter(function (p) { return p.minutes && p.minutes.expected > 0; }).map(function (p) { return '<option value="' + p.id + '">' + esc(p.name) + ' (' + sg(p.impact.net) + ', ' + f(p.minutes.expected, 0) + ' min)</option>'; }).join('');
+        ps.disabled = false; ps._doc = td;
+      });
+    });
+    q('[data-add]').addEventListener('click', function () {
+      var ps = q('[data-addplayer]'); var td = ps._doc; if (!td || !ps.value) return;
+      var p = td.players.find(function (x) { return String(x.id) === ps.value; }); if (!p || added.some(function (a) { return a.id === 'add:' + p.id; })) return;
+      var mins = Number(q('[data-addmin]').value) || p.minutes.expected;
+      added.push({ id: 'add:' + p.id, name: p.name + ' (from ' + td.team.short + ')', pos: p.pos, expected: mins, cap: Math.max(mins, p.minutes.cap || mins), o: p.impact.o, d: p.impact.d, sd_o: p.impact.sd_o, sd_d: p.impact.sd_d });
+      run();
+    });
+    el.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-remove]'); if (!b) return; added = added.filter(function (a) { return a.id !== b.getAttribute('data-remove'); }); run(); });
+    var state = { delta: null };
     var run = function () {
-      var out = []; var cap = {};
-      rot.forEach(function (p, i) { if (el.querySelector('[data-out="' + i + '"]').checked) out.push(p.id); var c = el.querySelector('[data-cap="' + i + '"]').value; if (c !== '') cap[p.id] = Number(c); });
-      var bench = Number(document.getElementById('bench').value); document.getElementById('benchv').textContent = Math.round(bench * 100) + '%';
-      var sc = NR.scenario(rot, { out: out, cap: cap, bench_share: bench }); var dv = sc.delta_vs_usual;
-      sc.minutes.players.forEach(function (p) { var i = rot.findIndex(function (q) { return q.id === p.id; }); if (i < 0) return; document.getElementById('sm' + i).textContent = f(p.minutes); var c = dv.contributions.find(function (x) { return x.id === p.id; }); document.getElementById('se' + i).textContent = c ? sg(c.net_effect, 2) : '0.00'; });
+      var out = []; var cap = {}; var closing = [];
+      shown.forEach(function (p, i) { if (q('[data-out="' + i + '"]').checked) out.push(p.id); var c = q('[data-cap="' + i + '"]').value; if (c !== '') cap[p.id] = Number(c); if (q('[data-close="' + i + '"]').checked) closing.push(p.id); });
+      var bench = Number(q('[data-bench]').value); q('[data-benchv]').textContent = Math.round(bench * 100) + '%';
+      var tooMany = closing.length > 5; if (tooMany) closing = closing.slice(0, 5);
+      var sc = NR.scenario(rot, { out: out, cap: cap, bench_share: bench, closing: closing, add: added }); var dv = sc.delta_vs_usual;
+      sc.minutes.players.forEach(function (p) { var i = shown.findIndex(function (x) { return x.id === p.id; }); if (i < 0) return; q('[data-sm="' + i + '"]').textContent = f(p.minutes); var c = dv.contributions.find(function (x) { return x.id === p.id; }); q('[data-se="' + i + '"]').textContent = c ? sg(c.net_effect, 2) : '0.00'; });
+      q('[data-added]').innerHTML = added.map(function (a) { var m = sc.minutes.players.find(function (x) { return x.id === a.id; }); var c = dv.contributions.find(function (x) { return x.id === a.id; }); return ' <span class="tag">' + esc(a.name) + ' · ' + f(m ? m.minutes : 0) + ' min · ' + sg(c ? c.net_effect : 0, 2) + '/100 <button type="button" data-remove="' + esc(a.id) + '" aria-label="Remove ' + esc(a.name) + '">×</button></span>'; }).join('');
+      var any = out.length || Object.keys(cap).length || bench || closing.length || added.length;
       var poss = d.rating.tempo; var fs = sc.full_strength_vs_rating.net;
-      var drift = '<p class="note">For reference: the usual rotation with everyone available differs from the season-average minutes inside the published rating by ' + sg(fs, 2) + ' per 100 (players who missed games or changed roles). That difference is not added to the rating: with availability known after the fact it did not improve predictions.</p>';
-      document.getElementById('scenout').innerHTML = ((out.length || Object.keys(cap).length || bench) ? '<b>Conditional change in net rating: ' + sg(dv.net, 2) + ' per 100</b> (± ' + f(dv.sd_net, 2) + ') against the usual rotation, about ' + sg(dv.net * poss / 100, 1) + ' points per game at their tempo. Offense ' + sg(dv.off, 2) + ', defense ' + sg(dv.def, 2) + '.' + (Math.abs(sc.minutes.unassigned) > 0.5 ? ' <span class="neg">' + f(sc.minutes.unassigned) + ' minutes could not be placed within players\' caps.</span>' : '') : 'No change selected: the team rating as published.') + drift;
+      var drift = opts.compact ? '' : '<p class="note">For reference: the usual rotation with everyone available differs from the season-average minutes inside the published rating by ' + sg(fs, 2) + ' per 100 (players who missed games or changed roles). That difference is not added to the rating: with availability known after the fact it did not improve predictions.</p>';
+      q('[data-out-summary]').innerHTML = (any ? '<b>Conditional change in net rating: ' + sg(dv.net, 2) + ' per 100</b> (± ' + f(dv.sd_net, 2) + ') against the usual rotation, about ' + sg(dv.net * poss / 100, 1) + ' points per game at their tempo. Offense ' + sg(dv.off, 2) + ', defense ' + sg(dv.def, 2) + '.' + (Math.abs(sc.minutes.unassigned) > 0.5 ? ' <span class="neg">' + f(sc.minutes.unassigned) + ' minutes could not be placed within players\' caps.</span>' : '') + (tooMany ? ' <span class="neg">Only the first five closers are used.</span>' : '') : 'No change selected: the team rating as published.') + drift;
+      state.delta = any ? dv : null; state.label = any ? describe(out, cap, closing, bench, added, rot) : null;
+      if (opts.onChange) opts.onChange(state);
     };
     el.addEventListener('input', run); run();
+    return state;
+  }
+  function describe(out, cap, closing, bench, added, rot) {
+    var nm = function (id) { var p = rot.find(function (x) { return x.id === id; }); return p ? p.name : id; }; var parts = [];
+    if (out.length) parts.push(out.map(nm).join(', ') + ' out');
+    Object.keys(cap).forEach(function (id) { parts.push(nm(isNaN(+id) ? id : +id) + ' capped at ' + cap[id] + ' min'); });
+    if (closing.length) parts.push('closing five: ' + closing.map(nm).join(', '));
+    if (bench) parts.push(Math.round(bench * 100) + '% of starter minutes to the bench');
+    if (added.length) parts.push(added.map(function (a) { return a.name + ' added'; }).join(', '));
+    return parts.join('; ');
   }
 
   /* ---------------------------------------------------------------- player */
@@ -183,10 +226,18 @@
       var go = function () {
         location.replace('#/matchup?h=' + mh.value + '&a=' + ma.value + '&n=' + (mn.checked ? 1 : 0));
         Promise.all([get('teams/' + mh.value + '.json'), get('teams/' + ma.value + '.json')]).then(function (t) {
-          var rep = NR.matchupReport(t[0], t[1], lg, { neutral: mn.checked });
-          rep.market = NR.compareMarket(null, [], { unavailable_reason: 'No men\'s college basketball odds source is configured; hypothetical matchups have no market.' });
-          document.getElementById('mrep').innerHTML = renderReport(rep, t[0], t[1]);
-          bindRows();
+          var box = document.getElementById('mrep');
+          box.innerHTML = '<details class="card" id="mscen"><summary>Scenarios for this game ' + kindTag('c') + ' (who is out, minute caps, closers, a player added)</summary><div class="grid g2"><div><h3>' + esc(t[0].team.short) + '</h3><div id="mscenh"></div></div><div><h3>' + esc(t[1].team.short) + '</h3><div id="mscena"></div></div></div></details><div id="mbody"></div>';
+          var sh = { delta: null }; var sa = { delta: null };
+          var draw = function () {
+            var rep = NR.matchupReport(t[0], t[1], lg, { neutral: mn.checked, delta_home: sh.delta || undefined, delta_away: sa.delta || undefined });
+            rep.scenario_text = [sh.label ? t[0].team.short + ': ' + sh.label : null, sa.label ? t[1].team.short + ': ' + sa.label : null].filter(Boolean).join(' · ');
+            rep.market = NR.compareMarket(null, [], { unavailable_reason: 'No men\'s college basketball odds source is configured; hypothetical matchups have no market.' });
+            document.getElementById('mbody').innerHTML = renderReport(rep, t[0], t[1]); bindRows();
+          };
+          sh = scenarioTool(document.getElementById('mscenh'), t[0], { compact: true, limit: 10, prefix: 'h', onChange: function (st) { sh = st; if (document.getElementById('mbody')) draw(); } }) || sh;
+          sa = scenarioTool(document.getElementById('mscena'), t[1], { compact: true, limit: 10, prefix: 'a', onChange: function (st) { sa = st; if (document.getElementById('mbody')) draw(); } }) || sa;
+          draw();
         }).catch(fail);
       };
       document.getElementById('go').addEventListener('click', go); if (params.h) go();
@@ -200,6 +251,7 @@
       tile('Margin (' + esc(hs) + ')', sg(P.margin_home.mean), '80%: ' + sg(P.margin_home.p10, 0) + ' to ' + sg(P.margin_home.p90, 0) + ' · SD ' + f(P.margin_home.sd)) +
       tile('Win probability', pct(P.win_home, 0) + ' / ' + pct(P.win_away, 0), esc(hs) + ' / ' + esc(as) + ' (overtime included)') +
       tile('Total', f(P.total.mean), '80%: ' + f(P.total.p10, 0) + ' to ' + f(P.total.p90, 0) + ' · fair spread ' + esc(hs) + ' ' + sg(P.fair_spread_home) + ', fair total ' + f(P.fair_total)) + '</div>';
+    if (P.scenario_applied) h += '<div class="banner warn"><b>Conditional scenario applied</b> (' + esc(rep.scenario_text || '') + '): ' + esc(hs) + ' margin ' + sg(P.margin_home.mean) + ' vs ' + sg(P.baseline_without_scenario.margin_home) + ' without it; win ' + pct(P.win_home, 0) + ' vs ' + pct(P.baseline_without_scenario.win_home, 0) + '. Not confirmed availability.</div>';
     var mp = P.margin_probabilities;
     var items = [{ label: hs + ' by 10+', v: mp.home_by_10_plus }, { label: hs + ' by 1-9', v: mp.home_by_1_9 }, { label: as + ' by 1-9', v: mp.away_by_1_9 }, { label: as + ' by 10+', v: mp.away_by_10_plus }];
     h += '<div class="card"><h3>Margin distribution ' + kindTag('p') + '</h3><div class="bars">' + items.map(function (i) { return '<div class="bar-row"><div>' + esc(i.label) + '</div><div class="bar-track"><span class="b p" style="left:0;width:' + (100 * i.v) + '%;border-radius:0 4px 4px 0"></span></div><div class="num r">' + pct(i.v, 0) + '</div></div>'; }).join('') + '</div></div>';

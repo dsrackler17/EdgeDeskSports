@@ -92,10 +92,19 @@ O_p ~ N(b_O · x_p, s²/λ),  D_p ~ N(b_D · x_p, s²/λ)
   capped player's minutes go to teammates in proportion to their usual
   minutes × positional similarity, each capped at his season high. The team
   still plays 200 player-minutes.
+- **Closing five.** Each of the five chosen to close gains up to
+  5 × (1 − his minutes / 40) minutes, within his cap. The others give up the
+  same total in proportion to their minutes.
+- **Added player.** A player from another team (a transfer, or anyone)
+  enters with his own impact and the minutes chosen. The team still plays
+  200 player-minutes, so the others give up time in proportion.
 - **Pricing.** Δ net = Σ (minutes′ − minutes) / 40 × impact.
   - The pages price changes against the usual rotation, so no change = 0.
   - The validation priced them against the rating's own minutes, so nothing
     a rating already contains is counted twice.
+- **In a matchup.** A scenario moves the team's offense and defense by
+  its Δ, and the margin and total SDs widen by its SD. The report says a
+  scenario is applied and shows the game without it alongside.
 
 ## Lineups
 
