@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_cfb_live_validation_v1",
- "generated_at": "2026-10-14T15:07:52.816Z",
+ "generated_at": "2026-10-14T16:08:02.733Z",
  "season": 2026,
  "question": "Is the current version actually getting better?",
  "freeze": {
@@ -178,7 +178,7 @@
   "release": "edgedesk_cfb_r1",
   "frozen_at": "2026-09-28T00:00:00.000Z",
   "live_games": 119,
-  "live_snapshots_tracked": 1037,
+  "live_snapshots_tracked": 1049,
   "model_mae": 12.5,
   "market_moved_toward_edgedesk_pct": 53,
   "average_clv": -0.009,
@@ -1013,13 +1013,16 @@
    }
   },
   "research_gates": {
-   "verified": null,
-   "investigate": null,
-   "data_faults": null,
-   "note": "no LIVE gate verdicts were recorded for this week (the gate was wired to the Lab on 2026-09-27)"
+   "verified": 0,
+   "investigate": 1,
+   "data_faults": 0,
+   "not_run": 0,
+   "raw_7plus": 1,
+   "favorite_flips": 0,
+   "downgraded": null
   },
   "report": {
-   "text": "EDGEDESK CFB WEEK 7 (2026)\n\nGames: 2\nMargin MAE: 2.73 (median 2.73, worst 3.77)\nMarket movement toward early EdgeDesk: 0%\nAverage CLV: 0 pts\nVerified major: —\nInvestigate: —\nBET decisions: 0 (betting disabled by policy)\nRecord: —\nPrimary concern: Sample: 2 games graded — one week says little. Read the rolling and season lines.\nResearch trigger: CALIBRATION_DRIFT\n\nRolling 4 weeks: MAE 12.5 on 119 games · Season: MAE 12.5 on 119 · Current version: 119 games graded.\nOne week is never the verdict. No model change follows from this report; research triggers open candidates, promotions need walk-forward evidence.",
+   "text": "EDGEDESK CFB WEEK 7 (2026)\n\nGames: 2\nMargin MAE: 2.73 (median 2.73, worst 3.77)\nMarket movement toward early EdgeDesk: 0%\nAverage CLV: 0 pts\nVerified major: 0\nInvestigate: 1\nBET decisions: 0 (betting disabled by policy)\nRecord: —\nPrimary concern: Sample: 2 games graded — one week says little. Read the rolling and season lines.\nResearch trigger: CALIBRATION_DRIFT\n\nRolling 4 weeks: MAE 12.5 on 119 games · Season: MAE 12.5 on 119 · Current version: 119 games graded.\nOne week is never the verdict. No model change follows from this report; research triggers open candidates, promotions need walk-forward evidence.",
    "primary_concern": "Sample: 2 games graded — one week says little. Read the rolling and season lines.",
    "research_trigger": [
     "CALIBRATION_DRIFT"
@@ -1371,7 +1374,7 @@
  ],
  "what_changed_this_week": {
   "available": true,
-  "since": "2026-10-08T15:07:41.086Z",
+  "since": "2026-10-08T16:07:44.377Z",
   "changes": [
    {
     "what": "pricing code",
@@ -1406,8 +1409,8 @@
    {
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
-    "from": 6,
-    "to": 19
+    "from": 7,
+    "to": 36
    }
   ],
   "summary": "SOFTWARE: pricing code · SOFTWARE: research-gate code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
@@ -1443,9 +1446,9 @@
   {
    "kind": "market_source_stale",
    "level": "warn",
-   "message": "64% of snapshots within 72 h fail odds_freshness",
+   "message": "37% of snapshots within 72 h fail odds_freshness",
    "detail": {
-    "share": 0.642
+    "share": 0.367
    }
   }
  ],
