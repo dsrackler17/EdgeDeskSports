@@ -208,12 +208,101 @@ The panel is Research → Other → **NBA** (`lib/edgedesk_nba_ui.js`, `lib/edge
 
 ## 12. Missing data and limitations
 
-⟨LIMITS⟩
+**Blocked.** Each of these needs a decision or a resource from the owner.
+
+1. **The market test.** No licensed archive of timestamped NBA closing prices exists here. Until there is one:
+   - every market is NOT_TESTED;
+   - value claims are DISABLED;
+   - there is no ROI and no CLV.
+
+   ESPN's displayed spread (2012-13 on) has no timestamp, no book and no price, so it is used only as an accuracy diagnostic.
+2. **Live prices.** These need the owner to authorise spend: run `supabase/nba_odds_sport.sql`, enable the gateway row, and set `NBA_PRICES=on` (§11).
+3. **Commercial data rights.** ESPN- and NBA-derived data must be reviewed before NBA output is sold (§2).
+4. **The Rithmm posts and the NBA.com glossary and terms.** Both are unreachable from this build. `NBA_RESEARCH.md` §7 lists what to verify from an open network.
+
+**Provisional.** These limit how far the numbers can be trusted.
+
+- **No injury report or confirmed lineup feed.** The published price uses the **projected** track: each team's previous-game rotation, or last season's closing rotation for its first game. The confirmed track (who played) is scored in the walk-forward as the upper bound a lineup feed could reach. It is never used for a published price.
+- **Retrospective data.** When a result was first published is unknown. Every game is assumed known four hours after tip, and `pit = RETRO`.
+- **Rosters at a season's start.** The opening price carries last season's closing rotation. The roster-adjusted scenario (the 2026-27 preseason roster) is shown beside it, labelled. Its timing cannot be reproduced historically, so it is never scored.
+- **The possession simulation (D)** omits and-ones and bonus free throws. Its level is anchored to B, and its spread of outcomes is wider than the data. It stays a candidate and is not the published price.
+- **Older data.** Play-by-play before 2006-07 has period-score mismatches. These seasons are burn-in only, and half and quarter scoring drops those games. DNP reasons start in 2012-13.
+- **Props** are validated on synthetic lines; no historical prop prices are licensed. Minutes carry most of the uncertainty, and the minutes model has no injury feed.
+- **The cross-sport registry** (`engine/registry.json`) still reads the basketball lab's NBA record. Switching it to this engine is a separate, reviewable change; this build leaves the registry and the board untouched.
 
 ## 13. Files changed and tests executed
 
-⟨FILES⟩
+**New: the engine (`nba/`).**
+
+| Path | What it does |
+|---|---|
+| `nba/config.js` | Windows, sources, licences, paths, schemas |
+| `nba/ingest/season.js`, `nba/ingest/pbp.js` | Schedule, team and player box, play-by-play: period scores, lineup stints, shots, possessions, the transition proxy; rest, travel, altitude and time zone |
+| `nba/lib/io.js`, `nba/lib/data.js`, `nba/lib/venues.js` | Cached fetch, the parquet bridge, tables, arenas |
+| `nba/tools/parquet_select.py` | pyarrow column selection; CR/LF inside strings is flattened |
+| `nba/tools/fetch_all.js` | Download every season's parquet into the cache |
+| `nba/tools/lineups.js` | Five-man units per team-season |
+| `nba/tools/sync_supabase.js` | The `nbahist` copy (service role, off by default) |
+| `nba/model/ratings.js` | Elo, Glicko, adjusted ratings, Kalman |
+| `nba/model/players.js` | RAPM and availability |
+| `nba/model/simulate.js` | The possession simulation |
+| `nba/model/learn.js` | Ridge, logistic, GBDT, Platt |
+| `nba/model/ml.js` | The E models per track |
+| `nba/model/pass.js` | The point-in-time pass |
+| `nba/model/distribution.js`, `nba/model/dist_fit.js` | One distribution for every market, and its fitting |
+| `nba/model/walkforward.js` | The record, the seal, the choice |
+| `nba/model/tune.js` | Selection-window tuning, with parallel parts |
+| `nba/model/live.js` | The live parameters |
+| `nba/props/state.js`, `nba/props/model.js`, `nba/props/walkforward.js`, `nba/props/build_props.js` | Props: features, model, record, slate |
+| `nba/build_slate.js` | The slate, scenarios and the ledger |
+| `nba/grade_ledger.js` | Grades the ledger |
+| `nba/market/quotes.js`, `nba/market/fetch_quotes.js` | Gated price capture |
+| `nba/desk.js` | The desk module |
+
+**New: committed data and artifacts.** `nba/data/**`, `nba/params/**`, `nba/validation/**`, `nba/slate.json`, `nba/props_slate.json`, `nba/ledger/**`, `nba/market/quotes.json`.
+
+**New: everything else.**
+
+- **App:** `lib/edgedesk_nba_ui.js`, `lib/edgedesk_nba.css`.
+- **SQL:** `supabase/nba_engine.sql`, `supabase/nba_engine_rollback.sql`, `supabase/nba_odds_sport.sql`, `supabase/migrations/20261014120000_nba_odds_sport_row.sql`.
+- **CI:** `.github/workflows/nba.yml`.
+- **Tests:** `tools/nba/nba.test.js`, `nba_desk.test.js`, `nba_sql.test.js`, `nba_ui.e2e.js`.
+- **Docs:** `docs/engine/NBA.md`, `docs/engine/NBA_RESEARCH.md`.
+
+**Changed shared files.** Each has one NBA entry added.
+
+| File | Change |
+|---|---|
+| `app.html` | The NBA button, panel host, stylesheet and registration |
+| `lib/edgedesk_sports.js` | NBA in `RESEARCH_COVERAGE` |
+| Inlined copies: `record.html`, `supabase/functions/{edgedesk_ai,capture,close}/index.ts` | Synced with `tools/presentation/inline.js` |
+| `supabase/functions/edgedesk_ai/index.ts` | The `nbaTurn` after the NHL turn |
+| `tools/presentation/inline.js` | The `EDNBADESK` entry |
+| `supabase/expose_schemas.sql` | `nbahist` listed |
+| `package.json` | `nba:*` scripts |
+| `README.md`, `docs/engine/README.md` | NBA sections |
+
+**Tests updated** because they pin the coverage list or the Other row. These are dated changes, not loosened checks: `tools/app/navigation.test.js`, `tools/app/sports_config.test.js`, `tools/intelligence/support_boundary.test.js`.
+
+**Untouched:** football, MLB, NHL, the basketball lab, the registry and the board, the odds gateway code, and every other workflow.
+
+⟨TESTS⟩
 
 ## 14. Deployment and rollback status
 
-⟨DEPLOY⟩
+**Nothing is deployed.** The work is on branch `claude/vibrant-einstein-sz8a25` as a draft pull request.
+
+**What merging does.**
+
+- **The panel goes live.** GitHub Pages serves `app.html`, so the panel ships on merge. It reads only committed files.
+- **The SQL does not run.** `supabase/nba_engine.sql` (the `nbahist` schema) and `supabase/nba_odds_sport.sql` (the disabled gateway row) are applied by hand in the SQL editor. The odds-row migration in `supabase/migrations/` mirrors the NHL's and inserts the row **disabled**. The schema is deliberately not a migration.
+- **The desk does not change yet.** The NBA desk turn is in `supabase/functions/edgedesk_ai/index.ts`. It reaches readers only when the function is redeployed (`Deploy intelligence`, manual). Its `BUILD` tag is unchanged, so the Intelligence doctor does not redeploy it on its own. `EDGEDESK_NBA=0` switches the turn off without a code change.
+- **Scheduled jobs start.** `.github/workflows/nba.yml` runs on `main` after merge: the build every 3 hours, the sealed validation weekly. They spend nothing (`NBA_PRICES` and `NBA_SUPABASE` are unset), and they commit through `tools/ci/push_generated.sh` only when the checks pass.
+
+**Rollback.** Each layer can be withdrawn on its own.
+
+- **The panel:** remove the NBA button and `researchRegister({id:'nba'…})` from `app.html`, or revert the merge. The panel holds no state.
+- **The coverage list:** remove `{ id: 'nba' }` from `EDSPORTS.RESEARCH_COVERAGE` and run `node tools/presentation/inline.js`. That restores the previous coverage sentence everywhere it is inlined.
+- **The desk:** set `EDGEDESK_NBA=0` in the function's secrets, or redeploy the previous build.
+- **The database:** `supabase/nba_engine_rollback.sql` drops `nbahist` (nothing outside it depends on it). `select public.odds_api_set_sport('basketball_nba', false);` withdraws price capture.
+- **The jobs:** disable the `NBA engine` workflow.

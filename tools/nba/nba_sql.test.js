@@ -26,8 +26,9 @@ const ODDS = fs.readFileSync(path.join(ROOT, 'supabase', 'nba_odds_sport.sql'), 
 
 T.chk('the odds file only inserts, with on conflict do nothing', /insert into public\.odds_api_sports[\s\S]*on conflict \(sport_key\) do nothing/.test(ODDS) && !/\bupdate\b|\bdelete\b|\bdrop\b/i.test(ODDS.replace(/--[^\n]*/g, '')));
 T.chk('the NBA row is inserted disabled', /values \('basketball_nba', 'nba', false,/.test(ODDS));
-T.chk('the migrations are the same files', fs.readFileSync(path.join(ROOT, 'supabase', 'migrations', '20261014120000_nba_odds_sport_row.sql'), 'utf8') === ODDS
-  && fs.readFileSync(path.join(ROOT, 'supabase', 'migrations', '20261014120100_nba_engine.sql'), 'utf8') === SQL);
+T.chk('the odds-row migration is the same file', fs.readFileSync(path.join(ROOT, 'supabase', 'migrations', '20261014120000_nba_odds_sport_row.sql'), 'utf8') === ODDS);
+/* the nbahist schema is applied by hand (supabase/nba_engine.sql), never by a migration: creating it is the owner's decision */
+T.chk('the warehouse schema is not a migration', !fs.readdirSync(path.join(ROOT, 'supabase', 'migrations')).some((f) => /nba_engine/.test(f)));
 T.chk('the contract never grants a client write', !/grant\s+(insert|update|delete|all)[^;]*to\s+(anon|authenticated)/i.test(SQL));
 
 const db = PG.start('nbasql');

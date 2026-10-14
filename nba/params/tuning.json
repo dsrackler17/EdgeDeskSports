@@ -31,7 +31,21 @@
    "prior_d": 0
   }
  },
- "ml": {},
+ "ml": {
+  "ridge_l2": 300,
+  "logit_l2": 300,
+  "gbdt": {
+   "trees": 600,
+   "depth": 2,
+   "lr": 0.08,
+   "minLeaf": 150,
+   "l2": 5,
+   "subsample": 0.8,
+   "colsample": 0.8,
+   "bins": 32,
+   "patience": 40
+  }
+ },
  "grids": {
   "elo": {
    "at": "2026-10-13T14:24:32.983Z",
@@ -1124,6 +1138,99 @@
      "prior_d": 0
     }
    ]
+  },
+  "ml": {
+   "at": "2026-10-14T01:52:26.534Z",
+   "grid": {
+    "ridge": [
+     {
+      "l2": 300,
+      "selection_ll": 0.584439
+     },
+     {
+      "l2": 3,
+      "selection_ll": 0.58461
+     },
+     {
+      "l2": 30,
+      "selection_ll": 0.585009
+     }
+    ],
+    "gbdt": [
+     {
+      "depth": 2,
+      "lr": 0.08,
+      "minLeaf": 150,
+      "selection_ll": 0.584353
+     },
+     {
+      "depth": 3,
+      "lr": 0.03,
+      "minLeaf": 150,
+      "selection_ll": 0.584353
+     },
+     {
+      "depth": 3,
+      "lr": 0.08,
+      "minLeaf": 60,
+      "selection_ll": 0.584543
+     },
+     {
+      "depth": 2,
+      "lr": 0.03,
+      "minLeaf": 60,
+      "selection_ll": 0.584607
+     },
+     {
+      "depth": 3,
+      "lr": 0.03,
+      "minLeaf": 60,
+      "selection_ll": 0.584657
+     },
+     {
+      "depth": 2,
+      "lr": 0.03,
+      "minLeaf": 150,
+      "selection_ll": 0.584748
+     },
+     {
+      "depth": 2,
+      "lr": 0.08,
+      "minLeaf": 60,
+      "selection_ll": 0.58487
+     },
+     {
+      "depth": 4,
+      "lr": 0.03,
+      "minLeaf": 150,
+      "selection_ll": 0.585002
+     },
+     {
+      "depth": 3,
+      "lr": 0.08,
+      "minLeaf": 150,
+      "selection_ll": 0.585439
+     },
+     {
+      "depth": 4,
+      "lr": 0.03,
+      "minLeaf": 60,
+      "selection_ll": 0.58548
+     },
+     {
+      "depth": 4,
+      "lr": 0.08,
+      "minLeaf": 60,
+      "selection_ll": 0.585865
+     },
+     {
+      "depth": 4,
+      "lr": 0.08,
+      "minLeaf": 150,
+      "selection_ll": 0.585899
+     }
+    ]
+   }
   }
  },
  "rule": "each family chosen by SELECTION-window (2008-2017) log loss of its own signal under the walk-forward calibration; no later season is read"
