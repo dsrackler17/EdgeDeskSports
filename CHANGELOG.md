@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-10-14 — Server-only functions: lock the Collective, `edge_call` and three financial views away from the browser
+
+**The August ship-gate audit (PR #14) found that anyone holding the public anon key could call `public.edge_call`, which runs any Edge Function with the service-role key. They could also call every function in the `collective` schema, including the admin-id leak and the unchecked `billing_*` writers. Its fix never reached the repository. It would also have left all of them open, because it did not revoke the default `PUBLIC` grant.** `supabase/server_only_lockdown.sql` is the corrected fix. Paste it into the SQL editor; every report row should read `ok`.
+
+- **What it locks:** every routine in `collective`, `public.edge_call`, `guarantee_sweep` and the four `research_*` helpers lose EXECUTE for `PUBLIC`, `anon` and `authenticated`. The three financial views lose SELECT for `anon` and `authenticated`.
+- **What keeps working:** `service_role` is granted explicitly before `PUBLIC` is revoked, so the Collective edge functions and `settle-finals.yml` keep every call. `has_active_sub` and the browser's `collective_model_ensure` / `collective_my_models` wrappers are untouched. No page or admin console calls any locked function (checked against every rpc in the repository).
+- **Tests** (`tools/app/server_only_lockdown_sql.test.js`, in `games-sql.yml`): 79 checks on a real PostgreSQL against a rebuild of the audited catalog, in which `service_role` holds nothing explicit. It runs each attack as `anon` and as a signed-in user, and each server call as `service_role`. It runs the file a second time as the SQL editor would (same grants after), shows the report catching a function added later, and applies the file to an empty database.
+
 ## 2026-10-14 — The college baseball research engine: every Division I game on the board, validated on a holdout it never saw, research not picks
 
 **I built an NCAA Division I baseball engine on the warehouse: an opponent-adjusted, conference-pooled run model with run-space calibration. On 2025–26, seasons it never saw, it beats calibrated Elo (−0.0055 log loss, 95% −0.0074 to −0.0035) and is calibrated (in-the-large 0.002, slope 1.015). The moneyline is OUTCOME_VALIDATED on outcomes. Nothing has been tested against a market, because no authorised college-baseball feed exists, so the board shows prices and never a bet.** Docs: `docs/college-baseball/REPORT.md` (generated from the evidence), `college_baseball/research/`.
