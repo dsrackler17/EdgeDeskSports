@@ -1,0 +1,558 @@
+{
+ "schema": "edgedesk_cbase_audit_v1",
+ "model_version": "cbase_v1.0.0",
+ "chosen": "hier_cal",
+ "checks": [
+  {
+   "id": "LEAKAGE",
+   "critical": true,
+   "status": "PASS",
+   "threshold": "zero leakage violations; no VALIDATION log loss below 0.55 (implausible for single college games)",
+   "evidence": {
+    "checked": 95356,
+    "violations": 0,
+    "best_validation_log_loss": 0.59346
+   },
+   "remediation": null
+  },
+  {
+   "id": "TIMESTAMPS",
+   "critical": true,
+   "status": "PASS",
+   "threshold": "every row: known_at blank (never backdated), assumed_available_at = next day 06:00 UTC, pit = RETRO",
+   "evidence": {
+    "rows": 119938,
+    "violations": 0,
+    "examples": []
+   },
+   "remediation": null
+  },
+  {
+   "id": "SOURCE_CONFLICTS",
+   "critical": true,
+   "status": "PASS",
+   "threshold": "no quarantined game scored or priced; conflict rate <= 2% per season (WARN above)",
+   "evidence": {
+    "scored_quarantined": 0,
+    "conflict_rate_by_season": {
+     "2012": 0.0001,
+     "2013": 0.0001,
+     "2014": 0,
+     "2015": 0,
+     "2016": 0,
+     "2017": 0,
+     "2018": 0,
+     "2019": 0.008,
+     "2020": 0.0004,
+     "2021": 0.0077,
+     "2022": 0.0088,
+     "2023": 0,
+     "2024": 0.0002,
+     "2025": 0,
+     "2026": 0
+    }
+   },
+   "remediation": null
+  },
+  {
+   "id": "STARTERS",
+   "critical": false,
+   "status": "PASS",
+   "threshold": "exactly one starter per team-game; projection top-1 accuracy >= 0.40 on SELECTION (WARN below)",
+   "evidence": {
+    "team_games": 50998,
+    "with_two_starters": 0,
+    "with_no_starter": 0,
+    "starters_with_3_outs_or_fewer": 3919,
+    "projection_top1_accuracy_2025": 0.5336,
+    "projection_by_status": {
+     "UNKNOWN": {
+      "n": 6728,
+      "top1_accuracy": 0.3401,
+      "mean_top_p": 0.3006,
+      "log_loss": 1.1856,
+      "unseen_share": 0.338
+     },
+     "PROJECTED": {
+      "n": 9994,
+      "top1_accuracy": 0.6639,
+      "mean_top_p": 0.6596,
+      "log_loss": 1.0456,
+      "unseen_share": 0.1057
+     }
+    }
+   },
+   "remediation": null
+  },
+  {
+   "id": "BULLPEN_ASSUMPTIONS",
+   "critical": false,
+   "status": "PASS",
+   "threshold": "reliever availability model: |mean p - mean y| <= 0.02 out of sample (2025)",
+   "evidence": {
+    "season": 2025,
+    "n": 219837,
+    "mean_p": 0.2362,
+    "mean_y": 0.2327,
+    "citl": 0.0035,
+    "slope": 1.019,
+    "log_loss": 0.50214,
+    "climatology_log_loss": 0.54246
+   },
+   "remediation": null
+  },
+  {
+   "id": "GAME_RULES",
+   "critical": true,
+   "status": "PASS",
+   "threshold": "R02 runs-scored violations <= 1% of eligible games; extra-inning scoring inconsistent with an automatic runner; run rule applied by measured context only",
+   "evidence": {
+    "r02_violation_rate": 0.004,
+    "extra_mean": 0.523,
+    "regulation_mean": 0.717,
+    "ncaa_tourney_run_rule_rate": 0,
+    "seven_inning_dh_share": {
+     "n": 3072,
+     "seven": 650,
+     "share": 0.212
+    }
+   },
+   "remediation": null
+  },
+  {
+   "id": "CONFERENCE_BIAS",
+   "critical": false,
+   "status": "PASS",
+   "threshold": "|CITL| per home conference within 3 standard errors + 0.01 (n >= 300)",
+   "evidence": {
+    "conferences": 0,
+    "flagged": [],
+    "table": {}
+   },
+   "remediation": null
+  },
+  {
+   "id": "FAVOURITE_CALIBRATION",
+   "critical": false,
+   "status": "PASS",
+   "threshold": "|favourite p - observed| <= 0.025 in each tier with n >= 500",
+   "evidence": {
+    "heavy": {
+     "n": 3214,
+     "mean_p": 0.8364,
+     "observed": 0.8463,
+     "citl": -0.0099
+    },
+    "moderate": {
+     "n": 4767,
+     "mean_p": 0.6703,
+     "observed": 0.6606,
+     "citl": 0.0097
+    },
+    "tossup": {
+     "n": 3969,
+     "mean_p": 0.5498,
+     "observed": 0.5518,
+     "citl": -0.002
+    }
+   },
+   "remediation": null
+  },
+  {
+   "id": "HOME_FIELD_BIAS",
+   "critical": false,
+   "status": "PASS",
+   "threshold": "|CITL| <= 0.02 for home games, <= 0.03 for neutral (n >= 300)",
+   "evidence": {
+    "home": {
+     "n": 11011,
+     "citl": -0.0035,
+     "slope": 1.011,
+     "log_loss": 0.58957,
+     "se": 0.004632640372939948
+    },
+    "neutral": {
+     "n": 939,
+     "citl": 0.0147,
+     "slope": 0.916,
+     "log_loss": 0.64277,
+     "se": 0.016311109720662444
+    }
+   },
+   "remediation": null
+  },
+  {
+   "id": "EARLY_SEASON",
+   "critical": false,
+   "status": "PASS",
+   "threshold": "first three weeks: calibration slope >= 0.80 (not overconfident), |CITL| <= 0.03",
+   "evidence": {
+    "n": 2406,
+    "citl": -0.0084,
+    "slope": 0.934,
+    "log_loss": 0.56403,
+    "se": 0.009699250555926133
+   },
+   "remediation": null
+  },
+  {
+   "id": "MISSING_DATA",
+   "critical": false,
+   "status": "PASS",
+   "threshold": "single-source games no worse than verified games by > 0.03 log loss (n >= 200)",
+   "evidence": {
+    "single_source": {
+     "n": 1,
+     "citl": 0.3233,
+     "slope": null,
+     "log_loss": 0.3905,
+     "se": 0
+    },
+    "verified": {
+     "n": 11949,
+     "citl": -0.0021,
+     "slope": 1.007,
+     "log_loss": 0.59377,
+     "se": 0.004464276799723294
+    },
+    "by_starter_status_2025": {
+     "both_PROJECTED": {
+      "team": {
+       "n": 3527,
+       "log_loss": 0.60942
+      },
+      "hybrid_proj": {
+       "n": 3527,
+       "log_loss": 0.60937
+      },
+      "hybrid_oracle": {
+       "n": 3527,
+       "log_loss": 0.6086
+      }
+     },
+     "both_UNKNOWN": {
+      "team": {
+       "n": 1893,
+       "log_loss": 0.57152
+      },
+      "hybrid_proj": {
+       "n": 1893,
+       "log_loss": 0.5714
+      },
+      "hybrid_oracle": {
+       "n": 1893,
+       "log_loss": 0.57185
+      }
+     }
+    }
+   },
+   "remediation": null
+  },
+  {
+   "id": "PROGRAM_ERRORS",
+   "critical": false,
+   "status": "PASS",
+   "threshold": "programs with |z| > 3.5 no more than chance (~0.05% each)",
+   "evidence": {
+    "programs": 305,
+    "extreme": []
+   },
+   "remediation": null
+  },
+  {
+   "id": "OVERFITTING",
+   "critical": true,
+   "status": "WARN",
+   "threshold": "chosen model's SELECTION->VALIDATION log-loss gap no worse than the best baseline's by > 0.005; <= 3 holdout looks per family; tuned values on a grid edge WARN",
+   "evidence": {
+    "selection_to_validation_gap": -0.01547,
+    "baseline_gap": -0.01649,
+    "holdout_looks": {
+     "team_pricing": 1,
+     "pitcher_hybrid": 2
+    },
+    "grid_edges": [
+     "elo.home=45",
+     "elo.carry=1",
+     "hier.sigma_conf=0.05",
+     "hier.carry_team=1",
+     "hier.phi=1.25",
+     "hier.halflife_days=180",
+     "poisson_flat.sigma_team=0.15",
+     "poisson_flat.carry_team=1",
+     "poisson_flat.phi=1.8",
+     "massey.carry=0.95",
+     "bt.sigma=0.45",
+     "bt.carry=0.95"
+    ]
+   },
+   "remediation": "simplify; stop looking at the holdout; extend grids"
+  },
+  {
+   "id": "TAILS",
+   "critical": true,
+   "status": "FAIL",
+   "threshold": "P(total >= 20), P(side >= 15), P(shutout) within max(0.01, 15% relative) of observed on VALIDATION; 80% total interval covers 77-83% (WARN outside)",
+   "evidence": {
+    "tails": {
+     "p_total_ge_20": 0.1707,
+     "obs_total_ge_20": 0.1678,
+     "p_side_ge_15": 0.0767,
+     "obs_side_ge_15": 0.0656,
+     "p_shutout": 0.0359,
+     "obs_shutout": 0.0357
+    },
+    "total_coverage_80": 0.8295,
+    "family": "nb"
+   },
+   "remediation": "refit the dispersion; consider a mixture tail"
+  },
+  {
+   "id": "SIMULATION",
+   "critical": true,
+   "status": "PASS",
+   "threshold": "full-game prices from the engine that is not worse on the moneyline, totals or run line (closed form vs simulator, VALIDATION); first-five Monte Carlo SE <= 0.01 at the board's draw count; zero incoherent prices in the study and on the board",
+   "evidence": {
+    "engine": {
+     "full_game_engine": "closed form",
+     "full_game_construction": "reweighted_raw",
+     "first_five_engine": "simulator, calibration outside tolerance: first-five prices are research only"
+    },
+    "comparisons": {
+     "moneyline_cf_vs_sim": {
+      "n": 4240,
+      "blocks": 119,
+      "mean_diff": -0.003191,
+      "ci95": [
+       -0.005035,
+       -0.001591
+      ],
+      "a_better": true,
+      "b_better": false
+     },
+     "total_cf_vs_sim": {
+      "n": 4240,
+      "blocks": 119,
+      "mean_diff": -0.064257,
+      "ci95": [
+       -0.097296,
+       -0.03445
+      ],
+      "a_better": true,
+      "b_better": false
+     },
+     "run_line_cf_vs_sim": {
+      "n": 4240,
+      "blocks": 119,
+      "mean_diff": -0.001451,
+      "ci95": [
+       -0.004447,
+       0.001382
+      ],
+      "a_better": false,
+      "b_better": false
+     },
+     "moneyline_sim_vs_sim_on_calibrated_inputs": {
+      "n": 4240,
+      "blocks": 119,
+      "mean_diff": -0.005643,
+      "ci95": [
+       -0.008798,
+       -0.002565
+      ],
+      "a_better": true,
+      "b_better": false
+     }
+    },
+    "first_five": {
+     "home_win": {
+      "n": 4240,
+      "log_loss": 0.65943,
+      "brier": 0.23281,
+      "citl": 0.0011,
+      "slope": 0.724
+     },
+     "tie": {
+      "n": 4240,
+      "log_loss": 0.33604,
+      "brier": 0.09376,
+      "citl": -0.0021,
+      "slope": 0.355
+     },
+     "max_mc_se": 0.0112
+    },
+    "board_sims": 4000,
+    "board_first_five_max_se": 0.0079,
+    "study_coherence_failures": 0,
+    "board_coherence_failures": 0
+   },
+   "remediation": null
+  },
+  {
+   "id": "STALENESS",
+   "critical": false,
+   "status": "PASS",
+   "threshold": "in season: warehouse rebuilt within 2 days (FAIL); off season: within 30 days (WARN)",
+   "evidence": {
+    "latest_build": "2026-10-14T01:09:07.618Z",
+    "age_days": 0.08,
+    "in_season": false,
+    "board_mode": "REPLAY"
+   },
+   "remediation": null
+  },
+  {
+   "id": "DEGRADATION",
+   "critical": false,
+   "status": "PASS",
+   "threshold": "the chosen model must not trail the best baseline in the two latest non-holdout seasons (FAIL) or in more than two seasons (WARN)",
+   "evidence": {
+    "2014": {
+     "n": 7908,
+     "chosen": 0.62252,
+     "baseline": 0.63047,
+     "diff": -0.00795
+    },
+    "2015": {
+     "n": 8028,
+     "chosen": 0.61693,
+     "baseline": 0.62385,
+     "diff": -0.00692
+    },
+    "2016": {
+     "n": 8476,
+     "chosen": 0.61161,
+     "baseline": 0.62053,
+     "diff": -0.00892
+    },
+    "2017": {
+     "n": 8474,
+     "chosen": 0.60804,
+     "baseline": 0.61695,
+     "diff": -0.00891
+    },
+    "2018": {
+     "n": 7922,
+     "chosen": 0.60976,
+     "baseline": 0.61425,
+     "diff": -0.00449
+    },
+    "2019": {
+     "n": 8207,
+     "chosen": 0.6037,
+     "baseline": 0.61122,
+     "diff": -0.00753
+    },
+    "2020": {
+     "n": 2335,
+     "chosen": 0.55994,
+     "baseline": 0.56879,
+     "diff": -0.00885
+    },
+    "2021": {
+     "n": 7162,
+     "chosen": 0.61727,
+     "baseline": 0.6194,
+     "diff": -0.00212
+    },
+    "2022": {
+     "n": 8198,
+     "chosen": 0.59958,
+     "baseline": 0.60447,
+     "diff": -0.0049
+    },
+    "2023": {
+     "n": 3532,
+     "chosen": 0.56777,
+     "baseline": 0.57218,
+     "diff": -0.00441
+    },
+    "2024": {
+     "n": 8418,
+     "chosen": 0.60466,
+     "baseline": 0.61077,
+     "diff": -0.00612
+    }
+   },
+   "remediation": null
+  },
+  {
+   "id": "ENSEMBLE_STABILITY",
+   "critical": false,
+   "status": "PASS",
+   "threshold": "stacking weights move by <= 0.6 between season blocks (FAIL if the ensemble is adopted and unstable)",
+   "evidence": {
+    "adopted": false,
+    "weight_spread": {
+     "hier_cal": 0.426,
+     "elo_cal": 0.185,
+     "massey_cal": 0.278,
+     "pythag_cal": 0.055
+    },
+    "block_weights": [
+     {
+      "seasons": [
+       2014,
+       2016
+      ],
+      "n": 24412,
+      "weights": [
+       0.039,
+       1.014,
+       0.062,
+       0.027,
+       -0.091
+      ]
+     },
+     {
+      "seasons": [
+       2017,
+       2019
+      ],
+      "n": 24603,
+      "weights": [
+       0.013,
+       0.817,
+       0.115,
+       0.186,
+       -0.126
+      ]
+     },
+     {
+      "seasons": [
+       2020,
+       2022
+      ],
+      "n": 17695,
+      "weights": [
+       0,
+       0.588,
+       0.247,
+       0.305,
+       -0.146
+      ]
+     }
+    ]
+   },
+   "remediation": null
+  },
+  {
+   "id": "REGISTRY_INTEGRITY",
+   "critical": true,
+   "status": "PASS",
+   "threshold": "the experiment registry hash chain is intact",
+   "evidence": {
+    "ok": true,
+    "records": 54,
+    "errors": []
+   },
+   "remediation": null
+  }
+ ],
+ "critical_failures": [
+  "TAILS"
+ ],
+ "promotion_allowed": false,
+ "summary": "17 PASS, 1 WARN, 1 FAIL; promotion BLOCKED by TAILS",
+ "generated_at": "2026-10-14T03:07:21.168Z"
+}

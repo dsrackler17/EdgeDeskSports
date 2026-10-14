@@ -1,0 +1,88 @@
+{
+ "schema": "edgedesk_cbase_ablations_v1",
+ "point_in_time": "RETROSPECTIVE",
+ "window": "VALIDATION 2023-2024",
+ "n": 11950,
+ "full_log_loss": 0.59705,
+ "config": {
+  "tq": {
+   "sigma_team": 0.12,
+   "sigma_conf": 0.05,
+   "carry_team": 1,
+   "phi": 1.25,
+   "halflife_days": 180
+  },
+  "dist": {
+   "family": "nb",
+   "r": 3.256
+  }
+ },
+ "results": [
+  {
+   "removed": "hierarchy",
+   "log_loss": 0.59832,
+   "diff_vs_full": 0.001274,
+   "ci95": [
+    0.000347,
+    0.002223
+   ],
+   "verdict": "KEEPS ITS PLACE",
+   "seconds": 19
+  },
+  {
+   "removed": "parks",
+   "log_loss": 0.59746,
+   "diff_vs_full": 0.00041,
+   "ci95": [
+    0.00021,
+    0.000627
+   ],
+   "verdict": "KEEPS ITS PLACE",
+   "seconds": 32
+  },
+  {
+   "removed": "carryover",
+   "log_loss": 0.61729,
+   "diff_vs_full": 0.020241,
+   "ci95": [
+    0.015374,
+    0.025997
+   ],
+   "verdict": "KEEPS ITS PLACE",
+   "seconds": 38
+  },
+  {
+   "removed": "uncertainty integration",
+   "log_loss": 0.59676,
+   "diff_vs_full": -0.000285,
+   "ci95": [
+    -0.000424,
+    -0.000147
+   ],
+   "verdict": "REMOVAL IMPROVES",
+   "seconds": 37
+  },
+  {
+   "removed": "seven inning mixture",
+   "log_loss": 0.59704,
+   "diff_vs_full": -0.000008,
+   "ci95": [
+    -0.00002,
+    0.000005
+   ],
+   "verdict": "NO MEASURABLE VALUE",
+   "seconds": 39
+  },
+  {
+   "removed": "prior-season calibration map",
+   "log_loss": 0.59705,
+   "diff_vs_full": 0.003294,
+   "ci95": [
+    0.002053,
+    0.004544
+   ],
+   "verdict": "KEEPS ITS PLACE",
+   "note": "compared with hier_cal on the same rows"
+  }
+ ]
+}

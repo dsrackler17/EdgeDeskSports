@@ -1,0 +1,157 @@
+name: College baseball research engine
+run-name: College baseball research · ${{ inputs.mode || github.event_name }}
+
+# The NCAA Division I baseball research engine (college_baseball/): the
+# warehouse, the coverage ledger and data-quality audit, the walk-forward
+# validation, the adversarial auditor, the release gates and the board the
+# terminal reads (Research → Baseball → NCAA engine).
+#
+# Every source is free and keyless (sportsdataverse/baseballr-data on
+# raw.githubusercontent.com, through engine/http.js: cache, quota, breaker).
+# Nothing here spends an odds credit: there is no authorised college-baseball
+# market feed, and the no-bypass suite proves these files cannot reach one.
+#
+# Separate stages (Phase 13): ingestion and pricing run daily in season;
+# validation weekly; TUNING ONLY BY HAND (mode=tune), never on a schedule.
+
+on:
+  pull_request:
+    paths:
+      - 'college_baseball/**'
+      - 'lib/edgedesk_cbase_ui.js'
+      - 'lib/edgedesk_cbase.css'
+      - 'tools/college_baseball/**'
+      - '.github/workflows/college-baseball-research.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'college_baseball/lib/**'
+      - 'college_baseball/*.js'
+      - 'tools/college_baseball/**'
+  schedule:
+    - cron: '23 11 * 2-6 *'   # daily, February-June: today's games, coverage, board, audit, gates
+    - cron: '53 12 * * 1'     # weekly: every validation record refit (no tuning)
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'build | validate | tune | backfill'
+        required: false
+        default: 'build'
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The engine's tests (synthetic, then the committed artifacts)
+        run: node tools/college_baseball/college_baseball.test.js
+      - name: Every committed record reproduces and passes its check
+        run: |
+          node college_baseball/coverage.js --check
+          node college_baseball/rules_evidence.js --check
+          node college_baseball/walkforward.js --check
+          node college_baseball/build_slate.js --check
+      - name: No path to a paid odds provider
+        run: node tools/odds/no_bypass.test.js
+      - name: The rest of EdgeDesk still works
+        run: node tools/app/sports_config.test.js && node tools/site/nav.test.js && node tools/lab/lab.test.js && node tools/engine/engine.test.js
+
+  build:
+    if: (github.event_name == 'schedule' && github.event.schedule == '23 11 * 2-6 *') || (github.event_name == 'workflow_dispatch' && (inputs.mode == '' || inputs.mode == 'build'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    concurrency:
+      group: college-baseball-artifacts
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet pyarrow
+      - name: The season in progress (completed seasons are committed and unchanged)
+        run: node college_baseball/ingest/build.js --season "$(date -u +%Y)"
+      - name: Coverage ledger and data-quality audit
+        run: node college_baseball/coverage.js
+      - name: Board (pregame prices for upcoming games; a retrospective replay when there are none)
+        run: node college_baseball/build_slate.js
+      - name: Adversarial audit and release gates (a failed critical check keeps the last validated production record)
+        run: |
+          node college_baseball/audit.js --promote || true
+          node college_baseball/release_gates.js
+          node college_baseball/report.js
+      - name: The suites pass before anything is written
+        run: node tools/college_baseball/college_baseball.test.js && node college_baseball/build_slate.js --check
+      - name: Commit (tools/ci/push_generated.sh)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "college baseball: today's games, coverage, board, audit and gates" -- \
+            college_baseball/data college_baseball/board college_baseball/validation college_baseball/research/COVERAGE.md college_baseball/research/audit_log.jsonl college_baseball/params/production.json docs/college-baseball/REPORT.md
+
+  validate:
+    if: (github.event_name == 'schedule' && github.event.schedule == '53 12 * * 1') || (github.event_name == 'workflow_dispatch' && (inputs.mode == 'validate' || inputs.mode == 'tune' || inputs.mode == 'backfill'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    permissions:
+      contents: write
+    concurrency:
+      group: college-baseball-artifacts
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet pyarrow
+      - name: Backfill every season (mode=backfill only)
+        if: inputs.mode == 'backfill'
+        run: node college_baseball/ingest/build.js --all && node college_baseball/coverage.js && node college_baseball/rules_evidence.js
+      - name: Tune on SELECTION only (mode=tune only; a deliberate act, recorded in the registry)
+        if: inputs.mode == 'tune'
+        run: for m in elo pythag hier poisson_flat massey bt; do node college_baseball/walkforward.js --tune $m; done
+      - name: Walk-forward, distributions, pitchers, simulator, learners, features, ablations (SELECTION and VALIDATION only)
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: |
+          node college_baseball/walkforward.js
+          node college_baseball/run_distribution.js
+          node college_baseball/walkforward.js
+          node college_baseball/pitcher_walkforward.js
+          node college_baseball/sim_eval.js
+          node college_baseball/ml_ensemble.js
+          node college_baseball/feature_research.js
+          node college_baseball/ablations.js
+          node college_baseball/build_slate.js
+          node college_baseball/audit.js --promote || true
+          node college_baseball/release_gates.js
+          node college_baseball/research_docs.js
+          node college_baseball/report.js
+      - name: The suites pass before anything is written
+        run: node tools/college_baseball/college_baseball.test.js && node college_baseball/walkforward.js --check && node college_baseball/build_slate.js --check
+      - name: Commit (tools/ci/push_generated.sh)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "college baseball: weekly validation records" -- \
+            college_baseball/data college_baseball/params college_baseball/validation college_baseball/board college_baseball/research docs/college-baseball/REPORT.md

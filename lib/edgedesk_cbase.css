@@ -1,0 +1,76 @@
+/* ===========================================================================
+   EDGEDESK — the college baseball research terminal (cb- prefix).
+   Uses the app's tokens (--bg --surface --surface2 --border --text --dim
+   --faint --accent --pos --neg --warn) so it reads as one system with the rest
+   of EdgeDesk, in both themes. Wide tables scroll inside their own box; the
+   page never scrolls sideways at 390 px.
+   =========================================================================== */
+.cb{--cb-line:var(--border,#332a1b);--cb-bg2:var(--surface2,#221c15);--cb-mono:'JetBrains Mono',ui-monospace,monospace;color:var(--text,#f1ebdf);font-size:13px;min-width:0;max-width:100%}
+.cb *{box-sizing:border-box}
+.cb .num{font-family:var(--cb-mono);font-variant-numeric:tabular-nums}
+.cb button,.cb select,.cb input{font-family:inherit}
+.cb-head{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;margin:6px 0 8px}
+.cb-head h3{margin:0;font-size:20px;font-weight:800}
+.cb-head small{display:block;font-size:11.5px;color:var(--dim);margin-top:3px;max-width:70ch;line-height:1.4}
+.cb-grow{flex:1}
+.cb-btn{background:var(--surface);border:1px solid var(--cb-line);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;padding:7px 11px;cursor:pointer;white-space:nowrap;min-height:34px}
+.cb-btn:hover{border-color:var(--dim)}
+.cb-btn.ghost{background:none;color:var(--dim)}
+.cb-btn[disabled]{opacity:.45;cursor:default}
+.cb-btn:focus-visible,.cb-seg button:focus-visible,.cb-in:focus-visible,.cb-row:focus-visible,.cb summary:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.cb-banner{border:1px solid var(--cb-line);border-left:4px solid var(--warn,#e0a526);border-radius:10px;padding:10px 12px;margin:8px 0;font-size:12.5px;line-height:1.45;background:var(--surface)}
+.cb-banner.err{border-left-color:var(--neg,#e5484d)}
+.cb-banner.info{border-left-color:var(--accent)}
+.cb-banner b{font-weight:800}
+.cb-loading,.cb-empty{color:var(--dim);padding:16px 0}
+.cb-ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0 10px}
+.cb-in{background:var(--surface);border:1px solid var(--cb-line);border-radius:8px;color:var(--text);font-size:12.5px;padding:7px 9px;min-height:34px;max-width:100%}
+.cb-seg{display:inline-flex;border:1px solid var(--cb-line);border-radius:9px;background:var(--surface);max-width:100%;overflow-x:auto}
+.cb-seg button{background:none;border:0;color:var(--dim);font-size:12px;font-weight:700;padding:8px 11px;cursor:pointer;white-space:nowrap}
+.cb-seg button+button{border-left:1px solid var(--cb-line)}
+.cb-seg button.on{background:var(--cb-bg2);color:var(--accent)}
+.cb-chip{display:inline-block;border:1px solid var(--cb-line);border-radius:999px;padding:1px 8px;font-size:10.5px;font-weight:700;letter-spacing:.02em;white-space:nowrap;color:var(--dim)}
+.cb-chip.ok{border-color:var(--pos,#2fbf71);color:var(--pos,#2fbf71)}
+.cb-chip.acc{border-color:var(--accent);color:var(--accent)}
+.cb-chip.warn{border-color:var(--warn,#e0a526);color:var(--warn,#e0a526)}
+.cb-chip.bad{border-color:var(--neg,#e5484d);color:var(--neg,#e5484d)}
+.cb-chips{display:flex;flex-wrap:wrap;gap:4px}
+.cb-scroll{overflow-x:auto;max-width:100%;border:1px solid var(--cb-line);border-radius:10px;background:var(--surface)}
+.cb-t{border-collapse:collapse;width:100%;font-size:12.5px}
+.cb-t th{position:sticky;top:0;background:var(--cb-bg2);text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--faint);font-weight:800;padding:7px 8px;white-space:nowrap;border-bottom:1px solid var(--cb-line)}
+.cb-t td{padding:7px 8px;border-top:1px solid var(--cb-line);vertical-align:top}
+.cb-t td.r,.cb-t th.r{text-align:right}
+.cb-t tr.cb-row{cursor:pointer}
+.cb-t tr.cb-row:hover td{background:var(--cb-bg2)}
+.cb-mu{font-weight:700;white-space:nowrap}
+.cb-sub{display:block;font-size:11px;color:var(--dim);margin-top:2px}
+.cb-faint{color:var(--faint)}
+.cb-sec{margin:16px 0 6px;font-weight:800;font-size:14px;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.cb-sec .r{font-size:11px;color:var(--faint);font-weight:500}
+.cb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.cb-card{background:var(--surface);border:1px solid var(--cb-line);border-radius:var(--rad,14px);padding:12px;min-width:0}
+.cb-card h4{margin:0 0 6px;font-size:13px;font-weight:800}
+.cb-kv{display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:12.5px}
+.cb-kv .k{color:var(--faint);font-size:11px;text-transform:uppercase;letter-spacing:.04em;font-weight:700;align-self:center}
+.cb-big{font-size:22px;font-weight:800;font-family:var(--cb-mono)}
+.cb-expl{margin:6px 0 0 18px;padding:0;line-height:1.5}
+.cb-expl li{margin:2px 0}
+.cb-states{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:6px}
+.cb-state{border:1px solid var(--cb-line);border-radius:8px;padding:6px 8px;font-size:12px;background:var(--surface)}
+.cb-state b{display:block;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase}
+.cb-state.yes b{color:var(--pos,#2fbf71)}
+.cb-state.no b{color:var(--faint)}
+.cb-state.alert b{color:var(--warn,#e0a526)}
+.cb-state.block b{color:var(--neg,#e5484d)}
+.cb-state ul{margin:3px 0 0 14px;padding:0;color:var(--dim);font-size:11.5px}
+.cb-bars{display:flex;align-items:flex-end;gap:2px;height:90px;padding:4px 0;border-bottom:1px solid var(--cb-line)}
+.cb-bar{flex:1;background:var(--accent);opacity:.75;border-radius:2px 2px 0 0;min-height:1px}
+.cb-bar.neg{background:var(--neg,#e5484d)}
+.cb-bars-lab{display:flex;justify-content:space-between;font-size:10px;color:var(--faint);font-family:var(--cb-mono)}
+.cb-meter{height:6px;border-radius:3px;background:var(--cb-bg2);overflow:hidden;margin-top:3px}
+.cb-meter i{display:block;height:100%;background:var(--accent)}
+.cb-back{margin:4px 0 8px}
+.cb details{border:1px solid var(--cb-line);border-radius:10px;padding:8px 10px;margin:8px 0;background:var(--surface)}
+.cb summary{cursor:pointer;font-weight:700}
+.cb-note{font-size:11.5px;color:var(--dim);line-height:1.45;margin:4px 0}
+@media (max-width:600px){.cb-head h3{font-size:18px}.cb-t{font-size:12px}.cb-big{font-size:19px}}
