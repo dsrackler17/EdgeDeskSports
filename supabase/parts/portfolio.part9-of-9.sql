@@ -16,8 +16,11 @@ select step, item, outcome from (
       'portfolio_transactions', 'portfolio_imports', 'portfolio_import_rows', 'portfolio_sync_logs'))
       or (schemaname = 'portfolio_private' and tablename = 'platform_credentials')) and rowsecurity) = 7 then 'ok' else 'CHECK THIS — RLS is off on a table' end
   union all select 3, 'every reader policy is keyed to auth.uid()',
-    case when (select count(*) from pg_policies where schemaname = 'public' and tablename like any (array['platform_accounts', 'portfolio\_%'])
-      and coalesce(qual, with_check) like '%user_id = auth.uid()%') = 22 then 'ok' else 'CHECK THIS — a policy is missing or not owner-scoped' end
+    -- this file's six tables only: the later portfolio_*.sql files add owner policies of their own
+    case when (select count(*) filter (where coalesce(qual, with_check) like '%user_id = auth.uid()%') = 22 and count(*) = 22
+      from pg_policies where schemaname = 'public' and tablename in ('platform_accounts', 'portfolio_positions',
+      'portfolio_transactions', 'portfolio_imports', 'portfolio_import_rows', 'portfolio_sync_logs'))
+      then 'ok' else 'CHECK THIS — a policy is missing or not owner-scoped' end
   union all select 4, 'anon can read nothing',
     case when not has_table_privilege('anon', 'public.portfolio_positions', 'select') and not has_table_privilege('anon', 'public.platform_accounts', 'select')
       and not has_table_privilege('anon', 'public.portfolio_transactions', 'select') and not has_table_privilege('anon', 'public.portfolio_sync_logs', 'select')
