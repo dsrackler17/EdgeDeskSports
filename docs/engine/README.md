@@ -38,7 +38,7 @@ and the artifact-commit procedure (`tools/ci/push_generated.sh`).
 | 5 | Walk-forward validation with leakage audit, baselines, calibration, bootstrap intervals | done |
 | 6 | Market test harness (no-vig close, ROI with pushes, CLV) | done — **blocked on data**: no licensed closing archive |
 | 7 | Live slate with goalie scenarios, uncertainty, invalidators; append-only ledger and grader | done |
-| 8 | Readiness registry for 12 sports, computed from evidence | done |
+| 8 | Readiness registry for 11 sports (soccer removed 2026-10-15), computed from evidence | done |
 | 9 | Cross-sport board: shrinkage, selection-adjusted bar, sanity, correlation, PASS | done |
 | 10 | NHL price capture through the gateway, disabled by default | done — **needs authorisation** to spend |
 | 11 | UI: NHL and Engine panels, filters, reasoning, sources, readiness | done (Chromium, desktop + 390 px) |
@@ -46,7 +46,7 @@ and the artifact-commit procedure (`tools/ci/push_generated.sh`).
 | 12 | CI: tests on every PR, 3-hourly build, weekly validation | done (`.github/workflows/nhl.yml`) |
 | 13 | The Quant Data Pack imported and verified (44/45 tables; NFL 2022 play-by-play arrived empty) | done (`datapack/quant_v1`, `tools/datapack/verify.js`) |
 | 14 | NHL temporal rule (blank `known_at`, explicit availability, RETRO), lineups, ESPN cross-check, canonical contracts | done |
-| 15 | Basketball ×4, soccer ×5, MLB brains walk-forward on multi-season free sources, reconciled with the pack | done |
+| 15 | Basketball ×4, soccer ×5 (removed 2026-10-15), MLB brains walk-forward on multi-season free sources, reconciled with the pack | done |
 | 16 | UFC, college baseball, tennis | measured or recorded as insufficient — **no model claimed** |
 | 17 | Board v2: pushes, voids, split settlement, sensitivity gate; the six-rung readiness ladder in the UI | done |
 | 18 | Missingness diagnostics; CI for the lab (`.github/workflows/lab.yml`) | done |
@@ -87,7 +87,6 @@ and the artifact-commit procedure (`tools/ci/push_generated.sh`).
 | WNBA | Validated vs outcomes — spread, total | the moneyline does not beat Elo with a clean interval |
 | NFL | Validated vs outcomes — spread | against the close LEAN (break-even), not ahead |
 | College football | Validated vs outcomes — total | behind the close |
-| Soccer (5 leagues) | Validated vs outcomes — the home −1.5 Asian line in 3 leagues only | **1X2 is level with Elo everywhere (provisional)**; totals over-confident |
 | MLB | Validated vs outcomes — run line only | **the moneyline does not beat Elo out of sample** (worse by 0.0016); totals over-confident; 2024 has no starters |
 | College baseball | Research only | a 313-game sample: no model |
 | UFC / MMA | Research only | one year (138 scorable bouts): Elo indistinguishable from a coin flip |
@@ -110,9 +109,9 @@ npm run nhl:quotes       # NHL prices — spends nothing unless NHL_PRICES=on
 npm run nhl:slate        # fair prices for the next 72 h, ledger, grades
 npm run engine:board     # registry + cross-sport board
 npm run datapack:check   # the pack verifies (and npm run datapack:test)
-npm run lab:ingest       # basketball, soccer, MLB history (free sources, cached)
+npm run lab:ingest       # basketball, MLB history (free sources, cached)
 npm run lab:validate     # every lab walk-forward record (tuning files kept)
-npm run lab:slates       # basketball and soccer fair prices, missingness, registry, board
+npm run lab:slates       # basketball fair prices, missingness, registry, board
 npm run lab:test         # the lab suite (protocol, brains, settlement, ladder)
 npm run nhl:test && npm run engine:test && npm run nhl:sql && npm run engine:e2e   # nhl:test includes the desk through the real handler
 npm run nhl:check && npm run engine:check
@@ -148,7 +147,7 @@ npm run nba:test && npm run nba:sql && npm run nba:e2e && npm run nba:check
    terms restrict commercial use. Review before NHL output is sold in a paid tier.
 5. **Market tests for every sport.** Add a licensed, timestamped closing
    archive per sport; until then every market stays `NOT_TESTED` and value
-   claims stay off. Basketball and soccer prices are not captured at all (the
+   claims stay off. Basketball prices are not captured at all (the
    gateway allowlist has no row for them).
 6. **Lineups and availability.** No injury or lineup feed exists for any
    sport. NHL confirmed lineups measurably help (−0.0009 log loss) but arrive

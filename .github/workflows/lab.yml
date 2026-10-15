@@ -2,8 +2,7 @@ name: Multi-sport lab
 run-name: Multi-sport lab · ${{ inputs.mode || github.event_name }}
 
 # The data packs (datapack/quant_v1, nhl_v1, nfl_v1) and the brains built on them beside the NHL:
-# basketball (NBA, WNBA, men's and women's college), soccer (five leagues),
-# MLB history, the UFC measurement, missingness, the registry and the board.
+# basketball (NBA, WNBA, men's and women's college), MLB history, the UFC measurement, missingness, the registry and the board.
 # Every source here is free and keyless (raw.githubusercontent.com through
 # engine/http.js: cache, quota, breaker). Nothing spends an odds credit.
 
@@ -12,7 +11,6 @@ on:
     paths:
       - 'datapack/**'
       - 'basketball/**'
-      - 'soccer/**'
       - 'mlb/history/**'
       - 'engine/**'
       - 'lib/edgedesk_xboard.js'
@@ -31,7 +29,6 @@ on:
     paths:
       - 'datapack/**'
       - 'basketball/**'
-      - 'soccer/**'
       - 'mlb/history/**'
       - 'engine/lab/**'
       - 'tools/datapack/**'
@@ -77,10 +74,8 @@ jobs:
       - name: Every committed record passes its check
         run: |
           node basketball/walkforward.js --check
-          node soccer/walkforward.js --check
           node mlb/history/walkforward.js --check
           node basketball/build_slate.js --check
-          node soccer/build_slate.js --check
           node engine/build_registry.js --check
           node engine/build_board.js --check
 
@@ -107,17 +102,16 @@ jobs:
       - name: The seasons in progress (completed seasons are cached and unchanged)
         run: |
           node basketball/ingest.js --league all --season current
-          node soccer/ingest.js --season current
       - name: Slates, missingness, registry and board
-        run: node basketball/build_slate.js && node soccer/build_slate.js && node engine/lab/missingness.js && node engine/build_registry.js && node engine/build_board.js
+        run: node basketball/build_slate.js && node engine/lab/missingness.js && node engine/build_registry.js && node engine/build_board.js
       - name: The suites pass before anything is written
-        run: node tools/lab/lab.test.js && node basketball/build_slate.js --check && node soccer/build_slate.js --check && node engine/build_registry.js --check && node engine/build_board.js --check
+        run: node tools/lab/lab.test.js && node basketball/build_slate.js --check && node engine/build_registry.js --check && node engine/build_board.js --check
       - name: Commit (tools/ci/push_generated.sh)
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           bash tools/ci/push_generated.sh main "lab: current seasons, slates and the cross-sport board" -- \
-            basketball/data soccer/data basketball/slate.json soccer/slate.json engine/missingness.json engine/registry.json engine/board.json
+            basketball/data basketball/slate.json engine/missingness.json engine/registry.json engine/board.json
 
   validate:
     if: (github.event_name == 'schedule' && github.event.schedule == '47 11 * * 3') || (github.event_name == 'workflow_dispatch' && inputs.mode == 'validate')
@@ -147,21 +141,19 @@ jobs:
       - name: Every season (cached between runs)
         run: |
           node basketball/ingest.js --league all
-          node soccer/ingest.js
           node mlb/history/ingest.js
       - name: The walk-forward records (tuning files are kept; --tune is a deliberate, separate act)
         run: |
           node --max-old-space-size=6144 basketball/walkforward.js --league all
-          node soccer/walkforward.js --league all
           node --max-old-space-size=6144 mlb/history/walkforward.js
           node engine/lab/ufc_elo.js
       - name: Cross-check, missingness, slates, registry and board on the new records
-        run: node tools/datapack/crosscheck.js && node engine/lab/missingness.js && node basketball/build_slate.js && node soccer/build_slate.js && node engine/build_registry.js && node engine/build_board.js
+        run: node tools/datapack/crosscheck.js && node engine/lab/missingness.js && node basketball/build_slate.js && node engine/build_registry.js && node engine/build_board.js
       - name: The suites pass on the new records before anything commits
-        run: node tools/lab/lab.test.js && node basketball/walkforward.js --check && node soccer/walkforward.js --check && node mlb/history/walkforward.js --check && node engine/build_registry.js --check && node engine/build_board.js --check
+        run: node tools/lab/lab.test.js && node basketball/walkforward.js --check && node mlb/history/walkforward.js --check && node engine/build_registry.js --check && node engine/build_board.js --check
       - name: Commit (tools/ci/push_generated.sh)
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           bash tools/ci/push_generated.sh main "lab: weekly walk-forward records" -- \
-            basketball soccer mlb/history engine/lab/ufc_elo.json engine/missingness.json engine/registry.json engine/board.json datapack/quant_v1/EDGEDESK_CROSSCHECK.json
+            basketball mlb/history engine/lab/ufc_elo.json engine/missingness.json engine/registry.json engine/board.json datapack/quant_v1/EDGEDESK_CROSSCHECK.json

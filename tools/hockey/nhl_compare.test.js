@@ -102,7 +102,7 @@ chk('moneyline: the side EdgeDesk rates higher is the one with the positive gap'
 chk('moneyline: EV is EdgeDesk\'s probability at the book\'s price', near(h.ev, Math.round((0.6 * MK.amToDec(-145) - 1) * 1e4) / 1e4, 1e-4) && h.ev > 0);
 chk('moneyline: positive EV on a validated market is PROVISIONAL, never more', h.verdict === 'PROVISIONAL' && r.markets.every((m) => m.sides.every((x) => x.verdict !== 'VERIFIED_VALUE')));
 const pv = h.gates.filter((g) => g.gate === 'price_verified')[0];
-chk('labels: an ESPN-republished price is a reference and fails price_verified, saying why', pv && !pv.ok && /DraftKings’s price as republished by ESPN: a reference/.test(pv.reason), pv);
+chk('labels: a republished price is a reference and fails price_verified, saying why without naming ESPN', pv && !pv.ok && /DraftKings’s price as republished by a public scoreboard: a reference/.test(pv.reason) && !/ESPN/.test(pv.reason), pv);
 chk('labels: the market test gate fails while the NHL is untested against the close', h.gates.some((g) => g.gate === 'market_tested' && !g.ok));
 chk('compare: the book is named (the reader never sees ESPN), the source kept as a reference, the age kept', r.source.book === 'DraftKings' && r.source.kind === 'reference' && r.source.via === 'ESPN' && r.source.label === 'DraftKings' && r.source.age_min === 10 && !r.source.stale);
 chk('compare: the sentence names the side, the gap and the price that pays', /EdgeDesk rates HOM \d\.\d pp higher than DraftKings does/.test(ml.sentence) && /pays more than EdgeDesk’s fair −150/.test(ml.sentence) && /Provisional, not a verified edge/.test(ml.sentence), ml.sentence);

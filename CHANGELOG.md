@@ -5,7 +5,7 @@
 **"What's the best researched opportunity tonight?" is now answered across every sport EdgeDesk models, from EdgeDesk's own projections, frozen before any sportsbook price is read. It used to be answered from football alone.** The desk was a price scanner: a sport with no captured price had no "games" (NBA, NHL, WNBA and college basketball are not captured). On 2026-10-15 it scanned one NFL game and three college games and reported the NHL, with 11 games and an outcome-validated model, as "prices not captured". Full write-up: `docs/quant-desk/MULTISPORT.md`.
 
 - **Model first.**
-  - `lib/edgedesk_projections.js` reads every published engine (NHL, NBA, WNBA, NCAAM, NCAAW, NFL, FBS, five soccer leagues) into one independent-projection contract, then freezes and hashes it.
+  - `lib/edgedesk_projections.js` reads every published engine (NHL, NBA, WNBA, NCAAM, NCAAW, NFL, FBS; soccer, removed from the platform the same day, is reported as not covered) into one independent-projection contract, then freezes and hashes it.
   - `lib/edgedesk_market_compare.js` compares the frozen snapshot with the prices that exist, without moving it, and labels every price by kind.
   - `lib/edgedesk_multisport.js` discovers the events from the schedule, writes the matchup research and ranks across sports by validated, uncertainty-adjusted rules.
   - The answer has four sections (best verified opportunity, best researched matchup, strongest market watch, other candidates), plus what could change it, a coverage report and the sources.
@@ -36,6 +36,19 @@
   - No constant is shown as a fair line.
   - The database stamps `created_at` itself and refuses back-dated freezes and comparisons, and comparisons naming another event or probability.
 - Tests: `tools/intelligence/multisport.test.js` (127), `multisport_host.test.js` (37, including the 2026-10-15 regression from a fixture of that day's committed artifacts), `projections_sql.test.js` (50, PostgreSQL 16). `quant_ui.e2e.js` (59) renders the Oct 15 answer in Chromium at both widths. Every suite in the existing `ai:test` chain stays green.
+
+## 2026-10-15 — Soccer removed; the last ESPN wording on prices; the new strip actually loads
+
+**EdgeDesk covers American sports and UFC. Soccer is gone from the platform; no other sport's numbers changed.**
+
+- **Today's Games** (`lib/edgedesk_games.js`): soccer is no longer a listed sport, so it has no pill, no feed read, no card and no fallback schedule (`tools/slate/artifacts.js`, `build.js`, `research.js`). The committed `today/slate.json` drops its 110 soccer games; the next build reads no soccer scoreboard. A soccer event from a slate saved on a device, or a live row written before the removal, is dropped wherever it turns up (`EDGames.select`). `/today/`'s title and copy no longer list soccer.
+- **The cross-sport engine**: the soccer brain is out of `lib/edgedesk_sport_brains.js`, `engine/build_registry.js`, `engine/build_board.js` and `engine/lab/missingness.js`. `engine/registry.json` and `board.json` were rebuilt: every other sport's rows, coverage and registry entries are identical to before; only the soccer candidates leave the board. The data-pack cross-check keeps the pack's EPL sample as counted only.
+- **The soccer model** (`soccer/`: code, data, records, slate) is deleted, with its steps in `.github/workflows/lab.yml` and the `lab:*` npm scripts.
+- **The Card** (`lib/edgedesk_card_feed.js`, `lib/edgedesk_decision_ui.js`): no soccer rows, pill or three-way pricing. A Soccer filter saved on a device reads as All sports, never an empty Card.
+- **Kept on purpose:** your own bet history still imports and labels soccer bets (portfolio sync, slip reader); the AI already answers "Soccer is not covered" with no pick; the archived data pack (`datapack/quant_v1`, hash-verified) is untouched.
+- **ESPN on prices:** the Card's price line reads "DraftKings (free, no credits)"; the NHL panel and the NHL price-verified reason say "a public scoreboard" instead of naming ESPN.
+- **Cache:** every changed browser file has a new `?v=` tag in `app.html` and `/today/`, so the new Today's Games strip (the entry below) reaches browsers that held the old copy.
+- Tests: the slate kernel, pipeline and browser suites now cover college basketball where they used soccer, and check that no soccer pill, feed, row or old live row ever shows; the lab, engine, Card and NHL suites updated for 11 sports.
 
 ## 2026-10-15 — Today's Games: scoreboard tiles, and no "ESPN" on screen
 

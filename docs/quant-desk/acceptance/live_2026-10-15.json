@@ -1,10 +1,10 @@
 {
  "acceptance": {
   "mode": "live",
-  "at": "2026-10-15T15:24:00.220Z",
+  "at": "2026-10-15T15:29:43.326Z",
   "timezone": "America/Chicago",
   "window": {
-   "from": "2026-10-15T15:24:00.220Z",
+   "from": "2026-10-15T15:29:43.326Z",
    "to": "2026-10-16T05:00:00.000Z",
    "label": "tonight, 2026-10-15 (America/Chicago)",
    "timezone": "America/Chicago",
@@ -12,16 +12,15 @@
    "past": false
   },
   "odds": "captured scoreboard snapshot only",
-  "1_sports_discovered": 6,
+  "1_sports_discovered": 5,
   "1_sports_discovered_list": [
    "NHL",
    "NBA",
    "NFL",
    "College football (FBS)",
-   "Soccer",
    "MLB"
   ],
-  "2_sports_with_operational_models": 8,
+  "2_sports_with_operational_models": 7,
   "2_operational_list": [
    "NHL",
    "NBA",
@@ -29,15 +28,13 @@
    "Men's college basketball",
    "Women's college basketball",
    "NFL",
-   "College football (FBS)",
-   "Soccer"
+   "College football (FBS)"
   ],
   "3_eligible_games_per_sport": {
    "NHL": 11,
    "NBA": 2,
    "NFL": 1,
    "College football (FBS)": 3,
-   "Soccer": 18,
    "MLB": 2
   },
   "4_successful_research_evaluations": 15,
@@ -53,9 +50,6 @@
    },
    "College football (FBS)": {
     "RESEARCH_CONDITIONAL": 3
-   },
-   "Soccer": {
-    "MODEL_UNAVAILABLE": 18
    },
    "MLB": {
     "MODEL_UNAVAILABLE": 2
@@ -146,9 +140,6 @@
    "NBA": [
     "not on the NBA engine's slate — a preseason game (before the first regular-season game on the engine's schedule, 2026-10-20); the NBA ingest drops preseason and no preseason model is validated"
    ],
-   "WNBA": [
-    "no game in the next 72 h; the next is 2026-10-17T19:30:00Z"
-   ],
    "Men's college basketball": [
     "no game in the next 72 h; the next is 2026-11-02T05:00:00Z"
    ],
@@ -156,7 +147,7 @@
     "no game in the next 72 h; the next is 2026-11-02T05:00:00Z"
    ],
    "Soccer": [
-    "Europa League is not a modelled competition (only Premier League, Bundesliga, La Liga, Serie A, Ligue 1)"
+    "removed from the platform on 2026-10-15: the soccer model, its data and its slate were deleted (EdgeDesk covers American sports and UFC)"
    ],
    "MLB": [
     "no per-game MLB projection is published: the history engine (mlb/history) is walk-forward through 2025 with end-of-2025 ratings and no 2026 or postseason inputs, and the run model (mlb/engine.js) runs in the browser only and is unvalidated"
@@ -183,15 +174,15 @@
    "best_research_sport": "NHL"
   },
   "order": {
-   "projections_frozen_at": "2026-10-15T15:24:00.220Z",
-   "quotes_compared_at": "2026-10-15T15:24:01.220Z",
-   "snapshot_hash": "c9c968ccb98a910238e43d0a8e5cec360cdd95aa7ce05a8b82f46c829eace28c",
+   "projections_frozen_at": "2026-10-15T15:29:43.326Z",
+   "quotes_compared_at": "2026-10-15T15:29:44.326Z",
+   "snapshot_hash": "646973b16d5b397fc9ee6e19be50a0587ad757d56e33244d04f9d7ba5e75827b",
    "snapshot_unchanged": true,
    "frozen_before_market": true
   },
   "artifacts": {
    "engine/registry.json": {
-    "generated_at": "2026-10-15T12:05:57.944Z"
+    "generated_at": "2026-10-15T14:20:12.766Z"
    },
    "hockey/slate.json": {
     "generated_at": "2026-10-15T12:05:48.530Z"
@@ -203,7 +194,7 @@
     "generated_at": "2026-10-14T17:52:25.049Z"
    },
    "basketball/slate.json": {
-    "generated_at": "2026-10-14T16:01:28.662Z"
+    "generated_at": "2026-10-15T14:11:16.132Z"
    },
    "football/nfl/slate.json": {
     "generated_at": "2026-10-14T18:02:19.644Z"
@@ -212,17 +203,14 @@
     "generated_at": "2026-10-14T18:01:59.031Z"
    },
    "football/fbs/slate.json": {
-    "generated_at": "2026-10-15T11:51:17.906Z"
-   },
-   "soccer/slate.json": {
-    "generated_at": "2026-10-14T16:01:28.760Z"
+    "generated_at": "2026-10-15T15:22:35.627Z"
    },
    "today/slate.json": {
     "generated_at": "2026-10-15T11:20:01.565Z"
    }
   }
  },
- "answer": "BEST VERIFIED OPPORTUNITY\nNone. No independently modeled market has a fresh, verified executable price that clears every execution gate — of 68 markets compared: 68 stale price.\n\nBEST RESEARCHED MATCHUP\nSport: NHL · Event: Calgary Flames @ Vegas Golden Knights · Thu, Oct 15, 9:00 PM CDT\nModeled probability: Vegas Golden Knights 66.4% (moneyline, fair -197) — the model's probability of the outcome, not a confidence score. Uncertainty σ 1.9% (model 0.8%, calibration 1.2%, lineup 1.2%); conservative 61.8% at z 2.45.\nEdgeDesk fair lines: total 6; projected 2.45–3.48 (away–home).\nResearch: RESEARCH CONDITIONAL — starting goalies not confirmed (projected uncertain).\nStrongest measured advantages: CGY results beyond chances (goals for and against, finishing): 5.2 pp of win probability toward VGK; VGK results beyond chances (goals for and against, finishing): 3.4 pp of win probability toward VGK; VGK 5v5 chance suppression: 2.8 pp of win probability toward VGK; 5v5 xG for 1.02× league vs 0.96×; xG against 0.90× vs 1.04× (score- and opponent-adjusted).\nRest and travel: rest VGK 2 d, CGY 2 d; CGY travel 354 km.\nCounterargument: no measured factor runs against the favoured side; the uncertainty is the counterargument.\nModel reliability: OUTCOME VALIDATED, n 7,945, held-out log loss 0.66286, Brier 0.23534; never shown to beat the closing market.\nFreshness (separate from reliability): model built 3.3 h ago (fresh); inputs known through 2026-10-14.\nWhy it ranks first: its conservative probability 61.8% is the highest among 14 ranked projections with an out-of-sample validated primary market; next is Vancouver Canucks @ Florida Panthers (NHL, 59.1%). A matchup with no current odds is research, never a verified bet.\nPrice to watch: Vegas Golden Knights at -147 or better (the worst moneyline price at which the conservative probability 60.8% (z 2.9738 for the 68 markets this run compares; more priced markets raise it) still clears the 2% bar on EV).\n\nSTRONGEST CONDITIONAL MARKET WATCH\nNone: no compared price is positive against the model.\n\nOTHER TOP CANDIDATES (ranked by the rules below; probability, uncertainty and validation are reported separately)\n2. NHL — Vancouver Canucks @ Florida Panthers, Thu, Oct 15, 6:00 PM CDT: Florida Panthers 64.3% (σ 2.1%, conservative 59.1%); outcome validated moneyline; research conditional (starting goalies not confirmed (projected uncertain)).\n3. NHL — Seattle Kraken @ Tampa Bay Lightning, Thu, Oct 15, 6:00 PM CDT: Tampa Bay Lightning 61.8% (σ 1.9%, conservative 57.2%); outcome validated moneyline; research conditional (starting goalies not confirmed (projected uncertain)).\n4. NHL — Winnipeg Jets @ Chicago Blackhawks, Thu, Oct 15, 7:00 PM CDT: Winnipeg Jets 57.4% (σ 2.3%, conservative 51.7%); outcome validated moneyline; research conditional (starting goalies not confirmed (projected uncertain)).\n5. NHL — New York Islanders @ Ottawa Senators, Thu, Oct 15, 6:00 PM CDT: Ottawa Senators 58.1% (σ 3.0%, conservative 50.7%); outcome validated moneyline; research conditional (starting goalies not confirmed (projected uncertain)).\n6. NHL — San Jose Sharks @ Nashville Predators, Thu, Oct 15, 7:00 PM CDT: Nashville Predators 57.1% (σ 2.8%, conservative 50.3%); outcome validated moneyline; research conditional (starting goalies not confirmed (projected uncertain)).\nBest per sport: NHL #1 Vegas Golden Knights 66.4% (conservative 61.8%, tier 1: outcome validated moneyline); College football (FBS) #12 Texas State 91.7% (conservative 77.1%, tier 2: experimental moneyline).\nHeld back — NFL Seattle Seahawks @ Denver Broncos: projection invalidated: Seattle Seahawks: the projection assumed Drew Lock (nflverse games.csv, SCHEDULE_FEED) but nflverse depth charts lists Sam Darnold as QB1 (published 2026-10-14T12:51:31Z) and Sam Darnold took the first dropback of week 5.\n\nWHAT COULD CHANGE THE ANSWER\n1. starting goalie: home probability 66.4%–67.5%\n2. A starting goalie other than the projected one (see the goalie scenarios for the size of the move).\n3. A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.\n4. a re-run of the NFL engine on the current starter for Seattle Seahawks @ Denver Broncos\n5. goalie, quarterback and lineup confirmations closer to the start\n\nCOVERAGE REPORT (tonight, 2026-10-15 (America/Chicago))\n- NHL: 11 discovered, 11 researched, model executed (edgedesk_nhl_v1:xg_core), 44 markets evaluated, prices: newest quote 244 min old, 0 verified edges.\n- NBA: 2 discovered, 0 researched, model executed (edgedesk_nba_v1:G_stack_P), 0 markets evaluated, prices: —, 0 verified edges; blockers: not on the NBA engine's slate — a preseason game (before the first regular-season game on the engine's schedule, 2026-10-20); the NBA ingest drops preseason and no preseason model is validated.\n- WNBA: 0 discovered, 0 researched, model executed (edgedesk_bb_points_v1:points), 0 markets evaluated, prices: —, 0 verified edges; blockers: no game in the next 72 h; the next is 2026-10-17T19:30:00Z.\n- Men's college basketball: 0 discovered, 0 researched, model executed (edgedesk_bb_points_v1:points), 0 markets evaluated, prices: —, 0 verified edges; blockers: no game in the next 72 h; the next is 2026-11-02T05:00:00Z.\n- Women's college basketball: 0 discovered, 0 researched, model executed (edgedesk_bb_points_v1:points), 0 markets evaluated, prices: —, 0 verified edges; blockers: no game in the next 72 h; the next is 2026-11-02T05:00:00Z.\n- NFL: 1 discovered, 1 researched, model executed (edgedesk_football_v1.0.0), 6 markets evaluated, prices: newest quote 244 min old, 0 verified edges.\n- College football (FBS): 3 discovered, 3 researched, model executed (edgedesk_cfb_p4), 18 markets evaluated, prices: newest quote 244 min old, 0 verified edges.\n- Soccer: 18 discovered, 0 researched, model executed (edgedesk_soccer_dc_v1), 0 markets evaluated, prices: —, 0 verified edges; blockers: Europa League is not a modelled competition (only Premier League, Bundesliga, La Liga, Serie A, Ligue 1).\n- MLB: 2 discovered, 0 researched, model not executed, 0 markets evaluated, prices: —, 0 verified edges; blockers: no per-game MLB projection is published: the history engine (mlb/history) is walk-forward through 2025 with end-of-2025 ratings and no 2026 or postseason inputs, and the run model (mlb/engine.js) runs in the browser only and is unvalidated.\n- College baseball: 0 discovered, 0 researched, model not executed, 0 markets evaluated, prices: —, 0 verified edges; blockers: out of season; the model's release gates are not passed (college_baseball/validation/release_gates.json: release_allowed false).\n- UFC / MMA: 0 discovered, 0 researched, model not executed, 0 markets evaluated, prices: —, 0 verified edges; blockers: no fighter model is built: the 2024 Elo test does not beat a coin flip (engine/lab/ufc_elo.json: 138 scored bouts, log loss 0.689 vs 0.693, interval includes zero).\n- Tennis: 0 discovered, 0 researched, model not executed, 0 markets evaluated, prices: —, 0 verified edges; blockers: retired as a product on 2026-09-27 (lib/edgedesk_sports.js).\n- Golf: 0 discovered, 0 researched, model not executed, 0 markets evaluated, prices: —, 0 verified edges; blockers: no golf data source or model exists in EdgeDesk (golf.html is a partner referral page).\n\nRESEARCH SOURCES\n- basketball/slate.json — built 2026-10-14T16:01:28.662Z\n- engine/registry.json — built 2026-10-15T12:05:57.944Z\n- football/fbs/slate.json — built 2026-10-15T11:51:17.906Z\n- football/nfl/slate.json — built 2026-10-14T18:02:19.644Z\n- football/starters/nfl_2026.json — built 2026-10-14T18:01:59.031Z\n- hockey/slate.json — built 2026-10-15T12:05:48.530Z\n- nba/slate.json — built 2026-10-15T11:48:24.745Z\n- nba/validation/summary.json — built 2026-10-14T17:52:25.049Z\n- soccer/slate.json — built 2026-10-14T16:01:28.760Z\n- today/slate.json — built 2026-10-15T11:20:01.565Z\n- prices: today/slate.json markets — the ESPN scoreboard's single-book lines captured 2026-10-15T11:20:01.565Z (previously captured, never live)\n- prices: capture's Supabase signals are read by the edge function, not by this command-line run\nOrder: projections frozen 2026-10-15T15:24:00.220Z (snapshot c9c968ccb98a9102), compared with prices 2026-10-15T15:24:01.220Z; projections unchanged by the comparison: yes.",
+ "answer": "BEST VERIFIED OPPORTUNITY\nNone. No independently modeled market has a fresh, verified executable price that clears every execution gate — of 68 markets compared: 68 stale price.\n\nBEST RESEARCHED MATCHUP\nSport: NHL · Event: Calgary Flames @ Vegas Golden Knights · Thu, Oct 15, 9:00 PM CDT\nModeled probability: Vegas Golden Knights 66.4% (moneyline, fair -197) — the model's probability of the outcome, not a confidence score. Uncertainty σ 1.9% (model 0.8%, calibration 1.2%, lineup 1.2%); conservative 61.8% at z 2.45.\nEdgeDesk fair lines: total 6; projected 2.45–3.48 (away–home).\nResearch: RESEARCH CONDITIONAL — starting goalies not confirmed (projected uncertain).\nStrongest measured advantages: CGY results beyond chances (goals for and against, finishing): 5.2 pp of win probability toward VGK; VGK results beyond chances (goals for and against, finishing): 3.4 pp of win probability toward VGK; VGK 5v5 chance suppression: 2.8 pp of win probability toward VGK; 5v5 xG for 1.02× league vs 0.96×; xG against 0.90× vs 1.04× (score- and opponent-adjusted).\nRest and travel: rest VGK 2 d, CGY 2 d; CGY travel 354 km.\nCounterargument: no measured factor runs against the favoured side; the uncertainty is the counterargument.\nModel reliability: OUTCOME VALIDATED, n 7,945, held-out log loss 0.66286, Brier 0.23534; never shown to beat the closing market.\nFreshness (separate from reliability): model built 3.4 h ago (fresh); inputs known through 2026-10-14.\nWhy it ranks first: its conservative probability 61.8% is the highest among 14 ranked projections with an out-of-sample validated primary market; next is Vancouver Canucks @ Florida Panthers (NHL, 59.1%). A matchup with no current odds is research, never a verified bet.\nPrice to watch: Vegas Golden Knights at -147 or better (the worst moneyline price at which the conservative probability 60.8% (z 2.9738 for the 68 markets this run compares; more priced markets raise it) still clears the 2% bar on EV).\n\nSTRONGEST CONDITIONAL MARKET WATCH\nNone: no compared price is positive against the model.\n\nOTHER TOP CANDIDATES (ranked by the rules below; probability, uncertainty and validation are reported separately)\n2. NHL — Vancouver Canucks @ Florida Panthers, Thu, Oct 15, 6:00 PM CDT: Florida Panthers 64.3% (σ 2.1%, conservative 59.1%); outcome validated moneyline; research conditional (starting goalies not confirmed (projected uncertain)).\n3. NHL — Seattle Kraken @ Tampa Bay Lightning, Thu, Oct 15, 6:00 PM CDT: Tampa Bay Lightning 61.8% (σ 1.9%, conservative 57.2%); outcome validated moneyline; research conditional (starting goalies not confirmed (projected uncertain)).\n4. NHL — Winnipeg Jets @ Chicago Blackhawks, Thu, Oct 15, 7:00 PM CDT: Winnipeg Jets 57.4% (σ 2.3%, conservative 51.7%); outcome validated moneyline; research conditional (starting goalies not confirmed (projected uncertain)).\n5. NHL — New York Islanders @ Ottawa Senators, Thu, Oct 15, 6:00 PM CDT: Ottawa Senators 58.1% (σ 3.0%, conservative 50.7%); outcome validated moneyline; research conditional (starting goalies not confirmed (projected uncertain)).\n6. NHL — San Jose Sharks @ Nashville Predators, Thu, Oct 15, 7:00 PM CDT: Nashville Predators 57.1% (σ 2.8%, conservative 50.3%); outcome validated moneyline; research conditional (starting goalies not confirmed (projected uncertain)).\nBest per sport: NHL #1 Vegas Golden Knights 66.4% (conservative 61.8%, tier 1: outcome validated moneyline); College football (FBS) #12 Texas State 91.7% (conservative 77.1%, tier 2: experimental moneyline).\nHeld back — NFL Seattle Seahawks @ Denver Broncos: projection invalidated: Seattle Seahawks: the projection assumed Drew Lock (nflverse games.csv, SCHEDULE_FEED) but nflverse depth charts lists Sam Darnold as QB1 (published 2026-10-14T12:51:31Z) and Sam Darnold took the first dropback of week 5.\n\nWHAT COULD CHANGE THE ANSWER\n1. starting goalie: home probability 66.4%–67.5%\n2. A starting goalie other than the projected one (see the goalie scenarios for the size of the move).\n3. A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.\n4. a re-run of the NFL engine on the current starter for Seattle Seahawks @ Denver Broncos\n5. goalie, quarterback and lineup confirmations closer to the start\n\nCOVERAGE REPORT (tonight, 2026-10-15 (America/Chicago))\n- NHL: 11 discovered, 11 researched, model executed (edgedesk_nhl_v1:xg_core), 44 markets evaluated, prices: newest quote 250 min old, 0 verified edges.\n- NBA: 2 discovered, 0 researched, model executed (edgedesk_nba_v1:G_stack_P), 0 markets evaluated, prices: —, 0 verified edges; blockers: not on the NBA engine's slate — a preseason game (before the first regular-season game on the engine's schedule, 2026-10-20); the NBA ingest drops preseason and no preseason model is validated.\n- WNBA: 0 discovered, 0 researched, model executed (edgedesk_bb_points_v1:points), 0 markets evaluated, prices: —, 0 verified edges.\n- Men's college basketball: 0 discovered, 0 researched, model executed (edgedesk_bb_points_v1:points), 0 markets evaluated, prices: —, 0 verified edges; blockers: no game in the next 72 h; the next is 2026-11-02T05:00:00Z.\n- Women's college basketball: 0 discovered, 0 researched, model executed (edgedesk_bb_points_v1:points), 0 markets evaluated, prices: —, 0 verified edges; blockers: no game in the next 72 h; the next is 2026-11-02T05:00:00Z.\n- NFL: 1 discovered, 1 researched, model executed (edgedesk_football_v1.0.0), 6 markets evaluated, prices: newest quote 250 min old, 0 verified edges.\n- College football (FBS): 3 discovered, 3 researched, model executed (edgedesk_cfb_p4), 18 markets evaluated, prices: newest quote 250 min old, 0 verified edges.\n- Soccer: 0 discovered, 0 researched, model not executed, 0 markets evaluated, prices: —, 0 verified edges; blockers: removed from the platform on 2026-10-15: the soccer model, its data and its slate were deleted (EdgeDesk covers American sports and UFC).\n- MLB: 2 discovered, 0 researched, model not executed, 0 markets evaluated, prices: —, 0 verified edges; blockers: no per-game MLB projection is published: the history engine (mlb/history) is walk-forward through 2025 with end-of-2025 ratings and no 2026 or postseason inputs, and the run model (mlb/engine.js) runs in the browser only and is unvalidated.\n- College baseball: 0 discovered, 0 researched, model not executed, 0 markets evaluated, prices: —, 0 verified edges; blockers: out of season; the model's release gates are not passed (college_baseball/validation/release_gates.json: release_allowed false).\n- UFC / MMA: 0 discovered, 0 researched, model not executed, 0 markets evaluated, prices: —, 0 verified edges; blockers: no fighter model is built: the 2024 Elo test does not beat a coin flip (engine/lab/ufc_elo.json: 138 scored bouts, log loss 0.689 vs 0.693, interval includes zero).\n- Tennis: 0 discovered, 0 researched, model not executed, 0 markets evaluated, prices: —, 0 verified edges; blockers: retired as a product on 2026-09-27 (lib/edgedesk_sports.js).\n- Golf: 0 discovered, 0 researched, model not executed, 0 markets evaluated, prices: —, 0 verified edges; blockers: no golf data source or model exists in EdgeDesk (golf.html is a partner referral page).\n\nRESEARCH SOURCES\n- basketball/slate.json — built 2026-10-15T14:11:16.132Z\n- engine/registry.json — built 2026-10-15T14:20:12.766Z\n- football/fbs/slate.json — built 2026-10-15T15:22:35.627Z\n- football/nfl/slate.json — built 2026-10-14T18:02:19.644Z\n- football/starters/nfl_2026.json — built 2026-10-14T18:01:59.031Z\n- hockey/slate.json — built 2026-10-15T12:05:48.530Z\n- nba/slate.json — built 2026-10-15T11:48:24.745Z\n- nba/validation/summary.json — built 2026-10-14T17:52:25.049Z\n- today/slate.json — built 2026-10-15T11:20:01.565Z\n- prices: today/slate.json markets — the ESPN scoreboard's single-book lines captured 2026-10-15T11:20:01.565Z (previously captured, never live)\n- prices: capture's Supabase signals are read by the edge function, not by this command-line run\nOrder: projections frozen 2026-10-15T15:29:43.326Z (snapshot 646973b16d5b397f), compared with prices 2026-10-15T15:29:44.326Z; projections unchanged by the comparison: yes.",
  "result": {
   "sections": {
    "best_verified": null,
@@ -295,7 +283,7 @@
     },
     "freshness": {
      "model_built_at": "2026-10-15T12:05:48.530Z",
-     "age_hours": 3.3,
+     "age_hours": 3.4,
      "state": "FRESH",
      "inputs_known_at": "2026-10-14",
      "data_state": "FRESH"
@@ -383,7 +371,7 @@
     },
     "freshness": {
      "model_built_at": "2026-10-15T12:05:48.530Z",
-     "age_hours": 3.3,
+     "age_hours": 3.4,
      "state": "FRESH",
      "inputs_known_at": "2026-10-14",
      "data_state": "FRESH"
@@ -474,7 +462,7 @@
      },
      "freshness": {
       "model_built_at": "2026-10-15T12:05:48.530Z",
-      "age_hours": 3.3,
+      "age_hours": 3.4,
       "state": "FRESH",
       "inputs_known_at": "2026-10-14",
       "data_state": "FRESH"
@@ -560,7 +548,7 @@
      },
      "freshness": {
       "model_built_at": "2026-10-15T12:05:48.530Z",
-      "age_hours": 3.3,
+      "age_hours": 3.4,
       "state": "FRESH",
       "inputs_known_at": "2026-10-14",
       "data_state": "FRESH"
@@ -649,7 +637,7 @@
      },
      "freshness": {
       "model_built_at": "2026-10-15T12:05:48.530Z",
-      "age_hours": 3.3,
+      "age_hours": 3.4,
       "state": "FRESH",
       "inputs_known_at": "2026-10-14",
       "data_state": "FRESH"
@@ -737,7 +725,7 @@
      },
      "freshness": {
       "model_built_at": "2026-10-15T12:05:48.530Z",
-      "age_hours": 3.3,
+      "age_hours": 3.4,
       "state": "FRESH",
       "inputs_known_at": "2026-10-14",
       "data_state": "FRESH"
@@ -827,7 +815,7 @@
      },
      "freshness": {
       "model_built_at": "2026-10-15T12:05:48.530Z",
-      "age_hours": 3.3,
+      "age_hours": 3.4,
       "state": "FRESH",
       "inputs_known_at": "2026-10-14",
       "data_state": "FRESH"
@@ -915,7 +903,7 @@
      },
      "freshness": {
       "model_built_at": "2026-10-15T12:05:48.530Z",
-      "age_hours": 3.3,
+      "age_hours": 3.4,
       "state": "FRESH",
       "inputs_known_at": "2026-10-14",
       "data_state": "FRESH"
@@ -934,7 +922,7 @@
      "rank": 1
     },
     {
-     "projection_id": "pj_4afdf875e3ba4d927ba7cfb2",
+     "projection_id": "pj_26def589a63c812d28d51e2a",
      "sport": "cfb",
      "sport_label": "College football (FBS)",
      "league": "FBS",
@@ -992,8 +980,8 @@
       "value_claims": false
      },
      "freshness": {
-      "model_built_at": "2026-10-15T11:51:17.906Z",
-      "age_hours": 3.5,
+      "model_built_at": "2026-10-15T15:22:35.627Z",
+      "age_hours": 0.1,
       "state": "FRESH",
       "inputs_known_at": null,
       "data_state": null
@@ -1080,7 +1068,7 @@
      },
      "freshness": {
       "model_built_at": "2026-10-14T18:02:19.644Z",
-      "age_hours": 21.4,
+      "age_hours": 21.5,
       "state": "FRESH",
       "inputs_known_at": null,
       "data_state": null
@@ -1133,7 +1121,7 @@
     "model_built_at": "2026-10-15T12:05:48.530Z",
     "markets_evaluated": 44,
     "markets_priced": 44,
-    "price_freshness": "newest quote 244 min old",
+    "price_freshness": "newest quote 250 min old",
     "verified_edges": 0,
     "blockers": []
    },
@@ -1166,14 +1154,12 @@
     "research_outcomes": {},
     "model_executed": true,
     "model": "edgedesk_bb_points_v1:points",
-    "model_built_at": "2026-10-14T16:01:28.662Z",
+    "model_built_at": "2026-10-15T14:11:16.132Z",
     "markets_evaluated": 0,
     "markets_priced": 0,
     "price_freshness": "—",
     "verified_edges": 0,
-    "blockers": [
-     "no game in the next 72 h; the next is 2026-10-17T19:30:00Z"
-    ]
+    "blockers": []
    },
    {
     "sport": "ncaab_m",
@@ -1184,7 +1170,7 @@
     "research_outcomes": {},
     "model_executed": true,
     "model": "edgedesk_bb_points_v1:points",
-    "model_built_at": "2026-10-14T16:01:28.662Z",
+    "model_built_at": "2026-10-15T14:11:16.132Z",
     "markets_evaluated": 0,
     "markets_priced": 0,
     "price_freshness": "—",
@@ -1202,7 +1188,7 @@
     "research_outcomes": {},
     "model_executed": true,
     "model": "edgedesk_bb_points_v1:points",
-    "model_built_at": "2026-10-14T16:01:28.662Z",
+    "model_built_at": "2026-10-15T14:11:16.132Z",
     "markets_evaluated": 0,
     "markets_priced": 0,
     "price_freshness": "—",
@@ -1225,7 +1211,7 @@
     "model_built_at": "2026-10-14T18:02:19.644Z",
     "markets_evaluated": 6,
     "markets_priced": 6,
-    "price_freshness": "newest quote 244 min old",
+    "price_freshness": "newest quote 250 min old",
     "verified_edges": 0,
     "blockers": []
    },
@@ -1240,31 +1226,29 @@
     },
     "model_executed": true,
     "model": "edgedesk_cfb_p4",
-    "model_built_at": "2026-10-15T11:51:17.906Z",
+    "model_built_at": "2026-10-15T15:22:35.627Z",
     "markets_evaluated": 18,
     "markets_priced": 18,
-    "price_freshness": "newest quote 244 min old",
+    "price_freshness": "newest quote 250 min old",
     "verified_edges": 0,
     "blockers": []
    },
    {
     "sport": "soccer",
     "label": "Soccer",
-    "events_discovered": 18,
+    "events_discovered": 0,
     "events_researched": 0,
     "projections": 0,
-    "research_outcomes": {
-     "MODEL_UNAVAILABLE": 18
-    },
-    "model_executed": true,
-    "model": "edgedesk_soccer_dc_v1",
-    "model_built_at": "2026-10-14T16:01:28.760Z",
+    "research_outcomes": {},
+    "model_executed": false,
+    "model": null,
+    "model_built_at": null,
     "markets_evaluated": 0,
     "markets_priced": 0,
     "price_freshness": "—",
     "verified_edges": 0,
     "blockers": [
-     "Europa League is not a modelled competition (only Premier League, Bundesliga, La Liga, Serie A, Ligue 1)"
+     "removed from the platform on 2026-10-15: the soccer model, its data and its slate were deleted (EdgeDesk covers American sports and UFC)"
     ]
    },
    {
@@ -1361,8 +1345,8 @@
    }
   ],
   "counts": {
-   "sports_discovered": 6,
-   "sports_with_operational_models": 8,
+   "sports_discovered": 5,
+   "sports_with_operational_models": 7,
    "sports_researched": 3,
    "eligible_games_by_sport": {
     "nhl": 11,
@@ -1372,7 +1356,7 @@
     "ncaab_w": 0,
     "nfl": 1,
     "cfb": 3,
-    "soccer": 18,
+    "soccer": 0,
     "mlb": 2,
     "college_baseball": 0,
     "mma": 0,
@@ -1386,9 +1370,9 @@
    "verified_positive_ev": 0
   },
   "order": {
-   "projections_frozen_at": "2026-10-15T15:24:00.220Z",
-   "quotes_compared_at": "2026-10-15T15:24:01.220Z",
-   "snapshot_hash": "c9c968ccb98a910238e43d0a8e5cec360cdd95aa7ce05a8b82f46c829eace28c",
+   "projections_frozen_at": "2026-10-15T15:29:43.326Z",
+   "quotes_compared_at": "2026-10-15T15:29:44.326Z",
+   "snapshot_hash": "646973b16d5b397fc9ee6e19be50a0587ad757d56e33244d04f9d7ba5e75827b",
    "snapshot_unchanged": true,
    "frozen_before_market": true
   }

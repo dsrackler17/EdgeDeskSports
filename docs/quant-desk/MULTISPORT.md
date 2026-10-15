@@ -44,7 +44,7 @@ What the engines themselves do was audited (2026-10-15):
 
 - **No market input in the projection:** NHL (`hockey/build_slate.js:166-172`), NBA
   (`nba/model/*`; the ESPN reference line is used only in a walk-forward MAE
-  diagnostic), the basketball lab, soccer, the NFL engine (`fbPredict` is called with an
+  diagnostic), the basketball lab, the NFL engine (`fbPredict` is called with an
   empty market) and the CFB engine.
 - **One disclosed caveat:** the NFL and CFB margin distributions take their *shape* from
   historical closing spreads and are re-centred on the model's own margin. This is
@@ -194,7 +194,7 @@ eligibility line.
 | NCAAM / NCAAW | edgedesk_bb_points_v1 | OPERATIONAL, no events | OUTCOME_VALIDATED | 0 | — | — | season starts 11-02 |
 | NFL | edgedesk_football_v1.0.0 (`football/nfl/slate.json`) | OPERATIONAL | spread OUTCOME_VALIDATED (break-even vs close); ML/total EXPERIMENTAL | 1 | 1 (held back) | stale | SEA@DEN starter conflict |
 | CFB (FBS) | edgedesk_cfb_p4 (`football/fbs/slate.json`) | OPERATIONAL | ML EXPERIMENTAL (behind close) | 3 | 3 | stale | spread/total distributions not published |
-| Soccer | edgedesk_soccer_dc_v1 (`soccer/slate.json`, 5 leagues) | OPERATIONAL, inputs stale | 1X2 PROVISIONAL | 18 (Europa League) | 0 | — | UEL/UCL/MLS not modelled; league results stale since 09-20 → DATA_INSUFFICIENT |
+| Soccer | none (removed from the platform on 2026-10-15, after this matrix was measured) | MODEL_UNAVAILABLE | — | 18 (Europa League) | 0 | — | at 13:00Z the five-league model existed but did not cover the Europa League and its inputs were stale since 09-20; the model, its data and its slate have since been deleted, so the desk reports every soccer event as removed |
 | MLB | none per game | MODEL_UNAVAILABLE | (history engine RL validated through 2025) | 2 (postseason) | 0 | scoreboard | no 2026/postseason inputs; browser run model unvalidated |
 | College baseball | cbase_v1 | out of season | ML OUTCOME_VALIDATED (holdout) | 0 | — | — | release gates closed |
 | UFC / MMA | none | MODEL_UNAVAILABLE | Elo does not beat a coin flip (n 138) | 0 | — | capture | — |
@@ -215,21 +215,22 @@ three hours.
   artifacts at run time. No network: this environment cannot reach the site or any odds
   provider.
 
-| Measure | Replay 13:00Z | Live 15:24Z | Live, odds off |
+| Measure | Replay 13:00Z | Live 15:29Z | Live, odds off |
 |---|---|---|---|
-| Sports discovered (events in window) | 6 | 6 | 6 |
-| Sports with operational models | 8 | 8 | 8 |
-| Eligible games | NHL 11, NBA 2, NFL 1, CFB 3, soccer 18, MLB 2 | same | same |
+| Sports discovered (events in window) | 6 (soccer still on that morning's schedule) | 5 | 5 |
+| Sports with operational models | 7 | 7 | 7 |
+| Eligible games | NHL 11, NBA 2, NFL 1, CFB 3, soccer 18 (removed: not researched), MLB 2 | NHL 11, NBA 2, NFL 1, CFB 3, MLB 2 | same |
 | Research evaluations / independent projections | 15 / 15 | 15 / 15 | 15 / 15 |
 | Valid sportsbook price captures | 0 (68 seen, all stale) | 0 (68, stale) | 0 (none read) |
 | Verified positive EV | 0 | 0 | 0 |
 | Best researched | NHL CGY@VGK, VGK 66.4% (σ 1.9%, conservative 61.8%) | same | same |
-| Snapshot hash | c9c968cc… | c9c968cc… | c9c968cc… (prices never move a projection) |
+| Snapshot hash | c9c968cc… | 646973b1… | 646973b1… (prices never move a projection) |
 
-The replay and live runs agree because no artifact changed between 13:00Z and 15:24Z.
-(The review fixes raised the captures matched to these events from 62 to 68 — team matching
-no longer misses short names such as UAB — and changed the snapshot hash, because the NHL and
-soccer projections no longer state a constant as a fair line.)
+The replay and live runs rank the same matchups with the same probabilities. Their snapshot
+hashes differ because `engine/registry.json` was rebuilt after 13:00Z (soccer's removal), and
+the registry's validation block is part of every projection; the replay reads the registry as
+committed at 13:00Z. Odds on and odds off share one hash. (The review fixes raised the captures
+matched to these events from 62 to 68: team matching no longer misses short names such as UAB.)
 No verified edge is possible today on any sport. No EdgeDesk model has been tested
 against a licensed closing archive (`value_claims` is false everywhere), and no live
 quote is reachable from this environment. That is reported, not papered over.

@@ -10,7 +10,6 @@
 | The Odds API, only via `supabase/functions/odds_gateway` | NHL book prices (`featured`: h2h, spreads, totals) | gateway service credentials | commercial API | only when authorised | ≈3 credits per call; **0 by default** |
 | `sportsdataverse/fastRhockey-nhl-data` skater box | NHL lineups (who dressed, TOI) | keyless | as above | daily | free |
 | `sportsdataverse` hoopR / wehoop data (GitHub raw) | NBA, WNBA, men's and women's college schedules and results | keyless | MIT repositories; ESPN's data — owner review before paid use | daily | free |
-| `openfootball/football.json` | five soccer leagues' fixtures and results | keyless | public domain (CC0) | daily | free |
 | Retrosheet game logs (`chadwickbureau/retrosheet`) | MLB results, starters, parks 2010-2023, 2025 | keyless | free with the Retrosheet notice | yearly | free |
 | `nflverse/nfldata` games.csv | the data pack's NFL labels cross-check (the football engine's own source) | keyless | CC-BY-4.0 | weekly | free |
 | The EdgeDesk Quant Data Pack (`datapack/quant_v1`) | one ESPN season per sport, NFL derived tables, MLB 2024, UFC 2024, contracts | imported | research copies; each source's terms (`sources/source_registry.json`) | one-off | — |
@@ -71,12 +70,6 @@ start_utc, neutral, home_id, away_id (ESPN ids; names in teams.json), hs, as,
 ot, status (FINAL|SCHEDULED), src (S source | P data pack), known_at,
 assumed_available_at, pit`.
 
-### Soccer — `soccer/data/<league>/<season>.csv` (`edgedesk_soccer_matches_v1`)
-`match_id, season, date (local), time_local (no zone), home, away (club keys;
-display names in manifest.json), hg, ag, ht_hg, ht_ag, status (FINAL |
-SCHEDULED | RESULT_MISSING), known_at, assumed_available_at (match day 23:59
-UTC), pit`.
-
 ### MLB — `mlb/history/data/<season>.csv` (`edgedesk_mlb_games_v1`)
 `game_id, season, date, game_no, dn, home, away (franchise keys), hs, as, outs,
 park, sp_home, sp_away (blank for 2024), source, known_at,
@@ -84,18 +77,16 @@ assumed_available_at (08:00 UTC next day), pit`.
 
 ### Walk-forward records — `edgedesk_lab_walkforward_v1`
 `basketball/validation/<league>_walkforward.json`,
-`soccer/validation/<league>_walkforward.json`,
 `mlb/history/validation/mlb_walkforward.json`, `engine/lab/ufc_elo.json`:
 protocol, data (with `temporal`), leakage audit, tuning, selection,
 comparisons (block bootstrap), markets (status, failed rules,
 `market_status: NOT_TESTED`), windows.
 
 ### Research slates — `edgedesk_lab_slate_v1`
-`basketball/slate.json`, `soccer/slate.json`: each league's model, validation
-status per market, `value_claims: DISABLED` with the reason, the data state
-(soccer leagues with recent missing results are STALE), and per game the
-fair prices with their settlement rules (quarter Asian lines as five
-outcomes), inputs and invalidators.
+`basketball/slate.json`: each league's model, validation status per market,
+`value_claims: DISABLED` with the reason, the data state, and per game the
+fair prices with their settlement rules, inputs and invalidators. (The soccer
+data, records and slate were removed on 2026-10-15.)
 
 ### Quality reports
 `datapack/quant_v1/EDGEDESK_VERIFICATION.json` (the pack verified),

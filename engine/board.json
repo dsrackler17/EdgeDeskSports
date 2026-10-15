@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_engine_board_v1",
  "version": "edgedesk_xboard_v2",
- "evaluated_at": "2026-10-15T12:05:57.976Z",
+ "evaluated_at": "2026-10-15T14:11:16.938Z",
  "verdict": "PASS",
  "best": null,
  "why": [
-  "No market had a fresh executable price: 624 without a price, 0 stale."
+  "No market had a fresh executable price: 366 without a price, 0 stale."
  ],
  "strongest_candidate": {
   "sport_id": "nfl",
@@ -91,13 +91,13 @@
   "disagreement": 0.0133
  },
  "counts": {
-  "RESEARCH": 624
+  "RESEARCH": 366
  },
  "gate_failures": {
-  "NO_PRICE": 624,
-  "NEEDS_PRICE": 624
+  "NO_PRICE": 366,
+  "NEEDS_PRICE": 366
  },
- "n_candidates": 624,
+ "n_candidates": 366,
  "n_priced": 0,
  "selection_z": 1.2816,
  "rules": {
@@ -1833,1826 +1833,6 @@
     "lineup_certainty": "UNKNOWN"
    },
    "model_id": "edgedesk_football_v1.0.0"
-  },
-  {
-   "id": "b97477d5",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · Bundesliga",
-   "event_key": "SOCCER|bundesliga:2026-10-16:eintrachtfrankfurt:koln",
-   "event": {
-    "home": "Eintracht Frankfurt",
-    "away": "1. FC Köln",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "1. FC Köln @ Eintracht Frankfurt"
-   },
-   "market": {
-    "kind": "total",
-    "registry_key": "bundesliga.total",
-    "side": "over",
-    "line": 2.5,
-    "settles": "90 minutes plus stoppage time"
-   },
-   "label": "1. FC Köln @ Eintracht Frankfurt — over 2.5",
-   "quote": null,
-   "fair_american": -279,
-   "break_even": null,
-   "prob": {
-    "model": 0.736,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.736,
-    "sd": 0.0354,
-    "conservative": 0.6907,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -210,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -210 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.4298 / 1.4006 goals",
-    "model poisson (bundesliga); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
-    "the source has not published 9 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/bundesliga:poisson"
-  },
-  {
-   "id": "831ed6bf",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · Ligue 1",
-   "event_key": "SOCCER|ligue1:2026-10-16:lemans:toulouse",
-   "event": {
-    "home": "Le Mans FC",
-    "away": "Toulouse FC",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "Toulouse FC @ Le Mans FC"
-   },
-   "market": {
-    "kind": "total",
-    "registry_key": "ligue1.total",
-    "side": "over",
-    "line": 2.5,
-    "settles": "90 minutes plus stoppage time"
-   },
-   "label": "Toulouse FC @ Le Mans FC — over 2.5",
-   "quote": null,
-   "fair_american": -173,
-   "break_even": null,
-   "prob": {
-    "model": 0.6334,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.6334,
-    "sd": 0.0354,
-    "conservative": 0.5881,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -136,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -136 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 1.6191 / 1.6456 goals",
-    "model poisson (ligue1); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
-    "the source has not published 9 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/ligue1:poisson"
-  },
-  {
-   "id": "fcbd4cf5",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · Bundesliga",
-   "event_key": "SOCCER|bundesliga:2026-10-16:eintrachtfrankfurt:koln",
-   "event": {
-    "home": "Eintracht Frankfurt",
-    "away": "1. FC Köln",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "1. FC Köln @ Eintracht Frankfurt"
-   },
-   "market": {
-    "kind": "three_way",
-    "registry_key": "bundesliga.moneyline",
-    "side": "Eintracht Frankfurt",
-    "line": null,
-    "settles": "90 minutes plus stoppage time"
-   },
-   "label": "1. FC Köln @ Eintracht Frankfurt — Eintracht Frankfurt (90 minutes)",
-   "quote": null,
-   "fair_american": -151,
-   "break_even": null,
-   "prob": {
-    "model": 0.6016,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.6016,
-    "sd": 0.0354,
-    "conservative": 0.5563,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -120,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -120 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.4298 / 1.4006 goals",
-    "model poisson (bundesliga); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
-    "the source has not published 9 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/bundesliga:poisson"
-  },
-  {
-   "id": "ab19c3e4",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · Bundesliga",
-   "event_key": "SOCCER|bundesliga:2026-10-16:eintrachtfrankfurt:koln",
-   "event": {
-    "home": "Eintracht Frankfurt",
-    "away": "1. FC Köln",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "1. FC Köln @ Eintracht Frankfurt"
-   },
-   "market": {
-    "kind": "asian_handicap",
-    "registry_key": "bundesliga.spread",
-    "side": "Eintracht Frankfurt",
-    "line": -0.25,
-    "settles": "quarter line: two half stakes on 0 and -0.5"
-   },
-   "label": "1. FC Köln @ Eintracht Frankfurt — Eintracht Frankfurt -0.25 (Asian)",
-   "quote": null,
-   "fair_american": -198,
-   "break_even": null,
-   "prob": {
-    "model": 0.6016,
-    "push": 0.094,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.6016,
-    "sd": 0.0354,
-    "conservative": 0.5563,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -150,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -150 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": {
-    "split": true,
-    "p_void": 0,
-    "effective_p_win": 0.6016,
-    "stake_returned": 0.094
-   },
-   "evidence": [
-    "λ 2.4298 / 1.4006 goals",
-    "model poisson (bundesliga); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
-    "the source has not published 9 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/bundesliga:poisson"
-  },
-  {
-   "id": "06b4d17c",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · La Liga",
-   "event_key": "SOCCER|laliga:2026-10-16:deportivolacoruna:levante",
-   "event": {
-    "home": "RC Deportivo La Coruña",
-    "away": "Levante UD",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "Levante UD @ RC Deportivo La Coruña"
-   },
-   "market": {
-    "kind": "total",
-    "registry_key": "laliga.total",
-    "side": "over",
-    "line": 2.5,
-    "settles": "90 minutes plus stoppage time"
-   },
-   "label": "Levante UD @ RC Deportivo La Coruña — over 2.5",
-   "quote": null,
-   "fair_american": -144,
-   "break_even": null,
-   "prob": {
-    "model": 0.5904,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.5904,
-    "sd": 0.0354,
-    "conservative": 0.5451,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -115,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -115 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 1.8684 / 1.193 goals",
-    "model poisson (laliga); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
-    "the source has not published 10 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/laliga:poisson"
-  },
-  {
-   "id": "2b568804",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · La Liga",
-   "event_key": "SOCCER|laliga:2026-10-16:deportivolacoruna:levante",
-   "event": {
-    "home": "RC Deportivo La Coruña",
-    "away": "Levante UD",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "Levante UD @ RC Deportivo La Coruña"
-   },
-   "market": {
-    "kind": "three_way",
-    "registry_key": "laliga.moneyline",
-    "side": "RC Deportivo La Coruña",
-    "line": null,
-    "settles": "90 minutes plus stoppage time"
-   },
-   "label": "Levante UD @ RC Deportivo La Coruña — RC Deportivo La Coruña (90 minutes)",
-   "quote": null,
-   "fair_american": -114,
-   "break_even": null,
-   "prob": {
-    "model": 0.5317,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.5317,
-    "sd": 0.0354,
-    "conservative": 0.4864,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 110,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +110 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 1.8684 / 1.193 goals",
-    "model poisson (laliga); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
-    "the source has not published 10 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/laliga:poisson"
-  },
-  {
-   "id": "58fa881f",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · La Liga",
-   "event_key": "SOCCER|laliga:2026-10-16:deportivolacoruna:levante",
-   "event": {
-    "home": "RC Deportivo La Coruña",
-    "away": "Levante UD",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "Levante UD @ RC Deportivo La Coruña"
-   },
-   "market": {
-    "kind": "asian_handicap",
-    "registry_key": "laliga.spread",
-    "side": "RC Deportivo La Coruña",
-    "line": -0.25,
-    "settles": "quarter line: two half stakes on 0 and -0.5"
-   },
-   "label": "Levante UD @ RC Deportivo La Coruña — RC Deportivo La Coruña -0.25 (Asian)",
-   "quote": null,
-   "fair_american": -150,
-   "break_even": null,
-   "prob": {
-    "model": 0.5317,
-    "push": 0.113,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.5317,
-    "sd": 0.0354,
-    "conservative": 0.4864,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": -116,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of -116 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": {
-    "split": true,
-    "p_void": 0,
-    "effective_p_win": 0.5317,
-    "stake_returned": 0.113
-   },
-   "evidence": [
-    "λ 1.8684 / 1.193 goals",
-    "model poisson (laliga); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
-    "the source has not published 10 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/laliga:poisson"
-  },
-  {
-   "id": "5e9e1ea5",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · Serie A",
-   "event_key": "SOCCER|seriea:2026-10-16:frosinone:sassuolo",
-   "event": {
-    "home": "Frosinone Calcio",
-    "away": "US Sassuolo Calcio",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "US Sassuolo Calcio @ Frosinone Calcio"
-   },
-   "market": {
-    "kind": "total",
-    "registry_key": "seriea.total",
-    "side": "under",
-    "line": 2.5,
-    "settles": "90 minutes plus stoppage time"
-   },
-   "label": "US Sassuolo Calcio @ Frosinone Calcio — under 2.5",
-   "quote": null,
-   "fair_american": -102,
-   "break_even": null,
-   "prob": {
-    "model": 0.5052,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.5052,
-    "sd": 0.0354,
-    "conservative": 0.4599,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 122,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +122 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 1.5363 / 1.1167 goals",
-    "model poisson (seriea); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
-    "the source has not published 10 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/seriea:poisson"
-  },
-  {
-   "id": "665ca8a9",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · Serie A",
-   "event_key": "SOCCER|seriea:2026-10-16:frosinone:sassuolo",
-   "event": {
-    "home": "Frosinone Calcio",
-    "away": "US Sassuolo Calcio",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "US Sassuolo Calcio @ Frosinone Calcio"
-   },
-   "market": {
-    "kind": "total",
-    "registry_key": "seriea.total",
-    "side": "over",
-    "line": 2.5,
-    "settles": "90 minutes plus stoppage time"
-   },
-   "label": "US Sassuolo Calcio @ Frosinone Calcio — over 2.5",
-   "quote": null,
-   "fair_american": 102,
-   "break_even": null,
-   "prob": {
-    "model": 0.4948,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4948,
-    "sd": 0.0354,
-    "conservative": 0.4495,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 127,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +127 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 1.5363 / 1.1167 goals",
-    "model poisson (seriea); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
-    "the source has not published 10 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/seriea:poisson"
-  },
-  {
-   "id": "c9530c2c",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · Serie A",
-   "event_key": "SOCCER|seriea:2026-10-16:frosinone:sassuolo",
-   "event": {
-    "home": "Frosinone Calcio",
-    "away": "US Sassuolo Calcio",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "US Sassuolo Calcio @ Frosinone Calcio"
-   },
-   "market": {
-    "kind": "three_way",
-    "registry_key": "seriea.moneyline",
-    "side": "Frosinone Calcio",
-    "line": null,
-    "settles": "90 minutes plus stoppage time"
-   },
-   "label": "US Sassuolo Calcio @ Frosinone Calcio — Frosinone Calcio (90 minutes)",
-   "quote": null,
-   "fair_american": 113,
-   "break_even": null,
-   "prob": {
-    "model": 0.4697,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4697,
-    "sd": 0.0354,
-    "conservative": 0.4244,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 140,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +140 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 1.5363 / 1.1167 goals",
-    "model poisson (seriea); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
-    "the source has not published 10 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/seriea:poisson"
-  },
-  {
-   "id": "c0e7f649",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · Serie A",
-   "event_key": "SOCCER|seriea:2026-10-16:frosinone:sassuolo",
-   "event": {
-    "home": "Frosinone Calcio",
-    "away": "US Sassuolo Calcio",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "US Sassuolo Calcio @ Frosinone Calcio"
-   },
-   "market": {
-    "kind": "asian_handicap",
-    "registry_key": "seriea.spread",
-    "side": "Frosinone Calcio",
-    "line": -0.25,
-    "settles": "quarter line: two half stakes on 0 and -0.5"
-   },
-   "label": "US Sassuolo Calcio @ Frosinone Calcio — Frosinone Calcio -0.25 (Asian)",
-   "quote": null,
-   "fair_american": -116,
-   "break_even": null,
-   "prob": {
-    "model": 0.4697,
-    "push": 0.1271,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4697,
-    "sd": 0.0354,
-    "conservative": 0.4244,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 110,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +110 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": {
-    "split": true,
-    "p_void": 0,
-    "effective_p_win": 0.4697,
-    "stake_returned": 0.1271
-   },
-   "evidence": [
-    "λ 1.5363 / 1.1167 goals",
-    "model poisson (seriea); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
-    "the source has not published 10 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/seriea:poisson"
-  },
-  {
-   "id": "89f37046",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · La Liga",
-   "event_key": "SOCCER|laliga:2026-10-16:deportivolacoruna:levante",
-   "event": {
-    "home": "RC Deportivo La Coruña",
-    "away": "Levante UD",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "Levante UD @ RC Deportivo La Coruña"
-   },
-   "market": {
-    "kind": "total",
-    "registry_key": "laliga.total",
-    "side": "under",
-    "line": 2.5,
-    "settles": "90 minutes plus stoppage time"
-   },
-   "label": "Levante UD @ RC Deportivo La Coruña — under 2.5",
-   "quote": null,
-   "fair_american": 144,
-   "break_even": null,
-   "prob": {
-    "model": 0.4096,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.4096,
-    "sd": 0.0354,
-    "conservative": 0.3643,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 180,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +180 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 1.8684 / 1.193 goals",
-    "model poisson (laliga); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
-    "the source has not published 10 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/laliga:poisson"
-  },
-  {
-   "id": "54a1fe91",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · Ligue 1",
-   "event_key": "SOCCER|ligue1:2026-10-16:lemans:toulouse",
-   "event": {
-    "home": "Le Mans FC",
-    "away": "Toulouse FC",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "Toulouse FC @ Le Mans FC"
-   },
-   "market": {
-    "kind": "three_way",
-    "registry_key": "ligue1.moneyline",
-    "side": "Toulouse FC",
-    "line": null,
-    "settles": "90 minutes plus stoppage time"
-   },
-   "label": "Toulouse FC @ Le Mans FC — Toulouse FC (90 minutes)",
-   "quote": null,
-   "fair_american": 157,
-   "break_even": null,
-   "prob": {
-    "model": 0.3898,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.3898,
-    "sd": 0.0354,
-    "conservative": 0.3445,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 196,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +196 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 1.6191 / 1.6456 goals",
-    "model poisson (ligue1); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
-    "the source has not published 9 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/ligue1:poisson"
-  },
-  {
-   "id": "22b3936d",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · Ligue 1",
-   "event_key": "SOCCER|ligue1:2026-10-16:lemans:toulouse",
-   "event": {
-    "home": "Le Mans FC",
-    "away": "Toulouse FC",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "Toulouse FC @ Le Mans FC"
-   },
-   "market": {
-    "kind": "three_way",
-    "registry_key": "ligue1.moneyline",
-    "side": "Le Mans FC",
-    "line": null,
-    "settles": "90 minutes plus stoppage time"
-   },
-   "label": "Toulouse FC @ Le Mans FC — Le Mans FC (90 minutes)",
-   "quote": null,
-   "fair_american": 164,
-   "break_even": null,
-   "prob": {
-    "model": 0.3786,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.3786,
-    "sd": 0.0354,
-    "conservative": 0.3333,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 206,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +206 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 1.6191 / 1.6456 goals",
-    "model poisson (ligue1); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
-    "the source has not published 9 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/ligue1:poisson"
-  },
-  {
-   "id": "e316bf1a",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · Ligue 1",
-   "event_key": "SOCCER|ligue1:2026-10-16:lemans:toulouse",
-   "event": {
-    "home": "Le Mans FC",
-    "away": "Toulouse FC",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "Toulouse FC @ Le Mans FC"
-   },
-   "market": {
-    "kind": "asian_handicap",
-    "registry_key": "ligue1.spread",
-    "side": "Le Mans FC",
-    "line": -0.25,
-    "settles": "quarter line: two half stakes on 0 and -0.5"
-   },
-   "label": "Toulouse FC @ Le Mans FC — Le Mans FC -0.25 (Asian)",
-   "quote": null,
-   "fair_american": 134,
-   "break_even": null,
-   "prob": {
-    "model": 0.3786,
-    "push": 0.1158,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.3786,
-    "sd": 0.0354,
-    "conservative": 0.3333,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 171,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +171 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": {
-    "split": true,
-    "p_void": 0,
-    "effective_p_win": 0.3786,
-    "stake_returned": 0.1158
-   },
-   "evidence": [
-    "λ 1.6191 / 1.6456 goals",
-    "model poisson (ligue1); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
-    "the source has not published 9 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/ligue1:poisson"
-  },
-  {
-   "id": "b6169c23",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · Ligue 1",
-   "event_key": "SOCCER|ligue1:2026-10-16:lemans:toulouse",
-   "event": {
-    "home": "Le Mans FC",
-    "away": "Toulouse FC",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "Toulouse FC @ Le Mans FC"
-   },
-   "market": {
-    "kind": "total",
-    "registry_key": "ligue1.total",
-    "side": "under",
-    "line": 2.5,
-    "settles": "90 minutes plus stoppage time"
-   },
-   "label": "Toulouse FC @ Le Mans FC — under 2.5",
-   "quote": null,
-   "fair_american": 173,
-   "break_even": null,
-   "prob": {
-    "model": 0.3666,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.3666,
-    "sd": 0.0354,
-    "conservative": 0.3213,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 217,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +217 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 1.6191 / 1.6456 goals",
-    "model poisson (ligue1); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
-    "the source has not published 9 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/ligue1:poisson"
-  },
-  {
-   "id": "2b02c158",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · Serie A",
-   "event_key": "SOCCER|seriea:2026-10-16:frosinone:sassuolo",
-   "event": {
-    "home": "Frosinone Calcio",
-    "away": "US Sassuolo Calcio",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "US Sassuolo Calcio @ Frosinone Calcio"
-   },
-   "market": {
-    "kind": "three_way",
-    "registry_key": "seriea.moneyline",
-    "side": "US Sassuolo Calcio",
-    "line": null,
-    "settles": "90 minutes plus stoppage time"
-   },
-   "label": "US Sassuolo Calcio @ Frosinone Calcio — US Sassuolo Calcio (90 minutes)",
-   "quote": null,
-   "fair_american": 262,
-   "break_even": null,
-   "prob": {
-    "model": 0.2762,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.2762,
-    "sd": 0.0354,
-    "conservative": 0.2309,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 342,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +342 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 1.5363 / 1.1167 goals",
-    "model poisson (seriea); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
-    "the source has not published 10 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/seriea:poisson"
-  },
-  {
-   "id": "e00f6f11",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · Bundesliga",
-   "event_key": "SOCCER|bundesliga:2026-10-16:eintrachtfrankfurt:koln",
-   "event": {
-    "home": "Eintracht Frankfurt",
-    "away": "1. FC Köln",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "1. FC Köln @ Eintracht Frankfurt"
-   },
-   "market": {
-    "kind": "total",
-    "registry_key": "bundesliga.total",
-    "side": "under",
-    "line": 2.5,
-    "settles": "90 minutes plus stoppage time"
-   },
-   "label": "1. FC Köln @ Eintracht Frankfurt — under 2.5",
-   "quote": null,
-   "fair_american": 279,
-   "break_even": null,
-   "prob": {
-    "model": 0.264,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.264,
-    "sd": 0.0354,
-    "conservative": 0.2187,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 366,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +366 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.4298 / 1.4006 goals",
-    "model poisson (bundesliga); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
-    "the source has not published 9 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/bundesliga:poisson"
-  },
-  {
-   "id": "9f94609e",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · Serie A",
-   "event_key": "SOCCER|seriea:2026-10-16:frosinone:sassuolo",
-   "event": {
-    "home": "Frosinone Calcio",
-    "away": "US Sassuolo Calcio",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "US Sassuolo Calcio @ Frosinone Calcio"
-   },
-   "market": {
-    "kind": "three_way",
-    "registry_key": "seriea.moneyline",
-    "side": "draw",
-    "line": null,
-    "settles": "90 minutes plus stoppage time"
-   },
-   "label": "US Sassuolo Calcio @ Frosinone Calcio — draw (90 minutes)",
-   "quote": null,
-   "fair_american": 294,
-   "break_even": null,
-   "prob": {
-    "model": 0.2541,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.2541,
-    "sd": 0.0354,
-    "conservative": 0.2088,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 389,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +389 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 1.5363 / 1.1167 goals",
-    "model poisson (seriea); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
-    "the source has not published 10 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/seriea:poisson"
-  },
-  {
-   "id": "43971323",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · La Liga",
-   "event_key": "SOCCER|laliga:2026-10-16:deportivolacoruna:levante",
-   "event": {
-    "home": "RC Deportivo La Coruña",
-    "away": "Levante UD",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "Levante UD @ RC Deportivo La Coruña"
-   },
-   "market": {
-    "kind": "three_way",
-    "registry_key": "laliga.moneyline",
-    "side": "Levante UD",
-    "line": null,
-    "settles": "90 minutes plus stoppage time"
-   },
-   "label": "Levante UD @ RC Deportivo La Coruña — Levante UD (90 minutes)",
-   "quote": null,
-   "fair_american": 313,
-   "break_even": null,
-   "prob": {
-    "model": 0.2424,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.2424,
-    "sd": 0.0354,
-    "conservative": 0.1971,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 418,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +418 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 1.8684 / 1.193 goals",
-    "model poisson (laliga); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
-    "the source has not published 10 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/laliga:poisson"
-  },
-  {
-   "id": "9d2ed004",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · Ligue 1",
-   "event_key": "SOCCER|ligue1:2026-10-16:lemans:toulouse",
-   "event": {
-    "home": "Le Mans FC",
-    "away": "Toulouse FC",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "Toulouse FC @ Le Mans FC"
-   },
-   "market": {
-    "kind": "three_way",
-    "registry_key": "ligue1.moneyline",
-    "side": "draw",
-    "line": null,
-    "settles": "90 minutes plus stoppage time"
-   },
-   "label": "Toulouse FC @ Le Mans FC — draw (90 minutes)",
-   "quote": null,
-   "fair_american": 332,
-   "break_even": null,
-   "prob": {
-    "model": 0.2316,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.2316,
-    "sd": 0.0354,
-    "conservative": 0.1863,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 448,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +448 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 1.6191 / 1.6456 goals",
-    "model poisson (ligue1); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
-    "the source has not published 9 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/ligue1:poisson"
-  },
-  {
-   "id": "85415b45",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · La Liga",
-   "event_key": "SOCCER|laliga:2026-10-16:deportivolacoruna:levante",
-   "event": {
-    "home": "RC Deportivo La Coruña",
-    "away": "Levante UD",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "Levante UD @ RC Deportivo La Coruña"
-   },
-   "market": {
-    "kind": "three_way",
-    "registry_key": "laliga.moneyline",
-    "side": "draw",
-    "line": null,
-    "settles": "90 minutes plus stoppage time"
-   },
-   "label": "Levante UD @ RC Deportivo La Coruña — draw (90 minutes)",
-   "quote": null,
-   "fair_american": 343,
-   "break_even": null,
-   "prob": {
-    "model": 0.2259,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.2259,
-    "sd": 0.0354,
-    "conservative": 0.1806,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 465,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +465 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 1.8684 / 1.193 goals",
-    "model poisson (laliga); 1X2 PROVISIONAL, Asian handicap PROVISIONAL vs outcomes; never tested vs the close",
-    "the source has not published 10 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/laliga:poisson"
-  },
-  {
-   "id": "6ea33ea5",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · Bundesliga",
-   "event_key": "SOCCER|bundesliga:2026-10-16:eintrachtfrankfurt:koln",
-   "event": {
-    "home": "Eintracht Frankfurt",
-    "away": "1. FC Köln",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "1. FC Köln @ Eintracht Frankfurt"
-   },
-   "market": {
-    "kind": "three_way",
-    "registry_key": "bundesliga.moneyline",
-    "side": "1. FC Köln",
-    "line": null,
-    "settles": "90 minutes plus stoppage time"
-   },
-   "label": "1. FC Köln @ Eintracht Frankfurt — 1. FC Köln (90 minutes)",
-   "quote": null,
-   "fair_american": 375,
-   "break_even": null,
-   "prob": {
-    "model": 0.2104,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.2104,
-    "sd": 0.0354,
-    "conservative": 0.1651,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 518,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +518 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.4298 / 1.4006 goals",
-    "model poisson (bundesliga); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
-    "the source has not published 9 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/bundesliga:poisson"
-  },
-  {
-   "id": "60006b72",
-   "status": "RESEARCH",
-   "sport_id": "soccer",
-   "sport_label": "Soccer · Bundesliga",
-   "event_key": "SOCCER|bundesliga:2026-10-16:eintrachtfrankfurt:koln",
-   "event": {
-    "home": "Eintracht Frankfurt",
-    "away": "1. FC Köln",
-    "start_utc": "2026-10-16T23:59:00Z",
-    "date": "2026-10-16",
-    "label": "1. FC Köln @ Eintracht Frankfurt"
-   },
-   "market": {
-    "kind": "three_way",
-    "registry_key": "bundesliga.moneyline",
-    "side": "draw",
-    "line": null,
-    "settles": "90 minutes plus stoppage time"
-   },
-   "label": "1. FC Köln @ Eintracht Frankfurt — draw (90 minutes)",
-   "quote": null,
-   "fair_american": 432,
-   "break_even": null,
-   "prob": {
-    "model": 0.188,
-    "push": 0,
-    "market_novig": null,
-    "shrink_k": 1,
-    "posterior": 0.188,
-    "sd": 0.0354,
-    "conservative": 0.1427,
-    "components": {
-     "model_sd": 0.025,
-     "calibration_sd": 0.015,
-     "lineup_sd": 0.02
-    }
-   },
-   "ev_raw": null,
-   "ev_posterior": null,
-   "ev_conservative": null,
-   "min_acceptable_american": 615,
-   "disagreement": null,
-   "gates": [
-    {
-     "gate": "PRICE",
-     "ok": false,
-     "code": "NO_PRICE",
-     "reason": "no captured or supplied price for this market"
-    },
-    {
-     "gate": "VALUE",
-     "ok": false,
-     "code": "NEEDS_PRICE",
-     "reason": "needs a price of +615 or better to clear the bar (if value claims were enabled)"
-    }
-   ],
-   "sensitivity": null,
-   "settlement": null,
-   "evidence": [
-    "λ 2.4298 / 1.4006 goals",
-    "model poisson (bundesliga); 1X2 PROVISIONAL, Asian handicap OUTCOME_VALIDATED vs outcomes; never tested vs the close",
-    "the source has not published 9 recent result(s); ratings miss them"
-   ],
-   "invalidators": [
-    "Team news (injuries, rotation before a European or cup match) is not modelled.",
-    "Kick-off time zone is not in the source; prices are keyed by date.",
-    "The source is missing recent results: ratings are stale."
-   ],
-   "data": {
-    "state": "STALE",
-    "lineup_certainty": "UNKNOWN"
-   },
-   "model_id": "soccer/bundesliga:poisson"
   },
   {
    "id": "e706f9b9",
@@ -5429,6 +3609,432 @@
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "d20d8f0c",
+   "status": "RESEARCH",
+   "sport_id": "wnba",
+   "sport_label": "WNBA",
+   "event_key": "WNBA|401918305",
+   "event": {
+    "home": "Golden State Valkyries",
+    "away": "Atlanta Dream",
+    "start_utc": "2026-10-17T19:30:00Z",
+    "label": "Atlanta Dream @ Golden State Valkyries"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Golden State Valkyries",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Atlanta Dream @ Golden State Valkyries — Golden State Valkyries moneyline",
+   "quote": null,
+   "fair_american": -126,
+   "break_even": null,
+   "prob": {
+    "model": 0.5577,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.5577,
+    "sd": 0.0354,
+    "conservative": 0.5124,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -101,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -101 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 2.1 (home), total 160.7",
+    "model points (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/wnba:points"
+  },
+  {
+   "id": "c9c0dad8",
+   "status": "RESEARCH",
+   "sport_id": "wnba",
+   "sport_label": "WNBA",
+   "event_key": "WNBA|401918305",
+   "event": {
+    "home": "Golden State Valkyries",
+    "away": "Atlanta Dream",
+    "start_utc": "2026-10-17T19:30:00Z",
+    "label": "Atlanta Dream @ Golden State Valkyries"
+   },
+   "market": {
+    "kind": "total",
+    "side": "over",
+    "line": 160.5,
+    "settles": "including overtime"
+   },
+   "label": "Atlanta Dream @ Golden State Valkyries — over 160.5",
+   "quote": null,
+   "fair_american": -102,
+   "break_even": null,
+   "prob": {
+    "model": 0.505,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.505,
+    "sd": 0.0354,
+    "conservative": 0.4597,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 122,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +122 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 2.1 (home), total 160.7",
+    "model points (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/wnba:points"
+  },
+  {
+   "id": "ccc3cb9c",
+   "status": "RESEARCH",
+   "sport_id": "wnba",
+   "sport_label": "WNBA",
+   "event_key": "WNBA|401918305",
+   "event": {
+    "home": "Golden State Valkyries",
+    "away": "Atlanta Dream",
+    "start_utc": "2026-10-17T19:30:00Z",
+    "label": "Atlanta Dream @ Golden State Valkyries"
+   },
+   "market": {
+    "kind": "total",
+    "side": "under",
+    "line": 160.5,
+    "settles": "including overtime"
+   },
+   "label": "Atlanta Dream @ Golden State Valkyries — under 160.5",
+   "quote": null,
+   "fair_american": 102,
+   "break_even": null,
+   "prob": {
+    "model": 0.495,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.495,
+    "sd": 0.0354,
+    "conservative": 0.4497,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 127,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +127 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 2.1 (home), total 160.7",
+    "model points (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/wnba:points"
+  },
+  {
+   "id": "83c65822",
+   "status": "RESEARCH",
+   "sport_id": "wnba",
+   "sport_label": "WNBA",
+   "event_key": "WNBA|401918305",
+   "event": {
+    "home": "Golden State Valkyries",
+    "away": "Atlanta Dream",
+    "start_utc": "2026-10-17T19:30:00Z",
+    "label": "Atlanta Dream @ Golden State Valkyries"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Golden State Valkyries",
+    "line": -2,
+    "settles": "including overtime; a whole-number line can push"
+   },
+   "label": "Atlanta Dream @ Golden State Valkyries — Golden State Valkyries -2",
+   "quote": null,
+   "fair_american": -101,
+   "break_even": null,
+   "prob": {
+    "model": 0.4872,
+    "push": 0.0319,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4872,
+    "sd": 0.0354,
+    "conservative": 0.4419,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 124,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 2.1 (home), total 160.7",
+    "model points (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/wnba:points"
+  },
+  {
+   "id": "d9e03ea7",
+   "status": "RESEARCH",
+   "sport_id": "wnba",
+   "sport_label": "WNBA",
+   "event_key": "WNBA|401918305",
+   "event": {
+    "home": "Golden State Valkyries",
+    "away": "Atlanta Dream",
+    "start_utc": "2026-10-17T19:30:00Z",
+    "label": "Atlanta Dream @ Golden State Valkyries"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Atlanta Dream",
+    "line": 2,
+    "settles": "including overtime; a whole-number line can push"
+   },
+   "label": "Atlanta Dream @ Golden State Valkyries — Atlanta Dream +2",
+   "quote": null,
+   "fair_american": 101,
+   "break_even": null,
+   "prob": {
+    "model": 0.481,
+    "push": 0.0319,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.481,
+    "sd": 0.0354,
+    "conservative": 0.4357,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 127,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +127 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 2.1 (home), total 160.7",
+    "model points (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/wnba:points"
+  },
+  {
+   "id": "1df826aa",
+   "status": "RESEARCH",
+   "sport_id": "wnba",
+   "sport_label": "WNBA",
+   "event_key": "WNBA|401918305",
+   "event": {
+    "home": "Golden State Valkyries",
+    "away": "Atlanta Dream",
+    "start_utc": "2026-10-17T19:30:00Z",
+    "label": "Atlanta Dream @ Golden State Valkyries"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Atlanta Dream",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Atlanta Dream @ Golden State Valkyries — Atlanta Dream moneyline",
+   "quote": null,
+   "fair_american": 126,
+   "break_even": null,
+   "prob": {
+    "model": 0.4423,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4423,
+    "sd": 0.0354,
+    "conservative": 0.397,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 157,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +157 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 2.1 (home), total 160.7",
+    "model points (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/wnba:points"
   }
  ],
  "disclaimer": "Research, not picks. A qualified opportunity is a price that cleared EdgeDesk's published rules at the time shown; it is not a prediction that it will win, and nothing here is a recommendation to bet.",
@@ -5654,9 +4260,9 @@
    "label": "WNBA",
    "state": "OUTCOME_VALIDATED",
    "value_claims": false,
-   "candidates": 0,
+   "candidates": 6,
    "priced": 0,
-   "note": "no game in the window (fair prices appear when the schedule reaches it)",
+   "note": "6 fair prices in the window; no book price is captured for this sport",
    "ladder": {
     "data_loaded": {
      "done": true,
@@ -5758,42 +4364,6 @@
    }
   },
   {
-   "id": "soccer",
-   "label": "Soccer",
-   "state": "OUTCOME_VALIDATED",
-   "value_claims": false,
-   "candidates": 264,
-   "priced": 0,
-   "note": "264 fair prices in the window; no book price is captured for this sport",
-   "ladder": {
-    "data_loaded": {
-     "done": true,
-     "detail": "25572 games, retrospective"
-    },
-    "model_trained": {
-     "done": true,
-     "detail": "{\"epl\":\"poisson\",\"bundesliga\":\"poisson\",\"laliga\":\"poisson\",\"seriea\":\"poisson\",\"ligue1\":\"poisson\"}"
-    },
-    "validation_passed": {
-     "done": true,
-     "partial": true,
-     "detail": "3 of 20 markets validated vs outcomes; primary market (moneyline): experimental"
-    },
-    "market_tested": {
-     "done": false,
-     "detail": "no licensed closing archive: never compared with the market"
-    },
-    "market_verified": {
-     "done": false,
-     "detail": "no executable price on file now"
-    },
-    "actionable": {
-     "done": false,
-     "detail": "none"
-    }
-   }
-  },
-  {
    "id": "tennis",
    "label": "Tennis (ATP/WTA)",
    "state": "RETIRED",
@@ -5867,10 +4437,9 @@
   }
  ],
  "inputs": {
-  "registry_generated_at": "2026-10-15T12:05:57.944Z",
+  "registry_generated_at": "2026-10-15T14:20:12.766Z",
   "nhl_slate_generated_at": "2026-10-15T12:05:48.530Z",
-  "basketball_slate_generated_at": "2026-10-14T16:01:28.662Z",
-  "soccer_slate_generated_at": "2026-10-14T16:01:28.760Z",
+  "basketball_slate_generated_at": "2026-10-15T14:11:16.132Z",
   "nhl_quotes": {
    "status": "DISABLED",
    "generated_at": "2026-10-15T12:05:48.462Z",
@@ -5880,8 +4449,8 @@
   "manual_quotes_applied": 0
  },
  "candidates_trimmed": {
-  "research_total": 624,
-  "research_kept": 72,
+  "research_total": 366,
+  "research_kept": 54,
   "rule": "all non-research rows; per sport, 24 research rows by conservative disagreement with the market reference, then by start time"
  }
 }

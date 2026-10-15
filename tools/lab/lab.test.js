@@ -1,20 +1,19 @@
 #!/usr/bin/env node
 'use strict';
 /* ===========================================================================
-   The new brains (basketball, soccer, MLB), the shared protocol, the board's
+   The new brains (basketball, MLB), the shared protocol, the board's
    settlement and sensitivity rules, the registry's ladder — offline.
 
    Proves: the protocol's rules (one season can never validate; a challenger
    needs 0.001); the ingests drop what they say (preseason, exhibitions,
    unplayed) and keep a missing result missing; the pack fills only what the
    source lacks; each model behaves (a stronger home side is favoured, ratings
-   never see their own game, Dixon-Coles quarter lines split, run
-   distributions sum to 1); the board prices a quarter line exactly as two
+   never see their own game, run distributions sum to 1); the board prices a quarter line exactly as two
    half stakes, returns the stake on a void, and marks a qualifier FRAGILE
    when a scenario, a worse tick or another reference breaks it; every
    committed record is leak-free, retrospective, never market-tested, and
-   chose its model by the rule; the registry's ladder is computed for all 12
-   sports and no value claim is on.
+   chose its model by the rule; the registry's ladder is computed for all 11
+   sports (soccer was removed on 2026-10-15) and no value claim is on.
 
    Run: node tools/lab/lab.test.js
    =========================================================================== */
@@ -59,21 +58,10 @@ const BS = R('basketball/build_slate.js');
 const ou = BS.overUnder(220.2, 18, 220);
 ok('basketball: a whole-number line has a push; the three outcomes sum to 1', ou.push > 0.01 && near(ou.over + ou.push + ou.under, 1, 1e-9) && BS.overUnder(220.2, 18, 220.5).push === 0);
 
-/* 3. soccer */
-const SI = R('soccer/ingest.js');
-ok('soccer: club names normalise across seasons, and different clubs stay apart', SI.clubKey('Arsenal FC') === SI.clubKey('Arsenal') && SI.clubKey('FC Internazionale Milano') === SI.clubKey('Inter') && SI.clubKey('Paris FC') !== SI.clubKey('Paris Saint-Germain') && SI.clubKey('Manchester City FC') !== SI.clubKey('Manchester United FC') && SI.clubKey('Sheffield United') !== SI.clubKey('Sheffield Wednesday'));
-const sn = SI.normalise({ matches: [{ date: '2026-09-01', team1: 'A FC', team2: 'B FC', score: { ft: [2, 1], ht: [1, 0] } }, { date: '2026-09-02', team1: 'C', team2: 'D' }, { date: '2026-12-01', team1: 'E', team2: 'F', score: [] }] }, 'epl', 2027, '2026-10-13');
-ok('soccer: a played match without a score is RESULT_MISSING (never guessed); a future one SCHEDULED', sn.rows.map((r) => r.status).join() === 'FINAL,RESULT_MISSING,SCHEDULED' && sn.rows[1].hg === '' && sn.rows[0].assumed_available_at === '2026-09-01T23:59:00Z');
-const SM = R('soccer/model.js');
-const dc = new SM.DixonColes({}); dc.lambdas = () => ({ lh: 1.5, la: 1.1 });
-const mk = SM.markets(dc.score(null, null, -0.05));
-ok('soccer: the score matrix sums to 1 and 1X2 sums to 1', near(mk.home + mk.draw + mk.away, 1, 1e-9) && near(Object.values(mk.diff).reduce((a, b) => a + b, 0), 1, 1e-9));
-const mk0 = SM.markets(dc.score(null, null, 0));
-ok('soccer: a negative rho adds draws (Dixon-Coles)', mk.draw > mk0.draw);
-const ah = SM.asian({ '-1': 0.3, '0': 0.3, '1': 0.25, '2': 0.15 }, -0.25);
-ok('soccer: -0.25 is two half stakes — a draw is a half loss', ah.split && near(ah.half_loss, 0.3) && near(ah.full_win, 0.4) && near(ah.full_loss, 0.3));
+/* 3. split settlement (a quarter line is two half stakes) */
 const Q = R('engine/quant.js');
-ok('soccer: the quarter line\'s EV matches the pack\'s split-settlement formula', near(Q.expectedSplitProfit(1.95, ah.full_win, ah.half_win, ah.push, ah.half_loss, ah.full_loss), 0.4 * 0.95 - 0.15 - 0.3, 1e-9));
+ok('quant: a quarter line\'s EV is the split-settlement formula', near(Q.expectedSplitProfit(1.95, 0.4, 0, 0, 0.3, 0.3), 0.4 * 0.95 - 0.15 - 0.3, 1e-9));
+ok('soccer is gone: no soccer brain is left in the repo', !fs.existsSync(path.join(ROOT, 'soccer')));
 
 /* 4. MLB */
 const MI = R('mlb/history/ingest.js');
@@ -109,7 +97,6 @@ ok('board: one tick worse crosses the even line correctly', XB.worseTick(102) ==
 
 /* 6. committed records */
 const recs = [['basketball/validation/nba_walkforward.json', ['points', 'points_rest']], ['basketball/validation/wnba_walkforward.json', ['points', 'points_rest']], ['basketball/validation/ncaam_walkforward.json', ['points', 'points_rest']], ['basketball/validation/ncaaw_walkforward.json', ['points', 'points_rest']],
-  ['soccer/validation/epl_walkforward.json', ['poisson', 'dixon_coles', 'poisson_cal', 'dixon_coles_cal']], ['soccer/validation/bundesliga_walkforward.json', ['poisson', 'dixon_coles', 'poisson_cal', 'dixon_coles_cal']], ['soccer/validation/laliga_walkforward.json', ['poisson', 'dixon_coles', 'poisson_cal', 'dixon_coles_cal']], ['soccer/validation/seriea_walkforward.json', ['poisson', 'dixon_coles', 'poisson_cal', 'dixon_coles_cal']], ['soccer/validation/ligue1_walkforward.json', ['poisson', 'dixon_coles', 'poisson_cal', 'dixon_coles_cal']],
   ['mlb/history/validation/mlb_walkforward.json', ['team', 'team_park', 'team_park_sp']]];
 for (const [f, order] of recs) {
   let r = null; try { r = JSON.parse(fs.readFileSync(path.join(ROOT, f), 'utf8')); } catch (_) {}
@@ -123,7 +110,7 @@ ok('ufc: one year is measured as INSUFFICIENT, never a model', ufc.markets.money
 
 /* 7. the registry */
 const reg2 = JSON.parse(fs.readFileSync(path.join(ROOT, 'engine', 'registry.json'), 'utf8'));
-ok('registry: all 12 sports carry the computed ladder', reg2.sports.length === 12 && reg2.sports.every((s) => s.readiness.ladder && ['data_loaded', 'model_trained', 'validation_passed', 'market_tested'].every((k) => typeof s.readiness.ladder[k].done === 'boolean')));
+ok('registry: all 11 sports carry the computed ladder, and soccer is not one', reg2.sports.length === 11 && !reg2.sports.some((s) => s.id === 'soccer') && reg2.sports.every((s) => s.readiness.ladder && ['data_loaded', 'model_trained', 'validation_passed', 'market_tested'].every((k) => typeof s.readiness.ladder[k].done === 'boolean')));
 ok('registry: no value claim is on anywhere (nothing beat a close)', reg2.value_claims_enabled.length === 0 && reg2.sports.every((s) => !s.readiness.value_claims_any));
 ok('registry: a validated headline names the markets it covers', reg2.sports.filter((s) => s.readiness.state === 'OUTCOME_VALIDATED').every((s) => s.readiness.scope.length > 0 && s.readiness.label.indexOf(s.readiness.scope[0]) > 0));
 ok('registry: a sport without a model is never validated (UFC)', ['mma'].every((id) => reg2.sports.find((s) => s.id === id).readiness.state === 'RESEARCH_ONLY'));
@@ -134,7 +121,7 @@ ok('registry: a sport without a model is never validated (UFC)', ['mma'].every((
   ok('registry: college baseball is validated only by its own holdout record, and never claims value', (held || cb.readiness.state !== 'OUTCOME_VALIDATED') && !cb.readiness.value_claims_any, cb.readiness.state);
 }
 const board = JSON.parse(fs.readFileSync(path.join(ROOT, 'engine', 'board.json'), 'utf8'));
-ok('board: PASS with no fresh price, and every soccer row is held on stale data or research', board.verdict === 'PASS' && board.candidates.filter((c) => c.sport_id === 'soccer').every((c) => c.status === 'RESEARCH'));
+ok('board: PASS with no fresh price, and no soccer row', board.verdict === 'PASS' && !board.candidates.some((c) => c.sport_id === 'soccer') && !(board.coverage || []).some((c) => c.id === 'soccer'));
 
 console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'lab — ' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail === 0 ? 0 : 1);

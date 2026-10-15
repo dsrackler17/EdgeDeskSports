@@ -64,7 +64,7 @@ function quote(p, o) {
   const b2 = P.buildAll(a2, { now: NOW });
   const w = b2.projections.find((p) => p.sport === 'wnba');
   ok('ROUTING: a WNBA game goes to the lab basketball adapter and the WNBA validation row', w && w.model.artifact === 'basketball/slate.json' && /edgedesk_bb_points_v1/.test(w.model.id) && w.validation.markets.moneyline.state === 'EXPERIMENTAL', w && [w.model, w.validation.markets.moneyline.state]);
-  ok('ROUTING: soccer only for the five modelled leagues; a Europa League match is MODEL UNAVAILABLE with the reason', prep0.discovery.events.filter((e) => e.league === 'Europa League').every((e) => e.research.outcome === 'MODEL_UNAVAILABLE' && /not a modelled competition/.test(e.research.reasons[0])));
+  ok('ROUTING: soccer was removed from the platform (2026-10-15): every soccer event on the schedule is MODEL UNAVAILABLE with that reason, and no soccer projection is built', prep0.discovery.events.filter((e) => e.sport === 'soccer' && !e.excluded).length > 0 && prep0.discovery.events.filter((e) => e.sport === 'soccer' && !e.excluded).every((e) => e.research.outcome === 'MODEL_UNAVAILABLE' && /removed from the platform/.test(e.research.reasons[0])) && !prep0.snapshot.projections.some((p) => p.sport === 'soccer'));
   ok('ROUTING: an NBA preseason game is MODEL UNAVAILABLE, named as preseason, never priced by the regular-season engine', prep0.discovery.events.filter((e) => e.sport === 'nba').every((e) => e.research.outcome === 'MODEL_UNAVAILABLE' && /preseason/.test(e.research.reasons[0])));
   ok('ROUTING: MLB, UFC, college baseball, tennis and golf have no adapter and say why', ['mlb', 'mma', 'college_baseball', 'tennis', 'golf'].every((s) => !P.SPORTS[s].adapter && P.SPORTS[s].unsupported.length));
 }
@@ -173,7 +173,7 @@ function quote(p, o) {
   const h = b.projections.find((p) => p.sport === 'nhl');
   ok('EXPIRED: an NHL build 9 h old (limit 8 h) is DATA INSUFFICIENT', h.freshness.state === 'EXPIRED' && h.research.outcome === 'DATA_INSUFFICIENT' && /expired/.test(h.research.reasons[0]), h.research);
   ok('EXPIRED: …and may not price', !P.pricingEligibility(h, 'moneyline').ok && /expired/i.test(P.pricingEligibility(h, 'moneyline').why));
-  ok('EXPIRED: stale soccer inputs (latest result 2026-09-20) are DATA INSUFFICIENT, with the reason', P.buildAll(A(), { now: NOW }).projections.filter((p) => p.sport === 'soccer').every((p) => p.research.outcome === 'DATA_INSUFFICIENT' && /stale/.test(p.research.reasons[0])));
+  ok('REMOVED: no adapter reads soccer/slate.json, even where an old artifact still carries it', P.artifactsNeeded().indexOf('soccer/slate.json') < 0 && !P.buildAll(A(), { now: NOW }).projections.some((p) => p.sport === 'soccer'));
   const a2 = A(); a2['hockey/slate.json'] = null;
   const p2 = X.prepare({ artifacts: a2, artifact_errors: { 'hockey/slate.json': 'HTTP 503 from https://site.test/hockey/slate.json' }, question: 'tonight', now: NOW, timezone: TZ });
   const r2 = X.complete(p2, { quotes: [], now: NOW + 1000 });
@@ -336,18 +336,15 @@ function quote(p, o) {
   const Ap = A(); (Ap['today/slate.json'].events || []).concat(Ap['today/slate.json'].upcoming || []).filter((e) => e.id === ev0.schedule_id).forEach((e) => { e.status = 'POSTPONED'; });
   const pp = X.prepare({ artifacts: Ap, question: 'tonight', now: NOW, timezone: TZ });
   ok('POSTPONED: the game is listed once, excluded, and its projection is neither frozen nor ranked', pp.discovery.events.filter((e) => e.schedule_id === ev0.schedule_id || e.projection_id === ev0.projection_id).length === 1 && pp.discovery.events.find((e) => e.schedule_id === ev0.schedule_id).excluded && !pp.snapshot.projections.some((p) => p.projection_id === ev0.projection_id), pp.discovery.events.filter((e) => e.projection_id === ev0.projection_id));
-  /* 5 + 6. soccer: the scoreboard's "FC Cologne" is the engine's "1. FC Köln" — one event, and its 1X2 quotes are compared */
-  const pw = X.prepare({ artifacts: A(), question: 'this week', now: NOW, timezone: TZ });
-  const koln = pw.discovery.events.filter((e) => e.sport === 'soccer' && /Frankfurt/.test(e.home.name) && (/Cologne/.test(e.away.name) || /Köln/.test(e.away.name)));
-  ok('SOCCER JOIN: Eintracht Frankfurt v FC Cologne (scoreboard) and v 1. FC Köln (engine) are one event with the projection', koln.length === 1 && !!koln[0].projection_id, koln.map((e) => [e.schedule_id, e.projection_id, e.away.name]));
-  const kp = koln[0] && pw.snapshot.projections.find((p) => p.projection_id === koln[0].projection_id);
-  const sbq = M.quotesFromScoreboard({ events: [{ id: 'sb1', sport: 'soccer', home: { name: 'Eintracht Frankfurt' }, away: { name: 'FC Cologne' }, start_utc: kp ? kp.start_utc : null }], markets: { sb1: { book: 'DraftKings', captured_at: new Date(NOW - 60000).toISOString(), moneyline: { home: -120, away: 300, draw: 280 } } } }, () => 'soccer');
-  ok('SOCCER 1X2: a scoreboard market with a draw becomes three three-way quotes, each against the other two', sbq.length === 3 && sbq.every((q) => q.market.kind === 'three_way' && q.other_sides_american && q.other_sides_american.length === 2) && sbq.some((q) => q.market.side === 'draw'), sbq.map((q) => q.market));
-  const kc = kp ? X.complete(pw, { quotes: sbq, now: NOWC }) : null;
-  const kRows = kc ? kc.comparison.rows.filter((r) => r.projection_id === kp.projection_id && r.market.kind === 'three_way') : [];
-  ok('SOCCER 1X2: …matched to the engine\'s projection through the schedule\'s names, so no outcome reads NO CURRENT ODDS', kRows.length === 3 && kRows.every((r) => r.quote && r.outcome !== 'NO_CURRENT_ODDS'), kRows.map((r) => [r.market.side, r.outcome, r.reasons[0]]));
-  const sig = M.quotesFromSignals([{ sport_key: 'soccer_germany_bundesliga', market: 'h2h', selection: 'Draw', home_team: 'Eintracht Frankfurt', away_team: 'FC Cologne', best_dec: 3.8, best_book: 'fanduel', last_seen_at: new Date(NOW).toISOString(), commence_time: '2026-10-16T18:30:00Z' }]);
-  ok('SOCCER 1X2: capture\'s h2h Draw selection is the three-way draw', sig.length === 1 && sig[0].market.kind === 'three_way' && sig[0].market.side === 'draw', sig.map((q) => q.market));
+  /* 6. a team spelled differently by the scoreboard (a renamed franchise) still joins its projection: same kick-off, one team named, one candidate */
+  const T0 = (n) => ({ name: n });
+  const pU = { projection_id: 'pU', sport: 'nhl', event_id: '900', home: T0('Utah Mammoth'), away: T0('St. Louis Blues'), start_utc: '2026-10-16T02:00:00Z' };
+  const pO = { projection_id: 'pO', sport: 'nhl', event_id: '901', home: T0('Colorado Avalanche'), away: T0('Dallas Stars'), start_utc: '2026-10-16T02:00:00Z' };
+  ok('JOIN: "Utah Hockey Club" v St. Louis Blues on the scoreboard joins the engine\'s Utah Mammoth projection (kick-off within 15 min, one team named, the only candidate)', X.joinOf({ home: T0('Utah Hockey Club'), away: T0('St. Louis Blues'), start_utc: '2026-10-16T02:05:00Z' }, [pU, pO], null) === pU);
+  ok('JOIN: …but not when the one-team match is ambiguous or the start is 2 hours apart', X.joinOf({ home: T0('Utah Hockey Club'), away: T0('St. Louis Blues'), start_utc: '2026-10-16T04:00:00Z' }, [pU, pO], null) === null);
+  /* a market with a draw (three-way) is never de-vigged as a two-way pair */
+  const sbq = M.quotesFromScoreboard({ events: [{ id: 'sb1', sport: 'x', home: { name: 'A' }, away: { name: 'B' }, start_utc: '2026-10-16T18:30:00Z' }], markets: { sb1: { book: 'DraftKings', captured_at: new Date(NOW - 60000).toISOString(), moneyline: { home: -120, away: 300, draw: 280 } } } }, () => 'x');
+  ok('THREE-WAY: a scoreboard market with a draw becomes three three-way quotes, each against the other two (never a two-way moneyline)', sbq.length === 3 && sbq.every((q) => q.market.kind === 'three_way' && q.other_sides_american && q.other_sides_american.length === 2) && sbq.some((q) => q.market.side === 'draw'), sbq.map((q) => q.market));
   /* 7. team names: a school is not its State / Tech / A&M / directional namesake; short names and LA still match */
   const T = (n) => ({ name: n });
   ok('SAME TEAM: Texas ≠ Texas A&M, Michigan ≠ Central Michigan, Iowa ≠ Iowa State, Miami ≠ Miami (OH), Florida ≠ Florida Atlantic', !M.sameTeam(T('Texas'), 'Texas A&M Aggies') && !M.sameTeam(T('Michigan'), 'Central Michigan') && !M.sameTeam(T('Iowa'), 'Iowa State Cyclones') && !M.sameTeam(T('Miami'), 'Miami (OH)') && !M.sameTeam(T('Florida'), 'Florida Atlantic Owls'));
@@ -357,10 +354,9 @@ function quote(p, o) {
   ok('JOIN: an exact id link wins over a name match (Iowa State @ Kansas State with provider id 222 joins 222, not Iowa @ Kansas)', X.joinOf({ provider_id: '222', home: T('Kansas State'), away: T('Iowa State'), start_utc: '2026-10-17T19:00:00Z' }, [pI, pS], null) === pS);
   /* 8. a missing published figure drops a line, never the desk */
   const holes = [Object.assign(clone(VGK), { matchup: { factors: [], metrics: { home: { ev_xg_for_vs_league: 1.1 }, away: { ev_xg_for_vs_league: 0.9 } } } })];
-  const nbaP = prep0.snapshot.projections.find((p) => p.sport === 'nba'); if (nbaP) holes.push(Object.assign(clone(nbaP), { matchup: { factors: [], metrics: { home_offence_vs_away_defence: 115, away_offence_vs_home_defence: 112, pace: null } } }));
-  if (kp) holes.push(Object.assign(clone(kp), { projected_score: { home: null, away: null } }));
+  const nbaP = P.buildAll(A(), { now: NOW }).projections.find((p) => p.sport === 'nba'); if (nbaP) holes.push(Object.assign(clone(nbaP), { matchup: { factors: [], metrics: { home_offence_vs_away_defence: 115, away_offence_vs_home_defence: 112, pace: null } } }));
   let threw = null; try { holes.forEach((h) => X.researchFor(h)); } catch (e) { threw = String(e.message || e); }
-  ok('NULL FIELDS: NHL xG against, NBA pace and soccer λ missing → research still written', threw === null && holes.length >= 2, threw);
+  ok('NULL FIELDS: NHL xG against and NBA pace missing → research still written', threw === null && holes.length >= 2, threw);
   /* 10. two feeds reading the same book are one book */
   const twoFeeds = M.compareMarket(VGK, { kind: 'moneyline', side: 'home', line: null }, [M.normalizeQuote(quote(VGK, { american: -150, book: 'DraftKings', source: 'signals' }), NOWC), M.normalizeQuote(quote(VGK, { american: -150, book: 'draftkings', source: 'scoreboard' }), NOWC)], { now: NOWC, n_compared: 1 });
   ok('BOOKS: DraftKings from capture and from the scoreboard counts once (BOOKS_CONFIRM open, one book listed)', twoFeeds.books.length === 1 && twoFeeds.gates.some((g) => g.gate === 'BOOKS_CONFIRM' && !g.ok && /^1 book/.test(g.why)), [twoFeeds.books, twoFeeds.gates.find((g) => g.gate === 'BOOKS_CONFIRM')]);
@@ -377,7 +373,7 @@ function quote(p, o) {
   const tagged = ((hk && hk.markets && hk.markets.total) || []).filter((x) => x.validation && VGK.distribution.total_lines.some((y) => y.line === x.line));
   ok('NHL LINES: every total line the engine tags (PROVISIONAL) carries that tag in the projection, also lines first read from prices', tagged.length > 0 && tagged.every((x) => VGK.distribution.total_lines.find((y) => y.line === x.line).validation === x.validation), tagged.map((x) => [x.line, x.validation]));
   /* 15. no constant is shown as a fair line */
-  ok('FAIR LINES: the NHL spread and the soccer handicap/total publish no fair LINE (the engines price fixed lines)', VGK.fair.spread.home_line === null && VGK.fair.spread.priced_line.home_line === -1.5 && (!kp || (kp.fair.spread.home_line === null && kp.fair.total.line === null)) && !/EdgeDesk fair lines: home -1\.5/.test(r0.answer));
+  ok('FAIR LINES: the NHL spread publishes no fair LINE (the engine prices the fixed ±1.5 puck line)', VGK.fair.spread.home_line === null && VGK.fair.spread.priced_line.home_line === -1.5 && !/EdgeDesk fair lines: home -1\.5/.test(r0.answer));
 }
 
 /* ═══ THE REGISTRY ══════════════════════════════════════════════════════════ */

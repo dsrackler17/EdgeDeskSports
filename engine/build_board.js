@@ -14,8 +14,6 @@
                consensus line; the consensus is a REFERENCE, never a price
      NBA, WNBA, men's and women's college basketball
                basketball/slate.json — fair prices (no book prices captured)
-     soccer    soccer/slate.json — 1X2, total 2.5, both-to-score and a
-               quarter Asian line (split settlement), per league
      any       engine/market/manual_quotes.json — a price I typed in from a
                sportsbook screen, labelled USER_SUPPLIED with its time
    Spends nothing: no network, no odds credit.
@@ -135,7 +133,7 @@ function footballCandidates(sheets, now) {
   return out;
 }
 
-/* ---------- basketball and soccer (fair prices, research until a price exists) ---------- */
+/* ---------- basketball (fair prices, research until a price exists) ---------- */
 function basketballCandidates(slate, now) {
   if (!slate || !slate.leagues) return [];
   const out = [];
@@ -153,26 +151,6 @@ function basketballCandidates(slate, now) {
     const tl = g.prices.total.lines[g.prices.total.fair_line];
     if (tl) for (const side of ['over', 'under']) out.push(Object.assign({}, base, { market: { kind: 'total', side, line: g.prices.total.fair_line, settles: g.prices.total.settles }, quote: null,
       model: { p_win: tl[side], p_push: tl.push, method: 'MODEL', model_id: 'basketball/' + league + ':' + L.model, sd: 0.025 }, market_ref: null }));
-  }
-  return out;
-}
-function soccerCandidates(slate) {
-  if (!slate || !slate.leagues) return [];
-  const out = [];
-  for (const [league, L] of Object.entries(slate.leagues)) for (const g of L.games || []) {
-    const base = { sport_id: 'soccer', sport_label: 'Soccer · ' + L.label, event_key: g.event_key, event: { home: g.home, away: g.away, start_utc: g.date + 'T23:59:00Z', date: g.date, label: g.away + ' @ ' + g.home },
-      data: { state: g.data_quality.state, lineup_certainty: 'UNKNOWN' },
-      evidence: ['λ ' + g.lambda.home + ' / ' + g.lambda.away + ' goals', 'model ' + L.model + ' (' + league + '); 1X2 ' + L.validation.three_way + ', Asian handicap ' + L.validation.asian_handicap + ' vs outcomes; never tested vs the close'].concat(L.data.note ? [L.data.note] : []),
-      invalidators: g.invalidators };
-    const t = g.prices.three_way;
-    for (const [side, p] of [['home', t.home], ['draw', t.draw], ['away', t.away]]) out.push(Object.assign({}, base, { market: { kind: 'three_way', registry_key: league + '.moneyline', side: side === 'home' ? g.home : side === 'away' ? g.away : 'draw', line: null, settles: t.settles }, quote: null,
-      model: { p_win: p, p_push: 0, method: 'MODEL', model_id: 'soccer/' + league + ':' + L.model, sd: 0.025 }, market_ref: null }));
-    const tot = g.prices.total;
-    for (const side of ['over', 'under']) out.push(Object.assign({}, base, { market: { kind: 'total', registry_key: league + '.total', side, line: 2.5, settles: '90 minutes plus stoppage time' }, quote: null,
-      model: { p_win: side === 'over' ? tot.over_2_5 : 1 - tot.over_2_5, p_push: 0, method: 'MODEL', model_id: 'soccer/' + league + ':' + L.model, sd: 0.025 }, market_ref: null }));
-    const ah = g.prices.asian_handicap_home['-0.25'];
-    if (ah) out.push(Object.assign({}, base, { market: { kind: 'asian_handicap', registry_key: league + '.spread', side: g.home, line: -0.25, settles: 'quarter line: two half stakes on 0 and -0.5' }, quote: null,
-      model: { settlement: { type: 'split', full_win: ah.full_win, half_win: ah.half_win, push: ah.push, half_loss: ah.half_loss, full_loss: ah.full_loss }, method: 'MODEL', model_id: 'soccer/' + league + ':' + L.model, sd: 0.025 }, market_ref: null }));
   }
   return out;
 }
@@ -198,7 +176,7 @@ function coverage(registry, cands, slate, quotes) {
     let note;
     if (s.id === 'nhl') note = slate ? slate.games.length + ' upcoming games priced by the model; book prices: ' + (quotes ? quotes.status : 'NOT_CAPTURED') : 'no slate built';
     else if (s.id === 'nfl' || s.id === 'cfb') note = mine.length ? mine.length + ' sides at the consensus line (a reference, not a price); captured book prices live in the desk (Supabase), not in this static board' : 'no sheet with a reference line in the window';
-    else if (['nba', 'wnba', 'ncaab_m', 'ncaab_w', 'soccer'].indexOf(s.id) >= 0) note = mine.length ? mine.length + ' fair prices in the window; no book price is captured for this sport' : 'no game in the window (fair prices appear when the schedule reaches it)';
+    else if (['nba', 'wnba', 'ncaab_m', 'ncaab_w'].indexOf(s.id) >= 0) note = mine.length ? mine.length + ' fair prices in the window; no book price is captured for this sport' : 'no game in the window (fair prices appear when the schedule reaches it)';
     else if (s.id === 'mlb') note = 'the record is walk-forward through 2025; no 2026 schedule or game logs are in the sources, so nothing is priced now';
     else note = s.readiness.state === 'UNAVAILABLE' ? 'no data or model wired' : s.readiness.state === 'RETIRED' ? 'retired product' : 'no independent model: nothing to evaluate here';
     const L = s.readiness.ladder || {};
@@ -219,13 +197,12 @@ function build(now) {
   const sheets = read('football/linemaker/fair_lines.json');
   const manual = read('engine/market/manual_quotes.json');
   const bb = read('basketball/slate.json');
-  const sc = read('soccer/slate.json');
-  const cands = nhlCandidates(slate, quotes).concat(footballCandidates(sheets, now), basketballCandidates(bb, now), soccerCandidates(sc));
+  const cands = nhlCandidates(slate, quotes).concat(footballCandidates(sheets, now), basketballCandidates(bb, now));
   const man = applyManual(cands, manual);
   const board = XB.evaluate({ candidates: cands, registry, now });
   board.schema = 'edgedesk_engine_board_v1';
   board.coverage = coverage(registry, cands, slate, quotes);
-  board.inputs = { registry_generated_at: registry && registry.generated_at, nhl_slate_generated_at: slate && slate.generated_at, basketball_slate_generated_at: bb && bb.generated_at, soccer_slate_generated_at: sc && sc.generated_at, nhl_quotes: quotes ? { status: quotes.status, generated_at: quotes.generated_at, reason: quotes.reason || null } : { status: 'NOT_CAPTURED' }, football_sheets_generated_at: sheets && sheets.generated_at, manual_quotes_applied: man.applied };
+  board.inputs = { registry_generated_at: registry && registry.generated_at, nhl_slate_generated_at: slate && slate.generated_at, basketball_slate_generated_at: bb && bb.generated_at, nhl_quotes: quotes ? { status: quotes.status, generated_at: quotes.generated_at, reason: quotes.reason || null } : { status: 'NOT_CAPTURED' }, football_sheets_generated_at: sheets && sheets.generated_at, manual_quotes_applied: man.applied };
   /* keep the file small: every actionable row, and per sport the 24 research rows
      with the largest conservative disagreement with a market reference (the
      soonest games where no reference exists); counts above cover every candidate */

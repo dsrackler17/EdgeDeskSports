@@ -35079,7 +35079,7 @@ const EDFAIR: any = (globalThis as any).EDFAIR;
 
   /* What EdgeDesk does not cover, stated rather than silently skipped. */
   var NOT_COVERED = [
-    { id: 'soccer', label: 'Soccer', key_prefix: 'soccer_', why: 'no soccer price is captured, so the price board cannot scan it; the multi-sport desk researches the five modelled leagues from soccer/slate.json', settlement: { h2h: { overtime: false, ties: 'a three-way market settles on 90 minutes plus stoppage time; a draw is its own outcome' } } },
+    { id: 'soccer', label: 'Soccer', key_prefix: 'soccer_', why: 'removed from the platform on 2026-10-15: no soccer model, schedule or price is kept', settlement: { h2h: { overtime: false, ties: 'a three-way market settles on 90 minutes plus stoppage time; a draw is its own outcome' } } },
     { id: 'tennis', label: 'Tennis', key_prefix: 'tennis_', why: 'retired as a product on 2026-09-27 (lib/edgedesk_sports.js)' },
     { id: 'golf', label: 'Golf', key_prefix: 'golf_', why: 'no data source or model' }
   ];
@@ -36512,15 +36512,9 @@ const EDQUANT: any = (globalThis as any).EDQUANT;
       unsupported: [{ what: 'spread and total pricing', why: 'the FBS slate publishes fair lines but no cover distribution, so no spread or total probability is derived' }, { what: 'FCS-only games', why: 'no FCS model; FBS-vs-FCS games are on the FBS slate' }]
     },
     soccer: {
-      id: 'soccer', label: 'Soccer', league: 'Soccer', level: 'professional', family: 'soccer', odds_key: 'soccer_', registry_id: 'soccer', schedule_codes: ['soccer'], season_months: [1, 12],
-      adapter: 'soccer', artifacts: ['soccer/slate.json'], max_age_hours: 30,
-      competitions: { epl: { label: 'Premier League', tz: 'Europe/London', espn: 'Premier League' }, bundesliga: { label: 'Bundesliga', tz: 'Europe/Berlin', espn: 'Bundesliga' }, laliga: { label: 'La Liga', tz: 'Europe/Madrid', espn: 'LaLiga' }, seriea: { label: 'Serie A', tz: 'Europe/Rome', espn: 'Serie A' }, ligue1: { label: 'Ligue 1', tz: 'Europe/Paris', espn: 'Ligue 1' } },
-      discovery: 'openfootball fixtures in soccer/slate.json (five leagues), cross-checked with the ESPN scoreboard',
-      providers: ['openfootball (third-party)', 'ESPN scoreboard (third-party)'],
-      stats: ['attack and defence ratings per league (Dixon-Coles / Poisson goals)', 'home advantage'], availability: 'not modelled (no lineup feed)',
-      simulation: { method: 'independent Poisson goals with a fitted pair calibration → exact score grid', monte_carlo: false },
-      markets: ['three_way', 'total', 'spread'], key_role: null,
-      unsupported: [{ what: 'Champions League, Europa League, Conference League, MLS and cups', why: 'only the five domestic leagues are modelled; a cross-competition match has no rating link' }]
+      id: 'soccer', label: 'Soccer', league: 'Soccer', level: 'professional', family: 'soccer', odds_key: 'soccer_', registry_id: null, schedule_codes: ['soccer'], season_months: [1, 12],
+      adapter: null, artifacts: [], max_age_hours: null, discovery: 'none (removed)', providers: [], stats: [], availability: 'none', simulation: null, markets: [], key_role: null,
+      unsupported: [{ what: 'everything', why: 'removed from the platform on 2026-10-15: the soccer model, its data and its slate were deleted (EdgeDesk covers American sports and UFC)' }]
     },
     mlb: {
       id: 'mlb', label: 'MLB', league: 'MLB', level: 'professional', family: 'baseball', odds_key: 'baseball_mlb', registry_id: 'mlb', schedule_codes: ['mlb'], season_months: [3, 11],
@@ -36554,7 +36548,7 @@ const EDQUANT: any = (globalThis as any).EDQUANT;
       unsupported: [{ what: 'everything', why: 'no golf data source or model exists in EdgeDesk (golf.html is a partner referral page)' }]
     }
   };
-  /* today/slate.json sport codes → registry ids (ESPN feeds; soccer is split by competition later) */
+  /* today/slate.json sport codes → registry ids (ESPN feeds) */
   var SCHEDULE_CODE = { nfl: 'nfl', cfb: 'cfb', nba: 'nba', wnba: 'wnba', ncaam: 'ncaab_m', ncaaw: 'ncaab_w', nhl: 'nhl', mlb: 'mlb', ncaabase: 'college_baseball', soccer: 'soccer', mma: 'mma', tennis: 'tennis', golf: 'golf' };
 
   var NHL_NAMES = { ANA: 'Anaheim Ducks', BOS: 'Boston Bruins', BUF: 'Buffalo Sabres', CAR: 'Carolina Hurricanes', CBJ: 'Columbus Blue Jackets', CGY: 'Calgary Flames', CHI: 'Chicago Blackhawks', COL: 'Colorado Avalanche', DAL: 'Dallas Stars', DET: 'Detroit Red Wings', EDM: 'Edmonton Oilers', FLA: 'Florida Panthers', LAK: 'Los Angeles Kings', MIN: 'Minnesota Wild', MTL: 'Montreal Canadiens', NJD: 'New Jersey Devils', NSH: 'Nashville Predators', NYI: 'New York Islanders', NYR: 'New York Rangers', OTT: 'Ottawa Senators', PHI: 'Philadelphia Flyers', PIT: 'Pittsburgh Penguins', SEA: 'Seattle Kraken', SJS: 'San Jose Sharks', STL: 'St. Louis Blues', TBL: 'Tampa Bay Lightning', TOR: 'Toronto Maple Leafs', UTA: 'Utah Mammoth', VAN: 'Vancouver Canucks', VGK: 'Vegas Golden Knights', WPG: 'Winnipeg Jets', WSH: 'Washington Capitals' };
@@ -36565,8 +36559,7 @@ const EDQUANT: any = (globalThis as any).EDQUANT;
     'nba/slate.json': { top: [], game: ['market', 'decision'] },
     'football/nfl/slate.json': { top: ['pricing', 'market_note'], game: ['reference_market', 'market_status', 'market_note'] },
     'football/fbs/slate.json': { top: ['market_note'], game: ['market_status', 'quote_timestamp', 'spread_recommendation'] },
-    'basketball/slate.json': { top: [], game: [] },
-    'soccer/slate.json': { top: [], game: [] }
+    'basketball/slate.json': { top: [], game: [] }
   };
 
   /* ------------------------------------------------------------ helpers */
@@ -36661,6 +36654,17 @@ const EDQUANT: any = (globalThis as any).EDQUANT;
     if (!v) return SIGMA.calibration_by_state.RESEARCH_ONLY;
     var d = SIGMA.calibration_by_state[v.state] != null ? SIGMA.calibration_by_state[v.state] : SIGMA.calibration_by_state.RESEARCH_ONLY;
     return v.calibration_offset != null ? Math.max(d, v.calibration_offset) : d;
+  }
+
+  /* a local date and time in an IANA zone → UTC ISO (DST-aware: the offset is re-read at the converted instant) */
+  function zonedToUtc(date, time, tz) {
+    if (!date) return null;
+    var hm = /^(\d{1,2}):(\d{2})/.exec(str(time || '12:00')) || ['', '12', '00'];
+    var guess = Date.parse(date + 'T' + ('0' + hm[1]).slice(-2) + ':' + hm[2] + ':00Z');
+    if (!isFinite(guess)) return null;
+    function offMin(ms) { try { var p = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'shortOffset' }).formatToParts(new Date(ms)); var z = (p.filter(function (x) { return x.type === 'timeZoneName'; })[0] || {}).value || 'GMT'; var m = /GMT([+-]\d+)(?::(\d+))?/.exec(z); return m ? Number(m[1]) * 60 + (m[1][0] === '-' ? -1 : 1) * Number(m[2] || 0) : 0; } catch (_) { return 0; } }
+    var o1 = offMin(guess), t = guess - o1 * 60000, o2 = offMin(t);
+    return new Date(guess - o2 * 60000).toISOString();
   }
 
   /* ================================================================ */
@@ -36830,55 +36834,6 @@ const EDQUANT: any = (globalThis as any).EDQUANT;
     return { projections: out, error: null, model: { id: 'edgedesk_bb_points_v1:' + str(L.model), generated_at: s.generated_at }, note: (L.games || []).length ? null : L.note || null, next_game: L.next_game || null };
   };
 
-  /* Soccer — soccer/slate.json (edgedesk_lab_slate_v1, five leagues; local kickoff converted from the league's own zone) */
-  function zonedToUtc(date, time, tz) {
-    if (!date) return null;
-    var hm = /^(\d{1,2}):(\d{2})/.exec(str(time || '12:00')) || ['', '12', '00'];
-    var guess = Date.parse(date + 'T' + ('0' + hm[1]).slice(-2) + ':' + hm[2] + ':00Z');
-    if (!isFinite(guess)) return null;
-    function offMin(ms) { try { var p = new Intl.DateTimeFormat('en-US', { timeZone: tz, timeZoneName: 'shortOffset' }).formatToParts(new Date(ms)); var z = (p.filter(function (x) { return x.type === 'timeZoneName'; })[0] || {}).value || 'GMT'; var m = /GMT([+-]\d+)(?::(\d+))?/.exec(z); return m ? Number(m[1]) * 60 + (m[1][0] === '-' ? -1 : 1) * Number(m[2] || 0) : 0; } catch (_) { return 0; } }
-    var o1 = offMin(guess), t = guess - o1 * 60000, o2 = offMin(t);
-    return new Date(guess - o2 * 60000).toISOString();
-  }
-  ADAPTERS.soccer = function (A, ctx) {
-    var sp = SPORTS.soccer, s = A['soccer/slate.json'], out = [], now = ctx.now, notes = [];
-    if (!s || s.schema !== 'edgedesk_lab_slate_v1' || !s.leagues) return { projections: [], error: 'soccer/slate.json missing or not edgedesk_lab_slate_v1' };
-    Object.keys(s.leagues).forEach(function (lk) {
-      var L = s.leagues[lk], comp = sp.competitions[lk];
-      if (!comp) return;
-      var dataState = L.data && L.data.state || null;
-      if (dataState && dataState !== 'FRESH') notes.push(comp.label + ': data ' + dataState + (L.data.latest_result ? ' (latest result ' + L.data.latest_result + ', ' + (L.data.results_missing_last_14_days || 0) + ' missing in the last 14 days)' : ''));
-      (L.games || []).forEach(function (g) {
-        var tw = g.prices && g.prices.three_way; if (!tw || num(tw.home) == null) return;
-        var tt = g.prices.total || {}, ah = g.prices.asian_handicap_home || {};
-        var totalLines = [[1.5, 'over_1_5'], [2.5, 'over_2_5'], [3.5, 'over_3_5']].filter(function (x) { return num(tt[x[1]]) != null; }).map(function (x) { return { line: x[0], over: num(tt[x[1]]), under: r4(1 - num(tt[x[1]])), push: 0 }; });
-        /* Asian handicap, whole and half lines only (a quarter line settles as two half stakes and is not priced here) */
-        var spreadLines = Object.keys(ah).filter(function (k) { return num(k) != null && ah[k] && !ah[k].split; }).map(function (k) { var x = ah[k]; return { home_line: num(k), home: num(x.full_win), away: num(x.full_loss), push: num(x.push) || 0 }; });
-        var val = validationBlock(ctx.registry, 'soccer', ['three_way', 'total', 'spread'], lk);
-        var start = zonedToUtc(g.date, g.time_local, comp.tz);
-        out.push(base(sp, {
-          league: comp.label, competition: lk, event_id: g.match_id, event_key: g.event_key, start_utc: start, start_basis: 'local kick-off ' + str(g.date) + ' ' + str(g.time_local) + ' in ' + comp.tz + ', converted to UTC',
-          home: team(g.home, null, g.home_key), away: team(g.away, null, g.away_key),
-          model: { id: 'edgedesk_soccer_dc_v1:' + str(L.model), version: L.model || null, artifact: 'soccer/slate.json', artifact_generated_at: iso(s.generated_at), predicted_at: iso(s.generated_at), params_generated_at: iso(L.params_generated_at), inputs_known_at: L.data ? L.data.latest_result || null : null },
-          outcome: { p_home: num(tw.home), p_away: num(tw.away), p_draw: num(tw.draw), settles: tw.settles || '90 minutes plus stoppage time' },
-          /* no fair handicap or total LINE is published (the grid prices fixed lines); the expected goals are the model's own number */
-          fair: { moneyline: { home: num(tw.fair_home), away: num(tw.fair_away), draw: num(tw.fair_draw) }, spread: { home_line: null }, total: { line: null, expected: num(tt.expected) } },
-          projected_score: { home: num(g.lambda && g.lambda.home), away: num(g.lambda && g.lambda.away), total: num(tt.expected), basis: 'expected goals per side (Poisson λ)' },
-          distribution: { kind: 'poisson_score_grid', spread_lines: spreadLines, total_lines: totalLines, three_way: { home: num(tw.home), draw: num(tw.draw), away: num(tw.away) } },
-          simulation: { method: sp.simulation.method, monte_carlo: false, simulations: null, convergence: 'exact score grid: no Monte Carlo error' },
-          uncertainty: { model_sd: SIGMA.model_default, calibration_sd: sigmaCal(val.markets.three_way), lineup_sd: SIGMA.lineup.UNKNOWN, basis: 'board defaults; calibration from the registry state of the 1X2 market' },
-          validation: val,
-          availability: { key_role: null, certainty: 'UNKNOWN', home: {}, away: {}, injuries: 'no lineup feed', conflicts: [] },
-          matchup: { factors: [], metrics: { expected_goals: g.lambda || null } },
-          provenance: [{ what: 'fixtures and results', source: 'openfootball (soccer/data)', authority: 'THIRD_PARTY' }, { what: 'projection', source: 'soccer/slate.json (' + lk + ')', authority: 'EDGEDESK_MODEL', retrieved_at: iso(s.generated_at) }],
-          freshness: freshnessOf(sp, s.generated_at, now, { data_state: dataState, latest_result: L.data ? L.data.latest_result : null, results_missing_last_14_days: L.data ? num(L.data.results_missing_last_14_days) : null }),
-          invalidators: g.invalidators || [], limitations: ['1X2 and totals are PROVISIONAL in every league (calibration slopes 0.28-0.75)'],
-          markets_supported: ['three_way', 'total', 'spread']
-        }));
-      });
-    });
-    return { projections: out, error: null, model: { id: 'edgedesk_soccer_dc_v1', generated_at: s.generated_at }, notes: notes };
-  };
 
   /* NFL — football/nfl/slate.json; the starter the projection priced is checked against football/starters/nfl_<season>.json */
   /**
@@ -37745,7 +37700,7 @@ const EDMKT: any = (globalThis as any).EDMKT;
     return id || null;
   }
   function competitionOf(e) {
-    var Pj = P(); if (!Pj) return null;
+    var Pj = P(); if (!Pj || !Pj.SPORTS.soccer || !Pj.SPORTS.soccer.competitions) return null;
     var comps = Pj.SPORTS.soccer.competitions, s = slug(e.league);
     for (var k in comps) if (slug(comps[k].label) === s || slug(comps[k].espn) === s) return k;
     return null;
@@ -37811,7 +37766,7 @@ const EDMKT: any = (globalThis as any).EDMKT;
       var row = { sport: sport || str(e.sport), league: e.league || null, competition: null, schedule_id: e.id, start_utc: iso(e.start_utc), home: teamOf(e.home), away: teamOf(e.away), venue: e.venue || null,
         schedule_source: 'today/slate.json (' + (e.provider || 'scoreboard') + ')', status: st || 'SCHEDULED', projection_id: null, research: null, reason: null };
       var sp = sport && Pj ? Pj.SPORTS[sport] : null;
-      if (sport === 'soccer' && sp) row.competition = competitionOf(e);
+      if (sport === 'soccer' && sp && sp.adapter) row.competition = competitionOf(e);
       var cands = sp && sp.adapter ? (build.projections || []).filter(function (p) { return p.sport === sport && !used[p.projection_id]; }) : [];
       var hit = cands.length ? joinOf(e, cands, row.competition) : null;
       /* a game that is not pregame (started, finished, postponed, cancelled, delayed — or past its start time)
@@ -37819,8 +37774,8 @@ const EDMKT: any = (globalThis as any).EDMKT;
       var notPre = st && st !== 'SCHEDULED' && st !== 'PRE' ? 'the event is not pregame (' + st.toLowerCase() + ')' : now != null && toMs(e.start_utc) <= now ? 'the event has started (its start time has passed)' : null;
       if (notPre) { row.excluded = notPre; if (hit) { used[hit.projection_id] = 1; row.excluded_projection_id = hit.projection_id; } events.push(row); return; }
       if (!sport || !sp) { row.research = { outcome: 'MODEL_UNAVAILABLE', reasons: ['EdgeDesk has no research adapter for ' + str(e.sport)] }; events.push(row); return; }
-      if (sport === 'soccer' && !row.competition) { row.research = { outcome: 'MODEL_UNAVAILABLE', reasons: [str(e.league) + ' is not a modelled competition (only ' + Object.keys(sp.competitions).map(function (k) { return sp.competitions[k].label; }).join(', ') + ')'] }; events.push(row); return; }
       if (!sp.adapter) { row.research = { outcome: 'MODEL_UNAVAILABLE', reasons: sp.unsupported.map(function (u) { return u.why; }) }; events.push(row); return; }
+      if (sport === 'soccer' && !row.competition) { row.research = { outcome: 'MODEL_UNAVAILABLE', reasons: [str(e.league) + ' is not a modelled competition (only ' + Object.keys(sp.competitions || {}).map(function (k) { return sp.competitions[k].label; }).join(', ') + ')'] }; events.push(row); return; }
       if (hit) { used[hit.projection_id] = 1; row.projection_id = hit.projection_id; row.research = hit.research; }
       else {
         /* before the engine's first scheduled regular-season game: a preseason game, which the ingest drops */

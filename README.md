@@ -128,8 +128,8 @@ Tests: `npm run resilience:test`.
 ## Today's Games — what is being played today, one tap from its research
 
 The first thing on the Research screen is today's slate in every sport EdgeDesk
-lists: NFL, college football, NBA, college basketball, NHL, MLB, college baseball,
-soccer and UFC. It covers the reader's own calendar day in their own time zone
+lists: NFL, college football, NBA, college basketball, NHL, MLB, college baseball
+and UFC (soccer was removed on 2026-10-15). It covers the reader's own calendar day in their own time zone
 (America/Chicago when the browser does not say), with live status and scores, the
 price where one was captured from a named book, and **View Research** straight into
 the existing research for that game. **View all games** opens `#games`: Yesterday,
@@ -338,8 +338,9 @@ is called value (`lib/edgedesk_nhl_compare.js`, docs/engine/NHL.md §3a).
 The EdgeDesk Quant Data Pack is imported and verified (`datapack/quant_v1`,
 [`docs/engine/DATAPACK.md`](docs/engine/DATAPACK.md)). On it and on free
 multi-season sources I built and validated walk-forward brains for the NBA,
-WNBA, men's and women's college basketball (`basketball/`), five soccer
-leagues (`soccer/`) and MLB (`mlb/history/`). UFC, college baseball and
+WNBA, men's and women's college basketball (`basketball/`) and MLB
+(`mlb/history/`). The soccer brain was removed on 2026-10-15: EdgeDesk covers
+American sports and UFC. UFC, college baseball and
 tennis are measured as too thin for a model. The Engine's readiness ladder
 keeps apart what is loaded, trained, validated, market-tested, priced now and
 actionable. Tests: `npm run datapack:test`, `npm run lab:test`, `npm run lab:check`.
@@ -405,8 +406,8 @@ Tests: `npm run ncaam:test`, `npm run ncaam:test:pack`, `npm run ncaam:e2e`,
 "What's the best researched opportunity tonight?" is answered across **every
 sport EdgeDesk models**, whether or not a sportsbook price exists
 ([`docs/quant-desk/MULTISPORT.md`](docs/quant-desk/MULTISPORT.md)). Each sport
-engine's published projections (NHL, NBA, WNBA, college basketball, NFL, FBS,
-five soccer leagues) are read into one independent contract, frozen and
+engine's published projections (NHL, NBA, WNBA, college basketball, NFL and
+FBS) are read into one independent contract, frozen and
 written to the database **before any price is read**. Only then are the
 frozen projections compared with the prices that exist, without moving them.
 The answer has four parts:
@@ -445,8 +446,9 @@ trade eligibility as three separate facts.
 - **Honest capability** (`lib/edgedesk_projections.js`, `engine/projections.json`):
   NHL moneyline and puck line, NBA, NCAAM/NCAAW and the NFL spread are
   outcome-validated out of sample. None has been shown to beat the closing
-  market, so none is called a verified edge yet. CFB moneylines, NHL totals and
-  soccer 1X2 are experimental. MLB has no per-game projection; UFC has no model.
+  market, so none is called a verified edge yet. CFB moneylines and NHL totals
+  are experimental. MLB has no per-game projection; UFC has no model; soccer was
+  removed from the platform on 2026-10-15 and is not covered.
 - **Calibration** (`lib/edgedesk_calibration.js`): Brier, log loss, buckets,
   CLV, ROI after fees, drawdown and intervals against the no-vig close, with
   look-ahead rows rejected. On the 2026 settled prop ledgers neither league

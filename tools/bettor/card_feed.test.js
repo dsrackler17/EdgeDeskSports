@@ -51,8 +51,10 @@ const S = {
     ev('nhl:espn:1', 'nhl', IN6H, 'Rangers', 'Bruins', { status: 'PREDICTED', tier: 'OUTCOME_VALIDATED', data_quality: 'OK', fair: { ml_home: -170, ml_away: 170 } }),
     /* NHL: the market and the model agree */
     ev('nhl:espn:2', 'nhl', IN6H, 'Kings', 'Ducks', { status: 'PREDICTED', tier: 'OUTCOME_VALIDATED', data_quality: 'OK', fair: { ml_home: -120, ml_away: 120 } }),
-    /* soccer: a 3-way market the model calls wildly differently */
-    ev('soccer:espn:3', 'soccer', IN6H, 'Hull City', 'Leeds', { status: 'PREDICTED', tier: 'PROVISIONAL', data_quality: 'LIMITED', fair: { ml_home: 150, ml_draw: 260, ml_away: 260, total_over_2_5: -110 } }),
+    /* MLB: a market the model calls wildly differently */
+    ev('mlb:espn:3', 'mlb', IN6H, 'Royals', 'Tigers', { status: 'PREDICTED', tier: 'PROVISIONAL', data_quality: 'LIMITED', fair: { ml_home: 150, ml_away: -150 } }),
+    /* soccer, from a slate written before soccer was removed: never read */
+    ev('soccer:espn:9', 'soccer', IN6H, 'Hull City', 'Leeds', { status: 'PREDICTED', tier: 'PROVISIONAL', data_quality: 'OK', fair: { ml_home: 150, ml_draw: 260, ml_away: 260 } }),
     /* NBA: a price, no model */
     ev('nba:espn:4', 'nba', IN6H, 'Celtics', 'Knicks', null),
     /* NHL: a model, no price yet */
@@ -70,7 +72,8 @@ const S = {
   markets: {
     'nhl:espn:1': { book: 'Draft Kings', source: 'espn_scoreboard', captured_at: AT, moneyline: { home: -125, away: 105 }, total: { point: 6.5, over: -110, under: -110 } },
     'nhl:espn:2': { book: 'Draft Kings', source: 'espn_scoreboard', captured_at: AT, moneyline: { home: -128, away: 108 } },
-    'soccer:espn:3': { book: 'DraftKings', source: 'espn_scoreboard', captured_at: AT, moneyline: { home: 370, draw: 260, away: -140 }, total: { point: 2.5, over: -110, under: -110 } },
+    'mlb:espn:3': { book: 'DraftKings', source: 'espn_scoreboard', captured_at: AT, moneyline: { home: -300, away: 250 }, total: { point: 8.5, over: -110, under: -110 } },
+    'soccer:espn:9': { book: 'DraftKings', source: 'espn_scoreboard', captured_at: AT, moneyline: { home: 370, draw: 260, away: -140 } },
     'nba:espn:4': { book: 'Draft Kings', source: 'espn_scoreboard', captured_at: AT, moneyline: { home: -200, away: 170 }, spread: { home: { point: -5.5, price: -110 }, away: { point: 5.5, price: -110 } }, total: { point: 221.5, over: -110, under: -110 } },
     'cfb:espn:401000001': { book: 'Draft Kings', source: 'espn_scoreboard', captured_at: AT, moneyline: { home: -250, away: 200 }, spread: { home: { point: -6.5, price: -110 }, away: { point: 6.5, price: -110 } }, total: { point: 55.5, over: -108, under: -112 } },
     'nhl:espn:7': { book: 'Draft Kings', source: 'espn_scoreboard', captured_at: new Date(NOW - 26 * 3600000).toISOString(), moneyline: { home: -125, away: 105 } },
@@ -82,13 +85,14 @@ const byId = {}; rows.forEach((r) => { byId[r.game_id] = r; });
 
 console.log('— A · every sport from the free feed');
 eq('one row per pregame game the engine does not decide (the started game and the decided CFB game are out)', rows.map((r) => r.game_id).sort(),
-  ['nba:espn:4', 'nfl:espn:8', 'nhl:espn:1', 'nhl:espn:2', 'nhl:espn:5', 'nhl:espn:7', 'soccer:espn:3']);
+  ['mlb:espn:3', 'nba:espn:4', 'nfl:espn:8', 'nhl:espn:1', 'nhl:espn:2', 'nhl:espn:5', 'nhl:espn:7']);
+chk('a soccer game from an older slate never reaches the Card (soccer was removed)', !byId['soccer:espn:9'] && !rows.some((r) => /soccer/i.test(r.sport + r.game_id)));
 chk('a row names its sport, its teams, their logos, its book and the capture time', byId['nhl:espn:1'].sport === 'NHL' && byId['nhl:espn:1'].home === 'Rangers' && /^https:/.test(byId['nhl:espn:1'].home_logo) && byId['nhl:espn:1'].book === 'DraftKings' && byId['nhl:espn:1'].quote_captured_at === AT);
 const nhl = byId['nhl:espn:1'];
 chk('the model number is priced at the book price: Rangers ML at −125, a positive edge', nhl.reference_quote.side === 'home' && nhl.reference_quote.odds === -125 && nhl.edge_pp > 0 && nhl.decision_ev_pct > 0, nhl.reference_quote);
 chk('…pulled toward the market: the decision probability sits between the model and the no-vig market', nhl.reference_quote.model_probability > nhl.reference_quote.decision_cover && nhl.reference_quote.decision_cover > nhl.reference_quote.market_probability, nhl.reference_quote);
 const st = F.status(S, { now: NOW });
-chk('the feed status: games, prices, sports and the capture age', st.ok && st.games === 8 && st.priced === 7 && st.capture_age_minutes === 20 && st.sports.map((x) => x.id).join() === 'nfl,cfb,nba,nhl,soccer', st);
+chk('the feed status: games, prices, sports and the capture age', st.ok && st.games === 8 && st.priced === 7 && st.capture_age_minutes === 20 && st.sports.map((x) => x.id).join() === 'nfl,cfb,nba,nhl,mlb', st);
 
 console.log('— B · never a BET, never units');
 chk('every feed row has 0 units and no row is a BET', rows.every((r) => r.recommended_units === 0 && r.decision !== 'BET'));
@@ -97,9 +101,9 @@ chk('…and says why it is capped', /not yet validated against closing prices/.t
 eq('the aligned NHL game is a PASS', [byId['nhl:espn:2'].decision, byId['nhl:espn:2'].action_reason_code].join(' '), 'PASS MARKET_ALIGNED');
 
 console.log('— C · scrutiny');
-const soc = byId['soccer:espn:3'];
-eq('a gap too large to believe is WATCH · CHECK THE NUMBER', [soc.decision, soc.decision_qualifier], ['WATCH', 'CHECK THE NUMBER']);
-chk('…the 3-way market is read with its draw', soc.reference_quote && ['home', 'draw', 'away', 'over', 'under'].indexOf(soc.reference_quote.side) >= 0 && F.modelProbs(S.events[2].research.model, 'soccer').three_way === true);
+const wild = byId['mlb:espn:3'];
+eq('a gap too large to believe is WATCH · CHECK THE NUMBER', [wild.decision, wild.decision_qualifier], ['WATCH', 'CHECK THE NUMBER']);
+chk('…read as a two-way moneyline, never three-way', wild.reference_quote && ['home', 'away'].indexOf(wild.reference_quote.side) >= 0 && !F.modelProbs(S.events[2].research.model, 'mlb').three_way);
 eq('value on a day-old price is capped at WATCH · STALE PRICE', [byId['nhl:espn:7'].decision, byId['nhl:espn:7'].decision_qualifier], ['WATCH', 'STALE PRICE']);
 
 console.log('— D · price only and awaiting lines');
@@ -142,11 +146,13 @@ console.log('— G · the Card page');
 const engine = [{ game_id: '401000001', sport: 'CFB', home: 'Texas', away: 'Oklahoma', kickoff: IN6H, decision: 'PASS', action_reason_text: 'The price is past the number.', action_reason_code: 'CALIBRATED_EV_NEGATIVE', evaluated_at: AT, recommended_units: 0,
   reference_quote: { side: 'home', team: 'Texas', market_type: 'spread', line: -6.5, odds: -110, book: 'draftkings' } }];
 const page = U.cardPageHTML(engine, { board: rows, feed: st, hero: true, view: { filter: 'all', sort: 'kickoff' }, no_health: true });
+const pageSoc = U.cardPageHTML(engine, { board: rows, feed: st, hero: true, view: { filter: 'all', sort: 'kickoff', sport: 'soccer' }, no_health: true });
+chk('a Soccer filter saved on a device before soccer was removed reads as All sports, never an empty Card', /data-edc-open="nhl:espn:1"/.test(pageSoc) && /data-edc-open="mlb:espn:3"/.test(pageSoc));
 const t = text(page);
 chk('TOP OF THE CARD leads with the strongest answer: the NHL LEAN, as a tile', /TOP OF THE CARD/.test(t) && /class="edc-tile edc-t-lean"/.test(page) && page.indexOf('edc-tile') < page.indexOf('edd-sech-bet'));
-chk('…a CHECK THE NUMBER or stale row is never a top tile', !/edc-tile[^>]*data-edc-open="soccer:espn:3"/.test(page) && !/edc-tile[^>]*data-edc-open="nhl:espn:7"/.test(page));
-chk('the feed strip says where prices come from and how old they are', /PRICES/.test(t) && /DraftKings via ESPN/.test(t) && /20 min ago/.test(t) && /7 of 8 upcoming games priced/.test(t), t.slice(0, 600));
-chk('the sport row: All sports, NFL, CFB, NBA, NHL, SOCCER with counts', ['All sports', 'NFL', 'CFB', 'NBA', 'NHL', 'SOCCER'].every((x) => page.indexOf('<span>' + x + '</span>') >= 0) && /data-edd-act="sport" data-edd-v="nhl"><span>NHL<\/span> <small>4<\/small>/.test(page), page.match(/edc-sports[\s\S]{0,900}/)[0]);
+chk('…a CHECK THE NUMBER or stale row is never a top tile', !/edc-tile[^>]*data-edc-open="mlb:espn:3"/.test(page) && !/edc-tile[^>]*data-edc-open="nhl:espn:7"/.test(page));
+chk('the feed strip says where prices come from and how old they are', /PRICES/.test(t) && /DraftKings \(free, no credits\)/.test(t) && !/ESPN/.test(t) && /20 min ago/.test(t) && /7 of 8 upcoming games priced/.test(t), t.slice(0, 600));
+chk('the sport row: All sports, NFL, CFB, NBA, NHL, MLB with counts, and no SOCCER', ['All sports', 'NFL', 'CFB', 'NBA', 'NHL', 'MLB'].every((x) => page.indexOf('<span>' + x + '</span>') >= 0) && page.indexOf('<span>SOCCER</span>') < 0 && /data-edd-act="sport" data-edd-v="nhl"><span>NHL<\/span> <small>4<\/small>/.test(page), page.match(/edc-sports[\s\S]{0,900}/)[0]);
 chk('feed rows sit in the decision sections (LEAN, WATCHING, PASS) with their sport badge', /LEAN <small>1/.test(page) && /WATCHING <small>2/.test(page) && /PASS <small>3/.test(page) && /<span class="edc-sp">NHL<\/span> <b>Rangers ML \(-125\)<\/b>/.test(page), t.slice(0, 900));
 chk('MARKET BOARD lists the priced game without a model; AWAITING LINES the modelled game without a price', /MARKET BOARD/.test(t) && /data-edc-open="nba:espn:4"/.test(page) && /AWAITING LINES/.test(t) && /data-edc-open="nhl:espn:5"/.test(page));
 chk('neither is counted as a decision: 0 no decision', /0 no decision/.test(t), t.slice(0, 500));

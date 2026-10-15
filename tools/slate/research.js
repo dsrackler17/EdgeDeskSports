@@ -42,7 +42,6 @@ function loadSources(files) {
     nhl: r('nhl', 'hockey/slate.json'),
     nhlTeams: r('nhlTeams', 'hockey/data/teams.json'),
     basketball: r('basketball', 'basketball/slate.json'),
-    soccer: r('soccer', 'soccer/slate.json'),
     engine: r('engine', 'engine/board.json'),
     published: r('published', 'articles/data/published.json')
   };
@@ -90,12 +89,6 @@ function basketballIndex(src) {
   });
   return by;
 }
-function soccerIndex(src) {
-  const out = [];
-  const L = (src.soccer && src.soccer.leagues) || {};
-  Object.keys(L).forEach((lk) => (L[lk].games || []).forEach((g) => out.push({ g, lk, L: L[lk] })));
-  return out;
-}
 
 function modelFromNfl(row, tier) {
   if (!row) return null;
@@ -133,13 +126,12 @@ function modelFromNhl(row, val, slate) {
 function modelFromLab(g, L, src) {
   if (!g || !g.prices) return null;
   const p = g.prices;
-  const tw = p.three_way || null, ml = p.moneyline || null, sp = p.spread || null, tot = p.total || null;
+  const ml = p.moneyline || null, sp = p.spread || null, tot = p.total || null;
   const st = (L && L.validation) || {};
   return {
-    status: 'PREDICTED', tier: (tw && tw.status) || st.moneyline || st.three_way || null, data_quality: L && L.data && L.data.state === 'STALE' ? 'LIMITED' : 'OK',
-    home_line: num(tw ? tw.fair_home : (ml ? ml.fair_home : null)), source: src,
-    fair: tw ? { ml_home: num(tw.fair_home), ml_draw: num(tw.fair_draw), ml_away: num(tw.fair_away), total_over_2_5: num(tot && tot.fair_over_2_5), expected_total: num(tot && tot.expected) }
-      : { ml_home: num(ml && ml.fair_home), ml_away: num(ml && ml.fair_away), spread_home: num(sp && (sp.fair_line != null ? sp.fair_line : sp.home_line)), total: num(tot && (tot.fair_line != null ? tot.fair_line : tot.expected)) },
+    status: 'PREDICTED', tier: st.moneyline || null, data_quality: L && L.data && L.data.state === 'STALE' ? 'LIMITED' : 'OK',
+    home_line: num(ml ? ml.fair_home : null), source: src,
+    fair: { ml_home: num(ml && ml.fair_home), ml_away: num(ml && ml.fair_away), spread_home: num(sp && (sp.fair_line != null ? sp.fair_line : sp.home_line)), total: num(tot && (tot.fair_line != null ? tot.fair_line : tot.expected)) },
     note: L && L.value_reason ? 'value claims are off: ' + L.value_reason : null
   };
 }
@@ -160,7 +152,7 @@ function join(events, src, o) {
   o = o || {};
   src = src || loadSources();
   const arts = articles(src.published);
-  const nfl = nflIndex(src), cfb = cfbIndex(src), nhl = nhlIndex(src), bb = basketballIndex(src), soc = soccerIndex(src);
+  const nfl = nflIndex(src), cfb = cfbIndex(src), nhl = nhlIndex(src), bb = basketballIndex(src);
   const homeKeys = {};
   ((src.home && src.home.games) || []).forEach((g) => { homeKeys[g.key] = true; });
   const stats = { joined: {}, unmatched: {} };
@@ -236,13 +228,6 @@ function join(events, src, o) {
     } else if (e.sport === 'nba' || e.sport === 'ncaam') {
       const hit = e.provider === 'espn' ? bb[e.sport + ':' + e.provider_id] : null;
       if (hit) { r.model = modelFromLab(hit.g, hit.L, 'basketball/slate.json'); r.metrics = true; }
-    } else if (e.sport === 'soccer') {
-      const c = soc.filter((x) => {
-        if (e.model_league && x.lk !== e.model_league) return false;
-        const cand = { sport: 'soccer', start_utc: x.g.date + 'T12:00:00Z', home: { name: x.g.home }, away: { name: x.g.away } };
-        return G.sameEvent(e, cand, 36);
-      });
-      if (c.length === 1) { r.model = modelFromLab(c[0].g, c[0].L, 'soccer/slate.json'); r.metrics = true; r.model_key = c[0].g.event_key; }
     }
     const eng = engineSignal(src, e);
     if (eng) r.signal = eng;
