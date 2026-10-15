@@ -26172,6 +26172,11 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
 .edai-msg.a .qd-read ol li:before{content:counter(qd) '.';top:2px;left:0;width:auto;height:auto;border-radius:0;background:none;color:var(--desk-dim);font-weight:700;font-size:12px}
 .qd-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
 .qd-tbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;color:var(--desk-fg)}
+.qd-cov{margin-top:4px}
+.qd-cov-r{padding:6px 0;border-bottom:1px solid var(--ink-line)}
+.qd-cov-h{font-weight:700;color:var(--desk-fg);font-size:12.5px}
+.qd-cov-n{font-size:12px;color:var(--desk-fg);overflow-wrap:anywhere}
+.qd-cov-b{font-size:11.5px;color:var(--desk-dim);margin-top:2px;overflow-wrap:anywhere}
 .qd-tbl th,.qd-tbl td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--ink-line);vertical-align:top}
 .qd-tbl th{color:var(--desk-dim);font-weight:700}
 .qd-res{font-weight:800;font-size:10.5px;letter-spacing:.05em}
@@ -39986,8 +39991,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
      checks); nothing is computed here, and the verdict chip is the server's
      own classification, never upgraded by the page. */
   var QD_LABEL={VERIFIED_EDGE:['Verified edge','v'],POTENTIAL_EDGE:['Potential edge','p'],WATCH:['Watch','w'],PASS:['Pass','x'],UNVERIFIED_DATA:['Unverified data','u'],
-    VERIFIED_CANDIDATE:['Verified candidate','v'],WATCHLIST:['Watchlist','w'],RESEARCH_REQUIRED:['Research required','p'],REJECTED:['Rejected','x'],UNVERIFIED:['Unverified','u']};
-  var QD_KEYS=/^(Event|Sport|Market|Venue|Available price|Verified market price|Independent fair price|Independent fair probability|Break-even probability|Estimated net EV|Maximum acceptable entry|Maximum acceptable price|Model reliability|Research freshness|Why the model disagrees with the market|Primary matchup advantage|Strongest counterargument|What would invalidate the opportunity|Biggest risk|Decision|Final status|Market no-vig|Fair probability|Fair price|Fees|Slippage|Break-even|Net EV|Maximum entry|Calibration|Independent model|Missing|Context \(not a probability\)|Not verified because): (.*)$/;
+    VERIFIED_CANDIDATE:['Verified candidate','v'],WATCHLIST:['Watchlist','w'],RESEARCH_REQUIRED:['Research required','p'],REJECTED:['Rejected','x'],UNVERIFIED:['Unverified','u'],
+    VERIFIED_POSITIVE_EV:['Verified positive EV','v'],CONDITIONAL_EDGE:['Conditional edge','p'],MARKET_WATCH:['Market watch','w'],RESEARCH_ONLY:['Research only — no verified edge','u']};
+  var QD_KEYS=/^(Event|Sport|Market|Venue|Available price|Verified market price|Independent fair price|Independent fair probability|Break-even probability|Estimated net EV|Maximum acceptable entry|Maximum acceptable price|Model reliability|Research freshness|Why the model disagrees with the market|Primary matchup advantage|Strongest counterargument|What would invalidate the opportunity|Biggest risk|Decision|Final status|Market no-vig|Fair probability|Fair price|Fees|Slippage|Break-even|Net EV|Maximum entry|Calibration|Independent model|Missing|Context \(not a probability\)|Not verified because|Audit execution|Evidence verification|Trade execution eligibility|Modeled probability|EdgeDesk fair lines|Strongest measured advantages|Rest and travel|Counterargument|Freshness \(separate from reliability\)|Why it ranks first|Price to watch|Verdict): (.*)$/;
   /* the server's final status (VERIFIED CANDIDATE / WATCHLIST / PASS) as a chip key */
   function qdStatusKey(fs){ fs=String(fs||''); return fs==='VERIFIED CANDIDATE'?'VERIFIED_CANDIDATE':fs==='WATCHLIST'?'WATCHLIST':fs==='PASS'?'PASS':null; }
   /* one numbered source line: "[n] title — https://… (reliability, published …, retrieved …)"; only an https URL becomes a link */
@@ -40014,7 +40020,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
         if(skip){ if(/^Why: /.test(t)){ skip=false; } return; }
       }
       if(!t){ flushKv(); flushOl(); return; }
-      if((m=QD_KEYS.exec(t))){ flushOl(); kv+='<dt>'+esc(m[1])+'</dt><dd'+(m[1]==='Decision'||m[1]==='Final status'?' class="qd-dec"':'')+'>'+esc(m[2])+'</dd>'; return; }
+      if((m=QD_KEYS.exec(t))){ flushOl(); kv+='<dt>'+esc(m[1])+'</dt><dd'+(m[1]==='Decision'||m[1]==='Final status'||m[1]==='Trade execution eligibility'||m[1]==='Verdict'?' class="qd-dec"':'')+'>'+esc(m[2])+'</dd>'; return; }
       if((m=/^(\d+)\.\s+(.*)$/.exec(t))){ flushKv(); ol+='<li>'+esc(m[2])+'</li>'; return; }
       if((m=/^\[(\d+)\]\s+(.*)$/.exec(t))){ flushKv(); ol+=qdSourceLi(m[2]); return; }
       flushKv(); flushOl();
@@ -40134,8 +40140,23 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     h+='<div class="edai-src">From your own recorded positions only ('+esc(b.positions_read)+' read'+(b.capped?', the latest 1,000 settled':'')+'). Past results only; they do not predict future results.</div>';
     return h;
   }
+  /* the multi-sport coverage report: every sport, what was discovered, researched, priced and what blocked it */
+  function qdMultiCoverageHTML(ms){
+    var rows=(ms.coverage||[]).filter(function(c){ return c.events_discovered||c.model_executed||(c.blockers||[]).length; });
+    if(!rows.length) return '';
+    /* one compact row per sport (the Desk panel is narrow): the counts on one line, what blocked it underneath */
+    var h='<div class="qd-cov">';
+    rows.forEach(function(c){
+      var line=[c.events_discovered+' event'+(c.events_discovered===1?'':'s'), c.events_researched+' researched', c.model_executed?'model '+(c.model||'executed'):'no model run', c.markets_evaluated+' market'+(c.markets_evaluated===1?'':'s'), 'prices: '+c.price_freshness, c.verified_edges+' verified'].join(' \u00b7 ');
+      h+='<div class="qd-cov-r" data-sport="'+esc(c.sport)+'" data-events="'+esc(c.events_discovered)+'" data-researched="'+esc(c.events_researched)+'"><div class="qd-cov-h">'+esc(c.label)+'</div><div class="qd-cov-n">'+esc(line)+'</div>'+((c.blockers||[]).length?'<div class="qd-cov-b">'+esc(c.blockers.join('; '))+'</div>':'')+'</div>';
+    });
+    h+='</div>';
+    var o=ms.order||{};
+    h+='<div class="edai-src">'+esc('Projections frozen '+(o.projections_frozen_at||'\u2014')+' and compared with prices '+(o.quotes_compared_at||'\u2014')+'; unchanged by the comparison: '+(o.snapshot_unchanged?'yes':'NO')+(ms.odds&&ms.odds.disabled?'. Odds integrations were off for this run.':''))+'</div>';
+    return h;
+  }
   function quantAnswerHTML(d){
-    var intent=d.quant&&d.quant.intent, ans=String(d.answer||''), cls=null, ev=null, au=null, cap=null, trail=null, rsrc=null;
+    var intent=d.quant&&d.quant.intent, ans=String(d.answer||''), cls=null, bench=null, ev=null, au=null, cap=null, trail=null, rsrc=null;
     if(intent==='SCAN'&&d.scan){
       var b=d.scan.best||(d.scan.potential||[])[0]||null;
       ev=b&&b.evaluation||null; au=b&&b.audit||null; trail=d.scan.audit_trail||null; rsrc=b&&b.research||null;
@@ -40143,6 +40164,8 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       if(!d.scan.best&&cls==='VERIFIED_EDGE') cls='POTENTIAL_EDGE';
       /* researched: the chip is the auditor's final status, never upgraded here */
       if(d.scan.researched) cls=qdStatusKey(d.scan.final_status)||cls;
+      /* the multi-sport desk owns the verdict: the captured-price result is a labelled market benchmark, never the chip */
+      if(d.multisport&&d.multisport.available){ var msx=d.multisport; bench=cls; cls=msx.best_verified?'VERIFIED_POSITIVE_EV':msx.market_watch?(msx.market_watch.outcome==='CONDITIONAL_EDGE'?'CONDITIONAL_EDGE':'MARKET_WATCH'):'RESEARCH_ONLY'; }
     } else if(intent==='RESEARCH_SLATE'&&d.research_slate){
       var rb=(d.research_slate.investigated||[])[0]||null;
       ev=rb&&rb.evaluation||null; au=rb&&rb.audit||null; rsrc=rb&&rb.research||null;
@@ -40158,7 +40181,9 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
     /* availability: the status reads here; each source, its time and any disagreement are in the card below */
     if(intent==='AVAILABILITY'&&cards.indexOf('ia-av')>=0) ans=ans.split(/\n\s*\n(?:What each source says:|For the model)/)[0];
     var lab=intent==='AVAILABILITY'?'Availability':intent==='UNSUPPORTED'?'Outside EdgeDesk\u2019s coverage':intent==='GAME_RESEARCH'?'Game research':intent==='READINESS'?'Research readiness':intent==='MATCHUP_EDGE'?'Matchup mismatches':intent==='VENUE_COMPARE'?'Venue comparison':intent==='BETS'?'Your betting history':(intent==='RESEARCH_SLATE'||(d.scan&&d.scan.researched))?'EdgeDesk research':'The Quant Desk';
-    var h='<div class="dk-read qd-read"><div class="lab">'+esc(lab)+(cls?qdChip(cls):'')+'</div>'+qdLines(ans,{fold:fold})+'</div>'+cards;
+    /* the captured-price auditor's status survives as a second, labelled chip: a market benchmark, never the verdict */
+    var benchChip=bench?'<span class="qd-chip qd-'+((QD_LABEL[bench]||[0,'u'])[1])+' qd-bench" title="market-derived: a book against the sharp market or the model–market blend">Benchmark: '+esc((QD_LABEL[bench]||[String(bench).replace(/_/g,' ').toLowerCase()])[0])+'</span>':'';
+    var h='<div class="dk-read qd-read"><div class="lab">'+esc(lab)+(cls?qdChip(cls):'')+benchChip+'</div>'+qdLines(ans,{fold:fold})+'</div>'+cards;
     var more='';
     function sec(title, body, open){ if(body) more+='<details class="dk-more qd-more"'+(open?' open':'')+'><summary>'+esc(title)+'</summary><div style="margin-top:6px">'+body+'</div></details>'; }
     if(d.research_slate&&!cards) sec('Model versus market, every game', qdSlateHTML(d.research_slate), true);
@@ -40172,6 +40197,10 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       sec('Source verification', qdSourceHTML(ev, d.contract&&d.contract.missing?d.contract.missing.map(function(m){ return 'Missing: '+m; }):null));
       sec('Model assumptions', qdModelHTML(ev, cap));
     } else if(rsrc) sec('Confidence — four separate measures', qdConfidenceHTML(rsrc));
+    if(d.multisport&&d.multisport.available){
+      sec('Coverage — every sport, models first', qdMultiCoverageHTML(d.multisport), true);
+      sec('How the candidates were ranked', '<ol>'+[].concat(d.multisport.ranking_rules&&d.multisport.ranking_rules.research||[], d.multisport.ranking_rules&&d.multisport.ranking_rules.execution||[]).map(function(r){ return '<li>'+esc(r)+'</li>'; }).join('')+'</ol>');
+    }
     if(d.scan){
       var others=fold?[]:[].concat(d.scan.potential||[]).slice(d.scan.best?0:1).concat(d.scan.near_misses||[]);
       if(others.length) sec('Other candidates audited', others.map(function(o){ return '<div class="dk-sec"><div class="h">'+esc(o.candidate.selection+' — '+o.candidate.matchup)+'</div>'+qdAuditHTML(o.audit, trail)+'</div>'; }).join(''));

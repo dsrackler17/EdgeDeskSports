@@ -100,6 +100,8 @@ arithmetic only.
 
 ## 2. The sport adapters (`lib/edgedesk_sport_adapters.js`, EDADAPT)
 
+> **2026-10-15:** the cross-sport question is now answered by the multi-sport research desk, model first (`docs/quant-desk/MULTISPORT.md`). EDADAPT below describes the **captured-price board**, which is kept as a labelled market benchmark. The NBA, WNBA, NCAAB and NHL rows now name their real engines, which that board does not price; the multi-sport desk compares their frozen projections with prices instead.
+
 Per sport: captured by default (NFL, CFB, MLB, UFC — the capture allowlist;
 `EDGEDESK_CAPTURED_SPORTS` overrides), the independent model, where it runs
 and its tier per market, settlement terms per market (overtime, listed

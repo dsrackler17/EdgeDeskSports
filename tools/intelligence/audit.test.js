@@ -75,7 +75,8 @@ function evidence(over) { return Object.assign({ fresh: freshRow(), books: BOOKS
   eq('MLB has a model, but it runs in the browser only and is RESEARCH: it may not price', [mlb.independent_model, mlb.may_price, mlb.tier], [true, false, 'RESEARCH']);
   chk('…and the reason says browser only', /browser only/.test(mlb.reason), mlb.reason);
   const nba = AD.modelCapability('basketball_nba', 'h2h');
-  eq('NBA has no independent model', [nba.independent_model, nba.may_price], [false, false]);
+  eq('NBA has an independent model (nba/slate.json) that the captured-price board does not price: it is outcome-validated, never tested against the close', [nba.independent_model, nba.may_price, nba.tier, /multi-sport desk/.test(nba.reason)], [true, false, 'OUTCOME_VALIDATED', true]);
+  eq('NHL likewise: an independent model, compared by the multi-sport desk', [AD.modelCapability('icehockey_nhl', 'h2h').independent_model, AD.modelCapability('icehockey_nhl', 'h2h').may_price], [true, false]);
   chk('…its independent fair probability is unavailable, stated', /unavailable/.test(nba.reason), nba.reason);
   eq('UFC has no model (the market\'s de-vig only)', AD.modelCapability('mma_mixed_martial_arts', 'h2h').independent_model, false);
   eq('a run-time tier overrides the registry (a VALIDATED NFL total would price)', AD.modelCapability('americanfootball_nfl', 'totals', 'VALIDATED').may_price, true);

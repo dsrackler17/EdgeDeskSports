@@ -316,6 +316,29 @@ const LIBS = [
     start: '/*__EDQUANT_START__*/', end: '/*__EDQUANT_END__*/',
     hosts: [path.join(FN, 'index.ts')],
   },
+  /* The multi-sport research desk, in its enforced order: EDPROJ reads every
+     sport engine's published artifact into one independent-projection
+     contract and freezes it; EDMKT compares a frozen snapshot with whatever
+     executable prices exist; EDMULTI discovers the events, writes the
+     fundamental research, ranks across sports and renders the answer. */
+  {
+    name: 'EDPROJ',
+    src: path.join(ROOT, 'lib', 'edgedesk_projections.js'),
+    start: '/*__EDPROJ_START__*/', end: '/*__EDPROJ_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  {
+    name: 'EDMKT',
+    src: path.join(ROOT, 'lib', 'edgedesk_market_compare.js'),
+    start: '/*__EDMKT_START__*/', end: '/*__EDMKT_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
+  {
+    name: 'EDMULTI',
+    src: path.join(ROOT, 'lib', 'edgedesk_multisport.js'),
+    start: '/*__EDMULTI_START__*/', end: '/*__EDMULTI_END__*/',
+    hosts: [path.join(FN, 'index.ts')],
+  },
   /* Phase 2, the research system. ORDER MATTERS: EDAGENTS reads EDGRAPH,
      EDDISAGREE, EDFAIR and EDADAPT when it runs. The evidence graph, the
      model disagreement engine and the research budget are lib files Node

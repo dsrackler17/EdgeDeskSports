@@ -103,7 +103,7 @@ globalThis.fetch = async function (url, init) {
 function field(answer, k) { const m = new RegExp('^' + k.replace(/[()]/g, '\\$&') + ': (.*)$', 'm').exec(answer || ''); return m ? m[1] : null; }
 function fmtAm(n) { n = Number(n); return (n > 0 ? '+' : '') + Math.round(n); }
 const FIELDS = ['Event', 'Sport', 'Market', 'Venue', 'Verified market price', 'Independent fair probability', 'Break-even probability', 'Estimated net EV', 'Maximum acceptable price', 'Model reliability',
-  'Research freshness', 'Why the model disagrees with the market', 'Primary matchup advantage', 'Strongest counterargument', 'What would invalidate the opportunity', 'Final status'];
+  'Research freshness', 'Why the model disagrees with the market', 'Primary matchup advantage', 'Strongest counterargument', 'What would invalidate the opportunity', 'Audit execution', 'Evidence verification', 'Trade execution eligibility'];
 /* every number the candidate block prints for the decision equals the engine's JSON */
 function consistent(tag, answer, row) {
   const ev = row.evaluation || {}, r = row.research || {};
@@ -118,8 +118,13 @@ function consistent(tag, answer, row) {
   const ind = field(answer, 'Independent fair probability');
   const want = r.independent_fair_probability != null ? r.independent_fair_probability : r.model_view ? r.model_view.probability : null;
   ok(tag + ': the independent fair probability is the engine\'s, or honestly unavailable', want == null ? /^unavailable/.test(ind || '') : ind && ind.indexOf((want * 100).toFixed(1) + '%') === 0, [ind, want]);
-  const fs_ = field(answer, 'Final status');
-  ok(tag + ': the final status is the auditor\'s', fs_ && fs_.indexOf(row.classification.final_status) === 0, [fs_, row.classification]);
+  const fs_ = field(answer, 'Trade execution eligibility');
+  ok(tag + ': the decision is the auditor\'s, on the eligibility line', fs_ && fs_.indexOf('— decision: ' + row.classification.final_status) > 0, [fs_, row.classification]);
+  /* the three facts stay apart: an audit that ran is COMPLETED whatever it concluded, and nothing unverified is eligible */
+  const ae = field(answer, 'Audit execution'), evv = field(answer, 'Evidence verification');
+  ok(tag + ': audit execution, evidence verification and eligibility are three separate lines', ae && evv && fs_ && /^(COMPLETED|FAILED|NOT RUN)/.test(ae) && /^(VERIFIED|PARTIALLY VERIFIED|NOT VERIFIED|REJECTED)/.test(evv), [ae, evv, fs_]);
+  ok(tag + ': evidence that is not verified is never eligible', !/^(NOT VERIFIED|REJECTED|PARTIALLY VERIFIED)/.test(evv || '') || /^NOT ELIGIBLE/.test(fs_ || ''), [evv, fs_]);
+  ok(tag + ': no line pairs UNVERIFIED with a bare PASS status', !/UNVERIFIED[^\n]*Final status|Final status: PASS \(audit: UNVERIFIED\)/.test(answer), answer.split('\n').filter((l) => /status/i.test(l)));
 }
 
 (async function main() {
@@ -230,8 +235,8 @@ function consistent(tag, answer, row) {
   ok('CHALLENGE S1: the best candidate faced all eight questions and STANDS — each answered from the ledgers, nothing unresolved', bCh && bCh.schema === 'edgedesk_challenge_v1' && bCh.questions.length === 8 && bCh.outcome === 'STANDS' && bCh.unresolved.critical === 0 && bCh.unresolved.important === 0 && bCh.questions.every((x) => x.answer && x.status), bCh && [bCh.outcome, bCh.questions.map((x) => x.id + ':' + x.status + ':' + x.answer.slice(0, 60))]);
   ok('CHALLENGE S1: the market-priced Bills answer sample size and calibration NOT_APPLICABLE; the quote CLEAR; confidence a category, not a percentage', bCh && bCh.questions.find((x) => x.id === 'Q3_SAMPLE_SIZE').status === 'NOT_APPLICABLE' && bCh.questions.find((x) => x.id === 'Q6_CALIBRATION').status === 'NOT_APPLICABLE' && bCh.questions.find((x) => x.id === 'Q5_STALE_QUOTE').status === 'CLEAR' && ['HIGH', 'MODERATE', 'LOW', 'INSUFFICIENT'].includes(bCh.confidence.after) && !/%/.test(JSON.stringify(bCh.confidence)), bCh && bCh.confidence);
   ok('S1: the best VERIFIED CANDIDATE is Bills -2.5 at FanDuel', best && best.candidate.selection === 'Buffalo Bills' && best.classification.classification === 'VERIFIED_CANDIDATE' && sc.final_status === 'VERIFIED CANDIDATE', best ? [best.candidate.selection, best.classification] : (sc.potential || []).map((p) => [p.candidate.selection, p.classification]));
-  ok('S1: the answer opens BEST VERIFIED RESEARCH CANDIDATE and prints every field the brief names', /^BEST VERIFIED RESEARCH CANDIDATE/.test(s1.answer) && FIELDS.every((k) => field(s1.answer, k) != null), FIELDS.filter((k) => field(s1.answer, k) == null));
-  if (best) consistent('S1', s1.answer, best);
+  ok('S1: the answer opens BEST VERIFIED RESEARCH CANDIDATE and prints every field the brief names', /^BEST VERIFIED RESEARCH CANDIDATE/.test(s1.scan.benchmark_answer) && FIELDS.every((k) => field(s1.scan.benchmark_answer, k) != null), FIELDS.filter((k) => field(s1.scan.benchmark_answer, k) == null));
+  if (best) consistent('S1', s1.scan.benchmark_answer, best);
   ok('S1: the Texans are held back: the engine priced Anthony Richardson, the depth chart lists Daniel Jones', [].concat(sc.potential || [], sc.near_misses || []).some((r) => r.candidate.selection === 'Houston Texans' && r.classification.classification === 'RESEARCH_REQUIRED'), [].concat(sc.potential || [], sc.near_misses || []).map((r) => [r.candidate.selection, r.classification && r.classification.reasons[0]]));
   const allFindings = [best].concat(sc.potential || [], sc.near_misses || []).filter(Boolean).flatMap((r) => r.research.findings || []);
   ok('S1: every finding carries a source URL, a retrieval time, an event reference, a claim and a reliability class', allFindings.length > 5 && allFindings.every((f) => /^https:\/\//.test(f.source_url) && f.retrieved_at && f.event_ref && f.claim && ['OFFICIAL', 'CREDIBLE_JOURNALISM', 'STATISTICAL_DATA', 'SPECULATION', 'OPINION', 'UNKNOWN'].includes(f.reliability)), allFindings.slice(0, 2));
@@ -363,7 +368,7 @@ function consistent(tag, answer, row) {
   /* ═══ S8. STALE ODDS ═════════════════════════════════════════════════════ */
   const stale = MLB_SIGNALS.concat(NFL_SIGNALS).map((x) => Object.assign({}, x, { last_seen_at: ISO(-400) }));
   const s8 = await ask("What's the best bet this weekend across all sports?", { signals: stale, bookAt: ISO(-400) });
-  ok('S8: with every price 6 h old nothing is verified, and no capture was asked for (no odds credits spent)', s8 && s8.scan.final_status !== 'VERIFIED CANDIDATE' && /^No verified positive-EV trade/.test(s8.answer) && oddsCalls.length === 0, s8 && [s8.scan.final_status, s8.answer.slice(0, 160)]);
+  ok('S8: with every price 6 h old nothing is verified, and no capture was asked for (no odds credits spent)', s8 && s8.scan.final_status !== 'VERIFIED CANDIDATE' && /^No verified positive-EV trade/.test(s8.scan.benchmark_answer) && oddsCalls.length === 0, s8 && [s8.scan.final_status, s8.scan.benchmark_answer.slice(0, 160)]);
   ok('S8: any candidate that was looked at carries the staleness in its verdict', rowsOf(s8.scan).every((r) => !r.classification || r.classification.classification !== 'VERIFIED_CANDIDATE'), rowsOf(s8.scan).map((r) => [r.candidate.selection, r.classification && r.classification.classification]));
 
   /* ═══ S8b. THE AUDITOR REJECTS WHAT THE RESEARCHER FAVOURED ════════════
@@ -384,7 +389,7 @@ function consistent(tag, answer, row) {
   /* ═══ S10. EVERY CANDIDATE REJECTED ═════════════════════════════════════ */
   const bad = NFL_SIGNALS.map((x) => Object.assign({}, x, { best_dec: 1.8, edge: -0.04, first_edge: -0.04 }));
   const s10 = await ask("What's the best bet this weekend across all sports?", { signals: bad, noMlb: true });
-  ok('S10: nothing clears: "No verified positive-EV trade…", final status PASS, no candidate block', s10 && /^No verified positive-EV trade/.test(s10.answer) && s10.scan.final_status === 'PASS' && !/^Final status:/m.test(s10.answer), s10 && [s10.scan.final_status, s10.answer.slice(0, 300)]);
+  ok('S10: nothing clears: "No verified positive-EV trade…", final status PASS, no candidate block', s10 && /^No verified positive-EV trade/.test(s10.scan.benchmark_answer) && s10.scan.final_status === 'PASS' && !/^Trade execution eligibility:/m.test(s10.scan.benchmark_answer), s10 && [s10.scan.final_status, s10.scan.benchmark_answer.slice(0, 300)]);
   ok('S10: research stayed at L1: nothing on the board was worth investigating, so nothing was bought', s10.scan.research_summary && s10.scan.research_summary.level === 'L1' && s10.scan.research_summary.cost_estimate_usd === 0, s10.scan.research_summary);
   ok('S10: no prediction snapshot is written for a slate with no candidate', !posted.some((p) => p.table === 'prediction_snapshots'), posted.map((p) => p.table));
   const s10s = await ask('Research every available NFL game this weekend and tell me which opportunities survive an adversarial audit.', { signals: bad, noMlb: true });
@@ -429,7 +434,7 @@ function consistent(tag, answer, row) {
   ok('S12: with the injury build itself down, the price check still runs and the candidate is held, not dropped', s12mb && s12mb.evaluation && s12mb.evaluation.ok && s12mb.classification.classification !== 'VERIFIED_CANDIDATE', s12mb && [s12mb.classification, s12mb.audit.status]);
 
   /* ═══ THE COMMUNICATOR: IT MAY NOT INVENT OR CHANGE A VALUE ═══════════════ */
-  const det = s1.answer;
+  const det = s1.scan.benchmark_answer;
   const head = det.slice(0, det.indexOf('\nResearch: '));
   const g1 = best.research ? null : null;
   const graphLike = { sourceUrls: () => allFindings.map((f) => f.source_url) };
@@ -438,7 +443,7 @@ function consistent(tag, answer, row) {
   ok('C: a changed EV is caught', AG.critic(changed, head, graphLike).findings.some((f) => f.code === 'DROPPED_OR_CHANGED' || f.code === 'UNLISTED_NUMBER'), AG.critic(changed, head, graphLike));
   ok('C: an invented probability is caught', AG.critic(head + '\nI make the Bills a 61.3% chance.', head, graphLike).findings.some((f) => f.code === 'UNLISTED_NUMBER'), null);
   ok('C: certainty language is caught', AG.critic(head + '\nThis is a lock.', head, graphLike).findings.some((f) => f.code === 'CERTAINTY'), null);
-  ok('C: a changed final status is caught', AG.critic(head.replace('Final status: VERIFIED CANDIDATE', 'Final status: WATCHLIST'), head, graphLike).findings.some((f) => f.code === 'STATUS_CHANGED'), null);
+  ok('C: a changed final status is caught', AG.critic(head.replace('decision: VERIFIED CANDIDATE', 'decision: WATCHLIST').replace(/\bVERIFIED CANDIDATE\b/g, 'WATCHLIST'), head, graphLike).findings.some((f) => f.code === 'STATUS_CHANGED'), null);
   ok('C: a fabricated citation is caught', AG.critic(head + '\nSee https://www.espn.com/made-up-story', head, graphLike).findings.some((f) => f.code === 'UNKNOWN_LINK'), null);
   ok('C: an injury the result never mentioned is caught', AG.critic(head + '\nJames Cook was ruled out this morning.', head, graphLike).verdict === 'FAIL', AG.critic(head + '\nJames Cook was ruled out this morning.', head, graphLike));
 

@@ -76,6 +76,10 @@ on:
         description: 'Apply supabase/quant_desk.sql — verified venue fee schedules, the audit trail, the fair-price checks and the backtest record (idempotent)'
         type: boolean
         default: false
+      apply_independent_projections:
+        description: 'Apply supabase/independent_projections.sql — the frozen projection snapshots and the market comparisons made against them, order enforced by the server (idempotent, additive; rollback: independent_projections_rollback.sql)'
+        type: boolean
+        default: false
       apply_research_intel:
         description: 'Apply supabase/research_intel.sql — write-once research findings, pregame prediction snapshots and the research-provider quota ledger (idempotent, additive; paid providers seeded DISABLED)'
         type: boolean
@@ -241,6 +245,16 @@ jobs:
           # throwaway server and attacks it. Its last statement is a report, and a
           # row reading CHECK THIS is the thing to read before deploying anything.
           psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/quant_desk.sql
+
+      - name: Apply the independent projection ledgers
+        if: ${{ inputs.apply_independent_projections && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Idempotent and additive; projections_sql.test.js applies it twice against a
+          # throwaway server, attacks it and runs the rollback. Its last statement is a
+          # report, and a row reading CHECK THIS is the thing to read before deploying.
+          psql "$PGURL" -v ON_ERROR_STOP=1 -f supabase/independent_projections.sql
 
       - name: Apply the research memory and provider quotas
         if: ${{ inputs.apply_research_intel && steps.creds.outputs.have_db == 'yes' }}

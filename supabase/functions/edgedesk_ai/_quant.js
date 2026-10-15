@@ -253,6 +253,8 @@
     var counter = ag ? ag.counterArgument(x) : null;
     if (warn && !/^Not examined/.test(warn.detail)) counter = (counter ? counter + '; ' : '') + 'the audit flagged: ' + warn.detail;
     x.counter = counter;
+    /* the audit's own run facts, so the block can say the audit COMPLETED apart from what it concluded */
+    x.audit_summary = r.audit ? { status: r.audit.status, rounds: r.rounds || null } : null;
     return ag.renderCandidate(x, heading);
   }
   function researchTail(s) {
