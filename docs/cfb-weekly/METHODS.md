@@ -182,6 +182,16 @@ Each state kind has a natural key:
 nothing. Different content, after a provider correction, is written as `state_version + 1`, with
 `supersedes` naming the previous id and a reason. Nothing is overwritten.
 
+The instant a row is computed at is provenance too (`store.VOLATILE`): `validated_at` on a game validation,
+`as_of` on a game performance, `as_of` and `status_age_hours` on a unit week. Until 2026-10-15 they counted as
+content, so every daily run appended a "provider correction" of every key: 23 identical versions of each
+game's validation, and a 100 MB file GitHub refused to accept. Team and QB weeks keep `as_of` as content,
+because it is the week's freeze and the next build reads it back. A stored version is compared by re-hashing
+it, so rows written under the old rule need no rewrite. `python3 -m v2.weekly.store --compact` drops the
+versions that changed nothing from the committed files. It keeps the newest version of each run of identical
+ones, byte for byte, so `current()` and the next version number stay the same. The Postgres mirror keeps every
+version.
+
 `current(kind)` returns the highest version per key. Write-once facts (runs, projections, changes, QB events,
 research items) use `append_unique` on their id. The Postgres mirror (`supabase/cfb_weekly.sql`) enforces
 the same keys and refuses updates and deletes by trigger.

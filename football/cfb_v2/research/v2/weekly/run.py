@@ -165,16 +165,19 @@ def _pipeline(run, store, ctx, mode, force, fetch, through_week, lab_dispatch):
         g = G[G.season.eq(season)]
         rec['counts'].update(games_season=int(len(g)), games_final=int(g.status.eq('FINAL').sum()),
                              target_week=tw, source_week=sw, T=ids.ts(T))
-        # an idempotent re-run of published work is a no-op
+        # an idempotent re-run of published work is a no-op. It is a SKIPPED
+        # return, never an exception: run.stage records any exception as a
+        # FAILED stage, which failed every no-op run (2026-10-14)
         prev = [r for r in store.read('runs') if r.get('run_key') == run.run_key and r.get('published')]
         if prev and not force:
             ctx['noop'] = prev[-1]['run_id']
-            raise _Noop()
+            rec['error'] = 'nothing new: already published by %s' % ctx['noop']
+            return {'_status': 'SKIPPED'}
         return {}
 
-    try:
-        run.stage('INGEST_FINAL_SCORES', ingest)
-    except _Noop:
+    run.stage('INGEST_FINAL_SCORES', ingest)
+    if ctx.get('noop'):
+        run.status = 'NOOP'
         return
     if not run.ok('INGEST_FINAL_SCORES'):
         run.status = 'FAILED'
@@ -629,10 +632,6 @@ def _pipeline(run, store, ctx, mode, force, fetch, through_week, lab_dispatch):
     run.stage('HEALTH_REPORT', report, needs=('INGEST_FINAL_SCORES',))
     run.status = 'PUBLISHED' if run.ok('WRITE_STATE') else ('GATE_FAILED' if run.stages.get('RELEASE_GATE', {}).get('status') == 'FAILED' else 'FAILED')
     run.published = run.status == 'PUBLISHED'
-
-
-class _Noop(Exception):
-    pass
 
 
 # ------------------------------------------------------------------ helpers

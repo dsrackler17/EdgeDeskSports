@@ -7,7 +7,8 @@ same content again is a no-op, so an idempotent re-run adds nothing. Writing
 DIFFERENT content for a key that already exists (a provider corrected the
 play-by-play) appends state_version n+1 with `supersedes` and `reason`. The
 old row stays, because a prediction may have depended on it. Nothing is ever
-edited or deleted.
+edited or deleted, with one exception: Store.compact drops a version that
+changed nothing (the database mirror keeps it).
 """
 import json
 import os
@@ -36,6 +37,25 @@ KINDS = {
 #  state writes nothing; the record keeps the versions it was first computed from)
 PROVENANCE = {'run_id', 'computed_at', 'state_version', 'supersedes', 'reason', 'content_hash', 'recorded_at',
               'data_version', 'pbp_version', 'roster_version', 'injury_version'}
+# per kind: the instant a row was computed at, and what follows from that
+# instant alone, are provenance too. They move on every run, so as content they
+# made every daily run append a "provider correction" of every key: 23 copies
+# of each game's validation, 100 MB, and GitHub refused the push (2026-10-15).
+# (team and QB state keep as_of as content: it is the week's freeze, and the
+#  next week's build reads it back as T_prev.)
+VOLATILE = {
+    'game_validation': ('validated_at',),
+    'game_performance': ('as_of',),
+    'unit_week_state': ('as_of', 'status_age_hours'),
+}
+
+
+def content_hash(kind, row):
+    """The hash two versions of a key are compared by: the row without its id,
+    provenance or volatile fields. Recomputed from a stored row, it equals the
+    stored content_hash for every kind without volatile fields."""
+    skip = PROVENANCE | set(VOLATILE.get(kind, ())) | {KINDS[kind][1]}
+    return ids.content_hash({k: v for k, v in row.items() if k not in skip})
 
 
 def season_dir(season, root=None):
@@ -100,9 +120,11 @@ class Store:
         for r in rows:
             r = dict(r)
             k = tuple(r.get(f) for f in key_fields)
-            ch = ids.content_hash({kk: v for kk, v in r.items() if kk not in PROVENANCE and kk != idf})
+            ch = content_hash(kind, r)
             prev = current.get(k)
-            if prev is not None and prev.get('content_hash') == ch:
+            # the stored version is re-hashed, not trusted: rows written before
+            # VOLATILE carry a content_hash that includes the volatile fields
+            if prev is not None and content_hash(kind, prev) == ch:
                 stats['unchanged'] += 1
                 continue
             ver = (prev.get('state_version', 1) + 1) if prev else 1
@@ -116,6 +138,36 @@ class Store:
             stats['corrected' if prev else 'written'] += 1
         append_jsonl(self.path(kind), out)
         return stats
+
+    def compact(self, kind):
+        """Drop the versions that changed nothing: per key, a version whose
+        content equals the next version's goes, so the newest of each run of
+        identical versions stays. Kept lines are copied byte for byte, so
+        current() and the next state_version are unchanged, and a version the
+        database already holds is never numbered again. The database mirror is
+        insert-only and keeps every version. Returns {'kept', 'dropped'}."""
+        _, _, key_fields, _ = KINDS[kind]
+        path = self.path(kind)
+        if not key_fields or not os.path.exists(path):
+            return {'kept': 0, 'dropped': 0}
+        with open(path) as f:
+            lines = [l for l in f if l.strip()]
+        rows = [json.loads(l) for l in lines]
+        by_key = {}
+        for i, r in enumerate(rows):
+            by_key.setdefault(tuple(r.get(f) for f in key_fields), []).append(i)
+        drop = set()
+        for idx in by_key.values():
+            idx = sorted(idx, key=lambda i: rows[i].get('state_version', 1))
+            for a, b in zip(idx, idx[1:]):
+                if content_hash(kind, rows[a]) == content_hash(kind, rows[b]):
+                    drop.add(a)
+        if drop:
+            tmp = path + '.tmp'
+            with open(tmp, 'w') as f:
+                f.writelines(l if l.endswith('\n') else l + '\n' for i, l in enumerate(lines) if i not in drop)
+            os.replace(tmp, path)
+        return {'kept': len(lines) - len(drop), 'dropped': len(drop)}
 
     def current(self, kind):
         """The newest version of every key."""
@@ -134,3 +186,19 @@ class Store:
             json.dump(ids.clean(obj), f, indent=1, sort_keys=True)
             f.write('\n')
         return p
+
+
+if __name__ == '__main__':
+    # python3 -m v2.weekly.store --compact [--season 2026]: drop the no-change
+    # versions from the committed ledgers (see Store.compact)
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--compact', action='store_true', required=True)
+    ap.add_argument('--season', type=int, default=None)
+    a = ap.parse_args()
+    seasons = [a.season] if a.season else sorted(int(d) for d in os.listdir(ROOT) if d.isdigit())
+    for s in seasons:
+        st = Store(s)
+        for kind in KINDS:
+            if KINDS[kind][2]:
+                print(json.dumps({'season': s, 'kind': kind, **st.compact(kind)}, sort_keys=True))
