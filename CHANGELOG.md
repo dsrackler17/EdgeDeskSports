@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-15 — Today's Games: scoreboard tiles, and no "ESPN" on screen
+
+**The Today's Games strip on the Research screen now reads like a sportsbook app's scoreboard.** Each game is a small tile: two teams with their logo and abbreviation and one number each, the start time and the total underneath, then one pill to the research.
+
+- **The numbers.** A spread sport (NFL, college football, NBA, college basketball) shows the favourite's spread and the underdog's moneyline (`ECU −5.5`, `UAB +170`, `o47.5`). A puck-line, run-line or 1X2 sport shows both moneylines; a soccer draw is in the tile's words and tooltip. Live and final games show the score instead. A price past the 90-minute limit is dimmed and marked **past**; no price says **No odds**.
+- **The pill.** *Research* (or *Matchup* where there is no research page), with EdgeDesk's read on the game underneath (`Read: Investigate`), a certified signal when there is one, or what the game has. The ⓘ button beside it opens the matchup view.
+- **Layout.** Two tiles and a bit across a phone, as a swipeable rail; two rows of four on a desktop, the last one the way to every game.
+- **No "ESPN" on screen.** Prices name their book only (`DraftKings · 10 min ago`): on the tiles, the games page cards, the matchup view's footer and the NHL comparison sentence (`lib/edgedesk_nhl_compare.js`'s label, also used by the NHL panel). The data still records where each quote was read.
+- The games page (`#games`) and `/today/` keep their full cards, with every market.
+- Tests: `tools/slate/games_ui.e2e.js` (101, from 89: the tile's numbers, words and tap targets at 390 px, no ESPN anywhere in the strip or matchup view), `tools/hockey/nhl_compare.test.js`, `tools/engine/engine_ui.e2e.js`.
+
 ## 2026-10-14 — Portfolio: sportsbook history through Juice Reel (OAuth 2.0 + PKCE; awaiting Juice Reel's approval)
 
 **Juice Reel is built as the sportsbook sync provider to replace SharpSports. A reader signs in on Juice Reel's own page and allows EdgeDesk to read their open and settled bets. One authorization covers every book Juice Reel tracks for them, and each book becomes their own Portfolio account. It is built and tested here, NOT deployed and NOT yet run against Juice Reel: EdgeDesk's Juice Reel application is awaiting approval, so readers see "Awaiting provider approval" and linking stays off behind the existing registry guard until Juice Reel approves, a PRODUCTION smoke test passes and the terms review clears.** Docs: `docs/juicereel.md`. Redirect URI to register: `https://edgedesksports.com/oauth/juicereel-callback.html`.

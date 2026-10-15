@@ -33,13 +33,12 @@
 .gm-strip button:focus-visible,.gm-page button:focus-visible,.gm-page input:focus-visible,.gm-page select:focus-visible,.gm-strip a:focus-visible,.gm-page a:focus-visible,.gm-dlg a:focus-visible,.gm-dlg button:focus-visible{outline:2px solid var(--gm-ac);outline-offset:2px}
 
 /* ---- the row of cards: a swipeable rail on a phone, a grid on a desk ---- */
-.gm-row{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(258px,82%);gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 2px;padding:2px 2px 8px;margin:0 -2px;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.gm-row{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(164px,47%);gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 2px;padding:2px 2px 8px;margin:0 -2px;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
 .gm-li{scroll-snap-align:start;min-width:0;display:flex}
 .gm-li>.gm-card{flex:1}
 @media(min-width:720px){
-  .gm-row{grid-auto-flow:row;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));grid-auto-columns:auto;overflow:visible;scroll-snap-type:none}
-  .gm-row>.gm-li:nth-child(n+9){display:none}
-  .gm-row>.gm-li:last-child{display:flex}
+  .gm-row{grid-auto-flow:row;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));grid-auto-columns:auto;overflow:visible;scroll-snap-type:none}
+  .gm-row.gm-cut>.gm-li:nth-child(n+8):not(:last-child){display:none}
 }
 .gm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px}
 @media(max-width:400px){.gm-grid{grid-template-columns:1fr}}
@@ -106,6 +105,54 @@
 .gm-upg{display:block;font-size:12.5px;line-height:1.45;color:var(--gm-dim);text-decoration:none;border-bottom:1px dotted var(--gm-bd);padding:6px 0 2px;align-self:flex-start}
 .gm-upg:hover{color:var(--gm-tx)}
 .gm-more-tile{align-items:center;justify-content:center;flex-direction:row;gap:6px;font-weight:700;font-size:14px;color:var(--gm-ac);text-decoration:none;min-height:120px;background:transparent;border-style:dashed}
+
+/* ---- the strip card: a scoreboard tile (lib/edgedesk_games_ui.js
+   compactCardHTML). Two teams with one number each, the start and the
+   total underneath, one pill to the research. Two and a bit to a phone's
+   width, two rows of four on a desk. ---- */
+.gm-strip .gm-grid{grid-template-columns:repeat(auto-fill,minmax(164px,1fr))}
+@media(min-width:720px){.gm-strip .gm-grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}}
+.gm-cc{gap:7px;padding:12px 10px 10px;border-width:1.5px;border-radius:16px;background:var(--gm-s1)}
+.gm-cc .gm-clg{font:700 9.5px var(--gm-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--gm-faint);margin:-2px 0 -1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gm-cc .gm-title{font-size:11.5px}
+.gm-cc .gm-team{gap:9px;min-height:30px}
+.gm-cc .gm-team b{font-size:17px;font-weight:800;letter-spacing:.01em}
+.gm-cc .gm-logo,.gm-cc .gm-mono{width:28px;height:28px}
+.gm-cc .gm-logo img{width:27px;height:27px}
+.gm-cc .gm-mono{font-size:9px;border-radius:8px}
+.gm-cc .gm-sc{font-size:18px}
+.gm-cv{margin-left:auto;flex:none;font:600 13.5px var(--gm-mono);font-variant-numeric:tabular-nums;color:var(--gm-dim);white-space:pre}
+.gm-cc.gm-past-mk .gm-cv{color:var(--gm-faint)}
+.gm-past{font:700 9px var(--gm-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--gm-warn);margin-right:5px}
+.gm-cfoot{display:flex;align-items:center;gap:6px;min-height:22px;min-width:0}
+.gm-cfoot .gm-st{margin-left:0;max-width:none;font-family:inherit;font-size:13px;font-weight:500;color:var(--gm-dim);flex:0 1 auto;min-width:0}
+.gm-cfoot .gm-st.live{color:var(--gm-pos);font-weight:600}.gm-cfoot .gm-st.live.stale{color:var(--gm-warn)}
+.gm-cfoot .gm-st.started{color:var(--gm-warn)}
+.gm-cfoot .gm-st.off{color:var(--gm-warn);font-size:11.5px}
+.gm-cfoot .gm-cv{font-size:13px}
+.gm-ctag{font:700 9.5px var(--gm-mono);color:var(--gm-dim);border:1px solid var(--gm-bd);border-radius:5px;padding:0 4px;flex:none}
+.gm-cnone{margin-left:auto;font-size:11.5px;color:var(--gm-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.gm-cc .gm-when{font-family:inherit;font-size:10.5px;line-height:1.3}
+.gm-cta{display:flex;align-items:center;margin-top:auto;border:1px solid var(--gm-bd);border-radius:12px;background:var(--gm-s2);min-height:46px;min-width:0}
+.gm-cta:hover{border-color:var(--gm-dim)}
+.gm-cc .gm-cta .gm-go{flex:1;display:flex;align-items:center;justify-content:flex-start;gap:6px;min-width:0;min-height:44px;padding:4px 2px 4px 6px;background:transparent;color:var(--gm-tx);border-radius:11px;font-size:13px;text-align:left;white-space:normal}
+.gm-cc .gm-cta .gm-go:hover{filter:none}
+.gm-cta-ic{flex:none;width:22px;height:22px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;background:rgba(47,167,154,.14);color:var(--gm-ac)}
+.gm-cta-ic svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:719px){.gm-cta-ic{display:none}.gm-cc .gm-cta .gm-go{padding-left:4px}}
+.gm-cta-tx{display:flex;flex-direction:column;align-items:center;min-width:0;flex:1;line-height:1.2}
+.gm-cta-tx b{font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.gm-cta-tx small{font-size:10px;font-weight:500;color:var(--gm-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.gm-cta-tx small.sig{color:var(--gm-ac);font-weight:700}
+.gm-cta-tx small.rd em{font-style:normal;font-weight:700;color:var(--gm-gold)}
+.gm-cta-end{flex:none;display:inline-flex;color:var(--gm-dim);padding-right:4px}
+.gm-cta-end svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.gm-cc .gm-cta .gm-more{flex:none;width:32px;min-height:44px;height:44px;padding:0;margin-right:1px;border:0;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;color:var(--gm-dim);background:transparent}
+.gm-cc .gm-cta .gm-more:hover{color:var(--gm-tx)}
+.gm-cc .gm-cta .gm-more svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.gm-strip .gm-more-tile{min-height:150px;border-radius:16px}
+.gm-strip .gm-skel{grid-auto-columns:minmax(164px,1fr)}
+.gm-strip .gm-skel i{height:168px;border-radius:16px}
 
 /* ---- states ---- */
 .gm-empty{border:1px dashed var(--gm-bd);border-radius:12px;padding:14px;font-size:13.5px;color:var(--gm-dim);line-height:1.5;margin:0 0 10px}

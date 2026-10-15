@@ -282,7 +282,7 @@ The comparison uses the price Today's Games already captured: DraftKings as
 republished by ESPN's public scoreboard (`today/slate.json`), or the games
 strip's live merged prices when they are newer. ESPN posts NHL odds on game
 day, so later games show "no price yet". A republished price is a
-**reference**: it is named "DraftKings via ESPN", its age is shown, it is a
+**reference**: it is named by its book ("DraftKings"), its age is shown, it is a
 past price after the slate's 90-minute limit, and it never passes the
 `price_verified` gate of `lib/edgedesk_nhl_market.js`.
 

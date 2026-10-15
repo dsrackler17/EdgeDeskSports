@@ -149,7 +149,7 @@ const TODAY = (() => {
       chk(label + ': a price above EdgeDesk\'s fair is provisional, never verified value', /provisional/.test(board[0].cells[4]) && /EV \+/.test(board[0].cells[4]) && (await page.$$eval('#nhlHost .xe-chip', (x) => x.filter((c) => /verified value/i.test(c.textContent)).length)) === 0, board[0].cells[4]);
       chk(label + ': a price inside the book\'s margin pays nothing', /pass/.test(board[1].cells[4]) && /none/.test(board[1].cells[4]), board[1].cells[4]);
       if (board.length > 2) chk(label + ': a game without a price says so, and is not called a pass', /no price yet/.test(board[2].cells[2]) && board[2].cells[4] === '—', board[2]);
-      chk(label + ': the board names the source as a reference, not a verified quote', /DraftKings via ESPN/.test(await page.textContent('#nhlHost')) && /reference price/.test(await page.textContent('#nhlHost')));
+      chk(label + ': the board names the book as a reference, not a verified quote', /DraftKings/.test(await page.textContent('#nhlHost')) && !/DraftKings via ESPN/.test(await page.textContent('#nhlHost')) && /reference price/.test(await page.textContent('#nhlHost')));
       chk(label + ': the record names its second source and calls it a check of past data, not a forecast', await page.evaluate(() => { const e = document.querySelector('#nhlHost .xe-2nd'); return !!e && /Second source/.test(e.textContent) && /2024-25/.test(e.textContent) && /not a forecast/.test(e.textContent); }));
       await shot(page, label + '_nhl_list');
       const g = SLATE.games[0];

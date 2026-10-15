@@ -145,6 +145,12 @@ const NOW = F.NOW;
       chk(label + ': yesterday’s final is not today’s', ids.indexOf('soccer:espn:701001') < 0);
       chk(label + ': All sports counts today’s nine games', /All sports\s*9/.test(await text(page, '#gamesStrip [data-gm-sport="all"]')));
       chk(label + ': no horizontal page scroll', await noHScroll(page));
+      chk(label + ': the strip never names ESPN, in its words, tooltips or labels', await page.evaluate(() => { const s = document.getElementById('gamesStrip'); return !/ESPN/i.test(s.innerText) && ![...s.querySelectorAll('[title],[aria-label]')].some((e) => /ESPN/i.test((e.getAttribute('title') || '') + ' ' + (e.getAttribute('aria-label') || ''))); }));
+      if (label === 'phone') {
+        chk('phone: scoreboard tiles, two abreast with the next peeking', await page.evaluate(() => { const li = document.querySelectorAll('#gamesStrip .gm-row > .gm-li'); const a = li[1].getBoundingClientRect(), b = li[2].getBoundingClientRect(); return a.right <= window.innerWidth && b.left < window.innerWidth && a.width < 200; }));
+        chk('phone: the research pill and its Details button are full tap targets', await page.evaluate(() => [...document.querySelectorAll('#gamesStrip .gm-cta .gm-go, #gamesStrip .gm-cta .gm-more')].every((b) => b.getBoundingClientRect().height >= 35.5 && b.getBoundingClientRect().width >= 28)));
+        chk('phone: the pill\'s words fit (nothing cut off)', await page.evaluate(() => [...document.querySelectorAll('#gamesStrip .gm-cta-tx b, #gamesStrip .gm-cta-tx small')].every((e) => e.scrollWidth <= e.clientWidth + 1)));
+      }
       chk(label + ': no page error', errors.length === 0, errors);
       await ctx.close();
     }
@@ -153,15 +159,19 @@ const NOW = F.NOW;
     const { page } = D;
     await page.waitForSelector('#gamesStrip .gm-card[data-id]');
     const cbj = await text(page, '#gamesStrip .gm-card[data-id="nhl:espn:401802002"]');
-    chk('a hockey card prices the puck line, the moneyline and the total, both sides labelled', /Puck line/i.test(cbj) && /FLA\s+−1\.5 \+170\s+−150\s+O 6\.5 −110/.test(cbj) && /CBJ\s+\+1\.5 −205\s+\+130\s+U 6\.5 −110/.test(cbj), cbj);
-    chk('with its book and its age', /DraftKings via ESPN · \d+ min ago/.test(cbj), cbj);
+    chk('a hockey tile prints each side\'s moneyline beside it and the total under them', /FLA\s+−150\s+[\s\S]*CBJ\s+\+130\s+6:00 PM\s+o6\.5/.test(cbj), cbj);
+    chk('with its book and its age, in words', /DraftKings · \d+ min ago/.test(cbj) && /FLA moneyline −150, CBJ moneyline \+130, total 6\.5 \(over −110, under −110\)/.test(cbj), cbj);
+    chk('and EdgeDesk\'s state on the research pill', /Research[\s\S]*Model ready/.test(cbj), cbj);
     const cfb = await text(page, '#gamesStrip .gm-card[data-id="cfb:espn:401871067"]');
-    chk('a game with only a consensus quote stays on the slate and says "Odds unavailable"', /Odds unavailable/.test(cfb) && /View Research/.test(cfb), cfb);
+    chk('a game with only a consensus quote stays on the slate and says it has no odds', /No odds/.test(cfb) && /odds unavailable/i.test(cfb) && /Research/.test(cfb) && !(await page.$('#gamesStrip .gm-card[data-id="cfb:espn:401871067"] .gm-cv')), cfb);
+    chk('the board\'s read rides on the pill', /Read: Research/.test(cfb), cfb);
     const mlb = await text(page, '#gamesStrip .gm-card[data-id="mlb:espn:401803002"]');
-    chk('a baseball card prices the run line; a doubleheader game says which', /Run line/i.test(mlb) && /Game 2 of 2/.test(mlb), mlb);
+    chk('a baseball tile prints the moneylines; a doubleheader game says which', /NYY\s+\+100/.test(mlb) && /BOS\s+−120/.test(mlb) && /\bG2\b/.test(mlb) && /Game 2 of 2/.test(mlb), mlb);
     const det = await text(page, '#gamesStrip .gm-card[data-id="nhl:espn:401802001"]');
-    chk('a live game shows its clock and score, and no in-play price', /Live · 2nd 12:34/.test(det) && /\b2\b/.test(det) && /No pregame price on file/.test(det), det);
-    chk('times are the reader’s, with the zone named', /6:00 PM CDT/.test(cbj) && /Times in CDT \(America\/Chicago\)/.test(await text(page, '#gamesStrip .gm-foot')));
+    chk('a live game shows its clock and score, and no in-play price', /Live · 2nd 12:34/.test(det) && /\b2\b/.test(det) && !(await page.$('#gamesStrip .gm-card[data-id="nhl:espn:401802001"] .gm-cv')), det);
+    chk('times are the reader’s, with the zone named once under the strip', /6:00 PM/.test(cbj) && /Times in CDT \(America\/Chicago\)/.test(await text(page, '#gamesStrip .gm-foot')));
+    const rma = await text(page, '#gamesStrip .gm-card[data-id="soccer:espn:701003"]');
+    chk('a game with no research page: the pill opens the matchup', /Matchup/.test(rma) && /No research yet/.test(rma) && !!(await page.$('#gamesStrip .gm-card[data-id="soccer:espn:701003"] button.gm-go[data-gm-detail]')), rma);
 
     /* empty, failed, upcoming */
     await page.click('#gamesStrip [data-gm-sport="nba"]');
@@ -199,6 +209,7 @@ const NOW = F.NOW;
     await page.click('#gamesStrip .gm-card[data-id="nhl:espn:401802002"] .gm-more');
     await page.waitForSelector('#gmDetail:not([hidden])');
     const dlg = await text(page, '#gmDetail');
+    chk('the matchup view never names ESPN', !/ESPN/i.test(dlg), dlg.slice(-300));
     chk('Details opens a dialog with the market, the research, the model and the five readiness answers',
       /Market/i.test(dlg) && /Research/i.test(dlg) && /EdgeDesk model/i.test(dlg) && /Fair puck line/.test(dlg) && /Games available/.test(dlg) && /Actionable signal/.test(dlg), dlg.slice(0, 500));
     chk('the NHL matchup sets EdgeDesk against the captured price: the favourite, the gap, the price that pays, never verified',
@@ -214,6 +225,10 @@ const NOW = F.NOW;
     chk('View all opens the games page on today', true);
     chk('the Research seat stays lit', await page.evaluate(() => document.querySelector('.bottomnav button[data-v="research"]').getAttribute('aria-current') === 'page'));
     await shot(page, 'page-desktop');
+    const pcbj = await text(page, '#gamesPage .gm-card[data-id="nhl:espn:401802002"]');
+    chk('the games page card keeps every market: puck line, moneyline and total, both sides labelled', /Puck line/i.test(pcbj) && /FLA\s+−1\.5 \+170\s+−150\s+O 6\.5 −110/.test(pcbj) && /CBJ\s+\+1\.5 −205\s+\+130\s+U 6\.5 −110/.test(pcbj), pcbj);
+    chk('with its book and its age, and no ESPN', /DraftKings · \d+ min ago/.test(pcbj) && !/ESPN/.test(await text(page, '#gamesPage')), pcbj);
+    chk('a baseball page card prices the run line', /Run line/i.test(await text(page, '#gamesPage .gm-card[data-id="mlb:espn:401803002"]')));
     const secs = await page.$$eval('#gamesPage .gm-sec .gm-sech', (h) => h.map((x) => x.firstChild.textContent.trim()));
     chk('sections in order: live, scheduled, final, postponed', JSON.stringify(secs) === JSON.stringify(['Live', 'Scheduled', 'Final', 'Postponed and canceled']), secs);
     chk('the postponed game is in its own section', (await cards(page, '#gamesPage .gm-sec[aria-labelledby="gm-sec-off"]')).join() === 'mlb:espn:401803003');
@@ -287,7 +302,7 @@ const NOW = F.NOW;
     chk('days and sports the live read did not cover are untouched', (await cards(L.page, '#gamesStrip')).indexOf('mlb:espn:401803002') >= 0);
     await L.page.waitForFunction(() => /FanDuel/.test((document.querySelector('#gamesStrip .gm-card[data-id="cfb:espn:401871067"]') || {}).innerText || ''), null, { timeout: 15000 });
     const cfbP = await text(L.page, '#gamesStrip .gm-card[data-id="cfb:espn:401871067"]');
-    chk('a subscriber sees the price capture holds for the game: one book, both sides, oriented to the home team', /FanDuel/.test(cfbP) && /MTSU\s+−4\.5 −110\s+−200/.test(cfbP) && /DEL\s+\+4\.5 −110\s+\+170/.test(cfbP), cfbP);
+    chk('a subscriber sees the price capture holds for the game: the favourite\'s spread, the underdog\'s moneyline, one book, oriented to the home team', /FanDuel/.test(cfbP) && /DEL\s+\+170\s+[\s\S]*MTSU\s+−4\.5/.test(cfbP) && /DEL moneyline \+170, MTSU spread −4\.5 \(−110\)/.test(cfbP), cfbP);
     /* a background refresh never moves the reader */
     await L.page.focus('#gamesStrip .gm-card[data-id="nhl:espn:401802002"] a.gm-go');
     M.live = 'none';
@@ -317,7 +332,7 @@ const NOW = F.NOW;
     await H4.page.waitForSelector('#gamesStrip .gm-card[data-id]');
     await H4.page.waitForFunction(() => window.EDGamesUI._state.mkAt > 0 || window.EDGamesUI._state.mkErr !== null, null, { timeout: 10000 }).catch(() => null);
     chk('a slate_markets() not yet installed is "no prices", never a recorded database fault', H4.seen.markets >= 1 && await H4.page.evaluate(() => !(window.ED_DB && /slate_markets/.test(String(window.ED_DB.where || '')))));
-    chk('and the cards still show the slate’s own captured prices', /DraftKings via ESPN/.test(await text(H4.page, '#gamesStrip .gm-card[data-id="nhl:espn:401802002"]')));
+    chk('and the cards still show the slate’s own captured prices', /DraftKings · /.test(await text(H4.page, '#gamesStrip .gm-card[data-id="nhl:espn:401802002"]')));
     await H4.ctx.close();
     M.markets = 'none';
 

@@ -6,7 +6,7 @@ from the research EdgeDesk already has on it.
 
 | Where | What |
 |---|---|
-| Terminal, Research screen (`app.html`, `#gamesStrip`) | The strip: sport pills, compact cards, **View all games**. A swipeable rail on a phone, a grid on a desktop. |
+| Terminal, Research screen (`app.html`, `#gamesStrip`) | The strip: sport pills, scoreboard tiles, **View all games**. Each tile is two teams with one number each (a spread sport: the favourite's spread and the underdog's moneyline; a puck-line, run-line or 1X2 sport: both moneylines), the start time and the total underneath, and one pill to the research with EdgeDesk's read on the game, plus a Details button for the matchup view. Live and final games show the score instead. Two tiles and a bit across a phone (a swipeable rail), two rows of four on a desktop. |
 | Terminal, `#games[/<sport>[/<date>]][?status=…&q=…]` | The full slate: Yesterday / Today / Tomorrow and a date picker, sport and status filters, team search. Live first, then scheduled by start time, then final, then postponed and canceled. The state lives in the hash, so research opened from here comes **Back** to the same slate. |
 | Public `/today/` | The same slate for a signed-out visitor: schedule, status, scores, the free published research and the public read for up to eight games, with the upgrade path last on every card. **No prices and no EdgeDesk numbers.** If the slate file cannot be loaded, it falls back to the public board’s games and says so. |
 
@@ -50,11 +50,12 @@ The cells below describe the code paths. The real ESPN feed has **not** been rea
 | Soccer | ESPN `soccer/eng.1`, `esp.1`, `ger.1`, `ita.1`, `fra.1`, `usa.1`, `uefa.champions`, `uefa.europa` | `soccer/slate.json` (openfootball, CC0; the local kick-off is read in the league's own zone) | ESPN quote: 1X2 with the draw, total | **No research page yet.** The matchup view, with the league model's fair 1X2 (PROVISIONAL) for the five modelled leagues. |
 | UFC / MMA | ESPN `mma/ufc`: a card is one event, its headline bout named by the card | none in the repo (`ufc.events` in Supabase) | none (the card has no single price) | `#research/ufc`: the UFC panel and its live fight center. There is no per-card route. |
 
-**What a card says when something is missing.** "Odds unavailable" means no current captured price for the game. "Research not available yet" means EdgeDesk has no research page for it. "No model" means no EdgeDesk projection is on file. A card never shows a projection, a price, a score or a confidence it does not hold.
+**What a card says when something is missing.** "Odds unavailable" ("No odds" on a strip tile) means no current captured price for the game. A strip tile's price past the 90-minute limit is dimmed and marked **past**. "Research not available yet" means EdgeDesk has no research page for it. "No model" means no EdgeDesk projection is on file. A card never shows a projection, a price, a score or a confidence it does not hold.
 
 ## Providers and permitted use
 
 - **ESPN's public site API** (`site.api.espn.com`) is undocumented, keyless and carries **no published licence**. This repository already relies on it for football schedules and finals, college baseball, UFC and the CFB lab's quotes. Its pregame quotes name the book they come from. For a licensed production feed, the replacements are Sportradar or SportsDataIO for schedules and live scores, or The Odds API's `/scores` endpoint. The gateway can already build that endpoint's request (`supabase/functions/odds_gateway`), but it costs credits.
+- **Naming the source.** Every card, tile and matchup view names the **book** a price came from ("DraftKings · 10 min ago"), never the scoreboard that republished it: the reader sees no "ESPN". The slate still records the source (`market.source`), and the NHL comparison still treats such a price as a reference that never passes `price_verified`.
 - **Team logos** are ESPN CDN URLs (`a.espncdn.com`), hotlinked from the reader's browser with `referrerpolicy="no-referrer"` and a monogram fallback. Pass `logos: false` to `EDGamesUI` to show monograms only.
 - **openfootball/football.json** (soccer fallback) is CC0.
 - **The Odds API** prices are shown only to entitled subscribers, from what capture already stored. Nothing here buys a price.
@@ -108,7 +109,7 @@ Rollback: revert the merge. The SQL is additive: drop `public.slate_live`, `publ
 |---|---|
 | `npm run slate:test` | The kernel (106 checks: DST and midnight, selection, statuses, doubleheaders, overlay, markets, readiness, URL) and the pipeline (59: adapter, builder carry-forward and fallback, research join, poller). |
 | `npm run slate:sql` | `supabase/games_slate.sql` on a real PostgreSQL (23), with Supabase's own default grants in place. |
-| `npm run slate:e2e` | Chromium at 390 px and 1280 px (88): the strip, the page, the dialog, the live overlay, the reader's prices, failure and the device copy, staleness, local midnight, `/today/`, and the terminal's own navigation. |
+| `npm run slate:e2e` | Chromium at 390 px and 1280 px (101): the strip, the page, the dialog, the live overlay, the reader's prices, failure and the device copy, staleness, local midnight, `/today/`, and the terminal's own navigation. |
 
 ## Known limits
 
