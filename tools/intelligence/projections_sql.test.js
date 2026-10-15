@@ -77,15 +77,15 @@ const snapshot = (uid, over) => {
     values (${L(o.id)}, ${L(uid)}, ${L(o.hash)}, ${L(o.frozen)}, ${L(o.frozen)}, ${L(at(15 * 3600))}, 'America/Chicago', 'best researched opportunity tonight', 'edgedesk_independent_projection_v1', ${o.projections.length}, ${L(JSON.stringify(o.projections))}::jsonb)`;
 };
 const cmp = (uid, over) => {
-  const o = Object.assign({ id: 'mc_' + EDPROJ.sha256(JSON.stringify(over || {})).slice(0, 16), snap: SNAP, pj: PJ1, h: H1, frozen: FROZEN, compared: at(-3599), outcome: 'STALE_PRICE', kind: 'CAPTURED_SPORTSBOOK_QUOTE', odds: -180, captured: at(-3600 - 165 * 60), ev: 'null' }, over || {});
+  const o = Object.assign({ id: 'mc_' + EDPROJ.sha256(JSON.stringify(over || {})).slice(0, 16), snap: SNAP, pj: PJ1, h: H1, frozen: FROZEN, compared: at(-119), outcome: 'STALE_PRICE', kind: 'CAPTURED_SPORTSBOOK_QUOTE', odds: -180, captured: at(-120 - 165 * 60), ev: 'null', sport: 'nhl', event: '2026020118', pw: 0.664 }, over || {});
   return `insert into public.market_comparisons (comparison_id, user_id, snapshot_id, projection_id, projection_hash, frozen_at, compared_at, sport, event_id, market, side, line, model_probability, model_push, model_fair_american, quote_kind, book, odds_american, quote_captured_at, quote_source, break_even, ev_per_dollar, outcome, reasons, gates, engine_version)
-    values (${L(o.id)}, ${L(uid)}, ${L(o.snap)}, ${L(o.pj)}, ${L(o.h)}, ${L(o.frozen)}, ${L(o.compared)}, 'nhl', '2026020118', 'moneyline', 'home', null, 0.664, 0, -198, ${o.kind == null ? 'null' : L(o.kind)}, 'DraftKings', ${o.odds == null ? 'null' : o.odds}, ${o.captured == null ? 'null' : L(o.captured)}, 'today/slate.json markets', 0.643, ${o.ev}, ${L(o.outcome)}, '["captured 165 min ago against a 60 min limit"]'::jsonb, '[]'::jsonb, 'edgedesk_market_compare_v1')`;
+    values (${L(o.id)}, ${L(uid)}, ${L(o.snap)}, ${L(o.pj)}, ${L(o.h)}, ${L(o.frozen)}, ${L(o.compared)}, ${L(o.sport)}, ${L(o.event)}, 'moneyline', 'home', null, ${o.pw}, 0, -198, ${o.kind == null ? 'null' : L(o.kind)}, 'DraftKings', ${o.odds == null ? 'null' : o.odds}, ${o.captured == null ? 'null' : L(o.captured)}, 'today/slate.json markets', 0.643, ${o.ev}, ${L(o.outcome)}, '["captured 165 min ago against a 60 min limit"]'::jsonb, '[]'::jsonb, 'edgedesk_market_compare_v1')`;
 };
 
 try {
   db.sql('alter default privileges for role postgres in schema public grant all on tables to anon, authenticated;');
   BASE = Date.parse(db.sql("select to_char(now() at time zone 'utc', 'YYYY-MM-DD\"T\"HH24:MI:SS\"Z\"')").trim());
-  FROZEN = at(-3600);
+  FROZEN = at(-120);
 
   /* ═══ 1. APPLY, TWICE ═════════════════════════════════════════════════ */
   const r1 = db.applyFile(FILE);
@@ -112,14 +112,29 @@ try {
   chk('a comparison naming a snapshot that was never stored is refused', /no snapshot/.test(noSnap || ''), noSnap);
   const wrongHash = db.mustFail(() => db.as(A, cmp(A, { id: 'mc_' + '2'.repeat(16), h: EDPROJ.sha256('a projection changed after the price') })));
   chk('a comparison whose projection hash differs from the frozen one is refused (the projection moved)', /no snapshot/.test(wrongHash || ''), wrongHash);
-  const before = db.mustFail(() => db.as(A, cmp(A, { id: 'mc_' + '3'.repeat(16), compared: at(-3700) })));
+  const before = db.mustFail(() => db.as(A, cmp(A, { id: 'mc_' + '3'.repeat(16), compared: at(-200) })));
   chk('a comparison stamped before the freeze is refused', before !== null, before);
-  const otherFrozen = db.mustFail(() => db.as(A, cmp(A, { id: 'mc_' + '4'.repeat(16), frozen: at(-3660) })));
+  const otherFrozen = db.mustFail(() => db.as(A, cmp(A, { id: 'mc_' + '4'.repeat(16), frozen: at(-180) })));
   chk('a comparison claiming a different freeze time is refused', /no snapshot/.test(otherFrozen || ''), otherFrozen);
   const borrow = db.mustFail(() => db.as(B, cmp(B, { id: 'mc_' + '5'.repeat(16) })));
   chk('another reader cannot compare against A\'s snapshot', /no snapshot/.test(borrow || ''), borrow);
   const unknownPj = db.mustFail(() => db.as(A, cmp(A, { id: 'mc_' + '6'.repeat(16), pj: 'pj_' + 'd'.repeat(24) })));
   chk('a projection the snapshot does not hold is refused', /no snapshot/.test(unknownPj || ''), unknownPj);
+  /* the server's clock: nothing is back-dated to look frozen first */
+  const oldFreeze = db.mustFail(() => db.as(A, snapshot(A, { id: 'pjs_' + '9'.repeat(32), frozen: at(-7 * 86400) })));
+  chk('a snapshot back-dated a week (frozen_at long before the write) is refused', /never back-dated/.test(oldFreeze || ''), oldFreeze);
+  const futureFreeze = db.mustFail(() => db.as(A, snapshot(A, { id: 'pjs_' + '8'.repeat(32), frozen: at(3600) }).replace(/\(snapshot_id, user_id,/, '(snapshot_id, user_id, created_at,').replace(/values \(([^,]+), ([^,]+),/, "values ($1, $2, now() + interval '2 hours',")));
+  chk('a client-supplied created_at cannot lift the future-freeze limit (created_at is the server\'s)', futureFreeze !== null && db.as(A, "select count(*) from public.projection_snapshots where snapshot_id = 'pjs_" + '8'.repeat(32) + "'").trim() === '0', futureFreeze);
+  const oldCmp = db.mustFail(() => db.as(A, cmp(A, { id: 'mc_' + 'c'.repeat(16), compared: at(-3 * 3600) })));
+  chk('a comparison back-dated hours before its write is refused', /not the time of the write/.test(oldCmp || ''), oldCmp);
+  const wrongEvent = db.mustFail(() => db.as(A, cmp(A, { id: 'mc_' + 'd'.repeat(16), event: '2026020999' })));
+  chk('a comparison naming another event than its projection\'s is refused', /not nhl event 2026020999/.test(wrongEvent || ''), wrongEvent);
+  const wrongSport = db.mustFail(() => db.as(A, cmp(A, { id: 'mc_' + 'e'.repeat(16), sport: 'nba' })));
+  chk('a comparison naming another sport than its projection\'s is refused', /not nba event/.test(wrongSport || ''), wrongSport);
+  const wrongP = db.mustFail(() => db.as(A, cmp(A, { id: 'mc_' + 'f'.repeat(16), pw: 0.71 })));
+  chk('a moneyline comparison carrying a probability other than the frozen one is refused', /not the frozen projection/.test(wrongP || ''), wrongP);
+  const stamped = db.as(A, "select (abs(extract(epoch from (created_at - now()))) < 120)::text from public.market_comparisons order by id limit 1").trim();
+  chk('created_at is the server\'s clock', stamped === 'true', stamped);
 
   /* ═══ 4. INDEPENDENCE AND UNITS ═══════════════════════════════════════ */
   const contaminated = db.mustFail(() => db.as(A, snapshot(A, { id: 'pjs_' + 'e'.repeat(32), projections: [proj(PJ1, H1, { market_inputs: ['consensus spread'] })] })));
@@ -134,7 +149,7 @@ try {
   chk('an unknown outcome is refused', db.mustFail(() => db.as(A, cmp(A, { id: 'mc_' + '8'.repeat(16), outcome: 'LOCK' }))) !== null);
   const verCaptured = db.mustFail(() => db.as(A, cmp(A, { id: 'mc_' + '9'.repeat(16), outcome: 'VERIFIED_POSITIVE_EV', ev: '0.031' })));
   chk('VERIFIED POSITIVE EV on a previously captured quote is refused (it needs a live quote)', /verified_needs_live_quote/.test(verCaptured || ''), verCaptured);
-  db.as(A, cmp(A, { id: 'mc_' + 'a'.repeat(16), outcome: 'VERIFIED_POSITIVE_EV', kind: 'LIVE_SPORTSBOOK_QUOTE', captured: at(-3620), ev: '0.031' }));
+  db.as(A, cmp(A, { id: 'mc_' + 'a'.repeat(16), outcome: 'VERIFIED_POSITIVE_EV', kind: 'LIVE_SPORTSBOOK_QUOTE', captured: at(-140), ev: '0.031' }));
   chk('VERIFIED POSITIVE EV on a live, timestamped quote is stored', db.as(A, "select count(*) from public.market_comparisons where outcome = 'VERIFIED_POSITIVE_EV'").trim() === '1');
   chk('NO CURRENT ODDS cannot carry an EV', db.mustFail(() => db.as(A, cmp(A, { id: 'mc_' + 'b'.repeat(16), outcome: 'NO_CURRENT_ODDS', kind: null, odds: null, captured: null, ev: '0.02' }))) !== null);
 

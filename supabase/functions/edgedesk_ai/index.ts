@@ -36680,10 +36680,22 @@ const EDQUANT: any = (globalThis as any).EDQUANT;
       var pl = pr.puck_line || {};
       if (num(pl.home_minus_1_5) != null) spreadLines.push({ home_line: -1.5, home: num(pl.home_minus_1_5), away: num(pl.away_plus_1_5), push: 0 });
       if (num(pl.home_plus_1_5) != null) spreadLines.push({ home_line: 1.5, home: num(pl.home_plus_1_5), away: num(pl.away_minus_1_5), push: 0 });
-      ((g.markets && g.markets.puck_line) || []).forEach(function (x) { if (num(x.home_line) != null && !spreadLines.some(function (y) { return y.home_line === num(x.home_line); })) spreadLines.push({ home_line: num(x.home_line), home: num(x.p), away: num(x.p_other), push: num(x.push) || 0, validation: x.validation || null }); });
+      /* the engine's per-line markets add lines AND their own validation word; a line already read from
+         prices keeps that validation too (a PROVISIONAL line never prices on the market's tier) */
+      ((g.markets && g.markets.puck_line) || []).forEach(function (x) {
+        var hl = num(x.home_line); if (hl == null) return;
+        var ex = spreadLines.filter(function (y) { return y.home_line === hl; })[0];
+        if (ex) { if (x.validation && !ex.validation) ex.validation = x.validation; return; }
+        spreadLines.push({ home_line: hl, home: num(x.p), away: num(x.p_other), push: num(x.push) || 0, validation: x.validation || null });
+      });
       var tl = (pr.total && pr.total.lines) || {};
       Object.keys(tl).forEach(function (L) { totalLines.push({ line: num(L), over: num(tl[L].over), under: num(tl[L].under), push: num(tl[L].push) || 0 }); });
-      ((g.markets && g.markets.total) || []).forEach(function (x) { if (num(x.line) != null && !totalLines.some(function (y) { return y.line === num(x.line); })) totalLines.push({ line: num(x.line), over: num(x.p), under: num(x.p_other), push: num(x.push) || 0, validation: x.validation || null }); });
+      ((g.markets && g.markets.total) || []).forEach(function (x) {
+        var ln = num(x.line); if (ln == null) return;
+        var ex = totalLines.filter(function (y) { return y.line === ln; })[0];
+        if (ex) { if (x.validation && !ex.validation) ex.validation = x.validation; return; }
+        totalLines.push({ line: ln, over: num(x.p), under: num(x.p_other), push: num(x.push) || 0, validation: x.validation || null });
+      });
       var unc = g.uncertainty || {}, bin = unc.calibration_bin || null;
       var val = validationBlock(ctx.registry, 'nhl', ['moneyline', 'spread', 'total'], null, { record: s.record && s.record.moneyline ? { moneyline: { n: s.record.moneyline.n, brier: s.record.moneyline.brier, log_loss: s.record.moneyline.log_loss, calibration_slope: s.record.moneyline.calibration_slope, file: 'hockey/validation/nhl_walkforward.json' } } : null });
       if (rd.model) Object.keys(rd.model).forEach(function (k) { var key = k === 'puck_line' ? 'spread' : k; if (val.markets[key] && val.markets[key].state === 'UNAVAILABLE') val.markets[key] = { state: rd.model[k].status === 'OUTCOME_VALIDATED' ? 'OUTCOME_VALIDATED' : 'EXPERIMENTAL', value_claims: false, reason: 'hockey/slate.json readiness', source: 'hockey/slate.json' }; });
@@ -36703,7 +36715,8 @@ const EDQUANT: any = (globalThis as any).EDQUANT;
         model: { id: (s.model && s.model.id) || 'edgedesk_nhl_v1', version: (s.model && s.model.chosen) || null, artifact: 'hockey/slate.json', artifact_generated_at: iso(s.generated_at), predicted_at: iso(s.generated_at), params_generated_at: s.model ? iso(s.model.params_generated_at) : null, inputs_known_at: rd.data && rd.data.latest_completed_game ? rd.data.latest_completed_game : null },
         outcome: { p_home: num(ml.home), p_away: num(ml.away), p_draw: null, settles: ml.settles || 'includes overtime and shootout', p_overtime: num(pr.p_overtime), p_shootout: num(pr.p_shootout),
           regulation_3way: pr.regulation ? { home: num(pr.regulation.home), draw: num(pr.regulation.draw), away: num(pr.regulation.away), state: 'PROVISIONAL' } : null },
-        fair: { moneyline: { home: num(ml.fair_home), away: num(ml.fair_away) }, spread: { home_line: -1.5, home_american: num(pl.fair_home_minus_1_5), away_american: num(pl.fair_away_plus_1_5) }, total: { line: num(pr.total && pr.total.fair_line), expected: num(pr.total && pr.total.expected) } },
+        /* the NHL engine prices the fixed ±1.5 puck line; it publishes no fair spread line, so none is stated */
+        fair: { moneyline: { home: num(ml.fair_home), away: num(ml.fair_away) }, spread: { home_line: null, priced_line: { home_line: -1.5, home_american: num(pl.fair_home_minus_1_5), away_american: num(pl.fair_away_plus_1_5) } }, total: { line: num(pr.total && pr.total.fair_line), expected: num(pr.total && pr.total.expected) } },
         projected_score: { home: num(g.lambda && g.lambda.home), away: num(g.lambda && g.lambda.away), total: num(pr.total && pr.total.expected), basis: 'expected regulation goals per team (λ) and the expected total including overtime' },
         distribution: { kind: 'exact_score_distribution', spread_lines: spreadLines, total_lines: totalLines },
         simulation: { method: sp.simulation.method, monte_carlo: false, simulations: null, convergence: 'exact enumeration: no Monte Carlo error' },
@@ -36848,7 +36861,8 @@ const EDQUANT: any = (globalThis as any).EDQUANT;
           home: team(g.home, null, g.home_key), away: team(g.away, null, g.away_key),
           model: { id: 'edgedesk_soccer_dc_v1:' + str(L.model), version: L.model || null, artifact: 'soccer/slate.json', artifact_generated_at: iso(s.generated_at), predicted_at: iso(s.generated_at), params_generated_at: iso(L.params_generated_at), inputs_known_at: L.data ? L.data.latest_result || null : null },
           outcome: { p_home: num(tw.home), p_away: num(tw.away), p_draw: num(tw.draw), settles: tw.settles || '90 minutes plus stoppage time' },
-          fair: { moneyline: { home: num(tw.fair_home), away: num(tw.fair_away), draw: num(tw.fair_draw) }, spread: { home_line: 0 }, total: { line: 2.5, expected: num(tt.expected) } },
+          /* no fair handicap or total LINE is published (the grid prices fixed lines); the expected goals are the model's own number */
+          fair: { moneyline: { home: num(tw.fair_home), away: num(tw.fair_away), draw: num(tw.fair_draw) }, spread: { home_line: null }, total: { line: null, expected: num(tt.expected) } },
           projected_score: { home: num(g.lambda && g.lambda.home), away: num(g.lambda && g.lambda.away), total: num(tt.expected), basis: 'expected goals per side (Poisson λ)' },
           distribution: { kind: 'poisson_score_grid', spread_lines: spreadLines, total_lines: totalLines, three_way: { home: num(tw.home), draw: num(tw.draw), away: num(tw.away) } },
           simulation: { method: sp.simulation.method, monte_carlo: false, simulations: null, convergence: 'exact score grid: no Monte Carlo error' },
@@ -37035,6 +37049,9 @@ const EDQUANT: any = (globalThis as any).EDQUANT;
     var list = (projections || []).map(function (p0) { var p = clone(p0); p.frozen_at = at; p.projection_hash = hashOf(p); return deepFreeze(p); });
     var snap = { schema: SNAPSHOT, frozen_at: at, count: list.length, projections: list };
     snap.snapshot_hash = sha256(list.map(function (p) { return p.projection_hash; }).join('|'));
+    /* the stored row's id: the same projections frozen at another time are another freeze, with their own row
+       (an id from the hash alone would be silently deduplicated and the second turn's comparisons refused) */
+    snap.snapshot_id = 'pjs_' + sha256(snap.snapshot_hash + '|' + at).slice(0, 32);
     return deepFreeze(snap);
   }
   function snapshotHash(snap) { return snap && snap.projections ? sha256(snap.projections.map(function (p) { return hashOf(p); }).join('|')) : null; }
@@ -37055,6 +37072,8 @@ const EDQUANT: any = (globalThis as any).EDQUANT;
     if (kind === 'moneyline' && p.sport !== 'soccer') return side === 'home' ? res(p.outcome.p_home, 0) : side === 'away' ? res(p.outcome.p_away, 0) : null;
     if (kind === 'three_way' || (kind === 'moneyline' && p.sport === 'soccer')) return side === 'home' ? res(p.outcome.p_home) : side === 'away' ? res(p.outcome.p_away) : side === 'draw' ? res(p.outcome.p_draw) : null;
     var d = p.distribution || {};
+    /* a spread or total without a line names no market: nothing is priced (never pick'em by default) */
+    if ((kind === 'spread' || kind === 'total') && num(line) == null) return null;
     if (kind === 'spread') {
       /* a quote's line is the SELECTION's: home -1.5 is home_line -1.5; away +1.5 is home_line -1.5 too */
       var hl = side === 'home' ? num(line) : side === 'away' ? -num(line) : null;
@@ -37109,7 +37128,7 @@ const EDQUANT: any = (globalThis as any).EDQUANT;
     function add(k, s, l) { var key = k + '|' + s + '|' + (l == null ? '' : l); if (seen[key]) return; seen[key] = 1; out.push({ kind: k, side: s, line: l == null ? null : l }); }
     if (p.sport === 'soccer') { add('three_way', 'home'); add('three_way', 'away'); add('three_way', 'draw'); }
     else { add('moneyline', 'home'); add('moneyline', 'away'); }
-    (quotes || []).forEach(function (q) { var k = q.market && q.market.kind; if (k === 'spread' || k === 'total') add(k, q.market.side, q.market.line); });
+    (quotes || []).forEach(function (q) { var k = q.market && q.market.kind; if ((k === 'spread' || k === 'total') && num(q.market.line) != null) add(k, q.market.side, q.market.line); });
     return out;
   }
 
@@ -37263,19 +37282,38 @@ const EDPROJ: any = (globalThis as any).EDPROJ;
     return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
   }
   function selectionZ(nCompared, alpha) { var n = Math.max(1, Number(nCompared) || 1); return qnorm(1 - (alpha || DEFAULTS.alpha) / n); }
-  function normTeam(s) { return str(s).toLowerCase().normalize ? str(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim() : str(s).toLowerCase(); }
-  /** Does a quote's team string name this projection's team? abbr exact, or every word of the shorter name in the longer. */
+  function normTeam(s) {
+    var t = str(s).toLowerCase();
+    t = t.normalize ? t.normalize('NFD').replace(/[̀-ͯ]/g, '') : t;
+    /* "LA Clippers" is the Odds API's "Los Angeles Clippers"; "NY" the same for New York */
+    return t.replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/^la /, 'los angeles ').replace(/^ny /, 'new york ');
+  }
+  /* words that name a DIFFERENT school or club when the longer name adds them: Texas is not Texas A&M,
+     Michigan is not Central Michigan, Iowa is not Iowa State, Miami is not Miami (OH) */
+  var QUALIFIER = { state: 1, st: 1, tech: 1, a: 1, m: 1, am: 1, central: 1, east: 1, eastern: 1, west: 1, western: 1, north: 1, northern: 1, south: 1, southern: 1, middle: 1, atlantic: 1, international: 1, christian: 1, oh: 1, monroe: 1, lafayette: 1 };
+  function nameMatch(n, q) {
+    if (!n || !q) return false;
+    if (n === q) return true;
+    var a = n.split(' '), b = q.split(' '), sh = a.length <= b.length ? a : b, lo = a.length <= b.length ? b : a;
+    /* a short name (UAB, LSU) matches only as the longer name's first word; a longer one when every word is in the other */
+    if (sh.join(' ').length < 4) { if (sh.length !== 1 || lo[0] !== sh[0]) return false; }
+    else if (!sh.every(function (w) { return lo.indexOf(w) >= 0; })) return false;
+    /* the longer name may add a mascot or a city, never a word that names another school */
+    return !lo.some(function (w) { return sh.indexOf(w) < 0 && QUALIFIER[w]; });
+  }
+  /** Does a quote's team string name this projection's team? abbr exact, or the names agree word for word (nameMatch). */
   function sameTeam(t, quoteName) {
     if (!t) return false;
     var q = normTeam(quoteName); if (!q) return false;
-    var names = [t.name, t.short, t.abbr, t.location].filter(Boolean).map(normTeam);
-    for (var i = 0; i < names.length; i++) {
-      var n = names[i]; if (!n) continue;
-      if (n === q) return true;
-      if (t.abbr && normTeam(t.abbr) === q) return true;
-      if (n.length >= 4 && q.length >= 4) { var a = n.split(' '), b = q.split(' '), sh = a.length <= b.length ? a : b, lo = a.length <= b.length ? b : a; if (sh.every(function (w) { return lo.indexOf(w) >= 0; })) return true; }
-    }
+    if (t.abbr && normTeam(t.abbr) === q) return true;
+    var names = [t.name, t.short, t.location].filter(Boolean).map(normTeam);
+    for (var i = 0; i < names.length; i++) if (nameMatch(names[i], q)) return true;
     return false;
+  }
+  /* one side of a projection against a quote's team: its own names, or the names the schedule join gave it */
+  function sideMatch(t, aliasNames, quoteName) {
+    if (sameTeam(t, quoteName)) return true;
+    return (aliasNames || []).some(function (n) { return sameTeam({ name: n }, quoteName); });
   }
 
   /* ================================================================ */
@@ -37304,18 +37342,26 @@ const EDPROJ: any = (globalThis as any).EDPROJ;
       american: am != null && Math.abs(am) >= 100 ? Math.round(am) : null, decimal: dec != null && dec > 1 ? r6(dec) : null,
       captured_at: iso(q.captured_at), age_min: age,
       other_side_american: num(q.other_side_american),
+      other_sides_american: Array.isArray(q.other_sides_american) ? q.other_sides_american.map(num).filter(function (x) { return x != null; }) : null,
       event: q.event || {}, market: { kind: str(m.kind).toLowerCase(), side: str(m.side).toLowerCase(), line: num(m.line) }
     };
   }
+  /* a spread or total quote without a numeric line names no market: it is never priced (it would read as pick'em) */
+  function usableQuote(q) { return !((q.market.kind === 'spread' || q.market.kind === 'total') && q.market.line == null); }
 
-  /** Identity: the quote names this event (sport, both teams on the right sides, start within tolerance). */
-  function verifyIdentity(proj, quote, cfg) {
+  /**
+   * Identity: the quote names this event (sport, both teams on the right sides, start within tolerance).
+   * alias (optional): { home: [names], away: [names] } — the schedule's names for this projection's teams,
+   * from the discovery join, so "Bayern Munich" on the scoreboard is the engine's "FC Bayern München".
+   */
+  function verifyIdentity(proj, quote, cfg, alias) {
     cfg = Object.assign({}, DEFAULTS, cfg || {});
+    alias = alias || {};
     var ev = quote.event || {}, why = [];
     if (ev.sport && proj.sport && str(ev.sport) !== str(proj.sport) && str(ev.sport) !== str(proj.odds_key)) why.push('sport ' + ev.sport + ' is not ' + proj.sport);
-    var hOk = sameTeam(proj.home, ev.home), aOk = sameTeam(proj.away, ev.away);
+    var hOk = sideMatch(proj.home, alias.home, ev.home), aOk = sideMatch(proj.away, alias.away, ev.away);
     if (!hOk || !aOk) {
-      var swapped = sameTeam(proj.home, ev.away) && sameTeam(proj.away, ev.home);
+      var swapped = sideMatch(proj.home, alias.home, ev.away) && sideMatch(proj.away, alias.away, ev.home);
       why.push(swapped ? 'the quote lists the teams the other way round (home/away swapped)' : 'the quote\'s teams (' + str(ev.away) + ' @ ' + str(ev.home) + ') are not ' + proj.away.name + ' @ ' + proj.home.name);
     }
     var ts = toMs(ev.start_utc), tp = toMs(proj.start_utc);
@@ -37347,14 +37393,19 @@ const EDPROJ: any = (globalThis as any).EDPROJ;
     var ev = pWin * (dec - 1) - (1 - pWin - (pPush || 0));
     return { exact: false, decimal: r6(dec), break_even: r6(be), ev: r6(ev), no_vig_market: null, implied: r6(1 / dec), max_entry: null, break_even_entry: null };
   }
+  /**
+   * The worst American price at which the conservative probability still clears the EDGE BAR (edge_bar, the
+   * bar compareMarket classifies on): the "maximum acceptable price" and the "price to watch" are this one number.
+   */
   function maxEntry(pCons, pPush, cfg) {
+    cfg = Object.assign({}, DEFAULTS, cfg || {});
     var Fx = FAIR();
     if (!(pCons > 0)) return null;
     if (Fx && typeof Fx.evaluateWager === 'function') {
       var r = Fx.evaluateWager({ american: 100, fair_probability: r6(Math.min(pCons, 0.999999)), push_probability: r6(pPush || 0), fair_source: { kind: 'MODEL', tier: 'VALIDATED' }, thresholds: { ev_floor: cfg.ev_floor, candidate_ev: cfg.edge_bar } });
-      if (r && r.ok) return r.maximum_entry_price;
+      if (r && r.ok) return r.maximum_edge_entry_price != null ? num(r.maximum_edge_entry_price) : null;
     }
-    var dmin = (1 - (pPush || 0) + cfg.ev_floor) / pCons;
+    var dmin = (1 - (pPush || 0) + cfg.edge_bar) / pCons;
     if (!(dmin > 1)) return null;
     var am = decToAm(dmin);
     return am == null ? null : (am > 0 ? Math.ceil(am) : Math.ceil(am));
@@ -37382,9 +37433,10 @@ const EDPROJ: any = (globalThis as any).EDPROJ;
     var tFrozen = toMs(frozen.frozen_at);
     if (tFrozen == null || now < tFrozen) return finish(base, 'INSUFFICIENT_MODEL_RELIABILITY', ['the projection was not frozen before this comparison; a price may not be compared with an unfrozen number']);
     /* the executable quotes for this exact market, identity-verified */
-    var mine = (quotes || []).filter(function (q) { return q.market.kind === mk.kind && q.market.side === mk.side && (mk.line == null || q.market.line === mk.line); });
+    var lined = mk.kind === 'spread' || mk.kind === 'total';
+    var mine = (quotes || []).filter(function (q) { return usableQuote(q) && q.market.kind === mk.kind && q.market.side === mk.side && (lined ? mk.line != null && q.market.line === mk.line : true); });
     var idFail = [];
-    var verified = mine.filter(function (q) { var v = verifyIdentity(frozen, q, cfg); if (!v.verified) idFail.push(v.why.join('; ')); return v.verified; });
+    var verified = mine.filter(function (q) { var v = verifyIdentity(frozen, q, cfg, o.alias); if (!v.verified) idFail.push(v.why.join('; ')); return v.verified; });
     var exec = verified.filter(function (q) { return q.executable && q.american != null; });
     var refs = verified.filter(function (q) { return !q.executable; });
     if (refs.length) base.market_reference = refs.map(function (r) { return { kind: r.kind, label: r.kind_label, american: r.american, line: r.market.line, source: r.source, captured_at: r.captured_at }; });
@@ -37400,7 +37452,10 @@ const EDPROJ: any = (globalThis as any).EDPROJ;
     fresh.sort(function (a, b) { return b.decimal - a.decimal; });
     var q = fresh[0];
     base.quote = quoteView(q);
-    base.books = fresh.map(function (x) { return { book: x.book, american: x.american, captured_at: x.captured_at, kind: x.kind }; });
+    /* one entry per book (its best fresh price): two feeds reading the same book are one book */
+    var seenBook = {};
+    var perBook = fresh.filter(function (x) { var k = normTeam(x.book || '') || ('?' + x.source); if (seenBook[k]) return false; seenBook[k] = 1; return true; });
+    base.books = perBook.map(function (x) { return { book: x.book, american: x.american, captured_at: x.captured_at, kind: x.kind, source: x.source }; });
     /* the model's eligibility to price: independent, a pricing tier, not invalidated */
     var elig = Pj ? Pj.pricingEligibility(frozen, mk.kind) : { ok: false, why: 'EDPROJ not loaded' };
     if (!model) return finish(base, 'INSUFFICIENT_MODEL_RELIABILITY', ['the projection\'s distribution does not cover ' + selectionText(frozen, mk) + '; no number is manufactured for an unsupported line']);
@@ -37418,8 +37473,13 @@ const EDPROJ: any = (globalThis as any).EDPROJ;
       max_acceptable_american: maxEntry(pCons, model.p_push, cfg), break_even_american_at_model: m.break_even_entry,
       edge_bar: cfg.edge_bar, ev_floor: cfg.ev_floor };
     if (m.no_vig_market != null) base.market_reference = (base.market_reference || []).concat([{ kind: 'SHARP_MARKET_REFERENCE', label: 'this book\'s two sides, de-vigged (market-derived: a reference, never the model)', probability: r4(m.no_vig_market), book: q.book }]);
+    /* a three-way market is de-vigged across all three outcomes (never as a two-way pair) */
+    if (mk.kind === 'three_way' && q.other_sides_american && q.other_sides_american.length === 2) {
+      var imps = [q.american].concat(q.other_sides_american).map(function (a) { var d = amToDec(a); return d ? 1 / d : null; });
+      if (imps.every(function (x) { return x != null; })) base.market_reference = (base.market_reference || []).concat([{ kind: 'SHARP_MARKET_REFERENCE', label: 'this book\'s three outcomes, de-vigged (market-derived: a reference, never the model)', probability: r4(imps[0] / (imps[0] + imps[1] + imps[2])), book: q.book }]);
+    }
     if (m.ev == null || m.ev <= 0) return finish(base, 'NO_VERIFIED_EDGE', ['at ' + fmtAm(q.american) + ' the price is worse than EdgeDesk\'s fair ' + fmtAm(model.fair_american) + ' (EV ' + pctS(m.ev) + ' per $1)']);
-    if (m.ev > cfg.sane_ev) return finish(base, 'MARKET_WATCH', ['DATA CHECK: EV ' + pctS(m.ev) + ' is past the ' + pctS(cfg.sane_ev) + ' sanity ceiling — a data or identity error is more likely than an edge']);
+    if (m.ev > cfg.sane_ev) { base.data_check = true; return finish(base, 'MARKET_WATCH', ['DATA CHECK: EV ' + pctS(m.ev) + ' is past the ' + pctS(cfg.sane_ev) + ' sanity ceiling — a data or identity error is more likely than an edge; not ranked']); }
     if (evCons < cfg.edge_bar) return finish(base, 'MARKET_WATCH', ['positive at the point estimate (' + pctS(m.ev) + ') but ' + pctS(evCons) + ' on the conservative probability ' + pctS(pCons, 1) + ' (z ' + r4(z) + ' × σ ' + r4(sd.total) + '); the bar is ' + pctS(cfg.edge_bar) + (base.math.max_acceptable_american != null ? '; it clears at ' + fmtAm(base.math.max_acceptable_american) + ' or better' : '')]);
     /* execution gates — every one must pass for VERIFIED */
     var gates = [];
@@ -37428,8 +37488,8 @@ const EDPROJ: any = (globalThis as any).EDPROJ;
     var lu = Pj.lineupGate(frozen);
     gates.push({ gate: 'LINEUP_CONFIRMED', ok: lu.ok, why: lu.why });
     gates.push({ gate: 'LIVE_QUOTE', ok: q.kind === 'LIVE_SPORTSBOOK_QUOTE', why: q.kind === 'LIVE_SPORTSBOOK_QUOTE' ? 'read from a live feed ' + q.age_min + ' min ago' : 'a previously captured quote (' + (q.source || 'stored') + '), not a live read' });
-    var clearing = fresh.filter(function (x) { var mm = priceMath(pCons, model.p_push, x.american, null, cfg); return mm && mm.ev != null && mm.ev >= cfg.ev_floor; });
-    gates.push({ gate: 'BOOKS_CONFIRM', ok: clearing.length >= cfg.min_books, why: clearing.length + ' book' + (clearing.length === 1 ? '' : 's') + ' clear the floor on the conservative probability (need ' + cfg.min_books + ')' });
+    var clearing = perBook.filter(function (x) { var mm = priceMath(pCons, model.p_push, x.american, null, cfg); return mm && mm.ev != null && mm.ev >= cfg.ev_floor; });
+    gates.push({ gate: 'BOOKS_CONFIRM', ok: clearing.length >= cfg.min_books, why: clearing.length + ' book' + (clearing.length === 1 ? '' : 's') + ' clear' + (clearing.length === 1 ? 's' : '') + ' the floor on the conservative probability (need ' + cfg.min_books + ' different books)' });
     var au = o.audit || null;
     gates.push({ gate: 'ADVERSARIAL_AUDIT', ok: !!(au && au.audit_execution === 'COMPLETED' && au.evidence_verification === 'VERIFIED'), why: au ? 'audit ' + str(au.audit_execution).toLowerCase() + ', evidence ' + str(au.evidence_verification).toLowerCase().replace(/_/g, ' ') : 'no adversarial audit was run on this market' });
     base.gates = gates;
@@ -37459,7 +37519,8 @@ const EDPROJ: any = (globalThis as any).EDPROJ;
   /* 3. THE WHOLE COMPARISON — frozen snapshot × quotes                */
   /* ================================================================ */
   /**
-   * snapshot: EDPROJ.freeze(...) output. quotes: raw quotes (normalised here). o: { now, cfg, audits: {projection_id|market: audit}, odds_disabled }
+   * snapshot: EDPROJ.freeze(...) output. quotes: raw quotes (normalised here).
+   * o: { now, cfg, audits: {projection_id|market: audit}, odds_disabled, aliases: {projection_id: {home: [names], away: [names]}} }
    * → { compared_at, snapshot_hash, snapshot_unchanged, rows, by_projection, counts }
    * Every market a projection supports is compared, priced or not, so "no odds" is a row, not a silence.
    */
@@ -37468,31 +37529,33 @@ const EDPROJ: any = (globalThis as any).EDPROJ;
     var Pj = P();
     var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
     var before = Pj ? Pj.snapshotHash(snapshot) : null;
-    var qs = o.odds_disabled ? [] : (quotes || []).map(function (q) { return normalizeQuote(q, now, o.cfg); });
+    var qs = o.odds_disabled ? [] : (quotes || []).map(function (q) { return normalizeQuote(q, now, o.cfg); }).filter(usableQuote);
     var projections = (snapshot && snapshot.projections) || [];
     var tasks = [], matched = 0;
     projections.forEach(function (p) {
       if (!p || !Pj || !Pj.isIndependent(p)) return;
+      var alias = o.aliases ? o.aliases[p.projection_id] || null : null;
       /* this event's quotes only: identity-verified, plus near misses (one team named, same day) so a mismatch is reported, not silent */
       var sameSport = qs.filter(function (q) { return q.event && (str(q.event.sport) === str(p.sport) || str(q.event.sport) === str(p.odds_key)); });
+      var mine = sameSport.filter(function (q) { return verifyIdentity(p, q, o.cfg, alias).verified; });
       var evq = sameSport.filter(function (q) {
-        if (verifyIdentity(p, q, o.cfg).verified) return true;
-        var e = q.event || {}, ts = toMs(e.start_utc), tp = toMs(p.start_utc);
-        return ts != null && tp != null && Math.abs(ts - tp) < 86400000 && (sameTeam(p.home, e.home) || sameTeam(p.away, e.away) || sameTeam(p.home, e.away) || sameTeam(p.away, e.home));
+        if (mine.indexOf(q) >= 0) return true;
+        var e = q.event || {}, ts = toMs(e.start_utc), tp = toMs(p.start_utc), al = alias || {};
+        return ts != null && tp != null && Math.abs(ts - tp) < 86400000 && (sideMatch(p.home, al.home, e.home) || sideMatch(p.away, al.away, e.away) || sideMatch(p.home, al.home, e.away) || sideMatch(p.away, al.away, e.home));
       });
-      matched += evq.filter(function (q) { return q.executable && verifyIdentity(p, q, o.cfg).verified; }).length;
-      Pj.comparableMarkets(p, evq.filter(function (q) { return verifyIdentity(p, q, o.cfg).verified; })).forEach(function (mk) { tasks.push({ p: p, mk: mk, quotes: evq }); });
+      matched += mine.filter(function (q) { return q.executable; }).length;
+      Pj.comparableMarkets(p, mine).forEach(function (mk) { tasks.push({ p: p, mk: mk, quotes: evq, alias: alias }); });
     });
     /* N for the selection bar: the markets that actually have an executable quote */
     var nPriced = tasks.filter(function (t) { return t.quotes.some(function (q) { return q.executable && q.market.kind === t.mk.kind && q.market.side === t.mk.side && (t.mk.line == null || q.market.line === t.mk.line); }); }).length;
-    var rows = tasks.map(function (t) { return compareMarket(t.p, t.mk, t.quotes, { now: now, n_compared: nPriced, audit: o.audits ? o.audits[t.p.projection_id + '|' + t.mk.kind + '|' + t.mk.side + '|' + (t.mk.line == null ? '' : t.mk.line)] : null, cfg: o.cfg }); });
+    var rows = tasks.map(function (t) { return compareMarket(t.p, t.mk, t.quotes, { now: now, n_compared: nPriced, alias: t.alias, audit: o.audits ? o.audits[t.p.projection_id + '|' + t.mk.kind + '|' + t.mk.side + '|' + (t.mk.line == null ? '' : t.mk.line)] : null, cfg: o.cfg }); });
     var after = Pj ? Pj.snapshotHash(snapshot) : null;
     var counts = {}; OUTCOMES.forEach(function (k) { counts[k] = 0; }); rows.forEach(function (r) { counts[r.outcome]++; });
     return {
       schema: VERSION, compared_at: new Date(now).toISOString(), odds_disabled: !!o.odds_disabled,
       snapshot_hash: before, snapshot_unchanged: before != null && before === after,
       quotes_in: qs.length, executable_quotes: qs.filter(function (q) { return q.executable; }).length, executable_quotes_matched: matched,
-      priced_markets: nPriced, rows: rows, counts: counts
+      priced_markets: nPriced, rows: rows, counts: counts, data_checks: rows.filter(function (r) { return r.data_check; }).length
     };
   }
 
@@ -37514,14 +37577,22 @@ const EDPROJ: any = (globalThis as any).EDPROJ;
       var ev = { sport: sport, home: e.home && e.home.name, away: e.away && e.away.name, start_utc: e.start_utc, provider_event_id: id };
       var b = { kind: 'CAPTURED_SPORTSBOOK_QUOTE', book: m.book || null, captured_at: m.captured_at || null, source: 'today/slate.json markets (' + (m.source || 'scoreboard') + ')', provider: m.source || 'espn_scoreboard', event: ev };
       var ml = m.moneyline || {};
-      if (num(ml.home) != null) out.push(Object.assign({}, b, { american: ml.home, other_side_american: ml.away, market: { kind: 'moneyline', side: 'home', line: null } }));
-      if (num(ml.away) != null) out.push(Object.assign({}, b, { american: ml.away, other_side_american: ml.home, market: { kind: 'moneyline', side: 'away', line: null } }));
+      if (num(ml.draw) != null || sport === 'soccer') {
+        /* a market with a draw is three-way (soccer's 1X2): each outcome against the other two, never a two-way pair */
+        [['home', ml.home, [ml.draw, ml.away]], ['draw', ml.draw, [ml.home, ml.away]], ['away', ml.away, [ml.home, ml.draw]]].forEach(function (x) {
+          if (num(x[1]) != null) out.push(Object.assign({}, b, { american: x[1], other_sides_american: x[2].every(function (y) { return num(y) != null; }) ? x[2] : null, market: { kind: 'three_way', side: x[0], line: null } }));
+        });
+      } else {
+        if (num(ml.home) != null) out.push(Object.assign({}, b, { american: ml.home, other_side_american: ml.away, market: { kind: 'moneyline', side: 'home', line: null } }));
+        if (num(ml.away) != null) out.push(Object.assign({}, b, { american: ml.away, other_side_american: ml.home, market: { kind: 'moneyline', side: 'away', line: null } }));
+      }
+      /* a spread or total without its point names no market, so it is not emitted */
       var sp = m.spread || {};
-      if (sp.home && num(sp.home.price) != null) out.push(Object.assign({}, b, { american: sp.home.price, other_side_american: sp.away ? sp.away.price : null, market: { kind: 'spread', side: 'home', line: num(sp.home.point) } }));
-      if (sp.away && num(sp.away.price) != null) out.push(Object.assign({}, b, { american: sp.away.price, other_side_american: sp.home ? sp.home.price : null, market: { kind: 'spread', side: 'away', line: num(sp.away.point) } }));
+      if (sp.home && num(sp.home.price) != null && num(sp.home.point) != null) out.push(Object.assign({}, b, { american: sp.home.price, other_side_american: sp.away ? sp.away.price : null, market: { kind: 'spread', side: 'home', line: num(sp.home.point) } }));
+      if (sp.away && num(sp.away.price) != null && num(sp.away.point) != null) out.push(Object.assign({}, b, { american: sp.away.price, other_side_american: sp.home ? sp.home.price : null, market: { kind: 'spread', side: 'away', line: num(sp.away.point) } }));
       var tt = m.total || {};
-      if (num(tt.over) != null) out.push(Object.assign({}, b, { american: tt.over, other_side_american: tt.under, market: { kind: 'total', side: 'over', line: num(tt.point) } }));
-      if (num(tt.under) != null) out.push(Object.assign({}, b, { american: tt.under, other_side_american: tt.over, market: { kind: 'total', side: 'under', line: num(tt.point) } }));
+      if (num(tt.over) != null && num(tt.point) != null) out.push(Object.assign({}, b, { american: tt.over, other_side_american: tt.under, market: { kind: 'total', side: 'over', line: num(tt.point) } }));
+      if (num(tt.under) != null && num(tt.point) != null) out.push(Object.assign({}, b, { american: tt.under, other_side_american: tt.over, market: { kind: 'total', side: 'under', line: num(tt.point) } }));
     });
     return out;
   }
@@ -37533,11 +37604,16 @@ const EDPROJ: any = (globalThis as any).EDPROJ;
     var out = [];
     (rows || []).forEach(function (r) {
       if (!r) return;
-      var mk = r.market === 'h2h' ? 'moneyline' : r.market === 'spreads' ? 'spread' : r.market === 'totals' ? 'total' : null;
+      /* soccer's h2h is the three-way 1X2 (the Odds API lists the Draw as a selection) */
+      var soccer = /^soccer_/.test(str(r.sport_key));
+      var mk = r.market === 'h2h' ? (soccer ? 'three_way' : 'moneyline') : r.market === 'spreads' ? 'spread' : r.market === 'totals' ? 'total' : null;
       if (!mk) return;
       var sel = str(r.selection).toLowerCase();
-      var side = mk === 'total' ? (/^over/.test(sel) ? 'over' : /^under/.test(sel) ? 'under' : null) : (normTeam(r.selection) === normTeam(r.home_team) ? 'home' : normTeam(r.selection) === normTeam(r.away_team) ? 'away' : null);
+      var side = mk === 'total' ? (/^over/.test(sel) ? 'over' : /^under/.test(sel) ? 'under' : null)
+        : mk === 'three_way' && normTeam(r.selection) === 'draw' ? 'draw'
+          : (normTeam(r.selection) === normTeam(r.home_team) ? 'home' : normTeam(r.selection) === normTeam(r.away_team) ? 'away' : null);
       if (!side) return;
+      if ((mk === 'spread' || mk === 'total') && num(r.point) == null) return;
       var ev = { sport: r.sport_key, home: r.home_team, away: r.away_team, start_utc: r.commence_time, provider_event_id: r.event_id };
       var dec = num(r.best_dec);
       if (dec != null && dec > 1) out.push({ kind: 'CAPTURED_SPORTSBOOK_QUOTE', book: r.best_book || null, decimal: dec, captured_at: r.last_seen_at || null, source: 'signals (capture)', provider: 'capture', event: ev, market: { kind: mk, side: side, line: num(r.point) } });
@@ -37549,7 +37625,7 @@ const EDPROJ: any = (globalThis as any).EDPROJ;
 
   return {
     VERSION: VERSION, QUOTE_KINDS: QUOTE_KINDS, OUTCOMES: OUTCOMES, OUTCOME_LABEL: OUTCOME_LABEL, OUTCOME_RANK: OUTCOME_RANK, DEFAULTS: DEFAULTS, PRICING_TIERS: PRICING_TIERS,
-    normalizeQuote: normalizeQuote, verifyIdentity: verifyIdentity, sameTeam: sameTeam, quoteFreshness: quoteFreshness,
+    normalizeQuote: normalizeQuote, verifyIdentity: verifyIdentity, sameTeam: sameTeam, quoteFreshness: quoteFreshness, maxEntry: maxEntry,
     compareMarket: compareMarket, compareSnapshot: compareSnapshot, selectionZ: selectionZ, qnorm: qnorm,
     quotesFromScoreboard: quotesFromScoreboard, quotesFromSignals: quotesFromSignals, amToDec: amToDec, decToAm: decToAm
   };
@@ -37607,6 +37683,7 @@ const EDMKT: any = (globalThis as any).EDMKT;
     execution: [
       'Only comparisons of a frozen independent projection with an executable, identity-verified quote are ranked.',
       'By outcome first (VERIFIED POSITIVE EV, then CONDITIONAL EDGE, then MARKET WATCH), then by EV at the conservative probability — never by headline EV.',
+      'A DATA CHECK (EV past the 15% sanity ceiling, where a data or identity error is likelier than an edge) is listed, never ranked.',
       'A market-derived (no-vig) reference is never ranked as an EdgeDesk edge; it is reported as a benchmark.'
     ]
   };
@@ -37632,6 +37709,8 @@ const EDMKT: any = (globalThis as any).EDMKT;
   function offsetMs(ms, tz) { var p = parts(ms, tz); return Date.UTC(p.y, p.m - 1, p.d, p.h, p.mi, p.s) - Math.floor(ms / 1000) * 1000; }
   /** local midnight of the day `ms` falls in, plus `days`; the offset is re-read at the target so a DST change lands right */
   function localMidnight(ms, tz, days) { var p = parts(ms, tz); var guess = Date.UTC(p.y, p.m - 1, p.d + (days || 0)) - offsetMs(ms, tz); return Date.UTC(p.y, p.m - 1, p.d + (days || 0)) - offsetMs(guess, tz); }
+  /** local midnight of the calendar date y-m-d in tz, read from the date itself (no noon-UTC anchor, which lands on the next day east of UTC+12) */
+  function midnightOfDate(y, m, d, tz) { var u = Date.UTC(y, m - 1, d); var guess = u - offsetMs(u, tz); return u - offsetMs(guess, tz); }
   function localDate(ms, tz) { var p = parts(ms, tz); return p.y + '-' + ('0' + p.m).slice(-2) + '-' + ('0' + p.d).slice(-2); }
   function localTime(ms, tz) { var t = toMs(ms); if (t == null) return null; try { return new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }).format(new Date(t)); } catch (_) { return new Date(t).toISOString(); } }
   /**
@@ -37641,17 +37720,21 @@ const EDMKT: any = (globalThis as any).EDMKT;
   function windowFor(question, now, tz, o) {
     o = o || {};
     var zone = validZone(tz) ? tz : DEFAULT_TZ, basis = validZone(tz) ? 'the reader\'s time zone (' + zone + ')' : 'no usable time zone was sent, so ' + DEFAULT_TZ + ' was used';
-    var q = str(question).toLowerCase(), from, to, label;
+    var q = str(question).toLowerCase(), from, to, label, past = false;
     var nh = /\bnext (\d{1,3}) hours?\b/.exec(q);
-    if (o.date && /^\d{4}-\d{2}-\d{2}$/.test(o.date)) {
-      var noon = Date.parse(o.date + 'T12:00:00Z');
-      var dayStart = localMidnight(noon, zone, 0); from = Math.max(dayStart, now); to = localMidnight(noon, zone, 1); label = o.date + ' (' + zone + ')';
+    var dm = o.date ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(o.date) : null;
+    if (dm && +dm[2] >= 1 && +dm[2] <= 12 && +dm[3] >= 1 && +dm[3] <= 31) {
+      var dayStart = midnightOfDate(+dm[1], +dm[2], +dm[3], zone), dayEnd = midnightOfDate(+dm[1], +dm[2], +dm[3] + 1, zone);
+      /* today: from now on (a started game is not pregame). A day already over: the whole day, every event of
+         which has started, so discovery excludes them all and nothing is frozen — a past day is never projected now */
+      past = dayEnd <= now;
+      from = past ? dayStart : Math.max(dayStart, now); to = dayEnd; label = o.date + ' (' + zone + ')' + (past ? ' — a day already over: every event has started' : '');
     } else if (nh) { from = now; to = now + Number(nh[1]) * 3600000; label = 'the next ' + nh[1] + ' hours'; }
     else if (/\btomorrow\b/.test(q)) { from = localMidnight(now, zone, 1); to = localMidnight(now, zone, 2); label = 'tomorrow, ' + localDate(from + 3600000, zone); }
     else if (/\bthis weekend\b|\bweekend\b/.test(q)) { var wd = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }[parts(now, zone).wd]; var toMon = (8 - wd) % 7 || 7; var startFri = wd >= 5 || wd === 0 ? now : localMidnight(now, zone, 5 - wd); from = Math.max(now, startFri); to = localMidnight(now, zone, toMon); label = 'this weekend'; }
     else if (/\bthis week\b|\bnext 7 days\b/.test(q)) { from = now; to = now + 7 * 86400000; label = 'the next seven days'; }
     else { from = now; to = localMidnight(now, zone, 1); label = (/\btonight\b/.test(q) ? 'tonight' : 'today') + ', ' + localDate(now, zone) + ' (' + zone + ')'; }
-    return { from: new Date(from).toISOString(), to: new Date(to).toISOString(), label: label, timezone: zone, basis: basis };
+    return { from: new Date(from).toISOString(), to: new Date(to).toISOString(), label: label, timezone: zone, basis: basis, past: past };
   }
 
   /* ================================================================ */
@@ -37668,18 +37751,46 @@ const EDMKT: any = (globalThis as any).EDMKT;
     return null;
   }
   function teamOf(t) { t = t || {}; return { name: t.name || t.short || t.abbr || '', abbr: t.abbr || null, short: t.short || null }; }
-  /** Does schedule event e describe projection p? Entity links first (the scoreboard builder's own join), then teams and time. */
-  function matches(e, p) {
+  /** Does schedule event e name projection p by id? (the scoreboard builder's entity link, or the provider's id) */
+  function matchesById(e, p) {
     var r = e.research || {};
     if (r.entity != null) {
       var ent = str(r.entity).replace(/^nfl\|/, '');
       if (ent && ent === str(p.event_id)) return true;
     }
-    if (str(e.provider_id) && str(e.provider_id) === str(p.event_id)) return true;
+    return !!(str(e.provider_id) && str(e.provider_id) === str(p.event_id));
+  }
+  /** Both teams on the right sides, starts within three hours. */
+  function matchesByName(e, p) {
     var Mk = M(); if (!Mk) return false;
     var te = toMs(e.start_utc), tp = toMs(p.start_utc);
     var near = te != null && tp != null && Math.abs(te - tp) <= 3 * 3600000;
     return near && Mk.sameTeam(p.home, e.home && e.home.name) && Mk.sameTeam(p.away, e.away && e.away.name);
+  }
+  /** Does schedule event e describe projection p? An id link first, then teams and time. */
+  function matches(e, p) { return matchesById(e, p) || matchesByName(e, p); }
+  /**
+   * The projection a schedule event describes, from the candidates of its sport: an id link wins over any name
+   * match; then both names; then — for providers that spell a club differently ("Bayern Munich" / "FC Bayern
+   * München") — the same competition, a kick-off within 15 minutes and ONE team named on its side, when exactly
+   * one candidate qualifies (a team plays one game at a time).
+   */
+  function joinOf(e, cands, competition) {
+    var Mk = M();
+    var byId = cands.filter(function (p) { return matchesById(e, p); })[0];
+    if (byId) return byId;
+    var byName = cands.filter(function (p) { return matchesByName(e, p); });
+    if (byName.length === 1) return byName[0];
+    if (byName.length > 1) return null;
+    if (!Mk) return null;
+    var te = toMs(e.start_utc);
+    var loose = cands.filter(function (p) {
+      var tp = toMs(p.start_utc);
+      if (te == null || tp == null || Math.abs(te - tp) > 15 * 60000) return false;
+      if (competition && p.competition && p.competition !== competition) return false;
+      return Mk.sameTeam(p.home, e.home && e.home.name) || Mk.sameTeam(p.away, e.away && e.away.name);
+    });
+    return loose.length === 1 ? loose[0] : null;
   }
   /**
    * o: { today (today/slate.json), build (EDPROJ.buildAll), window, now }
@@ -37699,13 +37810,17 @@ const EDMKT: any = (globalThis as any).EDMKT;
       var sport = sportOfEvent(e);
       var row = { sport: sport || str(e.sport), league: e.league || null, competition: null, schedule_id: e.id, start_utc: iso(e.start_utc), home: teamOf(e.home), away: teamOf(e.away), venue: e.venue || null,
         schedule_source: 'today/slate.json (' + (e.provider || 'scoreboard') + ')', status: st || 'SCHEDULED', projection_id: null, research: null, reason: null };
-      if (st && st !== 'SCHEDULED' && st !== 'PRE') { row.excluded = 'the event has started or finished (' + st.toLowerCase() + ')'; events.push(row); return; }
-      if (!sport || !Pj || !Pj.SPORTS[sport]) { row.research = { outcome: 'MODEL_UNAVAILABLE', reasons: ['EdgeDesk has no research adapter for ' + str(e.sport)] }; events.push(row); return; }
-      var sp = Pj.SPORTS[sport];
-      if (sport === 'soccer') { row.competition = competitionOf(e); if (!row.competition) { row.research = { outcome: 'MODEL_UNAVAILABLE', reasons: [str(e.league) + ' is not a modelled competition (only ' + Object.keys(sp.competitions).map(function (k) { return sp.competitions[k].label; }).join(', ') + ')'] }; events.push(row); return; } }
+      var sp = sport && Pj ? Pj.SPORTS[sport] : null;
+      if (sport === 'soccer' && sp) row.competition = competitionOf(e);
+      var cands = sp && sp.adapter ? (build.projections || []).filter(function (p) { return p.sport === sport && !used[p.projection_id]; }) : [];
+      var hit = cands.length ? joinOf(e, cands, row.competition) : null;
+      /* a game that is not pregame (started, finished, postponed, cancelled, delayed — or past its start time)
+         is excluded, and so is its projection: the engine-only pass below must not bring it back as scheduled */
+      var notPre = st && st !== 'SCHEDULED' && st !== 'PRE' ? 'the event is not pregame (' + st.toLowerCase() + ')' : now != null && toMs(e.start_utc) <= now ? 'the event has started (its start time has passed)' : null;
+      if (notPre) { row.excluded = notPre; if (hit) { used[hit.projection_id] = 1; row.excluded_projection_id = hit.projection_id; } events.push(row); return; }
+      if (!sport || !sp) { row.research = { outcome: 'MODEL_UNAVAILABLE', reasons: ['EdgeDesk has no research adapter for ' + str(e.sport)] }; events.push(row); return; }
+      if (sport === 'soccer' && !row.competition) { row.research = { outcome: 'MODEL_UNAVAILABLE', reasons: [str(e.league) + ' is not a modelled competition (only ' + Object.keys(sp.competitions).map(function (k) { return sp.competitions[k].label; }).join(', ') + ')'] }; events.push(row); return; }
       if (!sp.adapter) { row.research = { outcome: 'MODEL_UNAVAILABLE', reasons: sp.unsupported.map(function (u) { return u.why; }) }; events.push(row); return; }
-      var cands = (build.projections || []).filter(function (p) { return p.sport === sport && !used[p.projection_id]; });
-      var hit = cands.filter(function (p) { return matches(e, p); })[0] || null;
       if (hit) { used[hit.projection_id] = 1; row.projection_id = hit.projection_id; row.research = hit.research; }
       else {
         /* before the engine's first scheduled regular-season game: a preseason game, which the ingest drops */
@@ -37721,6 +37836,7 @@ const EDMKT: any = (globalThis as any).EDMKT;
     /* projections in the window the schedule snapshot did not list (or no snapshot was read) */
     (build.projections || []).forEach(function (p) {
       if (used[p.projection_id] || !inWin(p.start_utc)) return;
+      if (now != null && toMs(p.start_utc) <= now) return;
       used[p.projection_id] = 1;
       events.push({ sport: p.sport, league: p.league, competition: p.competition, schedule_id: null, start_utc: p.start_utc, home: p.home, away: p.away, venue: p.venue,
         schedule_source: p.model.artifact + ' (the engine\'s own schedule' + (sched.length ? '; not on the scoreboard snapshot' : '; no scoreboard snapshot was read') + ')', status: 'SCHEDULED', projection_id: p.projection_id, research: p.research, reason: null });
@@ -37780,17 +37896,21 @@ const EDMKT: any = (globalThis as any).EDMKT;
       if (hot > 0.005) counter.push('out of sample, games the model priced at ' + pct(bin.range[0], 0) + '–' + pct(bin.range[1], 0) + ' for the home side came in ' + (Math.abs(num(bin.model_mean) - num(bin.observed)) * 100).toFixed(1) + ' pp ' + (fav.side === 'home' ? 'below' : 'above') + ' the model (n ' + bin.n + ', ' + bin.window + ')');
     }
     var mx = p.matchup && p.matchup.metrics || {};
+    /* every figure is printed only when the engine published it: a missing field drops the line, never the desk */
+    var fx = function (v, d) { v = num(v); return v == null ? null : v.toFixed(d); };
     if (p.sport === 'nhl' && mx.home && mx.away) {
       var me = fav.side === 'home' ? mx.home : mx.away, them = fav.side === 'home' ? mx.away : mx.home;
-      if (num(me.ev_xg_for_vs_league) != null) advantages.push('5v5 xG for ' + num(me.ev_xg_for_vs_league).toFixed(2) + '× league vs ' + num(them.ev_xg_for_vs_league).toFixed(2) + '×; xG against ' + num(me.ev_xg_against_vs_league).toFixed(2) + '× vs ' + num(them.ev_xg_against_vs_league).toFixed(2) + '× (score- and opponent-adjusted)');
+      var xf = [fx(me.ev_xg_for_vs_league, 2), fx(them.ev_xg_for_vs_league, 2)], xa = [fx(me.ev_xg_against_vs_league, 2), fx(them.ev_xg_against_vs_league, 2)];
+      var xParts = [xf[0] != null && xf[1] != null ? '5v5 xG for ' + xf[0] + '× league vs ' + xf[1] + '×' : null, xa[0] != null && xa[1] != null ? 'xG against ' + xa[0] + '× vs ' + xa[1] + '×' : null].filter(Boolean);
+      if (xParts.length) advantages.push(xParts.join('; ') + ' (score- and opponent-adjusted)');
     }
-    if (p.sport === 'nba' && num(mx.home_offence_vs_away_defence) != null) advantages.push('projected efficiency ' + p.home.abbr + ' ' + num(mx.home_offence_vs_away_defence).toFixed(1) + ' vs ' + p.away.abbr + ' ' + num(mx.away_offence_vs_home_defence).toFixed(1) + ' per 100 at pace ' + num(mx.pace).toFixed(1));
+    if (p.sport === 'nba' && fx(mx.home_offence_vs_away_defence, 1) != null && fx(mx.away_offence_vs_home_defence, 1) != null) advantages.push('projected efficiency ' + (p.home.abbr || p.home.name) + ' ' + fx(mx.home_offence_vs_away_defence, 1) + ' vs ' + (p.away.abbr || p.away.name) + ' ' + fx(mx.away_offence_vs_home_defence, 1) + ' per 100' + (fx(mx.pace, 1) != null ? ' at pace ' + fx(mx.pace, 1) : ''));
     if (p.sport === 'cfb') {
       var qbLine = function (x, nm) { if (!x || typeof x !== 'object' || !x.season || num(x.season.epa_per_dropback) == null) return null; return nm + ' ' + (x.identity && x.identity.player ? x.identity.player + ' ' : '') + num(x.season.epa_per_dropback).toFixed(3) + ' EPA/dropback (' + x.season.dropbacks + ' dropbacks)'; };
       var qa = [qbLine(mx.home_qb_epa, p.home.name), qbLine(mx.away_qb_epa, p.away.name)].filter(Boolean);
       if (qa.length) advantages.push('quarterback passing ' + qa.join(' vs ') + ' — research context, not in the fair line');
     }
-    if (p.sport === 'soccer' && p.projected_score) advantages.push('expected goals ' + p.home.name + ' ' + num(p.projected_score.home).toFixed(2) + ', ' + p.away.name + ' ' + num(p.projected_score.away).toFixed(2));
+    if (p.sport === 'soccer' && p.projected_score && fx(p.projected_score.home, 2) != null && fx(p.projected_score.away, 2) != null) advantages.push('expected goals ' + p.home.name + ' ' + fx(p.projected_score.home, 2) + ', ' + p.away.name + ' ' + fx(p.projected_score.away, 2));
     var ctx = p.context || {};
     var rest = ctx.home && ctx.away && ctx.home.rest_days != null && ctx.away.rest_days != null ? 'rest ' + p.home.abbr + ' ' + ctx.home.rest_days + ' d' + (ctx.home.back_to_back ? ' (back-to-back)' : '') + ', ' + p.away.abbr + ' ' + ctx.away.rest_days + ' d' + (ctx.away.back_to_back ? ' (back-to-back)' : '') + (ctx.away.travel_km != null ? '; ' + p.away.abbr + ' travel ' + Math.round(ctx.away.travel_km) + ' km' : '') : null;
     var wrong = [].concat((p.integrity && p.integrity.conflicts || []).map(function (c) { return c.detail; }), (p.sensitivity || []).slice(0, 2).map(function (s) { return s.what + (s.range_p_home ? ': home probability ' + pct(s.range_p_home[0]) + '–' + pct(s.range_p_home[1]) : s.delta_p_home != null ? ': home probability ' + (s.delta_p_home >= 0 ? '+' : '') + (s.delta_p_home * 100).toFixed(1) + ' pp' : s.delta_home_line != null ? ': home line moves ' + s.delta_home_line + ' pts' : ''); }), (p.invalidators || []).slice(0, 2));
@@ -37833,10 +37953,13 @@ const EDMKT: any = (globalThis as any).EDMKT;
   }
   function rankExecution(cmp) {
     var Mk = M();
-    var rows = (cmp && cmp.rows || []).filter(function (r) { return r.outcome === 'VERIFIED_POSITIVE_EV' || r.outcome === 'CONDITIONAL_EDGE' || r.outcome === 'MARKET_WATCH'; });
+    var all = (cmp && cmp.rows || []).filter(function (r) { return r.outcome === 'VERIFIED_POSITIVE_EV' || r.outcome === 'CONDITIONAL_EDGE' || r.outcome === 'MARKET_WATCH'; });
+    /* the highest EVs are the likeliest data errors: a DATA CHECK is listed beside the ranking, never in it */
+    var checks = all.filter(function (r) { return r.data_check; });
+    var rows = all.filter(function (r) { return !r.data_check; });
     rows.sort(function (a, b) { var d = Mk.OUTCOME_RANK[a.outcome] - Mk.OUTCOME_RANK[b.outcome]; if (d) return d; return (num(b.math && b.math.conservative_ev_per_dollar) || -1) - (num(a.math && a.math.conservative_ev_per_dollar) || -1); });
     rows.forEach(function (r, i) { r.rank = i + 1; });
-    return { ranked: rows, rules: RANKING_RULES.execution };
+    return { ranked: rows, data_checks: checks, rules: RANKING_RULES.execution };
   }
 
   /* ================================================================ */
@@ -37863,6 +37986,16 @@ const EDMKT: any = (globalThis as any).EDMKT;
       discovery: disc, snapshot: snapshot, research: research, artifacts_read: Object.keys(A).filter(function (k) { return A[k] != null; }), artifact_errors: o.artifact_errors || {},
       artifact_times: artifactTimes(A) };
   }
+  /* the schedule's own names for each joined projection's teams: the comparison accepts a quote that names the
+     game the way the scoreboard does ("Bayern Munich"), because discovery already proved the two are one game */
+  function aliasesOf(prep) {
+    var out = {};
+    (prep.discovery && prep.discovery.events || []).forEach(function (e) {
+      if (!e.projection_id || !e.schedule_id) return;
+      out[e.projection_id] = { home: [e.home && e.home.name, e.home && e.home.short].filter(Boolean), away: [e.away && e.away.name, e.away && e.away.short].filter(Boolean) };
+    });
+    return out;
+  }
   function artifactTimes(A) { var out = {}; Object.keys(A || {}).forEach(function (k) { var a = A[k]; if (a && typeof a === 'object') out[k] = iso(a.generated_at) || null; }); return out; }
   /**
    * PHASE 2 — the market. o: { quotes: [raw quotes], odds_disabled, odds_status, now, audits, benchmark }
@@ -37872,19 +38005,26 @@ const EDMKT: any = (globalThis as any).EDMKT;
     var Mk = M(), Pj = P();
     var now = toMs(o.now) != null ? toMs(o.now) : Date.now();
     var hashBefore = prep.snapshot.snapshot_hash;
-    var cmp = Mk.compareSnapshot(prep.snapshot, o.odds_disabled ? [] : (o.quotes || []), { now: now, odds_disabled: !!o.odds_disabled, audits: o.audits || null, cfg: o.cfg || null });
+    var cmp = Mk.compareSnapshot(prep.snapshot, o.odds_disabled ? [] : (o.quotes || []), { now: now, odds_disabled: !!o.odds_disabled, audits: o.audits || null, cfg: o.cfg || null, aliases: aliasesOf(prep) });
     var verify = Pj.verifySnapshot(prep.snapshot);
     var rr = rankResearch(prep.research.map(function (r) { return JSON.parse(JSON.stringify(r)); }));
     var ex = rankExecution(cmp);
-    /* the price each top research candidate would need (from the frozen projection only; never a quote) */
+    /* The price each top research candidate would need, from the frozen projection only (never a quote), on the
+       SAME bar the comparison classifies on: the edge bar, and z for N = every market this run compares (at
+       least as many as are priced, so a quote at this price reads CONDITIONAL EDGE or better, not MARKET WATCH). */
+    var cfgN = Object.assign({}, Mk.DEFAULTS, o.cfg || {});
+    var nNeed = Math.max(1, cmp.rows.length, cmp.priced_markets || 0);
+    var zNeed = Mk.selectionZ(nNeed, cfgN.alpha);
     var needs = rr.ranked.slice(0, 6).map(function (r) {
       var p = prep.snapshot.projections.filter(function (x) { return x.projection_id === r.projection_id; })[0];
       var mk = p.sport === 'soccer' ? 'three_way' : 'moneyline';
       var el = Pj.pricingEligibility(p, mk);
       if (!el.ok) return { projection_id: r.projection_id, needs: null, why: el.why };
-      var sig = Pj.marketSigma(p, mk); var pc = Math.max(0, r.modeled.probability - (rr.z || 1.2816) * sig.total);
-      var dmin = (1 + 0.02) / pc; var am = !(dmin > 1) ? null : dmin >= 2 ? Math.ceil((dmin - 1) * 100) : Math.ceil(-100 / (dmin - 1));
-      return { projection_id: r.projection_id, needs: am, why: 'the worst ' + (mk === 'three_way' ? '1X2' : 'moneyline') + ' price at which the conservative probability ' + pct(pc) + ' still clears the 2% bar' };
+      var model = Pj.probabilityAt(p, mk, r.modeled.side, null);
+      var sig = Pj.marketSigma(p, mk); var pc = Math.max(0, r.modeled.probability - zNeed * sig.total);
+      var am = Mk.maxEntry(pc, model ? model.p_push : 0, cfgN);
+      return { projection_id: r.projection_id, needs: am, z: r4(zNeed), n_markets: nNeed,
+        why: 'the worst ' + (mk === 'three_way' ? '1X2' : 'moneyline') + ' price at which the conservative probability ' + pct(pc) + ' (z ' + r4(zNeed) + ' for the ' + nNeed + ' markets this run compares; more priced markets raise it) still clears the ' + pct(cfgN.edge_bar, 0) + ' bar on EV' };
     });
     var res = {
       schema: VERSION, version: VERSION, built_at: new Date(now).toISOString(), window: prep.window,
@@ -37942,6 +38082,7 @@ const EDMKT: any = (globalThis as any).EDMKT;
       best_research: rk[0] || null,
       runner_up: rk[1] || null,
       market_watch: watch[0] || null,
+      data_checks: res.execution_ranking.data_checks || [],
       alternatives: rk.slice(1, 6),
       /* the strongest ranked projection of every sport, so a sport outside the top five is still compared, with its rank */
       best_by_sport: rk.filter(function (r, i) { return rk.findIndex(function (x) { return x.sport === r.sport; }) === i; }),
@@ -37953,8 +38094,12 @@ const EDMKT: any = (globalThis as any).EDMKT;
   function noVerifiedReason(res) {
     var c = res.comparison.counts;
     if (res.odds.disabled) return 'sportsbook odds integrations are disabled for this run, so no price was compared: every market reads NO CURRENT ODDS';
-    var parts = [];
-    ['STALE_PRICE', 'NO_CURRENT_ODDS', 'INSUFFICIENT_MODEL_RELIABILITY', 'NO_VERIFIED_EDGE', 'MARKET_WATCH', 'CONDITIONAL_EDGE'].forEach(function (k) { if (c[k]) parts.push(c[k] + ' ' + M().OUTCOME_LABEL[k].toLowerCase()); });
+    var parts = [], dc = res.comparison.data_checks || 0;
+    ['STALE_PRICE', 'NO_CURRENT_ODDS', 'INSUFFICIENT_MODEL_RELIABILITY', 'NO_VERIFIED_EDGE', 'MARKET_WATCH', 'CONDITIONAL_EDGE'].forEach(function (k) {
+      var n = k === 'MARKET_WATCH' ? c[k] - dc : c[k];
+      if (n) parts.push(n + ' ' + M().OUTCOME_LABEL[k].toLowerCase());
+      if (k === 'MARKET_WATCH' && dc) parts.push(dc + ' data check' + (dc === 1 ? '' : 's'));
+    });
     return parts.length ? 'of ' + plural(res.comparison.rows.length, 'market') + ' compared: ' + parts.join(', ') : 'no market was compared';
   }
   function countsOf(res, prep) {
@@ -37979,7 +38124,7 @@ const EDMKT: any = (globalThis as any).EDMKT;
     L.push(heading);
     L.push('Sport: ' + r.sport_label + (r.league && r.sport_label.indexOf(r.league) < 0 ? ' (' + r.league + ')' : '') + ' · Event: ' + r.event + ' · ' + localTime(r.start_utc, res.window.timezone));
     L.push('Modeled probability: ' + m.selection + ' ' + pct(m.probability) + ' (' + (m.market === 'three_way' ? '1X2' : 'moneyline') + ', fair ' + fmtAm(m.fair_american) + ') — the model\'s probability of the outcome, not a confidence score. Uncertainty σ ' + pct(m.sigma.total) + ' (model ' + pct(m.sigma.model) + ', calibration ' + pct(m.sigma.calibration) + ', lineup ' + pct(m.sigma.lineup) + '); conservative ' + pct(m.conservative_probability) + ' at z ' + m.z + '.');
-    if (m.fair_home_line != null || m.fair_total != null || m.projected_score) L.push('EdgeDesk fair lines: ' + [m.fair_home_line != null ? 'home ' + (m.fair_home_line > 0 ? '+' : '') + m.fair_home_line : null, m.fair_total != null ? 'total ' + m.fair_total : null, m.projected_score && m.projected_score.home != null ? 'projected ' + Number(m.projected_score.away).toFixed(2) + '–' + Number(m.projected_score.home).toFixed(2) + ' (away–home)' : null].filter(Boolean).join('; ') + '.');
+    if (m.fair_home_line != null || m.fair_total != null || (m.projected_score && num(m.projected_score.home) != null && num(m.projected_score.away) != null)) L.push('EdgeDesk fair lines: ' + [m.fair_home_line != null ? 'home ' + (m.fair_home_line > 0 ? '+' : '') + m.fair_home_line : null, m.fair_total != null ? 'total ' + m.fair_total : null, m.projected_score && num(m.projected_score.home) != null && num(m.projected_score.away) != null ? 'projected ' + Number(m.projected_score.away).toFixed(2) + '–' + Number(m.projected_score.home).toFixed(2) + ' (away–home)' : null].filter(Boolean).join('; ') + '.');
     L.push('Research: ' + r.research_outcome.replace(/_/g, ' ') + (r.research_reasons && r.research_reasons.length && r.research_outcome !== 'RESEARCH_READY' ? ' — ' + r.research_reasons.join('; ') : '') + '.');
     if (r.advantages.length) L.push('Strongest measured advantages: ' + r.advantages.join('; ') + '.');
     if (r.context) L.push('Rest and travel: ' + r.context + '.');
@@ -38013,7 +38158,8 @@ const EDMKT: any = (globalThis as any).EDMKT;
     L.push('');
     L.push('STRONGEST CONDITIONAL MARKET WATCH');
     if (s.market_watch) execCard(s.market_watch, '', res).slice(1).forEach(function (l) { L.push(l); });
-    else L.push('None: ' + (res.odds.disabled ? 'odds integrations are disabled for this run.' : res.comparison.priced_markets ? 'no compared price is positive against the model.' : 'no fresh executable price was available for a modelled market.'));
+    else L.push('None: ' + (res.odds.disabled ? 'odds integrations are disabled for this run.' : res.comparison.priced_markets ? 'no compared price is positive against the model' + (s.data_checks.length ? ' outside the data checks below.' : '.') : 'no fresh executable price was available for a modelled market.'));
+    if (s.data_checks.length) L.push('Data checks (not ranked; EV past the 15% sanity ceiling, so a data or identity error is likelier than an edge): ' + s.data_checks.slice(0, 4).map(function (x) { return x.selection + ' at ' + fmtAm(x.quote && x.quote.american) + ' (' + x.event + ')'; }).join('; ') + (s.data_checks.length > 4 ? '; and ' + (s.data_checks.length - 4) + ' more' : '') + '.');
     L.push('');
     L.push('OTHER TOP CANDIDATES (ranked by the rules below; probability, uncertainty and validation are reported separately)');
     if (s.alternatives.length) s.alternatives.forEach(function (r) { L.push(r.rank + '. ' + r.sport_label + ' — ' + r.event + ', ' + localTime(r.start_utc, tz) + ': ' + r.modeled.selection + ' ' + pct(r.modeled.probability) + ' (σ ' + pct(r.modeled.sigma.total) + ', conservative ' + pct(r.modeled.conservative_probability) + '); ' + r.model_confidence.validation_state.replace(/_/g, ' ').toLowerCase() + ' ' + (r.modeled.market === 'three_way' ? '1X2' : 'moneyline') + '; ' + r.research_outcome.replace(/_/g, ' ').toLowerCase() + (r.research_reasons[0] ? ' (' + r.research_reasons[0] + ')' : '') + '.'); });
@@ -38049,7 +38195,7 @@ const EDMKT: any = (globalThis as any).EDMKT;
 
   return {
     VERSION: VERSION, RANKING_RULES: RANKING_RULES, DEFAULT_TZ: DEFAULT_TZ,
-    windowFor: windowFor, localMidnight: localMidnight, localDate: localDate, discover: discover, matches: matches,
+    windowFor: windowFor, localMidnight: localMidnight, localDate: localDate, discover: discover, matches: matches, joinOf: joinOf,
     researchFor: researchFor, rankResearch: rankResearch, rankExecution: rankExecution,
     prepare: prepare, complete: complete, coverage: coverage, render: render
   };
@@ -54718,7 +54864,9 @@ export async function multiSportPrepare(dal: Dal, o: { question: string; tz: str
 export function snapshotRow(prep: any, question: string): any {
   const s = prep.snapshot;
   return {
-    snapshot_id: "pjs_" + String(s.snapshot_hash).slice(0, 32), snapshot_hash: s.snapshot_hash, frozen_at: s.frozen_at, window_from: prep.window.from, window_to: prep.window.to,
+    /* one row per freeze: the id covers the snapshot hash AND the freeze time (EDPROJ.freeze), so a second question on
+       unchanged projections stores its own freeze instead of being deduplicated onto the first one's time */
+    snapshot_id: s.snapshot_id ?? ("pjs_" + EDPROJ.sha256(String(s.snapshot_hash) + "|" + s.frozen_at).slice(0, 32)), snapshot_hash: s.snapshot_hash, frozen_at: s.frozen_at, window_from: prep.window.from, window_to: prep.window.to,
     timezone: prep.window.timezone, question: String(question ?? "").slice(0, 300), contract_version: EDPROJ.CONTRACT, projections_count: s.count,
     projections: s.projections.map((p: any) => ({ projection_id: p.projection_id, projection_hash: p.projection_hash, sport: p.sport, event_id: p.event_id, start_utc: p.start_utc,
       home: p.home.name, away: p.away.name, model_id: p.model.id, model_built_at: p.model.artifact_generated_at, p_home: p.outcome.p_home, p_away: p.outcome.p_away, p_draw: p.outcome.p_draw ?? null,
@@ -54770,7 +54918,8 @@ export function multiSportQuotes(sw: any, today: any): { quotes: any[]; sources:
   return { quotes, sources };
 }
 function odds2sport(k: string): string {
-  for (const id of Object.keys(EDPROJ?.SPORTS ?? {})) if (EDPROJ.SPORTS[id].odds_key === k) return id;
+  /* an exact key (icehockey_nhl), or a family prefix (soccer_ covers soccer_epl, soccer_germany_bundesliga, …) */
+  for (const id of Object.keys(EDPROJ?.SPORTS ?? {})) { const ok = String(EDPROJ.SPORTS[id].odds_key ?? ""); if (ok === k || (ok.endsWith("_") && String(k ?? "").startsWith(ok))) return id; }
   return k;
 }
 
@@ -54879,7 +55028,7 @@ export function multiSportView(res: any, snapRow: any): any {
   const s = res.sections;
   return {
     available: true, schema: res.schema, window: res.window, order: res.order, odds: res.odds, counts: res.counts,
-    best_verified: s.best_verified, no_verified_reason: s.no_verified_reason, best_research: slimR(s.best_research), market_watch: s.market_watch,
+    best_verified: s.best_verified, no_verified_reason: s.no_verified_reason, best_research: slimR(s.best_research), market_watch: s.market_watch, data_checks: (s.data_checks ?? []).slice(0, 8),
     alternatives: s.alternatives.map(slimR), best_by_sport: s.best_by_sport.map(slimR), held_back: s.held_back.map(slimR), price_needed: res.price_needed,
     coverage: res.coverage, comparison_counts: res.comparison.counts, ranking_rules: { research: res.research_ranking.rules, execution: res.execution_ranking.rules },
     sources: res.artifact_times, artifact_errors: res.artifact_errors,
@@ -55313,7 +55462,8 @@ async function quantTurnInner(o: { body: any; auth: string; now?: number; fetchI
        question, not a cross-sport scan (unless it says "across all sports") */
     if (!cls.all_sports) {
       if (o.body.packet) return null;
-      if (quantTokens(q).length) { const named = await quantRows(dal, q, now); if (named.rows.length) return null; }
+      /* the named-game check reads captured prices (signals); with the odds integrations off no price is read at all */
+      if (!ODDS_DISABLED && quantTokens(q).length) { const named = await quantRows(dal, q, now); if (named.rows.length) return null; }
     }
     const r = await quantScan({ body: o.body, auth: o.auth, dal, now, cls, progress: o.progress }); return r ? { ...r, ...base } : null;
   }

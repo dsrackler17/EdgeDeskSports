@@ -20,7 +20,22 @@
   - The research layer invalidates a projection whose starter disagrees, and the research packet no longer lets the schedule feed win silently.
   - nflverse data is no longer labelled "official".
 - **Audit semantics.** "UNVERIFIED … PASS" is now three separate lines: audit execution, evidence verification, and trade execution eligibility.
-- Tests: `tools/intelligence/multisport.test.js` (108), `multisport_host.test.js` (35, including the 2026-10-15 regression from a fixture of that day's committed artifacts), `projections_sql.test.js` (43, PostgreSQL 16). `quant_ui.e2e.js` (59) renders the Oct 15 answer in Chromium at both widths. Every suite in the existing `ai:test` chain stays green.
+- **Fixed after review** (each reproduced, then pinned by a test):
+  - A second question on unchanged projections is its own freeze. Before, a hash-only snapshot id was deduplicated and the database refused every comparison of the second turn.
+  - A DATA CHECK (EV past the 15% ceiling) is listed, never ranked as the strongest market watch.
+  - The maximum acceptable price and the price to watch are on the classifier's own 2% bar.
+  - Postponed or delayed games stay excluded.
+  - Soccer's 1X2 is compared as a three-way market; a club spelled differently on the scoreboard ("FC Cologne") joins its engine projection ("1. FC Köln").
+  - Team matching no longer confuses Texas with Texas A&M or Iowa with Iowa State, and an id link wins over a name match.
+  - A missing published figure no longer takes down the desk.
+  - Two feeds of one book count as one book.
+  - A past replay date is no longer an inverted window.
+  - With odds off, the named-game check reads no price.
+  - A spread with no line is never priced as pick'em.
+  - The NHL engine's per-line validation is kept.
+  - No constant is shown as a fair line.
+  - The database stamps `created_at` itself and refuses back-dated freezes and comparisons, and comparisons naming another event or probability.
+- Tests: `tools/intelligence/multisport.test.js` (127), `multisport_host.test.js` (37, including the 2026-10-15 regression from a fixture of that day's committed artifacts), `projections_sql.test.js` (50, PostgreSQL 16). `quant_ui.e2e.js` (59) renders the Oct 15 answer in Chromium at both widths. Every suite in the existing `ai:test` chain stays green.
 
 ## 2026-10-15 — Today's Games: scoreboard tiles, and no "ESPN" on screen
 

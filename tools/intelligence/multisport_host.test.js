@@ -199,6 +199,12 @@ function defects(j) {
   const hashes = new Map(snapPost ? snapPost.body.projections.map((p) => [p.projection_id, p.projection_hash]) : []);
   ok('ORDER: the comparison rows name that snapshot and the exact projection hashes it froze', cmpPost && cmpPost.body.length > 0 && cmpPost.body.every((r) => r.snapshot_id === snapPost.body.snapshot_id && hashes.get(r.projection_id) === r.projection_hash && Date.parse(r.compared_at) >= Date.parse(r.frozen_at)), cmpPost && cmpPost.body.slice(0, 2));
   ok('ORDER: the answer proves the comparison did not move a projection', ms.order && ms.order.snapshot_unchanged === true && ms.order.frozen_before_market === true, ms.order);
+  /* a second question on unchanged projections is its own freeze: its own row, and its comparisons name it (a hash-only id
+     was deduplicated onto the first freeze, so the database refused every comparison of the second turn) */
+  const N2 = await ask(mNew, Q);
+  const snap2 = posted.find((p) => p.table === 'projection_snapshots'), cmp2 = posted.find((p) => p.table === 'market_comparisons');
+  ok('ORDER: a second question on the same projections writes its own snapshot (same hash, new id) and its comparisons name that one', N2.status === 200 && snap2 && snapPost && snap2.body.snapshot_hash === snapPost.body.snapshot_hash && snap2.body.snapshot_id !== snapPost.body.snapshot_id
+    && cmp2 && cmp2.body.length > 0 && cmp2.body.every((r) => r.snapshot_id === snap2.body.snapshot_id && r.frozen_at === snap2.body.frozen_at), [snapPost && snapPost.body.snapshot_id, snap2 && snap2.body.snapshot_id, snap2 && snap2.body.frozen_at]);
 
   /* ═══ 4. EVERY ODDS INTEGRATION OFF ═══ */
   ENV.EDGEDESK_ODDS_DISABLED = '1';
@@ -212,6 +218,9 @@ function defects(j) {
   ok('ODDS OFF: the snapshot hash is identical to the odds-on run (same projections, same hashes)', mo.snapshot && ms.snapshot && mo.snapshot.snapshot_hash === ms.snapshot.snapshot_hash, [mo.snapshot, ms.snapshot]);
   ok('ODDS OFF: every market reads NO CURRENT ODDS, nothing is called an edge', mo.comparison_counts && mo.comparison_counts.NO_CURRENT_ODDS > 0 && Object.keys(mo.comparison_counts).filter((k) => k !== 'NO_CURRENT_ODDS').every((k) => mo.comparison_counts[k] === 0) && mo.odds.disabled === true, mo.comparison_counts);
   ok('ODDS OFF: the answer says the integrations are off and the captured-price audit did not run', /odds integrations are disabled/.test(O.j.answer) && /Not run: the odds integrations are disabled/.test(O.j.answer) && O.j.scan && O.j.scan.not_run === 'ODDS_DISABLED', O.j.answer.split('\n').slice(0, 3));
+  /* the single-game routing check reads captured prices (signals); with every odds integration off it is skipped */
+  const O2 = await ask(mOff, "What's the best Vegas bet tonight?");
+  ok('ODDS OFF: a scan naming a team reads no price before (or after) the freeze — the named-game check is skipped', O2.status === 200 && O2.j.quant && O2.j.quant.intent === 'SCAN' && !log.some((x) => PRICE_URL.test(x.u)), log.filter((x) => PRICE_URL.test(x.u)).map((x) => x.u));
   refusePrices = false;
   delete ENV.EDGEDESK_ODDS_DISABLED;
 

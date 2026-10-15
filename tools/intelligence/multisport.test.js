@@ -116,11 +116,14 @@ function quote(p, o) {
   ok('NO-VIG: the market reference is labelled market-derived and never sits in the model slot', /market-derived/.test(ref.label) && r.model.source === 'INDEPENDENT_MODEL_PROJECTION' && r.model.p_win === p);
   ok('LINEUPS: the goalies are unconfirmed, so a price that clears the bar is a CONDITIONAL EDGE, not verified', r.outcome === 'CONDITIONAL_EDGE' && r.gates.some((g) => g.gate === 'LINEUP_CONFIRMED' && !g.ok) && /lineup confirmed/i.test(r.reasons.join(' ')), [r.outcome, r.reasons]);
   ok('LINEUPS: …and the other open gates are named: no closing-market validation, a single book, no audit', ['MODEL_MARKET_VALIDATED', 'BOOKS_CONFIRM', 'ADVERSARIAL_AUDIT'].every((g) => r.gates.some((x) => x.gate === g && !x.ok)), r.gates);
-  /* the maximum acceptable price clears the floor on the conservative probability; one tick worse does not */
+  /* the maximum acceptable price clears the EDGE BAR (the bar the classifier uses) on the conservative probability; one tick worse does not */
   const mx = r.math.max_acceptable_american, pc = r.math.conservative_probability;
   const evAt = (am) => { const d = am > 0 ? 1 + am / 100 : 1 + 100 / -am; return pc * (d - 1) - (1 - pc); };
-  ok('MAX PRICE: EV at the maximum acceptable price clears the 0.5% floor on the conservative probability', mx != null && evAt(mx) >= 0.005 - 1e-9, [mx, evAt(mx)]);
-  ok('MAX PRICE: one tick worse does not', evAt(mx - 1) < 0.005 + 1e-9 || mx - 1 === -100, [mx - 1, evAt(mx - 1)]);
+  ok('MAX PRICE: EV at the maximum acceptable price clears the 2% edge bar on the conservative probability', mx != null && evAt(mx) >= 0.02 - 1e-9, [mx, evAt(mx)]);
+  ok('MAX PRICE: one tick worse does not', evAt(mx - 1) < 0.02 + 1e-9 || mx - 1 === -100, [mx - 1, evAt(mx - 1)]);
+  const atMax = M.compareMarket(VGK, { kind: 'moneyline', side: 'home', line: null }, [M.normalizeQuote(quote(VGK, { american: mx }), NOW)], { now: NOW, n_compared: 1 });
+  const pastMax = M.compareMarket(VGK, { kind: 'moneyline', side: 'home', line: null }, [M.normalizeQuote(quote(VGK, { american: mx - 1 }), NOW)], { now: NOW, n_compared: 1 });
+  ok('MAX PRICE: a quote AT the stated maximum is classified CONDITIONAL EDGE, one tick worse MARKET WATCH (one bar, not two)', atMax.outcome === 'CONDITIONAL_EDGE' && pastMax.outcome === 'MARKET_WATCH', [atMax.outcome, pastMax.outcome, mx]);
   const worse = M.compareMarket(VGK, { kind: 'moneyline', side: 'home', line: null }, [M.normalizeQuote(quote(VGK, { american: -230 }), NOW)], { now: NOW, n_compared: 1 });
   ok('EV: a price worse than the fair is NO VERIFIED EDGE', worse.outcome === 'NO_VERIFIED_EDGE' && worse.math.ev_per_dollar < 0, [worse.outcome, worse.math && worse.math.ev_per_dollar]);
   const thin = M.compareMarket(VGK, { kind: 'moneyline', side: 'home', line: null }, [M.normalizeQuote(quote(VGK, { american: -190 }), NOW)], { now: NOW, n_compared: 40 });
@@ -309,6 +312,72 @@ function quote(p, o) {
   ok('ANSWER: the coverage report lists every sport with events, models, markets, prices and blockers', r.coverage.length === Object.keys(P.SPORTS).length && /- NHL: 11 discovered, 11 researched, model executed \(edgedesk_nhl_v1:xg_core\)/.test(r.answer));
   ok('ANSWER: sources carry their build times, and the order is proved', /hockey\/slate\.json — built 2026-10-15T12:05:48/.test(r.answer) && /projections unchanged by the comparison: yes/.test(r.answer));
   ok('ANSWER: no certainty words', !/\b(guarantee[sd]?|can'?t (lose|miss)|sure thing|free money|mortal lock|lock of the|will (win|cover|cash))\b/i.test(r.answer));
+}
+
+/* ═══ REVIEW REGRESSIONS (each a defect found in review, reproduced, then fixed) ═══ */
+{
+  const NOWC = NOW + 1000;
+  /* 1. a second question on unchanged projections is its own freeze, with its own stored id */
+  const pA = X.prepare({ artifacts: A(), question: 'tonight', now: NOW, timezone: TZ }), pB = X.prepare({ artifacts: A(), question: 'tonight', now: NOW + 20 * 60000, timezone: TZ });
+  ok('SNAPSHOT ID: the same projections frozen 20 minutes apart keep their hash but get two ids (no silent dedupe onto the first freeze time)', pA.snapshot.snapshot_hash === pB.snapshot.snapshot_hash && /^pjs_[0-9a-f]{32}$/.test(pA.snapshot.snapshot_id) && pA.snapshot.snapshot_id !== pB.snapshot.snapshot_id, [pA.snapshot.snapshot_id, pB.snapshot.snapshot_id]);
+  /* 2. a DATA CHECK (EV past the sanity ceiling) is listed, never ranked as the strongest market watch */
+  const dc = X.complete(prep0, { quotes: [quote(VGK, { american: 400, market: { side: 'away' } }), quote(VGK, { american: -150 })], now: NOWC });
+  const dRow = dc.comparison.rows.find((r) => r.projection_id === VGK.projection_id && r.market.side === 'away');
+  ok('DATA CHECK: the +400 row is flagged, out of the execution ranking, and never the strongest market watch', dRow && dRow.data_check === true && !dc.execution_ranking.ranked.includes(dRow) && dc.execution_ranking.data_checks.includes(dRow) && dc.sections.market_watch !== dRow && /Data checks \(not ranked/.test(dc.answer), [dRow && dRow.outcome, dc.sections.market_watch && dc.sections.market_watch.selection]);
+  /* 3. the price to watch is on the classifier's own bar: a fresh quote AT it is CONDITIONAL EDGE or better */
+  const r0 = X.complete(prep0, { quotes: [], now: NOWC });
+  const best = r0.sections.best_research, need = r0.price_needed.find((n) => n.projection_id === best.projection_id);
+  const bp = prep0.snapshot.projections.find((p) => p.projection_id === best.projection_id);
+  const r1 = need && need.needs != null ? X.complete(prep0, { quotes: [quote(bp, { american: need.needs, market: { side: best.modeled.side } })], now: NOWC }) : null;
+  const row1 = r1 && r1.comparison.rows.find((r) => r.projection_id === best.projection_id && r.market.side === best.modeled.side && r.quote);
+  ok('PRICE TO WATCH: a fresh quote at the stated price clears the same bar (CONDITIONAL EDGE or better, not MARKET WATCH)', row1 && (row1.outcome === 'CONDITIONAL_EDGE' || row1.outcome === 'VERIFIED_POSITIVE_EV'), [need, row1 && row1.outcome, row1 && row1.reasons]);
+  /* 4. a postponed game is excluded with its projection: never brought back as scheduled by the engine-only pass */
+  const ev0 = prep0.discovery.events.find((e) => e.sport === 'nhl' && e.schedule_id && e.projection_id);
+  const Ap = A(); (Ap['today/slate.json'].events || []).concat(Ap['today/slate.json'].upcoming || []).filter((e) => e.id === ev0.schedule_id).forEach((e) => { e.status = 'POSTPONED'; });
+  const pp = X.prepare({ artifacts: Ap, question: 'tonight', now: NOW, timezone: TZ });
+  ok('POSTPONED: the game is listed once, excluded, and its projection is neither frozen nor ranked', pp.discovery.events.filter((e) => e.schedule_id === ev0.schedule_id || e.projection_id === ev0.projection_id).length === 1 && pp.discovery.events.find((e) => e.schedule_id === ev0.schedule_id).excluded && !pp.snapshot.projections.some((p) => p.projection_id === ev0.projection_id), pp.discovery.events.filter((e) => e.projection_id === ev0.projection_id));
+  /* 5 + 6. soccer: the scoreboard's "FC Cologne" is the engine's "1. FC Köln" — one event, and its 1X2 quotes are compared */
+  const pw = X.prepare({ artifacts: A(), question: 'this week', now: NOW, timezone: TZ });
+  const koln = pw.discovery.events.filter((e) => e.sport === 'soccer' && /Frankfurt/.test(e.home.name) && (/Cologne/.test(e.away.name) || /Köln/.test(e.away.name)));
+  ok('SOCCER JOIN: Eintracht Frankfurt v FC Cologne (scoreboard) and v 1. FC Köln (engine) are one event with the projection', koln.length === 1 && !!koln[0].projection_id, koln.map((e) => [e.schedule_id, e.projection_id, e.away.name]));
+  const kp = koln[0] && pw.snapshot.projections.find((p) => p.projection_id === koln[0].projection_id);
+  const sbq = M.quotesFromScoreboard({ events: [{ id: 'sb1', sport: 'soccer', home: { name: 'Eintracht Frankfurt' }, away: { name: 'FC Cologne' }, start_utc: kp ? kp.start_utc : null }], markets: { sb1: { book: 'DraftKings', captured_at: new Date(NOW - 60000).toISOString(), moneyline: { home: -120, away: 300, draw: 280 } } } }, () => 'soccer');
+  ok('SOCCER 1X2: a scoreboard market with a draw becomes three three-way quotes, each against the other two', sbq.length === 3 && sbq.every((q) => q.market.kind === 'three_way' && q.other_sides_american && q.other_sides_american.length === 2) && sbq.some((q) => q.market.side === 'draw'), sbq.map((q) => q.market));
+  const kc = kp ? X.complete(pw, { quotes: sbq, now: NOWC }) : null;
+  const kRows = kc ? kc.comparison.rows.filter((r) => r.projection_id === kp.projection_id && r.market.kind === 'three_way') : [];
+  ok('SOCCER 1X2: …matched to the engine\'s projection through the schedule\'s names, so no outcome reads NO CURRENT ODDS', kRows.length === 3 && kRows.every((r) => r.quote && r.outcome !== 'NO_CURRENT_ODDS'), kRows.map((r) => [r.market.side, r.outcome, r.reasons[0]]));
+  const sig = M.quotesFromSignals([{ sport_key: 'soccer_germany_bundesliga', market: 'h2h', selection: 'Draw', home_team: 'Eintracht Frankfurt', away_team: 'FC Cologne', best_dec: 3.8, best_book: 'fanduel', last_seen_at: new Date(NOW).toISOString(), commence_time: '2026-10-16T18:30:00Z' }]);
+  ok('SOCCER 1X2: capture\'s h2h Draw selection is the three-way draw', sig.length === 1 && sig[0].market.kind === 'three_way' && sig[0].market.side === 'draw', sig.map((q) => q.market));
+  /* 7. team names: a school is not its State / Tech / A&M / directional namesake; short names and LA still match */
+  const T = (n) => ({ name: n });
+  ok('SAME TEAM: Texas ≠ Texas A&M, Michigan ≠ Central Michigan, Iowa ≠ Iowa State, Miami ≠ Miami (OH), Florida ≠ Florida Atlantic', !M.sameTeam(T('Texas'), 'Texas A&M Aggies') && !M.sameTeam(T('Michigan'), 'Central Michigan') && !M.sameTeam(T('Iowa'), 'Iowa State Cyclones') && !M.sameTeam(T('Miami'), 'Miami (OH)') && !M.sameTeam(T('Florida'), 'Florida Atlantic Owls'));
+  ok('SAME TEAM: …while Texas = Texas Longhorns, UAB = UAB Blazers, LA Clippers = Los Angeles Clippers, Vegas Golden Knights = Vegas', M.sameTeam(T('Texas'), 'Texas Longhorns') && M.sameTeam(T('UAB'), 'UAB Blazers') && M.sameTeam(T('LA Clippers'), 'Los Angeles Clippers') && M.sameTeam(T('Vegas Golden Knights'), 'Vegas'));
+  const pI = { projection_id: 'p111', sport: 'cfb', event_id: '111', home: T('Kansas'), away: T('Iowa'), start_utc: '2026-10-17T19:00:00Z' };
+  const pS = { projection_id: 'p222', sport: 'cfb', event_id: '222', home: T('Kansas State'), away: T('Iowa State'), start_utc: '2026-10-17T19:00:00Z' };
+  ok('JOIN: an exact id link wins over a name match (Iowa State @ Kansas State with provider id 222 joins 222, not Iowa @ Kansas)', X.joinOf({ provider_id: '222', home: T('Kansas State'), away: T('Iowa State'), start_utc: '2026-10-17T19:00:00Z' }, [pI, pS], null) === pS);
+  /* 8. a missing published figure drops a line, never the desk */
+  const holes = [Object.assign(clone(VGK), { matchup: { factors: [], metrics: { home: { ev_xg_for_vs_league: 1.1 }, away: { ev_xg_for_vs_league: 0.9 } } } })];
+  const nbaP = prep0.snapshot.projections.find((p) => p.sport === 'nba'); if (nbaP) holes.push(Object.assign(clone(nbaP), { matchup: { factors: [], metrics: { home_offence_vs_away_defence: 115, away_offence_vs_home_defence: 112, pace: null } } }));
+  if (kp) holes.push(Object.assign(clone(kp), { projected_score: { home: null, away: null } }));
+  let threw = null; try { holes.forEach((h) => X.researchFor(h)); } catch (e) { threw = String(e.message || e); }
+  ok('NULL FIELDS: NHL xG against, NBA pace and soccer λ missing → research still written', threw === null && holes.length >= 2, threw);
+  /* 10. two feeds reading the same book are one book */
+  const twoFeeds = M.compareMarket(VGK, { kind: 'moneyline', side: 'home', line: null }, [M.normalizeQuote(quote(VGK, { american: -150, book: 'DraftKings', source: 'signals' }), NOWC), M.normalizeQuote(quote(VGK, { american: -150, book: 'draftkings', source: 'scoreboard' }), NOWC)], { now: NOWC, n_compared: 1 });
+  ok('BOOKS: DraftKings from capture and from the scoreboard counts once (BOOKS_CONFIRM open, one book listed)', twoFeeds.books.length === 1 && twoFeeds.gates.some((g) => g.gate === 'BOOKS_CONFIRM' && !g.ok && /^1 book/.test(g.why)), [twoFeeds.books, twoFeeds.gates.find((g) => g.gate === 'BOOKS_CONFIRM')]);
+  /* 11. a replay date: a past day is never an inverted window; the day is read from the date, not a noon-UTC anchor */
+  const past = X.windowFor('', NOW, TZ, { date: '2026-10-14' });
+  ok('WINDOW: a day already over is the whole day (from < to), flagged past, and nothing in it is frozen', Date.parse(past.from) < Date.parse(past.to) && past.past === true && X.prepare({ artifacts: A(), question: '', now: NOW, timezone: TZ, date: '2026-10-14' }).snapshot.count === 0, past);
+  const akl = X.windowFor('', NOW, 'Pacific/Auckland', { date: '2026-10-16' });
+  ok('WINDOW: Pacific/Auckland 2026-10-16 ends at local midnight 2026-10-16T11:00Z (not a day late)', akl.to === '2026-10-16T11:00:00.000Z', akl);
+  /* 13. a spread or total quote without a line is never priced as pick'em */
+  const nl = M.compareSnapshot(prep0.snapshot, [quote(SEA, { american: -110, market: { kind: 'spread', side: 'away', line: null } })], { now: NOWC });
+  ok('NO LINE: a spread quote with no line is dropped (no row at line null, no probability at a null line)', !nl.rows.some((r) => r.market.kind === 'spread') && P.probabilityAt(SEA, 'spread', 'away', null) === null && M.quotesFromScoreboard({ events: [{ id: 'x', sport: 'nfl', home: { name: 'a' }, away: { name: 'b' }, start_utc: SEA.start_utc }], markets: { x: { captured_at: new Date(NOW).toISOString(), spread: { home: { price: -110 }, away: { price: -110 } } } } }, () => 'nfl').length === 0, nl.rows.filter((r) => r.market.kind === 'spread'));
+  /* 14. the NHL engine's own per-line validation survives the merge */
+  const hk = FX.artifacts['hockey/slate.json'].games.find((g) => String(g.game_id) === String(VGK.event_id));
+  const tagged = ((hk && hk.markets && hk.markets.total) || []).filter((x) => x.validation && VGK.distribution.total_lines.some((y) => y.line === x.line));
+  ok('NHL LINES: every total line the engine tags (PROVISIONAL) carries that tag in the projection, also lines first read from prices', tagged.length > 0 && tagged.every((x) => VGK.distribution.total_lines.find((y) => y.line === x.line).validation === x.validation), tagged.map((x) => [x.line, x.validation]));
+  /* 15. no constant is shown as a fair line */
+  ok('FAIR LINES: the NHL spread and the soccer handicap/total publish no fair LINE (the engines price fixed lines)', VGK.fair.spread.home_line === null && VGK.fair.spread.priced_line.home_line === -1.5 && (!kp || (kp.fair.spread.home_line === null && kp.fair.total.line === null)) && !/EdgeDesk fair lines: home -1\.5/.test(r0.answer));
 }
 
 /* ═══ THE REGISTRY ══════════════════════════════════════════════════════════ */

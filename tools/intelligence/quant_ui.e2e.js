@@ -147,7 +147,7 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       const q = String(body && body.question || '');
       if (/^Research every available NFL game/.test(q)) return R2.research_slate.response;
       if (/^Why did I lose money/.test(q)) return R2.bets.response;
-      if (/best researched opportunity tonight/.test(q)) return (body && body.__odds_off) ? R3.odds_off.response : R3.oct15.response;
+      if (/best researched opportunity tonight/.test(q)) return (body && body.__odds_off) || /with the odds off/.test(q) ? R3.odds_off.response : R3.oct15.response;
       if (/next 24 hours/.test(q)) return R.scan_24h.response;
       if (/this week across all sports/.test(q)) return R.scan_week.response;
       if (/Rays at 61/.test(q)) return R.contract_rays.response;
@@ -237,6 +237,10 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       const covT = await page.evaluate(() => { const box = [...document.querySelectorAll('#edaiLog .qd-read')].pop().parentElement; const d = [...box.querySelectorAll('details.qd-more')].find((x) => /^Coverage — every sport, models first/.test(x.querySelector('summary').textContent)); if (!d) return null; return { open: d.open, rows: [...d.querySelectorAll('.qd-cov-r')].map((r) => ({ sport: r.dataset.sport, events: r.dataset.events, researched: r.dataset.researched, label: r.querySelector('.qd-cov-h').textContent, blockers: (r.querySelector('.qd-cov-b') || {}).textContent || '', fits: r.scrollWidth <= r.clientWidth + 1 })) }; });
       chk(vp.tag + ': the per-sport coverage table is open: NHL 11 discovered and researched, NBA blocked as preseason, MLB without a projection', covT && covT.open && covT.rows.some((r) => r.label === 'NHL' && r.events === '11' && r.researched === '11') && covT.rows.some((r) => r.label === 'NBA' && /preseason/.test(r.blockers)) && covT.rows.some((r) => r.label === 'MLB' && /no per-game MLB projection/.test(r.blockers)) && covT.rows.every((r) => r.fits), covT);
       chk(vp.tag + ': …and the captured-price result is a labelled benchmark section, never the verdict', ms && /MARKET BENCHMARK/.test(ms.text) && !/^Benchmark: Verified/i.test(ms.bench || ''), ms && ms.bench);
+      /* every odds integration off: the captured-price audit never ran, so no benchmark chip is shown (it would read "Pass") */
+      await ask(page, "What's the best researched opportunity tonight with the odds off?", 9);
+      const off = await lastAnswer(page);
+      chk(vp.tag + ': odds off: the research answer renders with its research-only chip and NO benchmark chip (the benchmark did not run)', off && /research only/i.test(off.chip || '') && off.bench === null && /odds integrations are disabled/.test(off.text), off && [off.chip, off.bench]);
       if (SHOTS) {
         await page.evaluate(() => [...document.querySelectorAll('#edaiLog .qd-read')].pop().scrollIntoView({ block: 'start' }));
         await page.screenshot({ path: path.join(SHOT_DIR, 'quant-multisport-' + vp.tag + '.png'), fullPage: false });

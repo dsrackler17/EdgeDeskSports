@@ -63,10 +63,10 @@ sports data → each sport's engine (scheduled builds) → EDPROJ: one contract 
 | File | Role |
 |---|---|
 | `lib/edgedesk_projections.js` (EDPROJ) | The universal research registry (`SPORTS`: discovery, providers, stats, availability, simulation, markets, freshness limit, key role, unsupported reasons), one adapter per engine, the **model output contract** (`edgedesk_independent_projection_v1`), research assessment, freeze/hash, the capability matrix. |
-| `lib/edgedesk_market_compare.js` (EDMKT) | The quote taxonomy, identity verification, freshness, EV / break-even / no-vig / max entry (exact, through EDFAIR), the conservative probability, the seven execution outcomes, the execution gates. |
+| `lib/edgedesk_market_compare.js` (EDMKT) | The quote taxonomy, identity verification (team names that never confuse a school with its State / Tech / A&M / directional namesake, plus the schedule's own names for a joined game), freshness, EV / break-even / no-vig (three-way for soccer's 1X2) / max entry at the edge bar (exact, through EDFAIR), the conservative probability, the seven execution outcomes, the execution gates. |
 | `lib/edgedesk_multisport.js` (EDMULTI) | Calendar windows in the reader's zone, discovery, fundamental research per matchup, the two rankings, coverage, the answer. `prepare()` (no price) and `complete()` (prices) are separate calls. |
 | `engine/build_projections.js` | Scheduled (`.github/workflows/projections.yml`, every 3 h after the NHL/NBA builds). Freezes every engine's projections into `engine/projections.json` and appends new hashes to `engine/projections_ledger/<YYYY-MM>.jsonl`. Its reader **refuses** any non-engine path. |
-| `supabase/independent_projections.sql` | `projection_snapshots` and `market_comparisons`: write-once, reader-owned, RLS. A trigger refuses a comparison unless the same reader stored, earlier, a snapshot holding that projection id **and hash**. A projection carrying any market input is refused. `VERIFIED_POSITIVE_EV` needs a live, timestamped quote. Rollback: `independent_projections_rollback.sql`. |
+| `supabase/independent_projections.sql` | `projection_snapshots` and `market_comparisons`: write-once, reader-owned, RLS. One snapshot row per freeze (the id covers the snapshot hash and the freeze time). A trigger refuses a comparison unless the same reader stored, earlier, a snapshot holding that projection id **and hash**, for the same sport and event, with the same moneyline/1X2 probability. `created_at` is the server's clock; a freeze or a comparison more than 30 minutes before its write is refused, so nothing can be back-dated to look frozen first. A projection carrying any market input is refused. `VERIFIED_POSITIVE_EV` needs a live, timestamped quote. Rollback: `independent_projections_rollback.sql`. |
 
 **Model output contract.** Every projection carries:
 
@@ -101,13 +101,19 @@ known through) are reported separately.
 2. `STALE_PRICE` (past 60 min, untimed, or inside the 2-minute start guard)
 3. `INSUFFICIENT_MODEL_RELIABILITY` (not independent, invalidated, an expired build, or a market or line not outcome-validated)
 4. `NO_VERIFIED_EDGE` (EV ≤ 0)
-5. `MARKET_WATCH` (positive only at the point estimate, or past the 15% sanity ceiling)
+5. `MARKET_WATCH` (positive only at the point estimate; or past the 15% sanity ceiling, flagged `data_check` — a DATA CHECK is listed beside the ranking, never ranked)
 6. `CONDITIONAL_EDGE` (clears 2% on the conservative probability with at least one gate open)
 7. `VERIFIED_POSITIVE_EV`
 
 The `VERIFIED_POSITIVE_EV` gates are: a market validated against the close, the key role
-confirmed, a live quote, two or more books clearing the floor, and an adversarial audit
-that **completed and verified** the evidence.
+confirmed, a live quote, two or more **different** books clearing the floor (two feeds
+reading one book count once), and an adversarial audit that **completed and verified**
+the evidence.
+
+The **maximum acceptable price** and the **price to watch** are one number on one bar: the
+worst price at which the conservative probability still clears the 2% edge bar, with z for
+the markets the run compares. A fresh quote at that price reads `CONDITIONAL_EDGE` or
+better, never `MARKET_WATCH`. A spread or total quote without a line is never priced.
 
 **Ranking** (published with every answer):
 
@@ -117,7 +123,13 @@ that **completed and verified** the evidence.
   projection's own validation and z = Φ⁻¹(1 − 0.10/N). Ties go to READY, then the larger
   sample.
 - **Execution:** by outcome, then by EV at the conservative probability. Never by
-  headline EV.
+  headline EV. A DATA CHECK is not ranked.
+- **Discovery joins** a scoreboard game to an engine projection by id first, then by both
+  names, then (different spellings such as "FC Cologne" / "1. FC Köln") by the same
+  competition, a kick-off within 15 minutes and one team, when exactly one projection
+  qualifies. A game that is not pregame (started, postponed, cancelled, delayed) is
+  excluded with its projection. A replay `date` that is already over is the whole day,
+  every event of which has started, so nothing is frozen.
 - **Three separate measurements:** research outcome, modeled probability with its σ, and
   executable edge. No "confidence %" exists.
 
@@ -203,18 +215,21 @@ three hours.
   artifacts at run time. No network: this environment cannot reach the site or any odds
   provider.
 
-| Measure | Replay 13:00Z | Live 14:45Z | Live, odds off |
+| Measure | Replay 13:00Z | Live 15:24Z | Live, odds off |
 |---|---|---|---|
 | Sports discovered (events in window) | 6 | 6 | 6 |
 | Sports with operational models | 8 | 8 | 8 |
 | Eligible games | NHL 11, NBA 2, NFL 1, CFB 3, soccer 18, MLB 2 | same | same |
 | Research evaluations / independent projections | 15 / 15 | 15 / 15 | 15 / 15 |
-| Valid sportsbook price captures | 0 (62 seen, all stale) | 0 (62, stale) | 0 (none read) |
+| Valid sportsbook price captures | 0 (68 seen, all stale) | 0 (68, stale) | 0 (none read) |
 | Verified positive EV | 0 | 0 | 0 |
 | Best researched | NHL CGY@VGK, VGK 66.4% (σ 1.9%, conservative 61.8%) | same | same |
-| Snapshot hash | fbb6ff59… | fbb6ff59… | fbb6ff59… (prices never move a projection) |
+| Snapshot hash | c9c968cc… | c9c968cc… | c9c968cc… (prices never move a projection) |
 
-The replay and live runs agree because no artifact changed between 13:00Z and 14:45Z.
+The replay and live runs agree because no artifact changed between 13:00Z and 15:24Z.
+(The review fixes raised the captures matched to these events from 62 to 68 — team matching
+no longer misses short names such as UAB — and changed the snapshot hash, because the NHL and
+soccer projections no longer state a constant as a fair line.)
 No verified edge is possible today on any sport. No EdgeDesk model has been tested
 against a licensed closing archive (`value_claims` is false everywhere), and no live
 quote is reachable from this environment. That is reported, not papered over.
@@ -223,8 +238,8 @@ quote is reachable from this environment. That is reported, not papered over.
 
 | Suite | Proves |
 |---|---|
-| `tools/intelligence/multisport.test.js` (108) | Discovery, routing, events without prices, prices without a model, stale quotes, missing lineups, conflicting starters (slate and builder), injuries, expired builds, provider outages, quota exhaustion, no-event days, EV / break-even / no-vig / max price (exact, EDFAIR parity), ranking consistency, audit semantics, time zones (Chicago, New York, DST, European kick-offs), market contamination, freeze immutability, identity, the VERIFIED gates. |
-| `tools/intelligence/multisport_host.test.js` (35) | The real handler on the 10-15 fixture. The legacy desk reproduces all four Oct 15 defects (NFL-only focus, no independent projection, stale quote, starter disagreement) and the new desk shows none. The snapshot is written **before** the first price read. Comparisons carry the frozen hashes. With `EDGEDESK_ODDS_DISABLED=1` no price endpoint is touched, all 15 projections are produced with the identical snapshot hash, and every market reads NO CURRENT ODDS. |
-| `tools/intelligence/projections_sql.test.js` (43) | The migration on PostgreSQL 16, applied twice, attacked and rolled back. |
+| `tools/intelligence/multisport.test.js` (127) | Discovery, routing, events without prices, prices without a model, stale quotes, missing lineups, conflicting starters (slate and builder), injuries, expired builds, provider outages, quota exhaustion, no-event days, EV / break-even / no-vig / max price (exact, EDFAIR parity), ranking consistency, audit semantics, time zones (Chicago, New York, DST, European kick-offs), market contamination, freeze immutability, identity, the VERIFIED gates. |
+| `tools/intelligence/multisport_host.test.js` (37) | The real handler on the 10-15 fixture. The legacy desk reproduces all four Oct 15 defects (NFL-only focus, no independent projection, stale quote, starter disagreement) and the new desk shows none. The snapshot is written **before** the first price read. Comparisons carry the frozen hashes, and a second question on the same projections writes its own freeze. With `EDGEDESK_ODDS_DISABLED=1` no price endpoint is touched (not even the named-game routing check), all 15 projections are produced with the identical snapshot hash, and every market reads NO CURRENT ODDS. |
+| `tools/intelligence/projections_sql.test.js` (50) | The migration on PostgreSQL 16, applied twice, attacked (back-dated freezes and comparisons, a client-supplied `created_at`, another event's or another probability's comparison) and rolled back. |
 | `tools/intelligence/quant_ui.e2e.js` (59) | The real handler's answers in Chromium at 1280 px and 390 px, including the Oct 15 multi-sport answer. The chip is the multi-sport verdict (research only), with the captured-price status on a separate labelled "Benchmark:" chip. The per-sport coverage list is open, and the page never scrolls sideways. |
 | Existing suites | `npm run ai:test` (47 suites, the two above included), `npm run quant:sql`: green. |

@@ -40165,7 +40165,7 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       /* researched: the chip is the auditor's final status, never upgraded here */
       if(d.scan.researched) cls=qdStatusKey(d.scan.final_status)||cls;
       /* the multi-sport desk owns the verdict: the captured-price result is a labelled market benchmark, never the chip */
-      if(d.multisport&&d.multisport.available){ var msx=d.multisport; bench=cls; cls=msx.best_verified?'VERIFIED_POSITIVE_EV':msx.market_watch?(msx.market_watch.outcome==='CONDITIONAL_EDGE'?'CONDITIONAL_EDGE':'MARKET_WATCH'):'RESEARCH_ONLY'; }
+      if(d.multisport&&d.multisport.available){ var msx=d.multisport; bench=(d.scan&&d.scan.not_run)?null:cls; cls=msx.best_verified?'VERIFIED_POSITIVE_EV':msx.market_watch?(msx.market_watch.outcome==='CONDITIONAL_EDGE'?'CONDITIONAL_EDGE':'MARKET_WATCH'):'RESEARCH_ONLY'; }
     } else if(intent==='RESEARCH_SLATE'&&d.research_slate){
       var rb=(d.research_slate.investigated||[])[0]||null;
       ev=rb&&rb.evaluation||null; au=rb&&rb.audit||null; rsrc=rb&&rb.research||null;

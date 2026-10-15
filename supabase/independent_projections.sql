@@ -36,6 +36,11 @@
 --      `authenticated` holds SELECT and INSERT only (Supabase's default ALL is
 --      revoked, because TRUNCATE would bypass the row triggers).
 --   3. Units: probabilities in [0, 1]; American odds at least 100 in size.
+--   4. The server's clock: created_at is stamped by the database, a snapshot's
+--      frozen_at must be within 30 minutes before the write (5 after), and a
+--      comparison's compared_at within 30 minutes of its write; a comparison
+--      names its projection's own sport and event, and a moneyline/1X2 row its
+--      frozen probability. Nothing can be back-dated to look "frozen first".
 --
 -- CONVENTION (supabase/README.md): idempotent, additive, pasted into the SQL
 -- editor, no psql meta-commands, ends in a report. Safe to run again.
@@ -76,6 +81,12 @@ create or replace function public.projection_snapshots_check()
 returns trigger language plpgsql as $$
 declare e jsonb; ph numeric; pa numeric; pd numeric;
 begin
+  /* the server's clock, not the writer's: the row is stamped now, and the freeze it records must be recent —
+     a snapshot is written when it is frozen, so it cannot be back-dated to sit "before" an old price */
+  new.created_at := now();
+  if new.frozen_at < now() - interval '30 minutes' then
+    raise exception 'projection_snapshots: frozen_at % is more than 30 minutes before the write (server clock %); a snapshot is stored when it is frozen, never back-dated', new.frozen_at, now() using errcode = 'check_violation';
+  end if;
   for e in select * from jsonb_array_elements(new.projections) loop
     if coalesce(e->>'projection_id', '') !~ '^pj_[0-9a-f]{24}$' then
       raise exception 'projection_snapshots: a projection needs an id pj_<24 hex> (got %)', coalesce(e->>'projection_id', 'none') using errcode = 'check_violation';
@@ -148,22 +159,39 @@ end $c$;
 create index if not exists market_comparisons_user_snapshot_idx on public.market_comparisons (user_id, snapshot_id);
 
 /* The order, enforced: the same reader's snapshot exists, was frozen at the stated time (no later than
-   the comparison) and holds this projection with this exact hash. Runs as the definer so it can see the
-   snapshot row under RLS, and checks user_id explicitly so no reader can borrow another's snapshot. */
+   the comparison) and holds this projection with this exact hash, for this sport and event, with this
+   probability. The comparison is stamped with the server's clock and must be made now (within minutes),
+   so it cannot be back-dated onto an old freeze. Runs as the definer so it can see the snapshot row under
+   RLS, and checks user_id explicitly so no reader can borrow another's snapshot. */
 create or replace function public.market_comparisons_frozen_check()
 returns trigger language plpgsql security definer set search_path = public as $$
+declare e jsonb; ps numeric;
 begin
-  if not exists (
-    select 1 from public.projection_snapshots s
-     where s.user_id is not distinct from new.user_id
-       and s.snapshot_id = new.snapshot_id
-       and s.frozen_at = new.frozen_at
-       and s.frozen_at <= new.compared_at
-       and exists (select 1 from jsonb_array_elements(s.projections) e
-                    where e->>'projection_id' = new.projection_id and e->>'projection_hash' = new.projection_hash)
-  ) then
+  new.created_at := now();
+  if new.compared_at < now() - interval '30 minutes' or new.compared_at > now() + interval '5 minutes' then
+    raise exception 'market_comparisons: compared_at % is not the time of the write (server clock %); a comparison is stored when it is made', new.compared_at, now() using errcode = 'check_violation';
+  end if;
+  select x.value into e
+    from public.projection_snapshots s cross join lateral jsonb_array_elements(s.projections) x
+   where s.user_id is not distinct from new.user_id
+     and s.snapshot_id = new.snapshot_id
+     and s.frozen_at = new.frozen_at
+     and s.frozen_at <= new.compared_at
+     and x.value->>'projection_id' = new.projection_id and x.value->>'projection_hash' = new.projection_hash
+   limit 1;
+  if e is null then
     raise exception 'market_comparisons: no snapshot % frozen at % holds projection % with hash %; a price may only be compared with a projection stored before it',
       new.snapshot_id, new.frozen_at, new.projection_id, left(new.projection_hash, 12) using errcode = 'foreign_key_violation';
+  end if;
+  if coalesce(e->>'sport', '') <> new.sport or coalesce(e->>'event_id', '') <> new.event_id then
+    raise exception 'market_comparisons: projection % is % event %, not % event %', new.projection_id, e->>'sport', e->>'event_id', new.sport, new.event_id using errcode = 'check_violation';
+  end if;
+  /* a moneyline or 1X2 comparison carries the frozen probability itself, never a different number */
+  if new.market in ('moneyline', 'three_way') and new.model_probability is not null then
+    ps := nullif(e->>('p_' || new.side), '')::numeric;
+    if ps is null or abs(ps - new.model_probability) > 0.0005 then
+      raise exception 'market_comparisons: model probability % for % is not the frozen projection''s %', new.model_probability, new.side, coalesce(ps::text, 'none') using errcode = 'check_violation';
+    end if;
   end if;
   return new;
 end $$;
