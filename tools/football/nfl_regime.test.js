@@ -236,10 +236,17 @@ const buildOpts = (inj) => ({ now: NOW, lookahead: 12, offline: true, fetchText:
   section('5. the committed slate and the neutral-site report');
   const SL = JSON.parse(read('football/nfl/slate.json'));
   const pred = (SL.games || []).filter((g) => g.model_status === 'PREDICTED');
-  const STATUSES = ['SCHEDULE_FEED', 'INJURY_REPORT_REPLACEMENT', 'INJURY_REPORT_REPLACEMENT_PENDING', 'STARTER_UNKNOWN'];
+  /* DEPTH_CHART_RECONCILED: the depth chart's QB1, corroborated by the last game's first dropback, replaced the
+     schedule feed's name; SCHEDULE_FEED_CONFLICT: the feed's name is priced but disagrees with the depth chart
+     (build_nfl_slate.js reconcileQb, starterOf) */
+  const STATUSES = ['SCHEDULE_FEED', 'INJURY_REPORT_REPLACEMENT', 'INJURY_REPORT_REPLACEMENT_PENDING', 'STARTER_UNKNOWN', 'DEPTH_CHART_RECONCILED', 'SCHEDULE_FEED_CONFLICT'];
   chk('every predicted game in the committed slate carries its regime state and the status of each priced starter (' + pred.length + ' games)',
     pred.length > 0 && pred.every((g) => g.regime && g.regime.version === R.version && g.regime.promoted === false
       && ['home_starter', 'away_starter'].every((s) => g[s] === null || STATUSES.indexOf(g[s].status) >= 0)), pred.filter((g) => !g.regime).map((g) => g.game_id));
+  const CHECK_OF = { DEPTH_CHART_RECONCILED: 'RECONCILED', SCHEDULE_FEED_CONFLICT: 'CONFLICT' };
+  const recon = [];
+  pred.forEach((g) => ['home', 'away'].forEach((sd) => { const st = g[sd + '_starter'] && g[sd + '_starter'].status; if (CHECK_OF[st]) recon.push({ g: g.game_id, sd, st, check: g.starter_check && g.starter_check[sd] && g.starter_check[sd].status }); }));
+  chk('a reconciled or conflicting starter in the committed slate is exactly what the game\'s own starter_check says (' + recon.length + ')', recon.every((x) => x.check === CHECK_OF[x.st]), recon.filter((x) => x.check !== CHECK_OF[x.st]));
   /* the priced Washington starter follows the committed injury report, by the
      builder's own rule (starterOf / fbNflReconcileStarters): the feed's
      starter unless the report lists him OUT or DOUBTFUL. Daniels was OUT on
