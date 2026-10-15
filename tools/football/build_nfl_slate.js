@@ -107,6 +107,44 @@ async function fetchText(url, offline) {
   return t;
 }
 
+/* THE QUARTERBACK THE ENGINE PRICES, RECONCILED (the 2026-10-15 Seahawks @ Broncos report).
+   nflverse games.csv pre-fills each game's quarterback columns and does not correct them: on
+   2026-10-15 it named Drew Lock for Seattle's weeks 3-6 although Sam Darnold took the first
+   dropback of weeks 3, 4 and 5, and the slate priced Lock (+0.74 points to Denver). The depth
+   chart and the first-dropback history (football/starters/nfl_<season>.json, built earlier in
+   the same workflow) are read here, and a disagreement is never resolved silently:
+     AGREES           both name the same player: priced as before.
+     NO_FEED_STARTER  the feed names no one yet: priced as before (the club's carried level).
+     RECONCILED       they disagree, and the depth chart's QB1 took the first dropback of the
+                      team's most recent completed game, on a usable, uncontested record for this
+                      week or the one before: the engine is RE-RUN on that player, and the
+                      schedule feed's name is kept beside it.
+     CONFLICT         they disagree and nothing corroborates either: the schedule feed is priced,
+                      and the row says the starter is in conflict. Downstream (EDPROJ) a
+                      CONFLICT invalidates the projection for pricing.
+   An injury-report substitution (fbNflReconcileStarters: OUT/DOUBTFUL) is left as it is. */
+function reconcileQb(g, side, starters) {
+  const code = String(g[side + '_team'] || '').toLowerCase();
+  const feed = { name: g[side + '_qb_name'] || null, id: g[side + '_qb_id'] || null };
+  const e = starters && starters.teams ? starters.teams[code] : null;
+  if (g[side + '_qb_reconciled']) return { status: 'INJURY_REPORT', schedule_feed: feed, why: 'the injury report already substituted the starter' };
+  if (!e || !e.player_id) return { status: 'NOT_CHECKED', schedule_feed: feed, why: starters ? 'no depth-chart record for ' + g[side + '_team'] : 'football/starters was not read' };
+  const depth = { name: e.player_name, id: e.player_id, source: e.source || 'nflverse depth charts', published_at: e.published_at || null, week: e.week != null ? Number(e.week) : null };
+  if (feed.id && String(feed.id) === String(e.player_id)) return { status: 'AGREES', schedule_feed: feed, depth_chart: depth };
+  /* the feed names no one (a future week not yet pre-filled): nothing disagrees, and the engine keeps its
+     documented STARTER_UNKNOWN behaviour (the club's carried level); the depth chart is shown, not priced */
+  if (!feed.id && !feed.name) return { status: 'NO_FEED_STARTER', schedule_feed: feed, depth_chart: depth, why: 'the schedule feed names no quarterback yet; the engine prices the club\'s carried level' };
+  const hist = (e.history || []).filter((h) => h && h.settled && h.starter);
+  const last = hist.length ? hist[hist.length - 1] : null;
+  const lastGame = last ? { name: last.starter.player_name, id: last.starter.player_id, week: last.week, game_id: last.game_id } : null;
+  const usable = e.field_state === 'USABLE' && !(e.competition && e.competition.contested) && (depth.week == null || g.week == null || depth.week >= Number(g.week) - 1);
+  const corroborated = !!(lastGame && String(lastGame.id) === String(e.player_id));
+  if (usable && corroborated) return { status: 'RECONCILED', priced: 'DEPTH_CHART', schedule_feed: feed, depth_chart: depth, last_game_starter: lastGame,
+    why: 'nflverse games.csv names ' + (feed.name || 'no one') + ', but ' + depth.source + ' lists ' + depth.name + ' as QB1' + (depth.published_at ? ' (published ' + depth.published_at + ')' : '') + ' and ' + depth.name + ' took the first dropback of week ' + lastGame.week + ': the engine priced ' + depth.name };
+  return { status: 'CONFLICT', priced: 'SCHEDULE_FEED', schedule_feed: feed, depth_chart: depth, last_game_starter: lastGame,
+    why: 'nflverse games.csv names ' + (feed.name || 'no one') + ' and ' + depth.source + ' lists ' + depth.name + '; ' + (!usable ? 'the depth-chart record is not usable for this week' : 'the last game\'s first dropback does not corroborate the depth chart') + ' — unresolved, the projection may not be priced' };
+}
+
 /* the starter the model PRICED (second follow-up to the 2026-09-30 audit,
    item 4): the schedule feed's, unless the injury report lists him OUT or
    DOUBTFUL and the board substituted the team's next starter (app.html
@@ -120,7 +158,11 @@ function starterOf(g, side) {
     status: rec.replacement_id ? (rec.pending ? 'INJURY_REPORT_REPLACEMENT_PENDING' : 'INJURY_REPORT_REPLACEMENT') : 'STARTER_UNKNOWN',
     scheduled: { player_name: rec.scheduled_name, player_id: rec.scheduled_id, status: rec.status, injury: rec.injury, report_week: rec.report_week },
     basis: rec.replacement_basis || null };
-  return g[side + '_qb_name'] ? { player_name: g[side + '_qb_name'], player_id: g[side + '_qb_id'] || null, source: 'nflverse games.csv', status: 'SCHEDULE_FEED' } : null;
+  const qc = g['_qb_check_' + side];
+  if (qc && qc.status === 'RECONCILED') return { player_name: qc.depth_chart.name, player_id: qc.depth_chart.id, source: qc.depth_chart.source + ' (QB1), corroborated by the first dropback of week ' + qc.last_game_starter.week,
+    status: 'DEPTH_CHART_RECONCILED', published_at: qc.depth_chart.published_at, schedule_feed: { player_name: qc.schedule_feed.name, player_id: qc.schedule_feed.id, source: 'nflverse games.csv' }, basis: qc.why };
+  return g[side + '_qb_name'] ? Object.assign({ player_name: g[side + '_qb_name'], player_id: g[side + '_qb_id'] || null, source: 'nflverse games.csv', status: qc && qc.status === 'CONFLICT' ? 'SCHEDULE_FEED_CONFLICT' : 'SCHEDULE_FEED' },
+    qc && qc.status === 'CONFLICT' ? { conflict: { depth_chart: qc.depth_chart, last_game_starter: qc.last_game_starter, why: qc.why } } : {}) : null;
 }
 
 async function build(opts) {
@@ -213,6 +255,9 @@ async function build(opts) {
     return Math.max(-cap, Math.min(cap, p));
   }
 
+  /* the depth chart and first-dropback history, built earlier in the same workflow */
+  let startersFile = opts.starters || null;
+  if (!startersFile) { try { startersFile = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'starters', 'nfl_' + season + '.json'), 'utf8')); } catch (_) { startersFile = null; } }
   /* the module already trimmed S.up to its window; widen from S.games when a
      longer lookahead was asked for */
   const pool = (S.games || []).filter((u) => !u.done && u.t >= now - 6 * 3600000 && u.t <= now + lookaheadDays * 86400000);
@@ -220,6 +265,12 @@ async function build(opts) {
     const g = u.g;
     let p = null, err = null;
     const req = T.fbNflGameReq(g);
+    /* the quarterback the engine prices, reconciled against the depth chart (reconcileQb, above) */
+    ['home', 'away'].forEach((side) => {
+      const qc = reconcileQb(g, side, startersFile);
+      g['_qb_check_' + side] = qc;
+      if (qc.status === 'RECONCILED') req[side + '_qb_id'] = qc.depth_chart.id;
+    });
     try { p = T.fbPredict('nfl', req, {}, num(g.season)); } catch (e) { err = String(e && e.message || e); }
     const ref = T.fbNflRefMarket(g);
     const priced = !!(p && p.status === 'PREDICTED');
@@ -291,6 +342,8 @@ async function build(opts) {
          report lists him OUT or DOUBTFUL (app.html fbNflReconcileStarters) */
       home_starter: starterOf(g, 'home'),
       away_starter: starterOf(g, 'away'),
+      /* both sides' reconciliation, AGREES / RECONCILED / CONFLICT / NOT_CHECKED, with both sources */
+      starter_check: { home: g._qb_check_home || null, away: g._qb_check_away || null },
       /* the NFL regime signal per side (football/nfl/regime_nfl.js): shown,
          priced only when promoted */
       regime: g._regime || null,
@@ -464,5 +517,5 @@ async function main() {
   fs.writeFileSync(OUT, text);
   console.log('wrote ' + path.relative(ROOT, OUT));
 }
-module.exports = { build, pricingBlock, nflForecastWanted, fetchNflForecasts, SCHEMA, OUT, etToIso };
+module.exports = { build, pricingBlock, nflForecastWanted, fetchNflForecasts, SCHEMA, OUT, etToIso, reconcileQb };
 if (require.main === module) main();

@@ -401,18 +401,35 @@ source is configured. See [`docs/ncaam/README.md`](docs/ncaam/README.md) and
 Tests: `npm run ncaam:test`, `npm run ncaam:test:pack`, `npm run ncaam:e2e`,
 `npm run ncaam:check`. Refresh: `npm run ncaam:refresh`.
 
-## The quant desk — the best verified bet across every sport, contract prices, and an independent audit
+## The quant desk — every sport researched model first, then priced, then audited
 
-"What's the best bet right now?" with no league named is now a scan of **every
-sport EdgeDesk captures** (the board), followed by a **second, independent
-audit** of the strongest candidates on a fresh read, and an answer in one
-shape: event, market, venue, available price, independent fair price (or why
-there is none), net EV, maximum acceptable entry, model reliability, matchup
-advantage, biggest risk, BUY / WATCH / PASS — or *"No verified positive-EV
-trade currently clears the research and execution thresholds"* with the
-strongest candidate and the reason it failed. Coverage is printed with every
-answer: a sport whose prices are not captured (NBA, NHL) is NOT CAPTURED, not
-an empty slate, and "best across all sports" is never said over a partial scan.
+"What's the best researched opportunity tonight?" is answered across **every
+sport EdgeDesk models**, whether or not a sportsbook price exists
+([`docs/quant-desk/MULTISPORT.md`](docs/quant-desk/MULTISPORT.md)). Each sport
+engine's published projections (NHL, NBA, WNBA, college basketball, NFL and
+FBS) are read into one independent contract, frozen and
+written to the database **before any price is read**. Only then are the
+frozen projections compared with the prices that exist, without moving them.
+The answer has four parts:
+
+- the best **verified** opportunity, or why there is none;
+- the best **researched** matchup;
+- the strongest **conditional** market watch;
+- the other candidates.
+
+Each candidate reports its modelled probability, its uncertainty and its
+validation as separate measurements. The answer ends with what could change it,
+a coverage report for every sport and its sources. MLB, UFC, the NBA preseason
+and unmodelled soccer competitions are named with the reason they have no
+projection. `EDGEDESK_ODDS_DISABLED=1` turns every price read off and the
+research still runs.
+
+The earlier captured-price scan and its **second, independent audit** of the
+strongest candidates on a fresh read are kept, as a labelled **market
+benchmark** (a book against the sharp market or the model–market blend). For
+each candidate it reports event, market, venue, available price, fair price,
+net EV, maximum acceptable entry, and audit execution / evidence verification /
+trade eligibility as three separate facts.
 
 - **Contract prices.** "Is Rays at 61¢ positive EV?", "Cleveland +1.5 at 61
   cents on Kalshi", "find me a better price than this Kalshi contract":
@@ -426,17 +443,22 @@ an empty slate, and "best across all sports" is never said over a partial scan.
   availability news after the quote, the starter, settlement, fees,
   liquidity, sharp movement, unexplained model disagreement — with a bounded
   correct → recalculate → re-audit loop and a write-once trail.
-- **Honest capability** (`lib/edgedesk_sport_adapters.js`): only the NFL spread
-  model may price (LEAN); CFB is research; the MLB run model is browser-only
-  and unvalidated; NBA/NHL have no model; soccer is not covered.
+- **Honest capability** (`lib/edgedesk_projections.js`, `engine/projections.json`):
+  NHL moneyline and puck line, NBA, NCAAM/NCAAW and the NFL spread are
+  outcome-validated out of sample. None has been shown to beat the closing
+  market, so none is called a verified edge yet. CFB moneylines and NHL totals
+  are experimental. MLB has no per-game projection; UFC has no model; soccer was
+  removed from the platform on 2026-10-15 and is not covered.
 - **Calibration** (`lib/edgedesk_calibration.js`): Brier, log loss, buckets,
   CLV, ROI after fees, drawdown and intervals against the no-vig close, with
   look-ahead rows rejected. On the 2026 settled prop ledgers neither league
   beats the close (`football/validation/calibration_props_2026.json`).
 
-See [`docs/quant-desk/DESIGN.md`](docs/quant-desk/DESIGN.md) and
+See [`docs/quant-desk/MULTISPORT.md`](docs/quant-desk/MULTISPORT.md),
+[`docs/quant-desk/DESIGN.md`](docs/quant-desk/DESIGN.md) and
 [`docs/quant-desk/INVENTORY.md`](docs/quant-desk/INVENTORY.md).
 Tests: `npm run quant:test`, `npm run quant:sql`, `npm run quant:e2e`;
+`npm run quant:replay` replays 2026-10-15 from git (no look-ahead);
 `npm run quant:calibrate` rebuilds the calibration report.
 
 ## The bettor decision layer — BET / LEAN / WATCH / PASS / NO DECISION (NFL and CFB)

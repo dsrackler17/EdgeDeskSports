@@ -51,6 +51,12 @@ try { cp.execFileSync(process.execPath, [path.join(__dirname, 'research_host.tes
 catch (e) { console.log('research_host.test.js failed, so there is nothing real to render:\n' + String(e.stdout || e.message).slice(-800)); process.exit(1); }
 const R2 = JSON.parse(fs.readFileSync(DUMP2, 'utf8'));
 try { fs.unlinkSync(DUMP2); } catch (_) { /* ignore */ }
+/* the multi-sport desk: the 2026-10-15 answer, from the regression suite's real handler responses */
+const DUMP3 = path.join(require('os').tmpdir(), 'edgedesk-multisport-ui-' + process.pid + '.json');
+try { cp.execFileSync(process.execPath, [path.join(__dirname, 'multisport_host.test.js')], { env: Object.assign({}, process.env, { MS_DUMP: DUMP3, MS_PRINT: '0' }), stdio: 'pipe' }); }
+catch (e) { console.log('multisport_host.test.js failed, so there is nothing real to render:\n' + String(e.stdout || e.message).slice(-800)); process.exit(1); }
+const R3 = JSON.parse(fs.readFileSync(DUMP3, 'utf8'));
+try { fs.unlinkSync(DUMP3); } catch (_) { /* ignore */ }
 
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon' };
 function siteHandler(req, res) {
@@ -120,10 +126,11 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       if (!card) return null;
       const box = card.parentElement;
       const chip = card.querySelector('.qd-chip');
+      const bench = card.querySelector('.qd-bench');
       const kv = card.querySelector('.qd-kv');
       const sections = [...box.querySelectorAll('details.qd-more > summary')].map((s) => s.textContent.trim());
-      return { text: card.innerText, chip: chip ? chip.textContent.trim() : null, kvCols: kv ? getComputedStyle(kv).gridTemplateColumns.split(' ').length : 0,
-        keys: kv ? [...kv.querySelectorAll('dt')].map((d) => d.textContent.trim()) : [], sections, auditRows: box.querySelectorAll('details.qd-more .qd-tbl tr').length,
+      return { text: card.innerText, chip: chip ? chip.textContent.trim() : null, bench: bench ? bench.textContent.trim() : null, kvCols: kv ? getComputedStyle(kv).gridTemplateColumns.split(' ').length : 0,
+        keys: kv ? [...kv.querySelectorAll('dt')].map((d) => d.textContent.trim()) : [], allKeys: [...card.querySelectorAll('.qd-kv dt')].map((d) => d.textContent.trim()), sections, auditRows: box.querySelectorAll('details.qd-more .qd-tbl tr').length,
         src: ([...box.querySelectorAll(':scope > .edai-src')].pop() || {}).textContent || '', html: box.innerHTML.length,
         /* Phase 3: a researched candidate renders as a card (lib/edgedesk_intel_ui.js); its text block is folded into it */
         card: (() => { const c = [...box.querySelectorAll('.ia-card')][0]; if (!c) return null; const kv = {}; c.querySelectorAll('.ia-kv-r').forEach((r) => { const k = r.querySelector('dt').textContent; if (!(k in kv)) kv[k] = r.querySelector('dd').innerText.replace(/\s+/g, ' ').trim(); });
@@ -140,6 +147,7 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       const q = String(body && body.question || '');
       if (/^Research every available NFL game/.test(q)) return R2.research_slate.response;
       if (/^Why did I lose money/.test(q)) return R2.bets.response;
+      if (/best researched opportunity tonight/.test(q)) return (body && body.__odds_off) || /with the odds off/.test(q) ? R3.odds_off.response : R3.oct15.response;
       if (/next 24 hours/.test(q)) return R.scan_24h.response;
       if (/this week across all sports/.test(q)) return R.scan_week.response;
       if (/Rays at 61/.test(q)) return R.contract_rays.response;
@@ -155,7 +163,7 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       const a1 = await ask(page, R.scan_week.question, 1);
       const w = await lastAnswer(page);
       chk(vp.tag + ': the cross-sport question reached the server', a1.reached_server && SENT[0] && SENT[0].desk === true);
-      chk(vp.tag + ': the verdict chip is the auditor\'s final status: Verified candidate', w && /verified candidate/i.test(w.chip || ''), w && w.chip);
+      chk(vp.tag + ': the verdict chip is the multi-sport desk\'s (no independent model priced the Bills, so research only), and the captured-price auditor\'s Verified candidate is a labelled benchmark chip', w && /research only/i.test(w.chip || '') && /^Benchmark: Verified candidate$/i.test(w.bench || ''), w && [w.chip, w.bench]);
       const wc = w && w.card;
       chk(vp.tag + ': the Phase-2 fields are all on the card (event, sport, market and venue in its header and price)', wc && /Detroit Lions @ Buffalo Bills/.test(wc.sub) && /NFL/.test(wc.sub) && wc.title === 'Buffalo Bills -2.5' && /at FanDuel/.test(wc.kv['Verified market price'] || '')
         && ['Verified market price', 'Fair probability', 'Break-even probability', 'Estimated net EV', 'Model reliability', 'Research freshness', 'Why the model disagrees with the market', 'Primary matchup advantage', 'Strongest counterargument', 'What would invalidate the opportunity', 'Audit status'].every((k) => wc.keys.includes(k)) && /max price -112/.test(wc.kv['Estimated net EV'] || ''), wc && [wc.title, wc.sub, wc.keys]);
@@ -182,7 +190,7 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       /* 3. the 24-hour scan: nothing verified */
       await ask(page, R.scan_24h.question, 3);
       const s24 = await lastAnswer(page);
-      chk(vp.tag + ': no verified trade: the chip says Watchlist, not Verified', s24 && /watchlist/i.test(s24.chip || '') && !/verified/i.test(s24.chip || '') && /No verified positive-EV trade/.test(s24.text), s24 && [s24.chip, s24.text.slice(0, 160)]);
+      chk(vp.tag + ': no verified trade: the chip says research only, the benchmark Watchlist, never Verified', s24 && /research only/i.test(s24.chip || '') && /^Benchmark: Watchlist$/i.test(s24.bench || '') && !/^verified/i.test(s24.chip || '') && /No verified positive-EV trade/.test(s24.text), s24 && [s24.chip, s24.bench, s24.text.slice(0, 160)]);
       chk(vp.tag + ': …and the final status reads WATCHLIST', s24 && s24.card && /final status WATCHLIST/.test(s24.card.kv['Audit status'] || ''), s24 && s24.card && s24.card.kv['Audit status']);
 
       /* 4. the contract: an MLB "A vs B" with a price reaches the server and passes */
@@ -221,6 +229,25 @@ const serve = (h) => new Promise((r) => { const s = http.createServer(h); s.list
       if (SHOTS) await page.screenshot({ path: path.join(SHOT_DIR, 'quant-bets-' + vp.tag + '.png'), fullPage: false });
       if (vp.tag === 'phone') { const g2 = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth })); chk('phone: still no sideways scroll after the slate and bets answers', g2.sw <= g2.iw + 1, g2); }
 
+      /* 9. the multi-sport desk, 2026-10-15 at 8 AM Chicago: research across every sport, nothing verified */
+      await ask(page, R3.oct15.question, 8);
+      const ms = await lastAnswer(page);
+      chk(vp.tag + ': the multi-sport answer renders with its own verdict chip (research only — no verified edge)', ms && /research only/i.test(ms.chip || '') && /^BEST VERIFIED OPPORTUNITY/.test(ms.text.split('\n').slice(1).join('\n').trim() || ms.text) , ms && [ms.chip, ms.text.slice(0, 120)]);
+      chk(vp.tag + ': …the best researched matchup is the NHL game, with its probability and validation as separate lines', ms && /BEST RESEARCHED MATCHUP/.test(ms.text) && /Calgary Flames @ Vegas Golden Knights/.test(ms.text) && ms.allKeys.includes('Modeled probability') && ms.allKeys.includes('Model reliability') && ms.allKeys.includes('Freshness (separate from reliability)') && ms.allKeys.includes('Price to watch'), ms && ms.allKeys);
+      const covT = await page.evaluate(() => { const box = [...document.querySelectorAll('#edaiLog .qd-read')].pop().parentElement; const d = [...box.querySelectorAll('details.qd-more')].find((x) => /^Coverage — every sport, models first/.test(x.querySelector('summary').textContent)); if (!d) return null; return { open: d.open, rows: [...d.querySelectorAll('.qd-cov-r')].map((r) => ({ sport: r.dataset.sport, events: r.dataset.events, researched: r.dataset.researched, label: r.querySelector('.qd-cov-h').textContent, blockers: (r.querySelector('.qd-cov-b') || {}).textContent || '', fits: r.scrollWidth <= r.clientWidth + 1 })) }; });
+      chk(vp.tag + ': the per-sport coverage table is open: NHL 11 discovered and researched, NBA blocked as preseason, MLB without a projection', covT && covT.open && covT.rows.some((r) => r.label === 'NHL' && r.events === '11' && r.researched === '11') && covT.rows.some((r) => r.label === 'NBA' && /preseason/.test(r.blockers)) && covT.rows.some((r) => r.label === 'MLB' && /no per-game MLB projection/.test(r.blockers)) && covT.rows.every((r) => r.fits), covT);
+      chk(vp.tag + ': …and the captured-price result is a labelled benchmark section, never the verdict', ms && /MARKET BENCHMARK/.test(ms.text) && !/^Benchmark: Verified/i.test(ms.bench || ''), ms && ms.bench);
+      /* every odds integration off: the captured-price audit never ran, so no benchmark chip is shown (it would read "Pass") */
+      await ask(page, "What's the best researched opportunity tonight with the odds off?", 9);
+      const off = await lastAnswer(page);
+      chk(vp.tag + ': odds off: the research answer renders with its research-only chip and NO benchmark chip (the benchmark did not run)', off && /research only/i.test(off.chip || '') && off.bench === null && /odds integrations are disabled/.test(off.text), off && [off.chip, off.bench]);
+      if (SHOTS) {
+        await page.evaluate(() => [...document.querySelectorAll('#edaiLog .qd-read')].pop().scrollIntoView({ block: 'start' }));
+        await page.screenshot({ path: path.join(SHOT_DIR, 'quant-multisport-' + vp.tag + '.png'), fullPage: false });
+        await page.evaluate(() => { const box = [...document.querySelectorAll('#edaiLog .qd-read')].pop().parentElement; const d = [...box.querySelectorAll('details.qd-more')].find((x) => /^Coverage — every sport/.test(x.querySelector('summary').textContent)); if (d) d.scrollIntoView({ block: 'start' }); });
+        await page.screenshot({ path: path.join(SHOT_DIR, 'quant-multisport-coverage-' + vp.tag + '.png'), fullPage: false });
+      }
+      if (vp.tag === 'phone') { const g3 = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, iw: window.innerWidth })); chk('phone: no sideways scroll with the multi-sport answer and its coverage table', g3.sw <= g3.iw + 1, g3); }
       chk(vp.tag + ': no page errors', errors.length === 0, errors);
       await ctx.close();
     }

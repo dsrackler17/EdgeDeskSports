@@ -1,5 +1,42 @@
 # Changelog
 
+## 2026-10-15 — The Quant Desk researches every sport, model first
+
+**"What's the best researched opportunity tonight?" is now answered across every sport EdgeDesk models, from EdgeDesk's own projections, frozen before any sportsbook price is read. It used to be answered from football alone.** The desk was a price scanner: a sport with no captured price had no "games" (NBA, NHL, WNBA and college basketball are not captured). On 2026-10-15 it scanned one NFL game and three college games and reported the NHL, with 11 games and an outcome-validated model, as "prices not captured". Full write-up: `docs/quant-desk/MULTISPORT.md`.
+
+- **Model first.**
+  - `lib/edgedesk_projections.js` reads every published engine (NHL, NBA, WNBA, NCAAM, NCAAW, NFL, FBS; soccer, removed from the platform the same day, is reported as not covered) into one independent-projection contract, then freezes and hashes it.
+  - `lib/edgedesk_market_compare.js` compares the frozen snapshot with the prices that exist, without moving it, and labels every price by kind.
+  - `lib/edgedesk_multisport.js` discovers the events from the schedule, writes the matchup research and ranks across sports by validated, uncertainty-adjusted rules.
+  - The answer has four sections (best verified opportunity, best researched matchup, strongest market watch, other candidates), plus what could change it, a coverage report and the sources.
+- **No market contamination.** No adapter reads an artifact's market blocks (the NFL slate's model–consensus `pricing` rows, the NBA `market`, the NHL `market_check`); a test proves it by scrubbing and corrupting them. The captured-price audit is kept as a labelled **market benchmark**. The card feed's blend is now labelled a blend.
+- **Persisted before compared.**
+  - `supabase/independent_projections.sql`: the database refuses a comparison that doesn't match a projection hash stored earlier, refuses a market-informed projection, and refuses a "verified" edge on a non-live quote.
+  - `engine/build_projections.js` (`projections.yml`, every 3 h) freezes every engine's projections with no price read.
+- **Odds off.** With `EDGEDESK_ODDS_DISABLED=1` the desk reads no price and still produces every projection, with the same snapshot hash.
+- **The Seahawks starter.**
+  - nflverse `games.csv` named Drew Lock for SEA; the depth chart and play-by-play name Sam Darnold.
+  - The NFL slate builder now re-runs the engine on a corroborated depth-chart starter (DEN +0.07 → +1.01) and flags an unresolved disagreement.
+  - The research layer invalidates a projection whose starter disagrees, and the research packet no longer lets the schedule feed win silently.
+  - nflverse data is no longer labelled "official".
+- **Audit semantics.** "UNVERIFIED … PASS" is now three separate lines: audit execution, evidence verification, and trade execution eligibility.
+- **Fixed after review** (each reproduced, then pinned by a test):
+  - A second question on unchanged projections is its own freeze. Before, a hash-only snapshot id was deduplicated and the database refused every comparison of the second turn.
+  - A DATA CHECK (EV past the 15% ceiling) is listed, never ranked as the strongest market watch.
+  - The maximum acceptable price and the price to watch are on the classifier's own 2% bar.
+  - Postponed or delayed games stay excluded.
+  - Soccer's 1X2 is compared as a three-way market; a club spelled differently on the scoreboard ("FC Cologne") joins its engine projection ("1. FC Köln").
+  - Team matching no longer confuses Texas with Texas A&M or Iowa with Iowa State, and an id link wins over a name match.
+  - A missing published figure no longer takes down the desk.
+  - Two feeds of one book count as one book.
+  - A past replay date is no longer an inverted window.
+  - With odds off, the named-game check reads no price.
+  - A spread with no line is never priced as pick'em.
+  - The NHL engine's per-line validation is kept.
+  - No constant is shown as a fair line.
+  - The database stamps `created_at` itself and refuses back-dated freezes and comparisons, and comparisons naming another event or probability.
+- Tests: `tools/intelligence/multisport.test.js` (127), `multisport_host.test.js` (37, including the 2026-10-15 regression from a fixture of that day's committed artifacts), `projections_sql.test.js` (50, PostgreSQL 16). `quant_ui.e2e.js` (59) renders the Oct 15 answer in Chromium at both widths. Every suite in the existing `ai:test` chain stays green.
+
 ## 2026-10-15 — Soccer removed; the last ESPN wording on prices; the new strip actually loads
 
 **EdgeDesk covers American sports and UFC. Soccer is gone from the platform; no other sport's numbers changed.**

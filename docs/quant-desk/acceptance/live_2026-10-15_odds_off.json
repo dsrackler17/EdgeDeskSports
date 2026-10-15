@@ -1,0 +1,1380 @@
+{
+ "acceptance": {
+  "mode": "live",
+  "at": "2026-10-15T15:29:43.791Z",
+  "timezone": "America/Chicago",
+  "window": {
+   "from": "2026-10-15T15:29:43.791Z",
+   "to": "2026-10-16T05:00:00.000Z",
+   "label": "tonight, 2026-10-15 (America/Chicago)",
+   "timezone": "America/Chicago",
+   "basis": "the reader's time zone (America/Chicago)",
+   "past": false
+  },
+  "odds": "DISABLED",
+  "1_sports_discovered": 5,
+  "1_sports_discovered_list": [
+   "NHL",
+   "NBA",
+   "NFL",
+   "College football (FBS)",
+   "MLB"
+  ],
+  "2_sports_with_operational_models": 7,
+  "2_operational_list": [
+   "NHL",
+   "NBA",
+   "WNBA",
+   "Men's college basketball",
+   "Women's college basketball",
+   "NFL",
+   "College football (FBS)"
+  ],
+  "3_eligible_games_per_sport": {
+   "NHL": 11,
+   "NBA": 2,
+   "NFL": 1,
+   "College football (FBS)": 3,
+   "MLB": 2
+  },
+  "4_successful_research_evaluations": 15,
+  "research_outcomes": {
+   "NHL": {
+    "RESEARCH_CONDITIONAL": 11
+   },
+   "NBA": {
+    "MODEL_UNAVAILABLE": 2
+   },
+   "NFL": {
+    "RESEARCH_CONDITIONAL": 1
+   },
+   "College football (FBS)": {
+    "RESEARCH_CONDITIONAL": 3
+   },
+   "MLB": {
+    "MODEL_UNAVAILABLE": 2
+   }
+  },
+  "5_valid_sportsbook_price_captures": 0,
+  "price_captures_seen_for_these_events": 0,
+  "6_independent_projections": 15,
+  "7_verified_positive_ev": 0,
+  "comparison_outcomes": {
+   "VERIFIED_POSITIVE_EV": 0,
+   "CONDITIONAL_EDGE": 0,
+   "MARKET_WATCH": 0,
+   "NO_VERIFIED_EDGE": 0,
+   "STALE_PRICE": 0,
+   "NO_CURRENT_ODDS": 30,
+   "INSUFFICIENT_MODEL_RELIABILITY": 0
+  },
+  "8_top_research_candidates": [
+   {
+    "rank": 1,
+    "sport": "NHL",
+    "event": "Calgary Flames @ Vegas Golden Knights",
+    "pick": "Vegas Golden Knights",
+    "p": 0.6637,
+    "sigma": 0.0186,
+    "conservative": 0.6181,
+    "tier": 1,
+    "outcome": "RESEARCH_CONDITIONAL"
+   },
+   {
+    "rank": 2,
+    "sport": "NHL",
+    "event": "Vancouver Canucks @ Florida Panthers",
+    "pick": "Florida Panthers",
+    "p": 0.643,
+    "sigma": 0.0212,
+    "conservative": 0.5911,
+    "tier": 1,
+    "outcome": "RESEARCH_CONDITIONAL"
+   },
+   {
+    "rank": 3,
+    "sport": "NHL",
+    "event": "Seattle Kraken @ Tampa Bay Lightning",
+    "pick": "Tampa Bay Lightning",
+    "p": 0.6181,
+    "sigma": 0.019,
+    "conservative": 0.5716,
+    "tier": 1,
+    "outcome": "RESEARCH_CONDITIONAL"
+   },
+   {
+    "rank": 4,
+    "sport": "NHL",
+    "event": "Winnipeg Jets @ Chicago Blackhawks",
+    "pick": "Winnipeg Jets",
+    "p": 0.5741,
+    "sigma": 0.0232,
+    "conservative": 0.5173,
+    "tier": 1,
+    "outcome": "RESEARCH_CONDITIONAL"
+   },
+   {
+    "rank": 5,
+    "sport": "NHL",
+    "event": "New York Islanders @ Ottawa Senators",
+    "pick": "Ottawa Senators",
+    "p": 0.5809,
+    "sigma": 0.0303,
+    "conservative": 0.5067,
+    "tier": 1,
+    "outcome": "RESEARCH_CONDITIONAL"
+   },
+   {
+    "rank": 6,
+    "sport": "NHL",
+    "event": "San Jose Sharks @ Nashville Predators",
+    "pick": "Nashville Predators",
+    "p": 0.5712,
+    "sigma": 0.028,
+    "conservative": 0.5026,
+    "tier": 1,
+    "outcome": "RESEARCH_CONDITIONAL"
+   }
+  ],
+  "9_failures": {
+   "NBA": [
+    "not on the NBA engine's slate — a preseason game (before the first regular-season game on the engine's schedule, 2026-10-20); the NBA ingest drops preseason and no preseason model is validated"
+   ],
+   "Men's college basketball": [
+    "no game in the next 72 h; the next is 2026-11-02T05:00:00Z"
+   ],
+   "Women's college basketball": [
+    "no game in the next 72 h; the next is 2026-11-02T05:00:00Z"
+   ],
+   "Soccer": [
+    "removed from the platform on 2026-10-15: the soccer model, its data and its slate were deleted (EdgeDesk covers American sports and UFC)"
+   ],
+   "MLB": [
+    "no per-game MLB projection is published: the history engine (mlb/history) is walk-forward through 2025 with end-of-2025 ratings and no 2026 or postseason inputs, and the run model (mlb/engine.js) runs in the browser only and is unvalidated"
+   ],
+   "College baseball": [
+    "out of season; the model's release gates are not passed (college_baseball/validation/release_gates.json: release_allowed false)"
+   ],
+   "UFC / MMA": [
+    "no fighter model is built: the 2024 Elo test does not beat a coin flip (engine/lab/ufc_elo.json: 138 scored bouts, log loss 0.689 vs 0.693, interval includes zero)"
+   ],
+   "Tennis": [
+    "retired as a product on 2026-09-27 (lib/edgedesk_sports.js)"
+   ],
+   "Golf": [
+    "no golf data source or model exists in EdgeDesk (golf.html is a partner referral page)"
+   ]
+  },
+  "10_not_hardcoded_to_football": {
+   "sports_researched": [
+    "NHL",
+    "NFL",
+    "College football (FBS)"
+   ],
+   "best_research_sport": "NHL"
+  },
+  "order": {
+   "projections_frozen_at": "2026-10-15T15:29:43.791Z",
+   "quotes_compared_at": "2026-10-15T15:29:44.791Z",
+   "snapshot_hash": "646973b16d5b397fc9ee6e19be50a0587ad757d56e33244d04f9d7ba5e75827b",
+   "snapshot_unchanged": true,
+   "frozen_before_market": true
+  },
+  "artifacts": {
+   "engine/registry.json": {
+    "generated_at": "2026-10-15T14:20:12.766Z"
+   },
+   "hockey/slate.json": {
+    "generated_at": "2026-10-15T12:05:48.530Z"
+   },
+   "nba/slate.json": {
+    "generated_at": "2026-10-15T11:48:24.745Z"
+   },
+   "nba/validation/summary.json": {
+    "generated_at": "2026-10-14T17:52:25.049Z"
+   },
+   "basketball/slate.json": {
+    "generated_at": "2026-10-15T14:11:16.132Z"
+   },
+   "football/nfl/slate.json": {
+    "generated_at": "2026-10-14T18:02:19.644Z"
+   },
+   "football/starters/nfl_2026.json": {
+    "generated_at": "2026-10-14T18:01:59.031Z"
+   },
+   "football/fbs/slate.json": {
+    "generated_at": "2026-10-15T15:22:35.627Z"
+   },
+   "today/slate.json": {
+    "generated_at": "2026-10-15T11:20:01.565Z"
+   }
+  }
+ },
+ "answer": "BEST VERIFIED OPPORTUNITY\nNone. No independently modeled market has a fresh, verified executable price that clears every execution gate — sportsbook odds integrations are disabled for this run, so no price was compared: every market reads NO CURRENT ODDS.\n\nBEST RESEARCHED MATCHUP\nSport: NHL · Event: Calgary Flames @ Vegas Golden Knights · Thu, Oct 15, 9:00 PM CDT\nModeled probability: Vegas Golden Knights 66.4% (moneyline, fair -197) — the model's probability of the outcome, not a confidence score. Uncertainty σ 1.9% (model 0.8%, calibration 1.2%, lineup 1.2%); conservative 61.8% at z 2.45.\nEdgeDesk fair lines: total 6; projected 2.45–3.48 (away–home).\nResearch: RESEARCH CONDITIONAL — starting goalies not confirmed (projected uncertain).\nStrongest measured advantages: CGY results beyond chances (goals for and against, finishing): 5.2 pp of win probability toward VGK; VGK results beyond chances (goals for and against, finishing): 3.4 pp of win probability toward VGK; VGK 5v5 chance suppression: 2.8 pp of win probability toward VGK; 5v5 xG for 1.02× league vs 0.96×; xG against 0.90× vs 1.04× (score- and opponent-adjusted).\nRest and travel: rest VGK 2 d, CGY 2 d; CGY travel 354 km.\nCounterargument: no measured factor runs against the favoured side; the uncertainty is the counterargument.\nModel reliability: OUTCOME VALIDATED, n 7,945, held-out log loss 0.66286, Brier 0.23534; never shown to beat the closing market.\nFreshness (separate from reliability): model built 3.4 h ago (fresh); inputs known through 2026-10-14.\nWhy it ranks first: its conservative probability 61.8% is the highest among 14 ranked projections with an out-of-sample validated primary market; next is Vancouver Canucks @ Florida Panthers (NHL, 59.1%). A matchup with no current odds is research, never a verified bet.\nPrice to watch: Vegas Golden Knights at -150 or better (the worst moneyline price at which the conservative probability 61.3% (z 2.7131 for the 30 markets this run compares; more priced markets raise it) still clears the 2% bar on EV).\n\nSTRONGEST CONDITIONAL MARKET WATCH\nNone: odds integrations are disabled for this run.\n\nOTHER TOP CANDIDATES (ranked by the rules below; probability, uncertainty and validation are reported separately)\n2. NHL — Vancouver Canucks @ Florida Panthers, Thu, Oct 15, 6:00 PM CDT: Florida Panthers 64.3% (σ 2.1%, conservative 59.1%); outcome validated moneyline; research conditional (starting goalies not confirmed (projected uncertain)).\n3. NHL — Seattle Kraken @ Tampa Bay Lightning, Thu, Oct 15, 6:00 PM CDT: Tampa Bay Lightning 61.8% (σ 1.9%, conservative 57.2%); outcome validated moneyline; research conditional (starting goalies not confirmed (projected uncertain)).\n4. NHL — Winnipeg Jets @ Chicago Blackhawks, Thu, Oct 15, 7:00 PM CDT: Winnipeg Jets 57.4% (σ 2.3%, conservative 51.7%); outcome validated moneyline; research conditional (starting goalies not confirmed (projected uncertain)).\n5. NHL — New York Islanders @ Ottawa Senators, Thu, Oct 15, 6:00 PM CDT: Ottawa Senators 58.1% (σ 3.0%, conservative 50.7%); outcome validated moneyline; research conditional (starting goalies not confirmed (projected uncertain)).\n6. NHL — San Jose Sharks @ Nashville Predators, Thu, Oct 15, 7:00 PM CDT: Nashville Predators 57.1% (σ 2.8%, conservative 50.3%); outcome validated moneyline; research conditional (starting goalies not confirmed (projected uncertain)).\nBest per sport: NHL #1 Vegas Golden Knights 66.4% (conservative 61.8%, tier 1: outcome validated moneyline); College football (FBS) #12 Texas State 91.7% (conservative 77.1%, tier 2: experimental moneyline).\nHeld back — NFL Seattle Seahawks @ Denver Broncos: projection invalidated: Seattle Seahawks: the projection assumed Drew Lock (nflverse games.csv, SCHEDULE_FEED) but nflverse depth charts lists Sam Darnold as QB1 (published 2026-10-14T12:51:31Z) and Sam Darnold took the first dropback of week 5.\n\nWHAT COULD CHANGE THE ANSWER\n1. starting goalie: home probability 66.4%–67.5%\n2. A starting goalie other than the projected one (see the goalie scenarios for the size of the move).\n3. A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long.\n4. a re-run of the NFL engine on the current starter for Seattle Seahawks @ Denver Broncos\n5. re-enabling the odds integrations: the frozen projections above would be compared with live prices without being changed\n6. goalie, quarterback and lineup confirmations closer to the start\n\nCOVERAGE REPORT (tonight, 2026-10-15 (America/Chicago))\n- NHL: 11 discovered, 11 researched, model executed (edgedesk_nhl_v1:xg_core), 22 markets evaluated, prices: odds integrations disabled, 0 verified edges.\n- NBA: 2 discovered, 0 researched, model executed (edgedesk_nba_v1:G_stack_P), 0 markets evaluated, prices: odds integrations disabled, 0 verified edges; blockers: not on the NBA engine's slate — a preseason game (before the first regular-season game on the engine's schedule, 2026-10-20); the NBA ingest drops preseason and no preseason model is validated.\n- WNBA: 0 discovered, 0 researched, model executed (edgedesk_bb_points_v1:points), 0 markets evaluated, prices: odds integrations disabled, 0 verified edges.\n- Men's college basketball: 0 discovered, 0 researched, model executed (edgedesk_bb_points_v1:points), 0 markets evaluated, prices: odds integrations disabled, 0 verified edges; blockers: no game in the next 72 h; the next is 2026-11-02T05:00:00Z.\n- Women's college basketball: 0 discovered, 0 researched, model executed (edgedesk_bb_points_v1:points), 0 markets evaluated, prices: odds integrations disabled, 0 verified edges; blockers: no game in the next 72 h; the next is 2026-11-02T05:00:00Z.\n- NFL: 1 discovered, 1 researched, model executed (edgedesk_football_v1.0.0), 2 markets evaluated, prices: odds integrations disabled, 0 verified edges.\n- College football (FBS): 3 discovered, 3 researched, model executed (edgedesk_cfb_p4), 6 markets evaluated, prices: odds integrations disabled, 0 verified edges.\n- Soccer: 0 discovered, 0 researched, model not executed, 0 markets evaluated, prices: odds integrations disabled, 0 verified edges; blockers: removed from the platform on 2026-10-15: the soccer model, its data and its slate were deleted (EdgeDesk covers American sports and UFC).\n- MLB: 2 discovered, 0 researched, model not executed, 0 markets evaluated, prices: odds integrations disabled, 0 verified edges; blockers: no per-game MLB projection is published: the history engine (mlb/history) is walk-forward through 2025 with end-of-2025 ratings and no 2026 or postseason inputs, and the run model (mlb/engine.js) runs in the browser only and is unvalidated.\n- College baseball: 0 discovered, 0 researched, model not executed, 0 markets evaluated, prices: odds integrations disabled, 0 verified edges; blockers: out of season; the model's release gates are not passed (college_baseball/validation/release_gates.json: release_allowed false).\n- UFC / MMA: 0 discovered, 0 researched, model not executed, 0 markets evaluated, prices: odds integrations disabled, 0 verified edges; blockers: no fighter model is built: the 2024 Elo test does not beat a coin flip (engine/lab/ufc_elo.json: 138 scored bouts, log loss 0.689 vs 0.693, interval includes zero).\n- Tennis: 0 discovered, 0 researched, model not executed, 0 markets evaluated, prices: odds integrations disabled, 0 verified edges; blockers: retired as a product on 2026-09-27 (lib/edgedesk_sports.js).\n- Golf: 0 discovered, 0 researched, model not executed, 0 markets evaluated, prices: odds integrations disabled, 0 verified edges; blockers: no golf data source or model exists in EdgeDesk (golf.html is a partner referral page).\n\nRESEARCH SOURCES\n- basketball/slate.json — built 2026-10-15T14:11:16.132Z\n- engine/registry.json — built 2026-10-15T14:20:12.766Z\n- football/fbs/slate.json — built 2026-10-15T15:22:35.627Z\n- football/nfl/slate.json — built 2026-10-14T18:02:19.644Z\n- football/starters/nfl_2026.json — built 2026-10-14T18:01:59.031Z\n- hockey/slate.json — built 2026-10-15T12:05:48.530Z\n- nba/slate.json — built 2026-10-15T11:48:24.745Z\n- nba/validation/summary.json — built 2026-10-14T17:52:25.049Z\n- today/slate.json — built 2026-10-15T11:20:01.565Z\nOrder: projections frozen 2026-10-15T15:29:43.791Z (snapshot 646973b16d5b397f), compared with prices 2026-10-15T15:29:44.791Z; projections unchanged by the comparison: yes.",
+ "result": {
+  "sections": {
+   "best_verified": null,
+   "no_verified_reason": "sportsbook odds integrations are disabled for this run, so no price was compared: every market reads NO CURRENT ODDS",
+   "best_research": {
+    "projection_id": "pj_91b9793f3ca001db22d828ed",
+    "sport": "nhl",
+    "sport_label": "NHL",
+    "league": "NHL",
+    "event": "Calgary Flames @ Vegas Golden Knights",
+    "start_utc": "2026-10-16T02:00:00.000Z",
+    "research_outcome": "RESEARCH_CONDITIONAL",
+    "research_reasons": [
+     "starting goalies not confirmed (projected uncertain)"
+    ],
+    "modeled": {
+     "side": "home",
+     "selection": "Vegas Golden Knights",
+     "probability": 0.6637,
+     "market": "moneyline",
+     "sigma": {
+      "model": 0.0075,
+      "calibration": 0.0121,
+      "lineup": 0.012,
+      "total": 0.0186
+     },
+     "z": 2.45,
+     "conservative_probability": 0.6181,
+     "fair_american": -197,
+     "p_home": 0.6637,
+     "p_away": 0.3363,
+     "p_draw": null,
+     "fair_home_line": null,
+     "fair_total": 6,
+     "projected_score": {
+      "home": 3.4799,
+      "away": 2.4502,
+      "total": 6.13,
+      "basis": "expected regulation goals per team (λ) and the expected total including overtime"
+     },
+     "note": "the model's probability of this outcome — not a confidence score"
+    },
+    "advantages": [
+     "CGY results beyond chances (goals for and against, finishing): 5.2 pp of win probability toward VGK",
+     "VGK results beyond chances (goals for and against, finishing): 3.4 pp of win probability toward VGK",
+     "VGK 5v5 chance suppression: 2.8 pp of win probability toward VGK",
+     "5v5 xG for 1.02× league vs 0.96×; xG against 0.90× vs 1.04× (score- and opponent-adjusted)"
+    ],
+    "counterarguments": [],
+    "context": "rest VGK 2 d, CGY 2 d; CGY travel 354 km",
+    "could_be_wrong": [
+     "starting goalie: home probability 66.4%–67.5%",
+     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+     "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long."
+    ],
+    "model_confidence": {
+     "validation_state": "OUTCOME_VALIDATED",
+     "market": "moneyline",
+     "n": 7945,
+     "held_out_log_loss": 0.66286,
+     "headline": "outcomes: OUTCOME_VALIDATED; held-out log loss 0.66286; vs close: not tested; vs Elo Δ log loss -0.003687 (95% -0.005417 to -0.002134)",
+     "engine_record": {
+      "n": 7945,
+      "log_loss": 0.66286,
+      "brier": 0.23534,
+      "baseline_log_loss": null
+     },
+     "calibration_sd": 0.0121,
+     "value_claims": false
+    },
+    "freshness": {
+     "model_built_at": "2026-10-15T12:05:48.530Z",
+     "age_hours": 3.4,
+     "state": "FRESH",
+     "inputs_known_at": "2026-10-14",
+     "data_state": "FRESH"
+    },
+    "availability": {
+     "key_role": "G",
+     "certainty": "PROJECTED_UNCERTAIN",
+     "conflicts": []
+    },
+    "model": {
+     "id": "edgedesk_nhl_v1:xg_core",
+     "artifact": "hockey/slate.json"
+    },
+    "invalidated": false,
+    "tier": 1,
+    "rank": 1
+   },
+   "runner_up": {
+    "projection_id": "pj_7e180bf331a8c186e6b5b316",
+    "sport": "nhl",
+    "sport_label": "NHL",
+    "league": "NHL",
+    "event": "Vancouver Canucks @ Florida Panthers",
+    "start_utc": "2026-10-15T23:00:00.000Z",
+    "research_outcome": "RESEARCH_CONDITIONAL",
+    "research_reasons": [
+     "starting goalies not confirmed (projected uncertain)"
+    ],
+    "modeled": {
+     "side": "home",
+     "selection": "Florida Panthers",
+     "probability": 0.643,
+     "market": "moneyline",
+     "sigma": {
+      "model": 0.0126,
+      "calibration": 0.0121,
+      "lineup": 0.012,
+      "total": 0.0212
+     },
+     "z": 2.45,
+     "conservative_probability": 0.5911,
+     "fair_american": -180,
+     "p_home": 0.643,
+     "p_away": 0.357,
+     "p_draw": null,
+     "fair_home_line": null,
+     "fair_total": 6.5,
+     "projected_score": {
+      "home": 3.5388,
+      "away": 2.6271,
+      "total": 6.37,
+      "basis": "expected regulation goals per team (λ) and the expected total including overtime"
+     },
+     "note": "the model's probability of this outcome — not a confidence score"
+    },
+    "advantages": [
+     "VAN results beyond chances (goals for and against, finishing): 6.9 pp of win probability toward FLA",
+     "home ice: 2.5 pp of win probability toward FLA",
+     "VAN 5v5 chance suppression: 2.3 pp of win probability toward FLA",
+     "5v5 xG for 1.01× league vs 0.92×; xG against 0.97× vs 1.08× (score- and opponent-adjusted)"
+    ],
+    "counterarguments": [
+     "FLA results beyond chances (goals for and against, finishing): 0.1 pp of win probability toward VAN"
+    ],
+    "context": "rest FLA 2 d, VAN 2 d; VAN travel 1729 km",
+    "could_be_wrong": [
+     "starting goalie: home probability 64.7%–65.7%",
+     "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+     "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long."
+    ],
+    "model_confidence": {
+     "validation_state": "OUTCOME_VALIDATED",
+     "market": "moneyline",
+     "n": 7945,
+     "held_out_log_loss": 0.66286,
+     "headline": "outcomes: OUTCOME_VALIDATED; held-out log loss 0.66286; vs close: not tested; vs Elo Δ log loss -0.003687 (95% -0.005417 to -0.002134)",
+     "engine_record": {
+      "n": 7945,
+      "log_loss": 0.66286,
+      "brier": 0.23534,
+      "baseline_log_loss": null
+     },
+     "calibration_sd": 0.0121,
+     "value_claims": false
+    },
+    "freshness": {
+     "model_built_at": "2026-10-15T12:05:48.530Z",
+     "age_hours": 3.4,
+     "state": "FRESH",
+     "inputs_known_at": "2026-10-14",
+     "data_state": "FRESH"
+    },
+    "availability": {
+     "key_role": "G",
+     "certainty": "PROJECTED_UNCERTAIN",
+     "conflicts": []
+    },
+    "model": {
+     "id": "edgedesk_nhl_v1:xg_core",
+     "artifact": "hockey/slate.json"
+    },
+    "invalidated": false,
+    "tier": 1,
+    "rank": 2
+   },
+   "market_watch": null,
+   "data_checks": [],
+   "alternatives": [
+    {
+     "projection_id": "pj_7e180bf331a8c186e6b5b316",
+     "sport": "nhl",
+     "sport_label": "NHL",
+     "league": "NHL",
+     "event": "Vancouver Canucks @ Florida Panthers",
+     "start_utc": "2026-10-15T23:00:00.000Z",
+     "research_outcome": "RESEARCH_CONDITIONAL",
+     "research_reasons": [
+      "starting goalies not confirmed (projected uncertain)"
+     ],
+     "modeled": {
+      "side": "home",
+      "selection": "Florida Panthers",
+      "probability": 0.643,
+      "market": "moneyline",
+      "sigma": {
+       "model": 0.0126,
+       "calibration": 0.0121,
+       "lineup": 0.012,
+       "total": 0.0212
+      },
+      "z": 2.45,
+      "conservative_probability": 0.5911,
+      "fair_american": -180,
+      "p_home": 0.643,
+      "p_away": 0.357,
+      "p_draw": null,
+      "fair_home_line": null,
+      "fair_total": 6.5,
+      "projected_score": {
+       "home": 3.5388,
+       "away": 2.6271,
+       "total": 6.37,
+       "basis": "expected regulation goals per team (λ) and the expected total including overtime"
+      },
+      "note": "the model's probability of this outcome — not a confidence score"
+     },
+     "advantages": [
+      "VAN results beyond chances (goals for and against, finishing): 6.9 pp of win probability toward FLA",
+      "home ice: 2.5 pp of win probability toward FLA",
+      "VAN 5v5 chance suppression: 2.3 pp of win probability toward FLA",
+      "5v5 xG for 1.01× league vs 0.92×; xG against 0.97× vs 1.08× (score- and opponent-adjusted)"
+     ],
+     "counterarguments": [
+      "FLA results beyond chances (goals for and against, finishing): 0.1 pp of win probability toward VAN"
+     ],
+     "context": "rest FLA 2 d, VAN 2 d; VAN travel 1729 km",
+     "could_be_wrong": [
+      "starting goalie: home probability 64.7%–65.7%",
+      "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+      "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long."
+     ],
+     "model_confidence": {
+      "validation_state": "OUTCOME_VALIDATED",
+      "market": "moneyline",
+      "n": 7945,
+      "held_out_log_loss": 0.66286,
+      "headline": "outcomes: OUTCOME_VALIDATED; held-out log loss 0.66286; vs close: not tested; vs Elo Δ log loss -0.003687 (95% -0.005417 to -0.002134)",
+      "engine_record": {
+       "n": 7945,
+       "log_loss": 0.66286,
+       "brier": 0.23534,
+       "baseline_log_loss": null
+      },
+      "calibration_sd": 0.0121,
+      "value_claims": false
+     },
+     "freshness": {
+      "model_built_at": "2026-10-15T12:05:48.530Z",
+      "age_hours": 3.4,
+      "state": "FRESH",
+      "inputs_known_at": "2026-10-14",
+      "data_state": "FRESH"
+     },
+     "availability": {
+      "key_role": "G",
+      "certainty": "PROJECTED_UNCERTAIN",
+      "conflicts": []
+     },
+     "model": {
+      "id": "edgedesk_nhl_v1:xg_core",
+      "artifact": "hockey/slate.json"
+     },
+     "invalidated": false,
+     "tier": 1,
+     "rank": 2
+    },
+    {
+     "projection_id": "pj_ccb4a90fac83a0c39b887b45",
+     "sport": "nhl",
+     "sport_label": "NHL",
+     "league": "NHL",
+     "event": "Seattle Kraken @ Tampa Bay Lightning",
+     "start_utc": "2026-10-15T23:00:00.000Z",
+     "research_outcome": "RESEARCH_CONDITIONAL",
+     "research_reasons": [
+      "starting goalies not confirmed (projected uncertain)"
+     ],
+     "modeled": {
+      "side": "home",
+      "selection": "Tampa Bay Lightning",
+      "probability": 0.6181,
+      "market": "moneyline",
+      "sigma": {
+       "model": 0.0085,
+       "calibration": 0.0121,
+       "lineup": 0.012,
+       "total": 0.019
+      },
+      "z": 2.45,
+      "conservative_probability": 0.5716,
+      "fair_american": -162,
+      "p_home": 0.6181,
+      "p_away": 0.3819,
+      "p_draw": null,
+      "fair_home_line": null,
+      "fair_total": 6,
+      "projected_score": {
+       "home": 3.3647,
+       "away": 2.6281,
+       "total": 6.2,
+       "basis": "expected regulation goals per team (λ) and the expected total including overtime"
+      },
+      "note": "the model's probability of this outcome — not a confidence score"
+     },
+     "advantages": [
+      "TBL results beyond chances (goals for and against, finishing): 3.9 pp of win probability toward TBL",
+      "home ice: 2.5 pp of win probability toward TBL",
+      "TBL 5v5 chance suppression: 1.4 pp of win probability toward TBL",
+      "5v5 xG for 1.04× league vs 0.93×; xG against 0.95× vs 1.02× (score- and opponent-adjusted)"
+     ],
+     "counterarguments": [],
+     "context": "rest TBL 2 d, SEA 2 d; SEA travel 1488 km",
+     "could_be_wrong": [
+      "starting goalie: home probability 61.6%–63.0%",
+      "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+      "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long."
+     ],
+     "model_confidence": {
+      "validation_state": "OUTCOME_VALIDATED",
+      "market": "moneyline",
+      "n": 7945,
+      "held_out_log_loss": 0.66286,
+      "headline": "outcomes: OUTCOME_VALIDATED; held-out log loss 0.66286; vs close: not tested; vs Elo Δ log loss -0.003687 (95% -0.005417 to -0.002134)",
+      "engine_record": {
+       "n": 7945,
+       "log_loss": 0.66286,
+       "brier": 0.23534,
+       "baseline_log_loss": null
+      },
+      "calibration_sd": 0.0121,
+      "value_claims": false
+     },
+     "freshness": {
+      "model_built_at": "2026-10-15T12:05:48.530Z",
+      "age_hours": 3.4,
+      "state": "FRESH",
+      "inputs_known_at": "2026-10-14",
+      "data_state": "FRESH"
+     },
+     "availability": {
+      "key_role": "G",
+      "certainty": "PROJECTED_UNCERTAIN",
+      "conflicts": []
+     },
+     "model": {
+      "id": "edgedesk_nhl_v1:xg_core",
+      "artifact": "hockey/slate.json"
+     },
+     "invalidated": false,
+     "tier": 1,
+     "rank": 3
+    },
+    {
+     "projection_id": "pj_fd54170f50c577b651384d04",
+     "sport": "nhl",
+     "sport_label": "NHL",
+     "league": "NHL",
+     "event": "Winnipeg Jets @ Chicago Blackhawks",
+     "start_utc": "2026-10-16T00:00:00.000Z",
+     "research_outcome": "RESEARCH_CONDITIONAL",
+     "research_reasons": [
+      "starting goalies not confirmed (projected uncertain)"
+     ],
+     "modeled": {
+      "side": "away",
+      "selection": "Winnipeg Jets",
+      "probability": 0.5741,
+      "market": "moneyline",
+      "sigma": {
+       "model": 0.0092,
+       "calibration": 0.0176,
+       "lineup": 0.012,
+       "total": 0.0232
+      },
+      "z": 2.45,
+      "conservative_probability": 0.5173,
+      "fair_american": -135,
+      "p_home": 0.4259,
+      "p_away": 0.5741,
+      "p_draw": null,
+      "fair_home_line": null,
+      "fair_total": 6,
+      "projected_score": {
+       "home": 2.7447,
+       "away": 3.2131,
+       "total": 6.17,
+       "basis": "expected regulation goals per team (λ) and the expected total including overtime"
+      },
+      "note": "the model's probability of this outcome — not a confidence score"
+     },
+     "advantages": [
+      "CHI results beyond chances (goals for and against, finishing): 6.5 pp of win probability toward WPG",
+      "CHI 5v5 chance suppression: 2.9 pp of win probability toward WPG",
+      "CHI 5v5 chance creation: 2.0 pp of win probability toward WPG",
+      "5v5 xG for 0.96× league vs 0.91×; xG against 1.00× vs 1.10× (score- and opponent-adjusted)"
+     ],
+     "counterarguments": [
+      "home ice: 2.5 pp of win probability toward CHI",
+      "WPG 5v5 chance creation: 0.8 pp of win probability toward CHI"
+     ],
+     "context": "rest CHI 2 d, WPG 2 d; WPG travel 1152 km",
+     "could_be_wrong": [
+      "starting goalie: home probability 41.4%–43.7%",
+      "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+      "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long."
+     ],
+     "model_confidence": {
+      "validation_state": "OUTCOME_VALIDATED",
+      "market": "moneyline",
+      "n": 7945,
+      "held_out_log_loss": 0.66286,
+      "headline": "outcomes: OUTCOME_VALIDATED; held-out log loss 0.66286; vs close: not tested; vs Elo Δ log loss -0.003687 (95% -0.005417 to -0.002134)",
+      "engine_record": {
+       "n": 7945,
+       "log_loss": 0.66286,
+       "brier": 0.23534,
+       "baseline_log_loss": null
+      },
+      "calibration_sd": 0.0176,
+      "value_claims": false
+     },
+     "freshness": {
+      "model_built_at": "2026-10-15T12:05:48.530Z",
+      "age_hours": 3.4,
+      "state": "FRESH",
+      "inputs_known_at": "2026-10-14",
+      "data_state": "FRESH"
+     },
+     "availability": {
+      "key_role": "G",
+      "certainty": "PROJECTED_UNCERTAIN",
+      "conflicts": []
+     },
+     "model": {
+      "id": "edgedesk_nhl_v1:xg_core",
+      "artifact": "hockey/slate.json"
+     },
+     "invalidated": false,
+     "tier": 1,
+     "rank": 4
+    },
+    {
+     "projection_id": "pj_06d7bdb33cd512eb2f544e74",
+     "sport": "nhl",
+     "sport_label": "NHL",
+     "league": "NHL",
+     "event": "New York Islanders @ Ottawa Senators",
+     "start_utc": "2026-10-15T23:00:00.000Z",
+     "research_outcome": "RESEARCH_CONDITIONAL",
+     "research_reasons": [
+      "starting goalies not confirmed (projected uncertain)"
+     ],
+     "modeled": {
+      "side": "home",
+      "selection": "Ottawa Senators",
+      "probability": 0.5809,
+      "market": "moneyline",
+      "sigma": {
+       "model": 0.0126,
+       "calibration": 0.0248,
+       "lineup": 0.012,
+       "total": 0.0303
+      },
+      "z": 2.45,
+      "conservative_probability": 0.5067,
+      "fair_american": -139,
+      "p_home": 0.5809,
+      "p_away": 0.4191,
+      "p_draw": null,
+      "fair_home_line": null,
+      "fair_total": 6,
+      "projected_score": {
+       "home": 3.188,
+       "away": 2.6937,
+       "total": 6.1,
+       "basis": "expected regulation goals per team (λ) and the expected total including overtime"
+      },
+      "note": "the model's probability of this outcome — not a confidence score"
+     },
+     "advantages": [
+      "home ice: 2.5 pp of win probability toward OTT",
+      "OTT results beyond chances (goals for and against, finishing): 1.9 pp of win probability toward OTT",
+      "OTT 5v5 chance suppression: 1.6 pp of win probability toward OTT",
+      "5v5 xG for 1.01× league vs 1.00×; xG against 0.94× vs 1.03× (score- and opponent-adjusted)"
+     ],
+     "counterarguments": [
+      "out of sample, games the model priced at 50%–60% for the home side came in 2.3 pp below the model (n 2793, confirmation 2020-21 to 2025-26)"
+     ],
+     "context": "rest OTT 2 d, NYI 2 d; NYI travel 540 km",
+     "could_be_wrong": [
+      "starting goalie: home probability 56.4%–60.3%",
+      "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+      "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long."
+     ],
+     "model_confidence": {
+      "validation_state": "OUTCOME_VALIDATED",
+      "market": "moneyline",
+      "n": 7945,
+      "held_out_log_loss": 0.66286,
+      "headline": "outcomes: OUTCOME_VALIDATED; held-out log loss 0.66286; vs close: not tested; vs Elo Δ log loss -0.003687 (95% -0.005417 to -0.002134)",
+      "engine_record": {
+       "n": 7945,
+       "log_loss": 0.66286,
+       "brier": 0.23534,
+       "baseline_log_loss": null
+      },
+      "calibration_sd": 0.0248,
+      "value_claims": false
+     },
+     "freshness": {
+      "model_built_at": "2026-10-15T12:05:48.530Z",
+      "age_hours": 3.4,
+      "state": "FRESH",
+      "inputs_known_at": "2026-10-14",
+      "data_state": "FRESH"
+     },
+     "availability": {
+      "key_role": "G",
+      "certainty": "PROJECTED_UNCERTAIN",
+      "conflicts": []
+     },
+     "model": {
+      "id": "edgedesk_nhl_v1:xg_core",
+      "artifact": "hockey/slate.json"
+     },
+     "invalidated": false,
+     "tier": 1,
+     "rank": 5
+    },
+    {
+     "projection_id": "pj_b9b911dba0c38c440ed327ae",
+     "sport": "nhl",
+     "sport_label": "NHL",
+     "league": "NHL",
+     "event": "San Jose Sharks @ Nashville Predators",
+     "start_utc": "2026-10-16T00:00:00.000Z",
+     "research_outcome": "RESEARCH_CONDITIONAL",
+     "research_reasons": [
+      "starting goalies not confirmed (projected uncertain)"
+     ],
+     "modeled": {
+      "side": "home",
+      "selection": "Nashville Predators",
+      "probability": 0.5712,
+      "market": "moneyline",
+      "sigma": {
+       "model": 0.005,
+       "calibration": 0.0248,
+       "lineup": 0.012,
+       "total": 0.028
+      },
+      "z": 2.45,
+      "conservative_probability": 0.5026,
+      "fair_american": -133,
+      "p_home": 0.5712,
+      "p_away": 0.4288,
+      "p_draw": null,
+      "fair_home_line": null,
+      "fair_total": 6.5,
+      "projected_score": {
+       "home": 3.2861,
+       "away": 2.8432,
+       "total": 6.34,
+       "basis": "expected regulation goals per team (λ) and the expected total including overtime"
+      },
+      "note": "the model's probability of this outcome — not a confidence score"
+     },
+     "advantages": [
+      "SJS results beyond chances (goals for and against, finishing): 5.0 pp of win probability toward NSH",
+      "home ice: 2.6 pp of win probability toward NSH",
+      "SJS 5v5 chance creation: 1.5 pp of win probability toward NSH",
+      "5v5 xG for 0.98× league vs 0.93×; xG against 1.03× vs 1.04× (score- and opponent-adjusted)"
+     ],
+     "counterarguments": [
+      "NSH results beyond chances (goals for and against, finishing): 2.0 pp of win probability toward SJS",
+      "NSH 5v5 chance suppression: 0.9 pp of win probability toward SJS",
+      "out of sample, games the model priced at 50%–60% for the home side came in 2.3 pp below the model (n 2793, confirmation 2020-21 to 2025-26)"
+     ],
+     "context": "rest NSH 2 d, SJS 2 d; SJS travel 3114 km",
+     "could_be_wrong": [
+      "starting goalie: home probability 56.3%–57.2%",
+      "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+      "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long."
+     ],
+     "model_confidence": {
+      "validation_state": "OUTCOME_VALIDATED",
+      "market": "moneyline",
+      "n": 7945,
+      "held_out_log_loss": 0.66286,
+      "headline": "outcomes: OUTCOME_VALIDATED; held-out log loss 0.66286; vs close: not tested; vs Elo Δ log loss -0.003687 (95% -0.005417 to -0.002134)",
+      "engine_record": {
+       "n": 7945,
+       "log_loss": 0.66286,
+       "brier": 0.23534,
+       "baseline_log_loss": null
+      },
+      "calibration_sd": 0.0248,
+      "value_claims": false
+     },
+     "freshness": {
+      "model_built_at": "2026-10-15T12:05:48.530Z",
+      "age_hours": 3.4,
+      "state": "FRESH",
+      "inputs_known_at": "2026-10-14",
+      "data_state": "FRESH"
+     },
+     "availability": {
+      "key_role": "G",
+      "certainty": "PROJECTED_UNCERTAIN",
+      "conflicts": []
+     },
+     "model": {
+      "id": "edgedesk_nhl_v1:xg_core",
+      "artifact": "hockey/slate.json"
+     },
+     "invalidated": false,
+     "tier": 1,
+     "rank": 6
+    }
+   ],
+   "best_by_sport": [
+    {
+     "projection_id": "pj_91b9793f3ca001db22d828ed",
+     "sport": "nhl",
+     "sport_label": "NHL",
+     "league": "NHL",
+     "event": "Calgary Flames @ Vegas Golden Knights",
+     "start_utc": "2026-10-16T02:00:00.000Z",
+     "research_outcome": "RESEARCH_CONDITIONAL",
+     "research_reasons": [
+      "starting goalies not confirmed (projected uncertain)"
+     ],
+     "modeled": {
+      "side": "home",
+      "selection": "Vegas Golden Knights",
+      "probability": 0.6637,
+      "market": "moneyline",
+      "sigma": {
+       "model": 0.0075,
+       "calibration": 0.0121,
+       "lineup": 0.012,
+       "total": 0.0186
+      },
+      "z": 2.45,
+      "conservative_probability": 0.6181,
+      "fair_american": -197,
+      "p_home": 0.6637,
+      "p_away": 0.3363,
+      "p_draw": null,
+      "fair_home_line": null,
+      "fair_total": 6,
+      "projected_score": {
+       "home": 3.4799,
+       "away": 2.4502,
+       "total": 6.13,
+       "basis": "expected regulation goals per team (λ) and the expected total including overtime"
+      },
+      "note": "the model's probability of this outcome — not a confidence score"
+     },
+     "advantages": [
+      "CGY results beyond chances (goals for and against, finishing): 5.2 pp of win probability toward VGK",
+      "VGK results beyond chances (goals for and against, finishing): 3.4 pp of win probability toward VGK",
+      "VGK 5v5 chance suppression: 2.8 pp of win probability toward VGK",
+      "5v5 xG for 1.02× league vs 0.96×; xG against 0.90× vs 1.04× (score- and opponent-adjusted)"
+     ],
+     "counterarguments": [],
+     "context": "rest VGK 2 d, CGY 2 d; CGY travel 354 km",
+     "could_be_wrong": [
+      "starting goalie: home probability 66.4%–67.5%",
+      "A starting goalie other than the projected one (see the goalie scenarios for the size of the move).",
+      "A late scratch or return of a regular: lineups are measured but not in this price (no pregame lineup feed); the lineup block lists regulars absent from each club's last game and for how long."
+     ],
+     "model_confidence": {
+      "validation_state": "OUTCOME_VALIDATED",
+      "market": "moneyline",
+      "n": 7945,
+      "held_out_log_loss": 0.66286,
+      "headline": "outcomes: OUTCOME_VALIDATED; held-out log loss 0.66286; vs close: not tested; vs Elo Δ log loss -0.003687 (95% -0.005417 to -0.002134)",
+      "engine_record": {
+       "n": 7945,
+       "log_loss": 0.66286,
+       "brier": 0.23534,
+       "baseline_log_loss": null
+      },
+      "calibration_sd": 0.0121,
+      "value_claims": false
+     },
+     "freshness": {
+      "model_built_at": "2026-10-15T12:05:48.530Z",
+      "age_hours": 3.4,
+      "state": "FRESH",
+      "inputs_known_at": "2026-10-14",
+      "data_state": "FRESH"
+     },
+     "availability": {
+      "key_role": "G",
+      "certainty": "PROJECTED_UNCERTAIN",
+      "conflicts": []
+     },
+     "model": {
+      "id": "edgedesk_nhl_v1:xg_core",
+      "artifact": "hockey/slate.json"
+     },
+     "invalidated": false,
+     "tier": 1,
+     "rank": 1
+    },
+    {
+     "projection_id": "pj_26def589a63c812d28d51e2a",
+     "sport": "cfb",
+     "sport_label": "College football (FBS)",
+     "league": "FBS",
+     "event": "Colorado State @ Texas State",
+     "start_utc": "2026-10-16T00:00:00.000Z",
+     "research_outcome": "RESEARCH_CONDITIONAL",
+     "research_reasons": [
+      "starting quarterbacks not confirmed (projected uncertain)",
+      "the moneyline model is experimental (outcomes: PROVISIONAL (1 probability bin(s) off by more than 0.05 (0.3–0.35)); vs close: RESEARCH)"
+     ],
+     "modeled": {
+      "side": "home",
+      "selection": "Texas State",
+      "probability": 0.917,
+      "market": "moneyline",
+      "sigma": {
+       "model": 0.03,
+       "calibration": 0.05,
+       "lineup": 0.012,
+       "total": 0.0595
+      },
+      "z": 2.45,
+      "conservative_probability": 0.7712,
+      "fair_american": -1105,
+      "p_home": 0.917,
+      "p_away": 0.083,
+      "p_draw": null,
+      "fair_home_line": -20.27,
+      "fair_total": 64.2,
+      "projected_score": {
+       "home": 42.24,
+       "away": 21.97,
+       "margin": 20.27,
+       "total": 64.2,
+       "basis": "the engine's fair margin and fair total"
+      },
+      "note": "the model's probability of this outcome — not a confidence score"
+     },
+     "advantages": [
+      "quarterback passing Texas State Brad Jackson 0.302 EPA/dropback (142 dropbacks) vs Colorado State K'saan Farrar 0.132 EPA/dropback (108 dropbacks) — research context, not in the fair line"
+     ],
+     "counterarguments": [],
+     "context": null,
+     "could_be_wrong": [
+      "A quarterback change (college starters are rarely confirmed before kickoff)."
+     ],
+     "model_confidence": {
+      "validation_state": "EXPERIMENTAL",
+      "market": "moneyline",
+      "n": null,
+      "held_out_log_loss": null,
+      "headline": "outcomes: PROVISIONAL (1 probability bin(s) off by more than 0.05 (0.3–0.35)); vs close: RESEARCH",
+      "engine_record": null,
+      "calibration_sd": 0.05,
+      "value_claims": false
+     },
+     "freshness": {
+      "model_built_at": "2026-10-15T15:22:35.627Z",
+      "age_hours": 0.1,
+      "state": "FRESH",
+      "inputs_known_at": null,
+      "data_state": null
+     },
+     "availability": {
+      "key_role": "QB",
+      "certainty": "PROJECTED_UNCERTAIN",
+      "conflicts": []
+     },
+     "model": {
+      "id": "edgedesk_cfb_p4_v1.0.0",
+      "artifact": "football/fbs/slate.json"
+     },
+     "invalidated": false,
+     "tier": 2,
+     "rank": 12
+    }
+   ],
+   "held_back": [
+    {
+     "projection_id": "pj_0ca824d34b13b400889e0e95",
+     "sport": "nfl",
+     "sport_label": "NFL",
+     "league": "NFL",
+     "event": "Seattle Seahawks @ Denver Broncos",
+     "start_utc": "2026-10-16T00:15:00.000Z",
+     "research_outcome": "RESEARCH_CONDITIONAL",
+     "research_reasons": [
+      "STARTER CONFLICT — Seattle Seahawks: the projection assumed Drew Lock (nflverse games.csv, SCHEDULE_FEED) but nflverse depth charts lists Sam Darnold as QB1 (published 2026-10-14T12:51:31Z) and Sam Darnold took the first dropback of week 5; invalidated for pricing until the engine is re-run on the current starter",
+      "the moneyline model is experimental (outcomes: PROVISIONAL (mean probability off the observed rate by 0.0343 (limit 0.02)); vs close: RESEARCH)"
+     ],
+     "modeled": {
+      "side": "away",
+      "selection": "Seattle Seahawks",
+      "probability": 0.5025,
+      "market": "moneyline",
+      "sigma": {
+       "model": 0.03,
+       "calibration": 0.0343,
+       "lineup": 0.04,
+       "total": 0.0606
+      },
+      "z": 1.2816,
+      "conservative_probability": 0.4248,
+      "fair_american": -101,
+      "p_home": 0.4975,
+      "p_away": 0.5025,
+      "p_draw": null,
+      "fair_home_line": 0.07,
+      "fair_total": 42.14,
+      "projected_score": {
+       "home": 21.04,
+       "away": 21.11,
+       "margin": -0.07,
+       "total": 42.14,
+       "basis": "the engine's fair margin and fair total"
+      },
+      "note": "the model's probability of this outcome — not a confidence score"
+     },
+     "advantages": [
+      "net pass: 1.00 points of margin toward SEA",
+      "net pts: 0.60 points of margin toward SEA",
+      "net epa: 0.58 points of margin toward SEA"
+     ],
+     "counterarguments": [
+      "qb adj diff: 0.74 points of margin toward DEN"
+     ],
+     "context": "rest DEN 4 d, SEA 4 d",
+     "could_be_wrong": [
+      "Seattle Seahawks: the projection assumed Drew Lock (nflverse games.csv, SCHEDULE_FEED) but nflverse depth charts lists Sam Darnold as QB1 (published 2026-10-14T12:51:31Z) and Sam Darnold took the first dropback of week 5",
+      "DEN quarterback replaced by the club's carried level: home line moves 0.07 pts",
+      "SEA quarterback replaced by the club's carried level: home line moves 0.67 pts",
+      "A quarterback change."
+     ],
+     "model_confidence": {
+      "validation_state": "EXPERIMENTAL",
+      "market": "moneyline",
+      "n": 2647,
+      "held_out_log_loss": null,
+      "headline": "outcomes: PROVISIONAL (mean probability off the observed rate by 0.0343 (limit 0.02)); vs close: RESEARCH",
+      "engine_record": null,
+      "calibration_sd": 0.0343,
+      "value_claims": false
+     },
+     "freshness": {
+      "model_built_at": "2026-10-14T18:02:19.644Z",
+      "age_hours": 21.5,
+      "state": "FRESH",
+      "inputs_known_at": null,
+      "data_state": null
+     },
+     "availability": {
+      "key_role": "QB",
+      "certainty": "CONFLICTING",
+      "conflicts": [
+       "Seattle Seahawks: the projection assumed Drew Lock (nflverse games.csv, SCHEDULE_FEED) but nflverse depth charts lists Sam Darnold as QB1 (published 2026-10-14T12:51:31Z) and Sam Darnold took the first dropback of week 5"
+      ]
+     },
+     "model": {
+      "id": "edgedesk_football_v1.0.0",
+      "artifact": "football/nfl/slate.json"
+     },
+     "invalidated": true
+    }
+   ],
+   "outcomes": {
+    "VERIFIED_POSITIVE_EV": 0,
+    "CONDITIONAL_EDGE": 0,
+    "MARKET_WATCH": 0,
+    "NO_VERIFIED_EDGE": 0,
+    "STALE_PRICE": 0,
+    "NO_CURRENT_ODDS": 30,
+    "INSUFFICIENT_MODEL_RELIABILITY": 0
+   },
+   "label": {
+    "VERIFIED_POSITIVE_EV": "VERIFIED POSITIVE EV",
+    "CONDITIONAL_EDGE": "CONDITIONAL EDGE",
+    "MARKET_WATCH": "MARKET WATCH",
+    "NO_VERIFIED_EDGE": "NO VERIFIED EDGE",
+    "STALE_PRICE": "STALE PRICE",
+    "NO_CURRENT_ODDS": "NO CURRENT ODDS",
+    "INSUFFICIENT_MODEL_RELIABILITY": "INSUFFICIENT MODEL RELIABILITY"
+   }
+  },
+  "coverage": [
+   {
+    "sport": "nhl",
+    "label": "NHL",
+    "events_discovered": 11,
+    "events_researched": 11,
+    "projections": 11,
+    "research_outcomes": {
+     "RESEARCH_CONDITIONAL": 11
+    },
+    "model_executed": true,
+    "model": "edgedesk_nhl_v1:xg_core",
+    "model_built_at": "2026-10-15T12:05:48.530Z",
+    "markets_evaluated": 22,
+    "markets_priced": 0,
+    "price_freshness": "odds integrations disabled",
+    "verified_edges": 0,
+    "blockers": []
+   },
+   {
+    "sport": "nba",
+    "label": "NBA",
+    "events_discovered": 2,
+    "events_researched": 0,
+    "projections": 0,
+    "research_outcomes": {
+     "MODEL_UNAVAILABLE": 2
+    },
+    "model_executed": true,
+    "model": "edgedesk_nba_v1:G_stack_P",
+    "model_built_at": "2026-10-15T11:48:24.745Z",
+    "markets_evaluated": 0,
+    "markets_priced": 0,
+    "price_freshness": "odds integrations disabled",
+    "verified_edges": 0,
+    "blockers": [
+     "not on the NBA engine's slate — a preseason game (before the first regular-season game on the engine's schedule, 2026-10-20); the NBA ingest drops preseason and no preseason model is validated"
+    ]
+   },
+   {
+    "sport": "wnba",
+    "label": "WNBA",
+    "events_discovered": 0,
+    "events_researched": 0,
+    "projections": 0,
+    "research_outcomes": {},
+    "model_executed": true,
+    "model": "edgedesk_bb_points_v1:points",
+    "model_built_at": "2026-10-15T14:11:16.132Z",
+    "markets_evaluated": 0,
+    "markets_priced": 0,
+    "price_freshness": "odds integrations disabled",
+    "verified_edges": 0,
+    "blockers": []
+   },
+   {
+    "sport": "ncaab_m",
+    "label": "Men's college basketball",
+    "events_discovered": 0,
+    "events_researched": 0,
+    "projections": 0,
+    "research_outcomes": {},
+    "model_executed": true,
+    "model": "edgedesk_bb_points_v1:points",
+    "model_built_at": "2026-10-15T14:11:16.132Z",
+    "markets_evaluated": 0,
+    "markets_priced": 0,
+    "price_freshness": "odds integrations disabled",
+    "verified_edges": 0,
+    "blockers": [
+     "no game in the next 72 h; the next is 2026-11-02T05:00:00Z"
+    ]
+   },
+   {
+    "sport": "ncaab_w",
+    "label": "Women's college basketball",
+    "events_discovered": 0,
+    "events_researched": 0,
+    "projections": 0,
+    "research_outcomes": {},
+    "model_executed": true,
+    "model": "edgedesk_bb_points_v1:points",
+    "model_built_at": "2026-10-15T14:11:16.132Z",
+    "markets_evaluated": 0,
+    "markets_priced": 0,
+    "price_freshness": "odds integrations disabled",
+    "verified_edges": 0,
+    "blockers": [
+     "no game in the next 72 h; the next is 2026-11-02T05:00:00Z"
+    ]
+   },
+   {
+    "sport": "nfl",
+    "label": "NFL",
+    "events_discovered": 1,
+    "events_researched": 1,
+    "projections": 1,
+    "research_outcomes": {
+     "RESEARCH_CONDITIONAL": 1
+    },
+    "model_executed": true,
+    "model": "edgedesk_football_v1.0.0",
+    "model_built_at": "2026-10-14T18:02:19.644Z",
+    "markets_evaluated": 2,
+    "markets_priced": 0,
+    "price_freshness": "odds integrations disabled",
+    "verified_edges": 0,
+    "blockers": []
+   },
+   {
+    "sport": "cfb",
+    "label": "College football (FBS)",
+    "events_discovered": 3,
+    "events_researched": 3,
+    "projections": 3,
+    "research_outcomes": {
+     "RESEARCH_CONDITIONAL": 3
+    },
+    "model_executed": true,
+    "model": "edgedesk_cfb_p4",
+    "model_built_at": "2026-10-15T15:22:35.627Z",
+    "markets_evaluated": 6,
+    "markets_priced": 0,
+    "price_freshness": "odds integrations disabled",
+    "verified_edges": 0,
+    "blockers": []
+   },
+   {
+    "sport": "soccer",
+    "label": "Soccer",
+    "events_discovered": 0,
+    "events_researched": 0,
+    "projections": 0,
+    "research_outcomes": {},
+    "model_executed": false,
+    "model": null,
+    "model_built_at": null,
+    "markets_evaluated": 0,
+    "markets_priced": 0,
+    "price_freshness": "odds integrations disabled",
+    "verified_edges": 0,
+    "blockers": [
+     "removed from the platform on 2026-10-15: the soccer model, its data and its slate were deleted (EdgeDesk covers American sports and UFC)"
+    ]
+   },
+   {
+    "sport": "mlb",
+    "label": "MLB",
+    "events_discovered": 2,
+    "events_researched": 0,
+    "projections": 0,
+    "research_outcomes": {
+     "MODEL_UNAVAILABLE": 2
+    },
+    "model_executed": false,
+    "model": null,
+    "model_built_at": null,
+    "markets_evaluated": 0,
+    "markets_priced": 0,
+    "price_freshness": "odds integrations disabled",
+    "verified_edges": 0,
+    "blockers": [
+     "no per-game MLB projection is published: the history engine (mlb/history) is walk-forward through 2025 with end-of-2025 ratings and no 2026 or postseason inputs, and the run model (mlb/engine.js) runs in the browser only and is unvalidated"
+    ]
+   },
+   {
+    "sport": "college_baseball",
+    "label": "College baseball",
+    "events_discovered": 0,
+    "events_researched": 0,
+    "projections": 0,
+    "research_outcomes": {},
+    "model_executed": false,
+    "model": null,
+    "model_built_at": null,
+    "markets_evaluated": 0,
+    "markets_priced": 0,
+    "price_freshness": "odds integrations disabled",
+    "verified_edges": 0,
+    "blockers": [
+     "out of season; the model's release gates are not passed (college_baseball/validation/release_gates.json: release_allowed false)"
+    ]
+   },
+   {
+    "sport": "mma",
+    "label": "UFC / MMA",
+    "events_discovered": 0,
+    "events_researched": 0,
+    "projections": 0,
+    "research_outcomes": {},
+    "model_executed": false,
+    "model": null,
+    "model_built_at": null,
+    "markets_evaluated": 0,
+    "markets_priced": 0,
+    "price_freshness": "odds integrations disabled",
+    "verified_edges": 0,
+    "blockers": [
+     "no fighter model is built: the 2024 Elo test does not beat a coin flip (engine/lab/ufc_elo.json: 138 scored bouts, log loss 0.689 vs 0.693, interval includes zero)"
+    ]
+   },
+   {
+    "sport": "tennis",
+    "label": "Tennis",
+    "events_discovered": 0,
+    "events_researched": 0,
+    "projections": 0,
+    "research_outcomes": {},
+    "model_executed": false,
+    "model": null,
+    "model_built_at": null,
+    "markets_evaluated": 0,
+    "markets_priced": 0,
+    "price_freshness": "odds integrations disabled",
+    "verified_edges": 0,
+    "blockers": [
+     "retired as a product on 2026-09-27 (lib/edgedesk_sports.js)"
+    ]
+   },
+   {
+    "sport": "golf",
+    "label": "Golf",
+    "events_discovered": 0,
+    "events_researched": 0,
+    "projections": 0,
+    "research_outcomes": {},
+    "model_executed": false,
+    "model": null,
+    "model_built_at": null,
+    "markets_evaluated": 0,
+    "markets_priced": 0,
+    "price_freshness": "odds integrations disabled",
+    "verified_edges": 0,
+    "blockers": [
+     "no golf data source or model exists in EdgeDesk (golf.html is a partner referral page)"
+    ]
+   }
+  ],
+  "counts": {
+   "sports_discovered": 5,
+   "sports_with_operational_models": 7,
+   "sports_researched": 3,
+   "eligible_games_by_sport": {
+    "nhl": 11,
+    "nba": 2,
+    "wnba": 0,
+    "ncaab_m": 0,
+    "ncaab_w": 0,
+    "nfl": 1,
+    "cfb": 3,
+    "soccer": 0,
+    "mlb": 2,
+    "college_baseball": 0,
+    "mma": 0,
+    "tennis": 0,
+    "golf": 0
+   },
+   "research_evaluations": 15,
+   "independent_projections": 15,
+   "valid_price_captures": 0,
+   "price_captures_seen": 0,
+   "verified_positive_ev": 0
+  },
+  "order": {
+   "projections_frozen_at": "2026-10-15T15:29:43.791Z",
+   "quotes_compared_at": "2026-10-15T15:29:44.791Z",
+   "snapshot_hash": "646973b16d5b397fc9ee6e19be50a0587ad757d56e33244d04f9d7ba5e75827b",
+   "snapshot_unchanged": true,
+   "frozen_before_market": true
+  }
+ }
+}

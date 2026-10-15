@@ -746,7 +746,7 @@
       if (inj && inj.official && Array.isArray(inj.players)) {
         availability[s] = { state: 'OFFICIAL_REPORT', source: inj.source, observed_at: inj.retrieved_at || null, freshness: inj.freshness || null,
           week: inj.week, out: inj.out, doubtful: inj.doubtful, questionable: inj.questionable, players: inj.players.slice(0, 40),
-          sentence: 'An official report was read: ' + inj.out + ' out, ' + inj.doubtful + ' doubtful, ' + inj.questionable + ' questionable (week ' + inj.week + '). Players not listed are not on the report.' };
+          sentence: 'The league\'s injury report was read' + (/nflverse/i.test(String(inj.source || '')) ? ' (via nflverse, a third-party mirror)' : '') + ': ' + inj.out + ' out, ' + inj.doubtful + ' doubtful, ' + inj.questionable + ' questionable (week ' + inj.week + '). Players not listed are not on the report.' };
       }
       var st = availability[s] && availability[s].state;
       if (!st || /UNKNOWN|NOT_DUE|LIMITED|UNAVAILABLE/i.test(String(st))) unknowns.push('Availability for the ' + s + ' side is ' + (st || 'not on file') + ': injuries and absences are not known, and their absence from this packet is not a clean sheet.');

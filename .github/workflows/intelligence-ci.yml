@@ -26,6 +26,15 @@ on:
       - 'lib/edgedesk_fairodds.js'
       - 'lib/edgedesk_sport_adapters.js'
       - 'lib/edgedesk_calibration.js'
+      - 'lib/edgedesk_projections.js'
+      - 'lib/edgedesk_market_compare.js'
+      - 'lib/edgedesk_multisport.js'
+      - 'lib/edgedesk_card_feed.js'
+      - 'engine/build_projections.js'
+      - 'tools/quant/**'
+      - 'supabase/independent_projections.sql'
+      - 'supabase/independent_projections_rollback.sql'
+      - 'tools/football/build_nfl_slate.js'
       - 'lib/edgedesk_evidence_graph.js'
       - 'lib/edgedesk_disagreement.js'
       - 'lib/edgedesk_research_budget.js'
@@ -201,6 +210,10 @@ jobs:
         run: node tools/intelligence/quant_host.test.js
       - name: Calibration is claimed only against the close, profit only with an interval above zero, never with look-ahead
         run: node tools/intelligence/calibration.test.js
+      - name: The multi-sport desk — every engine read into one independent contract, frozen before any price, compared without moving it, ranked across sports
+        run: node tools/intelligence/multisport.test.js
+      - name: The 2026-10-15 regression through the real handler — NFL-only focus, missing projection, stale quote and starter conflict caught; the desk runs with every odds integration off
+        run: node tools/intelligence/multisport_host.test.js
       - name: The research agents — evidence graph, disagreement causes, research budget, researcher, oddsmaker, strategist, auditor, communicator critic
         run: node tools/intelligence/research_agents.test.js
       - name: The research system through the real handler — the twelve scenarios, the slate investigation, betting history and the narration critic
@@ -271,6 +284,10 @@ jobs:
         run: node tools/intelligence/stake_sql.test.js
       - name: The quant desk ledgers are write-once, reader-owned, unit-checked and chronologically separated
         run: node tools/intelligence/quant_sql.test.js
+        env:
+          QUANT_SQL_REQUIRED: '1'
+      - name: A market comparison is refused unless the projection it compares was frozen and stored first, unchanged; a market-informed projection is refused
+        run: node tools/intelligence/projections_sql.test.js
         env:
           QUANT_SQL_REQUIRED: '1'
       - name: Research findings and pregame snapshots are write-once, reader-owned and never postdate kickoff; research quotas are claimed atomically

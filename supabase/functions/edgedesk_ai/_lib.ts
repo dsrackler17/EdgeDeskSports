@@ -2163,7 +2163,7 @@ export const SPORT_INTELLIGENCE: Record<string, SportIntelligenceModule> = {
         "Keyed by event_id. Populated for MLB venues; an NFL row may or may not exist."),
       CAP("market", "signals", "MARKET", "signals", "AVAILABLE", "odds", "L7_MARKET", "Moneyline, spread and total with sharp reference and movement."),
       CAP("injuries_team_wide", "football/matchup/metrics.json", "ARTIFACT", "football/matchup/metrics.json → nfl.teams[code].injuries", "AVAILABLE", "injury", "L6_CURRENT",
-        "The official NFL injury report (nflverse injuries_<season>.csv, synced six-hourly) per club: status, injury, practice. Attached to the research packet as injuries.home/away with its retrieved time."),
+        "The NFL injury report as mirrored by nflverse (a third-party mirror of the league's report; injuries_<season>.csv, synced six-hourly) per club: status, injury, practice. Attached to the research packet as injuries.home/away with its retrieved time."),
       CAP("nfl_projection", "football/nfl/slate.json", "ARTIFACT", "football/nfl/slate.json", "AVAILABLE", "model", "L5_MATCHUP",
         "EdgeDesk's own NFL projection per upcoming game (home line, fair total, win probability, p10/p50/p90, contributions), the browser's module run in Node. Carries its walk-forward record; RESEARCH tier for spreads."),
       CAP("special_teams", "—", "OWNED_TABLE", "—", "NOT_AVAILABLE", "team_stats", "L3_TEAM_SEASON",

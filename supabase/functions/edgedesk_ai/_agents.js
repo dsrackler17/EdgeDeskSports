@@ -465,7 +465,42 @@
       if (s.verdict === 'CAUTION') reasons.push('strategist: ' + s.reason);
       if (sens.available && !sens.robust) reasons.push('fragile: ' + sens.note);
     }
-    return { classification: cls, label: CLASS_LABEL[cls], final_status: FINAL_STATUS[cls], reasons: reasons.filter(Boolean) };
+    var sem = auditSemantics(a, ev, cls, r);
+    return { classification: cls, label: CLASS_LABEL[cls], final_status: FINAL_STATUS[cls], reasons: reasons.filter(Boolean),
+      audit_execution: sem.audit_execution, evidence_verification: sem.evidence_verification, execution_eligibility: sem.execution_eligibility, semantics_note: sem.note };
+  }
+  /**
+   * THREE SEPARATE FACTS, never folded into one word. "UNVERIFIED … PASS" read as if the audit had
+   * passed; it had run and found the trade unverified. So:
+   *   audit_execution        did the adversarial audit run?     COMPLETED / FAILED / NOT_RUN
+   *   evidence_verification  what did it conclude about the evidence?
+   *                          VERIFIED / PARTIALLY_VERIFIED / NOT_VERIFIED / REJECTED
+   *   execution_eligibility  may the trade be executed?         ELIGIBLE / NOT_ELIGIBLE
+   * An audit can complete and still conclude NOT_VERIFIED; missing verification is never VERIFIED.
+   */
+  function auditSemantics(a, ev, cls, r) {
+    a = a || {}; ev = ev || {}; r = r || {};
+    var executed = a.status ? 'COMPLETED' : a.error ? 'FAILED' : 'NOT_RUN';
+    var evidence;
+    if (executed !== 'COMPLETED') evidence = 'NOT_VERIFIED';
+    else if (a.status === 'REJECTED') evidence = 'REJECTED';
+    else if (!ev.ok || ev.classification === 'UNVERIFIED_DATA' || a.status === 'NEEDS_RECHECK' || cls === 'RESEARCH_REQUIRED' || cls === 'UNVERIFIED' || (r.unresolved || []).length) evidence = 'NOT_VERIFIED';
+    else if (a.status === 'DOWNGRADED') evidence = 'PARTIALLY_VERIFIED';
+    else evidence = 'VERIFIED';
+    var eligible = cls === 'VERIFIED_CANDIDATE' ? 'ELIGIBLE' : 'NOT_ELIGIBLE';
+    return { audit_execution: executed, evidence_verification: evidence, execution_eligibility: eligible,
+      note: executed === 'COMPLETED' && evidence !== 'VERIFIED' ? 'the audit ran to completion and concluded the evidence is ' + evidence.toLowerCase().replace(/_/g, ' ') : null };
+  }
+  var SEM_WORD = { COMPLETED: 'COMPLETED', FAILED: 'FAILED', NOT_RUN: 'NOT RUN', VERIFIED: 'VERIFIED', PARTIALLY_VERIFIED: 'PARTIALLY VERIFIED', NOT_VERIFIED: 'NOT VERIFIED', REJECTED: 'REJECTED', ELIGIBLE: 'ELIGIBLE', NOT_ELIGIBLE: 'NOT ELIGIBLE' };
+  /** The three lines a candidate block prints, in this order. */
+  function statusLines(cl, a) {
+    cl = cl || {}; a = a || {};
+    var ex = cl.audit_execution || (a.status ? 'COMPLETED' : 'NOT_RUN'), evd = cl.evidence_verification || 'NOT_VERIFIED', el = cl.execution_eligibility || (cl.classification === 'VERIFIED_CANDIDATE' ? 'ELIGIBLE' : 'NOT_ELIGIBLE');
+    return [
+      'Audit execution: ' + SEM_WORD[ex] + (a.status ? ' (auditor verdict ' + a.status + (a.rounds ? ', ' + a.rounds + ' round' + (a.rounds === 1 ? '' : 's') : '') + ')' : ''),
+      'Evidence verification: ' + SEM_WORD[evd] + (cl.label && cl.label !== cl.final_status ? ' (research classification ' + cl.label + ')' : ''),
+      'Trade execution eligibility: ' + SEM_WORD[el] + ' — decision: ' + (cl.final_status || 'PASS')
+    ];
   }
 
   /**
@@ -568,7 +603,7 @@
     lines.push('Primary matchup advantage: ' + (x.advantage || 'none claimed — no measured matchup edge is on file for this market'));
     lines.push('Strongest counterargument: ' + (x.counter || counterArgument(x)));
     lines.push('What would invalidate the opportunity: ' + (x.invalidators || invalidators(x)).join('; '));
-    lines.push('Final status: ' + cl.final_status + (cl.label !== cl.final_status ? ' (audit: ' + cl.label + ')' : ''));
+    statusLines(cl, x.audit_summary || null).forEach(function (l) { lines.push(l); });
     if (cl.reasons && cl.reasons.length) lines.push('Why: ' + cl.reasons[0]);
     return lines.join('\n');
   }
@@ -612,14 +647,14 @@
       var first = (m[1].match(/[+-]?\d+(?:\.\d+)?/) || [])[0];
       if (first && p.indexOf(first) < 0) f.push({ code: 'DROPPED_OR_CHANGED', detail: k + ' ' + first });
     });
-    var st = /Final status: ([A-Z ]+)/.exec(d), sp = /\b(VERIFIED CANDIDATE|WATCHLIST|PASS)\b/.exec(p);
+    var st = /Trade execution eligibility: [A-Z ]+ — decision: ([A-Z ]+)/.exec(d) || /Final status: ([A-Z ]+)/.exec(d), sp = /\b(VERIFIED CANDIDATE|WATCHLIST|PASS)\b/.exec(p);
     if (st && (!sp || sp[1] !== st[1].trim())) f.push({ code: 'STATUS_CHANGED', detail: (sp ? sp[1] : 'missing') + ' vs ' + st[1].trim() });
     var Gr = G();
     if (Gr && Gr.CERTAINTY.test(p)) f.push({ code: 'CERTAINTY', detail: (p.match(Gr.CERTAINTY) || [])[0] });
     /* a person, or a status claim, the result never mentioned: the communicator may not report news */
     var dl = d.toLowerCase();
     var names = p.match(/\b[A-Z][a-z]+(?:[-'][A-Za-z]+)?(?:\s+(?:[A-Z]\.|[A-Z][a-z]+(?:[-'][A-Za-z]+)?)){1,2}\b/g) || [];
-    var STOP = /^(The|This|That|These|Those|It|In|On|At|For|And|But|If|When|What|Why|How|EdgeDesk|Final|Estimated|Maximum|Break|Independent|Model|Research|Primary|Strongest|Verified|Sources?|Coverage|Market|Sport|Event|Venue)\b/;
+    var STOP = /^(The|This|That|These|Those|It|In|On|At|For|And|But|If|When|What|Why|How|EdgeDesk|Final|Audit|Evidence|Trade|Estimated|Maximum|Break|Independent|Model|Research|Primary|Strongest|Verified|Sources?|Coverage|Market|Sport|Event|Venue)\b/;
     names.forEach(function (n) { var t = n.replace(STOP, '').trim(); if (t.split(/\s+/).length < 2) return; if (dl.indexOf(t.toLowerCase()) < 0) f.push({ code: 'UNKNOWN_NAME', detail: t }); });
     var STATUS_WORDS = /\b(ruled out|is out|will miss|doubtful|questionable|injur(?:ed|y)|scratched|inactive|suspended|placed on (?:ir|injured reserve)|day-to-day|game-time decision)\b/gi;
     (p.match(STATUS_WORDS) || []).forEach(function (w) { if (dl.indexOf(w.toLowerCase()) < 0) f.push({ code: 'NEW_STATUS_CLAIM', detail: w }); });
@@ -629,7 +664,7 @@
     return { verdict: f.length ? 'FAIL' : 'PASS', findings: f };
   }
 
-  return { VERSION: VERSION, ADJUSTMENT_RULES: ADJUSTMENT_RULES, CLASSES: CLASSES, CLASS_LABEL: CLASS_LABEL, FINAL_STATUS: FINAL_STATUS, NARRATION_CONTRACT: NARRATION_CONTRACT,
+  return { VERSION: VERSION, ADJUSTMENT_RULES: ADJUSTMENT_RULES, CLASSES: CLASSES, CLASS_LABEL: CLASS_LABEL, FINAL_STATUS: FINAL_STATUS, auditSemantics: auditSemantics, statusLines: statusLines, NARRATION_CONTRACT: NARRATION_CONTRACT,
     phi: phi, phiInv: phiInv, sourceClass: sourceClass, claimClass: claimClass, normalize: normalize, conflicts: conflicts, corroborate: corroborate, modelGaps: modelGaps, research: research,
     checkAdjustment: checkAdjustment, price: price, sensitivity: sensitivity, strategist: strategist, blindTest: blindTest, classify: classify, investigate: investigate,
     confidenceProfile: confidenceProfile, renderCandidate: renderCandidate, renderSources: renderSources, counterArgument: counterArgument, invalidators: invalidators, freshnessText: freshnessText, critic: critic };

@@ -267,16 +267,16 @@ const NFLV = 'https://github.com/nflverse/nflverse-data/releases/download/injuri
     inv.candidate = { matchup: 'Detroit Lions @ Buffalo Bills', sport_label: 'NFL', market_label: 'Buffalo Bills -2.5', book: 'FanDuel' };
     inv.event = EV;
     const text = A.renderCandidate(inv);
-    chk('the answer carries every field of the brief', ['Event:', 'Sport:', 'Market:', 'Venue:', 'Verified market price:', 'Independent fair probability:', 'Break-even probability:', 'Estimated net EV:', 'Maximum acceptable price:', 'Model reliability:', 'Research freshness:', 'Why the model disagrees with the market:', 'Primary matchup advantage:', 'Strongest counterargument:', 'What would invalidate the opportunity:', 'Final status:'].every((k) => text.indexOf(k) >= 0), text);
+    chk('the answer carries every field of the brief', ['Event:', 'Sport:', 'Market:', 'Venue:', 'Verified market price:', 'Independent fair probability:', 'Break-even probability:', 'Estimated net EV:', 'Maximum acceptable price:', 'Model reliability:', 'Research freshness:', 'Why the model disagrees with the market:', 'Primary matchup advantage:', 'Strongest counterargument:', 'What would invalidate the opportunity:', 'Audit execution:', 'Evidence verification:', 'Trade execution eligibility:'].every((k) => text.indexOf(k) >= 0) && text.indexOf('Final status:') < 0, text);
     const evLine = /Estimated net EV: ([^\n]+)/.exec(text)[1];
-    const faithful = 'Buffalo is the side. ' + text.split('\n').filter((l) => /Estimated net EV|Verified market price|Maximum acceptable price|Break-even probability|Independent fair probability|Final status/.test(l)).join(' ');
+    const faithful = 'Buffalo is the side. ' + text.split('\n').filter((l) => /Estimated net EV|Verified market price|Maximum acceptable price|Break-even probability|Independent fair probability|Trade execution eligibility/.test(l)).join(' ');
     eq('faithful prose passes the critic', A.critic(faithful, text, inv.research.graph).verdict, 'PASS');
     const altered = faithful.replace(evLine.match(/[+-]?\d+(?:\.\d+)?/)[0], '9.99');
     chk('prose that changes the EV fails the critic', A.critic(altered, text, inv.research.graph).findings.some((f) => f.code === 'DROPPED_OR_CHANGED' || f.code === 'UNLISTED_NUMBER'), A.critic(altered, text, inv.research.graph));
     chk('prose that adds a number fails', A.critic(faithful + ' They win 78% of the time.', text, inv.research.graph).findings.some((f) => f.code === 'UNLISTED_NUMBER'));
     chk('prose that calls it a lock fails', A.critic(faithful + ' A lock.', text, inv.research.graph).findings.some((f) => f.code === 'CERTAINTY'));
-    const st0 = /Final status: (VERIFIED CANDIDATE|WATCHLIST|PASS)/.exec(faithful)[1];
-    const swapped = faithful.replace('Final status: ' + st0, 'Final status: ' + (st0 === 'VERIFIED CANDIDATE' ? 'PASS' : 'VERIFIED CANDIDATE'));
+    const st0 = /decision: (VERIFIED CANDIDATE|WATCHLIST|PASS)/.exec(faithful)[1];
+    const swapped = faithful.replace('decision: ' + st0, 'decision: ' + (st0 === 'VERIFIED CANDIDATE' ? 'PASS' : 'VERIFIED CANDIDATE'));
     chk('prose that changes the status fails', A.critic(swapped, text, inv.research.graph).findings.some((f) => f.code === 'STATUS_CHANGED'), A.critic(swapped, text, inv.research.graph));
     chk('prose that invents a link fails', A.critic(faithful + ' https://made.up/x', text, inv.research.graph).findings.some((f) => f.code === 'UNKNOWN_LINK'));
     const src = A.renderSources(inv.research.graph);
@@ -352,7 +352,7 @@ const NFLV = 'https://github.com/nflverse/nflverse-data/releases/download/injuri
     chk('STALE: the text does not call a stale quote a verified price', /Verified market price: none current — last captured [+-]\d+/.test(tStale) && !/Verified market price: [+-]\d/.test(tStale), /Verified market price: [^\n]+/.exec(tStale)[0]);
     chk('STALE: …its EV is said to be on the stale capture, not a current edge', /Estimated net EV: -?\d+\.\d+% per \$1 on the stale capture — unavailable as a current edge/.test(tStale), /Estimated net EV: [^\n]+/.exec(tStale)[0]);
     chk('FRESH: a current quote keeps the plain wording', /Verified market price: [+-]\d+ \(implies/.test(tFresh) && !/stale capture/.test(tFresh), [/Verified market price: [^\n]+/.exec(tFresh)[0], /Estimated net EV: [^\n]+/.exec(tFresh)[0]]);
-    chk('STALE: the critic still holds the price and the EV to the text', A.critic('PASS. ' + tStale.split('\n').filter((l) => /Estimated net EV|Verified market price|Maximum acceptable price|Break-even probability|Independent fair probability|Final status/.test(l)).join(' '), tStale, null).findings.every((f) => f.code !== 'DROPPED_OR_CHANGED'));
+    chk('STALE: the critic still holds the price and the EV to the text', A.critic('PASS. ' + tStale.split('\n').filter((l) => /Estimated net EV|Verified market price|Maximum acceptable price|Break-even probability|Independent fair probability|Trade execution eligibility/.test(l)).join(' '), tStale, null).findings.every((f) => f.code !== 'DROPPED_OR_CHANGED'));
     chk('freshness is the newest PUBLICATION time, and an undated finding is said to be undated', new RegExp('Research freshness: 2 findings, newest published ' + T(1958).slice(0, 16).replace('T', ' ') + ' UTC; 1 with no publication time').test(tStale), /Research freshness: [^\n]+/.exec(tStale)[0]);
     /* the card the subscriber sees */
     const cardRow = (q) => ({ candidate: { selection: 'Under', market: 'totals', line: 54.5, matchup: 'Buffalo Bills @ Los Angeles Rams', sport: 'americanfootball_nfl', game_id: 'g1', quote: { book: 'DraftKings' } },

@@ -308,7 +308,7 @@
         qual.injuries = { status: 'PARTIAL', note: 'no availability report was required for this game, so health is unknown rather than clean' };
       if (sport === NFL) {
         var nf = input.nfl || {};
-        if (nf.injuries) qual.injuries = { available: true, captured_at: nf.injuries.as_of || null, source: nf.injuries.source || 'official NFL injury report' };
+        if (nf.injuries) qual.injuries = { available: true, captured_at: nf.injuries.as_of || null, source: nf.injuries.source || 'the NFL injury report via nflverse (third-party mirror; source not stated)' };
         var qbKnown = nf.home_starter && nf.away_starter;
         qual.qb = qbKnown ? { status: 'PARTIAL', note: 'starters from the schedule feed; not confirmed' } : { status: 'UNAVAILABLE', note: 'no starting quarterback on file for one or both sides' };
         if (nf.roof && /dome|closed/i.test(nf.roof)) qual.weather = { status: 'AVAILABLE', note: 'indoor venue' };
