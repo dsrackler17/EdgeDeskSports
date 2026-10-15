@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-15 — edgedesk_ai build label: r26-multisport-model-first
+
+The multi-sport Quant Desk (#589) shipped without a new `BUILD` label, so the deployment doctor compared the old label (`edgedesk_ai-2026-10-12-r25-stale-price-labels`) on both sides and could not show that the new code was live. `BUILD` is now `edgedesk_ai-2026-10-15-r26-multisport-model-first`. After the next deploy, `?probe=1` and the doctor name this build, so "deployed and current" means this code.
+
 ## 2026-10-15 — CI: no Skipped checks on a pull request; the Content engine tests green again
 
 **A pull request now lists only checks that run.** Seven workflows ran their tests on pull requests but also carried scheduled jobs, which every PR listed as Skipped. Following the Linemaker split (2026-10-14), each scheduled job is now its own workflow, unchanged apart from its trigger:
