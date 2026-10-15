@@ -1,30 +1,30 @@
 {
  "schema": "edgedesk_enrichment_audit_v1",
- "generated_at": "2026-10-15T15:59:47.533Z",
+ "generated_at": "2026-10-15T17:14:26.789Z",
  "basis": "what EdgeDesk knows about the slate now against the previous refresh; an engineering audit, not a betting signal",
  "latest": {
-  "at": "2026-10-15T15:59:47.533Z",
-  "reliability_generated_at": "2026-10-15T15:59:47.533Z",
-  "enrichment_generated_at": "2026-10-15T15:59:39.501Z",
+  "at": "2026-10-15T17:14:26.789Z",
+  "reliability_generated_at": "2026-10-15T17:14:26.789Z",
+  "enrichment_generated_at": "2026-10-15T17:14:16.762Z",
   "counts": {
    "games": 114,
-   "mean": 86.7,
+   "mean": 86.6,
    "median": 89,
    "by_band": {
-    "VERY_STRONG": 15,
+    "VERY_STRONG": 16,
     "LOW": 3,
     "ADEQUATE": 16,
-    "STRONG": 79,
-    "CAUTION": 1
+    "STRONG": 77,
+    "CAUTION": 2
    },
-   "missing_qb_status": 188,
+   "missing_qb_status": 184,
    "qb_conflicts_open": 3,
    "qb_confirmed": 0,
    "games_lacking_injury_information": 18,
-   "unrated_meaningful_absences": 312,
+   "unrated_meaningful_absences": 352,
    "fcs_games_thin_data": 3,
    "games_under_two_market_sources": 114,
-   "stale_evidence_records": 50,
+   "stale_evidence_records": 53,
    "provider_failures": 4,
    "provider_failures_attributable_to_run": 0
   },
@@ -866,46 +866,48 @@
    },
    "401858267": {
     "game": "Pittsburgh @ Boston College",
-    "score": 89,
-    "grade": "STRONG",
+    "score": 69,
+    "grade": "CAUTION",
     "fam": {
-     "availability": 4.6,
+     "qb_identity": 4.4,
+     "qb_conflict": 2.3,
      "qb_status": 2,
+     "stability": 1.8,
+     "attribution": 3,
+     "favorite_flips": 1.1,
      "starters": 1.2,
-     "stability": 0.4,
-     "qb_identity": 0.8,
      "rating_sample": 0.3,
      "transfer_turnover": 0.6
     },
     "qb": {
      "home": "EXPECTED",
-     "away": "EXPECTED"
+     "away": "UNKNOWN"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "COMPREHENSIVE_OFFICIAL",
+     "away": "COMPREHENSIVE_OFFICIAL"
     }
    },
    "401858268": {
     "game": "Virginia @ SMU",
-    "score": 89,
-    "grade": "STRONG",
+    "score": 93,
+    "grade": "VERY_STRONG",
     "fam": {
-     "availability": 4.6,
      "stability": 1.9,
-     "qb_status": 2,
+     "attribution": 2.7,
      "starters": 0.6,
      "qb_identity": 0.8,
      "rating_sample": 0.3,
-     "transfer_turnover": 0.3
+     "transfer_turnover": 0.3,
+     "player_identity": 0.1
     },
     "qb": {
      "home": "EXPECTED",
      "away": "EXPECTED"
     },
     "avail": {
-     "home": "NOT_DUE_YET",
-     "away": "NOT_DUE_YET"
+     "home": "COMPREHENSIVE_OFFICIAL",
+     "away": "COMPREHENSIVE_OFFICIAL"
     }
    },
    "401858269": {
@@ -2547,7 +2549,7 @@
   }
  },
  "previous": {
-  "at": "2026-10-15T15:22:35.627Z",
+  "at": "2026-10-15T15:59:47.533Z",
   "counts": {
    "games": 114,
    "mean": 86.7,
@@ -2572,35 +2574,21 @@
   },
   "baseline_of": null
  },
- "what_improved": [],
- "what_degraded": [],
- "why": [],
+ "what_improved": [
+  "-4 QB statuses missing (188 → 184)",
+  "1 game moved STRONG → VERY STRONG"
+ ],
+ "what_degraded": [
+  "-0.1 mean reliability (86.7 → 86.6)",
+  "+40 unrated meaningful absences (312 → 352)",
+  "+3 stale evidence records (50 → 53)",
+  "1 game moved STRONG → CAUTION"
+ ],
+ "why": [
+  "Pittsburgh @ Boston College: STRONG → CAUTION (89 → 69); largest change: availability +4.6 pts; away QB EXPECTED → UNKNOWN, home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL",
+  "Virginia @ SMU: STRONG → VERY STRONG (89 → 93); largest change: availability +4.6 pts; home availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL, away availability NOT_DUE_YET → COMPREHENSIVE_OFFICIAL"
+ ],
  "history": [
-  {
-   "at": "2026-10-08T14:11:33.389Z",
-   "counts": {
-    "games": 117,
-    "mean": 86.2,
-    "median": 89,
-    "by_band": {
-     "VERY_STRONG": 17,
-     "ADEQUATE": 18,
-     "STRONG": 77,
-     "LOW": 3,
-     "CAUTION": 2
-    },
-    "missing_qb_status": 193,
-    "qb_conflicts_open": 6,
-    "qb_confirmed": 0,
-    "games_lacking_injury_information": 21,
-    "unrated_meaningful_absences": 314,
-    "fcs_games_thin_data": 3,
-    "games_under_two_market_sources": 117,
-    "stale_evidence_records": 48,
-    "provider_failures": 4,
-    "provider_failures_attributable_to_run": 0
-   }
-  },
   {
    "at": "2026-10-08T16:09:56.708Z",
    "counts": {
@@ -4017,6 +4005,31 @@
     "fcs_games_thin_data": 3,
     "games_under_two_market_sources": 114,
     "stale_evidence_records": 50,
+    "provider_failures": 4,
+    "provider_failures_attributable_to_run": 0
+   }
+  },
+  {
+   "at": "2026-10-15T17:14:26.789Z",
+   "counts": {
+    "games": 114,
+    "mean": 86.6,
+    "median": 89,
+    "by_band": {
+     "VERY_STRONG": 16,
+     "LOW": 3,
+     "ADEQUATE": 16,
+     "STRONG": 77,
+     "CAUTION": 2
+    },
+    "missing_qb_status": 184,
+    "qb_conflicts_open": 3,
+    "qb_confirmed": 0,
+    "games_lacking_injury_information": 18,
+    "unrated_meaningful_absences": 352,
+    "fcs_games_thin_data": 3,
+    "games_under_two_market_sources": 114,
+    "stale_evidence_records": 53,
     "provider_failures": 4,
     "provider_failures_attributable_to_run": 0
    }
