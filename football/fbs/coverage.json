@@ -2,7 +2,7 @@
  "version": "edgedesk_fbs_universe_v1.0.0",
  "season": 2026,
  "source": "cfbfastR-data schedules 2026",
- "generated_at": "2026-10-15T04:57:43.625Z",
+ "generated_at": "2026-10-15T11:45:30.274Z",
  "counts": {
   "fbs_teams": 138,
   "non_fbs_teams": 100,
@@ -119,19 +119,18 @@
  "games_missing_projection": [],
  "odds_unmatched": [],
  "slate": {
-  "total": 116,
+  "total": 114,
   "by_group": {
-   "other": 58,
+   "other": 56,
    "p4": 58,
    "independent": 2
   },
   "by_matchup": {
-   "conference": 110,
+   "conference": 108,
    "fbs_fcs": 3,
    "non_conference": 3
   },
   "by_conference": {
-   "cusa": 6,
    "american": 12,
    "sunbelt": 12,
    "pac12": 6,
@@ -141,7 +140,8 @@
    "acc": 16,
    "mac": 14,
    "mwc": 9,
-   "independents": 2
+   "independents": 2,
+   "cusa": 4
   },
   "fbs_fcs_in_source": 3
  },
@@ -196,22 +196,24 @@
   }
  },
  "projection_status": {
-  "PREDICTED": 116
+  "PREDICTED": 114
  },
  "weather": {
-  "requested": 113,
-  "answered": 113,
+  "requested": 111,
+  "answered": 108,
   "dome": 3,
   "no_venue": 0,
-  "failed": 0,
-  "carried": 0,
+  "failed": 3,
+  "carried": 3,
   "carry_dropped": 0,
-  "failures": {},
+  "failures": {
+   "HTTP 429": 3
+  },
   "host": "api.open-meteo.com",
-  "summary": "113 of 113 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 0 request(s) failed"
+  "summary": "108 of 111 outdoor game(s) got a forecast; 3 indoor venue(s) needed none; 0 had no coordinates to locate one; 3 request(s) failed; 3 carried the last observed forecast forward at its real age (HTTP 429 x3)"
  },
  "spread_recommendation": {
-  "NO_MARKET": 116
+  "NO_MARKET": 114
  },
  "engine_efficiency": {
   "schema": "edgedesk_cfb_engine_efficiency_v1",
@@ -280,12 +282,12 @@
    "name": "games with no Power 4 participant are on the slate",
    "ok": true,
    "detail": {
-    "non_power_games": 58,
-    "total": 116,
+    "non_power_games": 56,
+    "total": 114,
     "example": [
-     "Kennesaw State @ Missouri State",
-     "Western Kentucky @ Sam Houston",
-     "East Carolina @ UAB"
+     "East Carolina @ UAB",
+     "Georgia Southern @ Old Dominion",
+     "Colorado State @ Texas State"
     ]
    }
   },
@@ -300,7 +302,7 @@
    "name": "every conference game has exactly one shared, non-independent conference",
    "ok": true,
    "detail": {
-    "conference_games": 110,
+    "conference_games": 108,
     "wrong": 0
    }
   },
@@ -334,8 +336,8 @@
    "name": "the slate the board renders and the slate the export writes are the same list",
    "ok": true,
    "detail": {
-    "slate": 116,
-    "audit_total": 116
+    "slate": 114,
+    "audit_total": 114
    }
   },
   {
