@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-15T12:04:37.516Z",
- "board_generated_at": "2026-10-15T12:04:30.193Z",
+ "generated_at": "2026-10-15T17:20:19.188Z",
+ "board_generated_at": "2026-10-15T17:20:11.459Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -15,26 +15,6 @@
   "football-only calibration preserves the major gap"
  ],
  "games": [
-  {
-   "game_id": "401858265",
-   "game": "Louisville @ Syracuse",
-   "kickoff": "2026-10-17T23:30:00.000Z",
-   "named": false,
-   "edgedesk": "Louisville -7.7",
-   "market": "Louisville -14.5",
-   "books": 1,
-   "gap": 6.8,
-   "gap_class": "MODERATE",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
-   "gate_status": "NOT REQUIRED (under 7 pts)",
-   "root_cause": null,
-   "requirements": null,
-   "consistent": true,
-   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
-  },
   {
    "game_id": "401856831",
    "game": "Oklahoma State @ Houston",
@@ -61,9 +41,9 @@
    "kickoff": "2026-10-16T00:00:00.000Z",
    "named": false,
    "edgedesk": "Texas State -20.3",
-   "market": "Texas State -14.0",
+   "market": "Texas State -14.5",
    "books": 1,
-   "gap": 6.3,
+   "gap": 5.8,
    "gap_class": "MODERATE",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -156,6 +136,72 @@
    "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
+   "game_id": "401858265",
+   "game": "Louisville @ Syracuse",
+   "kickoff": "2026-10-17T23:30:00.000Z",
+   "named": false,
+   "edgedesk": "Louisville -7.7",
+   "market": "Louisville -15.5",
+   "books": 1,
+   "gap": 7.8,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "MARKET_FAULT",
+   "root_cause": "THIN_MARKET",
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-17T23:30:00.000Z"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (JMA Wireless Dome), declared by the schedule feed"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "FAIL",
+     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+    },
+    {
+     "requirement": "current team states",
+     "result": "PASS",
+     "detail": "PASS: fewest current-season games behind a rating: 5 (at least 3 required at this size) · PASS: long-term state and current-season form differ by 5.5 rating pts"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "PASS",
+     "detail": "WARN: Syracuse: starter unresolved (competition) · PASS: Louisville: Lincoln Kienholz (previous game)"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "PASS",
+     "detail": "PASS: Syracuse: availability sources checked, nothing filed · PASS: Louisville: availability sources checked, nothing filed"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "PASS",
+     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "PASS",
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 7.5 pts on EdgeDesk’s side"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "FAIL",
+     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 6.7 — the extreme is not supported by how margins of this size have actually finished"
+    }
+   ],
+   "consistent": true,
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; football-only calibration preserves the major gap fail."
+  },
+  {
    "game_id": "401862801",
    "game": "Memphis @ Tulane",
    "kickoff": "2026-10-16T23:30:00.000Z",
@@ -181,9 +227,9 @@
    "kickoff": "2026-10-17T16:00:00.000Z",
    "named": false,
    "edgedesk": "Texas -20.0",
-   "market": "Texas -10.5",
+   "market": "Texas -11.5",
    "books": 1,
-   "gap": 9.5,
+   "gap": 8.5,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -230,16 +276,16 @@
     {
      "requirement": "submodel support",
      "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 6.3 pts on EdgeDesk’s side"
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 5.3 pts on EdgeDesk’s side"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
-     "result": "PASS",
-     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 7.4"
+     "result": "FAIL",
+     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 6.4 — the extreme is not supported by how margins of this size have actually finished"
     }
    ],
    "consistent": true,
-   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; component adjustments within historical bounds fail."
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; component adjustments within historical bounds fail; football-only calibration preserves the major gap fail."
   },
   {
    "game_id": "401856833",
@@ -498,6 +544,204 @@
    ],
    "consistent": true,
    "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; submodel support incomplete; football-only calibration preserves the major gap fail."
+  },
+  {
+   "game_id": "401858261",
+   "game": "Charleston Southern @ Clemson",
+   "kickoff": "2026-10-17T16:00:00.000Z",
+   "named": false,
+   "edgedesk": "Clemson -29.3",
+   "market": "Clemson -43.5",
+   "books": 1,
+   "gap": 14.2,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "MARKET_FAULT",
+   "research_label": "MARKET FAULT",
+   "decision_status": "NO_DECISION",
+   "gate_status": "MARKET_FAULT",
+   "root_cause": "THIN_MARKET",
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-17T16:00:00.000Z"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Memorial Stadium (Clemson, SC)), declared by the schedule feed"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "FAIL",
+     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+    },
+    {
+     "requirement": "current team states",
+     "result": "FAIL",
+     "detail": "FAIL: an FCS opponent is priced from a pooled FCS rating, not its own"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "FAIL",
+     "detail": "FAIL: Charleston Southern: starter unresolved (competition) — must be resolved or scenario-weighted at this size"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "PASS",
+     "detail": "PASS: Clemson: availability sources checked, nothing filed · PASS: Charleston Southern: availability sources checked, nothing filed"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "PASS",
+     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "FAIL",
+     "detail": "FAIL: 0 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required)"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "PASS",
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 16.7"
+    }
+   ],
+   "consistent": true,
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; current team states fail; resolved QB fail; submodel support fail."
+  },
+  {
+   "game_id": "401856725",
+   "game": "The Citadel @ Texas A&M",
+   "kickoff": "2026-10-17T17:00:00.000Z",
+   "named": false,
+   "edgedesk": "Texas A&M -32.3",
+   "market": "Texas A&M -45.5",
+   "books": 1,
+   "gap": 13.2,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "MARKET_FAULT",
+   "research_label": "MARKET FAULT",
+   "decision_status": "NO_DECISION",
+   "gate_status": "MARKET_FAULT",
+   "root_cause": "THIN_MARKET",
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-17T17:00:00.000Z"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Kyle Field), declared by the schedule feed"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "FAIL",
+     "detail": "FAIL: 1 book behind the consensus (at least 2 required at this size)"
+    },
+    {
+     "requirement": "current team states",
+     "result": "FAIL",
+     "detail": "FAIL: an FCS opponent is priced from a pooled FCS rating, not its own"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "PASS",
+     "detail": "PASS: Texas A&M: Marcel Reed (previous game) · PASS: The Citadel: Quentin Hayes (previous game)"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "PASS",
+     "detail": "PASS: Texas A&M: availability sources checked, nothing filed · PASS: The Citadel: availability sources checked, nothing filed"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "PASS",
+     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "INCOMPLETE",
+     "detail": "INCOMPLETE: no independent ensemble number"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "PASS",
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 15.8"
+    }
+   ],
+   "consistent": true,
+   "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; current team states fail; submodel support incomplete."
+  },
+  {
+   "game_id": "401858262",
+   "game": "Elon @ Stanford",
+   "kickoff": "2026-10-17T23:30:00.000Z",
+   "named": false,
+   "edgedesk": "Stanford -15.9",
+   "market": "Stanford -35.5",
+   "books": 1,
+   "gap": 19.6,
+   "gap_class": "MAJOR",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "MARKET_FAULT",
+   "root_cause": "THIN_MARKET",
+   "requirements": [
+    {
+     "requirement": "correct game",
+     "result": "PASS",
+     "detail": "PASS: both teams resolve to rated programs · PASS: kickoff 2026-10-17T23:30:00.000Z"
+    },
+    {
+     "requirement": "correct home/away",
+     "result": "PASS",
+     "detail": "PASS: both sides of the quote resolved to this game’s own teams (alias join) · PASS: home venue (Stanford Stadium), declared by the schedule feed"
+    },
+    {
+     "requirement": "fresh multi-book consensus",
+     "result": "FAIL",
+     "detail": "FAIL: 1 book behind the consensus (at least 3 required at this size)"
+    },
+    {
+     "requirement": "current team states",
+     "result": "FAIL",
+     "detail": "FAIL: an FCS opponent is priced from a pooled FCS rating, not its own"
+    },
+    {
+     "requirement": "resolved QB",
+     "result": "PASS",
+     "detail": "PASS: Stanford: Davis Warren (previous game) · PASS: Elon: Brady Stober (previous game)"
+    },
+    {
+     "requirement": "no abnormal availability",
+     "result": "PASS",
+     "detail": "PASS: Stanford: availability sources checked, nothing filed · PASS: Elon: availability sources checked, nothing filed"
+    },
+    {
+     "requirement": "component adjustments within historical bounds",
+     "result": "PASS",
+     "detail": "PASS: every adjustment inside its validated range; no single adjustment carries the gap"
+    },
+    {
+     "requirement": "submodel support",
+     "result": "INCOMPLETE",
+     "detail": "INCOMPLETE: no independent ensemble number"
+    },
+    {
+     "requirement": "football-only calibration preserves the major gap",
+     "result": "PASS",
+     "detail": "PASS: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 21.5"
+    }
+   ],
+   "consistent": true,
+   "verdict": "INVESTIGATE is correct: fresh multi-book consensus fail; current team states fail; submodel support incomplete."
   },
   {
    "game_id": "401858271",

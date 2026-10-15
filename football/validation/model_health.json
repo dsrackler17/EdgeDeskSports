@@ -2,15 +2,15 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-10-15T12:04:30.193Z",
+ "as_of": "2026-10-15T17:20:11.459Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "b1c1977691c06b2e",
+ "inputs_key": "9322d3c957efb1bc",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "rows": 3807,
+   "rows": 3834,
    "mode": "LIVE",
-   "sha1": "8c5956261bb6"
+   "sha1": "4eb0986e4c04"
   },
   {
    "file": "football/cfb_terminal/decisions/2026/evaluations.jsonl",
@@ -37,7 +37,7 @@
   {
    "file": "record/football/summary.json",
    "mode": "LIVE (model record)",
-   "sha1": "911c58df1afc"
+   "sha1": "aefce376bc30"
   },
   {
    "file": "football/params.js",
@@ -99,7 +99,7 @@
     "recalibration": "NOT_ALLOWED",
     "note": "A product maturity label, not a scientific verdict."
    },
-   "note": "3807 decision snapshots issued before kickoff; 152 settled"
+   "note": "3834 decision snapshots issued before kickoff; 152 settled"
   },
   {
    "key": "LIVE_CLV",
@@ -133,11 +133,11 @@
   }
  ],
  "live_decisions": {
-  "issued_snapshots": 3807,
+  "issued_snapshots": 3834,
   "issued_by_decision": {
-   "NO_DECISION": 1724,
-   "PASS": 1922,
-   "WATCH": 161
+   "NO_DECISION": 1727,
+   "PASS": 1945,
+   "WATCH": 162
   },
   "graded_rows": 156,
   "unit_of_analysis": "the first snapshot of each decision class per game",
@@ -15905,7 +15905,7 @@
   "source": "record/football/summary.json",
   "mode": "LIVE",
   "level": "model (the published fair line), not bettor decisions",
-  "generated_at": "2026-10-15T06:28:04.916Z",
+  "generated_at": "2026-10-15T15:59:35.361Z",
   "sports": {
    "nfl": {
     "versions": [
