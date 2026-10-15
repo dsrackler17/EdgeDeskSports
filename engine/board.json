@@ -1,11 +1,11 @@
 {
  "schema": "edgedesk_engine_board_v1",
  "version": "edgedesk_xboard_v2",
- "evaluated_at": "2026-10-15T12:05:57.976Z",
+ "evaluated_at": "2026-10-15T14:11:16.938Z",
  "verdict": "PASS",
  "best": null,
  "why": [
-  "No market had a fresh executable price: 624 without a price, 0 stale."
+  "No market had a fresh executable price: 654 without a price, 0 stale."
  ],
  "strongest_candidate": {
   "sport_id": "nfl",
@@ -91,13 +91,13 @@
   "disagreement": 0.0133
  },
  "counts": {
-  "RESEARCH": 624
+  "RESEARCH": 654
  },
  "gate_failures": {
-  "NO_PRICE": 624,
-  "NEEDS_PRICE": 624
+  "NO_PRICE": 654,
+  "NEEDS_PRICE": 654
  },
- "n_candidates": 624,
+ "n_candidates": 654,
  "n_priced": 0,
  "selection_z": 1.2816,
  "rules": {
@@ -5429,6 +5429,432 @@
     "lineup_certainty": "PROJECTED_UNCERTAIN"
    },
    "model_id": "edgedesk_nhl_v1:xg_core"
+  },
+  {
+   "id": "d20d8f0c",
+   "status": "RESEARCH",
+   "sport_id": "wnba",
+   "sport_label": "WNBA",
+   "event_key": "WNBA|401918305",
+   "event": {
+    "home": "Golden State Valkyries",
+    "away": "Atlanta Dream",
+    "start_utc": "2026-10-17T19:30:00Z",
+    "label": "Atlanta Dream @ Golden State Valkyries"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Golden State Valkyries",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Atlanta Dream @ Golden State Valkyries — Golden State Valkyries moneyline",
+   "quote": null,
+   "fair_american": -126,
+   "break_even": null,
+   "prob": {
+    "model": 0.5577,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.5577,
+    "sd": 0.0354,
+    "conservative": 0.5124,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": -101,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of -101 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 2.1 (home), total 160.7",
+    "model points (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/wnba:points"
+  },
+  {
+   "id": "c9c0dad8",
+   "status": "RESEARCH",
+   "sport_id": "wnba",
+   "sport_label": "WNBA",
+   "event_key": "WNBA|401918305",
+   "event": {
+    "home": "Golden State Valkyries",
+    "away": "Atlanta Dream",
+    "start_utc": "2026-10-17T19:30:00Z",
+    "label": "Atlanta Dream @ Golden State Valkyries"
+   },
+   "market": {
+    "kind": "total",
+    "side": "over",
+    "line": 160.5,
+    "settles": "including overtime"
+   },
+   "label": "Atlanta Dream @ Golden State Valkyries — over 160.5",
+   "quote": null,
+   "fair_american": -102,
+   "break_even": null,
+   "prob": {
+    "model": 0.505,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.505,
+    "sd": 0.0354,
+    "conservative": 0.4597,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 122,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +122 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 2.1 (home), total 160.7",
+    "model points (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/wnba:points"
+  },
+  {
+   "id": "ccc3cb9c",
+   "status": "RESEARCH",
+   "sport_id": "wnba",
+   "sport_label": "WNBA",
+   "event_key": "WNBA|401918305",
+   "event": {
+    "home": "Golden State Valkyries",
+    "away": "Atlanta Dream",
+    "start_utc": "2026-10-17T19:30:00Z",
+    "label": "Atlanta Dream @ Golden State Valkyries"
+   },
+   "market": {
+    "kind": "total",
+    "side": "under",
+    "line": 160.5,
+    "settles": "including overtime"
+   },
+   "label": "Atlanta Dream @ Golden State Valkyries — under 160.5",
+   "quote": null,
+   "fair_american": 102,
+   "break_even": null,
+   "prob": {
+    "model": 0.495,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.495,
+    "sd": 0.0354,
+    "conservative": 0.4497,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 127,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +127 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 2.1 (home), total 160.7",
+    "model points (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/wnba:points"
+  },
+  {
+   "id": "83c65822",
+   "status": "RESEARCH",
+   "sport_id": "wnba",
+   "sport_label": "WNBA",
+   "event_key": "WNBA|401918305",
+   "event": {
+    "home": "Golden State Valkyries",
+    "away": "Atlanta Dream",
+    "start_utc": "2026-10-17T19:30:00Z",
+    "label": "Atlanta Dream @ Golden State Valkyries"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Golden State Valkyries",
+    "line": -2,
+    "settles": "including overtime; a whole-number line can push"
+   },
+   "label": "Atlanta Dream @ Golden State Valkyries — Golden State Valkyries -2",
+   "quote": null,
+   "fair_american": -101,
+   "break_even": null,
+   "prob": {
+    "model": 0.4872,
+    "push": 0.0319,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4872,
+    "sd": 0.0354,
+    "conservative": 0.4419,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 124,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +124 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 2.1 (home), total 160.7",
+    "model points (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/wnba:points"
+  },
+  {
+   "id": "d9e03ea7",
+   "status": "RESEARCH",
+   "sport_id": "wnba",
+   "sport_label": "WNBA",
+   "event_key": "WNBA|401918305",
+   "event": {
+    "home": "Golden State Valkyries",
+    "away": "Atlanta Dream",
+    "start_utc": "2026-10-17T19:30:00Z",
+    "label": "Atlanta Dream @ Golden State Valkyries"
+   },
+   "market": {
+    "kind": "spread",
+    "side": "Atlanta Dream",
+    "line": 2,
+    "settles": "including overtime; a whole-number line can push"
+   },
+   "label": "Atlanta Dream @ Golden State Valkyries — Atlanta Dream +2",
+   "quote": null,
+   "fair_american": 101,
+   "break_even": null,
+   "prob": {
+    "model": 0.481,
+    "push": 0.0319,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.481,
+    "sd": 0.0354,
+    "conservative": 0.4357,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 127,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +127 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 2.1 (home), total 160.7",
+    "model points (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/wnba:points"
+  },
+  {
+   "id": "1df826aa",
+   "status": "RESEARCH",
+   "sport_id": "wnba",
+   "sport_label": "WNBA",
+   "event_key": "WNBA|401918305",
+   "event": {
+    "home": "Golden State Valkyries",
+    "away": "Atlanta Dream",
+    "start_utc": "2026-10-17T19:30:00Z",
+    "label": "Atlanta Dream @ Golden State Valkyries"
+   },
+   "market": {
+    "kind": "moneyline",
+    "side": "Atlanta Dream",
+    "line": null,
+    "settles": "including overtime"
+   },
+   "label": "Atlanta Dream @ Golden State Valkyries — Atlanta Dream moneyline",
+   "quote": null,
+   "fair_american": 126,
+   "break_even": null,
+   "prob": {
+    "model": 0.4423,
+    "push": 0,
+    "market_novig": null,
+    "shrink_k": 1,
+    "posterior": 0.4423,
+    "sd": 0.0354,
+    "conservative": 0.397,
+    "components": {
+     "model_sd": 0.025,
+     "calibration_sd": 0.015,
+     "lineup_sd": 0.02
+    }
+   },
+   "ev_raw": null,
+   "ev_posterior": null,
+   "ev_conservative": null,
+   "min_acceptable_american": 157,
+   "disagreement": null,
+   "gates": [
+    {
+     "gate": "PRICE",
+     "ok": false,
+     "code": "NO_PRICE",
+     "reason": "no captured or supplied price for this market"
+    },
+    {
+     "gate": "VALUE",
+     "ok": false,
+     "code": "NEEDS_PRICE",
+     "reason": "needs a price of +157 or better to clear the bar (if value claims were enabled)"
+    }
+   ],
+   "sensitivity": null,
+   "settlement": null,
+   "evidence": [
+    "projected margin 2.1 (home), total 160.7",
+    "model points (wnba); moneyline PROVISIONAL, spread OUTCOME_VALIDATED, total OUTCOME_VALIDATED vs outcomes; never tested vs the close"
+   ],
+   "invalidators": [
+    "A star or starter ruled out: availability is not modelled.",
+    "Early in a season, ratings lean on last season (carried at 0.8)."
+   ],
+   "data": {
+    "state": "FRESH",
+    "lineup_certainty": "UNKNOWN"
+   },
+   "model_id": "basketball/wnba:points"
   }
  ],
  "disclaimer": "Research, not picks. A qualified opportunity is a price that cleared EdgeDesk's published rules at the time shown; it is not a prediction that it will win, and nothing here is a recommendation to bet.",
@@ -5654,9 +6080,9 @@
    "label": "WNBA",
    "state": "OUTCOME_VALIDATED",
    "value_claims": false,
-   "candidates": 0,
+   "candidates": 6,
    "priced": 0,
-   "note": "no game in the window (fair prices appear when the schedule reaches it)",
+   "note": "6 fair prices in the window; no book price is captured for this sport",
    "ladder": {
     "data_loaded": {
      "done": true,
@@ -5762,9 +6188,9 @@
    "label": "Soccer",
    "state": "OUTCOME_VALIDATED",
    "value_claims": false,
-   "candidates": 264,
+   "candidates": 288,
    "priced": 0,
-   "note": "264 fair prices in the window; no book price is captured for this sport",
+   "note": "288 fair prices in the window; no book price is captured for this sport",
    "ladder": {
     "data_loaded": {
      "done": true,
@@ -5867,10 +6293,10 @@
   }
  ],
  "inputs": {
-  "registry_generated_at": "2026-10-15T12:05:57.944Z",
+  "registry_generated_at": "2026-10-15T14:11:16.913Z",
   "nhl_slate_generated_at": "2026-10-15T12:05:48.530Z",
-  "basketball_slate_generated_at": "2026-10-14T16:01:28.662Z",
-  "soccer_slate_generated_at": "2026-10-14T16:01:28.760Z",
+  "basketball_slate_generated_at": "2026-10-15T14:11:16.132Z",
+  "soccer_slate_generated_at": "2026-10-15T14:11:16.253Z",
   "nhl_quotes": {
    "status": "DISABLED",
    "generated_at": "2026-10-15T12:05:48.462Z",
@@ -5880,8 +6306,8 @@
   "manual_quotes_applied": 0
  },
  "candidates_trimmed": {
-  "research_total": 624,
-  "research_kept": 72,
+  "research_total": 654,
+  "research_kept": 78,
   "rule": "all non-research rows; per sport, 24 research rows by conservative disagreement with the market reference, then by start time"
  }
 }
