@@ -77,7 +77,7 @@ disagreements, injury implications, and attributed trending headlines. It then:
   or HTML export, with UTM-tagged links.
 
 Claude can rewrite a draft, but its version is kept only if it passes the same
-checks. A weekly job (`.github/workflows/content-engine.yml`) drafts at most a
+checks. A weekly job (`.github/workflows/content-engine-weekly.yml`) drafts at most a
 couple of the best topics into the owner's review queue. Nothing is approved,
 sent or published except by the owner, and the database enforces it
 (`supabase/content_engine.sql`). See

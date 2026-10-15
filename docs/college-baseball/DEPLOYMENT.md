@@ -10,7 +10,7 @@ is a committed file under `college_baseball/` read by
 1. **Merge the branch.** GitHub Pages serves the new files; the NCAA engine
    segment appears in Research → Baseball. Nothing else in the app changes
    (one segment button, one render branch in `app.html`).
-2. **Enable the workflow** `.github/workflows/college-baseball-research.yml`
+2. **Enable the workflows** `.github/workflows/college-baseball-research.yml` (tests), `college-baseball-research-build.yml` and `college-baseball-research-validate.yml`
    (it is on by default once merged):
    - daily 11:23 UTC, February–June: today's season ingested, coverage,
      board, audit, gates, committed with `tools/ci/push_generated.sh`;
@@ -24,8 +24,8 @@ is a committed file under `college_baseball/` read by
    fail) until someone deliberately runs `node college_baseball/walkforward.js
    --holdout`, which counts against the three-looks limit (research/PROTOCOL.md).
    Every run regenerates `docs/college-baseball/REPORT.md` from the evidence.
-3. **First run after merge**: `workflow_dispatch` with `mode=validate` so the
-   committed records are rebuilt on the runner, then `mode=build` in season.
+3. **First run after merge**: `workflow_dispatch` of `college-baseball-research-validate.yml` (mode `validate`, the default) so the
+   committed records are rebuilt on the runner, then `college-baseball-research-build.yml` in season.
 4. **Before any price is shown as more than research**, every release gate
    must pass (`node college_baseball/release_gates.js --check`). Today G1
    (data rights), G8–G10 (holdout status, if not yet evaluated or not

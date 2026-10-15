@@ -87,7 +87,7 @@ input.
 
 | What | Where | When |
 |---|---|---|
-| Season in progress (play-by-play, team games, lineups, periods, box) | `nhl.yml` build | every 3 hours |
-| Three previous seasons' box scores and play-by-play (props) | `nhl.yml` build | cached; re-fetched at most weekly |
-| Every season, xG refit, record, lab, props record, reconciliation | `nhl.yml` validate | weekly (Tuesday 10:23 UTC) |
-| Source registry, drift monitor | `nhl.yml` build | every 3 hours |
+| Season in progress (play-by-play, team games, lineups, periods, box) | `nhl-build.yml` | every 3 hours |
+| Three previous seasons' box scores and play-by-play (props) | `nhl-build.yml` | cached; re-fetched at most weekly |
+| Every season, xG refit, record, lab, props record, reconciliation | `nhl-validate.yml` | weekly (Tuesday 10:23 UTC) |
+| Source registry, drift monitor | `nhl-build.yml` | every 3 hours |

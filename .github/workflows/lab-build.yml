@@ -1,0 +1,48 @@
+# Multi-sport lab — the scheduled build (see lab.yml for what it does).
+# Its own workflow, split from lab.yml (which keeps the tests), so a pull
+# request or a push never lists this scheduled job as Skipped. The job is
+# unchanged; it runs on its schedule or by hand (Actions → Run workflow).
+name: Multi-sport lab build
+run-name: Multi-sport lab build · ${{ github.event_name }}
+
+on:
+  schedule:
+    - cron: '17 9 * * *'   # build
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    concurrency:
+      group: lab-artifacts
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet pyarrow
+      - name: The seasons in progress (completed seasons are cached and unchanged)
+        run: |
+          node basketball/ingest.js --league all --season current
+      - name: Slates, missingness, registry and board
+        run: node basketball/build_slate.js && node engine/lab/missingness.js && node engine/build_registry.js && node engine/build_board.js
+      - name: The suites pass before anything is written
+        run: node tools/lab/lab.test.js && node basketball/build_slate.js --check && node engine/build_registry.js --check && node engine/build_board.js --check
+      - name: Commit (tools/ci/push_generated.sh)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "lab: current seasons, slates and the cross-sport board" -- \
+            basketball/data basketball/slate.json engine/missingness.json engine/registry.json engine/board.json

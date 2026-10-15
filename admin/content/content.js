@@ -1084,7 +1084,7 @@
       + '<div class="f" style="max-width:150px"><label for="fpHour">Publish hour (CT)</label><input id="fpHour" type="number" min="5" max="20" value="' + esc(st.fp_publish_hour_ct || 7) + '"></div>'
       + '<div class="f" style="max-width:150px"><label for="fpMax">At most a week</label><input id="fpMax" type="number" min="0" max="3" value="' + esc(st.fp_max_per_week != null ? st.fp_max_per_week : 3) + '"></div>'
       + '<div class="f" style="flex:0 0 auto"><button id="fpSave" type="button">Save</button></div></div><div class="msg" id="fpMsg"></div>'
-      + '<p class="note">The job runs on Monday, Wednesday and Friday mornings (.github/workflows/edgedesk-features.yml) and once on other days to publish what you approved. A published article is one file the next site build renders, usually within a quarter hour.</p>';
+      + '<p class="note">The job runs on Monday, Wednesday and Friday mornings (.github/workflows/edgedesk-features-run.yml) and once on other days to publish what you approved. A published article is one file the next site build renders, usually within a quarter hour.</p>';
     $('fpSave').onclick = async function () {
       var m = $('fpMode').value;
       if (m === 'auto' && mode !== 'auto' && !window.confirm('Turn on automatic publishing?\n\nArticles that clear all twelve gates will be published on edgedesksports.com without asking you. Anything less is held here for your review.')) return;
@@ -1368,7 +1368,7 @@
       + '<div class="f"><label>Replies go to</label><input id="sSReply" value="' + esc(s.reply_to_email || '') + '" placeholder="' + esc(ST.overview.sender ? ST.overview.sender.reply_to : '') + '"></div>'
       + '<div class="f" style="flex:0 0 auto"><label>&nbsp;</label><button class="g" id="sSSave" type="button">Save sender</button></div></div>'
       + '<p class="note">Now sending as <b>' + esc(ST.overview.sender ? ST.overview.sender.from : 'no sender set') + '</b>' + (s.sender_email ? '' : ' (the outbound engine’s sender, until you set one here)') + '. Leave a field empty to use the outbound engine’s.</p>'
-      + '<p class="note">The weekly job (.github/workflows/content-engine.yml) discovers topics and drafts at most this many top opportunities above the priority floor, checks them, and puts the passing ones in your review queue. It never approves, sends or publishes. Budgets are enforced by the database before every AI call or feed fetch.</p>';
+      + '<p class="note">The weekly job (.github/workflows/content-engine-weekly.yml) discovers topics and drafts at most this many top opportunities above the priority floor, checks them, and puts the passing ones in your review queue. It never approves, sends or publishes. Budgets are enforced by the database before every AI call or feed fetch.</p>';
     $('sSave').onclick = async function () {
       try {
         var r = await rpc('content_engine_settings_save', { p: { drafts_per_run: +$('sDrafts').value, min_priority: +$('sMin').value, llm_calls_per_day: +$('sLlm').value, fetch_calls_per_day: +$('sFetch').value,

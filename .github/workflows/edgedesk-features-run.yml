@@ -1,0 +1,60 @@
+# EdgeDesk — first-party features: the scheduled slot (see edgedesk-features.yml for
+# what a run can do, the owner's modes and the secrets). Publishing is one file.
+# Its own workflow, split from edgedesk-features.yml (which keeps the tests), so a pull
+# request or a push never lists this scheduled job as Skipped. The job is
+# unchanged; it runs on its schedule or by hand (Actions → Run workflow).
+name: EdgeDesk features run
+run-name: EdgeDesk features run · ${{ github.event_name }}
+
+on:
+  schedule:
+    - cron: '41 10-21 * * 1,3,5'   # Mon/Wed/Fri hourly 10:41-21:41 UTC; the job decides in Central Time (--if-due)
+    - cron: '41 15 * * 0,2,4,6'   # other days: publish what the owner approved, restore what a race removed
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Force a dry run (never more permissive than the owner’s mode)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: edgedesk-features
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The checks first
+        run: |
+          node tools/content/content.test.js
+          node tools/editorial/features.test.js
+      - name: The slot
+        id: fp
+        env:
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          FORCE_DRY: ${{ github.event.inputs.dry_run }}
+        run: |
+          if [ -z "$EDGD_SB_URL" ] || [ -z "$EDGD_SB_SERVICE" ]; then
+            echo "::warning::EdgeDesk features: SB_URL / SB_SERVICE_ROLE are not set — a dry run that records nothing."
+          fi
+          args="--if-due --github-output $GITHUB_OUTPUT"
+          [ "$FORCE_DRY" = "true" ] && args="$args --mode dry_run"
+          node tools/editorial/features.js $args | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Publish the record (one file; the next site build renders it)
+        if: steps.fp.outputs.published == '1'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "features: EdgeDesk first-party article" -- features

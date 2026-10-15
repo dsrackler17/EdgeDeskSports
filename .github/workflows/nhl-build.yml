@@ -1,0 +1,77 @@
+# NHL engine — the scheduled build (see nhl.yml for what it does).
+# Its own workflow, split from nhl.yml (which keeps the tests), so a pull
+# request or a push never lists this scheduled job as Skipped. The job is
+# unchanged; it runs on its schedule or by hand (Actions → Run workflow).
+name: NHL engine build
+run-name: NHL engine build · ${{ github.event_name }}
+
+on:
+  schedule:
+    - cron: '41 */3 * * *'   # build
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    concurrency:
+      group: nhl-artifacts
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet pyarrow
+      - uses: actions/cache@v4
+        with:
+          path: .cache/nhl_src
+          key: nhl-src-${{ github.run_id }}
+          restore-keys: nhl-src-
+      - name: Ingest the season in progress and rebuild its team-game partitions
+        run: |
+          S=$(node -e "console.log(require('./hockey/config.js').CURRENT_SEASON)")
+          node hockey/ingest/season.js --season "$S"
+          node hockey/ingest/team_games.js --season "$S"
+          node hockey/ingest/lineups.js --season "$((S-1)),$S"
+          node hockey/ingest/periods.js --season "$S"
+      - name: Box scores and play-by-play of the three previous seasons for the player research (cached; ≈ 1.5 MB of box scores a run)
+        run: |
+          S=$(node -e "console.log(require('./hockey/config.js').CURRENT_SEASON)")
+          node hockey/ingest/season.js --season "$((S-3))-$((S-1))" --ttl-hours 160
+          node hockey/ingest/boxscores.js --season "$((S-3))-$((S-1))" --ttl-hours 160
+          node hockey/ingest/boxscores.js --season "$S"
+      - name: NHL book prices (spends nothing unless NHL_PRICES is on and the gateway row is enabled)
+        env:
+          NHL_PRICES: ${{ vars.NHL_PRICES }}
+          EDGD_SB_URL: ${{ vars.NHL_PRICES == 'on' && secrets.SB_URL || '' }}
+          EDGD_SB_SERVICE: ${{ vars.NHL_PRICES == 'on' && secrets.SB_SERVICE_ROLE || '' }}
+        run: node hockey/market/fetch_quotes.js
+      - name: Price the slate, grade the ledger, rebuild the registry and the board
+        run: node hockey/build_slate.js && node hockey/grade_ledger.js && node engine/build_registry.js && node engine/build_board.js
+      - name: Player research, the drift monitor and the data-source registry
+        run: node --max-old-space-size=6144 hockey/props/slate.js && node --max-old-space-size=6144 hockey/model/diagnostics.js && node hockey/sources/registry.js
+      - name: The suites and checks pass before anything is written
+        run: node tools/hockey/hockey.test.js && node tools/hockey/nhl_v2.test.js && node tools/engine/engine.test.js && node hockey/build_slate.js --check && node engine/build_registry.js --check && node engine/build_board.js --check
+      - name: The Supabase warehouse (writes nothing unless NHL_WAREHOUSE is on; supabase/nhl_warehouse.sql applied first)
+        env:
+          NHL_WAREHOUSE: ${{ vars.NHL_WAREHOUSE }}
+          EDGD_SB_URL: ${{ vars.NHL_WAREHOUSE == 'on' && secrets.SB_URL || '' }}
+          EDGD_SB_SERVICE: ${{ vars.NHL_WAREHOUSE == 'on' && secrets.SB_SERVICE_ROLE || '' }}
+        run: node hockey/warehouse/sync.js
+      - name: Commit via tools/ci/push_generated.sh (our paths on top of the remote tip, never a rebase)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "nhl: slate, ledger and the cross-sport board" -- \
+            hockey/data hockey/slate.json hockey/ledger hockey/market/quotes.json hockey/props/slate.json hockey/sources/registry.json hockey/validation/nhl_diagnostics.json engine/registry.json engine/board.json

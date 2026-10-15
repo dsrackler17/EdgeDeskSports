@@ -557,18 +557,19 @@ const libPairs = []; Object.keys(CE.TRANSITIONS).forEach((a) => CE.TRANSITIONS[a
 chk('S the library and the database share one transition matrix', JSON.stringify(pairs.sort()) === JSON.stringify(libPairs.sort()), { sql: pairs, lib: libPairs });
 chk('S the SQL and the library ban the same core phrases', ['best bets', 'guarantee', 'free money', 'sure thing', 'risk.?free', 'take the points'].every((t) => SQL.indexOf(t.replace('best bets', 'best bets?')) >= 0 || SQL.indexOf(t) >= 0));
 chk('S the Edge Function carries the core and the owner check verbatim', !INLINE.drifted());
-const publicFiles = [page, js, SQL, fs.readFileSync(path.join(ROOT, 'lib', 'content_engine.js'), 'utf8'), fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'content-engine.yml'), 'utf8'),
+const publicFiles = [page, js, SQL, fs.readFileSync(path.join(ROOT, 'lib', 'content_engine.js'), 'utf8'), fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'content-engine.yml'), 'utf8'), fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'content-engine-weekly.yml'), 'utf8'),
   fs.readFileSync(path.join(ROOT, 'docs', 'content-engine', 'README.md'), 'utf8'),
   /* EdgeDesk's own features: the job, the type, the workflow, the tests */
   fs.readFileSync(path.join(ROOT, 'tools', 'editorial', 'features.js'), 'utf8'), fs.readFileSync(path.join(ROOT, 'tools', 'editorial', 'feature_model.js'), 'utf8'),
-  fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'edgedesk-features.yml'), 'utf8'), fs.readFileSync(path.join(ROOT, 'tools', 'editorial', 'features.test.js'), 'utf8')]
+  fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'edgedesk-features.yml'), 'utf8'), fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'edgedesk-features-run.yml'), 'utf8'), fs.readFileSync(path.join(ROOT, 'tools', 'editorial', 'features.test.js'), 'utf8')]
   .concat(fs.existsSync(path.join(ROOT, 'features', 'records')) ? fs.readdirSync(path.join(ROOT, 'features', 'records')).map((f) => fs.readFileSync(path.join(ROOT, 'features', 'records', f), 'utf8')) : [])
   /* the tests are public too; the guard lines themselves are the only exception */
   .concat(fs.readdirSync(__dirname).filter((f) => /\.js$/.test(f)).map((f) => fs.readFileSync(path.join(__dirname, f), 'utf8')
     .split('\n').filter((l) => !/^chk\('(S no publisher business data|F the seed carries no contact)/.test(l)).join('\n'))).join('\n');
 chk('S no publisher business data in any public file (contacts, view benchmarks)', !/\b351\b|45[–-]48|@stadiumrant\.com|\bSteven\b/i.test(publicFiles));
-const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'content-engine.yml'), 'utf8');
-chk('S the workflow reads only, and runs the job only on schedule or by hand', /permissions:\n  contents: read/.test(wf) && /github\.event_name == 'schedule'/.test(wf) && !/contents: write|git push/.test(wf));
+/* the weekly job is its own workflow (content-engine-weekly.yml); content-engine.yml runs the tests */
+const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'content-engine-weekly.yml'), 'utf8');
+chk('S the workflow reads only, and runs the job only on schedule or by hand', /permissions:\n  contents: read/.test(wf) && /\non:\n  schedule:\n/.test(wf) && !/\n  (pull_request|push):/.test(wf) && !/contents: write|git push/.test(wf));
 const fnSrc = fs.readFileSync(INLINE.TARGET, 'utf8');
 chk('S the Edge Function names no door that approves, reviews or publishes', !/content_engine_article_(approve|transition|review)/.test(fnSrc));
 const runSrc = fs.readFileSync(path.join(__dirname, 'run.js'), 'utf8');

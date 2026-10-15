@@ -36,7 +36,7 @@ The pipeline is deterministic and the committed record is reproducible.
 | Pregame ledger (append-only, hashed) + grader | `hockey/build_slate.js`, `grade_ledger.js` | 2026-27 in progress |
 | Panel (list + game detail) | `lib/edgedesk_engine_ui.js` | — |
 | Desk turn | `hockey/desk.js` | — |
-| CI: tests, 3-hourly build, weekly validation | `.github/workflows/nhl.yml` | — |
+| CI: tests, 3-hourly build, weekly validation | `.github/workflows/nhl.yml`, `nhl-build.yml`, `nhl-validate.yml` | — |
 
 ## 3. What was missing or needed improvement
 

@@ -1,6 +1,6 @@
 # NHL engine: operations, deployment and rollback
 
-## What runs, and when (`.github/workflows/nhl.yml`)
+## What runs, and when (`.github/workflows/nhl.yml` tests, `nhl-build.yml`, `nhl-validate.yml`)
 
 | Job | Trigger | What it does | Runner time |
 |---|---|---|---|
@@ -30,7 +30,7 @@ Value claims stay off whatever the switches say. Only a market test with
 ## Deploying this change
 
 1. **Merge.** The panels, the slate and the record are static files. GitHub
-   Pages serves them, and the next `nhl.yml` build regenerates the slate with
+   Pages serves them, and the next `nhl-build.yml` build regenerates the slate with
    the new code.
 2. **Edge Function.** `edgedesk_ai` now explains NHL numbers from the slate's
    decomposition. It reaches readers after the usual deploy

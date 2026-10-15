@@ -184,7 +184,9 @@ function tempStore() {
 
   /* ── W the workflow ─────────────────────────────────────────────────── */
   section('W workflow');
-  const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'edgedesk-features.yml'), 'utf8');
+  /* the scheduled slot is its own workflow (edgedesk-features-run.yml); edgedesk-features.yml runs these tests on a pull request */
+  const wf = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'edgedesk-features-run.yml'), 'utf8');
+  chk('W the slot runs only on its schedule or by hand, never on a pull request', /\non:\n  schedule:\n/.test(wf) && !/\n  (pull_request|push):/.test(wf));
   chk('W Mon/Wed/Fri heartbeats, the job deciding in Central Time', /cron: '41 10-21 \* \* 1,3,5'/.test(wf) && /--if-due/.test(wf));
   chk('W the checks run before the slot', wf.indexOf('features.test.js') < wf.indexOf('node tools/editorial/features.js $args'));
   chk('W publishing pushes the features directory and nothing else', /push_generated\.sh main "[^"]+" -- features\n/.test(wf) && !/-- [^\n]*\barticles\b/.test(wf));
