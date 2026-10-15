@@ -2,12 +2,12 @@
  "schema": "edgedesk_nfl_slate_v1",
  "version": 1,
  "season": 2026,
- "generated_at": "2026-10-14T18:02:19.644Z",
+ "generated_at": "2026-10-15T15:58:10.737Z",
  "source": "nflverse/nfldata games.csv + nflverse-data stats_team_week, through the football module in app.html",
  "forecasts": {
-  "requested": 27,
+  "requested": 28,
   "no_venue": 0,
-  "answered": 16,
+  "answered": 17,
   "dome": 11,
   "failed": 0,
   "written": true,
@@ -237,13 +237,12 @@
  },
  "absorbed_games": 79,
  "notes": [
-  "1 upcoming NFL starter was listed OUT or DOUBTFUL on the injury report and is priced with the club’s most recent other starter (each game says which).",
   "Live sportsbook prices are not available for this NFL window yet. EdgeDesk can still show its model and nflverse consensus reference lines, but those reference lines may not be currently bettable. Check your sportsbook before acting on a number."
  ],
  "lookahead_days": 12,
  "window": {
-  "from": "2026-10-14T12:02:19.093Z",
-  "to": "2026-10-26T18:02:19.093Z"
+  "from": "2026-10-15T09:58:09.156Z",
+  "to": "2026-10-27T15:58:09.156Z"
  },
  "feeds": [
   {
@@ -252,19 +251,19 @@
   },
   {
    "url": "/football/nfl/slate.json",
-   "bytes": 744323
+   "bytes": 830692
   },
   {
    "url": "https://raw.githubusercontent.com/nflverse/nfldata/master/data/games.csv",
-   "bytes": 2184485
+   "bytes": 2184486
   },
   {
    "url": "/football/injuries/nfl_2026.json",
-   "bytes": 100280
+   "bytes": 99361
   },
   {
    "url": "/football/nfl/qbs_2026.csv",
-   "bytes": 18767
+   "bytes": 18923
   },
   {
    "url": "/football/nfl/stats_team_week_2026.csv",
@@ -272,9 +271,9 @@
   }
  ],
  "counts": {
-  "games": 27,
-  "predicted": 27,
-  "with_reference": 27,
+  "games": 28,
+  "predicted": 28,
+  "with_reference": 28,
   "teams": 32
  },
  "ranks_of": null,
@@ -523,10 +522,55 @@
     "status": "SCHEDULE_FEED"
    },
    "away_starter": {
-    "player_name": "Drew Lock",
-    "player_id": "00-0035704",
-    "source": "nflverse games.csv",
-    "status": "SCHEDULE_FEED"
+    "player_name": "Sam Darnold",
+    "player_id": "00-0034869",
+    "source": "nflverse depth charts (QB1), corroborated by the first dropback of week 5",
+    "status": "DEPTH_CHART_RECONCILED",
+    "published_at": "2026-10-15T12:37:05Z",
+    "schedule_feed": {
+     "player_name": "Drew Lock",
+     "player_id": "00-0035704",
+     "source": "nflverse games.csv"
+    },
+    "basis": "nflverse games.csv names Drew Lock, but nflverse depth charts lists Sam Darnold as QB1 (published 2026-10-15T12:37:05Z) and Sam Darnold took the first dropback of week 5: the engine priced Sam Darnold"
+   },
+   "starter_check": {
+    "home": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Bo Nix",
+      "id": "00-0039732"
+     },
+     "depth_chart": {
+      "name": "Bo Nix",
+      "id": "00-0039732",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    },
+    "away": {
+     "status": "RECONCILED",
+     "priced": "DEPTH_CHART",
+     "schedule_feed": {
+      "name": "Drew Lock",
+      "id": "00-0035704"
+     },
+     "depth_chart": {
+      "name": "Sam Darnold",
+      "id": "00-0034869",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "last_game_starter": {
+      "name": "S.Darnold",
+      "id": "00-0034869",
+      "week": 5,
+      "game_id": "2026_05_SF_SEA"
+     },
+     "why": "nflverse games.csv names Drew Lock, but nflverse depth charts lists Sam Darnold as QB1 (published 2026-10-15T12:37:05Z) and Sam Darnold took the first dropback of week 5: the engine priced Sam Darnold"
+    }
    },
    "regime": {
     "home": {
@@ -556,16 +600,16 @@
    },
    "model_status": "PREDICTED",
    "model_reason": null,
-   "model_home_margin": -0.07,
-   "model_home_line": 0.07,
+   "model_home_margin": -1.01,
+   "model_home_line": 1.01,
    "model_fair_total": 42.14,
-   "model_home_win_prob": 0.4975,
-   "model_fair_home_ml": 101,
-   "model_fair_away_ml": -101,
+   "model_home_win_prob": 0.4623,
+   "model_fair_home_ml": 116,
+   "model_fair_away_ml": -116,
    "outcome_range": {
     "p10": -17,
-    "p50": 0,
-    "p90": 18,
+    "p50": -1,
+    "p90": 17,
     "sigma": 10.7,
     "basis": "margin_pmf_by_spread",
     "unit": "home margin, points"
@@ -599,8 +643,8 @@
      },
      {
       "key": "qb_adj_diff",
-      "value": 0.1295,
-      "points": 0.74
+      "value": -0.0366,
+      "points": -0.21
      },
      {
       "key": "rest_diff",
@@ -692,7 +736,7 @@
      "net_epa": -0.05697392812385864,
      "net_pass": -0.07993666511062619,
      "net_rush": -0.014654360225195784,
-     "qb_adj_diff": 0.1294815,
+     "qb_adj_diff": -0.03663872429906544,
      "rest_diff": 0,
      "div_game": 0
     },
@@ -730,256 +774,256 @@
    },
    "scenarios": {
     "home_qb_out": {
-     "home_line": 0.13,
+     "home_line": 1.08,
      "delta_home_line": 0.07,
      "total": 42.14,
-     "home_win_prob": 0.495,
+     "home_win_prob": 0.4598,
      "basis": "engine re-run with home_qb_id = null: the replacement carries the club’s carried quarterback level, exactly what the engine does live when the feed names no starter",
      "source": "football/nfl/slate.json (engine re-run, one input changed)"
     },
     "away_qb_out": {
      "home_line": 0.74,
-     "delta_home_line": 0.67,
+     "delta_home_line": -0.28,
      "total": 42.14,
      "home_win_prob": 0.4725,
      "basis": "engine re-run with away_qb_id = null: the replacement carries the club’s carried quarterback level",
      "source": "football/nfl/slate.json (engine re-run, one input changed)"
     },
     "home_short_week": {
-     "home_line": 0.07,
+     "home_line": 1.01,
      "delta_home_line": 0,
      "total": 42.14,
-     "home_win_prob": 0.4975,
+     "home_win_prob": 0.4623,
      "basis": "engine re-run with home_rest = 4",
      "source": "football/nfl/slate.json (engine re-run, one input changed)"
     },
     "away_short_week": {
-     "home_line": 0.07,
+     "home_line": 1.01,
      "delta_home_line": 0,
      "total": 42.14,
-     "home_win_prob": 0.4975,
+     "home_win_prob": 0.4623,
      "basis": "engine re-run with away_rest = 4",
      "source": "football/nfl/slate.json (engine re-run, one input changed)"
     },
     "dome": {
-     "home_line": 0.93,
+     "home_line": 1.88,
      "delta_home_line": 0.87,
      "total": 43.83,
-     "home_win_prob": 0.4652,
+     "home_win_prob": 0.4303,
      "basis": "engine re-run with roof = dome (weather inputs ignored)",
      "source": "football/nfl/slate.json (engine re-run, one input changed)"
     },
     "cold_windy": {
-     "home_line": 0.07,
+     "home_line": 1.01,
      "delta_home_line": 0,
      "total": 38.19,
-     "home_win_prob": 0.4975,
+     "home_win_prob": 0.4623,
      "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
      "source": "football/nfl/slate.json (engine re-run, one input changed)"
     }
    },
    "cover_curve": [
     {
+     "home_line": 8,
+     "win": 0.7496,
+     "push": 0.0196,
+     "lose": 0.2307,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 7.5,
+     "win": 0.7496,
+     "push": 0,
+     "lose": 0.2504,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
      "home_line": 7,
-     "win": 0.7066,
-     "push": 0.0518,
-     "lose": 0.2416,
+     "win": 0.6973,
+     "push": 0.0524,
+     "lose": 0.2504,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 6.5,
-     "win": 0.7066,
+     "win": 0.6973,
      "push": 0,
-     "lose": 0.2934,
+     "lose": 0.3027,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 6,
-     "win": 0.6739,
-     "push": 0.0327,
-     "lose": 0.2934,
+     "win": 0.6641,
+     "push": 0.0331,
+     "lose": 0.3027,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 5.5,
-     "win": 0.6739,
+     "win": 0.6641,
      "push": 0,
-     "lose": 0.3261,
+     "lose": 0.3359,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 5,
-     "win": 0.6525,
-     "push": 0.0214,
-     "lose": 0.3261,
+     "win": 0.6421,
+     "push": 0.022,
+     "lose": 0.3359,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 4.5,
-     "win": 0.6525,
+     "win": 0.6421,
      "push": 0,
-     "lose": 0.3475,
+     "lose": 0.3579,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 4,
-     "win": 0.6208,
-     "push": 0.0317,
-     "lose": 0.3475,
+     "win": 0.6101,
+     "push": 0.0321,
+     "lose": 0.3579,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 3.5,
-     "win": 0.6208,
+     "win": 0.6101,
      "push": 0,
-     "lose": 0.3792,
+     "lose": 0.3899,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 3,
-     "win": 0.5459,
-     "push": 0.075,
-     "lose": 0.3792,
+     "win": 0.5342,
+     "push": 0.0758,
+     "lose": 0.3899,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 2.5,
-     "win": 0.5459,
+     "win": 0.5342,
      "push": 0,
-     "lose": 0.4541,
+     "lose": 0.4658,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 2,
-     "win": 0.5223,
-     "push": 0.0236,
-     "lose": 0.4541,
+     "win": 0.5103,
+     "push": 0.0239,
+     "lose": 0.4658,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 1.5,
-     "win": 0.5223,
+     "win": 0.5103,
      "push": 0,
-     "lose": 0.4777,
+     "lose": 0.4897,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 1,
-     "win": 0.5009,
-     "push": 0.0214,
-     "lose": 0.4777,
+     "win": 0.4891,
+     "push": 0.0212,
+     "lose": 0.4897,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 0.5,
-     "win": 0.5009,
+     "win": 0.4891,
      "push": 0,
-     "lose": 0.4991,
+     "lose": 0.5109,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 0,
-     "win": 0.4989,
-     "push": 0.002,
-     "lose": 0.4991,
+     "win": 0.487,
+     "push": 0.0021,
+     "lose": 0.5109,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": -0.5,
-     "win": 0.4989,
+     "win": 0.487,
      "push": 0,
-     "lose": 0.5011,
+     "lose": 0.513,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": -1,
-     "win": 0.4764,
-     "push": 0.0225,
-     "lose": 0.5011,
+     "win": 0.4649,
+     "push": 0.0222,
+     "lose": 0.513,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": -1.5,
-     "win": 0.4764,
+     "win": 0.4649,
      "push": 0,
-     "lose": 0.5236,
+     "lose": 0.5351,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": -2,
-     "win": 0.4544,
-     "push": 0.022,
-     "lose": 0.5236,
+     "win": 0.443,
+     "push": 0.0218,
+     "lose": 0.5351,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": -2.5,
-     "win": 0.4544,
+     "win": 0.443,
      "push": 0,
-     "lose": 0.5456,
+     "lose": 0.557,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": -3,
-     "win": 0.3698,
-     "push": 0.0846,
-     "lose": 0.5456,
+     "win": 0.3591,
+     "push": 0.0839,
+     "lose": 0.557,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": -3.5,
-     "win": 0.3698,
+     "win": 0.3591,
      "push": 0,
-     "lose": 0.6302,
+     "lose": 0.6409,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": -4,
-     "win": 0.3454,
-     "push": 0.0245,
-     "lose": 0.6302,
+     "win": 0.3352,
+     "push": 0.0239,
+     "lose": 0.6409,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": -4.5,
-     "win": 0.3454,
+     "win": 0.3352,
      "push": 0,
-     "lose": 0.6546,
+     "lose": 0.6648,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": -5,
-     "win": 0.3261,
-     "push": 0.0192,
-     "lose": 0.6546,
+     "win": 0.3165,
+     "push": 0.0188,
+     "lose": 0.6648,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": -5.5,
-     "win": 0.3261,
+     "win": 0.3165,
      "push": 0,
-     "lose": 0.6739,
+     "lose": 0.6835,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": -6,
-     "win": 0.2915,
-     "push": 0.0346,
-     "lose": 0.6739,
-     "basis": "margin_pmf_by_spread"
-    },
-    {
-     "home_line": -6.5,
-     "win": 0.2915,
-     "push": 0,
-     "lose": 0.7085,
-     "basis": "margin_pmf_by_spread"
-    },
-    {
-     "home_line": -7,
-     "win": 0.2476,
-     "push": 0.044,
-     "lose": 0.7085,
+     "win": 0.2824,
+     "push": 0.034,
+     "lose": 0.6835,
      "basis": "margin_pmf_by_spread"
     }
    ],
@@ -994,7 +1038,7 @@
    },
    "model_version": "edgedesk_football_v1.0.0",
    "feature_version": "nfl_fv1",
-   "fingerprint": "fp_17eivfn",
+   "fingerprint": "fp_jhoxv2",
    "reference_market": {
     "source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "home_line": 2.5,
@@ -1016,42 +1060,42 @@
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
    },
    "forecast": {
-    "temp_f": 44.8,
-    "wind_mph": 6,
+    "temp_f": 48.8,
+    "wind_mph": 1.8,
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-10-14T18:02:19.379Z",
+    "as_of": "2026-10-15T15:58:09.912Z",
     "kickoff_local": "2026-10-15T18:00",
     "kickoff_label": "6 PM",
     "timezone": "America/Denver",
     "tz_abbrev": "GMT-6",
     "utc_offset_seconds": -21600,
-    "feels_f": 39.4,
-    "humidity_pct": 75,
-    "gust_mph": 17.2,
+    "feels_f": 44.6,
+    "humidity_pct": 57,
+    "gust_mph": 5.4,
     "precip_pct": 0,
     "code": 0,
     "text": "Clear",
     "icon": "☀️",
-    "wind_word": "LIGHT",
-    "wind_from": "N",
-    "wind_arrow": "↓",
+    "wind_word": "CALM",
+    "wind_from": "W",
+    "wind_arrow": "→",
     "hours": [
      {
       "local": "2026-10-15T18:00",
       "at": "2026-10-16T00:00:00.000Z",
       "label": "6 PM",
-      "temp_f": 44.8,
-      "feels_f": 39.4,
+      "temp_f": 48.8,
+      "feels_f": 44.6,
       "precip_in": 0,
       "precip_pct": 0,
-      "humidity_pct": 75,
-      "wind_mph": 6,
-      "gust_mph": 17.2,
-      "wind_dir_deg": 22,
-      "wind_from": "N",
-      "wind_arrow": "↓",
+      "humidity_pct": 57,
+      "wind_mph": 1.8,
+      "gust_mph": 5.4,
+      "wind_dir_deg": 265,
+      "wind_from": "W",
+      "wind_arrow": "→",
       "code": 0,
       "text": "Clear",
       "icon": "☀️",
@@ -1061,14 +1105,14 @@
       "local": "2026-10-15T19:00",
       "at": "2026-10-16T01:00:00.000Z",
       "label": "7 PM",
-      "temp_f": 42.7,
-      "feels_f": 38.6,
+      "temp_f": 45.6,
+      "feels_f": 41.2,
       "precip_in": 0,
       "precip_pct": 0,
-      "humidity_pct": 81,
-      "wind_mph": 2.8,
-      "gust_mph": 8.9,
-      "wind_dir_deg": 284,
+      "humidity_pct": 62,
+      "wind_mph": 2.1,
+      "gust_mph": 2.2,
+      "wind_dir_deg": 278,
       "wind_from": "W",
       "wind_arrow": "→",
       "code": 0,
@@ -1080,38 +1124,38 @@
       "local": "2026-10-15T20:00",
       "at": "2026-10-16T02:00:00.000Z",
       "label": "8 PM",
-      "temp_f": 41.3,
-      "feels_f": 36.8,
+      "temp_f": 43.1,
+      "feels_f": 37.2,
       "precip_in": 0,
       "precip_pct": 0,
-      "humidity_pct": 84,
-      "wind_mph": 3.6,
-      "gust_mph": 4.5,
-      "wind_dir_deg": 313,
-      "wind_from": "NW",
-      "wind_arrow": "↘",
-      "code": 2,
-      "text": "Partly cloudy",
-      "icon": "☁️",
+      "humidity_pct": 71,
+      "wind_mph": 6,
+      "gust_mph": 6.9,
+      "wind_dir_deg": 252,
+      "wind_from": "W",
+      "wind_arrow": "→",
+      "code": 0,
+      "text": "Clear",
+      "icon": "🌙",
       "is_day": 0
      },
      {
       "local": "2026-10-15T21:00",
       "at": "2026-10-16T03:00:00.000Z",
       "label": "9 PM",
-      "temp_f": 43,
-      "feels_f": 39.9,
+      "temp_f": 41.6,
+      "feels_f": 36.7,
       "precip_in": 0,
       "precip_pct": 0,
-      "humidity_pct": 90,
-      "wind_mph": 1.8,
-      "gust_mph": 8.7,
-      "wind_dir_deg": 7,
+      "humidity_pct": 77,
+      "wind_mph": 3.6,
+      "gust_mph": 5.4,
+      "wind_dir_deg": 348,
       "wind_from": "N",
       "wind_arrow": "↓",
-      "code": 3,
-      "text": "Overcast",
-      "icon": "☁️",
+      "code": 0,
+      "text": "Clear",
+      "icon": "🌙",
       "is_day": 0
      }
     ]
@@ -1365,6 +1409,36 @@
     "player_id": "00-0039163",
     "source": "nflverse games.csv",
     "status": "SCHEDULE_FEED"
+   },
+   "starter_check": {
+    "home": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Trevor Lawrence",
+      "id": "00-0036971"
+     },
+     "depth_chart": {
+      "name": "Trevor Lawrence",
+      "id": "00-0036971",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    },
+    "away": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "C.J. Stroud",
+      "id": "00-0039163"
+     },
+     "depth_chart": {
+      "name": "C.J. Stroud",
+      "id": "00-0039163",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    }
    },
    "regime": {
     "home": {
@@ -1854,42 +1928,42 @@
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
    },
    "forecast": {
-    "temp_f": 55.1,
-    "wind_mph": 10.1,
-    "precip_in": 0.008,
+    "temp_f": 54.3,
+    "wind_mph": 11.4,
+    "precip_in": 0.004,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-10-14T18:02:19.384Z",
+    "as_of": "2026-10-15T15:58:09.999Z",
     "kickoff_local": "2026-10-18T14:00",
     "kickoff_label": "2 PM",
     "timezone": "Europe/London",
     "tz_abbrev": "GMT+1",
     "utc_offset_seconds": 3600,
-    "feels_f": 49.5,
-    "humidity_pct": 69,
-    "gust_mph": 20.6,
-    "precip_pct": 14,
+    "feels_f": 47.7,
+    "humidity_pct": 65,
+    "gust_mph": 22.8,
+    "precip_pct": 19,
     "code": 51,
     "text": "Drizzle",
     "icon": "🌦️",
     "wind_word": "LIGHT",
-    "wind_from": "N",
-    "wind_arrow": "↓",
+    "wind_from": "NE",
+    "wind_arrow": "↙",
     "hours": [
      {
       "local": "2026-10-18T14:00",
       "at": "2026-10-18T13:00:00.000Z",
       "label": "2 PM",
-      "temp_f": 55.1,
-      "feels_f": 49.5,
-      "precip_in": 0.008,
-      "precip_pct": 14,
-      "humidity_pct": 69,
-      "wind_mph": 10.1,
-      "gust_mph": 20.6,
-      "wind_dir_deg": 18,
-      "wind_from": "N",
-      "wind_arrow": "↓",
+      "temp_f": 54.3,
+      "feels_f": 47.7,
+      "precip_in": 0.004,
+      "precip_pct": 19,
+      "humidity_pct": 65,
+      "wind_mph": 11.4,
+      "gust_mph": 22.8,
+      "wind_dir_deg": 28,
+      "wind_from": "NE",
+      "wind_arrow": "↙",
       "code": 51,
       "text": "Drizzle",
       "icon": "🌦️",
@@ -1899,16 +1973,16 @@
       "local": "2026-10-18T15:00",
       "at": "2026-10-18T14:00:00.000Z",
       "label": "3 PM",
-      "temp_f": 54.9,
-      "feels_f": 49.4,
-      "precip_in": 0.008,
-      "precip_pct": 20,
-      "humidity_pct": 68,
-      "wind_mph": 9.6,
-      "gust_mph": 19.7,
-      "wind_dir_deg": 18,
-      "wind_from": "N",
-      "wind_arrow": "↓",
+      "temp_f": 54.1,
+      "feels_f": 47.7,
+      "precip_in": 0.004,
+      "precip_pct": 31,
+      "humidity_pct": 65,
+      "wind_mph": 10.7,
+      "gust_mph": 21.7,
+      "wind_dir_deg": 27,
+      "wind_from": "NE",
+      "wind_arrow": "↙",
       "code": 51,
       "text": "Drizzle",
       "icon": "🌦️",
@@ -1918,16 +1992,16 @@
       "local": "2026-10-18T16:00",
       "at": "2026-10-18T15:00:00.000Z",
       "label": "4 PM",
-      "temp_f": 54.5,
-      "feels_f": 49.2,
-      "precip_in": 0.008,
-      "precip_pct": 22,
-      "humidity_pct": 68,
-      "wind_mph": 9.2,
-      "gust_mph": 18.8,
-      "wind_dir_deg": 18,
-      "wind_from": "N",
-      "wind_arrow": "↓",
+      "temp_f": 53.5,
+      "feels_f": 47.4,
+      "precip_in": 0.004,
+      "precip_pct": 39,
+      "humidity_pct": 66,
+      "wind_mph": 10.1,
+      "gust_mph": 20.4,
+      "wind_dir_deg": 27,
+      "wind_from": "NE",
+      "wind_arrow": "↙",
       "code": 51,
       "text": "Drizzle",
       "icon": "🌦️",
@@ -1937,19 +2011,19 @@
       "local": "2026-10-18T17:00",
       "at": "2026-10-18T16:00:00.000Z",
       "label": "5 PM",
-      "temp_f": 54,
-      "feels_f": 48.8,
+      "temp_f": 52.9,
+      "feels_f": 46.9,
       "precip_in": 0,
-      "precip_pct": 19,
-      "humidity_pct": 69,
-      "wind_mph": 8.7,
-      "gust_mph": 17.9,
-      "wind_dir_deg": 16,
-      "wind_from": "N",
-      "wind_arrow": "↓",
-      "code": 0,
-      "text": "Clear",
-      "icon": "☀️",
+      "precip_pct": 38,
+      "humidity_pct": 67,
+      "wind_mph": 9.6,
+      "gust_mph": 19.2,
+      "wind_dir_deg": 23,
+      "wind_from": "NE",
+      "wind_arrow": "↙",
+      "code": 2,
+      "text": "Partly cloudy",
+      "icon": "⛅",
       "is_day": 1
      }
     ]
@@ -2202,7 +2276,61 @@
     "player_name": "Tyson Bagent",
     "player_id": "00-0038416",
     "source": "nflverse games.csv",
-    "status": "SCHEDULE_FEED"
+    "status": "SCHEDULE_FEED_CONFLICT",
+    "conflict": {
+     "depth_chart": {
+      "name": "Caleb Williams",
+      "id": "00-0039918",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "last_game_starter": {
+      "name": "T.Bagent",
+      "id": "00-0038416",
+      "week": 5,
+      "game_id": "2026_05_CHI_GB"
+     },
+     "why": "nflverse games.csv names Tyson Bagent and nflverse depth charts lists Caleb Williams; the last game's first dropback does not corroborate the depth chart — unresolved, the projection may not be priced"
+    }
+   },
+   "starter_check": {
+    "home": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Michael Penix Jr.",
+      "id": "00-0039917"
+     },
+     "depth_chart": {
+      "name": "Michael Penix Jr.",
+      "id": "00-0039917",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    },
+    "away": {
+     "status": "CONFLICT",
+     "priced": "SCHEDULE_FEED",
+     "schedule_feed": {
+      "name": "Tyson Bagent",
+      "id": "00-0038416"
+     },
+     "depth_chart": {
+      "name": "Caleb Williams",
+      "id": "00-0039918",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "last_game_starter": {
+      "name": "T.Bagent",
+      "id": "00-0038416",
+      "week": 5,
+      "game_id": "2026_05_CHI_GB"
+     },
+     "why": "nflverse games.csv names Tyson Bagent and nflverse depth charts lists Caleb Williams; the last game's first dropback does not corroborate the depth chart — unresolved, the projection may not be priced"
+    }
    },
    "regime": {
     "home": {
@@ -2673,11 +2801,11 @@
    "fingerprint": "fp_yx4rqh",
    "reference_market": {
     "source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
-    "home_line": 2.5,
-    "home_margin": -2.5,
-    "total": 50.5,
-    "home_ml": 130,
-    "away_ml": -155,
+    "home_line": 1.5,
+    "home_margin": -1.5,
+    "total": 51.5,
+    "home_ml": -105,
+    "away_ml": -115,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -2699,7 +2827,7 @@
     "roof": true,
     "hours": [],
     "source": "trained venue table — indoor venue, no request made",
-    "as_of": "2026-10-14T18:02:19.184Z"
+    "as_of": "2026-10-15T15:58:09.257Z"
    }
   },
   {
@@ -2954,18 +3082,40 @@
     "status": "SCHEDULE_FEED"
    },
    "away_starter": {
-    "player_name": "Tyler Huntley",
-    "player_id": "00-0035993",
-    "source": "injury report (football/injuries/nfl_<season>.json) over the nflverse schedule feed",
-    "status": "INJURY_REPORT_REPLACEMENT_PENDING",
-    "scheduled": {
-     "player_name": "Lamar Jackson",
-     "player_id": "00-0034796",
-     "status": "Out",
-     "injury": "Ankle",
-     "report_week": 5
+    "player_name": "Lamar Jackson",
+    "player_id": "00-0034796",
+    "source": "nflverse games.csv",
+    "status": "SCHEDULE_FEED"
+   },
+   "starter_check": {
+    "home": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Deshaun Watson",
+      "id": "00-0033537"
+     },
+     "depth_chart": {
+      "name": "Deshaun Watson",
+      "id": "00-0033537",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
     },
-    "basis": "1 start in 2026"
+    "away": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Lamar Jackson",
+      "id": "00-0034796"
+     },
+     "depth_chart": {
+      "name": "Lamar Jackson",
+      "id": "00-0034796",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    }
    },
    "regime": {
     "home": {
@@ -2982,27 +3132,27 @@
     "away": {
      "team": "BAL",
      "hc_new": true,
-     "qb_new": true,
-     "qb_out": true,
+     "qb_new": false,
+     "qb_out": false,
      "active": true,
      "regular_starter": "Lamar Jackson",
      "regular_tied": false,
      "last_season_starter": "Lamar Jackson",
-     "adjustment_pts": -3.69
+     "adjustment_pts": -1.49
     },
     "promoted": false,
     "version": "nfl_regime_v1"
    },
    "model_status": "PREDICTED",
    "model_reason": null,
-   "model_home_margin": -4.71,
-   "model_home_line": 4.71,
+   "model_home_margin": -4.95,
+   "model_home_line": 4.95,
    "model_fair_total": 41.23,
-   "model_home_win_prob": 0.3298,
-   "model_fair_home_ml": 203,
-   "model_fair_away_ml": -203,
+   "model_home_win_prob": 0.3218,
+   "model_fair_home_ml": 211,
+   "model_fair_away_ml": -211,
    "outcome_range": {
-    "p10": -23,
+    "p10": -24,
     "p50": -5,
     "p90": 10,
     "sigma": 10.7,
@@ -3038,8 +3188,8 @@
      },
      {
       "key": "qb_adj_diff",
-      "value": -0.0413,
-      "points": -0.24
+      "value": -0.083,
+      "points": -0.47
      },
      {
       "key": "rest_diff",
@@ -3131,7 +3281,7 @@
      "net_epa": -0.1551565989406663,
      "net_pass": -0.09718094362488647,
      "net_rush": -0.265763747737893,
-     "qb_adj_diff": -0.04128140116279068,
+     "qb_adj_diff": -0.08295458664666164,
      "rest_diff": 0,
      "div_game": 1
     },
@@ -3169,265 +3319,263 @@
    },
    "scenarios": {
     "home_qb_out": {
-     "home_line": 4.18,
+     "home_line": 4.42,
      "delta_home_line": -0.54,
      "total": 41.23,
-     "home_win_prob": 0.3481,
+     "home_win_prob": 0.3399,
      "basis": "engine re-run with home_qb_id = null: the replacement carries the club’s carried quarterback level, exactly what the engine does live when the feed names no starter",
      "source": "football/nfl/slate.json (engine re-run, one input changed)"
     },
     "away_qb_out": {
      "home_line": 5.01,
-     "delta_home_line": 0.3,
+     "delta_home_line": 0.06,
      "total": 41.23,
      "home_win_prob": 0.3197,
      "basis": "engine re-run with away_qb_id = null: the replacement carries the club’s carried quarterback level",
      "source": "football/nfl/slate.json (engine re-run, one input changed)"
     },
     "home_short_week": {
-     "home_line": 5.64,
+     "home_line": 5.87,
      "delta_home_line": 0.92,
      "total": 41.23,
-     "home_win_prob": 0.2991,
+     "home_win_prob": 0.2915,
      "basis": "engine re-run with home_rest = 4",
      "source": "football/nfl/slate.json (engine re-run, one input changed)"
     },
     "away_short_week": {
-     "home_line": 4.51,
+     "home_line": 4.75,
      "delta_home_line": -0.21,
      "total": 41.23,
-     "home_win_prob": 0.3368,
+     "home_win_prob": 0.3287,
      "basis": "engine re-run with away_rest = 4",
      "source": "football/nfl/slate.json (engine re-run, one input changed)"
     },
     "dome": {
-     "home_line": 5.58,
+     "home_line": 5.82,
      "delta_home_line": 0.87,
      "total": 42.91,
-     "home_win_prob": 0.301,
+     "home_win_prob": 0.2933,
      "basis": "engine re-run with roof = dome (weather inputs ignored)",
      "source": "football/nfl/slate.json (engine re-run, one input changed)"
     },
     "cold_windy": {
-     "home_line": 4.71,
+     "home_line": 4.95,
      "delta_home_line": 0,
      "total": 37.27,
-     "home_win_prob": 0.3298,
+     "home_win_prob": 0.3218,
      "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
      "source": "football/nfl/slate.json (engine re-run, one input changed)"
     }
    },
    "cover_curve": [
     {
+     "home_line": 12,
+     "win": 0.6908,
+     "push": 0.0103,
+     "lose": 0.2989,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
      "home_line": 11.5,
-     "win": 0.6965,
+     "win": 0.6908,
      "push": 0,
-     "lose": 0.3035,
+     "lose": 0.3092,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 11,
-     "win": 0.6786,
-     "push": 0.0179,
-     "lose": 0.3035,
+     "win": 0.6728,
+     "push": 0.018,
+     "lose": 0.3092,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 10.5,
-     "win": 0.6786,
+     "win": 0.6728,
      "push": 0,
-     "lose": 0.3214,
+     "lose": 0.3272,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 10,
-     "win": 0.6409,
-     "push": 0.0377,
-     "lose": 0.3214,
+     "win": 0.6354,
+     "push": 0.0373,
+     "lose": 0.3272,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 9.5,
-     "win": 0.6409,
+     "win": 0.6354,
      "push": 0,
-     "lose": 0.3591,
+     "lose": 0.3646,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 9,
-     "win": 0.6334,
+     "win": 0.6279,
      "push": 0.0075,
-     "lose": 0.3591,
+     "lose": 0.3646,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 8.5,
-     "win": 0.6334,
+     "win": 0.6279,
      "push": 0,
-     "lose": 0.3666,
+     "lose": 0.3721,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 8,
-     "win": 0.609,
-     "push": 0.0243,
-     "lose": 0.3666,
+     "win": 0.6033,
+     "push": 0.0247,
+     "lose": 0.3721,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 7.5,
-     "win": 0.609,
+     "win": 0.6033,
      "push": 0,
-     "lose": 0.391,
+     "lose": 0.3967,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 7,
-     "win": 0.5535,
-     "push": 0.0555,
-     "lose": 0.391,
+     "win": 0.5476,
+     "push": 0.0556,
+     "lose": 0.3967,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 6.5,
-     "win": 0.5535,
+     "win": 0.5476,
      "push": 0,
-     "lose": 0.4465,
+     "lose": 0.4524,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 6,
-     "win": 0.5178,
-     "push": 0.0357,
-     "lose": 0.4465,
+     "win": 0.5122,
+     "push": 0.0354,
+     "lose": 0.4524,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 5.5,
-     "win": 0.5178,
+     "win": 0.5122,
      "push": 0,
-     "lose": 0.4822,
+     "lose": 0.4878,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 5,
-     "win": 0.4951,
-     "push": 0.0227,
-     "lose": 0.4822,
+     "win": 0.49,
+     "push": 0.0223,
+     "lose": 0.4878,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 4.5,
-     "win": 0.4951,
+     "win": 0.49,
      "push": 0,
-     "lose": 0.5049,
+     "lose": 0.51,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 4,
-     "win": 0.4599,
-     "push": 0.0352,
-     "lose": 0.5049,
+     "win": 0.4546,
+     "push": 0.0353,
+     "lose": 0.51,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 3.5,
-     "win": 0.4599,
+     "win": 0.4546,
      "push": 0,
-     "lose": 0.5401,
+     "lose": 0.5454,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 3,
-     "win": 0.3692,
-     "push": 0.0907,
-     "lose": 0.5401,
+     "win": 0.3632,
+     "push": 0.0915,
+     "lose": 0.5454,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 2.5,
-     "win": 0.3692,
+     "win": 0.3632,
      "push": 0,
-     "lose": 0.6308,
+     "lose": 0.6368,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 2,
-     "win": 0.3466,
+     "win": 0.3406,
      "push": 0.0226,
-     "lose": 0.6308,
+     "lose": 0.6368,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 1.5,
-     "win": 0.3466,
+     "win": 0.3406,
      "push": 0,
-     "lose": 0.6534,
+     "lose": 0.6594,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 1,
-     "win": 0.3237,
-     "push": 0.0229,
-     "lose": 0.6534,
+     "win": 0.3174,
+     "push": 0.0232,
+     "lose": 0.6594,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 0.5,
-     "win": 0.3237,
+     "win": 0.3174,
      "push": 0,
-     "lose": 0.6763,
+     "lose": 0.6826,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": 0,
-     "win": 0.3202,
-     "push": 0.0034,
-     "lose": 0.6763,
+     "win": 0.3139,
+     "push": 0.0035,
+     "lose": 0.6826,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": -0.5,
-     "win": 0.3202,
+     "win": 0.3139,
      "push": 0,
-     "lose": 0.6798,
+     "lose": 0.6861,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": -1,
-     "win": 0.3026,
-     "push": 0.0176,
-     "lose": 0.6798,
+     "win": 0.2965,
+     "push": 0.0174,
+     "lose": 0.6861,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": -1.5,
-     "win": 0.3026,
+     "win": 0.2965,
      "push": 0,
-     "lose": 0.6974,
+     "lose": 0.7035,
      "basis": "margin_pmf_by_spread"
     },
     {
      "home_line": -2,
-     "win": 0.2836,
-     "push": 0.019,
-     "lose": 0.6974,
-     "basis": "margin_pmf_by_spread"
-    },
-    {
-     "home_line": -2.5,
-     "win": 0.2836,
-     "push": 0,
-     "lose": 0.7164,
+     "win": 0.2776,
+     "push": 0.0189,
+     "lose": 0.7035,
      "basis": "margin_pmf_by_spread"
     }
    ],
    "data_quality": {
     "status": "OK",
     "missing": [],
-    "warnings": [
-     "BAL starter: Lamar Jackson is OUT (Ankle) on the week-5 injury report and the week-6 report is not filed yet (pending); priced with Tyler Huntley (1 start in 2026), not the schedule feed’s pre-filled starter."
-    ]
+    "warnings": []
    },
    "qb_known": {
     "home": true,
@@ -3435,7 +3583,7 @@
    },
    "model_version": "edgedesk_football_v1.0.0",
    "feature_version": "nfl_fv1",
-   "fingerprint": "fp_4nmv6w",
+   "fingerprint": "fp_112hznm",
    "reference_market": {
     "source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "home_line": 5.5,
@@ -3457,21 +3605,21 @@
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
    },
    "forecast": {
-    "temp_f": 58.4,
-    "wind_mph": 10.5,
+    "temp_f": 58,
+    "wind_mph": 10.7,
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-10-14T18:02:19.386Z",
+    "as_of": "2026-10-15T15:58:10.024Z",
     "kickoff_local": "2026-10-18T13:00",
     "kickoff_label": "1 PM",
     "timezone": "America/New_York",
     "tz_abbrev": "GMT-4",
     "utc_offset_seconds": -14400,
-    "feels_f": 51.1,
-    "humidity_pct": 39,
-    "gust_mph": 16.1,
-    "precip_pct": 1,
+    "feels_f": 50.4,
+    "humidity_pct": 37,
+    "gust_mph": 15.4,
+    "precip_pct": 0,
     "code": 0,
     "text": "Clear",
     "icon": "☀️",
@@ -3483,14 +3631,14 @@
       "local": "2026-10-18T13:00",
       "at": "2026-10-18T17:00:00.000Z",
       "label": "1 PM",
-      "temp_f": 58.4,
-      "feels_f": 51.1,
+      "temp_f": 58,
+      "feels_f": 50.4,
       "precip_in": 0,
-      "precip_pct": 1,
-      "humidity_pct": 39,
-      "wind_mph": 10.5,
-      "gust_mph": 16.1,
-      "wind_dir_deg": 214,
+      "precip_pct": 0,
+      "humidity_pct": 37,
+      "wind_mph": 10.7,
+      "gust_mph": 15.4,
+      "wind_dir_deg": 206,
       "wind_from": "SW",
       "wind_arrow": "↗",
       "code": 0,
@@ -3503,13 +3651,13 @@
       "at": "2026-10-18T18:00:00.000Z",
       "label": "2 PM",
       "temp_f": 60.4,
-      "feels_f": 53.2,
+      "feels_f": 52.8,
       "precip_in": 0,
-      "precip_pct": 1,
-      "humidity_pct": 36,
-      "wind_mph": 10.4,
-      "gust_mph": 16.1,
-      "wind_dir_deg": 213,
+      "precip_pct": 0,
+      "humidity_pct": 34,
+      "wind_mph": 10.8,
+      "gust_mph": 15.2,
+      "wind_dir_deg": 207,
       "wind_from": "SW",
       "wind_arrow": "↗",
       "code": 0,
@@ -3522,13 +3670,13 @@
       "at": "2026-10-18T19:00:00.000Z",
       "label": "3 PM",
       "temp_f": 61.8,
-      "feels_f": 54.2,
+      "feels_f": 53.8,
       "precip_in": 0,
-      "precip_pct": 1,
-      "humidity_pct": 35,
-      "wind_mph": 10.4,
-      "gust_mph": 15.9,
-      "wind_dir_deg": 211,
+      "precip_pct": 0,
+      "humidity_pct": 33,
+      "wind_mph": 10.8,
+      "gust_mph": 15,
+      "wind_dir_deg": 204,
       "wind_from": "SW",
       "wind_arrow": "↗",
       "code": 0,
@@ -3541,15 +3689,15 @@
       "at": "2026-10-18T20:00:00.000Z",
       "label": "4 PM",
       "temp_f": 62.5,
-      "feels_f": 54.4,
+      "feels_f": 54.3,
       "precip_in": 0,
-      "precip_pct": 1,
-      "humidity_pct": 35,
-      "wind_mph": 11.1,
-      "gust_mph": 16.1,
-      "wind_dir_deg": 208,
-      "wind_from": "SW",
-      "wind_arrow": "↗",
+      "precip_pct": 0,
+      "humidity_pct": 33,
+      "wind_mph": 10.8,
+      "gust_mph": 14.5,
+      "wind_dir_deg": 201,
+      "wind_from": "S",
+      "wind_arrow": "↑",
       "code": 0,
       "text": "Clear",
       "icon": "☀️",
@@ -3810,6 +3958,36 @@
     "player_id": "00-0040676",
     "source": "nflverse games.csv",
     "status": "SCHEDULE_FEED"
+   },
+   "starter_check": {
+    "home": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Daniel Jones",
+      "id": "00-0035710"
+     },
+     "depth_chart": {
+      "name": "Daniel Jones",
+      "id": "00-0035710",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    },
+    "away": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Cam Ward",
+      "id": "00-0040676"
+     },
+     "depth_chart": {
+      "name": "Cam Ward",
+      "id": "00-0040676",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    }
    },
    "regime": {
     "home": {
@@ -4283,8 +4461,8 @@
     "home_line": -7,
     "home_margin": 7,
     "total": 44.5,
-    "home_ml": -325,
-    "away_ml": 260,
+    "home_ml": -355,
+    "away_ml": 280,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -4306,7 +4484,7 @@
     "roof": true,
     "hours": [],
     "source": "trained venue table — indoor venue, no request made",
-    "as_of": "2026-10-14T18:02:19.184Z"
+    "as_of": "2026-10-15T15:58:09.257Z"
    }
   },
   {
@@ -4557,6 +4735,36 @@
     "player_id": "00-0030565",
     "source": "nflverse games.csv",
     "status": "SCHEDULE_FEED"
+   },
+   "starter_check": {
+    "home": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Drake Maye",
+      "id": "00-0039851"
+     },
+     "depth_chart": {
+      "name": "Drake Maye",
+      "id": "00-0039851",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    },
+    "away": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Geno Smith",
+      "id": "00-0030565"
+     },
+     "depth_chart": {
+      "name": "Geno Smith",
+      "id": "00-0030565",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    }
    },
    "regime": {
     "home": {
@@ -5046,21 +5254,21 @@
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
    },
    "forecast": {
-    "temp_f": 56,
-    "wind_mph": 9.2,
+    "temp_f": 55.8,
+    "wind_mph": 8.2,
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-10-14T18:02:19.388Z",
+    "as_of": "2026-10-15T15:58:10.001Z",
     "kickoff_local": "2026-10-18T13:00",
     "kickoff_label": "1 PM",
     "timezone": "America/New_York",
     "tz_abbrev": "GMT-4",
     "utc_offset_seconds": -14400,
     "feels_f": 49.7,
-    "humidity_pct": 46,
-    "gust_mph": 14.3,
-    "precip_pct": 1,
+    "humidity_pct": 43,
+    "gust_mph": 11.4,
+    "precip_pct": 0,
     "code": 0,
     "text": "Clear",
     "icon": "☀️",
@@ -5072,14 +5280,14 @@
       "local": "2026-10-18T13:00",
       "at": "2026-10-18T17:00:00.000Z",
       "label": "1 PM",
-      "temp_f": 56,
+      "temp_f": 55.8,
       "feels_f": 49.7,
       "precip_in": 0,
-      "precip_pct": 1,
-      "humidity_pct": 46,
-      "wind_mph": 9.2,
-      "gust_mph": 14.3,
-      "wind_dir_deg": 274,
+      "precip_pct": 0,
+      "humidity_pct": 43,
+      "wind_mph": 8.2,
+      "gust_mph": 11.4,
+      "wind_dir_deg": 261,
       "wind_from": "W",
       "wind_arrow": "→",
       "code": 0,
@@ -5091,14 +5299,14 @@
       "local": "2026-10-18T14:00",
       "at": "2026-10-18T18:00:00.000Z",
       "label": "2 PM",
-      "temp_f": 56.6,
-      "feels_f": 49.7,
+      "temp_f": 56.4,
+      "feels_f": 49.4,
       "precip_in": 0,
-      "precip_pct": 1,
-      "humidity_pct": 45,
-      "wind_mph": 9.9,
-      "gust_mph": 14.3,
-      "wind_dir_deg": 276,
+      "precip_pct": 0,
+      "humidity_pct": 42,
+      "wind_mph": 9.4,
+      "gust_mph": 12.3,
+      "wind_dir_deg": 266,
       "wind_from": "W",
       "wind_arrow": "→",
       "code": 0,
@@ -5110,33 +5318,33 @@
       "local": "2026-10-18T15:00",
       "at": "2026-10-18T19:00:00.000Z",
       "label": "3 PM",
-      "temp_f": 56.7,
-      "feels_f": 49.5,
+      "temp_f": 56.6,
+      "feels_f": 49.1,
       "precip_in": 0,
       "precip_pct": 1,
-      "humidity_pct": 43,
-      "wind_mph": 9,
-      "gust_mph": 13.9,
-      "wind_dir_deg": 266,
+      "humidity_pct": 42,
+      "wind_mph": 9.1,
+      "gust_mph": 13.2,
+      "wind_dir_deg": 259,
       "wind_from": "W",
       "wind_arrow": "→",
-      "code": 0,
-      "text": "Clear",
-      "icon": "☀️",
+      "code": 1,
+      "text": "Mostly clear",
+      "icon": "🌤️",
       "is_day": 1
      },
      {
       "local": "2026-10-18T16:00",
       "at": "2026-10-18T20:00:00.000Z",
       "label": "4 PM",
-      "temp_f": 57.1,
-      "feels_f": 51,
+      "temp_f": 56.7,
+      "feels_f": 50.5,
       "precip_in": 0,
       "precip_pct": 1,
-      "humidity_pct": 46,
-      "wind_mph": 7.1,
-      "gust_mph": 14.5,
-      "wind_dir_deg": 257,
+      "humidity_pct": 45,
+      "wind_mph": 7.2,
+      "gust_mph": 14.1,
+      "wind_dir_deg": 256,
       "wind_from": "W",
       "wind_arrow": "→",
       "code": 0,
@@ -5399,6 +5607,36 @@
     "player_id": "00-0040743",
     "source": "nflverse games.csv",
     "status": "SCHEDULE_FEED"
+   },
+   "starter_check": {
+    "home": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Jameis Winston",
+      "id": "00-0031503"
+     },
+     "depth_chart": {
+      "name": "Jameis Winston",
+      "id": "00-0031503",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    },
+    "away": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Tyler Shough",
+      "id": "00-0040743"
+     },
+     "depth_chart": {
+      "name": "Tyler Shough",
+      "id": "00-0040743",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    }
    },
    "regime": {
     "home": {
@@ -5872,8 +6110,8 @@
     "home_line": 1.5,
     "home_margin": -1.5,
     "total": 45.5,
-    "home_ml": -102,
-    "away_ml": -118,
+    "home_ml": -108,
+    "away_ml": -112,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -5888,20 +6126,20 @@
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
    },
    "forecast": {
-    "temp_f": 59.2,
-    "wind_mph": 7.8,
+    "temp_f": 58.3,
+    "wind_mph": 6.4,
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-10-14T18:02:19.397Z",
+    "as_of": "2026-10-15T15:58:10.073Z",
     "kickoff_local": "2026-10-18T13:00",
     "kickoff_label": "1 PM",
     "timezone": "America/New_York",
     "tz_abbrev": "GMT-4",
     "utc_offset_seconds": -14400,
-    "feels_f": 52.8,
-    "humidity_pct": 32,
-    "gust_mph": 10.7,
+    "feels_f": 51.7,
+    "humidity_pct": 25,
+    "gust_mph": 8.9,
     "precip_pct": 1,
     "code": 0,
     "text": "Clear",
@@ -5914,14 +6152,14 @@
       "local": "2026-10-18T13:00",
       "at": "2026-10-18T17:00:00.000Z",
       "label": "1 PM",
-      "temp_f": 59.2,
-      "feels_f": 52.8,
+      "temp_f": 58.3,
+      "feels_f": 51.7,
       "precip_in": 0,
       "precip_pct": 1,
-      "humidity_pct": 32,
-      "wind_mph": 7.8,
-      "gust_mph": 10.7,
-      "wind_dir_deg": 258,
+      "humidity_pct": 25,
+      "wind_mph": 6.4,
+      "gust_mph": 8.9,
+      "wind_dir_deg": 252,
       "wind_from": "W",
       "wind_arrow": "→",
       "code": 0,
@@ -5933,16 +6171,16 @@
       "local": "2026-10-18T14:00",
       "at": "2026-10-18T18:00:00.000Z",
       "label": "2 PM",
-      "temp_f": 61,
-      "feels_f": 54.3,
+      "temp_f": 60.2,
+      "feels_f": 53,
       "precip_in": 0,
       "precip_pct": 1,
-      "humidity_pct": 30,
-      "wind_mph": 8,
-      "gust_mph": 12.1,
-      "wind_dir_deg": 259,
-      "wind_from": "W",
-      "wind_arrow": "→",
+      "humidity_pct": 24,
+      "wind_mph": 7.7,
+      "gust_mph": 10.3,
+      "wind_dir_deg": 244,
+      "wind_from": "SW",
+      "wind_arrow": "↗",
       "code": 0,
       "text": "Clear",
       "icon": "☀️",
@@ -5952,14 +6190,14 @@
       "local": "2026-10-18T15:00",
       "at": "2026-10-18T19:00:00.000Z",
       "label": "3 PM",
-      "temp_f": 61.9,
-      "feels_f": 54.2,
+      "temp_f": 61.1,
+      "feels_f": 53.1,
       "precip_in": 0,
       "precip_pct": 1,
-      "humidity_pct": 28,
-      "wind_mph": 8.2,
-      "gust_mph": 12.3,
-      "wind_dir_deg": 257,
+      "humidity_pct": 24,
+      "wind_mph": 7.8,
+      "gust_mph": 10.5,
+      "wind_dir_deg": 252,
       "wind_from": "W",
       "wind_arrow": "→",
       "code": 0,
@@ -5971,14 +6209,14 @@
       "local": "2026-10-18T16:00",
       "at": "2026-10-18T20:00:00.000Z",
       "label": "4 PM",
-      "temp_f": 61.7,
-      "feels_f": 53.8,
+      "temp_f": 61.3,
+      "feels_f": 53,
       "precip_in": 0,
       "precip_pct": 1,
-      "humidity_pct": 28,
-      "wind_mph": 8.2,
-      "gust_mph": 12.3,
-      "wind_dir_deg": 257,
+      "humidity_pct": 25,
+      "wind_mph": 8.4,
+      "gust_mph": 10.5,
+      "wind_dir_deg": 253,
       "wind_from": "W",
       "wind_arrow": "→",
       "code": 0,
@@ -6237,6 +6475,36 @@
     "player_id": "00-0039150",
     "source": "nflverse games.csv",
     "status": "SCHEDULE_FEED"
+   },
+   "starter_check": {
+    "home": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Jalen Hurts",
+      "id": "00-0036389"
+     },
+     "depth_chart": {
+      "name": "Jalen Hurts",
+      "id": "00-0036389",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    },
+    "away": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Bryce Young",
+      "id": "00-0039150"
+     },
+     "depth_chart": {
+      "name": "Bryce Young",
+      "id": "00-0039150",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    }
    },
    "regime": {
     "home": {
@@ -6710,8 +6978,8 @@
     "home_line": 1.5,
     "home_margin": -1.5,
     "total": 40.5,
-    "home_ml": -110,
-    "away_ml": -110,
+    "home_ml": -105,
+    "away_ml": -115,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -6726,20 +6994,20 @@
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
    },
    "forecast": {
-    "temp_f": 58.8,
-    "wind_mph": 5.2,
+    "temp_f": 58.1,
+    "wind_mph": 4.5,
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-10-14T18:02:19.480Z",
+    "as_of": "2026-10-15T15:58:10.163Z",
     "kickoff_local": "2026-10-18T13:00",
     "kickoff_label": "1 PM",
     "timezone": "America/New_York",
     "tz_abbrev": "GMT-4",
     "utc_offset_seconds": -14400,
-    "feels_f": 53.1,
-    "humidity_pct": 26,
-    "gust_mph": 7.8,
+    "feels_f": 52.5,
+    "humidity_pct": 25,
+    "gust_mph": 5.6,
     "precip_pct": 1,
     "code": 0,
     "text": "Clear",
@@ -6752,14 +7020,14 @@
       "local": "2026-10-18T13:00",
       "at": "2026-10-18T17:00:00.000Z",
       "label": "1 PM",
-      "temp_f": 58.8,
-      "feels_f": 53.1,
+      "temp_f": 58.1,
+      "feels_f": 52.5,
       "precip_in": 0,
       "precip_pct": 1,
-      "humidity_pct": 26,
-      "wind_mph": 5.2,
-      "gust_mph": 7.8,
-      "wind_dir_deg": 260,
+      "humidity_pct": 25,
+      "wind_mph": 4.5,
+      "gust_mph": 5.6,
+      "wind_dir_deg": 252,
       "wind_from": "W",
       "wind_arrow": "→",
       "code": 0,
@@ -6771,14 +7039,14 @@
       "local": "2026-10-18T14:00",
       "at": "2026-10-18T18:00:00.000Z",
       "label": "2 PM",
-      "temp_f": 60.2,
-      "feels_f": 54.2,
+      "temp_f": 59.5,
+      "feels_f": 53.6,
       "precip_in": 0,
       "precip_pct": 1,
-      "humidity_pct": 25,
-      "wind_mph": 5.7,
-      "gust_mph": 8.1,
-      "wind_dir_deg": 252,
+      "humidity_pct": 24,
+      "wind_mph": 5,
+      "gust_mph": 6,
+      "wind_dir_deg": 249,
       "wind_from": "W",
       "wind_arrow": "→",
       "code": 0,
@@ -6790,14 +7058,14 @@
       "local": "2026-10-18T15:00",
       "at": "2026-10-18T19:00:00.000Z",
       "label": "3 PM",
-      "temp_f": 61.1,
-      "feels_f": 54.2,
+      "temp_f": 60.2,
+      "feels_f": 53.6,
       "precip_in": 0,
       "precip_pct": 1,
       "humidity_pct": 25,
-      "wind_mph": 6,
-      "gust_mph": 8.5,
-      "wind_dir_deg": 243,
+      "wind_mph": 5.1,
+      "gust_mph": 6,
+      "wind_dir_deg": 247,
       "wind_from": "SW",
       "wind_arrow": "↗",
       "code": 0,
@@ -6809,14 +7077,14 @@
       "local": "2026-10-18T16:00",
       "at": "2026-10-18T20:00:00.000Z",
       "label": "4 PM",
-      "temp_f": 61.1,
-      "feels_f": 53.8,
+      "temp_f": 60.4,
+      "feels_f": 53.2,
       "precip_in": 0,
       "precip_pct": 1,
       "humidity_pct": 26,
-      "wind_mph": 6.3,
-      "gust_mph": 8.9,
-      "wind_dir_deg": 238,
+      "wind_mph": 5.7,
+      "gust_mph": 6.5,
+      "wind_dir_deg": 239,
       "wind_from": "SW",
       "wind_arrow": "↗",
       "code": 0,
@@ -7072,13 +7340,67 @@
     "player_name": "Jalon Daniels",
     "player_id": "00-0041251",
     "source": "nflverse games.csv",
-    "status": "SCHEDULE_FEED"
+    "status": "SCHEDULE_FEED_CONFLICT",
+    "conflict": {
+     "depth_chart": {
+      "name": "Baker Mayfield",
+      "id": "00-0034855",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "last_game_starter": {
+      "name": "J.Daniels",
+      "id": "00-0041251",
+      "week": 5,
+      "game_id": "2026_05_TB_DAL"
+     },
+     "why": "nflverse games.csv names Jalon Daniels and nflverse depth charts lists Baker Mayfield; the last game's first dropback does not corroborate the depth chart — unresolved, the projection may not be priced"
+    }
    },
    "away_starter": {
     "player_name": "Aaron Rodgers",
     "player_id": "00-0023459",
     "source": "nflverse games.csv",
     "status": "SCHEDULE_FEED"
+   },
+   "starter_check": {
+    "home": {
+     "status": "CONFLICT",
+     "priced": "SCHEDULE_FEED",
+     "schedule_feed": {
+      "name": "Jalon Daniels",
+      "id": "00-0041251"
+     },
+     "depth_chart": {
+      "name": "Baker Mayfield",
+      "id": "00-0034855",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "last_game_starter": {
+      "name": "J.Daniels",
+      "id": "00-0041251",
+      "week": 5,
+      "game_id": "2026_05_TB_DAL"
+     },
+     "why": "nflverse games.csv names Jalon Daniels and nflverse depth charts lists Baker Mayfield; the last game's first dropback does not corroborate the depth chart — unresolved, the projection may not be priced"
+    },
+    "away": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Aaron Rodgers",
+      "id": "00-0023459"
+     },
+     "depth_chart": {
+      "name": "Aaron Rodgers",
+      "id": "00-0023459",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    }
    },
    "regime": {
     "home": {
@@ -7568,21 +7890,21 @@
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
    },
    "forecast": {
-    "temp_f": 78.9,
-    "wind_mph": 22,
+    "temp_f": 80.2,
+    "wind_mph": 19.5,
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-10-14T18:02:19.481Z",
+    "as_of": "2026-10-15T15:58:10.241Z",
     "kickoff_local": "2026-10-18T13:00",
     "kickoff_label": "1 PM",
     "timezone": "America/New_York",
     "tz_abbrev": "GMT-4",
     "utc_offset_seconds": -14400,
-    "feels_f": 74.8,
-    "humidity_pct": 61,
-    "gust_mph": 28,
-    "precip_pct": 8,
+    "feels_f": 75.3,
+    "humidity_pct": 50,
+    "gust_mph": 23.9,
+    "precip_pct": 1,
     "code": 3,
     "text": "Overcast",
     "icon": "☁️",
@@ -7594,13 +7916,13 @@
       "local": "2026-10-18T13:00",
       "at": "2026-10-18T17:00:00.000Z",
       "label": "1 PM",
-      "temp_f": 78.9,
-      "feels_f": 74.8,
+      "temp_f": 80.2,
+      "feels_f": 75.3,
       "precip_in": 0,
-      "precip_pct": 8,
-      "humidity_pct": 61,
-      "wind_mph": 22,
-      "gust_mph": 28,
+      "precip_pct": 1,
+      "humidity_pct": 50,
+      "wind_mph": 19.5,
+      "gust_mph": 23.9,
       "wind_dir_deg": 62,
       "wind_from": "NE",
       "wind_arrow": "↙",
@@ -7613,14 +7935,33 @@
       "local": "2026-10-18T14:00",
       "at": "2026-10-18T18:00:00.000Z",
       "label": "2 PM",
-      "temp_f": 78.6,
-      "feels_f": 74.4,
+      "temp_f": 80.7,
+      "feels_f": 76.5,
       "precip_in": 0,
-      "precip_pct": 8,
-      "humidity_pct": 60,
-      "wind_mph": 21.2,
-      "gust_mph": 26.2,
-      "wind_dir_deg": 64,
+      "precip_pct": 1,
+      "humidity_pct": 51,
+      "wind_mph": 19.2,
+      "gust_mph": 23.5,
+      "wind_dir_deg": 67,
+      "wind_from": "NE",
+      "wind_arrow": "↙",
+      "code": 2,
+      "text": "Partly cloudy",
+      "icon": "⛅",
+      "is_day": 1
+     },
+     {
+      "local": "2026-10-18T15:00",
+      "at": "2026-10-18T19:00:00.000Z",
+      "label": "3 PM",
+      "temp_f": 80.9,
+      "feels_f": 76.1,
+      "precip_in": 0,
+      "precip_pct": 2,
+      "humidity_pct": 50,
+      "wind_mph": 19.8,
+      "gust_mph": 24.4,
+      "wind_dir_deg": 60,
       "wind_from": "NE",
       "wind_arrow": "↙",
       "code": 3,
@@ -7629,41 +7970,22 @@
       "is_day": 1
      },
      {
-      "local": "2026-10-18T15:00",
-      "at": "2026-10-18T19:00:00.000Z",
-      "label": "3 PM",
-      "temp_f": 79.6,
-      "feels_f": 75.1,
-      "precip_in": 0,
-      "precip_pct": 15,
-      "humidity_pct": 56,
-      "wind_mph": 21.2,
-      "gust_mph": 25.5,
-      "wind_dir_deg": 65,
-      "wind_from": "NE",
-      "wind_arrow": "↙",
-      "code": 2,
-      "text": "Partly cloudy",
-      "icon": "⛅",
-      "is_day": 1
-     },
-     {
       "local": "2026-10-18T16:00",
       "at": "2026-10-18T20:00:00.000Z",
       "label": "4 PM",
-      "temp_f": 80.2,
-      "feels_f": 76.2,
+      "temp_f": 78.9,
+      "feels_f": 74.6,
       "precip_in": 0,
-      "precip_pct": 15,
+      "precip_pct": 2,
       "humidity_pct": 54,
-      "wind_mph": 19.8,
-      "gust_mph": 25.3,
-      "wind_dir_deg": 63,
+      "wind_mph": 19.1,
+      "gust_mph": 23.7,
+      "wind_dir_deg": 54,
       "wind_from": "NE",
       "wind_arrow": "↙",
-      "code": 2,
-      "text": "Partly cloudy",
-      "icon": "⛅",
+      "code": 3,
+      "text": "Overcast",
+      "icon": "☁️",
       "is_day": 1
      }
     ]
@@ -7917,6 +8239,36 @@
     "player_id": "00-0033119",
     "source": "nflverse games.csv",
     "status": "SCHEDULE_FEED"
+   },
+   "starter_check": {
+    "home": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Matthew Stafford",
+      "id": "00-0026498"
+     },
+     "depth_chart": {
+      "name": "Matthew Stafford",
+      "id": "00-0026498",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    },
+    "away": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Jacoby Brissett",
+      "id": "00-0033119"
+     },
+     "depth_chart": {
+      "name": "Jacoby Brissett",
+      "id": "00-0033119",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    }
    },
    "regime": {
     "home": {
@@ -8390,8 +8742,8 @@
     "home_line": -12.5,
     "home_margin": 12.5,
     "total": 51.5,
-    "home_ml": -850,
-    "away_ml": 575,
+    "home_ml": -900,
+    "away_ml": 600,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -8413,7 +8765,7 @@
     "roof": true,
     "hours": [],
     "source": "trained venue table — indoor venue, no request made",
-    "as_of": "2026-10-14T18:02:19.184Z"
+    "as_of": "2026-10-15T15:58:09.257Z"
    }
   },
   {
@@ -8664,6 +9016,36 @@
     "player_id": "00-0036355",
     "source": "nflverse games.csv",
     "status": "SCHEDULE_FEED"
+   },
+   "starter_check": {
+    "home": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Patrick Mahomes",
+      "id": "00-0033873"
+     },
+     "depth_chart": {
+      "name": "Patrick Mahomes",
+      "id": "00-0033873",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    },
+    "away": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Justin Herbert",
+      "id": "00-0036355"
+     },
+     "depth_chart": {
+      "name": "Justin Herbert",
+      "id": "00-0036355",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    }
    },
    "regime": {
     "home": {
@@ -9137,8 +9519,8 @@
     "home_line": -8.5,
     "home_margin": 8.5,
     "total": 42.5,
-    "home_ml": -500,
-    "away_ml": 380,
+    "home_ml": -485,
+    "away_ml": 370,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -9153,20 +9535,20 @@
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
    },
    "forecast": {
-    "temp_f": 65.7,
-    "wind_mph": 15.3,
+    "temp_f": 65.3,
+    "wind_mph": 15.1,
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-10-14T18:02:19.485Z",
+    "as_of": "2026-10-15T15:58:10.252Z",
     "kickoff_local": "2026-10-18T15:00",
     "kickoff_label": "3 PM",
     "timezone": "America/Chicago",
     "tz_abbrev": "GMT-5",
     "utc_offset_seconds": -18000,
-    "feels_f": 58,
-    "humidity_pct": 43,
-    "gust_mph": 21,
+    "feels_f": 57,
+    "humidity_pct": 38,
+    "gust_mph": 20.4,
     "precip_pct": 0,
     "code": 0,
     "text": "Clear",
@@ -9179,13 +9561,13 @@
       "local": "2026-10-18T15:00",
       "at": "2026-10-18T20:00:00.000Z",
       "label": "3 PM",
-      "temp_f": 65.7,
-      "feels_f": 58,
+      "temp_f": 65.3,
+      "feels_f": 57,
       "precip_in": 0,
       "precip_pct": 0,
-      "humidity_pct": 43,
-      "wind_mph": 15.3,
-      "gust_mph": 21,
+      "humidity_pct": 38,
+      "wind_mph": 15.1,
+      "gust_mph": 20.4,
       "wind_dir_deg": 198,
       "wind_from": "S",
       "wind_arrow": "↑",
@@ -9198,14 +9580,14 @@
       "local": "2026-10-18T16:00",
       "at": "2026-10-18T21:00:00.000Z",
       "label": "4 PM",
-      "temp_f": 65.7,
-      "feels_f": 57.9,
+      "temp_f": 65.3,
+      "feels_f": 57,
       "precip_in": 0,
       "precip_pct": 0,
-      "humidity_pct": 44,
-      "wind_mph": 14.2,
-      "gust_mph": 21.3,
-      "wind_dir_deg": 196,
+      "humidity_pct": 40,
+      "wind_mph": 14.1,
+      "gust_mph": 20.1,
+      "wind_dir_deg": 195,
       "wind_from": "S",
       "wind_arrow": "↑",
       "code": 0,
@@ -9217,14 +9599,14 @@
       "local": "2026-10-18T17:00",
       "at": "2026-10-18T22:00:00.000Z",
       "label": "5 PM",
-      "temp_f": 64.4,
-      "feels_f": 57.7,
+      "temp_f": 64.1,
+      "feels_f": 56.9,
       "precip_in": 0,
       "precip_pct": 0,
-      "humidity_pct": 48,
-      "wind_mph": 12.4,
-      "gust_mph": 21.7,
-      "wind_dir_deg": 194,
+      "humidity_pct": 44,
+      "wind_mph": 12.1,
+      "gust_mph": 20.6,
+      "wind_dir_deg": 191,
       "wind_from": "S",
       "wind_arrow": "↑",
       "code": 0,
@@ -9236,14 +9618,14 @@
       "local": "2026-10-18T18:00",
       "at": "2026-10-18T23:00:00.000Z",
       "label": "6 PM",
-      "temp_f": 61,
-      "feels_f": 54.8,
+      "temp_f": 60.5,
+      "feels_f": 53.9,
       "precip_in": 0,
       "precip_pct": 0,
-      "humidity_pct": 53,
-      "wind_mph": 10.9,
-      "gust_mph": 22.4,
-      "wind_dir_deg": 191,
+      "humidity_pct": 49,
+      "wind_mph": 10.4,
+      "gust_mph": 21.9,
+      "wind_dir_deg": 189,
       "wind_from": "S",
       "wind_arrow": "↑",
       "code": 0,
@@ -9506,6 +9888,36 @@
     "player_id": "00-0034857",
     "source": "nflverse games.csv",
     "status": "SCHEDULE_FEED"
+   },
+   "starter_check": {
+    "home": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Kirk Cousins",
+      "id": "00-0029604"
+     },
+     "depth_chart": {
+      "name": "Kirk Cousins",
+      "id": "00-0029604",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    },
+    "away": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Josh Allen",
+      "id": "00-0034857"
+     },
+     "depth_chart": {
+      "name": "Josh Allen",
+      "id": "00-0034857",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    }
    },
    "regime": {
     "home": {
@@ -9979,8 +10391,8 @@
     "home_line": 5.5,
     "home_margin": -5.5,
     "total": 53.5,
-    "home_ml": 210,
-    "away_ml": -258,
+    "home_ml": 205,
+    "away_ml": -250,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -10002,7 +10414,7 @@
     "roof": true,
     "hours": [],
     "source": "trained venue table — indoor venue, no request made",
-    "as_of": "2026-10-14T18:02:19.184Z"
+    "as_of": "2026-10-15T15:58:09.257Z"
    }
   },
   {
@@ -10253,6 +10665,36 @@
     "player_id": "00-0033077",
     "source": "nflverse games.csv",
     "status": "SCHEDULE_FEED"
+   },
+   "starter_check": {
+    "home": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Jordan Love",
+      "id": "00-0036264"
+     },
+     "depth_chart": {
+      "name": "Jordan Love",
+      "id": "00-0036264",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    },
+    "away": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Dak Prescott",
+      "id": "00-0033077"
+     },
+     "depth_chart": {
+      "name": "Dak Prescott",
+      "id": "00-0033077",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    }
    },
    "regime": {
     "home": {
@@ -10742,19 +11184,19 @@
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
    },
    "forecast": {
-    "temp_f": 56.3,
-    "wind_mph": 17.8,
+    "temp_f": 54.5,
+    "wind_mph": 15.8,
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-10-14T18:02:19.484Z",
+    "as_of": "2026-10-15T15:58:10.244Z",
     "kickoff_local": "2026-10-18T19:00",
     "kickoff_label": "7 PM",
     "timezone": "America/Chicago",
     "tz_abbrev": "GMT-5",
     "utc_offset_seconds": -18000,
-    "feels_f": 47.2,
-    "humidity_pct": 62,
+    "feels_f": 45.7,
+    "humidity_pct": 60,
     "gust_mph": 34,
     "precip_pct": 0,
     "code": 0,
@@ -10768,14 +11210,14 @@
       "local": "2026-10-18T19:00",
       "at": "2026-10-19T00:00:00.000Z",
       "label": "7 PM",
-      "temp_f": 56.3,
-      "feels_f": 47.2,
+      "temp_f": 54.5,
+      "feels_f": 45.7,
       "precip_in": 0,
       "precip_pct": 0,
-      "humidity_pct": 62,
-      "wind_mph": 17.8,
+      "humidity_pct": 60,
+      "wind_mph": 15.8,
       "gust_mph": 34,
-      "wind_dir_deg": 216,
+      "wind_dir_deg": 215,
       "wind_from": "SW",
       "wind_arrow": "↗",
       "code": 0,
@@ -10787,14 +11229,14 @@
       "local": "2026-10-18T20:00",
       "at": "2026-10-19T01:00:00.000Z",
       "label": "8 PM",
-      "temp_f": 55.1,
-      "feels_f": 46.3,
+      "temp_f": 53.6,
+      "feels_f": 44.5,
       "precip_in": 0,
       "precip_pct": 0,
-      "humidity_pct": 66,
-      "wind_mph": 17,
-      "gust_mph": 36,
-      "wind_dir_deg": 218,
+      "humidity_pct": 62,
+      "wind_mph": 16.3,
+      "gust_mph": 36.2,
+      "wind_dir_deg": 213,
       "wind_from": "SW",
       "wind_arrow": "↗",
       "code": 0,
@@ -10806,18 +11248,18 @@
       "local": "2026-10-18T21:00",
       "at": "2026-10-19T02:00:00.000Z",
       "label": "9 PM",
-      "temp_f": 54.5,
-      "feels_f": 45.9,
+      "temp_f": 52.9,
+      "feels_f": 44.1,
       "precip_in": 0,
       "precip_pct": 0,
-      "humidity_pct": 67,
-      "wind_mph": 16.6,
-      "gust_mph": 37.4,
-      "wind_dir_deg": 222,
+      "humidity_pct": 65,
+      "wind_mph": 16,
+      "gust_mph": 36.7,
+      "wind_dir_deg": 216,
       "wind_from": "SW",
       "wind_arrow": "↗",
-      "code": 1,
-      "text": "Mostly clear",
+      "code": 0,
+      "text": "Clear",
       "icon": "🌙",
       "is_day": 0
      },
@@ -10825,14 +11267,14 @@
       "local": "2026-10-18T22:00",
       "at": "2026-10-19T03:00:00.000Z",
       "label": "10 PM",
-      "temp_f": 53.8,
-      "feels_f": 45.6,
+      "temp_f": 52.4,
+      "feels_f": 43.8,
       "precip_in": 0,
       "precip_pct": 0,
-      "humidity_pct": 68,
-      "wind_mph": 15.5,
-      "gust_mph": 38,
-      "wind_dir_deg": 225,
+      "humidity_pct": 66,
+      "wind_mph": 15.3,
+      "gust_mph": 37.1,
+      "wind_dir_deg": 219,
       "wind_from": "SW",
       "wind_arrow": "↗",
       "code": 0,
@@ -11091,6 +11533,36 @@
     "player_id": "00-0039910",
     "source": "nflverse games.csv",
     "status": "SCHEDULE_FEED"
+   },
+   "starter_check": {
+    "home": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Brock Purdy",
+      "id": "00-0037834"
+     },
+     "depth_chart": {
+      "name": "Brock Purdy",
+      "id": "00-0037834",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    },
+    "away": {
+     "status": "AGREES",
+     "schedule_feed": {
+      "name": "Jayden Daniels",
+      "id": "00-0039910"
+     },
+     "depth_chart": {
+      "name": "Jayden Daniels",
+      "id": "00-0039910",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     }
+    }
    },
    "regime": {
     "home": {
@@ -11580,24 +12052,24 @@
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
    },
    "forecast": {
-    "temp_f": 64.7,
-    "wind_mph": 10.6,
+    "temp_f": 64.5,
+    "wind_mph": 10,
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-10-14T18:02:19.560Z",
+    "as_of": "2026-10-15T15:58:10.326Z",
     "kickoff_local": "2026-10-19T17:00",
     "kickoff_label": "5 PM",
     "timezone": "America/Los_Angeles",
     "tz_abbrev": "GMT-7",
     "utc_offset_seconds": -25200,
-    "feels_f": 57.9,
-    "humidity_pct": 41,
-    "gust_mph": 9.8,
+    "feels_f": 58.2,
+    "humidity_pct": 43,
+    "gust_mph": 10.5,
     "precip_pct": 0,
-    "code": 2,
-    "text": "Partly cloudy",
-    "icon": "⛅",
+    "code": 3,
+    "text": "Overcast",
+    "icon": "☁️",
     "wind_word": "LIGHT",
     "wind_from": "NW",
     "wind_arrow": "↘",
@@ -11606,33 +12078,33 @@
       "local": "2026-10-19T17:00",
       "at": "2026-10-20T00:00:00.000Z",
       "label": "5 PM",
-      "temp_f": 64.7,
-      "feels_f": 57.9,
+      "temp_f": 64.5,
+      "feels_f": 58.2,
       "precip_in": 0,
       "precip_pct": 0,
-      "humidity_pct": 41,
-      "wind_mph": 10.6,
-      "gust_mph": 9.8,
-      "wind_dir_deg": 314,
+      "humidity_pct": 43,
+      "wind_mph": 10,
+      "gust_mph": 10.5,
+      "wind_dir_deg": 320,
       "wind_from": "NW",
       "wind_arrow": "↘",
-      "code": 2,
-      "text": "Partly cloudy",
-      "icon": "⛅",
+      "code": 3,
+      "text": "Overcast",
+      "icon": "☁️",
       "is_day": 1
      },
      {
       "local": "2026-10-19T18:00",
       "at": "2026-10-20T01:00:00.000Z",
       "label": "6 PM",
-      "temp_f": 63.3,
-      "feels_f": 57.3,
+      "temp_f": 63.4,
+      "feels_f": 58.5,
       "precip_in": 0,
       "precip_pct": 2,
-      "humidity_pct": 46,
-      "wind_mph": 9.7,
-      "gust_mph": 10.3,
-      "wind_dir_deg": 312,
+      "humidity_pct": 49,
+      "wind_mph": 8.1,
+      "gust_mph": 8.9,
+      "wind_dir_deg": 321,
       "wind_from": "NW",
       "wind_arrow": "↘",
       "code": 3,
@@ -11644,14 +12116,14 @@
       "local": "2026-10-19T19:00",
       "at": "2026-10-20T02:00:00.000Z",
       "label": "7 PM",
-      "temp_f": 61.9,
-      "feels_f": 56.9,
+      "temp_f": 62.2,
+      "feels_f": 58,
       "precip_in": 0,
       "precip_pct": 2,
-      "humidity_pct": 52,
-      "wind_mph": 8.2,
-      "gust_mph": 10.7,
-      "wind_dir_deg": 311,
+      "humidity_pct": 55,
+      "wind_mph": 7.3,
+      "gust_mph": 8.5,
+      "wind_dir_deg": 317,
       "wind_from": "NW",
       "wind_arrow": "↘",
       "code": 3,
@@ -11663,14 +12135,14 @@
       "local": "2026-10-19T20:00",
       "at": "2026-10-20T03:00:00.000Z",
       "label": "8 PM",
-      "temp_f": 60.7,
-      "feels_f": 56.8,
+      "temp_f": 61.6,
+      "feels_f": 58.1,
       "precip_in": 0,
       "precip_pct": 2,
       "humidity_pct": 58,
-      "wind_mph": 6.8,
-      "gust_mph": 10.5,
-      "wind_dir_deg": 308,
+      "wind_mph": 6.4,
+      "gust_mph": 8.1,
+      "wind_dir_deg": 309,
       "wind_from": "NW",
       "wind_arrow": "↘",
       "code": 3,
@@ -11920,6 +12392,38 @@
    },
    "home_starter": null,
    "away_starter": null,
+   "starter_check": {
+    "home": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Caleb Williams",
+      "id": "00-0039918",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    },
+    "away": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Drake Maye",
+      "id": "00-0039851",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    }
+   },
    "regime": {
     "home": {
      "team": "CHI",
@@ -12379,8 +12883,8 @@
     "home_line": -1.5,
     "home_margin": 1.5,
     "total": 48.5,
-    "home_ml": -122,
-    "away_ml": 102,
+    "home_ml": -125,
+    "away_ml": 105,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -12395,102 +12899,102 @@
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
    },
    "forecast": {
-    "temp_f": 64.1,
-    "wind_mph": 8.7,
-    "precip_in": 0.012,
+    "temp_f": 67.1,
+    "wind_mph": 3.7,
+    "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-10-14T18:02:19.562Z",
+    "as_of": "2026-10-15T15:58:10.404Z",
     "kickoff_local": "2026-10-22T19:00",
     "kickoff_label": "7 PM",
     "timezone": "America/Chicago",
     "tz_abbrev": "GMT-5",
     "utc_offset_seconds": -18000,
     "feels_f": 64.6,
-    "humidity_pct": 93,
-    "gust_mph": 23.9,
-    "precip_pct": 11,
-    "code": 51,
-    "text": "Drizzle",
-    "icon": "🌦️",
-    "wind_word": "LIGHT",
-    "wind_from": "SW",
-    "wind_arrow": "↗",
+    "humidity_pct": 47,
+    "gust_mph": 6.9,
+    "precip_pct": 5,
+    "code": 2,
+    "text": "Partly cloudy",
+    "icon": "☁️",
+    "wind_word": "CALM",
+    "wind_from": "SE",
+    "wind_arrow": "↖",
     "hours": [
      {
       "local": "2026-10-22T19:00",
       "at": "2026-10-23T00:00:00.000Z",
       "label": "7 PM",
-      "temp_f": 64.1,
+      "temp_f": 67.1,
       "feels_f": 64.6,
-      "precip_in": 0.012,
-      "precip_pct": 11,
-      "humidity_pct": 93,
-      "wind_mph": 8.7,
-      "gust_mph": 23.9,
-      "wind_dir_deg": 235,
-      "wind_from": "SW",
-      "wind_arrow": "↗",
-      "code": 51,
-      "text": "Drizzle",
-      "icon": "🌦️",
+      "precip_in": 0,
+      "precip_pct": 5,
+      "humidity_pct": 47,
+      "wind_mph": 3.7,
+      "gust_mph": 6.9,
+      "wind_dir_deg": 147,
+      "wind_from": "SE",
+      "wind_arrow": "↖",
+      "code": 2,
+      "text": "Partly cloudy",
+      "icon": "☁️",
       "is_day": 0
      },
      {
       "local": "2026-10-22T20:00",
       "at": "2026-10-23T01:00:00.000Z",
       "label": "8 PM",
-      "temp_f": 64.2,
-      "feels_f": 65.1,
-      "precip_in": 0.004,
-      "precip_pct": 14,
-      "humidity_pct": 94,
-      "wind_mph": 8.1,
-      "gust_mph": 21.9,
-      "wind_dir_deg": 242,
-      "wind_from": "SW",
-      "wind_arrow": "↗",
-      "code": 51,
-      "text": "Drizzle",
-      "icon": "🌦️",
+      "temp_f": 66.2,
+      "feels_f": 63.3,
+      "precip_in": 0,
+      "precip_pct": 6,
+      "humidity_pct": 48,
+      "wind_mph": 4.1,
+      "gust_mph": 8.5,
+      "wind_dir_deg": 151,
+      "wind_from": "SE",
+      "wind_arrow": "↖",
+      "code": 2,
+      "text": "Partly cloudy",
+      "icon": "☁️",
       "is_day": 0
      },
      {
       "local": "2026-10-22T21:00",
       "at": "2026-10-23T02:00:00.000Z",
       "label": "9 PM",
-      "temp_f": 64.4,
-      "feels_f": 65.4,
-      "precip_in": 0.004,
-      "precip_pct": 14,
-      "humidity_pct": 93,
-      "wind_mph": 7.9,
-      "gust_mph": 19.5,
-      "wind_dir_deg": 250,
-      "wind_from": "W",
-      "wind_arrow": "→",
-      "code": 51,
-      "text": "Drizzle",
-      "icon": "🌦️",
+      "temp_f": 65.3,
+      "feels_f": 62.3,
+      "precip_in": 0,
+      "precip_pct": 6,
+      "humidity_pct": 49,
+      "wind_mph": 4.6,
+      "gust_mph": 10.5,
+      "wind_dir_deg": 157,
+      "wind_from": "SE",
+      "wind_arrow": "↖",
+      "code": 3,
+      "text": "Overcast",
+      "icon": "☁️",
       "is_day": 0
      },
      {
       "local": "2026-10-22T22:00",
       "at": "2026-10-23T03:00:00.000Z",
       "label": "10 PM",
-      "temp_f": 64.3,
-      "feels_f": 65.4,
-      "precip_in": 0.004,
-      "precip_pct": 14,
-      "humidity_pct": 93,
-      "wind_mph": 7.5,
-      "gust_mph": 17.4,
-      "wind_dir_deg": 260,
-      "wind_from": "W",
-      "wind_arrow": "→",
-      "code": 51,
-      "text": "Drizzle",
-      "icon": "🌦️",
+      "temp_f": 64.6,
+      "feels_f": 61.3,
+      "precip_in": 0,
+      "precip_pct": 6,
+      "humidity_pct": 50,
+      "wind_mph": 5.2,
+      "gust_mph": 12.1,
+      "wind_dir_deg": 162,
+      "wind_from": "S",
+      "wind_arrow": "↑",
+      "code": 3,
+      "text": "Overcast",
+      "icon": "☁️",
       "is_day": 0
      }
     ]
@@ -12739,6 +13243,38 @@
    },
    "home_starter": null,
    "away_starter": null,
+   "starter_check": {
+    "home": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Tyler Shough",
+      "id": "00-0040743",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    },
+    "away": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Aaron Rodgers",
+      "id": "00-0023459",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    }
+   },
    "regime": {
     "home": {
      "team": "NO",
@@ -13198,8 +13734,8 @@
     "home_line": 2.5,
     "home_margin": -2.5,
     "total": 44.5,
-    "home_ml": 120,
-    "away_ml": -142,
+    "home_ml": 114,
+    "away_ml": -135,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -13221,7 +13757,7 @@
     "roof": true,
     "hours": [],
     "source": "trained venue table — indoor venue, no request made",
-    "as_of": "2026-10-14T18:02:19.184Z"
+    "as_of": "2026-10-15T15:58:09.257Z"
    }
   },
   {
@@ -13463,6 +13999,38 @@
    },
    "home_starter": null,
    "away_starter": null,
+   "starter_check": {
+    "home": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Michael Penix Jr.",
+      "id": "00-0039917",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    },
+    "away": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Brock Purdy",
+      "id": "00-0037834",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    }
+   },
    "regime": {
     "home": {
      "team": "ATL",
@@ -13945,7 +14513,7 @@
     "roof": true,
     "hours": [],
     "source": "trained venue table — indoor venue, no request made",
-    "as_of": "2026-10-14T18:02:19.184Z"
+    "as_of": "2026-10-15T15:58:09.257Z"
    }
   },
   {
@@ -14191,6 +14759,38 @@
    },
    "home_starter": null,
    "away_starter": null,
+   "starter_check": {
+    "home": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Lamar Jackson",
+      "id": "00-0034796",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    },
+    "away": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Joe Burrow",
+      "id": "00-0036442",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    }
+   },
    "regime": {
     "home": {
      "team": "BAL",
@@ -14666,42 +15266,42 @@
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
    },
    "forecast": {
-    "temp_f": 69.7,
-    "wind_mph": 5,
+    "temp_f": 54.6,
+    "wind_mph": 8.2,
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-10-14T18:02:19.562Z",
+    "as_of": "2026-10-15T15:58:10.485Z",
     "kickoff_local": "2026-10-25T13:00",
     "kickoff_label": "1 PM",
     "timezone": "America/New_York",
     "tz_abbrev": "GMT-4",
     "utc_offset_seconds": -14400,
-    "feels_f": 72,
-    "humidity_pct": 78,
-    "gust_mph": 31.3,
-    "precip_pct": 3,
+    "feels_f": 47.2,
+    "humidity_pct": 35,
+    "gust_mph": 13.9,
+    "precip_pct": 5,
     "code": 3,
     "text": "Overcast",
     "icon": "☁️",
-    "wind_word": "CALM",
-    "wind_from": "S",
-    "wind_arrow": "↑",
+    "wind_word": "LIGHT",
+    "wind_from": "NE",
+    "wind_arrow": "↙",
     "hours": [
      {
       "local": "2026-10-25T13:00",
       "at": "2026-10-25T17:00:00.000Z",
       "label": "1 PM",
-      "temp_f": 69.7,
-      "feels_f": 72,
+      "temp_f": 54.6,
+      "feels_f": 47.2,
       "precip_in": 0,
-      "precip_pct": 3,
-      "humidity_pct": 78,
-      "wind_mph": 5,
-      "gust_mph": 31.3,
-      "wind_dir_deg": 172,
-      "wind_from": "S",
-      "wind_arrow": "↑",
+      "precip_pct": 5,
+      "humidity_pct": 35,
+      "wind_mph": 8.2,
+      "gust_mph": 13.9,
+      "wind_dir_deg": 29,
+      "wind_from": "NE",
+      "wind_arrow": "↙",
       "code": 3,
       "text": "Overcast",
       "icon": "☁️",
@@ -14711,16 +15311,16 @@
       "local": "2026-10-25T14:00",
       "at": "2026-10-25T18:00:00.000Z",
       "label": "2 PM",
-      "temp_f": 71,
-      "feels_f": 73.4,
+      "temp_f": 56.3,
+      "feels_f": 48.5,
       "precip_in": 0,
-      "precip_pct": 3,
-      "humidity_pct": 75,
-      "wind_mph": 5.1,
-      "gust_mph": 34.2,
-      "wind_dir_deg": 180,
-      "wind_from": "S",
-      "wind_arrow": "↑",
+      "precip_pct": 5,
+      "humidity_pct": 32,
+      "wind_mph": 8.2,
+      "gust_mph": 13.4,
+      "wind_dir_deg": 26,
+      "wind_from": "NE",
+      "wind_arrow": "↙",
       "code": 3,
       "text": "Overcast",
       "icon": "☁️",
@@ -14730,16 +15330,16 @@
       "local": "2026-10-25T15:00",
       "at": "2026-10-25T19:00:00.000Z",
       "label": "3 PM",
-      "temp_f": 72.3,
-      "feels_f": 74.5,
+      "temp_f": 56.8,
+      "feels_f": 48.7,
       "precip_in": 0,
-      "precip_pct": 4,
-      "humidity_pct": 71,
-      "wind_mph": 5.1,
-      "gust_mph": 35.3,
-      "wind_dir_deg": 178,
-      "wind_from": "S",
-      "wind_arrow": "↑",
+      "precip_pct": 5,
+      "humidity_pct": 31,
+      "wind_mph": 8.4,
+      "gust_mph": 13.2,
+      "wind_dir_deg": 20,
+      "wind_from": "N",
+      "wind_arrow": "↓",
       "code": 3,
       "text": "Overcast",
       "icon": "☁️",
@@ -14749,16 +15349,16 @@
       "local": "2026-10-25T16:00",
       "at": "2026-10-25T20:00:00.000Z",
       "label": "4 PM",
-      "temp_f": 73.5,
-      "feels_f": 75.8,
+      "temp_f": 56.5,
+      "feels_f": 48.3,
       "precip_in": 0,
-      "precip_pct": 6,
-      "humidity_pct": 68,
-      "wind_mph": 4.7,
-      "gust_mph": 35.8,
-      "wind_dir_deg": 172,
-      "wind_from": "S",
-      "wind_arrow": "↑",
+      "precip_pct": 5,
+      "humidity_pct": 31,
+      "wind_mph": 8.4,
+      "gust_mph": 13.2,
+      "wind_dir_deg": 16,
+      "wind_from": "N",
+      "wind_arrow": "↓",
       "code": 3,
       "text": "Overcast",
       "icon": "☁️",
@@ -15006,6 +15606,38 @@
    },
    "home_starter": null,
    "away_starter": null,
+   "starter_check": {
+    "home": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Bryce Young",
+      "id": "00-0039150",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    },
+    "away": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Baker Mayfield",
+      "id": "00-0034855",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    }
+   },
    "regime": {
     "home": {
      "team": "CAR",
@@ -15465,8 +16097,8 @@
     "home_line": -3,
     "home_margin": 3,
     "total": 44.5,
-    "home_ml": -166,
-    "away_ml": 140,
+    "home_ml": -162,
+    "away_ml": 136,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -15481,25 +16113,25 @@
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
    },
    "forecast": {
-    "temp_f": 74.7,
-    "wind_mph": 5.9,
+    "temp_f": 61.9,
+    "wind_mph": 7,
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-10-14T18:02:19.563Z",
+    "as_of": "2026-10-15T15:58:10.493Z",
     "kickoff_local": "2026-10-25T13:00",
     "kickoff_label": "1 PM",
     "timezone": "America/New_York",
     "tz_abbrev": "GMT-4",
     "utc_offset_seconds": -14400,
-    "feels_f": 74.3,
-    "humidity_pct": 47,
-    "gust_mph": 20.4,
-    "precip_pct": 6,
-    "code": 0,
-    "text": "Clear",
-    "icon": "☀️",
-    "wind_word": "CALM",
+    "feels_f": 56.7,
+    "humidity_pct": 35,
+    "gust_mph": 11.6,
+    "precip_pct": 3,
+    "code": 1,
+    "text": "Mostly clear",
+    "icon": "🌤️",
+    "wind_word": "LIGHT",
     "wind_from": "NE",
     "wind_arrow": "↙",
     "hours": [
@@ -15507,52 +16139,52 @@
       "local": "2026-10-25T13:00",
       "at": "2026-10-25T17:00:00.000Z",
       "label": "1 PM",
-      "temp_f": 74.7,
-      "feels_f": 74.3,
+      "temp_f": 61.9,
+      "feels_f": 56.7,
       "precip_in": 0,
-      "precip_pct": 6,
-      "humidity_pct": 47,
-      "wind_mph": 5.9,
-      "gust_mph": 20.4,
-      "wind_dir_deg": 37,
+      "precip_pct": 3,
+      "humidity_pct": 35,
+      "wind_mph": 7,
+      "gust_mph": 11.6,
+      "wind_dir_deg": 27,
       "wind_from": "NE",
       "wind_arrow": "↙",
-      "code": 0,
-      "text": "Clear",
-      "icon": "☀️",
+      "code": 1,
+      "text": "Mostly clear",
+      "icon": "🌤️",
       "is_day": 1
      },
      {
       "local": "2026-10-25T14:00",
       "at": "2026-10-25T18:00:00.000Z",
       "label": "2 PM",
-      "temp_f": 76.6,
-      "feels_f": 76,
+      "temp_f": 64.4,
+      "feels_f": 59.4,
       "precip_in": 0,
-      "precip_pct": 6,
-      "humidity_pct": 42,
-      "wind_mph": 5.8,
-      "gust_mph": 20.1,
-      "wind_dir_deg": 36,
+      "precip_pct": 3,
+      "humidity_pct": 33,
+      "wind_mph": 6.9,
+      "gust_mph": 11.4,
+      "wind_dir_deg": 25,
       "wind_from": "NE",
       "wind_arrow": "↙",
-      "code": 0,
-      "text": "Clear",
-      "icon": "☀️",
+      "code": 1,
+      "text": "Mostly clear",
+      "icon": "🌤️",
       "is_day": 1
      },
      {
       "local": "2026-10-25T15:00",
       "at": "2026-10-25T19:00:00.000Z",
       "label": "3 PM",
-      "temp_f": 77.8,
-      "feels_f": 76.3,
+      "temp_f": 66,
+      "feels_f": 60.6,
       "precip_in": 0,
       "precip_pct": 6,
-      "humidity_pct": 39,
-      "wind_mph": 5.9,
-      "gust_mph": 21.7,
-      "wind_dir_deg": 29,
+      "humidity_pct": 33,
+      "wind_mph": 7.1,
+      "gust_mph": 11.2,
+      "wind_dir_deg": 28,
       "wind_from": "NE",
       "wind_arrow": "↙",
       "code": 0,
@@ -15564,14 +16196,14 @@
       "local": "2026-10-25T16:00",
       "at": "2026-10-25T20:00:00.000Z",
       "label": "4 PM",
-      "temp_f": 78.3,
-      "feels_f": 75.9,
+      "temp_f": 66.9,
+      "feels_f": 60.9,
       "precip_in": 0,
-      "precip_pct": 5,
-      "humidity_pct": 38,
-      "wind_mph": 6.1,
-      "gust_mph": 24.4,
-      "wind_dir_deg": 24,
+      "precip_pct": 6,
+      "humidity_pct": 33,
+      "wind_mph": 7.3,
+      "gust_mph": 11.4,
+      "wind_dir_deg": 34,
       "wind_from": "NE",
       "wind_arrow": "↙",
       "code": 0,
@@ -15825,6 +16457,38 @@
    },
    "home_starter": null,
    "away_starter": null,
+   "starter_check": {
+    "home": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "C.J. Stroud",
+      "id": "00-0039163",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    },
+    "away": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Jameis Winston",
+      "id": "00-0031503",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    }
+   },
    "regime": {
     "home": {
      "team": "HOU",
@@ -16284,8 +16948,8 @@
     "home_line": -7,
     "home_margin": 7,
     "total": 41.5,
-    "home_ml": -355,
-    "away_ml": 280,
+    "home_ml": -375,
+    "away_ml": 295,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -16307,7 +16971,7 @@
     "roof": true,
     "hours": [],
     "source": "trained venue table — indoor venue, no request made",
-    "as_of": "2026-10-14T18:02:19.184Z"
+    "as_of": "2026-10-15T15:58:09.257Z"
    }
   },
   {
@@ -16549,6 +17213,38 @@
    },
    "home_starter": null,
    "away_starter": null,
+   "starter_check": {
+    "home": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Kyler Murray",
+      "id": "00-0035228",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    },
+    "away": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Daniel Jones",
+      "id": "00-0035710",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    }
+   },
    "regime": {
     "home": {
      "team": "MIN",
@@ -17008,8 +17704,8 @@
     "home_line": -5.5,
     "home_margin": 5.5,
     "total": 43.5,
-    "home_ml": -258,
-    "away_ml": 210,
+    "home_ml": -265,
+    "away_ml": 215,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -17031,7 +17727,7 @@
     "roof": true,
     "hours": [],
     "source": "trained venue table — indoor venue, no request made",
-    "as_of": "2026-10-14T18:02:19.184Z"
+    "as_of": "2026-10-15T15:58:09.257Z"
    }
   },
   {
@@ -17277,6 +17973,38 @@
    },
    "home_starter": null,
    "away_starter": null,
+   "starter_check": {
+    "home": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Geno Smith",
+      "id": "00-0030565",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    },
+    "away": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Malik Willis",
+      "id": "00-0038128",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    }
+   },
    "regime": {
     "home": {
      "team": "NYJ",
@@ -17752,102 +18480,102 @@
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
    },
    "forecast": {
-    "temp_f": 67.9,
-    "wind_mph": 6.9,
+    "temp_f": 54,
+    "wind_mph": 10.5,
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-10-14T18:02:19.639Z",
+    "as_of": "2026-10-15T15:58:10.564Z",
     "kickoff_local": "2026-10-25T13:00",
     "kickoff_label": "1 PM",
     "timezone": "America/New_York",
     "tz_abbrev": "GMT-4",
     "utc_offset_seconds": -14400,
-    "feels_f": 68.2,
-    "humidity_pct": 75,
-    "gust_mph": 26.2,
-    "precip_pct": 3,
-    "code": 3,
-    "text": "Overcast",
-    "icon": "☁️",
+    "feels_f": 45.3,
+    "humidity_pct": 29,
+    "gust_mph": 15.7,
+    "precip_pct": 6,
+    "code": 0,
+    "text": "Clear",
+    "icon": "☀️",
     "wind_word": "LIGHT",
-    "wind_from": "S",
-    "wind_arrow": "↑",
+    "wind_from": "NE",
+    "wind_arrow": "↙",
     "hours": [
      {
       "local": "2026-10-25T13:00",
       "at": "2026-10-25T17:00:00.000Z",
       "label": "1 PM",
-      "temp_f": 67.9,
-      "feels_f": 68.2,
+      "temp_f": 54,
+      "feels_f": 45.3,
       "precip_in": 0,
-      "precip_pct": 3,
-      "humidity_pct": 75,
-      "wind_mph": 6.9,
-      "gust_mph": 26.2,
-      "wind_dir_deg": 180,
-      "wind_from": "S",
-      "wind_arrow": "↑",
-      "code": 3,
-      "text": "Overcast",
-      "icon": "☁️",
+      "precip_pct": 6,
+      "humidity_pct": 29,
+      "wind_mph": 10.5,
+      "gust_mph": 15.7,
+      "wind_dir_deg": 38,
+      "wind_from": "NE",
+      "wind_arrow": "↙",
+      "code": 0,
+      "text": "Clear",
+      "icon": "☀️",
       "is_day": 1
      },
      {
       "local": "2026-10-25T14:00",
       "at": "2026-10-25T18:00:00.000Z",
       "label": "2 PM",
-      "temp_f": 69.1,
-      "feels_f": 68.9,
+      "temp_f": 56.1,
+      "feels_f": 47.1,
       "precip_in": 0,
-      "precip_pct": 3,
-      "humidity_pct": 72,
-      "wind_mph": 8.1,
-      "gust_mph": 26.2,
-      "wind_dir_deg": 178,
-      "wind_from": "S",
-      "wind_arrow": "↑",
-      "code": 3,
-      "text": "Overcast",
-      "icon": "☁️",
+      "precip_pct": 6,
+      "humidity_pct": 23,
+      "wind_mph": 9.8,
+      "gust_mph": 14.5,
+      "wind_dir_deg": 37,
+      "wind_from": "NE",
+      "wind_arrow": "↙",
+      "code": 0,
+      "text": "Clear",
+      "icon": "☀️",
       "is_day": 1
      },
      {
       "local": "2026-10-25T15:00",
       "at": "2026-10-25T19:00:00.000Z",
       "label": "3 PM",
-      "temp_f": 69.2,
-      "feels_f": 68.7,
+      "temp_f": 57.1,
+      "feels_f": 47.5,
       "precip_in": 0,
-      "precip_pct": 5,
-      "humidity_pct": 71,
-      "wind_mph": 8.8,
-      "gust_mph": 25.9,
-      "wind_dir_deg": 173,
-      "wind_from": "S",
-      "wind_arrow": "↑",
-      "code": 3,
-      "text": "Overcast",
-      "icon": "☁️",
+      "precip_pct": 7,
+      "humidity_pct": 21,
+      "wind_mph": 9.6,
+      "gust_mph": 14.1,
+      "wind_dir_deg": 33,
+      "wind_from": "NE",
+      "wind_arrow": "↙",
+      "code": 0,
+      "text": "Clear",
+      "icon": "☀️",
       "is_day": 1
      },
      {
       "local": "2026-10-25T16:00",
       "at": "2026-10-25T20:00:00.000Z",
       "label": "4 PM",
-      "temp_f": 68.8,
-      "feels_f": 67.9,
+      "temp_f": 57.4,
+      "feels_f": 47.8,
       "precip_in": 0,
-      "precip_pct": 8,
-      "humidity_pct": 72,
-      "wind_mph": 9.5,
-      "gust_mph": 25.5,
-      "wind_dir_deg": 165,
-      "wind_from": "S",
-      "wind_arrow": "↑",
-      "code": 3,
-      "text": "Overcast",
-      "icon": "☁️",
+      "precip_pct": 7,
+      "humidity_pct": 22,
+      "wind_mph": 9.7,
+      "gust_mph": 14.3,
+      "wind_dir_deg": 29,
+      "wind_from": "NE",
+      "wind_arrow": "↙",
+      "code": 1,
+      "text": "Mostly clear",
+      "icon": "🌤️",
       "is_day": 1
      }
     ]
@@ -18100,6 +18828,38 @@
    },
    "home_starter": null,
    "away_starter": null,
+   "starter_check": {
+    "home": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Cam Ward",
+      "id": "00-0040676",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    },
+    "away": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Deshaun Watson",
+      "id": "00-0033537",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    }
+   },
    "regime": {
     "home": {
      "team": "TEN",
@@ -18559,8 +19319,8 @@
     "home_line": 1.5,
     "home_margin": -1.5,
     "total": 37.5,
-    "home_ml": 105,
-    "away_ml": -125,
+    "home_ml": 102,
+    "away_ml": -122,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -18575,102 +19335,102 @@
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
    },
    "forecast": {
-    "temp_f": 63.8,
-    "wind_mph": 9,
+    "temp_f": 70.8,
+    "wind_mph": 4.3,
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-10-14T18:02:19.641Z",
+    "as_of": "2026-10-15T15:58:10.647Z",
     "kickoff_local": "2026-10-25T12:00",
     "kickoff_label": "12 PM",
     "timezone": "America/Chicago",
     "tz_abbrev": "GMT-5",
     "utc_offset_seconds": -18000,
-    "feels_f": 61.1,
-    "humidity_pct": 69,
-    "gust_mph": 17.7,
-    "precip_pct": 19,
-    "code": 3,
-    "text": "Overcast",
-    "icon": "☁️",
-    "wind_word": "LIGHT",
-    "wind_from": "N",
-    "wind_arrow": "↓",
+    "feels_f": 67.6,
+    "humidity_pct": 39,
+    "gust_mph": 6.3,
+    "precip_pct": 4,
+    "code": 2,
+    "text": "Partly cloudy",
+    "icon": "⛅",
+    "wind_word": "CALM",
+    "wind_from": "SW",
+    "wind_arrow": "↗",
     "hours": [
      {
       "local": "2026-10-25T12:00",
       "at": "2026-10-25T17:00:00.000Z",
       "label": "12 PM",
-      "temp_f": 63.8,
-      "feels_f": 61.1,
+      "temp_f": 70.8,
+      "feels_f": 67.6,
       "precip_in": 0,
-      "precip_pct": 19,
-      "humidity_pct": 69,
-      "wind_mph": 9,
-      "gust_mph": 17.7,
-      "wind_dir_deg": 341,
-      "wind_from": "N",
-      "wind_arrow": "↓",
-      "code": 3,
-      "text": "Overcast",
-      "icon": "☁️",
+      "precip_pct": 4,
+      "humidity_pct": 39,
+      "wind_mph": 4.3,
+      "gust_mph": 6.3,
+      "wind_dir_deg": 242,
+      "wind_from": "SW",
+      "wind_arrow": "↗",
+      "code": 2,
+      "text": "Partly cloudy",
+      "icon": "⛅",
       "is_day": 1
      },
      {
       "local": "2026-10-25T13:00",
       "at": "2026-10-25T18:00:00.000Z",
       "label": "1 PM",
-      "temp_f": 63.2,
-      "feels_f": 60.3,
+      "temp_f": 73.3,
+      "feels_f": 70.3,
       "precip_in": 0,
-      "precip_pct": 19,
-      "humidity_pct": 69,
-      "wind_mph": 9,
-      "gust_mph": 17.4,
-      "wind_dir_deg": 341,
-      "wind_from": "N",
-      "wind_arrow": "↓",
-      "code": 3,
-      "text": "Overcast",
-      "icon": "☁️",
+      "precip_pct": 4,
+      "humidity_pct": 36,
+      "wind_mph": 3.9,
+      "gust_mph": 4.9,
+      "wind_dir_deg": 260,
+      "wind_from": "W",
+      "wind_arrow": "→",
+      "code": 2,
+      "text": "Partly cloudy",
+      "icon": "⛅",
       "is_day": 1
      },
      {
       "local": "2026-10-25T14:00",
       "at": "2026-10-25T19:00:00.000Z",
       "label": "2 PM",
-      "temp_f": 61.7,
-      "feels_f": 58.3,
+      "temp_f": 74.7,
+      "feels_f": 72.8,
       "precip_in": 0,
-      "precip_pct": 19,
-      "humidity_pct": 68,
-      "wind_mph": 8.8,
-      "gust_mph": 16.6,
-      "wind_dir_deg": 344,
-      "wind_from": "N",
-      "wind_arrow": "↓",
-      "code": 3,
-      "text": "Overcast",
-      "icon": "☁️",
+      "precip_pct": 4,
+      "humidity_pct": 35,
+      "wind_mph": 3.4,
+      "gust_mph": 4.3,
+      "wind_dir_deg": 281,
+      "wind_from": "W",
+      "wind_arrow": "→",
+      "code": 1,
+      "text": "Mostly clear",
+      "icon": "🌤️",
       "is_day": 1
      },
      {
       "local": "2026-10-25T15:00",
       "at": "2026-10-25T20:00:00.000Z",
       "label": "3 PM",
-      "temp_f": 59.8,
-      "feels_f": 55.7,
+      "temp_f": 75.5,
+      "feels_f": 72.8,
       "precip_in": 0,
-      "precip_pct": 18,
-      "humidity_pct": 66,
-      "wind_mph": 8.6,
-      "gust_mph": 15.7,
-      "wind_dir_deg": 350,
-      "wind_from": "N",
-      "wind_arrow": "↓",
-      "code": 3,
-      "text": "Overcast",
-      "icon": "☁️",
+      "precip_pct": 4,
+      "humidity_pct": 34,
+      "wind_mph": 3.2,
+      "gust_mph": 3.8,
+      "wind_dir_deg": 304,
+      "wind_from": "NW",
+      "wind_arrow": "↘",
+      "code": 0,
+      "text": "Clear",
+      "icon": "☀️",
       "is_day": 1
      }
     ]
@@ -18915,6 +19675,38 @@
    },
    "home_starter": null,
    "away_starter": null,
+   "starter_check": {
+    "home": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Jacoby Brissett",
+      "id": "00-0033119",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    },
+    "away": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Bo Nix",
+      "id": "00-0039732",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    }
+   },
    "regime": {
     "home": {
      "team": "ARI",
@@ -19397,7 +20189,7 @@
     "roof": true,
     "hours": [],
     "source": "trained venue table — indoor venue, no request made",
-    "as_of": "2026-10-14T18:02:19.184Z"
+    "as_of": "2026-10-15T15:58:09.257Z"
    }
   },
   {
@@ -19639,6 +20431,38 @@
    },
    "home_starter": null,
    "away_starter": null,
+   "starter_check": {
+    "home": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Jared Goff",
+      "id": "00-0033106",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    },
+    "away": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Jordan Love",
+      "id": "00-0036264",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    }
+   },
    "regime": {
     "home": {
      "team": "DET",
@@ -20121,7 +20945,7 @@
     "roof": true,
     "hours": [],
     "source": "trained venue table — indoor venue, no request made",
-    "as_of": "2026-10-14T18:02:19.184Z"
+    "as_of": "2026-10-15T15:58:09.257Z"
    }
   },
   {
@@ -20367,6 +21191,38 @@
    },
    "home_starter": null,
    "away_starter": null,
+   "starter_check": {
+    "home": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Kirk Cousins",
+      "id": "00-0029604",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    },
+    "away": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Matthew Stafford",
+      "id": "00-0026498",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    }
+   },
    "regime": {
     "home": {
      "team": "LV",
@@ -20826,8 +21682,8 @@
     "home_line": 7,
     "home_margin": -7,
     "total": 48.5,
-    "home_ml": 245,
-    "away_ml": -305,
+    "home_ml": 250,
+    "away_ml": -310,
     "convention": "home_line: negative = home favoured (betting)"
    },
    "market_status": "NOT JOINED IN THIS BUILD",
@@ -20849,7 +21705,7 @@
     "roof": true,
     "hours": [],
     "source": "trained venue table — indoor venue, no request made",
-    "as_of": "2026-10-14T18:02:19.184Z"
+    "as_of": "2026-10-15T15:58:09.257Z"
    }
   },
   {
@@ -21091,6 +21947,38 @@
    },
    "home_starter": null,
    "away_starter": null,
+   "starter_check": {
+    "home": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Sam Darnold",
+      "id": "00-0034869",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    },
+    "away": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Patrick Mahomes",
+      "id": "00-0033873",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    }
+   },
    "regime": {
     "home": {
      "team": "SEA",
@@ -21566,25 +22454,25 @@
     "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
    },
    "forecast": {
-    "temp_f": 60.9,
-    "wind_mph": 3.4,
+    "temp_f": 50.8,
+    "wind_mph": 10.1,
     "precip_in": 0,
     "dome": false,
     "source": "open-meteo forecast",
-    "as_of": "2026-10-14T18:02:19.642Z",
+    "as_of": "2026-10-15T15:58:10.724Z",
     "kickoff_local": "2026-10-25T17:00",
     "kickoff_label": "5 PM",
     "timezone": "America/Los_Angeles",
     "tz_abbrev": "GMT-7",
     "utc_offset_seconds": -25200,
-    "feels_f": 56.9,
-    "humidity_pct": 44,
-    "gust_mph": 4,
-    "precip_pct": 6,
+    "feels_f": 43.3,
+    "humidity_pct": 56,
+    "gust_mph": 15.9,
+    "precip_pct": 9,
     "code": 0,
     "text": "Clear",
     "icon": "☀️",
-    "wind_word": "CALM",
+    "wind_word": "LIGHT",
     "wind_from": "N",
     "wind_arrow": "↓",
     "hours": [
@@ -21592,14 +22480,14 @@
       "local": "2026-10-25T17:00",
       "at": "2026-10-26T00:00:00.000Z",
       "label": "5 PM",
-      "temp_f": 60.9,
-      "feels_f": 56.9,
+      "temp_f": 50.8,
+      "feels_f": 43.3,
       "precip_in": 0,
-      "precip_pct": 6,
-      "humidity_pct": 44,
-      "wind_mph": 3.4,
-      "gust_mph": 4,
-      "wind_dir_deg": 4,
+      "precip_pct": 9,
+      "humidity_pct": 56,
+      "wind_mph": 10.1,
+      "gust_mph": 15.9,
+      "wind_dir_deg": 354,
       "wind_from": "N",
       "wind_arrow": "↓",
       "code": 0,
@@ -21611,37 +22499,37 @@
       "local": "2026-10-25T18:00",
       "at": "2026-10-26T01:00:00.000Z",
       "label": "6 PM",
-      "temp_f": 58.2,
-      "feels_f": 54.2,
+      "temp_f": 49.4,
+      "feels_f": 42.8,
       "precip_in": 0,
-      "precip_pct": 7,
-      "humidity_pct": 48,
-      "wind_mph": 3.1,
-      "gust_mph": 3.8,
-      "wind_dir_deg": 4,
+      "precip_pct": 11,
+      "humidity_pct": 59,
+      "wind_mph": 8.1,
+      "gust_mph": 17.2,
+      "wind_dir_deg": 2,
       "wind_from": "N",
       "wind_arrow": "↓",
-      "code": 1,
-      "text": "Mostly clear",
-      "icon": "🌤️",
+      "code": 0,
+      "text": "Clear",
+      "icon": "☀️",
       "is_day": 1
      },
      {
       "local": "2026-10-25T19:00",
       "at": "2026-10-26T02:00:00.000Z",
       "label": "7 PM",
-      "temp_f": 54.9,
-      "feels_f": 51.1,
+      "temp_f": 47.6,
+      "feels_f": 41.7,
       "precip_in": 0,
-      "precip_pct": 7,
-      "humidity_pct": 53,
-      "wind_mph": 2.5,
-      "gust_mph": 2.9,
-      "wind_dir_deg": 5,
+      "precip_pct": 11,
+      "humidity_pct": 62,
+      "wind_mph": 6,
+      "gust_mph": 18.6,
+      "wind_dir_deg": 22,
       "wind_from": "N",
       "wind_arrow": "↓",
-      "code": 1,
-      "text": "Mostly clear",
+      "code": 0,
+      "text": "Clear",
       "icon": "🌙",
       "is_day": 0
      },
@@ -21649,19 +22537,866 @@
       "local": "2026-10-25T20:00",
       "at": "2026-10-26T03:00:00.000Z",
       "label": "8 PM",
-      "temp_f": 52.4,
-      "feels_f": 48.5,
+      "temp_f": 46.1,
+      "feels_f": 40.6,
       "precip_in": 0,
-      "precip_pct": 8,
-      "humidity_pct": 57,
-      "wind_mph": 2.2,
-      "gust_mph": 2.2,
-      "wind_dir_deg": 6,
+      "precip_pct": 11,
+      "humidity_pct": 66,
+      "wind_mph": 5.2,
+      "gust_mph": 19,
+      "wind_dir_deg": 43,
+      "wind_from": "NE",
+      "wind_arrow": "↙",
+      "code": 0,
+      "text": "Clear",
+      "icon": "🌙",
+      "is_day": 0
+     }
+    ]
+   }
+  },
+  {
+   "game_id": "2026_07_DAL_PHI",
+   "season": 2026,
+   "week": 7,
+   "game_type": "REG",
+   "kickoff": "2026-10-27T00:15:00.000Z",
+   "gameday": "2026-10-26",
+   "gametime_et": "20:15",
+   "home_code": "PHI",
+   "away_code": "DAL",
+   "home_team": "Philadelphia Eagles",
+   "away_team": "Dallas Cowboys",
+   "home_team_id": "phi",
+   "away_team_id": "dal",
+   "venue": "Lincoln Financial Field",
+   "roof": "outdoors",
+   "surface": "grass",
+   "div_game": true,
+   "home_rest": 8,
+   "away_rest": 8,
+   "home_coach": "Nick Sirianni",
+   "away_coach": "Brian Schottenheimer",
+   "coaching_staff": {
+    "validation_status": "CANDIDATE",
+    "affects_projection": false,
+    "tuned_candidate_cap": 1,
+    "validated_cap": 0,
+    "candidate_home_points": -0.59,
+    "candidate_away_points": -0.06,
+    "candidate_matchup_points": -0.53,
+    "adjustment_points": 0,
+    "home": {
+     "schema": "edgedesk_nfl_coaching_staff_v1",
+     "team": "PHI",
+     "coach": "Nick Sirianni",
+     "coaching_staff_rating": 47.9,
+     "coaching_staff_raw_score": 47,
+     "coaching_staff_reliability": 0.678,
+     "coaching_staff_observed_weight": 0.9,
+     "coaching_staff_raw_residual_points": -0.875,
+     "coaching_staff_residual_points": -0.594,
+     "coaching_staff_available": true,
+     "coaching_staff_rank": 22,
+     "coaching_staff_affects_projection": false,
+     "coaching_staff_candidate_cap": 1,
+     "coaching_staff_validated_cap": 0,
+     "coaching_staff_adjustment_points": 0,
+     "coaching_staff_inputs": {
+      "current_residual_conversion": {
+       "id": "current_residual_conversion",
+       "label": "Current residual conversion",
+       "configured_weight": 0.45,
+       "value": 39.08472664967687,
+       "observations": 5,
+       "weighted_evidence": -2.287,
+       "reliability": 0.5555555555555556,
+       "source": "EdgeDesk leak-free pregame NFL projection residuals",
+       "last_updated": "2026-10-11",
+       "available": true,
+       "reason": null
+      },
+      "multi_season_head_coach": {
+       "id": "multi_season_head_coach",
+       "label": "Multi-season head-coach residual",
+       "configured_weight": 0.3,
+       "value": 53.8,
+       "observations": 77,
+       "weighted_evidence": 0.536,
+       "reliability": 0.951,
+       "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+       "last_updated": "2025-12-31",
+       "available": true,
+       "reason": null
+      },
+      "program_persistence": {
+       "id": "program_persistence",
+       "label": "Program persistence",
+       "configured_weight": 0.15,
+       "value": 57,
+       "observations": 77,
+       "weighted_evidence": 0.536,
+       "reliability": 0.951,
+       "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+       "last_updated": "2025-12-31",
+       "available": true,
+       "reason": null
+      },
+      "efficiency_development": {
+       "id": "efficiency_development",
+       "label": "Efficiency development",
+       "configured_weight": 0.05,
+       "value": null,
+       "observations": 0,
+       "weighted_evidence": null,
+       "reliability": 0,
+       "source": null,
+       "last_updated": null,
+       "available": false,
+       "reason": "no measured evidence is available"
+      },
+      "game_management": {
+       "id": "game_management",
+       "label": "Game management",
+       "configured_weight": 0.05,
+       "value": null,
+       "observations": 0,
+       "weighted_evidence": null,
+       "reliability": 0,
+       "source": null,
+       "last_updated": null,
+       "available": false,
+       "reason": "no measured evidence is available"
+      }
+     },
+     "coaching_staff_warnings": [
+      {
+       "id": "efficiency_development_unavailable",
+       "detail": "Efficiency development: no measured evidence is available"
+      },
+      {
+       "id": "game_management_unavailable",
+       "detail": "Game management: no measured evidence is available"
+      }
+     ],
+     "provenance": {
+      "source": "EdgeDesk NFL pregame residual ledger + explicitly supplied historical staff seeds",
+      "last_updated": "2026-10-11",
+      "observations": 5,
+      "reliability": 0.678,
+      "affects_projection": false,
+      "limitations": "HC identity is observable from nflverse games.csv. OC/DC history, private locker-room dynamics, scheme-install quality, trust and ownership/front-office context are not inferred."
+     }
+    },
+    "away": {
+     "schema": "edgedesk_nfl_coaching_staff_v1",
+     "team": "DAL",
+     "coach": "Brian Schottenheimer",
+     "coaching_staff_rating": 48.8,
+     "coaching_staff_raw_score": 47.5,
+     "coaching_staff_reliability": 0.501,
+     "coaching_staff_observed_weight": 0.9,
+     "coaching_staff_raw_residual_points": -0.126,
+     "coaching_staff_residual_points": -0.063,
+     "coaching_staff_available": true,
+     "coaching_staff_rank": 20,
+     "coaching_staff_affects_projection": false,
+     "coaching_staff_candidate_cap": 1,
+     "coaching_staff_validated_cap": 0,
+     "coaching_staff_adjustment_points": 0,
+     "coaching_staff_inputs": {
+      "current_residual_conversion": {
+       "id": "current_residual_conversion",
+       "label": "Current residual conversion",
+       "configured_weight": 0.45,
+       "value": 52.263390345617516,
+       "observations": 5,
+       "weighted_evidence": 0.53,
+       "reliability": 0.5555555555555556,
+       "source": "EdgeDesk leak-free pregame NFL projection residuals",
+       "last_updated": "2026-10-08",
+       "available": true,
+       "reason": null
+      },
+      "multi_season_head_coach": {
+       "id": "multi_season_head_coach",
+       "label": "Multi-season head-coach residual",
+       "configured_weight": 0.3,
+       "value": 42.4,
+       "observations": 17,
+       "weighted_evidence": -0.854,
+       "reliability": 0.364,
+       "source": "NFL 2003-2025 leak-free pregame model residuals; same head coach only",
+       "last_updated": "2025-12-31",
+       "available": true,
+       "reason": null
+      },
+      "program_persistence": {
+       "id": "program_persistence",
+       "label": "Program persistence",
+       "configured_weight": 0.15,
+       "value": 43.5,
+       "observations": 71,
+       "weighted_evidence": -0.641,
+       "reliability": 0.947,
+       "source": "NFL 2003-2025 leak-free pregame model residuals; franchise persistence",
+       "last_updated": "2025-12-31",
+       "available": true,
+       "reason": null
+      },
+      "efficiency_development": {
+       "id": "efficiency_development",
+       "label": "Efficiency development",
+       "configured_weight": 0.05,
+       "value": null,
+       "observations": 0,
+       "weighted_evidence": null,
+       "reliability": 0,
+       "source": null,
+       "last_updated": null,
+       "available": false,
+       "reason": "no measured evidence is available"
+      },
+      "game_management": {
+       "id": "game_management",
+       "label": "Game management",
+       "configured_weight": 0.05,
+       "value": null,
+       "observations": 0,
+       "weighted_evidence": null,
+       "reliability": 0,
+       "source": null,
+       "last_updated": null,
+       "available": false,
+       "reason": "no measured evidence is available"
+      }
+     },
+     "coaching_staff_warnings": [
+      {
+       "id": "efficiency_development_unavailable",
+       "detail": "Efficiency development: no measured evidence is available"
+      },
+      {
+       "id": "game_management_unavailable",
+       "detail": "Game management: no measured evidence is available"
+      }
+     ],
+     "provenance": {
+      "source": "EdgeDesk NFL pregame residual ledger + explicitly supplied historical staff seeds",
+      "last_updated": "2026-10-08",
+      "observations": 5,
+      "reliability": 0.501,
+      "affects_projection": false,
+      "limitations": "HC identity is observable from nflverse games.csv. OC/DC history, private locker-room dynamics, scheme-install quality, trust and ownership/front-office context are not inferred."
+     }
+    },
+    "basis": "research-only Coaching / Staff residual points. The candidate matchup shift is shown for audit; the applied NFL projection adjustment is exactly 0."
+   },
+   "home_starter": null,
+   "away_starter": null,
+   "starter_check": {
+    "home": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Jalen Hurts",
+      "id": "00-0036389",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    },
+    "away": {
+     "status": "NO_FEED_STARTER",
+     "schedule_feed": {
+      "name": null,
+      "id": null
+     },
+     "depth_chart": {
+      "name": "Dak Prescott",
+      "id": "00-0033077",
+      "source": "nflverse depth charts",
+      "published_at": "2026-10-15T12:37:05Z",
+      "week": 6
+     },
+     "why": "the schedule feed names no quarterback yet; the engine prices the club's carried level"
+    }
+   },
+   "regime": {
+    "home": {
+     "team": "PHI",
+     "hc_new": false,
+     "qb_new": null,
+     "qb_out": null,
+     "active": false,
+     "regular_starter": "Jalen Hurts",
+     "regular_tied": false,
+     "last_season_starter": "Jalen Hurts",
+     "adjustment_pts": 0
+    },
+    "away": {
+     "team": "DAL",
+     "hc_new": false,
+     "qb_new": null,
+     "qb_out": null,
+     "active": false,
+     "regular_starter": "Dak Prescott",
+     "regular_tied": false,
+     "last_season_starter": "Dak Prescott",
+     "adjustment_pts": 0
+    },
+    "promoted": false,
+    "version": "nfl_regime_v1"
+   },
+   "model_status": "PREDICTED",
+   "model_reason": null,
+   "model_home_margin": 2.05,
+   "model_home_line": -2.05,
+   "model_fair_total": 45.79,
+   "model_home_win_prob": 0.576,
+   "model_fair_home_ml": -136,
+   "model_fair_away_ml": 136,
+   "outcome_range": {
+    "p10": -16,
+    "p50": 2,
+    "p90": 20,
+    "sigma": 10.7,
+    "basis": "margin_pmf_by_spread",
+    "unit": "home margin, points"
+   },
+   "contributions": {
+    "spread": [
+     {
+      "key": "baseline",
+      "value": 0,
+      "points": 2.48
+     },
+     {
+      "key": "net_pts",
+      "value": -11.215,
+      "points": -1.88
+     },
+     {
+      "key": "net_epa",
+      "value": 0.0638,
+      "points": 0.64
+     },
+     {
+      "key": "net_pass",
+      "value": 0.13,
+      "points": 1.62
+     },
+     {
+      "key": "net_rush",
+      "value": 0.02,
+      "points": 0.14
+     },
+     {
+      "key": "qb_adj_diff",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "rest_diff",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "div_game",
+      "value": 1,
+      "points": -0.66
+     }
+    ],
+    "total": [
+     {
+      "key": "baseline",
+      "value": 0,
+      "points": 45.01
+     },
+     {
+      "key": "off_epa_sum",
+      "value": 0.0152,
+      "points": 0.06
+     },
+     {
+      "key": "def_epa_sum",
+      "value": 0.0504,
+      "points": 0
+     },
+     {
+      "key": "pass_matchup",
+      "value": 0.1109,
+      "points": 0.41
+     },
+     {
+      "key": "rush_matchup",
+      "value": -0.0029,
+      "points": -0.01
+     },
+     {
+      "key": "expl_sum",
+      "value": -0.021,
+      "points": -0.01
+     },
+     {
+      "key": "sack_env",
+      "value": -0.0165,
+      "points": 0.02
+     },
+     {
+      "key": "pace_sum",
+      "value": 0.333,
+      "points": 0.03
+     },
+     {
+      "key": "pts_env",
+      "value": 3.1384,
+      "points": 1.46
+     },
+     {
+      "key": "is_dome",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "temp_c",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "wind_o",
+      "value": 0,
+      "points": 0
+     },
+     {
+      "key": "div_game",
+      "value": 1,
+      "points": -1.32
+     },
+     {
+      "key": "week_frac",
+      "value": 0.3889,
+      "points": 0.15
+     }
+    ]
+   },
+   "features": {
+    "spread": {
+     "net_pts": -11.214993835342504,
+     "net_epa": 0.06379322395697078,
+     "net_pass": 0.12996414656209482,
+     "net_rush": 0.020028106686143132,
+     "qb_adj_diff": 0,
+     "rest_diff": 0,
+     "div_game": 1
+    },
+    "total": {
+     "off_epa_sum": 0.01519974497368061,
+     "def_epa_sum": 0.05044000000000001,
+     "pass_matchup": 0.1109407376054221,
+     "rush_matchup": -0.002888876911749383,
+     "expl_sum": -0.020990196118416286,
+     "sack_env": -0.016486307904219902,
+     "pace_sum": 0.33302552975694777,
+     "pts_env": 3.1383628907842764,
+     "is_dome": 0,
+     "temp_c": 0,
+     "wind_o": 0,
+     "div_game": 1,
+     "week_frac": 0.3888888888888889
+    },
+    "ctx": {
+     "rest_diff": 0,
+     "home_short": 0,
+     "away_short": 0,
+     "home_off_bye": 0,
+     "away_off_bye": 0,
+     "div_game": 1,
+     "week_frac": 0.3888888888888889,
+     "is_dome": 0,
+     "grass": 1
+    },
+    "known": 104,
+    "qb_known": {
+     "home": false,
+     "away": false
+    }
+   },
+   "scenarios": {
+    "home_short_week": {
+     "home_line": -0.92,
+     "delta_home_line": 1.13,
+     "total": 45.79,
+     "home_win_prob": 0.5342,
+     "basis": "engine re-run with home_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "away_short_week": {
+     "home_line": -2.46,
+     "delta_home_line": -0.41,
+     "total": 45.79,
+     "home_win_prob": 0.5911,
+     "basis": "engine re-run with away_rest = 4",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "dome": {
+     "home_line": -1.18,
+     "delta_home_line": 0.87,
+     "total": 47.47,
+     "home_win_prob": 0.544,
+     "basis": "engine re-run with roof = dome (weather inputs ignored)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    },
+    "cold_windy": {
+     "home_line": -2.05,
+     "delta_home_line": 0,
+     "total": 41.83,
+     "home_win_prob": 0.576,
+     "basis": "engine re-run at 25°F and 20 mph wind (total inputs; the spread does not read weather)",
+     "source": "football/nfl/slate.json (engine re-run, one input changed)"
+    }
+   },
+   "cover_curve": [
+    {
+     "home_line": 5,
+     "win": 0.6844,
+     "push": 0.0196,
+     "lose": 0.2959,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4.5,
+     "win": 0.6844,
+     "push": 0,
+     "lose": 0.3156,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 4,
+     "win": 0.6542,
+     "push": 0.0302,
+     "lose": 0.3156,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3.5,
+     "win": 0.6542,
+     "push": 0,
+     "lose": 0.3458,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 3,
+     "win": 0.5818,
+     "push": 0.0724,
+     "lose": 0.3458,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2.5,
+     "win": 0.5818,
+     "push": 0,
+     "lose": 0.4182,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 2,
+     "win": 0.5593,
+     "push": 0.0226,
+     "lose": 0.4182,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1.5,
+     "win": 0.5593,
+     "push": 0,
+     "lose": 0.4407,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 1,
+     "win": 0.5374,
+     "push": 0.0219,
+     "lose": 0.4407,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0.5,
+     "win": 0.5374,
+     "push": 0,
+     "lose": 0.4626,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": 0,
+     "win": 0.5356,
+     "push": 0.0018,
+     "lose": 0.4626,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -0.5,
+     "win": 0.5356,
+     "push": 0,
+     "lose": 0.4644,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1,
+     "win": 0.5123,
+     "push": 0.0233,
+     "lose": 0.4644,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -1.5,
+     "win": 0.5123,
+     "push": 0,
+     "lose": 0.4877,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2,
+     "win": 0.4899,
+     "push": 0.0224,
+     "lose": 0.4877,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -2.5,
+     "win": 0.4899,
+     "push": 0,
+     "lose": 0.5101,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3,
+     "win": 0.4032,
+     "push": 0.0867,
+     "lose": 0.5101,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -3.5,
+     "win": 0.4032,
+     "push": 0,
+     "lose": 0.5968,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4,
+     "win": 0.3774,
+     "push": 0.0258,
+     "lose": 0.5968,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -4.5,
+     "win": 0.3774,
+     "push": 0,
+     "lose": 0.6226,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5,
+     "win": 0.3568,
+     "push": 0.0206,
+     "lose": 0.6226,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -5.5,
+     "win": 0.3568,
+     "push": 0,
+     "lose": 0.6432,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6,
+     "win": 0.3205,
+     "push": 0.0363,
+     "lose": 0.6432,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -6.5,
+     "win": 0.3205,
+     "push": 0,
+     "lose": 0.6795,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7,
+     "win": 0.2744,
+     "push": 0.0462,
+     "lose": 0.6795,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -7.5,
+     "win": 0.2744,
+     "push": 0,
+     "lose": 0.7256,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8,
+     "win": 0.2517,
+     "push": 0.0227,
+     "lose": 0.7256,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -8.5,
+     "win": 0.2517,
+     "push": 0,
+     "lose": 0.7483,
+     "basis": "margin_pmf_by_spread"
+    },
+    {
+     "home_line": -9,
+     "win": 0.2428,
+     "push": 0.0089,
+     "lose": 0.7483,
+     "basis": "margin_pmf_by_spread"
+    }
+   ],
+   "data_quality": {
+    "status": "OK",
+    "missing": [],
+    "warnings": [
+     "home QB starter unknown",
+     "away QB starter unknown"
+    ]
+   },
+   "qb_known": {
+    "home": false,
+    "away": false
+   },
+   "model_version": "edgedesk_football_v1.0.0",
+   "feature_version": "nfl_fv1",
+   "fingerprint": "fp_hs90fa",
+   "reference_market": {
+    "source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
+    "home_line": -1.5,
+    "home_margin": 1.5,
+    "total": 47.5,
+    "home_ml": -120,
+    "away_ml": 100,
+    "convention": "home_line: negative = home favoured (betting)"
+   },
+   "market_status": "NOT JOINED IN THIS BUILD",
+   "market_note": "Captured book prices are joined by the reader (signals under the caller’s token). Nothing here is a price.",
+   "venue_geography": {
+    "name": "Lincoln Financial Field",
+    "lat": 39.9008,
+    "lon": -75.1675,
+    "tz_name": "America/New_York",
+    "roof": "outdoors",
+    "verification": "VERIFIED",
+    "source": "football/venues/nfl_stadiums.json (hand-entered; verified by tools/football/verify_nfl_stadiums.js)"
+   },
+   "forecast": {
+    "temp_f": 58.3,
+    "wind_mph": 7.9,
+    "precip_in": 0,
+    "dome": false,
+    "source": "open-meteo forecast",
+    "as_of": "2026-10-15T15:58:10.734Z",
+    "kickoff_local": "2026-10-26T20:00",
+    "kickoff_label": "8 PM",
+    "timezone": "America/New_York",
+    "tz_abbrev": "GMT-4",
+    "utc_offset_seconds": -14400,
+    "feels_f": 52.5,
+    "humidity_pct": 49,
+    "gust_mph": 21.7,
+    "precip_pct": 13,
+    "code": 0,
+    "text": "Clear",
+    "icon": "🌙",
+    "wind_word": "LIGHT",
+    "wind_from": "N",
+    "wind_arrow": "↓",
+    "hours": [
+     {
+      "local": "2026-10-26T20:00",
+      "at": "2026-10-27T00:00:00.000Z",
+      "label": "8 PM",
+      "temp_f": 58.3,
+      "feels_f": 52.5,
+      "precip_in": 0,
+      "precip_pct": 13,
+      "humidity_pct": 49,
+      "wind_mph": 7.9,
+      "gust_mph": 21.7,
+      "wind_dir_deg": 355,
       "wind_from": "N",
       "wind_arrow": "↓",
-      "code": 2,
-      "text": "Partly cloudy",
-      "icon": "☁️",
+      "code": 0,
+      "text": "Clear",
+      "icon": "🌙",
+      "is_day": 0
+     },
+     {
+      "local": "2026-10-26T21:00",
+      "at": "2026-10-27T01:00:00.000Z",
+      "label": "9 PM",
+      "temp_f": 56.7,
+      "feels_f": 50.8,
+      "precip_in": 0,
+      "precip_pct": 13,
+      "humidity_pct": 51,
+      "wind_mph": 7.6,
+      "gust_mph": 22.4,
+      "wind_dir_deg": 357,
+      "wind_from": "N",
+      "wind_arrow": "↓",
+      "code": 0,
+      "text": "Clear",
+      "icon": "🌙",
+      "is_day": 0
+     },
+     {
+      "local": "2026-10-26T22:00",
+      "at": "2026-10-27T02:00:00.000Z",
+      "label": "10 PM",
+      "temp_f": 55.3,
+      "feels_f": 49.3,
+      "precip_in": 0,
+      "precip_pct": 12,
+      "humidity_pct": 53,
+      "wind_mph": 7.6,
+      "gust_mph": 22.1,
+      "wind_dir_deg": 360,
+      "wind_from": "N",
+      "wind_arrow": "↓",
+      "code": 0,
+      "text": "Clear",
+      "icon": "🌙",
+      "is_day": 0
+     },
+     {
+      "local": "2026-10-26T23:00",
+      "at": "2026-10-27T03:00:00.000Z",
+      "label": "11 PM",
+      "temp_f": 53.9,
+      "feels_f": 48,
+      "precip_in": 0,
+      "precip_pct": 12,
+      "humidity_pct": 54,
+      "wind_mph": 7.2,
+      "gust_mph": 21.3,
+      "wind_dir_deg": 4,
+      "wind_from": "N",
+      "wind_arrow": "↓",
+      "code": 0,
+      "text": "Clear",
+      "icon": "🌙",
       "is_day": 0
      }
     ]
@@ -29613,8 +31348,8 @@
  "pricing": {
   "schema": "edgedesk_ranked_slate_v1",
   "sport": "americanfootball_nfl",
-  "built_at": "2026-10-14T18:02:19.650Z",
-  "games": 27,
+  "built_at": "2026-10-15T15:58:10.742Z",
+  "games": 28,
   "rows": [
    {
     "game_id": "2026_06_NYJ_NE",
@@ -29893,19 +31628,19 @@
     "kickoff": "2026-10-18T17:00:00.000Z",
     "side": "home",
     "selection": "Atlanta Falcons",
-    "market_line": 2.5,
-    "fair_line": 2.04,
+    "market_line": 1.5,
+    "fair_line": 1.12,
     "model_line": -2.81,
-    "gap_points": 5.31,
-    "cover_at_market": 0.5144,
+    "gap_points": 4.31,
+    "cover_at_market": 0.5119,
     "break_even": 0.5238,
-    "edge_pp": -0.94,
-    "bet_to_line": 3,
+    "edge_pp": -1.19,
+    "bet_to_line": 2,
     "status": "PASS",
-    "why": "the disagreement clears the threshold, but at +2.5 -110 the price requires 52.4% and the fair line gives 51.4%; it becomes a number at +3 or better",
+    "why": "the disagreement clears the threshold, but at +1.5 -110 the price requires 52.4% and the fair line gives 51.2%; it becomes a number at +2 or better",
     "tier": "LEAN",
     "completeness": 0.8,
-    "rank_score": -0.75,
+    "rank_score": -0.95,
     "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "fair_status": "BLENDED",
     "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.38 + 1.16×market + 0.23×(projection − market)",
@@ -30111,20 +31846,20 @@
     "selection": "Denver Broncos",
     "market_line": 2.5,
     "fair_line": 2.5,
-    "model_line": 0.07,
-    "gap_points": 2.43,
+    "model_line": 1.01,
+    "gap_points": 1.49,
     "cover_at_market": 0.5,
     "break_even": 0.5238,
     "edge_pp": -2.38,
     "bet_to_line": 3.5,
     "status": "PASS",
-    "why": "the disagreement clears the threshold, but at +2.5 -110 the price requires 52.4% and the fair line gives 50%; it becomes a number at +3.5 or better",
+    "why": "the projection disagrees with the market by 1.49 points, below the 1.5-point threshold the LEAN record was graded on",
     "tier": "LEAN",
     "completeness": 0.8,
     "rank_score": -1.9,
     "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "fair_status": "BLENDED_HELD",
-    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.38 + 1.16×market + 0.23×(projection − market); held at the market line: the blend (2.71) would have crossed it against the projection",
+    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.38 + 1.16×market + 0.23×(projection − market); held at the market line: the blend (2.93) would have crossed it against the projection",
     "ev_available": false,
     "expected_value_pct": null,
     "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
@@ -30138,20 +31873,20 @@
     "selection": "Seattle Seahawks",
     "market_line": -2.5,
     "fair_line": -2.5,
-    "model_line": -0.07,
-    "gap_points": 2.43,
+    "model_line": -1.01,
+    "gap_points": 1.49,
     "cover_at_market": 0.5,
     "break_even": 0.5238,
     "edge_pp": -2.38,
     "bet_to_line": -1.5,
     "status": "PASS",
-    "why": "the graded pick rule takes the side the projection favours, and the projection favours the other side here (-0.07 vs the market’s -2.5)",
+    "why": "the projection disagrees with the market by 1.49 points, below the 1.5-point threshold the LEAN record was graded on",
     "tier": "LEAN",
     "completeness": 0.8,
     "rank_score": -1.9,
     "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "fair_status": "BLENDED_HELD",
-    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.38 + 1.16×market + 0.23×(projection − market); held at the market line: the blend (2.71) would have crossed it against the projection",
+    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.38 + 1.16×market + 0.23×(projection − market); held at the market line: the blend (2.93) would have crossed it against the projection",
     "ev_available": false,
     "expected_value_pct": null,
     "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
@@ -30165,20 +31900,20 @@
     "selection": "Cleveland Browns",
     "market_line": 5.5,
     "fair_line": 5.5,
-    "model_line": 4.71,
-    "gap_points": 0.79,
+    "model_line": 4.95,
+    "gap_points": 0.55,
     "cover_at_market": 0.5,
     "break_even": 0.5238,
     "edge_pp": -2.38,
     "bet_to_line": 6.5,
     "status": "PASS",
-    "why": "the projection disagrees with the market by 0.79 points, below the 1.5-point threshold the LEAN record was graded on",
+    "why": "the projection disagrees with the market by 0.55 points, below the 1.5-point threshold the LEAN record was graded on",
     "tier": "LEAN",
     "completeness": 0.8,
     "rank_score": -1.9,
     "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "fair_status": "BLENDED_HELD",
-    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.38 + 1.16×market + 0.23×(projection − market); held at the market line: the blend (6.56) would have crossed it against the projection",
+    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.38 + 1.16×market + 0.23×(projection − market); held at the market line: the blend (6.61) would have crossed it against the projection",
     "ev_available": false,
     "expected_value_pct": null,
     "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
@@ -30192,20 +31927,20 @@
     "selection": "Baltimore Ravens",
     "market_line": -5.5,
     "fair_line": -5.5,
-    "model_line": -4.71,
-    "gap_points": 0.79,
+    "model_line": -4.95,
+    "gap_points": 0.55,
     "cover_at_market": 0.5,
     "break_even": 0.5238,
     "edge_pp": -2.38,
     "bet_to_line": -4.5,
     "status": "PASS",
-    "why": "the projection disagrees with the market by 0.79 points, below the 1.5-point threshold the LEAN record was graded on",
+    "why": "the projection disagrees with the market by 0.55 points, below the 1.5-point threshold the LEAN record was graded on",
     "tier": "LEAN",
     "completeness": 0.8,
     "rank_score": -1.9,
     "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "fair_status": "BLENDED_HELD",
-    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.38 + 1.16×market + 0.23×(projection − market); held at the market line: the blend (6.56) would have crossed it against the projection",
+    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.38 + 1.16×market + 0.23×(projection − market); held at the market line: the blend (6.61) would have crossed it against the projection",
     "ev_available": false,
     "expected_value_pct": null,
     "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
@@ -30643,6 +32378,60 @@
     "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
    },
    {
+    "game_id": "2026_07_DAL_PHI",
+    "home": "Philadelphia Eagles",
+    "away": "Dallas Cowboys",
+    "kickoff": "2026-10-27T00:15:00.000Z",
+    "side": "home",
+    "selection": "Philadelphia Eagles",
+    "market_line": -1.5,
+    "fair_line": -1.5,
+    "model_line": -2.05,
+    "gap_points": 0.55,
+    "cover_at_market": 0.5,
+    "break_even": 0.5238,
+    "edge_pp": -2.38,
+    "bet_to_line": -0.5,
+    "status": "PASS",
+    "why": "the projection disagrees with the market by 0.55 points, below the 1.5-point threshold the LEAN record was graded on",
+    "tier": "LEAN",
+    "completeness": 0.8,
+    "rank_score": -1.9,
+    "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
+    "fair_status": "BLENDED_HELD",
+    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.38 + 1.16×market + 0.23×(projection − market); held at the market line: the blend (-1.48) would have crossed it against the projection",
+    "ev_available": false,
+    "expected_value_pct": null,
+    "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
+   },
+   {
+    "game_id": "2026_07_DAL_PHI",
+    "home": "Philadelphia Eagles",
+    "away": "Dallas Cowboys",
+    "kickoff": "2026-10-27T00:15:00.000Z",
+    "side": "away",
+    "selection": "Dallas Cowboys",
+    "market_line": 1.5,
+    "fair_line": 1.5,
+    "model_line": 2.05,
+    "gap_points": 0.55,
+    "cover_at_market": 0.5,
+    "break_even": 0.5238,
+    "edge_pp": -2.38,
+    "bet_to_line": 2.5,
+    "status": "PASS",
+    "why": "the projection disagrees with the market by 0.55 points, below the 1.5-point threshold the LEAN record was graded on",
+    "tier": "LEAN",
+    "completeness": 0.8,
+    "rank_score": -1.9,
+    "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
+    "fair_status": "BLENDED_HELD",
+    "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.38 + 1.16×market + 0.23×(projection − market); held at the market line: the blend (-1.48) would have crossed it against the projection",
+    "ev_available": false,
+    "expected_value_pct": null,
+    "ev_unavailable_reason": "no priced quote — the nflverse reference line carries no book price; the -110 here sets a break-even for research only, never an EV; the site prices captured quotes at read time"
+   },
+   {
     "game_id": "2026_06_DAL_GB",
     "home": "Green Bay Packers",
     "away": "Dallas Cowboys",
@@ -30784,19 +32573,19 @@
     "kickoff": "2026-10-18T17:00:00.000Z",
     "side": "away",
     "selection": "Chicago Bears",
-    "market_line": -2.5,
-    "fair_line": -2.04,
+    "market_line": -1.5,
+    "fair_line": -1.12,
     "model_line": 2.81,
-    "gap_points": 5.31,
-    "cover_at_market": 0.4856,
+    "gap_points": 4.31,
+    "cover_at_market": 0.4881,
     "break_even": 0.5238,
-    "edge_pp": -3.82,
-    "bet_to_line": -1.5,
+    "edge_pp": -3.57,
+    "bet_to_line": -0.5,
     "status": "PASS",
-    "why": "the graded pick rule takes the side the projection favours, and the projection favours the other side here (+2.81 vs the market’s -2.5)",
+    "why": "the graded pick rule takes the side the projection favours, and the projection favours the other side here (+2.81 vs the market’s -1.5)",
     "tier": "LEAN",
     "completeness": 0.8,
-    "rank_score": -3.06,
+    "rank_score": -2.86,
     "market_source": "nflverse games.csv consensus (reference, not a price, no book, no capture time)",
     "fair_status": "BLENDED",
     "fair_basis": "blend fitted on seasons before the held-out season: margin = -0.38 + 1.16×market + 0.23×(projection − market)",
