@@ -662,7 +662,10 @@ const CSV = [
       && +db.sql(`select count(*) from public.portfolio_positions where user_id = '${A}' and external_position_id = 'BR-77001';`) === 1);
     await page.click('.pfo-sheet [data-act="close"]');
 
-    const ls = await page.evaluate(() => JSON.stringify(Object.keys(localStorage).map((k) => [k, localStorage.getItem(k)])));
+    /* the Today's Games device copy (edgedesk_slate_cache_v1) is the public
+       schedule every visitor reads at /today/slate.json: a game such as
+       "Chiefs" in it is not the reader's money, so it is not read here */
+    const ls = await page.evaluate(() => JSON.stringify(Object.keys(localStorage).filter((k) => k !== 'edgedesk_slate_cache_v1').map((k) => [k, localStorage.getItem(k)])));
     chk('nothing financial is written to localStorage', !/Chiefs|Kalshi|90\.91|portfolio_positions|BR-77001|Rangers @ Devils/.test(ls));
     chk('no page errors on desktop', errors.length === 0, errors);
     await ctx.close();

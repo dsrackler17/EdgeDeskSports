@@ -253,10 +253,10 @@ const TODAY = (() => {
       const verdict = await page.textContent('.xe-verdict');
       chk(label + ': the verdict is the board\'s, with its reasons', BOARD.verdict === 'PASS' ? /PASS/.test(verdict) && BOARD.why.every((w) => verdict.indexOf(w.slice(0, 30)) >= 0) : /Best-supported/.test(verdict), verdict.slice(0, 300));
       const ladder = await page.$$eval('#engineHost .xe-ladder tr', (rows) => rows.map((r) => Array.from(r.children).map((c) => c.textContent.trim())));
-      chk(label + ': the readiness ladder keeps data, model, validation, market test, verified price and actionable apart, for all 12 sports', ladder.length === 13 && ['Historical data loaded', 'Model trained', 'Validation passed', 'Tested vs closing prices', 'Market price verified now', 'Actionable signal'].every((h, i) => ladder[0][i + 1] === h), ladder[0]);
+      chk(label + ': the readiness ladder keeps data, model, validation, market test, verified price and actionable apart, for all 11 sports', ladder.length === 12 && ['Historical data loaded', 'Model trained', 'Validation passed', 'Tested vs closing prices', 'Market price verified now', 'Actionable signal'].every((h, i) => ladder[0][i + 1] === h), ladder[0]);
       const covN = await page.$$eval('#engineHost .xe-sport', (x) => x.length);
       chk(label + ': no sport is marked actionable while the board says PASS', BOARD.verdict !== 'PASS' || ladder.slice(1).every((r) => /^—/.test(r[6])), ladder.map((r) => r[0] + ':' + r[6]));
-      chk(label + ': readiness and methods cover all 12 sports (+ sources)', covN === 12 * 2 + 1, covN);
+      chk(label + ': readiness and methods cover all 11 sports (+ sources)', covN === 11 * 2 + 1, covN);
       await page.click('.xe-seg button[data-f="sport"][data-v="nhl"]');
       const sports = await page.$$eval('#engineHost .xe-card .xe-sub', (x) => x.map((s) => s.textContent.split(' · ')[0]));
       chk(label + ': the sport filter keeps NHL only', sports.length > 0 && sports.every((s) => s === 'NHL'), sports.slice(0, 5));

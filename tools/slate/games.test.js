@@ -65,7 +65,7 @@ eq('a final keeps its score and the provider detail', [fin.status, fin.status_de
 eq('postponed and canceled', [E.status('postponed'), E.status('canceled')].map((s) => G.statusFromEspn(s).status), ['POSTPONED', 'CANCELED']);
 eq('halftime, end of period, shootout and a rain delay in progress are live', ['STATUS_HALFTIME', 'STATUS_END_PERIOD', 'STATUS_SHOOTOUT', 'STATUS_RAIN_DELAY'].map((n) => G.statusFromEspn({ type: { name: n, state: 'in' } }).status), ['LIVE', 'LIVE', 'LIVE', 'LIVE']);
 eq('a delay before the start is Delayed; a suspension is Suspended; a forfeit is Final', ['STATUS_DELAYED', 'STATUS_SUSPENDED', 'STATUS_FORFEIT'].map((n) => G.statusFromEspn({ type: { name: n, state: n === 'STATUS_SUSPENDED' ? 'post' : 'pre' } }).status), ['DELAYED', 'SUSPENDED', 'FINAL']);
-eq('full time (soccer) is final', G.statusFromEspn({ type: { name: 'STATUS_FULL_TIME', state: 'post', completed: true } }).status, 'FINAL');
+eq('ESPN\'s full time is final', G.statusFromEspn({ type: { name: 'STATUS_FULL_TIME', state: 'post', completed: true } }).status, 'FINAL');
 const tbd = G.fromEspn(E.event({ id: 4, date: '2026-10-17T04:00Z', timeValid: false, home: DET, away: NJ, status: E.status('pre') }), src);
 chk('timeValid: false is a TBD time, not a 4 AM start', tbd.time_tbd === true);
 const neu = G.fromEspn(E.event({ id: 5, date: '2026-10-18T13:30Z', neutral: true, venue: 'Wembley Stadium', city: 'London', state: 'England', home: DET, away: NJ, status: E.status('pre') }), src);
@@ -101,14 +101,16 @@ const list = [
   ev(7, 'nba', '2026-10-20T23:30:00Z'),
   ev(8, 'nba', '2026-10-21T23:30:00Z'),
   ev(9, 'nfl', '2026-10-16T00:15:00Z'),
-  ev(10, 'soccer', '2026-10-13T19:00:00Z', 'FINAL', { home: { name: 'Montréal Impact' }, away: { name: 'Toronto' } }),
+  ev(10, 'ncaam', '2026-10-13T19:00:00Z', 'FINAL', { home: { name: 'Montréal Carabins' }, away: { name: 'Toronto' } }),
+  ev(12, 'soccer', '2026-10-13T21:00:00Z', 'LIVE'),       /* a sport no longer listed */
   ev(11, 'nhl', '2026-11-30T00:00:00Z')                  /* past the Upcoming horizon */
 ];
 const day = G.select(list, { date: '2026-10-13', zone: CHI, now: NOW });
-eq('today in order: live, then upcoming by start, then final, then postponed', day.games.map((e) => e.id), ['nhl:espn:3', 'mlb:espn:6', 'nhl:espn:1', 'nhl:espn:4', 'soccer:espn:10', 'mlb:espn:5']);
+eq('today in order: live, then upcoming by start, then final, then postponed', day.games.map((e) => e.id), ['nhl:espn:3', 'mlb:espn:6', 'nhl:espn:1', 'nhl:espn:4', 'ncaam:espn:10', 'mlb:espn:5']);
+chk('a sport no longer listed (soccer) is never shown, live or not, and never counted', !day.games.some((e) => e.sport === 'soccer') && day.counts.soccer === undefined && day.counts.all === 6);
 chk('11:59 PM local is today; 12:01 AM is not', day.games.some((e) => e.id === 'nhl:espn:1') && !day.games.some((e) => e.id === 'nhl:espn:2'));
 chk('a later game is never under today', day.games.every((e) => { const t = ms(e.start_utc); return t >= day.bounds.from && t < day.bounds.to; }));
-eq('counts per sport', [day.counts.all, day.counts.nhl, day.counts.mlb, day.counts.nba, day.counts.soccer], [6, 3, 2, 0, 1]);
+eq('counts per sport', [day.counts.all, day.counts.nhl, day.counts.mlb, day.counts.nba, day.counts.ncaam], [6, 3, 2, 0, 1]);
 eq('counts per status group', day.by_status, { live: 1, upcoming: 2, final: 2, off: 1 });
 const tomorrow = G.select(list, { date: '2026-10-14', zone: CHI, now: NOW });
 chk('the 12:01 AM game is tomorrow’s', tomorrow.games.some((e) => e.id === 'nhl:espn:2'));
@@ -122,8 +124,8 @@ chk('a past day offers no Upcoming', !G.select(list, { date: '2026-10-12', zone:
 chk('a search offers no Upcoming', !G.select(list, { date: '2026-10-13', zone: CHI, now: NOW, sport: 'nba', q: 'x' }).upcoming.length);
 eq('status filter: live only', G.select(list, { date: '2026-10-13', zone: CHI, now: NOW, status: 'live' }).games.map((e) => e.id), ['nhl:espn:3']);
 eq('status filter: postponed and canceled', G.select(list, { date: '2026-10-13', zone: CHI, now: NOW, status: 'off' }).games.map((e) => e.id), ['mlb:espn:5']);
-eq('search ignores accents and case', G.select(list, { date: '2026-10-13', zone: CHI, now: NOW, q: 'MONTREAL' }).games.map((e) => e.id), ['soccer:espn:10']);
-eq('the same games in Tokyo (+9) all fall on the 14th', G.select(list, { date: '2026-10-14', zone: 'Asia/Tokyo', now: NOW }).games.map((e) => e.id).sort(), ['mlb:espn:5', 'mlb:espn:6', 'nhl:espn:1', 'nhl:espn:2', 'nhl:espn:3', 'nhl:espn:4', 'soccer:espn:10'].sort());
+eq('search ignores accents and case', G.select(list, { date: '2026-10-13', zone: CHI, now: NOW, q: 'MONTREAL' }).games.map((e) => e.id), ['ncaam:espn:10']);
+eq('the same games in Tokyo (+9) all fall on the 14th', G.select(list, { date: '2026-10-14', zone: 'Asia/Tokyo', now: NOW }).games.map((e) => e.id).sort(), ['mlb:espn:5', 'mlb:espn:6', 'nhl:espn:1', 'nhl:espn:2', 'nhl:espn:3', 'nhl:espn:4', 'ncaam:espn:10'].sort());
 eq('and none on the 13th', G.select(list, { date: '2026-10-13', zone: 'Asia/Tokyo', now: NOW }).games.length, 0);
 
 /* ── DOUBLEHEADERS, DEDUPE, OVERLAY ─────────────────────────────────── */
@@ -143,16 +145,16 @@ eq('one id, one event: the newer read wins, the older fills its silences', [dd.l
 const base = [Object.assign(ev(1, 'nhl', '2026-10-13T22:00:00Z'), { feed: 'nhl:hockey/nhl', sb_day: '2026-10-13' }),
   Object.assign(ev(2, 'nhl', '2026-10-13T23:00:00Z'), { feed: 'nhl:hockey/nhl', sb_day: '2026-10-13' }),
   Object.assign(ev(3, 'nhl', '2026-10-14T23:00:00Z'), { feed: 'nhl:hockey/nhl', sb_day: '2026-10-14' }),
-  Object.assign(ev(4, 'soccer', '2026-10-13T19:00:00Z'), { feed: 'soccer:soccer/eng.1', sb_day: '2026-10-13' })];
+  Object.assign(ev(4, 'ncaam', '2026-10-13T19:00:00Z'), { feed: 'ncaam:basketball/mens-college-basketball', sb_day: '2026-10-13' })];
 const liveRead = [Object.assign(ev(1, 'nhl', '2026-10-13T22:00:00Z', 'LIVE', { updated_at: '2026-10-13T22:29:00Z' }), { feed: 'nhl:hockey/nhl', sb_day: '2026-10-13' })];
 const ov = G.overlay(base, liveRead, [{ feed: 'nhl:hockey/nhl', sport: 'nhl', day: '2026-10-13', fetched_at: '2026-10-13T22:29:00Z' }]);
 eq('the live read replaces its covered day; a game it no longer lists (rescheduled) leaves that day; other days and feeds stay',
-  ov.map((e) => e.id + ':' + e.status).sort(), ['nhl:espn:1:LIVE', 'nhl:espn:3:SCHEDULED', 'soccer:espn:4:SCHEDULED']);
+  ov.map((e) => e.id + ':' + e.status).sort(), ['ncaam:espn:4:SCHEDULED', 'nhl:espn:1:LIVE', 'nhl:espn:3:SCHEDULED']);
 
 /* ── IDENTITY ───────────────────────────────────────────────────────── */
 chk('ESPN NJ is the NHL’s NJD', G.sameSide('nhl', { abbr: 'NJ', name: 'New Jersey Devils' }, { abbr: 'NJD', name: 'X' }));
 chk('ESPN WSH and LAR are nflverse WAS and LA', G.sameSide('nfl', { abbr: 'WSH' }, { abbr: 'WAS' }) && G.sameSide('nfl', { abbr: 'LAR' }, { abbr: 'LA' }));
-chk('club words and accents do not split a name', G.sameSide('soccer', { name: '1. FC Köln' }, { name: 'FC Koln' }) && G.sameSide('soccer', { name: 'Brentford FC' }, { name: 'Brentford' }));
+chk('club words and accents do not split a name', G.sameSide('nhl', { name: 'Montréal Canadiens' }, { name: 'Montreal Canadiens' }) && G.sameSide('mlb', { name: 'Athletics Baseball Club' }, { name: 'Athletics Baseball' }));
 chk('a mascot does not split a college name', G.sameSide('cfb', { name: 'Middle Tennessee Blue Raiders' }, { name: 'Middle Tennessee' }));
 chk('but two different schools sharing a word are different', !G.sameSide('cfb', { name: 'Tennessee Volunteers' }, { name: 'Middle Tennessee' }) && !G.sameSide('cfb', { name: 'Miami Hurricanes' }, { name: 'Miami (OH) RedHawks' }));
 chk('sameEvent needs both sides and a start inside the window', G.sameEvent({ sport: 'nhl', start_utc: '2026-10-13T22:00:00Z', home: { name: 'Detroit Red Wings' }, away: { name: 'New Jersey Devils' } },
@@ -169,10 +171,7 @@ eq('a hockey spread is the puck line', f1.cols, ['Puck line', 'Moneyline', 'Tota
 eq('both sides, each labelled, each priced', f1.rows.map((r) => [r.label].concat(r.cells)), [['FLA', '−1.5 +170', '−150', 'O 6.5 −110'], ['CBJ', '+1.5 −205', '+130', 'U 6.5 −110']]);
 chk('with the book and the capture age', f1.book === 'DraftKings' && f1.current && f1.age_min === 10);
 eq('a baseball spread is the run line', G.formatMarket(ev('m2', 'mlb', '2026-10-13T23:10:00Z'), { captured_at: cap, spread: { home: { point: -1.5, price: 140 }, away: { point: 1.5, price: -160 } } }, { now: NOW }).cols, ['Run line']);
-const soc = G.formatMarket(ev('m3', 'soccer', '2026-10-14T19:00:00Z', 'SCHEDULED', { home: { name: 'Liverpool', abbr: 'LIV' }, away: { name: 'Man City', abbr: 'MCI' } }),
-  { captured_at: cap, moneyline: { home: 120, away: 210, draw: 250 }, total: { point: 2.5, over: -130, under: 110 } }, { now: NOW });
-eq('a soccer moneyline is three-way with the draw on its own row', [soc.cols, soc.rows.map((r) => r.label + ' ' + r.cells.join('|'))], [['1X2', 'Total'], ['MCI +210|O 2.5 −130', 'LIV +120|U 2.5 +110', 'Draw +250|']]);
-chk('a soccer moneyline without the draw is not shown as one', !G.formatMarket(ev('m4', 'soccer', '2026-10-14T19:00:00Z'), { captured_at: cap, moneyline: { home: 120, away: 210 } }, { now: NOW }).ok);
+eq('no sport listed is three-way, and soccer is not listed', [G.SPORTS.filter((x) => x.draw).length, G.sport('soccer')], [0, null]);
 eq('no market: "Odds unavailable", with the reason', [G.formatMarket(nhlE, null, { now: NOW }).text, G.formatMarket(nhlE, null).reason], ['Odds unavailable', 'no captured price on file for this game']);
 chk('a market without a capture time cannot be verified', !G.formatMarket(nhlE, Object.assign({}, nhlM, { captured_at: null }), { now: NOW }).ok);
 const stale = G.formatMarket(nhlE, Object.assign({}, nhlM, { captured_at: '2026-10-13T18:00:00Z' }), { now: NOW });
@@ -181,8 +180,8 @@ eq('PK and signs', [G.point(0), G.point(-1.5), G.point(3), G.american(-110), G.a
 const cm = G.cleanMarket('nfl', { moneyline: { home: -110 }, spread: { home: { point: -3, price: -110 }, away: { point: 2.5, price: -110 } }, total: { point: 120, over: -110, under: -110 } });
 eq('the integrity check drops a one-sided moneyline, spreads that are not opposite and an impossible total', [cm.market, cm.why.length], [null, 3]);
 eq('and an overround outside 0–25%', G.cleanMarket('nba', { moneyline: { home: -400, away: -300 } }).why[0].indexOf('overround') >= 0, true);
-eq('a quarter-goal soccer handicap is allowed; an NFL spread off the half-point grid is not',
-  [!!G.cleanMarket('soccer', { spread: { home: { point: -0.25, price: -105 }, away: { point: 0.25, price: -115 } } }).market, !!G.cleanMarket('nfl', { spread: { home: { point: -3.25, price: -110 }, away: { point: 3.25, price: -110 } } }).market], [true, false]);
+eq('an NFL spread off the half-point grid is not allowed; a sport not listed has no market',
+  [!!G.cleanMarket('nfl', { spread: { home: { point: -3.25, price: -110 }, away: { point: 3.25, price: -110 } } }).market, G.cleanMarket('soccer', { moneyline: { home: 120, away: 210, draw: 250 } }).market], [false, null]);
 eq('decimal to American', [G.decToAm(1.91), G.decToAm(2.5), G.decToAm(2), G.decToAm(1)], [-110, 150, 100, null]);
 
 /* The Odds API → the slate */

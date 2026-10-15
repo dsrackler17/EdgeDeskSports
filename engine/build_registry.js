@@ -114,19 +114,6 @@ const READERS = {
   wnba() { return lab('basketball/validation/wnba_walkforward.json', BB); },
   ncaab_m() { return lab('basketball/validation/ncaam_walkforward.json', BB); },
   ncaab_w() { return lab('basketball/validation/ncaaw_walkforward.json', BB); },
-  soccer() {
-    /* one sport, five separately fitted leagues: markets are keyed league.market */
-    const out = { markets: {}, files: [], data: { loaded: false, games: 0, scored: 0, leagues: [] }, model: { trained: false, chosen: {} } };
-    for (const lg of ['epl', 'bundesliga', 'laliga', 'seriea', 'ligue1']) {
-      const r = lab('soccer/validation/' + lg + '_walkforward.json', { moneyline: 'three_way', total: 'total_over_2_5', spread: 'asian_handicap', btts: 'btts' }, lg + '.');
-      if (!r.files.length) continue;
-      Object.assign(out.markets, r.markets); out.files.push(...r.files);
-      out.data.loaded = true; out.data.games += r.data.games || 0; out.data.scored += r.data.scored || 0; out.data.leagues.push(lg); out.data.point_in_time = r.data.point_in_time;
-      out.model.trained = out.model.trained || r.model.trained; out.model.chosen[lg] = r.model.chosen;
-      out.generated_at = r.generated_at;
-    }
-    return out;
-  },
   mma() {
     const r = lab('engine/lab/ufc_elo.json', { moneyline: 'moneyline' });
     if (r.data) { r.model.trained = false; r.model.note = 'Elo measured on 2024 only: INSUFFICIENT (not a model)'; }
@@ -168,11 +155,11 @@ function ladder(s, ev, rd) {
   };
 }
 
-const GAP_KEY = { nfl: 'nfl', nhl: 'nhl', nba: 'nba', wnba: 'wnba', ncaab_m: 'ncaam', ncaab_w: 'ncaaw', soccer: 'soccer', mlb: 'mlb', mma: 'ufc' };
+const GAP_KEY = { nfl: 'nfl', nhl: 'nhl', nba: 'nba', wnba: 'wnba', ncaab_m: 'ncaam', ncaab_w: 'ncaaw', mlb: 'mlb', mma: 'ufc' };
 function gapsFor(id) {
   const m = read('engine/missingness.json'); const k = GAP_KEY[id];
   if (!m || !k || !m.sports[k]) return [];
-  const st = m.sports[k].structural || (m.sports[k].epl && m.sports[k].epl.structural) || {};
+  const st = m.sports[k].structural || {};
   return Object.entries(st).map(([f, why]) => f + ': ' + why);
 }
 

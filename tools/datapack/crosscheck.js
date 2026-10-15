@@ -13,14 +13,13 @@
      nhl          hockey/validation/nhl_crosscheck_espn.json (its own job)
      nba, wnba,   pack ESPN games vs basketball/data (sportsdataverse, also
      ncaam, ncaaw ESPN-derived: same game ids) — finals and neutral sites
-     epl          pack ESPN 2024-25 vs soccer/data/epl (openfootball, an
-                  independent source) — matched by date (±1 day) and clubs
      nfl          pack game labels 2022-24 vs nflverse nfldata games.csv (the
                   football engine's own source) — scores and archived lines
      mlb          pack 2024 is the training source for that season (no second
                   source); its regular season is counted against 30 x 162 / 2
-     cfb, college_baseball, ufc, tennis_atp, tennis_wta
+     cfb, college_baseball, ufc, tennis_atp, tennis_wta, epl
                   samples with no second source wired here: counted, flagged
+                  (soccer was removed on 2026-10-15; its pack sample stays)
    =========================================================================== */
 const fs = require('fs');
 const path = require('path');
@@ -49,26 +48,6 @@ function basketball(league, packDir, season) {
     if ((g.neutral_site === 'True') === (m.neutral === 1)) r.neutral_agree++;
   }
   r.reading = 'Same game ids (both ESPN-derived). matched/final_agree compare the source\'s own rows; added_from_pack are pack games the source lacked, now in the table (src = P). Unmatched pack games are preseason or exhibition events dropped by design.';
-  return r;
-}
-
-function epl() {
-  const { clubKey, loadMatches } = require(path.join(ROOT, 'soccer', 'ingest.js'));
-  const mine = loadMatches('epl', [2025]).filter((m) => m.status === 'FINAL');
-  const p = pack('soccer/games_historical.csv');
-  const r = { pack_rows: p.length, matched: 0, final_agree: 0, unmatched: 0, unmatched_examples: [], disagreements: [], date_shift_days: {} };
-  const used = new Set();
-  for (const g of p) {
-    const h = clubKey(g.home_name), a = clubKey(g.away_name);
-    const d = Date.parse(g.start_time.slice(0, 10) + 'T12:00:00Z');
-    const m = mine.find((x) => !used.has(x.match_id) && x.home === h && x.away === a && Math.abs(Date.parse(x.date + 'T12:00:00Z') - d) <= 864e5);
-    if (!m) { r.unmatched++; if (r.unmatched_examples.length < 8) r.unmatched_examples.push({ game: g.away_name + ' at ' + g.home_name, keys: [h, a], date: g.start_time }); continue; }
-    used.add(m.match_id); r.matched++;
-    const shift = Math.round((Date.parse(m.date + 'T12:00:00Z') - d) / 864e5); r.date_shift_days[shift] = (r.date_shift_days[shift] || 0) + 1;
-    if (Number(g.home_score) === m.hg && Number(g.away_score) === m.ag) r.final_agree++;
-    else if (r.disagreements.length < 10) r.disagreements.push({ game: m.match_id, pack: g.home_score + '-' + g.away_score, openfootball: m.hg + '-' + m.ag });
-  }
-  r.reading = 'Independent sources. ESPN dates are UTC; openfootball dates are local, so an evening kick-off can sit one day apart.';
   return r;
 }
 
@@ -105,7 +84,6 @@ async function run(o) {
       wnba: basketball('wnba', 'wnba', 2024),
       ncaam: basketball('ncaam', 'cbb_men', 2025),
       ncaaw: basketball('ncaaw', 'cbb_women', 2025),
-      epl: epl(),
       nfl: await nfl(o),
       mlb: { rows: mlbRows.length, regular_season_final: mlbRows.filter((x) => x.game_type === 'R' && (x.status === 'Final' || x.status === 'Completed Early')).length, expected_regular_season: 2430, state: 'TRAINING_SOURCE_FOR_2024', note: 'the 2024 season of mlb/history comes from this table; no starting pitchers' },
       cfb: counted('cfb/games_historical.csv', '111-game sample; the CFB brain trains on its own sources (football/)'),
@@ -113,6 +91,7 @@ async function run(o) {
       ufc: counted('ufc/bouts_2024.csv', 'one year of bout results; see engine/lab/ufc_elo.json'),
       tennis_atp: counted('tennis_atp/matches_sample.csv', 'four query dates; tennis is retired'),
       tennis_wta: counted('tennis_wta/matches_sample.csv', 'four query dates; tennis is retired'),
+      epl: counted('soccer/games_historical.csv', 'one season of Premier League results; soccer is not covered (removed 2026-10-15)'),
     },
   };
 }

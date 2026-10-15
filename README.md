@@ -128,8 +128,8 @@ Tests: `npm run resilience:test`.
 ## Today's Games — what is being played today, one tap from its research
 
 The first thing on the Research screen is today's slate in every sport EdgeDesk
-lists: NFL, college football, NBA, college basketball, NHL, MLB, college baseball,
-soccer and UFC. It covers the reader's own calendar day in their own time zone
+lists: NFL, college football, NBA, college basketball, NHL, MLB, college baseball
+and UFC (soccer was removed on 2026-10-15). It covers the reader's own calendar day in their own time zone
 (America/Chicago when the browser does not say), with live status and scores, the
 price where one was captured from a named book, and **View Research** straight into
 the existing research for that game. **View all games** opens `#games`: Yesterday,
@@ -338,8 +338,9 @@ is called value (`lib/edgedesk_nhl_compare.js`, docs/engine/NHL.md §3a).
 The EdgeDesk Quant Data Pack is imported and verified (`datapack/quant_v1`,
 [`docs/engine/DATAPACK.md`](docs/engine/DATAPACK.md)). On it and on free
 multi-season sources I built and validated walk-forward brains for the NBA,
-WNBA, men's and women's college basketball (`basketball/`), five soccer
-leagues (`soccer/`) and MLB (`mlb/history/`). UFC, college baseball and
+WNBA, men's and women's college basketball (`basketball/`) and MLB
+(`mlb/history/`). The soccer brain was removed on 2026-10-15: EdgeDesk covers
+American sports and UFC. UFC, college baseball and
 tennis are measured as too thin for a model. The Engine's readiness ladder
 keeps apart what is loaded, trained, validated, market-tested, priced now and
 actionable. Tests: `npm run datapack:test`, `npm run lab:test`, `npm run lab:check`.
@@ -427,7 +428,7 @@ an empty slate, and "best across all sports" is never said over a partial scan.
   correct → recalculate → re-audit loop and a write-once trail.
 - **Honest capability** (`lib/edgedesk_sport_adapters.js`): only the NFL spread
   model may price (LEAN); CFB is research; the MLB run model is browser-only
-  and unvalidated; NBA/NHL/soccer have no model.
+  and unvalidated; NBA/NHL have no model; soccer is not covered.
 - **Calibration** (`lib/edgedesk_calibration.js`): Brier, log loss, buckets,
   CLV, ROI after fees, drawdown and intervals against the no-vig close, with
   look-ahead rows rejected. On the 2026 settled prop ledgers neither league

@@ -2922,7 +2922,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_workspace.css?v=20261004b">
 <link rel="stylesheet" href="/lib/edgedesk_portfolio.css?v=20261014bs2">
 <link rel="stylesheet" href="/lib/edgedesk_intel.css?v=20261012ia8">
-<link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261014vs1">
+<link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261015sc1">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -4036,8 +4036,8 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_explain.js?v=20260929a"></script>
 <!-- THE FREE PRICE FEED: today/slate.json's DraftKings prices (ESPN's public scoreboard) for every
      sport — the Card's multi-sport rows, and the football boards' price when the paid capture is not current -->
-<script src="/lib/edgedesk_card_feed.js?v=20261014cf1"></script>
-<script src="/lib/edgedesk_decision_ui.js?v=20261014cf1"></script>
+<script src="/lib/edgedesk_card_feed.js?v=20261015sc1"></script>
+<script src="/lib/edgedesk_decision_ui.js?v=20261015sc1"></script>
 <!-- PLAYER PROPS: the kernel (distributions, price shopping, EV, decision — the SAME
      file the Node build prices with) and the terminal that renders it -->
 <script src="/lib/edgedesk_props.js?v=20260929fr1"></script>
@@ -4056,10 +4056,10 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_readiness.js?v=20261012ia2"></script>
 <!-- TODAY'S GAMES: the slate kernel (dates, statuses, markets, research links), then the strip and page -->
 <!-- EdgeDesk vs the market for NHL games (the matchup view and Research → NHL) -->
-<script src="/lib/edgedesk_nhl_market.js?v=20261014vs1"></script>
-<script src="/lib/edgedesk_nhl_compare.js?v=20261014vs1"></script>
-<script src="/lib/edgedesk_games.js?v=20261013gm1"></script>
-<script src="/lib/edgedesk_games_ui.js?v=20261014vs2"></script>
+<script src="/lib/edgedesk_nhl_market.js?v=20261015sc1"></script>
+<script src="/lib/edgedesk_nhl_compare.js?v=20261015sc1"></script>
+<script src="/lib/edgedesk_games.js?v=20261015sc1"></script>
+<script src="/lib/edgedesk_games_ui.js?v=20261015sc1"></script>
 <script>
 /* THE FREE PRICE FEED loads at boot and every 10 minutes the tab is open: the
    football boards price on it whenever the paid capture is not current, and
@@ -5829,7 +5829,7 @@ researchRegister({id:'lines',label:'Lines',schema:'public',cadenceMs:null,
 /* NHL and ENGINE — the multi-sport engine's two panels share one script
    (lib/edgedesk_engine_ui.js), loaded on first open. A script that fails to
    load is an error state on the panel, never a blank one. */
-var XE_SCRIPT='/lib/edgedesk_engine_ui.js?v=20261014nhl3';
+var XE_SCRIPT='/lib/edgedesk_engine_ui.js?v=20261015sc1';
 function xeReady(){if(window.EDEngineUI)return Promise.resolve();return lmScript(XE_SCRIPT);}
 function xeFail(id){return function(e){var h=$(id);if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The engine could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';};}
 researchRegister({id:'nhl',label:'NHL',schema:'public',cadenceMs:null,

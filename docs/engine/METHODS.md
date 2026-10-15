@@ -83,30 +83,13 @@ RETROSPECTIVE and that the market is NOT_TESTED.
 - **Not modelled:** player availability (the pack's P0 gap: no injury or
   lineup archive), travel, possessions and pace.
 
-## Soccer — built (`soccer/`, five leagues fitted separately)
+## Soccer — removed (2026-10-15)
 
-- **Approach:** time-decayed Poisson attack/defence ratings (maher1982) with
-  the Dixon-Coles low-score correction (dixoncoles1997) and an optional pair
-  recalibration of the two goal rates; four candidates chosen per league by
-  the selection rule. A promoted club starts at the mean rating of the clubs
-  relegated the season before. Markets come from the score matrix: 1X2, totals,
-  both teams to score, and Asian handicaps with quarter lines settled as two
-  half stakes.
-- **Baselines:** a goal-difference Elo whose draw curve is fitted on earlier
-  seasons (hvattum2010); the league's base rates. 1X2 is scored by the ranked
-  probability score (constantinou2012).
-- **Result (confirmation 2018-19 to 2025-26):** the model is at best level
-  with Elo. RPS difference vs Elo: Premier League −0.0016 (−0.0036 to
-  +0.0004), Bundesliga −0.0007, La Liga +0.0002, Serie A −0.0025 (−0.0043 to
-  −0.0008; but the draw is under-predicted by 2.4 points), Ligue 1 −0.0004.
-  Independent Poisson won the selection window in every league (the
-  low-score correction did not earn its place). Totals and both-to-score are
-  over-confident (calibration slopes 0.45–0.75). Only the home −1.5 Asian line
-  passes (Premier League, Bundesliga, Ligue 1). **1X2 stays provisional
-  everywhere.**
-- **Not modelled:** xG, lineups, cup and European fixtures, congestion. The
-  source lags: missing results are listed (RESULT_MISSING), never guessed, and
-  a league with recent gaps is STALE on the board.
+EdgeDesk covers American sports and UFC. The soccer brain (`soccer/`: five
+leagues, time-decayed Poisson with the Dixon-Coles correction) was removed
+with its data, records and slate. Its last record: at best level with Elo on
+1X2 in every league, totals over-confident; nothing it priced was ever a
+value claim. The code is in the git history.
 
 ## MLB — built (`mlb/history/`) beside the browser run model
 

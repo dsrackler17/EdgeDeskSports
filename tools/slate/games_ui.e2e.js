@@ -9,7 +9,7 @@
 
    It checks what a reader sees and can do: live first, the reader's own day
    (an 11:50 PM game is today's, a 12:10 AM one is tomorrow's), puck line /
-   run line / 1X2 with the draw, "Odds unavailable", an honest empty sport
+   run line, "Odds unavailable", an honest empty sport
    with its Upcoming games, "Unable to load" for a sport whose source failed,
    one tap to research and Back to the same sport and date, filters, search,
    keyboard, the matchup dialog, the live overlay, the reader's own prices,
@@ -56,7 +56,11 @@ const NOW = F.NOW;
     const det = ev.find((e) => e.id === 'nhl:espn:401802001');
     det.home.score = 3; det.status_detail = '3rd 4:10'; det.updated_at = new Date(NOW - 30000).toISOString();
     ev.forEach((e) => { e.market = null; });
-    return JSON.stringify({ schema: 'edgedesk_slate_live/1', as_of: new Date(NOW).toISOString(), covered: [{ feed: 'nhl:hockey/nhl', sport: 'nhl', day: '2026-10-13', fetched_at: new Date(NOW - 30000).toISOString() }], failed: [], events: ev });
+    /* a soccer row the live layer wrote before soccer was removed */
+    const old = { id: 'soccer:espn:701003', sport: 'soccer', league: 'La Liga', feed: 'soccer:soccer/esp.1', sb_day: '2026-10-13', provider: 'espn', status: 'LIVE', status_detail: "60'",
+      start_utc: '2026-10-13T21:30:00.000Z', updated_at: new Date(NOW - 30000).toISOString(), home: { name: 'Barcelona', abbr: 'BAR', score: 1 }, away: { name: 'Real Madrid', abbr: 'RMA', score: 1 }, market: null };
+    return JSON.stringify({ schema: 'edgedesk_slate_live/1', as_of: new Date(NOW).toISOString(), covered: [{ feed: 'nhl:hockey/nhl', sport: 'nhl', day: '2026-10-13', fetched_at: new Date(NOW - 30000).toISOString() },
+      { feed: 'soccer:soccer/esp.1', sport: 'soccer', day: '2026-10-13', fetched_at: new Date(NOW - 30000).toISOString() }], failed: [], events: ev.concat([old]) });
   }
   function marketsBody() {
     return JSON.stringify({ schema: 'edgedesk_slate_markets/1', entitled: true, available: true, events: [{
@@ -140,9 +144,10 @@ const NOW = F.NOW;
       await shot(page, 'strip-' + label);
       const ids = await cards(page, '#gamesStrip');
       chk(label + ': the strip is the first thing in Research', await page.evaluate(() => { const s = document.getElementById('gamesStrip'), h = document.querySelector('#v-research .rs-hd'); return !!s && h.nextElementSibling === s && !document.getElementById('v-research').classList.contains('hide'); }));
-      chk(label + ': live games first', ids[0] === 'soccer:espn:701003' && ids[1] === 'nhl:espn:401802001', ids.slice(0, 3));
+      chk(label + ': live games first', ids[0] === 'ncaam:espn:401910003' && ids[1] === 'nhl:espn:401802001', ids.slice(0, 3));
+      chk(label + ': no soccer anywhere: no pill, no game', !(await page.$('#gamesStrip [data-gm-sport="soccer"]')) && !/soccer/i.test(await text(page, '#gamesStrip')) && !ids.some((x) => /^soccer/.test(x)));
       chk(label + ': the 11:50 PM game is today’s; the 12:10 AM one is not', ids.indexOf('nhl:espn:401802004') >= 0 && ids.indexOf('nhl:espn:401802005') < 0);
-      chk(label + ': yesterday’s final is not today’s', ids.indexOf('soccer:espn:701001') < 0);
+      chk(label + ': yesterday’s final is not today’s', ids.indexOf('ncaam:espn:401910001') < 0);
       chk(label + ': All sports counts today’s nine games', /All sports\s*9/.test(await text(page, '#gamesStrip [data-gm-sport="all"]')));
       chk(label + ': no horizontal page scroll', await noHScroll(page));
       chk(label + ': the strip never names ESPN, in its words, tooltips or labels', await page.evaluate(() => { const s = document.getElementById('gamesStrip'); return !/ESPN/i.test(s.innerText) && ![...s.querySelectorAll('[title],[aria-label]')].some((e) => /ESPN/i.test((e.getAttribute('title') || '') + ' ' + (e.getAttribute('aria-label') || ''))); }));
@@ -170,8 +175,8 @@ const NOW = F.NOW;
     const det = await text(page, '#gamesStrip .gm-card[data-id="nhl:espn:401802001"]');
     chk('a live game shows its clock and score, and no in-play price', /Live · 2nd 12:34/.test(det) && /\b2\b/.test(det) && !(await page.$('#gamesStrip .gm-card[data-id="nhl:espn:401802001"] .gm-cv')), det);
     chk('times are the reader’s, with the zone named once under the strip', /6:00 PM/.test(cbj) && /Times in CDT \(America\/Chicago\)/.test(await text(page, '#gamesStrip .gm-foot')));
-    const rma = await text(page, '#gamesStrip .gm-card[data-id="soccer:espn:701003"]');
-    chk('a game with no research page: the pill opens the matchup', /Matchup/.test(rma) && /No research yet/.test(rma) && !!(await page.$('#gamesStrip .gm-card[data-id="soccer:espn:701003"] button.gm-go[data-gm-detail]')), rma);
+    const ku = await text(page, '#gamesStrip .gm-card[data-id="ncaam:espn:401910003"]');
+    chk('a game with no research page: the pill opens the matchup', /Matchup/.test(ku) && /No research yet/.test(ku) && !!(await page.$('#gamesStrip .gm-card[data-id="ncaam:espn:401910003"] button.gm-go[data-gm-detail]')), ku);
 
     /* empty, failed, upcoming */
     await page.click('#gamesStrip [data-gm-sport="nba"]');
@@ -259,13 +264,14 @@ const NOW = F.NOW;
     await page.click('#gamesPage [data-gm-sport="all"]');
     await page.click('#gamesPage [data-gm-date="2026-10-12"]');
     await page.waitForFunction(() => location.hash === '#games/all/2026-10-12');
-    const yday = await text(page, '#gamesPage .gm-card[data-id="soccer:espn:701001"]');
-    chk('Yesterday holds the final, with its score', /Final/.test(yday) && /Arsenal[\s\S]*2[\s\S]*Chelsea[\s\S]*2|Chelsea[\s\S]*2[\s\S]*Arsenal[\s\S]*2/.test(yday), yday);
+    const yday = await text(page, '#gamesPage .gm-card[data-id="ncaam:espn:401910001"]');
+    chk('Yesterday holds the final, with its score', /Final/.test(yday) && /Tar Heels[\s\S]*68[\s\S]*Blue Devils[\s\S]*70/.test(yday), yday);
     await page.fill('#gmDateInput', '2026-10-14');
     await page.dispatchEvent('#gmDateInput', 'change');
     await page.waitForFunction(() => location.hash === '#games/all/2026-10-14');
-    const liv = await text(page, '#gamesPage .gm-card[data-id="soccer:espn:701002"]');
-    chk('a soccer moneyline is the 1X2, with the draw priced on its own row', /1X2/i.test(liv) && /Draw\s+\+250/.test(liv), liv);
+    const bay = await text(page, '#gamesPage .gm-card[data-id="ncaam:espn:401910002"]');
+    chk('Tomorrow: a college basketball game with its spread, both sides', /Spread/i.test(bay) && /GONZ\s+−3\.5 −110\s+−180/.test(bay) && /BAY\s+\+3\.5 −110\s+\+150/.test(bay), bay);
+    chk('the games page has no soccer pill', !(await page.$('#gamesPage [data-gm-sport="soccer"]')));
     await page.fill('#gmDateInput', '2026-10-15');
     await page.dispatchEvent('#gmDateInput', 'change');
     await page.waitForFunction(() => location.hash === '#games/all/2026-10-15');
@@ -298,6 +304,7 @@ const NOW = F.NOW;
     const L = await open(DESK, '/app.html');
     await L.page.waitForFunction(() => { const c = document.querySelector('#gamesStrip .gm-card[data-id="nhl:espn:401802001"]'); return c && /3rd 4:10/.test(c.innerText); }, null, { timeout: 15000 });
     chk('the live layer updates the score and clock between builds', /\b3\b/.test(await text(L.page, '#gamesStrip .gm-card[data-id="nhl:espn:401802001"]')));
+    chk('a soccer row the live layer still holds is never shown', (await cards(L.page, '#gamesStrip')).every((x) => !/^soccer/.test(x)) && !/Barcelona|Real Madrid|soccer/i.test(await text(L.page, '#gamesStrip')));
     chk('a game the live read no longer lists for its day leaves it', (await cards(L.page, '#gamesStrip')).indexOf('nhl:espn:401802004') < 0);
     chk('days and sports the live read did not cover are untouched', (await cards(L.page, '#gamesStrip')).indexOf('mlb:espn:401803002') >= 0);
     await L.page.waitForFunction(() => /FanDuel/.test((document.querySelector('#gamesStrip .gm-card[data-id="cfb:espn:401871067"]') || {}).innerText || ''), null, { timeout: 15000 });
