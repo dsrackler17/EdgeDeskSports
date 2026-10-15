@@ -1,22 +1,16 @@
 {
  "schema": "edgedesk_cfb_changes_v1",
- "generated_at": "2026-10-15T00:52:32.198Z",
+ "generated_at": "2026-10-15T06:24:09.626Z",
  "threshold_points": 0.5,
  "rule": "market movement can never move the pure fair line, so it is never an attribution; an unexplained move is UNATTRIBUTED",
  "system": {
   "available": true,
-  "since": "2026-10-09T00:08:17.031Z",
+  "since": "2026-10-09T06:07:41.132Z",
   "changes": [
-   {
-    "what": "pricing code",
-    "kind": "SOFTWARE",
-    "from": "dbb650846e570ffc",
-    "to": "f6fc9d15df4dc2b3"
-   },
    {
     "what": "research-gate code",
     "kind": "SOFTWARE",
-    "from": "a8260f08e1ec209f",
+    "from": "c250afccd07d92b8",
     "to": "ff06bc85056495a2"
    },
    {
@@ -28,8 +22,8 @@
    {
     "what": "pricing slate rebuilt",
     "kind": "FOOTBALL",
-    "from": "2026-10-08T23:29:33.228Z",
-    "to": "2026-10-14T23:34:41.672Z"
+    "from": "2026-10-09T05:43:00.358Z",
+    "to": "2026-10-15T04:57:43.625Z"
    },
    {
     "what": "QB coverage (% of slate games with both starters resolved)",
@@ -41,10 +35,10 @@
     "what": "market coverage (% of slate games with a fresh quote)",
     "kind": "MARKET",
     "from": 4,
-    "to": 49
+    "to": 61
    }
   ],
-  "summary": "SOFTWARE: pricing code · SOFTWARE: research-gate code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
+  "summary": "SOFTWARE: research-gate code · FOOTBALL: current FBS power rating rebuilt · FOOTBALL: pricing slate rebuilt · FOOTBALL: QB coverage (% of slate games with both starters resolved) · MARKET: market coverage (% of slate games with a fresh quote)"
  },
  "games": [
   {
@@ -194,6 +188,47 @@
   },
   {
    "from_at": "2026-10-07T06:15:25.756Z",
+   "to_at": "2026-10-15T04:57:43.625Z",
+   "old_fair": 6.29,
+   "new_fair": 0.66,
+   "change": -5.63,
+   "material": true,
+   "causes": [
+    {
+     "cause": "SOFTWARE_PATCH",
+     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
+    },
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "QB_STATUS",
+     "detail": "home: Dylan Raiola (COMPETITION) → Dylan Raiola (PREVIOUS_GAME)"
+    },
+    {
+     "cause": "MATCHUP_UPDATE",
+     "term": "matchup",
+     "points": -1.29
+    },
+    {
+     "cause": "QB_ABSENCE_OR_AVAILABILITY",
+     "term": "injury",
+     "points": -3.9
+    }
+   ],
+   "unexplained": 0,
+   "game_id": "401858492",
+   "game": "Nebraska @ Oregon",
+   "market_then": -21.5,
+   "market_now": -7,
+   "market_change": 14.5,
+   "status_then": "NO_MARKET",
+   "status_now": "INVESTIGATE",
+   "price_state": "PART OF THE EDGE PRICED IN"
+  },
+  {
+   "from_at": "2026-10-07T06:15:25.756Z",
    "to_at": "2026-10-14T18:42:29.159Z",
    "old_fair": 20.66,
    "new_fair": 26.28,
@@ -254,6 +289,75 @@
    "market_change": null,
    "status_then": "NO_MARKET",
    "status_now": "WORTH_RESEARCHING",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-10-07T06:15:25.756Z",
+   "to_at": "2026-10-15T04:57:43.625Z",
+   "old_fair": 0.28,
+   "new_fair": 5.65,
+   "change": 5.37,
+   "material": true,
+   "causes": [
+    {
+     "cause": "SOFTWARE_PATCH",
+     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
+    },
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "MATCHUP_UPDATE",
+     "term": "matchup",
+     "points": 0.14
+    },
+    {
+     "cause": "QB_ABSENCE_OR_AVAILABILITY",
+     "term": "injury",
+     "points": 0.59
+    }
+   ],
+   "unexplained": 0,
+   "game_id": "401856721",
+   "game": "Missouri @ Ole Miss",
+   "market_then": null,
+   "market_now": -5.5,
+   "market_change": null,
+   "status_then": "NO_MARKET",
+   "status_now": "MARKET_ALIGNED",
+   "price_state": "EDGE MOSTLY PRICED IN"
+  },
+  {
+   "from_at": "2026-10-07T06:15:25.756Z",
+   "to_at": "2026-10-15T04:57:43.625Z",
+   "old_fair": 14.7,
+   "new_fair": 19.95,
+   "change": 5.25,
+   "material": true,
+   "causes": [
+    {
+     "cause": "SOFTWARE_PATCH",
+     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
+    },
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "QB_ABSENCE_OR_AVAILABILITY",
+     "term": "injury",
+     "points": 1.95
+    }
+   ],
+   "unexplained": 0.02,
+   "game_id": "401856724",
+   "game": "Florida @ Texas",
+   "market_then": null,
+   "market_now": -10.5,
+   "market_change": null,
+   "status_then": "NO_MARKET",
+   "status_now": "INVESTIGATE",
    "price_state": "PRICE STILL AVAILABLE"
   },
   {
@@ -323,38 +427,6 @@
    "status_then": "NO_MARKET",
    "status_now": "WORTH_RESEARCHING",
    "price_state": "NO INITIAL EDGE"
-  },
-  {
-   "from_at": "2026-10-07T06:15:25.756Z",
-   "to_at": "2026-10-14T18:42:29.159Z",
-   "old_fair": 0.28,
-   "new_fair": 5.06,
-   "change": 4.78,
-   "material": true,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "MATCHUP_UPDATE",
-     "term": "matchup",
-     "points": 0.14
-    }
-   ],
-   "unexplained": 0,
-   "game_id": "401856721",
-   "game": "Missouri @ Ole Miss",
-   "market_then": null,
-   "market_now": -6,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "MARKET_ALIGNED",
-   "price_state": "EDGE MOSTLY PRICED IN"
   },
   {
    "from_at": "2026-10-07T06:15:25.756Z",
@@ -784,6 +856,43 @@
    "price_state": "PRICE NO LONGER ATTRACTIVE"
   },
   {
+   "from_at": "2026-10-07T06:15:25.756Z",
+   "to_at": "2026-10-15T04:57:43.625Z",
+   "old_fair": 5.7,
+   "new_fair": 2.37,
+   "change": -3.33,
+   "material": true,
+   "causes": [
+    {
+     "cause": "SOFTWARE_PATCH",
+     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
+    },
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "MATCHUP_UPDATE",
+     "term": "matchup",
+     "points": -0.14
+    },
+    {
+     "cause": "QB_ABSENCE_OR_AVAILABILITY",
+     "term": "injury",
+     "points": -3.9
+    }
+   ],
+   "unexplained": 0.01,
+   "game_id": "401858494",
+   "game": "Wisconsin @ UCLA",
+   "market_then": null,
+   "market_now": -2.5,
+   "market_change": null,
+   "status_then": "NO_MARKET",
+   "status_now": "MARKET_ALIGNED",
+   "price_state": "PRICE NO LONGER ATTRACTIVE"
+  },
+  {
    "from_at": "2026-10-06T00:52:51.249Z",
    "to_at": "2026-10-14T12:12:55.934Z",
    "old_fair": -4.51,
@@ -814,33 +923,6 @@
    "status_then": "NO_MARKET",
    "status_now": "WORTH_RESEARCHING",
    "price_state": "NO INITIAL EDGE"
-  },
-  {
-   "from_at": "2026-10-07T06:15:25.756Z",
-   "to_at": "2026-10-14T08:38:29.879Z",
-   "old_fair": 14.7,
-   "new_fair": 18,
-   "change": 3.3,
-   "material": true,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    }
-   ],
-   "unexplained": 0.02,
-   "game_id": "401856724",
-   "game": "Florida @ Texas",
-   "market_then": null,
-   "market_now": -10.5,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "MARKET_FAULT",
-   "price_state": "PRICE STILL AVAILABLE"
   },
   {
    "from_at": "2026-10-07T06:15:25.756Z",
@@ -985,6 +1067,47 @@
   },
   {
    "from_at": "2026-10-07T06:15:25.756Z",
+   "to_at": "2026-10-15T04:57:43.625Z",
+   "old_fair": -6.22,
+   "new_fair": -8.72,
+   "change": -2.5,
+   "material": true,
+   "causes": [
+    {
+     "cause": "SOFTWARE_PATCH",
+     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
+    },
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "QB_STATUS",
+     "detail": "home: Faizon Brandon (PREVIOUS_GAME) → George MacIntyre (PREVIOUS_GAME)"
+    },
+    {
+     "cause": "MATCHUP_UPDATE",
+     "term": "matchup",
+     "points": -0.41
+    },
+    {
+     "cause": "QB_ABSENCE_OR_AVAILABILITY",
+     "term": "injury",
+     "points": -1.95
+    }
+   ],
+   "unexplained": -0.02,
+   "game_id": "401856723",
+   "game": "Alabama @ Tennessee",
+   "market_then": 1.5,
+   "market_now": 7.5,
+   "market_change": 6,
+   "status_then": "NO_MARKET",
+   "status_now": "MARKET_ALIGNED",
+   "price_state": "EDGE MOSTLY PRICED IN"
+  },
+  {
+   "from_at": "2026-10-07T06:15:25.756Z",
    "to_at": "2026-10-14T14:42:19.629Z",
    "old_fair": 22.99,
    "new_fair": 25.33,
@@ -1119,74 +1242,6 @@
    "status_then": "NO_MARKET",
    "status_now": "INVESTIGATE",
    "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
-   "from_at": "2026-10-07T06:15:25.756Z",
-   "to_at": "2026-10-14T12:12:55.934Z",
-   "old_fair": 6.29,
-   "new_fair": 4.56,
-   "change": -1.73,
-   "material": true,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "QB_STATUS",
-     "detail": "home: Dylan Raiola (COMPETITION) → Dylan Raiola (PREVIOUS_GAME)"
-    },
-    {
-     "cause": "MATCHUP_UPDATE",
-     "term": "matchup",
-     "points": -1.29
-    }
-   ],
-   "unexplained": 0,
-   "game_id": "401858492",
-   "game": "Nebraska @ Oregon",
-   "market_then": -21.5,
-   "market_now": -7.5,
-   "market_change": 14,
-   "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "EDGE MOSTLY PRICED IN"
-  },
-  {
-   "from_at": "2026-10-07T06:15:25.756Z",
-   "to_at": "2026-10-14T14:42:19.629Z",
-   "old_fair": 13.24,
-   "new_fair": 11.54,
-   "change": -1.7,
-   "material": true,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "MATCHUP_UPDATE",
-     "term": "matchup",
-     "points": 0.07
-    }
-   ],
-   "unexplained": 0,
-   "game_id": "401856720",
-   "game": "Mississippi State @ LSU",
-   "market_then": null,
-   "market_now": -14,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "WORTH_RESEARCHING",
-   "price_state": "NO INITIAL EDGE"
   },
   {
    "from_at": "2026-10-07T06:15:25.756Z",
@@ -1658,38 +1713,6 @@
    "price_state": "PRICE NO LONGER ATTRACTIVE"
   },
   {
-   "from_at": "2026-10-07T06:15:25.756Z",
-   "to_at": "2026-10-14T18:42:29.159Z",
-   "old_fair": 5.7,
-   "new_fair": 6.27,
-   "change": 0.57,
-   "material": true,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "MATCHUP_UPDATE",
-     "term": "matchup",
-     "points": -0.14
-    }
-   ],
-   "unexplained": 0.01,
-   "game_id": "401858494",
-   "game": "Wisconsin @ UCLA",
-   "market_then": null,
-   "market_now": -2.5,
-   "market_change": null,
-   "status_then": "NO_MARKET",
-   "status_now": "INVESTIGATE",
-   "price_state": "PRICE STILL AVAILABLE"
-  },
-  {
    "from_at": "2026-10-06T00:52:51.249Z",
    "to_at": "2026-10-14T12:12:55.934Z",
    "old_fair": -0.77,
@@ -1723,42 +1746,6 @@
   },
   {
    "from_at": "2026-10-07T06:15:25.756Z",
-   "to_at": "2026-10-14T18:42:29.159Z",
-   "old_fair": -6.22,
-   "new_fair": -6.76,
-   "change": -0.54,
-   "material": true,
-   "causes": [
-    {
-     "cause": "SOFTWARE_PATCH",
-     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
-    },
-    {
-     "cause": "NEW_GAME_ABSORBED",
-     "detail": "a completed game was absorbed into a team state"
-    },
-    {
-     "cause": "QB_STATUS",
-     "detail": "home: Faizon Brandon (PREVIOUS_GAME) → George MacIntyre (PREVIOUS_GAME)"
-    },
-    {
-     "cause": "MATCHUP_UPDATE",
-     "term": "matchup",
-     "points": -0.41
-    }
-   ],
-   "unexplained": -0.01,
-   "game_id": "401856723",
-   "game": "Alabama @ Tennessee",
-   "market_then": 1.5,
-   "market_now": 8.5,
-   "market_change": 7,
-   "status_then": "NO_MARKET",
-   "status_now": "MARKET_ALIGNED",
-   "price_state": "PRICE NO LONGER ATTRACTIVE"
-  },
-  {
-   "from_at": "2026-10-07T06:15:25.756Z",
    "to_at": "2026-10-14T14:42:19.629Z",
    "old_fair": -22.49,
    "new_fair": -22.96,
@@ -1788,6 +1775,43 @@
    "status_then": "NO_MARKET",
    "status_now": "INVESTIGATE",
    "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-10-07T06:15:25.756Z",
+   "to_at": "2026-10-15T04:57:43.625Z",
+   "old_fair": 13.24,
+   "new_fair": 13.49,
+   "change": 0.25,
+   "material": false,
+   "causes": [
+    {
+     "cause": "SOFTWARE_PATCH",
+     "detail": "the pricing code changed between the two numbers (bug fix or patch)"
+    },
+    {
+     "cause": "NEW_GAME_ABSORBED",
+     "detail": "a completed game was absorbed into a team state"
+    },
+    {
+     "cause": "MATCHUP_UPDATE",
+     "term": "matchup",
+     "points": 0.07
+    },
+    {
+     "cause": "QB_ABSENCE_OR_AVAILABILITY",
+     "term": "injury",
+     "points": 1.95
+    }
+   ],
+   "unexplained": 0,
+   "game_id": "401856720",
+   "game": "Mississippi State @ LSU",
+   "market_then": null,
+   "market_now": -14.5,
+   "market_change": null,
+   "status_then": "NO_MARKET",
+   "status_now": "MARKET_ALIGNED",
+   "price_state": "NO INITIAL EDGE"
   },
   {
    "from_at": "2026-10-07T17:45:36.876Z",
@@ -1979,6 +2003,240 @@
    "status_then": "NO_MARKET",
    "status_now": "NO_MARKET",
    "price_state": "PRICE HISTORY UNKNOWN"
+  },
+  {
+   "from_at": "2026-10-14T05:09:34.133Z",
+   "to_at": "2026-10-15T04:57:43.625Z",
+   "old_fair": 21.01,
+   "new_fair": 21.01,
+   "change": 0,
+   "material": false,
+   "causes": [],
+   "unexplained": 0,
+   "game_id": "401856727",
+   "game": "Texas A&M @ Alabama",
+   "market_then": -2.5,
+   "market_now": -15.5,
+   "market_change": -13,
+   "status_then": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-10-14T05:09:34.133Z",
+   "to_at": "2026-10-15T04:57:43.625Z",
+   "old_fair": 12.8,
+   "new_fair": 12.8,
+   "change": 0,
+   "material": false,
+   "causes": [],
+   "unexplained": 0,
+   "game_id": "401856729",
+   "game": "Vanderbilt @ Kentucky",
+   "market_then": null,
+   "market_now": -9.5,
+   "market_change": null,
+   "status_then": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-10-14T05:09:34.133Z",
+   "to_at": "2026-10-15T04:57:43.625Z",
+   "old_fair": 0.61,
+   "new_fair": 0.61,
+   "change": 0,
+   "material": false,
+   "causes": [],
+   "unexplained": 0,
+   "game_id": "401856731",
+   "game": "Tennessee @ South Carolina",
+   "market_then": null,
+   "market_now": 2.5,
+   "market_change": null,
+   "status_then": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-10-14T05:09:34.133Z",
+   "to_at": "2026-10-15T04:57:43.625Z",
+   "old_fair": 3.92,
+   "new_fair": 3.92,
+   "change": 0,
+   "material": false,
+   "causes": [],
+   "unexplained": 0,
+   "game_id": "401856732",
+   "game": "Ole Miss @ Texas",
+   "market_then": -8.5,
+   "market_now": -6.5,
+   "market_change": 2,
+   "status_then": "NO_MARKET",
+   "status_now": "INVESTIGATE",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-10-14T05:09:34.133Z",
+   "to_at": "2026-10-15T04:57:43.625Z",
+   "old_fair": -10.08,
+   "new_fair": -10.08,
+   "change": 0,
+   "material": false,
+   "causes": [],
+   "unexplained": 0,
+   "game_id": "401856835",
+   "game": "BYU @ UCF",
+   "market_then": null,
+   "market_now": 9.5,
+   "market_change": null,
+   "status_then": "NO_MARKET",
+   "status_now": "MARKET_ALIGNED",
+   "price_state": "NO INITIAL EDGE"
+  },
+  {
+   "from_at": "2026-10-14T05:09:34.133Z",
+   "to_at": "2026-10-15T04:57:43.625Z",
+   "old_fair": 12.84,
+   "new_fair": 12.84,
+   "change": 0,
+   "material": false,
+   "causes": [],
+   "unexplained": 0,
+   "game_id": "401856837",
+   "game": "Houston @ Utah",
+   "market_then": -6.5,
+   "market_now": -7,
+   "market_change": -0.5,
+   "status_then": "NO_MARKET",
+   "status_now": "INVESTIGATE",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-10-14T05:09:34.133Z",
+   "to_at": "2026-10-15T04:57:43.625Z",
+   "old_fair": 15.49,
+   "new_fair": 15.49,
+   "change": 0,
+   "material": false,
+   "causes": [],
+   "unexplained": 0,
+   "game_id": "401856838",
+   "game": "Iowa State @ Arizona",
+   "market_then": null,
+   "market_now": -10,
+   "market_change": null,
+   "status_then": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-10-14T05:09:34.133Z",
+   "to_at": "2026-10-15T04:57:43.625Z",
+   "old_fair": 25.15,
+   "new_fair": 25.15,
+   "change": 0,
+   "material": false,
+   "causes": [],
+   "unexplained": 0,
+   "game_id": "401858274",
+   "game": "Pittsburgh @ Miami",
+   "market_then": null,
+   "market_now": -23.5,
+   "market_change": null,
+   "status_then": "NO_MARKET",
+   "status_now": "MARKET_ALIGNED",
+   "price_state": "NO INITIAL EDGE"
+  },
+  {
+   "from_at": "2026-10-14T05:09:34.133Z",
+   "to_at": "2026-10-15T04:57:43.625Z",
+   "old_fair": 1.87,
+   "new_fair": 1.87,
+   "change": 0,
+   "material": false,
+   "causes": [],
+   "unexplained": 0,
+   "game_id": "401858276",
+   "game": "Virginia Tech @ Clemson",
+   "market_then": null,
+   "market_now": 1.5,
+   "market_change": null,
+   "status_then": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-10-14T05:09:34.133Z",
+   "to_at": "2026-10-15T04:57:43.625Z",
+   "old_fair": -10.04,
+   "new_fair": -10.04,
+   "change": 0,
+   "material": false,
+   "causes": [],
+   "unexplained": 0,
+   "game_id": "401858496",
+   "game": "Indiana @ Michigan",
+   "market_then": 6,
+   "market_now": 9.5,
+   "market_change": 3.5,
+   "status_then": "NO_MARKET",
+   "status_now": "MARKET_ALIGNED",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-10-14T05:09:34.133Z",
+   "to_at": "2026-10-15T04:57:43.625Z",
+   "old_fair": -9.28,
+   "new_fair": -9.28,
+   "change": 0,
+   "material": false,
+   "causes": [],
+   "unexplained": 0,
+   "game_id": "401858497",
+   "game": "Iowa @ Minnesota",
+   "market_then": null,
+   "market_now": 4.5,
+   "market_change": null,
+   "status_then": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-10-14T05:09:34.133Z",
+   "to_at": "2026-10-15T04:57:43.625Z",
+   "old_fair": 3.83,
+   "new_fair": 3.83,
+   "change": 0,
+   "material": false,
+   "causes": [],
+   "unexplained": 0,
+   "game_id": "401858500",
+   "game": "USC @ Wisconsin",
+   "market_then": null,
+   "market_now": 1.5,
+   "market_change": null,
+   "status_then": "NO_MARKET",
+   "status_now": "WORTH_RESEARCHING",
+   "price_state": "PRICE STILL AVAILABLE"
+  },
+  {
+   "from_at": "2026-10-14T18:42:29.159Z",
+   "to_at": "2026-10-15T04:57:43.625Z",
+   "old_fair": -3.03,
+   "new_fair": -3.03,
+   "change": 0,
+   "material": false,
+   "causes": [],
+   "unexplained": 0,
+   "game_id": "401856728",
+   "game": "LSU @ Auburn",
+   "market_then": null,
+   "market_now": 6.5,
+   "market_change": null,
+   "status_then": "NO_MARKET",
+   "status_now": "INVESTIGATE",
+   "price_state": "PRICE STILL AVAILABLE"
   }
  ]
 }
