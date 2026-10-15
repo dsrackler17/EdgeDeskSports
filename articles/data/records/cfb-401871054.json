@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-14T23:30:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1908,97 +1908,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1f68k66qz1664",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": false,
-    "question": "Can Kennesaw State contain Missouri State’s explosive runs?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Missouri State, and its own breakdown accounts for about 1.4 of the 2.7 points, but not the full gap. It is a research question, not a bet.",
-    "gap": {
-      "points": 2.7,
-      "toward": "Missouri State",
-      "other": "Kennesaw State"
-    },
-    "supporting": [
-      "When Kennesaw State has the ball (big plays on the ground): Kennesaw State’s offense turns 3.2% of its runs into explosive gains, and Missouri State’s defense gives up explosive gains on 6.8% of opponent runs (FBS average 6.6%).",
-      "EdgeDesk’s position-group ratings put Missouri State’s running backs No. 81 nationally and Kennesaw State’s No. 128.",
-      "When Missouri State has the ball (pass protection against the pass rush): Missouri State’s offense has allowed a sack on 8.1% of its dropbacks, and Kennesaw State’s defense sacks the quarterback on 3.4% of opponent dropbacks (FBS average 5.6%)."
-    ],
-    "contradicting": [
-      "When Missouri State has the ball (big plays on the ground): Missouri State’s offense turns 4.5% of its runs into explosive gains, and Kennesaw State’s defense gives up explosive gains on 2.7% of opponent runs (FBS average 6.6%).",
-      "When Kennesaw State has the ball (pass protection against the pass rush): Kennesaw State’s offense has allowed a sack on 3.0% of its dropbacks, and Missouri State’s defense sacks the quarterback on 4.4% of opponent dropbacks (FBS average 5.6%).",
-      "When Kennesaw State has the ball (third down): Kennesaw State’s offense converts 45.8% of its third downs, and Missouri State’s defense allows opponents to convert 53.2% of their third downs (FBS average 39.5%).",
-      "In his last two games (SMU and Western Kentucky), Locklear averaged 4.4 yards per attempt, against 9.2 in his three games before that."
-    ],
-    "quarterbacks": [
-      "Skyler Locklear has completed 71 of 108 passes (65.7%) for 788 yards, 7.3 yards per attempt, 4 touchdowns and 2 interceptions in five games for Missouri State, and has been sacked on 9 of 117 dropbacks.",
-      "Henry Belin IV has completed 19 of 34 passes (55.9%) for 250 yards, 7.4 yards per attempt, 2 touchdowns and 1 interception in four games for Missouri State, and has been sacked on 2 of 36 dropbacks.",
-      "Rickie Collins has completed 103 of 152 passes (67.8%) for 1,042 yards, 6.9 yards per attempt, 3 touchdowns and 3 interceptions in five games for Kennesaw State, and has been sacked on 4 of 156 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Missouri State’s offense has to keep winning on long runs: it turns 4.5% of its runs into explosive gains, and Kennesaw State’s defense gives up explosive gains on 2.7% of opponent runs.",
-        "Missouri State’s defense has to slow Kennesaw State in the pass-rush matchup — Kennesaw State’s offense has allowed a sack on 3.0% of its dropbacks.",
-        "Missouri State’s defense has to come out ahead on long runs: it gives up explosive gains on 6.8% of opponent runs, against an offense that turns 3.2% of its runs into explosive gains.",
-        "Missouri State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 8.1% of its dropbacks, and Kennesaw State’s defense sacks the quarterback on 3.4% of opponent dropbacks."
-      ],
-      "market": [
-        "Kennesaw State’s defense has to come out ahead on long runs: it gives up explosive gains on 2.7% of opponent runs, against an offense that turns 4.5% of its runs into explosive gains.",
-        "Kennesaw State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 3.0% of its dropbacks, and Missouri State’s defense sacks the quarterback on 4.4% of opponent dropbacks.",
-        "Collins keeps producing at his season rate (67.8% completions, 6.9 yards per attempt, 3 TD, 3 INT)."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate and sack rate allowed for Missouri State and Kennesaw State.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, historical meetings and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate (Missouri State) and sack rate allowed (Kennesaw State); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "HFA_CONSTANT",
-        "severity": "medium",
-        "text": "EdgeDesk’s model gives Missouri State 4.1 points for playing at home — a league-wide value, not one measured for this stadium; historically, the closing market has priced about 61% of EdgeDesk’s home-field number."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Missouri State: new head coach; returning roster share at the 50th percentile; returning production at the 27th percentile. The long-run state is weighted 68% (regime curve) instead of 80% (standard curve) at 5 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-14T18:41:54.995Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk position-group ratings",
-        "url": null,
-        "path": "football/rankings/current.json",
-        "observed_at": "2026-10-14T18:41:22.803Z",
-        "verification": "RATING"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-14T00:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-14T21:36:16.857Z"
+    "at": "2026-10-15T04:26:49.921Z"
   }
 }

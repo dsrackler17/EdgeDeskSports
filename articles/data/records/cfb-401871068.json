@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-15T00:00:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1899,86 +1899,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-14. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "13n0yjbv2tqph",
-    "status": "NO_MATERIAL_DISAGREEMENT",
-    "input_suspect": false,
-    "question": "Can Sam Houston get Western Kentucky off the field on third down?",
-    "assessment": "No material disagreement: EdgeDesk and the line are within 0.0 points.",
-    "gap": {
-      "points": 0,
-      "toward": "Western Kentucky",
-      "other": "Sam Houston"
-    },
-    "supporting": [
-      "When Sam Houston has the ball (big plays through the air): Sam Houston’s offense turns 6.9% of its pass plays into explosive gains, and Western Kentucky’s defense gives up explosive gains on 8.7% of opponent pass plays (FBS average 10.4%).",
-      "When Sam Houston has the ball (big plays on the ground): Sam Houston’s offense turns 3.0% of its runs into explosive gains, and Western Kentucky’s defense gives up explosive gains on 9.3% of opponent runs (FBS average 6.6%).",
-      "When Sam Houston has the ball (the line of scrimmage on running plays): Sam Houston’s offense is stopped at or behind the line on 26.2% of its runs, and Western Kentucky’s defense stops 14.6% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When Western Kentucky has the ball (big plays on the ground): Western Kentucky’s offense turns 5.2% of its runs into explosive gains, and Sam Houston’s defense gives up explosive gains on 13.0% of opponent runs (FBS average 6.6%)."
-    ],
-    "contradicting": [
-      "When Sam Houston has the ball (pass protection against the pass rush): Sam Houston’s offense has allowed a sack on 6.2% of its dropbacks, and Western Kentucky’s defense sacks the quarterback on 3.1% of opponent dropbacks (FBS average 5.6%).",
-      "When Western Kentucky has the ball (the passing game against the pass defense): Western Kentucky’s offense averages 6.7 yards per pass attempt, and Sam Houston’s defense allows 5.9 yards per pass attempt (FBS average 7.5).",
-      "When Western Kentucky has the ball (big plays through the air): Western Kentucky’s offense turns 8.1% of its pass plays into explosive gains, and Sam Houston’s defense gives up explosive gains on 7.6% of opponent pass plays (FBS average 10.4%).",
-      "Brock Glenn has completed 55 of 99 passes (55.6%) for 558 yards, 5.6 yards per attempt, 4 touchdowns and 1 interception in five games for Western Kentucky, and has been sacked on 2 of 101 dropbacks."
-    ],
-    "quarterbacks": [
-      "Landyn Locke has completed 116 of 178 passes (65.2%) for 1,306 yards, 7.3 yards per attempt, 11 touchdowns and 3 interceptions in five games for Sam Houston, and has been sacked on 12 of 190 dropbacks.",
-      "Rodney Tisdale Jr. has completed 76 of 116 passes (65.5%) for 818 yards, 7.1 yards per attempt, 4 touchdowns and 2 interceptions in four games for Western Kentucky, and has been sacked on 11 of 127 dropbacks.",
-      "Brock Glenn has completed 55 of 99 passes (55.6%) for 558 yards, 5.6 yards per attempt, 4 touchdowns and 1 interception in five games for Western Kentucky, and has been sacked on 2 of 101 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "Western Kentucky’s offense has to keep winning on third down: it converts 45.4% of its third downs, and Sam Houston’s defense allows opponents to convert 28.1% of their third downs.",
-        "Western Kentucky’s defense has to slow Sam Houston in the pass-rush matchup — Sam Houston’s offense has allowed a sack on 6.2% of its dropbacks.",
-        "Western Kentucky’s offense has to hold its own on big pass plays against a defense that gives up explosive gains on 7.6% of opponent pass plays.",
-        "Western Kentucky’s offense has to keep winning on long runs: it turns 5.2% of its runs into explosive gains, and Sam Houston’s defense gives up explosive gains on 13.0% of opponent runs."
-      ],
-      "market": [
-        "Sam Houston’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 6.2% of its dropbacks, and Western Kentucky’s defense sacks the quarterback on 3.1% of opponent dropbacks.",
-        "Sam Houston’s defense has to come out ahead on big pass plays: it gives up explosive gains on 7.6% of opponent pass plays, against an offense that turns 8.1% of its pass plays into explosive gains.",
-        "Sam Houston’s defense has to come out ahead on third down: it allows opponents to convert 28.1% of their third downs, against an offense that converts 45.4% of its third downs."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Sam Houston and Western Kentucky.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Sam Houston), sack rate allowed (Western Kentucky) and sack rate (Western Kentucky); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "medium",
-        "text": "EdgeDesk’s published number sits 3.2 points from the middle of its own other models."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-14T18:41:54.995Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-14T00:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-14T21:36:16.857Z"
+    "at": "2026-10-15T04:26:49.921Z"
   }
 }

@@ -21,8 +21,8 @@
   "game_time": "2026-10-17T23:30:00.000Z",
   "game_when_label": "2026-10-17 23:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-14T21:36:16.857Z",
-  "generated_at": "2026-10-14T21:36:16.857Z",
+  "updated_at": "2026-10-15T04:26:49.921Z",
+  "generated_at": "2026-10-15T04:26:49.921Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "DATA FAULT",
   "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -129,9 +129,9 @@
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
-          "NOT_DUE_YET": 4,
-          "FETCH_FAILED": 0,
-          "UNAVAILABLE": 3
+          "NOT_DUE_YET": 0,
+          "FETCH_FAILED": 2,
+          "UNAVAILABLE": 5
         },
         "absent": [
           {
@@ -139,6 +139,30 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
+          },
+          {
+            "field": "availability",
+            "side": "home",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Houston and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Big 12 Conference requires an availability report for this game: filed daily from three days before a conference game, with a final report 90 minutes before kickoff."
+          },
+          {
+            "field": "availability",
+            "side": "away",
+            "state": "FETCH_FAILED",
+            "why": "EdgeDesk read 3 source(s) for Oklahoma State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Big 12 Conference requires an availability report for this game: filed daily from three days before a conference game, with a final report 90 minutes before kickoff."
+          },
+          {
+            "field": "qb_availability",
+            "side": "home",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Big 12 Conference requires an availability report for this game: filed daily from three days before a conference game, with a final report 90 minutes before kickoff"
+          },
+          {
+            "field": "qb_availability",
+            "side": "away",
+            "state": "UNAVAILABLE",
+            "why": "the availability sources EdgeDesk reads were checked and carried no report on this player — no report found is not the same as healthy. Big 12 Conference requires an availability report for this game: filed daily from three days before a conference game, with a final report 90 minutes before kickoff"
           },
           {
             "field": "off_field",
@@ -239,7 +263,7 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-10T16:00:00.000Z",
-        "retrieved_at": "2026-10-14T18:41:00.555Z"
+        "retrieved_at": "2026-10-14T23:33:31.129Z"
       },
       "home": {
         "team": "Houston",
@@ -323,9 +347,9 @@
         "source": "cfbfastR-data player_stats — play attribution",
         "source_url": "https://raw.githubusercontent.com/sportsdataverse/cfbfastR-data/main/player_stats/csv/player_stats_2026.csv",
         "published_at": "2026-10-10T19:30:00.000Z",
-        "retrieved_at": "2026-10-14T18:41:00.555Z"
+        "retrieved_at": "2026-10-14T23:33:31.129Z"
       },
-      "generated_at": "2026-10-14T18:41:47.673Z",
+      "generated_at": "2026-10-14T23:34:08.012Z",
       "source": "football/starters/cfb_2026.json",
       "note": "An expected starter is not a confirmed one. EdgeDesk publishes which kind of answer each of these is, and no number on this page is priced from any of them. Availability is a separate axis: an absent report is UNKNOWN and is never read as healthy."
     },
@@ -1441,7 +1465,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 104h old",
+          "text": "odds is 110h old",
           "widening": null
         },
         {
@@ -1552,7 +1576,7 @@
       "total_market_held": null,
       "book": "captured consensus (stale) · 1 book · best at FanDuel",
       "captured": "2026-10-10T14:00:01.583+00:00",
-      "capture_age": "104 hours old",
+      "capture_age": "110 hours old",
       "stale": false,
       "classification": "DATA FAULT",
       "classification_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1582,6 +1606,8 @@
         "failed": [
           "MARKET.quote_fresh",
           "MARKET.book_count",
+          "ROSTER.home_availability",
+          "ROSTER.away_availability",
           "MODEL.calibration"
         ],
         "incomplete": [],
@@ -1617,11 +1643,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 88,
+        "pct": 84,
         "tier": "STRONG",
-        "text": "88 · STRONG",
-        "sub": "main deduction: Oklahoma State’s availability report is not due yet",
-        "score": 88,
+        "text": "84 · STRONG",
+        "sub": "main deduction: Oklahoma State’s availability sources refused",
+        "score": 84,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1635,7 +1661,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 12.2,
+            "score": 8.7,
             "max": 20
           },
           {
@@ -1647,7 +1673,7 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.9,
+            "score": 12.3,
             "max": 15
           },
           {
@@ -1663,23 +1689,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "Oklahoma State’s availability report is not due yet; the impact of Oklahoma State’s absences cannot be assessed: no graded availability read",
+        "main_deduction": "Oklahoma State’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Oklahoma State’s absences cannot be assessed: no graded availability read",
         "capped_by": [],
         "next_actions": [
           {
-            "action": "Re-read availability inside the filing window (Oklahoma State)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Restore an injury/availability source for Oklahoma State",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
-            "action": "Re-read availability inside the filing window (Houston)",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Restore an injury/availability source for Houston",
+            "potential_gain": 5,
+            "text": "up to +5"
           },
           {
             "action": "Refresh the market quote",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "potential_gain": 3,
+            "text": "up to +3"
           }
         ],
         "stability": {
@@ -1932,7 +1958,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "144texvw8h3ep",
+    "packet_hash": "ws1okf1rt9kfx",
     "status": "UNEXPLAINED",
     "input_suspect": true,
     "question": "Can Oklahoma State’s pass rush get to Conner Weigman?",
@@ -1974,7 +2000,8 @@
     },
     "unknown": [
       "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Houston and Oklahoma State.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
+      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate.",
+      "The line on file was captured Oct. 14 and may have moved."
     ],
     "flags": [
       {
@@ -2003,7 +2030,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-14T18:41:54.995Z",
+        "observed_at": "2026-10-14T23:34:13.255Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2019,6 +2046,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-14T21:36:16.857Z"
+    "at": "2026-10-15T04:26:49.921Z"
   }
 }
