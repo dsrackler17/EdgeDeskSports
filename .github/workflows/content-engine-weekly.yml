@@ -1,0 +1,60 @@
+# EdgeDesk — the Content Engine's weekly discovery and drafting (see content-engine.yml
+# for what it does, the secrets and the variables). It drafts into the owner's review
+# queue only; it never approves, sends or publishes.
+# Its own workflow, split from content-engine.yml (which keeps the tests), so a pull
+# request or a push never lists this scheduled job as Skipped. The job is
+# unchanged; it runs on its schedule or by hand (Actions → Run workflow).
+name: Content engine weekly
+run-name: Content engine weekly · ${{ github.event_name }}
+
+on:
+  schedule:
+    - cron: '23 13 * * 2,3'   # 13:23 UTC Tue/Wed; not on the hour (GitHub's scheduler drops runs there)
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Run again even if this week already ran (nothing is duplicated)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: content-engine-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  weekly:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The core's own checks first
+        run: node tools/content/content.test.js
+      - name: Discover and draft into the owner's review queue
+        env:
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CONTENT_ENGINE_MODEL: ${{ vars.CONTENT_ENGINE_MODEL }}
+          FORCE: ${{ github.event.inputs.force }}
+        run: |
+          # An empty secret is a loud, named state, never a silent green run.
+          missing=""
+          [ -n "$EDGD_SB_URL" ] || missing="$missing SB_URL"
+          [ -n "$EDGD_SB_SERVICE" ] || missing="$missing SB_SERVICE_ROLE"
+          if [ -n "$missing" ]; then
+            echo "::warning::Content engine not configured, nothing done. Missing secret(s):$missing (docs/content-engine/README.md)."
+            echo "**Content engine:** not configured. Missing secret(s):$missing." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          [ -n "$ANTHROPIC_API_KEY" ] || echo "::notice::ANTHROPIC_API_KEY is not set: drafts are EdgeDesk's deterministic writer only."
+          args="weekly --network"
+          [ "$FORCE" = "true" ] && args="$args --force"
+          node tools/content/run.js $args | tee -a "$GITHUB_STEP_SUMMARY"

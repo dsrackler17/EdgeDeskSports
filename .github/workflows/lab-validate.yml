@@ -1,0 +1,59 @@
+# Multi-sport lab — the weekly validation (see lab.yml for what it does).
+# Its own workflow, split from lab.yml (which keeps the tests), so a pull
+# request or a push never lists this scheduled job as Skipped. The job is
+# unchanged; it runs on its schedule or by hand (Actions → Run workflow).
+name: Multi-sport lab validate
+run-name: Multi-sport lab validate · ${{ github.event_name }}
+
+on:
+  schedule:
+    - cron: '47 11 * * 3'   # validate
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    concurrency:
+      group: lab-artifacts
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet pyarrow
+      - uses: actions/cache@v4
+        with:
+          path: .cache/lab_src
+          key: lab-src-${{ github.run_id }}
+          restore-keys: lab-src-
+      - name: Every season (cached between runs)
+        run: |
+          node basketball/ingest.js --league all
+          node mlb/history/ingest.js
+      - name: The walk-forward records (tuning files are kept; --tune is a deliberate, separate act)
+        run: |
+          node --max-old-space-size=6144 basketball/walkforward.js --league all
+          node --max-old-space-size=6144 mlb/history/walkforward.js
+          node engine/lab/ufc_elo.js
+      - name: Cross-check, missingness, slates, registry and board on the new records
+        run: node tools/datapack/crosscheck.js && node engine/lab/missingness.js && node basketball/build_slate.js && node engine/build_registry.js && node engine/build_board.js
+      - name: The suites pass on the new records before anything commits
+        run: node tools/lab/lab.test.js && node basketball/walkforward.js --check && node mlb/history/walkforward.js --check && node engine/build_registry.js --check && node engine/build_board.js --check
+      - name: Commit (tools/ci/push_generated.sh)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "lab: weekly walk-forward records" -- \
+            basketball mlb/history engine/lab/ufc_elo.json engine/missingness.json engine/registry.json engine/board.json datapack/quant_v1/EDGEDESK_CROSSCHECK.json

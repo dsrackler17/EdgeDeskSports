@@ -1,0 +1,54 @@
+# College baseball research engine — the daily build.
+# Its own workflow, split from college-baseball-research.yml (which keeps the tests), so a pull
+# request or a push never lists this scheduled job as Skipped. The job is
+# unchanged; it runs on its schedule or by hand (Actions → Run workflow).
+name: College baseball research build
+run-name: College baseball research build · ${{ github.event_name }}
+
+on:
+  schedule:
+    - cron: '23 11 * 2-6 *'   # daily, February-June: today's games, coverage, board, audit, gates
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    concurrency:
+      group: college-baseball-artifacts
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet pyarrow
+      - name: The season in progress (completed seasons are committed and unchanged)
+        run: node college_baseball/ingest/build.js --season "$(date -u +%Y)"
+      - name: Coverage ledger and data-quality audit
+        run: node college_baseball/coverage.js
+      - name: Board (pregame prices for upcoming games; a retrospective replay when there are none)
+        run: node college_baseball/build_slate.js
+      - name: Adversarial audit and release gates (a failed critical check keeps the last validated production record)
+        run: |
+          node college_baseball/audit.js --promote || true
+          node college_baseball/release_gates.js
+          node college_baseball/report.js
+      - name: The suites pass before anything is written
+        run: node tools/college_baseball/college_baseball.test.js && node college_baseball/build_slate.js --check
+      - name: Commit (tools/ci/push_generated.sh)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "college baseball: today's games, coverage, board, audit and gates" -- \
+            college_baseball/data college_baseball/board college_baseball/validation college_baseball/research/COVERAGE.md college_baseball/research/audit_log.jsonl college_baseball/params/production.json docs/college-baseball/REPORT.md

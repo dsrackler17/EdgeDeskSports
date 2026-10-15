@@ -27,22 +27,11 @@
 # SECRETS (already used by the content engine; nothing new)
 #   SB_URL, SB_SERVICE_ROLE   the job's door into the database. Missing: a
 #                             named warning and a dry run that records nothing.
+# The scheduled jobs run from their own workflows (edgedesk-features-run.yml),
+# so a pull request or a push lists only the tests here, never a Skipped job.
 name: EdgeDesk features
 
 on:
-  schedule:
-    # Mon/Wed/Fri, hourly 10:41–21:41 UTC (5 a.m.–4 p.m. Central): the job
-    # acts from two hours before the publish hour to the end of the window.
-    - cron: '41 10-21 * * 1,3,5'
-    # once on the other days: publish anything the owner approved, restore
-    # anything a race removed
-    - cron: '41 15 * * 0,2,4,6'
-  workflow_dispatch:
-    inputs:
-      dry_run:
-        description: 'Force a dry run (never more permissive than the owner’s mode)'
-        type: boolean
-        default: true
   pull_request:
     paths:
       - 'tools/editorial/features.js'
@@ -56,17 +45,17 @@ on:
       - 'tools/articles/**'
       - 'lib/content_engine.js'
       - '.github/workflows/edgedesk-features.yml'
+      - '.github/workflows/edgedesk-features-run.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: edgedesk-features
+  group: edgedesk-features-tests-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   tests:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -84,38 +73,3 @@ jobs:
         run: node tools/editorial/features_funnel.test.js
       - name: The article system the features join
         run: node tools/articles/articles.test.js
-
-  run:
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: main
-      - uses: actions/setup-node@v5
-        with:
-          node-version: '22'
-      - name: The checks first
-        run: |
-          node tools/content/content.test.js
-          node tools/editorial/features.test.js
-      - name: The slot
-        id: fp
-        env:
-          EDGD_SB_URL: ${{ secrets.SB_URL }}
-          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
-          FORCE_DRY: ${{ github.event.inputs.dry_run }}
-        run: |
-          if [ -z "$EDGD_SB_URL" ] || [ -z "$EDGD_SB_SERVICE" ]; then
-            echo "::warning::EdgeDesk features: SB_URL / SB_SERVICE_ROLE are not set — a dry run that records nothing."
-          fi
-          args="--if-due --github-output $GITHUB_OUTPUT"
-          [ "$FORCE_DRY" = "true" ] && args="$args --mode dry_run"
-          node tools/editorial/features.js $args | tee -a "$GITHUB_STEP_SUMMARY"
-      - name: Publish the record (one file; the next site build renders it)
-        if: steps.fp.outputs.published == '1'
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          bash tools/ci/push_generated.sh main "features: EdgeDesk first-party article" -- features

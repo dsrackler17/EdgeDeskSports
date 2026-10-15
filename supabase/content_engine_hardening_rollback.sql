@@ -12,7 +12,7 @@
 --      has not been done;
 --   3  redeploy the previous Edge Function (supabase/functions/content_engine
 --      at 007ac82a) and the previous admin page, and disable
---      .github/workflows/edgedesk-features.yml.
+--      .github/workflows/edgedesk-features-run.yml.
 --
 -- WHAT IS LOST, by design of a rollback:
 --   * content_engine.ai_calls     the AI ledger (estimated spend, cache)

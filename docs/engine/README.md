@@ -43,13 +43,13 @@ and the artifact-commit procedure (`tools/ci/push_generated.sh`).
 | 10 | NHL price capture through the gateway, disabled by default | done — **needs authorisation** to spend |
 | 11 | UI: NHL and Engine panels, filters, reasoning, sources, readiness | done (Chromium, desktop + 390 px) |
 | 11b | The AI desk answers NHL questions from the slate (`hockey/desk.js` → `nhlTurn`, deterministic, no model call) | done in code; **needs a redeploy** of `edgedesk_ai` |
-| 12 | CI: tests on every PR, 3-hourly build, weekly validation | done (`.github/workflows/nhl.yml`) |
+| 12 | CI: tests on every PR, 3-hourly build, weekly validation | done (`.github/workflows/nhl.yml` tests, `nhl-build.yml`, `nhl-validate.yml`) |
 | 13 | The Quant Data Pack imported and verified (44/45 tables; NFL 2022 play-by-play arrived empty) | done (`datapack/quant_v1`, `tools/datapack/verify.js`) |
 | 14 | NHL temporal rule (blank `known_at`, explicit availability, RETRO), lineups, ESPN cross-check, canonical contracts | done |
 | 15 | Basketball ×4, soccer ×5 (removed 2026-10-15), MLB brains walk-forward on multi-season free sources, reconciled with the pack | done |
 | 16 | UFC, college baseball, tennis | measured or recorded as insufficient — **no model claimed** |
 | 17 | Board v2: pushes, voids, split settlement, sensitivity gate; the six-rung readiness ladder in the UI | done |
-| 18 | Missingness diagnostics; CI for the lab (`.github/workflows/lab.yml`) | done |
+| 18 | Missingness diagnostics; CI for the lab (`.github/workflows/lab.yml` tests, `lab-build.yml`, `lab-validate.yml`) | done |
 | 19 | The NHL Data Pack (ESPN, full 2024-25) imported and verified (11/11 tables, 34/34 checks); reconciled event by event against my feed; the blocked-shot attribution error it exposed fixed across every season; officials and the pack's lagged features measured | done (`datapack/nhl_v1`, `tools/datapack/verify_nhl.js`, `hockey/crosscheck/`, `hockey/research/`) |
 | 20 | The NFL Data Pack (nflverse 2025-2026, 2026 partial) imported and verified (42/42 files, 18/18 checks, every derived table recomputed from play-by-play); reconciled with games.csv and my live team-week input; GSIS↔PFR↔ESPN crosswalk; offseason carryover and QB-change research | done (`datapack/nfl_v1`, `tools/datapack/verify_nfl.js`, `football/nfl/pack_crosscheck.js`, `football/nfl/research/`) |
 | 21 | NHL research engine: audit; box scores, periods and reconciliation; model lab (logistic, trees, ensembles, distribution shape, ablation, promotion rule); two amendments (period profile, parsimony); full market sheet incl. alternates and the first period; exact explanation of every price; market-comparison labels; diagnostics and drift; player-prop research; source registry and access requests; Supabase warehouse (off until authorised); tabbed game page with in-browser scenarios | done (`NHL_LAB.md`, `NHL_PROPS.md`, `NHL_SOURCES.md`, `NHL_OPERATIONS.md`) |

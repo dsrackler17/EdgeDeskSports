@@ -4707,6 +4707,12 @@
     try { if (typeof require === 'function') FE_CACHE = require('./football_evidence.js'); } catch (e) { FE_CACHE = null; }
     return FE_CACHE;
   }
+  /* what a game's copy must state (the gate's injuries_addressed for a multi-game piece): every conflict in
+     EdgeDesk's own inputs and every quarterback on an availability report, whatever the listed status */
+  function mustAddress(p) {
+    var F = fe(); if (!F || !p || !p.evidence) return [];
+    return F.writer.materialInjuries(p.evidence).filter(function (c) { return c.verification === 'CONFLICTING' || (c.values && c.values.position === 'QB'); });
+  }
   /* THE INTEGRITY LAYER (docs/system-integrity): the one calculation layer,
      kickoff truth, availability classes and the integrity engine. The page
      loads them with <script> tags, Node requires them, and the Edge Function
@@ -7054,8 +7060,7 @@
       /* a quarterback the report rules out, or a conflict in EdgeDesk's own
          inputs, and a model number EdgeDesk cannot explain, are said on the line */
       var Fu = fe(), X = p.evidence && p.evidence.explanation;
-      if (Fu && p.evidence) Fu.writer.materialInjuries(p.evidence).filter(function (c) { return c.verification === 'CONFLICTING' || (c.values && c.values.position === 'QB'); }).slice(0, 1)
-        .forEach(function (c) { s += ' ' + sent(cap(shortOf(c))); });
+      if (Fu && p.evidence) mustAddress(p).forEach(function (c) { s += ' ' + sent(cap(shortOf(c))); });
       if (X && (X.status === 'UNEXPLAINED' || X.input_suspect)) { var dsc = disclosure(p, { index: i }); if (dsc) s += ' ' + dsc; }
       return s;
     });
@@ -7452,7 +7457,9 @@
       con.length ? 'Against it: ' + sent(keepCase(con[0]) ? shortOf(con[0]) : lc(shortOf(con[0]))) : null,
       qbs.length && !(opts && opts.qb === false) ? 'At quarterback: ' + qbs.join('; ') + '.' : null,
       /* a quarterback the report rules out, or a conflict in EdgeDesk's own inputs */
-      fe() ? fe().writer.materialInjuries(p.evidence).filter(function (c) { return c.verification === 'CONFLICTING' || (c.values && c.values.position === 'QB' && c.status === 'OUT'); }).slice(0, 1).map(function (c) { return sent(cap(shortOf(c))); })[0] || null : null,
+      /* every quarterback on an availability report (out, doubtful or questionable) and every conflict in
+         EdgeDesk's own inputs: exactly what the editorial gate's injuries_addressed requires of a game */
+      mustAddress(p).map(function (c) { return sent(cap(shortOf(c))); }).join(' ') || null,
       disclosure(p, { index: isNum(idx) ? idx : 0 })) || null;
   }
 
@@ -7502,6 +7509,8 @@
     function one(key) { return C.filter(function (c) { return c.key === key; })[0] || null; }
     function lastResult(side) { var r = C.filter(function (c) { return /^result:/.test(c.key) && c.side === side && !/^fact:/.test(c.key); }); return r[r.length - 1] || null; }
     var conf = C.filter(function (c) { return c.topic === 'conference'; })[0];
+    /* a college conference claim carries its conference; the NFL's division claim carries none ("a division game") */
+    var confName = conf && conf.values && conf.values.conference ? conf.values.conference : null, divGame = !!(conf && !confName && conf.key === 'division');
     var recA = one('record:away'), recH = one('record:home');
     /* reserve the strongest evidence for the sections that argue it */
     var reservePro = pickClaims(S.pro, 3, {}), reserveCon = pickClaims(S.con.filter(function (c) { return c.football; }), 4, {});
@@ -7509,8 +7518,8 @@
 
     /* 1 · the opening: why the matchup matters */
     var nflT = p.league === 'nfl';
-    var open1 = para((nflT ? 'The ' : '') + p.away + (p.neutral_site ? ' and ' + (nflT ? 'the ' : '') + p.home + ' meet at a neutral site' : (nflT ? ' visit the ' : ' visits ') + p.home) + (p.kickoff_text ? ' on ' + p.kickoff_text : '') + (conf ? ' in ' + conf.values.conference + ' play' : '') + '.',
-      recA && sent(recA.text), recH && sent(recH.text), conf && sent(conf.text));
+    var open1 = para((nflT ? 'The ' : '') + p.away + (p.neutral_site ? ' and ' + (nflT ? 'the ' : '') + p.home + ' meet at a neutral site' : (nflT ? ' visit the ' : ' visits ') + p.home) + (p.kickoff_text ? ' on ' + p.kickoff_text : '') + (confName ? ' in ' + confName + ' play' : divGame ? ' in a division game' : '') + '.',
+      recA && sent(recA.text), recH && sent(recH.text), conf && !divGame && sent(conf.text));
     var la = lastResult('away'), lh = lastResult('home');
     var restC = one('rest');
     var open2 = para(la && sent(la.text), lh && sent(lh.text), restC && sent(restC.text));
@@ -7518,7 +7527,7 @@
     if (firstParty) {
       /* EdgeDesk's own page: a fact sheet first, not the publisher's prose */
       var glance = [
-        '- **Kickoff:** ' + (p.kickoff_text || 'time to be announced') + (p.neutral_site ? ', at a neutral site' : ', at ' + p.home) + (conf ? ' (' + conf.values.conference + ')' : '') + '.',
+        '- **Kickoff:** ' + (p.kickoff_text || 'time to be announced') + (p.neutral_site ? ', at a neutral site' : ', at ' + p.home) + (confName ? ' (' + confName + ')' : divGame ? ' (a division game)' : '') + '.',
         (recA || recH) ? '- **Records:** ' + [recA, recH].filter(Boolean).map(shortOf).join('; ') + (conf ? '; ' + shortOf(conf) : '') + '.' : null,
         (la || lh) ? '- **Last time out:** ' + [la && p.away + ' ' + shortOf(la), lh && p.home + ' ' + shortOf(lh)].filter(Boolean).join('; ') + '.' : null,
         restC ? '- **Rest:** ' + sent(shortOf(restC)) : null,

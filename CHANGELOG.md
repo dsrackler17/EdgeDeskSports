@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-10-15 — CI: no Skipped checks on a pull request; the Content engine tests green again
+
+**A pull request now lists only checks that run.** Seven workflows ran their tests on pull requests but also carried scheduled jobs, which every PR listed as Skipped. Following the Linemaker split (2026-10-14), each scheduled job is now its own workflow, unchanged apart from its trigger:
+- `nba-build.yml` and `nba-validate.yml`, `nhl-build.yml` and `nhl-validate.yml`, `lab-build.yml` and `lab-validate.yml`.
+- `college-baseball-research-build.yml` and `college-baseball-research-validate.yml` (tune and backfill by hand).
+- `content-engine-weekly.yml`, `edgedesk-features-run.yml` and `projections-build.yml`.
+
+Each keeps its cron, permissions, concurrency group and manual run. The original files keep the tests and their check names. No workflow that runs on a pull request or a push has a job-level condition left.
+
+**Content engine / tests was red on `main` too; it passes now.**
+- `lib/content_engine.js` crashed drafting a single-game analysis of an NFL division game, whose evidence claim carries no conference. It now says "a division game".
+- A multi-game article stated at most one quarterback status per game, and only an OUT. The editorial gate requires every quarterback on an availability report and every input conflict, so this week's Texas Tech article (Thomas Castellanos, questionable) was blocked. The writers now state exactly what the gate requires.
+- The Edge Function copy is re-inlined. The tests that read the workflows now read the files that hold the scheduled jobs.
+
 ## 2026-10-15 — The Quant Desk researches every sport, model first
 
 **"What's the best researched opportunity tonight?" is now answered across every sport EdgeDesk models, from EdgeDesk's own projections, frozen before any sportsbook price is read. It used to be answered from football alone.** The desk was a price scanner: a sport with no captured price had no "games" (NBA, NHL, WNBA and college basketball are not captured). On 2026-10-15 it scanned one NFL game and three college games and reported the NHL, with 11 games and an outcome-validated model, as "prices not captured". Full write-up: `docs/quant-desk/MULTISPORT.md`.

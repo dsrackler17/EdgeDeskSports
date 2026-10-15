@@ -1,0 +1,71 @@
+# College baseball research engine — the weekly validation (tune and backfill by hand).
+# Its own workflow, split from college-baseball-research.yml (which keeps the tests), so a pull
+# request or a push never lists this scheduled job as Skipped. The job is
+# unchanged; it runs on its schedule or by hand (Actions → Run workflow).
+name: College baseball research validate
+run-name: College baseball research validate · ${{ github.event_name }}
+
+on:
+  schedule:
+    - cron: '53 12 * * 1'   # weekly: every validation record refit (no tuning)
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'validate | tune | backfill'
+        required: false
+        default: 'validate'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    permissions:
+      contents: write
+    concurrency:
+      group: college-baseball-artifacts
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet pyarrow
+      - name: Backfill every season (mode=backfill only)
+        if: inputs.mode == 'backfill'
+        run: node college_baseball/ingest/build.js --all && node college_baseball/coverage.js && node college_baseball/rules_evidence.js
+      - name: Tune on SELECTION only (mode=tune only; a deliberate act, recorded in the registry)
+        if: inputs.mode == 'tune'
+        run: for m in elo pythag hier poisson_flat massey bt; do node college_baseball/walkforward.js --tune $m; done
+      - name: Walk-forward, distributions, pitchers, simulator, learners, features, ablations (SELECTION and VALIDATION only)
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
+        run: |
+          node college_baseball/walkforward.js
+          node college_baseball/run_distribution.js
+          node college_baseball/walkforward.js
+          node college_baseball/pitcher_walkforward.js
+          node college_baseball/sim_eval.js
+          node college_baseball/ml_ensemble.js
+          node college_baseball/feature_research.js
+          node college_baseball/ablations.js
+          node college_baseball/build_slate.js
+          node college_baseball/audit.js --promote || true
+          node college_baseball/release_gates.js
+          node college_baseball/research_docs.js
+          node college_baseball/report.js
+      - name: The suites pass before anything is written
+        run: node tools/college_baseball/college_baseball.test.js && node college_baseball/walkforward.js --check && node college_baseball/build_slate.js --check
+      - name: Commit (tools/ci/push_generated.sh)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "college baseball: weekly validation records" -- \
+            college_baseball/data college_baseball/params college_baseball/validation college_baseball/board college_baseball/research docs/college-baseball/REPORT.md

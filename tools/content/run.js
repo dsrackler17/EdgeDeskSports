@@ -7,7 +7,7 @@
          headlines, score the opportunities; print them, or (--write) record
          them through content_engine_opportunity_upsert.
      node tools/content/run.js weekly [--network] [--force] [--now ISO]
-         the scheduled run (.github/workflows/content-engine.yml):
+         the scheduled run (.github/workflows/content-engine-weekly.yml):
            1  a lease for this week's slates (content_engine_job_begin): the
               same week runs once, a crashed run is failed after 30 minutes;
            2  discover, check source freshness, score, record (idempotent on

@@ -1,0 +1,71 @@
+# NBA engine — the scheduled build (see nba.yml for what it does).
+# Its own workflow, split from nba.yml (which keeps the tests), so a pull
+# request or a push never lists this scheduled job as Skipped. The job is
+# unchanged; it runs on its schedule or by hand (Actions → Run workflow).
+name: NBA engine build
+run-name: NBA engine build · ${{ github.event_name }}
+
+on:
+  schedule:
+    - cron: '23 */3 * * *'   # build
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    concurrency:
+      group: nba-artifacts
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet pyarrow
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .cache/nba_src
+            .cache/nba_work
+          key: nba-work-${{ github.run_id }}
+          restore-keys: nba-work-
+      - name: Ingest the season in progress and the one before (completed seasons come from the cache)
+        run: |
+          S=$(node -e "console.log(require('./nba/config.js').CURRENT_SEASON)")
+          node --max-old-space-size=6144 nba/ingest/season.js --season "$((S-1)),$S"
+          node --max-old-space-size=4096 nba/tools/lineups.js --season "$((S-1)),$S"
+      - name: The full history for the pass (cached; only a cold cache downloads it)
+        run: node --max-old-space-size=6144 nba/ingest/season.js --season all --offline || node --max-old-space-size=6144 nba/ingest/season.js --season all
+      - name: NBA book prices (spends nothing unless NBA_PRICES is on and the gateway row is enabled)
+        env:
+          NBA_PRICES: ${{ vars.NBA_PRICES }}
+          EDGD_SB_URL: ${{ vars.NBA_PRICES == 'on' && secrets.SB_URL || '' }}
+          EDGD_SB_SERVICE: ${{ vars.NBA_PRICES == 'on' && secrets.SB_SERVICE_ROLE || '' }}
+        run: node nba/market/fetch_quotes.js
+      - name: Price the slate and the props, grade the ledger
+        run: node --max-old-space-size=12000 nba/build_slate.js && node --max-old-space-size=12000 nba/props/build_props.js && node nba/grade_ledger.js
+      - name: The checks pass before anything is written
+        run: node tools/nba/nba.test.js && node nba/build_slate.js --check
+      - name: The Supabase copy (only when NBA_SUPABASE is on)
+        if: vars.NBA_SUPABASE == 'on'
+        env:
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: node --max-old-space-size=6144 nba/tools/sync_supabase.js --season current
+      - name: Commit via tools/ci/push_generated.sh (our paths on top of the remote tip, never a rebase)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "nba: slate, props, ledger and grades" -- \
+            nba/data nba/slate.json nba/props_slate.json nba/ledger nba/market/quotes.json

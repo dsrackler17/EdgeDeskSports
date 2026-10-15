@@ -473,7 +473,7 @@ The desk (`tools/nba/nba_desk.test.js`, 25/25) runs through the real edge-functi
 
 - **App:** `lib/edgedesk_nba_ui.js`, `lib/edgedesk_nba.css`.
 - **SQL:** `supabase/nba_engine.sql`, `supabase/nba_engine_rollback.sql`, `supabase/nba_odds_sport.sql`, `supabase/migrations/20261014120000_nba_odds_sport_row.sql`.
-- **CI:** `.github/workflows/nba.yml`.
+- **CI:** `.github/workflows/nba.yml` (tests), `nba-build.yml` and `nba-validate.yml` (the scheduled jobs).
 - **Tests:** `tools/nba/nba.test.js`, `nba_desk.test.js`, `nba_sql.test.js`, `nba_ui.e2e.js`.
 - **Docs:** `docs/engine/NBA.md`, `docs/engine/NBA_RESEARCH.md`.
 
@@ -539,7 +539,7 @@ The one failure was a real regression. The NBA desk answered "Who will win the N
 - **The panel goes live.** GitHub Pages serves `app.html`, so the panel ships on merge. It reads only committed files.
 - **The SQL does not run.** `supabase/nba_engine.sql` (the `nbahist` schema) and `supabase/nba_odds_sport.sql` (the disabled gateway row) are applied by hand in the SQL editor. The odds-row migration in `supabase/migrations/` mirrors the NHL's and inserts the row **disabled**. The schema is deliberately not a migration.
 - **The desk does not change yet.** The NBA desk turn is in `supabase/functions/edgedesk_ai/index.ts`. It reaches readers only when the function is redeployed (`Deploy intelligence`, manual). Its `BUILD` tag is unchanged, so the Intelligence doctor does not redeploy it on its own. `EDGEDESK_NBA=0` switches the turn off without a code change.
-- **Scheduled jobs start.** `.github/workflows/nba.yml` runs on `main` after merge: the build every 3 hours, the sealed validation weekly. They spend nothing (`NBA_PRICES` and `NBA_SUPABASE` are unset), and they commit through `tools/ci/push_generated.sh` only when the checks pass.
+- **Scheduled jobs start.** `.github/workflows/nba-build.yml` and `nba-validate.yml` run on `main` after merge: the build every 3 hours, the sealed validation weekly. They spend nothing (`NBA_PRICES` and `NBA_SUPABASE` are unset), and they commit through `tools/ci/push_generated.sh` only when the checks pass.
 
 **Rollback.** Each layer can be withdrawn on its own.
 

@@ -63,7 +63,7 @@ Search Console (existing import) ───────────────�
   - call Claude, with the key on the server;
   - fetch the RSS feeds, which browsers block cross-origin.
 - **`admin/content/`** is the owner's dashboard: Opportunities, Article generator, Editorial review, Publishing queue, Performance, Publishers, and Settings & log.
-- **`tools/content/run.js`** is the weekly job (`.github/workflows/content-engine.yml`). It also provides local `discover` and `example` commands.
+- **`tools/content/run.js`** is the weekly job (`.github/workflows/content-engine-weekly.yml`). It also provides local `discover` and `example` commands.
 
 ### What it reuses (nothing duplicated)
 
@@ -98,9 +98,9 @@ Search Console (existing import) ───────────────�
    - **Send** uses `RESEND_API_KEY`, which the project already holds for the newsletter. Settings shows whether it is configured.
    - Redeploy the `newsletter` function too, so its webhook ignores the events from these emails (`edgedesk=content`).
    - Until the function is deployed, the page still discovers, drafts, reviews and exports. AI rewrites, trending headlines and Send say they are unavailable.
-4. **The weekly job.** It runs from `.github/workflows/content-engine.yml` on Tue/Wed at 13:23 UTC, or by hand. It uses secrets the repository already holds: `SB_URL`, `SB_SERVICE_ROLE`, and optionally `ANTHROPIC_API_KEY`. Without the Supabase secrets it posts a named warning and does nothing.
+4. **The weekly job.** It runs from `.github/workflows/content-engine-weekly.yml` on Tue/Wed at 13:23 UTC, or by hand. It uses secrets the repository already holds: `SB_URL`, `SB_SERVICE_ROLE`, and optionally `ANTHROPIC_API_KEY`. Without the Supabase secrets it posts a named warning and does nothing.
 5. **The reader funnel** for EdgeDesk's own articles: paste `supabase/first_party_funnel.sql` after `growth_engine.sql` and `content_engine.sql`. It adds the Growth Console's report, and registers the `article_engaged` event if `funnel.sql` has not already (re-pasting `funnel.sql` registers it too). Idempotent; every report row should read `ok`.
-6. **EdgeDesk's own articles** (Monday/Wednesday/Friday) run from `.github/workflows/edgedesk-features.yml` with the same `SB_URL` / `SB_SERVICE_ROLE` secrets. They start in **dry run**: nothing is published until you choose **Auto** in **EdgeDesk articles** (see *EdgeDesk's own articles* below).
+6. **EdgeDesk's own articles** (Monday/Wednesday/Friday) run from `.github/workflows/edgedesk-features-run.yml` with the same `SB_URL` / `SB_SERVICE_ROLE` secrets. They start in **dry run**: nothing is published until you choose **Auto** in **EdgeDesk articles** (see *EdgeDesk's own articles* below).
 7. **The football evidence floor.** Paste `supabase/content_engine_evidence.sql` after `content_engine.sql` (and again after any re-application of it). It makes the database refuse to approve an article whose stored checks do not include the football evidence gate, and adds the owner's editorial metrics (`content_engine_editorial_metrics`). It is idempotent and ends in a report. The `matchup_analysis` topic and format are in `content_engine.sql` itself.
 8. **Publisher business data** goes into the page, never the repository (see *Privacy* below). Open **Publishers → Stadium Rant** and:
    - add the contacts (name and email: **Send** only goes to these addresses) and the partnership terms;
@@ -544,7 +544,7 @@ A slot is **skipped, with its reason**, when the research does not support it. H
 
 1. Run the previous release of `supabase/content_engine.sql` (`git show 007ac82a:supabase/content_engine.sql`), then `supabase/content_engine_hardening_rollback.sql` (it refuses to run until step 1 is done). This removes the gate, the AI ledger, measurement and first-party state; the activity log is kept.
 2. `supabase/first_party_funnel_rollback.sql` removes the Growth Console report. The `article_engaged` event kind stays: it belongs to `supabase/funnel.sql`'s registry.
-3. Redeploy the previous Edge Function and admin page; disable `edgedesk-features.yml`; to unpublish a feature, delete its record in `features/records/` (its page leaves at the next build).
+3. Redeploy the previous Edge Function and admin page; disable `edgedesk-features-run.yml`; to unpublish a feature, delete its record in `features/records/` (its page leaves at the next build).
 
 ---
 

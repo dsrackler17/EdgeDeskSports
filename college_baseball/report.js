@@ -90,7 +90,7 @@ function build() {
     ['Adversarial auditor, promotion blocking', audit ? 'IMPLEMENTED, RUN' : 'not run', 'validation/audit.json, research/audit_log.jsonl'],
     ['Release gates', gates ? 'IMPLEMENTED, RUN' : 'not run', 'validation/release_gates.json'],
     ['Terminal (Research → Baseball → NCAA engine)', 'IMPLEMENTED, TESTED (Chromium, desktop and phone)', 'lib/edgedesk_cbase_ui.js'],
-    ['Automation', 'IMPLEMENTED', '.github/workflows/college-baseball-research.yml'],
+    ['Automation', 'IMPLEMENTED', '.github/workflows/college-baseball-research.yml (tests), -build.yml, -validate.yml'],
     ['Commercial data rights', 'BLOCKED — owner decision (gate G1: ' + G('G1') + ')', 'research/LICENSING.md'],
     ['Market comparison, CLV, EV', 'BLOCKED — no authorised feed', 'research/UNRESOLVED.md U-02'],
     ['Confirmed starters, lineups, weather as forecast', 'BLOCKED — no authorised source', 'research/UNRESOLVED.md U-06, U-11'],

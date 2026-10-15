@@ -24,23 +24,12 @@
 #                             Without it, EdgeDesk's deterministic writer drafts.
 # VARIABLES (optional)
 #   CONTENT_ENGINE_MODEL      defaults to claude-opus-5-5
+# The scheduled jobs run from their own workflows (content-engine-weekly.yml),
+# so a pull request or a push lists only the tests here, never a Skipped job.
 name: Content engine
 
 on:
-  schedule:
-    # 13:23 UTC Tue/Wed: morning in the US, in time for Thursday CFB and the
-    # weekend's NFL. Not on the hour: GitHub's scheduler drops runs there.
-    - cron: '23 13 * * 2,3'
   workflow_dispatch:
-    inputs:
-      run_weekly:
-        description: 'Run the weekly discovery and drafting now'
-        type: boolean
-        default: true
-      force:
-        description: 'Run again even if this week already ran (nothing is duplicated)'
-        type: boolean
-        default: false
   pull_request:
     paths:
       - 'lib/content_engine.js'
@@ -65,6 +54,7 @@ on:
       - 'tools/growth/outbound_auth.js'
       - 'lib/edgedesk_admin_session.js'
       - '.github/workflows/content-engine.yml'
+      - '.github/workflows/content-engine-weekly.yml'
 
 permissions:
   contents: read
@@ -75,7 +65,6 @@ concurrency:
 
 jobs:
   tests:
-    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && !inputs.run_weekly)
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -107,38 +96,3 @@ jobs:
           npx playwright install --with-deps chromium
       - name: The owner's whole flow in a browser — discover, write, review, approve, export, send
         run: node tools/content/content_engine.e2e.js
-
-  weekly:
-    if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.run_weekly)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: main
-      - uses: actions/setup-node@v5
-        with:
-          node-version: '22'
-      - name: The core's own checks first
-        run: node tools/content/content.test.js
-      - name: Discover and draft into the owner's review queue
-        env:
-          EDGD_SB_URL: ${{ secrets.SB_URL }}
-          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          CONTENT_ENGINE_MODEL: ${{ vars.CONTENT_ENGINE_MODEL }}
-          FORCE: ${{ github.event.inputs.force }}
-        run: |
-          # An empty secret is a loud, named state, never a silent green run.
-          missing=""
-          [ -n "$EDGD_SB_URL" ] || missing="$missing SB_URL"
-          [ -n "$EDGD_SB_SERVICE" ] || missing="$missing SB_SERVICE_ROLE"
-          if [ -n "$missing" ]; then
-            echo "::warning::Content engine not configured, nothing done. Missing secret(s):$missing (docs/content-engine/README.md)."
-            echo "**Content engine:** not configured. Missing secret(s):$missing." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
-          fi
-          [ -n "$ANTHROPIC_API_KEY" ] || echo "::notice::ANTHROPIC_API_KEY is not set: drafts are EdgeDesk's deterministic writer only."
-          args="weekly --network"
-          [ "$FORCE" = "true" ] && args="$args --force"
-          node tools/content/run.js $args | tee -a "$GITHUB_STEP_SUMMARY"

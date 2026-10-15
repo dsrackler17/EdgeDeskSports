@@ -1,0 +1,41 @@
+# Independent projections — the scheduled freeze (see projections.yml for what it does).
+# Its own workflow, split from projections.yml (which keeps the tests), so a pull
+# request or a push never lists this scheduled job as Skipped. The job is
+# unchanged; it runs on its schedule or by hand (Actions → Run workflow).
+name: Independent projections build
+run-name: Independent projections build · ${{ github.event_name }}
+
+on:
+  schedule:
+    - cron: '55 */3 * * *'   # after the NHL (:41) and NBA (:23) builds of the same hour
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    concurrency:
+      group: projections-artifacts
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The rules must pass before anything is written
+        run: node tools/intelligence/multisport.test.js
+      - name: Freeze every operational engine's projections (no price is read)
+        run: node engine/build_projections.js
+      - name: Commit (tools/ci/push_generated.sh)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main "projections: independent projections frozen before any price" -- \
+            engine/projections.json engine/projections_ledger

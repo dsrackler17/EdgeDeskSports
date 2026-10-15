@@ -1,3 +1,5 @@
+# The scheduled jobs run from their own workflows (projections-build.yml),
+# so a pull request or a push lists only the tests here, never a Skipped job.
 name: Independent projections
 run-name: Independent projections · ${{ github.event_name }}
 
@@ -25,16 +27,13 @@ on:
       - 'tools/intelligence/multisport*.test.js'
       - 'tools/intelligence/fixtures/quant_oct15_2026.json'
       - '.github/workflows/projections.yml'
-  schedule:
-    - cron: '55 */3 * * *'   # after the NHL (:41) and NBA (:23) builds of the same hour
-  workflow_dispatch:
+      - '.github/workflows/projections-build.yml'
 
 permissions:
   contents: read
 
 jobs:
   tests:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -48,30 +47,3 @@ jobs:
         run: node tools/intelligence/multisport_host.test.js
       - name: The build reads no price and is reproducible
         run: node engine/build_projections.js --check || echo "::notice::engine/projections.json differs from a fresh build (the slates moved since it was committed)"
-
-  build:
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    permissions:
-      contents: write
-    concurrency:
-      group: projections-artifacts
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: main
-      - uses: actions/setup-node@v5
-        with:
-          node-version: '22'
-      - name: The rules must pass before anything is written
-        run: node tools/intelligence/multisport.test.js
-      - name: Freeze every operational engine's projections (no price is read)
-        run: node engine/build_projections.js
-      - name: Commit (tools/ci/push_generated.sh)
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          bash tools/ci/push_generated.sh main "projections: independent projections frozen before any price" -- \
-            engine/projections.json engine/projections_ledger
