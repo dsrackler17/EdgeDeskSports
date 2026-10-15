@@ -104,7 +104,7 @@ chk('moneyline: positive EV on a validated market is PROVISIONAL, never more', h
 const pv = h.gates.filter((g) => g.gate === 'price_verified')[0];
 chk('labels: an ESPN-republished price is a reference and fails price_verified, saying why', pv && !pv.ok && /DraftKings’s price as republished by ESPN: a reference/.test(pv.reason), pv);
 chk('labels: the market test gate fails while the NHL is untested against the close', h.gates.some((g) => g.gate === 'market_tested' && !g.ok));
-chk('compare: the book is named, the ESPN source said, the age kept', r.source.book === 'DraftKings' && r.source.kind === 'reference' && r.source.label === 'DraftKings via ESPN' && r.source.age_min === 10 && !r.source.stale);
+chk('compare: the book is named (the reader never sees ESPN), the source kept as a reference, the age kept', r.source.book === 'DraftKings' && r.source.kind === 'reference' && r.source.via === 'ESPN' && r.source.label === 'DraftKings' && r.source.age_min === 10 && !r.source.stale);
 chk('compare: the sentence names the side, the gap and the price that pays', /EdgeDesk rates HOM \d\.\d pp higher than DraftKings does/.test(ml.sentence) && /pays more than EdgeDesk’s fair −150/.test(ml.sentence) && /Provisional, not a verified edge/.test(ml.sentence), ml.sentence);
 chk('compare: the summary says who EdgeDesk and the book make the favourite, and agree', r.summary.book_fav.key === 'home' && r.summary.agree_on_fav === true && r.summary.any_pays === true && r.summary.best.name === 'HOM');
 
