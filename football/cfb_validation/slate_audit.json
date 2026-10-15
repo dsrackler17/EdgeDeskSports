@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-15T06:24:09.626Z",
- "board_generated_at": "2026-10-15T06:24:03.575Z",
+ "generated_at": "2026-10-15T12:04:37.516Z",
+ "board_generated_at": "2026-10-15T12:04:30.193Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -61,9 +61,9 @@
    "kickoff": "2026-10-16T00:00:00.000Z",
    "named": false,
    "edgedesk": "Texas State -20.3",
-   "market": "Texas State -14.5",
+   "market": "Texas State -14.0",
    "books": 1,
-   "gap": 5.8,
+   "gap": 6.3,
    "gap_class": "MODERATE",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -394,6 +394,26 @@
    "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
+   "game_id": "401856728",
+   "game": "LSU @ Auburn",
+   "kickoff": "2026-10-24T16:00:00.000Z",
+   "named": false,
+   "edgedesk": "LSU -3.0",
+   "market": "LSU -6.5",
+   "books": 1,
+   "gap": 3.5,
+   "gap_class": "MODERATE",
+   "favorite_flip": false,
+   "research_status": "INVESTIGATE",
+   "research_label": "INVESTIGATE",
+   "decision_status": "PASS",
+   "gate_status": "NOT REQUIRED (under 7 pts)",
+   "root_cause": null,
+   "requirements": null,
+   "consistent": true,
+   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
+  },
+  {
    "game_id": "401864522",
    "game": "Northern Illinois @ Wyoming",
    "kickoff": "2026-10-17T19:30:00.000Z",
@@ -419,14 +439,14 @@
    "kickoff": "2026-10-25T02:00:00.000Z",
    "named": false,
    "edgedesk": "New Mexico -11.2",
-   "market": "New Mexico -3.5",
+   "market": "New Mexico -4.0",
    "books": 1,
-   "gap": 7.7,
+   "gap": 7.2,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "MARKET_FAULT",
    "research_label": "MARKET FAULT",
-   "decision_status": "NO_DECISION",
+   "decision_status": "PASS",
    "gate_status": "MARKET_FAULT",
    "root_cause": "THIN_MARKET",
    "requirements": [
@@ -473,31 +493,11 @@
     {
      "requirement": "football-only calibration preserves the major gap",
      "result": "FAIL",
-     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 5.9 — the extreme is not supported by how margins of this size have actually finished"
+     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 5.4 — the extreme is not supported by how margins of this size have actually finished"
     }
    ],
    "consistent": true,
    "verdict": "MARKET FAULT is correct: fresh multi-book consensus fail; submodel support incomplete; football-only calibration preserves the major gap fail."
-  },
-  {
-   "game_id": "401856728",
-   "game": "LSU @ Auburn",
-   "kickoff": "2026-10-24T16:00:00.000Z",
-   "named": false,
-   "edgedesk": "LSU -3.0",
-   "market": "LSU -6.5",
-   "books": 1,
-   "gap": 3.5,
-   "gap_class": "MODERATE",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "NO_DECISION",
-   "gate_status": "NOT REQUIRED (under 7 pts)",
-   "root_cause": null,
-   "requirements": null,
-   "consistent": true,
-   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
   },
   {
    "game_id": "401858271",
