@@ -155,6 +155,79 @@ n = st.append_unique('projections', [{'projection_id': 'p1'}, {'projection_id': 
 n2 = st.append_unique('projections', [{'projection_id': 'p1'}, {'projection_id': 'p2'}])
 chk('state: write-once facts are appended once (idempotent re-run)', n == 1 and n2 == 1 and len(st.read('projections')) == 2)
 
+# the instant a row was computed at is provenance: a daily re-run must not append a "correction"
+# of every key (2026-10-15: 23 copies of each game's validation, 100 MB, the push refused)
+vrow = {'game_id': 401, 'rule_version': 'cfb_game_validation_v1', 'status': 'FINAL_VALIDATED', 'validated_at': '2026-10-14T10:00:00.000Z'}
+st.write_versioned('game_validation', [vrow])
+s_v = st.write_versioned('game_validation', [dict(vrow, validated_at='2026-10-15T10:00:00.000Z', run_id='r9')])
+s_vc = st.write_versioned('game_validation', [dict(vrow, status='FINAL_PARTIAL_DATA', validated_at='2026-10-16T10:00:00.000Z')])
+chk('state: a re-validation that moves only validated_at writes nothing; a status change is version 2',
+    s_v['unchanged'] == 1 and s_vc['corrected'] == 1 and [r['state_version'] for r in st.read('game_validation')] == [1, 2])
+urow = {'team_id': '251', 'season': 2026, 'week': 7, 'unit': 'QB', 'rule_version': 'u1', 'knowledge': 'KNOWN', 'as_of': '2026-10-14T10:00:00.000Z', 'status_age_hours': 3.0}
+st.write_versioned('unit_week_state', [urow])
+s_u = st.write_versioned('unit_week_state', [dict(urow, as_of='2026-10-15T10:00:00.000Z', status_age_hours=27.0)])
+chk('state: unit state at a later instant (as_of, status age) writes nothing', s_u['unchanged'] == 1 and len(st.read('unit_week_state')) == 1)
+trow = dict(row, team_id='252', as_of='2026-10-13T12:00:00.000Z')
+st.write_versioned('team_week_state', [trow])
+chk('state: team state keeps as_of as content (the week\'s freeze, read back as T_prev)',
+    st.write_versioned('team_week_state', [dict(trow, as_of='2026-10-20T12:00:00.000Z')])['corrected'] == 1)
+
+# a ledger written before VOLATILE: its content_hash includes the volatile field
+lg = Store(2026, root=tempfile.mkdtemp())
+from .store import append_jsonl
+legacy = []
+for v, at in ((1, '2026-10-01T10:00:00.000Z'), (2, '2026-10-02T10:00:00.000Z'), (3, '2026-10-03T10:00:00.000Z')):
+    r = dict(vrow, game_id=7, validated_at=at, status='FINAL_VALIDATED' if v < 3 else 'FINAL_PARTIAL_DATA')
+    r.update(state_version=v, supersedes=legacy[-1]['validation_id'] if legacy else None, reason='provider correction' if legacy else None,
+             content_hash=ids.content_hash({k: x for k, x in r.items() if k != 'validation_id'}), validation_id='cfbv_' + ids.h(7, 'cfb_game_validation_v1', v))
+    legacy.append(r)
+legacy.append(dict(legacy[-1], state_version=4, supersedes=legacy[-1]['validation_id'], validated_at='2026-10-04T10:00:00.000Z',
+                   validation_id='cfbv_' + ids.h(7, 'cfb_game_validation_v1', 4)))
+append_jsonl(lg.path('game_validation'), legacy)
+chk('state: an old row is re-hashed, not trusted, so the first run after the fix writes nothing',
+    lg.write_versioned('game_validation', [dict(legacy[-1], validated_at='2026-10-05T10:00:00.000Z', run_id='rN')])['unchanged'] == 1)
+before = open(lg.path('game_validation')).read().splitlines()
+cur_before = lg.current('game_validation')
+cs = lg.compact('game_validation')
+after = open(lg.path('game_validation')).read().splitlines()
+chk('compact: drops the no-change versions and keeps the newest of each run, byte for byte',
+    cs == {'kept': 2, 'dropped': 2} and after == [before[1], before[3]], after)
+chk('compact: current() is unchanged and the next version is numbered after every version ever written',
+    lg.current('game_validation') == cur_before
+    and lg.write_versioned('game_validation', [dict(vrow, game_id=7, status='FINAL_VALIDATED')])['corrected'] == 1
+    and lg.read('game_validation')[-1]['state_version'] == 5)
+chk('compact: a second pass drops nothing', lg.compact('game_validation') == {'kept': 3, 'dropped': 0})
+
+# an idempotent re-run of published work exits clean (2026-10-14: "nothing new" was recorded as a
+# FAILED stage, exit 1, and the workflow failed)
+from . import run as WR
+from . import sources as SRC
+_out, _sub, _ver, _sp = C.OUT, WR._sub, SRC.versions, SRC.season_paths
+try:
+    C.OUT = tempfile.mkdtemp()
+    WR._sub = lambda *a, **k: ''
+    SRC.versions = lambda season, prior_seasons=None: {'data_version': 'dv_noop'}
+    SRC.season_paths = lambda s: {'pbp': [], 'schedule': []}
+    _k = pd.Timestamp('2026-10-17T16:00:00Z')
+    os.makedirs(os.path.join(C.OUT, 'stage2'))
+    pd.DataFrame({'game_id': ['1', '2'], 'season': [2026, 2026], 'week': [7, 8], 'status': ['FINAL', 'SCHEDULED'],
+                  'kickoff_ts': [_k - pd.Timedelta(days=7), _k], 'prediction_ts': [_k - pd.Timedelta(days=11), _k - pd.Timedelta(days=4)]}
+                 ).to_parquet(os.path.join(C.OUT, 'stage2', 'games.parquet'))
+    _now = '2026-10-14T15:00:00Z'
+    _sw, _tw, _T = WR.weeks_for(pd.read_parquet(os.path.join(C.OUT, 'stage2', 'games.parquet')), 2026, pd.Timestamp(_now), 'daily')
+    _pr = RL.PipelineRun(2026, _sw, _tw, 'daily', C.MODEL_VERSION, C.FEATURE_VERSION)
+    _pr.data_version = 'dv_noop'
+    _sr = tempfile.mkdtemp()
+    _ns = Store(2026, _sr)
+    _ns.append_unique('runs', [{'run_id': 'cfbw_published', 'run_key': _pr.run_key, 'published': True}])
+    _rec = WR.run(season=2026, now=_now, mode='daily', fetch=False, state_root=_sr, verbose=False)
+    _ing = [s for s in _rec['stages'] if s['stage'] == 'INGEST_FINAL_SCORES'][0]
+    chk('run: a re-run of published work is a NOOP (exit 0), not FAILED; its stage is SKIPPED and nothing is written',
+        _rec['status'] == 'NOOP' and _ing['status'] == 'SKIPPED' and 'cfbw_published' in (_ing['error'] or '')
+        and len(_ns.read('runs')) == 1 and _rec['errors_count'] == 0, {'status': _rec['status'], 'stage': _ing})
+finally:
+    C.OUT, WR._sub, SRC.versions, SRC.season_paths = _out, _sub, _ver, _sp
+
 # ---------------------------------------------------------------- pure / market separation
 chk('market guard: the artifact reads no market column', PJ.assert_no_market_inputs(
     ['edge_line_yds', 'edge_epa', 'match_mix_edge', 'eff_pts_raw', 'elo_diff']))
