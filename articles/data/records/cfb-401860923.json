@@ -21,8 +21,8 @@
   "game_time": "2026-10-16T00:00:00.000Z",
   "game_when_label": "2026-10-16 00:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-15T16:28:47.012Z",
-  "generated_at": "2026-10-15T16:28:47.012Z",
+  "updated_at": "2026-10-15T16:47:58.208Z",
+  "generated_at": "2026-10-15T16:47:58.208Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "DATA FAULT",
   "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1431,7 +1431,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 122h old",
+          "text": "odds is 123h old",
           "widening": null
         },
         {
@@ -1508,7 +1508,7 @@
       "total_market_held": null,
       "book": "captured consensus (stale) · 1 book · best at FanDuel",
       "captured": "2026-10-10T14:00:01.583+00:00",
-      "capture_age": "122 hours old",
+      "capture_age": "123 hours old",
       "stale": false,
       "classification": "DATA FAULT",
       "classification_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1886,120 +1886,16 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1h7ugea1il0gps",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": true,
-    "question": "Can Texas State contain Colorado State’s explosive runs?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Texas State, and its own breakdown accounts for about 0.0 of the 6.3 points, but not the full gap. Input warning: EdgeDesk’s game page already labels this gap a DATA FAULT: EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game. It is a research question, not a bet.",
-    "gap": {
-      "points": 6.3,
-      "toward": "Texas State",
-      "other": "Colorado State"
-    },
-    "supporting": [
-      "When Texas State has the ball (the passing game against the pass defense): Texas State’s offense averages 9.0 yards per pass attempt, and Colorado State’s defense allows 11.3 yards per pass attempt (FBS average 7.5).",
-      "When Texas State has the ball (the run game against the run defense): Texas State’s offense averages 5.5 yards per carry, and Colorado State’s defense allows 7.1 yards per carry (FBS average 5.1).",
-      "When Texas State has the ball (early downs): Texas State’s offense succeeds on 49.5% of its first- and second-down plays, and Colorado State’s defense allows success on 59.6% of first- and second-down plays (FBS average 42.8%).",
-      "When Texas State has the ball (third down): Texas State’s offense converts 54.1% of its third downs, and Colorado State’s defense allows opponents to convert 56.4% of their third downs (FBS average 39.5%)."
-    ],
-    "contradicting": [
-      "When Colorado State has the ball (pass protection against the pass rush): Colorado State’s offense has allowed a sack on 1.0% of its dropbacks, and Texas State’s defense sacks the quarterback on 4.1% of opponent dropbacks (FBS average 5.6%).",
-      "When Colorado State has the ball (the red zone): Colorado State’s offense succeeds on 52.9% of its red-zone plays, and Texas State’s defense allows success on 44.1% of opponent red-zone plays (FBS average 43.8%).",
-      "In his last two games (UTSA and Oregon State), Farrar averaged 7.0 yards per attempt, against 4.2 in his two games before that.",
-      "When Colorado State has the ball (third down): Colorado State’s offense converts 45.3% of its third downs, and Texas State’s defense allows opponents to convert 40.0% of their third downs (FBS average 39.5%)."
-    ],
-    "quarterbacks": [
-      "Brad Jackson has completed 92 of 138 passes (66.7%) for 1,226 yards, 8.9 yards per attempt, 13 touchdowns and 4 interceptions in five games for Texas State, and has been sacked on 4 of 142 dropbacks.",
-      "K'saan Farrar has completed 66 of 107 passes (61.7%) for 665 yards, 6.2 yards per attempt, 3 touchdowns and 2 interceptions in four games for Colorado State, and has been sacked on 1 of 108 dropbacks.",
-      "Hauss Hejny has completed 47 of 73 passes (64.4%) for 619 yards, 8.5 yards per attempt, 10 touchdowns and 1 interception in three games for Colorado State, and has been sacked on 1 of 74 dropbacks.",
-      "Colorado State’s third report Pac-12 availability report (published Oct. 14) lists quarterback Hauss Hejny as questionable."
-    ],
-    "availability": [
-      "Texas State’s availability report lists tight end Blake Smith as questionable.",
-      "Colorado State’s availability report lists receiver RJ Vick as questionable.",
-      "Colorado State’s availability report lists 11 players as out, including offensive linemen Zach Smith, Diego Rodriquez and Jayden Tuia."
-    ],
-    "script": {
-      "model": [
-        "Texas State’s defense has to come out ahead on long runs: it gives up explosive gains on 3.6% of opponent runs, against an offense that turns 8.3% of its runs into explosive gains.",
-        "Texas State’s defense has to slow Colorado State in the pass-rush matchup — Colorado State’s offense has allowed a sack on 1.0% of its dropbacks.",
-        "Texas State’s defense has to slow Colorado State in the red zone — Colorado State’s offense succeeds on 52.9% of its red-zone plays.",
-        "Texas State’s offense has to keep winning on big pass plays: it turns 14.7% of its pass plays into explosive gains, and Colorado State’s defense gives up explosive gains on 18.4% of opponent pass plays."
-      ],
-      "market": [
-        "Colorado State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 1.0% of its dropbacks, and Texas State’s defense sacks the quarterback on 4.1% of opponent dropbacks.",
-        "Colorado State’s offense has to keep winning in the red zone: it succeeds on 52.9% of its red-zone plays, and Texas State’s defense allows success on 44.1% of opponent red-zone plays.",
-        "Colorado State’s offense has to keep winning on long runs: it turns 8.3% of its runs into explosive gains, and Texas State’s defense gives up explosive gains on 3.6% of opponent runs."
-      ]
-    },
-    "unknown": [
-      "Texas State’s availability report lists tight end Blake Smith as questionable.",
-      "Colorado State’s third report Pac-12 availability report (published Oct. 14) lists quarterback Hauss Hejny as questionable.",
-      "Colorado State’s availability report lists receiver RJ Vick as questionable.",
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Texas State and Colorado State.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, historical meetings and penalty rate.",
-      "The line on file was captured Oct. 15 and may have moved."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Texas State), sack rate allowed (Colorado State) and sack rate (Colorado State); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      },
-      {
-        "key": "CROSS_MODEL_OUTLIER",
-        "severity": "medium",
-        "text": "EdgeDesk’s published number sits 5.1 points from the middle of its own other models."
-      },
-      {
-        "key": "DATA_FAULT",
-        "severity": "high",
-        "text": "EdgeDesk’s game page already labels this gap a DATA FAULT: EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game."
-      },
-      {
-        "key": "HFA_CONSTANT",
-        "severity": "medium",
-        "text": "EdgeDesk’s model gives Texas State 4.1 points for playing at home — a league-wide value, not one measured for this stadium; historically, the closing market has priced about 61% of EdgeDesk’s home-field number."
-      },
-      {
-        "key": "REGIME_CHANGE",
-        "severity": "medium",
-        "text": "Colorado State: new head coach; returning roster share at the 10th percentile; returning production at the 23rd percentile. The long-run state is weighted 68% (regime curve) instead of 80% (standard curve) at 5 games played."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-15T15:59:19.241Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-15T00:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "Pac-12 Conference availability report (Third Report)",
-        "url": "https://pac-12.com/news/2026/9/11/2026-football-reports.aspx",
-        "path": "football/availability/reports/",
-        "observed_at": "2026-10-15T02:03:33.688Z",
-        "verification": "OFFICIAL_REPORT"
-      }
-    ],
-    "needs_confirmation": []
+  "snapshot_id": "snap_6142927d7d5fca75",
+  "timing": {
+    "publication_window": "normal",
+    "classified_window": "normal",
+    "scheduled_kickoff": "2026-10-16T00:00:00.000Z",
+    "minutes_before_kickoff": 432,
+    "published_at": null,
+    "refreshed": false,
+    "at": "2026-10-15T16:47:58.208Z"
   },
-  "checks": {
-    "ok": true,
-    "failed": [],
-    "at": "2026-10-15T16:28:47.012Z"
-  },
-  "snapshot_id": "snap_d02a2f0ad8c5aa4f",
   "featured": {
     "editorial_priority": 41.6,
     "status": "featured",
@@ -2283,7 +2179,7 @@
     }
   ],
   "quality": {
-    "score": 88,
+    "score": 100,
     "publishable": false,
     "manual_review_required": true,
     "hold_reason": "FACTUAL INTEGRITY: no_unsupported_statistics",
@@ -2294,28 +2190,12 @@
         "detail": "15.8 in \"Texas State carries the stronger underlying team rating — +5.2 against -10.7, a 15.8-point separation on a neutral field before home advanta\" | 15.8 in \"Texas State carries the stronger underlying team rating — +5.2 against -10.7, a 15.8-point separation on a neutral field before home advanta\""
       }
     ],
-    "craft_failed": [
-      {
-        "id": "duplicate_paragraph",
-        "why": "the same paragraph must not appear twice on one page",
-        "detail": "Colorado State’s third report Pac-12 availability report (published Oct. 14) lists quarter",
-        "cost": 12
-      }
-    ],
-    "at": "2026-10-15T16:28:47.012Z"
-  },
-  "timing": {
-    "publication_window": "normal",
-    "classified_window": "normal",
-    "scheduled_kickoff": "2026-10-16T00:00:00.000Z",
-    "minutes_before_kickoff": 451,
-    "published_at": null,
-    "refreshed": false,
-    "at": "2026-10-15T16:28:47.012Z"
+    "craft_failed": [],
+    "at": "2026-10-15T16:47:58.208Z"
   },
   "publish_state": {
     "ok": false,
-    "at": "2026-10-15T16:28:47.012Z",
+    "at": "2026-10-15T16:47:58.208Z",
     "blocking": [
       {
         "id": "evidence_inputs_suspect",
@@ -2328,13 +2208,120 @@
         "detail": "no_unsupported_statistics"
       }
     ],
-    "warnings": [
+    "warnings": [],
+    "hold_reason": "evidence_inputs_suspect, factual_integrity"
+  },
+  "football_evidence": {
+    "schema": "edgedesk_article_evidence_v1",
+    "packet_hash": "1h7ugea1il0gps",
+    "status": "PARTIALLY_EXPLAINED",
+    "input_suspect": true,
+    "question": "Can Texas State contain Colorado State’s explosive runs?",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Texas State, and its own breakdown accounts for about 0.0 of the 6.3 points, but not the full gap. Input warning: EdgeDesk’s game page already labels this gap a DATA FAULT: EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game. It is a research question, not a bet.",
+    "gap": {
+      "points": 6.3,
+      "toward": "Texas State",
+      "other": "Colorado State"
+    },
+    "supporting": [
+      "When Texas State has the ball (the passing game against the pass defense): Texas State’s offense averages 9.0 yards per pass attempt, and Colorado State’s defense allows 11.3 yards per pass attempt (FBS average 7.5).",
+      "When Texas State has the ball (the run game against the run defense): Texas State’s offense averages 5.5 yards per carry, and Colorado State’s defense allows 7.1 yards per carry (FBS average 5.1).",
+      "When Texas State has the ball (early downs): Texas State’s offense succeeds on 49.5% of its first- and second-down plays, and Colorado State’s defense allows success on 59.6% of first- and second-down plays (FBS average 42.8%).",
+      "When Texas State has the ball (third down): Texas State’s offense converts 54.1% of its third downs, and Colorado State’s defense allows opponents to convert 56.4% of their third downs (FBS average 39.5%)."
+    ],
+    "contradicting": [
+      "When Colorado State has the ball (pass protection against the pass rush): Colorado State’s offense has allowed a sack on 1.0% of its dropbacks, and Texas State’s defense sacks the quarterback on 4.1% of opponent dropbacks (FBS average 5.6%).",
+      "When Colorado State has the ball (the red zone): Colorado State’s offense succeeds on 52.9% of its red-zone plays, and Texas State’s defense allows success on 44.1% of opponent red-zone plays (FBS average 43.8%).",
+      "In his last two games (UTSA and Oregon State), Farrar averaged 7.0 yards per attempt, against 4.2 in his two games before that.",
+      "When Colorado State has the ball (third down): Colorado State’s offense converts 45.3% of its third downs, and Texas State’s defense allows opponents to convert 40.0% of their third downs (FBS average 39.5%)."
+    ],
+    "quarterbacks": [
+      "Brad Jackson has completed 92 of 138 passes (66.7%) for 1,226 yards, 8.9 yards per attempt, 13 touchdowns and 4 interceptions in five games for Texas State, and has been sacked on 4 of 142 dropbacks.",
+      "K'saan Farrar has completed 66 of 107 passes (61.7%) for 665 yards, 6.2 yards per attempt, 3 touchdowns and 2 interceptions in four games for Colorado State, and has been sacked on 1 of 108 dropbacks.",
+      "Hauss Hejny has completed 47 of 73 passes (64.4%) for 619 yards, 8.5 yards per attempt, 10 touchdowns and 1 interception in three games for Colorado State, and has been sacked on 1 of 74 dropbacks.",
+      "Colorado State’s third report Pac-12 availability report (published Oct. 14) lists quarterback Hauss Hejny as questionable."
+    ],
+    "availability": [
+      "Texas State’s availability report lists tight end Blake Smith as questionable.",
+      "Colorado State’s availability report lists receiver RJ Vick as questionable.",
+      "Colorado State’s availability report lists 11 players as out, including offensive linemen Zach Smith, Diego Rodriquez and Jayden Tuia."
+    ],
+    "script": {
+      "model": [
+        "Texas State’s defense has to come out ahead on long runs: it gives up explosive gains on 3.6% of opponent runs, against an offense that turns 8.3% of its runs into explosive gains.",
+        "Texas State’s defense has to slow Colorado State in the pass-rush matchup — Colorado State’s offense has allowed a sack on 1.0% of its dropbacks.",
+        "Texas State’s defense has to slow Colorado State in the red zone — Colorado State’s offense succeeds on 52.9% of its red-zone plays.",
+        "Texas State’s offense has to keep winning on big pass plays: it turns 14.7% of its pass plays into explosive gains, and Colorado State’s defense gives up explosive gains on 18.4% of opponent pass plays."
+      ],
+      "market": [
+        "Colorado State’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 1.0% of its dropbacks, and Texas State’s defense sacks the quarterback on 4.1% of opponent dropbacks.",
+        "Colorado State’s offense has to keep winning in the red zone: it succeeds on 52.9% of its red-zone plays, and Texas State’s defense allows success on 44.1% of opponent red-zone plays.",
+        "Colorado State’s offense has to keep winning on long runs: it turns 8.3% of its runs into explosive gains, and Texas State’s defense gives up explosive gains on 3.6% of opponent runs."
+      ]
+    },
+    "unknown": [
+      "Texas State’s availability report lists tight end Blake Smith as questionable.",
+      "Colorado State’s third report Pac-12 availability report (published Oct. 14) lists quarterback Hauss Hejny as questionable.",
+      "Colorado State’s availability report lists receiver RJ Vick as questionable.",
+      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Texas State and Colorado State.",
+      "Not in EdgeDesk’s verified data for this game: turnover rates, historical meetings and penalty rate.",
+      "The line on file was captured Oct. 15 and may have moved."
+    ],
+    "flags": [
       {
-        "id": "craft_duplicate_paragraph",
-        "why": "the same paragraph must not appear twice on one page",
-        "detail": "Colorado State’s third report Pac-12 availability report (published Oct. 14) lists quarter"
+        "key": "DATA_CONFLICT",
+        "severity": "medium",
+        "text": "EdgeDesk’s own sources disagree on sack rate allowed (Texas State), sack rate allowed (Colorado State) and sack rate (Colorado State); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
+      },
+      {
+        "key": "CROSS_MODEL_OUTLIER",
+        "severity": "medium",
+        "text": "EdgeDesk’s published number sits 5.1 points from the middle of its own other models."
+      },
+      {
+        "key": "DATA_FAULT",
+        "severity": "high",
+        "text": "EdgeDesk’s game page already labels this gap a DATA FAULT: EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game."
+      },
+      {
+        "key": "HFA_CONSTANT",
+        "severity": "medium",
+        "text": "EdgeDesk’s model gives Texas State 4.1 points for playing at home — a league-wide value, not one measured for this stadium; historically, the closing market has priced about 61% of EdgeDesk’s home-field number."
+      },
+      {
+        "key": "REGIME_CHANGE",
+        "severity": "medium",
+        "text": "Colorado State: new head coach; returning roster share at the 10th percentile; returning production at the 23rd percentile. The long-run state is weighted 68% (regime curve) instead of 80% (standard curve) at 5 games played."
       }
     ],
-    "hold_reason": "evidence_inputs_suspect, factual_integrity"
+    "sources": [
+      {
+        "label": "EdgeDesk play-by-play unit metrics (2026 season)",
+        "url": null,
+        "path": "football/matchup/metrics.json",
+        "observed_at": "2026-10-15T15:59:19.241Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "EdgeDesk play-by-play quarterback logs (2026)",
+        "url": null,
+        "path": "football/fbs_epa/qb_epa_2026.json",
+        "observed_at": "2026-10-15T00:00:00.000Z",
+        "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Pac-12 Conference availability report (Third Report)",
+        "url": "https://pac-12.com/news/2026/9/11/2026-football-reports.aspx",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-15T02:03:33.688Z",
+        "verification": "OFFICIAL_REPORT"
+      }
+    ],
+    "needs_confirmation": []
+  },
+  "checks": {
+    "ok": true,
+    "failed": [],
+    "at": "2026-10-15T16:47:58.208Z"
   }
 }
