@@ -21,8 +21,8 @@
   "game_time": "2026-10-18T02:30:00.000Z",
   "game_when_label": "2026-10-18 02:30 UTC",
   "published_at": null,
-  "updated_at": "2026-10-15T04:26:49.921Z",
-  "generated_at": "2026-10-15T04:26:49.921Z",
+  "updated_at": "2026-10-15T11:19:39.679Z",
+  "generated_at": "2026-10-15T11:19:39.679Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -115,22 +115,22 @@
         "note": "Quoted from San Diego State’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
       "confidence_pct": 84,
-      "inputs_reached_pct": 73,
+      "inputs_reached_pct": 81,
       "input_contract": {
         "fields": 26,
         "applicable": 26,
-        "known": 19,
-        "priced": 11,
-        "priced_coverage_pct": 42,
+        "known": 21,
+        "priced": 13,
+        "priced_coverage_pct": 50,
         "by_state": {
-          "USABLE": 11,
+          "USABLE": 13,
           "RESEARCH_ONLY": 8,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
           "NOT_DUE_YET": 0,
-          "FETCH_FAILED": 2,
+          "FETCH_FAILED": 0,
           "UNAVAILABLE": 5
         },
         "absent": [
@@ -139,18 +139,6 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "FETCH_FAILED",
-            "why": "EdgeDesk read 3 source(s) for San Diego State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff."
-          },
-          {
-            "field": "availability",
-            "side": "away",
-            "state": "FETCH_FAILED",
-            "why": "EdgeDesk read 3 source(s) for Fresno State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff."
           },
           {
             "field": "qb_availability",
@@ -1475,18 +1463,6 @@
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "home injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "away injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
           "text": "no book spread joined to this game — no edge is claimed",
           "widening": null
         },
@@ -1505,14 +1481,6 @@
         {
           "item": "Away starting quarterback",
           "why": "starting QB not supplied for away"
-        },
-        {
-          "item": "Home availability / injuries",
-          "why": "no injury report supplied for home"
-        },
-        {
-          "item": "Away availability / injuries",
-          "why": "no injury report supplied for away"
         },
         {
           "item": "Weather at kickoff",
@@ -1590,11 +1558,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 84,
+        "pct": 88,
         "tier": "STRONG",
-        "text": "84 · STRONG",
-        "sub": "main deduction: Fresno State’s availability sources refused",
-        "score": 84,
+        "text": "88 · STRONG",
+        "sub": "main deduction: no market quote is joined to this game",
+        "score": 88,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1608,7 +1576,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 9.3,
+            "score": 13.5,
             "max": 20
           },
           {
@@ -1620,13 +1588,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.3,
+            "score": 12.9,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 15,
+            "score": 14.5,
             "max": 15
           },
           {
@@ -1636,23 +1604,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "Fresno State’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Fresno State’s absences cannot be assessed: no graded availability read",
+        "main_deduction": "no market quote is joined to this game",
         "capped_by": [],
         "next_actions": [
           {
-            "action": "Restore an injury/availability source for Fresno State",
-            "potential_gain": 5,
-            "text": "up to +5"
+            "action": "Confirm Fresno State’s QB availability",
+            "potential_gain": 1,
+            "text": "up to +1"
           },
           {
-            "action": "Restore an injury/availability source for San Diego State",
-            "potential_gain": 5,
-            "text": "up to +5"
+            "action": "Confirm San Diego State’s QB availability",
+            "potential_gain": 1,
+            "text": "up to +1"
           },
           {
             "action": "Capture a market quote",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "potential_gain": 1,
+            "text": "up to +1"
           }
         ],
         "stability": {
@@ -1686,9 +1654,9 @@
         "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
-        "key": "STABLE",
-        "label": "STABLE",
-        "text": "EdgeDesk’s number is unchanged since the latest published number."
+        "key": "INJURY_UNCERTAINTY",
+        "label": "INJURY UNCERTAINTY",
+        "text": "A supplied availability report lists 40 players with an unresolved status; the engine widens this game’s range for it."
       },
       "stability": {
         "tier": "LOW",
@@ -1899,7 +1867,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1kofv4glhl27m",
+    "packet_hash": "fginq618pfp18",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": false,
     "question": "Can San Diego State contain Fresno State’s explosive runs?",
@@ -1923,9 +1891,21 @@
     ],
     "quarterbacks": [
       "Jayden Denegal has completed 75 of 140 passes (53.6%) for 821 yards, 5.9 yards per attempt, 6 touchdowns and 5 interceptions in six games for San Diego State, and has been sacked on 7 of 147 dropbacks.",
-      "Jayden Mandal has completed 110 of 173 passes (63.6%) for 1,252 yards, 7.2 yards per attempt, 8 touchdowns and 1 interception in six games for Fresno State, and has been sacked on 7 of 180 dropbacks."
+      "Jayden Mandal has completed 110 of 173 passes (63.6%) for 1,252 yards, 7.2 yards per attempt, 8 touchdowns and 1 interception in six games for Fresno State, and has been sacked on 7 of 180 dropbacks.",
+      "San Diego State’s advance report Pac-12 availability report (published Oct. 14) lists quarterback Stone Saunders as questionable."
     ],
-    "availability": [],
+    "availability": [
+      "San Diego State’s availability report lists running back DJ Overstreet as questionable.",
+      "San Diego State’s availability report lists running back Lucky Sutton as questionable.",
+      "San Diego State’s availability report lists tight end Ryan Wolfer as doubtful.",
+      "San Diego State’s availability report lists receiver Donovan Brown as doubtful.",
+      "San Diego State’s availability report lists running back Javion Kinnard as questionable.",
+      "San Diego State’s availability report lists running back Josiah Lucas as doubtful.",
+      "San Diego State’s availability report lists receiver Will Cianfrini as questionable.",
+      "San Diego State’s availability report lists receiver Nate Acevedo as doubtful.",
+      "San Diego State’s availability report lists receiver Derek Stevenson as questionable.",
+      "Fresno State’s availability report lists running back Rayshon Luke as questionable."
+    ],
     "script": {
       "model": [
         "Fresno State’s offense has to keep winning on long runs: it turns 9.3% of its runs into explosive gains, and San Diego State’s defense gives up explosive gains on 2.5% of opponent runs.",
@@ -1940,9 +1920,12 @@
       ]
     },
     "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for San Diego State and Fresno State.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate.",
-      "The line on file was captured Oct. 14 and may have moved."
+      "San Diego State’s advance report Pac-12 availability report (published Oct. 14) lists quarterback Stone Saunders as questionable.",
+      "San Diego State’s availability report lists running back DJ Overstreet as questionable.",
+      "San Diego State’s availability report lists running back Lucky Sutton as questionable.",
+      "San Diego State’s availability report lists tight end Ryan Wolfer as doubtful.",
+      "San Diego State’s availability report lists receiver Donovan Brown as doubtful.",
+      "San Diego State’s availability report lists running back Javion Kinnard as questionable."
     ],
     "flags": [
       {
@@ -1956,7 +1939,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-14T23:34:13.255Z",
+        "observed_at": "2026-10-15T04:44:42.562Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1972,6 +1955,13 @@
         "path": "football/fbs_epa/qb_epa_2026.json",
         "observed_at": "2026-10-14T00:00:00.000Z",
         "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "Pac-12 Conference availability report (Advance Report)",
+        "url": "https://pac-12.com/news/2026/9/11/2026-football-reports.aspx",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-15T02:05:27.179Z",
+        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1979,6 +1969,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-15T04:26:49.921Z"
+    "at": "2026-10-15T11:19:39.679Z"
   }
 }

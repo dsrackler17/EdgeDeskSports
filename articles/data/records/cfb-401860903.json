@@ -21,8 +21,8 @@
   "game_time": "2026-10-17T22:00:00.000Z",
   "game_when_label": "2026-10-17 22:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-15T04:26:49.921Z",
-  "generated_at": "2026-10-15T04:26:49.921Z",
+  "updated_at": "2026-10-15T11:19:39.679Z",
+  "generated_at": "2026-10-15T11:19:39.679Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -115,22 +115,22 @@
         "note": "Quoted from Oregon State’s perspective, as the engine publishes it. Eight results in ten land inside p10–p90."
       },
       "confidence_pct": 83,
-      "inputs_reached_pct": 69,
+      "inputs_reached_pct": 77,
       "input_contract": {
         "fields": 26,
         "applicable": 26,
-        "known": 18,
-        "priced": 11,
-        "priced_coverage_pct": 42,
+        "known": 20,
+        "priced": 13,
+        "priced_coverage_pct": 50,
         "by_state": {
-          "USABLE": 11,
+          "USABLE": 13,
           "RESEARCH_ONLY": 7,
           "STALE": 0,
           "CONFLICTING": 0,
           "NOT_APPLICABLE": 0,
           "NOT_REQUIRED": 0,
           "NOT_DUE_YET": 0,
-          "FETCH_FAILED": 2,
+          "FETCH_FAILED": 0,
           "UNAVAILABLE": 6
         },
         "absent": [
@@ -139,18 +139,6 @@
             "side": null,
             "state": "UNAVAILABLE",
             "why": "no forecast provider was called in this build; the venue’s coordinates are known, so this is a build that did not ask rather than a source that did not answer"
-          },
-          {
-            "field": "availability",
-            "side": "home",
-            "state": "FETCH_FAILED",
-            "why": "EdgeDesk read 3 source(s) for Oregon State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff."
-          },
-          {
-            "field": "availability",
-            "side": "away",
-            "state": "FETCH_FAILED",
-            "why": "EdgeDesk read 3 source(s) for Washington State and 2 refused; the read is graded LIMITED and an ungraded read is not a clean bill of health. The engine prices this as maximum injury uncertainty, never as healthy. THIS IS NOT A PER-TEAM FAILURE: espn_depth refuses for all 138 programmes (no depth-chart endpoint answered (HTTP 404; HTTP 403; HTTP 404)); espn_participation refuses for all 138 programmes (HTTP 403) — an endpoint the provider closed, not 138 separate misses Pac-12 Conference requires an availability report for this game: filed three, two and one day before a conference game (each by 7 p.m. PT) and no later than two hours before kickoff."
           },
           {
             "field": "qb_availability",
@@ -1481,18 +1469,6 @@
         {
           "sev": "LOW",
           "label": "missing",
-          "text": "home injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
-          "text": "away injury report not supplied",
-          "widening": null
-        },
-        {
-          "sev": "LOW",
-          "label": "missing",
           "text": "REGIME CHANGE (Washington State): REGIME CHANGE: new head coach; transfers out at the 94th percentile. The long-run state is weighted 60% (regime curve) instead of 60% (standard curve) at 6 games played.",
           "widening": null
         },
@@ -1523,14 +1499,6 @@
         {
           "item": "Away starting quarterback",
           "why": "starting QB not supplied for away"
-        },
-        {
-          "item": "Home availability / injuries",
-          "why": "no injury report supplied for home"
-        },
-        {
-          "item": "Away availability / injuries",
-          "why": "no injury report supplied for away"
         },
         {
           "item": "Weather at kickoff",
@@ -1608,11 +1576,11 @@
         "label": "High"
       },
       "reliability": {
-        "pct": 82,
+        "pct": 88,
         "tier": "STRONG",
-        "text": "82 · STRONG",
-        "sub": "main deduction: Washington State’s availability sources refused",
-        "score": 82,
+        "text": "88 · STRONG",
+        "sub": "main deduction: no market quote is joined to this game",
+        "score": 88,
         "grade": "STRONG",
         "grade_label": "STRONG",
         "gate_label": null,
@@ -1626,7 +1594,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 9,
+            "score": 13.7,
             "max": 20
           },
           {
@@ -1638,13 +1606,13 @@
           {
             "key": "freshness",
             "label": "Freshness",
-            "score": 12.3,
+            "score": 12.9,
             "max": 15
           },
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 13.3,
+            "score": 13.2,
             "max": 15
           },
           {
@@ -1654,23 +1622,23 @@
             "max": 10
           }
         ],
-        "main_deduction": "Washington State’s availability sources refused — a provider-wide refusal, not this team’s: espn_depth and espn_participation refuse for all 138 programmes; the impact of Washington State’s absences cannot be assessed: no graded availability read",
+        "main_deduction": "no market quote is joined to this game",
         "capped_by": [],
         "next_actions": [
           {
-            "action": "Restore an injury/availability source for Washington State",
-            "potential_gain": 5,
-            "text": "up to +5"
+            "action": "Confirm Washington State’s QB availability",
+            "potential_gain": 1,
+            "text": "up to +1"
           },
           {
-            "action": "Restore an injury/availability source for Oregon State",
-            "potential_gain": 5,
-            "text": "up to +5"
+            "action": "Confirm Oregon State’s QB availability",
+            "potential_gain": 1,
+            "text": "up to +1"
           },
           {
             "action": "Capture a market quote",
-            "potential_gain": 3,
-            "text": "up to +3"
+            "potential_gain": 1,
+            "text": "up to +1"
           }
         ],
         "stability": {
@@ -1923,7 +1891,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "i6gvdz19xc4qt",
+    "packet_hash": "jh90uh13htw4r",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can Washington State get Oregon State off the field on third down?",
@@ -1966,7 +1934,7 @@
     "unknown": [
       "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for Oregon State and Washington State.",
       "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate.",
-      "The line on file was captured Oct. 14 and may have moved."
+      "The line on file was captured Oct. 15 and may have moved."
     ],
     "flags": [
       {
@@ -1995,7 +1963,7 @@
         "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-14T23:34:13.255Z",
+        "observed_at": "2026-10-15T04:44:42.562Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2018,6 +1986,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-15T04:26:49.921Z"
+    "at": "2026-10-15T11:19:39.679Z"
   }
 }

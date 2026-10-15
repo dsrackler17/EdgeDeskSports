@@ -21,8 +21,8 @@
   "game_time": "2026-10-17T16:00:00.000Z",
   "game_when_label": "2026-10-17 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-15T04:26:49.921Z",
-  "generated_at": "2026-10-15T04:26:49.921Z",
+  "updated_at": "2026-10-15T11:19:39.679Z",
+  "generated_at": "2026-10-15T11:19:39.679Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "DATA FAULT",
   "model_status_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1455,7 +1455,7 @@
         {
           "sev": "MEDIUM",
           "label": "stale",
-          "text": "odds is 110h old",
+          "text": "odds is 117h old",
           "widening": null
         },
         {
@@ -1546,7 +1546,7 @@
       "total_market_held": null,
       "book": "captured consensus (stale) · 1 book · best at BetRivers",
       "captured": "2026-10-10T14:00:01.583+00:00",
-      "capture_age": "110 hours old",
+      "capture_age": "117 hours old",
       "stale": false,
       "classification": "DATA FAULT",
       "classification_note": "EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game.",
@@ -1714,25 +1714,25 @@
           "text": "Texas -14.7"
         },
         {
-          "at": "2026-10-11T14:09:22.388Z",
+          "at": "2026-10-15T04:57:43.625Z",
           "source": "latest published",
-          "home_margin": 18,
-          "text": "Texas -18.0"
+          "home_margin": 19.95,
+          "text": "Texas -19.9"
         }
       ],
-      "revisions": 2,
+      "revisions": 3,
       "change_since_published": {
         "comparable": true,
-        "points": 1.95,
+        "points": 0,
         "toward_team": "Texas",
-        "since_at": "2026-10-11T14:09:22.388Z",
-        "text": "2.0 pts toward Texas since the latest published number"
+        "since_at": "2026-10-15T04:57:43.625Z",
+        "text": "unchanged since the latest published number"
       },
       "what_changed": {
         "available": true,
         "summary": "EdgeDesk moved 5.3 points toward Texas since the first published number.",
         "attribution_text": "Projection changed 5.3 points since the first published number. Component-level attribution is unavailable: the stored snapshot keeps the number, not the terms behind it.",
-        "market": "Market moved 0.5 pts toward Texas (espn · DraftKings)",
+        "market": "Market moved 1.0 pts toward Texas (espn · DraftKings)",
         "model_version": null
       },
       "parity": {
@@ -1910,13 +1910,13 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "alpw681jkznia",
+    "packet_hash": "58ctup1r51q4j",
     "status": "PARTIALLY_EXPLAINED",
     "input_suspect": true,
     "question": "Can Texas take away Florida’s big plays?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Texas, and its own breakdown accounts for about 0.0 of the 7.5 points, but not the full gap. Input warning: EdgeDesk’s game page already labels this gap a DATA FAULT: EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game. It is a research question, not a bet.",
+    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Texas, and its own breakdown accounts for about 0.0 of the 9.5 points, but not the full gap. Input warning: EdgeDesk’s game page already labels this gap a DATA FAULT: EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game. It is a research question, not a bet.",
     "gap": {
-      "points": 7.5,
+      "points": 9.5,
       "toward": "Texas",
       "other": "Florida"
     },
@@ -1972,6 +1972,11 @@
         "text": "EdgeDesk’s own sources disagree on sack rate allowed (Texas), sack rate (Texas) and sack rate allowed (Florida); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
       },
       {
+        "key": "CROSS_MODEL_OUTLIER",
+        "severity": "medium",
+        "text": "EdgeDesk’s published number sits 4.7 points from the middle of its own other models."
+      },
+      {
         "key": "DATA_FAULT",
         "severity": "high",
         "text": "EdgeDesk’s game page already labels this gap a DATA FAULT: EdgeDesk’s number and the market are further apart than any real disagreement explains, which is a signal about EdgeDesk’s data, not about the game."
@@ -1992,7 +1997,7 @@
         "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-14T23:34:13.255Z",
+        "observed_at": "2026-10-15T04:44:42.562Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -2015,6 +2020,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-15T04:26:49.921Z"
+    "at": "2026-10-15T11:19:39.679Z"
   }
 }
