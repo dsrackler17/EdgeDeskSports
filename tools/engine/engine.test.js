@@ -30,7 +30,7 @@ const near = (a, b, e) => Math.abs(a - b) <= (e == null ? 1e-6 : e);
 
 /* ---------------- registry ---------------- */
 const ids = B.SPORTS.map((s) => s.id);
-chk('registry: the 12 sports asked for, each once', JSON.stringify(ids.slice().sort()) === JSON.stringify(['cfb', 'college_baseball', 'mlb', 'mma', 'ncaab_m', 'ncaab_w', 'nba', 'nfl', 'nhl', 'soccer', 'tennis', 'wnba'].sort()), ids);
+chk('registry: the 11 sports asked for, each once (soccer removed 2026-10-15)', JSON.stringify(ids.slice().sort()) === JSON.stringify(['cfb', 'college_baseball', 'mlb', 'mma', 'ncaab_m', 'ncaab_w', 'nba', 'nfl', 'nhl', 'tennis', 'wnba'].sort()), ids);
 chk('registry: every cited source exists', B.SPORTS.every((s) => (s.brain.candidates || []).every((c) => (c.sources || []).every((k) => B.SOURCES[k]))));
 chk('registry: a sport with no brain and no data is UNAVAILABLE', B.computeReadiness(B.byId('nba'), { markets: {} }).state === 'UNAVAILABLE');
 chk('registry: a sport with data but no brain is RESEARCH_ONLY', B.computeReadiness(B.byId('mma'), { markets: {} }).state === 'RESEARCH_ONLY');
@@ -102,7 +102,7 @@ chk('board: an unconfirmed lineup widens the uncertainty', b.candidates[0].prob.
 const board = JSON.parse(fs.readFileSync(path.join(ROOT, 'engine', 'board.json'), 'utf8'));
 chk('artifacts: the committed board has a verdict and, if PASS, its reasons', board.schema === 'edgedesk_engine_board_v1' && (board.verdict === 'BEST_SUPPORTED' ? !!board.best : board.why.length > 0));
 chk('artifacts: nothing qualified without passing the value gate', board.candidates.filter((x) => x.status === 'QUALIFIED').every((x) => x.gates.some((g) => g.gate === 'VALUE' && g.ok)));
-chk('artifacts: coverage names all 12 sports with their state', board.coverage.length === 12 && board.coverage.every((x) => x.state && x.note));
+chk('artifacts: coverage names all 11 sports with their state, and no soccer', board.coverage.length === 11 && board.coverage.every((x) => x.state && x.note) && !board.coverage.some((x) => x.id === 'soccer'));
 
 failures.forEach((f) => console.log('FAIL | ' + f.name + (f.detail !== undefined ? '  ' + JSON.stringify(f.detail).slice(0, 400) : '')));
 console.log((fail === 0 ? 'ALL GREEN ' : 'FAILED ') + 'multi-sport engine — ' + pass + ' passed, ' + fail + ' failed');

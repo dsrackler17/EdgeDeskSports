@@ -24,7 +24,6 @@ const G = require(path.join(ROOT, 'lib', 'edgedesk_games.js'));
 const ESPN = require('./espn.js');
 const BUILD = require('./build.js');
 const RES = require('./research.js');
-const ART = require('./artifacts.js');
 const LIVE = require('./live_poll.js');
 const E = require('./fixtures/espn_shapes.js');
 const F = require('./fixtures/slate_fixture.js');
@@ -37,7 +36,8 @@ function eq(name, got, want) { chk(name, JSON.stringify(got) === JSON.stringify(
   /* ── THE ADAPTER ──────────────────────────────────────────────────── */
   eq('one plain day per request, the division for college', ESPN.scoreboardUrl({ path: 'football/college-football', groups: '80' }, '20261013'),
     'https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard?dates=20261013&limit=500&groups=80');
-  eq('sixteen feeds across the nine sports', [ESPN.feeds().length, Array.from(new Set(ESPN.feeds().map((f) => f.sport))).length], [16, 9]);
+  eq('eight feeds across the eight sports (soccer removed)', [ESPN.feeds().length, Array.from(new Set(ESPN.feeds().map((f) => f.sport))).length], [8, 8]);
+  chk('no feed reads a soccer scoreboard', !ESPN.feeds().some((f) => /soccer/.test(f.sport + f.path)));
 
   const rec = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'cfb_lab', 'fixtures', 'providers', 'espn_scoreboard_pregame.json'), 'utf8'));
   const recEv = G.fromEspn(rec.events[0], { sport: 'cfb', league: 'FBS', fetched_at: '2026-10-01T12:00:00Z' });
@@ -65,7 +65,8 @@ function eq(name, got, want) { chk(name, JSON.stringify(got) === JSON.stringify(
   eq('the snapshot schema', s.schema, 'edgedesk_slate/1');
   chk('no request reaches the odds pipeline: every read is an ESPN scoreboard', log.every((k) => /^[a-z-]+\/[a-z0-9.-]+\|\d{8}$/.test(k)), log.slice(0, 3));
   const ids = s.events.map((e) => e.id);
-  chk('every listed sport with games in the window is in it', ['nhl', 'mlb', 'cfb', 'nfl', 'soccer'].every((sp) => s.events.some((e) => e.sport === sp)));
+  chk('every listed sport with games in the window is in it', ['nhl', 'mlb', 'cfb', 'nfl', 'ncaam'].every((sp) => s.events.some((e) => e.sport === sp)));
+  chk('soccer is not a listed sport: no feed, no bucket, no event', !s.sports.soccer && !Object.keys(s.buckets).some((k) => /^soccer/.test(k)) && !s.events.concat(s.upcoming).some((e) => e.sport === 'soccer') && !log.some((k) => /^soccer\//.test(k)));
   chk('UFC failed on every day: its state is failed, with no events', s.sports.mma.state === 'failed' && !s.events.some((e) => e.sport === 'mma'));
   chk('college baseball answered, empty: its state is ok (a confirmed empty slate)', s.sports.ncaabase.state === 'ok' && !s.events.some((e) => e.sport === 'ncaabase'));
   chk('both games of the doubleheader are in, as two events', ids.indexOf('mlb:espn:401803001') >= 0 && ids.indexOf('mlb:espn:401803002') >= 0);
@@ -74,7 +75,7 @@ function eq(name, got, want) { chk(name, JSON.stringify(got) === JSON.stringify(
   chk('late West Coast games remember the Eastern scoreboard day they were read from', s.events.find((e) => e.id === 'nhl:espn:401802005').sb_day === '2026-10-13');
   eq('Upcoming carries the next games of sports with few ahead: the neutral-site NFL game and the NBA opener', s.upcoming.map((e) => e.id).sort(), ['nba:espn:401900001', 'nfl:espn:401880002']);
   chk('the neutral site survives', s.upcoming.find((e) => e.id === 'nfl:espn:401880002').neutral === true);
-  eq('markets: only pregame, only named books, both sides — the upcoming games’ posted lines too', Object.keys(s.markets).sort(), ['mlb:espn:401803002', 'nfl:espn:401880001', 'nfl:espn:401880002', 'nhl:espn:401802002', 'soccer:espn:701002']);
+  eq('markets: only pregame, only named books, both sides — the upcoming games’ posted lines too', Object.keys(s.markets).sort(), ['mlb:espn:401803002', 'nfl:espn:401880001', 'nfl:espn:401880002', 'nhl:espn:401802002', 'ncaam:espn:401910002'].sort());
   chk('an upcoming game past the window keeps the line its book posted (the Card prices next week’s slate)', s.markets['nfl:espn:401880002'] && s.markets['nfl:espn:401880002'].spread && s.markets['nfl:espn:401880002'].spread.home.point === 1.5);
   chk('the refused consensus quote is counted, not shown', s.run.odds_rejected === 1 && !s.markets['cfb:espn:401871067']);
   chk('every market carries its book and its capture time', Object.values(s.markets).every((m) => m.book && m.captured_at && m.source === 'espn_scoreboard'));
@@ -113,10 +114,9 @@ function eq(name, got, want) { chk(name, JSON.stringify(got) === JSON.stringify(
 
   /* the offline bootstrap builds from the repo's real committed schedules */
   const off = await BUILD.build({ offline: true, now: Date.parse('2026-10-13T12:00:00Z'), prev: null });
-  chk('offline: the committed football, hockey and soccer schedules become slate events', ['cfb', 'nhl'].every((sp) => off.snap.events.some((e) => e.sport === sp)) && off.requests === 0);
+  chk('offline: the committed football and hockey schedules become slate events', ['cfb', 'nhl'].every((sp) => off.snap.events.some((e) => e.sport === sp)) && off.requests === 0);
   chk('offline: a sport with no committed schedule is failed, not empty', off.snap.sports.mma.state === 'failed' && off.snap.sports.mlb.state === 'failed');
-  eq('a soccer kickoff with no zone is read in the league’s own zone (15:00 London in BST = 14:00Z)', ART.zonedToUtc('2026-10-17', '15:00', 'Europe/London'), '2026-10-17T14:00:00.000Z');
-  eq('and after the clocks change (15:00 London in GMT = 15:00Z)', ART.zonedToUtc('2026-11-07', '15:00', 'Europe/London'), '2026-11-07T15:00:00.000Z');
+  chk('offline: no soccer schedule is read any more', !off.snap.events.some((e) => e.sport === 'soccer') && !(off.snap.sources.fallback || []).some((x) => /soccer/.test(x.file)));
 
   /* ── THE RESEARCH JOIN ────────────────────────────────────────────── */
   const R = (id) => s.events.concat(s.upcoming).find((e) => e.id === id).research;
@@ -126,7 +126,7 @@ function eq(name, got, want) { chk(name, JSON.stringify(got) === JSON.stringify(
   eq('CFB: the ESPN id is the research entity, with its free article and the board’s read', [R('cfb:espn:401871067').entity, R('cfb:espn:401871067').article.url, R('cfb:espn:401871067').read.label], ['401871067', '/articles/delaware-vs-middle-tennessee-2026/', 'RESEARCH']);
   chk('a RESEARCH read with a PASS decision is not a signal', R('cfb:espn:401871067').signal.actionable === false);
   eq('MLB: the card’s own key (Eastern date, both clubs, the game number)', R('mlb:espn:401803002').entity, 'g:mlb:2026-10-13|newyorkyankees|bostonredsox|2');
-  chk('soccer and the NBA have no research page; a game with nothing says nothing', R('soccer:espn:701002').module === null && R('nba:espn:401900001').module === null);
+  chk('college basketball and the NBA have no research page; a game with nothing says nothing', R('ncaam:espn:401910002').module === null && R('nba:espn:401900001').module === null);
   const src = F.research();
   src.cfb.rows[0].decision_status = 'BET'; src.cfb.rows[0].decision_label = 'BET';
   const evs = [JSON.parse(JSON.stringify(s.events.find((e) => e.id === 'cfb:espn:401871067')))];
@@ -152,7 +152,7 @@ function eq(name, got, want) { chk(name, JSON.stringify(got) === JSON.stringify(
   const cycles = await LIVE.poll({ snapshot: s, sources: F.research(), db, fetch: E.fakeFetch(F.table()), clock: () => F.NOW, once: true, log: false });
   chk('one cycle writes through slate_live_ingest only', calls.length === 1 && calls[0].fn === 'slate_live_ingest');
   const wrote = calls[0].args;
-  chk('it reads only feeds with a game in its live window', wrote.p_feeds.every((f) => ['nhl:hockey/nhl', 'mlb:baseball/mlb', 'cfb:football/college-football', 'soccer:soccer/esp.1'].indexOf(f.feed) >= 0), wrote.p_feeds.map((f) => f.feed));
+  chk('it reads only feeds with a game in its live window', wrote.p_feeds.every((f) => ['nhl:hockey/nhl', 'mlb:baseball/mlb', 'cfb:football/college-football', 'ncaam:basketball/mens-college-basketball'].indexOf(f.feed) >= 0), wrote.p_feeds.map((f) => f.feed));
   chk('each written event carries its feed, its scoreboard day and its research', wrote.p_events.every((e) => e.feed && e.sb_day && e.event && e.event.research));
   chk('the pregame price rides along; the live game has none', wrote.p_events.find((e) => e.id === 'nhl:espn:401802002').market && !wrote.p_events.find((e) => e.id === 'nhl:espn:401802001').market);
   const calls2 = [];

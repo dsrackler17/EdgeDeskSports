@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-15 — Soccer removed; the last ESPN wording on prices; the new strip actually loads
+
+**EdgeDesk covers American sports and UFC. Soccer is gone from the platform; no other sport's numbers changed.**
+
+- **Today's Games** (`lib/edgedesk_games.js`): soccer is no longer a listed sport, so it has no pill, no feed read, no card and no fallback schedule (`tools/slate/artifacts.js`, `build.js`, `research.js`). The committed `today/slate.json` drops its 110 soccer games; the next build reads no soccer scoreboard. A soccer event from a slate saved on a device, or a live row written before the removal, is dropped wherever it turns up (`EDGames.select`). `/today/`'s title and copy no longer list soccer.
+- **The cross-sport engine**: the soccer brain is out of `lib/edgedesk_sport_brains.js`, `engine/build_registry.js`, `engine/build_board.js` and `engine/lab/missingness.js`. `engine/registry.json` and `board.json` were rebuilt: every other sport's rows, coverage and registry entries are byte-identical to before (the board drops 264 soccer candidates, 624 → 360). The data-pack cross-check keeps the pack's EPL sample as counted only.
+- **The soccer model** (`soccer/`: code, data, records, slate) is deleted, with its steps in `.github/workflows/lab.yml` and the `lab:*` npm scripts.
+- **The Card** (`lib/edgedesk_card_feed.js`, `lib/edgedesk_decision_ui.js`): no soccer rows, pill or three-way pricing. A Soccer filter saved on a device reads as All sports, never an empty Card.
+- **Kept on purpose:** your own bet history still imports and labels soccer bets (portfolio sync, slip reader); the AI already answers "Soccer is not covered" with no pick; the archived data pack (`datapack/quant_v1`, hash-verified) is untouched.
+- **ESPN on prices:** the Card's price line reads "DraftKings (free, no credits)"; the NHL panel and the NHL price-verified reason say "a public scoreboard" instead of naming ESPN.
+- **Cache:** every changed browser file has a new `?v=` tag in `app.html` and `/today/`, so the new Today's Games strip (the entry below) reaches browsers that held the old copy.
+- Tests: the slate kernel, pipeline and browser suites now cover college basketball where they used soccer, and check that no soccer pill, feed, row or old live row ever shows; the lab, engine, Card and NHL suites updated for 11 sports.
+
 ## 2026-10-15 — Today's Games: scoreboard tiles, and no "ESPN" on screen
 
 **The Today's Games strip on the Research screen now reads like a sportsbook app's scoreboard.** Each game is a small tile: two teams with their logo and abbreviation and one number each, the start time and the total underneath, then one pill to the research.

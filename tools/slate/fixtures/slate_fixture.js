@@ -14,11 +14,11 @@
      CFB   DEL @ MTSU tonight: research + a free article, a consensus-only
            quote (refused → "Odds unavailable")
      NFL   SEA @ DEN Thursday (priced) · HOU v JAX at Wembley, neutral (Upcoming)
-     Soccer ARS v CHE final yesterday · BAR v RMA live 60' · LIV v MCI
-           tomorrow with a draw price (1X2)
+     NCAAB UNC @ DUKE final yesterday · UK @ KU live (2nd 12:00), no
+           research page · GONZ @ BAY tomorrow, priced (spread)
      NBA   nothing this week; BOS @ NYK on Oct 20 (Upcoming)
      UFC   the scoreboard answers 503 for every day (unable to load)
-     NCAA baseball and basketball: answered, empty (no games scheduled)
+     NCAA baseball: answered, empty (no games scheduled)
    =========================================================================== */
 const path = require('path');
 const E = require('./espn_shapes.js');
@@ -38,9 +38,9 @@ const T = {
   DEL: E.team('DEL', 'Delaware Blue Hens', 'Blue Hens', 48), MTSU: E.team('MTSU', 'Middle Tennessee Blue Raiders', 'Blue Raiders', 2393),
   SEAf: E.team('SEA', 'Seattle Seahawks', 'Seahawks', 26), DEN: E.team('DEN', 'Denver Broncos', 'Broncos', 7),
   HOUf: E.team('HOU', 'Houston Texans', 'Texans', 34), JAX: E.team('JAX', 'Jacksonville Jaguars', 'Jaguars', 30),
-  ARS: E.team('ARS', 'Arsenal', 'Arsenal', 359), CHE: E.team('CHE', 'Chelsea', 'Chelsea', 363),
-  LIV: E.team('LIV', 'Liverpool', 'Liverpool', 364), MCI: E.team('MCI', 'Manchester City', 'Man City', 382),
-  BAR: E.team('BAR', 'Barcelona', 'Barcelona', 83), RMA: E.team('RMA', 'Real Madrid', 'Real Madrid', 86),
+  DUKE: E.team('DUKE', 'Duke Blue Devils', 'Blue Devils', 150), UNC: E.team('UNC', 'North Carolina Tar Heels', 'Tar Heels', 153),
+  KU: E.team('KU', 'Kansas Jayhawks', 'Jayhawks', 2305), UK: E.team('UK', 'Kentucky Wildcats', 'Wildcats', 96),
+  BAY: E.team('BAY', 'Baylor Bears', 'Bears', 239), GONZ: E.team('GONZ', 'Gonzaga Bulldogs', 'Bulldogs', 2250),
   BOSn: E.team('BOS', 'Boston Celtics', 'Celtics', 2), NYK: E.team('NY', 'New York Knicks', 'Knicks', 18)
 };
 
@@ -74,15 +74,15 @@ function table() {
     E.event({ id: 401880002, date: '2026-10-18T13:30Z', home: T.JAX, away: T.HOUf, neutral: true, venue: 'Wembley Stadium', city: 'London', state: 'England', week: 6, status: E.status('pre'),
       odds: E.odds({ book: 'DraftKings', homeAbbr: 'JAX', awayAbbr: 'HOU', home: { ml: 110, line: 1.5, price: -110 }, away: { ml: -130, price: -110 }, total: 44.5, over: -110, under: -110 }) })
   ]);
-  t['soccer/eng.1|20261012'] = E.board([
-    E.event({ id: 701001, date: '2026-10-12T19:00Z', home: T.ARS, away: T.CHE, hs: 2, as: 2, status: E.status('final', { name: 'STATUS_FULL_TIME', detail: 'FT' }) })
+  t['basketball/mens-college-basketball|20261012'] = E.board([
+    E.event({ id: 401910001, date: '2026-10-12T19:00Z', home: T.DUKE, away: T.UNC, hs: 70, as: 68, status: E.status('final') })
   ]);
-  t['soccer/eng.1|20261014'] = E.board([
-    E.event({ id: 701002, date: '2026-10-14T19:00Z', home: T.LIV, away: T.MCI, venue: 'Anfield', city: 'Liverpool', state: 'England', status: E.status('pre'),
-      odds: E.odds({ book: 'DraftKings', homeAbbr: 'LIV', awayAbbr: 'MCI', home: { ml: 120 }, away: { ml: 210 }, draw: 250, total: 2.5, over: -130, under: 110 }) })
+  t['basketball/mens-college-basketball|20261014'] = E.board([
+    E.event({ id: 401910002, date: '2026-10-14T23:00Z', home: T.BAY, away: T.GONZ, venue: 'Foster Pavilion', city: 'Waco', state: 'TX', status: E.status('pre'),
+      odds: E.odds({ book: 'DraftKings', homeAbbr: 'BAY', awayAbbr: 'GONZ', home: { ml: 150, line: 3.5, price: -110 }, away: { ml: -180, price: -110 }, total: 152.5, over: -110, under: -110 }) })
   ]);
-  t['soccer/esp.1|20261013'] = E.board([
-    E.event({ id: 701003, date: '2026-10-13T21:30Z', home: T.BAR, away: T.RMA, hs: 1, as: 1, status: E.status('live', { name: 'STATUS_SECOND_HALF', detail: "60'", period: 2, clock: "60'" }) })
+  t['basketball/mens-college-basketball|20261013'] = E.board([
+    E.event({ id: 401910003, date: '2026-10-13T21:30Z', home: T.KU, away: T.UK, hs: 41, as: 38, status: E.status('live', { detail: '2nd 12:00', period: 2, clock: '12:00' }) })
   ]);
   t['basketball/nba|20261020'] = E.board([
     E.event({ id: 401900001, date: '2026-10-20T23:30Z', home: T.NYK, away: T.BOSn, status: E.status('pre') })
@@ -112,7 +112,6 @@ function research() {
       readiness: { model: { moneyline: { status: 'OUTCOME_VALIDATED' } } } },
     nhlTeams: real.nhlTeams,
     basketball: { leagues: { nba: { games: [] } } },
-    soccer: { leagues: {} },
     engine: { verdict: 'PASS' },
     published: { articles: [{ game_id: '401871067', type: 'pregame', url: '/articles/delaware-vs-middle-tennessee-2026/', title: 'Delaware at Middle Tennessee' }] }
   };

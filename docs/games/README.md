@@ -19,7 +19,7 @@ Research, not picks. An available game is not a recommendation.
 | `lib/edgedesk_games.js` (`EDGames`) | The kernel, browser and Node: the reader's day (DST-safe, America/Chicago fallback), ESPN normalisation, statuses, ordering, doubleheaders, dedupe, the live overlay, market formatting and the integrity check, The Odds API orientation, research links, readiness through `lib/edgedesk_readiness.js`, the URL state. |
 | `lib/edgedesk_games_ui.js` (`EDGamesUI`) + `lib/edgedesk_games.css` | The strip, the page and the matchup dialog, for both hosts. Polling, the device copy, local-midnight rollover. |
 | `tools/slate/espn.js` | The ESPN scoreboard adapter: one plain request per feed per day. Odds only before the game, only from a named book, only through the football record's orientation-checked line reader. |
-| `tools/slate/artifacts.js` | The fallback: the schedules this repository already builds (`football/home/schedule.json`, `hockey/slate.json`, `soccer/slate.json`, `basketball/slate.json`). |
+| `tools/slate/artifacts.js` | The fallback: the schedules this repository already builds (`football/home/schedule.json`, `hockey/slate.json`, `basketball/slate.json`). |
 | `tools/slate/research.js` | Which research each game already has (module + entity, free article, model, the board's read, a certified signal). |
 | `tools/slate/build.js` | Builds `today/slate.json`. |
 | `tools/slate/live_poll.js` | The live poller (gate + poll), writing through `slate_live_ingest()`. |
@@ -36,6 +36,8 @@ Research, not picks. An available game is not a recommendation.
 
 ## Coverage, sport by sport
 
+Soccer was removed on 2026-10-15: it has no feed, no pill and no card, and an event of a sport not listed (from a slate saved on a device, or a live row written before the removal) is dropped wherever it turns up (`EDGames.select`, the Card's feed index).
+
 The cells below describe the code paths. The real ESPN feed has **not** been read from the environment this was built in, because its network policy refuses `site.api.espn.com`. Run `npm run slate:verify` (or the workflow's *verify* input) on a runner to see what each feed answers today.
 
 | Sport | Schedule, status, score | Fallback in the repo | Prices on the card | One-tap research |
@@ -47,7 +49,6 @@ The cells below describe the code paths. The real ESPN feed has **not** been rea
 | NHL | ESPN `hockey/nhl` | `hockey/slate.json` (120 h: every day the slate lists, `hockey/config.js` `SLATE_HORIZON_HOURS`) | ESPN quote (puck line); NHL capture is registered but disabled | `#research/nhl/<NHL id>` (ESPN `NJ`/`TB`/`LA`/`SJ`/`UTAH` mapped to the NHL's codes) |
 | MLB | ESPN `baseball/mlb` | none in the repo (the MLB card lives in Supabase) | ESPN quote (run line); The Odds API capture for subscribers | `#research/baseball/g:mlb:<ET date>\|<away>\|<home>\|<game #>`, the MLB card's own key, for today and tomorrow |
 | College baseball | ESPN `baseball/college-baseball` | none in the repo (`cbb.games` in Supabase) | ESPN quote only | `#research/baseball/g:cbb:<ESPN id>` |
-| Soccer | ESPN `soccer/eng.1`, `esp.1`, `ger.1`, `ita.1`, `fra.1`, `usa.1`, `uefa.champions`, `uefa.europa` | `soccer/slate.json` (openfootball, CC0; the local kick-off is read in the league's own zone) | ESPN quote: 1X2 with the draw, total | **No research page yet.** The matchup view, with the league model's fair 1X2 (PROVISIONAL) for the five modelled leagues. |
 | UFC / MMA | ESPN `mma/ufc`: a card is one event, its headline bout named by the card | none in the repo (`ufc.events` in Supabase) | none (the card has no single price) | `#research/ufc`: the UFC panel and its live fight center. There is no per-card route. |
 
 **What a card says when something is missing.** "Odds unavailable" ("No odds" on a strip tile) means no current captured price for the game. A strip tile's price past the 90-minute limit is dimmed and marked **past**. "Research not available yet" means EdgeDesk has no research page for it. "No model" means no EdgeDesk projection is on file. A card never shows a projection, a price, a score or a confidence it does not hold.
@@ -57,7 +58,6 @@ The cells below describe the code paths. The real ESPN feed has **not** been rea
 - **ESPN's public site API** (`site.api.espn.com`) is undocumented, keyless and carries **no published licence**. This repository already relies on it for football schedules and finals, college baseball, UFC and the CFB lab's quotes. Its pregame quotes name the book they come from. For a licensed production feed, the replacements are Sportradar or SportsDataIO for schedules and live scores, or The Odds API's `/scores` endpoint. The gateway can already build that endpoint's request (`supabase/functions/odds_gateway`), but it costs credits.
 - **Naming the source.** Every card, tile and matchup view names the **book** a price came from ("DraftKings · 10 min ago"), never the scoreboard that republished it: the reader sees no "ESPN". The slate still records the source (`market.source`), and the NHL comparison still treats such a price as a reference that never passes `price_verified`.
 - **Team logos** are ESPN CDN URLs (`a.espncdn.com`), hotlinked from the reader's browser with `referrerpolicy="no-referrer"` and a monogram fallback. Pass `logos: false` to `EDGamesUI` to show monograms only.
-- **openfootball/football.json** (soccer fallback) is CC0.
 - **The Odds API** prices are shown only to entitled subscribers, from what capture already stored. Nothing here buys a price.
 
 ## Refresh
@@ -115,6 +115,6 @@ Rollback: revert the merge. The SQL is additive: drop `public.slate_live`, `publ
 
 - The real ESPN feed has not been read from the build environment. The adapter is tested against a recorded ESPN odds block and constructed payloads in ESPN's shape. `npm run slate:verify` on a runner is the first live check.
 - The MLB research link is the MLB card's own key, built from ESPN's club names and Eastern date. It opens the card's brief when the card (Supabase `mlb_game_cards`) holds that game, and the Baseball panel otherwise.
-- NBA, college basketball and soccer have models (`basketball/`, `soccer/`) but no research page. Their cards open the matchup view and say so.
+- NBA and college basketball have models (`basketball/`) but no research page. Their cards open the matchup view and say so.
 - UFC has no per-card research route. The link opens the UFC panel.
 - The date picker covers the slate's window (two days back, three ahead). Later dates say they are outside it.

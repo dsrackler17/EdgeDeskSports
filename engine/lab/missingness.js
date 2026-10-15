@@ -52,14 +52,6 @@ function main() {
       wnba: { table: 'basketball/data/wnba', by_season: scan(path.join(ROOT, 'basketball', 'data', 'wnba'), ['start_utc', 'ot', 'known_at'], (r) => r.status === 'FINAL'), structural: { availability: 'no injury or lineup feed' } },
       ncaam: { table: 'basketball/data/ncaam', by_season: scan(path.join(ROOT, 'basketball', 'data', 'ncaam'), ['start_utc', 'ot', 'known_at'], (r) => r.status === 'FINAL'), structural: { availability: 'no injury or lineup feed' } },
       ncaaw: { table: 'basketball/data/ncaaw', by_season: scan(path.join(ROOT, 'basketball', 'data', 'ncaaw'), ['start_utc', 'ot', 'src', 'known_at'], (r) => r.status === 'FINAL'), structural: { coverage: '2024-25: the source lacked 209 games; added from the data pack (src = P)', availability: 'no injury or lineup feed' } },
-      soccer: Object.fromEntries(['epl', 'bundesliga', 'laliga', 'seriea', 'ligue1'].map((lg) => {
-        const dir = path.join(ROOT, 'soccer', 'data', lg); const bs = {};
-        if (fs.existsSync(dir)) for (const f of fs.readdirSync(dir).filter((x) => /^\d{4}\.csv$/.test(x)).sort()) {
-          const rows = readCsv(path.join(dir, f)).rows; const played = rows.filter((r) => r.status !== 'SCHEDULED');
-          bs[f.slice(0, 4)] = { rows: rows.length, result_missing: played.filter((r) => r.status === 'RESULT_MISSING').length, missing: { time_local: r4(rows.filter((r) => !r.time_local).length / (rows.length || 1)), ht_score: r4(played.filter((r) => r.status === 'FINAL' && r.ht_hg === '').length / (played.length || 1)) } };
-        }
-        return [lg, { table: 'soccer/data/' + lg, by_season: bs, structural: { result_missing: 'the source has not published these results (2019-20 Ligue 1: the season was abandoned)', time_zone: 'kick-off times are local with no zone', xg: 'no xG source', lineups: 'no lineup feed' } }];
-      })),
       mlb: { table: 'mlb/history/data', by_season: scan(path.join(ROOT, 'mlb', 'history', 'data'), ['sp_home', 'sp_away', 'park', 'outs', 'dn']), structural: { '2024 starters, park, outs': 'Retrosheet 2024 not reachable; the data pack\'s StatsAPI table has no starters', bullpen: 'no bullpen usage archive', lineups: 'no lineup archive' } },
       nfl: { table: 'datapack/nfl_v1/data/team_game_advanced_2022_2026.csv', by_season: (() => { const f = path.join(ROOT, 'datapack', 'nfl_v1', 'data', 'team_game_advanced_2022_2026.csv'); const out = {}; if (!fs.existsSync(f)) return out; const rows = readCsv(f).rows; for (const y of [...new Set(rows.map((r) => r.season))].sort()) { const s = rows.filter((r) => r.season === y); out[y] = { rows: s.length, missing: { cpoe_sum: r4(s.filter((r) => r.cpoe_passes === '0' || r.cpoe_passes === '').length / s.length), def_plays: r4(s.filter((r) => r.def_plays === '').length / s.length), known_at: r4(s.filter((r) => r.known_at === '').length / s.length) } }; } return out; })(),
         structural: { known_at: 'never recorded for history; EPA and CPOE are model outputs that can be refit', injuries: 'weekly status rows with no publication time: they cannot be placed before a kickoff', depth_charts: 'provider snapshots (2025+) or weekly rows (2024), not announcements', routes_participation: 'not in any source here: targets and snaps cannot stand in for routes', current_season: '2026 is partial in the pack (through week 5)', identity: '7 roster id conflicts (two pairs of players sharing an ESPN id; players with two PFR or two ESPN ids): left out of the crosswalk, never guessed' } },
@@ -67,7 +59,7 @@ function main() {
     },
   };
   fs.writeFileSync(OUT, JSON.stringify(report, null, 1) + '\n');
-  const m = report.sports.mlb.by_season; console.log('[missingness] mlb 2024 sp_home missing ' + (m['2024'] ? m['2024'].missing.sp_home : '—') + '; soccer epl 2026 results missing ' + (report.sports.soccer.epl.by_season['2026'] || {}).result_missing + '; written ' + path.relative(ROOT, OUT));
+  const m = report.sports.mlb.by_season; console.log('[missingness] mlb 2024 sp_home missing ' + (m['2024'] ? m['2024'].missing.sp_home : '—') + '; written ' + path.relative(ROOT, OUT));
 }
 
 if (require.main === module) main();

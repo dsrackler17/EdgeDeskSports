@@ -79,7 +79,7 @@ fail-closed as-of rule. It is held to the pack's own test cases.
    | Sport | Brain | Data |
    |---|---|---|
    | Basketball ×4 | `basketball/` | 2008/2010–2026 |
-   | Soccer ×5 | `soccer/` | — |
+   | Soccer ×5 | removed 2026-10-15 (the pack's soccer sample stays, unchecked) | — |
    | MLB | `mlb/history/` | — |
    | UFC | measured only | — |
    | NFL, CFB | existing brains | — |

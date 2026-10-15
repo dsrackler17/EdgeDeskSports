@@ -82,7 +82,6 @@ async function pool(items, n, fn) {
 function feedOfArtifact(e) {
   const sp = G.sport(e.sport);
   if (!sp) return null;
-  if (e.sport === 'soccer') { const f = sp.espn.find((x) => x.model && x.model === e.model_league); return f ? 'soccer:' + f.path : null; }
   return sp.id + ':' + sp.espn[0].path;
 }
 
@@ -231,9 +230,9 @@ async function build(o) {
   return { snap, log, rejected, requests };
 }
 function artifactCovers(src, day, today) {
-  /* the artifact's own horizon: hockey and basketball 72 h, soccer 4 days,
-     football 8 days; a day past it is unknown, not empty */
-  const lim = src.sports.indexOf('nhl') >= 0 || src.sports.indexOf('nba') >= 0 ? 2 : src.sports.indexOf('soccer') >= 0 ? 3 : 7;
+  /* the artifact's own horizon: hockey and basketball 72 h, football 8
+     days; a day past it is unknown, not empty */
+  const lim = src.sports.indexOf('nhl') >= 0 || src.sports.indexOf('nba') >= 0 ? 2 : 7;
   return day >= today && day <= G.addDays(today, lim);
 }
 function strip(e) {
