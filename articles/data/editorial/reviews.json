@@ -1,6 +1,6 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-10-15T21:18:59.821Z",
+  "generated_at": "2026-10-15T21:21:08.590Z",
   "open": 12,
   "count": 12,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
@@ -294,6 +294,59 @@
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
+      "key": "CFB:market:price market_gap",
+      "sport": "CFB",
+      "category": "market",
+      "question": "Does EdgeDesk’s market handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-10-06T18:25:23.283Z",
+      "updated_at": "2026-10-15T21:21:08.590Z",
+      "evidence": [
+        {
+          "lesson_id": "401862792:contradicted:market",
+          "game_id": "401862792",
+          "season": 2026,
+          "week": 5,
+          "team": "South Florida",
+          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at South Florida -14.9 with a fair total of 55.1, which makes South Florida the better team here by that margin on this field. EdgeDesk makes it South Florida -14.9 where the market has South Florida -6.5 at captured consensus (stale) · 1 book · best at Hard Rock Bet — a 8.4 points disagreement.",
+          "result": "South Florida Bulls lost by 4 where EdgeDesk projected a 14.9-point edge. South Florida Bulls lost by 4.",
+          "severity": "high",
+          "at": "2026-10-06T18:25:23.283Z"
+        },
+        {
+          "lesson_id": "401856715:contradicted:market",
+          "game_id": "401856715",
+          "season": 2026,
+          "week": 6,
+          "team": "LSU",
+          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at Kentucky +5.3 with a fair total of 53.5, which makes LSU the better team here by that margin on this field. EdgeDesk makes it Kentucky +5.3 where the market has Kentucky +8.5 at captured consensus (stale) · 1 book · best at DraftKings — a 3.2 points disagreement.",
+          "result": "LSU Tigers lost by 1 where EdgeDesk projected a 5.3-point edge. LSU Tigers lost by 1.",
+          "severity": "high",
+          "at": "2026-10-11T03:00:32.232Z"
+        },
+        {
+          "lesson_id": "401856712:contradicted:market",
+          "game_id": "401856712",
+          "season": 2026,
+          "week": 6,
+          "team": "Alabama",
+          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at Alabama -5.3 with a fair total of 57.1, which makes Alabama the better team here by that margin on this field. EdgeDesk makes it Alabama -5.3 where the market has Alabama -2.0 at captured consensus (stale) · 1 book · best at BetMGM — a 3.3 points disagreement.",
+          "result": "Alabama Crimson Tide lost by 3 where EdgeDesk projected a 5.3-point edge. Alabama Crimson Tide lost by 3.",
+          "severity": "high",
+          "at": "2026-10-15T21:21:08.590Z"
+        }
+      ],
+      "occurrences": 3,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
+      "recurring": true,
+      "note": "Seen 3 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
       "key": "NFL:scoring:general",
       "sport": "NFL",
       "category": "scoring",
@@ -363,46 +416,6 @@
           "result": "Sacramento State Hornets lost by 29. Sacramento State Hornets lost by 29 where EdgeDesk projected a 3.8-point edge.",
           "severity": "high",
           "at": "2026-10-08T07:15:12.051Z"
-        }
-      ],
-      "occurrences": 2,
-      "disposition": null,
-      "disposition_note": null,
-      "closed_at": null,
-      "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
-    },
-    {
-      "schema": "edgedesk_model_review_candidate_v1",
-      "key": "CFB:market:price market_gap",
-      "sport": "CFB",
-      "category": "market",
-      "question": "Does EdgeDesk’s market handling need investigating? Raised by a published article whose claim the game contradicted.",
-      "status": "open",
-      "opened_at": "2026-10-06T18:25:23.283Z",
-      "updated_at": "2026-10-11T03:00:32.232Z",
-      "evidence": [
-        {
-          "lesson_id": "401862792:contradicted:market",
-          "game_id": "401862792",
-          "season": 2026,
-          "week": 5,
-          "team": "South Florida",
-          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at South Florida -14.9 with a fair total of 55.1, which makes South Florida the better team here by that margin on this field. EdgeDesk makes it South Florida -14.9 where the market has South Florida -6.5 at captured consensus (stale) · 1 book · best at Hard Rock Bet — a 8.4 points disagreement.",
-          "result": "South Florida Bulls lost by 4 where EdgeDesk projected a 14.9-point edge. South Florida Bulls lost by 4.",
-          "severity": "high",
-          "at": "2026-10-06T18:25:23.283Z"
-        },
-        {
-          "lesson_id": "401856715:contradicted:market",
-          "game_id": "401856715",
-          "season": 2026,
-          "week": 6,
-          "team": "LSU",
-          "expectation": "2 published claims said the same thing: EdgeDesk prices this game at Kentucky +5.3 with a fair total of 53.5, which makes LSU the better team here by that margin on this field. EdgeDesk makes it Kentucky +5.3 where the market has Kentucky +8.5 at captured consensus (stale) · 1 book · best at DraftKings — a 3.2 points disagreement.",
-          "result": "LSU Tigers lost by 1 where EdgeDesk projected a 5.3-point edge. LSU Tigers lost by 1.",
-          "severity": "high",
-          "at": "2026-10-11T03:00:32.232Z"
         }
       ],
       "occurrences": 2,
