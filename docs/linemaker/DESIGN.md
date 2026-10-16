@@ -93,7 +93,7 @@ These were written into the tool before any score was read.
 | NFL | moneyline | ENGINE (kept: KERNEL_JOINT won by < 0.001) | PROVISIONAL: mean p off by 0.034 | 0.6681 | 0.7001 (n 65) | — |
 | NFL | total | KERNEL_JOINT | PROVISIONAL: mean p off by 0.035; one bin | 0.7264 (ENGINE 0.9260) | 0.7223 | **0.30** (n 1411) |
 | NFL | team total | KERNEL_JOINT | PROVISIONAL: one bin | 0.7503 (normal 0.7544) | 0.7531 | never tested |
-| CFB | spread | ENGINE | PROVISIONAL: mean p off by 0.030 | 0.7267 | 0.7303 | **−0.08** (n 4275) |
+| CFB | spread | ENGINE, read as one distribution per game (below) | PROVISIONAL: mean p off by 0.030 | 0.7264 | 0.7303 | **−0.07** (n 4275) |
 | CFB | moneyline | NORMAL_CAL | PROVISIONAL: one bin | 0.5565 (ENGINE 0.5584) | 0.4968 | — |
 | CFB | total | KERNEL_JOINT | **CALIBRATED** | 0.7279 (ENGINE 0.8938) | 0.7129 | **0.21** (n 4303) |
 | CFB | team total | KERNEL_JOINT | PROVISIONAL: one bin | 0.7480 (normal 0.7556) | 0.7499 | never tested |
@@ -102,8 +102,12 @@ What the table says:
 
 1. **Against outcomes, the probabilities are well calibrated.** Calibration slopes are 0.95–1.04, and every market has positive skill over climatology.
 2. **At the numbers the market posted, they have almost no resolution.** When the model says 62% at the closing number, it happened about 52% of the time. This is the same finding as `pricing_*.json` (the model does not beat the close), seen from the probability side. It is why the price check reads the at-market bands.
-3. **The engines' total distributions give zero push probability on whole-number lines.** Their residual tables are relative to a fractional fair total. A game that lands exactly on a whole-number total gets a near-infinite log loss. The kernel prices those pushes. The engines are left as they are; this is reported, not changed.
-4. **Centre accuracy, out of sample.**
+3. **The CFB spread is priced from one distribution per game.** The engine's per-line call (`football/cfb_p4/engine.js` `dist.coverProbSpread`) borrows its shape from the `margin_pmf_by_spread` row keyed by the line being priced, and from the pooled residual past the table's ±45. A ladder of lines therefore read a different distribution at every rung, and the chance of covering sometimes fell as the line got better. Examples: Tulane −0.5 38.9% but +0.5 38.7%. Every FBS sheet had dips: up to 1 point inside a published ladder and 3 points across the ±45 edge.
+   - **How it reads now.** `tools/football/build_fair_lines.js` `cfbSpreadCover` reads the shape once per game, from the row at EdgeDesk's own fair margin clamped to the table (`EDQuoteEV.cfbGameCover`). This is the row the terminal and the app read when no market is joined; the linemaker never reads one. The shape is then re-centred and stretched exactly as the engine does it. At the fair margin it equals the engine to the bit.
+   - **The calibration replay grades the same function.** On identical data, held-out log loss improved: 0.72413 → 0.72394 (selection) and 0.72673 → 0.72643 (confirmation). The calibration slope went from 1.024 to 1.007. The mean-probability miss went from 0.0295 to 0.0303, so the status stays PROVISIONAL.
+   - **The engine itself is unchanged.** Its card prices one line, the market's.
+4. **The engines' total distributions give zero push probability on whole-number lines.** Their residual tables are relative to a fractional fair total. A game that lands exactly on a whole-number total gets a near-infinite log loss. The kernel prices those pushes. The engines are left as they are; this is reported, not changed.
+5. **Centre accuracy, out of sample.**
    - NFL margin MAE: model 10.31, close 9.76. Total MAE: model 10.45, close 10.31 (2021–25).
    - CFB margin MAE: model 13.05, close 12.21 (2020–25).
 

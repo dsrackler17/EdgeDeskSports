@@ -59,7 +59,35 @@ function engineHooks(league) {
   const C = require(path.join(ROOT, 'football', 'cfb_p4', 'engine.js'));
   const P = global.window.EDCfbP4Params;
   const base = (P.volatility && P.volatility.sigma_base) || (P.distributions && P.distributions.sigma_margin) || 15;
-  return { cover: (raw, thr) => ou(C.dist.coverProbSpread(raw.home_margin, thr, raw.sigma || base, base)), over: (raw, L) => ou(C.dist.coverProbTotal(raw.total, L, 'over')), winProb: (raw) => C.dist.winProb(raw.home_margin, raw.sigma || base), version: P.model_version, sigma_base: base };
+  const cover = cfbSpreadCover(P, C, base);
+  return { cover: (raw, thr) => ou(cover(raw, thr)), over: (raw, L) => ou(C.dist.coverProbTotal(raw.total, L, 'over')), winProb: (raw) => C.dist.winProb(raw.home_margin, raw.sigma || base), version: P.model_version, sigma_base: base };
+}
+/* ONE CFB MARGIN DISTRIBUTION PER GAME, every line a tail of it. The engine's
+   per-line call (football/cfb_p4/engine.js dist.coverProbSpread) borrows its
+   shape from the margin_pmf_by_spread row KEYED BY THE LINE IT PRICES, and
+   past the table's range (±45) from the pooled residual, so a ladder read a
+   different distribution at every rung: the chance of covering fell as the
+   line got better (Tulane −0.5 38.9%, +0.5 38.7%; dips in every FBS sheet,
+   3 points across the ±45 edge). The shape is read ONCE per game, from the
+   row at EdgeDesk's own fair margin clamped to the table's range
+   (EDQuoteEV.cfbGameCover: the row football/cfb_terminal/build.js and
+   app.html read when no market is joined; the linemaker never reads one),
+   re-centred and stretched exactly as the engine does, so at the fair margin
+   the two agree to the bit. A params file with no table falls back to the
+   engine's pooled residual, itself one distribution shifted to the margin.
+   Shared with tools/football/linemaker_calibrate.js, so the calibration
+   record grades the function the sheets ship. -> (raw, threshold) -> {win, push, lose} */
+function cfbSpreadCover(P, C, base) {
+  const QEV = require(path.join(ROOT, 'lib', 'edgedesk_quote_ev.js'));
+  const D = P.distributions || {}, tabled = !!(D.margin_pmf_by_spread && D.pmf_spread_range);
+  let lastKey = null, curve = null;
+  return (raw, thr) => {
+    const sg = raw.sigma || base, sb = raw.sigma_base || base, key = raw.home_margin + '|' + sg + '|' + sb;
+    if (key !== lastKey) { lastKey = key; curve = tabled ? QEV.cfbGameCover(D, raw.home_margin, null, sg, sb) : null; }
+    if (curve) return curve(thr);
+    /* a table that cannot price this margin refuses rather than mix rows */
+    return tabled ? null : C.dist.coverProbSpread(raw.home_margin, thr, sg, sb);
+  };
 }
 
 /* -------------------------------------------------- the reference markets */
@@ -312,5 +340,5 @@ function main() {
   Object.keys(r.appended).forEach((s) => console.log('ledger ' + s + ': +' + r.appended[s] + ' record(s)'));
 }
 
-module.exports = { build, check, fingerprint, ledgerRecord, readLedger, versusReference, inputsFor, engineHooks, SCHEMA, LEDGER_SCHEMA };
+module.exports = { build, check, fingerprint, ledgerRecord, readLedger, versusReference, inputsFor, engineHooks, cfbSpreadCover, SCHEMA, LEDGER_SCHEMA };
 if (require.main === module) main();

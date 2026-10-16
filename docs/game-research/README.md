@@ -219,8 +219,10 @@ app at `#game/<nfl|cfb>/<game_id>[?f=portrait]`.
    newer inputs than the snapshot, the page says so and does not blend them.
 4. **What to watch for**: the insights in full sentences, with sources.
 5. **Deep research**: **Beginner** (a plain answer, what could change it) ·
-   **Research** (the projection, unit rankings with bars, the model's terms,
-   NFL one-input scenarios, how the number has moved) · **Lab** (model and
+   **Research** (the projection, the scoring distribution's 80% ranges, fair
+   alternate lines at every half point from the same run's probability sheet,
+   unit rankings with bars, the model's terms, NFL one-input scenarios, how the
+   number has moved) · **Lab** (model and
    input files with times, consistency checks, uncertainty, market
    diagnostics with blocker codes, definitions). The level is shared with the
    decision card (`edgedesk_info_level_v1`). The board's full game card is one
@@ -292,6 +294,11 @@ price's break-even), never "bet". The existing fair-number comparison
   so and keeps the snapshot's numbers together.
 - **NFL model terms** do not have to add to the margin (post-model
   adjustments follow); the page says so. College terms reconcile exactly.
+- **Fair alternate lines** are one model distribution per game. A better
+  line never shows a lower chance, and a CFB ±0.5 pair reads the same
+  because college games cannot tie. The CFB ladder once read a different
+  table row at every line and dipped by up to a point; see
+  `docs/linemaker/DESIGN.md` §2.5. The tests check every served ladder.
 - **EV** is shown only where the market's probabilities are calibrated; none
   of EdgeDesk's markets has yet been shown to beat the closing line, and the
   price check says so on every result.

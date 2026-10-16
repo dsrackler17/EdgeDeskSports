@@ -224,8 +224,12 @@ function replayCfb(opts) {
   }
   const sigmaBase = (P.volatility && P.volatility.sigma_base) || (P.distributions && P.distributions.sigma_margin) || 15;
   const ou = (c) => (c ? { over: c.win, push: c.push, under: c.lose } : null);
+  /* the spread exactly as the sheets price it: one distribution per game
+     (tools/football/build_fair_lines.js cfbSpreadCover), never the engine's
+     per-line read, whose shape changed with the line it priced */
+  const cover = require(path.join(__dirname, 'build_fair_lines.js')).cfbSpreadCover(P, E, sigmaBase);
   const engine = {
-    cover: (raw, thr) => ou(E.dist.coverProbSpread(raw.home_margin, thr, raw.sigma || sigmaBase, raw.sigma_base || sigmaBase)),
+    cover: (raw, thr) => ou(cover(raw, thr)),
     over: (raw, L) => ou(E.dist.coverProbTotal(raw.total, L, 'over')),
     winProb: (raw) => E.dist.winProb(raw.home_margin, raw.sigma || sigmaBase)
   };

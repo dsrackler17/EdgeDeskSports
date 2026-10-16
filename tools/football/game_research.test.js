@@ -239,6 +239,14 @@ chk('a sheet from a different projection does not match', GS.sheetMatches(sN, sh
 const sC = proj.find((s) => s.league === 'cfb' && P.sheets[s.game_key]);
 const r4 = GS.comparePrice(sC, P.sheets[sC.game_key], P.models.cfb, { market: 'spread', side: 'away', line: Math.round(-sC.model.fair.home_line * 2) / 2 + 3, american: -110 }, FL);
 chk('a CFB typed spread prices on its own league’s sheet', r4.ok, r4.errors);
+/* the fair alternate lines the page shows: a better number never prices lower
+   (the CFB ladder once read a different table row at every line) */
+const ladderDips = Object.keys(P.sheets).filter((k) => { const L = ((P.sheets[k].ladders || {}).spread || []).slice().sort((a, b) => a.home_line - b.home_line); return L.some((r, i) => i > 0 && r.home + r.push < L[i - 1].home + L[i - 1].push - 1.01e-4); });
+chk('every spread ladder the build serves: a home line covers at least as often the more points it gets', Object.keys(P.sheets).some((k) => /^cfb/.test(k)) && ladderDips.length === 0, ladderDips.slice(0, 5));
+const cfbHalf = Object.keys(P.sheets).filter((k) => /^cfb/.test(k)).filter((k) => { const L = P.sheets[k].ladders.spread, a = L.find((r) => r.home_line === -0.5), b = L.find((r) => r.home_line === 0.5); return a && b && a.home !== b.home; });
+chk('CFB has no ties: a served −0.5 and +0.5 cover equally often', cfbHalf.length === 0, cfbHalf.slice(0, 5));
+const viaPage = (() => { const k = Object.keys(P.sheets).find((x) => /^cfb/.test(x)), sh = P.sheets[k], c = Math.round(sh.markets.spread.fair_home_line * 2) / 2, ps = []; for (let d = -6; d <= 6; d += 0.5) ps.push(FL.probabilities(sh, { market: 'spread', side: 'home', line: c + d })); return ps; })();
+chk('the page reads the same ladder through EDFairLine.probabilities, and it never dips', viaPage.every((p, i) => p && !p.error && (i === 0 || p.win + p.push >= viaPage[i - 1].win + viaPage[i - 1].push - 1.01e-4)));
 chk('nothing in the price check writes to storage or the network', !/localStorage|fetch\(|XMLHttpRequest/.test(GS.comparePrice.toString()));
 
 /* ======================================================================= */
@@ -324,6 +332,18 @@ try {
     let failed = false; try { execFileSync(process.execPath, [path.join(__dirname, 'build_game_research.js'), '--check'], { cwd: ROOT, stdio: 'pipe' }); } catch (_) { failed = true; }
     chk('--check fails on a snapshot edited after it was hashed', failed);
   } finally { fs.writeFileSync(curFile, orig); }
+}
+{
+  /* …and a served ladder that covers less often at a better line (the CFB dip) */
+  const prFile = path.join(ROOT, 'football', 'game_research', 'probabilities.json'), orig = fs.readFileSync(prFile, 'utf8');
+  try {
+    const t = JSON.parse(orig), k = Object.keys(t.sheets).find((x) => /^cfb/.test(x) && t.sheets[x].ladders && t.sheets[x].ladders.spread.length > 4);
+    const L = t.sheets[k].ladders.spread, i = L.findIndex((r) => r.home_line === 0.5), j = L.findIndex((r) => r.home_line === -0.5);
+    L[i].home = Math.round((L[j].home - 0.002) * 1e4) / 1e4; L[i].away = Math.round((1 - L[i].home - L[i].push) * 1e4) / 1e4; /* +0.5 below −0.5: Tulane's dip */
+    fs.writeFileSync(prFile, JSON.stringify(t));
+    let msg = ''; try { execFileSync(process.execPath, [path.join(__dirname, 'build_game_research.js'), '--check'], { cwd: ROOT, stdio: 'pipe' }); } catch (e) { msg = String(e.stderr || ''); }
+    chk('--check fails on a spread ladder that covers less often at a better line', /covers less often at a better line/.test(msg), msg.slice(0, 200));
+  } finally { fs.writeFileSync(prFile, orig); }
 }
 const ledgerDir = path.join(ROOT, 'football', 'game_research', 'history');
 if (fs.existsSync(ledgerDir)) fs.readdirSync(ledgerDir).filter((f) => /\.jsonl$/.test(f)).forEach((f) => {
