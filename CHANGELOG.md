@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-16 — College baseball out of season: the card says what the archive holds again
+
+**Out of season the college baseball board now falls back to the last day played**, under a "the season is complete" note. That note never said what the archive holds. Only the empty-archive card did. `tools/cbb/cbb_ui.e2e.js` checks for it, and it had failed on `main` (57/58) unnoticed, because no workflow ran it.
+
+- **`app.html`.** `cbbArchiveLine()` is one sentence, shared by both out-of-season states: "The archive holds N games across seasons X–Y. Season records and prior meetings are still there to read." It is omitted when the status read failed, as before.
+- **`tools/cbb/cbb_ui.e2e.js`:**
+  - It describes the fallback the page now shows, and checks that the last day played is labelled as finished games: 59 checks.
+  - It creates Supabase's three roles one by one, the way `tools/games/sql/supabase_shim.sql` does (`service_role` bypasses RLS). Before, on a bare PostgreSQL, the schema failed on `service_role` before a single check ran.
+- **`.github/workflows/games-sql.yml`:**
+  - It runs the test next to the MLB browser suite, against the same database.
+  - Its log is on the skip guard's list, so a skip fails the job.
+  - It now triggers on `lib/college_baseball.js` and `tools/cbb/**`.
+
 ## 2026-10-16 — College baseball: a postponed game is no longer stored as a finished 0-0
 
 **The ingest called any game in ESPN's `post` state completed** (`tools/cbb/ingest.js`). ESPN files postponed, canceled and suspended games under `post` too. It flags a postponed one `completed: true`, with a score of "0" for each side. So:
