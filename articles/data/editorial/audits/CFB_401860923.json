@@ -1,0 +1,675 @@
+{
+  "schema": "edgedesk_game_audit_v1",
+  "key": "CFB:401860923",
+  "game_id": "401860923",
+  "sport": "CFB",
+  "snapshot_id": "snap_d02a2f0ad8c5aa4f",
+  "audited_at": "2026-10-16T04:09:55.179Z",
+  "theses": [
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "price",
+      "kind": "price",
+      "claim": "EdgeDesk prices this game at Texas State -20.3 with a fair total of 64.2, which makes Texas State the better team here by that margin on this field.",
+      "basis": "the model’s own fair spread",
+      "source_path": "model.fair_spread_text",
+      "category": "market",
+      "weight": 20.3,
+      "favours_side": "home",
+      "favours_team": "Texas State",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 20.267341187497554,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "falsifier": "Colorado State winning the game outright, or the margin landing on the wrong side of zero.",
+      "watch": "Whether Texas State is ahead on the scoreboard in a way that looks like Texas State -20.3 rather than a coin flip.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "claim": "EdgeDesk makes it Texas State -20.3 where the market has Texas State -11.5 at captured consensus (stale) · 1 book · best at FanDuel — a 8.8 points disagreement.",
+      "basis": "EdgeDesk’s own number against a captured sportsbook quote",
+      "source_path": "market.difference",
+      "category": "market",
+      "weight": 8.8,
+      "favours_side": "home",
+      "favours_team": "Texas State",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 8.8,
+        "unit": "points",
+        "market_margin": 11.5,
+        "market_text": "Texas State -11.5",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "falsifier": "the game landing between the two numbers, or on the market’s side of them — either of which means the market read this matchup better than EdgeDesk did.",
+      "watch": "Whether the scoreboard ever reaches the gap between Texas State -11.5 and Texas State -20.3.",
+      "observable": true,
+      "not_observable_why": null
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "claim": "Texas State is the better football team by 13.1 points on opponent-adjusted results, with roughly 47% of it still inherited from last season — worth +13.1 of the EdgeDesk number, in Texas State’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[0]",
+      "category": "model",
+      "weight": 13.1,
+      "favours_side": "home",
+      "favours_team": "Texas State",
+      "expected_signal": null,
+      "falsifier": "Colorado State winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "claim": "Playing at Texas State is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality — worth +4.1 of the EdgeDesk number, in Texas State’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[1]",
+      "category": "model",
+      "weight": 4.1,
+      "favours_side": "home",
+      "favours_team": "Texas State",
+      "expected_signal": null,
+      "falsifier": "Colorado State winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "claim": "Stylistically the matchup favours Texas State by 3.1 points: ball control vs front disruption — worth +3.1 of the EdgeDesk number, in Texas State’s favour.",
+      "basis": "the engine’s own additive contribution to this price",
+      "source_path": "drivers.rows[2]",
+      "category": "model",
+      "weight": 3.1,
+      "favours_side": "home",
+      "favours_team": "Texas State",
+      "expected_signal": null,
+      "falsifier": "Colorado State winning this part of the game instead.",
+      "watch": null,
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "claim": "Colorado State’s pass offense rates 55.6 (#39 of 137) against Texas State’s pass defense at 49.6 (#70 of 138). Colorado State’s unit stands higher among its own position group, by 31 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[0]",
+      "category": "passing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Colorado State pass offense handles Texas State pass defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "claim": "Colorado State’s run offense rates 54.9 (#42 of 138) against Texas State’s run defense at 65.2 (#21 of 138). Texas State’s unit stands higher among its own position group, by 21 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[1]",
+      "category": "rushing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Colorado State run offense handles Texas State run defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "claim": "Texas State’s pass offense rates 65.2 (#10 of 137) against Colorado State’s pass defense at 17.7 (#138 of 138). Texas State’s unit stands higher among its own position group, by 128 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[2]",
+      "category": "passing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Texas State pass offense handles Colorado State pass defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "claim": "Texas State’s run offense rates 59.7 (#25 of 138) against Colorado State’s run defense at 26.1 (#135 of 138). Texas State’s unit stands higher among its own position group, by 110 places.",
+      "basis": "the model’s own unit ratings for both sides of this pairing",
+      "source_path": "matchups[3]",
+      "category": "rushing",
+      "weight": 0,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": null,
+      "watch": "How Texas State run offense handles Colorado State run defense looks on early downs.",
+      "observable": false,
+      "not_observable_why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "claim": "Colorado State holds the largest measured edge in this matchup: Colorado State 50.5 (#54 of 130) vs Texas State 45.4 (#128 of 130) — 74 places on the national board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.away[0]",
+      "category": "special_teams",
+      "weight": 18.5,
+      "favours_side": "away",
+      "favours_team": "Colorado State",
+      "expected_signal": null,
+      "falsifier": "Texas State winning that category on the day.",
+      "watch": "Whether Colorado State’s edge in Special teams shows up in the box score.",
+      "observable": false,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Special teams"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "claim": "Texas State holds the largest measured edge in this matchup: Texas State 65.2 (#21 of 138) vs Colorado State 26.1 (#135 of 138) — 114 places on the national board.",
+      "basis": "both teams carry a rank in this category, so the gap between them is measured rather than assumed",
+      "source_path": "advantages.home[0]",
+      "category": "defence",
+      "weight": 28.5,
+      "favours_side": "home",
+      "favours_team": "Texas State",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_play"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "falsifier": "Colorado State winning that category on the day.",
+      "watch": "Whether Texas State’s edge in Run defense shows up in the box score.",
+      "observable": true,
+      "not_observable_why": "no single-game statistic in EdgeDesk’s vocabulary observes Run defense"
+    },
+    {
+      "schema": "edgedesk_thesis_v1",
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "claim": "The largest stated risk to this read: The market disagrees by 8.8 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+      "basis": "the model’s own highest-severity published uncertainty",
+      "source_path": "uncertainty.items[0]",
+      "category": "data_quality",
+      "weight": 2,
+      "favours_side": null,
+      "favours_team": null,
+      "expected_signal": null,
+      "falsifier": "the game passing off without the stated gap mattering.",
+      "watch": "Anything that turns on market disagreement.",
+      "observable": false,
+      "not_observable_why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "audit": [
+    {
+      "thesis_id": "price",
+      "kind": "price",
+      "category": "market",
+      "claim": "EdgeDesk prices this game at Texas State -20.3 with a fair total of 64.2, which makes Texas State the better team here by that margin on this field.",
+      "weight": 20.3,
+      "favours_team": "Texas State",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 0,
+        "unit": "points",
+        "projected": 20.267341187497554,
+        "note": "the model’s margin is the centre of a distribution, so the test is the SIGN and the neighbourhood, never the exact number."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": 39,
+          "away": -39,
+          "diff": 39
+        }
+      ],
+      "observed_result": "Texas State Bobcats won by 39 where EdgeDesk projected a 20.3-point edge.",
+      "evaluation": "PARTIALLY CONFIRMED",
+      "confidence": "medium",
+      "why": "the side EdgeDesk made better won, but by a margin the projection did not describe"
+    },
+    {
+      "thesis_id": "market_gap",
+      "kind": "market",
+      "category": "market",
+      "claim": "EdgeDesk makes it Texas State -20.3 where the market has Texas State -11.5 at captured consensus (stale) · 1 book · best at FanDuel — a 8.8 points disagreement.",
+      "weight": 8.8,
+      "favours_team": "Texas State",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "margin"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": 8.8,
+        "unit": "points",
+        "market_margin": 11.5,
+        "market_text": "Texas State -11.5",
+        "market_margin_why": null,
+        "note": "for the disagreement to have been information rather than noise, the result has to land on EdgeDesk’s side of the MARKET number, not merely on the right side of zero."
+      },
+      "observed": [
+        {
+          "metric": "margin",
+          "label": "scoring margin",
+          "available": true,
+          "home": 39,
+          "away": -39,
+          "diff": 39
+        }
+      ],
+      "observed_result": "Texas State Bobcats won by 39.",
+      "evaluation": "CONFIRMED",
+      "confidence": "medium",
+      "why": "the result landed on EdgeDesk’s side of the market number: Texas State Bobcats beat a margin of 11.5"
+    },
+    {
+      "thesis_id": "driver.0",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Texas State is the better football team by 13.1 points on opponent-adjusted results, with roughly 47% of it still inherited from last season — worth +13.1 of the EdgeDesk number, in Texas State’s favour.",
+      "weight": 13.1,
+      "favours_team": "Texas State",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "driver.1",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Playing at Texas State is worth 4.1 points — the league-wide home-field number, because a per-venue table was tested and could not be told apart from the home team’s own quality — worth +4.1 of the EdgeDesk number, in Texas State’s favour.",
+      "weight": 4.1,
+      "favours_team": "Texas State",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "driver.2",
+      "kind": "driver",
+      "category": "model",
+      "claim": "Stylistically the matchup favours Texas State by 3.1 points: ball control vs front disruption — worth +3.1 of the EdgeDesk number, in Texas State’s favour.",
+      "weight": 3.1,
+      "favours_team": "Texas State",
+      "favours_side": "home",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes this driver"
+    },
+    {
+      "thesis_id": "matchup.0",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Colorado State’s pass offense rates 55.6 (#39 of 137) against Texas State’s pass defense at 49.6 (#70 of 138). Colorado State’s unit stands higher among its own position group, by 31 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.1",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Colorado State’s run offense rates 54.9 (#42 of 138) against Texas State’s run defense at 65.2 (#21 of 138). Texas State’s unit stands higher among its own position group, by 21 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.2",
+      "kind": "matchup",
+      "category": "passing",
+      "claim": "Texas State’s pass offense rates 65.2 (#10 of 137) against Colorado State’s pass defense at 17.7 (#138 of 138). Texas State’s unit stands higher among its own position group, by 128 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "matchup.3",
+      "kind": "matchup",
+      "category": "rushing",
+      "claim": "Texas State’s run offense rates 59.7 (#25 of 138) against Colorado State’s run defense at 26.1 (#135 of 138). Texas State’s unit stands higher among its own position group, by 110 places.",
+      "weight": 0,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the read does not name a side, so there is no direction to test"
+    },
+    {
+      "thesis_id": "advantage.away",
+      "kind": "advantage",
+      "category": "special_teams",
+      "claim": "Colorado State holds the largest measured edge in this matchup: Colorado State 50.5 (#54 of 130) vs Texas State 45.4 (#128 of 130) — 74 places on the national board.",
+      "weight": 18.5,
+      "favours_team": "Colorado State",
+      "favours_side": "away",
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "no single-game statistic in EdgeDesk’s vocabulary observes Special teams"
+    },
+    {
+      "thesis_id": "advantage.home",
+      "kind": "advantage",
+      "category": "defence",
+      "claim": "Texas State holds the largest measured edge in this matchup: Texas State 65.2 (#21 of 138) vs Colorado State 26.1 (#135 of 138) — 114 places on the national board.",
+      "weight": 28.5,
+      "favours_team": "Texas State",
+      "favours_side": "home",
+      "expected_signal": {
+        "metrics": [
+          "yards_per_play"
+        ],
+        "side": "home",
+        "direction": "high",
+        "threshold": null,
+        "unit": null,
+        "note": null
+      },
+      "observed": [
+        {
+          "metric": "yards_per_play",
+          "available": false,
+          "label": "yards per play",
+          "unit": "yards",
+          "why": "the box score for this game published no yards per play"
+        }
+      ],
+      "observed_result": "Not published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "the box score for this game published no yards per play"
+    },
+    {
+      "thesis_id": "uncertainty.primary",
+      "kind": "uncertainty",
+      "category": "data_quality",
+      "claim": "The largest stated risk to this read: The market disagrees by 8.8 points. The market is not the truth, but a gap that large is more often the model missing information (a suspension, a starter, a scheme change) than the market being wrong.",
+      "weight": 2,
+      "favours_team": null,
+      "favours_side": null,
+      "expected_signal": null,
+      "observed": [],
+      "observed_result": "Not observable from the statistics published for this game.",
+      "evaluation": "INCONCLUSIVE",
+      "confidence": "low",
+      "why": "an uncertainty is graded by whether the result is consistent with it, which is a reading rather than a measurement"
+    }
+  ],
+  "tally": {
+    "counts": {
+      "CONFIRMED": 1,
+      "PARTIALLY CONFIRMED": 1,
+      "NOT CONFIRMED": 0,
+      "INCONCLUSIVE": 10
+    },
+    "graded": 2,
+    "total": 12,
+    "not_observable": 10,
+    "headline": "1 of 2 gradeable claims held up, 0 did not"
+  },
+  "grading": {
+    "schema": "edgedesk_result_vs_process_v1",
+    "game_id": "401860923",
+    "sport": "CFB",
+    "snapshot_id": "snap_d02a2f0ad8c5aa4f",
+    "graded_at": "2026-10-16T04:09:55.179Z",
+    "final": {
+      "home_team": "Texas State Bobcats",
+      "away_team": "Colorado State Rams",
+      "home_score": 66,
+      "away_score": 27,
+      "margin": 39,
+      "total_points": 93,
+      "winner": "Texas State Bobcats"
+    },
+    "implied_side": {
+      "available": true,
+      "side": "home",
+      "team": "Texas State",
+      "point": -11.5,
+      "line_text": "Texas State -11.5",
+      "book": "captured consensus (stale) · 1 book · best at FanDuel",
+      "market_home_margin": -11.5,
+      "model_home_margin": -20.3,
+      "gap": 8.8,
+      "why": "EdgeDesk’s own number sat 8.8 points toward Texas State of the quote EdgeDesk captured at captured consensus (stale) · 1 book · best at FanDuel. That is what the disagreement implied. It was published as research, not as a recommendation to bet it."
+    },
+    "implied_total": {
+      "available": true,
+      "side": "under",
+      "line": 65.5,
+      "model_total": 64.2,
+      "gap": 1.3,
+      "why": "EdgeDesk’s fair total of 64.2 sat 1.3 points below the captured total of 65.5."
+    },
+    "bet_result": {
+      "spread": {
+        "outcome": "win",
+        "cover_margin": 27.5,
+        "side": "home",
+        "point": -11.5,
+        "team": "Texas State",
+        "line_text": "Texas State -11.5"
+      },
+      "total": {
+        "outcome": "loss",
+        "points": 93,
+        "line": 65.5,
+        "side": "under",
+        "by": 27.5,
+        "direction": "over"
+      },
+      "moneyline": {
+        "outcome": "win",
+        "side": "home",
+        "team": "Texas State"
+      }
+    },
+    "bet_headline": "WIN",
+    "closing_line": {
+      "available": false,
+      "why": "no closing line is held for this game: the Collective captured none and the schedule feed carries none. Closing-line value is left blank rather than estimated from the result."
+    },
+    "model_accuracy": {
+      "available": true,
+      "projected_home_margin": 20.3,
+      "actual_home_margin": 39,
+      "margin_error": 18.7,
+      "right_side": true,
+      "projected_total": 64.2,
+      "actual_total": 93,
+      "total_error": 28.8,
+      "projected_score": {
+        "away": 22,
+        "home": 42
+      },
+      "inside_published_range": true,
+      "range_text": "-1.7 → +40.3 (Texas State)"
+    },
+    "process": {
+      "grade": "UNTESTED",
+      "reasons": [
+        "None of the mechanism EdgeDesk named before kickoff could be graded against the statistics published for this game. The scoreboard is not evidence about a mechanism nobody could observe."
+      ],
+      "confirmed": 0,
+      "partial": 0,
+      "wrong": 0,
+      "graded": 0,
+      "basis": "the drivers, matchups and measured advantages only — never the price or the market claim, which are the result in longer words"
+    },
+    "process_headline": "UNTESTED",
+    "variance_markers": [
+      {
+        "key": "blowout",
+        "severity": "medium",
+        "label": "A 39-point margin",
+        "text": "Once a game is this far apart both teams stop playing the game they were rated on — the leader runs clock, the trailer throws — so late-game rates describe the situation rather than either team."
+      }
+    ],
+    "verdict": {
+      "key": "right_untested",
+      "line": "The number landed, in a game whose scoreline came largely from outside the matchup. That is a result, not a verification."
+    },
+    "separation_note": "The bet result and the process grade above are computed separately and are allowed to disagree. A winning number with a broken thesis is recorded as exactly that."
+  },
+  "lessons": [
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "401860923:unobservable",
+      "game_id": "401860923",
+      "sport": "CFB",
+      "season": 2026,
+      "week": 7,
+      "article_id": "postgame-cfb-401860923",
+      "snapshot_id": "snap_d02a2f0ad8c5aa4f",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "data_quality",
+      "evaluation": "INCONCLUSIVE",
+      "pregame_expectation": "9 of the claims in this article rested on model, passing, rushing, special_teams, defence.",
+      "actual_result": "None of them could be graded: no single-game statistic in EdgeDesk’s vocabulary observes this driver; the read does not name a side, so there is no direction to test.",
+      "lesson": "EdgeDesk prices these games partly on signals it has no way to observe afterwards. That is not an error in the model — it is a gap in the audit, and it means the platform cannot tell, from results alone, whether those parts of the number are earning their weight.",
+      "severity": "medium",
+      "model_review_required": false,
+      "suggested_investigation": "Consider whether a postgame data source exists for model, passing, rushing.",
+      "bet_result": "WIN",
+      "process_grade": "UNTESTED",
+      "created_at": "2026-10-16T04:09:55.179Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "401860923:total_miss",
+      "game_id": "401860923",
+      "sport": "CFB",
+      "season": 2026,
+      "week": 7,
+      "article_id": "postgame-cfb-401860923",
+      "snapshot_id": "snap_d02a2f0ad8c5aa4f",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "scoring",
+      "evaluation": "NOT CONFIRMED",
+      "pregame_expectation": "EdgeDesk published a fair total of 64.2.",
+      "actual_result": "The game finished with 93 points, an error of 28.8.",
+      "lesson": "A total missed by this much usually means a pace or a finishing assumption was wrong, not that both ratings were. Check which of the two moved.",
+      "severity": "high",
+      "model_review_required": true,
+      "suggested_investigation": "Was the play count or the points per drive the miss? Both are in this game’s result record.",
+      "bet_result": "WIN",
+      "process_grade": "UNTESTED",
+      "created_at": "2026-10-16T04:09:55.179Z"
+    },
+    {
+      "schema": "edgedesk_game_research_lesson_v1",
+      "id": "401860923:disagreement_landed",
+      "game_id": "401860923",
+      "sport": "CFB",
+      "season": 2026,
+      "week": 7,
+      "article_id": "postgame-cfb-401860923",
+      "snapshot_id": "snap_d02a2f0ad8c5aa4f",
+      "thesis_id": null,
+      "team": null,
+      "opponent": null,
+      "category": "market",
+      "evaluation": "CONFIRMED",
+      "pregame_expectation": "EdgeDesk makes it Texas State -20.3 where the market has Texas State -11.5 at captured consensus (stale) · 1 book · best at FanDuel — a 8.8 points disagreement.",
+      "actual_result": "Texas State Bobcats won by 39. the result landed on EdgeDesk’s side of the market number: Texas State Bobcats beat a margin of 11.5",
+      "lesson": "The disagreement landed. One landing proves nothing on its own; the aggregate of them, held against the closing line, is the only thing that would.",
+      "severity": "low",
+      "model_review_required": false,
+      "suggested_investigation": null,
+      "bet_result": "WIN",
+      "process_grade": "UNTESTED",
+      "created_at": "2026-10-16T04:09:55.179Z"
+    }
+  ]
+}
