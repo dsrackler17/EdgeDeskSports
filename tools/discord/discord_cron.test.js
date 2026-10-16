@@ -319,6 +319,10 @@ function reset(over) {
 
   /* ═══ the slate ═══════════════════════════════════════════════════════════ */
   NOW = Date.parse('2026-10-16T15:00:00Z'); /* Friday 10:00 CDT */
+  const proj = (sport, event_id, home, away, start, o) => Object.assign({
+    sport, event_id, start_utc: start, home: { name: home }, away: { name: away }, research: { outcome: 'RESEARCH_CONDITIONAL' },
+    outcome: { p_home: o.p }, fair: { moneyline: { home: o.mlH, away: o.mlA }, spread: { home_line: o.line == null ? null : o.line }, total: { line: o.tot, expected: o.tot } },
+    projected_score: { home: o.sh, away: o.sa }, validation: { markets: o.v } }, o.extra || {});
   function slateFixture() {
     reset();
     const ev = (sport, pid, away, home, start, extra) => Object.assign({ id: `${sport}:espn:${pid}`, sport, provider_id: pid, start_utc: start, time_tbd: false, status: 'SCHEDULED',
@@ -327,15 +331,30 @@ function reset(over) {
       generated_at: iso(NOW - 10 * MIN),
       sports: { nfl: { state: 'ok' }, cfb: { state: 'ok' }, nba: { state: 'ok' }, ncaam: { state: 'ok' }, nhl: { state: 'failed', note: 'The schedule source could not be read and no earlier read is held.' } },
       events: [
-        ev('cfb', '401862801', ['Memphis Tigers', 'Memphis'], ['Tulane Green Wave', 'Tulane'], '2026-10-16T23:30:00Z'),
+        ev('cfb', '401862801', ['Memphis Tigers', 'Memphis'], ['Tulane Green Wave', 'Tulane'], '2026-10-16T23:30:00Z', { research: { entity: '401862801' } }),
         ev('cfb', '401862803', ['UNLV Rebels', 'UNLV'], ['Colorado State Rams', 'Colorado State'], '2026-10-17T00:00:00Z'),
         ev('cfb', '401862809', ['Navy Midshipmen', 'Navy'], ['Rice Owls', 'Rice'], '2026-10-16T14:00:00Z', { status: 'IN_PROGRESS' }),
-        ev('cfb', '401862900', ['Army Black Knights', 'Army'], ['Air Force Falcons', 'Air Force'], '2026-10-17T19:00:00Z'),
-        ev('nfl', '401872996', ['Pittsburgh Steelers', 'Steelers'], ['Cincinnati Bengals', 'Bengals'], '2026-10-17T00:15:00Z'),
+        ev('cfb', '401862900', ['Army Black Knights', 'Army'], ['Air Force Falcons', 'Air Force'], '2026-10-17T01:30:00Z'),
+        ev('nfl', '401872996', ['Pittsburgh Steelers', 'Steelers'], ['Cincinnati Bengals', 'Bengals'], '2026-10-17T00:15:00Z', { research: { entity: 'nfl|2026_07_PIT_CIN' } }),
         ev('nba', '401900001', ['Boston Celtics', 'Celtics'], ['New York Knicks', 'Knicks'], '2026-10-17T00:00:00Z'),
+        ev('nhl', '401892517', ['Pittsburgh Penguins', 'Penguins'], ['Colorado Avalanche', 'Avalanche'], '2026-10-17T01:00:00Z', { research: { entity: '2026020119' } }),
       ],
-      markets: { 'nba:espn:401900001': { book: 'DraftKings', source: 'espn_scoreboard', captured_at: iso(NOW - 30 * MIN), spread: { home: { point: 2.5 } }, total: { point: 221.5 } } },
+      markets: {
+        'nba:espn:401900001': { book: 'DraftKings', source: 'espn_scoreboard', captured_at: iso(NOW - 30 * MIN), moneyline: { home: 120, away: -140 }, spread: { home: { point: 2.5 } }, total: { point: 221.5 } },
+        'nhl:espn:401892517': { book: 'DraftKings', source: 'espn_scoreboard', captured_at: iso(NOW - 30 * MIN), moneyline: { home: -205, away: 170 }, total: { point: 6.5 }, partial: ['puck line not priced on both sides'] },
+      },
     };
+    SITE['engine/projections.json'] = { built_at: iso(NOW - 2 * H), projections: [
+      proj('cfb', '401862801', 'Tulane', 'Memphis', '2026-10-16T23:30:00Z', { p: 0.3722, mlH: 169, mlA: -169, line: 4.77, tot: 51.5, sh: 23.37, sa: 28.14,
+        v: { spread: { state: 'OUTCOME_VALIDATED', market_test: 'TESTED_EVEN' }, moneyline: { state: 'EXPERIMENTAL', market_test: 'TESTED_BEHIND' } } }),
+      proj('cfb', '401862900', 'Air Force', 'Army', '2026-10-17T01:30:00Z', { p: 0.5, extra: { research: { outcome: 'DATA_INSUFFICIENT' } }, v: {} }),
+      proj('nba', '401900001', 'New York Knicks', 'Boston Celtics', '2026-10-17T00:00:00Z', { p: 0.4589, mlH: 118, mlA: -118, line: 1.5, tot: 224.0, sh: 111.2, sa: 112.8,
+        v: { spread: { state: 'OUTCOME_VALIDATED', market_test: 'NOT_TESTED' } } }),
+      proj('nhl', '2026020119', 'Colorado Avalanche', 'Pittsburgh Penguins', '2026-10-17T01:00:00Z', { p: 0.612, mlH: -158, mlA: 158, line: null, tot: 6.47, sh: 3.488, sa: 2.7747,
+        v: { moneyline: { state: 'OUTCOME_VALIDATED', market_test: 'NOT_TESTED' } } }),
+      proj('nfl', '2026_07_PIT_CIN', 'Cincinnati Bengals', 'Pittsburgh Steelers', '2026-10-17T00:15:00Z', { p: 0.66, mlH: -194, mlA: 194, line: -4.6, tot: 43.1, sh: 23.9, sa: 19.3,
+        v: { spread: { state: 'OUTCOME_VALIDATED', market_test: 'TESTED_EVEN' } } }),
+    ] };
     SITE['football/venues/forecasts.json'] = { by_game: {
       '401862801': { temp_f: 67.8, wind_mph: 16.8, wind_from: 'NE', precip_pct: 0, text: 'Clear', dome: false },
       '401862803': { dome: true, roof: true, temp_f: null } } };
@@ -354,8 +373,8 @@ function reset(over) {
   }
   slateFixture();
   let o = await M.runSlate(rt());
-  const res_ = (s) => o.results.find((x) => x.sport === s);
-  chk('NFL: the odds feed is six days old, so the slate is SKIPPED, not posted stale', res_('nfl').result === 'skipped' && /line sync failed/.test(res_('nfl').reason) && /h old/.test(res_('nfl').reason), res_('nfl'));
+  const res_ = (sp, a) => o.results.find((x) => x.sport === sp && x.action === (a || 'slate'));
+  chk('NFL: a six-day-old odds feed with no ESPN quote to fall back on is SKIPPED, not posted stale', res_('nfl').result === 'skipped' && /line sync failed/.test(res_('nfl').reason) && /h old/.test(res_('nfl').reason), res_('nfl'));
   chk('…and the skip is logged with its reason on the NFL channel', DB.discord_posts.some((p) => p.channel === 'DISCORD_WEBHOOK_NFL' && p.status === 'skipped' && /line sync failed/.test(p.error)));
   chk('NHL: a failed schedule sync is a logged skip', res_('nhl').result === 'skipped' && /schedule sync is failed/.test(res_('nhl').reason));
   chk('CBB: no games is a logged skip', res_('cbb').result === 'skipped' && /no Men's college basketball games today/.test(res_('cbb').reason)
@@ -367,35 +386,137 @@ function reset(over) {
     && cfbE.author.name === 'EdgeDesk' && embedsOf(cfbI).at(-1).footer.text === 'Research, not betting advice. 18+.', cfbE);
   const memphis = cfbF.find((f) => /Memphis @ Tulane/.test(f.name));
   chk('CFB: game and Central time', memphis && memphis.name === 'Memphis @ Tulane · 6:30 PM CT', memphis);
-  chk('CFB: the current consensus line, the opener and the move since the open', memphis && /Line: Memphis -7 · Total 54\.5/.test(memphis.value)
+  chk('CFB: the current consensus line, the opener and the move since the open', memphis && /Consensus: Memphis -7 · Total 54\.5/.test(memphis.value)
     && /Open: Memphis -6\.5/.test(memphis.value) && /0\.5 pts toward Memphis since the open/.test(memphis.value), memphis && memphis.value);
+  chk('CFB: EdgeDesk\'s own numbers — the side and its %, the fair price, the fair line, the projected score, the total',
+    /EdgeDesk: Memphis 63% \(fair -169\) · line Memphis -4\.8 · proj Memphis 28\.1, Tulane 23\.4 · total 51\.5/.test(memphis.value), memphis && memphis.value);
+  chk('CFB: the gap to the book in points, the total gap, and the model\'s own validation state',
+    /Gap: EdgeDesk's line is 2\.2 pts further toward Tulane · total 3\.0 lower than the book · model: spread outcome-validated, break-even against the close/.test(memphis.value), memphis && memphis.value);
+  chk('CFB: the description says what the EdgeDesk numbers are, and that a gap is not a recommendation', /our own model's numbers, frozen before any price was read/.test(cfbE.description) && /not a recommendation/.test(cfbE.description));
+  chk('CFB: a game the model has too little data for says so', /EdgeDesk: not enough data for a number/.test(cfbF.find((f) => /Army @ Air Force/.test(f.name)).value));
+  chk('CFB: a game with no projection says so', /EdgeDesk: no projection for this game/.test(cfbF.find((f) => /UNLV/.test(f.name)).value));
   chk('CFB: weather for the outdoor game; none for the dome', /Weather: 68°F, wind 17 mph NE, 0% precip, Clear/.test(memphis.value)
     && !/Weather/.test(cfbF.find((f) => /UNLV/.test(f.name)).value));
-  chk('CFB: a game with no captured line says so; a game under way is left out and counted', /Line: not captured/.test(cfbF.find((f) => /Army @ Air Force/.test(f.name)) ? cfbF.find((f) => /Army/.test(f.name)).value : 'Line: not captured')
+  chk('CFB: a game with no captured line says so; a game under way is left out and counted', /Consensus: not captured/.test(cfbF.find((f) => /Army @ Air Force/.test(f.name)).value)
     && !cfbF.some((f) => /Navy/.test(f.name)) && /1 game already under way is not listed/.test(cfbE.description));
   const nbaI = DISCORD.findIndex((d) => d.url.startsWith(HOOK(4)));
   const nbaF = fieldsOf(nbaI)[0];
-  chk('NBA: the one-book line is named as one book; no open and no move are drawn', /Line \(DraftKings\): Celtics -2\.5 · Total 221\.5/.test(nbaF.value) && !/Open|move/i.test(nbaF.value)
+  chk('NBA: the one-book line is named as one book; no open and no move are drawn', /Book \(DraftKings\): Celtics -2\.5 · Total 221\.5/.test(nbaF.value) && !/Open|since the open/.test(nbaF.value)
     && /keeps no consensus or opening line for the NBA/.test(embedsOf(nbaI)[0].description), nbaF);
-  chk('no slate carries pick, lock, EV or prediction language', DISCORD.every((d) => M.copyViolations(allText(d.body)).length === 0 && !/predict|projected/i.test(allText(d.body))));
+  chk('NBA: EdgeDesk\'s line against the one book, with the model state', /EdgeDesk: Celtics 54% \(fair -118\) · line Celtics -1\.5/.test(nbaF.value)
+    && /Gap: EdgeDesk's line is 1\.0 pts further toward Knicks · total 2\.5 higher than the book · model: spread outcome-validated, not yet tested against the close/.test(nbaF.value), nbaF.value);
+  chk('no slate carries pick, lock, EV or win-probability language', DISCORD.every((d) => M.copyViolations(allText(d.body)).length === 0 && !/\bpick|\bbet on|\bplay\b/i.test(allText(d.body))));
   const before = DISCORD.length;
   NOW += 30 * MIN;
   o = await M.runSlate(rt());
   chk('the :30 tick posts nothing again (already posted), and retries the skips', DISCORD.length === before && res_('cfb').result === 'already_posted' && res_('nfl').result === 'skipped');
+
+  slateFixture();
+  SITE['engine/projections.json'].projections = SITE['engine/projections.json'].projections.filter((x) => x.sport !== 'nba');
+  o = await M.runSlate(rt(), { sports: ['nba'] });
+  const preE = embedsOf(DISCORD.findIndex((d) => d.url.startsWith(HOOK(4))))[0];
+  chk('a slate the model has nothing for (the NBA preseason): one line in the description, none per game', /EdgeDesk has no projection for any of today's NBA games yet/.test(preE.description)
+    && !preE.fields.some((f) => /EdgeDesk/.test(f.value)), preE);
+  slateFixture();
+  delete SITE['engine/projections.json'].projections[0].validation.markets.spread;
+  o = await M.runSlate(rt(), { sports: ['cfb'] });
+  chk('a market the registry has not validated says so', /model: spread not yet validated/.test(fieldsOf(DISCORD.findIndex((d) => d.url.startsWith(HOOK(3))))[0].value));
+
+  /* hockey: the moneyline is the line */
+  slateFixture();
+  SITE['today/slate.json'].sports.nhl = { state: 'ok' };
+  o = await M.runSlate(rt(), { sports: ['nhl'] });
+  const nhlV = fieldsOf(DISCORD.findIndex((d) => d.url.startsWith(HOOK(6))))[0];
+  chk('NHL: a book with no puck line shows its moneyline and total, never "not captured"', res_('nhl').result === 'sent'
+    && /Book \(DraftKings\): Avalanche -205 \/ Penguins \+170 · Total 6\.5/.test(nhlV.value), nhlV && nhlV.value);
+  chk('NHL: EdgeDesk\'s side and fair price against the book\'s no-vig price; total level; moneyline state',
+    /EdgeDesk: Avalanche 61% \(fair -158\) · proj Penguins 2\.8, Avalanche 3\.5 · total 6\.5/.test(nhlV.value)
+    && /Gap: EdgeDesk Avalanche 61% vs the book's no-vig 64% · total level with the book · model: moneyline outcome-validated, not yet tested against the close/.test(nhlV.value), nhlV && nhlV.value);
+
+  /* the NFL odds feed is paused: one fresh book via ESPN, said so */
+  slateFixture();
+  SITE['today/slate.json'].markets['nfl:espn:401872996'] = { book: 'DraftKings', source: 'espn_scoreboard', captured_at: iso(NOW - 20 * MIN), moneyline: { home: -200, away: 170 }, spread: { home: { point: -4.5 } }, total: { point: 44.5 } };
+  o = await M.runSlate(rt(), { sports: ['nfl'] });
+  const nflFE = embedsOf(DISCORD.findIndex((d) => d.url.startsWith(HOOK(2))))[0];
+  chk('NFL with the consensus feed stale and an ESPN quote: posted from one book, and the post says why', res_('nfl').result === 'sent' && /h old/.test(res_('nfl').fallback)
+    && /The consensus feed is unavailable \(.*h old.*\), so this shows one book via ESPN, with no open or move/.test(nflFE.description), nflFE.description);
+  chk('…with EdgeDesk\'s numbers, the gap, and the outdoor forecast', /Book \(DraftKings\): Bengals -4\.5 · Total 44\.5/.test(nflFE.fields[0].value) && /EdgeDesk: Bengals 66% \(fair -194\) · line Bengals -4\.6/.test(nflFE.fields[0].value)
+    && /Gap: book within 0\.5 pts of EdgeDesk/.test(nflFE.fields[0].value) && /Weather: 51°F/.test(nflFE.fields[0].value) && !/Open:/.test(nflFE.fields[0].value), nflFE.fields[0].value);
+
   slateFixture();
   BOARD.last_odds_at = BOARD.games[0].last_odds_at = iso(NOW - 40 * MIN);
   o = await M.runSlate(rt(), { sports: ['nfl'] });
   const nflV = fieldsOf(DISCORD.findIndex((d) => d.url.startsWith(HOOK(2))))[0];
-  chk('NFL with a fresh feed: consensus, open, move and the outdoor forecast', o.results[0].result === 'sent' && /Line: Bengals -5\.5 · Total 44\.5/.test(nflV.value)
+  chk('NFL with a fresh feed: consensus, open, move and the outdoor forecast', res_('nfl').result === 'sent' && /Consensus: Bengals -5\.5 · Total 44\.5/.test(nflV.value)
     && /Open: Bengals -4/.test(nflV.value) && /1\.5 pts toward Bengals since the open/.test(nflV.value) && /Weather: 51°F/.test(nflV.value), nflV);
+
+  slateFixture();
+  SITE['engine/projections.json'].built_at = iso(NOW - 10 * H);
+  o = await M.runSlate(rt(), { sports: ['cfb'] });
+  const staleE = embedsOf(DISCORD.findIndex((d) => d.url.startsWith(HOOK(3))))[0];
+  chk('stale projections: the slate still posts the lines, says why EdgeDesk\'s numbers are missing, and shows none',
+    res_('cfb').result === 'sent' && /EdgeDesk numbers are not shown today: EdgeDesk projections are 10 h old/.test(staleE.description) && !staleE.fields.some((f) => /EdgeDesk:/.test(f.value)), staleE.description);
+
   slateFixture();
   SITE['today/slate.json'].generated_at = iso(NOW - 5 * H);
   o = await M.runSlate(rt(), { sports: ['cfb'] });
-  chk('a stale schedule file is a skip for every sport', o.results[0].result === 'skipped' && /schedule sync is stale/.test(o.results[0].reason) && DISCORD.length === 0);
+  chk('a stale schedule file is a skip for every sport', res_('cfb').result === 'skipped' && /schedule sync is stale/.test(res_('cfb').reason) && DISCORD.length === 0);
   slateFixture();
   DB_DOWN.add('cfb_lab_predictions');
   o = await M.runSlate(rt(), { sports: ['cfb'] });
-  chk('an opener read that fails is a failed sync: skipped, not a post without openers', o.results[0].result === 'skipped' && /openers could not be read/.test(o.results[0].reason) && DISCORD.length === 0);
+  chk('an opener read that fails is a failed sync: skipped, not a post without openers', res_('cfb').result === 'skipped' && /openers could not be read/.test(res_('cfb').reason) && DISCORD.length === 0);
+
+  /* ═══ the morning results ═════════════════════════════════════════════════ */
+  function resultsFixture() {
+    NOW = Date.parse('2026-10-16T15:00:00Z'); /* Friday 10:00 CDT: yesterday is Thursday Oct 15 */
+    slateFixture();
+    SITE['today/slate.json'].sports.nhl = { state: 'ok' };
+    const row = (sport, home, away, start, extra) => Object.assign({ sport, home, away, start_utc: start, tier: 'VERIFIED' }, extra);
+    SITE['performance/data/summary.json'] = { games: [{ sport: 'nhl', season: 2027, path: '/performance/data/games/nhl-2027.json' }, { sport: 'nfl', season: 2026, path: '/performance/data/games/nfl-2026.json' }] };
+    SITE['performance/data/games/nhl-2027.json'] = { rows: [
+      row('nhl', 'Detroit Red Wings', 'New Jersey Devils', '2026-10-15T23:00:00Z', { tier: 'RECORDED', result: { state: 'FINAL', home_score: 4, away_score: 5, decided: 'OT' },
+        grade: { eligible: true, winner: { p_home: 0.5754, correct: false, brier: 0.331085 }, total: { projected_total: 6.15, actual_total: 9, abs_error: 2.85 } } }),
+      row('nhl', 'Boston Bruins', 'Ottawa Senators', '2026-10-15T23:30:00Z', { result: { state: 'FINAL', home_score: 3, away_score: 1 },
+        grade: { eligible: true, winner: { p_home: 0.62, correct: true, brier: 0.1444 }, total: { projected_total: 5.9, actual_total: 4, abs_error: 1.9 } } }),
+      row('nhl', 'Vegas Golden Knights', 'Seattle Kraken', '2026-10-16T02:00:00Z', { result: { state: 'SCHEDULED' } }),
+      row('nhl', 'Colorado Avalanche', 'Utah Mammoth', '2026-10-14T23:00:00Z', { result: { state: 'FINAL', home_score: 2, away_score: 1 }, grade: { eligible: true, winner: { p_home: 0.6, correct: true, brier: 0.16 } } }),
+    ] };
+    SITE['performance/data/games/nfl-2026.json'] = { rows: [
+      row('nfl', 'Philadelphia Eagles', 'New York Giants', '2026-10-16T00:15:00Z', { result: { state: 'FINAL', home_score: 27, away_score: 17 },
+        grade: { eligible: true, winner: { p_home: 0.6867, correct: true, brier: 0.098157 }, spread: { projected_margin: 5.2, actual_margin: 10, abs_error: 4.8 },
+          total: { projected_total: 52.4, actual_total: 44, abs_error: 8.4 }, market: { spread: { line: -4.5, market_abs_error: 5.5 }, total: { line: 45.5, market_abs_error: 1.5 }, clv: { spread_pts: 1, total_pts: 0 } } } }),
+    ] };
+  }
+  resultsFixture();
+  o = await M.runSlate(rt(), { sports: ['nhl', 'nfl'] });
+  chk('10:00: a final still unverified from yesterday holds the results for the :30 tick', res_('nhl', 'results').result === 'waiting' && /1 final not yet verified/.test(res_('nhl', 'results').reason), o.results);
+  chk('…while a sport with every final in posts at once, before its slate', res_('nfl', 'results').result === 'sent'
+    && DISCORD.findIndex((d) => d.url.startsWith(HOOK(2)) && /NFL results/.test(d.body.embeds[0].title)) >= 0);
+  const nflR = DISCORD.find((d) => /NFL results/.test(d.body.embeds[0].title)).body.embeds[0];
+  chk('NFL results: the date, the score, right or wrong, the margin against the book\'s, the total, the close',
+    nflR.title === 'NFL results · Thursday, Oct 15' && /Right winner: 1 of 1 · Brier 0\.098 · avg total miss 8\.4/.test(nflR.description)
+    && nflR.fields[0].name === 'New York Giants @ Philadelphia Eagles · final New York Giants 17, Philadelphia Eagles 27'
+    && /EdgeDesk: Philadelphia Eagles 69% · right winner · Brier 0\.098/.test(nflR.fields[0].value)
+    && /Margin: EdgeDesk Philadelphia Eagles by 5\.2 · actual Philadelphia Eagles by 10 · off by 4\.8 \(the book's line off by 5\.5\)/.test(nflR.fields[0].value)
+    && /Total: EdgeDesk 52\.4 · actual 44 · off by 8\.4 \(the book's off by 1\.5\)/.test(nflR.fields[0].value)
+    && /Close: the line moved 1\.0 pts toward EdgeDesk's number/.test(nflR.fields[0].value), nflR);
+  NOW += 30 * MIN;
+  o = await M.runSlate(rt(), { sports: ['nhl', 'nfl'] });
+  const nhlR = DISCORD.find((d) => /NHL results/.test(d.body.embeds[0].title)).body.embeds[0];
+  chk('10:30: the NHL results post, the pending game marked, a miss printed like a hit, only yesterday\'s games',
+    res_('nhl', 'results').result === 'sent' && nhlR.fields.length === 3 && /Right winner: 1 of 2/.test(nhlR.description)
+    && /Detroit Red Wings 58% · wrong winner/.test(nhlR.fields[0].value) && /final New Jersey Devils 5, Detroit Red Wings 4 \(OT\)/.test(nhlR.fields[0].name)
+    && /recorded pregame/.test(nhlR.fields[0].value) && /Boston Bruins 62% · right winner/.test(nhlR.fields[1].value)
+    && nhlR.fields[2].value === 'Result not yet verified' && !nhlR.fields.some((f) => /Utah/.test(f.name)), nhlR);
+  chk('…linked to the public record, with the slate footer, and no pick language', nhlR.url === 'https://edgedesksports.com/performance/' && nhlR.footer.text === 'Research, not betting advice. 18+.'
+    && M.copyViolations(JSON.stringify(nhlR)).length === 0);
+  chk('results go out once: NFL is not re-posted at 10:30', res_('nfl', 'results').result === 'already_posted'
+    && DISCORD.filter((d) => /NFL results/.test(d.body.embeds[0].title)).length === 1);
+  resultsFixture();
+  delete SITE['performance/data/summary.json'];
+  o = await M.runSlate(rt(), { sports: ['nfl'] });
+  chk('an unreadable /performance/ record: the results are skipped and logged, the slate still posts', res_('nfl', 'results').result === 'skipped'
+    && DB.discord_posts.some((p) => p.type === 'results' && p.status === 'skipped' && /summary could not be read/.test(p.error)));
 
   /* ═══ the CLV scorecard ═══════════════════════════════════════════════════ */
   function scoreFixture() {

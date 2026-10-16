@@ -7,7 +7,7 @@ helper, `postToDiscord(webhookSecretName, payload)`.
 | post | channel (secret) | when (Central) | action |
 |---|---|---|---|
 | Weekly CLV scorecard, plus the free samples' record | `DISCORD_WEBHOOK_CLV_RESULTS` | Mondays 10:00 | `scorecard` |
-| Daily slate | `DISCORD_WEBHOOK_NFL`, `_CFB`, `_NBA`, `_CBB`, `_NHL` | daily 10:00, on days with games | `slate` |
+| Yesterday's results (how EdgeDesk's numbers did), then the daily slate with EdgeDesk's own numbers | `DISCORD_WEBHOOK_NFL`, `_CFB`, `_NBA`, `_CBB`, `_NHL` | daily 10:00 (results wait for 10:30 if a final is unverified) | `slate` |
 | Free research sample, and its follow-up after the close | `DISCORD_WEBHOOK_CFB`, `DISCORD_WEBHOOK_NFL` | detection + 3 h, never later than kickoff − 60 min | `samples` (every 15 min) |
 
 Files:
@@ -58,7 +58,26 @@ a positive one.
 |---|---|---|---|---|
 | NFL | `today/slate.json` | `collective.odds_board` consensus (median across books) | its opening (median of each book's first stored price) | `football/nfl/slate.json` forecast, outdoor roofs only |
 | CFB | `today/slate.json` | `cfb_lab_consensus_now` (median across books) | `cfb_lab_predictions.opening_spread` (rule `cfb_lab_open_v1`) | `football/venues/forecasts.json`, non-dome only |
-| NBA, CBB, NHL | `today/slate.json` | one book's quote via ESPN, named as one book | none: EdgeDesk keeps no opener, so no move is drawn | none (indoor) |
+| NBA, CBB, NHL | `today/slate.json` | one book's quote via ESPN, named as one book; hockey shows the moneyline when no puck line is priced | none: EdgeDesk keeps no opener, so no move is drawn | none (indoor) |
+
+**When the consensus feed is down** (the NFL odds feed is paused until
+2026-11-01), the NFL and CFB slates fall back to the one ESPN book, and the post
+says so. They are skipped only if that book is missing or stale too.
+
+**EdgeDesk's own numbers.** Each game also shows EdgeDesk's own numbers from
+`engine/projections.json`, which every engine freezes before any price is read
+and rebuilds every 3 hours:
+
+- the side EdgeDesk favours and its %;
+- the fair moneyline and fair line;
+- the projected score and the total.
+
+A **Gap** line follows it. It gives EdgeDesk's line against the book's in
+points (or, for hockey, its % against the book's no-vig %), the total against
+the book's, and the market's validation state from `engine/registry.json`. A
+gap is described, never called a pick. A game with no projection says so. A
+slate the model has nothing for, such as the NBA preseason, says so once.
+Projections older than 8 h are left out, with the reason.
 
 **A skip, logged, never a partial post.** The slate is skipped in any of these
 cases:
@@ -67,7 +86,29 @@ cases:
 - `today/slate.json` is older than 3 h;
 - the sport's schedule sync is not `ok` / `fallback`;
 - the line source cannot be read, or its newest line is older than
-  `DISCORD_LINE_MAX_AGE_MIN` (3 h).
+  `DISCORD_LINE_MAX_AGE_MIN` (3 h), with no fresh ESPN book to fall back on.
+
+### Morning results
+
+Before each slate, the sport's channel gets yesterday's results: how
+EdgeDesk's pregame numbers did, every game. They come from the `/performance/`
+record (`performance/data`, rebuilt hourly from the hash-chained ledger), so
+the grades are the public page's own.
+
+Each game shows:
+
+- the final;
+- EdgeDesk's side and %, and whether it was the right winner;
+- the Brier score;
+- for football, the margin and total misses against the book's;
+- how far the close moved toward or away from EdgeDesk's number.
+
+A day's summary leads the post. Misses print exactly like hits. Forecasts
+recorded before the ledger locked them are labelled.
+
+If a final from yesterday is still unverified at 10:00, the results wait for
+the 10:30 tick, then post with that game marked pending. A sport with no
+games yesterday gets no results post.
 
 The skip is written to `discord_posts` with status `skipped` and the reason.
 The 10:30 tick tries once more.

@@ -80,8 +80,17 @@ try {
     && db.sql("select schedule from cron.job where jobname = 'discord_slate';") === '0 9 * * *');
 
   let out = db.applyFileAtomic(F('discord.sql'));
-  chk('discord.sql applies; all five report rows ok', ok(out, 5), out);
-  chk('…and again (idempotent)', ok(db.applyFileAtomic(F('discord.sql')), 5));
+  chk('discord.sql applies; all six report rows ok', ok(out, 6), out);
+  chk('…and again (idempotent)', ok(db.applyFileAtomic(F('discord.sql')), 6));
+  /* production was created before the results post existed: re-running the
+     file must widen the type list on the existing table */
+  db.sql(`alter table public.discord_posts drop constraint discord_posts_type;
+    alter table public.discord_posts add constraint discord_posts_type check (type in ('clv_scorecard', 'slate', 'sample', 'sample_followup', 'adhoc'));`);
+  chk('a table from the first release refuses a results row', fails(() => db.service("insert into public.discord_posts (channel, type, status) values ('DISCORD_WEBHOOK_NHL', 'results', 'sent');"), /discord_posts_type/));
+  out = db.applyFileAtomic(F('discord.sql'));
+  chk('…re-running discord.sql widens it (report row 6 ok) and the results post can be logged', ok(out, 6)
+    && fails(() => db.service("insert into public.discord_posts (channel, type, status) values ('DISCORD_WEBHOOK_NHL', 'results', 'sent');")) === false, out);
+  chk('…and still refuses an unknown type', fails(() => db.service("insert into public.discord_posts (channel, type, status) values ('DISCORD_WEBHOOK_NHL', 'picks', 'sent');"), /discord_posts_type/));
   out = db.applyFileAtomic(F('discord_samples.sql'));
   chk('discord_samples.sql applies; all five report rows ok', ok(out, 5), out);
   chk('…and again (idempotent)', ok(db.applyFileAtomic(F('discord_samples.sql')), 5));
