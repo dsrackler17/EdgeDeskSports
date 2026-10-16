@@ -146,6 +146,85 @@ console.log('college baseball ingest — the union');
   eq('…and no time is carried', g.start_time, null);
 }
 
-console.log(fail === 0 ? `ALL GREEN ${pass} passed, 0 failed` : `FAILED ${pass} passed, ${fail} failed`);
-if (fail === 0) console.log(`PASS | cbb ingest shaping and union | ${pass} assertions`);
-process.exit(fail === 0 ? 0 : 1);
+console.log('college baseball ingest — a result is a game that was played to a finish');
+{
+  /* ESPN files postponed, canceled and suspended games under state 'post', and
+     flags a postponed one completed: true with "0" for each side. Read off the
+     state, a rained-off game became a finished 0-0, a tie in the record fold. */
+  const at = (type, hs, as) => I.shapeEvent({ id: '41', date: '2026-04-18T20:00Z', status: { type },
+    competitions: [{ competitors: [
+      { homeAway: 'home', score: hs, team: { id: '1', displayName: 'Home' } },
+      { homeAway: 'away', score: as, team: { id: '2', displayName: 'Away' } }] }] }, 'scoreboard');
+
+  const fin = at({ name: 'STATUS_FINAL', state: 'post', completed: true, description: 'Final' }, '6', '2');
+  ok('a normal final is a result, with its score', fin.completed === true && fin.home_score === 6 && fin.away_score === 2, fin);
+  const named = at({ name: 'STATUS_FINAL', state: 'post', description: 'Final/7' }, '9', '1');
+  eq('a final status with no completed flag is still a result', named.completed, true);
+
+  const pp = at({ name: 'STATUS_POSTPONED', state: 'post', completed: true, description: 'Postponed' }, '0', '0');
+  eq('a postponed game in state post is not a result, even flagged completed', pp.completed, false);
+  ok('…and carries no score: the 0s are placeholders, not a 0-0 tie', pp.home_score === null && pp.away_score === null, pp);
+  eq('…and says why', pp.status_detail, 'Postponed');
+
+  const cx = at({ name: 'STATUS_CANCELED', state: 'post', completed: true, description: 'Canceled' }, '0', '0');
+  ok('a canceled game in state post is not a result and has no score', cx.completed === false && cx.home_score === null && cx.away_score === null, cx);
+
+  const su = at({ name: 'STATUS_SUSPENDED', state: 'post', completed: false, description: 'Suspended' }, '3', '2');
+  eq('a suspended game is not a result', su.completed, false);
+  ok('…but keeps its partial score, which is real', su.home_score === 3 && su.away_score === 2, su);
+
+  eq('a forfeit is not a played result', at({ name: 'STATUS_FORFEIT', state: 'post', completed: true, description: 'Forfeit' }, '1', '0').completed, false);
+  eq('a status named but not described still says why there is no result',
+    at({ name: 'STATUS_POSTPONED', state: 'post', completed: true }, '0', '0').status_detail, 'Postponed');
+  eq('the state alone is not a result (no flag, no final status)', at({ state: 'post' }, '4', '3').completed, false);
+
+  /* THE STICKY UNION. A completed reading from either source wins, and its
+     result leads; a postponed reading can never set it. */
+  const ppRow = (by) => I.shapeEvent({ id: '42', date: '2026-04-18T20:00Z',
+    status: { type: { name: 'STATUS_POSTPONED', state: 'post', completed: true, description: 'Postponed' } },
+    competitions: [{ competitors: [
+      { homeAway: 'home', score: '0', team: { id: '1', displayName: 'Home' } },
+      { homeAway: 'away', score: '0', team: { id: '2', displayName: 'Away' } }] }] }, by);
+  const finRow = (by) => I.shapeEvent({ id: '42', date: '2026-04-18T20:00Z',
+    status: { type: { name: 'STATUS_FINAL', state: 'post', completed: true, description: 'Final' }, period: 9 },
+    competitions: [{ competitors: [
+      { homeAway: 'home', score: '5', team: { id: '1', displayName: 'Home' } },
+      { homeAway: 'away', score: '4', team: { id: '2', displayName: 'Away' } }] }] }, by);
+  [['the scoreboard', [[finRow('scoreboard')], [ppRow('team_schedule')]]], ['the walk', [[ppRow('scoreboard')], [finRow('team_schedule')]]]]
+    .forEach(([who, lists]) => {
+      const m = I.unionGames(lists)[0];
+      ok('a stale postponement beside a final from ' + who + ' leaves the final whole (completed, Final, 4-5)',
+        m.completed === true && m.status_detail === 'Final' && m.home_score === 5 && m.away_score === 4 && m.innings === 9, m);
+    });
+  const both = I.unionGames([[ppRow('scoreboard')], [ppRow('team_schedule')]])[0];
+  ok('two postponed readings stay unplayed, with no score', both.completed === false && both.home_score === null && both.status_detail === 'Postponed', both);
+}
+
+console.log('the board — a row the old ingest stored');
+const boardRows = async () => {
+  /* what tools/cbb/ingest.js wrote before it knew postponed games: completed,
+     with the source's "0" for each side. lib/college_baseball.js reads it as
+     what it was, until the next import replaces it. */
+  const L = require('../../lib/college_baseball.js');
+  const row = (o) => Object.assign({ game_id: 'x', season: 2026, game_date: '2026-04-18', start_time: '2026-04-18T20:00Z',
+    away_name: 'Away', home_name: 'Home', away_team_id: '2', home_team_id: '1', status_state: 'post', status_detail: 'Final',
+    completed: true, away_score: 3, home_score: 4, innings: 9, seen_by: ['scoreboard'] }, o);
+  const svc = L.createService({ read: () => Promise.resolve([
+    row({ game_id: 'p', status_detail: 'Postponed', away_score: 0, home_score: 0, innings: null }),
+    row({ game_id: 's', status_detail: 'Suspended', away_score: 2, home_score: 1, innings: 7 }),
+    row({ game_id: 'f' }),
+  ]) });
+  const b = await svc.board({ from: '2026-04-18' });
+  const by = (id) => b.games.find((g) => g.game_id === id);
+  ok('a stored postponement is abandoned, not a 0-0 tie', by('p').abandoned === true && by('p').completed === false && by('p').winner === null, by('p'));
+  ok('…and shows no score', by('p').home.score === null && by('p').away.score === null, by('p'));
+  ok('a stored suspension is abandoned with its partial score, and no winner', by('s').abandoned === true && by('s').winner === null && by('s').home.score === 1, by('s'));
+  ok('a final is still a final', by('f').completed === true && by('f').abandoned === false && by('f').winner === 'home', by('f'));
+  ok('the board counts one final and two abandoned', b.counts.final === 1 && b.counts.abandoned === 2, b.counts);
+};
+
+boardRows().catch((e) => ok('the board block ran', false, String(e && e.stack || e))).then(() => {
+  console.log(fail === 0 ? `ALL GREEN ${pass} passed, 0 failed` : `FAILED ${pass} passed, ${fail} failed`);
+  if (fail === 0) console.log(`PASS | cbb ingest shaping and union | ${pass} assertions`);
+  process.exit(fail === 0 ? 0 : 1);
+});

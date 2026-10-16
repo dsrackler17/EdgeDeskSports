@@ -41,6 +41,35 @@ const ESPN = process.env.CBB_ESPN
 /* ── the season is the calendar year: college baseball runs February to June ─ */
 function seasonOf(dateISO) { return Number(String(dateISO).slice(0, 4)); }
 
+/* ── what counts as a result ─────────────────────────────────────────────
+   ESPN files a postponed, canceled or suspended game under state 'post', and
+   flags a postponed one completed: true, with a score of "0" for each side.
+   Read off the state, a rained-off game was stored as a finished 0-0, which
+   the record fold (cbb.rebuild_team_seasons) counts as a tie, and a game
+   suspended in the 7th was stored as a final. A game is a result only when
+   the source says it finished (the completed flag or a final status) and
+   nothing in its status says postponed, canceled, suspended or forfeited:
+   the rule tools/collective/settle_finals.js espnCompleted and
+   football/cfb_lab/integrity.js already hold the scoreboard to. */
+const NOT_PLAYED = /postpon|cancel|suspend|forfeit/i;
+function statusText(stype) {
+  stype = stype || {};
+  return [stype.name, stype.description, stype.detail, stype.shortDetail].filter(Boolean).join(' ');
+}
+function notPlayed(stype) { return NOT_PLAYED.test(statusText(stype)); }
+function isFinal(stype) {
+  stype = stype || {};
+  if (notPlayed(stype)) return false;
+  return stype.completed === true || /^STATUS_FINAL/.test(String(stype.name || ''))
+    || /^final\b/i.test(String(stype.description || stype.detail || stype.shortDetail || ''));
+}
+/* "STATUS_POSTPONED" → "Postponed", for a payload that names the status but
+   does not describe it: the stored row has to say why there is no result */
+function statusLabel(name) {
+  const w = String(name || '').replace(/^STATUS_/, '').replace(/_/g, ' ').toLowerCase();
+  return w ? w.charAt(0).toUpperCase() + w.slice(1) : null;
+}
+
 /* ── shaping: one event, from either source, into one row ──────────────────
    The two payloads differ in shape but describe the same thing, so both land
    here and the difference is handled once. */
@@ -70,7 +99,8 @@ function shapeEvent(ev, seenBy) {
   const status = (ev.status || comp.status || {});
   const stype = status.type || {};
   const state = stype.state || null;
-  const detail = stype.description || stype.detail || stype.shortDetail || null;
+  const unplayed = notPlayed(stype);
+  const detail = stype.description || stype.detail || stype.shortDetail || (unplayed ? statusLabel(stype.name) : null);
   const awayName = nameOf(away), homeName = nameOf(home);
   if (!awayName || !homeName) return null;
 
@@ -78,8 +108,12 @@ function shapeEvent(ev, seenBy) {
   const day = date.slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
 
-  const aS = scoreOf(away), hS = scoreOf(home);
-  const completed = stype.completed === true || state === 'post';
+  const completed = isFinal(stype);
+  /* a postponed or canceled game was never played, so the "0" the source
+     prints for each side is a placeholder, not a score. A suspended game
+     keeps its partial score: it is real, just not a result yet. */
+  const noScore = unplayed && /postpon|cancel/i.test(statusText(stype));
+  const aS = noScore ? null : scoreOf(away), hS = noScore ? null : scoreOf(home);
 
   const venue = comp.venue || {};
   const addr = venue.address || {};
@@ -119,16 +153,25 @@ const RICHER = ['start_time', 'venue', 'venue_city', 'venue_state', 'status_stat
   'away_score', 'home_score', 'innings', 'away_rank', 'home_rank', 'notes',
   'away_team_id', 'home_team_id', 'away_abbr', 'home_abbr'];
 
+/* the fields that describe how a game ended: when one source saw it finish
+   and the other did not, they come from the one that saw it finish */
+const OUTCOME = ['status_state', 'status_detail', 'away_score', 'home_score', 'innings'];
+
 function mergeGame(a, b) {
   if (!a) return b;
   if (!b) return a;
-  const out = Object.assign({}, a);
-  for (const f of RICHER) if (out[f] == null && b[f] != null) out[f] = b[f];
-  /* a completed game stays completed even if the other source is stale */
-  out.completed = a.completed || b.completed;
-  if (b.completed && b.away_score != null && a.away_score == null) {
-    out.away_score = b.away_score; out.home_score = b.home_score;
+  /* a completed game stays completed even if the other source is stale, and
+     its result leads: a stale "Postponed" or a live score from the other
+     source must not sit beside a final. A postponed reading is never
+     completed (isFinal), so it cannot set this. */
+  const lead = (b.completed && !a.completed) ? b : a, other = lead === a ? b : a;
+  const settled = lead.completed && !other.completed;
+  const out = Object.assign({}, lead);
+  for (const f of RICHER) {
+    if (settled && OUTCOME.indexOf(f) >= 0) continue;
+    if (out[f] == null && other[f] != null) out[f] = other[f];
   }
+  out.completed = a.completed || b.completed;
   out.neutral_site = a.neutral_site || b.neutral_site;
   out.conference_game = a.conference_game || b.conference_game;
   out.start_time_tbd = out.start_time == null;
@@ -165,7 +208,7 @@ function shapeTeam(t, season) {
   };
 }
 
-module.exports = { seasonOf, shapeEvent, mergeGame, unionGames, shapeTeam, ESPN, RICHER };
+module.exports = { seasonOf, shapeEvent, mergeGame, unionGames, shapeTeam, isFinal, notPlayed, ESPN, RICHER, OUTCOME };
 
 /* ── the network half, which only ever runs where the source is reachable ── */
 if (require.main === module) {
