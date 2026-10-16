@@ -1,0 +1,62 @@
+# EdgeDesk — model-first game research (docs/game-research).
+#
+# The research snapshot (Layer A, no sportsbook number), the deterministic
+# matchup graphic, the append-only history, the compare-a-price arithmetic and
+# the #game/<league>/<id> page. The unit suite runs on the committed slates
+# and on synthetic edge cases; the browser suite runs app.html in Chromium at
+# a 390 px phone and a 1280 px desktop with fresh, stale and missing odds.
+#
+# Offline: no network, no credentials, nothing written outside temp dirs
+# (the unit suite restores the one file its tamper case edits).
+name: Game research tests
+
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_game_snapshot.js'
+      - 'lib/edgedesk_game_graphic.js'
+      - 'lib/edgedesk_game_view.js'
+      - 'lib/edgedesk_game_view.css'
+      - 'lib/edgedesk_calc.js'
+      - 'lib/edgedesk_fairline.js'
+      - 'lib/edgedesk_decision.js'
+      - 'lib/edgedesk_decision_ui.js'
+      - 'tools/football/build_game_research.js'
+      - 'tools/football/build_fair_lines.js'
+      - 'tools/football/render_game_graphics.js'
+      - 'tools/football/game_research*.js'
+      - 'football/game_research/**'
+      - 'app.html'
+      - '.github/workflows/game-research-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: game-research-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Syntax
+        run: |
+          for f in lib/edgedesk_game_snapshot.js lib/edgedesk_game_graphic.js lib/edgedesk_game_view.js \
+                   tools/football/build_game_research.js tools/football/render_game_graphics.js; do node --check "$f"; done
+      - name: The committed snapshots are self-consistent
+        run: node tools/football/build_game_research.js --check
+      - name: Snapshot, insights, consistency, market states, price check, graphic, history, wiring
+        run: node tools/football/game_research.test.js
+      - name: Install Chromium for the browser suite
+        run: |
+          npm install --no-save playwright@1.49.1
+          npx playwright install --with-deps chromium
+      - name: The page in Chromium (phone and desktop; fresh, stale and missing odds)
+        run: node tools/football/game_research_ui.e2e.js

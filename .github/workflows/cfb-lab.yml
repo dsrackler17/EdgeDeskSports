@@ -157,6 +157,17 @@ jobs:
         if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
         run: node football/cfb_terminal/build.js || echo "::warning::the research terminal could not be rebuilt; the last published objects stay up"
 
+      # Model-first game research (docs/game-research): one snapshot per NFL and
+      # FBS game from the slates and the terminal objects just rebuilt, the
+      # probability sheet each one's price check reads, and the append-only
+      # graphic history. No market is read. This job is the ONLY writer of
+      # football/game_research/, so the ledger is never merged from two runs.
+      - name: Game research snapshots (football/game_research)
+        if: ${{ steps.gate.outputs.proceed == 'true' && (github.event.inputs.mode || 'hourly') != 'verify' }}
+        run: |
+          node tools/football/build_game_research.js && node tools/football/build_game_research.js --check \
+            || echo "::warning::the game research snapshots could not be rebuilt; the last published snapshots stay up"
+
       # Live validation (football/cfb_validation): the separated model / market /
       # betting views, the since-upgrade view against the frozen champion, the
       # 138-team rating-state divergence monitor, the verified / investigate
@@ -229,7 +240,7 @@ jobs:
             football/cfb_lab/ledger football/cfb_lab/governance football/cfb_lab/reports \
             record/football/cfb_model_lab.json football/cfb_decision football/cfb_market/ledger \
             football/cfb_production/reports/ops.json football/cfb_production/reports/projections.json \
-            football/cfb_production/reports/traces.json football/cfb_terminal football/cfb_validation football/markets \
+            football/cfb_production/reports/traces.json football/cfb_terminal football/game_research football/cfb_validation football/markets \
             football/validation/model_health.json football/broadcasts/current.json football/content/packets.json football/evidence/packets.json \
             articles sitemap-articles.xml sitemap.xml
 

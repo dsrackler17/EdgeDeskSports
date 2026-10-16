@@ -125,6 +125,21 @@ through `supabase/functions/odds_gateway` and its control plane
 [`docs/market-resilience/README.md`](docs/market-resilience/README.md).
 Tests: `npm run resilience:test`.
 
+## Game research — the model first, the graphic automatic, the market optional
+
+Every NFL and FBS game opens a research page (`#game/<nfl|cfb>/<id>`) that
+leads with EdgeDesk's own snapshot: an automatically drawn matchup graphic
+(square 1080×1080 and portrait 1080×1350, PNG download and share), the
+projected score, fair spread and total, both win probabilities, what to watch
+for from measured unit rankings and the model's own terms, and Beginner /
+Research / Lab depth. The snapshot (`football/game_research/`, built hourly)
+reads no sportsbook number; a stale or missing quote removes only the market
+comparison, and "NO DECISION · STALE_QUOTE" is moved under Lab details. A
+reader can compare their own sportsbook price against the model probability
+(labelled user-entered and unverified; EV only where calibrated). See
+[`docs/game-research/README.md`](docs/game-research/README.md).
+Tests: `npm run game:research:test`, `npm run game:research:e2e`.
+
 ## Today's Games — what is being played today, one tap from its research
 
 The first thing on the Research screen is today's slate in every sport EdgeDesk
