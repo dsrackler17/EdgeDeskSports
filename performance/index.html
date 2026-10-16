@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>EdgeDesk Model Performance — Every Pregame Forecast, Graded | EdgeDesk</title>
+<meta name="description" content="Every EdgeDesk game forecast, locked before the start and graded on the verified final: winners, Brier score, calibration, margin error. Misses included.">
+<link rel="canonical" href="https://edgedesksports.com/performance/">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#100e0a">
+<meta name="color-scheme" content="dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Sports">
+<meta property="og:url" content="https://edgedesksports.com/performance/">
+<meta property="og:title" content="EdgeDesk Model Performance — every pregame forecast, graded">
+<meta property="og:description" content="The public record of EdgeDesk's models: forecasts locked before the game, graded against the verified final, misses included.">
+<meta property="og:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@edgedesksports">
+<meta name="twitter:title" content="EdgeDesk Model Performance — every pregame forecast, graded">
+<meta name="twitter:description" content="The public record of EdgeDesk's models: forecasts locked before the game, graded against the verified final, misses included.">
+<meta name="twitter:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23100e0a'/%3E%3Cpath d='M15 6h6l-4 20h-6z' fill='%232fa79a'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tools/tools.css?v=1">
+<link rel="stylesheet" href="/performance/performance.css?v=1">
+<script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  "name": "EdgeDesk Model Performance",
+  "description": "Every eligible EdgeDesk pregame forecast, locked before the game and graded against the verified final score, with the method and its limitations.",
+  "url": "https://edgedesksports.com/performance/",
+  "isAccessibleForFree": true,
+  "creator": { "@type": "Organization", "name": "EdgeDesk Sports", "url": "https://edgedesksports.com" },
+  "distribution": [{ "@type": "DataDownload", "encodingFormat": "application/json", "contentUrl": "https://edgedesksports.com/performance/data/summary.json" }]
+}</script>
+</head>
+<body data-ed-page="performance">
+<header class="th">
+  <a class="th-brand" href="/"><span class="th-mark" aria-hidden="true"></span>EdgeDesk</a>
+  <nav class="th-nav" aria-label="Main">
+    <a href="/articles/" data-ed-nav="research">Free Research</a><a href="/today/" data-ed-nav="today">Today’s Games</a><a href="/tools/" data-ed-nav="tools">Tools</a><a href="/app.html" data-ed-nav="terminal">Research Terminal</a><a href="/#pricing" data-ed-nav="pricing">Pricing</a>
+  </nav>
+  <a class="th-cta" href="/#subscribe" data-ed-cta="performance_header_trial">Start free trial</a>
+</header>
+<main class="wrap pf-wrap" id="main">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/articles/">Research</a> › <span aria-current="page">Model Performance</span></nav>
+  <span class="ey">Free · no account · the record, misses included</span>
+  <h1>EdgeDesk Model Performance</h1>
+  <p class="lede">Every eligible EdgeDesk forecast is locked before the game starts, then graded against the verified final score. Nothing is overwritten, and nothing is left out because it missed. Research, not picks.</p>
+
+  <section aria-labelledby="pf-head-h" class="pf-sec">
+    <h2 id="pf-head-h" class="pf-vh">Headline</h2>
+    <div id="pf-status" class="pf-status" role="status" aria-live="polite">Loading the record…</div>
+    <div id="pf-headline" class="pf-tiles"></div>
+  </section>
+
+  <section aria-labelledby="pf-filter-h" class="pf-sec">
+    <h2 id="pf-filter-h">Explore the record</h2>
+    <div class="seg pf-tier" role="group" aria-label="Which forecasts">
+      <button type="button" data-tier="VERIFIED" class="on" aria-pressed="true">Verified pregame</button>
+      <button type="button" data-tier="RECORDED" aria-pressed="false">Recorded pregame (pre-ledger)</button>
+      <button type="button" data-tier="all" aria-pressed="false">Both, labelled</button>
+    </div>
+    <p class="note" id="pf-tier-note"></p>
+    <div class="filters pf-filters">
+      <div><label class="fl" for="pf-sport">Sport</label><select id="pf-sport"><option value="all">All sports</option></select></div>
+      <div><label class="fl" for="pf-model">Model version</label><select id="pf-model"><option value="all">All versions</option></select></div>
+      <div><label class="fl" for="pf-type">Prediction type</label><select id="pf-type">
+        <option value="all">All types</option><option value="winner">Winner (win probability)</option><option value="spread">Margin (fair spread)</option><option value="total">Total</option><option value="market">Compared with a market line</option></select></div>
+      <div><label class="fl" for="pf-from">From</label><input type="text" id="pf-from" inputmode="numeric" placeholder="YYYY-MM-DD" autocomplete="off"></div>
+      <div><label class="fl" for="pf-to">To</label><input type="text" id="pf-to" inputmode="numeric" placeholder="YYYY-MM-DD" autocomplete="off"></div>
+    </div>
+    <div id="pf-filtered" class="pf-tiles"></div>
+  </section>
+
+  <section aria-labelledby="pf-sport-h" class="pf-sec">
+    <h2 id="pf-sport-h">By sport</h2>
+    <div class="tblwrap"><table class="tbl" id="pf-sports"><caption class="pf-vh">Performance by sport for the selected forecasts</caption></table></div>
+  </section>
+
+  <section aria-labelledby="pf-cal-h" class="pf-sec">
+    <h2 id="pf-cal-h">Calibration: did the win probabilities mean what they said?</h2>
+    <p class="note">Each dot groups games by the probability EdgeDesk gave its home side. A dot on the diagonal means that, of the games EdgeDesk called 70%, about 70% happened. Bars are 95% intervals; a small group has a wide one.</p>
+    <div class="pf-two">
+      <div id="pf-cal" class="pf-chart"></div>
+      <div><div class="tblwrap"><table class="tbl" id="pf-bands"><caption class="pf-vh">Right-winner rate by how confident the forecast was</caption></table></div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="pf-trend-h" class="pf-sec">
+    <h2 id="pf-trend-h">Over time</h2>
+    <p class="note">Cumulative, week by week: a rate appears once enough games stand behind it. The bars are each week’s graded games.</p>
+    <div id="pf-trend" class="pf-chart"></div>
+  </section>
+
+  <section aria-labelledby="pf-mkt-h" class="pf-sec">
+    <h2 id="pf-mkt-h">Model versus market</h2>
+    <p class="note">Only games with a named sportsbook line captured before the start, at or before the graded forecast. The side is the one EdgeDesk’s fair number favoured at that line. A fair-line gap is a research disagreement, not a bet, and no price is ever assumed: without a captured price there are no units and no ROI.</p>
+    <div id="pf-mkt"></div>
+  </section>
+
+  <section aria-labelledby="pf-ledger-h" class="pf-sec">
+    <h2 id="pf-ledger-h">The game ledger</h2>
+    <p class="note">The original forecast, the actual result and when each was recorded. Open a game for its sources, the market line it was compared with and its fingerprint in the ledger.</p>
+    <div class="pf-search"><label class="fl" for="pf-q">Search a team or game</label><input type="text" id="pf-q" placeholder="e.g. Packers, Oilers, 401856711" autocomplete="off"></div>
+    <div class="tblwrap"><table class="tbl pf-ledger" id="pf-ledger"><caption class="pf-vh">Every graded game for the selected forecasts</caption></table></div>
+    <div class="row" id="pf-pager"></div>
+  </section>
+
+  <section aria-labelledby="pf-cov-h" class="pf-sec">
+    <h2 id="pf-cov-h">Coverage: what is graded, and what is not</h2>
+    <div class="tblwrap"><table class="tbl" id="pf-coverage"><caption class="pf-vh">Each sport EdgeDesk researches and whether its forecasts are graded</caption></table></div>
+  </section>
+
+  <section aria-labelledby="pf-retro-h" class="pf-sec">
+    <h2 id="pf-retro-h">Retrospective model evaluations (kept apart)</h2>
+    <p class="note"><b>Not pregame predictions.</b> These are walk-forward tests on past seasons the models were not trained on, run after the fact. They say how a method would have done, not what EdgeDesk published before a game, so they are never mixed into the record above.</p>
+    <div id="pf-retro"></div>
+  </section>
+
+  <section aria-labelledby="pf-method-h" class="pf-sec" id="methodology">
+    <h2 id="pf-method-h">Methodology and limitations</h2>
+    <ul class="steps" id="pf-rules"></ul>
+    <h3>What each number means</h3>
+    <ul class="steps">
+      <li><b>Right winner:</b> the side EdgeDesk gave over a 50% chance won. Games at exactly 50% and ties are not counted.</li>
+      <li><b>Brier score:</b> the average squared gap between the win probability and what happened (1 or 0). Lower is better; always saying 50% scores 0.25.</li>
+      <li><b>Log loss:</b> the same idea, punishing a confident miss harder. Lower is better; always saying 50% scores 0.693.</li>
+      <li><b>Margin and total error:</b> how far the final margin (home minus away) and the final total landed from EdgeDesk’s projection, in points (goals for the NHL). MAE is the average distance; bias is the average signed miss.</li>
+      <li><b>Sample states:</b> under 50 graded games is too early to read; 50 to 199 is an early signal; 200 to 499 is developing; 500 or more is a meaningful sample. Nothing here is a guarantee of what comes next.</li>
+    </ul>
+    <h3>Limitations</h3>
+    <ul class="steps">
+      <li>Small samples swing. A week, or a sport early in its season, says little on its own.</li>
+      <li>Final scores are noisy: a late score or overtime moves a margin without saying much about the forecast.</li>
+      <li>The ledger captures EdgeDesk’s published forecasts hourly. A number revised in the last hour before a start may not be the one graded; the graded one is always a genuine pregame forecast.</li>
+      <li>Market lines are named-book lines captured by EdgeDesk; they are not every book, and they are not closing lines unless labelled so.</li>
+      <li>MLB, college baseball and UFC have no published per-game forecast, so nothing is graded for them. Retired sports are not shown.</li>
+    </ul>
+    <p class="note">The ledger, the grades and the summary are public files: <a href="/performance/data/summary.json">summary.json</a>. Every ledger row is hash-chained to the one before it, so a changed row breaks the chain. See also the <a href="/record.html">public record</a> of EdgeDesk’s flagged edges and recommendations, and <a href="/methodology/">how EdgeDesk builds a number</a>.</p>
+  </section>
+
+  <aside class="cta">
+    <span class="k">Research, not picks</span>
+    <p>The full research behind every number above, for every game on the slate, is in the EdgeDesk Research Terminal.</p>
+    <a class="btn" href="/#subscribe" data-ed-cta="performance_trial">Start free trial</a>
+  </aside>
+</main>
+<footer class="tf">
+  <div><b>Research, not picks.</b> This page reports how EdgeDesk’s published forecasts performed. Nothing here is betting advice, a prediction of future results or a recommendation.</div>
+  <nav aria-label="Footer"><a href="/">Home</a><a href="/articles/">Free research</a><a href="/today/">Today’s games</a><a href="/tools/">Free tools</a><a href="/performance/">Model performance</a><a href="/methodology/">Methodology</a><a href="/record.html">Public record</a><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a><a href="/disclaimer.html">Disclaimer</a></nav>
+  <div>21+ · Gamble responsibly — 1-800-GAMBLER · © EdgeDesk Sports, Rackler Tech Ventures LLC</div>
+</footer>
+<script src="/lib/edgedesk_calibration.js?v=20261016a"></script>
+<script src="/lib/edgedesk_performance.js?v=20261016a"></script>
+<script src="/performance/performance.js?v=20261016a" defer></script>
+<script src="/lib/edgedesk_track.js?v=20261008a" defer></script>
+<script src="/lib/edgedesk_public.js?v=20261008a" defer></script>
+</body>
+</html>

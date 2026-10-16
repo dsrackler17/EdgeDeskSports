@@ -1,5 +1,71 @@
 # Changelog
 
+## 2026-10-16 — EdgeDesk Model Performance: every pregame forecast, locked and graded in public, misses included
+
+**`/performance/` is the public, cross-sport record of EdgeDesk's forecasts.** It is free and needs no account. See `docs/model-performance/` (AUDIT, DESIGN, RUNBOOK).
+
+- **The audit** (`docs/model-performance/AUDIT.md`) found:
+  - per-game pregame grading only for NFL/CFB (`record/football`);
+  - season aggregates nobody displayed for NBA/NHL;
+  - a cross-sport projections ledger nothing graded;
+  - no independent capture time anywhere;
+  - five different ways of handling postponements and corrections;
+  - no public ledger of forecast against result.
+
+  It reuses the projection contract, the slate's scoreboard and quotes, each sport's own result file, EDCALIB, the record's closes, `push_generated.sh` and the SQL harness. Nothing is replaced.
+- **The ledger** (`performance/ledger/`, `tools/performance/`, `lib/edgedesk_performance.js`):
+  - four append-only, SHA-256 hash-chained streams: forecasts, quotes, results and grades;
+  - an hourly capture of the projection contract as committed;
+  - pregame only: a capture or a model build at or after the start is refused, including the build's 3-hour post-start window;
+  - every revision kept;
+  - the graded forecast is the last captured before the actual start, and a start moved more than 36 h voids the earlier snapshots.
+
+  `run.js --check --base` refuses any rewritten line.
+- **Verification tiers.**
+  - *Verified pregame* is the ledger's own capture.
+  - *Recorded pregame* covers 1,346 revisions imported from the football record, the NBA/NHL ledgers and the projections ledger, all labelled and never counted in the verified headline.
+  - *Retrospective* walk-forward results are shown apart.
+- **Results.**
+  - Sources: the slate's ESPN scoreboard; nflverse, ESPN plus cfbfastR, hoopR and the official NHL data from `record/` and each engine; and ESPN by date for missed finals (at most 4 reads a run).
+  - Sources must agree; a disagreement is CONFLICT.
+  - 0-0 is a placeholder.
+  - Canceled, forfeited and postponed-14-days games are VOID.
+  - Corrections are new revisions that regrade the game.
+  - Overtime counts; NHL finals include the shootout goal.
+  - On first build, 448 games verified and graded (recorded tier).
+  - Cross-checked: NFL/CFB margin MAE, total MAE, Brier (CFB) and CLV match `record/football/summary.json` to the digit. The NFL Brier differs only because the one tie is excluded rather than scored as 0.5.
+- **Metrics:**
+  - right winner, Brier, log loss, calibration (Wilson), confidence bands;
+  - margin and total MAE and bias;
+  - model against the captured named-book line on the same games;
+  - records at the line at three disagreement thresholds;
+  - units only at a captured price (never −110);
+  - CLV only against a same-source close;
+  - cumulative trends.
+
+  Every figure carries its `n` and sample state, and nothing prints under 20 games.
+- **The page:**
+  - a verified headline with an honest insufficient-data state;
+  - tier, sport, model version, type and date filters;
+  - by sport, calibration chart, trend and model against market;
+  - a searchable ledger with each game's sources, market line and fingerprint, linked as `?g=`;
+  - coverage, including why MLB, college baseball and UFC are not graded;
+  - methodology and limitations.
+
+  It is linked from the footers, `record.html`, the landing footer, `methodology/` and the app's More › Transparency.
+- **Articles.**
+  - A played matchup page gains **EdgeDesk Prediction vs. Actual Result**, built from its own published numbers, the verified final, the errors and a link to the record. It notes when the graded forecast moved after the article.
+  - The Monday Weekend Model Review gains a cross-sport accountability section and the week's largest model-against-market disagreements. All 12 gates pass, and a thin week is declined with its reason.
+- **Social.** `performance/social/<week>.json` holds a summary under 280 characters, card data, comparisons and a market recap. It is written once per complete week of 20 or more verified games. Drafts only: no X integration exists.
+- **Supabase (optional).** `supabase/model_performance.sql` adds append-only `perf_*` tables for every role, a chain check, server-stamped receipt times, RLS that publishes forecasts only after their game starts, a single service-role write path and an ingest log. It ships with a rollback and a manual deploy workflow.
+- **Monitoring.** `performance/data/health.json` reports missing finals, conflicts, unmatched games, stale capture, metric shifts and duplicate publication. ERROR and ALERT turn the hourly run red after the data is published.
+- **Tests:**
+  - `performance:test`: 90 checks covering the kernel, the ledger and a full offline lifecycle.
+  - `performance:sql`: 55 checks on a real PostgreSQL, as anon, a reader, the service role and the owner.
+  - `performance:e2e`: 42 checks at 390 and 1280 px.
+
+  The site, nav, free-access, SEO, growth, app navigation, article, content engine and features suites stay green.
+
 ## 2026-10-16 — The landing page: a model you can follow and argue with, shown on real games, and what shipped finally says Live
 
 **The landing page now shows EdgeDesk the way a subscriber sees it.** It explains why a model you can check is worth having, and it stops calling shipped features "in development".

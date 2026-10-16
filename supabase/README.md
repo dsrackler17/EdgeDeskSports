@@ -1579,6 +1579,27 @@ needed.
 
 ---
 
+### `model_performance.sql` — the public model record's mirror (optional)
+The append-only mirror of the committed, hash-chained performance ledger
+(`performance/ledger/*.jsonl`, written hourly by `tools/performance/run.js`).
+The public page never reads it: the committed ledger is the source of truth.
+What the mirror adds is a **server-stamped receipt time** on every forecast
+(`perf_forecast_attestation.server_pregame`), append-only enforced by the
+database for every role (owner included), the chain checked on insert, and an
+ingest log.
+
+- Tables: `perf_forecasts`, `perf_quotes`, `perf_results`, `perf_grades`,
+  `perf_ingest_runs` (server-only).
+- One write path: `perf_ingest(kind, rows, run, git_sha)`, service role only;
+  the service role cannot insert around it, and nobody can update, delete or
+  truncate.
+- Reads: results and grades public; forecasts and quotes only once their game
+  has started.
+- Apply with the **Deploy model performance mirror** workflow (or paste: it fits
+  in one paste), then set the repository variable `PERFORMANCE_SUPABASE=on`.
+- Rollback: `model_performance_rollback.sql` (drops only `perf_*`).
+- Tests: `npm run performance:sql`. Runbook: `docs/model-performance/RUNBOOK.md`.
+
 ## Not in this repository
 
 `public_record.sql` is referenced by the app and by capture's comments but has

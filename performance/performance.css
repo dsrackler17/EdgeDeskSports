@@ -1,0 +1,59 @@
+/* ============================================================================
+   EDGEDESK MODEL PERFORMANCE — /performance/. The tools family's tokens and
+   components (/tools/tools.css), plus what a record page needs: tiles that
+   carry their n, chips that carry the sample state, a reliability chart, a
+   trend chart and a ledger. Chart colours are the site's validated pair
+   (research/cfb/terminal.css): EdgeDesk #3987e5, the market #d95926.
+   ========================================================================== */
+.pf-wrap{max-width:1080px}
+.pf-wrap .tblwrap,.pf-sec{position:relative}
+.pf-vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.pf-sec{margin-top:34px}
+.pf-status{font-size:14px;color:var(--dim);background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:12px;padding:12px 14px;margin:18px 0 12px}
+.pf-status.warn{border-left-color:var(--warn)}
+.pf-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:12px 0}
+.pf-tiles .stat .v.dim{color:var(--faint);font-size:16px}
+.pf-chip{display:inline-block;font:700 10px var(--mono);letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;border-radius:999px;border:1px solid var(--border2);color:var(--dim);vertical-align:middle;white-space:nowrap}
+.pf-chip.TOO_EARLY{color:var(--faint)}
+.pf-chip.EARLY_SIGNAL{color:var(--warn);border-color:rgba(217,154,43,.45)}
+.pf-chip.DEVELOPING{color:#3987e5;border-color:rgba(57,135,229,.5)}
+.pf-chip.MEANINGFUL{color:var(--pos);border-color:rgba(118,189,62,.45)}
+.pf-chip.VERIFIED{color:var(--accent);border-color:rgba(47,167,154,.5)}
+.pf-chip.RECORDED{color:var(--mdl);border-color:rgba(210,116,176,.45)}
+.pf-tier{flex-wrap:wrap;max-width:100%}
+.pf-tier button{white-space:normal;text-align:left}
+.pf-filters{margin:6px 0 4px}
+.pf-filters input{font-size:15px}
+.pf-two{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px;align-items:start}
+.pf-two>*{min-width:0}
+@media(max-width:820px){.pf-two{grid-template-columns:minmax(0,1fr)}}
+.pf-chart{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px;min-height:120px}
+.pf-chart svg{display:block;width:100%;height:auto}
+.pf-chart .ax{stroke:var(--border2);stroke-width:1}
+.pf-chart .grid{stroke:var(--border);stroke-width:1}
+.pf-chart .diag{stroke:var(--faint);stroke-dasharray:4 4;stroke-width:1}
+.pf-chart text{fill:var(--faint);font:500 11px var(--mono)}
+.pf-chart .ed{stroke:#3987e5;fill:#3987e5}
+.pf-chart .mkt{stroke:#d95926;fill:#d95926}
+.pf-chart .ln-ed{stroke:#3987e5;fill:none}
+.pf-chart .ln-mkt{stroke:#d95926;fill:none}
+.pf-chart .bar{fill:var(--surface2);stroke:var(--border2)}
+.pf-chart .ci{stroke:#3987e5;stroke-width:1.5;opacity:.55}
+.pf-empty{border:1px dashed var(--border2);border-radius:12px;padding:16px;color:var(--dim);font-size:14px;margin:8px 0}
+.pf-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--dim);margin:8px 2px 0}
+.pf-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.pf-search{max-width:420px;margin:8px 0 12px}
+.pf-ledger td{vertical-align:top}
+.pf-ledger td.m{white-space:normal;min-width:180px}
+.pf-ledger tr.pf-open td{background:var(--surface2)}
+.pf-ledger button.pf-x{background:transparent;border:1px solid var(--border2);color:var(--dim);border-radius:8px;min-width:44px;min-height:44px;cursor:pointer;font:600 13px var(--sans)}
+.pf-ledger button.pf-x:focus-visible{outline:2px solid var(--accent)}
+.pf-detail{white-space:normal;font-size:13.5px;color:var(--dim);line-height:1.55}
+.pf-detail dl{display:grid;grid-template-columns:minmax(120px,max-content) 1fr;gap:4px 14px;margin:6px 0}
+.pf-detail dt{color:var(--faint);font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;padding-top:3px}
+.pf-detail dd{margin:0;word-break:break-word}
+.pf-detail code{font:500 12px var(--mono);color:var(--text)}
+.pos{color:var(--pos)} .neg{color:var(--neg)} .dimt{color:var(--faint)}
+#pf-pager .btn{min-height:44px;padding:9px 14px;font-size:14px}
+#pf-pager span{font-size:13px;color:var(--faint)}
+@media(max-width:640px){.pf-detail dl{grid-template-columns:1fr}.pf-tiles{grid-template-columns:1fr 1fr}}

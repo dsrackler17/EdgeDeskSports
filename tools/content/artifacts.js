@@ -77,6 +77,7 @@ function assemble(read, marketNames, evidence) {
     marketSnapshots: marketSnapshots(season, marketNames, read),
     published: read(A.published),
     performance: read(A.performance),
+    perfWeekly: A.perf_weekly ? read(A.perf_weekly) : null,
     forecasts: read(A.forecasts),
     records: { cfb: read(A.record.replace('{league}', 'cfb').replace('{season}', season)), nfl: read(A.record.replace('{league}', 'nfl').replace('{season}', season)) },
     /* the editorial matchup packets (tools/content/build_packets.js) */

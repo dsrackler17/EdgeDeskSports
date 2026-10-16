@@ -42,7 +42,7 @@ const ROOT = path.join(__dirname, '..', '..');
 const SITE = 'https://edgedesksports.com';
 /* standing public pages that must pass even when a sitemap forgets them */
 const STANDING = ['/', '/articles/', '/articles/college-football/', '/articles/nfl/', '/today/', '/tools/', '/tools/no-vig-calculator/',
-  '/tools/fair-odds-calculator/', '/tools/model-vs-market/', '/newsletter/', '/methodology/', '/record.html', '/partners/',
+  '/tools/fair-odds-calculator/', '/tools/model-vs-market/', '/newsletter/', '/methodology/', '/record.html', '/performance/', '/partners/',
   '/terms.html', '/privacy.html', '/disclaimer.html'];
 
 function read(root, rel) { try { return fs.readFileSync(path.join(root, rel), 'utf8'); } catch (_) { return null; } }
