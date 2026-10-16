@@ -41,7 +41,7 @@
   }
 })();
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#100e0a;--surface:#191510;--surface2:#221c15;--border:#332a1b;--text:#f1ebdf;--fg:#f1ebdf;--dim:#aa9c87;--faint:#958a7a;--accent:#2fa79a;--on-accent:#042320;--pos:#76bd3e;--neg:#e26044;--warn:#d99a2b;--gold:#e3b84d;--mdl:#d274b0;--nav:58px;--foot:30px;--sp2:8px;--sp3:12px;--sp4:16px;--sp5:20px;--sp6:24px;--sp8:32px;--rad:14px;--rad-s:11px}
 *{box-sizing:border-box}html,body{margin:0}
@@ -2924,6 +2924,7 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_intel.css?v=20261012ia8">
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261015sc1">
 <link rel="stylesheet" href="/lib/edgedesk_guide.css?v=20261016g1">
+<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261016gr1">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -3467,6 +3468,12 @@ body.focus .dk-focusnote{display:block}
        Owned by the Research seat (NAV_OWNER). lib/edgedesk_games_ui.js -->
   <section id="v-games" class="view hide"><div id="gamesPage"></div></section>
 
+  <!-- GAME RESEARCH — #game/<nfl|cfb>/<game_id>: the matchup graphic first, then the overview,
+       what to watch for, Beginner / Research / Lab, the optional market comparison and Compare
+       my number. Model first: a missing sportsbook quote removes only the market section.
+       Owned by the Research seat (NAV_OWNER). lib/edgedesk_game_view.js -->
+  <section id="v-game" class="view hide"><div id="gamePage"></div></section>
+
   <!-- TERMS -->
   <!-- MORE — the secondary and system destinations. Every row opens something
        that already exists; a destination this app does not have is left out
@@ -4003,6 +4010,11 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_schedule.js?v=20261008i"></script>
 <script src="/lib/edgedesk_availability.js?v=20261008i"></script>
 <script src="/lib/edgedesk_integrity.js?v=20261008i"></script>
+<!-- model-first game research (docs/game-research): the snapshot (Layer A, no sportsbook number),
+     the deterministic matchup graphic, and the #game/<league>/<id> page -->
+<script src="/lib/edgedesk_game_snapshot.js?v=20261016gr1"></script>
+<script src="/lib/edgedesk_game_graphic.js?v=20261016gr1"></script>
+<script src="/lib/edgedesk_game_view.js?v=20261016gr1"></script>
 <script src="/lib/cfb_reliability.js?v=20260925e"></script>
 <script src="/lib/market_consensus.js?v=20260925e"></script>
 <script src="/lib/game_evidence.js?v=20260925e"></script>
@@ -4099,6 +4111,81 @@ window.mcRefresh=function(){
     else if(window.EDGamesUI.page)window.EDGamesUI.page.setState(window.EDGamesUI.page.st);};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){try{window.gmMountStrip();}catch(e){try{console.error('games strip',e);}catch(_){}}});
   else try{window.gmMountStrip();}catch(e){}
+})();
+</script>
+<script>
+/* GAME RESEARCH — #game/<nfl|cfb>/<game_id> (lib/edgedesk_game_view.js, docs/game-research).
+   Layer A (EdgeDesk's own snapshot) is the page; this glue only hands it the
+   optional Layer B the terminal already holds, and the reader's own actions.
+     CFB  the hourly board build's market state and decision (cfb_terminal/board.json)
+     NFL  the reader's live research state (fbResearchStateOf) once the
+          football board has loaded, and the board's own decision
+   A market that cannot be read is "unavailable" and nothing else moves. */
+(function(){
+  var GVB={board:null,p:null};
+  function gvBoard(){
+    try{if(window.FB&&FB.canon&&FB.canon.by)return Promise.resolve(FB.canon.by);}catch(_){}
+    if(GVB.board)return Promise.resolve(GVB.board);
+    if(!GVB.p)GVB.p=fetch('/football/cfb_terminal/board.json',{cache:'no-cache'}).then(function(r){return r.ok?r.json():null;})
+      .then(function(b){var m={};((b&&b.rows)||[]).forEach(function(r){m[String(r.game_id)]=r;});GVB.board=m;GVB.at=b&&b.generated_at;return m;})
+      .catch(function(){GVB.p=null;return {};});
+    return GVB.p;
+  }
+  function gvDecision(league,gid){
+    try{var U=window.EDDecisionUI;if(!U||typeof U.mergedDecisions!=='function')return null;
+      return U.mergedDecisions().filter(function(d){return String(d.game_id)===String(gid)&&String(d.sport||'').toLowerCase()===league;})[0]||null;}catch(_){return null;}
+  }
+  function gvCfb(gid){
+    return gvBoard().then(function(by){
+      var r=by[String(gid)];if(!r)return {market:null,decision:null,live:null,source:'no board row for this game'};
+      var ms=r.market_state||{},b=r.bettor||null,q=b&&b.quote||null,mk=null;
+      if(ms.state==='FAULT')mk={fault:ms.label||'market fault',home_line:ms.spread,total:ms.total};
+      else if(ms.state&&ms.state!=='UNAVAILABLE'&&(ms.spread!=null||ms.total!=null))
+        mk={home_line:ms.spread,total:ms.total,captured_at:ms.captured_at||null,book:q&&q.sportsbook?q.sportsbook:null,stale:ms.state!=='LIVE',
+          manual:ms.state==='MANUAL',verified:!!ms.verified,kind:'captured'};
+      return {market:mk,decision:b?{decision:b.decision,label:b.label,blocker_codes:b.blocker_codes||[],reason:b.reason||null,reason_code:b.reason_code||null}:null,
+        live:r.fair_home_margin!=null?{home_line:-r.fair_home_margin,total:r.fair_total}:null,
+        source:'EdgeDesk board build (football/cfb_terminal/board.json'+(GVB.at?', '+GVB.at:'')+')'};
+    });
+  }
+  function gvNflState(gid){
+    var key='nfl|'+gid,st=null;
+    try{if(window.EDMine&&EDMine.stateFor)st=EDMine.stateFor(key);}catch(_){st=null;}
+    if(!st){try{var r=window.fbResearchStates&&window.fbResearchStates();((r&&r.states)||[]).forEach(function(x){if(x.game_key===key)st=x;});}catch(_){}}
+    return st;
+  }
+  function gvNfl(gid){
+    var go=function(){var st=gvNflState(gid),d=gvDecision('nfl',gid);
+      return {market:st&&window.EDGameSnapshot?EDGameSnapshot.marketFromState(st):null,decision:d?{decision:d.decision,label:d.label||d.decision,blocker_codes:d.blocker_codes||[],reason:d.action_reason_text||null,reason_code:d.action_reason_code||null}:null,
+        live:st&&st.fair&&st.fair.home_line!=null?{home_line:st.fair.home_line,total:st.fair.total}:null,source:'the football board’s live join (captured sportsbook quotes)'};};
+    if(window.FB&&FB.at&&FB.nfl&&FB.nfl.state)return Promise.resolve(go());
+    if(typeof window.loadFootball!=='function')return Promise.resolve({market:null,decision:null,live:null,source:'the football board is not loaded'});
+    return Promise.resolve(window.loadFootball(false)).then(go,go);
+  }
+  function gvOpts(){return {
+    market:function(league,gid){return league==='cfb'?gvCfb(gid):gvNfl(gid);},
+    starHTML:function(league,gid,meta){try{return window.EDMine&&EDMine.starHTML?EDMine.starHTML(league==='cfb'?'p4':'nfl',gid,meta):'';}catch(_){return '';}},
+    compareFair:window.EDMine&&window.EDMine.compareOpen?function(league,gid){try{EDMine.compareOpen(league+'|'+gid);}catch(_){}}:null,
+    boardCard:function(league,gid){researchGo('football');setTimeout(function(){try{window.fbOpenGame(league==='cfb'?'p4':'nfl',gid);}catch(_){}},80);},
+    missing:function(league,gid){try{history.replaceState(null,'',location.pathname+location.search+'#research/football');}catch(_){}
+      researchGo('football');setTimeout(function(){try{window.fbOpenGame(league==='cfb'?'p4':'nfl',gid);}catch(_){}},80);},
+    back:function(){if(history.length>1)history.back();else researchGo('football');},
+    track:function(name,props){try{if(window.EDTrack&&EDTrack.event)EDTrack.event(name,props||{},{once:false});}catch(_){}}
+  };}
+  var GVPEND=null;
+  window.gvShowPage=function(h,o){var el=document.getElementById('gamePage');if(!el||!window.EDGameView)return;
+    if(!el.getAttribute('data-mounted')){el.setAttribute('data-mounted','1');window.EDGameView.mount(el,gvOpts());}
+    h=h||location.hash;if(!o&&GVPEND&&GVPEND.h===h)o=GVPEND.o;GVPEND=null;
+    window.EDGameView.openHash(h,o);};
+  /* open a game's research page from anywhere in the terminal; Back returns
+     to where the reader came from (the hash is replaced, not stacked, when a
+     route such as #research/football/<id> led here) */
+  window.gvOpen=function(league,gid,o){
+    o=o||{};
+    var h=window.EDGameView?window.EDGameView.hashFor(league,gid):'#game/'+league+'/'+encodeURIComponent(gid);
+    if(o.replace){try{history.replaceState(null,'',location.pathname+location.search+h);}catch(_){}if($('v-game').classList.contains('hide'))show('game');window.gvShowPage(h,o);}
+    else{GVPEND={h:h,o:o};location.hash=h;}
+  };
 })();
 </script>
 <script src="/lib/edgedesk_intel_ui.js?v=20261012ia9"></script>
@@ -5451,6 +5538,8 @@ var NAV_PRIMARY={research:1,card:1,portfolio:1,process:1};
 /* views with no seat light the seat that owns them, so a reader never loses
    their place: everything reached through More reads as More */
 var NAV_OWNER={faults:'more',terms:'more',settings:'more',collective:'more',news:'more',record:'more',games:'research'};
+/* a game's research page (#game/<league>/<id>) belongs to the Research seat too */
+NAV_OWNER.game='research';
 /* views that carry their own #hash, so a destination can be linked to */
 var NAV_HASH_RE=/^#(card|portfolio|process|more)(\/[a-z]+)?$/;
 function navPaint(on){var b=document.querySelectorAll('.bottomnav button');for(var j=0;j<b.length;j++){var x=b[j].dataset.v===on;b[j].classList.toggle('on',x);if(x)b[j].setAttribute('aria-current','page');else b[j].removeAttribute('aria-current');}}
@@ -5513,6 +5602,8 @@ function navHashRoute(h){
   if(/^#receipt=/.test(h)){var rv=$('v-record');if(rv&&rv.classList.contains('hide'))show('record');return true;}
   /* Today's Games: #games[/<sport>[/<date>]][?status=…&q=…] (lib/edgedesk_games.js parseState) */
   if(/^#games(?:[\/?]|$)/.test(h)){if($('v-games').classList.contains('hide'))show('games');else{try{window.gmShowPage(h);}catch(_){}}return true;}
+  /* Game research: #game/<nfl|cfb>/<game_id>[?f=portrait] (lib/edgedesk_game_view.js) */
+  if(/^#game\/(nfl|cfb)\//.test(h)){if($('v-game').classList.contains('hide'))show('game');try{window.gvShowPage(h);}catch(_){}return true;}
   var m=h.match(/^#([a-z]+)(?:\/([a-z]+))?$/);if(!m||!NAV_HASH_MAP[m[1]])return false;
   var t=NAV_HASH_MAP[m[1]];
   /* the coach was a Portfolio tab before it became the Process seat */
@@ -24369,7 +24460,13 @@ window.__mcovToggle=function(el){var m=el.closest('.mcov');if(m)m.classList.togg
       if(mine)try{window.EDMine.paintDesk();}catch(_){}
     }catch(err){host.innerHTML='<div class="empty">The research desk could not render: '+esc(err&&err.message||'')+'</div>';}
   };
-  window.fbOpenGameFromDesk=function(sport,gid){researchGo('football');setTimeout(function(){try{window.fbOpenGame(sport,gid);}catch(_){}},80);};
+  /* a game named from outside the board (Today's Games, the desk, an email
+     link) opens its research page, graphic first; a game with no snapshot
+     falls back to its card on the board, exactly as before */
+  window.fbOpenGameFromDesk=function(sport,gid){
+    var lg=String(sport||'').toLowerCase()==='nfl'?'nfl':'cfb';
+    if(window.EDGameView&&typeof window.gvOpen==='function'){window.gvOpen(lg,gid,{replace:/^#research\/football\//.test(location.hash||''),fallback:true});return;}
+    researchGo('football');setTimeout(function(){try{window.fbOpenGame(sport,gid);}catch(_){}},80);};
 
 
   /* ------------------------------------------------------------------ */
@@ -50550,6 +50647,7 @@ function fbGameCardNfl(u){
     +'<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(awayName)+' @ '+fbEsc(homeName)+'</div>'
     +'<div class="mdl-card-when">NFL · week '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div>'
     +fbMineActs('nfl',g.game_id,homeName,awayName,u.t)+'</div>'
+    +fbGameResearchLead('nfl',g.game_id,homeName,awayName,mdl.fair_spread,mdl.fair_total,mdl.home_win_prob,u.t!=null&&u.t<=Date.now())
     +fbDecCardHTML(dn)+lines+fbNflCoachingHTML(g)+qb+pa+fbPropsSecHTML('nfl',g.game_id,u.t)+fbQualityLine(p,extra)+(window.fbBriefBtn?fbBriefBtn('nfl',g,u,homeName,awayName):'')+'</div>';
 }
 
@@ -56162,7 +56260,39 @@ function fbDecisionNfl(u,p,M){
 }
 function fbDecCardHTML(d){
   if(!d||!window.EDDecisionUI)return '';
-  try{return window.EDDecisionUI.actionCardHTML(d,{mobile:(window.innerWidth||1024)<=560});}catch(e){FBQEV.lastErr=String(e&&e.stack||e).slice(0,400);return '';}
+  try{
+    var full=window.EDDecisionUI.actionCardHTML(d,{mobile:(window.innerWidth||1024)<=560});
+    /* MODEL FIRST (docs/game-research): when the ONLY reason there is no
+       decision is the sportsbook quote (stale, missing, suspended, failed
+       its integrity check), the card says so calmly and the model research
+       leads. The full decision card, blocker code included, is one tap away
+       under Lab details. A model or game blocker keeps the full card. */
+    var G=window.EDGameSnapshot;
+    if(!G||!G.marketOnlyDecision(d))return full;
+    var gid=String(d.game_id),cfb=String(d.sport||'').toUpperCase()==='CFB';
+    /* the model's own number stays in view, with the decision layer's own term tip */
+    var TT=window.EDDecision&&window.EDDecision.TOOLTIP?window.EDDecision.TOOLTIP.model_fair:null;
+    var fairTip=TT?'<span class="edd-tip" tabindex="0" role="note" aria-label="'+fbEsc('EDGEDESK MODEL: '+TT)+'" data-tip="'+fbEsc(TT)+'" data-ed-tip="model_fair">EDGEDESK MODEL</span>':'EDGEDESK MODEL';
+    return '<section class="edd-mkt-only" data-edd-mkt-only="'+fbEsc(gid)+'"><div class="edd-mkt-calm">'
+      +(d.model_fair_text?'<div class="edd-f2"><span class="edd-k">'+fairTip+'</span> '+fbEsc(d.model_fair_text)+'</div>':'')
+      +'<span class="edd-k">MARKET COMPARISON · BETTING DECISION NOT EVALUATED</span>'+fbEsc(G.marketNoteFor(d))
+      +(cfb?' <button type="button" class="gv-link" data-edd-act="research" data-edd-gid="'+fbEsc(gid)+'">View full research ↓</button>':'')
+      +'<details class="edd-mkt-why"><summary>Lab details: why there is no betting decision</summary>'+full+'</details></div></section>';
+  }catch(e){FBQEV.lastErr=String(e&&e.stack||e).slice(0,400);return '';}
+}
+/* THE MODEL-FIRST LEAD on a board card: EdgeDesk's own projection (the card's
+   own engine run, the numbers printed below it) and the door to the game's
+   research page and graphic. No sportsbook number is read here. */
+function fbGameResearchLead(league,gid,home,away,homeMargin,total,homeWin,started){
+  var C=window.EDCalc;if(!C||homeMargin==null||total==null)return '';
+  var fl=C.spread(homeMargin,{home:home,away:away}),sc=C.projectedScores({home:home,away:away,home_margin:homeMargin,total:total});
+  var fav=fl.favorite,fw=fav==='home'?homeWin:(fav==='away'?1-homeWin:null);
+  return '<div class="gvl" data-gvl="'+fbEsc(league+'|'+gid)+'">'
+    +'<div class="gvl-n"><span class="gvl-k">EdgeDesk projection</span><span class="gvl-v">'+fbEsc(away)+' '+fbEsc(sc.available?sc.away.toFixed(sc.decimals):'—')+' · '+fbEsc(home)+' '+fbEsc(sc.available?sc.home.toFixed(sc.decimals):'—')+'</span></div>'
+    +'<div class="gvl-n"><span class="gvl-k">Fair spread · total</span><span class="gvl-v">'+fbEsc(fl.text)+' · '+fbEsc(C.round(total,1).toFixed(1))+'</span></div>'
+    +(fw!=null?'<div class="gvl-n"><span class="gvl-k">Model win prob.</span><span class="gvl-v">'+fbEsc(fl.favorite_team)+' '+Math.round(fw*100)+'%</span></div>':'')
+    +(window.EDGameView&&!started?'<button type="button" class="gvl-btn" onclick="event.stopPropagation();gvOpen(\''+league+'\',\''+fbEsc(String(gid)).replace(/'/g,'')+'\')">Game research &amp; graphic</button>':'')
+    +'</div>';
 }
 /* every game the boards have loaded, decided (the EdgeDesk Card's live overlay) */
 window.fbDecisionsLive=function(){
@@ -57277,7 +57407,8 @@ function fbP4Card(u){
      beginner mode, and one tap ("VIEW FULL RESEARCH") away even then */
   var dec=null;try{dec=fbDecisionCfb(u,p);}catch(_){dec=null;}
   body=fbDecCardHTML(dec)+fbGxPropsSec(u)+'<div data-edd-research="'+fbEsc(gid)+'" class="'+(dec&&window.EDDecisionUI&&window.EDDecisionUI.beginner()?'edd-collapsed':'')+'">'+body+'</div>';
-  return '<div class="mdl-card">'+head+'<div style="padding:0 12px 12px">'+body+'</div></div>';
+  var lead=fbGameResearchLead('cfb',gid,g.home_team,g.away_team,m.fair_spread,m.fair_total,m.home_win_prob,u.t!=null&&u.t<=Date.now());
+  return '<div class="mdl-card">'+head+'<div style="padding:0 12px 12px">'+lead+body+'</div></div>';
 }
 /* PLAYER PROP RESEARCH beside the game's decision, open, and outside the
    beginner-mode collapse: the prop state is never missing from the card */
