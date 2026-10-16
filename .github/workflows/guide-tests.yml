@@ -1,0 +1,48 @@
+# EdgeDesk — the checks that gate every change to Learn EdgeDesk: the
+# first-visit introduction, the task walkthroughs, the Help panel and the
+# term explainers (lib/edgedesk_guide.js, lib/edgedesk_guide_content.js).
+#
+#   suite   the copy keeps the product's rules (no promised results, no edge
+#           without a price, every term says what it cannot tell you), every
+#           walkthrough step points at a control that exists in app.html or
+#           the renderers, the introduction is asked once, and app.html wires
+#           it in — offline, no browser.
+#
+# The browser suite (tools/guide/guide_ui.e2e.js: desktop and a 390 px phone,
+# skipping, reopening, navigation, missing data, a locked account, keyboard
+# and reduced motion) needs Playwright and is run by hand: npm run guide:e2e.
+# Nothing here deploys or writes.
+name: Guide CI
+
+on:
+  pull_request:
+    paths:
+      - 'lib/edgedesk_guide*'
+      - 'lib/edgedesk_decision_ui.js'
+      - 'lib/edgedesk_games_ui.js'
+      - 'lib/edgedesk_props_ui.js'
+      - 'lib/edgedesk_personal_ui.js'
+      - 'lib/edgedesk_vocab.js'
+      - 'tools/guide/**'
+      - 'app.html'
+      - '.github/workflows/guide-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: guide-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: The guide's words keep the rules, its steps point at real controls, and it is asked once
+        run: node tools/guide/guide.test.js

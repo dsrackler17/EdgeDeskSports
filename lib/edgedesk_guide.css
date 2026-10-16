@@ -1,0 +1,154 @@
+/* ===========================================================================
+   EdgeDesk GUIDE — the introduction, walkthroughs, Help panel and term
+   explainers (lib/edgedesk_guide.js). The app's own tokens and shapes: the
+   welcome card (.wel-card), .btn, the mono eyebrow, the 14px radius.
+
+   Stacking: every layer shares the welcome overlays' tier (9998), under the
+   paywall (9999), and the engine appends the one it opens last in <body>,
+   so it sits above whatever same-tier overlay another module opened first
+   (a game's stored brief, the welcome) and above the app's own dialogs and
+   the navigation. The ring never takes a click (pointer-events: none), so
+   the control it highlights is always usable.
+   =========================================================================== */
+
+/* ---------- the Help button in the header ---------- */
+.edg-hbtn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:none;height:30px;min-width:30px;padding:0;border-radius:15px;border:1px solid var(--border);background:var(--surface);color:var(--dim);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.edg-hbtn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.edg-hbtn .edg-hbtn-l{display:none}
+.edg-hbtn:hover,.edg-hbtn[aria-expanded="true"]{color:var(--text);border-color:var(--dim)}
+.edg-hbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.edg-hbtn.edg-new::after{content:"";position:absolute;top:-1px;right:-1px;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--bg)}
+.edg-hbtn.edg-pulse{border-color:var(--accent);color:var(--accent);animation:edgPulse 1.6s ease-in-out 3}
+@keyframes edgPulse{50%{box-shadow:0 0 0 5px rgba(47,167,154,.22)}}
+@media(min-width:760px){.edg-hbtn{padding:0 11px 0 9px}.edg-hbtn .edg-hbtn-l{display:inline}}
+/* phones: a 44px target around the 30px face, like the bell and avatar */
+@media(max-width:640px){.appbar .edg-hbtn::before{content:"";position:absolute;inset:-7px 0}}
+/* the narrowest phones: the header gives the word "research" back so the
+   help button fits beside the status, the bell and the account */
+@media(max-width:400px){.appbar-in{gap:7px}.appbar .tag{display:none}}
+/* 320 px: the status pill keeps its dot and count (and its full label for
+   screen readers) and drops the word "System" */
+@media(max-width:359px){.appbar .hpsum .hpk{display:none}}
+
+/* ---------- shared bits ---------- */
+.edg-x{flex:none;width:34px;height:34px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:18px;line-height:1;cursor:pointer;font-family:inherit}
+.edg-x.sm{width:28px;height:28px;font-size:16px;border-radius:8px}
+.edg-x:hover{border-color:var(--dim)}
+.edg-x:focus-visible,.edg-link:focus-visible,.edg-chip:focus-visible,.edg-row:focus-visible,.edg-path:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.edg-link{background:none;border:none;padding:6px 2px;color:var(--accent);font:inherit;font-size:12.5px;font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.edg-acts{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px}
+.edg-acts .btn.sm{min-height:36px;padding:8px 14px;font-size:13px}
+.edg-sp{flex:1}
+.edg-vh{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.edg-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.edg-chip{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:14px;padding:6px 10px;font-family:inherit;font-size:12px;cursor:pointer;line-height:1.3;text-align:left}
+.edg-chip:hover{border-color:var(--accent);color:var(--accent)}
+.edg-note{margin:8px 0 0;font-size:12px;color:var(--dim);line-height:1.5}
+.edg-note.warn{border-left:2px solid var(--warn);padding:2px 0 2px 10px;color:var(--text)}
+.edg-muted{font-size:12.5px;color:var(--faint);line-height:1.5;margin:6px 0 0}
+
+/* ---------- the introduction (inside the welcome overlay, #welHost) ---------- */
+.wel-card.edg-intro{position:relative;max-width:520px}
+.edg-intro .edg-x{position:absolute;top:12px;right:12px}
+/* headings are real headings; the app's global h2/h3 (small caps labels) do not apply */
+.edg-intro h2.wel-t{margin:6px 0 0;padding-right:40px;font-size:23px;font-weight:800;letter-spacing:-.02em;line-height:1.15;text-transform:none;color:var(--text);outline:none}
+.edg-points{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:8px}
+.edg-points li{border:1px solid var(--border);border-radius:11px;background:var(--surface2);padding:9px 12px}
+.edg-points b{display:block;font-size:13px;color:var(--text)}
+.edg-points span{display:block;font-size:12px;color:var(--dim);line-height:1.5;margin-top:2px}
+.edg-caution{margin:14px 0 0;border-left:2px solid var(--accent);padding:2px 0 2px 12px;font-size:13px;line-height:1.55;color:var(--text)}
+.edg-intro .edg-acts .btn{width:auto}
+.edg-paths{display:grid;gap:8px;margin-top:14px}
+.edg-path{display:block;width:100%;text-align:left;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-family:inherit;cursor:pointer}
+.edg-path:hover{border-color:var(--accent)}
+.edg-path b{display:block;font-size:14px}
+.edg-path span{display:block;font-size:12.5px;color:var(--dim);line-height:1.5;margin-top:3px}
+.edg-path i{display:block;font-style:normal;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:var(--accent);margin-top:6px;text-transform:uppercase}
+
+/* ---------- the toast that says where Help lives ---------- */
+.edg-toast{position:fixed;z-index:9998;top:calc(60px + env(safe-area-inset-top));right:12px;max-width:min(340px,calc(100vw - 24px));display:none;align-items:flex-start;gap:10px;background:var(--surface);border:1px solid var(--accent);border-radius:12px;padding:10px 10px 10px 13px;box-shadow:0 14px 40px rgba(0,0,0,.5);font-size:12.5px;line-height:1.5;color:var(--text)}
+.edg-toast.on{display:flex}
+
+/* ---------- walkthroughs: the ring and the card ---------- */
+/* the ring glides from one step to the next, and follows a scroll exactly */
+.edg-ring{position:fixed;z-index:9998;display:none;pointer-events:none;border:2px solid var(--accent);border-radius:10px;box-shadow:0 0 0 4px rgba(47,167,154,.28),0 0 0 200vmax rgba(6,8,12,.5)}
+.edg-ring.glide{transition:top .18s ease,left .18s ease,width .18s ease,height .18s ease}
+.edg-ring.on{display:block}
+.edg-pop{position:fixed;z-index:9998;display:none;width:min(360px,calc(100vw - 16px));max-height:calc(100dvh - 120px);overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 14px 12px;box-shadow:0 18px 50px rgba(0,0,0,.6);color:var(--text)}
+.edg-pop.on{display:block}
+.edg-pop.dock{left:8px!important;right:8px;width:auto;max-height:min(46dvh,420px)}
+.edg-pop-hd{display:flex;align-items:center;gap:8px}
+.edg-pop-k{flex:1;min-width:0;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.edg-dots{display:flex;gap:4px;margin:8px 0 2px}
+.edg-dots i{height:3px;flex:1;border-radius:2px;background:var(--border)}
+.edg-dots i.past{background:rgba(47,167,154,.45)}.edg-dots i.on{background:var(--accent)}
+.edg-pop-t{margin:8px 0 0;font-size:16px;font-weight:700;letter-spacing:-.01em;outline:none}
+.edg-pop-b p{margin:6px 0 0;font-size:13px;line-height:1.55;color:var(--dim)}
+.edg-pop-b b{color:var(--text);font-weight:600}.edg-pop-b i{color:var(--text);font-style:normal}
+.edg-pop .edg-acts{margin-top:12px}
+.edg-pop .edg-fix{margin-top:4px}
+.edg-next-up{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)}
+.edg-next-up span{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-right:2px}
+
+/* ---------- Help ---------- */
+.edg-help-bg{position:fixed;inset:0;z-index:9998;background:rgba(6,8,12,.6);display:none}
+.edg-help-bg.on{display:block}
+.edg-help{position:fixed;z-index:9998;top:0;right:0;bottom:0;width:min(420px,100vw);display:none;flex-direction:column;background:var(--surface);border-left:1px solid var(--border);box-shadow:-20px 0 60px rgba(0,0,0,.5);padding-top:env(safe-area-inset-top)}
+.edg-help.on{display:flex}
+.edg-help-hd{display:flex;align-items:center;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--border)}
+.edg-help-hd h2{flex:1;margin:0;font-size:17px;font-weight:800;letter-spacing:-.01em;text-transform:none;color:var(--text);outline:none}
+.edg-help-hd h2 span{font-weight:500;color:var(--dim)}
+.edg-help-b{flex:1;overflow-y:auto;padding:12px 16px 18px;overscroll-behavior:contain}
+.edg-help-ft{padding:10px 16px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--border);font-size:10.5px;color:var(--faint);line-height:1.5}
+.edg-help-ft a{color:var(--accent);font-weight:600}
+.edg-lede{margin:0;font-size:13px;color:var(--dim);line-height:1.55}
+.edg-sec{margin-top:18px}
+.edg-sec h3{margin:0 0 8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:700}
+.edg-sec h3 span{color:var(--accent);margin-left:6px;letter-spacing:.06em}
+.edg-wide{display:block;width:100%;margin-top:6px;text-align:left}
+.edg-sec .btn.sm.edg-wide{padding:10px 13px;font-size:13px}
+.edg-row{display:block;width:100%;text-align:left;background:none;border:none;border-top:1px solid var(--border);padding:10px 2px;color:var(--text);font-family:inherit;cursor:pointer;position:relative}
+.edg-row:first-of-type{border-top:none}
+.edg-row:hover b{color:var(--accent)}
+.edg-row b{display:block;font-size:13.5px;font-weight:600;padding-right:70px}
+.edg-row span{display:block;font-size:12px;color:var(--dim);line-height:1.45;margin-top:2px}
+.edg-row i{position:absolute;top:11px;right:2px;font-style:normal;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--faint)}
+.edg-row i.edg-done{color:var(--pos)}
+.edg-grp{margin:12px 0 2px;font-size:11px;font-weight:700;color:var(--dim)}
+.edg-search{display:block}
+.edg-search input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;font-size:13px;padding:9px 11px}
+.edg-search input:focus{outline:2px solid var(--accent);outline-offset:1px}
+.edg-backlink{margin:-2px 0 8px;text-decoration:none}
+.edg-entry-t{margin:0;font-size:19px;font-weight:800;letter-spacing:-.01em}
+.edg-aka{margin:4px 0 0;font-size:11.5px;color:var(--faint);font-family:'JetBrains Mono',monospace;line-height:1.5}
+.edg-entry h4{margin:16px 0 4px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+.edg-entry p,.edg-entry li{margin:0;font-size:13.5px;line-height:1.6;color:var(--text)}
+.edg-entry ul{margin:0;padding-left:18px}
+.edg-limit{border-left:2px solid var(--warn);padding-left:10px}
+@media(max-width:640px){
+  .edg-help{top:auto;left:0;width:auto;max-height:90dvh;border-left:none;border-top:1px solid var(--border);border-radius:16px 16px 0 0;box-shadow:0 -20px 60px rgba(0,0,0,.5)}
+}
+
+/* ---------- the term explainer ---------- */
+.edg-term{position:fixed;z-index:9998;display:none;width:min(340px,calc(100vw - 16px));max-height:min(70dvh,480px);overflow:auto;background:var(--surface);border:1px solid var(--accent);border-radius:12px;padding:11px 13px 12px;box-shadow:0 16px 44px rgba(0,0,0,.6);color:var(--text)}
+.edg-term.on{display:block}
+.edg-term.dock{left:8px!important;right:8px;width:auto;top:auto!important;bottom:calc(var(--nav) + var(--foot) + env(safe-area-inset-bottom) + 8px)}
+.edg-term-hd{display:flex;align-items:flex-start;gap:8px}
+.edg-term-hd h3{flex:1;margin:2px 0 0;font-size:14.5px;font-weight:700;outline:none}
+.edg-term p{margin:7px 0 0;font-size:12.5px;line-height:1.55;color:var(--dim)}
+.edg-term p b{color:var(--text);font-weight:600}
+.edg-term .edg-limit{color:var(--text)}
+.edg-term .edg-link{margin-top:6px}
+/* a term other modules mark with data-ed-term: a dotted underline, like the
+   decision layer's own labels, and a real button for the keyboard */
+[data-ed-term].edg-termlink{cursor:help;text-decoration:underline dotted;text-decoration-color:var(--faint);text-underline-offset:3px}
+[data-ed-term].edg-termlink:hover{text-decoration-color:var(--accent)}
+.edg-termlink:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+/* while the full explainer is open, the short hover tooltip steps aside */
+.edd-tip[aria-expanded="true"]::after{display:none!important}
+
+@media (prefers-reduced-motion:reduce){
+  .edg-ring,.edg-ring.glide{transition:none}
+  .edg-hbtn.edg-pulse{animation:none}
+}
+@media print{.edg-hbtn,.edg-ring,.edg-pop,.edg-help,.edg-help-bg,.edg-term,.edg-toast{display:none!important}}
