@@ -21,8 +21,8 @@
   "game_time": "2026-10-17T16:00:00.000Z",
   "game_when_label": "2026-10-17 16:00 UTC",
   "published_at": null,
-  "updated_at": "2026-10-16T04:22:04.398Z",
-  "generated_at": "2026-10-16T04:22:04.398Z",
+  "updated_at": "2026-10-16T11:14:32.503Z",
+  "generated_at": "2026-10-16T11:14:32.503Z",
   "model_version": "EdgeDesk Power 4 game model edgedesk_cfb_p4_v1.0.0",
   "model_status": "NO MARKET",
   "model_status_note": "No sportsbook price has been captured for this game, so there is nothing to compare EdgeDesk’s number against. The projection stands on its own.",
@@ -1567,7 +1567,7 @@
           {
             "key": "roster_availability",
             "label": "Roster/status",
-            "score": 19,
+            "score": 19.2,
             "max": 20
           },
           {
@@ -1585,7 +1585,7 @@
           {
             "key": "source_integrity",
             "label": "Source integrity",
-            "score": 14.9,
+            "score": 14.8,
             "max": 15
           },
           {
@@ -1604,12 +1604,12 @@
             "text": "up to +2"
           },
           {
-            "action": "Re-read Cincinnati’s starter evidence",
-            "potential_gain": 1,
-            "text": "up to +1"
+            "action": "Fetch the venue forecast",
+            "potential_gain": 2,
+            "text": "up to +2"
           },
           {
-            "action": "Fetch the venue forecast",
+            "action": "Re-read Cincinnati’s starter evidence",
             "potential_gain": 1,
             "text": "up to +1"
           }
@@ -1639,9 +1639,9 @@
         "reason": "no sportsbook quote has been captured for this game"
       },
       "projection_status": {
-        "key": "INJURY_UNCERTAINTY",
-        "label": "INJURY UNCERTAINTY",
-        "text": "A supplied availability report lists 12 players with an unresolved status; the engine widens this game’s range for it."
+        "key": "STABLE",
+        "label": "STABLE",
+        "text": "EdgeDesk’s number is unchanged since the latest published number."
       },
       "stability": {
         "tier": "LOW",
@@ -1852,7 +1852,7 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "7b46p0c2qex2",
+    "packet_hash": "1hunox7569wg9",
     "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can Cincinnati take away West Virginia’s big plays?",
@@ -1877,8 +1877,8 @@
     "quarterbacks": [
       "Michael Hawkins Jr. has completed 58 of 111 passes (52.3%) for 1,055 yards, 9.5 yards per attempt, 7 touchdowns and 1 interception in six games for West Virginia, and has been sacked on 9 of 120 dropbacks.",
       "JC French IV has completed 81 of 119 passes (68.1%) for 857 yards, 7.2 yards per attempt, 5 touchdowns and no interceptions in five games for Cincinnati, and has been sacked on 8 of 127 dropbacks.",
-      "Michael Hawkins Jr. does not appear on West Virginia’s initial availability report.",
-      "JC French IV does not appear on Cincinnati’s initial availability report."
+      "Michael Hawkins Jr. does not appear on West Virginia’s update 1 availability report.",
+      "JC French IV does not appear on Cincinnati’s update 1 availability report."
     ],
     "availability": [],
     "script": {
@@ -1896,7 +1896,8 @@
     },
     "unknown": [
       "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for West Virginia.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate."
+      "Not in EdgeDesk’s verified data for this game: turnover rates and penalty rate.",
+      "The line on file was captured Oct. 16 and may have moved."
     ],
     "flags": [
       {
@@ -1910,7 +1911,7 @@
         "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-16T03:56:39.257Z",
+        "observed_at": "2026-10-16T04:36:08.144Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1921,10 +1922,10 @@
         "verification": "VERIFIED_DATA"
       },
       {
-        "label": "Big 12 Conference availability report (Initial)",
+        "label": "Big 12 Conference availability report (Update 1)",
         "url": "https://app.hdintelligence.com/?source=B12&sport=Football&conf=B12&type=report",
         "path": "football/availability/reports/",
-        "observed_at": "2026-10-15T02:00:00.000Z",
+        "observed_at": "2026-10-16T02:00:00.000Z",
         "verification": "OFFICIAL_REPORT"
       }
     ],
@@ -1933,6 +1934,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-16T04:22:04.398Z"
+    "at": "2026-10-16T11:14:32.503Z"
   }
 }
