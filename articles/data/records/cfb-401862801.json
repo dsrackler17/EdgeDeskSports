@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-16T23:30:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-16. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1905,13 +1905,13 @@
   },
   "football_evidence": {
     "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1rtp5gj18675c1",
-    "status": "PARTIALLY_EXPLAINED",
+    "packet_hash": "1dakrh9necp33",
+    "status": "NO_MATERIAL_DISAGREEMENT",
     "input_suspect": false,
     "question": "Can Memphis’ pass rush get to Kadin Semonza?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward Tulane, and its own breakdown accounts for about 1.5 of the 2.2 points, but not the full gap. It is a research question, not a bet.",
+    "assessment": "No material disagreement: EdgeDesk and the line are within 1.7 points.",
     "gap": {
-      "points": 2.2,
+      "points": 1.7,
       "toward": "Tulane",
       "other": "Memphis"
     },
@@ -1929,9 +1929,13 @@
     ],
     "quarterbacks": [
       "Kadin Semonza has completed 64 of 119 passes (53.8%) for 808 yards, 6.8 yards per attempt, 4 touchdowns and 2 interceptions in five games for Tulane, and has been sacked on 13 of 132 dropbacks.",
-      "Marcus Stokes has completed 101 of 144 passes (70.1%) for 1,543 yards, 10.7 yards per attempt, 17 touchdowns and 3 interceptions in six games for Memphis, and has been sacked on 8 of 152 dropbacks."
+      "Marcus Stokes has completed 101 of 144 passes (70.1%) for 1,543 yards, 10.7 yards per attempt, 17 touchdowns and 3 interceptions in six games for Memphis, and has been sacked on 8 of 152 dropbacks.",
+      "Kadin Semonza does not appear on Tulane’s game day availability report.",
+      "Marcus Stokes does not appear on Memphis’ game day availability report."
     ],
-    "availability": [],
+    "availability": [
+      "Tulane’s availability report lists seven players as out, including offensive linemen Elijah Baker and Darion Reed."
+    ],
     "script": {
       "model": [
         "Tulane’s offense has to keep winning in the pass-rush matchup: it has allowed a sack on 8.9% of its dropbacks, and Memphis’ defense sacks the quarterback on 8.6% of opponent dropbacks.",
@@ -1976,7 +1980,7 @@
         "label": "EdgeDesk play-by-play unit metrics (2026 season)",
         "url": null,
         "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-16T20:35:21.481Z",
+        "observed_at": "2026-10-16T21:13:11.805Z",
         "verification": "VERIFIED_DATA"
       },
       {
@@ -1992,6 +1996,13 @@
         "path": "football/fbs_epa/qb_epa_2026.json",
         "observed_at": "2026-10-16T00:00:00.000Z",
         "verification": "VERIFIED_DATA"
+      },
+      {
+        "label": "American Athletic Conference availability report (Game Day)",
+        "url": "https://app.hdintelligence.com/?source=American&sport=Football&conf=American&type=report",
+        "path": "football/availability/reports/",
+        "observed_at": "2026-10-16T21:30:00.000Z",
+        "verification": "OFFICIAL_REPORT"
       }
     ],
     "needs_confirmation": []
@@ -1999,6 +2010,6 @@
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-16T20:59:01.365Z"
+    "at": "2026-10-16T23:30:25.104Z"
   }
 }
