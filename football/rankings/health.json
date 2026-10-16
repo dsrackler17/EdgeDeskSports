@@ -1,6 +1,6 @@
 {
  "schema": "edgedesk_rankings_health_v1",
- "generated_at": "2026-10-16T03:56:20.017Z",
+ "generated_at": "2026-10-16T13:22:07.385Z",
  "build_version": {
   "schema_version": "1.1.0",
   "versions": {
@@ -14,7 +14,7 @@
    "scheme_matchup": "scheme_matchup_v1",
    "simulation": "simulation_v1"
   },
-  "digest": "4c618ef6315bc9a4"
+  "digest": "b1c4127bcbfcace9"
  },
  "season": 2026,
  "week": 7,
@@ -331,22 +331,22 @@
   }
  ],
  "ingestion": {
-  "completed_games_in_schedule": 452,
-  "last_completed_kickoff": "2026-10-15T00:00:00.000Z",
-  "team_games_read": 1658,
+  "completed_games_in_schedule": 455,
+  "last_completed_kickoff": "2026-10-16T00:00:00.000Z",
+  "team_games_read": 1664,
   "teams_with_a_performance_rating": 138,
-  "special_teams_team_games_joined": 900,
-  "special_teams_coverage_joined": 851,
+  "special_teams_team_games_joined": 906,
+  "special_teams_coverage_joined": 857,
   "special_teams_box_available": true,
   "opponent_adjustment_converged": true
  },
  "source_freshness": {
-  "completed_games": 452,
-  "latest_completed_kickoff": "2026-10-15T00:00:00.000Z",
-  "completed_games_digest": "53e81abb7e2b61ea",
+  "completed_games": 455,
+  "latest_completed_kickoff": "2026-10-16T00:00:00.000Z",
+  "completed_games_digest": "f3571cee6e9f3dca",
   "finality": {
    "schedule_final": 448,
-   "confirmed_by_box_alone": 4,
+   "confirmed_by_box_alone": 7,
    "games": [
     {
      "game_id": "401871067",
@@ -379,11 +379,35 @@
      "week": 7,
      "start_date": "2026-10-15T00:00:00.000Z",
      "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
+    },
+    {
+     "game_id": "401862800",
+     "home": "UAB",
+     "away": "East Carolina",
+     "week": 7,
+     "start_date": "2026-10-15T23:30:00.000Z",
+     "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
+    },
+    {
+     "game_id": "401869950",
+     "home": "Old Dominion",
+     "away": "Georgia Southern",
+     "week": 7,
+     "start_date": "2026-10-15T23:30:00.000Z",
+     "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
+    },
+    {
+     "game_id": "401860923",
+     "home": "Texas State",
+     "away": "Colorado State",
+     "week": 7,
+     "start_date": "2026-10-16T00:00:00.000Z",
+     "note": "the box carries both teams for this game; the schedule feed had not published it as final. The SCORE is not taken from the box and stays null — it is not a rating input and reconstructing one would be a fabrication."
     }
    ],
    "basis": "a game is FINAL when a feed this pipeline reads says it was played: the schedule feed with a score, or the ESPN box by carrying both teams. Whichever publishes first is believed, and the board says which one it was."
   },
-  "team_games_read": 1658,
+  "team_games_read": 1664,
   "teams_with_a_performance_rating": 138,
   "basis": "the completed games and team-games this build actually read out of the season in progress, and how many teams that was enough to rate. A rebuild that read a stale cache shows the same numbers as the week before it."
  },
@@ -392,11 +416,11 @@
   "season": 2026,
   "reference_season": 2025,
   "per_team_game": {
-   "team_games": 901,
+   "team_games": 907,
    "fg_att": 1.46,
    "xp_att": 3.16,
-   "punts": 4.22,
-   "punts_in20": 1.31,
+   "punts": 4.21,
+   "punts_in20": 1.32,
    "kr": 1.47,
    "pr": 1.29
   },
@@ -413,7 +437,7 @@
    "fg_att": 0.96,
    "xp_att": 1.04,
    "punts": 1.02,
-   "punts_in20": 0.99,
+   "punts_in20": 1,
    "kr": 0.88,
    "pr": 1.02
   },
@@ -437,12 +461,12 @@
    "week_ordinal": 7,
    "week_label": "Week 7",
    "season_type": "regular",
-   "generated_at": "2026-10-16T03:56:20.017Z",
+   "generated_at": "2026-10-16T13:22:07.385Z",
    "team_count": 138,
    "rating_version": "team_rating_v1"
   }
  },
- "last_rankings_build": "2026-10-16T03:56:20.017Z",
+ "last_rankings_build": "2026-10-16T13:22:07.385Z",
  "notes": [
   "Every count here is of FBS teams. A team with no rating in a category is listed by name in genuinely_unavailable with the reason that team was given, so a gap is a lookup rather than an investigation.",
   "A rating exists when the evidence exists. Sample size is carried by CONFIDENCE and by the reliability shrink, never by a null."
