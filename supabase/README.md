@@ -224,8 +224,15 @@ conversions read from `stripe_events` **by trigger** — so the deployed webhook
 does not change, and an attribution error can never fail the ledger write —
 commissions at the rate in the one-row `affiliate_settings` (pending through the
 refund hold, approved by an admin or automatically if turned on, paid only with
-a manual payout reference; a refund voids or claws back, amounts are never
-edited or deleted). Partners read their own counts through
+a manual payout reference; a refund or a dispute books a negative row on the
+same invoice, capped at its commission — amounts are never edited, deleted or
+voided). Since 2026-10 an account is also credited from the Stripe sale itself
+(the promotion-code id on the subscription, else the checkout's
+`metadata.affiliate`, never an account that has paid before), commissions are
+dated by the invoice and counted in billing periods, test-mode rows are flagged,
+`public.affiliates` is a service-role view in the spec's words, and
+`affiliate_statement(slug, month)` is the monthly payout statement
+(`docs/affiliates/RUNBOOK.md`). Partners read their own counts through
 `affiliate_my_dashboard()`; admins (`affiliate_admins`) use `/admin/affiliates/`.
 No money moves here. Add `charge.refunded` to the webhook endpoint's events in
 the Stripe dashboard. **Campaigns** (`affiliate_campaigns`): per creator, per
@@ -235,8 +242,19 @@ against Stripe's record of the promotion code (add `promotion_code.created`,
 creator's commission (rate, recurring or one-time, months), a start, an end
 and an on/off switch, all edited in `/admin/affiliates/` without a deploy. The
 terms are snapshotted onto the attribution and never rewritten; a campaign is
-switched off, never deleted. Report rows 1-13 should say `ok`. Tested by
+switched off, never deleted. Report rows 1-19 should say `ok`. Tested by
 `tools/personal/affiliates_sql.test.js`.
+
+### `affiliate_connor.sql` — Connor: CONNOR10, 20% for 12 months
+Run after `affiliates.sql` (the guard says so). Seeds the creator `connor`
+(checkout-only attribution) and the campaign `CONNOR10`: 10% x 3 months for the
+customer, 20% recurring for 12 months for Connor. **No Stripe id is in it**: the
+checkout reads `CONNOR_PROMO_CODE_ID` / `MONTHLY_PRICE_ID` from its env and
+registers the promotion code on the campaign itself, so live and test mode each
+use their own. Never re-enables or re-rates anything an admin changed. Report
+rows 1-6 should say `ok`. Deployed with `referral_codes.sql` and `affiliates.sql`
+by `.github/workflows/deploy-affiliates.yml`; tested by
+`tools/personal/affiliate_connor_sql.test.js` and `tools/billing/affiliate_flow.test.js`.
 
 ### `growth.sql` — trial activation, acquisition attribution, public samples
 Run after `personal_research.sql` and `affiliates.sql` (the guard says so).

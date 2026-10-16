@@ -1,0 +1,173 @@
+# Deploy the partner program to production, in order, each file in ONE
+# transaction and each ending in a report whose rows must say ok:
+#
+#   1. supabase/referral_codes.sql   the code labels: CONNOR10 in, BETDESK
+#                                    retired (never deleted); the referral
+#                                    columns on subscriptions the program reads
+#   2. supabase/affiliates.sql       the program: attribution from the Stripe
+#                                    sale, the commission ledger, refunds and
+#                                    disputes, the payout statement
+#   3. supabase/affiliate_connor.sql Connor: CONNOR10, 20% for 12 months
+#
+# HOW IT RUNS
+#   * workflow_dispatch with stage = dry_run | apply.
+#   * A push to a claude/** branch that changes one of these files runs the
+#     SQL suites and touches nothing else — UNLESS its head commit message
+#     names a stage: [affiliates:dry-run] or [affiliates:apply]. That is the
+#     db-doctor pattern: a change can be proved against production before it
+#     reaches main, and only by a commit that says so in words.
+#
+# DRY RUN: all three files against production in ONE transaction that is then
+# rolled back — every guard, every lock (affiliates.sql takes its own NOWAIT,
+# so it never waits while holding one), every report row, nothing kept. It
+# does hold subscriptions for the seconds it takes (referral_codes.sql adds
+# its columns if missing), exactly as pasting it into the SQL editor would.
+#
+# AFTER APPLY: deploy create_checkout_session (deploy-billing.yml, stage
+# deploy_create_checkout_session) with MONTHLY_PRICE_ID and
+# CONNOR_PROMO_CODE_ID set in Supabase's Edge Function secrets, and add
+# charge.refunded and charge.dispute.created to the Stripe webhook endpoint's
+# events (live, and the test-mode endpoint if one is used). Until then the
+# program attributes a CONNOR10 typed at Stripe checkout by its code, and the
+# landing page keeps visitors' codes; nothing applies the discount for them.
+#
+# SECRETS (the one the other deploy workflows already use):
+#   SB_DB_URL   the pooled Postgres connection string
+name: Deploy partner program (affiliates)
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: 'dry_run (applied, reported, rolled back) or apply (committed)'
+        type: choice
+        options: [dry_run, apply]
+        default: dry_run
+  push:
+    branches: ['claude/**']
+    paths:
+      - '.github/workflows/deploy-affiliates.yml'
+      - 'supabase/referral_codes.sql'
+      - 'supabase/affiliates.sql'
+      - 'supabase/affiliate_connor.sql'
+      - 'docs/affiliates/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-affiliates
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      STAGE: ${{ inputs.stage || (contains(github.event.head_commit.message, '[affiliates:apply]') && 'apply') || (contains(github.event.head_commit.message, '[affiliates:dry-run]') && 'dry_run') || 'test_only' }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: Which stage
+        run: |
+          echo "stage: $STAGE (event: ${{ github.event_name }}, ref: ${{ github.ref_name }})"
+          case "$STAGE" in test_only) echo "Tests only: production is not touched.";; esac
+
+      - name: The SQL must pass against a throwaway PostgreSQL before it touches production
+        run: |
+          sudo apt-get install -y -qq postgresql postgresql-client >/dev/null 2>&1 || true
+          node tools/personal/affiliates_sql.test.js
+          node tools/personal/affiliate_connor_sql.test.js
+          node tools/billing/affiliate_flow.test.js
+          node tools/billing/checkout_ref.test.js
+          node tools/personal/growth_sql.test.js
+
+      - name: Check the credential exists before claiming anything
+        if: env.STAGE != 'test_only'
+        env:
+          DBURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Presence only. No value is ever printed.
+          if [ -z "$DBURL" ]; then echo "::error::SB_DB_URL is not set. Add it in Settings > Secrets and variables > Actions, or paste the three files into the SQL editor, in order."; exit 1; fi
+
+      - name: Dry run against production (one transaction, rolled back)
+        if: env.STAGE == 'dry_run'
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          cat > /tmp/dry.sql <<'SQL'
+          BEGIN;
+          \echo '=== supabase/referral_codes.sql'
+          \i supabase/referral_codes.sql
+          \echo '=== supabase/affiliates.sql'
+          \i supabase/affiliates.sql
+          \echo '=== supabase/affiliate_connor.sql'
+          \i supabase/affiliate_connor.sql
+          \echo '=== rolled back: nothing was kept'
+          ROLLBACK;
+          SQL
+          if ! out=$(psql "$PGURL" -X -q -v ON_ERROR_STOP=1 -f /tmp/dry.sql 2>&1); then
+            echo "$out" | tail -40
+            echo "::error::the dry run stopped on an error (rolled back; nothing changed)"
+            exit 1
+          fi
+          echo "$out"
+          # a CHECK THIS in the program or Connor's seed fails the run; one in
+          # referral_codes.sql's report is about existing data and is a warning
+          program=$(echo "$out" | awk '/^=== supabase\/affiliates.sql/{p=1} /^=== rolled back/{p=0} p')
+          codes=$(echo "$out" | awk '/^=== supabase\/referral_codes.sql/{p=1} /^=== supabase\/affiliates.sql/{p=0} p')
+          if echo "$codes" | grep -q 'CHECK THIS'; then echo "::warning::referral_codes.sql's report has a CHECK THIS row (existing data); read it above"; fi
+          if echo "$program" | grep -q 'CHECK THIS'; then echo "::error::a report row in affiliates.sql or affiliate_connor.sql says CHECK THIS"; exit 1; fi
+          echo "DRY RUN OK — nothing was kept"
+
+      - name: Apply supabase/referral_codes.sql (one transaction)
+        if: env.STAGE == 'apply'
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if ! out=$(psql "$PGURL" -X -q -1 -v ON_ERROR_STOP=1 -f supabase/referral_codes.sql 2>&1); then
+            echo "$out" | tail -20
+            echo "::error::supabase/referral_codes.sql did not apply (rolled back; nothing changed)"
+            exit 1
+          fi
+          echo "$out" | tail -16
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::warning::referral_codes.sql's report has a CHECK THIS row (existing data); read it above"; fi
+
+      - name: Apply supabase/affiliates.sql (one transaction)
+        if: env.STAGE == 'apply'
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if ! out=$(psql "$PGURL" -X -q -1 -v ON_ERROR_STOP=1 -f supabase/affiliates.sql 2>&1); then
+            echo "$out" | tail -20
+            echo "::error::supabase/affiliates.sql did not apply (rolled back; nothing changed)"
+            exit 1
+          fi
+          echo "$out" | tail -22
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/affiliates.sql: a report row says CHECK THIS"; exit 1; fi
+
+      - name: Apply supabase/affiliate_connor.sql (one transaction)
+        if: env.STAGE == 'apply'
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if ! out=$(psql "$PGURL" -X -q -1 -v ON_ERROR_STOP=1 -f supabase/affiliate_connor.sql 2>&1); then
+            echo "$out" | tail -20
+            echo "::error::supabase/affiliate_connor.sql did not apply (rolled back; nothing changed)"
+            exit 1
+          fi
+          echo "$out" | tail -10
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/affiliate_connor.sql: a report row says CHECK THIS"; exit 1; fi
+
+      - name: What production now holds
+        if: env.STAGE == 'apply'
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          psql "$PGURL" -X -q -v ON_ERROR_STOP=1 -c "select slug, display_name, promo_code, commission_rate, earning_months, active,
+            stripe_promotion_code_id is not null as live_promo_registered, stripe_test_promotion_code_id is not null as test_promo_registered,
+            attribution_mode from public.affiliates order by slug;"
+          psql "$PGURL" -X -q -v ON_ERROR_STOP=1 -c "select code, partner_name, retired_at is not null as retired from public.referral_codes order by code;"

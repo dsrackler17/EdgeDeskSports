@@ -14,6 +14,14 @@
        a different payment method and, often, a different email.
      * failures: fail('GET /v1/subscriptions', n) makes the next n matching
        calls answer 500; stall(...) makes them never answer (a timeout).
+     * promotion codes and the billing clock (affiliate_flow.test.js): a
+       session's promotion code becomes the subscription's Discount, with a
+       repeating coupon's end counted from the subscription's start, as Stripe
+       counts it; trialInvoice() and cycle() bill it period by period on a
+       clock of their own (a test clock), applying the discount to every
+       period that starts before the Discount ends; refund() and dispute()
+       produce the charge.refunded / charge.dispute.created Stripe sends. A
+       first-time-only promotion code is refused for a customer who has paid.
 
    Events are signed by the test, not here — this only produces their bodies.
    =========================================================================== */
@@ -42,7 +50,7 @@ function make(opts) {
   let clock = o.startSec || Math.floor(Date.now() / 1000);
   let seq = 0;
   const id = (p) => p + '_' + (++seq).toString(36).padStart(6, '0') + Math.random().toString(36).slice(2, 8).replace(/[^a-z0-9]/g, 'x');
-  const S = { customers: {}, subscriptions: {}, sessions: {}, prices: {}, promos: {}, idem: {} };
+  const S = { customers: {}, subscriptions: {}, sessions: {}, prices: {}, promos: {}, idem: {}, invoices: {}, charges: {}, paid: {} };
   const calls = [];
   const failing = [];   // {pattern, n, mode}
   const livemode = o.live !== false;
@@ -50,6 +58,14 @@ function make(opts) {
   S.prices.price_4999 = { id: 'price_4999', object: 'price', active: true, type: 'recurring', currency: 'usd',
     unit_amount: 4999, recurring: { interval: 'month', interval_count: 1 }, product: 'prod_edgedesk' };
 
+  // Stripe's month arithmetic: the same day next month, clamped to its last day
+  function addMonths(sec, n) {
+    const d = new Date(sec * 1000), day = d.getUTCDate();
+    const t = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, 1, d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds()));
+    const last = new Date(Date.UTC(t.getUTCFullYear(), t.getUTCMonth() + 1, 0)).getUTCDate();
+    t.setUTCDate(Math.min(day, last));
+    return Math.floor(t.getTime() / 1000);
+  }
   function now() { return clock; }
   function tick(sec) { clock += sec == null ? 60 : sec; return clock; }
 
@@ -113,6 +129,16 @@ function make(opts) {
       metadata: Object.assign({}, (s.subscription_data && s.subscription_data.metadata) || {}),
       default_payment_method: { type: 'card', card: { wallet: p.wallet ? { type: p.wallet } : null } },
     });
+    const promo = Array.isArray(s.discounts) && s.discounts[0] && s.discounts[0].promotion_code
+      ? S.promos[s.discounts[0].promotion_code] : null;
+    if (promo) {
+      const cp = promo.coupon;
+      sub.discount = { id: id('di'), object: 'discount', coupon: snap(cp), promotion_code: promo.id, start: sub.created,
+        end: cp.duration === 'repeating' ? addMonths(sub.created, Number(cp.duration_in_months)) : null, subscription: sub.id };
+      sub.discounts = [sub.discount.id];
+      s.discounts = [{ coupon: cp.id, promotion_code: promo.id }];
+      promo.times_redeemed = (promo.times_redeemed || 0) + 1;
+    }
     s.status = 'complete';
     s.subscription = sub.id;
     s.customer_details = { email: p.email || cust.email || null };
@@ -137,6 +163,62 @@ function make(opts) {
     // apart at most, never drifting ahead of the functions' own clock
     clock = Math.max(clock + 1, Math.floor(Date.now() / 1000));
     return { id: id('evt'), object: 'event', type, created: now(), livemode, data: { object } };
+  }
+
+  /* ── the billing clock ──────────────────────────────────────────────────
+     An invoice for one period of a subscription, paid an hour after the
+     period opens (on the subscription's own clock), with the Discount applied
+     when the period starts before the Discount ends — Stripe's rule for a
+     repeating coupon. Returns the events Stripe sends for it. */
+  function invoice(sub, periodStart, amount, reason) {
+    const inv = { id: id('in'), object: 'invoice', customer: sub.customer, subscription: sub.id, livemode,
+      amount_paid: amount, amount_due: amount, currency: 'usd', status: 'paid', billing_reason: reason,
+      status_transitions: { finalized_at: periodStart + 3600, paid_at: periodStart + 3600 },
+      lines: { object: 'list', data: [{ id: id('il'), object: 'line_item', amount,
+        period: { start: periodStart, end: addMonths(periodStart, 1) } }] },
+      total_discount_amounts: [], charge: null, payment_intent: null };
+    if (amount > 0) {
+      const ch = { id: id('ch'), object: 'charge', amount, amount_refunded: 0, customer: sub.customer, invoice: inv.id,
+        payment_intent: id('pi'), currency: 'usd', livemode, refunded: false };
+      inv.charge = ch.id; inv.payment_intent = ch.payment_intent;
+      S.charges[ch.id] = ch;
+      S.paid[sub.customer] = true;
+    }
+    S.invoices[inv.id] = inv;
+    return inv;
+  }
+  function discountOn(sub, periodStart, unit) {
+    const d = sub.discount;
+    if (!d || (d.end != null && periodStart >= d.end)) return 0;
+    if (d.coupon.percent_off) return Math.round(unit * Number(d.coupon.percent_off) / 100);
+    return Math.min(unit, Number(d.coupon.amount_off || 0));
+  }
+  function trialInvoice(subId) {
+    const sub = S.subscriptions[subId];
+    const inv = invoice(sub, sub.created, 0, 'subscription_create');
+    return { invoice: inv, events: [ev('invoice.paid', snap(inv))] };
+  }
+  function cycle(subId) {
+    const sub = S.subscriptions[subId];
+    const start = sub.current_period_end;
+    const unit = Number(sub.items.data[0].price.unit_amount);
+    const off = discountOn(sub, start, unit);
+    const inv = invoice(sub, start, unit - off, 'subscription_cycle');
+    if (off) inv.total_discount_amounts = [{ amount: off, discount: sub.discount.id }];
+    sub.status = 'active';
+    sub.current_period_end = addMonths(start, 1);
+    return { invoice: inv, events: [ev('invoice.paid', snap(inv)), ev('customer.subscription.updated', snap(sub))] };
+  }
+  function refund(invoiceId, amount) {
+    const ch = S.charges[S.invoices[invoiceId].charge];
+    ch.amount_refunded = Math.min(ch.amount, ch.amount_refunded + amount);
+    ch.refunded = ch.amount_refunded === ch.amount;
+    return ev('charge.refunded', snap(ch));
+  }
+  function dispute(invoiceId, amount) {
+    const ch = S.charges[S.invoices[invoiceId].charge];
+    return ev('charge.dispute.created', { id: id('dp'), object: 'dispute', charge: ch.id, payment_intent: ch.payment_intent,
+      amount: amount == null ? ch.amount : amount, currency: 'usd', reason: 'fraudulent', status: 'needs_response', livemode });
   }
 
   function fail(pattern, n, mode) { failing.push({ pattern, n: n == null ? 1 : n, mode: mode || 'error' }); }
@@ -210,10 +292,24 @@ function make(opts) {
     }
     if (method === 'POST' && path === '/v1/checkout/sessions') {
       if (!body.customer || !S.customers[body.customer]) return R(400, { error: { message: 'customer required' } });
+      if (body.discounts && body.allow_promotion_codes) {
+        return R(400, { error: { type: 'invalid_request_error', message: 'You may only specify one of these parameters: allow_promotion_codes, discounts.' } });
+      }
+      const pid = body.discounts && body.discounts[0] && body.discounts[0].promotion_code;
+      if (pid) {
+        const pc = S.promos[pid];
+        if (!pc || !pc.active) return R(400, { error: { type: 'invalid_request_error', code: 'resource_missing', message: 'No such promotion code' } });
+        if (pc.restrictions && pc.restrictions.first_time_transaction && S.paid[body.customer]) {
+          return R(400, { error: { type: 'invalid_request_error', message: 'This promotion code cannot be redeemed because the associated customer has prior transactions.' } });
+        }
+      }
       out = createSession(body, false);
     }
     if ((m = /^\/v1\/prices\/([^/]+)$/.exec(path))) {
       return S.prices[m[1]] ? R(200, snap(S.prices[m[1]])) : notFound('price');
+    }
+    if ((m = /^\/v1\/promotion_codes\/([^/]+)$/.exec(path)) && method === 'GET') {
+      return S.promos[m[1]] ? R(200, snap(S.promos[m[1]])) : notFound('promotion code');
     }
     if (method === 'GET' && path === '/v1/promotion_codes') {
       const data = Object.values(S.promos).filter((p) => p.code === q.get('code') && p.active);
@@ -226,7 +322,8 @@ function make(opts) {
     return R(404, { error: { message: 'fake stripe has no route ' + key } });
   }
 
-  return { S, calls, api, fail, now, tick, customer, subscription, createSession, paymentLinkSession, complete, update, ev, snap, livemode };
+  return { S, calls, api, fail, now, tick, customer, subscription, createSession, paymentLinkSession, complete, update, ev, snap, livemode,
+           addMonths, trialInvoice, cycle, refund, dispute };
 }
 
 module.exports = { make, parseForm };

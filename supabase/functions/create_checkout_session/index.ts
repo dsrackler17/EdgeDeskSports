@@ -22,6 +22,13 @@
 //                            trial to an account that already had a Stripe
 //                            subscription. Off by default, which is what the
 //                            Payment Link has always done.
+//    MONTHLY_PRICE_ID        price_... the $49.99/month price creators' codes
+//                            apply to. An affiliate code is applied ONLY when
+//                            STRIPE_PRICE_ID is this price; unset, none is.
+//    <SLUG>_PROMO_CODE_ID    promo_... each creator's Stripe promotion code,
+//                            named from their slug: CONNOR_PROMO_CODE_ID for
+//                            'connor'. Live and test mode set their own ids;
+//                            no file holds one.
 //    SB_URL / SB_SERVICE_ROLE (or SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)
 //    SUPABASE_ANON_KEY       provided by Supabase; used only to ask Auth who the
 //                            caller's token belongs to
@@ -58,8 +65,25 @@
 // IT REUSES rather than duplicates: an open session from the last 30 minutes for
 // the same offer is returned again (a double click, a second tab), and an
 // account's existing Stripe customer is used instead of making another.
+//
+// A CREATOR'S CODE (supabase/affiliates.sql). The page sends the code the
+// visitor last arrived with (?ref=CONNOR10, kept 30 days) as `affiliate_code`.
+// It is applied only when every one of these holds, and otherwise the session
+// is exactly the plain one (allow_promotion_codes, no stamp):
+//   * the price on sale is MONTHLY_PRICE_ID — the coupon cannot be limited to
+//     one price, so the code is ignored on any other;
+//   * the database says it is a campaign in force, for an account that is not
+//     the creator's own and has never paid an invoice (affiliate_checkout_code);
+//   * the creator's promotion code from the env (<SLUG>_PROMO_CODE_ID) is, in
+//     Stripe, active and that same code.
+// Then the session carries discounts: [{promotion_code}] — NEVER together with
+// allow_promotion_codes, which Stripe refuses — and metadata.affiliate = slug
+// on the session and the subscription, which is what the webhook's ledger
+// attributes the customer by. The 7-day trial is unchanged. If Stripe still
+// refuses the discount (a first-time-only code, a customer with an earlier
+// payment), the checkout is made again without it rather than failed.
 
-const BUILD = 'create_checkout_session-2026-10-04-1';
+const BUILD = 'create_checkout_session-2026-10-16-affiliate-1';
 
 const CORS = {
   'access-control-allow-origin': '*',
@@ -85,6 +109,9 @@ function config() {
     siteUrl: (env('SITE_URL') || 'https://edgedesksports.com').replace(/\/+$/, ''),
     automaticTax: env('STRIPE_AUTOMATIC_TAX') === 'true',
     oneTrial: env('BILLING_ONE_TRIAL_PER_ACCOUNT') === 'true',
+    monthlyPriceId: env('MONTHLY_PRICE_ID'),
+    livemode: env('STRIPE_SECRET_KEY').indexOf('_live_') > 0,
+    env,
   };
 }
 
@@ -686,6 +713,78 @@ function offerProblem(price, wantCents, wantTrialDays, trialDays) {
   return null;
 }
 
+// ── a creator's code ─────────────────────────────────────────────────────────
+// 'connor' -> CONNOR_PROMO_CODE_ID: the next creator needs a seed row and an
+// env var, never a code change.
+function promoEnvName(slug) {
+  return String(slug || '').toUpperCase().replace(/[^A-Z0-9]+/g, '_') + '_PROMO_CODE_ID';
+}
+function normAffiliateCode(v) {
+  const s = String(v == null ? '' : v).trim().toUpperCase();
+  return /^[A-Z0-9_-]{3,32}$/.test(s) ? s : null;
+}
+
+// The promotion code is read from Stripe once per warm instance, like the price.
+const PROMO_CACHE = {};
+async function readPromotionCode(stripe, id) {
+  const hit = PROMO_CACHE[id];
+  if (hit && Date.now() - hit.at < 10 * 60 * 1000) return hit.promo;
+  const p = await stripe.get('/promotion_codes/' + encodeURIComponent(id));
+  PROMO_CACHE[id] = { at: Date.now(), promo: p };
+  return p;
+}
+
+// Is the env's promotion code, in Stripe, the one the campaign names? Active,
+// the same code, and — when it carries one — the same affiliate in its metadata.
+function promoProblem(pc, want) {
+  if (!pc || pc.object !== 'promotion_code') return 'not a promotion code';
+  if (!pc.active) return 'inactive in Stripe';
+  if (String(pc.code || '').toUpperCase() !== want.code) return 'its code is ' + pc.code + ', not ' + want.code;
+  const m = pc.metadata && pc.metadata.affiliate;
+  if (m && String(m).toLowerCase() !== want.slug) return 'its metadata names affiliate ' + m;
+  const cp = pc.coupon || (pc.promotion && pc.promotion.coupon);
+  if (cp && typeof cp === 'object' && cp.valid === false) return 'its coupon is no longer valid';
+  return null;
+}
+
+// { slug, code, promotion_code_id } when the code is to be applied, else null
+// (and a log line saying why). Never throws: a creator's code is never a
+// reason a checkout fails.
+async function resolveAffiliate(c, db, stripe, user, code, trace) {
+  const skip = (reason, level, extra) => {
+    logLine('create_checkout_session', level || 'info', 'checkout.affiliate_skipped',
+      Object.assign({ reason }, extra || {}, trace));
+    return null;
+  };
+  if (!c.monthlyPriceId) return skip('monthly_price_not_configured', 'warn');
+  if (c.priceId !== c.monthlyPriceId) return skip('not_the_monthly_price', 'info', { price_id: c.priceId });
+  let r;
+  try { r = await db.rpc('affiliate_checkout_code', { p_code: code, p_user: user.id, p_livemode: c.livemode }); }
+  catch (e) { return skip('lookup_failed', 'warn', { error: String(e.message || e).slice(0, 200) }); }
+  if (!r || !r.ok) return skip((r && r.reason) || 'not_a_campaign');
+  const envName = promoEnvName(r.slug);
+  const promoId = c.env(envName);
+  if (!/^promo_[A-Za-z0-9]+$/.test(promoId)) return skip('promotion_code_env_missing', 'error', { env: envName });
+  let pc;
+  try { pc = await readPromotionCode(stripe, promoId); }
+  catch (e) { return skip('promotion_code_unreadable', 'error', { env: envName, error: String(e.message || e).slice(0, 200) }); }
+  const bad = promoProblem(pc, { code: r.code, slug: r.slug });
+  if (bad) return skip('promotion_code_mismatch', 'error', { env: envName, problem: bad });
+  // the id the webhook's ledger attributes by, written on the campaign once per mode
+  try {
+    const reg = await db.rpc('affiliate_register_promotion_code',
+      { p_campaign: r.campaign_id, p_promo: promoId, p_livemode: c.livemode });
+    if (reg === 'conflict') {
+      return skip('promotion_code_conflict', 'error', { env: envName, registered: r.promotion_code_id || 'another campaign' });
+    }
+  } catch (e) {
+    // the metadata stamp still attributes the sale; the discount is not withheld for this
+    logLine('create_checkout_session', 'warn', 'checkout.affiliate_register_failed',
+      Object.assign({ error: String(e.message || e).slice(0, 200) }, trace));
+  }
+  return { slug: r.slug, code: r.code, promotion_code_id: promoId };
+}
+
 async function pickCustomer(c, ctx, user, candidates) {
   for (const cand of candidates) {
     try {
@@ -737,13 +836,15 @@ async function handle(req) {
   if (!Number.isInteger(wantCents) || wantCents <= 0 || !Number.isInteger(wantTrial) || wantTrial < 0) {
     return json({ ok: false, reason: 'bad_offer', message: 'The offer the page showed was not sent.' }, 400);
   }
-  const promo = /^[A-Z0-9_.-]{1,64}$/.test(String(body.promo_code || '')) ? String(body.promo_code) : null;
+  // the creator's code the visitor arrived with; `promo_code` is what pages
+  // built before 2026-10-16 send, and it is treated exactly the same way
+  const affCode = normAffiliateCode(body.affiliate_code) || normAffiliateCode(body.promo_code);
   const ref = /^EDS-[A-Z0-9]{6}$/.test(String(body.ref || '')) ? String(body.ref) : makeRef();
 
   const db = makeDb(c.url, c.serviceKey);
   const stripe = makeStripe(c.stripeKey, fetch, { timeoutMs: 8000, retries: 1 });
   const ctx = { db, stripe, svc: 'create_checkout_session' };
-  const trace = { user_id: user.id, ref, kind, promo: !!promo };
+  const trace = { user_id: user.id, ref, kind, affiliate_code: affCode };
 
   try {
     const adm = await db.rpc('billing_sync_admit', { p_user: user.id, p_source: 'checkout', p_max: 10, p_window_s: 600, p_ref: ref });
@@ -784,7 +885,13 @@ async function handle(req) {
       message: 'Checkout is being updated, so we stopped before taking any payment. Nothing has been charged.' }, 409);
   }
 
+  // ── 2b. A CREATOR'S CODE, ON THE MONTHLY PRICE ONLY ───────────────────────
+  const affiliate = affCode ? await resolveAffiliate(c, db, stripe, user, affCode, trace) : null;
+  const wantAffiliate = affiliate ? affiliate.slug : null;
+
   // ── 3. AN OPEN SESSION FOR THE SAME OFFER IS REUSED ───────────────────────
+  // The same offer includes the same discount: a session opened without the
+  // creator's code is not handed back to someone who has since clicked it.
   try {
     const since = new Date(Date.now() - 30 * 60 * 1000).toISOString();
     const open = await db.get('billing_checkout_sessions?select=id,url,price_id,trial_days,kind&user_id=eq.' + user.id +
@@ -792,9 +899,10 @@ async function handle(req) {
     for (const s of open || []) {
       if (s.price_id !== c.priceId || Number(s.trial_days) !== c.trialDays || s.kind !== kind) continue;
       const live = await stripe.get('/checkout/sessions/' + encodeURIComponent(s.id)).catch(() => null);
-      if (live && live.status === 'open' && live.url) {
+      const liveAffiliate = (live && live.metadata && live.metadata.affiliate) || null;
+      if (live && live.status === 'open' && live.url && liveAffiliate === wantAffiliate) {
         logLine('create_checkout_session', 'info', 'checkout.reused', Object.assign({ session_id: s.id }, trace));
-        return json({ ok: true, url: live.url, session_id: s.id, reused: true, ref });
+        return json({ ok: true, url: live.url, session_id: s.id, reused: true, ref, affiliate: wantAffiliate });
       }
       if (live && (live.status === 'complete' || live.status === 'expired')) {
         await db.patch('billing_checkout_sessions', 'id=eq.' + encodeURIComponent(s.id),
@@ -816,14 +924,6 @@ async function handle(req) {
   trace.customer_id = customer.id;
 
   // ── 5. THE SESSION ────────────────────────────────────────────────────────
-  let discounts = null;
-  if (promo) {
-    try {
-      const pc = await stripe.get('/promotion_codes', { code: promo, active: 'true', limit: 1 });
-      const hit = pc && pc.data && pc.data[0];
-      if (hit && hit.id) discounts = [{ promotion_code: hit.id }];
-    } catch (_) { /* the customer can still type it on Stripe's page */ }
-  }
   const params = {
     mode: 'subscription',
     customer: customer.id,
@@ -839,19 +939,49 @@ async function handle(req) {
     success_url: c.siteUrl + '/?checkout=success&session_id={CHECKOUT_SESSION_ID}',
     cancel_url: c.siteUrl + '/?checkout=cancel',
   };
-  if (discounts) params.discounts = discounts; else params.allow_promotion_codes = 'true';
+  // ONE OR THE OTHER, NEVER BOTH: Stripe refuses a session that carries
+  // discounts and allow_promotion_codes together.
+  const plain = () => {
+    delete params.discounts;
+    delete params.metadata.affiliate; delete params.metadata.affiliate_code;
+    delete params.subscription_data.metadata.affiliate; delete params.subscription_data.metadata.affiliate_code;
+    params.allow_promotion_codes = 'true';
+  };
+  if (affiliate) {
+    params.discounts = [{ promotion_code: affiliate.promotion_code_id }];
+    // the stamp the webhook's ledger attributes the customer by
+    params.metadata.affiliate = params.subscription_data.metadata.affiliate = affiliate.slug;
+    params.metadata.affiliate_code = params.subscription_data.metadata.affiliate_code = affiliate.code;
+  } else {
+    plain();
+  }
   if (c.automaticTax) { params.automatic_tax = { enabled: 'true' }; params.customer_update = { address: 'auto' }; }
 
-  let session;
+  let session, applied = !!affiliate;
+  // Identical requests inside ten seconds are one session (a double click
+  // that beat the reuse check above).
+  const idem = ['edgedesk-cs', user.id, c.priceId, c.trialDays, affiliate ? affiliate.promotion_code_id : '-',
+                Math.floor(Date.now() / 10000)].join('-');
   try {
-    // Identical requests inside ten seconds are one session (a double click
-    // that beat the reuse check above).
-    const idem = ['edgedesk-cs', user.id, c.priceId, c.trialDays, promo || '-', Math.floor(Date.now() / 10000)].join('-');
     session = await stripe.post('/checkout/sessions', params, idem);
   } catch (e) {
-    logLine('create_checkout_session', 'error', 'checkout.create_failed',
-      Object.assign({ error: String(e.message || e), stripe_code: e && e.code }, trace));
-    return json({ ok: false, reason: 'stripe_unavailable', ref, message: 'Stripe could not start checkout. Nothing was charged; try again.' }, 502);
+    // Stripe refusing the DISCOUNT — a first-time-only code for a customer
+    // with an earlier payment, a code switched off a minute ago — must not cost
+    // the customer the checkout: once more, without the code and its stamp.
+    const refusedDiscount = applied && e && e.status >= 400 && e.status < 500 && e.status !== 429;
+    if (refusedDiscount) {
+      logLine('create_checkout_session', 'warn', 'checkout.affiliate_refused_by_stripe',
+        Object.assign({ stripe_code: e.code, stripe_message: e.stripeMessage }, trace));
+      plain();
+      applied = false;
+      try { session = await stripe.post('/checkout/sessions', params, idem + '-plain'); }
+      catch (e2) { e = e2; session = null; }
+    }
+    if (!session) {
+      logLine('create_checkout_session', 'error', 'checkout.create_failed',
+        Object.assign({ error: String(e.message || e), stripe_code: e && e.code }, trace));
+      return json({ ok: false, reason: 'stripe_unavailable', ref, message: 'Stripe could not start checkout. Nothing was charged; try again.' }, 502);
+    }
   }
 
   try {
@@ -868,8 +998,9 @@ async function handle(req) {
 
   logLine('create_checkout_session', 'info', 'checkout.created', Object.assign({
     session_id: session.id, price_id: c.priceId, trial_days: c.trialDays, customer_created: customer.created,
-    livemode: session.livemode !== false }, trace));
-  return json({ ok: true, url: session.url, session_id: session.id, reused: false, ref });
+    livemode: session.livemode !== false, affiliate: applied ? affiliate.slug : null }, trace));
+  return json({ ok: true, url: session.url, session_id: session.id, reused: false, ref,
+    affiliate: applied ? affiliate.slug : null });
 }
 
 if (typeof Deno !== 'undefined' && typeof Deno.serve === 'function') Deno.serve(handle);

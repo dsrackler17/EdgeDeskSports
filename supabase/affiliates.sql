@@ -57,14 +57,37 @@
 --     APPROVED by an admin (or automatically when the admin turns that on),
 --     and PAID only when an admin records the payout reference. There is no
 --     payout provider here and nothing moves money.
---   * A refund voids an unpaid commission and books a negative CLAWBACK row
---     against a paid one. Rows are never edited into different amounts.
+--   * A refund or a dispute books a negative CLAWBACK row against the same
+--     invoice: the commission's share of what was refunded or disputed, and
+--     never more, across every refund and dispute on that invoice, than the
+--     commission originally booked for it. Nothing is voided to do this, and
+--     rows are never edited into different amounts.
+--   * A commission's dates are the INVOICE's own (status_transitions.paid_at),
+--     not the moment the webhook heard about it, and the earning window is
+--     counted in billing periods: commission_duration_months = 12 earns on the
+--     invoices whose period starts within 12 months of the first paid one's —
+--     invoices 1 to 12 of a monthly plan, never a 13th by a minute's jitter.
+--   * Every row says whether Stripe was in test mode. Test-mode deliveries are
+--     processed like live ones, so a dry run can be read off the tables, and
+--     the payout statement leaves them out.
 --   * Self-referral is refused at attribution and again at conversion.
 --   * The first valid attribution wins and is never overwritten.
---   * An existing customer cannot be claimed by a link clicked afterwards.
+--   * An existing customer cannot be claimed by a link clicked afterwards, and
+--     an account that has already paid an invoice is never attributed.
+--
+-- CHECKOUT ATTRIBUTION (2026-10). The checkout (create_checkout_session) puts
+-- a creator's Stripe promotion code on the subscription itself, and the
+-- creator's slug in its metadata (affiliate = 'connor'). The account is then
+-- attributed from what Stripe reports, strongest evidence first: the
+-- promotion-code id on the session, subscription or invoice, matched against
+-- the campaign's stripe_promotion_code_id (or its test-mode twin); then the
+-- metadata; then the human code the webhook wrote to subscriptions. A creator
+-- whose attribution_mode is 'checkout_only' is credited this way and no
+-- other: a link click is counted, never claimed.
 --
 -- RUN ORDER. billing.sql, stripe_webhook.sql and referral_codes.sql first
--- (the guard below says so). Then this file.
+-- (the guard below says so). Then this file. affiliate_connor.sql seeds the
+-- first creator on top of it.
 --
 -- CONVENTION (supabase/README.md): idempotent, additive, pasted into the SQL
 -- editor, no psql meta-commands, ends in a report. Safe to run again.
@@ -77,6 +100,11 @@ begin
   end if;
   if to_regclass('public.stripe_events') is null then
     raise exception 'public.stripe_events does not exist. Run supabase/stripe_webhook.sql first.';
+  end if;
+  -- the promo-code attribution reads the code the webhook writes here
+  if not exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'subscriptions'
+                    and column_name = 'stripe_promotion_code_id') then
+    raise exception 'public.subscriptions has no referral columns. Run supabase/referral_codes.sql first.';
   end if;
 end
 $guard$;
@@ -212,6 +240,23 @@ revoke all on public.affiliate_accounts from anon;
 revoke insert, update, delete on public.affiliate_accounts from authenticated;
 grant select on public.affiliate_accounts to authenticated;
 
+-- slug: the creator's stable lower-case handle ('connor'). The checkout reads
+-- the creator's Stripe promotion code id from the env var <SLUG>_PROMO_CODE_ID
+-- (CONNOR_PROMO_CODE_ID), so live and test mode each use their own, and stamps
+-- the subscription's metadata with affiliate = slug.
+-- attribution_mode: 'link_or_checkout' credits a link claim at signup or a
+-- checkout; 'checkout_only' credits only what Stripe reports on the sale.
+alter table public.affiliate_accounts add column if not exists slug text;
+alter table public.affiliate_accounts add column if not exists attribution_mode text not null default 'link_or_checkout';
+do $c$ begin
+  if not exists (select 1 from pg_constraint where conname = 'affiliate_accounts_slug_mode') then
+    alter table public.affiliate_accounts add constraint affiliate_accounts_slug_mode check (
+          (slug is null or slug ~ '^[a-z0-9][a-z0-9_-]{1,31}$')
+      and attribution_mode in ('link_or_checkout', 'checkout_only'));
+  end if;
+end $c$;
+create unique index if not exists affiliate_accounts_slug on public.affiliate_accounts (slug) where slug is not null;
+
 -- ── clicks ───────────────────────────────────────────────────────────────────
 -- One row per (affiliate, visitor, UTC day). The visitor id is a random value
 -- the page generates and keeps in first-party storage; only its hash is kept.
@@ -246,9 +291,14 @@ create table if not exists public.affiliate_attributions (
   void_reason    text
 );
 do $c$ begin
+  -- widened in place for 'metadata' (the checkout's affiliate stamp)
+  if exists (select 1 from pg_constraint where conname = 'affiliate_attributions_shape'
+              and pg_get_constraintdef(oid) not like '%metadata%') then
+    alter table public.affiliate_attributions drop constraint affiliate_attributions_shape;
+  end if;
   if not exists (select 1 from pg_constraint where conname = 'affiliate_attributions_shape') then
     alter table public.affiliate_attributions add constraint affiliate_attributions_shape check (
-      source in ('link','promo_code','admin') and status in ('active','void'));
+      source in ('link','promo_code','metadata','admin') and status in ('active','void'));
   end if;
 end $c$;
 create index if not exists affiliate_attributions_affiliate_idx on public.affiliate_attributions (affiliate_id);
@@ -275,12 +325,28 @@ do $c$ begin
   if not exists (select 1 from pg_constraint where conname = 'affiliate_conversions_once') then
     alter table public.affiliate_conversions add constraint affiliate_conversions_once unique (dedupe_key);
   end if;
+  -- widened in place for 'disputed'
+  if exists (select 1 from pg_constraint where conname = 'affiliate_conversions_kind'
+              and pg_get_constraintdef(oid) not like '%disputed%') then
+    alter table public.affiliate_conversions drop constraint affiliate_conversions_kind;
+  end if;
   if not exists (select 1 from pg_constraint where conname = 'affiliate_conversions_kind') then
     alter table public.affiliate_conversions add constraint affiliate_conversions_kind check (
-      kind in ('trial_started','paid','renewal','canceled','refunded'));
+      kind in ('trial_started','paid','renewal','canceled','refunded','disputed'));
   end if;
 end $c$;
 create index if not exists affiliate_conversions_affiliate_idx on public.affiliate_conversions (affiliate_id, occurred_at desc);
+-- what a refund or a dispute is matched back to its invoice by (a charge
+-- names its invoice only on older Stripe API versions; a dispute never does),
+-- the billing period an invoice paid for, and whether Stripe was in test mode
+alter table public.affiliate_conversions add column if not exists stripe_customer_id       text;
+alter table public.affiliate_conversions add column if not exists stripe_charge_id         text;
+alter table public.affiliate_conversions add column if not exists stripe_payment_intent_id text;
+alter table public.affiliate_conversions add column if not exists period_start             timestamptz;
+alter table public.affiliate_conversions add column if not exists livemode                 boolean;
+create index if not exists affiliate_conversions_charge_idx on public.affiliate_conversions (stripe_charge_id) where stripe_charge_id is not null;
+create index if not exists affiliate_conversions_pi_idx on public.affiliate_conversions (stripe_payment_intent_id) where stripe_payment_intent_id is not null;
+create index if not exists affiliate_conversions_invoice_idx on public.affiliate_conversions (stripe_invoice_id) where stripe_invoice_id is not null;
 alter table public.affiliate_conversions enable row level security;
 revoke all on public.affiliate_conversions from anon, authenticated;
 
@@ -322,15 +388,29 @@ do $c$ begin
 end $c$;
 create index if not exists affiliate_commissions_affiliate_idx on public.affiliate_commissions (affiliate_id, status);
 create index if not exists affiliate_commissions_invoice_idx on public.affiliate_commissions (stripe_invoice_id);
+-- the payout statement's columns: whose money (Stripe's customer id, shown
+-- masked), when the invoice was paid, when this row's money moved (the
+-- payment for an accrual, the refund or dispute for a clawback), and whether
+-- Stripe was in test mode. `paid_at` above is the PAYOUT, not the invoice.
+alter table public.affiliate_commissions add column if not exists stripe_customer_id text;
+alter table public.affiliate_commissions add column if not exists invoice_paid_at    timestamptz;
+alter table public.affiliate_commissions add column if not exists occurred_at        timestamptz;
+alter table public.affiliate_commissions add column if not exists livemode           boolean;
+-- ONE accrual per Stripe invoice, whatever path or retry tries to book another
+create unique index if not exists affiliate_commissions_one_accrual_per_invoice
+  on public.affiliate_commissions (stripe_invoice_id) where kind = 'accrual';
+create index if not exists affiliate_commissions_occurred_idx on public.affiliate_commissions (affiliate_id, occurred_at);
 -- the money columns are never rewritten; only the status walks forward
 create or replace function public.affiliate_commissions_guard()
 returns trigger language plpgsql as $$
 begin
   if (new.affiliate_id, new.user_id, new.conversion_id, new.stripe_invoice_id, new.kind, new.basis_cents,
-      new.rate, new.amount_cents, new.currency, new.eligible_at, new.created_at)
+      new.rate, new.amount_cents, new.currency, new.eligible_at, new.created_at,
+      new.stripe_customer_id, new.invoice_paid_at, new.occurred_at, new.livemode)
      is distinct from
      (old.affiliate_id, old.user_id, old.conversion_id, old.stripe_invoice_id, old.kind, old.basis_cents,
-      old.rate, old.amount_cents, old.currency, old.eligible_at, old.created_at) then
+      old.rate, old.amount_cents, old.currency, old.eligible_at, old.created_at,
+      old.stripe_customer_id, old.invoice_paid_at, old.occurred_at, old.livemode) then
     raise exception 'affiliate_commissions: amounts are never edited; void the row and book a new one' using errcode = 'restrict_violation';
   end if;
   if old.status = 'paid' and new.status <> 'paid' then
@@ -428,6 +508,20 @@ end $c$;
 create unique index if not exists affiliate_campaigns_code_ci on public.affiliate_campaigns (upper(code));
 create unique index if not exists affiliate_campaigns_promo_id on public.affiliate_campaigns (stripe_promotion_code_id) where stripe_promotion_code_id is not null;
 create index if not exists affiliate_campaigns_affiliate_idx on public.affiliate_campaigns (affiliate_id);
+-- Stripe's test mode has its own promotion code with its own id, delivered to
+-- this same project on the test-mode endpoint. It is kept beside the live id,
+-- never in it: a dry run must not be able to occupy the live column. Both are
+-- written by the checkout from its env (affiliate_register_promotion_code),
+-- never by hand and never from a file.
+alter table public.affiliate_campaigns add column if not exists stripe_test_promotion_code_id text;
+do $c$ begin
+  if not exists (select 1 from pg_constraint where conname = 'affiliate_campaigns_test_promo') then
+    alter table public.affiliate_campaigns add constraint affiliate_campaigns_test_promo check (
+      stripe_test_promotion_code_id is null or stripe_test_promotion_code_id ~ '^promo_[A-Za-z0-9]{1,64}$');
+  end if;
+end $c$;
+create unique index if not exists affiliate_campaigns_test_promo_id on public.affiliate_campaigns (stripe_test_promotion_code_id)
+  where stripe_test_promotion_code_id is not null;
 
 -- One code, one creator: a campaign code may be its own creator's base code,
 -- never another creator's.
@@ -591,6 +685,98 @@ returns text language sql immutable as $$
               when jsonb_typeof(p) = 'object' then nullif(p ->> 'id', '')
               else null end;
 $$;
+-- a Stripe timestamp (unix seconds), or null
+create or replace function public.affiliate_stripe_ts(p jsonb)
+returns timestamptz language sql immutable as $$
+  select case when p is not null and (p #>> '{}') ~ '^[0-9]{1,12}$' then to_timestamp((p #>> '{}')::bigint) end;
+$$;
+-- Stripe's own test-mode flag, from the event or the object (live unless it says otherwise)
+create or replace function public.affiliate_stripe_livemode(p jsonb)
+returns boolean language sql immutable as $$
+  select coalesce(case when (p ->> 'livemode') in ('true', 'false') then (p ->> 'livemode')::boolean end,
+                  case when (public.affiliate_stripe_object(p) ->> 'livemode') in ('true', 'false')
+                       then (public.affiliate_stripe_object(p) ->> 'livemode')::boolean end,
+                  true);
+$$;
+-- The promotion-code id a checkout session, subscription or invoice carries,
+-- in every shape Stripe's API versions use: discounts[] as objects or ids,
+-- the older single `discount`, and the session's total_details breakdown. A
+-- bare di_… or coupon id names no creator and is never returned.
+create or replace function public.affiliate_event_promotion_code(o jsonb)
+returns text language sql immutable as $$
+  select x.id from (
+    select case when jsonb_typeof(d) = 'string' then d #>> '{}' end as id, 1 as pri, n
+      from jsonb_array_elements(case when jsonb_typeof(o -> 'discounts') = 'array' then o -> 'discounts' else '[]'::jsonb end)
+           with ordinality as t(d, n)
+    union all
+    select public.affiliate_stripe_id(d -> 'promotion_code'), 1, n
+      from jsonb_array_elements(case when jsonb_typeof(o -> 'discounts') = 'array' then o -> 'discounts' else '[]'::jsonb end)
+           with ordinality as t(d, n) where jsonb_typeof(d) = 'object'
+    union all
+    select public.affiliate_stripe_id(o -> 'discount' -> 'promotion_code'), 2, 1
+    union all
+    select public.affiliate_stripe_id(d -> 'discount' -> 'promotion_code'), 3, n
+      from jsonb_array_elements(case when jsonb_typeof(o -> 'total_details' -> 'breakdown' -> 'discounts') = 'array'
+                                     then o -> 'total_details' -> 'breakdown' -> 'discounts' else '[]'::jsonb end)
+           with ordinality as t(d, n) where jsonb_typeof(d) = 'object'
+  ) x
+  where x.id ~ '^promo_[A-Za-z0-9]{1,64}$'
+  order by x.pri, x.n limit 1;
+$$;
+-- The metadata that carries the checkout's affiliate stamp: the session's or
+-- the subscription's own, or (on an invoice) the subscription's as copied
+-- into subscription_details. Empty when none of them names an affiliate.
+create or replace function public.affiliate_event_metadata(o jsonb)
+returns jsonb language sql immutable as $$
+  select coalesce((
+    select m from (values (1, o -> 'metadata'), (2, o -> 'subscription_details' -> 'metadata'),
+                          (3, o -> 'parent' -> 'subscription_details' -> 'metadata')) v(pri, m)
+     where jsonb_typeof(m) = 'object' and nullif(btrim(m ->> 'affiliate'), '') is not null
+     order by pri limit 1), '{}'::jsonb);
+$$;
+-- The start of the billing period an invoice paid for (its latest line's
+-- period start): exact under Stripe's own month arithmetic, so the earning
+-- window can never be decided by when a payment happened to settle.
+create or replace function public.affiliate_invoice_period_start(o jsonb)
+returns timestamptz language sql immutable as $$
+  select max(public.affiliate_stripe_ts(l -> 'period' -> 'start'))
+    from jsonb_array_elements(case when jsonb_typeof(o -> 'lines' -> 'data') = 'array' then o -> 'lines' -> 'data' else '[]'::jsonb end) l;
+$$;
+-- The charge and payment intent that paid an invoice, in both API shapes
+-- (invoice.charge / invoice.payment_intent, or invoice.payments[] since 2025-03).
+create or replace function public.affiliate_invoice_payment_ref(o jsonb, p_what text)
+returns text language sql immutable as $$
+  select coalesce(public.affiliate_stripe_id(o -> p_what),
+                  (select public.affiliate_stripe_id(p -> 'payment' -> p_what)
+                     from jsonb_array_elements(case when jsonb_typeof(o -> 'payments' -> 'data') = 'array'
+                                                    then o -> 'payments' -> 'data' else '[]'::jsonb end) p
+                    where public.affiliate_stripe_id(p -> 'payment' -> p_what) is not null limit 1));
+$$;
+
+-- HAS THIS ACCOUNT ALREADY PAID US? Any invoice that moved money (amount_paid
+-- > 0) on the webhook's ledger, for this account or its Stripe customer, other
+-- than the subscription being attributed (whose own first invoice is not
+-- "prior"). A $0 trial invoice is not a payment. Used to refuse attribution
+-- to a returning customer, and by the checkout before it applies a code.
+create index if not exists stripe_events_user on public.stripe_events (user_id) where user_id is not null;
+create or replace function public.affiliate_has_prior_paid_invoice(p_user uuid, p_customer text, p_subscription text)
+returns boolean language sql stable security definer set search_path = public, pg_temp as $$
+  with custs as (
+    select p_customer as c where p_customer is not null
+    union select stripe_customer_id from public.subscriptions where user_id = p_user and stripe_customer_id is not null
+  )
+  select exists (
+    select 1 from public.stripe_events e
+     cross join lateral (select public.affiliate_stripe_object(e.payload) as inv) x
+     where e.type in ('invoice.paid', 'invoice.payment_succeeded')
+       and ((p_user is not null and e.user_id = p_user) or e.customer_id in (select c from custs))
+       and (x.inv ->> 'amount_paid') ~ '^[0-9]+$' and (x.inv ->> 'amount_paid')::bigint > 0
+       and (p_subscription is null
+            or coalesce(public.affiliate_stripe_id(x.inv -> 'subscription'),
+                        public.affiliate_stripe_id(x.inv -> 'parent' -> 'subscription_details' -> 'subscription'))
+               is distinct from p_subscription));
+$$;
+revoke all on function public.affiliate_has_prior_paid_invoice(uuid, text, text) from public, anon, authenticated;
 
 -- ── attribution: the door the signed-in page knocks on ──────────────────────
 -- No user argument: the claim is always for the caller. Returns why, when it
@@ -633,6 +819,13 @@ begin
   select * into v_aff from public.affiliate_accounts where id = (r ->> 'affiliate_id')::uuid;
   if not found or v_aff.status <> 'active' then return jsonb_build_object('ok', false, 'reason', 'unknown_or_inactive_code'); end if;
   if v_aff.user_id = v_uid then return jsonb_build_object('ok', false, 'reason', 'self_referral'); end if;
+  -- a checkout-only creator is credited from the Stripe sale, never from a click
+  if v_aff.attribution_mode = 'checkout_only' then
+    return jsonb_build_object('ok', false, 'reason', 'attributed_at_checkout');
+  end if;
+  if public.affiliate_has_prior_paid_invoice(v_uid, null, null) then
+    return jsonb_build_object('ok', false, 'reason', 'existing_customer');
+  end if;
   select * into v_set from public.affiliate_settings where id = 1;
   if v_hash is not null then
     select min(created_at) into v_click from public.affiliate_clicks where affiliate_id = v_aff.id and visitor_hash = v_hash;
@@ -713,11 +906,15 @@ grant execute on function public.affiliate_apply(text, text, text) to authentica
 create or replace function public.affiliate_campaign_apply_stripe(p_event_id text)
 returns text language plpgsql security definer set search_path = public, pg_temp as $$
 declare e record; o jsonb; cp jsonb; v_at timestamptz; snap jsonb; v_code text; v_promo text; v_coupon text; n int := 0;
+  v_live boolean;
 begin
   select * into e from public.stripe_events where id = p_event_id;
   if not found then return 'no_event'; end if;
   o := public.affiliate_stripe_object(e.payload);
   v_at := coalesce(e.stripe_created, e.created_at);
+  -- a test-mode promotion code fills the test column and never the live one;
+  -- the visitor-facing snapshot follows live Stripe wherever a live id exists
+  v_live := public.affiliate_stripe_livemode(e.payload);
   if o ->> 'object' = 'promotion_code' or e.type like 'promotion_code.%' then
     v_promo := o ->> 'id'; v_code := upper(nullif(btrim(coalesce(o ->> 'code', '')), ''));
     cp := case when jsonb_typeof(o -> 'coupon') = 'object' then o -> 'coupon'
@@ -730,12 +927,17 @@ begin
       'currency', upper(cp ->> 'currency'), 'duration', cp -> 'duration', 'duration_in_months', cp -> 'duration_in_months',
       'coupon_valid', cp -> 'valid', 'event_id', e.id, 'event_type', e.type, 'event_at', v_at));
     update public.affiliate_campaigns c
-       set stripe_snapshot = coalesce(c.stripe_snapshot, '{}'::jsonb) || snap,
-           stripe_promotion_code_id = coalesce(c.stripe_promotion_code_id, v_promo),
-           stripe_coupon_id = coalesce(c.stripe_coupon_id, v_coupon),
-           stripe_verified_at = v_at
-     where (c.stripe_promotion_code_id = v_promo
-            or (c.stripe_promotion_code_id is null and v_code is not null and upper(coalesce(c.stripe_promo_code, c.code)) = v_code))
+       set stripe_snapshot = case when v_live or c.stripe_promotion_code_id is null
+                                  then coalesce(c.stripe_snapshot, '{}'::jsonb) || snap else c.stripe_snapshot end,
+           stripe_promotion_code_id = case when v_live then coalesce(c.stripe_promotion_code_id, v_promo) else c.stripe_promotion_code_id end,
+           stripe_test_promotion_code_id = case when v_live then c.stripe_test_promotion_code_id
+                                                else coalesce(c.stripe_test_promotion_code_id, v_promo) end,
+           stripe_coupon_id = case when v_live or c.stripe_promotion_code_id is null
+                                   then coalesce(c.stripe_coupon_id, v_coupon) else c.stripe_coupon_id end,
+           stripe_verified_at = case when v_live or c.stripe_promotion_code_id is null then v_at else c.stripe_verified_at end
+     where (c.stripe_promotion_code_id = v_promo or c.stripe_test_promotion_code_id = v_promo
+            or (v_code is not null and upper(coalesce(c.stripe_promo_code, c.code)) = v_code
+                and (case when v_live then c.stripe_promotion_code_id else c.stripe_test_promotion_code_id end) is null))
        and (c.stripe_verified_at is null or c.stripe_verified_at <= v_at);
     get diagnostics n = row_count;
     return 'promotion_code:' || n;
@@ -772,6 +974,186 @@ begin
 end $$;
 revoke all on function public.affiliate_campaign_stripe_sync() from public, anon, authenticated;
 
+-- ── attribution from the checkout: what Stripe says about the sale ─────────
+-- Asked for an account that has no attribution yet, on any event that can
+-- describe its sale (so a checkout whose own deliveries arrived unresolved is
+-- still credited when they are). Strongest evidence first, and no fourth:
+--   1. the promotion-code id on the event's session, subscription or invoice,
+--      or the one the webhook recorded on subscriptions, matched against a
+--      campaign's live or test-mode stripe_promotion_code_id;
+--   2. the checkout's stamp: metadata.affiliate (the creator's slug) and
+--      metadata.affiliate_code (which of their campaigns);
+--   3. the human code the webhook wrote to subscriptions.referral_code.
+-- The campaign must have been in force when the subscription was bought. Never
+-- the creator's own account, and never an account that has already paid an
+-- invoice on another subscription. The first attribution wins: nothing here
+-- can replace one (the primary key and the guard trigger refuse it too).
+create or replace function public.affiliate_attribute_from_checkout(p_user uuid, p_event_id text)
+returns text language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  e record; o jsonb; v_at timestamptz; v_sale timestamptz; v_sub record; v_sub_id text; v_cust text;
+  v_promo text; v_meta jsonb; v_slug text; v_mcode text; v_code text; v_source text; v_terms jsonb;
+  v_camp public.affiliate_campaigns%rowtype; v_aff public.affiliate_accounts%rowtype;
+  v_has_camp boolean := false; v_has_aff boolean := false;
+begin
+  if exists (select 1 from public.affiliate_attributions where user_id = p_user) then return 'already_attributed'; end if;
+  select * into e from public.stripe_events where id = p_event_id;
+  if not found then return 'no_event'; end if;
+  o := public.affiliate_stripe_object(e.payload);
+  if o is null then return 'no_payload'; end if;
+  v_at := coalesce(e.stripe_created, e.created_at);
+  select s.referral_code, s.stripe_promotion_code_id, s.created_at into v_sub
+    from public.subscriptions s where s.user_id = p_user;
+  v_sub_id := case when o ->> 'object' = 'subscription' or e.type like 'customer.subscription.%' then o ->> 'id'
+                   else coalesce(public.affiliate_stripe_id(o -> 'subscription'),
+                                 public.affiliate_stripe_id(o -> 'parent' -> 'subscription_details' -> 'subscription'),
+                                 e.subscription_id) end;
+  v_cust := coalesce(e.customer_id, public.affiliate_stripe_id(o -> 'customer'));
+  -- when the subscription was bought: its own start, the checkout's, else the row's
+  v_sale := coalesce(case when o ->> 'object' = 'subscription' then public.affiliate_stripe_ts(o -> 'start_date') end,
+                     case when o ->> 'object' in ('subscription', 'checkout.session') then public.affiliate_stripe_ts(o -> 'created') end,
+                     v_sub.created_at, v_at);
+
+  -- 1. the promotion-code id Stripe applied
+  v_promo := coalesce(public.affiliate_event_promotion_code(o), v_sub.stripe_promotion_code_id);
+  if v_promo is not null then
+    select * into v_camp from public.affiliate_campaigns
+     where (stripe_promotion_code_id = v_promo or stripe_test_promotion_code_id = v_promo)
+       and public.affiliate_campaign_in_force(id, v_sale) limit 1;
+    if found then v_has_camp := true; v_source := 'promo_code'; end if;
+  end if;
+  -- 2. the checkout's metadata stamp
+  if not v_has_camp then
+    v_meta := public.affiliate_event_metadata(o);
+    v_slug := lower(nullif(btrim(v_meta ->> 'affiliate'), ''));
+    v_mcode := upper(nullif(btrim(v_meta ->> 'affiliate_code'), ''));
+    if v_slug is not null then
+      select * into v_aff from public.affiliate_accounts where slug = v_slug and status = 'active';
+      if found then
+        v_has_aff := true; v_source := 'metadata';
+        select * into v_camp from public.affiliate_campaigns
+         where affiliate_id = v_aff.id and (v_mcode is null or upper(code) = v_mcode)
+           and public.affiliate_campaign_in_force(id, v_sale)
+         order by created_at limit 1;
+        v_has_camp := found;
+      end if;
+    end if;
+  end if;
+  -- 3. the code the customer typed, as the webhook named it
+  if not v_has_camp and not v_has_aff then
+    v_code := upper(nullif(btrim(v_sub.referral_code), ''));
+    if v_code is not null then
+      select * into v_camp from public.affiliate_campaigns
+       where (upper(code) = v_code or upper(stripe_promo_code) = v_code)
+         and public.affiliate_campaign_in_force(id, v_sale) limit 1;
+      if found then
+        v_has_camp := true; v_source := 'promo_code';
+      else
+        select * into v_aff from public.affiliate_accounts
+         where status in ('active', 'paused') and (upper(code) = v_code or upper(stripe_promo_code) = v_code) limit 1;
+        if found then v_has_aff := true; v_source := 'promo_code'; end if;
+      end if;
+    end if;
+  end if;
+  if not v_has_camp and not v_has_aff then return 'no_evidence'; end if;
+  if v_has_camp then select * into v_aff from public.affiliate_accounts where id = v_camp.affiliate_id; end if;
+  if v_aff.user_id = p_user then return 'self_referral'; end if;
+  if public.affiliate_has_prior_paid_invoice(p_user, v_cust, v_sub_id) then return 'prior_paid_invoice'; end if;
+  if v_has_camp then v_terms := public.affiliate_campaign_terms(v_camp.id); end if;
+  insert into public.affiliate_attributions (user_id, affiliate_id, code, source, campaign_id, term_rate, term_type, term_months, terms_at)
+  values (p_user, v_aff.id, case when v_has_camp then v_camp.code else v_aff.code end, v_source,
+          case when v_has_camp then v_camp.id end, (v_terms ->> 'rate')::numeric, v_terms ->> 'type', (v_terms ->> 'months')::int,
+          case when v_has_camp then now() end)
+  on conflict (user_id) do nothing;
+  if not found then return 'already_attributed'; end if;
+  return 'attributed:' || v_source;
+end $$;
+revoke all on function public.affiliate_attribute_from_checkout(uuid, text) from public, anon, authenticated;
+
+-- ── refunds and disputes: a negative row against the same invoice ───────────
+-- The adjustment is the commission's share of the money taken back:
+--   commission × refunded ÷ charged   for charge.refunded (amount_refunded is
+--                                     the charge's running total, so each
+--                                     delivery books only what is new)
+--   commission × disputed ÷ paid      for charge.dispute.created
+-- and across every refund and dispute on the invoice it never takes back more
+-- than the commission booked for it. The accrual is never voided or edited: it
+-- keeps its row and its status, and the clawback nets it. A charge names its
+-- invoice only on API versions before 2025-03-31 and a dispute never does, so
+-- both are also matched by the charge or payment intent that paid it.
+create or replace function public.affiliate_book_adjustment(p_event_id text)
+returns text language plpgsql security definer set search_path = public, pg_temp as $$
+declare
+  e record; o jsonb; v_at timestamptz; v_kind text; v_charge text; v_pi text; v_inv text; v_base bigint; v_part bigint;
+  v_dedupe text; v_paid record; v_com public.affiliate_commissions%rowtype; v_has_com boolean; v_conv bigint;
+  v_target bigint; v_same bigint; v_all bigint; v_book bigint;
+begin
+  select * into e from public.stripe_events where id = p_event_id;
+  if not found then return 'no_event'; end if;
+  o := public.affiliate_stripe_object(e.payload);
+  if o is null then return 'no_payload'; end if;
+  v_at := coalesce(e.stripe_created, e.created_at);
+  if e.type = 'charge.refunded' then
+    v_kind := 'refunded';
+    v_charge := nullif(o ->> 'id', '');
+    v_inv := public.affiliate_stripe_id(o -> 'invoice');
+    v_base := case when (o ->> 'amount') ~ '^[0-9]+$' then (o ->> 'amount')::bigint end;
+    v_part := case when (o ->> 'amount_refunded') ~ '^[0-9]+$' then (o ->> 'amount_refunded')::bigint end;
+    v_dedupe := 'refund:' || coalesce(v_charge, e.id) || ':' || coalesce(v_part::text, '?');
+  else
+    v_kind := 'disputed';
+    v_charge := public.affiliate_stripe_id(o -> 'charge');
+    v_part := case when (o ->> 'amount') ~ '^[0-9]+$' then (o ->> 'amount')::bigint end;
+    v_dedupe := 'dispute:' || coalesce(nullif(o ->> 'id', ''), e.id);
+  end if;
+  v_pi := public.affiliate_stripe_id(o -> 'payment_intent');
+  if v_part is null or v_part <= 0 then return v_kind || ':unreadable'; end if;
+  -- the attributed payment this money came back from
+  select * into v_paid from public.affiliate_conversions
+   where kind in ('paid', 'renewal')
+     and ((v_inv is not null and stripe_invoice_id = v_inv)
+          or (v_inv is null and ((v_charge is not null and stripe_charge_id = v_charge)
+                                 or (v_pi is not null and stripe_payment_intent_id = v_pi))))
+   order by id limit 1;
+  if not found then return v_kind || ':not_an_attributed_payment'; end if;
+  v_inv := v_paid.stripe_invoice_id;
+  if v_kind = 'disputed' then v_base := v_paid.amount_cents; end if;
+  if v_base is null or v_base <= 0 then return v_kind || ':unreadable'; end if;
+  -- one adjustment at a time per invoice: the accrual row is the lock
+  select * into v_com from public.affiliate_commissions
+   where stripe_invoice_id = v_inv and kind = 'accrual' and status <> 'void' for update;
+  v_has_com := found;
+  insert into public.affiliate_conversions (affiliate_id, user_id, kind, dedupe_key, stripe_event_id, stripe_invoice_id,
+       stripe_subscription_id, stripe_customer_id, stripe_charge_id, stripe_payment_intent_id, amount_cents, currency,
+       occurred_at, livemode)
+  values (v_paid.affiliate_id, v_paid.user_id, v_kind, v_dedupe, e.id, v_inv, v_paid.stripe_subscription_id,
+          v_paid.stripe_customer_id, coalesce(v_charge, v_paid.stripe_charge_id), coalesce(v_pi, v_paid.stripe_payment_intent_id),
+          v_part, upper(coalesce(o ->> 'currency', v_paid.currency, 'usd')), v_at,
+          coalesce(v_paid.livemode, public.affiliate_stripe_livemode(e.payload)))
+  on conflict (dedupe_key) do nothing
+  returning id into v_conv;
+  if v_conv is null then return v_kind || ':already_recorded'; end if;
+  if not v_has_com or v_com.amount_cents <= 0 then return v_kind || ':no_commission'; end if;
+  v_target := least(v_com.amount_cents, round(v_com.amount_cents::numeric * least(v_part, v_base) / v_base)::bigint);
+  -- already taken back from this invoice: by every adjustment, and by earlier
+  -- refunds of this same charge (which amount_refunded already includes)
+  select coalesce(-sum(c.amount_cents), 0),
+         coalesce(-sum(c.amount_cents) filter (where cv.kind = 'refunded' and cv.stripe_charge_id is not distinct from v_charge), 0)
+    into v_all, v_same
+    from public.affiliate_commissions c join public.affiliate_conversions cv on cv.id = c.conversion_id
+   where c.stripe_invoice_id = v_inv and c.kind = 'clawback' and c.status <> 'void';
+  v_book := case when v_kind = 'refunded' then v_target - v_same else v_target end;
+  v_book := least(v_book, v_com.amount_cents - v_all);
+  if v_book <= 0 then return v_kind || ':nothing_left_to_take_back'; end if;
+  insert into public.affiliate_commissions (affiliate_id, user_id, conversion_id, stripe_invoice_id, kind, basis_cents, rate,
+       amount_cents, currency, status, eligible_at, stripe_customer_id, invoice_paid_at, occurred_at, livemode)
+  values (v_com.affiliate_id, v_com.user_id, v_conv, v_inv, 'clawback', 0, v_com.rate, -v_book, v_com.currency, 'pending', v_at,
+          v_com.stripe_customer_id, v_com.invoice_paid_at, v_at, v_com.livemode)
+  on conflict do nothing;
+  return v_kind || ':clawback';
+end $$;
+revoke all on function public.affiliate_book_adjustment(text) from public, anon, authenticated;
+
 -- ── processing one Stripe event into conversions and commissions ────────────
 create or replace function public.affiliate_process_event(p_event_id text)
 returns text language plpgsql security definer set search_path = public, pg_temp as $$
@@ -779,17 +1161,23 @@ declare
   e record; o jsonb; v_user uuid; v_attr record; v_aff public.affiliate_accounts%rowtype;
   v_set public.affiliate_settings%rowtype; v_sub_id text; v_cust text; v_inv text; v_status text;
   v_amt bigint; v_tax bigint; v_basis bigint; v_rate numeric; v_conv bigint; v_first timestamptz;
-  v_at timestamptz; v_kind text; v_charge_amt bigint; v_refunded bigint; v_com record; v_promo text; v_has boolean;
-  v_camp public.affiliate_campaigns%rowtype; v_sub_created timestamptz; v_terms jsonb; v_months int;
+  v_at timestamptz; v_kind text; v_months int; v_live boolean; v_paid_at timestamptz; v_period timestamptz;
+  v_why text;
 begin
   select * into e from public.stripe_events where id = p_event_id;
   if not found then return 'no_event'; end if;
   if e.type like 'promotion_code.%' or e.type like 'coupon.%' then
     return public.affiliate_campaign_apply_stripe(e.id);
   end if;
+  -- a refund or a dispute is matched to the payment it takes money back from,
+  -- not to an account: a dispute does not even name its customer
+  if e.type in ('charge.refunded', 'charge.dispute.created') then
+    return public.affiliate_book_adjustment(e.id);
+  end if;
   o := public.affiliate_stripe_object(e.payload);
   if o is null then return 'no_payload'; end if;
   v_at := coalesce(e.stripe_created, e.created_at);
+  v_live := public.affiliate_stripe_livemode(e.payload);
   v_cust := coalesce(e.customer_id, public.affiliate_stripe_id(o -> 'customer'));
   v_sub_id := coalesce(e.subscription_id,
                        public.affiliate_stripe_id(o -> 'subscription'),
@@ -806,36 +1194,11 @@ begin
   if v_user is null then return 'unresolved'; end if;
 
   select * into v_attr from public.affiliate_attributions where user_id = v_user and status = 'active';
-  v_has := found;
-  if not v_has then
-    -- a sale made with a partner's promotion code, and no link, is still theirs
-    select upper(nullif(btrim(referral_code), '')), created_at into v_promo, v_sub_created from public.subscriptions where user_id = v_user;
-    if v_promo is not null then
-      -- a campaign's code, in force when the subscription was bought, first
-      select * into v_camp from public.affiliate_campaigns
-       where (upper(code) = v_promo or upper(stripe_promo_code) = v_promo)
-         and public.affiliate_campaign_in_force(id, coalesce(v_sub_created, v_at)) limit 1;
-      if found then
-        select * into v_aff from public.affiliate_accounts where id = v_camp.affiliate_id;
-        if v_aff.user_id is distinct from v_user then
-          v_terms := public.affiliate_campaign_terms(v_camp.id);
-          insert into public.affiliate_attributions (user_id, affiliate_id, code, source, campaign_id, term_rate, term_type, term_months, terms_at)
-          values (v_user, v_aff.id, v_camp.code, 'promo_code', v_camp.id, (v_terms ->> 'rate')::numeric, v_terms ->> 'type',
-                  (v_terms ->> 'months')::int, now())
-          on conflict (user_id) do nothing;
-        end if;
-      else
-        select * into v_aff from public.affiliate_accounts
-         where status in ('active','paused') and (upper(code) = v_promo or upper(stripe_promo_code) = v_promo) limit 1;
-        if found and v_aff.user_id is distinct from v_user then
-          insert into public.affiliate_attributions (user_id, affiliate_id, code, source)
-          values (v_user, v_aff.id, v_aff.code, 'promo_code') on conflict (user_id) do nothing;
-        end if;
-      end if;
-      select * into v_attr from public.affiliate_attributions where user_id = v_user and status = 'active';
-      v_has := found;
-    end if;
-    if not v_has then return 'unattributed'; end if;
+  if not found then
+    -- a sale made through a creator's checkout (or their typed code) is theirs
+    v_why := public.affiliate_attribute_from_checkout(v_user, e.id);
+    select * into v_attr from public.affiliate_attributions where user_id = v_user and status = 'active';
+    if not found then return 'unattributed:' || coalesce(v_why, '?'); end if;
   end if;
   select * into v_aff from public.affiliate_accounts where id = v_attr.affiliate_id;
   if v_aff.user_id = v_user then return 'self_referral'; end if;
@@ -844,13 +1207,15 @@ begin
   if e.type in ('customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted') then
     v_status := case when e.type = 'customer.subscription.deleted' then 'canceled' else o ->> 'status' end;
     if v_status = 'trialing' then
-      insert into public.affiliate_conversions (affiliate_id, user_id, kind, dedupe_key, stripe_event_id, stripe_subscription_id, occurred_at)
-      values (v_aff.id, v_user, 'trial_started', 'trial:' || v_user, e.id, v_sub_id, v_at)
+      insert into public.affiliate_conversions (affiliate_id, user_id, kind, dedupe_key, stripe_event_id, stripe_subscription_id,
+                                                stripe_customer_id, occurred_at, livemode)
+      values (v_aff.id, v_user, 'trial_started', 'trial:' || v_user, e.id, v_sub_id, v_cust, v_at, v_live)
       on conflict (dedupe_key) do nothing;
     elsif v_status = 'canceled' or coalesce((o ->> 'cancel_at_period_end')::boolean, false) then
-      insert into public.affiliate_conversions (affiliate_id, user_id, kind, dedupe_key, stripe_event_id, stripe_subscription_id, occurred_at, note)
-      values (v_aff.id, v_user, 'canceled', 'cancel:' || coalesce(v_sub_id, v_user::text), e.id, v_sub_id, v_at,
-              case when v_status = 'canceled' then 'subscription ended' else 'set to cancel at period end' end)
+      insert into public.affiliate_conversions (affiliate_id, user_id, kind, dedupe_key, stripe_event_id, stripe_subscription_id,
+                                                stripe_customer_id, occurred_at, note, livemode)
+      values (v_aff.id, v_user, 'canceled', 'cancel:' || coalesce(v_sub_id, v_user::text), e.id, v_sub_id, v_cust, v_at,
+              case when v_status = 'canceled' then 'subscription ended' else 'set to cancel at period end' end, v_live)
       on conflict (dedupe_key) do nothing;
     end if;
     return 'subscription:' || coalesce(v_status, 'unknown');
@@ -859,16 +1224,25 @@ begin
   if e.type in ('invoice.payment_succeeded', 'invoice.paid') then
     v_inv := o ->> 'id';
     v_amt := case when (o ->> 'amount_paid') ~ '^[0-9]+$' then (o ->> 'amount_paid')::bigint else 0 end;
+    -- a $0 invoice (the one a free trial opens with) earns nothing
     if v_inv is null or v_amt <= 0 then return 'invoice:no_money'; end if;
     v_tax := case when (o ->> 'tax') ~ '^[0-9]+$' then (o ->> 'tax')::bigint
                   else coalesce((select sum((t ->> 'amount')::bigint) from jsonb_array_elements(coalesce(o -> 'total_taxes', '[]'::jsonb)) t
                                   where (t ->> 'amount') ~ '^[0-9]+$'), 0) end;
     v_basis := greatest(v_amt - coalesce(v_tax, 0), 0);
-    select min(occurred_at) into v_first from public.affiliate_conversions where user_id = v_user and kind = 'paid';
+    -- the invoice's own dates: when Stripe marked it paid, and the billing
+    -- period it paid for (both on Stripe's clock, a test clock's included)
+    v_paid_at := coalesce(public.affiliate_stripe_ts(o -> 'status_transitions' -> 'paid_at'), v_at);
+    v_period := coalesce(public.affiliate_invoice_period_start(o), v_paid_at);
+    select min(coalesce(period_start, occurred_at)) into v_first from public.affiliate_conversions
+     where user_id = v_user and kind in ('paid', 'renewal');
     v_kind := case when v_first is null then 'paid' else 'renewal' end;
     insert into public.affiliate_conversions (affiliate_id, user_id, kind, dedupe_key, stripe_event_id, stripe_invoice_id,
-                                              stripe_subscription_id, amount_cents, currency, occurred_at)
-    values (v_aff.id, v_user, v_kind, 'invoice:' || v_inv, e.id, v_inv, v_sub_id, v_amt, upper(coalesce(o ->> 'currency', 'usd')), v_at)
+                                              stripe_subscription_id, amount_cents, currency, occurred_at, stripe_customer_id,
+                                              stripe_charge_id, stripe_payment_intent_id, period_start, livemode)
+    values (v_aff.id, v_user, v_kind, 'invoice:' || v_inv, e.id, v_inv, v_sub_id, v_amt, upper(coalesce(o ->> 'currency', 'usd')),
+            v_paid_at, v_cust, public.affiliate_invoice_payment_ref(o, 'charge'), public.affiliate_invoice_payment_ref(o, 'payment_intent'),
+            v_period, v_live)
     on conflict (dedupe_key) do nothing
     returning id into v_conv;
     if v_conv is null then return 'invoice:already_recorded'; end if;
@@ -882,44 +1256,20 @@ begin
     else
       v_rate := coalesce(v_aff.commission_rate, v_set.default_commission_rate); v_months := v_set.commission_duration_months;
     end if;
-    if v_first is not null and v_months is not null
-       and v_at > v_first + make_interval(months => v_months) then
+    -- the window is counted in billing periods from the first paid one's
+    -- start, exclusive: 12 months earns on invoices 1 to 12, never a 13th
+    if v_months is not null
+       and v_period >= least(coalesce(v_first, v_period), v_period) + make_interval(months => v_months) then
       return 'invoice:past_commission_duration';
     end if;
     insert into public.affiliate_commissions (affiliate_id, user_id, conversion_id, stripe_invoice_id, kind, basis_cents, rate,
-                                              amount_cents, currency, status, eligible_at)
+                                              amount_cents, currency, status, eligible_at, stripe_customer_id, invoice_paid_at,
+                                              occurred_at, livemode)
     values (v_aff.id, v_user, v_conv, v_inv, 'accrual', v_basis, v_rate, round(v_basis * v_rate)::bigint,
-            upper(coalesce(o ->> 'currency', 'usd')), 'pending', v_at + make_interval(days => v_set.hold_days))
-    on conflict on constraint affiliate_commissions_once do nothing;
+            upper(coalesce(o ->> 'currency', 'usd')), 'pending', v_paid_at + make_interval(days => v_set.hold_days),
+            v_cust, v_paid_at, v_paid_at, v_live)
+    on conflict do nothing;
     return 'invoice:' || v_kind;
-  end if;
-
-  if e.type = 'charge.refunded' then
-    v_inv := public.affiliate_stripe_id(o -> 'invoice');
-    v_charge_amt := case when (o ->> 'amount') ~ '^[0-9]+$' then (o ->> 'amount')::bigint else null end;
-    v_refunded := case when (o ->> 'amount_refunded') ~ '^[0-9]+$' then (o ->> 'amount_refunded')::bigint else null end;
-    if v_inv is null or v_charge_amt is null or v_refunded is null or v_refunded <= 0 then return 'refund:unreadable'; end if;
-    insert into public.affiliate_conversions (affiliate_id, user_id, kind, dedupe_key, stripe_event_id, stripe_invoice_id,
-                                              amount_cents, currency, occurred_at)
-    values (v_aff.id, v_user, 'refunded', 'refund:' || coalesce(o ->> 'id', e.id) || ':' || v_refunded, e.id, v_inv,
-            v_refunded, upper(coalesce(o ->> 'currency', 'usd')), v_at)
-    on conflict (dedupe_key) do nothing
-    returning id into v_conv;
-    if v_conv is null then return 'refund:already_recorded'; end if;
-    select * into v_com from public.affiliate_commissions where stripe_invoice_id = v_inv and kind = 'accrual' order by id limit 1;
-    if not found then return 'refund:no_commission'; end if;
-    if v_refunded >= v_charge_amt and v_com.status in ('pending', 'approved') then
-      update public.affiliate_commissions set status = 'void', void_reason = 'invoice refunded in full' where id = v_com.id;
-      return 'refund:voided';
-    end if;
-    -- a paid commission, or a partial refund: a negative row, proportional
-    insert into public.affiliate_commissions (affiliate_id, user_id, conversion_id, stripe_invoice_id, kind, basis_cents, rate,
-                                              amount_cents, currency, status, eligible_at)
-    values (v_com.affiliate_id, v_com.user_id, v_conv, v_inv, 'clawback', 0, v_com.rate,
-            -least(v_com.amount_cents, round(v_com.amount_cents::numeric * v_refunded / v_charge_amt)::bigint),
-            v_com.currency, 'pending', v_at)
-    on conflict on constraint affiliate_commissions_once do nothing;
-    return 'refund:clawback';
   end if;
   return 'ignored:' || e.type;
 end $$;
@@ -949,8 +1299,9 @@ returns jsonb language plpgsql security definer set search_path = public, pg_tem
 declare r record; n int := 0; t int := 0; a int := 0;
 begin
   for r in select id from public.stripe_events
-            where type in ('customer.subscription.created','customer.subscription.updated','customer.subscription.deleted',
-                           'invoice.payment_succeeded','invoice.paid','charge.refunded')
+            where type in ('checkout.session.completed',
+                           'customer.subscription.created','customer.subscription.updated','customer.subscription.deleted',
+                           'invoice.payment_succeeded','invoice.paid','charge.refunded','charge.dispute.created')
               and created_at > now() - make_interval(days => greatest(1, least(p_days, 400)))
             order by coalesce(stripe_created, created_at), id loop
     perform public.affiliate_process_event(r.id); n := n + 1;
@@ -977,6 +1328,146 @@ revoke all on function public.affiliate_reconcile(int) from public, anon, authen
 do $g$ begin
   if exists (select 1 from pg_roles where rolname = 'service_role') then
     execute 'grant execute on function public.affiliate_reconcile(int) to service_role';
+  end if;
+end $g$;
+
+-- ── the checkout's two doors (service role only) ────────────────────────────
+-- create_checkout_session asks, for a code a visitor arrived with: is it a
+-- campaign in force right now, whose creator has a slug, for an account that
+-- is not the creator and has never paid us? The answer names the creator (the
+-- checkout then reads <SLUG>_PROMO_CODE_ID from its env) and the promotion
+-- code already registered for this Stripe mode, if any.
+create or replace function public.affiliate_checkout_code(p_code text, p_user uuid, p_livemode boolean default true)
+returns jsonb language plpgsql stable security definer set search_path = public, pg_temp as $$
+declare r jsonb; c public.affiliate_campaigns%rowtype; a public.affiliate_accounts%rowtype;
+begin
+  r := public.affiliate_resolve_code(p_code);
+  if not coalesce((r ->> 'ok')::boolean, false) or r ->> 'campaign_id' is null
+     or not coalesce((r ->> 'in_force')::boolean, false) then
+    return jsonb_build_object('ok', false, 'reason', coalesce(r ->> 'reason', 'no_campaign_in_force'));
+  end if;
+  select * into c from public.affiliate_campaigns where id = (r ->> 'campaign_id')::uuid;
+  select * into a from public.affiliate_accounts where id = c.affiliate_id;
+  if a.slug is null then return jsonb_build_object('ok', false, 'reason', 'creator_has_no_slug'); end if;
+  if a.user_id = p_user then return jsonb_build_object('ok', false, 'reason', 'self_referral'); end if;
+  if public.affiliate_has_prior_paid_invoice(p_user, null, null) then
+    return jsonb_build_object('ok', false, 'reason', 'returning_customer');
+  end if;
+  return jsonb_build_object('ok', true, 'slug', a.slug, 'affiliate_id', a.id, 'campaign_id', c.id, 'code', c.code,
+    'promotion_code_id', case when coalesce(p_livemode, true) then c.stripe_promotion_code_id else c.stripe_test_promotion_code_id end);
+end $$;
+revoke all on function public.affiliate_checkout_code(text, uuid, boolean) from public, anon, authenticated;
+
+-- The promotion code the checkout is about to apply, written onto the
+-- campaign for that Stripe mode the first time and never overwritten — so the
+-- id lives in the checkout's env, not in any file, and the attribution above
+-- can match it by id. 'registered' | 'same' | 'conflict' (a different id is
+-- already on the campaign, or this id is another campaign's) | 'invalid'.
+create or replace function public.affiliate_register_promotion_code(p_campaign uuid, p_promo text, p_livemode boolean default true)
+returns text language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_cur text;
+begin
+  if p_promo is null or p_promo !~ '^promo_[A-Za-z0-9]{1,64}$' then return 'invalid'; end if;
+  if coalesce(p_livemode, true) then
+    update public.affiliate_campaigns set stripe_promotion_code_id = p_promo where id = p_campaign and stripe_promotion_code_id is null;
+  else
+    update public.affiliate_campaigns set stripe_test_promotion_code_id = p_promo where id = p_campaign and stripe_test_promotion_code_id is null;
+  end if;
+  if found then return 'registered'; end if;
+  select case when coalesce(p_livemode, true) then stripe_promotion_code_id else stripe_test_promotion_code_id end into v_cur
+    from public.affiliate_campaigns where id = p_campaign;
+  if not found then return 'unknown_campaign'; end if;
+  return case when v_cur = p_promo then 'same' else 'conflict' end;
+exception when unique_violation then
+  return 'conflict';
+end $$;
+revoke all on function public.affiliate_register_promotion_code(uuid, text, boolean) from public, anon, authenticated;
+
+-- ── the monthly payout statement (service role only) ────────────────────────
+--   select * from public.affiliate_statement('connor', date '2026-11-01');
+-- One row per commission booked in that calendar month (UTC): a PAYMENT per
+-- paid invoice (the date Stripe marked it paid, what was eligible — the amount
+-- paid less tax — the rate and the commission) and an ADJUSTMENT per refund
+-- or dispute booked that month (negative, with the date of the payment it
+-- comes back from), then one TOTAL row. A customer appears only as the last 4
+-- characters of their Stripe customer id. PAYOUT RULE: a month's collections
+-- are paid by the 15th of the second month after it (October's by December
+-- 15) — payout_due, on every row. Test-mode rows are left out; pass
+-- p_livemode => false to read only those (a dry run). Voided rows never show.
+create or replace function public.affiliate_statement(affiliate_slug text, month date, p_livemode boolean default true)
+returns table (line int, row_type text, customer_last4 text, payment_date date, invoice_paid_date date,
+               eligible_amount_cents bigint, adjustment_cents bigint, rate numeric, commission_cents bigint,
+               status text, payout_due date)
+language plpgsql stable security definer set search_path = public, pg_temp as $$
+#variable_conflict use_column
+declare v_aff uuid; v_month date; v_from timestamptz; v_to timestamptz; v_due date;
+begin
+  if affiliate_statement.month is null then raise exception 'affiliate_statement: month is required'; end if;
+  v_month := make_date(extract(year from affiliate_statement.month)::int, extract(month from affiliate_statement.month)::int, 1);
+  select a.id into v_aff from public.affiliate_accounts a where a.slug = lower(btrim(affiliate_statement.affiliate_slug));
+  if v_aff is null then
+    raise exception 'affiliate_statement: no creator with slug %', affiliate_statement.affiliate_slug using errcode = 'no_data_found';
+  end if;
+  v_from := v_month::timestamp at time zone 'UTC';
+  v_to := (v_month + interval '1 month')::timestamp at time zone 'UTC';
+  v_due := (v_month + interval '2 months' + interval '14 days')::date;
+  return query
+  with r as (
+    select c.id, c.kind, c.stripe_customer_id, coalesce(c.occurred_at, c.invoice_paid_at, c.created_at) as at,
+           c.invoice_paid_at, c.basis_cents, c.amount_cents, c.rate, c.status
+      from public.affiliate_commissions c
+     where c.affiliate_id = v_aff and c.status <> 'void'
+       and coalesce(c.livemode, true) = coalesce(p_livemode, true)
+       and coalesce(c.occurred_at, c.invoice_paid_at, c.created_at) >= v_from
+       and coalesce(c.occurred_at, c.invoice_paid_at, c.created_at) < v_to
+  ), l as (
+    select (row_number() over (order by r.at, r.id))::int as line,
+           case when r.kind = 'accrual' then 'payment' else 'adjustment' end as row_type,
+           nullif(right(coalesce(r.stripe_customer_id, ''), 4), '') as customer_last4,
+           (r.at at time zone 'UTC')::date as payment_date,
+           (r.invoice_paid_at at time zone 'UTC')::date as invoice_paid_date,
+           case when r.kind = 'accrual' then r.basis_cents end as eligible_amount_cents,
+           case when r.kind = 'clawback' then r.amount_cents end as adjustment_cents,
+           r.rate, r.amount_cents as commission_cents, r.status
+      from r
+  )
+  select l.line, l.row_type, l.customer_last4, l.payment_date, l.invoice_paid_date, l.eligible_amount_cents,
+         l.adjustment_cents, l.rate, l.commission_cents, l.status, v_due
+    from l
+  union all
+  select coalesce(max(l.line), 0) + 1, 'total', null, null, null,
+         coalesce(sum(l.eligible_amount_cents), 0)::bigint, coalesce(sum(l.adjustment_cents), 0)::bigint, null,
+         coalesce(sum(l.commission_cents), 0)::bigint, null, v_due
+    from l
+  order by 1;
+end $$;
+revoke all on function public.affiliate_statement(text, date, boolean) from public, anon, authenticated;
+
+-- ── public.affiliates: one row per creator code, in the spec's own words ────
+-- (id, slug, display_name, stripe_promotion_code_id, promo_code,
+-- commission_rate, earning_months, active, created_at — plus the test-mode
+-- promotion code and the campaign behind the row). A VIEW over
+-- affiliate_accounts and affiliate_campaigns, not a second table: each fact
+-- has one home. earning_months is null for a one-time commission. Service
+-- role only; no client role can read it.
+create or replace view public.affiliates with (security_invoker = true) as
+  select a.id, a.slug, a.display_name, c.stripe_promotion_code_id, c.code as promo_code, c.commission_rate,
+         case when c.commission_type = 'recurring' then coalesce(c.commission_duration_months, s.commission_duration_months) end
+           as earning_months,
+         (c.active and c.starts_at <= now() and (c.expires_at is null or now() < c.expires_at) and a.status = 'active') as active,
+         a.created_at, c.stripe_test_promotion_code_id, c.id as campaign_id, c.commission_type, a.attribution_mode
+    from public.affiliate_accounts a
+    join public.affiliate_campaigns c on c.affiliate_id = a.id
+    cross join public.affiliate_settings s
+   where s.id = 1 and a.slug is not null;
+revoke all on public.affiliates from public, anon, authenticated;
+
+do $g$ begin
+  if exists (select 1 from pg_roles where rolname = 'service_role') then
+    execute 'grant select on public.affiliates to service_role';
+    execute 'grant execute on function public.affiliate_checkout_code(text, uuid, boolean),
+             public.affiliate_register_promotion_code(uuid, text, boolean),
+             public.affiliate_statement(text, date, boolean) to service_role';
   end if;
 end $g$;
 
@@ -1343,7 +1834,10 @@ select 10, 'no signed-in-only function is callable by a signed-out visitor',
       'public.affiliate_admin_update_settings(jsonb)', 'public.affiliate_admin_commissions(bigint[], text, text, text)',
       'public.affiliate_admin_reconcile()', 'public.affiliate_stats(uuid)',
       'public.affiliate_admin_upsert_campaign(jsonb)', 'public.affiliate_admin_set_campaign_active(uuid, boolean)',
-      'public.affiliate_campaign_stats(uuid)', 'public.affiliate_resolve_code(text, timestamp with time zone)']) f
+      'public.affiliate_campaign_stats(uuid)', 'public.affiliate_resolve_code(text, timestamp with time zone)',
+      'public.affiliate_checkout_code(text, uuid, boolean)', 'public.affiliate_register_promotion_code(uuid, text, boolean)',
+      'public.affiliate_statement(text, date, boolean)', 'public.affiliate_book_adjustment(text)',
+      'public.affiliate_attribute_from_checkout(uuid, text)', 'public.affiliate_has_prior_paid_invoice(uuid, text, text)']) f
     where has_function_privilege('anon', f, 'execute')) then 'ok' else 'CHECK THIS' end
 union all
 select 11, 'campaigns: per-code terms, never deleted, no client reads them directly',
@@ -1359,4 +1853,36 @@ union all
 select 13, 'a visitor can read a code''s offer (discount as Stripe records it), never its commission',
   case when has_function_privilege('anon', 'public.affiliate_offer(text)', 'execute')
         and position('commission' in pg_get_functiondef('public.affiliate_offer(text)'::regprocedure)) = 0 then 'ok' else 'CHECK THIS' end
+union all
+select 14, 'public.affiliates (one row per creator code) is a view the service role reads and no client can',
+  case when to_regclass('public.affiliates') is not null
+        and not has_table_privilege('anon', 'public.affiliates', 'select')
+        and not has_table_privilege('authenticated', 'public.affiliates', 'select')
+        and (not exists (select 1 from pg_roles where rolname = 'service_role')
+             or has_table_privilege('service_role', 'public.affiliates', 'select')) then 'ok' else 'CHECK THIS' end
+union all
+select 15, 'one commission accrual per Stripe invoice, whatever retries',
+  case when exists (select 1 from pg_indexes where schemaname = 'public' and indexname = 'affiliate_commissions_one_accrual_per_invoice')
+       then 'ok' else 'CHECK THIS' end
+union all
+select 16, 'refunds and disputes book a capped negative row against the invoice (never a void)',
+  case when position('charge.dispute.created' in pg_get_functiondef('public.affiliate_process_event(text)'::regprocedure)) > 0
+        and position('update public.affiliate_commissions' in pg_get_functiondef('public.affiliate_book_adjustment(text)'::regprocedure)) = 0
+       then 'ok' else 'CHECK THIS' end
+union all
+select 17, 'the checkout doors and the payout statement are service-role only',
+  case when not has_function_privilege('authenticated', 'public.affiliate_statement(text, date, boolean)', 'execute')
+        and not has_function_privilege('authenticated', 'public.affiliate_checkout_code(text, uuid, boolean)', 'execute')
+        and not has_function_privilege('authenticated', 'public.affiliate_register_promotion_code(uuid, text, boolean)', 'execute')
+        and (not exists (select 1 from pg_roles where rolname = 'service_role')
+             or (has_function_privilege('service_role', 'public.affiliate_statement(text, date, boolean)', 'execute')
+                 and has_function_privilege('service_role', 'public.affiliate_checkout_code(text, uuid, boolean)', 'execute')))
+       then 'ok' else 'CHECK THIS' end
+union all
+select 18, 'a checkout-only creator is never credited by a link claim',
+  case when position('checkout_only' in pg_get_functiondef('public.affiliate_claim(text, text)'::regprocedure)) > 0
+       then 'ok' else 'CHECK THIS' end
+union all
+select 19, 'creators with a slug (each can be paid through the checkout)',
+  'ok (' || (select count(*) from public.affiliate_accounts where slug is not null)::text || ')'
 order by 1;
