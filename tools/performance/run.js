@@ -15,8 +15,9 @@
             --max-espn <n> (ESPN day reads per run, default 4)
 
    Order, every run: verify the chains (a broken chain stops the run before
-   anything is written) → capture → import → results → grade → build → verify
-   again. Each step appends only what is new, so a second run on the same
+   anything is written) → capture → research grades (the A–F grade of every
+   upcoming game, lib/edgedesk_research_grade.js) → import → results → grade →
+   settle research grades → build → verify again. Each step appends only what is new, so a second run on the same
    inputs writes nothing.
    Exit 0 = done; 1 = a chain or prefix check failed; 2 = nothing could be read.
    =========================================================================== */
@@ -28,6 +29,9 @@ const L = require('./ledger.js');
 const S = require('./sources.js');
 const PL = require('./pipeline.js');
 const B = require('./build.js');
+const RG = require('./research_grades.js');
+const GB = require('./grade_build.js');
+const G = require('../../lib/edgedesk_research_grade.js');
 
 const ROOT_DEFAULT = path.join(__dirname, '..', '..');
 
@@ -69,7 +73,10 @@ function check(root, base) {
       if (!v.ok) prefix.push({ file: rel, detail: v.detail });
     });
   }
-  return { ok: chains.ok && !prefix.length, chains, prefix };
+  /* every locked research grade must come back unchanged from its own inputs and version */
+  const reproduce = [];
+  L.readStream(root, 'research_grades').forEach((r) => { const v = G.reproduce(r); if (!v.ok) reproduce.push({ event_key: r.event_key, hash: r.hash, diffs: v.diffs || [v.why] }); });
+  return { ok: chains.ok && !prefix.length && !reproduce.length, chains, prefix, reproduce };
 }
 
 /**
@@ -94,8 +101,8 @@ async function runAll(o) {
   const native = S.makeNative(root);
 
   /* 1 CAPTURE */
+  let cur = null;
   if (o.capture !== false) {
-    let cur;
     if (o.projections) cur = { projections: o.projections }; /* tests and replays inject the contract */
     else { try { cur = S.currentProjections(root, now); } catch (e) { cur = { projections: [], error: String(e && e.message || e) }; } }
     const c = PL.capture(state, { now, projections: cur.projections, slate, run: o.run || null, git_sha: o.git_sha || null });
@@ -104,6 +111,14 @@ async function runAll(o) {
     report.steps.capture = { projections: cur.projections.length, considered: c.considered, appended: w.length, quotes: c.quotes.length, unchanged: c.unchanged, refused: c.refused, matched: c.matched, error: cur.error || null };
     log('capture: ' + w.length + ' new forecast revision(s), ' + c.quotes.length + ' quote change(s), ' + c.unchanged + ' unchanged; refused ' + JSON.stringify(c.refused));
     report.steps.capture_detail = c;
+  }
+  /* 1b RESEARCH GRADES: every upcoming game's A–F grade, from what is on file now (after the capture above) */
+  if (cur) {
+    const rg = RG.snapshot(state, { now, projections: cur.projections, slate, extras: RG.loadExtras(root), run: o.run || null, git_sha: o.git_sha || null });
+    const w = append('research_grades', rg.appended);
+    report.steps.research_grades = { considered: rg.considered, appended: w.length, unchanged: rg.unchanged, refused: rg.refused, letters: rg.letters, reproduce_failures: rg.reproduce_failures.length };
+    log('research grades: ' + w.length + ' new grade revision(s), ' + rg.unchanged + ' unchanged; letters ' + JSON.stringify(rg.letters) + '; refused ' + JSON.stringify(rg.refused));
+    report.steps.research_grades_detail = rg;
   }
   /* 2 IMPORT (the period before the ledger's first capture) */
   if (o.import !== false) {
@@ -130,6 +145,11 @@ async function runAll(o) {
   const gw = append('grades', gr.appended);
   report.steps.grade = { appended: gw.length, revisions: gw.filter((x) => x.revision > 1).length, no_snapshot: gr.no_snapshot.length };
   log('grade: ' + gw.length + ' new grade revision(s), ' + report.steps.grade.revisions + ' of them regrades');
+  /* 4b SETTLE RESEARCH GRADES: each verified result against the game's latest valid pregame grade */
+  const so = RG.settle(state, { now, native });
+  const ow = append('grade_outcomes', so.appended);
+  report.steps.grade_outcomes = { appended: ow.length, revisions: ow.filter((x) => x.revision > 1).length, no_pregame_grade: so.no_pregame_grade.length };
+  log('grade outcomes: ' + ow.length + ' new outcome revision(s); ' + so.no_pregame_grade.length + ' completed game(s) had no pregame research grade (never backfilled)');
 
   /* 5 BUILD */
   const after = L.verifyAll(root);
@@ -150,10 +170,24 @@ async function runAll(o) {
     } catch (_) { /* unreadable: leave it, report it */ duplicates.push({ file: path.relative(root, socialFile), why: 'unreadable published draft left in place' }); }
   }
   const hl = B.health(state, { capture: report.steps.capture_detail, results: res, grade: gr, duplicates, espn }, prevSummary, summary, now, after);
+  /* the research grade artifacts, and their health items folded into the one health file */
+  const gradeLive = GB.live(state, now);
+  const gpr = GB.publicRows(state, now);
+  const ggf = GB.gameFiles(gpr.rows, now);
+  const gsum = GB.buildSummary(state, gpr.rows, now, { chains, no_pregame_grade: so.no_pregame_grade, conflicts: res.conflicts, pending: res.pending });
+  gsum.games = ggf.index;
+  GB.healthItems(state, { snapshot: report.steps.research_grades_detail, settle: so }, now).forEach((i) => hl.items.push(i));
+  const LV = ['OK', 'INFO', 'WARN', 'ALERT', 'ERROR'];
+  hl.status = hl.items.reduce((w, i) => (LV.indexOf(i.level) > LV.indexOf(w) && i.level !== 'INFO' ? i.level : w), hl.status);
+  hl.counts.research_grades = (state.research_grades || []).length; hl.counts.grade_outcomes = (state.grade_outcomes || []).length;
   delete report.steps.capture_detail;
+  delete report.steps.research_grades_detail;
   const gf = B.gameFiles(pr.rows, now);
   summary.games = gf.index;
-  const outputs = Object.assign({}, gf.files, {
+  const outputs = Object.assign({}, gf.files, ggf.files, {
+    'performance/data/grades/live.json': gradeLive.live,
+    'performance/data/grades/live_detail.json': gradeLive.detail,
+    'performance/data/grades/summary.json': gsum,
     'performance/data/summary.json': summary,
     'performance/data/weekly.json': wk,
     'performance/data/health.json': hl,
@@ -161,10 +195,11 @@ async function runAll(o) {
   });
   if (social && !fs.existsSync(socialFile)) outputs[path.relative(root, socialFile)] = social;
   report.health = hl.status;
+  report.grades = { upcoming: Object.keys(gradeLive.live.games).length, started: gpr.rows.length, settled_graded: gsum.overall.totals.settled_graded, insufficient: gsum.insufficient };
   report.public = { games: pr.rows.length, graded_verified: summary.headline.verified.eligibility.graded, graded_recorded: summary.headline.recorded.eligibility.graded, articles: Object.keys(articles).length, weekly: wk.week_id + ' ' + wk.status };
   if (o.write) {
     const { writeIfChanged } = require(path.join(root, 'tools', 'football', 'write_if_changed.js'));
-    Object.keys(outputs).forEach((rel) => { report.wrote[rel] = writeIfChanged(path.join(root, rel), outputs[rel], { pretty: rel.indexOf('/games/') < 0, newline: true }); });
+    Object.keys(outputs).forEach((rel) => { report.wrote[rel] = writeIfChanged(path.join(root, rel), outputs[rel], { pretty: rel.indexOf('/games/') < 0 && rel.indexOf('/grades/live') < 0, newline: true }); });
   }
   report.chains = chains;
   return { report, state, outputs };
@@ -176,7 +211,8 @@ async function main() {
     const c = check(a.root, a.base);
     c.chains.files.forEach((f) => { if (!f.ok) console.log('BROKEN ' + f.file + ': ' + f.errors.join('; ')); });
     c.prefix.forEach((p) => console.log('REWRITTEN ' + p.file + ': ' + p.detail));
-    console.log(c.ok ? 'CHECK OK: ' + c.chains.files.length + ' ledger file(s), every chain verifies' + (a.base ? ', every committed line kept (base ' + a.base + ')' : '') : 'CHECK FAILED');
+    c.reproduce.forEach((p) => console.log('NOT REPRODUCIBLE ' + p.event_key + ' ' + p.hash + ': ' + p.diffs.join(', ')));
+    console.log(c.ok ? 'CHECK OK: ' + c.chains.files.length + ' ledger file(s), every chain verifies, every research grade reproduces' + (a.base ? ', every committed line kept (base ' + a.base + ')' : '') : 'CHECK FAILED');
     process.exit(c.ok ? 0 : 1);
   }
   const now = a.now ? Date.parse(a.now) : Date.now();
@@ -191,7 +227,9 @@ async function main() {
       '| capture | ' + (r.report.steps.capture ? r.report.steps.capture.appended + ' new forecast revision(s), ' + r.report.steps.capture.unchanged + ' unchanged' : 'skipped') + ' |',
       '| import | ' + (r.report.steps.import ? r.report.steps.import.appended + ' recorded revision(s)' : 'skipped') + ' |',
       '| results | ' + r.report.steps.results.appended + ' new, ' + r.report.steps.results.pending + ' pending, ' + r.report.steps.results.conflicts + ' in conflict |',
-      '| grade | ' + r.report.steps.grade.appended + ' new grade revision(s) |', ''];
+      '| grade | ' + r.report.steps.grade.appended + ' new grade revision(s) |',
+      '| research grades | ' + (r.report.steps.research_grades ? r.report.steps.research_grades.appended + ' new, letters ' + JSON.stringify(r.report.steps.research_grades.letters) : 'skipped') + ' |',
+      '| grade outcomes | ' + r.report.steps.grade_outcomes.appended + ' new, ' + r.report.steps.grade_outcomes.no_pregame_grade + ' without a pregame grade |', ''];
     h.items.forEach((i) => lines.push('- **' + i.level + '** ' + i.check + ': ' + i.detail));
     try { fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, lines.join('\n') + '\n'); } catch (_) { /* summary is best effort */ }
   }

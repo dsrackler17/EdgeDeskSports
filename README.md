@@ -83,6 +83,24 @@ sent or published except by the owner, and the database enforces it
 (`supabase/content_engine.sql`). See
 [`docs/content-engine/README.md`](docs/content-engine/README.md).
 
+## Research Grades (A–F) and Grade Performance
+
+Every game EdgeDesk researches carries an A–F **Research Grade**: how complete,
+current, cross-checked and reliable the pregame research is — never the chance
+a side wins, and never a pick. The score (0–100) comes from five provisional,
+versioned weights: the model's live track record, data completeness, a check
+against a sportsbook line captured before kickoff, matchup clarity and
+uncertainty. Missing data earns nothing; an unvalidated track record or a
+missing line caps the grade; a failed prerequisite means "Not graded".
+
+The hourly performance job locks each grade before kickoff in an append-only,
+hash-chained ledger, re-scores every stored grade from its own inputs, and
+judges each verified final against the game's latest pregame grade. The
+terminal's boards show a badge, a letter filter and a Grade Breakdown;
+[`/performance/grades/`](performance/grades/) shows how the grades held up,
+with sample sizes and an honest insufficient-data state until enough games
+are settled. See [`docs/research-grade/`](docs/research-grade/).
+
 ## System integrity: one calculation layer, one integrity engine
 
 Every number EdgeDesk prints is computed in one place:

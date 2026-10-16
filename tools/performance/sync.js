@@ -8,7 +8,9 @@
 
    The committed ledger (performance/ledger/*.jsonl) is the source of truth;
    this copies it, insert-only, through perf_ingest() (supabase/
-   model_performance.sql), which stamps each row with the server's own clock,
+   model_performance.sql) and, for the two research grade streams,
+   perf_research_ingest() (supabase/research_grades.sql — optional: until it
+   is applied those two streams wait and the rest still sync), which stamps each row with the server's own clock,
    refuses a row that does not follow the stored chain, refuses any UPDATE,
    DELETE or TRUNCATE, and logs every call. It asks perf_heads() where each
    file stands and sends only what is beyond it, oldest first, so a run sends
@@ -26,6 +28,16 @@ const REST = require('../lib/pgrest.js');
 
 const ROOT = path.join(__dirname, '..', '..');
 const BATCH = 200;
+/* which write path and which heads each stream uses */
+const ROUTE = {
+  forecasts: { rpc: 'perf_ingest', heads: 'perf_heads', sql: 'supabase/model_performance.sql' },
+  quotes: { rpc: 'perf_ingest', heads: 'perf_heads', sql: 'supabase/model_performance.sql' },
+  results: { rpc: 'perf_ingest', heads: 'perf_heads', sql: 'supabase/model_performance.sql' },
+  grades: { rpc: 'perf_ingest', heads: 'perf_heads', sql: 'supabase/model_performance.sql' },
+  research_grades: { rpc: 'perf_research_ingest', heads: 'perf_research_heads', sql: 'supabase/research_grades.sql', optional: true },
+  grade_outcomes: { rpc: 'perf_research_ingest', heads: 'perf_research_heads', sql: 'supabase/research_grades.sql', optional: true }
+};
+function missingFn(e) { return REST.refused(e) && (e.status === 404 || /PGRST202|42883|42P01/.test(String(e.code) + String(e.message))); }
 
 function shout(level, title, msg) {
   console.log('::' + level + ' title=' + title + '::' + msg);
@@ -61,15 +73,24 @@ async function sync(o) {
     }
     throw e;
   }
+  /* the research grade mirror is a separate, optional file: without it those streams wait */
+  let rheads = null;
+  try { rheads = await db.rpc('public', 'perf_research_heads', {}); }
+  catch (e) {
+    if (!missingFn(e)) throw e;
+    shout('notice', 'research grade mirror not applied', 'perf_research_heads() is missing: apply supabase/research_grades.sql to mirror the research grade streams (docs/research-grade/RUNBOOK.md) — the committed ledger is unaffected');
+  }
   const report = { code: 0, sent: 0, inserted: 0, already: 0, streams: {} };
   for (const stream of L.STREAMS) {
-    const rows = pending(root, stream, heads || {});
+    const route = ROUTE[stream];
+    if (route.optional && !rheads) { report.streams[stream] = { pending: null, inserted: 0, skipped: route.sql + ' not applied' }; continue; }
+    const rows = pending(root, stream, (route.heads === 'perf_heads' ? heads : rheads) || {});
     report.streams[stream] = { pending: rows.length, inserted: 0 };
     if (o.dry) continue;
     for (let i = 0; i < rows.length; i += BATCH) {
       const batch = rows.slice(i, i + BATCH);
       try {
-        const r = await db.rpc('public', 'perf_ingest', { p_kind: stream, p_rows: batch, p_run: o.run || null, p_git_sha: o.git_sha || null });
+        const r = await db.rpc('public', route.rpc, { p_kind: stream, p_rows: batch, p_run: o.run || null, p_git_sha: o.git_sha || null });
         report.sent += batch.length; report.inserted += r.inserted || 0; report.already += r.already_present || 0;
         report.streams[stream].inserted += r.inserted || 0;
       } catch (e) {
@@ -82,7 +103,7 @@ async function sync(o) {
   return report;
 }
 
-module.exports = { sync, pending };
+module.exports = { sync, pending, ROUTE };
 if (require.main === module) {
   sync({ dry: process.argv.includes('--dry'), run: process.env.GITHUB_RUN_ID ? 'gh:' + process.env.GITHUB_RUN_ID : null, git_sha: process.env.GITHUB_SHA || null })
     .then((r) => process.exit(r.code || 0))

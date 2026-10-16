@@ -6,7 +6,11 @@
 # import as verified, settles a game its sources disagree on, assumes a price,
 # prints a rate from a handful of games, exposes an upcoming forecast, lets a
 # client write the ledger, or rewrites a committed ledger line has to fail on
-# the PR that makes it.
+# the PR that makes it. The same holds for the A–F research grade: a grade made
+# after kickoff, a missing input given credit, a cap skipped, a side chosen
+# from the final, a grade that does not reproduce from its own inputs, an
+# outcome backfilled for a game that had no pregame grade, or a badge on the
+# free page fails here (docs/research-grade/).
 name: Model performance tests
 
 on:
@@ -15,10 +19,16 @@ on:
       - 'lib/edgedesk_performance.js'
       - 'lib/edgedesk_calibration.js'
       - 'lib/edgedesk_projections.js'
+      - 'lib/edgedesk_research_grade.js'
+      - 'lib/edgedesk_grade_ui.js'
+      - 'lib/edgedesk_grade.css'
+      - 'lib/edgedesk_games_ui.js'
+      - 'lib/edgedesk_game_view.js'
       - 'engine/build_projections.js'
       - 'tools/performance/**'
       - 'performance/**'
       - 'supabase/model_performance*.sql'
+      - 'supabase/research_grades*.sql'
       - 'tools/articles/article_render.js'
       - 'tools/articles/build_articles.js'
       - 'tools/slate/espn.js'
@@ -28,8 +38,12 @@ on:
     branches: [main]
     paths:
       - 'lib/edgedesk_performance.js'
+      - 'lib/edgedesk_research_grade.js'
+      - 'lib/edgedesk_grade_ui.js'
       - 'tools/performance/**'
       - 'supabase/model_performance*.sql'
+      - 'supabase/research_grades*.sql'
+      - 'performance/grades/**'
       - 'performance/index.html'
       - 'performance/performance.js'
       - 'performance/performance.css'
@@ -55,6 +69,10 @@ jobs:
           node-version: '22'
       - name: The kernel, the ledger and the whole lifecycle (grading, pushes and ties, missing odds, the pregame rule, revisions, postponements, corrections, version changes, duplicate runs)
         run: node tools/performance/performance.test.js
+      - name: The research grade (A–F thresholds, missing features, disagreements, stale data, sport adapters, odds-provider failures, reproducibility, leakage, settlement, the dashboard's numbers, the lifecycle) and its wiring into the boards
+        run: |
+          node tools/performance/research_grade.test.js
+          node tools/performance/grade_ui.test.js
       - name: Append-only against the base branch (no committed ledger line rewritten, every chain verifies)
         run: |
           base="origin/${{ github.base_ref || 'main' }}"
@@ -66,6 +84,7 @@ jobs:
         run: |
           sudo apt-get install -y -qq postgresql postgresql-client >/dev/null 2>&1 || true
           node tools/performance/performance_sql.test.js
+          node tools/performance/research_grades_sql.test.js
       - name: The article block and the existing article suites
         run: node tools/articles/articles.test.js
       - name: Playwright and Chromium
@@ -74,3 +93,5 @@ jobs:
           npx playwright install --with-deps chromium
       - name: /performance/ in a real browser (390 and 1280 px; insufficient data, a verified record, a failed load)
         run: node tools/performance/performance_ui.e2e.js
+      - name: /performance/grades/, the badges, the letter filter and the Grade Breakdown in a real browser (390 and 1280 px; insufficient data, a populated record, a failed load, the free page)
+        run: node tools/performance/grades_ui.e2e.js

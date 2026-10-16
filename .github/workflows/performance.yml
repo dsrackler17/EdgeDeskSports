@@ -15,6 +15,13 @@
 #      sources must agree; a correction is a new revision;
 #   4. GRADE every game with a verified result, and rebuild the public page's
 #      data, the article blocks, the weekly packet and the social drafts;
+#   4b. RESEARCH GRADES (docs/research-grade/): after the capture, every
+#      upcoming game's A–F research grade, from what is on file at that
+#      moment, locked in performance/ledger/research_grades when it changes;
+#      after the results, each verified final judged against the game's
+#      latest valid pregame grade (performance/ledger/grade_outcomes). A game
+#      with no pregame grade is counted, never given one. The boards' live
+#      file and /performance/grades/ are rebuilt from the ledger;
 #   5. verify again (the new ledger must extend the committed one, byte for
 #      byte) and commit only the generated paths (tools/ci/push_generated.sh);
 #   6. optionally mirror to Supabase (vars.PERFORMANCE_SUPABASE == 'on');
@@ -64,6 +71,7 @@ jobs:
       - name: The grading rules must pass, and every committed chain must verify, before the ledger may move
         run: |
           node tools/performance/performance.test.js
+          node tools/performance/research_grade.test.js
           node tools/performance/run.js --check
 
       - name: Capture, verify finals, grade, build

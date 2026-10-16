@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-10-16 — The A–F Research Grade, locked before kickoff, and Grade Performance: how the grades held up
+
+**Every game EdgeDesk researches now carries an A–F Research Grade:** how complete, current, cross-checked and reliable the pregame research is. It is not a win probability, not a prediction and not a betting recommendation. Research, not picks. See `docs/research-grade/` (AUDIT_AND_PLAN, METHODOLOGY, RUNBOOK).
+
+- **The audit** (`docs/research-grade/AUDIT_AND_PLAN.md`) found the inputs already in the projection contract (EDPROJ), a CFB-only reliability score, three different "research grade" names already in use, and a same-day cross-sport performance ledger that already settles finals and computes Brier, calibration and MAE. Nothing is duplicated:
+  - the grade reads EDPROJ and, for CFB, `lib/cfb_reliability.js`'s own score;
+  - its snapshots and outcomes are two new streams in the existing hash-chained ledger;
+  - its settlement reads the existing results stream and grades with `EDPERF.gradeGame`; its dashboard runs `EDPERF.metrics` per letter.
+- **The kernel** (`lib/edgedesk_research_grade.js`, EDGRADE): a deterministic 0–100 score from five dimensions with provisional, versioned weights (reliability 30, completeness 25, model–market 20, clarity 15, uncertainty 10), sport adapters for NFL, CFB, NBA, NHL, WNBA and college basketball, and a plain-English explanation.
+  - Nothing missing earns credit; a missing input scores 0 and is named.
+  - An unvalidated live track record and a missing pregame sportsbook line are excluded and capped (C and B); unknown key-player availability caps at C.
+  - Gates give "Not graded" (no model number, an expired or invalidated build, a market-fed model, too little data, anything after kickoff).
+  - The live track record is read as of the grade's own moment; a line captured after the start or after the grade is dropped.
+  - Every stored grade re-scores from its own inputs: the job refuses a row that does not, and `run.js --check` re-scores every committed one.
+- **The hourly job** (`tools/performance/research_grades.js`, `grade_build.js`) locks a new grade revision whenever the letter, the score, a part, a cap or gate, the forecast or the evaluated side changes (a pure line move is kept by the quote ledger, not a new grade); judges each verified final against the game's latest valid pregame grade; never grades a game that had none; writes `performance/data/grades/` and folds its health items into `health.json`. ATS and O/U records use only the side and line saved before kickoff; CLV only a same-source close.
+- **The boards** (`lib/edgedesk_grade_ui.js`, `lib/edgedesk_grade.css`), terminal only: a compact badge on Today's Games, the FBS board, NFL cards and the NBA and NHL boards; a letter filter on Today's Games and the FBS board (kept in the URL as `fbs_grade`); an expandable Grade Breakdown in the matchup view, the NFL/CFB game view, the P4 game card and the NBA/NHL game views; the guide's "Research Grade (A–F)" entry on tap. `/today/` is unchanged.
+- **Grade Performance** (`/performance/grades/`, public): totals, coverage, distribution, a grade-by-grade table (settled games, average score, Brier with 95% interval, calibration, margin and total MAE/RMSE, model agreement, completeness, records at the saved line, CLV, sample state), Brier and error by grade, calibration and trend small multiples, sport breakdowns, exclusions, filters (sport, league, season, dates, model version, grade version, market type) and the full methodology. It opens in an honest "Insufficient Historical Data" state: no rate below 20 settled games, no interval below 50, and no claim that higher grades do better until an interval says so. Linked from the app's More › Transparency, the footers, the methodology page and the sitemap.
+- **Supabase (optional)**: `supabase/research_grades.sql` (+ rollback), standalone of `model_performance.sql`: append-only tables for every role, server receipt stamps, RLS (grades readable once their game starts), one service-role ingest, a trigger that refuses any outcome for a grade captured after the start or with a different letter, the A–F thresholds as a check constraint, indexes and the `perf_grade_performance` view. `tools/performance/sync.js` mirrors the two streams once it is applied.
+- **Tests**: `research_grade.test.js` (176), `grade_ui.test.js` (28), `research_grades_sql.test.js` (55, real PostgreSQL), `grades_ui.e2e.js` (89, 390 and 1280 px), wired into `performance-tests.yml`; the hourly job runs the kernel suite before it writes. The existing performance, site, navigation, guide, game research, FBS board, slate, NBA and engine suites stay green.
+- **Shipped with no grades in it.** The ledger's first research grades are written by the hourly job after merge; nothing was backfilled.
+
 ## 2026-10-16 — College baseball out of season: the card says what the archive holds again
 
 **Out of season the college baseball board now falls back to the last day played**, under a "the season is complete" note. That note never said what the archive holds. Only the empty-archive card did. `tools/cbb/cbb_ui.e2e.js` checks for it, and it had failed on `main` (57/58) unnoticed, because no workflow ran it.

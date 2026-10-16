@@ -26,6 +26,10 @@ on:
         description: 'Apply supabase/model_performance.sql (idempotent, additive)'
         type: boolean
         default: true
+      apply_grades:
+        description: 'Also apply supabase/research_grades.sql (the research grade mirror; idempotent, additive, standalone)'
+        type: boolean
+        default: false
       sync:
         description: 'Then copy the committed ledger'
         type: boolean
@@ -56,6 +60,7 @@ jobs:
         run: |
           sudo apt-get install -y -qq postgresql postgresql-client >/dev/null 2>&1 || true
           node tools/performance/performance_sql.test.js
+          node tools/performance/research_grades_sql.test.js
 
       - name: Check the credentials exist before claiming anything
         id: creds
@@ -80,6 +85,17 @@ jobs:
           fi
           echo "$out" | tail -10
           if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/model_performance.sql: a report row says CHECK THIS"; exit 1; fi
+
+      - name: Apply supabase/research_grades.sql
+        if: ${{ inputs.apply_grades }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if ! out=$(psql "$PGURL" -X -q -1 -v ON_ERROR_STOP=1 -f supabase/research_grades.sql 2>&1); then
+            echo "$out" | tail -20; echo "::error::supabase/research_grades.sql did not apply (rolled back)"; exit 1
+          fi
+          echo "$out" | tail -10
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/research_grades.sql: a report row says CHECK THIS"; exit 1; fi
 
       - name: Copy the committed ledger
         if: ${{ inputs.sync && steps.creds.outputs.have_sb == 'yes' }}

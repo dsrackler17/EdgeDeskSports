@@ -2924,7 +2924,8 @@ body.focus .dk-focusnote{display:block}
 <link rel="stylesheet" href="/lib/edgedesk_intel.css?v=20261012ia8">
 <link rel="stylesheet" href="/lib/edgedesk_games.css?v=20261015sc1">
 <link rel="stylesheet" href="/lib/edgedesk_guide.css?v=20261016g1">
-<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261016gr1">
+<link rel="stylesheet" href="/lib/edgedesk_game_view.css?v=20261016rg1">
+<link rel="stylesheet" href="/lib/edgedesk_grade.css?v=20261016rg1">
 </head>
 <body>
 <div id="pgWarn" class="hide"></div>
@@ -4012,9 +4013,9 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_integrity.js?v=20261008i"></script>
 <!-- model-first game research (docs/game-research): the snapshot (Layer A, no sportsbook number),
      the deterministic matchup graphic, and the #game/<league>/<id> page -->
-<script src="/lib/edgedesk_game_snapshot.js?v=20261016gr1"></script>
-<script src="/lib/edgedesk_game_graphic.js?v=20261016gr1"></script>
-<script src="/lib/edgedesk_game_view.js?v=20261016gr1"></script>
+<script src="/lib/edgedesk_game_snapshot.js?v=20261016rg1"></script>
+<script src="/lib/edgedesk_game_graphic.js?v=20261016rg1"></script>
+<script src="/lib/edgedesk_game_view.js?v=20261016rg1"></script>
 <script src="/lib/cfb_reliability.js?v=20260925e"></script>
 <script src="/lib/market_consensus.js?v=20260925e"></script>
 <script src="/lib/game_evidence.js?v=20260925e"></script>
@@ -4076,7 +4077,8 @@ window.mcRefresh=function(){
 <script src="/lib/edgedesk_nhl_market.js?v=20261015sc1"></script>
 <script src="/lib/edgedesk_nhl_compare.js?v=20261015sc1"></script>
 <script src="/lib/edgedesk_games.js?v=20261015sc1"></script>
-<script src="/lib/edgedesk_games_ui.js?v=20261016g1"></script>
+<script src="/lib/edgedesk_grade_ui.js?v=20261016rg1"></script>
+<script src="/lib/edgedesk_games_ui.js?v=20261016rg1"></script>
 <script>
 /* THE FREE PRICE FEED loads at boot and every 10 minutes the tab is open: the
    football boards price on it whenever the paid capture is not current, and
@@ -4111,6 +4113,12 @@ window.mcRefresh=function(){
     else if(window.EDGamesUI.page)window.EDGamesUI.page.setState(window.EDGamesUI.page.st);};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',function(){try{window.gmMountStrip();}catch(e){try{console.error('games strip',e);}catch(_){}}});
   else try{window.gmMountStrip();}catch(e){}
+  /* RESEARCH GRADES (lib/edgedesk_grade_ui.js): read once from the ledger's live file; every board's
+     badge slot fills itself. The FBS board redraws once so its grade filter appears. */
+  if(window.EDGradeUI){
+    window.EDGradeUI.load();
+    window.EDGradeUI.onChange(function(){try{if(document.querySelector('.fbs-filters')&&typeof window.renderFootball==='function')window.renderFootball();}catch(_){}});
+  }
 })();
 </script>
 <script>
@@ -5925,7 +5933,7 @@ researchRegister({id:'lines',label:'Lines',schema:'public',cadenceMs:null,
 /* NHL and ENGINE — the multi-sport engine's two panels share one script
    (lib/edgedesk_engine_ui.js), loaded on first open. A script that fails to
    load is an error state on the panel, never a blank one. */
-var XE_SCRIPT='/lib/edgedesk_engine_ui.js?v=20261015sc1';
+var XE_SCRIPT='/lib/edgedesk_engine_ui.js?v=20261016rg1';
 function xeReady(){if(window.EDEngineUI)return Promise.resolve();return lmScript(XE_SCRIPT);}
 function xeFail(id){return function(e){var h=$(id);if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The engine could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';};}
 researchRegister({id:'nhl',label:'NHL',schema:'public',cadenceMs:null,
@@ -5939,7 +5947,7 @@ researchRegister({id:'nhl',label:'NHL',schema:'public',cadenceMs:null,
   availability:function(){return null;},limitations:function(){return ['NHL value claims are off: no captured NHL prices and no market test yet.'];},provenance:{}});
 /* NBA — its own script (lib/edgedesk_nba_ui.js), loaded on first open; a script
    that fails to load is an error state on the panel, never a blank one. */
-var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261014nb1';
+var NB_SCRIPT='/lib/edgedesk_nba_ui.js?v=20261016rg1';
 function nbReady(){if(window.EDNbaUI)return Promise.resolve();return lmScript(NB_SCRIPT);}
 function nbFail(e){var h=$('nbaHost');if(h)h.innerHTML='<div class="xe-banner err" role="alert"><b>The NBA research could not start.</b> '+String((e&&e.message)||'a script did not load').replace(/[<>&]/g,'')+'. Nothing is shown in its place.</div>';}
 researchRegister({id:'nba',label:'NBA',schema:'public',cadenceMs:null,
@@ -20836,6 +20844,8 @@ function loadMore(){
     $('v-record')?moreItem(IC.model,'Model performance','How EdgeDesk’s model and flagged edges have performed — every graded call. Not your bets.','show(\'record\')','model_performance'):'',
     /* the public, cross-sport forecast record (/performance/): every published game forecast, locked pregame and graded on the verified final */
     moreItem(IC.model,'Public forecast record ↗','Every game forecast in every sport, locked before the start and graded on the final, misses included. No account needed.','moreGoPerformance()','performance_public'),
+    /* how the A–F research grades held up (/performance/grades/): research quality, never a pick */
+    moreItem(IC.model,'Grade performance ↗','How EdgeDesk’s A–F research grades held up on completed games, locked before kickoff. Research quality, not picks.','moreGoGrades()','grade_performance'),
     typeof window.hiwOpen==='function'?moreItem(IC.method,'Methodology','How EdgeDesk prices, grades and proves itself, screen by screen.','hiwOpen()','methodology'):'',
     (window.RESEARCH_MODULES&&RESEARCH_MODULES.lab)?moreItem(IC.sources,'Data sources','Where every model input came from, what transformed it, and how fresh it is.','moreGoProvenance()','data_sources'):'']);
   group('System',[
@@ -20871,7 +20881,11 @@ function moreGoPerformance(){
   try{window.open('/performance/','_blank','noopener');}
   catch(_){location.href='/performance/';}
 }
-window.loadMore=loadMore;window.moreGoProvenance=moreGoProvenance;window.moreGoGames=moreGoGames;window.moreGoPerformance=moreGoPerformance;
+function moreGoGrades(){
+  try{window.open('/performance/grades/','_blank','noopener');}
+  catch(_){location.href='/performance/grades/';}
+}
+window.loadMore=loadMore;window.moreGoProvenance=moreGoProvenance;window.moreGoGames=moreGoGames;window.moreGoPerformance=moreGoPerformance;window.moreGoGrades=moreGoGrades;
 
 /* settings boot: apply prefs, paint avatar, honour landing-page pref */
 try{applyPrefs();renderAvatar();loadSubStatus();
@@ -50658,7 +50672,7 @@ function fbGameCardNfl(u){
     +'<details class="qev-more"><summary>Price evaluation · both sides · alternate spreads</summary>'+fbQevCardHTML(qv)
     +'<div class="gd-sec">Alternate spread value</div>'+fbQevLadderHTML(qv)+'</details>';
   return '<div class="mdl-card" id="fbg-nfl-'+fbEsc(String(g.game_id))+'">'
-    +'<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(awayName)+' @ '+fbEsc(homeName)+'</div>'
+    +'<div class="mdl-card-h"><div class="mdl-card-match">'+fbEsc(awayName)+' @ '+fbEsc(homeName)+(window.EDGradeUI?' '+window.EDGradeUI.slot('NFL|'+g.game_id):'')+'</div>'
     +'<div class="mdl-card-when">NFL · week '+fbEsc(String(g.week))+' · '+fbEsc(whenLabel(new Date(u.t).toISOString()))+'</div>'
     +fbMineActs('nfl',g.game_id,homeName,awayName,u.t)+'</div>'
     +fbGameResearchLead('nfl',g.game_id,homeName,awayName,mdl.fair_spread,mdl.fair_total,mdl.home_win_prob,u.t!=null&&u.t<=Date.now())
@@ -55630,7 +55644,7 @@ function fbPropsBody(lg,gid,ko){
 function fbPropsSecHTML(lg,gid,ko){return '<details class="qev-more fb-props" open><summary>Player prop research</summary>'+fbPropsBody(lg,gid,ko)+'</details>';}
 window.fbPropsSecHTML=fbPropsSecHTML; /* the NFL card's section, for tools/props/props_ui.e2e.js */
 var FB_GX_DEFAULT={props:true,why:true,proj:true,changed:false,best:true,drivers:true,wrong:true,qb:true,cases:true,scale:true,detail:false,scores:false,edr:false,quality:false,
-  research:true,decomp:true,price:true,alts:true,dq:false,scen:false,watch:false,explain:false,personnel:true};
+  research:true,decomp:true,price:true,alts:true,dq:false,scen:false,watch:false,explain:false,personnel:true,grade:false};
 
 /* ── COPY RESEARCH BRIEF ────────────────────────────────────────────────
    Plain text that stands alone away from this page. No ids, no JSON, no
@@ -57409,6 +57423,9 @@ function fbP4Card(u){
     +fbGxSec(gid,'scale','Model vs market',fbGxScale(u,p),true)
     +fbGxSec(gid,'dq','Data quality by category',fbGxQuality(u,p),false,
       'available, partial, stale or unavailable — and why')
+    /* the A–F research grade locked in the performance ledger (lib/edgedesk_grade_ui.js): the quality of this research, not a side */
+    +(window.EDGradeUI?fbGxSec(gid,'grade','Research grade · Grade Breakdown',window.EDGradeUI.breakdown(fbP4GradeKey(gid),{open:true}),false,
+      'how complete, current and checked this research is — not a win probability or a pick'):'')
     +fbGxSec(gid,'scen','Scenarios · hypothetical',fbGxScenarios(u,p),false,
       'the engine re-run with one supplied input removed')
     +fbGxSec(gid,'explain','Explain this research',fbGxExplain(u,p),false,
@@ -58245,7 +58262,10 @@ function fbP4StatusStrip(){
    The state lives in the URL's query string so a view is shareable: the
    research router owns the hash, so this owns `?fbs_*` and leaves the hash
    exactly as it found it. */
-var FBP4_FILTER_DEFAULTS={group:'all',conferences:[],matchup:'all',status:'all',market:'all',sort:'kick'};
+var FBP4_FILTER_DEFAULTS={group:'all',conferences:[],matchup:'all',status:'all',market:'all',sort:'kick',grade:'all'};
+/* the research grade filter (lib/edgedesk_grade_ui.js): A–F or not graded. A grade rates the research, never a side */
+var FBP4_GRADES=[['all','Any grade'],['A','A'],['B','B'],['C','C'],['D','D'],['F','F'],['INSUFFICIENT','Not graded']];
+function fbP4GradeKey(gid){return 'CFB|'+gid;}
 var FBP4_STATUSES=['VERIFIED MAJOR DISAGREEMENT','RESEARCH','INVESTIGATE','AGREEMENT','MARKET FAULT','THIN DATA','STALE QUOTE','NO MARKET','DATA FAULT','AWAITING DATA'];
 /* the words on screen (lib/edgedesk_vocab.js): the board keeps its internal
    STALE QUOTE key for its exports and the research ranking, and shows the
@@ -58291,19 +58311,21 @@ function fbP4FiltersRead(){
   if(q.fbs_sort&&FBP4_SORTS.map(function(x){return x[0];}).indexOf(q.fbs_sort)>=0)f.sort=q.fbs_sort;
   if(q.fbs_status&&FBP4_STATUSES.indexOf(q.fbs_status)>=0)f.status=q.fbs_status;
   if(q.fbs_conf)f.conferences=String(q.fbs_conf).split(',').map(function(x){return x.trim();}).filter(Boolean);
+  if(q.fbs_grade&&FBP4_GRADES.map(function(x){return x[0];}).indexOf(q.fbs_grade)>=0)f.grade=q.fbs_grade;
   return f;
 }
 function fbP4FiltersWrite(){
   var f=FB.p4.filters;
   try{
     var q=fbP4QueryParse(location.search);
-    delete q.fbs_group;delete q.fbs_conf;delete q.fbs_matchup;delete q.fbs_status;delete q.fbs_market;delete q.fbs_sort;
+    delete q.fbs_group;delete q.fbs_conf;delete q.fbs_matchup;delete q.fbs_status;delete q.fbs_market;delete q.fbs_sort;delete q.fbs_grade;
     if(f.group!=='all')q.fbs_group=f.group;
     if(f.conferences&&f.conferences.length)q.fbs_conf=f.conferences.join(',');
     if(f.matchup!=='all')q.fbs_matchup=f.matchup;
     if(f.status!=='all')q.fbs_status=f.status;
     if(f.market!=='all')q.fbs_market=f.market;
     if(f.sort!=='kick')q.fbs_sort=f.sort;
+    if(f.grade&&f.grade!=='all')q.fbs_grade=f.grade;
     history.replaceState(null,'',location.pathname+fbP4QueryBuild(q)+(location.hash||''));
   }catch(_){}
 }
@@ -58334,7 +58356,7 @@ window.fbP4SetFilter=function(kind,val){
   try{window.renderFootball();}catch(_){}
 };
 window.fbP4FilterReset=function(){
-  FB.p4.filters={group:'all',conferences:[],matchup:'all',status:'all',market:'all',sort:'kick'};
+  FB.p4.filters={group:'all',conferences:[],matchup:'all',status:'all',market:'all',sort:'kick',grade:'all'};
   fbP4FiltersWrite();
   try{window.renderFootball();}catch(_){}
 };
@@ -58404,6 +58426,7 @@ function fbP4ExportSlug(){
   if(f.matchup!=='all')bits.push(f.matchup);
   if(f.market!=='all')bits.push('mkt-'+f.market);
   if(f.status!=='all')bits.push(String(f.status).toLowerCase().replace(/\s+/g,'-'));
+  if(f.grade&&f.grade!=='all')bits.push('grade-'+String(f.grade).toLowerCase());
   return bits.length?bits.join('_'):'all-fbs';
 }
 function fbP4MarketPass(r,mode){
@@ -58419,6 +58442,7 @@ function fbP4Visible(rows){
     if(!window.EDFbs.matches(r.meta,{group:f.group,conferences:f.conferences,matchup:f.matchup}))continue;
     if(f.status!=='all'&&r.st.t!==f.status)continue;
     if(!fbP4MarketPass(r,f.market))continue;
+    if(f.grade&&f.grade!=='all'&&!(window.EDGradeUI&&window.EDGradeUI.matches(fbP4GradeKey(r.gid),f.grade)))continue;
     out.push(r);
   }
   var ord=FBP4_STATUSES;
@@ -58550,6 +58574,15 @@ function fbP4FilterBarHTML(rows,visible){
     h+=fbP4Chip(f.matchup===m.id,m.label,'fbP4SetFilter(\'matchup\',\''+m.id+'\')');
   });
   h+='</div></div>';
+  /* RESEARCH GRADE — the quality of the research on each game, never a side */
+  if(window.EDGradeUI&&window.EDGradeUI.ready()){
+    var gc=window.EDGradeUI.countLetters(rows.map(function(r){return fbP4GradeKey(r.gid);}));
+    h+='<div class="fbs-frow"><span class="fbs-flab" title="'+fbEsc(window.EDGradeUI.TOOLTIP)+'" data-ed-term="research-grade">RESEARCH GRADE</span><div class="fbs-fset">';
+    FBP4_GRADES.forEach(function(g){
+      h+=fbP4Chip((f.grade||'all')===g[0],g[1]+(g[0]==='all'?'':' '+(gc[g[0]]||0)),'fbP4SetFilter(\'grade\',\''+g[0]+'\')',g[0]==='all'?window.EDGradeUI.TOOLTIP:'');
+    });
+    h+='</div></div>';
+  }
   /* RESEARCH CONTROLS — market availability, status, sort */
   h+='<div class="fbs-frow"><span class="fbs-flab">MARKET</span><div class="fbs-fset">';
   FBP4_MARKETS.forEach(function(m){
@@ -58720,7 +58753,8 @@ function fbP4BoardHTML(){
       +'<span id="p4arr-'+fbEsc(gid)+'" style="color:var(--faint)">▸</span>'
       +'<span class="mut">'+fbP4KickLabel(u.t,g)+(r.scope==='FUTURE_WEEK'?' <span class="fbs-badge" title="A later schedule week: look-ahead research, never this week’s">WK '+fbEsc(String(g.week))+'</span>':'')+'</span>'
       +'<span>'+fbEsc(g.away_team)+' <span class="mut">→</span> '+fbEsc(g.home_team)
-      +(m.matchup_type==='fbs_fcs'?' <span class="fbs-badge fcs">FCS</span>':'')+fbP4IntegrityMark(fbP4IntegrityFor(r,rv))+'</span>'
+      +(m.matchup_type==='fbs_fcs'?' <span class="fbs-badge fcs">FCS</span>':'')+fbP4IntegrityMark(fbP4IntegrityFor(r,rv))
+      +(window.EDGradeUI?' '+window.EDGradeUI.slot(fbP4GradeKey(gid)):'')+'</span>'
       +'<span class="fbs-confcell'+(RV?' rv-conf':'')+'">'+conf+'</span>'
       +cells+'</div>'
       +qsub
@@ -64215,7 +64249,7 @@ try{
 <script src="/lib/edgedesk_first_run.js?v=20261004a"></script>
 <!-- the introduction, walkthroughs, Help panel and term explainers: the words,
      then the engine that shows them -->
-<script src="/lib/edgedesk_guide_content.js?v=20261016g1"></script>
+<script src="/lib/edgedesk_guide_content.js?v=20261016rg1"></script>
 <script src="/lib/edgedesk_guide.js?v=20261016g1"></script>
 <script>
 try{
