@@ -19,15 +19,21 @@
 //       a bad week is printed exactly like a good one. A last embed carries
 //       the free Discord samples' own record.
 //
-//   action 'slate'  daily 10:00 CT, to each sport's channel, on days with
-//       games. Observed data only: game, time, the current line, the opening
-//       line and the move since the open, and the forecast for outdoor
-//       football games where EdgeDesk has one. Where EdgeDesk owns no
-//       consensus or opener (NBA, CBB, NHL: one book's quote via ESPN), the
-//       post names the book and shows no move: the pipeline does not own that
-//       conclusion, so it is not drawn. No picks, no EV, no predictions. No
-//       games, or a failed / stale sync, is a SKIP, logged with its reason —
-//       never a partial post.
+//   action 'slate'  daily 10:00 CT, to each sport's channel. First
+//       yesterday's results: how EdgeDesk's pregame numbers did, every game,
+//       from the /performance/ record (misses printed like hits; a day with an
+//       unverified final waits for the 10:30 tick). Then today's slate: game,
+//       time, the book's line, the opening line and the move since the open,
+//       and the forecast for outdoor football games where EdgeDesk has one.
+//       Where EdgeDesk owns no consensus or opener (NBA, CBB, NHL: one book's
+//       quote via ESPN), the post names the book and shows no move; when the
+//       NFL / CFB consensus feed is down it falls back to that one book and
+//       says so. Beside each line, EdgeDesk's OWN numbers from
+//       engine/projections.json (frozen before any price is read): its side
+//       and %, fair price and line, projected score and total, the gap to the
+//       book, and the market's validation state. A gap is described, never
+//       called a pick; no EV. No games, or a failed / stale sync, is a SKIP,
+//       logged with its reason — never a partial post.
 //
 //   action 'samples'  every 15 minutes, CFB and NFL. (1) records the first
 //       time each game is seen classified INVESTIGATE or MONITOR, with the
@@ -89,7 +95,7 @@
 // ============================================================
 
 /* WHICH CODE IS ANSWERING. Returned by the GET probe. Bump on every change. */
-export const BUILD = "discord_cron-2026-10-16-r1";
+export const BUILD = "discord_cron-2026-10-16-r2";
 
 // ------------------------------------------------------------------ config
 
@@ -299,7 +305,7 @@ export type Field = { name: string; value: string; inline?: boolean };
 export type Embed = { title?: string; description?: string; url?: string; color?: number; author?: { name: string; url?: string }; fields?: Field[]; footer?: { text: string }; timestamp?: string };
 export type Payload = { content?: string; embeds?: Embed[] };
 export type Message = Payload & { username: string; allowed_mentions: { parse: string[] } };
-export type PostType = 'clv_scorecard' | 'slate' | 'sample' | 'sample_followup' | 'adhoc';
+export type PostType = 'clv_scorecard' | 'slate' | 'results' | 'sample' | 'sample_followup' | 'adhoc';
 export type PostOpts = { type?: PostType; postKey?: string | null; postDate?: string | null; threadId?: string | null; dryRun?: boolean; detail?: Row };
 export type PostResult = {
   status: 'sent' | 'failed' | 'partial' | 'unknown' | 'dry_run' | 'duplicate';
@@ -538,7 +544,7 @@ async function siteJson(rt: Runtime, path: string): Promise<{ data: Row | null; 
   } catch (e) { return { data: null, error: `${path}: ${clip(errMsg(e), 120)}` }; }
 }
 
-export type GameRef = { id: string; home: string; away: string; homeFull: string; awayFull: string; kickoff: number | null; tbd: boolean; status: string; slateId: string | null };
+export type GameRef = { id: string; home: string; away: string; homeFull: string; awayFull: string; kickoff: number | null; tbd: boolean; status: string; slateId: string | null; entity?: string | null };
 
 /* team names from two feeds. The same club when the names match; when one is
    a bare nickname that is the other's last word ("Jaguars", "Jacksonville
@@ -557,10 +563,10 @@ export function sameTeam(a: string, b: string): boolean {
   return s === l || (s.length <= 2 && l[0] === s[0]);
 }
 
-export type LineRow = { home: number | null; total: number | null; openHome: number | null; openTotal: number | null; asOf: number | null; books: number | null; openQuality: string | null; book: string | null };
+export type LineRow = { home: number | null; total: number | null; openHome: number | null; openTotal: number | null; asOf: number | null; books: number | null; openQuality: string | null; book: string | null; mlHome?: number | null; mlAway?: number | null };
 /* readFailed: the source could not be READ (try again next tick), as opposed
    to read fine and found stale or empty (a fact to record) */
-export type LineBook = { ok: boolean; reason: string | null; source: string; consensus: boolean; newestAsOf: number | null; rows: Map<string, LineRow>; readFailed?: boolean };
+export type LineBook = { ok: boolean; reason: string | null; source: string; consensus: boolean; newestAsOf: number | null; rows: Map<string, LineRow>; readFailed?: boolean; fallbackReason?: string | null };
 
 function finishBook(rt: Runtime, book: LineBook, label: string): LineBook {
   if (!book.ok) return book;
@@ -644,9 +650,11 @@ async function collectiveLines(rt: Runtime, games: GameRef[]): Promise<LineBook>
   return finishBook(rt, book, source);
 }
 
-/* NBA / CBB / NHL: EdgeDesk captures one book's pregame quote from ESPN's
-   scoreboard (today/slate.json markets). One book is not a consensus, and no
-   opener is kept, so no move is drawn. */
+/* NBA / CBB / NHL (and the NFL / CFB slate when their consensus feed is
+   down): EdgeDesk captures one book's pregame quote from ESPN's scoreboard
+   (today/slate.json markets). One book is not a consensus, and no opener is
+   kept, so no move is drawn. Hockey's main line is the moneyline: a book
+   that prices no puck line still has one. */
 function espnLines(rt: Runtime, slate: Row, games: GameRef[]): LineBook {
   const markets = (slate.markets ?? {}) as Record<string, Row>;
   let label = 'one book via ESPN';
@@ -656,7 +664,11 @@ function espnLines(rt: Runtime, slate: Row, games: GameRef[]): LineBook {
     if (!m) continue;
     const sp = ((m.spread as Row | undefined)?.home ?? {}) as Row;
     const t = ms(m.captured_at);
-    book.rows.set(g.id, { home: num(sp.point), total: num((m.total as Row | undefined)?.point), openHome: null, openTotal: null, asOf: t, books: 1, openQuality: null, book: str(m.book) || null });
+    const ml = (m.moneyline ?? {}) as Row;
+    book.rows.set(g.id, {
+      home: num(sp.point), total: num((m.total as Row | undefined)?.point), openHome: null, openTotal: null, asOf: t, books: 1, openQuality: null,
+      book: str(m.book) || null, mlHome: num(ml.home), mlAway: num(ml.away),
+    });
     if (t != null && (book.newestAsOf == null || t > book.newestAsOf)) book.newestAsOf = t;
     if (m.book) label = `${str(m.book)} via ESPN (one book)`;
   }
@@ -724,6 +736,99 @@ export function fmtMove(open: number | null, cur: number | null, homeTeam: strin
 }
 /* a signed figure at a fixed precision, so +1.0 and -1.0 read alike */
 const signed = (v: number, unit: string, d = 1) => `${v > 0 ? '+' : v < 0 ? '-' : ''}${Math.abs(v).toFixed(d)}${unit}`;
+const fmtMl = (v: number) => (v > 0 ? `+${Math.round(v)}` : String(Math.round(v)));
+/* a model line, to one decimal: "Memphis -4.8" */
+export function fmtModelLine(home: number, homeTeam: string, awayTeam: string): string {
+  const a = Math.abs(home).toFixed(1);
+  if (a === '0.0') return 'Even (0)';
+  return home < 0 ? `${homeTeam} -${a}` : `${awayTeam} -${a}`;
+}
+/* a two-way moneyline without the book's margin: the home side's share */
+export function noVigHome(mlHome: number, mlAway: number): number | null {
+  const imp = (ml: number) => (ml < 0 ? -ml / (-ml + 100) : 100 / (ml + 100));
+  const h = imp(mlHome), a = imp(mlAway);
+  return Number.isFinite(h + a) && h + a > 0 ? h / (h + a) : null;
+}
+
+// ================================================================== EdgeDesk's own numbers
+
+/* engine/projections.json: every sport engine's pregame projection, frozen
+   BEFORE any price is read (engine/build_projections.js, every 3 hours), with
+   each market's validation state from engine/registry.json. The slate shows
+   these beside the book's line; it never computes a number of its own. */
+export const PROJ_SPORT: Record<SportId, string> = { nfl: 'nfl', cfb: 'cfb', nba: 'nba', cbb: 'ncaab_m', nhl: 'nhl' };
+const PROJ_MAX_AGE_H = 8;
+export type ProjBook = { ok: boolean; reason: string | null; builtAt: number | null; list: Row[] };
+async function loadProjections(rt: Runtime): Promise<ProjBook> {
+  const { data, error } = await siteJson(rt, 'engine/projections.json');
+  if (error || !data) return { ok: false, reason: 'EdgeDesk projections could not be read (' + (error ?? 'empty') + ')', builtAt: null, list: [] };
+  const builtAt = ms(data.built_at);
+  if (builtAt == null || rt.now() - builtAt > PROJ_MAX_AGE_H * H) {
+    return { ok: false, reason: `EdgeDesk projections are ${builtAt == null ? 'undated' : Math.round((rt.now() - builtAt) / H) + ' h old'}`, builtAt, list: [] };
+  }
+  return { ok: true, reason: null, builtAt, list: Array.isArray(data.projections) ? data.projections as Row[] : [] };
+}
+const nameIs = (proj: string, full: string, short: string) => {
+  const p = norm(proj);
+  return !!p && (p === norm(full) || p === norm(short) || norm(full).startsWith(p + ' ') || sameTeam(proj, full));
+};
+/* by id first (the slate's research entity, or the ESPN id), then by both
+   teams within three hours of the start */
+export function matchProjection(list: Row[], sport: SportId, g: GameRef): Row | undefined {
+  const sp = PROJ_SPORT[sport];
+  const ids = [g.entity ? g.entity.replace(/^[a-z_]+\|/i, '') : null, g.id].filter(Boolean) as string[];
+  const byId = list.find((p) => p.sport === sp && ids.includes(str(p.event_id)));
+  if (byId) return byId;
+  return list.find((p) => {
+    const t = ms(p.start_utc), h = (p.home ?? {}) as Row, a = (p.away ?? {}) as Row;
+    return p.sport === sp && t != null && g.kickoff != null && Math.abs(t - g.kickoff) <= 3 * H
+      && nameIs(str(h.name), g.homeFull, g.home) && nameIs(str(a.name), g.awayFull, g.away);
+  });
+}
+const STATE_WORD: Record<string, string> = { OUTCOME_VALIDATED: 'outcome-validated', VALIDATED: 'validated', EXPERIMENTAL: 'experimental', PROVISIONAL: 'provisional', RESEARCH: 'research only' };
+const TEST_WORD: Record<string, string> = { NOT_TESTED: 'not yet tested against the close', TESTED_BEHIND: 'behind the close when tested', TESTED_EVEN: 'break-even against the close', TESTED_AHEAD: 'ahead of the close when tested' };
+/* "EdgeDesk: …" and "Gap: …" for one game. A gap is the difference between
+   two numbers, never a recommendation: no side is called a play. */
+export function modelLines(p: Row | undefined, row: LineRow | undefined, g: GameRef, sport: SportId): string[] {
+  if (!p) return ['EdgeDesk: no projection for this game'];
+  if (str(((p.research ?? {}) as Row).outcome) === 'DATA_INSUFFICIENT') return ['EdgeDesk: not enough data for a number on this game'];
+  const ph = num(((p.outcome ?? {}) as Row).p_home);
+  if (ph == null) return ['EdgeDesk: no projection for this game'];
+  const fair = (p.fair ?? {}) as Row, ps = (p.projected_score ?? {}) as Row;
+  const homeFav = ph >= 0.5, fav = homeFav ? g.home : g.away, favP = homeFav ? ph : 1 - ph;
+  const mlFav = num(((fair.moneyline ?? {}) as Row)[homeFav ? 'home' : 'away']);
+  const fl = num(((fair.spread ?? {}) as Row).home_line);
+  const tot = num(((fair.total ?? {}) as Row).expected) ?? num(((fair.total ?? {}) as Row).line);
+  const pa = num(ps.away), phs = num(ps.home);
+  const parts = [`EdgeDesk: ${fav} ${Math.round(favP * 100)}%${mlFav != null ? ` (fair ${fmtMl(mlFav)})` : ''}`];
+  if (fl != null && sport !== 'nhl') parts.push(`line ${fmtModelLine(fl, g.home, g.away)}`);
+  if (pa != null && phs != null) parts.push(`proj ${g.away} ${pa.toFixed(1)}, ${g.home} ${phs.toFixed(1)}`);
+  if (tot != null) parts.push(`total ${tot.toFixed(1)}`);
+  const gap: string[] = [];
+  let market = 'moneyline';
+  if (row?.home != null && fl != null && sport !== 'nhl') {
+    market = 'spread';
+    const d = r2(row.home - fl);
+    gap.push(Math.abs(d) < 0.5 ? 'book within 0.5 pts of EdgeDesk' : `EdgeDesk's line is ${Math.abs(d).toFixed(1)} pts further toward ${d > 0 ? g.home : g.away}`);
+  } else if (row?.mlHome != null && row?.mlAway != null) {
+    const bp = noVigHome(row.mlHome, row.mlAway);
+    if (bp != null) {
+      const bFav = homeFav ? bp : 1 - bp, diff = (favP - bFav) * 100;
+      gap.push(Math.abs(diff) < 1 ? `book within 1 pt of EdgeDesk on ${fav}` : `EdgeDesk ${fav} ${Math.round(favP * 100)}% vs the book's no-vig ${Math.round(bFav * 100)}%`);
+    }
+  }
+  if (row?.total != null && tot != null) {
+    const dt = r2(tot - row.total);
+    gap.push(Math.abs(dt) < 0.1 ? 'total level with the book' : `total ${Math.abs(dt).toFixed(1)} ${dt < 0 ? 'lower' : 'higher'} than the book`);
+  }
+  const v = (((p.validation ?? {}) as Row).markets ?? {}) as Record<string, Row>;
+  const mv = v[market];
+  /* a market the registry has no record for is said to be unvalidated, never left blank */
+  const check = mv ? `model: ${market} ${STATE_WORD[str(mv.state)] ?? str(mv.state).toLowerCase().replace(/_/g, ' ')}${TEST_WORD[str(mv.market_test)] ? ', ' + TEST_WORD[str(mv.market_test)] : ''}` : `model: ${market} not yet validated`;
+  const out = [parts.join(' · ')];
+  if (gap.length || check) out.push(`Gap: ${[...gap, ...(check ? [check] : [])].join(' · ')}`);
+  return out;
+}
 const fmtWx = (w: Wx) => [`${Math.round(w.temp)}°F`, w.wind != null ? `wind ${Math.round(w.wind)} mph${w.from ? ' ' + w.from : ''}` : null, w.precipPct != null ? `${Math.round(w.precipPct)}% precip` : null, w.text].filter(Boolean).join(', ');
 
 // ================================================================== the slate
@@ -735,7 +840,7 @@ function slateGames(slate: Row, sport: SportId, date: string): GameRef[] {
   return ev.filter((e) => e.sport === SPORTS[sport].slate).map((e) => {
     const h = (e.home ?? {}) as Row, a = (e.away ?? {}) as Row;
     return {
-      id: str(e.provider_id || e.id), slateId: str(e.id) || null,
+      id: str(e.provider_id || e.id), slateId: str(e.id) || null, entity: str(((e.research ?? {}) as Row).entity) || null,
       home: str(h.short || h.name), away: str(a.short || a.name), homeFull: str(h.name || h.short), awayFull: str(a.name || a.short),
       kickoff: ms(e.start_utc), tbd: e.time_tbd === true, status: str(e.status),
     };
@@ -743,27 +848,35 @@ function slateGames(slate: Row, sport: SportId, date: string): GameRef[] {
     .sort((x, y) => (x.kickoff! - y.kickoff!) || x.home.localeCompare(y.home));
 }
 
-export function renderSlate(sport: SportId, date: string, games: GameRef[], book: LineBook, wx: Map<string, Wx>, startedCount: number, now: number): Payload {
+export function renderSlate(sport: SportId, date: string, games: GameRef[], book: LineBook, wx: Map<string, Wx>, startedCount: number, now: number, proj: ProjBook | null = null): Payload {
   const S = SPORTS[sport];
   const desc: string[] = [];
+  if (book.fallbackReason) desc.push(`The consensus feed is unavailable (${book.fallbackReason}), so this shows one book via ESPN, with no open or move.`);
   desc.push(book.consensus
     ? `Lines: ${book.source}, as captured by EdgeDesk at ${fmtTime(book.newestAsOf ?? now)}. The open is the first consensus EdgeDesk recorded; the move is the difference, not a reason.`
-    : `Lines: ${book.source}, as captured at ${fmtTime(book.newestAsOf ?? now)}. EdgeDesk keeps no consensus or opening line for the ${S.label}, so no move is shown.`);
+    : `Lines: ${book.source}, as captured at ${fmtTime(book.newestAsOf ?? now)}.${book.fallbackReason ? '' : ` EdgeDesk keeps no consensus or opening line for the ${S.label}, so no move is shown.`}`);
+  /* one sentence, not a line per game, when the model has nothing for this slate (the NBA preseason) */
+  const projected = proj?.ok ? games.filter((g) => matchProjection(proj.list, sport, g)).length : 0;
+  if (proj?.ok && projected) desc.push(`EdgeDesk: our own model's numbers, frozen before any price was read (built ${fmtTime(proj.builtAt!)}). A gap is the difference between two numbers, not a recommendation.`);
+  else if (proj?.ok) desc.push(`EdgeDesk has no projection for any of today's ${S.label} games yet.`);
+  else if (proj) desc.push(`EdgeDesk numbers are not shown today: ${proj.reason}.`);
   if (S.weather) desc.push('Weather: forecast at kickoff for outdoor venues, where EdgeDesk has one.');
   if (startedCount > 0) desc.push(`${startedCount} game${startedCount === 1 ? '' : 's'} already under way ${startedCount === 1 ? 'is' : 'are'} not listed.`);
   desc.push('Times are Central.');
   const fields: Field[] = games.map((g) => {
     const row = book.rows.get(g.id);
     const lines: string[] = [];
-    if (!row || row.home == null) lines.push('Line: not captured');
-    else {
-      const stale = row.asOf != null && now - row.asOf > 3 * H ? ` (as of ${fmtWhen(row.asOf)})` : '';
-      lines.push(`${book.consensus ? 'Line' : `Line (${row.book ?? 'one book'})`}: ${fmtSpread(row.home, g.home, g.away)}${row.total != null ? ` · Total ${fmtPts(row.total)}` : ''}${stale}`);
-      if (book.consensus) {
-        const mv = fmtMove(row.openHome, row.home, g.home, g.away);
-        lines.push(row.openHome == null ? 'Open: not captured' : `Open: ${fmtSpread(row.openHome, g.home, g.away)}${row.openTotal != null ? ` · Total ${fmtPts(row.openTotal)}` : ''}${mv ? ` · ${mv}` : ''}`);
-      }
+    const label = book.consensus ? 'Consensus' : `Book (${row?.book ?? 'one book'})`;
+    const stale = row?.asOf != null && now - row.asOf > 3 * H ? ` (as of ${fmtWhen(row.asOf)})` : '';
+    const tot = row?.total != null ? ` · Total ${fmtPts(row.total)}` : '';
+    if (row?.home != null) lines.push(`${label}: ${fmtSpread(row.home, g.home, g.away)}${tot}${stale}`);
+    else if (row?.mlHome != null && row?.mlAway != null) lines.push(`${label}: ${g.home} ${fmtMl(row.mlHome)} / ${g.away} ${fmtMl(row.mlAway)}${tot}${stale}`);
+    else lines.push(`${label}: not captured`);
+    if (book.consensus && row?.home != null) {
+      const mv = fmtMove(row.openHome, row.home, g.home, g.away);
+      lines.push(row.openHome == null ? 'Open: not captured' : `Open: ${fmtSpread(row.openHome, g.home, g.away)}${row.openTotal != null ? ` · Total ${fmtPts(row.openTotal)}` : ''}${mv ? ` · ${mv}` : ''}`);
     }
+    if (proj?.ok && projected) lines.push(...modelLines(matchProjection(proj.list, sport, g), row, g, sport));
     const w = wx.get(g.id);
     if (w) lines.push(`Weather: ${fmtWx(w)}`);
     return { name: `${g.away} @ ${g.home} · ${g.tbd ? 'time TBD' : fmtTime(g.kickoff!)}`, value: lines.join('\n') };
@@ -779,7 +892,7 @@ export function renderSlate(sport: SportId, date: string, games: GameRef[], book
   };
 }
 
-async function slateForSport(rt: Runtime, sport: SportId, slate: { data: Row | null; error: string | null }, o: { dryRun: boolean }): Promise<Outcome> {
+async function slateForSport(rt: Runtime, sport: SportId, slate: { data: Row | null; error: string | null }, o: { dryRun: boolean }, proj: ProjBook | null = null): Promise<Outcome> {
   const c = rt.c, now = rt.now(), date = localDate(now), S = SPORTS[sport];
   const key = `slate:${S.channel}:${date}`;
   const out: Outcome = { action: 'slate', sport, key };
@@ -796,22 +909,133 @@ async function slateForSport(rt: Runtime, sport: SportId, slate: { data: Row | n
   const all = slateGames(slate.data, sport, date);
   const games = all.filter((g) => g.tbd || g.kickoff! > now);
   if (!games.length) return skip(all.length ? `no ${S.label} games left to start today` : `no ${S.label} games today`, { listed: all.length });
-  const book = await linesFor(rt, sport, games, slate.data);
+  let book = await linesFor(rt, sport, games, slate.data);
+  if (!book.ok && S.lines !== 'espn') {
+    /* the consensus feed is down (the NFL odds feed is paused until
+       2026-11-01): one fresh book via ESPN, said so, beats no slate at all */
+    const one = espnLines(rt, slate.data, games);
+    if (one.ok) book = { ...one, fallbackReason: book.reason };
+  }
   if (!book.ok) return skip('line sync failed: ' + book.reason, { games: games.length });
   const w = await weatherFor(rt, sport, games);
-  const payload = renderSlate(sport, date, games, book, w.wx, all.length - games.length, now);
-  const r = await postToDiscord(S.channel, payload, { type: 'slate', postKey: key, postDate: date, dryRun: o.dryRun, detail: { games: games.length, weather_error: w.error, line_source: book.source } }, rt);
-  return { ...out, result: r.status, error: r.error, games: games.length, messages: r.messages, printed: r.printed };
+  const payload = renderSlate(sport, date, games, book, w.wx, all.length - games.length, now, proj);
+  const r = await postToDiscord(S.channel, payload, { type: 'slate', postKey: key, postDate: date, dryRun: o.dryRun, detail: { games: games.length, weather_error: w.error, line_source: book.source, fallback: book.fallbackReason ?? null, projections: proj ? (proj.ok ? 'ok' : proj.reason) : null } }, rt);
+  return { ...out, result: r.status, error: r.error, games: games.length, messages: r.messages, printed: r.printed, ...(book.fallbackReason ? { fallback: book.fallbackReason } : {}) };
+}
+
+// ================================================================== the morning results
+
+/* How EdgeDesk's pregame numbers did yesterday, per sport, read from the
+   /performance/ record (performance/data, rebuilt hourly from the
+   hash-chained ledger): the same grades the public page shows, misses
+   printed exactly like hits. Posted at the 10:00 tick; when a game from
+   yesterday still has no verified final it waits for the 10:30 tick, then
+   posts with that game marked pending. */
+export type PerfBook = { ok: boolean; reason: string | null; rows: Row[] };
+async function loadPerformance(rt: Runtime): Promise<PerfBook> {
+  const sum = await siteJson(rt, 'performance/data/summary.json');
+  if (sum.error || !sum.data) return { ok: false, reason: 'the /performance/ summary could not be read (' + (sum.error ?? 'empty') + ')', rows: [] };
+  const rows: Row[] = [];
+  for (const f of (Array.isArray(sum.data.games) ? sum.data.games as Row[] : [])) {
+    const path = str(f.path).replace(/^\//, '');
+    if (!path) continue;
+    const g = await siteJson(rt, path);
+    if (g.error || !g.data) return { ok: false, reason: `${path} could not be read (${g.error ?? 'empty'})`, rows: [] };
+    rows.push(...(Array.isArray(g.data.rows) ? g.data.rows as Row[] : []));
+  }
+  return { ok: true, reason: null, rows };
+}
+
+export function resultLine(r: Row): Field {
+  const res = (r.result ?? {}) as Row, g = (r.grade ?? null) as Row | null;
+  const home = str(r.home), away = str(r.away);
+  const hs = num(res.home_score), as = num(res.away_score);
+  const final = hs != null && as != null ? ` · final ${away} ${as}, ${home} ${hs}${res.decided && res.decided !== 'REG' ? ` (${str(res.decided)})` : ''}` : '';
+  const name = `${away} @ ${home}${final}`;
+  if (!g) return { name, value: str(res.state) === 'VOID' ? 'Not graded: the game was void' : 'Result not yet verified' };
+  if (g.eligible !== true) return { name, value: `Not graded: ${str(g.why).toLowerCase().replace(/_/g, ' ') || 'not eligible'}` };
+  const lines: string[] = [];
+  const w = (g.winner ?? null) as Row | null;
+  if (w && num(w.p_home) != null) {
+    const ph = num(w.p_home)!, fav = ph >= 0.5 ? home : away, favP = Math.max(ph, 1 - ph);
+    const verdict = w.correct === true ? 'right winner' : w.correct === false ? 'wrong winner' : 'no favourite (50/50)';
+    lines.push(`EdgeDesk: ${fav} ${Math.round(favP * 100)}% · ${verdict}${num(w.brier) != null ? ` · Brier ${num(w.brier)!.toFixed(3)}` : ''}`);
+  }
+  const sp = (g.spread ?? null) as Row | null, mk = (g.market ?? {}) as Row, msp = (mk.spread ?? null) as Row | null;
+  if (sp && num(sp.projected_margin) != null && num(sp.actual_margin) != null) {
+    const pm = num(sp.projected_margin)!, am = num(sp.actual_margin)!;
+    const side = (m: number) => (m === 0 ? 'level' : `${m > 0 ? home : away} by ${Math.abs(m).toFixed(1).replace(/\.0$/, '')}`);
+    lines.push(`Margin: EdgeDesk ${side(pm)} · actual ${side(am)} · off by ${Math.abs(num(sp.abs_error) ?? am - pm).toFixed(1)}${msp && num(msp.market_abs_error) != null ? ` (the book's line off by ${num(msp.market_abs_error)!.toFixed(1)})` : ''}`);
+  }
+  const tt = (g.total ?? null) as Row | null, mt = (mk.total ?? null) as Row | null;
+  if (tt && num(tt.projected_total) != null && num(tt.actual_total) != null) {
+    lines.push(`Total: EdgeDesk ${num(tt.projected_total)!.toFixed(1)} · actual ${num(tt.actual_total)} · off by ${Math.abs(num(tt.abs_error) ?? 0).toFixed(1)}${mt && num(mt.market_abs_error) != null ? ` (the book's off by ${num(mt.market_abs_error)!.toFixed(1)})` : ''}`);
+  }
+  const clv = num(((mk.clv ?? {}) as Row).spread_pts);
+  if (clv != null) lines.push(`Close: ${clv === 0 ? "the line closed where EdgeDesk's number started" : `the line moved ${Math.abs(clv).toFixed(1)} pts ${clv > 0 ? 'toward' : 'away from'} EdgeDesk's number`}`);
+  if (str(r.tier) === 'RECORDED') lines.push('(recorded pregame, before the ledger locked forecasts)');
+  return { name, value: lines.join('\n') || 'Graded' };
+}
+
+export function renderResults(sport: SportId, date: string, rows: Row[], c: Cfg): Payload {
+  const S = SPORTS[sport];
+  const graded = rows.filter((r) => (r.grade as Row | undefined)?.eligible === true);
+  const called = graded.filter((r) => ((r.grade as Row).winner as Row | undefined)?.correct != null);
+  const right = called.filter((r) => ((r.grade as Row).winner as Row).correct === true).length;
+  const briers = graded.map((r) => num(((r.grade as Row).winner as Row | undefined)?.brier)).filter((x): x is number => x != null);
+  const totErr = graded.map((r) => num(((r.grade as Row).total as Row | undefined)?.abs_error)).filter((x): x is number => x != null);
+  const summary = [
+    called.length ? `Right winner: ${right} of ${called.length}` : null,
+    briers.length ? `Brier ${mean(briers)!.toFixed(3)}` : null,
+    totErr.length ? `avg total miss ${mean(totErr)!.toFixed(1)}` : null,
+  ].filter(Boolean).join(' · ');
+  return {
+    embeds: [{
+      title: `${S.label} results · ${fmtLongDate(date)}`,
+      url: c.performanceUrl,
+      description: [
+        summary || 'No graded games.',
+        "How EdgeDesk's pregame numbers did, every game, from the public record. Shown the same way right or wrong. Brier: lower is better.",
+        `Full record: ${c.performanceUrl}`,
+      ].join('\n'),
+      fields: rows.map((r) => resultLine(r)),
+      footer: { text: FOOTER_SLATE },
+    }],
+  };
+}
+
+async function resultsForSport(rt: Runtime, sport: SportId, perf: PerfBook, o: { dryRun: boolean; ignoreSchedule: boolean }): Promise<Outcome> {
+  const c = rt.c, now = rt.now(), lp = localParts(now), S = SPORTS[sport];
+  const day = addDays(lp.date, -1);
+  const key = `results:${S.channel}:${day}`;
+  const out: Outcome = { action: 'results', sport, key };
+  if (!o.dryRun) {
+    const cs = await claimState(c, key);
+    if (cs.state && cs.state !== 'failed') return { ...out, result: 'already_posted', state: cs.state };
+  }
+  if (!perf.ok) { await logSkip(c, S.channel, 'results', key, day, 'results not posted: ' + perf.reason); return { ...out, result: 'skipped', reason: perf.reason }; }
+  const rows = perf.rows.filter((r) => r.sport === S.perf && ms(r.start_utc) != null && localDate(ms(r.start_utc)!) === day)
+    .sort((a, b) => ms(a.start_utc)! - ms(b.start_utc)! || str(a.home).localeCompare(str(b.home)));
+  if (!rows.length) return { ...out, result: 'none', reason: `no ${S.label} games on record for ${day}` };
+  const pending = rows.filter((r) => !r.grade && str((r.result as Row | undefined)?.state) !== 'VOID').length;
+  if (pending && !o.ignoreSchedule && lp.minute < 30) return { ...out, result: 'waiting', reason: `${pending} final${pending === 1 ? '' : 's'} not yet verified; posting at the :30 tick` };
+  const r = await postToDiscord(S.channel, renderResults(sport, day, rows, c), { type: 'results', postKey: key, postDate: day, dryRun: o.dryRun, detail: { games: rows.length, pending } }, rt);
+  return { ...out, result: r.status, error: r.error, games: rows.length, pending, messages: r.messages, printed: r.printed };
 }
 
 export async function runSlate(rt: Runtime, o: { dryRun?: boolean; ignoreSchedule?: boolean; sports?: SportId[] } = {}): Promise<Row> {
   const now = rt.now(), lp = localParts(now);
   if (!o.ignoreSchedule && lp.hour !== rt.c.slateHour) return { ok: true, action: 'slate', result: 'not_due', local: `${lp.date} ${lp.hour}:${String(lp.minute).padStart(2, '0')} CT` };
   const slate = await siteJson(rt, 'today/slate.json');
+  const proj = await loadProjections(rt);
+  const perf = await loadPerformance(rt);
   const dryRun = o.dryRun ?? rt.c.dryRun;
   const results: Outcome[] = [];
   for (const sport of o.sports ?? SPORT_ORDER) {
-    try { results.push(await slateForSport(rt, sport, slate, { dryRun })); }
+    /* yesterday's results first, so the channel reads results, then today */
+    try { results.push(await resultsForSport(rt, sport, perf, { dryRun, ignoreSchedule: !!o.ignoreSchedule })); }
+    catch (e) { results.push({ action: 'results', sport, result: 'error', error: clip(scrub(errMsg(e)), 300) }); }
+    try { results.push(await slateForSport(rt, sport, slate, { dryRun }, proj)); }
     catch (e) { results.push({ action: 'slate', sport, result: 'error', error: clip(scrub(errMsg(e)), 300) }); }
   }
   return { ok: !results.some((x) => ['failed', 'partial', 'unknown', 'error'].includes(str(x.result))), action: 'slate', date: lp.date, results };

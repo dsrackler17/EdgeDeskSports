@@ -54,7 +54,7 @@ create table if not exists public.discord_posts (
   payload             jsonb,
   detail              jsonb not null default '{}'::jsonb,
   constraint discord_posts_channel check (channel ~ '^DISCORD_WEBHOOK_[A-Z0-9_]+$'),
-  constraint discord_posts_type check (type in ('clv_scorecard', 'slate', 'sample', 'sample_followup', 'adhoc')),
+  constraint discord_posts_type check (type in ('clv_scorecard', 'slate', 'results', 'sample', 'sample_followup', 'adhoc')),
   constraint discord_posts_status check (status in ('sent', 'failed', 'partial', 'unknown', 'dry_run', 'duplicate', 'skipped')),
   -- a webhook URL is a credential: it must never be stored, even by accident
   constraint discord_posts_no_webhook_url check (
@@ -62,6 +62,11 @@ create table if not exists public.discord_posts (
     and coalesce(payload::text, '') !~* 'discord(app)?\.com/api/(v[0-9]+/)?webhooks/[0-9]+/'
     and detail::text !~* 'discord(app)?\.com/api/(v[0-9]+/)?webhooks/[0-9]+/')
 );
+-- 2026-10-16 r2: the morning results post. An existing table gets the wider
+-- type list here (the create above only shapes a new one).
+alter table public.discord_posts drop constraint if exists discord_posts_type;
+alter table public.discord_posts add constraint discord_posts_type
+  check (type in ('clv_scorecard', 'slate', 'results', 'sample', 'sample_followup', 'adhoc'));
 create index if not exists discord_posts_sent_idx on public.discord_posts (sent_at desc);
 create index if not exists discord_posts_problem_idx on public.discord_posts (sent_at desc)
   where status in ('failed', 'partial', 'unknown');
@@ -219,6 +224,9 @@ with checks as (
                then 1 else 0 end), 1
   union all select 5, 'a webhook URL cannot be written into the log',
          (select count(*) from pg_constraint where conname = 'discord_posts_no_webhook_url')::int, 1
+  union all select 6, 'the log accepts the morning results post (type results)',
+         (select count(*) from pg_constraint where conname = 'discord_posts_type'
+            and pg_get_constraintdef(oid) like '%results%')::int, 1
 )
 select n, check_name, got, want, case when got = want then 'ok' else 'CHECK THIS' end as status
 from checks order by 1;
