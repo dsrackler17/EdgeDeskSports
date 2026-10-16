@@ -37,8 +37,8 @@
   "status": "ready",
   "article_type": "pregame",
   "related": null,
-  "frozen": false,
-  "frozen_at": null,
+  "frozen": true,
+  "frozen_at": "2026-10-15T23:30:00.000Z",
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
   "research_source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser.",
@@ -1899,81 +1899,10 @@
     "priced_label": "PRICED BY MODEL — the projection and its drivers, from validated inputs only.",
     "source": "Ratings: football/rankings/current.json — 2026 Week 7, built 2026-10-15. Projection: the same EdgeDesk Power 4 game model the board runs. Every number is read from one committed build; nothing on this page was computed in your browser."
   },
-  "football_evidence": {
-    "schema": "edgedesk_article_evidence_v1",
-    "packet_hash": "1eboin5zk4bwj",
-    "status": "PARTIALLY_EXPLAINED",
-    "input_suspect": false,
-    "question": "Can East Carolina win at the line of scrimmage?",
-    "assessment": "Some measured evidence supports EdgeDesk’s lean toward East Carolina, and its own breakdown accounts for about 0.0 of the 3.3 points, but not the full gap. It is a research question, not a bet.",
-    "gap": {
-      "points": 3.3,
-      "toward": "East Carolina",
-      "other": "UAB"
-    },
-    "supporting": [
-      "When UAB has the ball (pass protection against the pass rush): UAB’s offense has allowed a sack on 10.6% of its dropbacks, and East Carolina’s defense sacks the quarterback on 11.1% of opponent dropbacks (FBS average 5.6%).",
-      "When UAB has the ball (big plays on the ground): UAB’s offense turns 4.9% of its runs into explosive gains, and East Carolina’s defense gives up explosive gains on 5.7% of opponent runs (FBS average 6.6%).",
-      "When UAB has the ball (the line of scrimmage on running plays): UAB’s offense is stopped at or behind the line on 12.8% of its runs, and East Carolina’s defense stops 30.9% of opponent runs at or behind the line (FBS average 17.4%).",
-      "When East Carolina has the ball (the line of scrimmage on running plays): East Carolina’s offense is stopped at or behind the line on 15.2% of its runs, and UAB’s defense stops 10.4% of opponent runs at or behind the line (FBS average 17.4%)."
-    ],
-    "contradicting": [
-      "When East Carolina has the ball (pass protection against the pass rush): East Carolina’s offense has allowed a sack on 6.9% of its dropbacks, and UAB’s defense sacks the quarterback on 9.0% of opponent dropbacks (FBS average 5.6%).",
-      "When East Carolina has the ball (third down): East Carolina’s offense converts 23.5% of its third downs, and UAB’s defense allows opponents to convert 36.6% of their third downs (FBS average 39.5%).",
-      "When East Carolina has the ball (big plays through the air): East Carolina’s offense turns 8.7% of its pass plays into explosive gains, and UAB’s defense gives up explosive gains on 5.0% of opponent pass plays (FBS average 10.4%).",
-      "Mitch Griffis has completed 39 of 71 passes (54.9%) for 422 yards, 5.9 yards per attempt, 3 touchdowns and 1 interception in five games for East Carolina, and has been sacked on 5 of 76 dropbacks."
-    ],
-    "quarterbacks": [
-      "Ryder Burton has completed 73 of 131 passes (55.7%) for 949 yards, 7.2 yards per attempt, 5 touchdowns and 5 interceptions in six games for UAB, and has been sacked on 16 of 147 dropbacks.",
-      "Emory Williams has completed 49 of 76 passes (64.5%) for 552 yards, 7.3 yards per attempt, 5 touchdowns and 1 interception in four games for East Carolina, and has been sacked on 6 of 82 dropbacks.",
-      "Mitch Griffis has completed 39 of 71 passes (54.9%) for 422 yards, 5.9 yards per attempt, 3 touchdowns and 1 interception in five games for East Carolina, and has been sacked on 5 of 76 dropbacks."
-    ],
-    "availability": [],
-    "script": {
-      "model": [
-        "East Carolina’s defense has to come out ahead at the line of scrimmage: it stops 30.9% of opponent runs at or behind the line, against an offense that is stopped at or behind the line on 12.8% of its runs.",
-        "East Carolina’s offense has to hold its own in the pass-rush matchup against a defense that sacks the quarterback on 9.0% of opponent dropbacks.",
-        "East Carolina’s offense has to hold its own on big pass plays against a defense that gives up explosive gains on 5.0% of opponent pass plays.",
-        "East Carolina’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 11.1% of opponent dropbacks, against an offense that has allowed a sack on 10.6% of its dropbacks."
-      ],
-      "market": [
-        "UAB’s defense has to come out ahead in the pass-rush matchup: it sacks the quarterback on 9.0% of opponent dropbacks, against an offense that has allowed a sack on 6.9% of its dropbacks.",
-        "UAB’s defense has to come out ahead on big pass plays: it gives up explosive gains on 5.0% of opponent pass plays, against an offense that turns 8.7% of its pass plays into explosive gains.",
-        "UAB’s offense has to keep winning at the line of scrimmage: it is stopped at or behind the line on 12.8% of its runs, and East Carolina’s defense stops 30.9% of opponent runs at or behind the line."
-      ]
-    },
-    "unknown": [
-      "EdgeDesk’s own sources disagree on sack rate allowed and sack rate for UAB and East Carolina.",
-      "Not in EdgeDesk’s verified data for this game: turnover rates, injuries and personnel and penalty rate."
-    ],
-    "flags": [
-      {
-        "key": "DATA_CONFLICT",
-        "severity": "medium",
-        "text": "EdgeDesk’s own sources disagree on sack rate allowed (UAB), sack rate (UAB), sack rate allowed (East Carolina) and sack rate (East Carolina); the evidence uses the corroborated figures, and any model term built on the play-by-play figure may be off."
-      }
-    ],
-    "sources": [
-      {
-        "label": "EdgeDesk play-by-play metrics, quarterback logs and box scores",
-        "url": null,
-        "path": "football/matchup/metrics.json",
-        "observed_at": "2026-10-15T17:47:37.371Z",
-        "verification": "VERIFIED_DATA"
-      },
-      {
-        "label": "EdgeDesk play-by-play quarterback logs (2026)",
-        "url": null,
-        "path": "football/fbs_epa/qb_epa_2026.json",
-        "observed_at": "2026-10-15T00:00:00.000Z",
-        "verification": "VERIFIED_DATA"
-      }
-    ],
-    "needs_confirmation": []
-  },
+  "football_evidence": null,
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-15T21:17:53.208Z"
+    "at": "2026-10-16T04:22:04.398Z"
   }
 }
