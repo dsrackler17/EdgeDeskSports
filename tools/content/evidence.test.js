@@ -198,6 +198,21 @@ chk('G software jargon fails for a publisher', failed(revalidate(o1, add('conclu
 /* the format decides the audience: a matchup_analysis is written for a publisher whoever validates it */
 chk('G … even when no publisher is named, a publisher format keeps the rule', failed(revalidate(o1, add('conclusion', 'The V2.1 ensemble disagrees.'), null), 'no_software_jargon'));
 chk('G … but not for EdgeDesk’s own page', (() => { const w = write(OM, 'edgedesk_analysis'); const a = edit(w.a, 'conclusion', (b) => b + '\n\nThe V2.1 ensemble disagrees.'); return !failed(CE.validate(a, w.o, { publisher: null, now: NOW, teamLists: TL }), 'no_software_jargon'); })());
+/* a conference report names one quarterback ("lists quarterback Jared Curtis
+   as questionable"): a sourced report, like the NFL's player list, so the
+   sentence the packet itself prints is not charged as unsupported */
+{
+  const SENT = 'Vanderbilt’s initial SEC availability report (published Oct. 7) lists quarterback Jared Curtis as questionable.';
+  const withReport = (keep) => {
+    const p = JSON.parse(JSON.stringify(OM));
+    p.evidence.claims = p.evidence.claims.filter((c) => keep || !(c.verification === 'OFFICIAL_REPORT' && c.team === 'Vanderbilt'));
+    p.evidence.claims.filter((c) => c.verification === 'OFFICIAL_REPORT' && c.subject === 'Jared Curtis').forEach((c) => { c.values.status = 'QUESTIONABLE'; c.status = 'QUESTIONABLE'; });
+    const w = write(p, 'matchup_analysis');
+    return CE.validate(edit(w.a, 'conclusion', (b) => b + '\n\n' + SENT), w.o, { publisher: SR, now: NOW, teamLists: TL });
+  };
+  chk('G a conference report’s quarterback listing supports the uncertainty it states', passed(withReport(true), 'qb_claims_sourced'), withReport(true).checks.filter((c) => c.id === 'qb_claims_sourced'));
+  chk('G … and the same sentence with no Vanderbilt report on file still fails', failed(withReport(false), 'qb_claims_sourced'));
+}
 /* the 14-check editorial gate (CE.gate) the database requires before approval sees the evidence too */
 chk('G the editorial gate BLOCKS when the evidence fails (under unsupported factual claims)', (() => {
   const bad = add('thesis', 'EdgeDesk’s model likes Vanderbilt because Vanderbilt’s defense sacks the quarterback on 8.0% of opponent dropbacks.');

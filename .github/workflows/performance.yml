@@ -18,10 +18,13 @@
 #   5. verify again (the new ledger must extend the committed one, byte for
 #      byte) and commit only the generated paths (tools/ci/push_generated.sh);
 #   6. optionally mirror to Supabase (vars.PERFORMANCE_SUPABASE == 'on');
-#   7. go red on an ERROR or ALERT in performance/data/health.json (a missing
+#   7. list what needs a person from performance/data/health.json (a missing
 #      final, an unmatched game or a source conflict a day old, a stale
-#      capture, a metric that moved more than new games explain), AFTER the
-#      data is published, so GitHub tells the owner.
+#      capture, a metric that moved more than new games explain) as
+#      annotations and in the run summary. It never fails the run: an alert
+#      is a data question, not a broken job, and a red hourly run would email
+#      the owner every hour until a source catches up. The run goes red only
+#      when the job itself breaks (a rule test fails, a chain does not verify).
 #
 # COST. One hourly run of about a minute on a stock runner; ESPN's public
 # scoreboard (free, keyless) only for missed dates; no paid service and no new
@@ -88,10 +91,8 @@ jobs:
           EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
         run: node tools/performance/sync.js
 
-      - name: Surface what needs a person (missing finals, conflicts, unmatched games, stale capture, metric shifts)
-        run: |
-          node -e "
-            const h = require('./performance/data/health.json');
-            h.items.forEach((i) => console.log((i.level === 'ERROR' || i.level === 'ALERT' ? '::error title=' : i.level === 'WARN' ? '::warning title=' : '::notice title=') + i.check + '::' + i.detail));
-            if (h.status === 'ERROR' || h.status === 'ALERT') process.exit(1);
-          "
+      # Annotations and the run summary only: never exits non-zero, so an
+      # alert does not turn the run red or send a failure email.
+      - name: List what needs a person (missing finals, conflicts, unmatched games, stale capture, metric shifts)
+        if: ${{ always() }}
+        run: node tools/performance/health_report.js

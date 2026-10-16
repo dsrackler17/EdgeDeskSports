@@ -59,6 +59,22 @@ const LANDING_GAMES = 3;
 /* a game that kicked off this long ago leaves current.json (its history stays) */
 const STARTED_KEEP_H = 36;
 
+/* landing.json embeds current.json's snapshots whole (landing_model.test.js
+   compares them byte for byte), so it takes them from current.json AS WRITTEN:
+   writeIfChanged keeps the old file when only a clock field moved, and a
+   snapshot from this run would then differ from it by its generated_at. It is
+   rewritten whenever what it embeds differs, clock fields included. */
+function writeLanding(land, dir) {
+  dir = dir || OUT;
+  const json = (f) => { try { return JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')); } catch (_) { return null; } };
+  const file = path.join(dir, 'landing.json'), cur = json('current.json'), disk = {};
+  ((cur && cur.games) || []).forEach((s) => { disk[s.game_key] = s; });
+  land.games.forEach((g) => { if (disk[g.game_key]) g.snapshot = disk[g.game_key]; });
+  const prev = json('landing.json');
+  const embedded = (l) => JSON.stringify(((l && l.games) || []).map((g) => g.snapshot));
+  if (prev && embedded(prev) !== embedded(land)) { fs.writeFileSync(file, JSON.stringify(land)); return 'written'; }
+  return writeIfChanged(file, land, { pretty: false });
+}
 function readJson(rel) { try { return JSON.parse(fs.readFileSync(path.join(ROOT, rel), 'utf8')); } catch (_) { return null; } }
 function num(v) { if (v == null || v === '') return null; const n = Number(v); return Number.isFinite(n) ? n : null; }
 
@@ -358,7 +374,7 @@ function main() {
     if (!cur || !probs) { console.error('football/game_research/current.json or probabilities.json is missing'); process.exit(1); }
     const nowArg = (() => { const i = argv.indexOf('--now'); return i >= 0 ? Date.parse(argv[i + 1]) : Date.now(); })();
     const land = landingFor(cur, probs, readJson('articles/data/editorial/featured.json'), nowArg);
-    const w = writeIfChanged(path.join(OUT, 'landing.json'), land, { pretty: false });
+    const w = writeLanding(land);
     console.log('landing.json ' + w + ' (' + land.games.map((g) => g.game_key).join(', ') + ')');
     return;
   }
@@ -443,8 +459,7 @@ function main() {
   const w1 = writeIfChanged(path.join(OUT, 'current.json'), r.current, { pretty: false });
   const w2 = writeIfChanged(path.join(OUT, 'probabilities.json'), r.probabilities, { pretty: false });
   /* the landing page's games carry the trail just appended, like current.json */
-  r.landing.games.forEach((g) => { const s = r.current.games.find((x) => x.game_key === g.game_key); if (s) g.snapshot = s; });
-  const w3 = writeIfChanged(path.join(OUT, 'landing.json'), r.landing, { pretty: false });
+  const w3 = writeLanding(r.landing);
   const c = r.current.counts;
   console.log('game research: ' + c.games + ' games (' + c.nfl + ' NFL, ' + c.cfb + ' CFB), ' + c.model_available + ' projected, ' + c.limited + ' limited, '
     + c.data_fault + ' data faults, ' + c.started + ' started; sheets ' + c.with_sheet + ' matched / ' + c.sheet_mismatch + ' dropped; '
@@ -453,4 +468,4 @@ function main() {
 }
 
 if (require.main === module) main();
-module.exports = { build, buildIdentity, loadHistory, historyRow, nflRecords, espnByGame, sheetsFor, landingFor, SCHEMA, PROB_SCHEMA, HISTORY_SCHEMA, LANDING_SCHEMA, LANDING_GAMES };
+module.exports = { build, buildIdentity, loadHistory, historyRow, nflRecords, espnByGame, sheetsFor, landingFor, writeLanding, SCHEMA, PROB_SCHEMA, HISTORY_SCHEMA, LANDING_SCHEMA, LANDING_GAMES };

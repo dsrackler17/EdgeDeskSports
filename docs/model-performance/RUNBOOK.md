@@ -36,7 +36,7 @@ How to run, configure, monitor and roll back the public model performance record
 
 **`tools/performance/pipeline.js`:**
 - `MISSING_FINAL_HOURS = 8`: after this many hours a missing final is reported.
-- `ALERT_HOURS = 30`: after this many hours it turns the run red.
+- `ALERT_HOURS = 30`: after this many hours it is listed as an alert.
 - `CHASE_DAYS = 21`: after this many days the job stops looking for a final.
 
 **Changing how games are graded:** bump `GRADER_VERSION`. The next run regrades every game as a new grade revision with `reason: method_change`. The old grades are kept.
@@ -65,13 +65,15 @@ How to run, configure, monitor and roll back the public model performance record
 
 Every run writes `performance/data/health.json` and adds a summary to the run page.
 
-### When the run turns red
+**Health items never turn the run red, so they send no failure email.** The last step, `tools/performance/health_report.js`, lists each one as an annotation on the run (ERROR and ALERT as errors). The run goes red only when the job itself breaks: a rule test fails, or a ledger chain does not verify. In that case nothing is written.
 
-The run turns red, after the data is published, on any item with level ERROR or ALERT:
+### Alerts to look at
+
+Check the run's annotations or `health.json` for items with level ERROR or ALERT:
 
 | Check | Meaning | What to do |
 |---|---|---|
-| `chain_integrity` (ERROR) | A committed ledger file no longer verifies. Someone edited a line. | Restore the file from git (`git checkout <last good> -- performance/ledger/...`). The job refuses to write until the chain is whole. |
+| `chain_integrity` (ERROR) | A committed ledger file no longer verifies. Someone edited a line. This is the one item that also fails the run, because the job cannot write. | Restore the file from git (`git checkout <last good> -- performance/ledger/...`). The job refuses to write until the chain is whole. |
 | `missing_finals` (ALERT after 30 h) | A started game has no verified final from any source. | Check `today/slate.json` and the sport's own result file. ESPN is re-read by date automatically (4 reads a run). |
 | `result_conflicts` (ALERT after 30 h) | Two sources disagree on the final. | Nothing is settled until they agree. Check which source is wrong; the correction lands on its own once it agrees. |
 | `unmatched_events` (ALERT after 30 h) | An NFL or NHL forecast could not be matched to the scoreboard by team names and start. | A team-name difference between the engine and ESPN. Check `tools/performance/sources.js` `matchSlate`. |
@@ -81,7 +83,7 @@ The run turns red, after the data is published, on any item with level ERROR or 
 ### Warnings and notices
 
 - `postponed`, `unresolved_finals`, `ungraded`, `late_forecasts_refused`, `duplicate_publication` and `source_read_failed` are warnings or notices.
-- They are listed on the run and in `health.json`. They do not turn the run red.
+- They are listed on the run and in `health.json`, like the alerts above.
 
 **Duplicate runs** append nothing. Every step is idempotent: content hashes, and `writeIfChanged` for the public files. A week's social draft is written once, and a different rebuild of it is refused and reported.
 

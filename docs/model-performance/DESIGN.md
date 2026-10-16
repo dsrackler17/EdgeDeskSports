@@ -243,7 +243,7 @@ The sync runs only with secrets present and `vars.PERFORMANCE_SUPABASE == 'on'`,
 
 ### Failure handling
 
-A health check that fails turns the run red through a separate step (the `model-health.yml` pattern), so GitHub notifies the owner. The data is still committed first.
+Health items never turn the run red. The last step (`tools/performance/health_report.js`) lists them as annotations, and the run summary and `health.json` carry the same list. An alert is a data question, such as a final not yet posted or two sources that disagree. A red run for it would email the owner every hour until the source catches up. The run goes red only when the job itself breaks: a rule test fails or a ledger chain does not verify. In that case nothing is written.
 
 ### Cost
 
