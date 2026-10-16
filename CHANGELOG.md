@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-10-16 — Model-first game research: an automatic matchup graphic, a research page per game, and a market outage that no longer hides the model
+
+**EdgeDesk's own projections now lead every NFL and FBS game, with or without a sportsbook quote.** See `docs/game-research/README.md`.
+
+- **A research snapshot per game** (`lib/edgedesk_game_snapshot.js`, built hourly by `tools/football/build_game_research.js` into `football/game_research/`): projected score, fair spread and total, both win probabilities, the model moneyline (labelled a model estimate), the 80% range, the model's own terms, unit rankings, reliability or the NFL data check. It reads no sportsbook number. Every snapshot is held to its own arithmetic (scores reconcile, probabilities sum to 100%, the moneyline restates the probability); a failure is a visible DATA FAULT.
+- **Insights from measured data only**: an offense against the unit that has to stop it, strength on strength, the projection's own strength and home-field terms, continuity and special teams. Never generic copy; some games show two.
+- **The matchup graphic** (`lib/edgedesk_game_graphic.js`): deterministic Canvas rendering of one snapshot, square 1080×1080 and portrait 1080×1350, EdgeDesk branding, team monograms in team colours (no unlicensed logos), a live-market panel only from a fresh quote, otherwise EdgeDesk's model detail. Download, native share, copy link; cached by snapshot, quote and format; any past graphic redraws from the append-only history. `npm run game:graphics` batch-exports PNGs.
+- **The research page** `#game/<nfl|cfb>/<id>` (`lib/edgedesk_game_view.js`): status (research · model · market · betting decision, four separate answers), the graphic first, the overview, what to watch for, Beginner / Research / Lab, the optional market comparison, and Compare my number. Every board card opens with the projection and **Game research & graphic**; Today's Games, desk and email links open the page.
+- **NO DECISION no longer leads a game** when the only reason is the quote (stale, missing, suspended, failed its check): the card reads *Market comparison · betting decision not evaluated* with the full decision under Lab details. Model and game blockers keep the full card. The decision engine, stale-market safeguards and ingestion are unchanged.
+- **Compare my number with a price**: spread, total or moneyline with American odds, priced by the linemaker's `EDFairLine.priceCheck` on the snapshot's own probability sheet: implied probability, model probability, difference, fair odds, and EV only where the market's probabilities are calibrated. Labelled *User-entered, unverified sportsbook quote*; never stored.
+- **Tests.** `npm run game:research:test` (every committed game, synthetic edge cases, market states, price checks, graphic bounds, history, integrity and a tamper case, app wiring) and `npm run game:research:e2e` (Chromium at 390 px and 1280 px with fresh, stale and missing odds). CI: `game-research-tests.yml`.
+
 ## 2026-10-16 — Learn EdgeDesk: a first-visit introduction, task walkthroughs, Help, and terms explained where they appear
 
 **A first-time visitor can now learn EdgeDesk inside the product.** See `docs/guide/README.md`.
