@@ -177,7 +177,9 @@ try {
 
   /* ── refunds ─────────────────────────────────────────────────────────── */
   event('charge.refunded', { id: 'ch_1', object: 'charge', customer: 'cus_ref', invoice: 'in_1', amount: 7999, amount_refunded: 7999, currency: 'usd' }, null, 50);
-  chk('a full refund voids an unpaid commission', db.sql(`select status from public.affiliate_commissions where stripe_invoice_id = 'in_1' and kind = 'accrual';`) === 'void');
+  chk('a full refund of an unpaid commission books a negative row for all of it (the accrual is never voided)',
+    db.sql(`select string_agg(kind || ':' || amount_cents || ':' || status, ',' order by id) from public.affiliate_commissions where stripe_invoice_id = 'in_1';`)
+      === 'accrual:2000:pending,clawback:-2000:pending');
   event('charge.refunded', { id: 'ch_4', object: 'charge', customer: 'cus_ref', invoice: 'in_4', amount: 7999, amount_refunded: 4000, currency: 'usd' }, null, 40);
   const claw = db.sql(`select amount_cents || '|' || status from public.affiliate_commissions where stripe_invoice_id = 'in_4' and kind = 'clawback';`);
   chk('a refund after payout books a proportional negative clawback', claw === '-1000|pending', claw);
@@ -203,7 +205,7 @@ try {
   const dash = JSON.parse(db.as(U.partner, `select public.affiliate_my_dashboard();`));
   chk('the dashboard answers for the caller\'s own account', dash.account && dash.account.code === 'COACHBIGGS');
   chk('clicks, signups, trials and paid customers are counted', dash.stats.clicks === 1 && dash.stats.signups === 2 && dash.stats.trials === 1 && dash.stats.paid_customers === 2, dash.stats);
-  chk('commission is split by status', dash.stats.paid_cents === 2000 && dash.stats.void_cents === 2000 && dash.stats.pending_cents > 0, dash.stats);
+  chk('commission is split by status, refunds netted by negative rows', dash.stats.paid_cents === 2000 && dash.stats.void_cents === 0 && dash.stats.pending_cents === 5000, dash.stats);
   chk('no referred customer is identifiable in it', !/example\.com|cus_|00000000-/.test(JSON.stringify(dash)));
   const none = JSON.parse(db.as(U.ref, `select public.affiliate_my_dashboard();`));
   chk('a reader with no partner account sees no stats', none.ok === true && none.account === null && !none.stats);

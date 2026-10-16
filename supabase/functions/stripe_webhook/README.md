@@ -115,6 +115,12 @@ Stripe Dashboard → Developers → Webhooks → **Add endpoint**
   `charge.dispute.created` (raised as an alert only — a dispute never changes
   access by itself).
 
+  **The partner program needs two of these** (`supabase/affiliates.sql` reads
+  them from the ledger by trigger; this function's code does not change):
+  `charge.refunded` and `charge.dispute.created`, which book the negative
+  commission rows for a refunded or disputed payment. Add them to the live
+  endpoint, and to the test-mode endpoint if one is used.
+
 Stripe then shows a **signing secret** (`whsec_…`). Put it in
 `STRIPE_WEBHOOK_SECRET` and redeploy the function so it picks the secret up.
 

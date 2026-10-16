@@ -35,6 +35,9 @@ on:
       - 'lib/edgedesk_bankroll.js'
       - 'tools/bettor/**'
       - 'supabase/affiliates.sql'
+      - 'supabase/affiliate_connor.sql'
+      - 'lib/edgedesk_ref.js'
+      - 'lib/edgedesk_public.js'
       - 'supabase/growth.sql'
       - 'supabase/billing.sql'
       - 'supabase/stripe_webhook.sql'
@@ -127,6 +130,11 @@ jobs:
         run: node tools/billing/billing_core.test.js
       - name: The browser asks the database for access, never decides it, and gives up boundedly
         run: node tools/billing/access_client.test.js
+      # A creator's code (?ref=CONNOR10): kept with its click time once the
+      # server confirms it, the last valid click wins, gone after 30 days, and
+      # a browser that refuses storage still checks out.
+      - name: The creator code a visitor checks out with is the last valid click, for 30 days
+        run: node tools/billing/checkout_ref.test.js
       - name: The billing console puts every account in exactly one of five verdicts
         run: node tools/billing/admin_console.test.js
       - name: Compare My Number, research cards, personas, creator offers, trial actions, public samples
@@ -193,6 +201,16 @@ jobs:
         run: node tools/personal/personal_sql.test.js
       - name: The partner program and its campaigns track what happened and never rewrite money or credit
         run: node tools/personal/affiliates_sql.test.js
+      # Connor's deal on a simulated test clock: $0 trial, $9.00 x3, $10.00,
+      # 12 months then nothing, refunds and disputes capped, a returning
+      # customer never attributed, test mode kept out of the statement.
+      - name: Connor's referral deal books exactly what it promises, and the payout statement totals it
+        run: node tools/personal/affiliate_connor_sql.test.js
+      # The same, through the shipped checkout and webhook: the code applies
+      # only on MONTHLY_PRICE_ID, never with allow_promotion_codes, and Stripe
+      # refusing it never costs the customer the checkout.
+      - name: A creator's code through the real checkout and webhook
+        run: node tools/billing/affiliate_flow.test.js
       - name: The bettor's bankroll units and placed bets are private; EdgeDesk's frozen decisions are write-once and pregame
         run: node tools/bettor/bettor_sql.test.js
       - name: Trial activation, acquisition attribution and public samples

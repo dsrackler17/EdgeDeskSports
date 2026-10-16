@@ -1450,6 +1450,10 @@ footer{border-top:1px solid var(--line);background:var(--deep);padding:52px 0 44
 <!-- THE ONE ACCESS DECISION (public.my_billing_access) and the two server
      functions that change it: create_checkout_session, sync_subscription. -->
 <script src="/lib/edgedesk_access.js?v=20261004a"></script>
+<!-- The creator's code this visitor will check out with: the last valid
+     ?ref= clicked, kept 30 days (sent to create_checkout_session as
+     affiliate_code; the server decides whether it applies). -->
+<script src="/lib/edgedesk_ref.js?v=20261016ref1"></script>
 <script src="/lib/edgedesk_flags.js?v=20261008a"></script>
 <script src="/lib/edgedesk_odds_tools.js?v=20261008a"></script>
 <script>try{window.EDPricing&&window.EDPricing.apply(document);}catch(e){}</script>
@@ -1686,13 +1690,16 @@ async function acqClaim(token){
       body:JSON.stringify({p_visitor:affVisitor(),p_first:acqTouch(ED_ATTR&&ED_ATTR.first),p_last:acqTouch(attrRead(ATTR_LAST))})});
   }catch(e){}
 }
-/* A CREATOR CAMPAIGN'S OFFER (supabase/affiliates.sql affiliate_offer): the
-   code to carry to Stripe checkout, and the discount only as STRIPE records
-   it — worded by lib/edgedesk_pricing.js. No record, no discount line: the
-   page never promises a discount Stripe has not confirmed. */
+/* A CREATOR CAMPAIGN'S OFFER (supabase/affiliates.sql affiliate_offer), for
+   the code this visitor will check out with (lib/edgedesk_ref.js: the code on
+   this URL, else the last valid one kept within 30 days): the discount only
+   as STRIPE records it — worded by lib/edgedesk_pricing.js. No record, no
+   discount line: the page never promises a discount Stripe has not confirmed. */
 var ED_OFFER=null;
 async function edOfferLoad(){
-  var code=affCode(attrRef()); if(!code) return;
+  var code=null;
+  try{ code=window.EDRef?(EDRef.fromUrl()||EDRef.read()):null; }catch(e){ code=null; }
+  if(!code) return;
   try{
     var r=await fetch(SB_URL+'/rest/v1/rpc/affiliate_offer',{method:'POST',
       headers:{apikey:SB_KEY,authorization:'Bearer '+SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({p_code:code})});
@@ -2003,7 +2010,10 @@ async function confirmArl(){
 
   var btn=document.getElementById('arlSubmit'); btn.disabled=true; var old=btn.textContent; btn.textContent='…';
   msg.className='auth-msg ok'; msg.textContent='Opening secure checkout…';
-  var promo=(ED_OFFER&&ED_OFFER.checkout_code&&/^[A-Z0-9_.-]{1,64}$/.test(ED_OFFER.checkout_code))?ED_OFFER.checkout_code:null;
+  /* the creator's code this visitor carries (last valid ?ref=, 30 days); the
+     server applies it only to the monthly price, for a first-time customer */
+  var affiliateCode=null;
+  try{ affiliateCode=window.EDRef?EDRef.read():null; }catch(e){ affiliateCode=null; }
 
   /* THE SERVER CREATES THE CHECKOUT. create_checkout_session takes the account
      from the signed-in token — nothing this page sends can name another — puts
@@ -2017,7 +2027,7 @@ async function confirmArl(){
   var url='';
   if(window.EDAccess){
     var co=await EDAccess.startCheckout({url:SB_URL,key:SB_KEY,token:function(){var x=edSession();return x&&x.access_token;}},
-      {kind:'trial',price_cents:PRICE_CENTS,trial_days:TRIAL_DAYS,consent_version:CONSENT_VERSION,promo_code:promo||undefined});
+      {kind:'trial',price_cents:PRICE_CENTS,trial_days:TRIAL_DAYS,consent_version:CONSENT_VERSION,affiliate_code:affiliateCode||undefined});
     if(co.ok){ url=co.url; }
     else if(co.reason==='already_entitled'){
       msg.className='auth-msg ok';
@@ -2045,9 +2055,11 @@ async function confirmArl(){
        customer may edit it at checkout, which is exactly why it is never the key). */
     url=STRIPE_LINK+'?client_reference_id='+encodeURIComponent(u.id);
     if(u.email)url+='&prefilled_email='+encodeURIComponent(u.email);
-    /* a creator campaign's code travels to checkout; Stripe decides whether
-       and how much it discounts (affiliate_offer only names a code Stripe has) */
-    if(promo)url+='&prefilled_promo_code='+encodeURIComponent(promo);
+    /* the creator's code travels to checkout; Stripe decides whether and how
+       much it discounts. This link sells the monthly price only
+       (lib/edgedesk_pricing.js CHECKOUT_LINK, checked by
+       tools/billing/verify_stripe_offer.js), the one creators' codes are for. */
+    if(affiliateCode)url+='&prefilled_promo_code='+encodeURIComponent(affiliateCode);
   }
 
   /* Record the consent BEFORE sending them to Stripe, storing the exact terms

@@ -86,8 +86,8 @@ alter table public.referral_codes add column if not exists stripe_coupon_id     
 alter table public.referral_codes add column if not exists note                     text;
 alter table public.referral_codes add column if not exists retired_at               timestamptz;
 
--- Stripe matches a promotion code case-insensitively at redemption, so BETDESK
--- and betdesk are one code and must never become two rows here.
+-- Stripe matches a promotion code case-insensitively at redemption, so CONNOR10
+-- and connor10 are one code and must never become two rows here.
 create unique index if not exists referral_codes_code_ci
   on public.referral_codes (upper(code));
 create unique index if not exists referral_codes_promo_id
@@ -140,18 +140,25 @@ comment on column public.subscriptions.referred_partner is
 -- Edit this block, paste, read the report. Re-running never renames a code:
 -- the insert is `do nothing`, and the Stripe ids are filled in ONLY where they
 -- are still null, which is the additive rule this folder runs on.
+--
+-- BETDESK WAS WITHDRAWN (2026-10-16; its coupon is deleted in Stripe). Its row,
+-- if this file ever wrote one, is RETIRED rather than deleted, for the reason
+-- the table's comment gives: every sale it made keeps its label.
 do $codes$
 declare
   -- ==== THE VALUES THIS FILE IS ABOUT ==================================== --
   -- The code as it is typed at Stripe checkout. Stored upper case.
-  p_code    text := 'BETDESK';
-  p_partner text := 'BETDESK launch promo';
-  -- Paste these in after creating the coupon and promotion code in Stripe
-  -- (Products > Coupons). Leave null until then: with them set, the webhook can
-  -- name this code without a single call to Stripe, which is what keeps
-  -- attribution working on a day the Stripe API is slow or the key is unset.
+  p_code    text := 'CONNOR10';
+  p_partner text := 'Connor';
+  -- Leave the Stripe ids null for CONNOR10. Its live and test-mode promotion
+  -- codes differ and both deliver to this project, so the id lives in the
+  -- checkout's env (CONNOR_PROMO_CODE_ID) and is registered on the campaign
+  -- by the checkout itself (supabase/affiliates.sql). The webhook names the
+  -- code with one call to Stripe instead.
   p_promo   text := null;   -- 'promo_1ABC…'
   p_coupon  text := null;   -- the coupon id behind it
+  -- codes no longer offered: retired, never deleted
+  p_retired text[] := array['BETDESK'];
   -- ====================================================================== --
 begin
   insert into public.referral_codes (code, partner_name, stripe_promotion_code_id, stripe_coupon_id)
@@ -163,6 +170,9 @@ begin
          stripe_coupon_id         = coalesce(stripe_coupon_id, p_coupon),
          partner_name             = coalesce(partner_name, p_partner)
    where code = upper(btrim(p_code));
+
+  update public.referral_codes set retired_at = now()
+   where code = any (p_retired) and retired_at is null;
 end
 $codes$;
 
@@ -417,7 +427,7 @@ revoke all on function public.referral_entitlement_agrees() from public, anon, a
 -- is a human writing one row by hand and saying so:
 --
 --   update public.subscriptions
---      set referral_code = 'BETDESK', referred_partner = 'BETDESK launch promo',
+--      set referral_code = 'CONNOR10', referred_partner = 'Connor',
 --          referral_source = 'manual'
 --    where user_id = '…' and referral_code is null;
 --
