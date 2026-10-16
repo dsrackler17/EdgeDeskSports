@@ -1,0 +1,68 @@
+/* ===========================================================================
+   EdgeDesk landing page — the #model demo's styles (lib/edgedesk_home_model.js
+   draws what these rules dress). Loaded by the module when the page starts, so
+   it has arrived before a reader scrolls to the demo; the section's shell and
+   its four cards are styled inline in index.html. The page's own colour tokens
+   (--panel, --line, --obs …) are used throughout.
+   =========================================================================== */
+.demo-hd{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:12px 16px;border-bottom:1px solid var(--line);background:#14100b}
+.demo-k{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--dim)}
+.demo-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
+.mdt{display:inline-flex;align-items:baseline;gap:6px;min-height:36px;padding:7px 12px;border:1px solid var(--line2);border-radius:9px;background:transparent;color:var(--dim);font-size:13px;cursor:pointer}
+.mdt b{color:var(--text);font-weight:600}
+.mdt small{font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--faint)}
+.mdt:hover{border-color:var(--dim)}
+.mdt.on{border-color:var(--obs);background:rgba(47,167,154,.1)}
+.demo-body.ill{color:var(--dim)}
+
+.md-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:22px;align-items:start}
+.md-fig{margin:0;min-width:0}
+.md-fig img{display:block;width:100%;height:auto;aspect-ratio:1/1;border-radius:12px;border:1px solid var(--line)}
+.md-ph{width:100%;aspect-ratio:1/1;border-radius:12px;border:1px solid var(--line);background:var(--deep)}
+.md-fig figcaption{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:10px;font-size:12.5px;color:var(--faint);line-height:1.45}
+.md-fig figcaption span{flex:1 1 180px}
+.md-side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.md-gh b{display:block;font-family:var(--disp);font-size:21px;letter-spacing:-.02em;color:var(--text);line-height:1.2}
+.md-gh span{display:block;font-family:var(--mono);font-size:11.5px;color:var(--dim);margin-top:4px}
+.md-gh small{display:inline-block;margin-top:6px;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--val);border:1px solid rgba(124,193,66,.35);border-radius:6px;padding:2px 7px}
+.md-lv{display:inline-flex;align-self:flex-start;border:1px solid var(--line2);border-radius:10px;overflow:hidden}
+.md-lv button{min-height:36px;padding:7px 14px;border:0;border-right:1px solid var(--line2);background:transparent;color:var(--dim);font-size:13.5px;font-weight:600;cursor:pointer}
+.md-lv button:last-child{border-right:0}
+.md-lv button.on{background:var(--obs);color:var(--on-accent)}
+.md-level{min-height:120px}
+.md-lead{color:var(--text);font-size:15.5px;line-height:1.55}
+.md-pts{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:7px}
+.md-pts li{position:relative;padding-left:16px;font-size:14px;line-height:1.5;color:var(--dim)}
+.md-pts li::before{content:"";position:absolute;left:0;top:.62em;width:6px;height:6px;border-radius:2px;background:var(--obs)}
+.md-unk li::before{background:var(--est)}
+.md-rows{margin:0;display:grid;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.md-rows>div{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:10px;padding:8px 12px;border-top:1px solid var(--line);background:var(--deep)}
+.md-rows>div:first-child{border-top:0}
+.md-rows dt{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--dim);align-self:center}
+.md-rows dd{margin:0;font-size:14px;color:var(--text);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.md-k{margin-top:14px;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--obs)}
+.md-watch{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:8px}
+.md-watch li{display:grid;gap:2px}
+.md-watch b{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--text)}
+.md-watch span,.md-p{font-size:14px;line-height:1.5;color:var(--dim)}
+.md-p{margin-top:10px}
+.md-cmp{border-top:1px solid var(--line);padding-top:4px}
+.md-cmp-in{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto;gap:8px;align-items:end;margin-top:8px}
+.md-cmp-in label{display:grid;gap:4px;min-width:0}
+.md-cmp-in label span{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+.md-cmp-in select,.md-cmp-in input{width:100%;min-height:40px;padding:8px 10px;border:1px solid var(--line2);border-radius:9px;background:var(--deep);color:var(--text);font:inherit;font-size:14px}
+.md-cmp-in select:focus,.md-cmp-in input:focus{border-color:var(--obs);outline:none}
+.md-cmp-in .btn{min-height:40px}
+.md-cmp-out{margin-top:10px}
+.md-cmp-out .md-rows{margin-top:2px}
+.md-s{margin-top:8px;font-size:12px;line-height:1.5;color:var(--faint)}
+.md-err{color:var(--neg);font-size:14px}
+@media(max-width:900px){.md-grid{grid-template-columns:1fr}.md-fig{max-width:520px}}
+@media(max-width:560px){
+  .demo-tabs{margin-left:0;width:100%}
+  .mdt{flex:1 1 0;justify-content:center;padding:7px 8px}.mdt small{display:none}
+  .md-cmp-in{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .md-cmp-in .btn{grid-column:1/-1}
+  .md-rows>div{grid-template-columns:1fr;gap:2px}
+  .md-lv{align-self:stretch}.md-lv button{flex:1 1 0}
+}

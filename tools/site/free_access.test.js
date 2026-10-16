@@ -79,7 +79,7 @@ const SURFACES = [
   ['research/sample/index.html', false], ['lib/edgedesk_public.js', false], ['lib/edgedesk_track.js', false],
   ['lib/edgedesk_home.js', false], ['lib/edgedesk_flags.js', false], ['lib/edgedesk_plans.js', false],
   ['lib/edgedesk_odds_tools.js', false], ['lib/edgedesk_nav.js', false], ['lib/edgedesk_home_free.js', false],
-  ['lib/edgedesk_games.js', false], ['lib/edgedesk_games_ui.js', false]
+  ['lib/edgedesk_games.js', false], ['lib/edgedesk_games_ui.js', false], ['lib/edgedesk_home_model.js', false]
 ];
 function doorsIn(src) {
   const out = [];
@@ -127,7 +127,9 @@ chk('subscriptions: every privilege is revoked from anon', /revoke\s+all\s+on\s+
 chk('the shared research state is not readable by anon', tableGrantees('game_research_state').indexOf('anon') < 0);
 
 /* ── ARTIFACTS ───────────────────────────────────────────────────────── */
-const PUBLIC_FILES = ['/football/home/board.json', '/football/home/schedule.json'];
+/* landing.json: the landing page's #model demo — up to three of the week's
+   editorially featured games (already free in the articles), Layer A only */
+const PUBLIC_FILES = ['/football/home/board.json', '/football/home/schedule.json', '/football/game_research/landing.json'];
 SURFACES.forEach(([rel]) => {
   const src = read(rel);
   const files = Array.from(new Set([...src.matchAll(/['"(](\/?football\/[A-Za-z0-9_./-]+\.json)/g)].map((m) => '/' + m[1].replace(/^\//, ''))));
@@ -137,6 +139,26 @@ SURFACES.forEach(([rel]) => {
   const S = JSON.parse(read('football/home/schedule.json'));
   const ALLOWED = ['key', 'league', 'week', 'kickoff', 'away', 'home', 'away_code', 'home_code', 'venue', 'away_conf', 'home_conf', 'fcs'];
   chk('the public schedule carries no model number, market or EV', S.games.every((g) => Object.keys(g).every((k) => ALLOWED.indexOf(k) >= 0)));
+}
+
+/* the landing demo's file stays a SAMPLE of the research, never the slate:
+   a handful of games, each the research page's own snapshot and sheet, with
+   no sportsbook price, chosen from the week's editorially featured games */
+{
+  const BGR = require(path.join(ROOT, 'tools', 'football', 'build_game_research.js'));
+  const land = JSON.parse(read('football/game_research/landing.json'));
+  const feat = JSON.parse(read('articles/data/editorial/featured.json'));
+  const featured = new Set((feat.games || []).filter((f) => f.status === 'featured').map((f) => String(f.sport).toLowerCase() + '|' + f.game_id));
+  chk('landing.json: a sample of at most ' + BGR.LANDING_GAMES + ' games, not the slate', land.schema === BGR.LANDING_SCHEMA && land.games.length >= 1 && land.games.length <= BGR.LANDING_GAMES, land.games.length);
+  chk('landing.json: no sportsbook price anywhere in it', !/"(?:market_state|reference_market|quotes_h2h|home_ml_price|best_price|book)"\s*:/.test(read('football/game_research/landing.json')));
+  /* the editorial job rewrites featured.json on its own clock: the file is
+     held to the list only when that list is no newer than the file (the one
+     it was built from); a later list cannot be checked against it */
+  chk('landing.json: each game says why it is there, featured or the documented fallback', land.games.every((g) => /featured by EdgeDesk|next game with a full data check/.test(g.chosen_because)));
+  if (Date.parse(feat.generated_at) <= Date.parse(land.generated_at)) {
+    chk('landing.json: and a game said to be featured is on the featured list it was built from', land.games.every((g) => !/featured by EdgeDesk/.test(g.chosen_because) || featured.has(g.game_key)));
+  }
+  chk('landing.json: each carries only its own snapshot and sheet', land.games.every((g) => JSON.stringify(Object.keys(g).sort()) === JSON.stringify(['chosen_because', 'game_key', 'sheet', 'snapshot'])));
 }
 
 /* ── FLAGS ───────────────────────────────────────────────────────────── */

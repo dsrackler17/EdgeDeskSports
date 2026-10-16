@@ -523,6 +523,11 @@ jobs:
       - name: The landing page's EdgeDesk EV is the terminal's EV
         run: node tools/presentation/landing_ev.test.js
 
+      # The #model demo: the week's real games, as the research page draws
+      # them (football/game_research/landing.json), priced by its own code.
+      - name: The landing page's real games are the research page's own
+        run: node tools/presentation/landing_model.test.js
+
       # The workbook the boards download, rebuilt from a real cleaned file.
       - name: The download is the format the operator cleaned up by hand
         run: node tools/collective/app_export.test.js

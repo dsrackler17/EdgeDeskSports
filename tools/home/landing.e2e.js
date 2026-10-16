@@ -47,6 +47,13 @@
            the truth about the data it has: no RESEARCH on a stale price, no
            EV past the execution window, an example that says so when the
            reads fail, and no stat it could not read
+   MODEL   #model at 390 and 1280: the week's real games (landing.json, its
+           kickoffs moved ahead of the clock) drawn as the research page
+           draws them — a tab per game, the matchup graphic as a PNG to
+           download, Beginner / Research / Lab, a typed price checked and a
+           bad one refused, the season's graded count read from the record,
+           one tool_used; with the file missing, the free-sample link and a
+           line saying the games could not be loaded
 
    Needs Playwright with Chromium; prints SKIPPED and exits 0 without one.
 
@@ -511,6 +518,79 @@ const BANNED = /\b(lock of the day|locks?\b|guaranteed?|can'?t lose|free money|t
     const ov = await overflowing(S.page);
     chk(vp.width + ' down: nothing wider than the screen', ov.length === 0, ov);
     await S.ctx.close();
+  }
+
+  /* MODEL: the week's real games, the way subscribers see them */
+  const LAND = JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'game_research', 'landing.json'), 'utf8'));
+  function landingAhead() {
+    const L = JSON.parse(JSON.stringify(LAND));
+    L.games.forEach((g, i) => { g.snapshot.kickoff = new Date(Date.now() + (i + 1) * 864e5).toISOString(); });
+    return L;
+  }
+  for (const vp of [{ width: 390, height: 844 }, { width: 1280, height: 900 }]) {
+    for (const missing of [false, true]) {
+      const S = await open(vp, 'live');
+      await S.page.route('**/football/game_research/landing.json', (route) => missing ? route.fulfill({ status: 404, body: '' })
+        : route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(landingAhead()) }));
+      await S.page.evaluate(() => document.getElementById('model').scrollIntoView());
+      const tag = vp.width + (missing ? ' model, file missing' : ' model');
+      if (missing) {
+        await S.page.waitForFunction(() => /couldn.t be loaded/.test(document.getElementById('mdFoot').textContent), null, { timeout: 20000 }).catch(() => {});
+        const r = await S.page.evaluate(() => ({ foot: document.getElementById('mdFoot').textContent, body: document.getElementById('mdBody').innerText, tabs: document.querySelectorAll('#mdTabs button').length }));
+        chk(tag + ': says the games could not be loaded, and why', /couldn.t be loaded just now \(the games file did not arrive\)/.test(r.foot), r.foot);
+        chk(tag + ': leaves the free sample one tap away, and draws nothing', /the free sample/.test(r.body) && r.tabs === 0, r);
+        chk(tag + ': no script errors', S.errors.length === 0, S.errors);
+        await S.ctx.close();
+        continue;
+      }
+      await S.page.waitForFunction(() => { const i = document.querySelector('#mdFig img'); return i && i.naturalWidth > 0; }, null, { timeout: 30000 }).catch(() => {});
+      const r = await S.page.evaluate(() => ({
+        tabs: [...document.querySelectorAll('#mdTabs button')].map((b) => ({ text: b.innerText.replace(/\s+/g, ' ').trim(), sel: b.getAttribute('aria-selected') })),
+        title: (document.querySelector('.md-gh b') || {}).textContent,
+        img: (() => { const i = document.querySelector('#mdFig img'); return i ? { w: i.naturalWidth, h: i.naturalHeight, alt: i.alt } : null; })(),
+        dl: (() => { const a = document.getElementById('mdDl'); return a ? { download: a.getAttribute('download'), href: a.getAttribute('href') } : null; })(),
+        level: document.getElementById('mdLevel').innerText,
+        graded: (() => { const el = document.getElementById('mdGraded'); return el && !el.hidden ? el.textContent : null; })(),
+        count: document.getElementById('mdCount').textContent,
+        foot: document.getElementById('mdFoot').textContent
+      }));
+      chk(tag + ': a tab per real game, the first selected', r.tabs.length === LAND.games.length && r.tabs[0].sel === 'true' && r.tabs.every((t, i) => t.text.indexOf(LAND.games[i].snapshot.away.abbr || LAND.games[i].snapshot.away.short) === 0), r.tabs);
+      chk(tag + ': the first game is named in full', r.title === LAND.games[0].snapshot.away.name + ' @ ' + LAND.games[0].snapshot.home.name, r.title);
+      chk(tag + ': the matchup graphic is drawn, square, with alt text', r.img && r.img.w === 1080 && r.img.h === 1080 && /^EdgeDesk research graphic: /.test(r.img.alt), r.img && r.img.alt.slice(0, 80));
+      chk(tag + ': and can be downloaded as a PNG', r.dl && /\.png$/.test(r.dl.download) && /^blob:/.test(r.dl.href), r.dl);
+      chk(tag + ': Beginner opens first, in the research page\'s words', /^EdgeDesk’s model (expects|sees)/.test(r.level), r.level.slice(0, 80));
+      chk(tag + ': the season\'s graded count is read from the public record', /^ \(\d[\d,]* games so far in \d{4}\)$/.test(r.graded || ''), r.graded);
+      chk(tag + ': the call to action counts the games EdgeDesk projects', new RegExp('^Each of the ' + LAND.counts.model_available + ' NFL and FBS games').test(r.count), r.count);
+      chk(tag + ': it says no sportsbook price is read here', /No sportsbook price is read or shown here\./.test(r.foot), r.foot);
+      await S.page.click('[data-md-level="research"]');
+      const res = await S.page.evaluate(() => document.getElementById('mdLevel').innerText);
+      chk(tag + ': Research shows the projection, what to watch for and what the model does not know', /Projected score/i.test(res) && /What to watch for/i.test(res) && /What the model doesn.t know yet/i.test(res), res.slice(0, 160));
+      await S.page.click('[data-md-level="lab"]');
+      const lab = await S.page.evaluate(() => document.getElementById('mdLevel').innerText);
+      chk(tag + ': Lab shows the snapshot and each market\'s calibration status', lab.indexOf(LAND.games[0].snapshot.snapshot_id) >= 0 && /Spread probabilities/i.test(lab), lab.slice(0, 160));
+      await S.page.selectOption('#mdMk', 'total');
+      await S.page.fill('#mdOdds', '-110');
+      await S.page.click('#mdCmp button[type=submit]');
+      const out1 = await S.page.evaluate(() => document.getElementById('mdCmpOut').innerText);
+      chk(tag + ': a typed total is priced: break-even beside EdgeDesk\'s probability', /Break-even for that price/i.test(out1) && /EdgeDesk model probability of the over/i.test(out1) && /\d+\.\d%/.test(out1), out1.slice(0, 200));
+      await S.page.fill('#mdOdds', '50');
+      await S.page.click('#mdCmp button[type=submit]');
+      const out2 = await S.page.evaluate(() => document.getElementById('mdCmpOut').innerText);
+      chk(tag + ': an impossible price is refused with the reason', /American odds are \+100 or higher/.test(out2), out2);
+      await S.page.click('#mdTabs button:nth-child(2)');
+      await S.page.waitForFunction((t) => (document.querySelector('.md-gh b') || {}).textContent === t, LAND.games[1].snapshot.away.name + ' @ ' + LAND.games[1].snapshot.home.name, { timeout: 5000 }).catch(() => {});
+      chk(tag + ': another game opens on its tab', (await S.page.evaluate(() => (document.querySelector('.md-gh b') || {}).textContent)) === LAND.games[1].snapshot.away.name + ' @ ' + LAND.games[1].snapshot.home.name);
+      await S.page.waitForTimeout(1600); /* past one funnel flush (lib/edgedesk_track.js flush_ms 1200) */
+      const used = S.events.filter((e) => e.event === 'tool_used' && e.props && e.props.entity === 'compare_home');
+      chk(tag + ': one tool_used for the price check, however many prices are typed', used.length === 1, used.length);
+      const text = (await S.page.evaluate(() => document.getElementById('model').innerText)).replace(REFUSALS, '');
+      chk(tag + ': no tout or promise words anywhere in the section', !BANNED.test(text), (text.match(BANNED) || [])[0]);
+      const ov = await overflowing(S.page);
+      chk(tag + ': nothing wider than the screen', ov.length === 0, ov);
+      chk(tag + ': no script errors', S.errors.length === 0, S.errors);
+      if (SHOTS) await (await S.page.$('#model')).screenshot({ path: path.join(SHOTS, 'model-' + vp.width + '.png') });
+      await S.ctx.close();
+    }
   }
 
   /* the methodology page the long explanations live on */

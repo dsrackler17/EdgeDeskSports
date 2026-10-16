@@ -18,7 +18,9 @@
      4  the sections the redesigns removed stay removed, with no anchor, module
         or CSS rule left pointing at them;
      5  no number is invented: the page reads two sources, does no odds
-        arithmetic of its own, and never uses randomness;
+        arithmetic of its own, and never uses randomness; the #model demo
+        (lib/edgedesk_home_model.js) reads two public files and prices with
+        the research page's own code, never a sportsbook price;
      6  the funnel is measured through ONE client (lib/edgedesk_track.js), with
         no new vendor, and the GA events the dashboards already use survive;
      7  the page stays light, and the heavy artifacts are not downloaded.
@@ -142,7 +144,7 @@ chk('the scroll behaviour stops being smooth under reduced motion', /prefers-red
 /* ======================================================================== */
 ['compress', 'getyou', 'notpicks', 'steps', 'idk', 'ours', 'close', 'engines', 'football', 'collective', 'attack',
  'evidence', 'ai', 'clv', 'proof', 'bridge', 'values', 'beyond', 'price', 'chapRail', 'problem', 'terminal', 'pass',
- 'stack', 'work', 'attention', 'casual', 'ladder', 'examples', 'tabs', 'game', 'ev', 'lpLive']
+ 'stack', 'work', 'attention', 'casual', 'ladder', 'examples', 'tabs', 'game', 'ev', 'lpLive', 'depth']
   .forEach(id => lacks(IDX, 'id="' + id + '"', 'the removed section ' + id + ' stays removed'));
 ['heroGames', 'pile', 'layers', 'stepper', 'progress', 'idk', 'heroDemo', 'thesisAttack', 'football', 'collective',
  'evidence', 'aiAnalyst', 'clv', 'workflow', 'casual', 'boardToDecision', 'gameTabs', 'evDemo', 'landingArtifacts']
@@ -184,6 +186,17 @@ chk('no CSS rule is left for a class nothing carries', () => {
   const dead = cls.filter(c => !new RegExp('(?<![a-zA-Z0-9_-])' + c.replace(/-/g, '\\-') + '(?![a-zA-Z0-9_-])').test(rest));
   return dead.length === 0 || (console.log('   dead classes:', dead.join(', ')), false);
 });
+/* the stylesheets the page moved out of its <style> (the 200 KB budget):
+   every class each one styles is still carried by the page or by the script
+   that draws into it */
+[['lib/edgedesk_landing_pictures.css', [IDX]], ['lib/edgedesk_home_model.css', [IDX, fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_home_model.js'), 'utf8')]]].forEach(([f, hosts]) => {
+  const css = fs.readFileSync(path.join(ROOT, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const cls = [...new Set((css.match(/\.[a-zA-Z][a-zA-Z0-9_-]+/g) || []).map(x => x.slice(1)))].filter(c => !/^\d/.test(c));
+  const dead = cls.filter(c => !hosts.some(h => new RegExp('(?<![a-zA-Z0-9_-])' + c.replace(/-/g, '\\-') + '(?![a-zA-Z0-9_-])').test(h)));
+  chk(f + ': no rule for a class nothing carries', cls.length > 10 && dead.length === 0, dead.join(', '));
+});
+chk('the product pictures\' sheet never blocks the first screen, and still loads without script',
+  /<link rel="stylesheet" href="\/lib\/edgedesk_landing_pictures\.css\?v=[0-9a-z]+" media="print" onload="this\.media='all'">\s*<noscript><link rel="stylesheet" href="\/lib\/edgedesk_landing_pictures\.css\?v=[0-9a-z]+"><\/noscript>/.test(IDX));
 chk('no giant commented-out markup is left behind', !/<!--[^>]*<(?:section|div|article)\b[\s\S]{0,4000}?-->/.test(IDX.replace(/<script[\s\S]*?<\/script>/g, '')));
 [/\bbullpen\b/i, /\bpitching\b/i, /\bpitch mix\b/i, /\bpark factor\b/i, /\bumpire\b/i, /\binnings?\b/i, /Reds @ Cubs/, /Dodgers/]
   .forEach(re => chk('no baseball copy survives: ' + re, !re.test(IDX), (re.exec(IDX) || [])[0]));
@@ -207,6 +220,21 @@ chk('the page fetches exactly three things of its own: the board RPC, the board 
   return all.every(a => /^SB_URL/.test(a) || /^url\+'\/rest\/v1\/rpc\/public_home_board'/.test(a) || /^'\/football\/home\/board\.json'/.test(a));
 }, [...IDX.matchAll(/fetch\(([^,)]{0,40})/g)].map(m => m[1]).join(' | '));
 chk('no number anywhere is invented at random', !/Math\.random/.test(IDX));
+/* THE #model DEMO: real games, Layer A only, priced by the research page's code */
+const HM = fs.readFileSync(path.join(ROOT, 'lib', 'edgedesk_home_model.js'), 'utf8');
+chk('the demo reads exactly two files: the week\'s real games and the public record', () => {
+  const urls = [...HM.matchAll(/'(\/(?:football|record)\/[A-Za-z0-9_./-]+\.json)'/g)].map(m => m[1]);
+  return JSON.stringify(urls) === JSON.stringify(['/football/game_research/landing.json', '/record/football/summary.json']) && !/supabase|\/rest\/v1\//.test(HM);
+});
+chk('it loads the research page\'s own libraries, never a second copy of their arithmetic',
+  ['research_core.js', 'edgedesk_calc.js', 'edgedesk_fairline.js', 'edgedesk_game_snapshot.js', 'edgedesk_game_graphic.js'].every(f => HM.indexOf("'/lib/" + f + '?v=') >= 0)
+  && /GS\(\)\.comparePrice\(/.test(HM) && /EDGameGraphic\.render\(/.test(HM)
+  && ![/impliedFromAmerican\(/, /100\s*\/\s*\(/, /\bbreakEven\(/, /expected_roi\s*=/].some(re => re.test(HM)));
+chk('it never reads a sportsbook price (Layer A: the file carries none, and the code asks for none)', !/market_state|reference_market|quotes_h2h|\.book\b|odds_api|best_price/.test(HM));
+chk('it escapes every value it writes and builds every button with its type', /function e\(s\) \{ return String\(s == null \? '' : s\)\.replace\(\/\[&<>"\]\/g/.test(HM) && !/'<button (?!type=)/.test(HM));
+chk('it never invents a number at random, and waits for the reader to come near', !/Math\.random/.test(HM) && /new root\.IntersectionObserver\(/.test(HM) && /rootMargin: '700px 0px'/.test(HM));
+chk('the graphic is drawn on the reader\'s device, never downloaded as an image', /EDGameGraphic\.render\(spec, null, 'square'\)/.test(HM) && !/\.(?:png|jpe?g|webp)'/.test(HM.replace(/'image\/png'/g, '')));
+chk('a failed or late read leaves the free-sample link and says so', /function fail\(why\)/.test(HM) && /couldn’t be loaded just now/.test(HM));
 [/impliedFromAmerican/, /americanFromImplied/, /decimalFromAmerican/, /100\s*\/\s*\(\s*-?\s*a\s*\)/, /\(\s*-a\s*\)\s*\/\s*\(\(-a\)\+100\)/, /1\s*\+\s*100\s*\//, /\bexpectedValue\(/, /\bbreakEven\(/]
   .forEach(re => chk('the landing script does no odds arithmetic of its own: ' + re, !re.test(LANDING), (re.exec(LANDING) || [])[0]));
 chk('the view model is the only place a live number is shaped', /H\.build\(o\.rpc, o\.stat, Date\.now\(\)\)/.test(LANDING));
@@ -280,9 +308,10 @@ chk('the database connection is warmed before the first read', /<link rel="preco
 chk('nothing below the fold is an image or a video', !/<(?:img|video|iframe)\b/.test(IDX));
 /* the view model also holds the hero's own rules (the two-pillar preview and
    the selective "worth researching" count), so it gets 36 KiB; the others 32 */
-const LIB_BUDGET = { 'edgedesk_home.js': 36 * 1024, 'edgedesk_track.js': 32 * 1024, 'edgedesk_pricing.js': 32 * 1024 };
+const LIB_BUDGET = { 'edgedesk_home.js': 36 * 1024, 'edgedesk_track.js': 32 * 1024, 'edgedesk_pricing.js': 32 * 1024, 'edgedesk_home_model.js': 28 * 1024,
+  'edgedesk_home_model.css': 12 * 1024, 'edgedesk_landing_pictures.css': 12 * 1024 };
 const libs = Object.keys(LIB_BUDGET).map(f => [f, fs.statSync(path.join(ROOT, 'lib', f)).size]);
-chk('the three small libraries it loads stay small', libs.every(([f, n]) => n < LIB_BUDGET[f]), libs.map(([f, n]) => f + ' ' + n).join(', '));
+chk('the small libraries and sheets it loads stay small', libs.every(([f, n]) => n < LIB_BUDGET[f]), libs.map(([f, n]) => f + ' ' + n).join(', '));
 
 console.log('');
 failures.forEach(f => console.log('  FAIL  ' + f));
