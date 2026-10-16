@@ -104,8 +104,9 @@ jobs:
           # ON_ERROR_STOP=0: a table that does not exist yet is an answer, not a failure
           psql "$PGURL" -X -q -v ON_ERROR_STOP=0 <<'SQL'
           \pset footer off
-          select code, slug, status, commission_rate, attribution_mode, user_id is not null as has_login, created_at::date
-            from public.affiliate_accounts order by created_at;
+          select a.code, to_jsonb(a) ->> 'slug' as slug, a.status, a.commission_rate, to_jsonb(a) ->> 'attribution_mode' as attribution_mode,
+                 a.user_id is not null as has_login, a.created_at::date
+            from public.affiliate_accounts a order by a.created_at;
           select c.code, a.code as creator, c.active, c.commission_rate, c.commission_type, c.commission_duration_months,
                  c.stripe_promotion_code_id is not null as live_promo, c.stripe_snapshot is not null as stripe_seen, c.created_at::date
             from public.affiliate_campaigns c join public.affiliate_accounts a on a.id = c.affiliate_id order by c.created_at;

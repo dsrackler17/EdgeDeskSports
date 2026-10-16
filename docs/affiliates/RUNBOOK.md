@@ -55,8 +55,13 @@ earning_months, active, created_at (plus the test-mode promotion code id).
 3. **Deploy `create_checkout_session`** (*Deploy billing*, stage
    `deploy_create_checkout_session`). Its build marker is
    `create_checkout_session-2026-10-16-affiliate-1`.
-4. **Stripe webhook endpoint events**: add `charge.refunded` and
+4. **Stripe webhook endpoint events** — commissions are booked from invoice
+   events, so the endpoint must send **`invoice.paid`** (and/or
+   `invoice.payment_succeeded`), plus `charge.refunded` and
    `charge.dispute.created` (live, and the test-mode endpoint if you use one).
+   **As of 2026-10-16 production's ledger had received no invoice event at
+   all** (7 `checkout.session.completed`, 10 `customer.subscription.created`,
+   0 `invoice.*`): until they are added, no commission can be booked.
    Optional: `promotion_code.updated` and `coupon.updated`, so the landing page
    can show Stripe's own discount line for the code.
 
@@ -148,4 +153,7 @@ with the code and terms), create the coupon and promotion code in Stripe
 - 2026-10-16 — program built (PR dsrackler17/EdgeDeskSports#601).
 - 2026-10-16 — production dry run through `deploy-affiliates.yml`
   (`[affiliates:dry-run]` from `claude/sweet-meitner-8d7ewv`): applied in one
-  transaction and rolled back.
+  transaction and rolled back; every report row ok. The program was already
+  installed (an earlier `affiliates.sql`) with no campaigns, attributions,
+  commissions or clicks; `referral_codes` held BETDESK only.
+- Apply: pending (owner's go-ahead).
