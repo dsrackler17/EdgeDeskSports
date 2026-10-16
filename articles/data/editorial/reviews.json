@@ -1,6 +1,6 @@
 {
   "schema": "edgedesk_model_review_candidates_v1",
-  "generated_at": "2026-10-16T20:51:07.560Z",
+  "generated_at": "2026-10-16T21:00:03.749Z",
   "open": 12,
   "count": 12,
   "note": "A candidate is a QUESTION WITH EVIDENCE ATTACHED. It is raised automatically when a published claim carrying real weight is contradicted by a game, and it is closed only by a person writing a disposition on it. No production model weight is changed from this file by anything in this repository.",
@@ -79,6 +79,70 @@
       "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
       "recurring": true,
       "note": "Seen 5 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
+      "key": "NFL:variance:general",
+      "sport": "NFL",
+      "category": "variance",
+      "question": "Does EdgeDesk’s variance handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-09-21T04:00:22.158Z",
+      "updated_at": "2026-10-16T21:00:03.749Z",
+      "evidence": [
+        {
+          "lesson_id": "2026_02_IND_KC:won_wrong",
+          "game_id": "2026_02_IND_KC",
+          "season": 2026,
+          "week": 2,
+          "team": null,
+          "expectation": "The number implied Indianapolis Colts +5.5.",
+          "result": "It graded a win. The reasoning behind it did not hold: 4 of 8 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
+          "severity": "high",
+          "at": "2026-09-21T04:00:22.158Z"
+        },
+        {
+          "lesson_id": "2026_03_PHI_CHI:won_wrong",
+          "game_id": "2026_03_PHI_CHI",
+          "season": 2026,
+          "week": 3,
+          "team": null,
+          "expectation": "The number implied Chicago Bears +3.",
+          "result": "It graded a win. The reasoning behind it did not hold: 5 of 9 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
+          "severity": "high",
+          "at": "2026-09-29T03:20:22.190Z"
+        },
+        {
+          "lesson_id": "2026_05_BAL_ATL:won_wrong",
+          "game_id": "2026_05_BAL_ATL",
+          "season": 2026,
+          "week": 5,
+          "team": null,
+          "expectation": "The number implied Baltimore Ravens +3.5.",
+          "result": "It graded a win. The reasoning behind it did not hold: 5 of 10 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
+          "severity": "high",
+          "at": "2026-10-12T03:50:33.685Z"
+        },
+        {
+          "lesson_id": "2026_03_NE_JAX:won_wrong",
+          "game_id": "2026_03_NE_JAX",
+          "season": 2026,
+          "week": 3,
+          "team": null,
+          "expectation": "The number implied Jacksonville Jaguars -3.",
+          "result": "It graded a win. The reasoning behind it did not hold: 8 of 10 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
+          "severity": "high",
+          "at": "2026-10-16T21:00:03.749Z"
+        }
+      ],
+      "occurrences": 4,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
+      "recurring": true,
+      "note": "Seen 4 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
@@ -175,59 +239,6 @@
           "result": "Dallas Cowboys lost by 8 where EdgeDesk projected a 5.8-point edge. Dallas Cowboys lost by 8.",
           "severity": "high",
           "at": "2026-10-09T03:20:31.654Z"
-        }
-      ],
-      "occurrences": 3,
-      "disposition": null,
-      "disposition_note": null,
-      "closed_at": null,
-      "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one.",
-      "recurring": true,
-      "note": "Seen 3 times. A recurring contradiction is worth a real investigation — still by a person, and still against a holdout the fit has never seen."
-    },
-    {
-      "schema": "edgedesk_model_review_candidate_v1",
-      "key": "NFL:variance:general",
-      "sport": "NFL",
-      "category": "variance",
-      "question": "Does EdgeDesk’s variance handling need investigating? Raised by a published article whose claim the game contradicted.",
-      "status": "open",
-      "opened_at": "2026-09-21T04:00:22.158Z",
-      "updated_at": "2026-10-12T03:50:33.685Z",
-      "evidence": [
-        {
-          "lesson_id": "2026_02_IND_KC:won_wrong",
-          "game_id": "2026_02_IND_KC",
-          "season": 2026,
-          "week": 2,
-          "team": null,
-          "expectation": "The number implied Indianapolis Colts +5.5.",
-          "result": "It graded a win. The reasoning behind it did not hold: 4 of 8 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
-          "severity": "high",
-          "at": "2026-09-21T04:00:22.158Z"
-        },
-        {
-          "lesson_id": "2026_03_PHI_CHI:won_wrong",
-          "game_id": "2026_03_PHI_CHI",
-          "season": 2026,
-          "week": 3,
-          "team": null,
-          "expectation": "The number implied Chicago Bears +3.",
-          "result": "It graded a win. The reasoning behind it did not hold: 5 of 9 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
-          "severity": "high",
-          "at": "2026-09-29T03:20:22.190Z"
-        },
-        {
-          "lesson_id": "2026_05_BAL_ATL:won_wrong",
-          "game_id": "2026_05_BAL_ATL",
-          "season": 2026,
-          "week": 5,
-          "team": null,
-          "expectation": "The number implied Baltimore Ravens +3.5.",
-          "result": "It graded a win. The reasoning behind it did not hold: 5 of 10 gradeable claims went the other way. The read of this matchup was wrong in its mechanism, not only in its number.",
-          "severity": "high",
-          "at": "2026-10-12T03:50:33.685Z"
         }
       ],
       "occurrences": 3,
@@ -507,6 +518,46 @@
     },
     {
       "schema": "edgedesk_model_review_candidate_v1",
+      "key": "NFL:rushing:advantage",
+      "sport": "NFL",
+      "category": "rushing",
+      "question": "Does EdgeDesk’s rushing handling need investigating? Raised by a published article whose claim the game contradicted.",
+      "status": "open",
+      "opened_at": "2026-10-06T00:02:02.233Z",
+      "updated_at": "2026-10-16T21:00:03.749Z",
+      "evidence": [
+        {
+          "lesson_id": "2026_02_NYG_LA:contradicted:rushing",
+          "game_id": "2026_02_NYG_LA",
+          "season": 2026,
+          "week": 2,
+          "team": "New York Giants",
+          "expectation": "2 published claims said the same thing: New York Giants holds the largest measured edge in this matchup: New York Giants +0.044 (#6 of 32) vs Los Angeles Rams +0.028 (#13 of 32) — 7 places on the league board. New York Giants’ run offence rates +0.044 (#6 of 32) and Los Angeles Rams’ run defence rates +0.001 (#16 of 32). Added the way the model adds them, this pairing sits +0.045 from the league mean, which favours New York Giants.",
+          "result": "New York Giants 2.48 yards per carry against Los Angeles Rams 5.82; New York Giants 52 rushing yards against Los Angeles Rams 163. New York Giants 2.48 yards per carry against Los Angeles Rams 5.82; New York Giants 52 rushing yards against Los Angeles Rams 163.",
+          "severity": "high",
+          "at": "2026-10-06T00:02:02.233Z"
+        },
+        {
+          "lesson_id": "2026_03_NE_JAX:contradicted:rushing",
+          "game_id": "2026_03_NE_JAX",
+          "season": 2026,
+          "week": 3,
+          "team": "New England Patriots",
+          "expectation": "4 published claims said the same thing: New England Patriots holds the largest measured edge in this matchup: New England Patriots +0.040 (#8 of 32) vs Jacksonville Jaguars −0.009 (#16 of 32) — 8 places on the league board. Net rushing EPA — New England Patriots by 0.7 points — worth -0.7 of the EdgeDesk number, in New England Patriots’s favour. New England Patriots’ run offence rates +0.040 (#8 of 32) and Jacksonville Jaguars’ run defence rates +0.018 (#20 of 32). Added the way the model adds them, this pairing sits +0.058 from the league mean, which favours New England Patriots. Jacksonville Jaguars’ run offence rates −0.009 (#16 of 32) and New England Patriots’ run defence rates −0.028 (#12 of 32). Added the way the model adds them, this pairing sits −0.037 from the league mean, which favours New England Patriots.",
+          "result": "New England Patriots 3.19 yards per carry against Jacksonville Jaguars 4.57; New England Patriots 83 rushing yards against Jacksonville Jaguars 137. New England Patriots 3.19 yards per carry against Jacksonville Jaguars 4.57; New England Patriots 83 rushing yards against Jacksonville Jaguars 137. New England Patriots 3.19 yards per carry against Jacksonville Jaguars 4.57; New England Patriots 83 rushing yards against Jacksonville Jaguars 137. New England Patriots 3.19 yards per carry against Jacksonville Jaguars 4.57; New England Patriots 83 rushing yards against Jacksonville Jaguars 137.",
+          "severity": "high",
+          "at": "2026-10-16T21:00:03.749Z"
+        }
+      ],
+      "occurrences": 2,
+      "disposition": null,
+      "disposition_note": null,
+      "closed_at": null,
+      "closed_by": null,
+      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
+    },
+    {
+      "schema": "edgedesk_model_review_candidate_v1",
       "key": "CFB:passing:advantage",
       "sport": "CFB",
       "category": "passing",
@@ -525,35 +576,6 @@
           "result": "USC Trojans 7.76 yards per pass attempt against Oregon Ducks 10.46; USC Trojans 326 net passing yards against Oregon Ducks 366.",
           "severity": "high",
           "at": "2026-09-27T03:30:36.660Z"
-        }
-      ],
-      "occurrences": 1,
-      "disposition": null,
-      "disposition_note": null,
-      "closed_at": null,
-      "closed_by": null,
-      "rule": "A review candidate is a question with evidence attached. Nothing in this repository changes a model weight from it, and only a person may close one."
-    },
-    {
-      "schema": "edgedesk_model_review_candidate_v1",
-      "key": "NFL:rushing:advantage",
-      "sport": "NFL",
-      "category": "rushing",
-      "question": "Does EdgeDesk’s rushing handling need investigating? Raised by a published article whose claim the game contradicted.",
-      "status": "open",
-      "opened_at": "2026-10-06T00:02:02.233Z",
-      "updated_at": "2026-10-06T00:02:02.233Z",
-      "evidence": [
-        {
-          "lesson_id": "2026_02_NYG_LA:contradicted:rushing",
-          "game_id": "2026_02_NYG_LA",
-          "season": 2026,
-          "week": 2,
-          "team": "New York Giants",
-          "expectation": "2 published claims said the same thing: New York Giants holds the largest measured edge in this matchup: New York Giants +0.044 (#6 of 32) vs Los Angeles Rams +0.028 (#13 of 32) — 7 places on the league board. New York Giants’ run offence rates +0.044 (#6 of 32) and Los Angeles Rams’ run defence rates +0.001 (#16 of 32). Added the way the model adds them, this pairing sits +0.045 from the league mean, which favours New York Giants.",
-          "result": "New York Giants 2.48 yards per carry against Los Angeles Rams 5.82; New York Giants 52 rushing yards against Los Angeles Rams 163. New York Giants 2.48 yards per carry against Los Angeles Rams 5.82; New York Giants 52 rushing yards against Los Angeles Rams 163.",
-          "severity": "high",
-          "at": "2026-10-06T00:02:02.233Z"
         }
       ],
       "occurrences": 1,
