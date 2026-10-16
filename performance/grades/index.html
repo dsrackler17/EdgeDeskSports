@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>EdgeDesk Grade Performance — How the A–F Research Grades Held Up | EdgeDesk</title>
+<meta name="description" content="How EdgeDesk's A–F Research Grades performed on completed games: Brier score, calibration, margin and total error by grade, locked before kickoff. Research quality, not picks.">
+<link rel="canonical" href="https://edgedesksports.com/performance/grades/">
+<meta name="robots" content="index,follow">
+<meta name="theme-color" content="#100e0a">
+<meta name="color-scheme" content="dark">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="EdgeDesk Sports">
+<meta property="og:url" content="https://edgedesksports.com/performance/grades/">
+<meta property="og:title" content="EdgeDesk Grade Performance — how the research grades held up">
+<meta property="og:description" content="Every A–F research grade locked before kickoff and checked against the verified final. Research quality, not picks.">
+<meta property="og:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@edgedesksports">
+<meta name="twitter:title" content="EdgeDesk Grade Performance — how the research grades held up">
+<meta name="twitter:description" content="Every A–F research grade locked before kickoff and checked against the verified final. Research quality, not picks.">
+<meta name="twitter:image" content="https://edgedesksports.com/assets/og/edgedesk-research.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23100e0a'/%3E%3Cpath d='M15 6h6l-4 20h-6z' fill='%232fa79a'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/tools/tools.css?v=1">
+<link rel="stylesheet" href="/lib/edgedesk_grade.css?v=20261016rg1">
+<link rel="stylesheet" href="/performance/grades/grades.css?v=20261016rg1">
+<script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  "name": "EdgeDesk Grade Performance",
+  "description": "Every EdgeDesk A–F research grade locked before kickoff, and how the forecasts behind each grade performed on the verified final: Brier score, calibration, margin and total error, with sample sizes and the method.",
+  "url": "https://edgedesksports.com/performance/grades/",
+  "isAccessibleForFree": true,
+  "creator": { "@type": "Organization", "name": "EdgeDesk Sports", "url": "https://edgedesksports.com" },
+  "distribution": [{ "@type": "DataDownload", "encodingFormat": "application/json", "contentUrl": "https://edgedesksports.com/performance/data/grades/summary.json" }]
+}</script>
+</head>
+<body data-ed-page="grade_performance">
+<header class="th">
+  <a class="th-brand" href="/"><span class="th-mark" aria-hidden="true"></span>EdgeDesk</a>
+  <nav class="th-nav" aria-label="Main">
+    <a href="/articles/" data-ed-nav="research">Free Research</a><a href="/today/" data-ed-nav="today">Today’s Games</a><a href="/tools/" data-ed-nav="tools">Tools</a><a href="/app.html" data-ed-nav="terminal">Research Terminal</a><a href="/#pricing" data-ed-nav="pricing">Pricing</a>
+  </nav>
+  <a class="th-cta" href="/#subscribe" data-ed-cta="grades_header_trial">Start free trial</a>
+</header>
+<main class="wrap gp-wrap" id="main">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/articles/">Research</a> › <a href="/performance/">Model Performance</a> › <span aria-current="page">Grade Performance</span></nav>
+  <span class="ey">Research, not picks · every grade locked before kickoff</span>
+  <h1>EdgeDesk Grade Performance</h1>
+  <p class="lede">EdgeDesk gives every game it researches an A–F <b>Research Grade</b>: how complete, current, cross-checked and reliable the pregame research is. This page checks how the forecasts behind each grade held up once the games were played. A grade is not the chance a side wins and not a betting recommendation.</p>
+
+  <section aria-labelledby="gp-head-h" class="gp-sec">
+    <h2 id="gp-head-h" class="gp-vh">Headline</h2>
+    <div id="gp-status" class="gp-status" role="status" aria-live="polite">Loading the grade record…</div>
+    <div id="gp-headline" class="gp-tiles"></div>
+  </section>
+
+  <section aria-labelledby="gp-filter-h" class="gp-sec">
+    <h2 id="gp-filter-h">Explore the record</h2>
+    <p class="note">Every figure below is recomputed in your browser from the published game rows, with the same code the hourly job uses, so a filter never prints a number the record does not support.</p>
+    <div class="filters gp-filters">
+      <div><label class="fl" for="gp-sport">Sport</label><select id="gp-sport"><option value="all">All sports</option></select></div>
+      <div><label class="fl" for="gp-league">League</label><select id="gp-league"><option value="all">All leagues</option></select></div>
+      <div><label class="fl" for="gp-season">Season</label><select id="gp-season"><option value="all">All seasons</option></select></div>
+      <div><label class="fl" for="gp-from">From</label><input type="text" id="gp-from" inputmode="numeric" placeholder="YYYY-MM-DD" autocomplete="off"></div>
+      <div><label class="fl" for="gp-to">To</label><input type="text" id="gp-to" inputmode="numeric" placeholder="YYYY-MM-DD" autocomplete="off"></div>
+      <div><label class="fl" for="gp-model">Model version</label><select id="gp-model"><option value="all">All model versions</option></select></div>
+      <div><label class="fl" for="gp-gver">Grade version</label><select id="gp-gver"><option value="all">All grade versions</option></select></div>
+      <div><label class="fl" for="gp-market">Market type</label><select id="gp-market"><option value="all">All market types</option></select></div>
+    </div>
+    <div id="gp-filtered" class="gp-tiles"></div>
+  </section>
+
+  <section aria-labelledby="gp-dist-h" class="gp-sec">
+    <h2 id="gp-dist-h">Grade distribution</h2>
+    <p class="note">How many started games carried each grade at kickoff: the last grade locked before the start. “Not graded” means a prerequisite failed (no model number, an expired or invalidated build, too little data), so no letter was given.</p>
+    <div class="gp-two">
+      <div id="gp-dist" class="gp-chart"></div>
+      <div id="gp-vol" class="gp-chart"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="gp-table-h" class="gp-sec">
+    <h2 id="gp-table-h">Grade by grade</h2>
+    <p class="note">Each row is every completed game that carried that grade at kickoff. A rate, Brier score or error appears only once 20 settled games stand behind it, an interval only from 50; below that you see the counts. Records at the line count only a side and a named-book line saved before kickoff.</p>
+    <div class="tblwrap"><table class="tbl gp-cmp" id="gp-cmp"><caption class="gp-vh">Performance of the forecasts behind each research grade</caption></table></div>
+    <p class="gp-order" id="gp-order"></p>
+  </section>
+
+  <section aria-labelledby="gp-err-h" class="gp-sec">
+    <h2 id="gp-err-h">Accuracy by research grade</h2>
+    <p class="note">Lower is better on all three. A dot is the average; its bar is the 95% interval (from 50 games). Overlapping bars mean the data cannot yet tell the grades apart.</p>
+    <div class="gp-three">
+      <div id="gp-brier" class="gp-chart"></div>
+      <div id="gp-mae" class="gp-chart"></div>
+      <div id="gp-tmae" class="gp-chart"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="gp-cal-h" class="gp-sec">
+    <h2 id="gp-cal-h">Probability calibration by research grade</h2>
+    <p class="note">For each grade, games are grouped by the win probability EdgeDesk gave the home side. A dot on the diagonal means that of the games called 70%, about 70% were won. Bars are 95% intervals; a small group has a wide one.</p>
+    <div id="gp-cal" class="gp-multi"></div>
+  </section>
+
+  <section aria-labelledby="gp-trend-h" class="gp-sec">
+    <h2 id="gp-trend-h">Over time</h2>
+    <p class="note">Cumulative Brier score by grade, week by week: a line starts once 20 settled games stand behind it.</p>
+    <div id="gp-trend" class="gp-multi"></div>
+  </section>
+
+  <section aria-labelledby="gp-sport-h" class="gp-sec">
+    <h2 id="gp-sport-h">By sport</h2>
+    <div class="tblwrap"><table class="tbl" id="gp-sports"><caption class="gp-vh">Settled games, Brier score and margin error by sport and grade</caption></table></div>
+  </section>
+
+  <section aria-labelledby="gp-cov-h" class="gp-sec">
+    <h2 id="gp-cov-h">Coverage and exclusions</h2>
+    <p class="note">Every started game the performance ledger forecast since the grade ledger began, and what happened to it. Nothing is dropped quietly: a game that could not be settled is counted here with its reason.</p>
+    <div class="tblwrap"><table class="tbl" id="gp-coverage"><caption class="gp-vh">Grade coverage by sport</caption></table></div>
+    <ul class="steps" id="gp-excl"></ul>
+  </section>
+
+  <section aria-labelledby="gp-method-h" class="gp-sec" id="method">
+    <h2 id="gp-method-h">How research grades are made, and how they are checked</h2>
+    <h3>What a grade measures</h3>
+    <p class="gp-p">A Research Grade rates the <b>quality and reliability of EdgeDesk’s pregame research</b> on a game. It is a deterministic score from 0 to 100, built from five parts. The weights are a provisional starting configuration, not a validated finding:</p>
+    <ul class="steps">
+      <li><b>Model reliability and calibration (30).</b> The model’s own live record of pregame forecasts graded before this one (Brier skill and calibration), and its walk-forward validation state (retrospective, labelled so). Fewer than 50 graded games: unvalidated, excluded and the grade is capped at C; 50–199: counted, capped at B.</li>
+      <li><b>Data completeness (25).</b> The model outputs a sport should publish, how fresh the build is against its own limit, the engine’s own input-quality measure (for college football, its 0–100 reliability score) and the authority of the data sources.</li>
+      <li><b>Model–market comparison (20).</b> A named-book line captured before kickoff, its age, and how far EdgeDesk’s spread, total and win probability sit from it. A large unexplained gap lowers the grade: with a liquid market, it is more often a data problem than an opportunity. No line captured: the part is excluded and the grade is capped at B.</li>
+      <li><b>Matchup clarity (15).</b> Whether the key players (quarterbacks, goalies, stars) are confirmed, how far one absence would move the number, whether the factors behind the number are itemised, and whether the start time is confirmed. Unknown key-player availability caps the grade at C.</li>
+      <li><b>Uncertainty (10).</b> How much the model’s variants disagree or how stable the number is under perturbation, its calibration band, and whether ratings are early-season.</li>
+    </ul>
+    <p class="gp-p"><b>Letters:</b> A 90–100, B 80–89, C 70–79, D 60–69, F below 60, on the score rounded to the nearest whole number. <b>Not graded</b> when a prerequisite fails: no model win probability, a number produced after kickoff, an expired build, an invalidated projection (such as a starting-quarterback conflict), a model that reads market prices, a research state of “data insufficient”, or too little data.</p>
+    <dl class="gp-letters" id="gp-letters"></dl>
+    <h3>Missing data</h3>
+    <ul class="steps">
+      <li>Nothing missing earns credit. A part with no data scores zero and is named in the Grade Breakdown with the reason.</li>
+      <li>Only a question that does not arise for the sport leaves the calculation (the NHL publishes no margin, so its puck line is not compared with one).</li>
+      <li>The two kinds of evidence the method treats separately, an unvalidated live track record and a missing sportsbook line, are excluded and capped rather than credited. The cap is the price of the missing evidence, and no weight can lift it.</li>
+    </ul>
+    <h3>How results are tracked</h3>
+    <ul class="steps" id="gp-rules"></ul>
+    <h3>What each number means</h3>
+    <ul class="steps">
+      <li><b>Brier score:</b> the average squared gap between EdgeDesk’s win probability and what happened (1 or 0). Lower is better; always saying 50% scores 0.250.</li>
+      <li><b>Calibration:</b> whether games EdgeDesk called 70% were won about 70% of the time, bucket by bucket, each with a Wilson 95% interval.</li>
+      <li><b>MAE and RMSE:</b> the average miss of the projected margin (home minus away) and total, in points (goals for the NHL). RMSE weighs big misses more.</li>
+      <li><b>Model agreement and data completeness:</b> the average of those two parts of the grade, 0–100, for the games in the row.</li>
+      <li><b>Against the spread and over/under:</b> the side EdgeDesk’s number sat on against the named-book line captured with the grade before kickoff, and how it landed. A research comparison, not a betting record, and never chosen from the final.</li>
+      <li><b>Closing-line value:</b> only against a close from the same source as the line the grade saw; otherwise it is not shown.</li>
+      <li><b>Intervals and evidence:</b> a difference between two grades is called evidence only when its 95% interval excludes zero, with at least 50 settled games on each side. Until then this page says there is no evidence yet.</li>
+    </ul>
+    <h3>Limitations</h3>
+    <ul class="steps">
+      <li>The grade ledger began recently. Until enough games are settled, this page is honestly in its insufficient-data state, and no grade is claimed to predict anything.</li>
+      <li>The weights and reference points are provisional. A change to them is a new grade version: earlier grades keep their own version and are never re-scored.</li>
+      <li>Research quality is not betting profitability. An A-grade game can be a poor bet and an F-grade game can win; the grade says how much the research can carry.</li>
+      <li>Final scores are noisy. One game, a week or a sport early in its season says little on its own.</li>
+      <li>Grades cover the sports EdgeDesk publishes a per-game forecast for: NFL, college football, NBA, NHL, WNBA and college basketball. MLB, college baseball and UFC have none, so they are not graded.</li>
+      <li>Completed games from before the grade ledger began have no pregame grade and are never given one afterwards. A retrospective analysis, if one is ever published, will be labelled as such and kept apart.</li>
+    </ul>
+    <p class="note">The data are public files: <a href="/performance/data/grades/summary.json">summary.json</a> and the game files it lists; every grade row in the ledger is hash-chained to the one before it. See also <a href="/performance/">Model Performance</a>, the full forecast record, and <a href="/methodology/">how EdgeDesk builds a number</a>.</p>
+  </section>
+
+  <aside class="cta">
+    <span class="k">Research, not picks</span>
+    <p>Every upcoming game’s research grade, with its full Grade Breakdown, is in the EdgeDesk Research Terminal.</p>
+    <a class="btn" href="/#subscribe" data-ed-cta="grades_trial">Start free trial</a>
+  </aside>
+</main>
+<footer class="tf">
+  <div><b>Research, not picks.</b> This page reports how the forecasts behind EdgeDesk’s research grades performed. A grade measures research quality, not the chance a side wins. Nothing here is betting advice, a prediction of future results or a recommendation.</div>
+  <nav aria-label="Footer"><a href="/">Home</a><a href="/articles/">Free research</a><a href="/today/">Today’s games</a><a href="/tools/">Free tools</a><a href="/performance/">Model performance</a><a href="/performance/grades/">Grade performance</a><a href="/methodology/">Methodology</a><a href="/record.html">Public record</a><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a><a href="/disclaimer.html">Disclaimer</a></nav>
+  <div>21+ · Gamble responsibly — 1-800-GAMBLER · © EdgeDesk Sports, Rackler Tech Ventures LLC</div>
+</footer>
+<script src="/lib/edgedesk_calibration.js?v=20261016a"></script>
+<script src="/lib/edgedesk_performance.js?v=20261016a"></script>
+<script src="/lib/edgedesk_research_grade.js?v=20261016rg1"></script>
+<script src="/performance/grades/grades.js?v=20261016rg1" defer></script>
+<script src="/lib/edgedesk_track.js?v=20261008a" defer></script>
+<script src="/lib/edgedesk_public.js?v=20261008a" defer></script>
+</body>
+</html>

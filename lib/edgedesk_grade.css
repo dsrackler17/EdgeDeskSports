@@ -1,0 +1,73 @@
+/* ===========================================================================
+   EdgeDesk RESEARCH GRADE — the A–F badge, the letter filter and the Grade
+   Breakdown (lib/edgedesk_grade_ui.js). EdgeDesk's own tokens with the app's
+   values as fallbacks, so it reads the same in the terminal and on a public
+   page. Dark only, like the rest of EdgeDesk. The letters' colours rate the
+   research, not a side: A is the most complete and best-checked research.
+   =========================================================================== */
+.edg-badge,.edg-filter,.edg-bd-slot{--edg-s1:var(--surface,#191510);--edg-s2:var(--surface2,#221c15);--edg-bd:var(--border,#332a1b);--edg-tx:var(--text,#f1ebdf);--edg-dim:var(--dim,#aa9c87);--edg-faint:var(--faint,#958a7a);--edg-ac:var(--accent,#2fa79a);--edg-pos:var(--pos,#76bd3e);--edg-warn:var(--warn,#d99a2b);--edg-neg:var(--neg,#e26044);--edg-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace}
+.edg-slot{display:inline-flex;vertical-align:middle}
+.edg-slot:empty{display:none}
+.edg-badge{display:inline-flex;align-items:center;gap:3px;height:20px;padding:0 6px 0 5px;border-radius:6px;border:1px solid var(--edg-bd);background:var(--edg-s2);color:var(--edg-tx);font:700 11px var(--edg-mono);line-height:1;white-space:nowrap;cursor:help;vertical-align:middle}
+.edg-badge .edg-k{font-size:8.5px;letter-spacing:.06em;color:var(--edg-faint);font-weight:600}
+.edg-badge b{font-size:12px;font-weight:800}
+.edg-badge small{font-size:9.5px;color:var(--edg-dim);font-weight:600}
+.edg-badge.edg-md{height:28px;padding:0 9px 0 7px;border-radius:8px}
+.edg-badge.edg-md b{font-size:16px}
+.edg-badge.edg-capped b::after{content:'*';font-size:.7em;vertical-align:super;color:var(--edg-faint);margin-left:1px}
+.edg-l-A{border-color:rgba(118,189,62,.65)}.edg-l-A b{color:var(--edg-pos)}
+.edg-l-B{border-color:rgba(47,167,154,.65)}.edg-l-B b{color:var(--edg-ac)}
+.edg-l-C{border-color:rgba(217,154,43,.55)}.edg-l-C b{color:var(--edg-warn)}
+.edg-l-D{border-color:rgba(226,96,68,.45)}.edg-l-D b{color:#e88a5c}
+.edg-l-F{border-color:rgba(226,96,68,.7)}.edg-l-F b{color:var(--edg-neg)}
+.edg-l-INS b{color:var(--edg-faint)}
+
+/* ---- the letter filter ---- */
+.edg-filter{display:flex;align-items:center;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 1px 4px;margin:0 0 10px;-webkit-overflow-scrolling:touch}
+.edg-filter::-webkit-scrollbar{display:none}
+.edg-flab{flex:none;font:600 10.5px var(--edg-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--edg-faint);cursor:help;margin-right:2px}
+.edg-fbtn{flex:none;display:inline-flex;align-items:center;gap:5px;min-height:36px;padding:0 11px;border-radius:999px;border:1px solid var(--edg-bd);background:transparent;color:var(--edg-tx);font:600 13px inherit;font-family:inherit;cursor:pointer;white-space:nowrap}
+.edg-fbtn .n{font:600 10.5px var(--edg-mono);color:var(--edg-faint)}
+.edg-fbtn[data-zero]{color:var(--edg-dim)}
+.edg-fbtn[aria-pressed="true"]{border-color:var(--edg-ac);background:rgba(47,167,154,.12)}
+.edg-fbtn:focus-visible{outline:2px solid var(--edg-ac);outline-offset:2px}
+
+/* ---- the Grade Breakdown ---- */
+.edg-bd-slot{display:block;margin:0 0 14px}
+.edg-bd{background:var(--edg-s1);border:1px solid var(--edg-bd);border-radius:var(--rad,14px);color:var(--edg-tx)}
+.edg-bd>summary{list-style:none;cursor:pointer;padding:12px 14px;min-height:44px;display:flex;align-items:center}
+.edg-bd>summary::-webkit-details-marker{display:none}
+.edg-bd>summary:focus-visible{outline:2px solid var(--edg-ac);outline-offset:2px;border-radius:var(--rad,14px)}
+.edg-sumrow{display:flex;align-items:center;gap:10px;width:100%;min-width:0}
+.edg-sumtx{display:flex;flex-direction:column;min-width:0}
+.edg-sumtx b{font-size:15px}
+.edg-sumtx small{font-size:12px;color:var(--edg-dim)}
+.edg-caret{margin-left:auto;width:10px;height:10px;border-right:2px solid var(--edg-dim);border-bottom:2px solid var(--edg-dim);transform:rotate(45deg);transition:transform .15s;flex:none}
+.edg-bd[open] .edg-caret{transform:rotate(-135deg)}
+@media (prefers-reduced-motion:reduce){.edg-caret{transition:none}}
+.edg-bd-b{padding:0 14px 14px;font-size:13.5px;line-height:1.5}
+.edg-x{margin:0 0 8px}
+.edg-what{margin:0 0 10px;padding:8px 10px;border-radius:10px;background:var(--edg-s2);color:var(--edg-dim);font-size:12.5px}
+.edg-what b{color:var(--edg-tx)}
+.edg-dims{display:grid;gap:10px;margin:0 0 10px}
+.edg-dim{border-top:1px solid var(--edg-bd);padding-top:8px}
+.edg-dh{display:grid;grid-template-columns:minmax(0,1fr) 72px 32px;align-items:center;gap:8px}
+.edg-dn{font-weight:700;font-size:13px}
+.edg-dn small{font:500 10.5px var(--edg-mono);color:var(--edg-faint)}
+.edg-bar{display:block;height:6px;border-radius:3px;background:var(--edg-s2);overflow:hidden}
+.edg-bar i{display:block;height:100%;background:var(--edg-ac)}
+.edg-ds{font:700 13px var(--edg-mono);text-align:right}
+.edg-dst{margin:2px 0 4px;font-size:11.5px;color:var(--edg-faint)}
+.edg-subs{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.edg-subs li{display:grid;grid-template-columns:minmax(0,1fr) 36px;gap:0 8px;font-size:12.5px}
+.edg-sl{color:var(--edg-tx)}
+.edg-sv{font:600 12px var(--edg-mono);text-align:right}
+.edg-sd{grid-column:1/-1;color:var(--edg-dim);font-size:12px}
+.edg-subs li.edg-st-unavailable .edg-sv,.edg-subs li.edg-st-unvalidated .edg-sv,.edg-subs li.edg-st-excluded .edg-sv{color:var(--edg-warn);font-size:10.5px}
+.edg-subs li.edg-st-na{opacity:.7}
+.edg-caps,.edg-hist,.edg-meta,.edg-links{margin:8px 0 0;font-size:12.5px;color:var(--edg-dim)}
+.edg-caps b,.edg-hist b{color:var(--edg-tx)}
+.edg-flags{margin:8px 0 0;padding-left:18px;font-size:12.5px;color:var(--edg-warn)}
+.edg-links a{color:var(--edg-ac)}
+.edg-note{margin:0;font-size:12.5px;color:var(--edg-dim)}
+@media (max-width:420px){.edg-dh{grid-template-columns:minmax(0,1fr) 48px 28px}}

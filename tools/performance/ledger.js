@@ -2,7 +2,7 @@
 /* ===========================================================================
    THE PERFORMANCE LEDGER STORE — append-only, hash-chained JSONL.
 
-   Four streams under performance/ledger/, one file per sport and UTC year of
+   Six streams under performance/ledger/, one file per sport and UTC year of
    the game's start (a chain per file):
 
      forecasts/<sport>-<YYYY>.jsonl   every pregame forecast revision
@@ -10,6 +10,11 @@
      results/<sport>-<YYYY>.jsonl     every verified result revision (corrections
                                       are new rows that supersede, never edits)
      grades/<sport>-<YYYY>.jsonl      every grade revision
+     research_grades/<sport>-<YYYY>.jsonl  every A–F research grade revision,
+                                      locked before kickoff (tools/performance/
+                                      research_grades.js)
+     grade_outcomes/<sport>-<YYYY>.jsonl   every settled outcome of a game's
+                                      designated pregame research grade
 
    Each row carries seq, prev (the previous row's hash, or GENESIS) and hash
    (SHA-256 of the canonical row without its hash). A changed byte anywhere
@@ -22,7 +27,7 @@ const path = require('path');
 const crypto = require('crypto');
 
 const GENESIS = 'GENESIS';
-const STREAMS = ['forecasts', 'quotes', 'results', 'grades'];
+const STREAMS = ['forecasts', 'quotes', 'results', 'grades', 'research_grades', 'grade_outcomes'];
 
 /** Stable JSON: object keys sorted at every depth, undefined dropped. */
 function canonical(v) {
