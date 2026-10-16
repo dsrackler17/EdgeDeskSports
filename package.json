@@ -494,6 +494,13 @@
     "quant:multisport": "node tools/quant/multisport_run.js --tz America/Chicago",
     "quant:replay": "node tools/quant/multisport_run.js --replay --at 2026-10-15T13:00:00Z --tz America/Chicago",
     "quant:projections": "node engine/build_projections.js",
-    "quant:fixture:oct15": "node tools/quant/build_oct15_fixture.js"
+    "quant:fixture:oct15": "node tools/quant/build_oct15_fixture.js",
+    "performance:dry": "node tools/performance/run.js",
+    "performance:run": "node tools/performance/run.js --write --network",
+    "performance:check": "node tools/performance/run.js --check --base origin/main",
+    "performance:sync": "node tools/performance/sync.js",
+    "performance:test": "node tools/performance/performance.test.js",
+    "performance:sql": "node tools/performance/performance_sql.test.js",
+    "performance:e2e": "node tools/performance/performance_ui.e2e.js"
   }
 }

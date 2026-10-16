@@ -212,8 +212,14 @@ function build() {
       || (Math.abs(kick(a) - kick(r)) - Math.abs(kick(b) - kick(r)))
       || String(a.slug).localeCompare(String(b.slug)))
     .slice(0, 6);
+  /* EdgeDesk Prediction vs. Actual Result: for each played pregame article
+     whose final is verified, its own published numbers beside the final
+     (tools/performance/ builds performance/articles/postgame.json; it never
+     touches a record, and a page without an entry simply has no block) */
+  let POSTGAME = {};
+  try { POSTGAME = (JSON.parse(fs.readFileSync(path.join(ROOT, 'performance', 'articles', 'postgame.json'), 'utf8')).articles) || {}; } catch (_) { POSTGAME = {}; }
   pub.forEach(r => {
-    written.push(page(r.slug, R.articlePage(r, { published: published, more: moreFor(r), now: NOW })));
+    written.push(page(r.slug, R.articlePage(r, { published: published, more: moreFor(r), now: NOW, postgame: r.article_type === 'postgame' ? null : POSTGAME[r.id] || null })));
     (r.aliases || []).forEach(a => { written.push(page(a, R.aliasPage(r, a))); });
   });
 

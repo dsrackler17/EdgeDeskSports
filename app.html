@@ -20826,6 +20826,8 @@ function loadMore(){
   group('Transparency',[
     /* EdgeDesk's record, never the reader's: the reader's results are Portfolio */
     $('v-record')?moreItem(IC.model,'Model performance','How EdgeDesk’s model and flagged edges have performed — every graded call. Not your bets.','show(\'record\')','model_performance'):'',
+    /* the public, cross-sport forecast record (/performance/): every published game forecast, locked pregame and graded on the verified final */
+    moreItem(IC.model,'Public forecast record ↗','Every game forecast in every sport, locked before the start and graded on the final, misses included. No account needed.','moreGoPerformance()','performance_public'),
     typeof window.hiwOpen==='function'?moreItem(IC.method,'Methodology','How EdgeDesk prices, grades and proves itself, screen by screen.','hiwOpen()','methodology'):'',
     (window.RESEARCH_MODULES&&RESEARCH_MODULES.lab)?moreItem(IC.sources,'Data sources','Where every model input came from, what transformed it, and how fresh it is.','moreGoProvenance()','data_sources'):'']);
   group('System',[
@@ -20857,7 +20859,11 @@ function moreGoGames(){
   try{window.open('/games/?ref=app','_blank','noopener');}
   catch(_){location.href='/games/?ref=app';}
 }
-window.loadMore=loadMore;window.moreGoProvenance=moreGoProvenance;window.moreGoGames=moreGoGames;
+function moreGoPerformance(){
+  try{window.open('/performance/','_blank','noopener');}
+  catch(_){location.href='/performance/';}
+}
+window.loadMore=loadMore;window.moreGoProvenance=moreGoProvenance;window.moreGoGames=moreGoGames;window.moreGoPerformance=moreGoPerformance;
 
 /* settings boot: apply prefs, paint avatar, honour landing-page pref */
 try{applyPrefs();renderAvatar();loadSubStatus();

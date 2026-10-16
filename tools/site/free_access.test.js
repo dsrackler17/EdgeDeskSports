@@ -76,7 +76,8 @@ const SURFACES = [
   ['index.html', true], ['lib/edgedesk_access.js', true],
   ['today/index.html', false], ['tools/index.html', false], ['tools/no-vig-calculator/index.html', false],
   ['tools/fair-odds-calculator/index.html', false], ['tools/model-vs-market/index.html', false],
-  ['research/sample/index.html', false], ['lib/edgedesk_public.js', false], ['lib/edgedesk_track.js', false],
+  ['research/sample/index.html', false], ['performance/index.html', false], ['performance/performance.js', false], ['lib/edgedesk_performance.js', false],
+  ['lib/edgedesk_public.js', false], ['lib/edgedesk_track.js', false],
   ['lib/edgedesk_home.js', false], ['lib/edgedesk_flags.js', false], ['lib/edgedesk_plans.js', false],
   ['lib/edgedesk_odds_tools.js', false], ['lib/edgedesk_nav.js', false], ['lib/edgedesk_home_free.js', false],
   ['lib/edgedesk_games.js', false], ['lib/edgedesk_games_ui.js', false], ['lib/edgedesk_home_model.js', false]

@@ -1,0 +1,97 @@
+# EdgeDesk Model Performance — the hourly public forecast record.
+# docs/model-performance/RUNBOOK.md
+#
+# THE ONLY WRITER OF performance/ledger, performance/data, performance/articles
+# and performance/social. Each run, in order:
+#   1. the rules must pass (tools/performance/performance.test.js) and every
+#      committed ledger chain must verify before anything moves;
+#   2. CAPTURE: the projection contract as the committed engine artifacts
+#      stand now (engine/build_projections.js, no price read) → a new forecast
+#      revision for every upcoming game whose number changed, with the named-
+#      book quote the slate captured before the start. Pregame only;
+#   3. RESULTS: every started game's final from the scoreboard the slate
+#      already reads (today/slate.json) and each sport's own result file, plus
+#      ESPN by date for a final the slate no longer carries (≤ 4 reads a run);
+#      sources must agree; a correction is a new revision;
+#   4. GRADE every game with a verified result, and rebuild the public page's
+#      data, the article blocks, the weekly packet and the social drafts;
+#   5. verify again (the new ledger must extend the committed one, byte for
+#      byte) and commit only the generated paths (tools/ci/push_generated.sh);
+#   6. optionally mirror to Supabase (vars.PERFORMANCE_SUPABASE == 'on');
+#   7. go red on an ERROR or ALERT in performance/data/health.json (a missing
+#      final, an unmatched game or a source conflict a day old, a stale
+#      capture, a metric that moved more than new games explain), AFTER the
+#      data is published, so GitHub tells the owner.
+#
+# COST. One hourly run of about a minute on a stock runner; ESPN's public
+# scoreboard (free, keyless) only for missed dates; no paid service and no new
+# secret. The page reads committed files.
+name: Model performance
+
+on:
+  schedule:
+    - cron: '19 * * * *'   # hourly, after the :07 slate commit
+  workflow_dispatch:
+    inputs:
+      network:
+        description: 'Read ESPN by date for finals the slate no longer carries'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: model-performance
+  cancel-in-progress: false
+
+jobs:
+  performance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The grading rules must pass, and every committed chain must verify, before the ledger may move
+        run: |
+          node tools/performance/performance.test.js
+          node tools/performance/run.js --check
+
+      - name: Capture, verify finals, grade, build
+        run: node tools/performance/run.js --write ${{ (github.event_name == 'schedule' || inputs.network) && '--network' || '' }}
+
+      - name: The new ledger must extend the committed one, byte for byte
+        run: node tools/performance/run.js --check --base HEAD
+
+      - name: Publish the record (generated paths only; never a rebase)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          bash tools/ci/push_generated.sh main 'performance: forecasts locked, finals verified, the public record graded' -- \
+            performance/ledger performance/data performance/articles performance/social
+
+      # Optional hardening: on only after supabase/model_performance.sql is
+      # applied (the "Deploy model performance mirror" workflow) and the
+      # repository variable PERFORMANCE_SUPABASE is set to on. The page never
+      # waits on it; a failure is shown, never hidden.
+      - name: Mirror to Supabase (server-stamped, append-only)
+        if: ${{ vars.PERFORMANCE_SUPABASE == 'on' }}
+        continue-on-error: true
+        env:
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: node tools/performance/sync.js
+
+      - name: Surface what needs a person (missing finals, conflicts, unmatched games, stale capture, metric shifts)
+        run: |
+          node -e "
+            const h = require('./performance/data/health.json');
+            h.items.forEach((i) => console.log((i.level === 'ERROR' || i.level === 'ALERT' ? '::error title=' : i.level === 'WARN' ? '::warning title=' : '::notice title=') + i.check + '::' + i.detail));
+            if (h.status === 'ERROR' || h.status === 'ALERT') process.exit(1);
+          "

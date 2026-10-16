@@ -28,7 +28,7 @@
 
   var SITE = 'https://edgedesksports.com';
   var ORG = 'EdgeDesk Sports';
-  var CSS_HREF = '/articles/articles.css?v=3';
+  var CSS_HREF = '/articles/articles.css?v=4';
   /* THE SHARE IMAGE. Every article's hero graphic is an inline SVG data URI,
      which X, Facebook, LinkedIn and Slack all refuse as an og:image: a card
      with no picture. A real 1200x630 PNG on the site is used instead wherever
@@ -179,7 +179,7 @@
       + '<a href="/articles/nfl/">NFL</a><a href="/articles/community/">Member posts</a>'
       + '<a href="/today/">Today\u2019s games</a>'
       + '<a href="/tools/">Free odds tools</a><a href="/methodology/">Methodology</a>'
-      + '<a href="/record.html">Public record</a>'
+      + '<a href="/performance/">Model performance</a><a href="/record.html">Public record</a>'
       + '<a href="/app.html#research/football">Research terminal</a>'
       + '<a href="/newsletter/">Weekly research email</a>'
       + '<a href="/games">EdgeDesk Games</a><a href="/terms.html">Terms</a><a href="/privacy.html">Privacy</a>'
@@ -768,6 +768,44 @@
       + (post ? ' <a href="' + esc(r.postgame_url) + '">Read the postgame analysis →</a>' : '')
       + '</aside>';
   }
+  /* EDGEDESK PREDICTION VS. ACTUAL RESULT. Once the final is verified, a
+     played pregame page shows what it published beside what happened: the
+     ARTICLE'S OWN numbers (never a later forecast, never rewritten), the
+     verified final, the forecast errors, and the game's row in the public
+     model record. Built by tools/performance/ (performance/articles/
+     postgame.json) from the verified results ledger; every figure here is
+     precomputed there, so the page prints numbers, it never derives them. */
+  function teamBy(name, n) { return name + ' by ' + n; }
+  function predictionVsActualHTML(rec, pg) {
+    if (!pg || !pg.published || !pg.final || pg.final.home_score == null || pg.final.away_score == null) return '';
+    var p = pg.published, f = pg.final, e = pg.error || {};
+    var home = f.home || p.home, away = f.away || p.away;
+    var margin = f.home_score - f.away_score, total = f.home_score + f.away_score;
+    var actualSide = margin === 0 ? 'Tied' : margin > 0 ? teamBy(home, margin) : teamBy(away, -margin);
+    var rows = [];
+    if (p.fair_spread_text) rows.push(['Fair spread', p.fair_spread_text, actualSide, e.margin_abs != null ? 'Off by ' + e.margin_abs.toFixed(1) + ' points' : '']);
+    if (p.total_text) rows.push(['Projected total', p.total_text, String(total), e.total_abs != null ? 'Off by ' + e.total_abs.toFixed(1) + ' points' : '']);
+    if (p.favourite && p.favourite_pct != null) rows.push(['Win probability', p.favourite + ' ' + p.favourite_pct + '%', margin === 0 ? 'Tie' : (margin > 0 ? home : away) + ' won',
+      e.favourite_won == null ? '' : e.favourite_won ? 'The favourite won' : 'The underdog won']);
+    if (p.score) rows.push(['Projected score', away + ' ' + p.score.away + ', ' + home + ' ' + p.score.home, away + ' ' + f.away_score + ', ' + home + ' ' + f.home_score, '']);
+    if (!rows.length) return '';
+    var asOf = p.as_of ? new Date(p.as_of) : null, ver = f.verified_at ? new Date(f.verified_at) : null;
+    var day = function (d) { return d && !isNaN(d) ? d.toISOString().slice(0, 10) : null; };
+    var h = '<section class="a-pva" aria-labelledby="a-pva-h"><h2 id="a-pva-h">EdgeDesk Prediction vs. Actual Result</h2>'
+      + '<div class="a-pvawrap"><table class="a-pvat"><thead><tr><th scope="col"></th><th scope="col">EdgeDesk before kickoff</th><th scope="col">Actual</th><th scope="col">Forecast error</th></tr></thead><tbody>'
+      + rows.map(function (r) { return '<tr><th scope="row">' + esc(r[0]) + '</th><td>' + esc(r[1]) + '</td><td>' + esc(r[2]) + '</td><td>' + esc(r[3]) + '</td></tr>'; }).join('')
+      + '</tbody></table></div>'
+      + '<p class="a-pvanote">These are the numbers this article published before kickoff' + (day(asOf) ? ' (research as of ' + day(asOf) + ')' : '') + ', kept exactly as published. The final was verified'
+      + (day(ver) ? ' on ' + day(ver) : '') + ((f.sources || []).length ? ' from ' + esc(f.sources.join(' and ')) : '') + (f.revision > 1 ? ', after a source correction (the earlier final is kept on the record)' : '') + '.</p>';
+    if (pg.ledger && pg.ledger.differs) {
+      var hl = pg.ledger.fair_home_line;
+      h += '<p class="a-pvanote">EdgeDesk’s number moved after this article was written. The forecast graded on the public record is its last one before kickoff'
+        + (hl != null ? ': ' + esc(home) + ' ' + (hl > 0 ? '+' : '') + (Math.round(hl * 10) / 10).toFixed(1) : '') + (pg.ledger.fair_total != null ? ', total ' + (Math.round(pg.ledger.fair_total * 10) / 10).toFixed(1) : '') + '.</p>';
+    }
+    if (pg.record_url) h += '<p class="a-pvalink"><a href="' + esc(pg.record_url) + '">See this game in EdgeDesk’s public model record →</a></p>';
+    return h + '</section>';
+  }
+
   /* MORE RESEARCH: other published games, nearest kickoff first, the tools
      and the method. No figure from another game is printed here: every
      number on a page traces to that page's own record (the editorial
@@ -899,6 +937,7 @@
       + '<a href="/articles/' + esc(rec.sport_slug) + '/">' + esc(rec.sport_label) + '</a> <span>›</span> '
       + '<span aria-current="page">' + esc(matchupOf(rec)) + '</span></nav>';
     if (played) h += playedHTML(rec, published);
+    if (played && opts.postgame) h += predictionVsActualHTML(rec, opts.postgame);
     h += heroHTML(rec);
     h += relatedHTML(rec, published);
     h += shareHTML(rec);
@@ -1134,7 +1173,7 @@
     SITE: SITE, esc: esc, head: head, anchorId: anchorId,
     structuredData: structuredData, articlePage: articlePage, aliasPage: aliasPage,
     relatedHTML: relatedHTML, thesisAuditHTML: thesisAuditHTML, processHTML: processHTML,
-    narrativeHTML: narrativeHTML,
+    narrativeHTML: narrativeHTML, predictionVsActualHTML: predictionVsActualHTML,
     scorecardHTML: scorecardHTML, lessonsHTML: lessonsHTML, watchedHTML: watchedHTML,
     hubPage: hubPage, cardHTML: cardHTML, articleBody: articleBody, dateLabel: dateLabel,
     slashed: slashed, OG_DEFAULT: OG_DEFAULT, TRIAL_LINE: TRIAL_LINE, TRIAL_HREF: TRIAL_HREF,

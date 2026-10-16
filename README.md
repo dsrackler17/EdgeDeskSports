@@ -533,6 +533,48 @@ the audit in `docs/bettor-decision/AUDIT.md` and the engineering report in
 - `npm run bettor:sql` — `supabase/bettor_decisions.sql` against a real PostgreSQL
 - `npm run bettor:e2e` — the layer in Chromium, desktop and a 390 px phone
 
+## EdgeDesk Model Performance: every pregame forecast, graded, misses included
+
+`/performance/` is the public record of EdgeDesk's models. It is free and needs no account. Every eligible game forecast, in every sport with a per-game model (NFL, college football, NBA, NHL, WNBA, college basketball), is locked before the start and graded against the verified final.
+
+**The ledger** (`performance/ledger/`) is append-only and hash-chained. It holds:
+- every forecast revision, from the independent projection contract (`engine/build_projections.js`, no price read);
+- every named-book quote change captured before a start;
+- every verified result revision;
+- every grade revision.
+
+**The graded forecast** is the last one the ledger captured before the actual start. Earlier revisions are kept, and nothing is overwritten.
+
+**Verification tiers.** *Verified pregame* means the ledger itself captured the forecast. Forecasts imported from EdgeDesk's earlier pregame-only records are *recorded pregame*, labelled as such and never counted in the verified headline. Walk-forward evaluations are shown apart, as *retrospective*.
+
+**Results.** These come from the scoreboard the slate already reads and each sport's own result file, and the sources must agree. A correction is a new revision that regrades the game; postponed, canceled and forfeited games are void.
+
+**Metrics:**
+- right winner, Brier, log loss, calibration with Wilson intervals, confidence bands;
+- margin and total error;
+- model against the captured line, with records at the line;
+- units only at a captured price;
+- CLV only against a same-source close;
+- trends over time.
+
+Every figure carries its `n`, and nothing is printed under 20 games.
+
+**Integrations:**
+- Played matchup articles gain an **EdgeDesk Prediction vs. Actual Result** block, built from the article's own published numbers.
+- The Monday Weekend Model Review gains a cross-sport accountability section.
+- Weekly social drafts are written to `performance/social/`. Nothing posts.
+
+**Docs:**
+- [`docs/model-performance/AUDIT.md`](docs/model-performance/AUDIT.md): what existed and the gaps
+- [`docs/model-performance/DESIGN.md`](docs/model-performance/DESIGN.md): the design
+- [`docs/model-performance/RUNBOOK.md`](docs/model-performance/RUNBOOK.md): configuration, deployment, monitoring, rollback and costs
+
+**Commands:**
+- `npm run performance:dry` / `performance:run`: dry run / write
+- `npm run performance:check`: chains plus append-only against main
+- `npm run performance:test`, `performance:sql`, `performance:e2e`: the test suites
+- `npm run performance:sync`: the optional Supabase mirror
+
 ## Profit & Loss — every recommendation at the price it was made
 
 The Record's **Profit & Loss** book answers one question: *if I had followed every

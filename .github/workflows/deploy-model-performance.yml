@@ -1,0 +1,89 @@
+# Deploy the model performance mirror: supabase/model_performance.sql.
+#
+# MANUAL ON PURPOSE (workflow_dispatch). Applying SQL to production is a
+# decision a person makes. The public record never depends on it: the page
+# reads the committed ledger. The mirror adds server-stamped receipt times,
+# database-enforced append-only rows and an ingest log.
+#
+# IN ORDER, STOPPING AT THE FIRST PROBLEM
+#   1. the SQL suite against a throwaway PostgreSQL;
+#   2. applies supabase/model_performance.sql in one transaction with
+#      ON_ERROR_STOP (idempotent, additive; a CHECK THIS report row fails);
+#   3. copies the committed ledger (tools/performance/sync.js).
+# Then set the repository variable PERFORMANCE_SUPABASE=on so the hourly job
+# keeps the mirror current. Rollback: supabase/model_performance_rollback.sql
+# (docs/model-performance/RUNBOOK.md).
+#
+# SECRETS (the ones the other deploy workflows already use):
+#   SB_DB_URL                 the pooled Postgres connection string (to apply SQL)
+#   SB_URL, SB_SERVICE_ROLE   PostgREST with the service role (to sync)
+name: Deploy model performance mirror
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply_schema:
+        description: 'Apply supabase/model_performance.sql (idempotent, additive)'
+        type: boolean
+        default: true
+      sync:
+        description: 'Then copy the committed ledger'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-model-performance
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The SQL must pass against a throwaway PostgreSQL before it touches production
+        env:
+          PERF_SQL_REQUIRED: '1'
+        run: |
+          sudo apt-get install -y -qq postgresql postgresql-client >/dev/null 2>&1 || true
+          node tools/performance/performance_sql.test.js
+
+      - name: Check the credentials exist before claiming anything
+        id: creds
+        env:
+          DBURL: ${{ secrets.SB_DB_URL }}
+          SBURL: ${{ secrets.SB_URL }}
+          SBKEY: ${{ secrets.SB_SERVICE_ROLE }}
+        run: |
+          # Presence only. No value is ever printed.
+          echo "have_db=$([ -n "$DBURL" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          echo "have_sb=$([ -n "$SBURL" ] && [ -n "$SBKEY" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          if [ -z "$DBURL" ]; then echo "::error::SB_DB_URL is not set — paste supabase/model_performance.sql into the SQL editor instead (it fits in one paste)."; exit 1; fi
+          if [ -z "$SBURL" ] || [ -z "$SBKEY" ]; then echo "::warning::SB_URL / SB_SERVICE_ROLE are not set — the schema can be applied, but the ledger cannot be copied."; fi
+
+      - name: Apply supabase/model_performance.sql
+        if: ${{ inputs.apply_schema }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          if ! out=$(psql "$PGURL" -X -q -1 -v ON_ERROR_STOP=1 -f supabase/model_performance.sql 2>&1); then
+            echo "$out" | tail -20; echo "::error::supabase/model_performance.sql did not apply (rolled back)"; exit 1
+          fi
+          echo "$out" | tail -10
+          if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::supabase/model_performance.sql: a report row says CHECK THIS"; exit 1; fi
+
+      - name: Copy the committed ledger
+        if: ${{ inputs.sync && steps.creds.outputs.have_sb == 'yes' }}
+        env:
+          EDGD_SB_URL: ${{ secrets.SB_URL }}
+          EDGD_SB_SERVICE: ${{ secrets.SB_SERVICE_ROLE }}
+        run: node tools/performance/sync.js
