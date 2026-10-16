@@ -145,5 +145,7 @@ with the code and terms), create the coupon and promotion code in Stripe
 
 ## Deploy log
 
-- 2026-10-16 — program built; production dry run and apply through
-  `deploy-affiliates.yml` from branch `claude/sweet-meitner-8d7ewv`.
+- 2026-10-16 — program built (PR dsrackler17/EdgeDeskSports#601).
+- 2026-10-16 — production dry run through `deploy-affiliates.yml`
+  (`[affiliates:dry-run]` from `claude/sweet-meitner-8d7ewv`): applied in one
+  transaction and rolled back.
