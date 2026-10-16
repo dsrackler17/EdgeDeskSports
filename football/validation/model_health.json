@@ -2,15 +2,15 @@
  "schema": "edgedesk_model_health_v1",
  "engine": "edgedesk_validation_v1",
  "generated_by": "tools/validation/model_health.js",
- "as_of": "2026-10-15T23:16:20.476Z",
+ "as_of": "2026-10-16T01:38:25.452Z",
  "rule": "Cached historical analytics: rebuilt by this job, read by the page, never recomputed on render. Modes are reported separately and never blended. Every figure carries n and a sample state (n<50 descriptive only · 50–199 early signal · 200–499 developing evidence · 500+ meaningful sample). Nothing here changes a threshold, a calibration or a model.",
- "inputs_key": "afdac555efe7aa0f",
+ "inputs_key": "49c06805c30fb42c",
  "sources": [
   {
    "file": "football/cfb_terminal/decisions/2026/snapshots.jsonl",
-   "rows": 3861,
+   "rows": 3870,
    "mode": "LIVE",
-   "sha1": "54a7cc956781"
+   "sha1": "857349777bf6"
   },
   {
    "file": "football/cfb_terminal/decisions/2026/evaluations.jsonl",
@@ -37,7 +37,7 @@
   {
    "file": "record/football/summary.json",
    "mode": "LIVE (model record)",
-   "sha1": "aefce376bc30"
+   "sha1": "28521d83209f"
   },
   {
    "file": "football/params.js",
@@ -99,7 +99,7 @@
     "recalibration": "NOT_ALLOWED",
     "note": "A product maturity label, not a scientific verdict."
    },
-   "note": "3861 decision snapshots issued before kickoff; 152 settled"
+   "note": "3870 decision snapshots issued before kickoff; 152 settled"
   },
   {
    "key": "LIVE_CLV",
@@ -133,11 +133,11 @@
   }
  ],
  "live_decisions": {
-  "issued_snapshots": 3861,
+  "issued_snapshots": 3870,
   "issued_by_decision": {
    "NO_DECISION": 1727,
-   "PASS": 1972,
-   "WATCH": 162
+   "PASS": 1979,
+   "WATCH": 164
   },
   "graded_rows": 156,
   "unit_of_analysis": "the first snapshot of each decision class per game",
@@ -15905,7 +15905,7 @@
   "source": "record/football/summary.json",
   "mode": "LIVE",
   "level": "model (the published fair line), not bettor decisions",
-  "generated_at": "2026-10-15T15:59:35.361Z",
+  "generated_at": "2026-10-16T00:30:43.179Z",
   "sports": {
    "nfl": {
     "versions": [
