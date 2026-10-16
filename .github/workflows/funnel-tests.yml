@@ -26,6 +26,13 @@ on:
       - 'email/**'
       - 'lib/edgedesk_home.js'
       - 'lib/edgedesk_home_free.js'
+      - 'lib/edgedesk_home_model.*'
+      - 'lib/edgedesk_landing_pictures.css'
+      - 'lib/edgedesk_game_snapshot.js'
+      - 'lib/edgedesk_game_graphic.js'
+      - 'lib/edgedesk_fairline.js'
+      - 'football/game_research/landing.json'
+      - 'tools/football/build_game_research.js'
       - 'lib/edgedesk_flags.js'
       - 'lib/edgedesk_odds_tools.js'
       - 'lib/edgedesk_plans.js'
@@ -73,6 +80,7 @@ jobs:
           node tools/presentation/landing_positioning.test.js
           node tools/presentation/landing_interaction.test.js
           node tools/presentation/landing_ev.test.js
+          node tools/presentation/landing_model.test.js
 
   migrations:
     runs-on: ubuntu-latest

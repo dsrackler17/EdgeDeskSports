@@ -1,5 +1,46 @@
 # Changelog
 
+## 2026-10-16 — The landing page: a model you can follow and argue with, shown on real games, and what shipped finally says Live
+
+**The landing page now shows EdgeDesk the way a subscriber sees it.** It explains why a model you can check is worth having, and it stops calling shipped features "in development".
+
+- **New section: "A model you can follow. And argue with."** (`#model`, right after the free research).
+  - **Know it:** every number shows its work (the score, fair spread and total, win chances, and the terms that moved them).
+  - **Follow it:** the record is public, losses included. The season's graded count is read live from `record/football/summary.json` (419 so far in 2026).
+  - **Help it:** each game lists what the model doesn't know yet.
+  - **Disagree with it:** your own fair line goes beside EdgeDesk's and the market's, and stays in your journal unchanged to grade against the close.
+  - One paragraph on why a baseline matters, then the trial button.
+- **Real games, drawn by the research page's own code** (`lib/edgedesk_home_model.js` + `.css`). Up to three of the week's editorially featured games, from the new `football/game_research/landing.json` (written hourly by `build_game_research.js`, checked by `--check`).
+  - A tab per game.
+  - The matchup graphic, drawn on the reader's device and downloadable as a PNG.
+  - Beginner / Research / Lab.
+  - Compare your number: `GS.comparePrice` on the game's own sheet, EV only where the market is calibrated, labelled a user-entered quote, never stored.
+  - Layer A only: no sportsbook price is read. The libraries load only as the section nears the screen. If the file is missing, the free sample link stays and the page says why.
+- **What shipped now says Live.** The Process Coach, the Weekly Film Room, the calendar, CSV import and bet slip screenshots shipped on 2026-10-04/05/14 (Portfolio schema deployed 2026-10-14), but the page still called them "in development". The loop's Learn and Improve steps, the Coach's eight reports, the Film Room and the calendar are now marked Live. Their pictures stay labelled sample data.
+- **Still labelled in development:** sportsbook and prediction-market account connections, and the free-account dashboard and saves (`lib/edgedesk_plans.js` PLANNED, now only these).
+- **The plan card and the terminal's paywall** (`lib/edgedesk_pricing.js` FEATURES) now list:
+  - Model-first NFL and college football research
+  - Fair lines, win probabilities and matchup graphics
+  - Compare your number with the model
+  - Live market comparison and EdgeDesk EV
+  - Player props
+  - Bet journal with CSV and bet slip import
+  - Profit, ROI and closing-line value
+  - Process Coach and the weekly Film Room
+- **The free list** adds "This week's featured games, researched in full".
+- **FAQ:**
+  - "What if I disagree with EdgeDesk's number?" replaces "Who is EdgeDesk for?" (the hero already says who).
+  - The coverage answer now names the terminal's other sports (NHL, NBA, MLB, college baseball, UFC) once, saying none makes a value claim.
+  - The connections answer names the three live ways in.
+- **"Start simple, go as deep as you want"** (`#depth`) gave way to the demo's Beginner / Research / Lab on a real game.
+- **Weight.** The coach, Film Room and calendar picture styles moved to `lib/edgedesk_landing_pictures.css`, which doesn't block first paint. The page is about 199.5k of its 204.8k-character budget.
+- **Tests.**
+  - `tools/presentation/landing_model.test.js` (new, 105): the file is `current.json`'s own, the selection rule, the pick, the words, parity with the research page's price check, the graded count, and the copy.
+  - `landing_positioning.test.js` and `landing_interaction.test.js` hold the new truth.
+  - `tools/site/free_access.test.js`: `landing.json` is a public sample (at most three games, no price, featured or the stated fallback).
+  - `tools/home/landing.e2e.js` (289, +29): the demo at 390 and 1280 px, the file missing, one `tool_used`.
+  - CI: `funnel-tests.yml` and `collective-tests.yml` run the new suite.
+
 ## 2026-10-16 — CFB fair alternate spreads: one distribution per game, so a better line never prices lower
 
 **The CFB fair-line ladder no longer dips as the line improves.** Before, Tulane −0.5 read 38.9% and Tulane +0.5 read 38.7%. Every FBS sheet had dips like this: up to 1 point inside a published ladder and 3 points across the table's ±45 edge.

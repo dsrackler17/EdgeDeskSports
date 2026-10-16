@@ -5,7 +5,8 @@
    The page sells ONE idea in five seconds: EdgeDesk is sports research plus
    personal betting analytics — research a football game, track what you
    bet, see whether you are actually profitable and whether your process is
-   working. Research, not picks. $49.99 a month. A first-time reader should
+   working. Research, not picks. $49.99 a month. Its model is a BASELINE a
+   reader can follow, check and argue with (#model), shown on real games. A first-time reader should
    be able to answer, from the first screen: what EdgeDesk is, what it does,
    what it costs, and that it sells no picks. These tests hold those answers
    on the page, and hold the line on what a marketing page is never allowed
@@ -17,10 +18,13 @@
         and says both in its own chrome before any number;
      3  one subscription, said once, with what is not live yet marked;
      4  results vs process: the sample tickets' arithmetic is right;
-     5  the loop — research, track, measure, learn, improve — says which
-        steps are live and which are not;
-     6  UNFINISHED IS LABELLED: Process Coach, the Weekly Film Room, the
-        calendar, prediction markets and account connections never appear
+     5  the loop — research, track, measure, learn, improve — is live, and
+        what is not (prediction markets, account sync) is marked soon;
+     5b the baseline (#model): know it, follow it, help it, disagree with it,
+        then real games drawn by the research page's own code, read not typed;
+     6  WHAT SHIPPED SAYS LIVE, WHAT DID NOT IS LABELLED: the Process Coach,
+        the Weekly Film Room and the calendar are live (pictured on labelled
+        sample data); prediction markets and account connections never appear
         without an in-development label, and no platform is called connected;
      7  the research terminal — the live product — is read, never typed in,
         and falls back to an example that says it is one;
@@ -182,24 +186,50 @@ has(HOW, 'Every bet should teach you something.', 'the loop headline');
 const STEPS = [...HOW.matchAll(/<li( class="on")?>\s*<div class="hd"><span class="n">(\d)<\/span><span class="(livechip|soon)">([^<]+)<\/span><\/div>\s*<h3>([^<]+)<\/h3>/g)]
   .map(m => ({ n: +m[2], live: m[3] === 'livechip', label: m[4], name: m[5] }));
 chk('five steps: Research, Track, Measure, Learn, Improve', JSON.stringify(STEPS.map(s => s.name)) === JSON.stringify(['Research', 'Track', 'Measure', 'Learn', 'Improve']), STEPS.map(s => s.name));
-chk('Research, Track and Measure are live; Learn and Improve are in development', JSON.stringify(STEPS.map(s => s.live)) === JSON.stringify([true, true, true, false, false])
-  && STEPS.filter(s => !s.live).every(s => s.label === 'In development'), STEPS);
-chk('the steps not yet live say what IS live today', (HOW.match(/<p class="now"><b>Today:<\/b>/g) || []).length === 2);
+chk('all five steps are live: the Process Coach and its experiments shipped (CHANGELOG 2026-10-04/05)', STEPS.length === 5 && STEPS.every(s => s.live && s.label === 'Live'), STEPS);
+chk('so no step needs a "Today:" stand-in any more', !/<p class="now">/.test(HOW));
 chk('tracking is described as logging, never as automatic connection', /Log your bets as you make them/.test(HOW) && !/\b(?:connect|sync)s? (?:where you bet|automatically|your (?:sportsbook|account))/i.test(plain(HOW)));
-['Prediction markets', 'Import + account sync', 'By sportsbook'].forEach(t =>
+['Prediction markets', 'Account sync'].forEach(t =>
   chk('"' + t + '" is marked as coming, not live', new RegExp('<span class="ck later">' + t.replace(/\+/g, '\\+') + '<i>soon<\\/i><\\/span>').test(HOW)));
+['CSV import', 'Bet slip screenshots', 'By sportsbook', 'Bankroll + drawdown'].forEach(t => has(HOW, '<span class="ck">' + t + '</span>', 'shipped, so live: ' + t));
 ['Fair spread', 'Win probability', 'Market comparison', 'Roster + matchup context', 'Uncertainty'].forEach(t => has(HOW, '<span class="ck">' + t + '</span>', 'research covers ' + t));
 ['P&amp;L', 'ROI', 'Closing-line value', 'Exposure', 'By league', 'By market'].forEach(t => has(HOW, '<span class="ck">' + t + '</span>', 'measure covers ' + t));
-['Entry timing', 'Price quality', 'Position sizing', 'Market selection', 'Edge capture'].forEach(t => has(HOW, '<span class="ck later">' + t + '</span>', 'Learn names ' + t + ', as not live'));
+['Entry timing', 'Price quality', 'Position sizing', 'Rule discipline', 'Edge capture'].forEach(t => has(HOW, '<span class="ck">' + t + '</span>', 'Learn grades ' + t));
+['Experiments', 'Weekly Film Room', 'Before-you-bet check'].forEach(t => has(HOW, '<span class="ck">' + t + '</span>', 'Improve offers ' + t));
+chk('the only things still marked soon in the loop are prediction markets and account sync', [...HOW.matchAll(/<span class="ck later">([^<]+)<i>soon/g)].map(m => m[1]).join('|') === 'Prediction markets|Account sync');
 
 /* ======================================================================== */
-/* 6. UNFINISHED IS LABELLED                                                */
+/* 5b. THE BASELINE: A MODEL YOU CAN FOLLOW, AND ARGUE WITH                 */
 /* ======================================================================== */
-/* Every block that shows a feature still in development carries the label
-   in that same block; every product picture that is not live data says
-   "Sample data" in its own bar (landing_interaction.test.js checks the bars). */
-const COACH = section('coach'), FILM = section('film'), HIST = section('history'), DEPTH = section('depth');
-has(COACH, '<span class="ey">Process Coach <span class="soon">In development</span></span>', 'Process Coach is labelled in development at its heading');
+const MOD = section('model');
+has(MOD, '<span class="ey">Your baseline <span class="livechip">Live</span></span>', 'the baseline section is live');
+has(MOD, 'A model you can follow. <span class="g">And argue with.</span>', 'the baseline headline');
+has(MOD, 'It doesn&rsquo;t pick your bets. It&rsquo;s the baseline you measure them against.', 'it says what the model is for, and what it is not');
+chk('four cards, in order: know it, follow it, help it, disagree with it', JSON.stringify([...MOD.matchAll(/<span class="fk">([^<]+)<\/span>/g)].map(m => m[1])) === JSON.stringify(['Know it', 'Follow it', 'Help it', 'Disagree with it']));
+has(MOD, 'graded against the close and the final, losses included', 'following it means a public record with the losses in');
+has(MOD, 'what the model doesn&rsquo;t know yet', 'helping it means knowing what it cannot see');
+has(MOD, 'Write down your own fair line.', 'disagreeing means putting a number beside it');
+has(MOD, '<b>Why a baseline?</b>', 'and why a baseline matters, in one paragraph');
+chk('the season\'s graded count is READ, never typed: it ships hidden and empty', /<span id="mdGraded" hidden><\/span>/.test(MOD));
+has(MOD, 'id="mdDemo" role="region" aria-label="Real games, the way subscribers see them"', 'the demo is a labelled region');
+chk('without script the demo is a link to the free sample, and no number is in the markup',
+  /id="mdBody" aria-live="polite">See one game researched end to end in <a class="lnk" href="\/research\/sample\/" data-cta="model_sample">the free sample<\/a>\.<\/div>/.test(MOD)
+  && !/\d+(?:\.\d)?%|[−-]\d+\.\d/.test(plain(MOD.slice(MOD.indexOf('id="mdDemo"')))));
+chk('the demo reads real games through the research page\'s own code', /<script src="\/lib\/edgedesk_home_model\.js\?v=/.test(IDX) && /EDHomeModel\.init\(\{track:track, funnel:funnel, wait:withDeadline\}\)/.test(IDX));
+chk('the demo closes on the one call to action', /<button type="button" class="btn primary lg" onclick="startSubscribe\(\)" data-track="model_trial_click" data-cta="model_trial">Start free trial /.test(MOD)
+  && MOD.indexOf('<span data-ed-price="cta">' + X.CTA_LINE + '</span>') > 0);
+
+/* ======================================================================== */
+/* 6. WHAT SHIPPED SAYS LIVE; WHAT DID NOT IS LABELLED                      */
+/* ======================================================================== */
+/* The Process Coach, the Weekly Film Room and the calendar shipped
+   (CHANGELOG 2026-10-04/05; Portfolio schema deployed 2026-10-14): they say
+   Live, and their pictures stay SAMPLE data, said in each panel's own bar
+   (landing_interaction.test.js checks the bars). Account connections and
+   prediction markets did not ship: every mention carries the label. */
+const COACH = section('coach'), FILM = section('film'), HIST = section('history');
+has(COACH, '<span class="ey">Process Coach <span class="livechip">Live</span></span>', 'the Process Coach is live, at its heading');
+has(COACH, 'Until it has 10 graded positions it says Building, never a guess.', 'and its evidence rule is stated (X.MIN.observation)');
 has(COACH, 'Don&rsquo;t just ask &ldquo;Am I winning?&rdquo;<br><span class="g">Ask &ldquo;Why?&rdquo;</span>', 'the coach headline');
 ['Game-day CFB entries', '43 positions', '&minus;12.8%', '&minus;1.3 pts', '61', 'CFB entries &gt;24h early', '51 positions', '+8.7%', '+1.2 pts', '89',
  'Your earlier CFB entries have historically produced better prices and stronger closing-line value than your game-day entries.',
@@ -211,33 +241,35 @@ chk('every sample position behind the finding has a CLV that matches its entry a
   const num = (s) => parseFloat(plain(s));
   return rows.length === 4 && rows.every(m => Math.abs((num(m[2]) - num(m[3])) - num(m[4])) < 1e-9);
 });
-has(COACH, 'not a real customer&rsquo;s results. Process Coach is in development and is not available yet.', 'the coach example says it is not a real customer and not live');
-chk('each "your record can\'t show" item says whether it is live', () => {
+has(COACH, 'Sample data and an illustrative example, not a real customer&rsquo;s results.', 'the coach example says it is not a real customer');
+chk('each "your record can\'t show" item says it is live: every one is a Process Coach report today', () => {
   const items = [...COACH.matchAll(/<li><b>([^<]+)<\/b><span>[^<]+<\/span><i class="(livechip|soon)">(Live|Soon)<\/i><\/li>/g)];
-  return items.length === 8 && JSON.stringify(items.map(m => m[1])) === JSON.stringify(['Bad wins', 'Good losses', 'Market fit', 'Edge capture', 'Timing', 'Sizing', 'Rules', 'Film room']);
+  return items.length === 8 && JSON.stringify(items.map(m => m[1])) === JSON.stringify(['Bad wins', 'Good losses', 'Market fit', 'Edge capture', 'Timing', 'Sizing', 'Rules', 'Film room'])
+    && items.every(m => m[2] === 'livechip');
 });
-chk('only what the journal shows today is marked live there: bad wins, good losses, market fit',
-  JSON.stringify([...COACH.matchAll(/<li><b>([^<]+)<\/b><span>[^<]+<\/span><i class="livechip">/g)].map(m => m[1])) === JSON.stringify(['Bad wins', 'Good losses', 'Market fit']));
-has(FILM, '<span class="ey">Weekly Film Room <span class="soon">In development</span></span>', 'the Film Room is labelled in development');
+has(COACH, 'Every finding opens onto the positions behind it', 'and every finding can be checked and challenged (WHY on everything)');
+has(FILM, '<span class="ey">Weekly Film Room <span class="livechip">Live</span></span>', 'the Film Room is live');
 has(FILM, 'Review your week like game film.', 'the Film Room headline');
 ['&minus;$126', 'B+', 'The result was worse than the process.', 'Average CLV remained positive.', 'Early CFB spreads', 'Process grade: A', 'Game-day player props', 'Process grade: D+',
  'Best decision', 'Strong price', 'Positive CLV', 'Correct sizing', 'Bad win', 'Poor entry', 'Negative CLV', 'Oversized position', 'Focus: no new CFB sides inside six hours of kickoff.']
   .forEach(t => has(FILM, t, 'the film room shows ' + t));
-has(FILM, 'The Weekly Film Room is in development and is not available yet.', 'and says it is not live');
-has(HIST, '<span class="soon">In development</span><span class="tag">Sample data</span>', 'the calendar is labelled in development and sample data');
+has(FILM, 'Illustrative sample, not a real customer&rsquo;s week.', 'and its picture says it is a sample');
+has(HIST, '<span class="nm">September</span><span class="chips"><span class="tag">Sample data</span></span>', 'the calendar picture is labelled sample data');
 has(HIST, 'Your entire betting history. <span class="g">With context.</span>', 'the history headline');
 has(HIST, 'Stop relying on memory. See what you did, when you did it, and what happened afterward.', 'the history promise');
 ['Placed', 'Settled', 'P&amp;L', 'Process'].forEach(t => has(HIST, '<span class="l">' + t + '</span>', 'the calendar day shows ' + t));
 ['When you entered it', 'Your line, price and stake', 'The result', 'Closing-line value, graded for you', 'EdgeDesk&rsquo;s numbers at that moment', 'Your own notes']
   .forEach(t => has(HIST, '<li>' + t + '</li>', 'the live journal keeps ' + t));
-has(HIST, 'The calendar view and per-bet grades shown here are in development.', 'what in that picture is not live is named');
+chk('the calendar and per-bet grades are no longer called unfinished: the only thing in development there is account connections',
+  (plain(HIST).match(/in development/g) || []).length === 1 && /prediction-market accounts is in development/.test(plain(HIST)));
 chk('the sample calendar is September of a real year shape: the 1st on a Tuesday, 30 days, the selected day a Saturday', () => {
   const cells = [...HIST.matchAll(/<td(?: class="sel")?>(?:<span class="d">(\d+)<\/span>)?/g)].map(m => m[1] ? +m[1] : null);
   const first = cells.indexOf(1), sel = +(HIST.match(/<td class="sel"><span class="d">(\d+)/) || [])[1];
   return first === 2 && cells.filter(Boolean).length === 30 && (first + sel - 1) % 7 === 6 && /Saturday, Sept\. 26/.test(HIST) && sel === 26;
 });
 /* ACCOUNT CONNECTIONS: none is live, so none is claimed */
-has(HIST, 'Today you log your bets yourself. Importing, and connecting sportsbook and prediction-market accounts, are in development.', 'connections are described as in development');
+has(HIST, 'Log a bet by hand, import a CSV export, or read a bet slip screenshot on your own device; the image is never uploaded. Connecting sportsbook and prediction-market accounts is in development.',
+  'the three live ways in are named, and connections are described as in development');
 has(HIST, 'We won&rsquo;t show any sportsbook or exchange as connected until that connection genuinely works.', 'and the page promises not to overclaim them');
 lacks(HIST, 'Connect where you bet', 'the "connect where you bet" headline waits for a connector that works');
 chk('no sportsbook or exchange is named as connected, synced or integrated anywhere',
@@ -247,7 +279,7 @@ chk('no sportsbook logo or image is on the page', !/<img\b/.test(IDX) && !/logo[
 chk('"connected" is only ever said as a refusal', () => [...TEXT.matchAll(/\bconnected\b/gi)].every(m => /won't show|never|not|until/i.test(TEXT.slice(Math.max(0, m.index - 80), m.index))));
 /* every place a not-live feature is NAMED in visible copy is a block that
    also carries the label, or a sentence that says so */
-[/Process Coach/g, /Film Room/g, /\bcalendar\b/gi, /prediction[- ]market/gi].forEach(re => {
+[/prediction[- ]market/gi, /\baccount (?:sync|connections?)\b/gi].forEach(re => {
   const bad = [];
   /* a block is a list item, a heading block, a panel, a FAQ answer or
      question; a block may name an unfinished feature only if it carries the
@@ -264,11 +296,9 @@ chk('"connected" is only ever said as a refusal', () => [...TEXT.matchAll(/\bcon
   /* the sections that are wholly about an unfinished feature carry the label at their heading */
   chk('every mention of ' + re + ' is labelled where it is made', bad.length === 0, bad.slice(0, 3).join(' || '));
 });
-has(DEPTH, 'Start simple. Go as deep as you want.', 'the depth headline');
-['&ldquo;Am I actually up or down?&rdquo;', '&ldquo;Where am I losing edge?&rdquo;', '&ldquo;Show me the evidence.&rdquo;'].forEach(q => has(DEPTH, q, 'the depth question ' + q));
-has(DEPTH, 'Same platform. Same data. As much depth as you want.', 'the depth caption');
-has(DEPTH, '<span class="sample">Sample values</span>', 'and its values are labelled samples');
-has(DEPTH, '<li class="later">Timing buckets + edge capture <span class="soon">Soon</span></li>', 'the advanced list marks what is not live');
+/* beginner to advanced is now shown, not told: the #model demo's Beginner,
+   Research and Lab levels on a real game (the #depth section is gone) */
+lacks(IDX, 'id="depth"', 'the depth section made way for the real game');
 
 /* ======================================================================== */
 /* 7. THE RESEARCH TERMINAL: LIVE, READ, NEVER TYPED IN                     */
@@ -335,7 +365,8 @@ chk('the plan\'s inclusions are the pricing file\'s FEATURES, in order', () => {
   return JSON.stringify(li) === JSON.stringify(X.FEATURES);
 }, 'the plan card list differs from lib/edgedesk_pricing.js FEATURES');
 chk('the plan lists six to eight benefits, not a wall', X.FEATURES.length >= 6 && X.FEATURES.length <= 8, X.FEATURES.length);
-chk('and none of them is a feature still in development', !X.FEATURES.some(f => /coach|film room|calendar|prediction|connect|sync|import|grade/i.test(f)), X.FEATURES);
+chk('and none of them is a feature still in development (account connections, prediction markets)', !X.FEATURES.some(f => /prediction|connect|sync/i.test(f)), X.FEATURES);
+chk('the plan names what shipped since: the baseline tools and the Process Coach', ['Compare your number with the model', 'Process Coach and the weekly Film Room'].every(f => X.FEATURES.indexOf(f) >= 0), X.FEATURES);
 chk('player props are part of the plan', X.FEATURES.indexOf('Player props') >= 0);
 /* FREE BESIDE FULL ACCESS: the free card is lib/edgedesk_plans.js FREE, in
    order; no card on this section lists anything still being built */
@@ -427,23 +458,34 @@ has(TR, 'EdgeDesk&rsquo;s record &middot; live', 'and it says it is EdgeDesk\'s 
 /* ======================================================================== */
 const FAQ = section('faq');
 const QS = [...FAQ.matchAll(/<summary>([\s\S]*?)<\/summary>/g)].map(m => plain(m[1]).trim());
-['Is EdgeDesk a picks service?', 'What can I use for free?', 'Does EdgeDesk guarantee I\'ll make money?', 'Who is EdgeDesk for?', 'Can beginners and advanced bettors both use it?',
+['Is EdgeDesk a picks service?', 'What can I use for free?', 'Does EdgeDesk guarantee I\'ll make money?', 'What if I disagree with EdgeDesk\'s number?', 'Can beginners and advanced bettors both use it?',
  'What sports are currently supported?', 'Can I connect my sportsbook or prediction-market account?', 'Which features are still in development?', 'How does the 7 -day trial work?', 'Can I cancel anytime?']
   .forEach(q => chk('the FAQ answers: ' + q, QS.indexOf(q) >= 0, QS.join(' | ')));
 function answer(q) { const i = QS.indexOf(q); const all = [...FAQ.matchAll(/<div class="a">([\s\S]*?)<\/div>/g)]; return i < 0 || !all[i] ? '' : plain(all[i][1]).trim(); }
 chk('a picks service? No. Research, not picks.', /^No\. Research, not picks\./.test(answer('Is EdgeDesk a picks service?')));
 chk('guaranteed money? No.', /^No\b/.test(answer('Does EdgeDesk guarantee I\'ll make money?')));
-chk('sports: exactly the NFL and NCAA FBS', /^Football: the NFL and NCAA FBS/.test(answer('What sports are currently supported?')));
-chk('connections: not yet, and logged by hand today', /^Not yet\. Today you log your bets yourself\./.test(answer('Can I connect my sportsbook or prediction-market account?')));
-chk('the in-development list names every unfinished feature', ['Process Coach', 'Weekly Film Room', 'calendar view', 'per-bet process grades', 'prediction-market tracking', 'account connections']
-  .every(f => answer('Which features are still in development?').indexOf(f) >= 0));
+chk('sports: football first, the NFL and NCAA FBS', /^Football: the NFL and NCAA FBS/.test(answer('What sports are currently supported?')));
+chk('and the other sports the terminal carries, with no value claim for any of them',
+  /The terminal also carries research on the NHL, NBA, MLB, college baseball and UFC; where those sports have a model, it is checked against results on seasons it never saw but not yet against the market, so they make no value claims\./.test(answer('What sports are currently supported?')));
+chk('connections: not yet; by hand, CSV or screenshot today', /^Not yet\. Today you log a bet by hand, import a CSV export, or read a bet slip screenshot on your own device/.test(answer('Can I connect my sportsbook or prediction-market account?')));
+chk('the in-development list names what is still unfinished, and only that', /^Sportsbook and prediction-market account connections, and a dashboard and saved research for free accounts\./.test(answer('Which features are still in development?'))
+  && !/Process Coach|Film Room|calendar/.test(answer('Which features are still in development?')));
+chk('disagreeing with the model: welcome, and measured', /^Good: that's what it's for\. EdgeDesk is a baseline, not an oracle\./.test(answer('What if I disagree with EdgeDesk\'s number?')) && /how far yours and EdgeDesk's each landed from the close/.test(answer('What if I disagree with EdgeDesk\'s number?')));
 chk('beginners and advanced: yes, both', /^Yes\./.test(answer('Can beginners and advanced bettors both use it?')) && /For advanced bettors: Fair lines/.test(answer('Can beginners and advanced bettors both use it?')));
 chk('what is free: no account, no card, and what Full Access adds', /^No account, no card/.test(answer('What can I use for free?')) && /Full Access adds/.test(answer('What can I use for free?')));
 chk('the FAQ is short: at most a dozen product questions', QS.length <= 12, QS.length);
 has(FAQ, 'Re-check my subscription now', 'the self-serve billing re-check survives');
 has(FAQ, 'reopen signup', 'and the confirmation-email help');
-[/\bevery sport\b/i, /\ball sports\b/i, /\bMLB\b/, /\bNBA\b/, /\bWNBA\b/, /\bNHL\b/, /\btennis\b/i, /\bUFC\b/, /\bbaseball\b/i, /\bgolf/i, /\bsoccer\b/i]
+/* COVERAGE: football leads; the terminal's other sports are named ONCE, in
+   the FAQ answer that says none makes a value claim. Retired or uncovered
+   sports never appear. */
+[/\bevery sport\b/i, /\ball sports\b/i, /\bWNBA\b/, /\btennis\b/i, /\bgolf/i, /\bsoccer\b/i]
   .forEach(re => chk('coverage is never overstated: ' + re, !re.test(TEXT), (re.exec(TEXT) || [])[0]));
+{
+  const sportsA = answer('What sports are currently supported?'), rest = TEXT.split(sportsA).join(' ');
+  [/\bMLB\b/, /\bNBA\b/, /\bNHL\b/, /\bUFC\b/, /\bbaseball\b/i]
+    .forEach(re => chk('another sport is named only in the coverage answer: ' + re, re.test(sportsA) && !re.test(rest), (re.exec(rest) || [])[0]));
+}
 has(IDX, 'carried as unknown, never as healthy', 'unknown is not healthy');
 has(IDX, 'A stale price is not compared', 'a stale market is not a price');
 has(IDX, 'Layers that have not cleared validation move no line', 'the unvalidated layers move no line');
@@ -477,9 +519,9 @@ chk('"See how it works" is the only secondary action in the hero', (HERO.match(/
 /* ======================================================================== */
 /* 12. THE HIERARCHY                                                        */
 /* ======================================================================== */
-const ORDER = ['top', 'free', 'research', 'why', 'how', 'coach', 'film', 'history', 'depth', 'pricing', 'trust', 'faq', 'start'];
+const ORDER = ['top', 'free', 'model', 'research', 'why', 'how', 'coach', 'film', 'history', 'pricing', 'trust', 'faq', 'start'];
 ORDER.forEach(id => has(IDX, 'id="' + id + '"', 'the ' + id + ' section exists'));
-chk('hero → free research → the live research preview → why results aren\'t enough → the loop → Process Coach → Film Room → history → depth → free + pricing → trust → FAQ → close',
+chk('hero → free research → the baseline on real games → the live research preview → why results aren\'t enough → the loop → Process Coach → Film Room → history → free + pricing → trust → FAQ → close',
   ORDER.every((id, i) => i === 0 || IDX.indexOf('id="' + id + '"') > IDX.indexOf('id="' + ORDER[i - 1] + '"')));
 chk('every section earns its place: twelve sections and the hero, no more', (IDX.match(/<section\b/g) || []).length === 12, (IDX.match(/<section\b/g) || []).length);
 chk('free research comes before any subscription pitch', IDX.indexOf('id="free"') < IDX.indexOf('id="why"') && IDX.indexOf('id="free"') < IDX.indexOf('id="pricing"'));
@@ -539,8 +581,8 @@ chk('and names what it researches and tracks, free first', /^Free /.test(DESC) &
 has(IDX, '<link rel="canonical" href="https://edgedesksports.com/">', 'the canonical URL is the root');
 ['og:title', 'og:description', 'og:url', 'og:type', 'twitter:card', 'twitter:title', 'twitter:description']
   .forEach(k => chk('social metadata: ' + k, new RegExp('(property|name)="' + k + '" content="[^"]{5,}"').test(IDX)));
-chk('no metadata advertises a feature that is not live', !/(?:property|name)="(?:og|twitter):[a-z]+" content="[^"]*(?:Process Coach|Film Room|calendar|prediction market|connect)/i.test(IDX)
-  && !/<meta name="description" content="[^"]*(?:Process Coach|Film Room|calendar|prediction market|connect)/i.test(IDX));
+chk('no metadata advertises a feature that is not live', !/(?:property|name)="(?:og|twitter):[a-z]+" content="[^"]*(?:prediction market|connect)/i.test(IDX)
+  && !/<meta name="description" content="[^"]*(?:prediction market|connect)/i.test(IDX));
 chk('the structured data parses and offers the price the pricing file states', () => {
   const j = JSON.parse((IDX.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/) || [])[1]);
   const app = j['@graph'].find(n => n['@type'] === 'SoftwareApplication');
@@ -548,7 +590,7 @@ chk('the structured data parses and offers the price the pricing file states', (
   return /var PRICE_DISPLAY=EDP\?EDP\.PRICE_DISPLAY:'';/.test(IDX) && price === '49.99'
     && app && app.offers && app.offers.price === price && app.offers.priceCurrency === X.CURRENCY
     && app.offers.description === X.TRIAL_DAYS + '-day free trial, then ' + X.PRICE_DISPLAY + ' per ' + X.BILLING_PERIOD + '. Cancel anytime.'
-    && !/Process Coach|Film Room|prediction/i.test(app.description);
+    && !/prediction|connect/i.test(app.description);
 });
 
 /* ======================================================================== */

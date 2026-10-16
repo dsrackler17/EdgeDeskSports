@@ -256,6 +256,15 @@ action (`hero_free`, `nav_*`, `free_*`, `today_*`, `pricing_free`,
 (`landing_interaction.test.js`); the next addition to it should move
 something into a library first.
 
+**2026-10-16 (the baseline section):** done that way. The product pictures'
+styles (#coach, #film, #history) moved to `lib/edgedesk_landing_pictures.css`,
+loaded without blocking the first screen; the #model demo draws from
+`lib/edgedesk_home_model.js` + `.css`. The page is back near 199,500
+characters. The demo reads `football/game_research/landing.json`, a third
+public file (`free_access.test.js` PUBLIC_FILES): up to three of the week's
+editorially featured games, Layer A only, already free in the articles. Run
+`tools/presentation/landing_model.test.js` with the three landing suites.
+
 ## 6. Rollout and rollback for Phases 1–2
 
 - Static pages only, plus one AI function fix. No SQL changes.

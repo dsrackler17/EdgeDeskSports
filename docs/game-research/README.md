@@ -276,6 +276,21 @@ price's break-even), never "bet". The existing fair-number comparison
 | A game that kicked off | keeps its last pregame snapshot (frozen, marked) for 36 hours, then leaves `current.json`; its graphic spec stays in the history |
 | Size | `current.json` ≈ 1 MB (≈ 115 KB gzipped) for ~140 games; `probabilities.json` loads only when a price is compared |
 
+### The landing page's real games
+
+`build()` also writes `football/game_research/landing.json`: up to three
+pregame games, exactly as `current.json` carries them, each with its own
+sheet from `probabilities.json` and the calibration block for its league.
+They are chosen from the games EdgeDesk's editorial desk features in its free
+articles (`articles/data/editorial/featured.json`): one per league first, then
+by editorial priority. With none, the soonest games with a full data check are
+used, and each game says which rule chose it. `--check` holds the file to
+`current.json` (same snapshot ids, matched sheets). The landing page's #model
+section (`lib/edgedesk_home_model.js`) draws them with this code: the
+graphic, the three levels, and Compare my number. No sportsbook price is in
+the file. `node tools/football/build_game_research.js --landing` re-derives the
+file from the committed snapshots alone.
+
 ## 7. Tests
 
 | Suite | What |

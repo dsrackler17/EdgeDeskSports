@@ -35,6 +35,9 @@
                                                  re-run identically, sheets match
                                                  their snapshots, ladders are
                                                  monotone, history is pregame
+     node tools/football/build_game_research.js --landing  re-derive landing.json (the
+                                                 landing page's real games) from
+                                                 the committed current.json
      node tools/football/build_game_research.js --identity regenerate the college
                                                  identity table from the NCAAM pack
    =========================================================================== */
@@ -50,6 +53,9 @@ const OUT = path.join(ROOT, 'football', 'game_research');
 const SCHEMA = 'edgedesk_game_research_current_v1';
 const PROB_SCHEMA = 'edgedesk_game_research_probabilities_v1';
 const HISTORY_SCHEMA = 'edgedesk_game_research_history_v1';
+const LANDING_SCHEMA = 'edgedesk_game_research_landing_v1';
+/* the landing page shows this many real games, the way a subscriber sees them */
+const LANDING_GAMES = 3;
 /* a game that kicked off this long ago leaves current.json (its history stays) */
 const STARTED_KEEP_H = 36;
 
@@ -162,6 +168,7 @@ function build(opts) {
   const rk = opts.rankings !== undefined ? opts.rankings : readJson('football/rankings/current.json');
   const today = opts.today !== undefined ? opts.today : readJson('today/slate.json');
   const ident = opts.identity !== undefined ? opts.identity : readJson('football/game_research/identity_cfb.json');
+  const featured = opts.featured !== undefined ? opts.featured : readJson('articles/data/editorial/featured.json');
   const prevHistory = opts.history || null;
   const prevCurrent = opts.previous !== undefined ? opts.previous : null;
 
@@ -270,7 +277,54 @@ function build(opts) {
   const probabilities = { schema: PROB_SCHEMA, generated_at: nowIso, fairline_version: FL.VERSION,
     note: 'Each sheet is lib/edgedesk_fairline.js sheet() on the same slate as its snapshot (tools/football/build_fair_lines.js inputsFor). A sheet whose centre does not match its snapshot is dropped, never served.',
     models: probs.models, refused: probs.refused, sheets: probs.sheets };
-  return { current, probabilities, appendBySeason, nowIso };
+  const landing = landingFor(current, probabilities, featured, now);
+  return { current, probabilities, landing, appendBySeason, nowIso };
+}
+
+/* THE LANDING PAGE'S REAL GAMES (index.html #model, lib/edgedesk_home_model.js).
+   Up to LANDING_GAMES pregame games exactly as the research page shows them:
+   the snapshot (Layer A, no sportsbook number) and its own probability sheet,
+   so the landing page draws the real matchup graphic and prices a typed
+   number with the real price check. Chosen from the games EdgeDesk's
+   editorial desk already features in its free articles
+   (articles/data/editorial/featured.json, status "featured"), highest
+   priority first, one per league before a second from either; with none,
+   the soonest games with a full data check. A game is eligible only before
+   kickoff, with a projection, no data fault and a matched sheet. Small on
+   purpose: three games, not the 2 MB slate. */
+function landingFor(current, probabilities, featured, now) {
+  const by = {};
+  (current.games || []).forEach((g) => { by[g.game_key] = g; });
+  const ok = (g) => g && !g.started && g.model && g.model.available && g.data.status !== 'FAULT' && g.probability_sheet === 'MATCHED'
+    && probabilities.sheets[g.game_key] && Date.parse(g.kickoff) > now;
+  const picked = [], why = {};
+  const feat = ((featured && featured.games) || []).filter((f) => f.status === 'featured' && f.key)
+    .map((f) => ({ gk: String(f.sport || '').toLowerCase() + '|' + String(f.game_id), p: num(f.editorial_priority) || 0, f }))
+    .filter((x) => ok(by[x.gk]))
+    .sort((a, b) => (b.p - a.p) || a.gk.localeCompare(b.gk));
+  /* one per league first, so a reader sees the NFL and college football; then by priority */
+  ['nfl', 'cfb'].forEach((lg) => { const x = feat.find((y) => by[y.gk].league === lg); if (x && picked.length < LANDING_GAMES) { picked.push(x.gk); why[x.gk] = x.f; } });
+  feat.forEach((x) => { if (picked.length < LANDING_GAMES && picked.indexOf(x.gk) < 0) { picked.push(x.gk); why[x.gk] = x.f; } });
+  if (!picked.length) {
+    (current.games || []).filter(ok).sort((a, b) => ((a.data.status === 'OK' ? 0 : 1) - (b.data.status === 'OK' ? 0 : 1)) || String(a.kickoff).localeCompare(String(b.kickoff)) || a.game_key.localeCompare(b.game_key))
+      .slice(0, LANDING_GAMES).forEach((g) => picked.push(g.game_key));
+  }
+  const games = picked.map((gk) => {
+    const s = by[gk], f = why[gk];
+    return { game_key: gk,
+      chosen_because: f ? 'featured by EdgeDesk’s editorial desk this week' + (f.window_label ? ' (' + f.window_label + (f.rivalry_label ? ', ' + f.rivalry_label : '') + ')' : '') : 'the next game with a full data check',
+      snapshot: s, sheet: probabilities.sheets[gk] };
+  });
+  const leagues = {};
+  games.forEach((g) => { leagues[g.snapshot.league] = 1; });
+  const c = current.counts || {};
+  return {
+    schema: LANDING_SCHEMA, version: GS.VERSION, generated_at: current.generated_at,
+    note: 'Real games from football/game_research/current.json, unchanged, each with its own sheet from probabilities.json: EdgeDesk’s numbers only, no sportsbook price. The landing page draws them with the same code the research page uses.',
+    counts: { games: c.games || 0, nfl: c.nfl || 0, cfb: c.cfb || 0, model_available: c.model_available || 0, started: c.started || 0 },
+    models: Object.keys(leagues).reduce((o, lg) => { if (probabilities.models[lg]) o[lg] = probabilities.models[lg]; return o; }, {}),
+    games
+  };
 }
 
 /* the latest history row per game, with a short trail of how its number moved */
@@ -295,6 +349,17 @@ function main() {
     fs.mkdirSync(OUT, { recursive: true });
     fs.writeFileSync(path.join(OUT, 'identity_cfb.json'), JSON.stringify(id, null, 1) + '\n');
     console.log('identity_cfb.json: ' + Object.keys(id.teams).length + ' teams' + (id.missing.length ? ', missing ' + id.missing.join(', ') : ''));
+    return;
+  }
+  if (argv.includes('--landing')) {
+    /* landing.json alone, from the COMMITTED current.json and probabilities.json
+       (the hourly build writes all three together; this re-derives the one) */
+    const cur = readJson('football/game_research/current.json'), probs = readJson('football/game_research/probabilities.json');
+    if (!cur || !probs) { console.error('football/game_research/current.json or probabilities.json is missing'); process.exit(1); }
+    const nowArg = (() => { const i = argv.indexOf('--now'); return i >= 0 ? Date.parse(argv[i + 1]) : Date.now(); })();
+    const land = landingFor(cur, probs, readJson('articles/data/editorial/featured.json'), nowArg);
+    const w = writeIfChanged(path.join(OUT, 'landing.json'), land, { pretty: false });
+    console.log('landing.json ' + w + ' (' + land.games.map((g) => g.game_key).join(', ') + ')');
     return;
   }
   const check = argv.includes('--check');
@@ -333,6 +398,22 @@ function main() {
       const to = (L.total || []).slice().sort((a, b) => a.line - b.line);
       if (to.some((r, i) => i > 0 && r.over > to[i - 1].over + TOL)) bad.push(k + ': its total ladder makes the over likelier at a higher total');
     });
+    /* the landing page's games are current.json's own, unchanged, each with its own sheet */
+    const land = readJson('football/game_research/landing.json');
+    if (!land || land.schema !== LANDING_SCHEMA) bad.push('landing.json is missing or not ' + LANDING_SCHEMA);
+    else {
+      const ids = {};
+      (cur.games || []).forEach((g) => { ids[g.game_key] = g.snapshot_id; });
+      if (!(land.games || []).length || land.games.length > LANDING_GAMES) bad.push('landing.json carries ' + (land.games || []).length + ' games');
+      (land.games || []).forEach((g) => {
+        const s = g.snapshot;
+        if (!s || ids[g.game_key] !== s.snapshot_id) bad.push('landing.json ' + g.game_key + ': not the snapshot current.json carries');
+        else if (GS.snapshotId(s) !== s.snapshot_id) bad.push('landing.json ' + g.game_key + ': snapshot id is not the hash of its content');
+        if (!g.sheet || !s || !GS.sheetMatches(s, g.sheet)) bad.push('landing.json ' + g.game_key + ': its sheet was not built from its snapshot');
+        if (s && !(s.model && s.model.available)) bad.push('landing.json ' + g.game_key + ': no projection');
+        if (s && !(land.models || {})[s.league]) bad.push('landing.json ' + g.game_key + ': no calibration block for ' + s.league);
+      });
+    }
     const dir = path.join(OUT, 'history');
     if (fs.existsSync(dir)) fs.readdirSync(dir).filter((f) => /\.jsonl$/.test(f)).forEach((f) => {
       readHistory(path.join(dir, f)).rows.forEach((r, i) => {
@@ -341,7 +422,7 @@ function main() {
       });
     });
     if (bad.length) { console.error('game research: ' + bad.length + ' integrity failure(s):\n  ' + bad.slice(0, 20).join('\n  ')); process.exit(1); }
-    console.log('game research: current.json is self-consistent (' + cur.counts.games + ' games, ' + Object.keys(probs.sheets).length + ' sheets) and the history ledger is pregame-only');
+    console.log('game research: current.json is self-consistent (' + cur.counts.games + ' games, ' + Object.keys(probs.sheets).length + ' sheets, ' + land.games.length + ' landing games) and the history ledger is pregame-only');
     return;
   }
   const r = build({ now: nowArg || undefined, history, previous: readJson('football/game_research/current.json') });
@@ -361,12 +442,15 @@ function main() {
   r.current.games.forEach((s) => { if (!s.started && fresh[s.game_key]) s.history = fresh[s.game_key].trail.slice(-6); });
   const w1 = writeIfChanged(path.join(OUT, 'current.json'), r.current, { pretty: false });
   const w2 = writeIfChanged(path.join(OUT, 'probabilities.json'), r.probabilities, { pretty: false });
+  /* the landing page's games carry the trail just appended, like current.json */
+  r.landing.games.forEach((g) => { const s = r.current.games.find((x) => x.game_key === g.game_key); if (s) g.snapshot = s; });
+  const w3 = writeIfChanged(path.join(OUT, 'landing.json'), r.landing, { pretty: false });
   const c = r.current.counts;
   console.log('game research: ' + c.games + ' games (' + c.nfl + ' NFL, ' + c.cfb + ' CFB), ' + c.model_available + ' projected, ' + c.limited + ' limited, '
     + c.data_fault + ' data faults, ' + c.started + ' started; sheets ' + c.with_sheet + ' matched / ' + c.sheet_mismatch + ' dropped; '
-    + appended + ' history rows appended; current.json ' + w1 + ', probabilities.json ' + w2);
+    + appended + ' history rows appended; current.json ' + w1 + ', probabilities.json ' + w2 + ', landing.json ' + w3 + ' (' + r.landing.games.map((g) => g.game_key).join(', ') + ')');
   if (r.current.refused.length) console.log('refused: ' + r.current.refused.map((x) => x.game_key + ' (' + x.reason + ')').join('; '));
 }
 
 if (require.main === module) main();
-module.exports = { build, buildIdentity, loadHistory, historyRow, nflRecords, espnByGame, sheetsFor, SCHEMA, PROB_SCHEMA, HISTORY_SCHEMA };
+module.exports = { build, buildIdentity, loadHistory, historyRow, nflRecords, espnByGame, sheetsFor, landingFor, SCHEMA, PROB_SCHEMA, HISTORY_SCHEMA, LANDING_SCHEMA, LANDING_GAMES };
