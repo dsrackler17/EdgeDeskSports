@@ -55826,10 +55826,18 @@ function fbGxResearchObj(u,p){
   if(u._gr&&u._gr.key===key)return u._gr.v;
   var g=u.g,m=p.model;
   var unc=(p.layers&&p.layers.uncertainty)||{};
-  /* The model's OWN distribution at any home line — the same function that
-     produced p.cover at the joined line — so every book's number can be
-     priced without deriving a probability from a spread gap. */
-  var coverAt=(E&&E.dist&&typeof E.dist.coverProbSpread==='function')?function(homeLine){
+  /* The model's OWN distribution at any home line, so every book's number is
+     priced without deriving a probability from a spread gap — and from ONE
+     distribution: EDQuoteEV.cfbGameCover reads the table row at the joined
+     market margin (clamped to the table; no market: the fair margin), the row
+     fbQevModelCfb and the terminal read, and at the joined line it equals the
+     engine's p.cover to the bit. The engine's per-line call keyed a different
+     row to every book's line, so a better number could price lower. */
+  var Q=window.EDQuoteEV,P4=window.EDCfbP4Params;
+  var cond=mk&&mk.spread_line!=null&&!mk.spread_fault?mk.spread_line:null;
+  var curve=(Q&&P4&&typeof Q.cfbGameCover==='function')?Q.cfbGameCover(P4.distributions,m.fair_spread,cond,unc.sigma,unc.sigma_base):null;
+  var coverAt=curve?function(homeLine){return curve(R.marginFromSpread(homeLine));}
+    :(E&&E.dist&&typeof E.dist.coverProbSpread==='function')?function(homeLine){
     return E.dist.coverProbSpread(m.fair_spread,R.marginFromSpread(homeLine),unc.sigma,unc.sigma_base);
   }:null;
   var market={};

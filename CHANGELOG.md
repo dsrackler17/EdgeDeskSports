@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-10-16 — CFB fair alternate spreads: one distribution per game, so a better line never prices lower
+
+**The CFB fair-line ladder no longer dips as the line improves.** Before, Tulane −0.5 read 38.9% and Tulane +0.5 read 38.7%. Every FBS sheet had dips like this: up to 1 point inside a published ladder and 3 points across the table's ±45 edge.
+
+- **The cause.** The engine's per-line cover call (`football/cfb_p4/engine.js` `dist.coverProbSpread`) borrows its shape from the margin table row keyed by the line it prices. Past ±45 it uses the pooled residual instead. So every rung of a ladder read a different distribution.
+- **The fix.** The linemaker now reads one row per game: EdgeDesk's own fair margin, clamped to the table (`EDQuoteEV.cfbGameCover`, the row the terminal and the in-card ladder already read). Every line is then a tail of that single distribution.
+  - It lives in `tools/football/build_fair_lines.js` `cfbSpreadCover`.
+  - At the fair margin it equals the engine to the bit.
+  - A ±0.5 pair now reads the same, because CFB has no ties.
+- **The app's per-book "price at this line"** (`fbGxResearchObj`) had the same per-line read. It now uses the curve conditioned on the joined market, which equals the engine's own cover at that line.
+- **The calibration record** (`football/validation/linemaker_cfb.json`) is re-graded on the new function, using identical data.
+  - Spread log loss improved: 0.72413 → 0.72394 on the selection seasons, 0.72673 → 0.72643 on the confirmation seasons.
+  - The calibration slope went from 1.024 to 1.007.
+  - The mean-probability miss went from 0.0295 to 0.0303, so the status stays PROVISIONAL and the tier stays RESEARCH.
+  - Every other market is unchanged.
+- **What moved.** Within ±10 points of fair, a typical rung moved 0.4 points, and 1.5 at most.
+- **Regeneration.** `football/game_research/probabilities.json` is rebuilt. `football/linemaker/fair_lines.json` and its append-only ledger reprice on the next `linemaker-build` run.
+- **Tests.**
+  - `linemaker.test.js`: every committed FBS projection, plus a sweep of margins and σ, is monotone and integer-consistent from −70 to +70; parity with the engine at the fair margin; the table-less fallback.
+  - `game_research.test.js`: the built and the committed ladders, ±0.5, and the page's read.
+  - `cockpit_ui.test.js`: the book-line pricer.
+
 ## 2026-10-16 — Model-first game research: an automatic matchup graphic, a research page per game, and a market outage that no longer hides the model
 
 **EdgeDesk's own projections now lead every NFL and FBS game, with or without a sportsbook quote.** See `docs/game-research/README.md`.

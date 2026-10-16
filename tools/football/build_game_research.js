@@ -33,7 +33,8 @@
      node tools/football/build_game_research.js --check    verify the committed artifact:
                                                  ids are content hashes, checks
                                                  re-run identically, sheets match
-                                                 their snapshots, history is pregame
+                                                 their snapshots, ladders are
+                                                 monotone, history is pregame
      node tools/football/build_game_research.js --identity regenerate the college
                                                  identity table from the NCAAM pack
    =========================================================================== */
@@ -308,6 +309,10 @@ function main() {
          - every snapshot's id is the hash of its own content;
          - every snapshot passes the consistency checks it carries;
          - every probability sheet served was built from its snapshot;
+         - every served ladder is one distribution's: a home line covers at
+           least as often the more points it gets, an over is no likelier at
+           a higher total (to the sheets' 4-dp rounding; the CFB spread once
+           read a different table row at every line and dipped);
          - the history ledger parses, is pregame-only and append-shaped. */
     const cur = readJson('football/game_research/current.json'), probs = readJson('football/game_research/probabilities.json');
     if (!cur || !probs) { console.error('football/game_research/current.json or probabilities.json is missing'); process.exit(1); }
@@ -319,6 +324,14 @@ function main() {
       if (s.model.available && !ck.ok && s.data.status !== 'FAULT') bad.push(s.game_key + ': a failed check is not shown as a DATA FAULT');
       const sh = probs.sheets[s.game_key];
       if (sh && !GS.sheetMatches(s, sh)) bad.push(s.game_key + ': its probability sheet was built from a different projection');
+    });
+    const TOL = 1.01e-4; /* two 4-dp roundings */
+    Object.keys(probs.sheets).forEach((k) => {
+      const L = probs.sheets[k].ladders || {};
+      const sp = (L.spread || []).slice().sort((a, b) => a.home_line - b.home_line);
+      if (sp.some((r, i) => i > 0 && r.home + r.push < sp[i - 1].home + sp[i - 1].push - TOL)) bad.push(k + ': its spread ladder covers less often at a better line');
+      const to = (L.total || []).slice().sort((a, b) => a.line - b.line);
+      if (to.some((r, i) => i > 0 && r.over > to[i - 1].over + TOL)) bad.push(k + ': its total ladder makes the over likelier at a higher total');
     });
     const dir = path.join(OUT, 'history');
     if (fs.existsSync(dir)) fs.readdirSync(dir).filter((f) => /\.jsonl$/.test(f)).forEach((f) => {

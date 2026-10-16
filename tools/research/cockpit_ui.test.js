@@ -259,6 +259,34 @@ chk('explain tags every line with its evidence type and flags unanswerable quest
   chk('the board mounts the queue above its rows', fnSrc('fbP4BoardHTML').indexOf('fbP4QueueHTML(visible)') > 0);
 })();
 
+/* ---- every book's number is priced from ONE distribution ----
+   The pricer read the engine's per-line coverProbSpread, which keys its
+   borrowed shape to the line it prices: a better home number could price
+   lower. It now reads EDQuoteEV.cfbGameCover at the joined market margin. */
+(function () {
+  const mkts = [{ spread_line: 3.5, total_line: 52.5 }, { spread_line: -21.5, total_line: 58.5 }, { spread_line: 52.5, total_line: 61.5 }, {}];
+  mkts.forEach((m0) => {
+    setMarket({ spread_line: m0.spread_line == null ? null : m0.spread_line, total_line: m0.total_line == null ? null : m0.total_line, quotes_h2h: null, book: 'consensus', as_of: recent, stale: false });
+    const pm = project(m0), o = c.fbGxResearchObj(unit('mono' + m0.spread_line), pm), at = o && o._cover_at;
+    const tag = m0.spread_line == null ? 'no market' : 'market home margin ' + m0.spread_line;
+    chk('the book-line pricer exists (' + tag + ')', typeof at === 'function');
+    if (typeof at !== 'function') return;
+    let dips = 0, gaps = 0;
+    for (let L = -70; L < 70; L += 0.5) {
+      const a = at(L), b = at(L + 0.5);
+      if (b.win + b.push < a.win + a.push - 1e-12 || b.win < a.win - 1e-12) dips++;
+      if (Number.isInteger(L + 0.5) && Math.abs(b.win - a.win) > 1e-12) gaps++; /* integer margins: P(m > n) = P(m > n − 0.5) */
+    }
+    chk('a better home number never prices lower, on every half point from −70 to +70 (' + tag + ')', dips === 0, dips);
+    chk('integer margins: an integer line wins exactly as often as the half point below it (' + tag + ')', gaps === 0, gaps);
+    const ec = o.model && o.model.engine_cover;
+    if (ec && Math.abs(m0.spread_line) <= 45) {
+      const x = at(ec.home_line);
+      chk('at the joined line the pricer equals the engine’s own cover to the bit (' + tag + ')', x.win === ec.win && x.push === ec.push && x.lose === ec.lose, { x, ec });
+    }
+  });
+})();
+
 /* ---- the card mounts it, and the page loads the layer ---- */
 chk('fbP4Card mounts the cockpit sections', ['fbGxResearchRead(u,p)', 'fbGxDecomp(u,p)', 'fbGxPrice(u,p)', 'fbGxAlts(u,p)', 'fbGxQuality(u,p)', 'fbGxScenarios(u,p)', 'fbGxWatch(u,p)', 'fbGxExplain(u,p)']
   .every((k) => fnSrc('fbP4Card').indexOf(k) >= 0));

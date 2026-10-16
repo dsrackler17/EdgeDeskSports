@@ -111,6 +111,42 @@ const flipped = FL.sheet({ sport: 'americanfootball_nfl', game_id: 't2', home: '
 chk('mirroring the projection mirrors the moneyline', near(flipped.markets.moneyline.home_win, shN.markets.moneyline.away_win, 0.03), [flipped.markets.moneyline.home_win, shN.markets.moneyline.away_win]);
 const shC = FL.sheet({ sport: 'americanfootball_ncaaf', game_id: 'c1', home: 'H', away: 'A', raw: { home_margin: 10, total: 55, sigma: 15, sigma_base: hooksC.sigma_base } }, CC.live, hooksC);
 chk('a CFB sheet builds with no tie on the moneyline', shC.ok && shC.markets.moneyline.tie === 0, shC.markets && shC.markets.moneyline);
+/* THE CFB SPREAD IS ONE DISTRIBUTION PER GAME (build_fair_lines.js
+   cfbSpreadCover). The engine's per-line call keyed its borrowed shape to the
+   line it priced, so a ladder dipped as the line got better (Tulane −0.5
+   38.9%, +0.5 38.7%; every FBS sheet; 3 points across the table's ±45 edge). */
+const E4 = require(path.join(ROOT, 'football', 'cfb_p4', 'engine.js')), P4 = global.window.EDCfbP4Params;
+function cfbLadderFaults(cover, raw, lo, hi) {
+  let dips = 0, gaps = 0, miss = 0, prev = null;
+  for (let L = lo; L <= hi + 1e-9; L += 0.5) {
+    const t = cover(raw, -L); if (!t) { miss++; prev = null; continue; }
+    if (prev) {
+      if (t.over + t.push < prev.over + prev.push - 1e-12 || t.over < prev.over - 1e-12) dips++;
+      if (Number.isInteger(L) && Math.abs(t.over - prev.over) > 1e-12) gaps++; /* integer margins: P(m > n) = P(m > n − 0.5) */
+    }
+    prev = t;
+  }
+  return { dips, gaps, miss };
+}
+const cfbIn = BFL.inputsFor('cfb', JSON.parse(fs.readFileSync(path.join(ROOT, 'football', 'fbs', 'slate.json'), 'utf8')), 0).rows;
+const cfbF = cfbIn.map((r) => cfbLadderFaults(hooksC.cover, r.input.raw, -70, 70));
+chk('CFB ladders: on every committed FBS projection a home line never covers less often as it gets more points (−70 to +70, unrounded)', cfbIn.length > 20 && cfbF.every((f) => f.dips === 0 && f.miss === 0), cfbF.filter((f) => f.dips || f.miss).length + ' of ' + cfbIn.length);
+chk('CFB ladders: integer margins — an integer home line wins exactly as often as the half point below it', cfbF.every((f) => f.gaps === 0), cfbF.filter((f) => f.gaps).length);
+const sweep = []; for (let m = -60; m <= 60; m += 2.5) [10, 15, 22].forEach((s) => sweep.push(cfbLadderFaults(hooksC.cover, { home_margin: m + 0.13, sigma: s, sigma_base: hooksC.sigma_base }, -75, 75)));
+chk('CFB ladders: monotone for fair margins −60 to +60 at σ 10, 15 and 22, across the table\'s ±45 edge', sweep.every((f) => f.dips === 0 && f.gaps === 0 && f.miss === 0), sweep.filter((f) => f.dips || f.gaps || f.miss).length);
+chk('CFB has no ties: home −0.5 and +0.5 win equally often on every committed projection', cfbIn.every((r) => hooksC.cover(r.input.raw, 0.5).over === hooksC.cover(r.input.raw, -0.5).over));
+const atFair = cfbIn.filter((r) => Math.abs(r.input.raw.home_margin) <= 45);
+chk('at EdgeDesk\'s fair margin the one curve equals the engine\'s own per-line answer to the bit', atFair.length > 20 && atFair.every((r) => { const x = r.input.raw, a = hooksC.cover(x, x.home_margin), e = E4.dist.coverProbSpread(x.home_margin, x.home_margin, x.sigma || hooksC.sigma_base, hooksC.sigma_base); return a.over === e.win && a.push === e.push && a.under === e.lose; }));
+const cfbSheets = cfbIn.map((r) => FL.sheet(r.input, CC.live, hooksC));
+chk('CFB sheets as published (4 dp): every spread rung covers at least as often as the one below it', cfbSheets.every((s) => s.ok && s.ladders.spread.length > 30 && s.ladders.spread.every((r, i, a) => i === 0 || r.home + r.push >= a[i - 1].home + a[i - 1].push - 1.01e-4)));
+const tableless = Object.assign({}, P4, { distributions: Object.assign({}, P4.distributions, { margin_pmf_by_spread: null, pmf_spread_range: null }) });
+const pooled = BFL.cfbSpreadCover(tableless, E4, hooksC.sigma_base), ou4 = (c) => (c ? { over: c.win, push: c.push, under: c.lose } : null);
+let pooledF = null, pooledB = null;
+global.window.EDCfbP4Params = tableless; /* the engine reads the global params */
+try { pooledF = cfbLadderFaults((x, t) => ou4(pooled(x, t)), { home_margin: 7.3, sigma: 15 }, -40, 40); pooledB = (pooled({ home_margin: 7.3 }, -3) || {}).basis; } finally { global.window.EDCfbP4Params = P4; }
+chk('a params file with no table falls back to the pooled residual, itself one distribution', pooledF && pooledF.dips === 0 && pooledF.miss === 0 && pooledB === 'pooled_residual', { pooledF, pooledB });
+chk('a table that cannot place the game refuses rather than read a different row per line', BFL.cfbSpreadCover(P4, E4, hooksC.sigma_base)({ home_margin: null }, 3) === null);
+chk('the calibration replay grades the function the sheets ship', /cfbSpreadCover\(P, E, sigmaBase\)/.test(fs.readFileSync(path.join(__dirname, 'linemaker_calibrate.js'), 'utf8')) && !/coverProbSpread\(raw\.home_margin/.test(fs.readFileSync(path.join(__dirname, 'linemaker_calibrate.js'), 'utf8')));
 const noHooks = FL.sheet({ sport: 'americanfootball_nfl', game_id: 't3', raw: { home_margin: 3, total: 44 } }, CN.live, null);
 const engineMarkets = Object.keys(CN.live.markets).filter((k) => CN.live.markets[k].method === 'ENGINE');
 chk('without an engine an ENGINE market is omitted and the sheet says why', engineMarkets.every((k) => !noHooks.markets[k] || k === 'moneyline') && (engineMarkets.length === 0 || noHooks.notes.length > 0), { engineMarkets, notes: noHooks.notes });
