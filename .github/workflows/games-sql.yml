@@ -102,6 +102,8 @@ on:
       - 'supabase/fix_promote_deletes_mlb.sql'
       - 'supabase/fix_slow_promote_mlb.sql'
       - 'supabase/fix_promote_deletes_cbb.sql'
+      - 'lib/college_baseball.js'
+      - 'tools/cbb/**'
       # THE MLB HISTORICAL PITCHING ARCHIVE. Its promote gate is a PL/pgSQL
       # function and its refusals are the whole safety property — a short,
       # duplicated or unreconciled dataset must not be able to replace a good
@@ -200,6 +202,8 @@ on:
       - 'supabase/fix_promote_deletes_mlb.sql'
       - 'supabase/fix_slow_promote_mlb.sql'
       - 'supabase/fix_promote_deletes_cbb.sql'
+      - 'lib/college_baseball.js'
+      - 'tools/cbb/**'
       # THE MLB HISTORICAL PITCHING ARCHIVE. Its promote gate is a PL/pgSQL
       # function and its refusals are the whole safety property — a short,
       # duplicated or unreconciled dataset must not be able to replace a good
@@ -651,6 +655,16 @@ jobs:
           EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
         run: node tools/mlb/baseball_ui.e2e.js | tee mlb_ui.log
 
+      # THE COLLEGE BASEBALL SURFACE, THE SAME WAY: the shipped board, brief and
+      # out-of-season card in Chromium, every read answered from this database.
+      # It ran in no workflow, so the out-of-season card lost its "the archive
+      # holds" line and nothing failed.
+      - name: Run the college baseball research surface e2e
+        env:
+          PGPASSWORD: postgres
+          EDGD_PG: -h 127.0.0.1 -p 5432 -U postgres
+        run: node tools/cbb/cbb_ui.e2e.js | tee cbb_ui.log
+
       # A skip here would mean the guarantee was never tested. On this job that
       # is a failure, not a pass.
       - name: Refuse a silent skip
@@ -682,7 +696,7 @@ jobs:
           # be read off the run at all. Now it names the file and shows the tail
           # that failed to satisfy it.
           bad=0
-          for f in sql.log franchise.log issues.log billing.log lockdown.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log newsletter_suppress.log ufc.log tennis.log tennis_record.log tennis_import.log tennis_leakage.log tennis_wfgate.log tennis_lab.log tennis_wta.log mlb.log mlb_import.log mlb_features.log mlb_refresh.log mlb_ai.log mlb_brief.log mlb_ui.log mlb_off_sql.log mlb_off_dataset.log mlb_off_import.log mlb_off_features.log mlb_off_refresh.log mlb_off_ai.log; do
+          for f in sql.log franchise.log issues.log billing.log lockdown.log community.log editorial.log editorial_runtime.log editorial_dispatch.log newsletter.log newsletter_suppress.log ufc.log tennis.log tennis_record.log tennis_import.log tennis_leakage.log tennis_wfgate.log tennis_lab.log tennis_wta.log mlb.log mlb_import.log mlb_features.log mlb_refresh.log mlb_ai.log mlb_brief.log mlb_ui.log cbb_ui.log mlb_off_sql.log mlb_off_dataset.log mlb_off_import.log mlb_off_features.log mlb_off_refresh.log mlb_off_ai.log; do
             if [ ! -f "$f" ]; then
               echo "::error::REFUSING: $f was never written — the step that produces it did not run"
               bad=1

@@ -40,7 +40,13 @@ const conn = PG.findServer();
 if (!conn) { console.log('SKIP | cbb research surface | no reachable PostgreSQL server'); process.exit(0); }
 if (!PG.createDatabase(conn, DB)) { console.log('SKIP | cbb research surface | could not create the test database'); process.exit(0); }
 const db = PG.pgClient(conn, { database: DB });
-try { db.sql('create role anon nologin; create role authenticated nologin;'); } catch (_) {}
+/* Supabase's roles, one statement each and as tools/games/sql/supabase_shim.sql
+   makes them (service_role bypasses RLS): the schema grants to all three, and a
+   bare PostgreSQL (a CI service container) has none of them. As one statement,
+   an anon left by an earlier suite aborted the rest, and the schema then failed
+   on service_role before a single assertion ran. */
+['anon nologin', 'authenticated nologin', 'service_role nologin bypassrls']
+  .forEach((r) => { try { db.sql('create role ' + r + ';'); } catch (_) {} });
 
 /* the card is dated relative to today so the board's own three-day ET window
    finds it — the season is February to June, so "today" is forced in-season
@@ -348,7 +354,10 @@ const game = (o) => Object.assign({
       await ctx.close();
     }
 
-    /* ══ 4. OUT OF SEASON — the screen with nothing on it ═══════════════════ */
+    /* ══ 4. OUT OF SEASON ═══════════════════════════════════════════════════
+       With earlier games in the archive, the board falls back to the last day
+       played and says so above it; it never reads as tonight's card. Both
+       out-of-season states say what the archive holds. */
     {
       const { page, ctx, errors } = await openApp();
       await page.evaluate(() => window.researchGo('baseball'));
@@ -368,6 +377,8 @@ const game = (o) => Object.assign({
         /February/i.test(body) && /June/i.test(body), body.slice(0, 400));
       chk('…and does not read as a failure', !/did not load|error/i.test(body), body.slice(0, 300));
       chk('…while still saying what the archive holds', /archive holds/i.test(body), body.slice(0, 400));
+      chk('…and the last day played is labelled as finished games, not tonight’s',
+        /Showing the last day played/.test(body) && /not tonight’s/.test(body), body.slice(0, 400));
       chk('no page error out of season', errors.length === 0, errors.slice(0, 3));
       await ctx.close();
     }

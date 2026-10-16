@@ -16084,6 +16084,16 @@ function cbbDayLabel(d){
     return dt.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric',timeZone:'UTC'});
   }catch(_){ return d; }
 }
+/* what the archive holds, said in both out-of-season states: the empty card
+   and the last day played. Out of season is when a reader most needs to know
+   the records and meetings are still there. Nothing when the status read failed. */
+function cbbArchiveLine(){
+  if(!(CBB.status&&CBB.status.ok))return '';
+  return '<div style="margin-top:9px" class="mlbh-cov-m">The archive holds '
+    +cbbEsc(CBB.status.counts.games)+' games across seasons '
+    +cbbEsc(CBB.status.coverage.first_season)+'–'+cbbEsc(CBB.status.coverage.last_season)
+    +'. Season records and prior meetings are still there to read.</div>';
+}
 
 window.loadCollegeBaseball=async function(force,signal){
   CBB.signal=signal||null;
@@ -16180,6 +16190,7 @@ function cbbBoardHTML(){
       +cbbEsc(cbbDayLabel(b.requested_through))+' — the season runs from the middle of February to the end '
       +'of June. Showing the last day played, <b>'+cbbEsc(cbbDayLabel(b.fell_back_to))+'</b>, so the card and '
       +'the research behind each game stay open out of season. These are finished games, not tonight’s.'
+      +cbbArchiveLine()
       +'</div>'+head;
   }
 
@@ -16193,10 +16204,7 @@ function cbbBoardHTML(){
         +'The season runs from the middle of February to the end of June. There are no games between '
         +cbbEsc(cbbDayLabel(b.from))+' and '+cbbEsc(cbbDayLabel(b.through))+', and that is the right answer '
         +'rather than an empty board.'
-        +(CBB.status&&CBB.status.ok?'<div style="margin-top:9px" class="mlbh-cov-m">The archive holds '
-          +cbbEsc(CBB.status.counts.games)+' games across seasons '
-          +cbbEsc(CBB.status.coverage.first_season)+'–'+cbbEsc(CBB.status.coverage.last_season)
-          +'. Season records and prior meetings are still there to read.</div>':'')
+        +cbbArchiveLine()
         +'</div>';
     }
     return head+'<div class="empty"><b>No college games on the card.</b><br>'
