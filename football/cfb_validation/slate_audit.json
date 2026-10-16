@@ -1,7 +1,7 @@
 {
  "schema": "edgedesk_cfb_slate_audit_v1",
- "generated_at": "2026-10-16T17:08:05.428Z",
- "board_generated_at": "2026-10-16T17:07:56.344Z",
+ "generated_at": "2026-10-16T17:41:33.816Z",
+ "board_generated_at": "2026-10-16T17:41:26.857Z",
  "source": "football/cfb_terminal/{board,games}.json — the canonical research objects every page reads",
  "requirements": [
   "correct game",
@@ -44,26 +44,6 @@
    "market": "Houston -4.4",
    "books": 2,
    "gap": 6.5,
-   "gap_class": "MODERATE",
-   "favorite_flip": false,
-   "research_status": "INVESTIGATE",
-   "research_label": "INVESTIGATE",
-   "decision_status": "PASS",
-   "gate_status": "NOT REQUIRED (under 7 pts)",
-   "root_cause": null,
-   "requirements": null,
-   "consistent": true,
-   "verdict": "Under 7 pts: no integrity gate required; research status INVESTIGATE."
-  },
-  {
-   "game_id": "401858492",
-   "game": "Nebraska @ Oregon",
-   "kickoff": "2026-10-18T03:00:00.000Z",
-   "named": false,
-   "edgedesk": "Oregon -0.7",
-   "market": "Oregon -7.0",
-   "books": 2,
-   "gap": 6.3,
    "gap_class": "MODERATE",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -121,9 +101,9 @@
    "kickoff": "2026-10-17T23:30:00.000Z",
    "named": false,
    "edgedesk": "Louisville -7.7",
-   "market": "Louisville -15.5",
+   "market": "Louisville -15.0",
    "books": 2,
-   "gap": 7.8,
+   "gap": 7.3,
    "gap_class": "MAJOR",
    "favorite_flip": false,
    "research_status": "INVESTIGATE",
@@ -145,7 +125,7 @@
     {
      "requirement": "fresh multi-book consensus",
      "result": "PASS",
-     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 0 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 0"
+     "detail": "PASS: a current consensus spread is on file · PASS: plausible spread · PASS: captured 0 h ago (limit 24 h at this size) · PASS: 2 books behind the consensus (at least 2 required at this size) · PASS: books disagree by SD 1"
     },
     {
      "requirement": "current team states",
@@ -170,12 +150,12 @@
     {
      "requirement": "submodel support",
      "result": "PASS",
-     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 7.5 pts on EdgeDesk’s side"
+     "detail": "PASS: 3 of 3 independent submodels sit on EdgeDesk’s side of the market by 2+ pts (0 on the market’s side; 2 required) · PASS: the independent ensemble is 7 pts on EdgeDesk’s side"
     },
     {
      "requirement": "football-only calibration preserves the major gap",
      "result": "FAIL",
-     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 6.7 — the extreme is not supported by how margins of this size have actually finished"
+     "detail": "FAIL: football-only calibration (slope 0.9637, home field 2.582) puts the gap at 6.2 — the extreme is not supported by how margins of this size have actually finished"
     }
    ],
    "consistent": true,
