@@ -297,6 +297,7 @@ if (require.main === module) {
   /* ── a day's completed games, straight from the scoreboard ──────────────
      For --sample-day, which needs no database. Everything else reads the game
      log, because the archive must never hold a game the log does not. */
+  const { isFinal } = require('./ingest.js');
   async function gamesFromScoreboard(day) {
     const ctl = new AbortController();
     const t = setTimeout(() => ctl.abort(), 25000);
@@ -311,7 +312,8 @@ if (require.main === module) {
     const out = [];
     for (const ev of (((j || {}).events) || [])) {
       const c = (ev.competitions || [])[0] || {};
-      if (!(c.status && c.status.type && c.status.type.completed)) continue;
+      /* the ingest's own rule: ESPN flags a postponed game completed too */
+      if (!isFinal((c.status || ev.status || {}).type)) continue;
       const cs = c.competitors || [];
       const home = cs.find((x) => x.homeAway === 'home') || cs[0] || {};
       const away = cs.find((x) => x.homeAway === 'away') || cs[1] || {};

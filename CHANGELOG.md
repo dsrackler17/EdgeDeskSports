@@ -1,5 +1,28 @@
 # Changelog
 
+## 2026-10-16 — College baseball: a postponed game is no longer stored as a finished 0-0
+
+**The ingest called any game in ESPN's `post` state completed** (`tools/cbb/ingest.js`). ESPN files postponed, canceled and suspended games under `post` too. It flags a postponed one `completed: true`, with a score of "0" for each side. So:
+- a rained-off game was stored as a finished 0-0, which the record fold (`cbb.rebuild_team_seasons`) counts as a tie, in the club's record, last 10 and streak;
+- a game suspended in the 7th was stored as a final, with a winner.
+
+**What changed:**
+- **`tools/cbb/ingest.js` `isFinal`.** A game is a result only when the source says it finished (the completed flag or a final status) and its status does not say postponed, canceled, suspended or forfeited. That is the rule `tools/collective/settle_finals.js` and the CFB Lab already use.
+  - A postponed or canceled game stores no score, and its row says why (`Postponed`), even when the source only names the status.
+  - A suspended game keeps its partial score, but it is not a result.
+- **The union** (`mergeGame`). When one source saw the game finish and the other did not, the finished reading's status, score and innings lead. A stale "Postponed" can no longer sit beside a final, and a postponed reading can never set completed.
+- **`tools/cbb/stats.js`** reads box scores by the same rule.
+- **`lib/college_baseball.js`.** Rows the old ingest already stored are read as what they were: abandoned, no winner, no 0-0. The next import replaces them, because promote rewrites every game row. `app.html` loads the library with a new cache key.
+
+**Tests.** `tools/cbb/ingest.test.js` covers:
+- a final, including one with no completed flag;
+- postponed, canceled, suspended and forfeited games in state `post`;
+- the state alone;
+- the union in both source orders;
+- the board's reading of a legacy row.
+
+13 of its 47 assertions fail on the old code.
+
 ## 2026-10-16 — EdgeDesk Model Performance: every pregame forecast, locked and graded in public, misses included
 
 **`/performance/` is the public, cross-sport record of EdgeDesk's forecasts.** It is free and needs no account. See `docs/model-performance/` (AUDIT, DESIGN, RUNBOOK).
