@@ -1,0 +1,52 @@
+# The checks that gate every change to the automated Discord posts.
+#
+#   function   supabase/functions/discord_cron/index.ts imported as deployed,
+#              against a mocked Discord, PostgREST and site: 429s, limits,
+#              idempotency, dry run, the copy check, the schedule in Central
+#              time, the slate, the scorecard and the free samples
+#   sql        supabase/discord.sql, discord_samples.sql and discord_cron.sql
+#              on a throwaway PostgreSQL: the claims, the insert-only log, the
+#              append-only, frozen sample ledger and the cron wiring
+#
+# Nothing here deploys or posts. Deploying is Deploy Discord posts (manual).
+name: Discord posts tests
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/discord_cron/**'
+      - 'supabase/discord*.sql'
+      - 'tools/discord/**'
+      - '.github/workflows/discord-tests.yml'
+      - '.github/workflows/deploy-discord.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/discord_cron/**'
+      - 'supabase/discord*.sql'
+      - 'tools/discord/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: discord-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: discord_cron, as deployed
+        run: node tools/discord/discord_cron.test.js
+      - name: The Discord SQL on a real PostgreSQL
+        env:
+          DISCORD_SQL_REQUIRED: '1'
+        run: |
+          sudo apt-get install -y -qq postgresql >/dev/null 2>&1 || true
+          node tools/discord/discord_sql.test.js

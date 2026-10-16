@@ -1,0 +1,97 @@
+# Deploy the automated Discord posts: the discord_cron edge function and,
+# optionally, its SQL (supabase/discord.sql, discord_samples.sql and
+# discord_cron.sql, in that order).
+#
+# MANUAL ON PURPOSE. Posting to a public Discord is outward-facing; nothing
+# here runs on a push. Before the first live day, set DISCORD_DRY_RUN=1 on the
+# function and read the printed payloads in its logs (docs/discord/README.md).
+#
+# SECRETS (GitHub Actions; the same ones Deploy research scheduler uses):
+#   SUPABASE_ACCESS_TOKEN, SUPABASE_PROJECT_REF   to deploy the function
+#   SB_DB_URL                                     to apply the SQL (optional;
+#                                                 or paste the files into the SQL editor)
+# The function's own secrets (the six webhook URLs, DISCORD_CRON_SECRET,
+# optionally DISCORD_BOT_TOKEN) are set on Supabase, never here:
+# docs/discord/README.md has the commands.
+name: Deploy Discord posts
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy_function:
+        description: 'Deploy supabase/functions/discord_cron (JWT verification OFF: pg_cron sends no JWT; the x-cron-secret header is checked inside)'
+        type: boolean
+        default: true
+      apply_sql:
+        description: 'Apply supabase/discord.sql, discord_samples.sql and discord_cron.sql (needs pg_cron, pg_net and the Vault secret discord_cron_secret)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-discord
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+
+      - name: The function and its SQL must pass before anything ships
+        env:
+          DISCORD_SQL_REQUIRED: '1'
+        run: |
+          sudo apt-get install -y -qq postgresql >/dev/null 2>&1 || true
+          node tools/discord/discord_cron.test.js
+          node tools/discord/discord_sql.test.js
+
+      - name: Check the credentials exist before claiming anything
+        id: creds
+        env:
+          TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          DBURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          # Presence only. No value is ever printed.
+          echo "have_token=$([ -n "$TOKEN" ] && echo yes || echo no)" >> "$GITHUB_OUTPUT"
+          echo "have_ref=$([ -n "$REF" ] && echo yes || echo no)"     >> "$GITHUB_OUTPUT"
+          echo "have_db=$([ -n "$DBURL" ] && echo yes || echo no)"    >> "$GITHUB_OUTPUT"
+          if [ -z "$TOKEN" ] || [ -z "$REF" ]; then echo "::warning::SUPABASE_ACCESS_TOKEN and/or SUPABASE_PROJECT_REF are not set — discord_cron cannot be deployed from CI."; fi
+          if [ -z "$DBURL" ]; then echo "::warning::SB_DB_URL is not set — the SQL cannot be applied from CI (paste the three files into the SQL editor instead)."; fi
+
+      - name: Install the Supabase CLI
+        if: ${{ inputs.deploy_function && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # --no-verify-jwt as for research_cron: pg_cron sends no JWT. The
+      # function refuses every POST whose x-cron-secret does not match
+      # DISCORD_CRON_SECRET, so nothing is opened.
+      - name: Deploy discord_cron
+        if: ${{ inputs.deploy_function && steps.creds.outputs.have_token == 'yes' && steps.creds.outputs.have_ref == 'yes' }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: |
+          supabase functions deploy discord_cron \
+            --project-ref "$PROJECT_REF" \
+            --no-verify-jwt
+
+      - name: Apply the Discord SQL
+        if: ${{ inputs.apply_sql && steps.creds.outputs.have_db == 'yes' }}
+        env:
+          PGURL: ${{ secrets.SB_DB_URL }}
+        run: |
+          sudo apt-get install -y -qq postgresql-client >/dev/null 2>&1 || true
+          for f in discord.sql discord_samples.sql discord_cron.sql; do
+            out=$(psql "$PGURL" -v ON_ERROR_STOP=1 -f "supabase/$f")
+            echo "== $f"; echo "$out" | tail -6
+            if echo "$out" | grep -q 'CHECK THIS'; then echo "::error::$f: a report row says CHECK THIS"; exit 1; fi
+          done

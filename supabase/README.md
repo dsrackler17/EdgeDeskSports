@@ -886,6 +886,68 @@ should say `ok`. Re-running replaces the job. Five minutes later,
 `select * from research_state_scheduler;` shows the ticks arriving. Tested by
 `tools/personal/research_cron_sql.test.js` and `research_cron.test.js`.
 
+### `discord.sql` — every Discord post, logged, and never sent twice
+`public.discord_posts` logs every call of `functions/discord_cron`'s
+`postToDiscord()`: the channel (the webhook SECRET NAME, never its URL), the
+type, `sent_at`, the status (`sent`, `failed`, `partial`, `unknown`, `dry_run`,
+`duplicate`, `skipped`), the error and the Discord message ids. It is
+insert-only for the service role, and its check refuses any row that carries a
+webhook URL. `public.discord_post_claims` holds one row per post key (type,
+channel and date). Only the run that claims a key sends it.
+
+- A Discord 4xx is `failed` and may be claimed again, three times in all.
+- `unknown` and `partial` are never retried automatically.
+- `discord_release_post(key, reason)` is for an operator in the SQL editor,
+  never an API role. It cannot release a `sent` key.
+
+Run first. Report rows 1-5 `ok`. Tested by `tools/discord/discord_sql.test.js`.
+See `docs/discord/README.md`.
+
+### `discord_samples.sql` — the free research samples' ledger
+The ledger that keeps the public sample record from being cherry-picked.
+
+- **`discord_sample_sightings`.** The first time a CFB or NFL game is seen
+  INVESTIGATE or MONITOR, with the consensus line then. Stamped by the
+  database clock.
+- **`discord_sample_selections`.** One row per sport and slate date, holding
+  every candidate, its order keys, its eligibility, and the reason for each
+  choice.
+- **`discord_samples`.** One row per chosen game.
+
+Sightings and selections are append-only. A sample's decided columns are
+frozen, its outcome columns are written once, and its status only moves
+forward (`scheduled` → `posted` → `followed_up`, or `scheduled` → `missed`).
+Nothing is deleted. A `posted_at` later than kickoff − 60 minutes is refused.
+`discord_record_selection()` writes a selection and its samples in one
+transaction, copying the detection time and line from the sighting.
+
+Run after `discord.sql`. Report rows 1-5 `ok`.
+
+### `discord_cron.sql` — the Discord schedules
+Three pg_cron jobs call `functions/discord_cron` through
+`public.discord_poke(action)`. That wrapper reads the Vault secret
+`discord_cron_secret` and sends it as `x-cron-secret`, as `capture_cron.sql`
+does.
+
+| job | schedule (UTC) | action |
+|---|---|---|
+| `discord_scorecard` | Mondays `0,30 15,16 * * 1` | `scorecard` |
+| `discord_slate` | daily `0,30 15,16 * * *` | `slate` |
+| `discord_samples` | `4,19,34,49 * * * *` | `samples` |
+
+The function acts only in the 10 o'clock hour America/Chicago, so the
+schedules are right under CDT and CST alike.
+
+Run order:
+
+1. `discord.sql`, then `discord_samples.sql`.
+2. Deploy `discord_cron` with `--no-verify-jwt`.
+3. Set its secrets, and the same `DISCORD_CRON_SECRET` value in Vault.
+4. Run this file.
+
+It needs pg_cron and pg_net. Without the Vault secret, row 5 says
+`CHECK THIS` and every poke raises. Re-running replaces the jobs.
+
 ### `lock_rule.sql` — the Collective's 30-minute lock
 Every game locks 30 minutes before kickoff. Each model's latest live submission
 received before the lock is the one the board, the consensus and the grader use.

@@ -105,6 +105,7 @@ by `.github/workflows/deploy-growth-outbound.yml` (manual):
 | function | what for |
 |---|---|
 | `research_cron` | the Personal research state job's primary scheduler (`supabase/research_state_cron.sql`, every five minutes). It dispatches `research-state.yml`, which writes `game_research_state` for the landing page and the terminal, when the newest state is older than 55 min (25 min inside 24 h of a kickoff), never twice inside one cadence. It never writes a state itself. JWT verification OFF (`--no-verify-jwt`): pg_cron sends no JWT. Its GET is a public health probe carrying `BUILD`. It reads `RESEARCH_GH_TOKEN`, then `PROPS_GH_TOKEN`, then `EDITORIAL_GH_TOKEN`. |
+| `discord_cron` | every automated Discord post (`supabase/discord_cron.sql`, `docs/discord/README.md`): the Monday CLV scorecard to #clv-results, the daily slate to each sport channel, and the CFB / NFL free research samples with their after-the-close follow-up. One helper, `postToDiscord()`, handles Discord's 429s and limits, the once-per-date claim and the log (`discord_posts`). Webhook URLs come from the `DISCORD_WEBHOOK_*` secrets by name and are never logged. Deployed `--no-verify-jwt`; every POST needs `x-cron-secret` = `DISCORD_CRON_SECRET`, which pg_cron reads from Vault. `DISCORD_DRY_RUN=1` prints instead of posting. Tested by `tools/discord/discord_cron.test.js`. |
 
 The newsletter pipeline itself is `tools/newsletter/`, run by
 `.github/workflows/newsletter.yml`; it reaches the database over PostgREST with
