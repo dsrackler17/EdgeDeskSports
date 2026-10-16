@@ -23,8 +23,8 @@
   "game_time": "2026-10-25T20:25:00.000Z",
   "game_when_label": "2026-10-25 20:25 UTC",
   "published_at": null,
-  "updated_at": "2026-10-13T22:38:33.579Z",
-  "generated_at": "2026-10-16T16:32:55.687Z",
+  "updated_at": "2026-10-16T20:59:01.365Z",
+  "generated_at": "2026-10-16T20:59:01.365Z",
   "model_version": "EdgeDesk NFL game model edgedesk_football_v1.0.0",
   "model_status": "STALE MARKET",
   "model_status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.9-point gap is context only and the game is excluded from research ranking.",
@@ -43,7 +43,7 @@
   "frozen_at": null,
   "author": "EdgeDesk Research",
   "publisher": "EdgeDesk Sports",
-  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 79 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
+  "research_source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 80 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice.",
   "market_source": null,
   "research": {
     "kind": "NFL_GAME",
@@ -66,11 +66,11 @@
       "Los Angeles Rams carries the stronger EdgeDesk offensive profile (#3 in EPA per play), while Las Vegas Raiders owns the more favourable defensive matchup (#13 in EPA allowed per play).",
       "EdgeDesk’s independent projection makes it Las Vegas Raiders +5.1 with a fair total of 49.7 — inside a touchdown, before any sportsbook number is consulted.",
       "The widest measured matchup on the board is Los Angeles Rams pass offence vs Las Vegas Raiders pass defence, which sits +0.233 from the league mean once the two ratings are combined the way the model combines them.",
-      "The largest uncertainty is quarterback information: Los Angeles Rams and Las Vegas Raiders have no confirmed starter on file, which materially affects how much confidence the exact number deserves."
+      "The largest uncertainty is availability: NFL injury report — not loaded in this session."
     ],
     "projection": {
       "priced": true,
-      "fair_spread": -5.110505443519294,
+      "fair_spread": -5.062858804184912,
       "fair_spread_text": "Las Vegas Raiders +5.1",
       "favourite": "Los Angeles Rams",
       "underdog": "Las Vegas Raiders",
@@ -104,8 +104,8 @@
       "moneyline": {
         "home": "Las Vegas Raiders",
         "away": "Los Angeles Rams",
-        "home_odds": "+216",
-        "away_odds": "-216",
+        "home_odds": "+214",
+        "away_odds": "-214",
         "note": "EdgeDesk’s own fair price, with no margin in it. It is not a quote and nobody offers it."
       },
       "outcome_range": {
@@ -117,8 +117,8 @@
         "note": "Quoted from the perspective of Las Vegas Raiders, off the engine’s own learned margin distribution (conditioned on this spread, so real key-number mass is kept). Eight results in ten land inside p10–p90."
       },
       "confidence_pct": null,
-      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 79 absorbed 2026 games.",
-      "sample_games": 79,
+      "confidence_absent_reason": "The NFL model publishes no single confidence score. What it publishes instead is the width of the outcome range above and the sample the ratings rest on: the trained seeds through 2025, plus 80 absorbed 2026 games.",
+      "sample_games": 80,
       "seeded": true,
       "status": "STALE MARKET",
       "status_note": "Only the nflverse reference line is on file, and it carries no timestamp: it is not a current price, so the 1.9-point gap is context only and the game is excluded from research ranking.",
@@ -264,8 +264,8 @@
               "a": {
                 "v": "+4.07",
                 "n": 4.06824922292905,
-                "rank": "#4 of 32",
-                "rank_n": 4,
+                "rank": "#3 of 32",
+                "rank_n": 3,
                 "note": null
               },
               "h": {
@@ -278,7 +278,7 @@
               "edge": {
                 "side": "a",
                 "gap": 6.60867986393494,
-                "rank_gap": 23
+                "rank_gap": 24
               }
             },
             {
@@ -574,14 +574,14 @@
               "h": {
                 "v": "+0.6 pp",
                 "n": 0.005725707047839217,
-                "rank": "#22 of 32",
-                "rank_n": 22,
+                "rank": "#23 of 32",
+                "rank_n": 23,
                 "note": null
               },
               "edge": {
                 "side": "a",
                 "gap": 0.035062748128367106,
-                "rank_gap": 20
+                "rank_gap": 21
               }
             },
             {
@@ -662,6 +662,16 @@
     "advantages": {
       "away": [
         {
+          "k": "Points scored",
+          "rank_gap": 24,
+          "gap": 6.60867986393494,
+          "lead": "Los Angeles Rams",
+          "trail": "Las Vegas Raiders",
+          "lead_cell": "+4.07 · #3 of 32",
+          "trail_cell": "−2.54 · #27 of 32",
+          "text": "Los Angeles Rams +4.07 (#3 of 32) vs Las Vegas Raiders −2.54 (#27 of 32) — 24 places on the league board."
+        },
+        {
           "k": "Offence · EPA per play",
           "rank_gap": 24,
           "gap": 0.19192419044781203,
@@ -670,16 +680,6 @@
           "lead_cell": "+0.116 · #3 of 32",
           "trail_cell": "−0.076 · #27 of 32",
           "text": "Los Angeles Rams +0.116 (#3 of 32) vs Las Vegas Raiders −0.076 (#27 of 32) — 24 places on the league board."
-        },
-        {
-          "k": "Points scored",
-          "rank_gap": 23,
-          "gap": 6.60867986393494,
-          "lead": "Los Angeles Rams",
-          "trail": "Las Vegas Raiders",
-          "lead_cell": "+4.07 · #4 of 32",
-          "trail_cell": "−2.54 · #27 of 32",
-          "text": "Los Angeles Rams +4.07 (#4 of 32) vs Las Vegas Raiders −2.54 (#27 of 32) — 23 places on the league board."
         },
         {
           "k": "Run offence · EPA per carry",
@@ -693,13 +693,13 @@
         },
         {
           "k": "Sacks taken per dropback",
-          "rank_gap": 20,
+          "rank_gap": 21,
           "gap": 0.035062748128367106,
           "lead": "Los Angeles Rams",
           "trail": "Las Vegas Raiders",
           "lead_cell": "−2.9 pp · #2 of 32",
-          "trail_cell": "+0.6 pp · #22 of 32",
-          "text": "Los Angeles Rams −2.9 pp (#2 of 32) vs Las Vegas Raiders +0.6 pp (#22 of 32) — 20 places on the league board."
+          "trail_cell": "+0.6 pp · #23 of 32",
+          "text": "Los Angeles Rams −2.9 pp (#2 of 32) vs Las Vegas Raiders +0.6 pp (#23 of 32) — 21 places on the league board."
         },
         {
           "k": "Net EPA per play",
@@ -866,7 +866,7 @@
           "team": "Las Vegas Raiders",
           "label": "pass protection",
           "v": "+0.6 pp",
-          "rank": "#22 of 32",
+          "rank": "#23 of 32",
           "note": null
         },
         "def": {
@@ -878,7 +878,7 @@
         },
         "complete": true,
         "net": 0.006613707047839217,
-        "read": "Las Vegas Raiders’ pass protection rates +0.6 pp (#22 of 32) and Los Angeles Rams’ pass rush rates +0.1 pp (#16 of 32). Added the way the model adds them, this pairing sits +0.7 pp from the league mean, which favours Los Angeles Rams."
+        "read": "Las Vegas Raiders’ pass protection rates +0.6 pp (#23 of 32) and Los Angeles Rams’ pass rush rates +0.1 pp (#16 of 32). Added the way the model adds them, this pairing sits +0.7 pp from the league mean, which favours Los Angeles Rams."
       },
       {
         "title": "Los Angeles Rams explosive passing vs Las Vegas Raiders explosive passes allowed",
@@ -972,32 +972,32 @@
         "rows": [
           {
             "k": "Confirmation",
-            "a": "STARTER NOT CONFIRMED",
-            "h": "STARTER NOT CONFIRMED",
+            "a": "STARTER CONFIRMED",
+            "h": "STARTER CONFIRMED",
             "note": "from the schedule feed’s own starter id"
           },
           {
             "k": "Quarterback",
-            "a": "not named — nobody has confirmed a starter",
-            "h": "not named — nobody has confirmed a starter",
+            "a": "Matthew Stafford",
+            "h": "Kirk Cousins",
             "note": null
           },
           {
             "k": "Roster check",
-            "a": "nothing to check until a starter is named",
-            "h": "nothing to check until a starter is named",
+            "a": "on the active roster",
+            "h": "on the active roster",
             "note": null
           },
           {
             "k": "Learned sample",
-            "a": "no starter to look up",
-            "h": "no starter to look up",
+            "a": "249 learned starts",
+            "h": "172 learned starts",
             "note": "starts the QB layer has actually absorbed"
           },
           {
             "k": "Model adjustment",
-            "a": "0.0 — an absence, not an average",
-            "h": "0.0 — an absence, not an average",
+            "a": "+0.092 rating units against this team’s own QB baseline",
+            "h": "+0.101 rating units against this team’s own QB baseline",
             "note": "this quarterback against his own team’s QB baseline. With no confirmed starter the term contributes nothing, which is not a claim that the position is league average"
           },
           {
@@ -1009,8 +1009,7 @@
         ],
         "reads": [
           "The quarterback difference is worth 0.0 points of the projected spread — the engine’s own qb_adj_diff term, and the only place a quarterback moves this number.",
-          "Los Angeles Rams’ starter is not confirmed by the schedule feed. EdgeDesk does NOT carry the last known starter forward here: with no confirmed id the quarterback term for Los Angeles Rams contributes exactly zero points, which is not the same as saying the position is league average. Its active room is Matthew Stafford, Stetson Bennett, Ty Simpson.",
-          "Las Vegas Raiders’ starter is not confirmed by the schedule feed. EdgeDesk does NOT carry the last known starter forward here: with no confirmed id the quarterback term for Las Vegas Raiders contributes exactly zero points, which is not the same as saying the position is league average. Its active room is Kirk Cousins, Aidan O'Connell, Fernando Mendoza.",
+          "Both starters are confirmed by the schedule feed, so the quarterback term is priced from the learned value of the two players actually named.",
           "The learned QB layer is identity-keyed and value-only: it says how a quarterback has played, never how he is feeling, and it knows nothing about a start nobody has announced."
         ]
       },
@@ -1082,7 +1081,7 @@
         ],
         "reads": [
           "Each situational factor is shown with the points the engine’s own context model assigned it, so nothing here is a rule of thumb. A factor with no weight in the fit is worth nothing in this number and says so rather than being quietly rounded up.",
-          "The ratings behind this projection are the trained seeds plus 79 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
+          "The ratings behind this projection are the trained seeds plus 80 absorbed 2026 games; early in a season that means the prior is still carrying most of the weight."
         ]
       }
     ],
@@ -1115,18 +1114,6 @@
       "items": [
         {
           "sev": "HIGH",
-          "label": "Los Angeles Rams — starting quarterback unknown",
-          "text": "No confirmed starter id for Los Angeles Rams. The quarterback term contributes zero points rather than a guess, so the projected spread carries no quarterback information for this side at all. In this league that is the single widest source of error a projection can have.",
-          "widening": null
-        },
-        {
-          "sev": "HIGH",
-          "label": "Las Vegas Raiders — starting quarterback unknown",
-          "text": "No confirmed starter id for Las Vegas Raiders. The quarterback term contributes zero points rather than a guess, so the projected spread carries no quarterback information for this side at all. In this league that is the single widest source of error a projection can have.",
-          "widening": null
-        },
-        {
-          "sev": "HIGH",
           "label": "availability not on file",
           "text": "NFL injury report — not loaded in this session.",
           "widening": null
@@ -1135,18 +1122,6 @@
           "sev": "HIGH",
           "label": "the model does not beat the closing line",
           "text": "Out of sample 2016–2025 this model’s spread MAE is 10.2 against the closing market’s 9.777. It is research, and this brief is the research; it is not a claim that the number is better than the market’s.",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "data quality",
-          "text": "home QB starter unknown",
-          "widening": null
-        },
-        {
-          "sev": "MEDIUM",
-          "label": "data quality",
-          "text": "away QB starter unknown",
           "widening": null
         }
       ],
@@ -1225,7 +1200,7 @@
         },
         {
           "k": "Points scored",
-          "a": "+4.07  #4 of 32",
+          "a": "+4.07  #3 of 32",
           "h": "−2.54  #27 of 32",
           "note": null
         },
@@ -1298,7 +1273,7 @@
         {
           "k": "Sacks taken per dropback",
           "a": "−2.9 pp  #2 of 32",
-          "h": "+0.6 pp  #22 of 32",
+          "h": "+0.6 pp  #23 of 32",
           "note": "pass protection — the only offensive-line number the NFL model carries"
         },
         {
@@ -1328,11 +1303,11 @@
     "missing": [],
     "priced_label": "PRICED BY MODEL — the projection and its additive drivers, from the inputs the NFL model actually fits.",
     "context_label": "RESEARCH CONTEXT — every rating below is opponent-adjusted and printed as a deviation from the league mean. The injury report and the quarterback panel explain the matchup and move no priced number.",
-    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 79 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
+    "source": "Ratings: EdgeDesk’s NFL rating state — trained seeds through 2025 plus 80 absorbed 2026 games, opponent-adjusted from the public nflverse team-week feed. Projection: the same edgedesk_football_v1.0.0 call the game card makes. Nothing on this page was computed in your browser twice."
   },
   "checks": {
     "ok": true,
     "failed": [],
-    "at": "2026-10-16T16:32:55.687Z"
+    "at": "2026-10-16T20:59:01.365Z"
   }
 }
